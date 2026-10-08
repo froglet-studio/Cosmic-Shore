@@ -1554,3 +1554,95 @@ keeping (c).**
 Note for the game session implementing (a) (`cece/swarm-fauna-game`, `Docs/SWARM_FAUNA.md` §16): the stomach-weighted
 pick (a) beat the largest-donor pick (a1) on balance; and the legibility numbers above are per 100-u cluster, so a
 DomainSlots row per 10% of the swarm is about the finest granularity a player can follow.
+
+## Living cell, round 2 (Direction G follow-up, branch `cece/eco-living-cell-r2`, 2026-10-08)
+
+**Question.** Round 1 left four open items: (1) thieves die out in 3 of 4 seeds, (2) packs and lurkers end at their
+population caps, (3) soil nutrient N climbs linearly, (4) the macro (far-from-pilot) rates were fitted before R8's
+diet fix. Plus the lead's rule (2026-10-06): **every life form must be able to feed AND reproduce**.
+Code: same folder; every configuration is in `rounds.py` (R9-R16, `CAL2`, `FINAL2`) with its result written
+above it; results `results/r2_*.json`; rerun with the round-2 block of `run_all.sh`.
+
+### Headline (recommended cell `rounds.FINAL2`, 4 seeds x 45 min, `results/r2_final.json`)
+
+| | round 1 final | **round 2 final** |
+|---|---|---|
+| extinctions (species-seeds) | thief 3/4 | **0** |
+| thief births / starved | ~11 / 52 per seed | **163 / 115 per seed** (they breed) |
+| samples at cap: pack / lurker / thief | pack + lurker pinned after ~30 min | **0% / 7% (late, at a 300 backstop) / 91% (colony size, see below)** |
+| packs at minute 44 | 120 (cap) | **43-74, food-limited** |
+| soil N slope (last half) vs pilots' trail input | ~100% (60k -> 138k) | **2%** (flat at ~70k; plants 150 -> 546) |
+| Shannon mean / min | 1.87 / 1.68 | 1.87 / 1.53 |
+| audit / shielded eaten / pop-ins | 1.1e-5 / 0 / 0 | 9e-6 / 0 / 0 |
+| cost ms/tick mean (p95) | 14.8 (34.7) | 12.7 (28.6) |
+| encounters/min, variety, emotions | 1.76, 3.1, 2.7 | 1.10, 2.7, 2.7 |
+| **quiet fraction** | **0.60** | **0.38** (explorer median 0.32, wanderer 0.41) |
+| hits/min median, steals/min | 2.0, 2.2 | 3.1, 12.3 |
+
+All 10 negative controls fire on `FINAL2`; the clean cell fires none (`results/r2_controls.json`). The freeze
+control was re-planted (a fauna-less cell seeded near its cap): with grazed-level seeding a fauna-less cell is
+still growing at minute 12, so the old planted failure no longer was one.
+
+**The ecosystem goals are met; the player numbers got worse.** The cell is busier: more thieves tail you, more
+lurkers wait at the flowers, quiet fell from 60% to 38%. That is the trade to decide on (see "what would move").
+
+### What each item turned out to be
+
+1. **Thieves: a behaviour bug, not the opening crash.** R9 seeded flora at its grazed level (13% of cap, grazers
+   400, locusts 250): the opening crash vanished (flora 6k -> 2-3k -> 6k instead of 29k -> 4k) but thieves still
+   fell 45 -> ~5 by minute 30. An instrumented run showed why: a thief near a pilot tailed it until it starved, and
+   a thief only ate its larder while under 40% of e_birth, so a fed thief never reached e_birth and **never bred**
+   (28 births in 3 x 30 min). `thief.feed_fix`: a starving thief goes home; at the nest the larder feeds it up to
+   e_max at its intake rate. R11: 400-630 births per 3 runs, no extinction. (R10's alternative, making thieves the
+   carrion eaters, starved the grazers and the lurkers with them and did not help the thieves.)
+2. **Pack caps were hiding a collapse.** Uncapped (R9 `nocap`), packs overshot to 230 and ate grazers and locusts
+   out. Diagnosis: 1326 of 1331 pack kills were *near pilots* (micro) - a hungry pack killed about one prey a second
+   with no handling time and turned every 3 kills into a pup. Lowering a pack's share of a kill (`pack.eff`, the
+   rest left as a carcass) then exposed a second lifecycle bug: packs hunted only below 0.6 e_max = 54, under
+   e_birth = 70, so they **never bred** (R11: 0-1 births). Hunting prey up to 0.85 e_max (pilots are still stalked
+   only below 0.6) made them breed - and switched on the *far* packs, which had been sitting at a mean stomach of
+   ~55, just above the gate, and almost never hunted: R12 collapsed every seed by minute 3. Round 1's "pack.a_attack
+   is inert in the fit" was this. The working pack (`PACK2`, designed in all-micro runs, `micro_design.py`,
+   `results/r2_micro_design.txt`): 40-s handling time on a kill (the macro `h_handle`), Holling III switching
+   (commit to a chase only with >= 5 prey within 300 u), keep 35% of a kill, far packs search their 6 neighbour
+   regions (a 300-u sense spans them; one region alone gave 65 far kills in 10 min at 100x the attack rate).
+   **Metabolism is then the pack dial** (R14): 0.06 climbs to 77-133 by minute 30, **0.10 levels at 36-64**, 0.14
+   declines. Packs no longer eat thieves: with them, thieves die in 2 of 3 seeds (R13).
+3. **Soil N: plant recruitment.** Plants seed new plants at a rate proportional to N above 60k (`flora_recruit`
+   1.0; parent weighted by standing crop, paid from N). N goes flat (R13: -9% of input; final +2%); recruit 3.0
+   draws it down. **The catch, and it is conservation, not a bug:** pilots' trail is the only source and pilot rams
+   the only sink, so the mass has to accumulate somewhere. It now accumulates as living biomass: plants 150 -> 546,
+   flora 6k -> 20-38k, and every level above grows with it - locusts swing to 1200-1600, lurkers climb to 230-300
+   by minute 44 (their backstop, 7% of samples). A longer session will need a real sink (pilots harvesting flora,
+   or a cap on plants) - a game decision, not an ecology dial.
+4. **Refit** (`calibrate.py CAL2`, micro truth `r2_consistency.json` = 3 seeds x 15 min all-micro): mean log error
+   0.95 -> 0.18. End gaps: lurker 4%, locust 46%, pack 71% (far packs 11 vs 38 near), grazer 94% (far 369 vs 191).
+   Thieves are no longer fitted: the fit has no pilots, so micro thieves lose their real food and starve, and the
+   fit taught the macro thief to starve too (F_half 1200 in round 1, 9,600 in the first round-2 fit).
+
+### Thieves are set by their colony size (stated, not hidden)
+
+With a pilot to rob, thieves are never food-limited: in R15 with no predator they filled the 150 cap 44% of the
+time (steals 37/min, quiet 0.28); with lurkers or packs eating them, seed 3 (nests off the pilots' routes) loses
+its thieves by minute 16. `FINAL2` gives each of the 3 nests a colony of 25 (like the fortress's 64 workers) and a
+magpie that raids only while its nest's hoard is short (`thief.hoard_target` 10; R16: steals 21 -> 14/min, quiet
+0.33 -> 0.46 at 30 min). They breed and starve at the nest limit; that number is a design choice.
+
+### Negatives worth keeping
+
+- R10 (carrion partition, Holling III on lurkers): lurkers extinct in every seed, thieves unhelped.
+- R12: one threshold change collapsed the whole cell in 3 minutes - the far level had been carried by a gate.
+- The first refit could not keep far packs alive at any attack rate (they never met prey in one region).
+- `r11_eff03_nocap` logged 1 pop-in (the only one in round 2).
+- The physarum is barely eating: 19-523 vol digested in 45 min, reserve down to 4-8 vol by minute 45 (it keeps
+  its 330-370 tubes). Grazers clear the flora under it first. By the feed-and-reproduce rule it is the next fix.
+- R10's Holling III lurker variants used the first macro switch formula (own region only); later runs use the
+  sense-volume-scaled one.
+
+### What would still move the numbers
+
+1. **Quiet time** is the regression: fewer tailing thieves (colony 10-15 per nest) or lurkers that cannot climb
+   with the herbivore base (lurker metabolism, or ambush seats limited to flowers) should buy back most of it.
+2. **A sink for long sessions** (see item 3): pilots harvesting flora would close the ledger without a timer.
+3. **Physarum feeding** (above).
+4. The far grazers run ~2x the near ones at minute 15 (fit end gap 94%): a grazer-specific far-level fix.

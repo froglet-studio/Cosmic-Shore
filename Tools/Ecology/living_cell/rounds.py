@@ -248,3 +248,9 @@ R16 = {
     "r16_hoard10_t45": dict(FINAL2, thief_cap=45, **{"thief.hoard_target": 10}),
     "r16_hoard10": dict(FINAL2, **{"thief.hoard_target": 10}),
 }
+
+# R16 result: raiding only while the nest's hoard is short (10 prisms) halves the tailing (steals 21 -> 14/min,
+# quiet 0.33 -> 0.46, median hits 1.6/min) with no thief extinction; smaller colonies (30, or 45 with the hoard
+# rule) gain a little more quiet but lose a colony in one seed. Thieves sit at their colony size in every variant:
+# with a pilot to rob they are never food-limited, so the nest size is what sets their number (stated, not hidden).
+FINAL2 = dict(FINAL2, **{"thief.hoard_target": 10})
