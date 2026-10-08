@@ -617,6 +617,27 @@ applies to new abilities, new resources on the meter list, and anything that add
     the whole set by asking which lists name a vessel, not by reading the list of lists somebody
     wrote down last time.** (Butterfly, 2026-09-22.)
 
+41. **A vessel made by COPYING another prefab on disk inherits four things that are silently
+    wrong, and the registration list is longer than the setup tool's.** The Flail (2026-10-08) is
+    a YAML clone of the Squirrel and hit each one:
+    - **`GlobalObjectIdHash`** is the source's verbatim, so only one of the two can ever spawn
+      (Netcode keys on the hash alone). Compute it as
+      `XXHash32("GlobalObjectId_V1-1-<prefab guid>-<NetworkObject fileID>-0")` (verify by
+      reproducing the source's shipped hash first) and zero
+      `InScenePlacedSourceGlobalObjectIdHash`. Gate: `Tools/Build/check_network_prefab_hashes.py`.
+    - **`DefaultNetworkPrefabs.asset`** keys by the root GAMEOBJECT fileID; the prefab container
+      keys by the root TRANSFORM. Same object, different ids.
+    - **Tests that enumerate `VesselClassType`** fail for a new member with no data:
+      `CrystalHullFusionConfigTests` needs four `CrystalHullFusionConfig` entries (a hull that
+      draws the source's mesh may reuse the source's bakes — `Matches` keys on mesh + tuning),
+      `EnumIntegrityTests` counts members (it was already one behind when the Flail landed), and
+      `OneThumbVesselCoverageTests` must be told a new transformer type exists or it skips the hull.
+      `grep -rln "GetValues(typeof(VesselClassType))" Assets/_Scripts` before committing.
+    - **Stale keys travel with the copy.** The Squirrel's camera asset carried seven fields
+      `CameraSettingsSO` no longer has; `Tools/Build/check_generated_assets.py` (after
+      `unity_refcompile`) reports them. To tell inherited findings from introduced ones, commit an
+      untouched copy of the source in a base worktree, audit it, and diff the two finding lists.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

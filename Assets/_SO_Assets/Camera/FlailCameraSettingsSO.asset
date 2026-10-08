@@ -15,13 +15,6 @@ MonoBehaviour:
   followOffset: {x: 0, y: 8, z: -55}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
-  disableRotationLerp: 1
-  useFixedUpdate: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
-  controlOverrides: 3
-  closeCamDistance: 55
-  farCamDistance: 55
-  followTargetPosition: {x: 0, y: 0, z: 0}
-  fixedOffsetPosition: {x: 0, y: 0, z: 0}
   orthographicSize: 5

@@ -168,7 +168,8 @@ Lock from cruise, orbit speed × cruise (RT up / RT held): 0.5 s 1.02/1.11, 1 s 
   MaterialPropertyBlock); a 12-link cosmetic verlet chain pinned to the hull and the ball that goes
   slack and flickers gold for READY; a gauge ring around the ball that fills clockwise toward smash
   speed; a gold skid trail while planting.
-- **Camera**: `FlailCameraSettingsSO` sits at `(0, 8, -55)` (the Squirrel's is `-17`), so the
+- **Camera**: `FlailCameraSettingsSO` sits at `(0, 8, -55)` (the Squirrel's is `-17`; the asset
+  authors no `mode`, so `FixedCamera` places the lens at exactly this offset), so the
   reeled-in ball (22 u back) is in front of the lens. At full let-out the ball trails past the
   camera when flying straight and swings into view on a turn.
 
@@ -208,6 +209,14 @@ actions; `vesselType 14`, `_name Flail`; a fresh `GlobalObjectIdHash` (188739858
 `XXHash32("GlobalObjectId_V1-1-<guid>-<NetworkObject fileID>-0")`, the formula verified by
 reproducing Squirrel's 2256742461) with `InScenePlacedSourceGlobalObjectIdHash` zeroed. Registered
 in `Vessel Prefab Container.asset`, `DefaultNetworkPrefabs.asset` and `ToyVesselRoster.Default`.
+
+**Crystal hull fusion**: `Resources/CrystalHullFusionConfig.asset` carries four `vessel: 14` entries
+that are copies of the Squirrel's, pointing at the Squirrel's bakes with identical tuning. That is a
+valid bake, not a placeholder: `CrystalHullFusionBakeSO.Matches` keys on the hull MESH and the
+entry's `tileFill`/`surfaceLift`, and the Flail draws the Squirrel's mesh. Re-running FrogletTools >
+Vessels > Bake Crystal Hull Fusions writes `Flail_*_HullFusionBake.asset` and repoints them, which is
+equally correct. (`CrystalHullFusionConfigTests` requires four entries for every hull but the
+Butterfly, so a new class with none fails it.)
 
 **Still the Squirrel's**: the model, the skimmer and its effects, the HUD
 (`SquirrelVesselHUDController` + `SquirrelHUDVariant`, whose icons describe drift and the tube — both
@@ -256,5 +265,13 @@ ball swings or falls slack), then `smashSpeed`, then `crack` / `reelSpinCap`.
 - **Sticks while planted** are ignored; tilting the orbit plane with the sticks is the obvious next
   verb.
 - **AI**: no AI abilities are authored (both triggers are holds).
+- **Random spawns**: `VesselSpawner.SpawnShip(Random)` picks from every enum member with a prefab, so
+  the single-player Random path can now hand out the Flail prototype (as it would any new hull).
+- **Debt walked past (not fixed here)**: the Squirrel prefab this was cloned from carries 152
+  `check_generated_assets.py` findings (stale nested-prefab overrides, unresolved script guids,
+  `R_VesselElementStatsHandler.cs` declaring `R_ShipElementStatsHandler` — on all 14 vessel
+  prefabs), and `SquirrelCameraSettingsSO` carries seven keys `CameraSettingsSO` no longer has.
+  Measured by auditing an untouched Squirrel copy in a base worktree: the Flail's 152 are
+  byte-identical, so none were introduced here. The camera copy was cleaned; the prefab was not.
 - **Gibbon id clash**: the Gibbon branch still claims `VesselClassType = 13`, which the Butterfly
   took; it will need 15 (or whatever is next) when it is rebased.
