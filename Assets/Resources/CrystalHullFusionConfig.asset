@@ -11,10 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 19e09dc329e44f5e88e55214333b9996, type: 3}
   m_Name: CrystalHullFusionConfig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   entries:
   - vessel: 6
     element: 1
+    bake: {fileID: 11400000, guid: 7d32ad4d63a127345a5311a30ea2ccaf, type: 2}
     peelSeconds: 0.16
     flightSeconds: 0.42
     mateSeconds: 0.3
