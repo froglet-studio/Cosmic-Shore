@@ -303,7 +303,7 @@ come with the Editor licence. Two are worth a line each:
 |---|---|
 | **`com.unity.pipeline` 0.5.0-exp.1** | The CLI pipeline package — a dev tool with a remote command surface. Already hard-gated out of release builds by `Assets/_Scripts/Editor/Build/UnityPipelineReleaseGuard.cs`. |
 | **UGS services** (`analytics`, `cloudsave`, `leaderboards`, `multiplayer`, `friends`, `core`, plus transitive `authentication`, `qos`, `wire`, `deployment`) | Governed by the **Unity Gaming Services Terms of Service**, not just the package licence — a separate agreement a human accepts on the UGS dashboard, with its own data-processing obligations. Relevant to the privacy/analytics work in `Docs/Analytics/`. |
-| **`com.unity.purchasing` 4.12.2 / `com.unity.ads`** | Commerce and ads SDKs carry additional platform terms. Note **R4 de-scoped the commerce surfaces**, so Purchasing is present but gated. |
+| **`com.unity.purchasing` 4.12.2 / `com.unity.ads`** | Commerce and ads SDKs carry additional platform terms. **Both are removed.** Unity Ads left the Gradle templates in 2026-10. Purchasing (installed and never called, since R4 de-scoped the commerce surfaces) was uninstalled on 2026-10-08 so no outdated Play Billing library ships in the store builds (`Docs/PLATFORM_UNIFICATION.md` §3.9). |
 
 ---
 
