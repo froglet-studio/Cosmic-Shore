@@ -129,6 +129,8 @@ namespace CosmicShore.UI
             public TMP_Text Score;
             public Image Background;
             public Color BackgroundRest;
+            // The template's own avatar art, restored for an entry with no avatar (see BindAvatar).
+            public Sprite AvatarRest;
         }
 
         readonly List<Row> _rows = new();
@@ -316,8 +318,11 @@ namespace CosmicShore.UI
         {
             if (!row.Avatar) return;
 
+            // Rows are REUSED across redraws (a tab switch, a refresh), so an entry with no avatar
+            // must restore the template's art rather than keep whichever face the row showed
+            // last - that put another player's face beside this player's name.
             var sprite = ResolveAvatarSprite(entry.AvatarId);
-            if (sprite) row.Avatar.sprite = sprite;
+            row.Avatar.sprite = sprite ? sprite : row.AvatarRest;
 
             row.Avatar.enabled = row.Avatar.sprite;
             row.Avatar.color = Color.white;   // the ART carries the colour; tinting it dyes a face
@@ -510,6 +515,7 @@ namespace CosmicShore.UI
                 Background = background,
                 BackgroundRest = background ? background.color : Color.white,
             };
+            row.AvatarRest = row.Avatar ? row.Avatar.sprite : null;
 
             return row;
         }
