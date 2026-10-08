@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Stoat
+  m_EditorClassIdentifier:
+  vesselClass: 14
+  entries:
+  - Element: 3
+    AbilityLabel: Slingshot
+    AbilityDescription: 'Squeeze a trigger and let go: a black-white hole pair is laid
+      across the hull on its own horizontal, the BLACK hole on the side you pressed
+      (left trigger = black on the left, white on the right; the right trigger mirrors
+      it). The hull falls toward the black hole and is shoved off the white one - that
+      asymmetric push IS the slingshot. The squeeze''s depth is the pair''s size (a tap
+      is a nudge, a buried trigger is the ~90 degree swing); the pair drifts apart,
+      stops, falls back and annihilates on its own, and anything the black hole
+      swallows comes out of the white hole the point-reflected way (Docs/BLACK_HOLE.md
+      11). Works while idle. Space is reach: the half-gap between the holes is the
+      Space-scaled number (StoatSlingConfigSO.halfGapHorizons, 4 -> 8 horizon radii at
+      level 10, floored at 1.5, read live). PROTOTYPE - no level-5 upgrade designed.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: 'OPEN DESIGN SLOT - the prototype ships the ability without an
+      upgrade. Left empty so the ability row reports it LOCKED rather than green.'
+  - Element: 4
+    AbilityLabel: Hold Still
+    AbilityDescription: 'The Sparrow''s stop, verbatim (ToggleTranslationModeActionSO,
+      Sparrow mode): press to stop translating and stop laying prisms, press again to
+      move. The Stoat slings from a standstill, so the stop is the set-up for the
+      slingshot - stop, lay the pair, get thrown. On Time (rate / mobility) as a
+      prototype placement, pending design sign-off. No element scaling.'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: 'OPEN DESIGN SLOT - not authored.'
+  - Element: 1
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'NOT AUTHORED. A natural home, once the vessel has been flown,
+      is the slung hole''s STRENGTH (minStrength / maxStrength) - threat / energy is the
+      fleet''s Charge convention. Recorded as a proposal, not implemented, pending
+      sign-off.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: ''
+  - Element: 2
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'NOT AUTHORED. Mass is size / volume, and the slung hole''s size
+      already follows its strength; a Mass channel would have to own something the
+      squeeze does not (the pair''s lifetime, or how much the white hole emits). Pending
+      sign-off.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: ''

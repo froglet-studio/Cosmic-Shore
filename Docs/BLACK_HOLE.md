@@ -55,6 +55,7 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
 | 12 | WHITE holes and black–white PAIRS: the radial law reversed, the horizon emitting, captured mass passed through to the partner, the pair drifting apart and annihilating; tool buttons, N/M keys, `blackhole white|pair`, `bhtest pair` | §11 |
+| 13 | The STOAT (`VesselClassType.Stoat = 14`): a Squirrel-prefab clone whose triggers sling a black–white pair across the hull, hold = size, black on the pressed side; the Sparrow's stop on X; generator + gates | §11 "The Stoat", `R_VesselActions/STOAT.md` |
 
 **Untested in the editor, in priority order:** white holes and pairs (§11 — the repulsion on a vessel,
 the pass-through of captured prisms, the core's look, the drift and annihilation); the after-transparents lens pass (`BlackHoleLensPass`,
@@ -62,8 +63,8 @@ Render Graph) on every camera and the Scene view; the lens sky (`BlackHoleSky`) 
 level; Shift+B in lava-lamp freestyle with a vessel flying; the edit-mode suites `BlackHoleTests`,
 `BlackHolePhysicsTests`, `BlackHoleToolTests` (written, never run).
 
-**What builds on it next:** the Stoat vessel, whose ability spawns these holes (planned on the same
-branch). Anything the Stoat needs from the black hole (per-hole spin and size, pulling more kinds of
+**What builds on it next:** the Stoat vessel, whose ability spawns these holes (row 13; prototype on
+the same branch, `R_VesselActions/STOAT.md`). Anything the Stoat needs from the black hole (per-hole spin and size, pulling more kinds of
 mass, ownership so a hole does not pull the vessel that made it) is added HERE, to the black hole,
 and recorded in this file — the vessel only spawns and despawns holes.
 
@@ -753,5 +754,15 @@ is widest at half-life and back at birth at the end, the exit is the point refle
 velocity outward. `verify_black_hole_lens.py` property 9: 2,000 captured rays report a unit, finite,
 inward crossing direction. `render_black_hole_lens.py --white` renders the core offline.
 
+**The Stoat** (`R_VesselActions/STOAT.md`) is the vessel built on this: its triggers call
+`BlackHoleRegistry.SpawnPair` from the HULL's frame rather than the camera's — midpoint
+`aheadHorizons` ahead, the holes on the hull's own horizontal, the BLACK hole on the side of the
+trigger pressed, the squeeze's depth (its hold time without analog triggers) setting the strength
+between 2 and 12, the half-gap Space-scaled — and it annihilates its own previous pair before
+slinging the next. The hull then does what §4 says: falls toward the black hole, is shoved off the
+white one. The sling works from a standstill, which is why the Stoat carries the Sparrow's stop.
+
 **Not yet:** a flash at annihilation and a thump at birth (the Stoat's feel pass, FMOD slots shipped
-empty); the pair's AI/network replication (pairs exist on the machine that spawned them, like holes).
+empty on `StoatSlingConfig`); the pair's AI/network replication (pairs exist on the machine that
+spawned them, like holes — a remote Stoat's press/release edges do replicate, so each peer lays its
+own copy at the replicated pose, but the copies are not one object).

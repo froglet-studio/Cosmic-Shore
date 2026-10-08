@@ -65,6 +65,7 @@ day after the channel it referred to had been deleted.
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
+| **Stoat** | 2/4 | 2/4 | 1/4 | *(added 2026-10-08 — PROTOTYPE: Space = Slingshot on the triggers, Time = Hold Still on X; Charge and Mass are open design slots with proposals in the map; no L5 upgrades; only the half-gap is element-scaled. `R_VesselActions/STOAT.md` §6)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is

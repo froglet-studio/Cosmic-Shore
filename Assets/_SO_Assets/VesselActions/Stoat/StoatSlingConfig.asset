@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb3ae478d1f44c3094a018efb792f5cb, type: 3}
+  m_Name: StoatSlingConfig
+  m_EditorClassIdentifier: 
+  minStrength: 2
+  maxStrength: 12
+  holdExponent: 1.5
+  holdRampSeconds: 1.2
+  autopilotHold01: 0.5
+  aheadHorizons: 2
+  halfGapHorizons:
+    Enabled: 1
+    Value: 4
+    Min: 4
+    Max: 8
+    element: 3
+    UseFloor: 1
+    Floor: 1.5
+  driftSpeed: 20
+  lifetime: 4
+  holdStartEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  slingEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

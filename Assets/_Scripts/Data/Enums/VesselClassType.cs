@@ -23,5 +23,6 @@ namespace CosmicShore.Data
         Sparrow = 11,
         Scarab = 12,
         Butterfly = 13,
+        Stoat = 14,
     }
 }
