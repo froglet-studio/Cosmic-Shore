@@ -4722,7 +4722,8 @@ longer domain-LOCKED: it carries every pilot and every viewer sees through it (t
 deleted — the 🟢 entry above's "sealed bubble" step no longer applies). A pilot NOT of the Butterfly's
 domain has `rivalTollPetalsPerElement` (15 = whole flower) petals stripped per element on each transit,
 left on the surface of the mouth they entered as free-for-all crystals. Runs on every peer from
-`TeleportContinuity`.
+`TeleportContinuity`. Headless `Tools/Build/unity_refcompile/run.sh` (player AND editor configs, the
+latter including `WormholeTollTests.cs`): 0 errors in project code — a compile, not a run.
 
 1. **Edit-mode:** `WormholeTollTests` (5 tests) and `ElementalDebuffWardTests` stay green.
 2. **Butterfly, own pair (MPPM or solo freestyle):** fold, thread either mouth. Expect: carried, no
