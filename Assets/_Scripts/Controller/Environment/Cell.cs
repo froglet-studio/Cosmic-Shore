@@ -1417,6 +1417,19 @@ namespace CosmicShore.Gameplay
                     grid?.Dispose();
                 countGrids.Clear();
             }
+
+            // The colony books are static and keyed by cell. ResetCell and Initialize retire this
+            // cell's entries, but a cell destroyed with its scene went through neither, and after
+            // the unload every Clear(cell) returns at its `!cell` guard - so the key could never be
+            // removed: each Menu_Main load leaked the previous colony's books (each entry pinning a
+            // destroyed AssembledFlora's object graph) and the colony census counted dead worlds'
+            // sites. `this` still passes the guard inside OnDestroy.
+            GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
         }
 
         void ResetCell()
