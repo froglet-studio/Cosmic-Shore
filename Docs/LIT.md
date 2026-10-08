@@ -37,6 +37,7 @@ lands, which is a property of the producer, not of the state:
 | Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep (a super-shield in it glows DANGER: the blast ends there) | everything | `EchoSightActionExecutor` |
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
+| Bomb passage (Grizzly trigger bomb) | Cylinder wake / Sphere at rest | **live** — a bomb is inside this mass and has not gone off | everything | `GrizzlyBombVisual.PublishLit` |
 
 **A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
 second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex
@@ -45,7 +46,15 @@ FAR**. That ripple was removed with its family (`.claude/skills/prism-morph` §1
 is a solo effect today, but the shape is the reusable part: a second lit volume competes for the
 eight slots and for the same colour language, where a vertex morph competes for neither.
 
-Three producers, and the third one is a **replacement rather than an addition**: it is what the
+The **bomb passage** row (2026-10-08) answers the two questions below the way a producer should:
+it is for **everyone** (a rival needs to see where a live bomb is sitting in their trail), and it is
+**on only while a bomb is out** — at most two per Grizzly, gone the moment the trigger blows them.
+It exists because a Grizzly trigger bomb flies THROUGH prisms and only the trigger detonates it, and
+a hot body sliding through mass with no reaction read as a clipping bug
+(`R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`). It wears the firing pilot's domain, per rule 3, not the
+bomb's own danger shade.
+
+The first three producers are older, and the third one is a **replacement rather than an addition**: it is what the
 2-second temporary shield used to do (see below), so it is the only one of the three that removes
 code instead of adding it. It covers every shape, because every blast that spares its own domain
 has a passthrough to express — the Scarab's swept plate (`affectSelf: 0`) lights through exactly

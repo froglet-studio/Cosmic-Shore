@@ -5088,3 +5088,131 @@ wave's start axis from the REAL imported rig. If it fails, nothing else below is
 
 The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
 rotation; the hop only touches the model child).
+
+## 🔴 Grizzly Time (63), Grizzly in the toybox, AI Grizzlies that steer and pump (`cece/eloquent-goodall-g1llta`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+No Unity editor or `unity` CLI in the authoring session, so `/verify-unity` did not run. What
+DID run: the course + its 14-test suite and Redline's 14 (shared solver) compiled with Roslyn
+and executed over 400 seeds x 4 intensities, watched failing under a mutated course; the pump
+executor + config type-checked with Roslyn against stubs transcribed from the real declarations
+(and watched failing on a bad member); every Tools/Build gate. Full steps:
+`_Scripts/Controller/Arcade/GRIZZLYTIME.md` §7. The short list:
+
+1. **Compiles in the editor** — the new/changed C#: `GrizzlyTimeController`, `GrizzlyTimeCourse`,
+   `GrizzlyTriggerBombExecutor` (was `GrizzlyBombPumpExecutor`; see the 2026-10-08 entry below), `GrizzlyTriggerBombConfigSO`, `EndConditionOverridesSO`
+   + its window, `MiniGameHUD`, `ToyVesselRoster`, and the tests. Edit-mode suite green,
+   especially `GrizzlyTimeCourseTests`, `GrizzlyTriggerBombTests`, `EnumIntegrityTests` (61 modes),
+   `ToyVesselRosterCoverageTests`.
+2. **Toybox** — Menu freestyle: the Vessel Changer and the Spawn Matrix hangar each offer a
+   **Grizzly** station; flying into it swaps you into a Grizzly. Releasing an AI Grizzly from the
+   hangar gives a companion that **steers and bomb-jumps** (it never steered before: `AIPilot` was
+   serialized disabled on `Grizzly.prefab`).
+3. **Arcade** — both **Grizzly Charge** and **Grizzly Time** cards show, clickable on a fresh
+   account, each pinned to the Grizzly. Grizzly Time launches into a 14-ring circuit, two laps.
+4. **Grizzly Charge regression** — its AI Grizzlies now steer (same prefab fix); confirm the
+   match still plays as Jonathan left it.
+5. **Lava-lamp** — the menu autopilot Grizzly now bomb-jumps on the straights. If that is too busy,
+   `GrizzlyTriggerBombConfig.aiFireStickBand` = 0 turns the drive off.
+
+## 🔴 Grizzly trigger bombs — LT/RT fire, freeze, detonate, launch (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Replaces the bomb pump after a playtest found its blasts never launched the pilot (they were
+spawned with `AffectSelfOverride = false`, which is also what makes the shooter a valid target for
+the self-launch impulse). Full design, numbers and steps: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What ran out of editor: `GrizzlyTriggerBombExecutor`, `GrizzlyTriggerBombConfigSO`,
+`GrizzlyBombActionSO` and `GrizzlyTriggerBombTests` type-checked with Roslyn against stubs
+transcribed from the real declarations (watched failing on two mutated members); the config's maps
+run for real (9/9) against the card-art harness's `Mathf`; `GrizzlyTimeCourseTests` 14/14 and
+`RedlineCourseTests` 14/14 on the launch model. The `GrizzlyHUDController` / `GrizzlyHUDView`
+ammo-bar change was read, not compiled (the controller pulls in five other executors).
+`Grizzly.prefab` surgery validated by script: no duplicate fileIDs, no dangling local refs.
+
+1. **Compiles; edit-mode suite green** — especially `GrizzlyTriggerBombTests`,
+   `GrizzlyTimeCourseTests`, `ControlChipBindingTests`. The executor and config were RENAMED in
+   place (script GUIDs kept), and `GrizzlyBombNetworkRelay` was DELETED along with its component on
+   `Grizzly.prefab` — confirm the prefab opens with no missing-script warnings.
+2. **Fire / freeze / blow / launch** — RT full squeeze: a visible bomb leaves faster than you,
+   Ammo bar (orange, above Energy) drops ~1/3. Pull RT again: it freezes. Fly up to it, release:
+   it blows and **you are thrown forward along your nose** (~3× cruise for ~1 s).
+3. **Pressure** — a feather pull fires a small bomb, a small Ammo dip and a 15 u blast; a full
+   squeeze a big bomb and a 60 u blast.
+4. **Independence** — LT and RT bombs in flight / frozen / detonated independently.
+5. **Fuse + impact** — an unfrozen bomb goes off where it comes to rest (~3 s) or on the first prism.
+6. **Ammo** — a low pool fires a smaller bomb; an empty one fizzles; refills ~0.15/s.
+7. **AI** — an AI Grizzly fires, freezes and blows bombs just ahead of itself and lunges each time.
+8. **MPPM two clients** — peers see each other's bombs at the same places and sizes.
+9. **Regression** — X still fires the charged cannon unchanged; Energy bar unaffected.
+
+## 🔴 Grizzly trigger bombs, second pass — thrown AWAY from the bomb, own bomb look, small bomb / big blast (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask: *"the bombs should launch you away from the bomb and make the bomb look good… smaller
+before it explodes but bigger explosion."* Full doc: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What changed: the self-launch moved into `GrizzlyTriggerBombExecutor.LaunchSelf` (bomb → hull
+direction, full at the bomb, half at the edge) and the blast now spawns with
+`AffectSelfOverride = false` (own trail spared); a new `GrizzlyBomb.prefab` (generated by
+`Tools/Build/author_grizzly_bomb_assets.py` from `GrizzlyShell`) with `GrizzlyBombVisual` (domain
+tint, fuse pulse, armed flare, streak) and its own pool / factory / `Gun` on `Grizzly.prefab`; bomb
+2.5–5, blast 50–200; the AI flies past its bomb and blows it behind.
+
+What ran out of editor: executor, visual, config, action SO and tests type-checked with Roslyn
+against stubs in the real namespaces (watched failing on three mutated members);
+`GrizzlyTriggerBombTests` 11/11 with real math; `GrizzlyTimeCourseTests` + `RedlineCourseTests`
+28/28; the bomb generator's `--check` (watched failing on a hand-edited prefab and on a dead field
+key); both prefabs validated (no duplicate fileIDs, no dangling local refs).
+
+1. **Compiles; no missing scripts** on `GrizzlyBomb.prefab` / `Grizzly.prefab`.
+2. **Looks** — a small glowing bomb in your domain colour with a short streak, its glow breathing
+   faster as the fuse burns; frozen, it flares and strobes. Compare with X's cannon shell (unchanged).
+3. **Launch away** — freeze, fly past, release just behind you: thrown forward. Beside: sideways.
+   Ahead: stopped. Far edge of the blast: weaker.
+4. **Big blast** — a full squeeze blows ~100 u wide; your own trail inside it survives, an enemy's breaks.
+5. **AI** — fires, freezes, flies past, blows it behind, lunges forward.
+6. **Tuning** — if the halo glow reads wrong (too dim / too big), the dials are on `GrizzlyBomb.prefab`'s
+   `GrizzlyBombVisual`, authored by the generator (edit there, re-run).
+
+## 🔴 Grizzly trigger bombs, third pass — launch 3×, trigger-only detonation, lit prisms, danger shades; Grizzly Time re-cut (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask: *"the bombs should launch the grizzly 3x more. the bombs should not detonate with time
+or on impact. they can cause prisms to become lit as they pass through so it doesn't look like a
+clip. but bombs should only detonate when the trigger tells them to. make both bombs the danger
+color, but shift the colors a bit so they look different."* Full doc:
+`R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`; course: `Arcade/GRIZZLYTIME.md` §1, §3.
+
+What changed:
+- **Shared code:** `ShipVelocityModifier.ceiling` + `VesselTransformer.ModifyVelocity(…, ceiling)`
+  — a live modifier may RAISE the 100 u/s shared velocity ceiling for its own lifetime (0 = no
+  change; every existing call site passes 0). `Projectile.HoldAtFlightEnd` — a round that parks at
+  the end of its flight instead of ending it (default false; reset per flight).
+- **Bombs:** `selfLaunchMultiplier` 1.5 → 4.5 and `selfLaunchCeiling` 300; fired with
+  `stopOnFirstPrismImpact: false` + `HoldAtFlightEnd`; a new, EMPTY
+  `GrizzlyBombProjectileImpactContainer` (was the Sparrow full-auto container — prism damage + a
+  detonate end effect); a natural flight end no longer detonates; danger colour ± 0.045 hue per
+  trigger; a LIT cylinder-wake / sphere published by `GrizzlyBombVisual` (domain-tinted).
+- **Grizzly Time:** top speed 150 → 350 u/s, so the circuit is now 8 gates on an 800 u ring, 3 laps
+  (target 28 → 24), Headlong's mouths, AI approach 380 / 420 / 285, plausible-speed clamp 1400,
+  comeback 0.3. Card art re-rendered.
+
+What ran out of editor: executor, visual, config, action SO and tests type-checked with Roslyn
+against stubs in the real namespaces (watched failing on a reverted call); `GrizzlyTriggerBombTests`
+14/14 with real math (Unity's HSV conversions transcribed into the shim) — watched failing on a 0
+hue shift, the old multiplier and the old ceiling; `GrizzlyTimeCourseTests` + `RedlineCourseTests`
+28/28 over 400 seeds × 4 intensities — watched failing with the old 100 ceiling and the old 14
+gates; both generators' `--check` green; `render_card_backgrounds --check` green.
+`VesselTransformer.cs` / `Projectile.cs` edits were read, not compiled (too much of the engine to stub).
+
+1. **Compiles; edit-mode suite green** — especially `ShipModifierTests`, `GrizzlyTriggerBombTests`,
+   `GrizzlyTimeCourseTests`, `PrismLitTests`. No missing scripts on `GrizzlyBomb.prefab`.
+2. **3× launch** — freeze, fly past, release just behind you: thrown forward at ~350 u/s for a
+   second (~300 u). A Sparrow / Rhino knock-back, a Rush or the cannon kick are **unchanged**.
+3. **No fuse** — an unfrozen bomb stops ~270 u out and hangs there, pulsing, indefinitely.
+4. **No contact** — a bomb fired into prisms passes through them; they **light** in your domain
+   colour as it passes and fade behind it; nothing breaks, nothing blows.
+5. **Trigger detonates** — pull on a hanging bomb freezes it (flare + strobe), release blows it.
+6. **Colours** — LT bomb crimson-magenta, RT red-orange; both unmistakably danger red.
+7. **Turn end** with a bomb hanging — it vanishes, no blast; no bomb leaks into the next turn.
+8. **Grizzly Time** — 8 rings, 3 laps, goal row 8/24; at intensity 4 a triangle with two
+   near-hairpins. AI Grizzlies still complete laps at the new speeds.
+9. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still end and return to their
+   pools exactly as before (`HoldAtFlightEnd` defaults off).

@@ -800,6 +800,25 @@ Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arc
 `Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
 is now a different mode, and the doc's measured ladder is the first thing to go stale.
 
+### 4.ab2 "Make it N× stronger" — find the CLAMP before you touch the multiplier
+
+Every displacement a vessel takes through `VesselTransformer.ModifyVelocity` is summed and then
+**clamped to one shared ceiling** (`velocityModifierMax`, 100 u/s). A shove that already reaches
+that ceiling is not made stronger by a bigger multiplier — it is made LONGER at the same speed,
+which a pilot cannot feel. The Grizzly's bomb launch (2026-10-08, "launch 3× more") was sitting on
+the 100 for its whole second at full squeeze, so `selfLaunchMultiplier` 1.5 -> 4.5 alone would have
+shipped a change that changed nothing. Two rules:
+
+- **Compute the shove's peak against the clamp first** (`impulse × 1.5` — the cosine ease's
+  birth weight — vs. the ceiling). If it saturates, the knob that matters is the ceiling.
+- **Never raise the shared ceiling for one ability** — it also lifts every knock-back, Rush and
+  kick that vessel takes. Use the per-modifier form, `ModifyVelocity(amount, duration,
+  ignoresTranslationRestriction, ceiling)` (`ShipVelocityModifier.ceiling`): a live modifier may
+  RAISE the cap for its own lifetime, never lower it, and 0 means "the vessel's own".
+
+And then §4.ab applies: a stronger shove is a faster vessel, so any mode cut against that
+vessel's curve has to be re-cut (Grizzly Time went 14 gates on 560 u -> 8 on 800 u).
+
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
 Some placed objects look different to different pilots: the Butterfly's fold wormhole first

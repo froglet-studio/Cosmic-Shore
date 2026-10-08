@@ -1382,6 +1382,7 @@ public class VesselTransformer : MonoBehaviour
         private void ApplyVelocityModifiers(bool translationRestricted = false)
         {
             Vector3 accumulatedVelocity = Vector3.zero;
+            float ceiling = velocityModifierMax;
 
             for (int i = VelocityModifiers.Count - 1; i >= 0; i--)
             {
@@ -1392,10 +1393,14 @@ public class VesselTransformer : MonoBehaviour
                 if (modifier.elapsedTime >= modifier.duration)
                     VelocityModifiers.RemoveAt(i);
                 else if (!translationRestricted || modifier.ignoresTranslationRestriction)
+                {
                     accumulatedVelocity += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration) / 2) + 1) * modifier.initialValue;
+                    // A live modifier may RAISE the shared ceiling (ShipVelocityModifier.ceiling).
+                    if (modifier.ceiling > ceiling) ceiling = modifier.ceiling;
+                }
             }
 
-            velocityShift = Vector3.ClampMagnitude(accumulatedVelocity, velocityModifierMax);
+            velocityShift = Vector3.ClampMagnitude(accumulatedVelocity, ceiling);
 
             var sqrMag = velocityShift.sqrMagnitude;
 
@@ -1430,8 +1435,19 @@ public class VesselTransformer : MonoBehaviour
         /// dodges that must remain available in a stance that pins the vessel — do not set it
         /// to make an ordinary ability work while stopped.</param>
         public void ModifyVelocity(Vector3 amount, float duration, bool ignoresTranslationRestriction)
+            => ModifyVelocity(amount, duration, ignoresTranslationRestriction, 0f);
+
+        /// <param name="ceiling">Raise the velocity ceiling to this many u/s while this
+        /// displacement lives (see <see cref="ShipVelocityModifier.ceiling"/>); 0 or anything
+        /// under the vessel's own ceiling leaves that ceiling in charge.</param>
+        public void ModifyVelocity(Vector3 amount, float duration, bool ignoresTranslationRestriction, float ceiling)
         {
-            VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0, ignoresTranslationRestriction));
+            VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0, ignoresTranslationRestriction,
+                                                           Mathf.Max(0f, ceiling)));
         }
+
+        /// <summary>The ceiling every displacement shares unless a live one raises it
+        /// (<see cref="ShipVelocityModifier.ceiling"/>), u/s.</summary>
+        public float VelocityModifierCeiling => velocityModifierMax;
     }
 }
