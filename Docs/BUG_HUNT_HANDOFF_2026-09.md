@@ -47,6 +47,54 @@ Confidence scale:
 | 20 | **Cloud Save no longer tells a failed load apart from "no data" (was §2.1).** `ICloudSaveProvider.TryLoadAsync` reports `Loaded`, `Missing` or `Failed`. After a `Failed` load a repository keeps using its local snapshot but does not upload to the cloud until a retry gets a definite answer (`Missing` allows the write; `Loaded` adopts the real record). An unreadable stored value now counts as `Failed`. Shipped on `Bug_Hunt`. | `ICloudSaveProvider`, `UGSCloudSaveProvider`, `CloudDataRepository` |
 | 21 | **Presence lobby is rejoined with backoff after a failed reconnect (was §2.2).** After three refresh errors the lobby was cleared and rejoined once; if that one attempt failed the lobby stayed null and nothing retried. `HostConnectionService` now retries from `Update` at 3s, 6s, 12s up to 60s until the lobby is back. Shipped on `Bug_Hunt`. | `HostConnectionService` |
 | 22 | **Invite-clear always takes the lobby mutex unless the caller holds it (was §2.3).** The shared `_insideRefreshCycle` flag meant "some refresh is running", so a user cancel, a party-leave callback, or a fire-and-forget clear that outlived its refresh skipped the lock and could race a send. It is replaced by an explicit `callerHoldsLobbyMutex` argument, true only for the one awaited call inside `RefreshPartyMembersAsync`. Shipped on `Bug_Hunt`. | `HostConnectionService`, `LobbyPropertyWriter` (comment) |
+| 23 | **Reconnect boot chain is a legal transition (was §2.4).** `ApplicationStateMachine` now allows `MainMenu → Authenticating` (ReconnectService re-runs the boot chain from Menu_Main); edit-mode test added. | `ApplicationStateMachine`, `ApplicationStateMachineTests` |
+| 24 | **Client report RPCs are turn-gated and reject NaN (was §4).** One `CanCreditReport()` (RoundStats + `IsTurnRunning`) and `IsCreditableVolume()` (finite, ≥ 0) gate every owner-detects / server-records RPC on `Player`. | `Player` |
+| 25 | **BranchingFlora rolls its trunk count once; the name generator reaches the last word (was §4).** | `BranchingFlora.SeedBranches`, `NameGenerationData` |
+| 26 | **An empty domain no longer wins an all-zero tie (was §4, "Bloomrush restarts a tied 0-0-0 round").** `ScoringRuleSO.ResolveWinner` and Bloomrush skip domains with no RoundStats row (`IsFielded`); tests added. | `ScoringRuleSO`, `BloomrushScoringRuleSO`, `ScoringRuleFieldedDomainTests` |
+| 27 | **Suspended ThumbCursor / ThumbPerimeter no longer throw on frame 1 (was §4, `Input.touches`).** Inert until initialized; touch counts read EnhancedTouch. | `ThumbCursor`, `ThumbPerimeter` |
+| 28 | **Trail index is `int` (was §4, ushort wrap past 65,535).** | `Trail` |
+| 29 | **Play Again (scene reload) no longer misses its fade-in (was §3.1, traced in code).** The handler subscribed after the 1000 ms `InitDelayMs`, but the host's vessel readies after `preSpawnDelayMs` (~200 ms). Now subscribed before the wait; the fade itself still waits for `InitializeGame`. | `MultiplayerMiniGameControllerBase` |
+| 30 | **19 network/backend waits are unscaled.** Every non-HOME Menu_Main screen sets `Time.timeScale = 0`; scaled `UniTask.Delay`s in the party/presence/session services, the menu vessel swap, `MultiplayerSetup` and `NetworkMonitor` never completed there (a guest's vessel swap left them shipless; the reconcile retry held `_lobbyMutex` and froze the online list, invites and Leave). | `MenuServerPlayerVesselInitializer`, `HostConnectionService`, `LobbyPropertyWriter`, `PresenceLobbyService`, `PartySessionService`, `AcceptanceSignalService`, `MultiplayerSetup`, `NetworkMonitor` |
+| 31 | **A boot-time presence-lobby join failure is retried** (BH-2.2's backoff was only reachable from the refresh watchdog, which never runs without a lobby). | `HostConnectionService.EnsureInitializedAsync` |
+| 32 | **Menu vessel swap checks ownership** (`RequireOwnership = false` RPC trusted a client-supplied player id). | `MenuServerPlayerVesselInitializer.SwapVesselAsync` |
+| 33 | **`InitializeAfterDelay` is cancelled with its controller** (a destroyed controller raised `InitializeGame` into the next scene). | `MultiplayerMiniGameControllerBase` |
+| 34 | **A human Player's `DontDestroyWithOwner` is assigned every pass**, so the menu (which never adopts) clears it: a guest leaving the party from the menu no longer leaves a ghost Player in the host's roster. | `ServerPlayerVesselInitializer` |
+| 35 | **Every match paid its placement crystals twice.** `GameCanvas.prefab` carried a second, added `EndGameSequencer` on the EndGameStatsPanel; both raised `OnShowGameEndScreen`, and `Scoreboard.AwardCrystalsToLocalPlayer` had no latch. The duplicate is removed and the award latched once per game. | `GameCanvas.prefab`, `Scoreboard` |
+| 36 | **Cellular Duel's in-place rematch shows its end screen** (`EndGameSequencer._isRunning` is now cleared on `OnResetForReplay`). | `EndGameSequencer` |
+| 37 | **Pausing a match other players are in no longer freezes time.** The GameCanvas pause button (and Escape / Start) took the single-player path in every live mode; it now takes the multiplayer path whenever another peer is connected. | `PauseMenu` |
+| 38 | **The card's per-hull starting elements survive the turn start** (the comeback profile's all-zero initial levels wiped Regatta's and Broadside's handicap tables). | `ElementalComebackSystem` |
+| 39 | **`IsLocalDomainWinner` answers for the top domain only** (both duelists got VICTORY and the WinMatch quest). | `GameDataSO` |
+| 40 | **Only the server's clock ends a networked timed turn** (client clocks ended the turn early and raised it twice); clients no longer invoke the timer ClientRpc. | `NetworkTimeBasedTurnMonitor` |
+| 41 | **Timed rounds run their full duration** (the t=0 loop tick counted as a second: 120 s rounds ended at 119). | `TimeBasedTurnMonitor` |
+| 42 | **Regatta's placement order agrees with its winner on a tied team total**; test added. | `RegattaScoringRuleSO`, `RegattaTeamPlayTests` |
+| 43 | **Petal loss no longer reads a level low from float32 drift** (`1.0f - 0.1f - 0.1f` floored to 7); `ResourceSystem.ToLevel` adds 1e-4; downward test added. | `ResourceSystem`, `ElementalScalingUnificationTests` |
+| 44 | **Engine flare and the slowed-ship broadcast are edge-triggered** (a `.materials` allocation per frame per hull; a ServerRpc + ClientRpc per frame per slowed vessel). | `VesselTransformer` |
+| 45 | **Serpent cloak frees its baked mesh and material clones** (leaked per cloak, per peer). | `CloakSeedWallActionExecutor` |
+| 46 | **Squirrel tube cleanup never recycles a prism reissued to someone else**; the list is pruned at each lay. | `SquirrelTubeActionExecutor` |
+| 47 | **A release stops the action list its press started** (re-resolving by the live device stopped the wrong SOs after a touch→pad switch). | `R_VesselActionHandler` |
+| 48 | **The `OnInitializeGame` pass no longer wipes a cell the first crystal already bootstrapped** (registries cleared under a planting spawner). | `Cell.Initialize` |
+| 49 | **A destroyed cell retires its colony books** (six static per-cell books leaked on every Menu_Main load). | `Cell.OnDestroy` |
+| 50 | **Unity fake-null no longer defeats `??` / `??=`** in HealthPrism/Spindle linking (also parent-safe for a skeleton at the scene root), the stellated super-shield, and four UI `GetComponent() ?? AddComponent()` sites. Builds were unaffected; the Editor diverged. | `HealthPrism`, `Spindle`, `PrismStateManager`, `SegmentSpawner`, `EndGameSequencer`, `VesselHUDController`, weekly-challenge panel/modal |
+| 51 | **SwarmFauna's loop stops on destroy; the pose job completes before its inputs are released** (both latent). | `SwarmFauna` |
+| 52 | **Vessel audio follows the pilot when a live hull changes hands** (Duel round swap, arena PilotSwap): FMOD listener, engine, drift and boost audio. | `ShipStudioListenerGate`, `ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController` |
+| 53 | **Pad and keyboard face buttons always send their release** (device switch, focus loss). | `GamepadInputStrategy`, `KeyboardInputStrategy` |
+| 54 | **Lifting the last thumb releases what the touch held**; touch gets `OnStrategyDeactivated` / `OnPaused`. | `TouchInputStrategy` |
+| 55 | **An empty drift-event slot warns once** instead of erroring every frame. | `DriftAudioController` |
+| 56 | **An avatar picked before the profile loads is applied for the session** (was dropped). | `ProfileIconSelectView`, `PlayerDataService.ApplyAvatarIdLocally` |
+| 57 | **A party invite gets its row when the sender also has a pending friend request.** | `FriendsListPanel` |
+| 58 | **`VolumeUI` destroys its per-instance material.** | `VolumeUI` |
+| 59 | **A failed immediate progression save is retried** (`SaveAsync` returns false; it does not throw). | `GameModeProgressionService` |
+| 60 | **Profile, progression and stats follow their repositories when the data object is replaced** (a recovered failed load or a late sign-in). The profile case uploaded a fresh default over the adopted real record - the loss BH-2.1 exists to prevent. | `PlayerDataService`, `GameModeProgressionService`, `UGSStatsManager` |
+| 61 | **`DataAccessor` saves atomically, sets a corrupt file aside, writes UTF-8** (a mid-write kill used to wipe painting progress). | `DataAccessor` |
+| 62 | **No crystal spend on a hangar unlock that cannot persist** (backend gate closed). | `VesselUnlockSystem` |
+| 63 | **Daily toy reward, paid episode-token grants and token purchases wait for the profile to load** (pre-load grants were discarded by the merge; a paid grant was reported successful and lost). | `DailyToyActivity`, `EpisodeTokenService`, `EpisodeTokenController` |
+| 64 | **`ClientPrefs.SetAvailableProfiles` writes under its key.** | `ClientPrefs` |
+| 65 | **Cellular Duel's round swap is applied on every peer** (it ran on the host only). | `OnlineDuelForTheCellController` |
+| 66 | **Legacy metric scorers are per-player** (Duel totals included the opponent's numbers). | `BaseScoring` + 7 scorers, `BaseScoreTracker` |
+| 67 | **`LifeFormsInCell` has one writer** (StatsManager double-decremented each flora death). | `StatsManager` |
+| 68 | **Two more tofu glyphs** (`×` in the resolution dropdown, `·` in the connecting status line). | `GameSettingsPanelController`, `ConnectingPanelController` |
+
+Rows 23-68 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -113,33 +161,56 @@ Confidence scale:
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
   invites, and no hang on the invite button (a hang would mean a lock deadlock).
 
+### Playtest items for rows 23-68 (overnight sweep, none run in Unity)
+- **Crystal payout (35):** finish any match and note the wallet before and after - it must rise by the placement payout ONCE, the GameEnd sound and reveal toast play once, and only one crystals-earned event is sent.
+- **Party pause (37):** host plus one client in any arcade mode. Host presses Escape: the client keeps flying normally and the host's AI keep moving. Client presses Escape: other vessels keep moving on the client's screen. A solo match still freezes on pause.
+- **Play Again fade (29):** Skim Race / Bloomrush → finish → Play Again, host and client, three times. The screen must fade in every time and the arena should be built (not popping) when it does.
+- **Menu screens with a party (30, 31):** with a guest in the party, sit on ARK / HANGAR / PORT and (a) have the guest swap vessels, (b) have the guest leave, (c) send an invite. Each must complete while you stay on that screen. Also boot with UGS Lobby blocked, then unblock: the online list fills within a minute.
+- **Duel (36, 39, 65, 66):** a full two-peer Cellular Duel. Round 2: the remote pilot flies the swapped hull with their own input, HUD, camera and engine sound. Only the winner sees VICTORY. Play Again: the rematch reaches its end screen.
+- **Regatta / Broadside handicaps (38):** check the per-hull starting petals are still there after the countdown.
+- **Timed rounds (40, 41):** Bloomrush / Tapestry: the clock starts at 120 (not 119), ends at 0, and a client never sees the turn end before the host.
+- **Vessel audio after a swap (52):** arena PilotSwap into an AI hull: 3D sounds come from your new hull, you hear your new hull's engine (and not the old one), drift/boost audio and drift haptics work.
+- **Input releases (47, 53, 54):** hold B (Sparrow boost) and move the mouse; hold Space and Alt-Tab; on a phone, lift one thumb (Dolphin drift) then the other. The ability must end each time.
+- **Cell bootstrap (48):** in SkimRace / Rampage, the first wave of flora is counted once (no double floor of plants a second after load).
+- **Editor flora (50):** in Editor play, graze the leaves off a branch - the branch must evaporate (it did in builds only).
+- **Profile edge cases (56, 60, 63):** boot offline, pick an avatar (it shows everywhere for the session); boot with a fresh install while Cloud Save is blocked, unblock, earn crystals - the real record's crystals and name must survive.
+- **Painting progress (61):** paint, kill the process mid-session, relaunch - progress is intact.
+
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
 
+Nothing open at this tier. Everything found by the 2026-10-08 sweep that was small and certain shipped (rows 23-68).
+
 ---
 
-## 2. Larger items (need design or several files)
+## 2. Larger items (need design, a playtest, or several files)
 
-### 2.4 `ApplicationStateMachine` refuses MainMenu → Authenticating — High
-- **Where:** `Assets/_Scripts/System/ReconnectService.cs:193` calls
-  `TransitionTo(ApplicationState.Authenticating)` from `MainMenu`. The transition table does not
-  allow it.
-- **Consequence:** reconnect logs `Invalid transition` and the app-state mirror stays `MainMenu`
-  while the auth scene runs. Anything keyed on app state misreads the phase.
-- **Fix:** add `MainMenu → Authenticating` to the table (reconnect is a legitimate path), and add a
-  case to `ApplicationStateMachineTests`.
+### 2.5 Rename migration drops a value on a key collision — Medium
+- **Where:** `GameModeRenameMigration.MigrateKeys` keeps the NEW key on a collision (`if (!map.ContainsKey(newKey))`), by design and pinned by `MigrateKeys_ReKeysAndPrefersTheNewKeyOnCollision`.
+- **Problem:** two historical names that map to one current name (Ribcage and PeelTheCage both → Cleave), or a record holding both names, keeps one and drops the other - losing a higher `MaxUnlockedIntensity` or a play count.
+- **Fix (design call):** merge on collision per field: `Math.Max` for intensity, sum for play counts, better-of for best stats. Changes the pinned test's contract.
+
+### 2.6 Boid cohesion pulls toward world origin — Medium (playtest first)
+- **Where:** `Boid.CalculateBehavior` (~:401): `cohesion = (cohesion - transform.position).normalized` subtracts an absolute position from a weighted direction sum, and divides by `prismCount - 1` (all prisms in radius, not boids).
+- **Consequence:** every boid gets a constant `cohesionWeight` pull toward world origin - out of any off-origin cell (Arkway traversal cells, satellites).
+- **Fix:** count boid neighbours separately and `cohesion = (cohesion / boidCount).normalized`, no `- transform.position`. Steering may be tuned around the current term (ecology is LOCKED - use `/ecology`), so playtest before changing.
+
+### 2.7 `PrismTimerManager.CancelScheduledActions` is O(N²) on mass cancels (was §4)
+- Deliberately NOT changed overnight: CLAUDE.md says profile first. A per-owner count map would make the common "nothing scheduled" cancel O(1). Profile a mass explosion first.
 
 ---
 
 ## 3. Confirm first
 
-### 3.1 Play Again (scene reload) may leave the screen black
-- **Where:** `MultiplayerMiniGameControllerBase.cs` ~171-179.
-- **Suspicion:** `FadeFromBlackOnReplay` is subscribed AFTER the `InitDelayMs` wait, so if
-  `OnClientReady` fires inside that window, the fade-from-black is missed.
-- **Repro:** Skim Race → finish → Play Again, several times, host and client. If it never sticks
-  black, close it.
+### 3.2 Rhino's DriftAudioController is gated to the Squirrel
+- `Rhino.prefab` ~2949: `restrictToVesselClass: 1`, `targetVesselClass: 6` (Squirrel), with the Squirrel's drift event borrowed. The Rhino gets no drift audio and no drift haptics. Design call: open the gate (and empty the borrowed slot per the FMOD convention) or delete the component.
+
+### 3.3 Joust and Scurry scenes still carry a `NetworkScoreTracker` with `golfRules: 0`
+- 500 ms after game end its `SendRoundStats_ClientRpc` re-sorts `RoundStatsList` / `DomainStatsList` as points (these modes are golf-timed), sets `IsGolfRules = false` and raises `OnWinnerCalculated` again. Nothing visible today (the scoreboard reads `Results` / `WinnerDomain`; the duplicate sequencer that would have re-run the reveal is gone, row 35). Set `golfRules: 1` or remove the trackers.
+
+### 3.4 Non-ASCII in user-facing default strings
+- Several serialized defaults and labels use `—` and `…` (e.g. `DisconnectNoticeConfigSO` "Reconnecting…"). Whether the ALDRICH font's TMP fallback covers them is an Editor check; fix 1.11 found `· ×` did NOT render. Look at one disconnect notice on screen.
 
 ---
 
@@ -147,17 +218,15 @@ Confidence scale:
 
 | Item | Where | Fix |
 |---|---|---|
-| Bloomrush restarts a tied 0-0-0 round when Jade is not fielded | Bloomrush end-of-round | tie-break over FIELDED domains only |
-| NaN volume accepted by the stat report RPCs | `Player.Report*_ServerRpc` | `if (!(volume >= 0f)) return;` (catches NaN) |
-| Report RPCs are not gated on a running turn | same | `if (!gameData.IsTurnRunning) return;` |
-| Trunk count re-rolled every iteration | `BranchingFlora.cs:~150` | roll once before the loop |
-| Name generator never picks the last word | `NameGenerationData.cs:20-21` | `Random.Range(0, list.Count)` (dead code today) |
-| `PrismTimerManager.CancelScheduledActions` is O(N²) | `PrismTimerManager` | index by prism; only matters on mass cancels |
-| `Input.touches` under the new Input System | `ThumbCursor.cs:75`, `ThumbPerimeter.cs:86` | `Touchscreen.current` / EnhancedTouch |
-| `Trail` ushort index wraps past 65,535 prisms | `Trail` | widen to `int`, or assert; a very long freestyle trail reaches it |
+| Hangar UNLOCK button live while the hangar quest is locked (dormant behind the developer unlock) | `HangarVesselDetailView.RefreshLockState` / `OnUnlockClicked` | require `IsVesselHangarUnlocked()` for `interactable`, show LOCKED |
+| Undertow banner names the wrong representative on a tie | Undertow `winnerRep` orders by `CombatPoints + LifeformsKilled` without `killPoints` | weight as the rule does |
+| `DailyRewardCard` never flips back at midnight | `DailyRewardCard.Update` (`secondsUntilMidnight > 0` always true); credits the legacy CatalogManager | retire with the legacy inventory |
+| `TrainingGameProgressSystem.ReportProgress` NREs on first call | reads `Progress` without `LoadProgress()`; hangar training is dead (§5) | retire with hangar training |
+| Legacy `UnityEngine.Input` in unreachable code | `PhoneFlipDetector` (disabled in Menu_Main; `DeviceOrientationHandler` covers it), `ArcadeProfileWidget` (no referrer), `CaptureScreenShot` (`#if UNITY_EDITOR`, no referrer) | delete or port to `Accelerometer.current` / `Keyboard.current` if revived |
+| `??=` on serialized impactor fields | `NetworkVesselImpactor`, `VesselImpactor`, `MineImpactor`, `PrismImpactor`, `CrystalImpactor` | latent: every asset assigns them; use explicit Unity-null tests if one ever ships unassigned |
+| Serialized enums without explicit values | `StatModuleSO.ValueFormatType`, `AICinematicBehaviorType`, `CameraSettingsSO.CameraMode`, `ShapePreset`, `LSystemPreset`, `RewardData.RewardType` / `RewardRarity` | add static values (repo rule); no reorder hazard today |
+| Stale comment | `ArcadeConfigSyncManager.IsPartyClient` says `IsPartyHost` is written only by tests; `HostConnectionService` writes it | fix the comment |
 | AI objective distance: `sqr` vs linear | `AIPilot.cs:~755` | **Deliberately NOT fixed** — the behaviour is tuned around it. Change only with a playtest. |
-
----
 
 ## 5. Follow-ups from the scene cleanup (#5)
 

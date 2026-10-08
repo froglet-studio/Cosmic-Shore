@@ -8,6 +8,89 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## Overnight sweep 2026-10-08 — handoff rows 23-68
+
+- **Branch:** `cece/loving-shannon-hxpdy0`, one fix per commit (each commit message carries the
+  symptom, root cause and fix in full - read it with `git show <hash>`).
+- **How they were found:** the open §2.4 / §3.1 / §4 items, then seven parallel read-only hunts
+  (vessels, arcade/scoring, ecology, UI, multiplayer/party, data/economy, input/audio/AI). Every
+  finding was re-traced against the code before it was changed; the ones that were deliberate,
+  unprovable without a playtest, or design calls were NOT changed and are listed in the handoff
+  (§2.5-§2.7, §3.2-§3.4, §4).
+- **Verification:** NOT run in Unity. `bash Tools/Build/unity_refcompile/run.sh` reports 0 errors
+  and 0 unverified in project code for the player config, and 0 errors for `--config editor` (which
+  compiles the four changed test files; its 4 unverified entries are pre-existing editor-only
+  members). Negative control: a planted call to an undefined method in a changed file was reported
+  as **1 unverified**, not as an error (the tool buckets CS0103 while some package references are
+  unavailable) - so read both numbers. Seven changed files `using` the unobtainable
+  `Unity.Services.Multiplayer` (`HostConnectionService`, `PartySessionService`,
+  `PresenceLobbyService`, `LobbyPropertyWriter`, `AcceptanceSignalService`, `MultiplayerSetup`,
+  `GameDataSO`), so their diagnostics are bucketed, not gated; the report was intersected with
+  the diff and **no diagnostic lands on any changed line** in them. The five textual gates
+  (`check_enum_member_references --check`, `check_using_directives --check`,
+  `check_conditional_compilation`, `check_self_referential_locals --all`,
+  `check_console_logging`) pass. Playtest steps are in the handoff under "Playtest items for rows
+  23-68".
+- **Prefab edit:** row 35 removed an added component from `GameCanvas.prefab` by YAML (the
+  `m_AddedComponents` entry, its MonoBehaviour block and the now-unreferenced stripped GameObject
+  stub). No scene references either fileID. Open the prefab once in the Editor to confirm it
+  re-serializes without a missing-script warning.
+
+| Commit | Fix |
+|---|---|
+| `e15f000e` | fix(app-state): allow MainMenu → Authenticating for the reconnect boot chain |
+| `24c5dd63` | fix(scoring): gate client report RPCs on a running turn and reject NaN volume |
+| `4b3a2c24` | fix(flora,names): roll BranchingFlora trunk count once; name generator reaches the last word |
+| `e6565c7c` | fix(scoring): an empty domain no longer wins an all-zero tie |
+| `afb66abd` | fix(ui): suspended thumb cursor/perimeter no longer throw on their first frame |
+| `ada75753` | fix(trail): index the trail with int so a 65,536th prism does not wrap |
+| `fe9c2fee` | fix(replay): Play Again no longer misses its fade-in on a scene reload |
+| `c2825eb4` | fix(party,net): backend waits use unscaled time so a paused menu cannot stall them |
+| `ceabacdd` | fix(presence): a boot-time presence-lobby join failure is retried |
+| `a0b01f82` | fix(menu-swap): refuse a vessel swap for a player the sender does not own |
+| `1b5c4522` | fix(arcade): cancel InitializeAfterDelay when the controller is destroyed |
+| `7f6981f1` | fix(net): clear a human Player's DontDestroyWithOwner when the scene will not adopt it |
+| `e68f204f` | fix(end-game): every match paid its placement crystals twice |
+| `0c0332f2` | fix(end-game): an in-place rematch shows its end screen again |
+| `c95f4046` | fix(pause): pausing a match other players are in no longer freezes time |
+| `02b96504` | fix(comeback): keep the card's per-hull starting elements when the turn starts |
+| `7511d95e` | fix(results): IsLocalDomainWinner only answers true for the top domain |
+| `4708c810` | fix(turn-monitor): only the server's clock ends a networked timed turn |
+| `ded3ee7f` | fix(turn-monitor): timed rounds run their full duration |
+| `f579cc76` | fix(regatta): placement order agrees with the winner on a tied team total |
+| `8c420702` | fix(elements): petal loss no longer reads one level low from float drift |
+| `ce645d19` | perf(vessel): edge-trigger the engine flare and the slowed-ship broadcast |
+| `7f20a5af` | fix(serpent): the cloak ghost frees its baked mesh and material clones |
+| `68bf94d0` | fix(squirrel): tube cleanup never recycles a prism that now belongs to someone else |
+| `7e5c950e` | fix(input): a release stops the actions its press started |
+| `c848e3d9` | fix(cell): the OnInitializeGame pass no longer wipes a cell the first crystal already bootstrapped |
+| `5b2e98c2` | fix(cell): a destroyed cell retires its colony books |
+| `e2eaebf4` | fix(prisms): Unity fake-null no longer defeats ??= in the Editor (spindle links, super-shield) |
+| `1b7be83c` | fix(ui): GetComponent() ?? AddComponent() replaced where the Editor's fake null defeats it |
+| `8a0ccadb` | fix(swarm): stop the swarm loop on destroy; complete the pose job before releasing its inputs |
+| `b76e7ab0` | fix(audio): vessel audio follows the pilot when a live hull changes hands |
+| `2817eb28` | fix(input): pad and keyboard face buttons always send their release |
+| `90ff29f3` | fix(touch): lifting the last thumb releases what the touch was holding |
+| `a6480b5a` | fix(audio): an empty drift-event slot warns once instead of erroring every frame |
+| `a674ebc4` | fix(profile): an avatar picked before the profile loads is applied, not dropped |
+| `d4162289` | fix(friends): a party invite gets its row even when the sender has a pending friend request |
+| `9b2ecdb9` | fix(ui): VolumeUI destroys its per-instance material |
+| `979dd6ce` | fix(progression): a failed immediate save is retried instead of forgotten |
+| `a64d0f6e` | fix(profile): follow the profile repo when it adopts the real cloud record |
+| `954b15ed` | fix(cloud-data): progression and stats follow their repositories when the data object is replaced |
+| `b11b9448` | fix(persistence): DataAccessor saves atomically, keeps a corrupt file, writes UTF-8 |
+| `31a12e09` | fix(hangar): never spend persistent crystals on an unlock that cannot persist |
+| `0929fea7` | fix(toys): the daily toy reward is not claimed before the profile has loaded |
+| `a7754133` | fix(episodes): refuse a paid token grant until the profile has actually loaded |
+| `196bb175` | fix(episodes): do not start a token purchase before the profile has loaded |
+| `9c90cc7b` | fix(prefs): SetAvailableProfiles writes under its key, not under the value |
+| `d0395c12` | fix(duel): Cellular Duel's round swap is applied on every peer, not only the host |
+| `9429df4a` | fix(scoring): legacy metric scorers keep a value per player, not one shared value |
+| `52e9ef9e` | fix(stats): LifeFormsInCell has one writer, so a flora death is counted once |
+| `52824cb1` | fix(ui): two more non-ASCII UI glyphs that the ALDRICH font renders as tofu |
+
+---
+
 ## BH-2.3 — invite-clear could skip the lobby mutex and race an invite send
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
