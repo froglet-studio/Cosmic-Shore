@@ -121,6 +121,7 @@ The board is `board.json` beside the tracks. A suggestion an agent makes while P
 within a second and survives Prisma's next save (saves merge with the file instead of overwriting it).
 If the file cannot be read, Prisma keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
 starts an empty board; the copy is never overwritten.
+How it works, how to test it on Windows, and the scheduler that builds on it: [`PRISMA_BOARD_SCHEDULER.md`](PRISMA_BOARD_SCHEDULER.md).
 
 ## BUILD
 

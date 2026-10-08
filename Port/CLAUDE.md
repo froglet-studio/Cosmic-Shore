@@ -75,6 +75,7 @@ changes in once a second, and an unreadable file is copied to `board.json.corrup
 replaces it. The scheduler's UI-free logic (quick add, TODAY/UPCOMING queries, repeat rules) lives in
 `src/Shared/Workspace/` - linked into the launcher, the MCP server and the tests, never a project of its
 own (the launcher's UPDATE builds only `CosmicShore.Launcher`, `Shared` and `Directory.Build.props`).
+Details, the quick-add syntax, Windows test steps and the roadmap: `docs/PRISMA_BOARD_SCHEDULER.md`.
 
 ## The editor (M2): tools, data sets, models - not a hierarchy
 
