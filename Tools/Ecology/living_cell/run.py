@@ -125,6 +125,12 @@ def eco_table(runs):
                 cv={k: round(float(np.mean([e["cv"].get(k, 0) for e in E])), 3) for k in E[0]["cv"]},
                 audit_max=float(max(e["audit_max"] for e in E)), shield_eaten=int(sum(e["shield_eaten"] for e in E)),
                 pop_ins=int(sum(r["continuity"]["pop_ins"] for r in runs)), pop_outs=int(sum(r["continuity"]["pop_outs"] for r in runs)),
+                cap_frac={k: round(float(np.mean([e["cap_frac"].get(k, 0) for e in E])), 3) for k in E[0].get("cap_frac", {})},
+                soil_frac_of_input=round(float(np.mean([e["soil"]["frac_of_input"] or 0 for e in E])), 3) if "soil" in E[0] else None,
+                N_end=round(float(np.mean([e["soil"]["N_end"] for e in E]))) if "soil" in E[0] else None,
+                plants_end=round(float(np.mean([e["soil"]["plants_end"] or 0 for e in E]))) if "soil" in E[0] else None,
+                births={k: int(np.sum([r["stats"]["births"].get(k, 0) for r in runs])) for k in runs[0]["stats"]["births"]},
+                starved={k: int(np.sum([r["stats"]["starved"].get(k, 0) for r in runs])) for k in runs[0]["stats"]["starved"]},
                 cost_ms=round(float(np.mean([r["cost_ms"]["mean"] for r in runs])), 2),
                 cost_p95=round(float(np.max([r["cost_ms"]["p95"] for r in runs])), 2))
 

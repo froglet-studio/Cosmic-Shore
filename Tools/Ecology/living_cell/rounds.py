@@ -95,3 +95,19 @@ R8 = {
 
 # The recommended cell after R8: per-species macro diets (= the micro diets). 0 extinctions in 3 seeds x 30 min.
 FINAL = dict(R8["r8_own_diets"])
+
+# ==========================================================================================================
+# ROUND 2 OF DIRECTION G (2026-10-08): the four open items of the first pass.
+#   1. thieves starve out (3/4 seeds by ~35 min): seed flora at its GRAZED level, not 60% of its cap
+#   2. packs / lurkers end at their caps: is the cap doing the work?
+#   3. soil N grows linearly with the pilots' trail: a sink that is not a timer (plant recruitment)
+#   4. the macro rates were fitted before R8's diet fix: refit
+# R9: the opening transient. Post-crash levels read off results/final.json (minutes 3-10): flora ~5-7k vol
+# (13% of the 48k cap), grazers 300-500, locusts 150-300.
+GRAZED = dict(flora_seed_frac=0.13, grazer_n=400, locust_n=250)
+R9 = {
+    "r9_grazed": dict(FINAL, **GRAZED),
+    "r9_bloom": dict(FINAL, flora_seed_frac=0.13, grazer_n=150, locust_n=100),
+    "r9_grazed_recruit": dict(FINAL, **GRAZED, flora_recruit=0.05),
+    "r9_grazed_nocap": dict(FINAL, **GRAZED, pack_cap=300, lurker_cap=180),   # diagnostic: where food alone stops them
+}

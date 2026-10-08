@@ -31,8 +31,12 @@ class Flora:
     name = "flora"
 
     def __init__(self, w, n_plants=150, cap=40, vol=8.0, r=0.03, N_half=20000.0, meadows=18, shield_frac=0.12,
-                 seed_frac=0.6, seed_c=3.0):
+                 seed_frac=0.6, seed_c=3.0, recruit=0.0, N_ref=60000.0, n_max=1200):
         self.w = w; self.cap = cap; self.seed_c = seed_c; self.vol = vol; self.r = r; self.N_half = N_half
+        self.shield_frac = shield_frac
+        # recruitment (round 9): plants SEED new plants when the soil holds more than N_ref - the soil's sink
+        # that is not a timer. Expected new plants/s = recruit * (N - N_ref) / N_ref; n_max is a backstop.
+        self.recruit = recruit; self.N_ref = N_ref; self.n_max = n_max; self.recruited = 0
         cen = w.ball(meadows, 0.3 * w.R, 0.85 * w.R)
         self.pos = cen[w.rng.integers(0, meadows, n_plants)] + w.rng.normal(0, 70.0, (n_plants, 3))
         self.shielded = w.rng.random(n_plants) < shield_frac         # CHARGE plants: armoured, never food
@@ -68,6 +72,20 @@ class Flora:
                 if w.N < self.vol:
                     return
                 w.N -= self.vol; self._lay(i); self.grown += 1
+        if self.recruit > 0 and w.N > self.N_ref and self.n < self.n_max:
+            k = int(w.rng.poisson(self.recruit * (w.N - self.N_ref) / self.N_ref * dt))
+            c = self.counts().astype(float)
+            for _ in range(min(k, self.n_max - self.n)):
+                if w.N < self.vol:
+                    return
+                # a seed falls from a plant (weighted by its standing crop) and roots inside the shell
+                par = w.rng.choice(self.n, p=(c + 1.0) / (c + 1.0).sum())
+                p = self.pos[par] + w.rng.normal(0, 60.0, 3)
+                rr = np.linalg.norm(p)
+                p = p * np.clip(rr, 0.3 * w.R, 0.9 * w.R) / max(rr, 1e-6)
+                self.pos = np.vstack([self.pos, p]); self.shielded = np.append(self.shielded, w.rng.random() < self.shield_frac)
+                self.n += 1; c = np.append(c, 0.0)
+                w.N -= self.vol; self._lay(self.n - 1); self.recruited += 1
 
 
 # ==========================================================================================================
