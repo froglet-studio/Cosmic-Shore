@@ -42,6 +42,12 @@ namespace CosmicShore.Gameplay
     /// TAIL still sticks out of the far ball's near face, so the gameplay camera's render draws the
     /// followed ship carried back. Each move brackets a single render and is undone before anything
     /// else runs.</para>
+    ///
+    /// <para><b>A mouth never hides the pilot's ship.</b> Every mouth's surface honours the
+    /// camera→ship occlusion corridor (<see cref="PrismOcclusionCorridor"/>), dissolving through the
+    /// prisms' screen door wherever it stands between the gameplay camera and the ship — the fold's
+    /// destination mouth is laid around the Butterfly, so while it blooms its front face is exactly
+    /// there. The carried mouth is the exception: its exact view is what shows the ship.</para>
     /// </summary>
     public static class WormholeView
     {
@@ -126,6 +132,7 @@ namespace CosmicShore.Gameplay
                 if (!m) continue;
                 m.ExactBlend = 0f;
                 m.PanoramaWanted = false;
+                m.HonorsOcclusionCorridor = true;
             }
 
             if (_mainView)
@@ -178,6 +185,9 @@ namespace CosmicShore.Gameplay
                     var m = live[i];
                     if (!m || !m.Partner || (m.Centre - mouth).sqrMagnitude > 1f) continue;
                     _carriedMouth = m;
+                    // The corridor opens onto the ship mapped back through this mouth, i.e. onto
+                    // its exact view - a hole there would show the empty near-side interior.
+                    m.HonorsOcclusionCorridor = false;
                     if (!Candidates.Contains(m)) Candidates.Add(m);
                     break;
                 }

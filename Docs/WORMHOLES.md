@@ -76,6 +76,17 @@ panorama across `portalWindowFadeBand` (600). The face table lives in **three** 
 `WormholeGeometryTests.Panorama_FaceUV_IsWhereTheFaceCameraSeesTheDirection` is the contract between
 them. The array is ours end to end, so no cubemap orientation convention is involved.
 
+**A mouth never hides the pilot's ship.** A fold lays its destination mouth *around* the Butterfly,
+so while it blooms — and whenever a mouth ends up between the chase camera and the ship — its front
+face stands between the two. The surface therefore honours the camera→ship **occlusion corridor**
+(`PrismOcclusionCorridor`, `Docs/PRISM_ANIMATION.md` §4.7) through the same
+`PrismOcclusionFade_float` the prism graphs call: inside the corridor it dissolves through the
+prisms' screen door, in the depth pass as well as the colour pass, and the ship behind it is drawn as
+itself. It uses the live-mass nose clearance, so a nose threading a mouth (§3) still disappears into
+a solid surface. The one exception is the mouth the camera is being **carried** through (§3, step 3):
+there the corridor opens onto the ship mapped back through the pair — i.e. onto the exact view, which
+is what shows the ship — so `WormholeView` clears that mouth's `_WormholeCorridor` for the carry.
+
 ## 3. The transit, frame by frame
 
 1. **Nose in.** The hull crosses A's sphere. A's surface hides the part inside the ball; the exact
@@ -180,6 +191,10 @@ takes a step that starts outside it.
   the panorama; inside `exactRange` this never shows.
 - **No recursion.** Every mouth is hidden inside every wormhole render (each samples targets those
   renders draw into), so A is never seen *through* B.
+- **Through the corridor's hole you see THIS side.** Where a mouth dissolves for the ship, the
+  pixels inside the ship-sized hole show the world behind the mouth on the near side, not the far
+  side's view — the ship itself is drawn correctly either way (it is also drawn through the exact
+  view, §3), so only the background inside a soft ship-sized column differs.
 - **The transit sound ships empty** (`FoldActionExecutor.gateThreadEvent`) per the FMOD convention.
 
 ## 7. Follow-ups and recorded debt (ship pass, 2026-10-08 — rows, not fixes)
@@ -194,4 +209,6 @@ takes a step that starts outside it.
 | W6 | incompleteness (report) | No HUD marker for a standing fold pair, and no AI uses one (carried over from the ring gates). An AI flying its own course may now thread a RIVAL pair by accident and pay the toll — it does not steer round one. | `BUTTERFLY_FOLD.md` § Follow-ups | design, not cleanup |
 | W7 | verify | The rival toll (§5) is unplayed: the default (15 = whole flower), the shed speed and the 30° spill cap are first-pass numbers, and nothing on screen tells a rival the price before they pay it beyond the rim's domain hue. | `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Butterfly wormholes carry anyone" | is a whole-flower toll the intended price, or should it be a few petals per element? |
 | W8 | inconsistency (walked past) | `FoldActionExecutor` still tags its verbose logs `[FoldGate]`, naming the retired ring gates (5 sites). Harmless, and a log filter keyed on it would break on a rename. | `grep -rn '\[FoldGate\]' Assets --include=*.cs` → 5 | rename to `[FoldWormhole]`? |
+| W9 | incompleteness (report) | The occlusion corridor's NON-prism consumers are listed nowhere: three hand-written shaders `#include` it and declare its globals themselves (`SwarmMemberInstanced`, `PrismSlice`, now `Wormhole`), and `PRISM_ANIMATION.md` §4.7 names none of them. A change to the corridor's uniforms or `PrismOcclusionFade_float`'s signature has to find them by grep. | `grep -ln 'PrismOcclusionCorridor.hlsl' Assets/_Graphics/Materials/Graphs/*.shader` → 4 (the 4th is the Lab's `PrismOcclusionDitherPreview`) | a consumer table in §4.7, or a test that enumerates the includers? |
+| W10 | inconsistency (created) | `Wormhole.shader` now alpha-clips (the corridor) but stays in `Queue = Geometry`; its two siblings that clip through the corridor sit in `AlphaTest`. One sphere, so no measurable cost — but it is the odd one out. | `grep -n '"Queue"' SwarmMemberInstanced.shader PrismSlice.shader Wormhole.shader` → AlphaTest, AlphaTest, Geometry | move to AlphaTest (needs a look at draw order vs the exact-view composite)? |
 

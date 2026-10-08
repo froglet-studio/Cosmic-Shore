@@ -2418,6 +2418,23 @@ any `Assets/...` include into the work dir at the same relative path, and compil
 `HLSLPROGRAM` vertex+fragment with and without `INSTANCING_ON`. It proves the shader's OWN code
 type-checks, nothing about URP; negative-control it (drop an argument from a call) before quoting.
 
+**A hand-written URP `.shader` can be compiled by a REAL HLSL compiler — Microsoft's DXC — with
+no substitutions at all.** The clang shim above rewrites the language (`out` params, constructors,
+scalar overloads) and the glslang mock compiles a GLSL translation; DXC compiles the HLSL as written,
+so `out` params, swizzles, `clip`, `Texture2DArray` and an `#include` of a shared `.hlsl` all behave
+exactly as on device. The Linux release downloads and runs in this container (2026-10, wormhole
+corridor change):
+`curl -sSL -o dxc.tgz https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.8.2407/linux_dxc_2024_07_31.x86_64.tar.gz`,
+untar into scratch, run as `LD_LIBRARY_PATH=<dir>/lib <dir>/bin/dxc -T ps_6_0 -E frag -HV 2018 -I <stubdir>
+-I Assets/_Graphics/Materials/Graphs pass0.hlsl -Fo /dev/null` (the `bin/dxc` binary needs `lib/` on the
+loader path or it fails to start). Build each pass's file as `HLSLINCLUDE` + that pass's `HLSLPROGRAM`
+with the `#pragma` lines dropped (entry names come from `#pragma vertex/fragment`), and swap the URP
+`Core.hlsl` include for a ~15-line stub: `CBUFFER_START/END`, `TEXTURE2D[_ARRAY]`, `SAMPLER`,
+`SAMPLE_TEXTURE2D[_ARRAY]`, `_WorldSpaceCameraPos`, `_ScreenParams`, `_ProjectionParams`, `_Time`,
+`UNITY_MATRIX_V/P`, `TransformObjectToWorld`, `TransformWorldToHClip`. Compile vertex AND fragment of
+every pass (`vs_6_0`/`ps_6_0`), then negative-control it (delete one global the pass reads — DXC must
+name it). Like the glslang route it proves the shader's own code and its includes, nothing about URP.
+
 **Reuse an existing harness's shim for a DIFFERENT function in the same file — do not write a
 second one.** `Tools/Shaders/verify_prism_shard3d.py` exposes `SHIM`, `translate()` and
 `clang_cmd()` as module members, so a scratch script can `import verify_prism_shard3d as H`,
