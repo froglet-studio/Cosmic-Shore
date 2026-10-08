@@ -10,6 +10,17 @@
 // (rising when _Start < _Stop, falling otherwise), the mesh is scaled by s about the origin when
 // _ScaleDistance is on, and Alpha = (1.05 - s) * _Opacity, clipped at 0.01.
 //
+// Two OPT-IN contrast controls, both inert at their defaults (so the omni triangles, which author
+// neither, draw exactly the formula above):
+//   _RimPower    the bright weight is rim^_RimPower, where rim = 1 - fresnel above. 1 is the linear
+//                SpreadFresnel ramp; higher pulls the bright colour out to the silhouette.
+//   _FaceForward measures N.V on the side FACING the camera. These shells are transparent and
+//                Cull Off, so a shell's back faces show through its front ones, and on the formula
+//                above a back face is always at the BRIGHT end - which washes a see-through crystal
+//                toward its bright colour. Facing it, rim = 1 - |N.V|: dark at the centre of every
+//                face, bright only edge-on, front and back alike. The Mass crystal turns both on
+//                (Tools/Build/author_mass_crystal_look.py).
+//
 // Like the body, it does NOT read FadeIn's lowercase _opacity: the omni appears at once on respawn
 // (see OmniCrystalFresnelShader for why).
 Shader "Custom/OmniShepardFresnelShader"
@@ -23,6 +34,8 @@ Shader "Custom/OmniShepardFresnelShader"
         _Period ("Period", Float) = 3
         [Toggle] _ScaleDistance ("Scale Distance", Float) = 1
         _Opacity ("Opacity", Range(0, 1)) = 1
+        _RimPower ("Rim Power", Range(0.25, 8)) = 1
+        [ToggleUI] _FaceForward ("Face Forward (see-through contrast)", Float) = 0
     }
 
     SubShader
@@ -56,6 +69,8 @@ Shader "Custom/OmniShepardFresnelShader"
             float _Period;
             float _ScaleDistance;
             float _Opacity;
+            float _RimPower;
+            float _FaceForward;
 
             struct appdata
             {
@@ -100,10 +115,13 @@ Shader "Custom/OmniShepardFresnelShader"
                 float alpha = (1.05 - i.s) * _Opacity;
                 clip(alpha - 0.01);
 
-                // The body's colour, verbatim (OmniCrystalFresnelShader / SpreadFresnelShader).
+                // The body's colour (OmniCrystalFresnelShader / SpreadFresnelShader): at the
+                // defaults rim = 1 - (1 + N.V) / 2 and this is lerp(_BrightColor, _DarkColor,
+                // fresnel) verbatim. See the header for _RimPower / _FaceForward.
                 float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
-                float fresnel = (1.0 + dot(viewDir, i.worldNormal))/2;
-                half4 col = lerp( _BrightColor, _DarkColor, fresnel);
+                float ndv = dot(viewDir, i.worldNormal);
+                float rim = _FaceForward > 0.5 ? 1.0 - abs(ndv) : (1.0 - ndv) * 0.5;
+                half4 col = lerp( _DarkColor, _BrightColor, pow(saturate(rim), _RimPower));
                 return half4(col.rgb, saturate(alpha));
             }
             ENDCG
