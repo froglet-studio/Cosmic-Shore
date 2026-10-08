@@ -1166,6 +1166,29 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
+        /// Re-writes the entity's bright/dark overrides as a DARKER shade of <paramref name="material"/>'s authored
+        /// colours: scaled by <paramref name="gain"/> (0-1). The hue stays the material's (a prism's colour is its
+        /// DOMAIN, and a shade must never read as another team or as a lit state). Inputs are authored-space; the
+        /// colour-space transform is applied here, as in <see cref="SetMaterial"/>. Spread is left as the material
+        /// set it. Called by <c>Prism.ApplyColorShade</c> after every material sync, so a domain or state change
+        /// keeps the shade.
+        /// </summary>
+        public static void ApplyColorShade(in PrismRenderHandle handle, Material material, float gain)
+        {
+            if (material == null || !IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ReadShadedColor(material, BrightColorId, gain) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ReadShadedColor(material, DarkColorId, gain) });
+        }
+
+        static float4 ReadShadedColor(Material material, int propertyId, float gain)
+        {
+            Color c = material.HasProperty(propertyId) ? material.GetColor(propertyId) : Color.white;
+            float k = Mathf.Clamp01(gain);
+            return ApplyColorSpace(new float4(c.r * k, c.g * k, c.b * k, c.a));
+        }
+
+        /// <summary>
         /// Swaps the entity's mesh (settled octahedron shield ↔ prism box) and refreshes
         /// RenderBounds. The mesh registers once and is shared across entities, so
         /// same-geometry shielded prisms keep batching.

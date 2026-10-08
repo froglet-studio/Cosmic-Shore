@@ -65,6 +65,50 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
+
+**Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
+`Crystal.prefab` slot 0 = whole omni model on the new, self-contained `OmniCrystalFresnelShader`
+(the elemental crystals' SpreadFresnel look, plus CrystalMorph + the forge's `_Opacity` dissolve);
+slots 1-3 = Shepard shells and slot 4 = a stationary rim, drawing only the 20 triangles
+(`Assets/_Models/OmniCrystalTriangles.asset`, a mesh baked from `MassCrystalExport3ExpandedTri`) on
+`OmniShepardFresnelShader` (the body's colour formula and pair), sweeping from 2x the crystal's radius
+down onto its surface. `OriginalMaterialSet` now points team crystals at those five materials;
+`ThemeManager` paints them in domain colours (`SO_MaterialSet.CrystalMaterial4` added). `SpreadFresnelShader` is NOT touched
+(the omni shader compiles to SPIR-V offline). One C# edit:
+`ScarabCrystalMorph.AdoptShells` skips the triangle shells on a verbose channel instead of warning;
+`ThemeManager` / `ThemeManagerDataContainerSO` / `SO_MaterialSet` gained slot 4 + Fresnel painting.
+Compiled against Unity reference assemblies (`unity_refcompile`, 0 project errors); not opened in the editor.
+
+**Verify in editor**
+1. Console after import: no shader errors on `OmniCrystalFresnelShader` (it includes
+   `Assets/_Graphics/Materials/Graphs/CrystalMorph.hlsl` by project-absolute path). No C# errors.
+2. Space + Time crystals look exactly as before (their shader is untouched).
+3. Open `Crystal.prefab`: `OmniCrystalBody` shows the lime Fresnel omni; the three
+   `OmniShepardTriangles` children show the `OmniCrystalTriangles` mesh. In play the triangles fall
+   in from outside the crystal, brightening, and land ON the body's own triangles. If they sit
+   rotated or offset against the body, the mesh bake's axis conversion is wrong (see the generator).
+   A faint stationary triangle rim (`OmniShepardTrianglesRim`) sits at the outer radius, so no
+   shell visibly pops in where it is born.
+4. In Skim Race, a collected crystal's replacement appears at once (no slow fade-in) - the omni
+   shaders deliberately ignore FadeIn's `_opacity`.
+5. Scarab: forge an omni crystal — the body folds onto the ball and dissolves; the triangle shells
+   just leave with the crystal. No warnings in the console.
+6. A toy/matrix that shows the omni's shape (`SpawnMatrixToy`, `ElementCrystalModelBuilder`)
+   shows the whole omni model, not just triangles.
+
+7. **Colour match (2026-10-08):** the falling triangles are the body's lime, see-through - same hue
+   and the same dark-face / bright-silhouette shading as the plates they land on.
+8. **Team crystals:** a Skim Race track crystal and a Dolphin-produced crystal look exactly like the
+   lime omni (body the same size, triangles falling inward onto it, faint rim) in Jade / Ruby / Gold
+   instead of lime. Nothing shrinks toward the centre. Console: no "Invalid crystal material index".
+9. A `MazeCrystal` taken by a domain shows the omni body in that domain's colour.
+
+**First-pass tuning:** `OUTER_REACH = 2.0` in the generator (how far out the tone starts); band
+period is the Mass materials' 3 s.
+
+---
+
 ### 🔴 Urchin autopilot driver for Skein and Hijack (#975, `claude/urchin-ai`, 2026-10-06)
 
 New `UrchinAutopilotDriver` (`Assets/_Scripts/Controller/AI/Urchin/`) owned by the Skein and Hijack
@@ -4736,3 +4780,143 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 Nested Gyroid flora + the Urchin's layered ride (`cece/happy-clarke-e0xu4y`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+No Unity Editor or `unity` CLI was available in the authoring session, so `/verify-unity` did **not** run.
+What WAS run: `bash Tools/Build/nested_gyroid_harness/run.sh` (and `run.sh sweep`) — the shipped
+`NestedGyroidLattice.cs` compiled against netstandard2.1 / C# 9 and executed, the shipped `NestedGyroidColony.cs`
+run against stubs to grow colonies, every acceptance gate green with negative controls; a Roslyn type-check of
+`NestedGyroidFlora`, `NestedGyroidColony`, `NestedGyroidConfigSO`, `ILayeredPrismscape`, `PrismscapeTopology` and
+`BlockscapeFollower` against hand-copied stubs, and of `NestedGyroidLatticeTests` against NUnit stubs (type-check
+only - the tests did not RUN). **Not compiled at all:** the `Prism.cs` / `PrismRenderService.cs` colour-shade
+additions and the `Cell.cs` colony-clear lines. Docs/ECOSYSTEM.md §58.
+
+**Model as of the third revision (plant = one octagon, colony = population):** a plant is ONE octagon tile of the
+gyroid flora's tiling on every sheet (~170-190 prisms), every prism on a limb hanging off its crystal; the species
+spreads as a colony of tiles (`NestedGyroidColony`, §58.9), one birth per cycle at a random open tile, on the gyroid
+flora's population numbers (seed 1, floor 4, cap 42).
+
+### 1. It compiles and the edit-mode suite passes
+Open the project; confirm zero compile errors. Run `NestedGyroidLatticeTests` (Test Runner, EditMode) —
+all 15 green.
+
+### 2. The plant grows (test scene)
+New empty scene (or `Assets/_Scenes/Game_TestDesign/`), drop `Assets/_Prefabs/FloraAndFauna/NestedGyroidFlora.prefab`
+at the origin, enter Play. Enable **FrogletTools > Toolbox > Logging > Ecology** first.
+- Within ~1 s a `[NestedGyroid] NestedGyroidConfig: plant 167-187 prisms (… plate / … strut, … danger-ring, 23-25-site
+  tile, 7 sheets), N/N on the crystal's spindle tree, …; period: 4235 prisms, overlaps 0 …` line appears (the
+  prefab's Time leaf) — the counts must match the harness. **No hitch** on the frame it appears (Profiler: the period
+  build runs ~2 ms per frame across ~90 frames, worst frame ~3-6 ms). No `nested gyroid tile … cut by PrismBudget`
+  warning.
+- **One plant is one octagon:** growth starts with eight limbs out of the CRYSTAL to its danger octagon ring on the
+  t = 0 sheet, spreads over that tile's ~24 plates, then out through the stack sheet by sheet; struts appear as each
+  new sheet does. At 40 prisms/s it completes in ~4-5 s (Time faster). It must read as a small multi-layer patch,
+  ~150 units across - NOT a 240-unit cube.
+- **Every prism is on a spindle:** select any prism in the Hierarchy — its parent is a Branch limb, whose parent is
+  another limb, … up to the plant root. No prism is parented to a prism; no limb dangles in space (each runs from its
+  parent's centre, or the crystal, to its prism).
+- **Every sheet is the gyroid flora's tiling**: put a Gyroid flora beside it - the plates must read as the same loops
+  with the same DANGER octagon ring, carried outward on every nested sheet. Struts are danger prisms.
+- Through the thickness the sheets darken toward -tMax (never brighter, never whitened - no prism reads
+  "lit"). Switch `ColorMode` to `AlternatingSheets` on the config and replant: odd sheets darker.
+- At full growth a `physics spot-check: 0 cross-layer overlaps in N prisms` line (N > 0 — if every prism
+  is "skipped, collider LOD-culled", fly a vessel into the plant and re-run).
+
+### 2b. The colony spreads through the periodic structure (a cell, not the bare test scene)
+The colony needs a cell (it rides the cell's fauna-wave cadence). Use the Spawn Matrix (3b) or any cell with a
+nested-gyroid config in its profile.
+- Once the founder is complete, roughly once per fauna-spawn period a DAUGHTER appears at one of its four neighbouring
+  tiles - flush against it, the two plants' sheets continuing into each other with no overlap and no gap (they are
+  one periodic stack). Later daughters appear at random open tiles beside ANY plant, so the population wanders in an
+  irregular shape, never fills a cube.
+- **It keeps growing** - the first play test of this model saw the colony stop at its founder (a planting-band gate
+  refused every tile next to a Spawn Matrix station, which sits outside the membrane). Release from the matrix and
+  watch for at least 3-4 births: a daughter per fauna-spawn period, beside the founder and then beside any plant.
+- At 42 plants per element births stop (the cap). Graze a plant to death: its tile is re-offered and later regrown.
+- No daughter's crystal ever lands inside a control-zone nucleus.
+- Reset the world (Cell Selector): the next founder lays a fresh frame (no daughters appear at the old world's tiles).
+
+### 3. The Urchin rides it in three directions
+Same scene plus an Urchin (Toy/Freestyle spawn), or the Freestyle cell with the prefab placed in it.
+Fly into a sheet and attach (`[GunVesselTransformer] Riding a Volume prismscape.` on the PrismscapeRide
+channel — it must say **Volume**).
+- **Within a sheet:** aim along the surface and roll. The rider stays on its sheet (no jumping to the
+  layer above/below as it crosses between plates), crosses from one plant of a colony onto the next on the SAME
+  sheet, and wraps over the colony's edges.
+- **Through the stack:** pitch the nose firmly into the sheet (past ~20° out of plane). The rider steps
+  inward one layer at a time; pitch out and it steps outward. On the outermost sheet pitching out keeps
+  it on the skin (it does not float away).
+- **Regression — every other prismscape:** ride a vessel trail, the gyroid flora, a Schwarz P surface and
+  the Switchyard (a Volume declared by its Trail): behaviour must be unchanged (the layered rules engage
+  only for an `ILayeredPrismscape`).
+
+### 3b. The Spawn Matrix carries all four (`Tools/Build/author_nested_gyroid_flora_assets.py`)
+Menu freestyle cell → Spawn Matrix → Flora: a **Nested Gyroid** station sits before Borromean, its icon a
+small window of a three-sheet stack with its danger octagon rings and struts, and it opens four element
+variants. Release each: the founder's crystal roots at the station, it grows, and its colony spreads tile by tile. Each element wears the GYROID FLORA's own
+prism for that element (Time 2:1 plates, Mass chunky slabs, Space long needles on a ~3x wider lattice, Charge
+small plates); Time grows visibly fastest; Charge's prisms are shielded over time (the octahedra are NOT
+fitted against the layer gap — report how it reads); each plant's heart is the largest in the cell (4.6).
+Opening the Flora row must not hitch (the icon is one plant cut from a three-sheet period, ~28 ms once, then cached).
+
+### 4. Colour shade does not leak
+Destroy a few nested-gyroid plates, then lay ordinary trail prisms (pooled reuse): no trail prism may come
+out darkened, and none may come out dangerous.
+
+---
+
+## 🔴 Every standing spindle keeps a path to its crystal (`cece/youthful-tesla-eq16r6`, 2026-10-07) — NOT EDITOR-VERIFIED
+
+`Docs/ECOSYSTEM.md` §26.10. (1) `BorromeanFlora` and the Mandelbulb family (Mandelbulb, Coral Bloom,
+Watershed, Apollonia) now link each limb to its parent limb (`Spindle.AttachToParent`), so a limb
+stays standing while anything hangs off it. (2) Ordered withers are read off the spindle TREE
+instead of distance: starvation `Spindle.OrderOutsideIn` (deepest first), the crystal joust
+`Spindle.OrderHeartOutward` (from the missing crystal to the leaves — the one sanctioned exception).
+
+### 1. Graze / shoot an INNER plate on a living Borromean and a Mandelbulb-family plant
+
+Destroy one plate in the innermost orbit (next to the crystal). Its limb must **stay** (the outer
+limbs hang off it), and the plant must regrow that plate on later grow ticks onto the same limb (no
+second limb on that bond). Then destroy an OUTERMOST plate: its limb (nothing beyond it) withers, and
+a bare parent limb with nothing else hanging off it follows. At no point may a limb stand with a
+gap between it and the crystal.
+
+### 2. Crystal-joust a Borromean plant — the exception
+
+Squirrel joust (or skim/explode its crystal). The heart is collected at the strike, the plates stay
+as a skeleton, and the limbs unravel **from the crystal out to the tips**, following the plant's
+own branches (it used to jump around the membrane by straight-line distance).
+
+### 3. Starve / joust a spindled creature (shark, brittlestar, clawfish)
+
+Starvation: fins / arms before the core body, the heart collectable only once the wither reaches
+the core. Joust: heart taken at the strike, body unravels from the heart outward. If either reads
+wrong on a creature whose prefab nests its spindles oddly, report the prefab.
+
+## 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
+place `TimeCrystalVertexHop` snaps the model child to a random rotation of the icosahedral group on
+the frame the 2 s flip-wave loop wraps, so the next wave starts from another of the 12 five-fold
+vertices while the crystal never visibly turns. The snap is only invisible because the shape at the
+loop seam is the fully symmetric bind pose — proved from the FBX by
+`python3 Tools/Build/measure_time_crystal_wave.py` (and `--self-test`). The symmetry frame is read at
+runtime from Unity's own import of the five first-ring bones, so no axis-conversion assumption ships.
+
+### 1. Run the edit-mode suite's `TimeCrystalVertexHopTests`
+
+All six pass offline against faithful math stubs. The seventh,
+`CrystalTimePrefab_ResolvesItsWaveAxis_FromTheImportedRig`, only runs in the editor: it resolves the
+wave's start axis from the REAL imported rig. If it fails, nothing else below is worth checking.
+
+### 2. Watch a Time crystal for ~10 s in any scene that spawns one
+
+- The crystal itself never turns: no tumble, and no jump/pop/twitch at any moment.
+- Each wave starts from a different vertex from the one before it (12 possible), never the same one twice in a row.
+- No `TimeCrystalVertexHop` error in the console.
+
+### 3. Capture one (Elemental capture / skim)
+
+The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
+rotation; the hop only touches the model child).
