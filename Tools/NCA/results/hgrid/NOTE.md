@@ -45,7 +45,34 @@ crystals). This is exactly what G2's switches lacked.
 | **hybrid**: G2 rule + grid composition (`hybrid_g2/`) | **7/8** | 7.2 / 17.2 / 6.8 / 11.1 | 3/4 | 0.94 / 0.99 / 0.30 / 1.73 |
 | learned vote NCA (decision learned, templates designed), 2 versions | 3/8 | 7.2 / (puffer) / 9.3 / (puffer) | 0/4 | not run |
 | learned field NCA (whole 47-ch morphogen learned) | not scored | density error never got below "predict nothing" in 7 episodes | | |
-| G2 rule conditioned on grid samples, end-to-end (`hgrid_e2e.py`) | see below | | | |
+| **e2e**: G2 rule conditioned on 9 grid samples, fine-tuned with swarm_loss (`e2e/`, step 150 published; best step 1050) | 7/8 (1 seed) | 7.8 / 13.9 / 9.4 / 9.7 | 3/4 | -0.35 / 0.75 / 0.07 / n.a. |
+| **oracle + morph wave** (`oracle_wave/`) | 7/8 | as oracle | 3/4 | as oracle |
+
+### Seed variance (`seeds.json`, 4 rollout seeds each; one rollout moves the summed divergence by 10-20,
+### and the 8th test is unpassable - see below - so 7 is the ceiling)
+
+| model | mean tests | worst seed | mean summed divergence |
+|---|---|---|---|
+| G2 | 4.25 | 4 | 276.7 |
+| oracle (designed grid) | **7.0** | **7** | 166.0 |
+| hybrid (G2 + grid composition) | 6.75 | 6 | 200.0 |
+| e2e step 1050 | 6.5 | 6 | **162.0** (127-196) |
+
+Every seed of every hgrid model gets own-plan 4/4. The designed grid is the robust one (7 on every
+seed); fine-tuning the learned rule against the grid buys the best single runs (127, and 125 with the
+wave) but a seed in two drops a switch.
+
+### Morph wave (`hgrid_boid.WaveField`, `wave=1`)
+
+The grid's spatial layer finally does something only a grid can: each cell holds which plan it
+expresses. When the swarm's plan changes, the new plan nucleates in the cell where the new majority
+element is densest (where the survivors are) and spreads to neighbouring cells (p=0.08 per step,
+~60-steps to sweep a body; p=0.5 sweeps it in ~11 steps, too fast to read). The body re-forms behind
+the front. One rule made it work: the BREEDING budget is always the decided plan's whole template -
+a half-converted field asks for the old majority's element, breeds it back and reverses the switch
+(the first wave scored 6/8 for exactly that reason, the same failure as the learned vote NCA).
+Oracle+wave: 7/8 (summed 159-168 over runs); G2-e2e step 1050 + wave, no retraining: 7/8, summed
+124.9, switches 11.1 / 4.2 / 12.1 (the best switches of any model).
 
 Bodies come out at the plan's size and mix, not at the 280-slot cap (oracle: 196/192, 91/88, 185/179,
 80/76 tadpoles, element mixes within a few units of the plan; G2 runs every plan at 280). In the
@@ -116,4 +143,40 @@ after the cull, or cull Space with Time.
 
 ## Recommendation for the next round
 
-(to be completed)
+1. **Ship the two-level split, with the decision designed and the body learned.** The single biggest
+   lever found here is the grid's COMPOSITION control: wanted counts per (element, slot) class read off
+   a field; a class with room breeds, a class without does not, births cross over to the most-wanted
+   element at a small rate, misfits starve to crystals. Bolted onto G2 with no retraining it lifts
+   G2 from 4.25 to 6.75 tests (4-seed mean) and makes every body the plan's size and mix. Every other
+   direction in the portfolio that grows a body should borrow it (it is ~40 lines,
+   `FieldBoid._lay` + the starvation block, and needs only the plan templates).
+2. **Combine with the best per-tadpole learner, not the grid NCA.** Fine-tune that learner WITH the
+   grid in the loop, as `hgrid_e2e.py` does (9 grid samples as zero-init inputs, sticky labels,
+   G2's loss). Here it bought the best single runs (127, 125 with the wave) but higher variance than the
+   designed boid; give it a GPU-sized run and select checkpoints on a multi-seed eval (one rollout is
+   +-10-20 noise; `hgrid_seeds.py`).
+3. **Keep the plan DECISION designed** (majority element, optional hysteresis). Two learned decision
+   layers (vote NCA, full-field NCA) failed for a structural reason: the decision feeds the composition
+   it is judged on, so early mistakes become self-confirming. If a learned decision is wanted, train it
+   open-loop on clean inputs and only then close the loop, or give it an explicit latched memory cell.
+4. **Use the space the grid gives you for game feel, not for the decision**: the morph wave (switch
+   nucleates where the survivors are, sweeps the body), per-cell flow (wings beat, Time units run
+   laps), and the misfits' wither-to-crystal are what a player reads. Next: make the wave's front
+   visible (a colour/brightness channel the renderer reads), and let a vessel strike leave a wound
+   the field remembers for a while (a damage channel that slows regrowth) - "carve and watch it heal".
+5. **Fix the yardstick's dragonfly -> whale test** (unpassable by a faithful dragonfly; see above):
+   cull toward the plan the cull actually produces, or cull Space along with Time.
+
+## Reproduce
+
+```
+python Tools/NCA/hgrid_eval.py oracle [--set wave=1] --probe --out results/hgrid/oracle
+python Tools/NCA/hgrid_hybrid.py --probe
+python Tools/NCA/hgrid_e2e.py eval --ckpt Tools/NCA/results/hgrid/rule_e2e_01050.pt [--set wave=1]
+python Tools/NCA/hgrid_e2e.py train --run runs/hgrid_e2e --hours 2      # warm-starts from G2
+python Tools/NCA/hgrid_chain.py oracle --set wave=1
+python Tools/NCA/hgrid_seeds.py --seeds 4 --models g2,oracle,oracle_wave,hybrid,e2e:<ckpt>,e2e_wave:<ckpt>
+```
+Top-level `summary.json` / `rollout.json` / `probe.json` are the designed-grid (oracle) model; each
+subfolder holds its own model's files (`rollout.json` in the viewer's `swarm_nca.pack` format,
+`chain.json` = the four-creature chain).

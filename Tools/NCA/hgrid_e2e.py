@@ -62,7 +62,7 @@ class E2EModel:
         self.rule, self.cfg, self.shed = rule, cfg, shed
         self.world = rule.world
         self.targets = sn.load_targets()
-        self.oracle = hb.OracleField(self.targets, cfg)
+        self.oracle = (hb.WaveField if cfg.wave else hb.OracleField)(self.targets, cfg)
         self.boid = hb.FieldBoid(self.world, cfg, self.oracle, self.targets)
 
     def _grid(self, sw, live):
@@ -99,6 +99,10 @@ class E2EModel:
                 / torch.gather(de, 2, sw.elem[..., None]).clamp(min=0.2)
         extra = torch.cat([d_own[..., None], smp[..., 12:14], 4 * g_own, 4 * fe], -1)   # [B,N,9]
         want = Dd.flatten(2).sum(-1)
+        wf = getattr(self.oracle, "want_field", None)
+        if wf is not None:                       # wave: breeding budget = the decided plan's whole template
+            Wc = wf[:, :hc.NCLS].reshape(B, 4, 3, -1).sum(-1)
+            want = torch.stack([Wc[b][:, inv[b]] for b in range(B)]).reshape(B, 12)
         return extra, g, d_own, want, cls
 
     def __call__(self, sw, gen=None, fire=None):
@@ -112,6 +116,7 @@ class E2EModel:
         self.rule._extra = extra.detach().reshape(B * N, K).clamp(-10, 10)
         out = hb.HSwarm.lift(self.rule(sw, gen, bud=False, fire=fire))
         out.gplan, out.dmap = hsw.gplan.clone(), hsw.dmap.clone()
+        out.grid, out.gcen = hsw.grid, hsw.gcen          # the wave's per-cell plan state rides along
         with torch.no_grad():
             live = out.active & out.hatched
             lf = live.float()
@@ -150,7 +155,7 @@ def make(rule_path="results/swarm_coevo_g2/rule.pt", cfg=None):
 
 # ------------------------------------------------------------------ train ---
 
-def train(run, hours, init, cfg_b: hb.BoidCfg, lr=3e-4, per_kind=2, pool=12, bptt=24, roll_min=48, roll_max=80,
+def train(run, hours, init, cfg_b: hb.BoidCfg, lr=1.5e-4, per_kind=2, pool=12, bptt=24, roll_min=48, roll_max=80,
           p_switch=0.3, seed=0, eval_every=150):
     import hgrid_eval
     os.makedirs(run, exist_ok=True)

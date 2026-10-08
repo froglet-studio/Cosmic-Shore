@@ -1,0 +1,126 @@
+{
+ "g2": {
+  "rows": [
+   {
+    "seed": 7,
+    "tests": 5,
+    "own": 4,
+    "close": 274.02
+   },
+   {
+    "seed": 8,
+    "tests": 4,
+    "own": 4,
+    "close": 274.52
+   },
+   {
+    "seed": 9,
+    "tests": 4,
+    "own": 4,
+    "close": 280.84
+   },
+   {
+    "seed": 10,
+    "tests": 4,
+    "own": 4,
+    "close": 277.33
+   }
+  ],
+  "tests_mean": 4.25,
+  "tests_min": 4,
+  "close_mean": 276.7
+ },
+ "oracle": {
+  "rows": [
+   {
+    "seed": 7,
+    "tests": 7,
+    "own": 4,
+    "close": 160.84
+   },
+   {
+    "seed": 8,
+    "tests": 7,
+    "own": 4,
+    "close": 168.21
+   },
+   {
+    "seed": 9,
+    "tests": 7,
+    "own": 4,
+    "close": 167.87
+   },
+   {
+    "seed": 10,
+    "tests": 7,
+    "own": 4,
+    "close": 167.03
+   }
+  ],
+  "tests_mean": 7.0,
+  "tests_min": 7,
+  "close_mean": 166.0
+ },
+ "hybrid": {
+  "rows": [
+   {
+    "seed": 7,
+    "tests": 7,
+    "own": 4,
+    "close": 187.97
+   },
+   {
+    "seed": 8,
+    "tests": 7,
+    "own": 4,
+    "close": 192.56
+   },
+   {
+    "seed": 9,
+    "tests": 6,
+    "own": 4,
+    "close": 219.54
+   },
+   {
+    "seed": 10,
+    "tests": 7,
+    "own": 4,
+    "close": 199.78
+   }
+  ],
+  "tests_mean": 6.75,
+  "tests_min": 6,
+  "close_mean": 200.0
+ },
+ "e2e:runs/e2e_1050.pt": {
+  "rows": [
+   {
+    "seed": 7,
+    "tests": 7,
+    "own": 4,
+    "close": 127.06
+   },
+   {
+    "seed": 8,
+    "tests": 6,
+    "own": 4,
+    "close": 195.9
+   },
+   {
+    "seed": 9,
+    "tests": 7,
+    "own": 4,
+    "close": 135.5
+   },
+   {
+    "seed": 10,
+    "tests": 6,
+    "own": 4,
+    "close": 189.47
+   }
+  ],
+  "tests_mean": 6.5,
+  "tests_min": 6,
+  "close_mean": 162.0
+ }
+}

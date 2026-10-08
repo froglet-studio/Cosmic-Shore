@@ -101,6 +101,8 @@ class BoidCfg:
     starve_local: float = 0.0  # ... and the tadpole sits where its class is not wanted (local class deficit below this)
     hyst: float = 0.0          # the plan switches when another element leads the current plan's by > hyst * n
     animate: int = 1           # cycle the target's 8 frames (period steps each)
+    wave: int = 0              # 1: a plan switch spreads cell by cell from where the new majority is densest
+    wave_p: float = 0.08       # per-step chance a cell adopts the new plan when a face neighbour has it
     flow: int = 1              # the field also carries the plan's own motion (per-element mean velocity)
     k_flow: float = 4.0
     period: int = 8
@@ -130,6 +132,58 @@ class OracleField:
         kinds = [sn.KINDS[int(g)] for g in sw.gplan]
         frames = [int(c // cfg.period) % len(self.targets[k].frames) if cfg.animate else 0 for c, k in zip(sw.clock, kinds)]
         return self.pf.field(kinds, frames, centres)
+
+
+class WaveField(OracleField):
+    """The designed morphogen, made SPATIAL: each grid cell holds which plan it expresses. When the
+    swarm's plan (decide_plan) changes, the new plan nucleates in the cell where the new majority
+    element is densest and spreads to face neighbours with probability wave_p per step - a front that
+    sweeps the body. The field in each cell is that cell's plan's template, so the body re-forms (and
+    the new classes are wanted, i.e. breed) behind the front."""
+
+    def __call__(self, sw, centres, live, train=False):
+        cfg, B, G = self.cfg, sw.B, self.cfg.G
+        T = torch.stack([self.pf.field([k] * B, [int(c // cfg.period) % len(self.targets[k].frames) if cfg.animate else 0
+                                                  for c in sw.clock], centres) for k in sn.KINDS], 1)   # [B,4,K,G,G,G]
+        P = sw.grid
+        if P is None or P.dim() != 4 or P.shape[0] != B or bool((sw.clock == 0).any()) or sw.gcen is None:
+            P = sw.gplan.clamp(min=0)[:, None, None, None].expand(B, G, G, G).clone().float()
+            sw.gcen = centres.clone()
+        d = torch.round((centres - sw.gcen) / cfg.cell).long()
+        if bool((d != 0).any()):
+            P = torch.stack([_shift_fill(P[b], d[b], float(sw.gplan[b].clamp(min=0))) for b in range(B)])
+            sw.gcen = centres.clone()
+        for b in range(B):
+            want = float(sw.gplan[b].clamp(min=0))
+            Pb = P[b]
+            if bool((Pb == want).all()):
+                continue
+            has = (Pb == want).float()
+            if float(has.sum()) == 0:                       # nucleate where the new majority element is densest
+                e = sn.MAJOR[sn.KINDS[int(want)]]
+                frame = hc.GridFrame(centres[b:b + 1], G, cfg.cell)
+                m = (sw.elem[b:b + 1] == e) & live[b:b + 1]
+                dens = hc.splat(frame, sw.pos[b:b + 1].detach(), m[..., None].float())[0, 0]
+                i = int(dens.argmax()); Pb.view(-1)[i] = want
+                has = (Pb == want).float()
+            nb = F.max_pool3d(has[None, None], 3, 1, 1)[0, 0] > 0      # (26-neighbourhood front)
+            flip = nb & (Pb != want) & (torch.rand(Pb.shape, generator=None) < cfg.wave_p)
+            Pb[flip] = want
+        sw.grid = P
+        # the BREEDING budget is always the decided plan's whole template: a field that is half old plan
+        # mid-wave would ask for the old majority's element, breed it back and reverse the switch
+        self.want_field = T[torch.arange(B), sw.gplan.clamp(min=0)]
+        oh = F.one_hot(P.long(), 4).permute(0, 4, 1, 2, 3).float()          # [B,4,G,G,G]
+        return (oh[:, :, None] * T).sum(1)
+
+
+def _shift_fill(g, d, fill):
+    Gs = g.shape[-1]
+    out = torch.full_like(g, fill)
+    src = [slice(max(0, int(x)), Gs + min(0, int(x))) for x in d]
+    dst = [slice(max(0, -int(x)), Gs - max(0, int(x))) for x in d]
+    out[dst[0], dst[1], dst[2]] = g[src[0], src[1], src[2]]
+    return out
 
 
 def decide_plan(sw: HSwarm, live, cfg: BoidCfg, targets):
@@ -210,6 +264,10 @@ class FieldBoid:
         g_tot = gd[:, :, 12]
         # a class the plan has no room for anywhere follows the all-class field only
         wanted_cls = Dd.flatten(2).sum(-1)                                        # [B,12]
+        wf = getattr(self.field_fn, "want_field", None)
+        if wf is not None:
+            Wc = wf[:, :hc.NCLS].reshape(B, 4, 3, -1).sum(-1)                     # [B,4,3 slots]
+            wanted_cls = torch.stack([Wc[b][:, inv[b]] for b in range(B)]).reshape(B, 12)
         niche = torch.gather(wanted_cls, 1, cls) > 0.5
         v = cfg.k_class * g_own * niche[..., None].float() + cfg.k_total * g_tot
         if D.shape[1] > hc.FIELD_C and cfg.k_flow:
@@ -322,4 +380,4 @@ def make_oracle(cfg=None, world=None):
     cfg = cfg or BoidCfg()
     world = world or sn.World()
     targets = sn.load_targets()
-    return FieldBoid(world, cfg, OracleField(targets, cfg), targets)
+    return FieldBoid(world, cfg, (WaveField if cfg.wave else OracleField)(targets, cfg), targets)
