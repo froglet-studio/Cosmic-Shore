@@ -238,9 +238,10 @@ no behaviour.
 ## Every fold leaves a PAIR OF GATES standing (2026-09-25)
 
 > **Superseded 2026-10-08 — the gates became WORMHOLES** (§ "The gates became wormholes", at the
-> end). The rules below — a pair per fold, domain-locked, replaced only by the next fold, laid from
-> replicated poses, owner-detected — all stand; the RING, its disc window and the planar geometry
-> are gone.
+> end). The rules below — a pair per fold, replaced only by the next fold, laid from replicated
+> poses, owner-detected — all stand; the RING, its disc window and the planar geometry are gone.
+> **The domain LOCK is gone too** (§ "Anyone rides; rivals pay a toll", at the end): a pair now
+> carries every pilot and strips a rival's petals instead of refusing them.
 
 A fold now opens **two portals** — one where the vessel left, one where it arrived — and they stay
 open. Any vessel of the Butterfly's **domain** threads either and is at the other, as often as it
@@ -565,7 +566,8 @@ one blooms); no lifespan; each machine tests only the vessels it owns and writes
 `SetPose`; a transit carries the pose through as a pure translation, rotation and speed untouched;
 it is a teleport, so it still cannot thread a race ring.
 
-**Domain, kept and made visible.** The pair is `DomainLocked` to the placer's domain. A pilot of that
+**Domain, kept and made visible.** *(The lock below was replaced later the same day by a toll —
+§ "Anyone rides; rivals pay a toll".)* The pair is `DomainLocked` to the placer's domain. A pilot of that
 domain flies into either mouth and out of the other, and sees the far side through it — the EXACT
 view (their own camera carried through the pair) up close, the partner's all-directions PANORAMA
 further out. To a viewer whose camera follows a pilot of any other domain the mouth is **sealed**: no
@@ -593,8 +595,8 @@ per frame across every mouth on screen, plus one panorama face per mouth whose p
 not fully exact. A sealed mouth costs nothing.
 
 **Follow-ups carried over** (the list above, renamed): no HUD marker for a standing pair
-(`WormholeMouth.Live` filtered by `DomainLocked`/`Domain` is the roster one would read); an AI never
-uses one.
+(`WormholeMouth.Live` filtered by `DomainTolled`/`Domain` is the roster one would read); an AI never
+uses one on purpose.
 
 ### Playtest 1 (2026-10-08): "the Butterfly made no wormholes"
 
@@ -615,3 +617,69 @@ target, a camera rig that is not a `CustomCameraController`) was treated as a ri
 to a ring: the pair is named `FoldWormhole::<pilot>::A` / `::B` in the Hierarchy; a `FoldGate::…`
 object would mean the editor is running pre-wormhole scripts (check the Console for compile errors).
 
+## Anyone rides; rivals pay a toll (2026-10-08)
+
+Requested by the owner: *"the butterfly wormhole portals should allow anyone through but if players
+are not the domain of the wormhole the wormhole strips away elemental crystal petals from the vessel
+and leaves them as elemental crystals at the surface of the wormhole."*
+
+**What changed.** The pair is no longer domain-LOCKED; it is domain-TOLLED
+(`WormholeMouth.Settings.DomainTolled`, set by `FoldActionExecutor.BuildGate`).
+
+- **Every pilot is carried**, of any domain — `WormholeMouth.Update` no longer filters on domain, and
+  `CanCarry` is gone.
+- **Every viewer sees through it.** The per-viewer seal (`WormholeView`'s viewer-domain resolve,
+  `WormholeMouth.Sealed`) is deleted: a view through is a promise you can go there, and now everybody
+  can. Only an unpaired, withering mouth still draws sealed. The rim keeps the Butterfly's domain hue,
+  which now reads as *whose road this is — and who rides it free*.
+- **A rival pays.** A pilot not of the mouth's domain loses `rivalTollPetalsPerElement` petals from
+  each element per transit (`WormholeMouth.LevyToll`), and they are left on the surface of the mouth
+  they went IN by as free-for-all elemental crystals — one per petal, spilled over a 30° cap around
+  the entry point and thrown radially out (`ElementalCrystalEjector.ShedOntoSphere`). The Butterfly
+  never pays, its domain never pays, and an unreadable pilot rides free (positive evidence only,
+  vessel skill §4.ac). `WormholeTollTests` pins all four.
+
+**Why the petals stay at the ENTRY mouth.** The rival comes out of the far mouth, so the spill is
+behind them — the price is real, not something they scoop back up on the way out. It sits on the
+Butterfly's side of the shortcut, where its team can harvest it; but it is free-for-all (lime, the
+platform's ejection stance), so anyone — the rival included, if they turn back through and pay again —
+may collect it.
+
+**Conservation and networking.** The take is `ResourceSystem.AccrueElementalLoss` under the new
+`ElementalDebuffSources.WormholeToll` class (clamped to what is held, whole petals, warded only by an
+"everything" grant), and every petal becomes exactly one crystal — an EJECT in
+`Docs/ELEMENTAL_ECONOMY.md`'s terms, never a burn. It runs on EVERY peer from
+`TeleportContinuity.OnTeleported` (where every pose write lands and the transit is already resolved
+to cut the ribbons), because the mouth's own `Transit` runs only on the vessel's owner and elemental
+levels are simulated per peer. Crystals are per-peer local objects, as every ejected petal is.
+
+**Is carrying a rival "moving an opposing vessel"?** No — `ELEMENTAL_ECONOMY.md` §9's law is about a
+weapon aimed at a pilot; a standing wormhole is ARENA the rival elects to fly into, exactly as a
+danger prism is. Nothing pulls anyone in.
+
+**Tuning (`ButterflyFoldAction.asset`, authored by `Tools/Build/author_wormholes.py`).**
+
+| Knob | Shipped | What it does |
+|---|---|---|
+| `rivalTollPetalsPerElement` | 15 | Petals stripped from EACH element per transit, clamped to what is held. 15 = the whole flower, overcharge included; 0 = everyone rides free. |
+| `rivalTollShedSpeed` | 25 | u/s the crystals leave the surface at; they settle ≈ speed / 1.8 u out (~14 u). Floored at 12. |
+| `WormholeMouth.TollSpreadDegrees` (code const) | 30° | How far round the mouth from the entry point the spill scatters. |
+
+**Files.** `WormholeMouth.cs` (`OwesToll`, `LevyToll`, `Settings.DomainTolled/TollPetalsPerElement/
+TollShedSpeed`), `WormholeView.cs` (seal removed), `TeleportContinuity.cs` + `VesselTransformer.SetPose`
+(the every-peer call), `ElementalCrystalEjector.ShedOntoSphere`, `ElementalDebuffSources.WormholeToll`,
+`FoldActionSO` (two knobs), `FoldActionExecutor.BuildGate`, `WormholeTollTests`.
+
+### In-editor verification
+
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Butterfly wormholes carry anyone; rivals pay petals".
+
+### Follow-ups
+
+- **The price is invisible until paid.** Beyond the rim's hue nothing tells a rival what threading
+  costs. A toll cue (a HUD line, a distinct transit sound for a paying pilot — a new empty FMOD slot)
+  is the obvious next step if playtest shows rivals feel ambushed.
+- **The whole-flower default is a first guess at the owner's wording** ("strips away … petals"). If
+  it plays as a de-facto lock, drop `rivalTollPetalsPerElement` to a few petals and the pair becomes
+  a priced shortcut instead.
+- **An AI does not steer round a rival pair**, so bots on a course through one will pay every time.

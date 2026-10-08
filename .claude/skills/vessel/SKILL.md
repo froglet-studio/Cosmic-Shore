@@ -802,9 +802,11 @@ is now a different mode, and the doc's measured ladder is the first thing to go 
 
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
-Some placed objects look different to different pilots: the Butterfly's fold wormhole shows a
-view through only to its own domain, and to a rival it is a sealed, domain-coloured outline
-(`WormholeView`, `BUTTERFLY_FOLD.md` § "The gates became wormholes"). The first cut decided
+Some placed objects look different to different pilots: the Butterfly's fold wormhole first
+showed a view through only to its own domain, and to a rival a sealed, domain-coloured outline
+(`WormholeView`, `BUTTERFLY_FOLD.md` § "The gates became wormholes" — since replaced by a TOLL:
+anyone rides and sees through, and a rival pays petals, `WormholeMouth.OwesToll`, which keeps
+both rules below). The first cut decided
 "rival" whenever the VIEWER's domain could not be resolved (no follow target, a camera rig that
 is not a `CustomCameraController`) and compared against a domain CAPTURED at placement — so the
 pilot's own pair rendered sealed, and the first playtest reported "the Butterfly made no
@@ -822,6 +824,17 @@ And one playtest rule: **when a replacement's degraded state looks like the thin
 "new code misbehaving" and "old code still running". Give the replacement a distinguishable
 GameObject name (`FoldWormhole::<pilot>::A`, the old gates were `FoldGate::…`) and tell the
 tester to check the Hierarchy — one look separates the two.
+
+
+**A consequence of a TELEPORT that changes shared state must run where EVERY peer sees the jump,
+not where the owner decides it.** A wormhole's `Transit` (and any owner-side detector like it) runs
+only on the machine that owns the vessel; the pose then replicates through `SetPose`, and
+`VesselTransformer.SetPose` -> `TeleportContinuity.OnTeleported` is the one place every machine
+sees that jump, already resolving WHICH mouth it went through (`WormholeMouth.TryResolveTransit`).
+Elemental levels are simulated per peer, so the rival toll (`WormholeMouth.LevyToll`, 2026-10-08)
+is levied there: putting it in `Transit` would have stripped petals on the owner only and desynced
+every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
+server re-broadcasts to everyone else), so a hook there fires once per machine.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

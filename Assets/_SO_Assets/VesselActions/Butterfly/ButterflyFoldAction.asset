@@ -22,6 +22,8 @@ MonoBehaviour:
   minGateSeparation: 300
   gateBloomSeconds: 0.45
   gateSettleSeconds: 0.75
+  rivalTollPetalsPerElement: 15
+  rivalTollShedSpeed: 25
   portalWindowRange: 2500
   portalWindowRenderScale: 0.75
   portalWindowFadeBand: 600

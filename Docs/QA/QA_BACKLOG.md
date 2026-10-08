@@ -1,17 +1,19 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-**Generated:** 2026-10-05 (arcade/arena matrix pass) · **Scan covers:** PR bodies for merges up
-to `3ba8ea1d2` (PRs #583–#956, the 2026-10-05 refresh in PR #961), plus a full sweep of every
-launchable Arcade and Arena card, its mode doc's verification section, and the per-vessel entries
-in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, against `bleeding-edge` at `bf0015838`.
+**Generated:** 2026-10-05 (arcade/arena matrix pass), **refreshed 2026-10-06** for PRs #971–#976
+· **Scan covers:** PR bodies for merges up to `3ba8ea1d2` (PRs #583–#956, the 2026-10-05 refresh
+in PR #961), plus a full sweep of every launchable Arcade and Arena card, its mode doc's
+verification section, and the per-vessel entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
+against `bleeding-edge` at `bf0015838`; **plus** PRs #971–#976 at `71d67ba9b` (six new Block P
+items). PRs #964–#970 are merged too: the "Known, do not fail on" lines they made untrue are
+corrected below, but their own Editor checks are not yet items.
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
-> **11 parallel PRs are landing alongside this list** (from the same 2026-10-05 audit): mode
-> generator gates, Wildlife Liberation / Tollway fixes, objective arrows, toasts, registration
-> drift, the Urchin HUD, hull ability rows, Urchin AI, the fleet AI boost, Hijack replication,
-> and audio slots. Each will add Editor checks of its own. They go in the clearly marked
-> **Block P** at the end of Priority 0 — not into the blocks below — and until each merges, the
-> "Known, do not fail on" lines in the mode items tell you which gaps not to fail a mode for.
+> **The 11 parallel PRs from the same 2026-10-05 audit have all merged (#964–#976, 2026-10-06).**
+> Six of them now have their own items in **Block P** at the end of Priority 0: the Urchin HUD,
+> hull ability rows, Urchin AI, the fleet AI boost, Hijack replication and toasts. The mode items
+> above Block P no longer excuse those gaps: a missing Urchin ability row, a missing pop-up
+> message where a mode now has one, or a missing objective arrow is now a real failure.
 
 **Why this list is laid out in blocks.** The audit found that of 31 launchable arcade/arena
 cards, **16 had never been opened in Unity** and **11 more had only a partial pass** (one rung,
@@ -31,8 +33,8 @@ has its own item, and each hull's open vessel checks sit next to the modes that 
 | F | Dolphin hull (10 red entries) + Rampage rungs 1–3, The Bends, Switchback | 7 cards; its forest is shared by four modes | 9 |
 | G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
 | H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
-| I | Urchin hull + Skein, Hijack | Least finished; waits on the Urchin HUD/AI PRs | 3 |
-| P | Reserved for the 11 parallel PRs | Filled as they merge | — |
+| I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
+| P | The parallel PRs' own Editor checks (#971–#976) | Merged 2026-10-06, never opened in Unity | 6 |
 
 Priority 1 and 2 (platform, ecology, toys, UI, the other vessels) follow unchanged.
 
@@ -106,10 +108,9 @@ or scene.
 **FAIL:** a card missing from either grid · a card that does nothing when clicked · a
 launch that hangs on the connecting panel or the countdown · the wrong ship spawning · a
 red error naming a mode, controller, scene or `Missing (Mono Script)`.
-**Known, do not fail on:** the Urchin has no ability icons at the bottom of the screen (no
-HUD yet); many modes show no pop-up messages ("toasts") and several have no objective
-arrow — both are being added by parallel PRs (see the reserved section at the end of the
-mode blocks); the Butterfly, Manta, Urchin, Scarab and Serpent are silent or nearly silent.
+**Known, do not fail on:** the Butterfly, Manta, Urchin, Scarab and Serpent are silent or nearly
+silent. (The Urchin now HAS ability icons, and the modes now have their pop-up messages and
+arrows - those are checked in Block P and the mode items, not here.)
 
 ### QA-BUILD-WINDOWS-PLAYER ⬜ — a Windows IL2CPP player reaches the main menu
 **Source:** PRs #688, #690, #692, #693, #698, #699. **Why P0 and why it is separate
@@ -402,8 +403,9 @@ hull that never animates · a juke that does not spin, or a bank that never come
 any visible effect from holding the left trigger or B/R · a disc of prisms filling the ring
 · a morph that snaps · a missing-script row.
 **Known, do not fail on:** the silhouette is a placeholder ("a low-poly scarab, not a
-floating-parts spaceship") — do not file the look itself. The Scarab's ability icons are
-the **Sparrow's** sprites (a known art gap). The juke has no sound (`jukeWhooshEvent` is
+floating-parts spaceship") — do not file the look itself. The Scarab's four ability icons are
+white **placeholder** outlines (a blast, a ring, a ball, a dial) waiting for final art; they
+must NOT be the Sparrow's missiles/bullet/boost pictures any more (QA-HULL-ABILITY-ROWS). The juke has no sound (`jukeWhooshEvent` is
 empty on purpose). Raising Mass to 5 does nothing visible to the ring ("Armored Switch" has
 no new home yet).
 **Report a number:** select the Scarab's hull object (`SparrowModel1`) and write down its
@@ -695,8 +697,9 @@ reaching a heart withers the plant and collects the heart for you; AI fly erosio
 dense rival mass; the match ends at 600 with forest still standing.
 **FAIL:** dust that never scores · own-colour mass scoring or being destroyed · a heart that
 is not collected · AI that never dust · a match that strips the forest bare before ending.
-**Known, do not fail on:** no objective arrow (the forest rings the whole cell — by design, like
-Cleave); silence.
+**Known, do not fail on:** silence. (Sirocco now HAS an objective arrow, added 2026-10-06: it
+points at the densest standing forest of another team's colour, never at the crystal. A missing
+arrow, or one pointing at the crystal, is a failure.)
 **Report:** match length at intensity 1 (600 is unmeasured).
 
 ## Priority 0 — Block C: the Arena screen — four multi-hull cards and the pilot swap
@@ -736,10 +739,9 @@ menu ship starts at rest.
 **FAIL:** a failing test · a hull missing or drawn as a white square · the select button
 over Play · a course that does not build · flowers that ignore the seeded levels · host and
 guest disagreeing.
-**Known, do not fail on:** AI Sparrows, Serpents, Dolphins and Scarabs **finish but never
-win** — only the Manta and Rhino AI can boost (fleet AI gap; a parallel PR is boosting it).
-The Urchin shows no ability icons. Hull speeds still spread about 5–6× even with the seeded
-elements.
+**Known, do not fail on:** hull speeds still spread about 5–6× even with the seeded elements.
+(AI Sparrows, Serpents, Dolphins and Scarabs now boost on the straights - QA-AI-BOOST-POLICIES
+checks that and records lap times; the Urchin now shows its ability icons.)
 
 ### QA-BROADSIDE-ARENA ⬜ — "Broadside", the seven-hull brawl, has never been opened
 **Source:** `GameModes.Broadside = 57`, in Dog Fight's Boneyard. Authored headless with **one
@@ -770,7 +772,7 @@ winner.
 **FAIL:** a hull whose weapon passes through a rival and scores nothing · any hit scoring a
 different price than listed · a Rhino blade scoring every frame · the Serpent offered.
 **Known, do not fail on:** the Dolphin is the weakest seat (its cone needs a crystal); the
-Rhino's sword drains no elements; the Urchin shows no ability icons.
+Rhino's sword drains no elements.
 **Report:** which hulls feel strongest and weakest, and whether each AI's weapon reads as a
 real attack (the Urchin's spike tap in particular).
 
@@ -799,8 +801,7 @@ message; out-laying flips the core; an empty core scores nobody; the match ends 
 **FAIL:** a wave that never scores · a wave scoring for a team that holds nothing · the
 first wave arriving before the countdown ends · a 3v3 that spawns pilots inside each other ·
 scores that disagree between machines.
-**Known, do not fail on:** no objective arrow (a parallel PR adds one); the creatures
-themselves may differ slightly between machines (they are local) — only the score must agree;
+**Known, do not fail on:** the creatures themselves may differ slightly between machines (they are local) — only the score must agree;
 the card's preview window may show a stale layout.
 
 ### QA-ASTROLEAGUE-REWORK ⬜ — blade strikes, the fauna pen, the smaller court, the settling ball
@@ -829,7 +830,7 @@ the ball and score.
 **FAIL:** a parked sword firing the ball · a ball that never settles or that stops dead
 · fauna untouchable anywhere on the pitch · a missing cage at some intensity · no strike
 feedback · a hull that cannot move the ball.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them; the card
+**Known, do not fail on:** the card
 preview's objective text reads "Crush Ballz , bruh." (copy drift, logged); the match has no
 authored goal target row (it ends on its own rule).
 **Judgement calls to report (each a one-field edit on `AstroLeagueSettings.asset`):**
@@ -856,8 +857,8 @@ self-reassigns team; a contested hull pick resolves to exactly one player.
 **FAIL:** a swap that moves the camera but not input (or vice versa) · a `[PilotSwap]`
 warning · an AI changing team on its own · both guests getting the same hull · a swap
 that throws.
-**Known, do not fail on:** swapping **into the Urchin** shows no ability row (it has no
-HUD prefab yet); a swap gives no toast — the camera move is the only feedback.
+**Known, do not fail on:** a swap gives no toast — the camera move is the only feedback.
+(Swapping into the Urchin now shows its four-icon ability row; a missing row is a failure.)
 
 ## Priority 0 — Block D: Maelstrom — the tournament across the modes above
 
@@ -1239,7 +1240,6 @@ has 4 fixed white crystals.
 **FAIL:** destruction not scoring · a refill from an opponent's crystal, or no refill from a
 teammate's · refills failing in one direction only between machines · AI orbiting enemy
 pilots · Dog Fight's crystal count changed.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them.
 **Report:** match length at intensity 1, and roughly how much destruction came from rockets
 versus guns.
 
@@ -1283,7 +1283,6 @@ plugs; baselines match the doc's table; Switchback unchanged.
 **FAIL:** no arena, or stations near the spawns · a method that does not score · stations
 counting out of order · a near miss counting · the team box summing pilots · an AI stuck at a
 plug · Replay rebuilding the same course · Switchback changed.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them.
 **Report:** the station count shown in the score row and the finish time at intensity 1.
 
 ### QA-WILDLIFE-LIBERATION ⬜ — "Wildlife Liberation" has never been opened
@@ -1335,8 +1334,9 @@ regardless of their pick.
 a counter ticking per prism · score moving for a starvation or a shark kill · creatures
 clumped at the arena centre or wandering between rooms · a flat population three minutes
 in · a non-Sparrow vessel spawning on either machine.
-**Known, do not fail on:** the **Clawfish** cannot be hunted (it has no heart prism —
-logged); no objective arrow and no pop-up messages ("toasts") — parallel PRs add both.
+**Known, do not fail on:** nothing from the 2026-10-05 list any more: the Clawfish is now
+hunted (shoot a tail rib to kill it), the objective arrow points at the nearest creature, and
+the pop-up messages are authored. Their absence is now a failure.
 **Report:** how long 30 kills takes, so the target can be set from a real number.
 
 ## Priority 0 — Block F: the Dolphin — 10 red vessel entries and its three modes
@@ -1576,7 +1576,6 @@ same prism count (a client log line `IntensityWise config choice DEFERRED` once 
 **FAIL:** a non-Dolphin ship · a forest that stops far short or overruns · rungs that look the
 same · a client showing a fraction of the host's prisms (a known race that must not regress) ·
 anonymous (unscored) blast kills.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them.
 **Report numbers — the point of the item:** volume and prism count per rung, and match time per
 rung. The old model said about **569k / 3,500** at intensity 1 and **1.62M / 9,830** at 4.
 
@@ -1608,9 +1607,9 @@ reads "N bends" correctly on every machine and Replay resets to 0.
 **FAIL:** flowers that never drop (the wiring is broken — stop, nothing else matters) · a client
 bend scoring 2 or 0 · an AI that never lands a hit in two minutes · a match that ends in two
 hits.
-**Known, do not fail on:** no objective arrow in this mode itself (its arrow exists and other
-modes borrow it — a parallel PR wires it here); the card preview says "Shoot your Echo" (the
-mode has no guns; copy drift, logged).
+**Known, do not fail on:** the card preview says "Shoot your Echo" (the mode has no guns; copy
+drift, logged). (The objective arrow is now wired here: it points at the nearest rival pilot,
+never a teammate.)
 **Report:** whether a 3-bend match feels too abrupt.
 
 ### QA-SWITCHBACK-MODE ⬜ — "Switchback" has never been opened
@@ -1645,7 +1644,6 @@ Gates Left" for losers, and Replay resets to 0/20; rings are smaller and the cou
 4; every Arcade card is drawn and the last one opens, with no `ArcadeExploreView` error.
 **FAIL:** no rings · out-of-order or near-miss gates counting · the team box summing pilots ·
 a shared lime ring across machines · an AI circling a ring · a missing or unopenable last card.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them.
 
 ## Priority 0 — Block G: the Rhino — Cleave and Headlong
 
@@ -1732,8 +1730,10 @@ specific:** a road you cannot find from spawn, a cut that keeps dropping while y
 one, a road that ROLLS about its own travel direction (that is the Twistbands' job, not
 this rung's), danger on an inside verge or on a straight, or a road folding through itself
 at the inside of a bend.
-**Known, do not fail on:** no objective arrow and no pop-up messages ("toasts") —
-parallel PRs add both; the Rhino shows no ability icons (0 of 4 bound).
+**Known, do not fail on:** the Rhino's ability row shows two LOCKED cards (the 1st and 3rd)
+- those are open design slots with no ability yet; the other two icons are white placeholders.
+(The objective arrow and the pop-up messages now exist; the arrow points at a dense part of the
+arena and moves at most every 1.5 s.)
 
 ### QA-HEADLONG-MODE ⬜ — "Headlong" (the Rhino's circuit) has never been flown
 **Source:** PR #852. `GameModes.Headlong = 49`, Rhino-only closed circuit (8 rings a lap, **24**
@@ -1761,8 +1761,8 @@ more than one lap; both machines see the same circuit and no crossing counts twi
 unchanged.
 **FAIL:** a non-Rhino ship · a circuit that never arrives · "finished" after one lap · an AI stuck
 after lap 1 · a crossing credited twice.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them; the Rhino
-shows no ability icons (0 of 4 bound; tracked separately).
+**Known, do not fail on:** the Rhino's ability row shows two LOCKED cards (the 1st and 3rd)
+- open design slots; the other two icons are white placeholders (QA-HULL-ABILITY-ROWS).
 **Report:** whether the graded ramp feels too forgiving or too punishing (dial:
 `straightnessGraceBand`).
 
@@ -1793,7 +1793,7 @@ straights, lifts in corners and completes more than one lap; a fast client's cro
 dropped; Headlong unchanged; AI Mantas elsewhere still fly normally.
 **FAIL:** a non-Manta ship · "finished" after one lap · a fast crossing dropped as implausible ·
 an AI that never lifts or never finishes a lap · AI Mantas in other modes behaving oddly.
-**Known, do not fail on:** no pop-up messages ("toasts") — a parallel PR adds them; the Manta is
+**Known, do not fail on:** the Manta is
 silent (its six sting sound slots are empty); the card preview is an empty shell.
 
 ### QA-BLOOMRUSH-MODE ⬜ — "Bloomrush" has never been compiled or played in Unity
@@ -1825,8 +1825,9 @@ by design until audio lands.
 
 ## Priority 0 — Block I: the Urchin — the hull, Skein and Hijack
 
-Last because the Urchin has no ability icons and no working AI yet (both are landing in
-parallel PRs — see Block P); re-run this block once those merge. The vessel item first.
+Last because the Urchin was the least finished hull. Its HUD, its AI and Hijack's replicated
+arena all merged 2026-10-06 and have their own items in Block P (QA-URCHIN-HUD, QA-URCHIN-AI,
+QA-HIJACK-OWNERSHIP-SYNC); run those first, then this block. The vessel item first.
 
 ### QA-URCHIN-VESSEL ⬜ — the Urchin's spikes, trail ride, launch and Track Projector
 **Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Urchin revival — chain-reaction spikes +
@@ -1859,9 +1860,8 @@ cooldown; the Urchin rolls across a surface flora.
 **FAIL:** a missing executor or binding · no latch, or a frozen ride · parking at a ribbon's end ·
 re-latching to the same ribbon at once · a tap that bursts, or a hold that fires nothing · a burst
 after a mid-hold swap · a track that lands behind you or never cools down.
-**Known, do not fail on:** **no ability icons** (the Urchin has no HUD — a parallel PR adds one);
-three sound slots are empty; the AI cannot spike, track or ride (a parallel PR adds Urchin AI);
-in multiplayer, chain depth and reach may differ between machines (backlog U1) and a remote steal
+**Known, do not fail on:** the four ability icons are white placeholders (art pending); three
+sound slots are empty; in multiplayer, chain depth and reach may differ between machines (backlog U1) and a remote steal
 does not debit the victim's count (U2).
 
 ### QA-SKEIN-MODE ⬜ — "Skein": the intensity ladder and the AI Urchin have never been verified
@@ -1891,15 +1891,17 @@ machines agree on counts.
 **FAIL:** rings at intensity 1 that are behind you when you pass the previous one · a collar
 that misses a strand · AI that orbit, stall on the cable, or never finish (no solo play) · a
 match that never ends.
-**Known, do not fail on:** no pop-up messages ("toasts"); no Urchin ability icons; both are
-being added by parallel PRs.
+**Known, do not fail on:** the Urchin's ability icons are white placeholders. (Skein now has
+pop-up messages - halfway, lead change, home stretch - and AI Urchins that Slip off wrong strands
+and spike rival ones; see QA-URCHIN-AI.)
 **Report:** match length, and whether 24 rings is the right course length.
 
 ### QA-HIJACK-MODE ⬜ — "Hijack" has never been opened (score agrees; the arena will not)
 **Source:** `GameModes.Hijack = 46`, Urchin steal race on the Switchyard (rail thirds and
 spiked "burrs"); first team to **750** stolen wins. "Nothing … has been run in the Unity editor."
-**Prism ownership is not replicated**, so ride speed, the objective arrow and AI rail choice can
-differ on each machine in a mode scored on ownership — the least finished live mode. Reference:
+Prism ownership in the Switchyard **is replicated since PR #972** (QA-HIJACK-OWNERSHIP-SYNC
+covers the two-machine checks); before it, ride speed, the objective arrow and AI rail choice
+differed on each machine. Reference:
 `_Scripts/Controller/Arcade/HIJACK.md` § 9.
 
 1. Open `MinigameHijack.unity`: four Switchyard configs on **Intensity Wise**; `rule =
@@ -1925,34 +1927,240 @@ crystal; a trailing team's flowers fill about 3 levels; the match ends at 750 wi
 the **scores agree** on both machines; freestyle Urchin unchanged.
 **FAIL:** stealing that does not score · own-colour riding that scores · a launch that needs
 steering to hit the burr · AI that orbit or crawl · scores that differ between machines.
-**Known, do not fail on:** rail colours, ride speeds and the arrow **may differ between machines**
-— the arena is not replicated yet (a parallel PR adds Hijack replication; do not fail the item on
-the arena, only on the score); no Urchin ability icons; no pop-up messages ("toasts").
+**Known, do not fail on:** a rail prism's SHIELD may differ between machines (shields are not
+replicated), so a steal refused on one machine may land on another; the Urchin's ability icons
+are white placeholders. Rail colours, ride speeds and the arrow must now AGREE between machines.
 
-## Priority 0 — Block P: reserved for the 11 parallel PRs now landing
+## Priority 0 — Block P: the parallel PRs' own checks (merged 2026-10-06)
 
-**Nothing in this section is a test item yet.** Eleven PRs from the same 2026-10-05 audit are
-landing in parallel with this backlog, and each will add Editor checks of its own. When each one
-merges, the next `/qa-backlog` run turns its PR body's "Needs Editor verification" section into
-items **here** (or folds them into the mode/vessel item named below, under the same ID), and
-removes the matching "Known, do not fail on" line from the items above. Until then, testers
-should **not** fail a mode for the gaps these PRs close.
+All eleven PRs from the 2026-10-05 audit have merged. The six below (#971–#976) have their
+items in this block; their "Known, do not fail on" lines have been removed from the items above.
+The other five (#964–#970) have no items of their own yet - the lines they made untrue are
+corrected above, and their checks wait for the next `/qa-backlog` run.
 
 | Parallel PR (subject) | What it changes | Items whose "Known, do not fail on" lines it retires |
 |---|---|---|
 | Mode generator gates | Generators stop reverting rendered card art and stop emitting the retired call-to-action key | none in play (offline gates); spot-check card art in QA-ARCADE-ROSTER-SMOKE |
 | Wildlife Liberation / Tollway | Kill target vs doc, Clawfish heart, Tollway flora-family check | QA-WILDLIFE-LIBERATION, QA-TOLLWAY-MODE |
 | Objective arrows | Arrows for Bends, Cleave, Sirocco, Wildlife Liberation, Brood Rush, Scurry (+ Maelstrom lobby) | QA-BENDS-MODE, QA-CLEAVE-MODE, QA-SIROCCO-MODE, QA-WILDLIFE-LIBERATION, QA-BROODRUSH-ARENA |
-| Toasts | Pop-up message configs for Rampage, Cleave, Salvo, Switchback, Headlong, Redline, Breakwater, Skein, Hijack, Wildlife Liberation, Astro League | every mode item that lists "no pop-up messages" |
+| Toasts — **merged #976** → QA-MODE-TOASTS | Pop-up message configs for Rampage, Cleave, Salvo, Switchback, Headlong, Redline, Breakwater, Skein, Hijack, Wildlife Liberation, Astro League | every mode item that listed "no pop-up messages" (retired) |
 | Registration drift | Scarab class list, Butterfly class icons, orphan scenes/cards, retired keys, stale preview copy | QA-SCARAB-VESSEL, QA-BUTTERFLY-VESSEL, QA-ASTROLEAGUE-REWORK, QA-BENDS-MODE |
-| Urchin HUD | A four-icon ability row for the Urchin | QA-URCHIN-VESSEL, QA-SKEIN-MODE, QA-HIJACK-MODE, QA-ARENA-PILOT-SWAP, QA-REGATTA-ARENA |
-| Hull ability rows | Missing/borrowed icons on the Rhino, Serpent, Scarab rows | QA-SCARAB-VESSEL, QA-CLEAVE-MODE, QA-HEADLONG-MODE |
-| Urchin AI | AI Urchins that spike, track and ride (Skein/Hijack backfill and solo play) | QA-URCHIN-VESSEL, QA-SKEIN-MODE, QA-HIJACK-MODE |
-| Fleet AI boost | AI boost for the hulls that cannot use it today (Regatta: Sparrow, Serpent, Dolphin, Scarab) | QA-REGATTA-ARENA |
-| Hijack replication | Prism ownership replicated, so ride speed, arrow and AI rail choice agree across machines | QA-HIJACK-MODE |
+| Urchin HUD — **merged #973** → QA-URCHIN-HUD | A four-icon ability row for the Urchin | QA-URCHIN-VESSEL, QA-SKEIN-MODE, QA-HIJACK-MODE, QA-ARENA-PILOT-SWAP, QA-REGATTA-ARENA (retired) |
+| Hull ability rows — **merged #971** → QA-HULL-ABILITY-ROWS | Missing/borrowed icons on the Rhino, Serpent, Scarab rows | QA-SCARAB-VESSEL, QA-CLEAVE-MODE, QA-HEADLONG-MODE (retired) |
+| Urchin AI — **merged #975** → QA-URCHIN-AI | AI Urchins that spike, track and ride (Skein/Hijack backfill and solo play) | QA-URCHIN-VESSEL, QA-SKEIN-MODE, QA-HIJACK-MODE (retired) |
+| Fleet AI boost — **merged #974** → QA-AI-BOOST-POLICIES | AI boost for the hulls that could not use it (Regatta: Sparrow, Serpent, Dolphin, Scarab; plus the Squirrel outside Skim Race) | QA-REGATTA-ARENA (retired) |
+| Hijack replication — **merged #972** → QA-HIJACK-OWNERSHIP-SYNC | Prism ownership replicated, so ride speed, arrow and AI rail choice agree across machines | QA-HIJACK-MODE (retired) |
 | Audio slots | Empty sound slots on Manta, Urchin, Serpent, Scarab, Butterfly | QA-BLOOMRUSH-MODE, QA-REDLINE-MODE, QA-SCARAB-VESSEL, QA-BUTTERFLY-VESSEL, QA-URCHIN-VESSEL |
 
 <!-- qa-parallel-pr-checks: new items from the PRs above go between these markers -->
+
+### QA-URCHIN-HUD ⬜ — the Urchin finally has its four ability icons and gauges
+**Source:** PR #973 (`Tools/Build/author_urchin_hud.py`; `UrchinHUDVariant.prefab`,
+`Urchin.prefab`, `UrchinVesselHUDController`). Prefabs written as text and never imported; the
+Urchin flew with no HUD at all before this. Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+"Urchin HUD variant and four-icon row".
+
+1. In the Project window, open `Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab`.
+   Check the Inspector header says it is a variant of `VesselHUDPrefab`. Select the object that
+   has `UrchinVesselHUDView` and count the entries under **Ability Icons**.
+2. Open `Assets/_Prefabs/Spacevessels/Urchin.prefab`. On its `VesselStatus` component, read the
+   **Vessel HUD Controller** field. Look for any field that says **Missing**.
+3. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows**, then **FrogletTools ▸ Vessels ▸
+   Audit Ability Lockups**. Find the Urchin lines in each report.
+4. Start freestyle (click the centre of the main menu screen, or press **Y** on a gamepad), open
+   the Vessel Changer and pick the **Urchin**. Look at the bottom-right of the screen.
+5. Press the **right trigger** to fire spikes until the first card's bar drops; wait and watch it.
+6. Fly into a trail so the Urchin latches on; then press **B** to slip off.
+7. Press the **left trigger** to project a track; press it again straight away.
+8. Raise any element to level 5 (fly through elemental crystals) and look at that element's card.
+9. With **Window ▸ Multiplayer ▸ Multiplayer Play Mode** open a second player window. Fly an
+   Urchin in one window and look at the other window's screen. Then swap away from the Urchin and
+   back in the first window and fire spikes once.
+
+**PASS:** the variant shows 4 ability icons (Charge, Mass, Space, Time) with the ammo and riding
+bars filled in; `Urchin.prefab`'s Vessel HUD Controller is set and nothing says Missing; both
+auditors pass the Urchin (4/4, in order); in play, four cards sit bottom-right with element
+flowers above them and a locked crystal card to their left; control hints read RT on the 1st
+card, LT on the 3rd and B on the 4th, none on the 2nd; the 1st card's bar drops when you fire and
+refills over time; the 2nd card fills within a blink when you latch and empties when you slip
+(never stuck half-full); the 3rd card shows a clockwise recharge sweep for about 20 seconds and
+a second press does nothing; a level-5 element shows a badge on its card; the other window shows
+no Urchin HUD for someone else's ship; after swapping back, one spike shot drops the bar once.
+**FAIL:** a missing icon, Missing reference or "VesselHUDController is null on Urchin" warning in
+the Console · an error (red text) when the Urchin spawns · cards in the wrong order or a hint under
+the wrong card · a bar that never moves · a riding bar parked half-full · a track press that works
+during the recharge · another player's HUD drawn on your screen · the bar dropping twice per shot
+after a swap.
+**Known, do not fail on:** the four icons are plain white placeholder outlines (final art
+pending); holding the spike trigger shows no charge-up bar (not built yet).
+
+### QA-HULL-ABILITY-ROWS ⬜ — Rhino, Serpent and Scarab show their own ability icons
+**Source:** PR #971 (`Tools/Build/author_hull_ability_rows.py`, `author_hull_icon_placeholders.py`).
+Before it the Rhino bound 0 of 4 icons, the Serpent 1 of 4, and the Scarab wore the Sparrow's
+pictures. Prefabs written as text, never imported; no code changed.
+
+1. Open `RhinoHUDVariant`, `SerpentHUDVariant`, `ScarabHUDVariant` (in `Assets/_Prefabs/UI
+   Elements/VesselHUD/`) and `Assets/_Prefabs/Spacevessels/Serpent.prefab`, one at a time.
+   Watch the Console for red errors. In the Project window, check the new `*-PLACEHOLDER.png`
+   files under `Assets/_Graphics/Icons/AbilityIcons/Rhino`, `/Serpent` and `/Scarab` show as
+   Sprite images.
+2. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** and read the Rhino, Serpent and
+   Scarab lines. Run **FrogletTools ▸ Vessels ▸ Audit Ability Lockups**.
+3. Start freestyle and pick the **Rhino** in the Vessel Changer. Read the four cards bottom-right,
+   left to right.
+4. Pick the **Serpent**. Read the four cards and their control hints. Fire the rifle (right
+   trigger) and watch the first card.
+5. Pick the **Scarab**. Read the four cards. Use the blast, the switch and the ball and watch the
+   card colours.
+
+**PASS:** no import errors and the placeholders are Sprites; the row auditor reports Rhino Mass and
+Time bound and Serpent Charge, Space and Time bound, and the only complaints left are "open design
+slot / no icon" lines for Rhino Charge, Rhino Space and Serpent Mass; the lockup auditor reports no
+icon that does not fit; the Rhino reads LOCKED / Trail Slabs / LOCKED / Ramp Spool with no old
+Rhino chrome in the bottom-right; the Serpent reads Sniper Shot (RT) / LOCKED / Scope (LT) /
+Pellets (A) and firing the rifle sweeps a cooldown shadow over the first card; the Scarab shows a
+blast, a ring, a ball and a dial (not missiles or bullets) and its cards still change colour as
+before.
+**FAIL:** a red error on import · a placeholder that imports as a texture, not a Sprite · a hull
+with a missing card or an icon on the wrong card · Sparrow pictures still on the Scarab · old
+Rhino chrome back on screen · the Serpent's first card not sweeping after a shot.
+**Known, do not fail on:** all eight icons are plain white placeholders; the Serpent may show a
+"pitch not uniform" line in the row auditor (it measures spacing only between bound icons and
+skips the locked slot - not a real layout fault); the LOCKED cards are open design slots with no
+ability behind them.
+
+### QA-AI-BOOST-POLICIES ⬜ — AI ships now boost on the straights
+**Source:** PR #974 (`AIPilot.boostPolicy`; five assets in `Assets/_SO_Assets/AI Boost Policies/`;
+design `Assets/_Scripts/Controller/AI/AI_BOOST.md`). Before it only the Manta and Rhino AI could
+boost, so AI Sparrows, Serpents, Dolphins and Scarabs finished Regatta but never won. Code
+type-checked offline only; never compiled in Unity.
+
+1. Wait for Unity to finish compiling. Open `Sparrow`, `Serpent`, `Dolphin`, `Squirrel` and
+   `Scarab.prefab` (in `Assets/_Prefabs/Spacevessels/`) and find **Boost Policy** on each one's
+   `AIPilot` component.
+2. From the **Arena** screen launch **Regatta** with AI in Sparrow, Serpent, Dolphin and Scarab
+   seats (tap an ally's chip on the launch panel to change its ship). Watch each AI on a long
+   straight and as it approaches a ring. Note each finishing time.
+3. Launch **Scurry** or **Brood Rush** with an AI **Squirrel** and follow it on a long straight.
+4. Go back to the main menu and wait a minute in freestyle with the menu ship flying itself.
+5. Launch any race with an AI **Scarab** whose Time element is 5 or more (in Regatta, check the
+   card's starting elements) and watch it on straights.
+6. Regression: play **The Bends** with an AI Dolphin, **Dog Fight** with an AI Sparrow, **Skim
+   Race** and **Astro League** with AI.
+7. In an Arena match, use **D-pad right** to swap into an AI teammate's ship while it is
+   boosting.
+
+**PASS:** each prefab's Boost Policy shows its matching asset; in Regatta the Sparrow boosts
+between rings and lets go before each ring, the Serpent spends its pellets on long legs and not
+right before a ring, and the Dolphin's burst fires mid-leg rather than after the ring; those three
+finish closer to the Manta and Rhino than before; the AI Squirrel lays one boost ring ahead on a
+long straight, flies through its middle without stopping, and speeds up; the menu ship never lays
+rings; the Scarab at Time 5+ surges forward on straights no more than about every 2 seconds, and
+not at all below Time 5; Bends, Dog Fight, Skim Race and Astro League AI behave as before; after a
+mid-boost swap the ship stops boosting when you let go.
+**FAIL:** a Boost Policy field empty or Missing · an AI that boosts straight into rings or turns ·
+a Squirrel that crashes into its own ring and stops dead, or lays rings in the menu · a Scarab
+surge below Time 5 · a changed AI in the regression modes · a ship stuck boosting after a swap.
+**Known, do not fail on:** the Squirrel's ring is only visible on the host's machine (AI actions
+run on the host); in Regatta and Skim Race the AI Squirrel flies the Skim Race racing pilot
+instead and does not lay rings. **Report:** each hull's Regatta finishing time.
+
+### QA-URCHIN-AI ⬜ — AI Urchins race Skein and raid Hijack using their whole kit
+**Source:** PR #975 (`UrchinAutopilotDriver`, `Assets/Resources/UrchinAutopilotConfig.asset`,
+tests `UrchinRailAssessmentTests`). Before it the AI Urchin only steered, so Skein above
+intensity 1 had no working solo play. Offline compile and simulated run only.
+
+1. Wait for Unity to finish compiling. Select `Assets/Resources/UrchinAutopilotConfig.asset` and
+   check the Inspector shows numbers, not "missing script".
+2. Open **Window ▸ General ▸ Test Runner**, choose **EditMode**, and run
+   `UrchinRailAssessmentTests`.
+3. From the **Arcade** screen launch **Skein** at intensity **3** or **4** with 2–4 players so AI
+   fill the seats. Follow one AI Urchin for three minutes (watch the scoreboard's ring count).
+4. Launch **Skein** at intensity **1** with AI and let it run to the end.
+5. Launch **Hijack** solo with AI and watch an AI raider for two minutes.
+6. Regression: launch **Regatta** and **Broadside** with AI Urchins.
+
+**PASS:** the config shows values; all 13 tests pass; at intensity 3–4 the AI's ring count rises
+steadily and it finishes, and you see it do at least two of these: slip off a cable that does not
+lead to its next ring and fly straight at the ring; tap spikes on a cable of a rival's colour so
+the cable turns its colour (instead of crawling along it slowly); turn round to ride the other way
+when its ring is behind it; lay a track on a long straight and launch off it toward the ring; at
+intensity 1 the AI rides through the collars and finishes; Hijack raiders grind, spike rival rail
+sections and burrs, slip out when parked, and their team's steal count climbs (they never lay a
+track in Hijack); Regatta and Broadside Urchins behave as before.
+**FAIL:** "missing script" on the config · a failing test · an AI that stops scoring rings, sits
+crawling on a rival cable, or never finishes (no solo play) · Hijack raiders that orbit or stall ·
+a changed Regatta/Broadside Urchin.
+**Known, do not fail on:** a track laid only occasionally (it fires only on long lined-up legs).
+**Report:** how long a solo Skein match takes at intensity 4.
+
+### QA-HIJACK-OWNERSHIP-SYNC ⬜ — Hijack's rail and burr colours agree on every machine
+**Source:** PR #972 (`HijackOwnershipLedger`, four RPCs on `HijackController`; `HIJACK.md` §11).
+Hijack is scored on who owns each prism, but ownership used to be local to each machine.
+Compiled and simulated offline (two peers, 20/20) only.
+
+1. Open `Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity`. Select the Hijack controller
+   object and find the **Ownership Sync** header. Watch the Console for red errors.
+2. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode** with one extra player. Launch Hijack with
+   the two players on **different** teams.
+3. In the second window, grind a rail section of the other team's colour and spike a burr. Watch
+   the first window.
+4. In the first window, steal a burr. Watch the second window's burr and its objective arrow.
+5. In one window, watch the other player grinding a rival rail for ten seconds.
+6. In the second window, empty a burr completely. Watch where the AI raiders go.
+7. Stop. Start again with only the first window, steal one or two burrs, **then** join the second
+   player mid-match. Look at those burrs in the second window.
+8. Compare both windows' scores. Then play one full match solo with AI.
+
+**PASS:** the header shows flush 0.1 and grace 0.5 and there are no errors; the second player's
+stolen prisms turn their colour in the first window within a blink, and the first player rides
+fast over them; a burr stolen in the first window flips in the second, and its arrow moves on to a
+burr that still has loot; prisms the other player steals flip and STAY flipped; AI raiders stop
+choosing the rail to an emptied burr; a player joining late sees the already-stolen burrs in the
+thief's colour; scores agree; the solo match plays as before with no warnings.
+**FAIL:** a red error or missing-script line · colours that differ between the two windows ·
+stolen prisms that flip and then snap back after about half a second · an arrow pointing at an
+empty burr · AI raiders still heading for an emptied burr · a late joiner seeing the original
+colours · scores that differ.
+**Known, do not fail on:** a rail prism's shield may differ between machines (shields are not
+synced), so occasionally a steal blocked on one machine lands on another.
+
+### QA-MODE-TOASTS ⬜ — pop-up messages in eleven modes that had none
+**Source:** PR #976 (eleven `GameToastConfig_*` assets, `DomainRaceToasts`, new publishers in the
+Wildlife Liberation, Astro League and Salvo controllers, a stolen-prisms counter for Hijack;
+`Assets/_Scripts/UI/GameToastSystem/GAME_TOASTS.md`). The PR's own description is a copy of
+another PR's, so these steps were written from the change itself. Never run in Unity.
+
+1. Wait for Unity to finish compiling. Select `Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset`
+   and check it lists configs for Rampage, Cleave, Salvo, Switchback, Headlong, Redline,
+   Breakwater, Skein, Hijack, Wildlife Liberation and Astro League, none shown as Missing.
+2. Play **Rampage** with AI to the end. Watch the pop-up messages (top of the screen).
+3. Play **Salvo** 2v2 (you plus an AI teammate). Let your teammate pick up a white crystal. Then
+   play a Salvo match alone on your team.
+4. Play **Hijack** with AI to at least 200 stolen.
+5. Play one gate race: **Switchback** or **Skein**, then one lapped race: **Headlong**, **Redline**
+   or **Breakwater**.
+6. Play **Cleave** and **Wildlife Liberation**. In Wildlife Liberation, fly into the core cage.
+7. Play **Astro League** until a goal, a match point, and if possible a draw at full time.
+8. Repeat one of the races with **Window ▸ Multiplayer ▸ Multiplayer Play Mode** (two windows),
+   and once leave and rejoin (or press Ready to replay) mid-match.
+
+**PASS:** every listed config is present; in Rampage, Salvo and Hijack a message appears when the
+leading team reaches a quarter and half of the target, and when the lead changes after that (no
+more than one lead message per 8 seconds); in Salvo your teammate's crystal pickup shows "<name>
+reloaded the wing" and refills your missiles, and nothing appears when you are alone on your
+team; Hijack shows "<name> has stolen N prisms" every 100; the gate races show halfway, lead
+change and home stretch messages, and the lapped races also show one "final lap" message;
+Cleave and Wildlife Liberation show their quarter / half / lead messages with the screen shake;
+the first pilot into Wildlife's core cage triggers "<name> broke into the core!" once per match;
+Astro League shows a goal message with the scorer, "MATCH POINT" one goal from the limit, and
+"Golden goal" on a draw; with two windows each message appears once in each window; a rejoin or
+replay does not dump a burst of old messages.
+**FAIL:** a config missing from the library · a mode in the list with no messages at all · a
+message with a blank or `{0}` in it · the wing-reload message for a solo team · the same message
+twice in one window · a burst of stale messages after a rejoin or replay.
+**Judgement call:** whether the message wording and frequency feel right; report any that are
+noisy.
 
 <!-- /qa-parallel-pr-checks -->
 
@@ -3082,7 +3290,9 @@ whether it reads better or worse at gameplay distance.
 / `_ArcDuty` / `_ArcSpeed` for the discharge; `_RimStrength` / `_FacetAmbient` /
 `_EmissionStrength` for the body.
 
-### QA-MENU-VEIL-PAUSE ⬜ — the menu-return veil hold and the prewarmed pause menu
+### QA-MENU-VEIL-PAUSE 🔴 — the menu-return veil hold and the prewarmed pause menu
+**Last QA:** FAIL on `5663cc4b3` (2026-10-08, akouroshm) — The menu-return/loading veil does not hide the build: prisms are visibly **popping in during loading**, and on entering a game the player sees a **"metal seal" opening up** — an animation that appears to be a remnant of an old loading-screen concept, not the current veil. The teardown/build is not being covered. (Observed on 71d67ba9b.)
+
 **Source:** PRs #672, #693, #698. The prewarm crashed the **Windows player** on every
 login (#693) and the root was a type-punned `pauseMenuPanel` reference (#698) — so this
 item is the Editor half; the player half is QA-BUILD-WINDOWS-PLAYER.
@@ -3620,16 +3830,6 @@ button is never left disabled.
 **FAIL:** a screen that will not navigate, a dead Home button, or a modal that cannot be
 reopened after one of the close paths.
 
-### QA-STATE-RESET ⬜ — runtime game state resets to defaults between sessions
-**Source:** PR #647. **Run this alongside QA-SCORING-CLIENT-MIRROR** — they are the two
-halves of "nothing leaks between games", and B17 is the networked half.
-1. Play a game to the end, return to the menu, and launch a **different** mode.
-2. Repeat with the same mode twice (use Play Again where available).
-
-**PASS:** the second launch starts with a clean score, intensity, player count and
-domain assignment — no leakage from the previous round.
-**FAIL:** any carried-over score, stale player count, or a domain that was not reassigned.
-
 ### QA-TOOLING-SHIP-PANEL ⬜ — the editor tool ship panel actually pushes
 **Source:** PR #663 (buttons never pressed in a running editor). **Do this on a throwaway
 branch, not on `bleeding-edge`.**
@@ -3858,17 +4058,6 @@ is never stranded, and a pilot who leaves mid-game leaves a ship that keeps flyi
 departed ship freeze or pop out; no exceptions on either machine.
 **FAIL:** a client stranded after leaving · a departed ship that freezes or vanishes
 instantly (breaking continuity) · an exception on either machine on a leave.
-
-### QA-AI-SKIMRACE ⬜ — the Squirrel Skim Race AI actually races and wins
-**Source:** PR #945. A trained Skim Race AI for the Squirrel that should win intensity 2
-inside the 80-second limit.
-1. Launch **Skim Race** solo with AI backfill at intensity 2 on the **Squirrel**.
-2. Watch an AI racer: it should fly the track, collect crystals, and make real progress —
-   not orbit or stall.
-3. Let the race run and confirm an AI can **finish** within the time limit.
-
-**PASS:** the AI races the track competently and can complete intensity 2 within ~80 s.
-**FAIL:** an AI that orbits, stalls, flies off-track, or never finishes.
 
 ### QA-OFFLINE-FALLBACK ⬜ — single-player offline fallback and the online/offline toggle
 **Source:** PR #812. When UGS/Relay is unreachable the game falls back to a local host,

@@ -41,6 +41,28 @@ namespace CosmicShore.Utility
     /// schedules. Each solid's phase is its centroid's rank by distance from the centre, mapped
     /// into <c>[phaseStart, phaseEnd]</c> — so authoring <c>start &gt; end</c> inverts the cascade
     /// (outermost-first becomes innermost-first) with no code change.
+    ///
+    /// ── The second mapping: a PANEL CENSUS onto octahedra (the Squirrel) ─────────────────────
+    /// <see cref="TryBuild(Mesh, IReadOnlyList{OctahedronTarget}, float, float, float, out string)"/>
+    /// is the other reading, and it rests on an exact coincidence rather than on convexity: the
+    /// omni body's cage is 122 disjoint solids — 90 box struts, 20 triangular prisms, 12 pentagonal
+    /// prisms — so its NON-QUAD faces are 20×2 + 12×2 = <b>64</b>, and the eight shielded prisms of
+    /// the Squirrel's boost ring show 8 × 8 = <b>64</b> octahedron faces. Every panel becomes exactly
+    /// one face, with nothing invented and nothing spare; the 660 quads (struts and panel rims) are
+    /// the leftovers, and each collapses into the octahedron its own solid was assigned to. Eight
+    /// separate octahedra are not one convex hull, which is why this is a census and not a cast.
+    /// Proven against the shipped FBX by <c>Tools/Build/measure_omni_crystal_morph.py</c>.
+    ///
+    /// Two traps that mapping is written around:
+    /// 1. <b>A face is found STRUCTURALLY, never by coplanarity.</b> 60 of the cage's quads are
+    ///    non-planar (a ~5° twist), so a plane test cuts them in half and reports 160 triangle
+    ///    panels where there are 40 — measured. Triangles cut from one imported polygon share
+    ///    vertex INDICES and triangles from different polygons cannot, because a hard-edged import
+    ///    splits those corners apart.
+    /// 2. <b>A panel must BECOME its face, not sit inside it.</b> A raw perimeter map put only 83
+    ///    of 336 panel corners on a target corner, so every octahedron would have landed as
+    ///    shrunken plates with gaps; three corners are ANCHORED to the face's three corners and
+    ///    the rest ride its edges (<see cref="MapPanel"/>).
     /// </summary>
     public static class CrystalMorphMeshBuilder
     {
@@ -266,9 +288,544 @@ namespace CosmicShore.Utility
                 landedNrm[i] = landedNrm[w];
             }
 
-            // ── Emit, unshared ────────────────────────────────────────────────────────────────
-            // One vertex per triangle corner. The source's own normals/tangents/UV0 are carried
-            // verbatim so frame 0 IS the crystal; only the two target channels are new.
+            var vertexTarget = new Vector4[srcVerts.Length];
+            var vertexTargetNormal = new Vector4[srcVerts.Length];
+            for (int i = 0; i < srcVerts.Length; i++)
+            {
+                float phase = Mathf.Clamp01(solidPhase[vertSolid[i]]);
+                vertexTarget[i] = new Vector4(landedPos[i].x, landedPos[i].y, landedPos[i].z, phase);
+                vertexTargetNormal[i] = new Vector4(landedNrm[i].x, landedNrm[i].y, landedNrm[i].z, phase);
+            }
+
+            return Emit(source, srcVerts, srcTris, vertexTarget, vertexTargetNormal, target.Corners);
+        }
+
+        // ══ The panel census: a crystal onto a SET of octahedra ════════════════════════════════
+
+        /// <summary>
+        /// One octahedron the crystal is morphing into, in the morph object's local space: its
+        /// centre and its eight faces as three corner POSITIONS each (face f owns [3f, 3f+2]).
+        ///
+        /// Corner positions carry no winding, which is deliberate — the outward sense of each face
+        /// is recovered from <see cref="Centre"/>, so the face set can come from anything that
+        /// knows the octahedron's six apexes without agreeing with
+        /// <see cref="OctahedronMeshGenerator"/>'s triangle order.
+        /// </summary>
+        public readonly struct OctahedronTarget
+        {
+            public readonly Vector3 Centre;
+            /// <summary>8 faces × 3 corners, flat. Face f owns [3f, 3f+2].</summary>
+            public readonly Vector3[] FaceCorners;
+
+            public OctahedronTarget(Vector3 centre, Vector3[] faceCorners)
+            {
+                Centre = centre;
+                FaceCorners = faceCorners;
+            }
+
+            public int FaceCount => FaceCorners == null ? 0 : FaceCorners.Length / 3;
+
+            /// <summary>
+            /// The eight octant faces of the octahedron whose apexes sit at
+            /// <paramref name="centre"/> ± each semi-axis, all mapped through
+            /// <paramref name="toLocal"/>. This is exactly the face set a prism's shield draws
+            /// (<see cref="OctahedronMeshGenerator"/>: one face per octant of ±x, ±y, ±z).
+            /// </summary>
+            public static OctahedronTarget FromSemiAxes(Matrix4x4 toLocal, Vector3 centre, Vector3 semiAxes)
+            {
+                Vector3 px = toLocal.MultiplyPoint3x4(centre + new Vector3(semiAxes.x, 0f, 0f));
+                Vector3 nx = toLocal.MultiplyPoint3x4(centre - new Vector3(semiAxes.x, 0f, 0f));
+                Vector3 py = toLocal.MultiplyPoint3x4(centre + new Vector3(0f, semiAxes.y, 0f));
+                Vector3 ny = toLocal.MultiplyPoint3x4(centre - new Vector3(0f, semiAxes.y, 0f));
+                Vector3 pz = toLocal.MultiplyPoint3x4(centre + new Vector3(0f, 0f, semiAxes.z));
+                Vector3 nz = toLocal.MultiplyPoint3x4(centre - new Vector3(0f, 0f, semiAxes.z));
+
+                var corners = new Vector3[24];
+                int w = 0;
+                for (int sx = 0; sx < 2; sx++)
+                    for (int sy = 0; sy < 2; sy++)
+                        for (int sz = 0; sz < 2; sz++)
+                        {
+                            corners[w++] = sx == 0 ? px : nx;
+                            corners[w++] = sy == 0 ? py : ny;
+                            corners[w++] = sz == 0 ? pz : nz;
+                        }
+                return new OctahedronTarget(toLocal.MultiplyPoint3x4(centre), corners);
+            }
+        }
+
+        // Source analysis, cached per mesh. Positions, normals and the face partition are
+        // properties of the SOURCE alone — one cage for every omni crystal in the game — so they
+        // are measured once per session; only the targets change per morph.
+        sealed class PanelAnalysis
+        {
+            public Vector3[] Vertices;
+            public Vector3[] Normals;
+            public int[] Triangles;
+            /// <summary>Each face's triangle indices (into <see cref="Triangles"/>/3).</summary>
+            public List<int>[] FaceTriangles;
+            /// <summary>Each face's unique source vertex indices, ordered around the polygon.</summary>
+            public int[][] FaceCorners;
+            public Vector3[] FaceCentroid;
+            /// <summary>Solid id per face.</summary>
+            public int[] FaceSolid;
+            /// <summary>Faces that are NOT quads — the panels that become octahedron faces.</summary>
+            public List<int> Panels;
+            public List<int> Fillers;
+            public Dictionary<int, List<int>> PanelsBySolid;
+            public Dictionary<int, Vector3> SolidCentroid;
+        }
+
+        static readonly Dictionary<int, PanelAnalysis> s_panelAnalysis = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetPanelCache() => s_panelAnalysis.Clear();
+
+        /// <summary>
+        /// Emits a morph mesh that starts as <paramref name="source"/> and ends as
+        /// <paramref name="targets"/>: every non-quad PANEL lands exactly on one octahedron face,
+        /// 1:1, and every quad collapses into the octahedron its own solid was assigned to.
+        ///
+        /// Returns null with a <paramref name="diagnosis"/> when the census does not line up —
+        /// a half-mapped morph is worse than none, because it reads as a broken shape rather than
+        /// as a missing animation.
+        /// </summary>
+        /// <param name="fillerPhase">Phase of the leftover quads. 0 = absorbed FIRST, so nothing is
+        /// left hanging around the shape when the panels land.</param>
+        /// <param name="panelPhaseStart">Phase of each octahedron's first face to land.</param>
+        /// <param name="panelPhaseEnd">Phase of each octahedron's last face to land.</param>
+        public static Mesh TryBuild(Mesh source, IReadOnlyList<OctahedronTarget> targets,
+                                    float fillerPhase, float panelPhaseStart, float panelPhaseEnd,
+                                    out string diagnosis)
+        {
+            diagnosis = null;
+            if (source == null) { diagnosis = "the crystal exposed no source mesh"; return null; }
+            if (targets == null || targets.Count == 0) { diagnosis = "no octahedron targets"; return null; }
+            for (int k = 0; k < targets.Count; k++)
+                if (targets[k].FaceCount != 8)
+                {
+                    diagnosis = $"target {k} has {targets[k].FaceCount} faces, not an octahedron's 8";
+                    return null;
+                }
+
+            // Read/Write is checked FIRST: without it `Mesh.vertices` does not return empty, it
+            // THROWS, and the throw escapes through whatever raised the event that got us here.
+            // That is how the Squirrel's morph first shipped dead — the only symptom was the ring
+            // appearing normally while the crystal faded out.
+            if (!source.isReadable)
+            {
+                diagnosis = $"'{source.name}' is not Read/Write enabled, so its vertices cannot be " +
+                            "read on the CPU (an imported mesh THROWS rather than returning empty). " +
+                            "Fix it on the model importer: select the FBX, tick Read/Write, apply.";
+                return null;
+            }
+
+            var a = AnalysePanels(source);
+            if (a == null) { diagnosis = $"'{source.name}' has no geometry (no vertices or no triangles)"; return null; }
+
+            int targetFaces = targets.Count * 8;
+            if (a.Panels.Count != targetFaces)
+            {
+                diagnosis = $"'{source.name}' has {a.Panels.Count} panel (non-quad) faces but " +
+                            $"{targets.Count} octahedra need {targetFaces}. The morph maps panels to " +
+                            "faces 1:1 — the omni cage's census is 64 = 8 × 8 " +
+                            "(Tools/Build/measure_omni_crystal_morph.py).";
+                return null;
+            }
+
+            var vertexTarget = new Vector4[a.Vertices.Length];
+            var vertexTargetNormal = new Vector4[a.Vertices.Length];
+            AssignPanels(a, targets, vertexTarget, vertexTargetNormal,
+                         Mathf.Clamp01(fillerPhase), Mathf.Clamp01(panelPhaseStart),
+                         Mathf.Clamp01(panelPhaseEnd));
+
+            var extent = new Vector3[targets.Count * 25];
+            int e = 0;
+            for (int k = 0; k < targets.Count; k++)
+            {
+                extent[e++] = targets[k].Centre;
+                for (int c = 0; c < 24; c++) extent[e++] = targets[k].FaceCorners[c];
+            }
+            return Emit(source, a.Vertices, a.Triangles, vertexTarget, vertexTargetNormal, extent);
+        }
+
+        static PanelAnalysis AnalysePanels(Mesh source)
+        {
+            if (s_panelAnalysis.TryGetValue(source.GetInstanceID(), out var cached)) return cached;
+
+            var verts = source.vertices;
+            var tris = source.triangles;
+            if (verts.Length == 0 || tris.Length < 3) return null;
+
+            var normals = source.normals;
+            var a = new PanelAnalysis
+            {
+                Vertices = verts,
+                Normals = normals != null && normals.Length == verts.Length ? normals : null,
+                Triangles = tris,
+            };
+
+            // FACES: union-find over shared vertex INDICES — never by plane (class doc, trap 1).
+            var faceOf = new int[verts.Length];
+            for (int i = 0; i < faceOf.Length; i++) faceOf[i] = i;
+            for (int t = 0; t < tris.Length; t += 3)
+            {
+                Union(faceOf, tris[t], tris[t + 1]);
+                Union(faceOf, tris[t], tris[t + 2]);
+            }
+
+            // SOLIDS: union-find over WELDED positions plus the index buffer.
+            int[] weld = WeldMap(verts, WeldEpsilon);
+            var solidOf = new int[verts.Length];
+            for (int i = 0; i < solidOf.Length; i++) solidOf[i] = i;
+            for (int i = 0; i < verts.Length; i++) Union(solidOf, i, weld[i]);
+            for (int t = 0; t < tris.Length; t += 3)
+            {
+                Union(solidOf, tris[t], tris[t + 1]);
+                Union(solidOf, tris[t], tris[t + 2]);
+            }
+
+            var faceIndex = new Dictionary<int, int>();
+            var faceTris = new List<List<int>>();
+            var faceVerts = new List<HashSet<int>>();
+            for (int t = 0; t < tris.Length; t += 3)
+            {
+                int root = Find(faceOf, tris[t]);
+                if (!faceIndex.TryGetValue(root, out int fi))
+                {
+                    fi = faceTris.Count;
+                    faceIndex[root] = fi;
+                    faceTris.Add(new List<int>());
+                    faceVerts.Add(new HashSet<int>());
+                }
+                faceTris[fi].Add(t / 3);
+                faceVerts[fi].Add(tris[t]);
+                faceVerts[fi].Add(tris[t + 1]);
+                faceVerts[fi].Add(tris[t + 2]);
+            }
+
+            int faceCount = faceTris.Count;
+            a.FaceTriangles = faceTris.ToArray();
+            a.FaceCorners = new int[faceCount][];
+            a.FaceCentroid = new Vector3[faceCount];
+            a.FaceSolid = new int[faceCount];
+            a.Panels = new List<int>();
+            a.Fillers = new List<int>();
+            a.PanelsBySolid = new Dictionary<int, List<int>>();
+            a.SolidCentroid = new Dictionary<int, Vector3>();
+            var solidSum = new Dictionary<int, Vector3>();
+            var solidN = new Dictionary<int, int>();
+
+            for (int f = 0; f < faceCount; f++)
+            {
+                var corners = new int[faceVerts[f].Count];
+                faceVerts[f].CopyTo(corners);
+
+                Vector3 c = Vector3.zero;
+                foreach (int v in corners) c += verts[v];
+                c /= corners.Length;
+                a.FaceCentroid[f] = c;
+
+                // Ordered around the polygon so the anchor map can walk the outline by arc length.
+                OrderAroundCentroid(verts, corners, c, TriangleNormal(verts, tris, faceTris[f][0]));
+                a.FaceCorners[f] = corners;
+
+                int solid = Find(solidOf, corners[0]);
+                a.FaceSolid[f] = solid;
+                solidSum[solid] = (solidSum.TryGetValue(solid, out var sum) ? sum : Vector3.zero) + c;
+                solidN[solid] = (solidN.TryGetValue(solid, out int n) ? n : 0) + 1;
+
+                if (corners.Length == 4) a.Fillers.Add(f);
+                else
+                {
+                    a.Panels.Add(f);
+                    if (!a.PanelsBySolid.TryGetValue(solid, out var list))
+                        a.PanelsBySolid[solid] = list = new List<int>();
+                    list.Add(f);
+                }
+            }
+            foreach (var kv in solidSum) a.SolidCentroid[kv.Key] = kv.Value / solidN[kv.Key];
+
+            s_panelAnalysis[source.GetInstanceID()] = a;
+            return a;
+        }
+
+        static Vector3 TriangleNormal(Vector3[] verts, int[] tris, int triIndex)
+        {
+            int t = triIndex * 3;
+            var n = Vector3.Cross(verts[tris[t + 1]] - verts[tris[t]], verts[tris[t + 2]] - verts[tris[t]]);
+            return n.sqrMagnitude > 1e-20f ? n.normalized : Vector3.up;
+        }
+
+        static void OrderAroundCentroid(Vector3[] verts, int[] corners, Vector3 centre, Vector3 normal)
+        {
+            if (corners.Length < 3) return;
+            Vector3 u = Vector3.Cross(normal, verts[corners[0]] - centre);
+            u = u.sqrMagnitude > 1e-20f ? Vector3.Cross(u, normal).normalized : Vector3.right;
+            Vector3 v = Vector3.Cross(normal, u);
+
+            var keys = new float[corners.Length];
+            for (int i = 0; i < corners.Length; i++)
+            {
+                Vector3 d = verts[corners[i]] - centre;
+                keys[i] = Mathf.Atan2(Vector3.Dot(d, v), Vector3.Dot(d, u));
+            }
+            System.Array.Sort(keys, corners);
+        }
+
+        static void AssignPanels(PanelAnalysis a, IReadOnlyList<OctahedronTarget> targets,
+                                 Vector4[] vertexTarget, Vector4[] vertexTargetNormal,
+                                 float fillerPhase, float panelPhaseStart, float panelPhaseEnd)
+        {
+            int octCount = targets.Count;
+
+            // Directions are taken about the centre of the WHOLE target set, never the morph
+            // object's origin: the ring is laid ahead of the hull, so measured from the crystal's
+            // own centre every octahedron would sit in roughly the same direction and the
+            // balanced pass below would be choosing between near-ties.
+            Vector3 ringCentre = Vector3.zero;
+            for (int k = 0; k < octCount; k++) ringCentre += targets[k].Centre;
+            ringCentre /= octCount;
+            Vector3 cageCentre = Vector3.zero;
+            int solids = 0;
+            foreach (var kv in a.SolidCentroid) { cageCentre += kv.Value; solids++; }
+            if (solids > 0) cageCentre /= solids;
+
+            var octDir = new Vector3[octCount];
+            for (int k = 0; k < octCount; k++) octDir[k] = SafeDir(targets[k].Centre - ringCentre);
+
+            // Panel-carrying solids spread EVENLY over the octahedra: each panel solid carries the
+            // same number of panels (two caps), so an even split of solids is an even split of
+            // faces. A solid's parts always travel together — the reason solids exist at all.
+            var panelSolids = new List<int>(a.PanelsBySolid.Keys);
+            panelSolids.Sort();
+            int perOct = Mathf.Max(1, panelSolids.Count / octCount);
+
+            var scored = new List<(float score, int solid, int oct)>(panelSolids.Count * octCount);
+            foreach (int s in panelSolids)
+            {
+                Vector3 d = SafeDir(a.SolidCentroid[s] - cageCentre);
+                for (int k = 0; k < octCount; k++)
+                    scored.Add((-Vector3.Dot(d, octDir[k]), s, k));
+            }
+            scored.Sort((x, y) => x.score != y.score ? x.score.CompareTo(y.score)
+                                                     : (x.solid != y.solid ? x.solid.CompareTo(y.solid)
+                                                                           : x.oct.CompareTo(y.oct)));
+            var solidOct = new Dictionary<int, int>(panelSolids.Count);
+            var counts = new int[octCount];
+            foreach (var (_, s, k) in scored)
+            {
+                if (solidOct.ContainsKey(s) || counts[k] >= perOct) continue;
+                solidOct[s] = k;
+                counts[k]++;
+            }
+            // A census that is not an exact multiple falls back to nearest so no panel is ever
+            // left without an octahedron (the count check above makes this unreachable today).
+            foreach (int s in panelSolids)
+                if (!solidOct.ContainsKey(s))
+                    solidOct[s] = NearestOct(a.SolidCentroid[s] - cageCentre, octDir);
+
+            // Panels → the faces of THEIR solid's octahedron, greedy by angular fit. Each panel is
+            // read about its own solid's centroid and each face about its octahedron's centre, so
+            // the fit is "which side of the shield does this side of the plate become".
+            var panelPairs = new List<(float score, int panel, int oct, int face)>();
+            foreach (var kv in a.PanelsBySolid)
+            {
+                int k = solidOct[kv.Key];
+                Vector3 solidCentre = a.SolidCentroid[kv.Key];
+                foreach (int f in kv.Value)
+                {
+                    Vector3 pd = SafeDir(a.FaceCentroid[f] - solidCentre);
+                    for (int fi = 0; fi < 8; fi++)
+                        panelPairs.Add((-Vector3.Dot(pd, SafeDir(FaceCentre(targets[k], fi) - targets[k].Centre)),
+                                        f, k, fi));
+                }
+            }
+            panelPairs.Sort((x, y) => x.score != y.score ? x.score.CompareTo(y.score)
+                                                         : (x.panel != y.panel ? x.panel.CompareTo(y.panel)
+                                                                               : x.face.CompareTo(y.face)));
+            var faceTaken = new HashSet<(int oct, int face)>();
+            var panelFace = new Dictionary<int, (int oct, int face)>(a.Panels.Count);
+            foreach (var (_, panel, oct, face) in panelPairs)
+            {
+                if (panelFace.ContainsKey(panel) || faceTaken.Contains((oct, face))) continue;
+                panelFace[panel] = (oct, face);
+                faceTaken.Add((oct, face));
+            }
+
+            // A face left unclaimed (its octahedron was handed panels it could not seat by fit)
+            // takes the first unseated panel — the count check guarantees the two lists match.
+            foreach (int f in a.Panels)
+            {
+                if (panelFace.ContainsKey(f)) continue;
+                for (int k = 0; k < octCount && !panelFace.ContainsKey(f); k++)
+                    for (int fi = 0; fi < 8; fi++)
+                        if (faceTaken.Add((k, fi))) { panelFace[f] = (k, fi); break; }
+            }
+
+            foreach (var kv in panelFace)
+            {
+                var (oct, face) = kv.Value;
+                // Spread across each octahedron's eight faces, so a shield ASSEMBLES face by face
+                // rather than appearing whole.
+                float phase = Mathf.Lerp(panelPhaseStart, panelPhaseEnd, face / 7f);
+                MapPanel(a, kv.Key, targets[oct], face, phase, vertexTarget, vertexTargetNormal);
+            }
+
+            foreach (int f in a.Fillers)
+            {
+                int solid = a.FaceSolid[f];
+                int k = solidOct.TryGetValue(solid, out int assigned)
+                    ? assigned
+                    : NearestOct(a.SolidCentroid[solid] - cageCentre, octDir);
+                // Collapse to the octahedron's CENTRE: the quad becomes a point inside the shield
+                // and is absorbed, rather than being left hanging as a face with no home.
+                var c = targets[k].Centre;
+                var target = new Vector4(c.x, c.y, c.z, fillerPhase);
+                foreach (int tri in a.FaceTriangles[f])
+                    for (int corner = 0; corner < 3; corner++)
+                    {
+                        int v = a.Triangles[tri * 3 + corner];
+                        vertexTarget[v] = target;
+                        // A leftover collapses to a POINT and has no area left to shade, so it has
+                        // no orientation to arrive at: its normal is held at its own, which makes
+                        // the blend a no-op instead of a swing on the way to nothing.
+                        Vector3 n = a.Normals != null ? a.Normals[v] : Vector3.up;
+                        vertexTargetNormal[v] = new Vector4(n.x, n.y, n.z, fillerPhase);
+                    }
+            }
+        }
+
+        static int NearestOct(Vector3 from, Vector3[] octDir)
+        {
+            Vector3 d = SafeDir(from);
+            int best = 0;
+            float bestDot = float.NegativeInfinity;
+            for (int k = 0; k < octDir.Length; k++)
+            {
+                float dot = Vector3.Dot(d, octDir[k]);
+                if (dot > bestDot) { bestDot = dot; best = k; }
+            }
+            return best;
+        }
+
+        static Vector3 SafeDir(Vector3 v) => v.sqrMagnitude > 1e-12f ? v.normalized : Vector3.forward;
+
+        static Vector3 FaceCentre(in OctahedronTarget t, int face) =>
+            (t.FaceCorners[face * 3] + t.FaceCorners[face * 3 + 1] + t.FaceCorners[face * 3 + 2]) / 3f;
+
+        /// <summary>
+        /// Maps one panel's corners onto its target triangle by ANCHORING three of them to the
+        /// triangle's three corners and sliding the rest along the edges between them (class doc,
+        /// trap 2). Anchored, the panel's outline IS the face's outline and its area IS the face's
+        /// area; a pentagon's two extra corners ride ON the edges, adding vertices without changing
+        /// the shape.
+        ///
+        /// The alignment — which source corners anchor, which target corner each takes, which way
+        /// round — is the one that moves the corners least: ≤ 6 candidates for a triangle, ≤ 60
+        /// for a pentagon, once per panel.
+        /// </summary>
+        static void MapPanel(PanelAnalysis a, int face, in OctahedronTarget target, int targetFace,
+                             float phase, Vector4[] vertexTarget, Vector4[] vertexTargetNormal)
+        {
+            var corners = a.FaceCorners[face];
+            int n = corners.Length;
+
+            var dst = new Vector3[3];
+            for (int i = 0; i < 3; i++) dst[i] = target.FaceCorners[targetFace * 3 + i];
+            Vector3 dstCentre = (dst[0] + dst[1] + dst[2]) / 3f;
+            Vector3 srcCentre = a.FaceCentroid[face];
+
+            var edge = new float[n];
+            for (int i = 0; i < n; i++)
+                edge[i] = (a.Vertices[corners[(i + 1) % n]] - a.Vertices[corners[i]]).magnitude;
+
+            var mapped = new Vector3[n];
+            var best = new Vector3[n];
+            var arc = new float[n + 1];
+            float bestScore = float.NegativeInfinity;
+            bool haveBest = false;
+
+            for (int dir = 1; dir >= -1; dir -= 2)
+                for (int start = 0; start < n; start++)
+                    for (int o1 = 1; o1 <= n - 2; o1++)
+                        for (int o2 = o1 + 1; o2 <= n - 1; o2++)
+                        {
+                            ApplyAnchors(a, corners, edge, dst, n, dir, start, o1, o2, arc, mapped);
+
+                            float score = 0f;
+                            for (int k = 0; k < n; k++)
+                                score += Vector3.Dot(SafeDir(a.Vertices[corners[k]] - srcCentre),
+                                                     SafeDir(mapped[k] - dstCentre));
+                            if (haveBest && score <= bestScore) continue;
+
+                            bestScore = score;
+                            haveBest = true;
+                            for (int k = 0; k < n; k++) best[k] = mapped[k];
+                        }
+
+            // The face's OUTWARD normal, oriented by the octahedron's own centre rather than by
+            // the corners' order, which carries no winding.
+            Vector3 fn = Vector3.Cross(dst[1] - dst[0], dst[2] - dst[0]);
+            fn = fn.sqrMagnitude > 1e-20f ? fn.normalized : SafeDir(dstCentre - target.Centre);
+            if (Vector3.Dot(fn, dstCentre - target.Centre) < 0f) fn = -fn;
+
+            for (int k = 0; k < n; k++)
+            {
+                vertexTarget[corners[k]] = new Vector4(best[k].x, best[k].y, best[k].z, phase);
+                vertexTargetNormal[corners[k]] = new Vector4(fn.x, fn.y, fn.z, phase);
+            }
+        }
+
+        /// <summary>
+        /// One candidate alignment: walking the source polygon from <paramref name="start"/> in
+        /// direction <paramref name="dir"/>, the corners at walk offsets 0, o1 and o2 become the
+        /// target's corners 0, 1 and 2; every other corner lands on the target edge between the
+        /// two anchors it sits between, at its own share of the arc length.
+        /// </summary>
+        static void ApplyAnchors(PanelAnalysis a, int[] corners, float[] edge, Vector3[] dst, int n,
+                                 int dir, int start, int o1, int o2, float[] arc, Vector3[] mapped)
+        {
+            int Walk(int offset) => ((start + dir * offset) % n + n) % n;
+
+            arc[0] = 0f;
+            for (int step = 0; step < n; step++)
+            {
+                int from = Walk(step);
+                // Walking backwards traverses the edge that ENDS at `from`, not the one that starts there.
+                arc[step + 1] = arc[step] + edge[dir > 0 ? from : ((from - 1) % n + n) % n];
+            }
+
+            int a0 = 0, a1 = o1, a2 = o2, a3 = n;
+            for (int seg = 0; seg < 3; seg++)
+            {
+                int fromStep = seg == 0 ? a0 : seg == 1 ? a1 : a2;
+                int toStep = seg == 0 ? a1 : seg == 1 ? a2 : a3;
+                float span = Mathf.Max(1e-6f, arc[toStep] - arc[fromStep]);
+                for (int step = fromStep; step < toStep; step++)
+                {
+                    float u = (arc[step] - arc[fromStep]) / span;
+                    mapped[Walk(step)] = Vector3.Lerp(dst[seg], dst[(seg + 1) % 3], u);
+                }
+            }
+        }
+
+        // ══ Emit (both mappings) ══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Emits the morph mesh UNSHARED — one vertex per source triangle corner — carrying the
+        /// source's own normals, tangents and UV0 verbatim (so frame 0 IS the crystal) plus the two
+        /// target channels.
+        ///
+        /// Unsharing is what makes per-face targets possible at all: a vertex reachable from two
+        /// faces would have two destinations and one slot. It is visually identical, because a
+        /// hard-edged import already stores those corners apart.
+        /// </summary>
+        /// <param name="extent">Points the animation reaches that the per-vertex targets may not
+        /// (a hull's corners, an octahedron's centre), folded into the culling bounds.</param>
+        static Mesh Emit(Mesh source, Vector3[] srcVerts, int[] srcTris,
+                         Vector4[] vertexTarget, Vector4[] vertexTargetNormal, Vector3[] extent)
+        {
             var srcNormals = source.normals;
             var srcTangents = source.tangents;
             var srcUv0 = source.uv;
@@ -278,7 +835,7 @@ namespace CosmicShore.Utility
 
             int n = srcTris.Length;
             var verts = new Vector3[n];
-            var normals2 = new Vector3[n];
+            var normals = new Vector3[n];
             var tangents = new Vector4[n];
             var uv0 = new Vector2[n];
             var uv2 = new Vector4[n];
@@ -289,25 +846,27 @@ namespace CosmicShore.Utility
             {
                 int si = srcTris[k];
                 verts[k] = srcVerts[si];
-                normals2[k] = hasNormals ? srcNormals[si] : Vector3.up;
+                normals[k] = hasNormals ? srcNormals[si] : Vector3.up;
                 tangents[k] = hasTangents ? srcTangents[si] : new Vector4(1f, 0f, 0f, 1f);
                 uv0[k] = hasUv0 ? srcUv0[si] : Vector2.zero;
-
-                float phase = Mathf.Clamp01(solidPhase[vertSolid[si]]);
-                uv2[k] = new Vector4(landedPos[si].x, landedPos[si].y, landedPos[si].z, phase);
-                uv3[k] = new Vector4(landedNrm[si].x, landedNrm[si].y, landedNrm[si].z, phase);
+                uv2[k] = vertexTarget[si];
+                uv3[k] = vertexTargetNormal[si];
                 tris[k] = k;
             }
 
             var mesh = new Mesh
             {
                 name = $"CrystalMorph_{source.name}",
+                // Runtime-only: a generated mesh must never serialize into a scene. DontSave also
+                // exempts it from Resources.UnloadUnusedAssets, so the runner's explicit Destroy is
+                // what keeps one per pickup from accumulating.
+                hideFlags = HideFlags.DontSave,
                 indexFormat = n > 65000
                     ? UnityEngine.Rendering.IndexFormat.UInt32
                     : UnityEngine.Rendering.IndexFormat.UInt16,
             };
             mesh.SetVertices(verts);
-            mesh.SetNormals(normals2);
+            mesh.SetNormals(normals);
             mesh.SetTangents(tangents);
             mesh.SetUVs(0, uv0);
             mesh.SetUVs(TargetUVChannel, uv2);
@@ -315,11 +874,13 @@ namespace CosmicShore.Utility
             mesh.SetTriangles(tris, 0, false);
 
             // The morph DISPLACES vertices in the vertex stage, so the culling envelope has to
-            // cover both ends of the animation or the mesh is frustum-culled mid-flight. The union
-            // of the source's bounds and the hull's is exact: every vertex travels a straight line
-            // between a point in one and a point in the other, and both are convex.
+            // cover both ends of the animation or the mesh is frustum-culled mid-flight. Every
+            // vertex travels a straight line from a point in the source to its target, so the
+            // source's bounds plus every target (and the extent points) is exact.
             var bounds = source.bounds;
-            for (int f = 0; f < target.Corners.Length; f++) bounds.Encapsulate(target.Corners[f]);
+            for (int k = 0; k < n; k++) bounds.Encapsulate(new Vector3(uv2[k].x, uv2[k].y, uv2[k].z));
+            if (extent != null)
+                for (int k = 0; k < extent.Length; k++) bounds.Encapsulate(extent[k]);
             mesh.bounds = bounds;
 
             return mesh;

@@ -645,7 +645,7 @@ public class VesselTransformer : MonoBehaviour
             // write lands (TeleportContinuity; a Butterfly fold gate transit is the case that
             // needed it to be seamless rather than merely correct).
             float jumpSpeed = VesselStatus != null ? VesselStatus.Speed : speed;
-            TeleportContinuity.OnTeleported(transform, from, pose.position, jumpSpeed);
+            TeleportContinuity.OnTeleported(transform, from, pose.position, jumpSpeed, VesselStatus);
             accumulatedRotation = pose.rotation;
 
             // A pose write is a teleport, so momentum must follow the new facing rather than the

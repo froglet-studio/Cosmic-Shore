@@ -26,6 +26,18 @@ ghost. What ships now is a BODY, THREE tone shells and a stationary RIM:
 and OriginalMaterialSet's CrystalMaterial..CrystalMaterial4 point at those five
 per-slot materials, so a TEAM crystal is the same crystal in its domain colours.
 
+Charge owns the PENTAGONS, and its signature is the charge crystal's EDGE DISCHARGE
+(plasma crackling vertex to vertex along the crease edges). A sixth child,
+OmniCrystalChargeEdges, draws exactly that on the 12 pentagonal prisms and nothing else:
+the body's own mesh, filtered at runtime by CrystalEdgeArcs (plateCorners 10 - a
+pentagonal prism has 10 corners) and edge-baked by CrystalEdgeArcMeshBaker, on
+OmniChargeEdgesShader, which adds ChargeCrystal.hlsl's discharge term over the body.
+It is a plain child, NOT a crystalModels slot - an overlay has no husk to burst and no
+team material to clone - and CrystalAccentTint paints its bolt halo from the body's
+material so a team crystal's bolts wear its domain colour. Its arc dials are cloned from
+ChargeCrystalMaterial (one look for one element - retune the charge crystal and --check
+names this material as drifted), its _BrightColor and _Spread from OmniCrystalBody.
+
 Five slots, and the fifth is real: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
 answers indices 0..4 (SO_MaterialSet.CrystalMaterial4 was added for the rim), so a
 team crystal paints every slot. Past 4 it still warns and reuses slot 0's material.
@@ -139,6 +151,25 @@ RIM_BAND = (1.03, 0.98)
 RIM_QUEUE = 3001
 MAT_RIM = mat_guid(RIM_NAME)
 
+# ── charge edges (the pentagons) ──
+CHARGE_PREFAB = "Assets/_Prefabs/Environment/OmniCrystalChargeEdges.prefab"
+CHARGE_PREFAB_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniCrystalChargeEdges.prefab").hexdigest()
+CHARGE_SHADER_GUID = "fea45e80b3e94b3e34515f9ff6446e87"   # OmniChargeEdgesShader.shader
+CHARGE_MAT_NAME = "OmniChargeEdges"
+MAT_CHARGE = mat_guid(CHARGE_MAT_NAME)
+CHARGE_DONOR = "ChargeCrystalMaterial"                   # the charge crystal's own dials
+EDGE_ARCS_GUID = "ed80837ca1fd4d9ebeb185fec643a226"      # CrystalEdgeArcs.cs
+ACCENT_TINT_GUID = "599565cac0fff6c38bbe40a3fcc53207"    # CrystalAccentTint.cs
+PENTAGON_PLATE_CORNERS = 10                              # a pentagonal prism: 2 x 5 corners
+TRUNC_OCTA_PREFAB = "Assets/_Prefabs/Environment/TrucatedOctahedron.prefab"
+# The shader's whole property set: (name, kind, source) - source is the material it is copied from.
+CHARGE_PROPS = [("_ArcCoreColor", "c", CHARGE_DONOR), ("_ArcDuty", "f", CHARGE_DONOR),
+                ("_ArcIntensity", "f", CHARGE_DONOR), ("_ArcJitter", "f", CHARGE_DONOR),
+                ("_ArcLength", "f", CHARGE_DONOR), ("_ArcShimmer", "f", CHARGE_DONOR),
+                ("_ArcSpeed", "f", CHARGE_DONOR), ("_ArcWidth", "f", CHARGE_DONOR),
+                ("_BrightColor", "c", "OmniCrystalBody"), ("_NodeIntensity", "f", CHARGE_DONOR),
+                ("_NodeRadius", "f", CHARGE_DONOR), ("_Spread", "c", "OmniCrystalBody")]
+
 
 def _donor(name):
     return open(os.path.join(ROOT, MAT_DIR, name + ".mat")).read()
@@ -178,7 +209,35 @@ def material_texts():
             f"OmniShepardTrianglesInactive {i}", "OmniCrystalBodyInactive", body_inactive, start, stop, 1, SHEPARD_QUEUES[i])
     out[RIM_NAME] = _tone_material(RIM_NAME, "OmniCrystalBody", body, *RIM_BAND, 0, RIM_QUEUE)
     out[RIM_NAME + "Inactive"] = _tone_material(RIM_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive, *RIM_BAND, 0, RIM_QUEUE)
+    out[CHARGE_MAT_NAME] = charge_material_text(body)
     return {f"{MAT_DIR}/{n}.mat": t for n, t in out.items()}
+
+
+def _saved(text, name, kind):
+    """One saved property's serialized value text out of a material, exactly as written."""
+    if kind == "f":
+        m = re.findall(rf"^    - {re.escape(name)}: (\S+)$", text, re.M)
+    else:
+        m = re.findall(rf"^    - {re.escape(name)}: (\{{[^}}]*\}})$", text, re.M)
+    if len(m) != 1:
+        raise SystemExit(f"material clone: {name} found {len(m)}x in its source material")
+    return m[0]
+
+
+def charge_material_text(body_text):
+    """OmniChargeEdges: ChargeCrystalMaterial's arc dials + the body's halo colour and spread, on
+    OmniChargeEdgesShader. Built from the charge material (donor-cloned for its header) with its
+    saved properties REPLACED by exactly the new shader's set, so no stale body property rides along."""
+    sources = {CHARGE_DONOR: _donor(CHARGE_DONOR), "OmniCrystalBody": body_text}
+    t = _sub1(sources[CHARGE_DONOR], rf"^  m_Name: {CHARGE_DONOR}$", f"  m_Name: {CHARGE_MAT_NAME}",
+              "charge m_Name")
+    t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
+              f"  m_Shader: {{fileID: 4800000, guid: {CHARGE_SHADER_GUID}, type: 3}}", "charge m_Shader")
+    floats = "".join(f"    - {n}: {_saved(sources[s], n, k)}\n" for n, k, s in CHARGE_PROPS if k == "f")
+    colors = "".join(f"    - {n}: {_saved(sources[s], n, k)}\n" for n, k, s in CHARGE_PROPS if k == "c")
+    t = _sub1(t, r"^    m_Floats:\n(?:    - .*\n)+", lambda _: "    m_Floats:\n" + floats, "charge m_Floats")
+    t = _sub1(t, r"^    m_Colors:\n(?:    - .*\n)+", lambda _: "    m_Colors:\n" + colors, "charge m_Colors")
+    return t
 
 
 def material_meta(name):
@@ -212,6 +271,14 @@ SLOTS = [
     # every other slot: SO_MaterialSet.CrystalMaterial4 / GetTeamCrystalMaterial case 4.
     (3086241560104200021, 3086241560104200022, 3086241560104200023, RIM_NAME),
 ]
+
+# The charge-edges overlay: a sixth child of Crystal.prefab that is deliberately NOT a crystalModels
+# slot (see the module docstring). Ids inside OmniCrystalChargeEdges.prefab, then its instance in
+# Crystal.prefab (PrefabInstance, stripped Transform, stripped GameObject).
+CHARGE_GO, CHARGE_TR, CHARGE_MF, CHARGE_MR, CHARGE_ARCS, CHARGE_TINT = (
+    3086241560104200031, 3086241560104200032, 3086241560104200033,
+    3086241560104200034, 3086241560104200035, 3086241560104200036)
+CHARGE_CHILD = (3086241560104200041, 3086241560104200042, 3086241560104200043, "OmniCrystalChargeEdges")
 
 # Per slot: (default, inactive). Slot 0 is the body; 1..3 the falling tone; 4 the rim.
 SLOT_MATERIALS = ([(MAT_BODY, MAT_BODY_INACTIVE)]
@@ -531,6 +598,98 @@ MonoBehaviour:
 """
 
 
+def body_mesh_ref():
+    """The omni model's mesh reference exactly as the body prefab records it (Unity minted that fileID
+    on import, so it is READ, never computed - see the docstring's note on FBX sub-asset ids)."""
+    refs = re.findall(r"^  m_Mesh: (\{fileID: -?\d+, guid: \w+, type: 3\})$",
+                      open(os.path.join(ROOT, TRUNC_OCTA_PREFAB)).read(), re.M)
+    if len(refs) != 1:
+        raise SystemExit(f"{TRUNC_OCTA_PREFAB}: expected one MeshFilter, found {len(refs)}")
+    return refs[0]
+
+
+def charge_prefab_text():
+    """The pentagon discharge overlay: the body's own mesh at the body's own pose (identity, scale 1 -
+    the body instance overrides nothing else), filtered to the 10-corner plates by CrystalEdgeArcs.
+    The renderer block is the tone shell's with shadows off: an additive overlay neither casts nor
+    receives them (its shader has no shadow pass anyway)."""
+    shell = shell_prefab_text(1)
+    renderer = shell[shell.index(f"--- !u!23 &{SHELL_MR}"):shell.index(f"--- !u!114 &{SHELL_FADE}")]
+    renderer = renderer.replace(f"&{SHELL_MR}", f"&{CHARGE_MR}").replace(
+        f"m_GameObject: {{fileID: {SHELL_GO}}}", f"m_GameObject: {{fileID: {CHARGE_GO}}}")
+    renderer = _sub1(renderer, r"^  m_CastShadows: 1$", "  m_CastShadows: 0", "charge shadows")
+    renderer = _sub1(renderer, r"^  m_ReceiveShadows: 1$", "  m_ReceiveShadows: 0", "charge receive")
+    renderer = _sub1(renderer, rf"^  - \{{fileID: 2100000, guid: {MAT_SHEPARD[0]}, type: 2\}}$",
+                     f"  - {{fileID: 2100000, guid: {MAT_CHARGE}, type: 2}}", "charge material")
+
+    def behaviour(fid, guid, fields):
+        return (f"--- !u!114 &{fid}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+                f"  m_CorrespondingSourceObject: {{fileID: 0}}\n  m_PrefabInstance: {{fileID: 0}}\n"
+                f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {CHARGE_GO}}}\n"
+                f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+                f"  m_Script: {{fileID: 11500000, guid: {guid}, type: 3}}\n"
+                f"  m_Name: \n  m_EditorClassIdentifier: \n{fields}")
+
+    return (f"""%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &{CHARGE_GO}
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  serializedVersion: 6
+  m_Component:
+  - component: {{fileID: {CHARGE_TR}}}
+  - component: {{fileID: {CHARGE_MF}}}
+  - component: {{fileID: {CHARGE_MR}}}
+  - component: {{fileID: {CHARGE_ARCS}}}
+  - component: {{fileID: {CHARGE_TINT}}}
+  m_Layer: 0
+  m_Name: OmniCrystalChargeEdges
+  m_TagString: Untagged
+  m_Icon: {{fileID: 0}}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &{CHARGE_TR}
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {CHARGE_GO}}}
+  serializedVersion: 2
+  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
+  m_LocalPosition: {{x: 0, y: 0, z: 0}}
+  m_LocalScale: {{x: 1, y: 1, z: 1}}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {{fileID: 0}}
+  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
+--- !u!33 &{CHARGE_MF}
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {CHARGE_GO}}}
+  m_Mesh: {body_mesh_ref()}
+""" + renderer
+            + behaviour(CHARGE_ARCS, EDGE_ARCS_GUID, f"  plateCorners: {PENTAGON_PLATE_CORNERS}\n")
+            + behaviour(CHARGE_TINT, ACCENT_TINT_GUID, "  crystal: {fileID: 0}\n"))
+
+
+CHARGE_META = f"""fileFormatVersion: 2
+guid: {CHARGE_PREFAB_GUID}
+PrefabImporter:
+  externalObjects: {{}}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
 SHELL_META = f"""fileFormatVersion: 2
 guid: {SHELL_PREFAB_GUID}
 PrefabImporter:
@@ -592,7 +751,8 @@ GameObject:
 
 
 def crystal_children_text():
-    """The five child PrefabInstances of Crystal.prefab, in crystalModels order."""
+    """Crystal.prefab's child PrefabInstances: the five crystalModels slots in order, then the
+    charge-edges overlay (a child, not a slot)."""
     out = []
     for i, (inst, stripped_tr, stripped_go, name) in enumerate(SLOTS):
         body = i == 0
@@ -602,6 +762,9 @@ def crystal_children_text():
         mat = SLOT_MATERIALS[i][0]
         out.append(_instance_block(inst, guid, t_go, t_tr, t_mr, name, mat))
         out.append(_stripped_blocks(inst, guid, stripped_tr, stripped_go, t_tr, t_go))
+    inst, stripped_tr, stripped_go, name = CHARGE_CHILD
+    out.append(_instance_block(inst, CHARGE_PREFAB_GUID, CHARGE_GO, CHARGE_TR, CHARGE_MR, name, MAT_CHARGE))
+    out.append(_stripped_blocks(inst, CHARGE_PREFAB_GUID, stripped_tr, stripped_go, CHARGE_TR, CHARGE_GO))
     return "".join(out)
 
 
@@ -658,11 +821,11 @@ MODELS_BLOCK = re.compile(r"^  crystalModels:\n(?:  - model:.*?\n(?:    .*\n)*)+
 def build_crystal_prefab(existing):
     head = existing[:CHILDREN_START.search(existing).start()]
     head, n = MODELS_BLOCK.subn(crystal_models_text(), head)
-    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS)
-    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){4,5}", lambda x: x.group(1) + children,
+    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS + [CHARGE_CHILD])
+    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){4,6}", lambda x: x.group(1) + children,
                       head, count=1, flags=re.M)
     if m != 1:
-        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (4-5 entries) not found")
+        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (4-6 entries) not found")
     if n != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: expected exactly one crystalModels block, found {n}")
     return head + crystal_children_text()
@@ -689,6 +852,8 @@ def main():
         TRI_MESH_ASSET + ".meta": TRI_MESH_META,
         SHELL_PREFAB: shell_prefab_text(shell_scale),
         SHELL_PREFAB + ".meta": SHELL_META,
+        CHARGE_PREFAB: charge_prefab_text(),
+        CHARGE_PREFAB + ".meta": CHARGE_META,
     }
     for path, text in material_texts().items():
         want[path] = text

@@ -65,6 +65,67 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Squirrel omni-crystal morph: the crystal becomes its eight shielded ring prisms (`cece/dreamy-fermat-szo9ck`, 2026-10-08)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`): a Squirrel's omni
+pickup no longer sprays the husk — the one-layer body's 64 panels land 1:1 on the 64 faces of the
+boost ring's eight shields, the tone triangles fade, and the ring is revealed already full-size.
+Shared `CrystalMorphRunner` now also drives the Scarab forge (its colour convergence was a no-op on
+the one-layer body and now works). `OmniCrystalFresnelShader` blends its colour formula onto
+BlockGraph's per face on the morph weight.
+
+**Not opened in Unity** — no editor in the session. Offline: census on the shipped FBX (64 = 8 × 8),
+21/21 geometry tests run headlessly (`Tools/Build/crystal_morph_harness/run.sh`, four injected
+defects caught), HLSL verifier, SPIR-V compile of the body shader, `unity_refcompile` player + editor
+0 project errors.
+
+**Verify in editor** — the steps are `SQUIRREL_CRYSTAL_MORPH.md` §6 (no husk; plates land on the
+ring; no grow-in after; ring skimmable mid-morph; second pickup inside 0.15 s fades with a named
+warning; other hulls unchanged; Scarab forge re-check; MPPM two peers). Inspect at 20× by setting
+`Resources/CrystalMorphConfig.duration` to 9.
+
+**First-pass tuning:** `overlayFadeFraction 0.3`, `panelPhaseStart/End 0.55/1`, `fillerPhase 0`,
+`targetGraceSeconds 1.5`, `ringCaptureRadius 60` — starting points, not settled.
+
+**Merged after it:** the pentagons' charge discharge (`OmniCrystalChargeEdges`, the entry below) is a
+plain child, not a `crystalModels` slot, so the morph does not adopt it — on a Squirrel pickup the
+bolts leave with the crystal on the pickup frame while the body morphs. Look for whether that reads as
+a pop; adopting it as a fading overlay is a follow-up (`Docs/PALETTE.md` §7).
+
+---
+
+### 🔴 Omni crystal: charge edge discharge on the pentagons (`cece/wonderful-planck-qqj3kd`, 2026-10-08)
+
+**Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
+a sixth child of `Crystal.prefab`, `OmniCrystalChargeEdges` (NOT a `crystalModels` slot), draws the
+charge crystal's crease-edge plasma on the omni's 12 pentagonal prisms only, additively, via the new
+`OmniChargeEdgesShader` + `OmniChargeEdges.mat`. C#: `CrystalEdgeArcMeshBaker` gains a plate filter
+(`plateCorners`), `CrystalEdgeArcs` exposes it, new `CrystalAccentTint`, and
+`Crystal.ModelMaterialSettled`. **Verified offline, not in Unity** (no editor/`unity` CLI in the
+session): the real baker + the new `CrystalEdgeArcMeshBakerTests` executed in a Roslyn harness (6/6,
+both negative controls fire); on the shipped omni model the filter keeps 192 triangles / 180 crease
+edges (12 x 16 / 12 x 15); the `ChargeCrystal.hlsl` refactor is bitwise identical under clang over
+200k samples; both shaders front-end compile under glslang (URP mocked); `unity_refcompile` reports 0
+project errors in the player AND editor configs (the test's one `LogAssert` call is "unverified" there,
+since the test-framework DLL is not in its references - the same call `GameObjectExtensionTests`
+makes); `check_generated_assets.py` audits the new prefab/material clean (negative-controlled).
+
+1. Console after import: no shader errors on `OmniChargeEdgesShader` or `ChargeCrystal` (the charge
+   crystal now calls the factored-out `ChargeCrystalDischarge`; it must look exactly as before).
+2. Play any scene with a free omni crystal (Skim Race): bolts crackle along the PENTAGONS' edges
+   only — the pentagon rims and the short side edges — never across a face, and never on the boxes or
+   triangles. No z-fighting shimmer on the pentagon faces (the overlay must not draw the faces).
+3. The bolts read like the charge crystal's (compare a `CrystalCharge` side by side): thin, white-hot
+   heads, lime tails, a faint idle shimmer on the pentagon wireframe. If they are invisible, check the
+   console for `[CrystalEdgeArcMeshBaker] ... no plate with exactly 10 corners`.
+4. Skim Race team crystals (domain-owned): bolt tails turn the domain colour on the same frame the
+   body does (the Fresnel pair cannot lerp, so the body snaps and the bolts follow it), not lime.
+5. Collect an omni: the replacement appears at once with its bolts; only the body/tone husks burst
+   (no extra pentagon husk).
+6. `CrystalEdgeArcMeshBakerTests` pass in the Test Runner.
+
+---
+
 ### 🔴 Butterfly omni-crystal bloom: strips pilots, dusts prisms (`cece/awesome-hopper-rj9b50`, 2026-10-08)
 
 **Landed** (`R_VesselActions/BUTTERFLY.md §3.3a`, generator `Tools/Build/author_butterfly_dust.py --check`):
@@ -112,6 +173,8 @@ deleted, container `explosionPrismEffects: []`, and `ButterflyBloomDust` (an `IE
 now applies the capsule's dust asset itself. Verify: no "explosionPrismEffects[0] is empty" error;
 `[ButterflyBloom]` logs `dispatched` ≈ `reached` with a non-zero tally; puffs on changed prisms.
 
+---
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
@@ -153,6 +216,200 @@ Compiled against Unity reference assemblies (`unity_refcompile`, 0 project error
 
 **First-pass tuning:** `OUTER_REACH = 2.0` in the generator (how far out the tone starts); band
 period is the Mass materials' 3 s.
+
+---
+
+### 🔴 Urchin autopilot driver for Skein and Hijack (#975, `claude/urchin-ai`, 2026-10-06)
+
+New `UrchinAutopilotDriver` (`Assets/_Scripts/Controller/AI/Urchin/`) owned by the Skein and Hijack
+controllers: picks ride / reverse / leave per rail (`UrchinRailAssessment`), Slips off a wrong rail
+or a parked ride, taps Chain Spikes on a hostile prism when the spike SO's `AmmoIndex`/`AmmoCost` are
+covered, and (Skein only) fires the Track Projector on a long lined-up leg. Presses go through
+`PerformShipControllerActionsReplicated`; `AIPilot` is untouched; `ram: 1` on `Urchin.prefab` was
+audited and kept. Tunables: `Assets/Resources/UrchinAutopilotConfig.asset`. No editor in the
+authoring session: the three new files and their NUnit tests were Roslyn-compiled against stubs and
+run (31 checks); the two controller edits were syntax-checked only. QA item: `QA-URCHIN-AI`.
+
+**Verify in editor**
+
+1. The project compiles. `Assets/Resources/UrchinAutopilotConfig.asset` shows the Urchin Autopilot
+   Config inspector with values, not "missing script".
+2. Edit-mode tests: `UrchinRailAssessmentTests` (13) pass.
+3. Skein, solo, intensity 3 or 4, 2-4 players so AI fill seats. An AI advances `SwitchesThreaded`
+   steadily and finishes. Watch for: a Slip off a strand that does not reach its next ring; spike
+   taps on a rival-coloured strand (the lane turns its colour) instead of a ~20 u/s crawl; a
+   swing-round to ride the other way when its ring is behind; occasionally a Track Projector rail
+   laid on a long straight leg and launched off toward the ring.
+4. Skein intensity 1 (all collars): AI ride through and finish as before.
+5. Hijack, solo with AI: raiders still grind, spike hostile thirds and burrs, Slip out of a parked
+   ride; their domain's steal count climbs. Hijack never fires the Track Projector (by design).
+6. Regression: Regatta and Broadside AI Urchins behave as before (no driver there).
+
+**First-pass tuning:** `UrchinAutopilotConfig.asset` `ClosingFraction` / `LaunchPreferArc` trade
+riding against leaving; `TrackMinRangeInLengths` sets how often Track fires.
+
+---
+
+### 🔴 Rhino, Serpent and Scarab ability rows bound to their own abilities (#971, `claude/hull-ability-rows`, 2026-10-06)
+
+`Tools/Build/author_hull_ability_rows.py` binds all four slots, charge → mass → space → time, on
+`RhinoHUDVariant` (Mass Trail Slabs, Time Ramp Spool; Charge and Space bound icon-less = LOCKED open
+design slots), `Serpent.prefab` / `SerpentHUDVariant` (Charge Sniper Shot, Space Scope, Time Pellets;
+Mass LOCKED) and `ScarabHUDVariant` (sprite swap off the borrowed Sparrow art: Cavitation Blast /
+Switch / Ball Forge / Throttle). Eight `*-PLACEHOLDER.png` sprites from
+`author_hull_icon_placeholders.py`. No C# changed; prefabs edited as YAML, never imported.
+QA item: `QA-HULL-ABILITY-ROWS`.
+
+**Verify in editor**
+
+1. `RhinoHUDVariant`, `SerpentHUDVariant`, `ScarabHUDVariant` and `Serpent.prefab` import with no
+   missing-reference or YAML errors; the `*-PLACEHOLDER.png` files import as Sprites.
+2. **FrogletTools > Vessels > Audit Vessel Ability Rows**: Rhino reports Mass and Time bound; Serpent
+   Charge, Space and Time bound; the only remaining lines are the open-design-slot / no-icon /
+   no-UpgradeLabel lines for Rhino Charge/Space and Serpent Mass. A Serpent "pitch not uniform"
+   (256/128) line is expected (the auditor skips the locked Mass slot).
+3. **FrogletTools > Vessels > Audit Ability Lockups**: no icon reported as not fitting its card.
+4. Rhino match: row reads LOCKED / Trail Slabs / LOCKED / Ramp Spool; the old bottom-right Rhino
+   chrome stays retired; no `[VesselHUDView]` row warnings.
+5. Serpent: Sniper Shot (RT chip) / LOCKED / Scope (LT chip) / Pellets (A chip); fire the rifle and
+   the Charge card's cooldown veil sweeps over the bullet icon.
+6. Scarab: blast / ring / ball / dial icons, not Sparrow art; gauge tints still apply (blast
+   ready/spent, switch charge ramp, ball READY).
+7. Optional: an element at level 5 shows the upgrade badge/bloom on its bound card.
+
+---
+
+### 🔴 Per-hull AI boost policies (#974, `claude/fleet-ai-boost`, 2026-10-06)
+
+`AIPilot` gains an optional `boostPolicy`; five policy SOs under
+`Assets/_SO_Assets/AI Boost Policies/`: Sparrow `HoldBoostAIPolicySO`, Serpent
+`PelletBoostAIPolicySO`, Dolphin `ChargeBoostAIPolicySO`, Squirrel `SkimRingAIPolicySO`, Scarab
+`SnapDashAIPolicySO` (+ `ScarabVesselTransformer.TryAutopilotSnapDash`). Each has `disabledInModes`
+(Sparrow: Dog Fight, Wildlife Liberation; Dolphin: Bends, Rampage, Broadside; Squirrel: Skim Race,
+Joust, Astro League + `requireAIPlayer`; Scarab: Astro League, Scarab Scramble, Tollway). Roslyn
+type-check against stubs only; `/verify-unity` did not run. Design:
+`Assets/_Scripts/Controller/AI/AI_BOOST.md`. QA item: `QA-AI-BOOST-POLICIES`.
+
+**Verify in editor**
+
+1. Compiles clean. On `Sparrow`, `Serpent`, `Dolphin`, `Squirrel` and `Scarab.prefab`, AIPilot >
+   Boost Policy shows the matching asset.
+2. Regatta, all-AI with Sparrow, Serpent, Dolphin and Scarab bots: Sparrow boosts between rings and
+   drops it approaching each ring; Serpent spends pellets on long legs, not just before a ring;
+   Dolphin's discharge fires mid-leg, not after the ring. All three finish nearer the Manta and
+   Rhino. Record lap times.
+3. Squirrel outside Skim Race and Regatta (Scurry or Brood Rush with an AI Squirrel): on a long
+   straight it lays one Boost Ring ~100 u ahead, flies through the middle without a full stop, and
+   its boost multiplier rises. No rings laid in the Menu_Main lava-lamp.
+4. Scarab at Time 5: a forward surge on straights no more than every ~2 s; nothing at Time < 5.
+5. Regressions: Bends Dolphin AI still aims its blast at rivals; Dog Fight Sparrow AI on its old
+   cycle; Skim Race `SkimRacePilot` unaffected; Astro League Squirrel and Scarab unchanged; menu
+   lava-lamp Sparrow/Dolphin fly normally.
+6. Arena pilot swap mid-boost: the boost releases (no stuck `IsBoosting`).
+
+**Known limit:** AI presses run server-only; the Squirrel's ring prisms appear only on the
+simulating machine (the `SkimRacePilot` limitation).
+
+---
+
+### 🔴 Urchin HUD variant and four-icon row (#973, `claude/urchin-hud`, 2026-10-06)
+
+`UrchinHUDVariant.prefab` (Prefab Variant of `VesselHUDPrefab`) binds Chain Spikes / Trail Rider /
+Track Projector / Slip with the ammo fill on the Charge card's gauge, a binary riding indicator on
+Mass and the Track Projector recharge veil on Space. `Urchin.prefab` gains a `ShipHUDContainer`, an
+`UrchinVesselHUDController` (serialized `trackExecutor`), and `VesselStatus.vesselHUDController`.
+Controller fixes: detach before the pilot check, null-`Player` guard, no shadowing `OnDestroy`.
+Four placeholder sprites under `Assets/_Graphics/Icons/AbilityIcons/Urchin/`. Everything written by
+`Tools/Build/author_urchin_hud.py` (`--check`). Full-project `unity_refcompile` (player config) 0
+errors; never opened in the Editor. Supersedes the "no HUD" notes in the two older Urchin entries
+below. QA item: `QA-URCHIN-HUD`.
+
+**Verify in editor**
+
+1. `UrchinHUDVariant.prefab` is a variant of `VesselHUDPrefab`; `UrchinVesselHUDView` holds 4
+   `abilityIcons` (Charge/Mass/Space/Time) with `ammoFill` / `ridingIndicator` bound. If Unity
+   rewrites anything on save, note what.
+2. `Urchin.prefab`: `VesselStatus.vesselHUDController` = `UrchinVesselHUDController`; its
+   `baseView`/`view` point at the nested variant, `trackExecutor` at the `UrchinTrackActionExecutor`;
+   no Missing references.
+3. **Audit Vessel Ability Rows**: Urchin 4/4, in order, uniform, chips drawn (Trail Rider's
+   `Input = 0` is correct - it is passive). **Audit Ability Lockups**: Urchin passes.
+4. Play Hijack, Skein or freestyle as the Urchin: no "VesselHUDController is null on Urchin"
+   warning, no NREs; four cards bottom-right with flowers above, the omni card to their left LOCKED;
+   chips RT on Charge, LT on Space, B on Time, none on Mass.
+5. Fire spikes (RT): the Charge gauge drops, then refills over time and while riding.
+6. Latch a trail: the Mass fill rises to full in ~0.15 s and empties on Slip/detach; never half-full.
+7. Project a track (LT): clockwise recharge veil on the Space card for the 20 s cooldown; a press
+   during cooldown does nothing.
+8. An element at level 5: that card shows the upgrade badge and rim.
+9. Two clients: a remote Urchin and an AI Urchin show no HUD on the other client; swapping away from
+   the Urchin and back leaves no duplicated ammo updates.
+
+**Still owed:** art for the four placeholders; a gauge for the Chain Spikes hold-to-charge.
+
+---
+
+### 🔴 Toast configs for eleven modes, shared race beats, missing publishers (#976, `claude/mode-toasts`, 2026-10-06)
+
+New `GameToastConfig_*` for Rampage, Cleave, Salvo, Switchback, Headlong, Redline, Breakwater,
+Skein, Hijack, Wildlife Liberation and Astro League, registered in `GameToastLibrary`. New
+`DomainRaceToasts` (a local poll over replicated RoundStats posting quarter / halfway / lead change
+/ home stretch / final lap, situations 128-132) ticked by `GateRaceController` and the Rampage,
+Salvo and Hijack controllers. New publishers: `WildlifeCoreBreached` (56, first pilot into the core
+cage), Astro League goal / match point / golden goal (133-135), Salvo wing reload (136, the refuel
+RPC now carries the collector's name), and a `PrismsStolenMilestone` (85) stat watch for Hijack.
+Reference: `Assets/_Scripts/UI/GameToastSystem/GAME_TOASTS.md`. **The PR's own body is a copy of
+#975's, so it carries no Editor list for this change; the steps below were written from the commit
+and the configs.** QA item: `QA-MODE-TOASTS`.
+
+**Verify in editor**
+
+1. Compiles clean; `GameToastLibrary` lists the eleven new configs with no missing entries.
+2. Rampage / Salvo / Hijack (any intensity, with AI): toasts appear when the leading domain reaches a
+   quarter and half of the target, and on a lead change after the quarter beat (at most one per
+   8 s). A late joiner or a replay does not get a backlog burst at match start.
+3. A gate race (Switchback, Headlong, Redline, Breakwater, Skein): halfway, lead change and home
+   stretch toasts; on a lapped course (Headlong, Redline, Breakwater) one "final lap" toast.
+4. Cleave and Wildlife Liberation: their own quarter / half / lead-change milestones now show text
+   with the shake. Wildlife: the first pilot into the core cage triggers "<name> broke into the
+   core!" once per match.
+5. Astro League: a goal toast with the scorer and count, "MATCH POINT" one goal from the limit,
+   and "Golden goal" when the clock runs out level.
+6. Salvo 2v2: a teammate's omni crystal pickup reloads your missiles and posts "<name> reloaded the
+   wing"; a solo domain refuelling itself posts nothing.
+7. Hijack: "<name> has stolen N prisms" every 100 stolen.
+8. Two clients: each beat appears once per machine, on both machines.
+
+---
+
+### 🔴 Hijack: server-authoritative, replicated prism ownership (#972, `claude/hijack-ownership-sync`, 2026-10-06)
+
+`HijackOwnershipLedger` (plain C#) + four RPCs on `HijackController` replicate ownership of every
+Switchyard prism (18 burrs + 24 rails): packed `(domain, slot, index)` changes flushed every 0.1 s,
+client steals reported and server-validated by sender domain, provisional local flips reverted
+after a 0.5 s grace, a snapshot for late joiners. `HijackYard` hostile-mass / nearest-burr / rail
+ownership queries read the table. Shield state is NOT replicated. Roslyn compile + two-peer
+simulation (20/20) against stubs; the rest of `HijackController.cs` syntax-checked only. Reference:
+`HIJACK.md` §10-11. QA item: `QA-HIJACK-OWNERSHIP-SYNC`.
+
+**Verify in editor**
+
+1. `MinigameHijack.unity` compiles; the controller shows the **Ownership Sync** header (flush 0.1,
+   grace 0.5); no missing-script or RPC codegen errors.
+2. Host + one client on different domains:
+   a. Client grinds a hostile rail third and spikes a burr: on the host those prisms turn the
+      client's colour within ~0.1 s and the host rides fast over them.
+   b. Host steals a burr: it flips on the client, and the client's arrow moves to the next burr
+      that still has loot.
+   c. A remote pilot grinding a hostile rail: prisms flip and STAY flipped (a snap-back after
+      ~0.5 s means the owner's report is not reaching the server).
+   d. Client empties a burr: host-run AI raiders stop picking the rail that leads to it.
+   e. Late join: host-only, steal one or two burrs, then join a client. Once its yard is laid those
+      burrs show the host's colour.
+   f. Scores agree on both machines.
+3. Solo with AI backfill, full match: steals, arrow and AI behave as before; console free of warnings.
+
+---
 
 ### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
@@ -1474,9 +1731,11 @@ was not**.
 
 **Known gaps (not this branch's to fix)**
 
-- The Urchin still has **no HUD** (`URCHIN_BACKLOG.md` U3), so neither the charge nor the track's
-  cooldown is visible. `UrchinTrackActionExecutor.CooldownRemaining01` is exposed and unread for
-  the day it exists.
+- ~~The Urchin still has **no HUD** (`URCHIN_BACKLOG.md` U3), so neither the charge nor the track's
+  cooldown is visible.~~ [Edit 2026-10-06: #973 gave the Urchin its HUD. The track's cooldown is
+  now drawn as the recharge veil on the Space card (`UrchinTrackActionExecutor.CooldownRemaining01`
+  is read by `UrchinVesselHUDController`); the Chain Spikes hold-to-charge still has no gauge,
+  because the executor does not expose charge progress. See the #973 entry.]
 - Three `EventReference` fields ship **empty** (charge start, charged release, track deploy) —
   the abilities are silent by design until they are given a voice.
 - The continuous Space/Charge element dials are still LOCAL level reads (`URCHIN_BACKLOG.md` U1);
@@ -2251,9 +2510,9 @@ re-check each line against the prefab rather than trusting the tick.*
    `NetworkVesselClientCache`, `NetworkVesselImpactor` or `ClientNetworkTransform` on
    `Urchin.prefab`. Multiplayer spawn is its own pass, so the MPPM steps below cannot run until it
    lands. Do the single-player steps first and treat the MPPM block as blocked, not as failing.
-7. **HUD row — STILL OPEN.** `UrchinVesselHUDView` exists (ammo fill + a deliberately binary riding
-   indicator); the four `abilityIcons` bindings still have to be authored on the HUD prefab in
-   charge → mass → space → time order. Run **FrogletTools > Vessels > Audit Vessel Ability Rows**
+7. **HUD row — authored by #973 (2026-10-06); verify it in the #973 entry.** `UrchinHUDVariant.prefab`
+   binds the four `abilityIcons` in charge → mass → space → time order (placeholder sprites), with
+   the ammo fill on Charge and the binary riding indicator on Mass. Run **FrogletTools > Vessels > Audit Vessel Ability Rows**
    afterwards — Trail Rider's `Input = 0` will look like an unset field and is **correct** (it is
    passive; the map cannot distinguish the two).
 8. **Three `GunVesselTransformer` fields are not serialized on the prefab** — `throttleDeadband`
@@ -2271,10 +2530,9 @@ re-check each line against the prefab rather than trusting the tick.*
    against the serialized fields of the class each asset's `m_Script` points at — a key Unity does
    not recognise is silently dropped and the field reads its initializer forever).
 10. **Urchin is selectable and spawns.** Menu_Main → vessel changer toy, or any mode's vessel
-   select. It flies and lays a trail. **NO HUD APPEARS, and that is the known state** — there is
-   no `UrchinHUDVariant.prefab`, `vesselHUDController` is `{fileID: 0}`, and the
-   `UrchinVesselHUDController`/`View` pair is referenced by nothing. Do not treat a missing HUD
-   as a failure of this step. (`vesselType` was `Random(0)`; if it fails to SPAWN,
+   select. It flies and lays a trail. ~~**NO HUD APPEARS, and that is the known state**~~
+   [Edit 2026-10-06: superseded by #973 - the Urchin now spawns with `UrchinHUDVariant`'s four-icon
+   row, so a MISSING HUD is now a failure; its checks are in the #973 entry.] (`vesselType` was `Random(0)`; if it fails to SPAWN,
    `TryGetShipPrefab` is not matching.)
 11. **One spike, one steal.** Fire the volley (RT) at an **enemy** trail at Charge 0 (depth 1): the
     spike stops in the prism, the prism changes to your domain, **8** children spray out of it, and
@@ -4759,6 +5017,41 @@ pilot (rings, no view); fixed in `cf99303f2` (fail-open sealing, the pair knows 
 playtested by the owner on 2026-10-08: "the butterfly is great". Still worth a look when convenient —
 a RIVAL domain's view (sealed bubble in the Butterfly's colour, flies straight through) and each
 domain's rim hue (`_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat` if it reads faint or hot).
+
+---
+
+## 🔴 Butterfly wormholes carry anyone; rivals pay petals (`cece/fervent-gates-ychb6q`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`BUTTERFLY_FOLD.md` § "Anyone rides; rivals pay a toll", `Docs/WORMHOLES.md` §5. The fold pair is no
+longer domain-LOCKED: it carries every pilot and every viewer sees through it (the rival seal is
+deleted — the 🟢 entry above's "sealed bubble" step no longer applies). A pilot NOT of the Butterfly's
+domain has `rivalTollPetalsPerElement` (15 = whole flower) petals stripped per element on each transit,
+left on the surface of the mouth they entered as free-for-all crystals. Runs on every peer from
+`TeleportContinuity`. Headless `Tools/Build/unity_refcompile/run.sh` (player AND editor configs, the
+latter including `WormholeTollTests.cs`): 0 errors in project code — a compile, not a run.
+
+1. **Edit-mode:** `WormholeTollTests` (5 tests) and `ElementalDebuffWardTests` stay green.
+2. **Butterfly, own pair (MPPM or solo freestyle):** fold, thread either mouth. Expect: carried, no
+   petals lost, no crystals at the mouth — unchanged from today.
+3. **Rival thread (two domains — MPPM with two clients on different teams, or an AI of another domain
+   flying through):** give the rival some petals (collect crystals), fly it into one mouth. Expect:
+   carried out of the other; its HUD flowers drop to empty (or by the toll); a spill of lime
+   free-for-all crystals, one per petal, on the ENTRY mouth's surface around the entry point, settling
+   ~14 u out — none inside the sphere. Collecting one gives exactly one petal back.
+4. **Rival view:** with the camera on the rival pilot, the pair shows a view through (exact up close,
+   panorama far), not a sealed bubble. The rim still wears the Butterfly's domain hue.
+5. **MPPM two-client:** after a rival transit both clients show the same petal loss on that pilot and
+   each shows its own spill (crystals are per-peer local objects — who collected one may disagree).
+6. **Warded rival:** a Sparrow/Serpent holding an `All` ward threads a rival pair → no petals lost,
+   no crystals.
+7. **Console:** no `[ElementalCrystalEjector] … are LOST` error (that would mean
+   `Resources/ElementalCrystalSet` is missing a prefab).
+
+| Knob (`ButterflyFoldAction.asset`) | First pass | If it plays wrong |
+|---|---|---|
+| `rivalTollPetalsPerElement` | 15 | Reads as a de-facto lock → try 2–3 |
+| `rivalTollShedSpeed` | 25 | Spill too tight / too far from the mouth |
+| `WormholeMouth.TollSpreadDegrees` (const) | 30 | Spill a clump → widen; can't tell whose entry → narrow |
 
 ---
 
