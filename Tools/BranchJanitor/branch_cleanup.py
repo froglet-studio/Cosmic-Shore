@@ -118,7 +118,9 @@ def classify(b, policy, now, allow_large=False):
 
 
 def parse_names(text):
-    return [n for n in re.split(r"[\s,]+", text or "") if n]
+    """Branch names separated by spaces, commas or new lines; lines starting with # are comments."""
+    lines = [l for l in (text or "").splitlines() if not l.lstrip().startswith("#")]
+    return [n for n in re.split(r"[\s,]+", "\n".join(lines)) if n]
 
 
 def summary(lines):
