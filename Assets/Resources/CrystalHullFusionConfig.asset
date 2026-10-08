@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19e09dc329e44f5e88e55214333b9996, type: 3}
+  m_Name: CrystalHullFusionConfig
+  m_EditorClassIdentifier:
+  entries:
+  - vessel: 6
+    element: 1
+    approachSeconds: 0.22
+    wrapSeconds: 0.34
+    holdSeconds: 0.24
+    sinkSeconds: 0.3
+    landRadiusFraction: 0.35
+    approachAcceleration: 2.4
+    approachPop: 0.25
+    approachSpinTurns: 1
+    tileFill: 1.1
+    flatten: 0.45
+    wrapLift: 0.3
+    wrapStagger: 0.4
+    spotConeDegrees: 12
+    surfaceLift: 0.05
+    flareGain: 2.6
+    clampPulse: 1.12
+    arcBoost: 2
+    holdArcDuty: 0
+    sinkDepth: 1
+    convergeToDomainColour: 1

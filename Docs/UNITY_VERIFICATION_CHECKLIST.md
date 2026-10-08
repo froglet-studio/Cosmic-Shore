@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Crystal → hull fusion: Squirrel × Charge (`cece/nice-babbage-j6sejq`, 2026-10-08)
+
+**What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture
+(fly in, shrink, husk). The crystal is pulled onto the hull, opens, and its 60 plates slide round
+and lie flush over the whole hull, flare and crackle, then sink in, ending in the pilot's domain
+colour. Experiment for a per-(vessel, element) family. Record + tuning table:
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md`. Also turns on Read/Write
+for the Squirrel FBX (bone weights for pinning plates to limbs). The `unity` CLI was not available
+in the authoring session, so `/verify-unity` did not run; compiled headless against real Unity
+references (player + editor) instead.
+
+**Verify in editor.**
+1. Squirrel, skim a charge crystal: crystal pulled to the hull side it came from → opens → plates
+   cover top, bottom and wings → flare + continuous edge discharge → sink. ~1.1 s. Domain colour,
+   not lime, by the clamp. Pickup SFX on the clamp; no husk spray.
+2. Pitch/yaw hard mid-fusion: wing plates stay on the wings.
+3. Squirrel + mass/space/time crystal, and any other vessel + charge crystal: old capture, unchanged.
+4. Clean console. `CrystalMorph` log channel → one `[CrystalHullFusion]` line per pickup.
+5. Run `CrystalHullFusionTests` (edit mode).
+
+**First-pass tuning** (`Resources/CrystalHullFusionConfig`): beats 0.22 / 0.34 / 0.24 / 0.30 s,
+`tileFill` 1.1, `flatten` 0.45, `wrapLift` 0.3, `wrapStagger` 0.4, `flareGain` 2.6.
+
+---
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):

@@ -113,6 +113,10 @@ namespace CosmicShore.Gameplay
             var crystal = Crystal;
             if (crystal == null) return;
 
+            // A (vessel, element) pair with its own fusion replaces this whole flourish: the
+            // crystal joins the hull instead of flying into it and dissolving.
+            if (TryFuseOntoHull(crystal, vesselStatus)) return;
+
             var cfg = CaptureConfig;
             var vesselTransform = vesselStatus?.VesselTransformer ? vesselStatus.VesselTransformer.transform : null;
 
@@ -206,6 +210,47 @@ namespace CosmicShore.Gameplay
             // A zero-length absorb still owes the payoff.
             if (!burstFired) FireHuskBurst(crystal, cfg, vesselStatus, baseScale);
 
+            crystal.DestroyCrystal();
+        }
+
+        /// <summary>
+        /// Hands the crystal to a <see cref="CrystalHullFusion"/> when
+        /// <see cref="CrystalHullFusionConfigSO"/> lists this (vessel, element) pair. False -
+        /// leaving the crystal untouched for the generic capture - when no entry exists or the
+        /// fusion cannot be laid out on this hull (it names why, once).
+        /// </summary>
+        bool TryFuseOntoHull(Crystal crystal, IVesselStatus vesselStatus)
+        {
+            if (vesselStatus == null) return false;
+            var config = CrystalHullFusionConfigSO.Load();
+            if (!config || !config.TryGet(vesselStatus.VesselType, crystal.crystalProperties.Element, out var entry))
+                return false;
+
+            var fusion = CrystalHullFusion.Begin(crystal, vesselStatus, entry);
+            if (!fusion) return false;
+
+            RetireIntoFusion(crystal, fusion, vesselStatus).Forget();
+            return true;
+        }
+
+        /// <summary>
+        /// The fusion draws the crystal's body from here on; the crystal itself is hidden and only
+        /// waits for the CLAMP beat - the moment the plates land flush - to play its pickup sound
+        /// there and leave the cell. No husk: the body is on the hull, not in the wake.
+        /// </summary>
+        static async UniTaskVoid RetireIntoFusion(Crystal crystal, CrystalHullFusion fusion, IVesselStatus vesselStatus)
+        {
+            await UniTask.WaitForSeconds(fusion.ClampDelaySeconds);
+            if (crystal == null) return;
+
+            if (fusion) crystal.transform.position = fusion.LandingWorldPosition;
+            crystal.Explode(new Crystal.ExplodeParams
+            {
+                Course = vesselStatus?.Course ?? crystal.transform.forward,
+                Speed = vesselStatus?.Speed ?? 0f,
+                PlayerName = vesselStatus != null ? vesselStatus.PlayerName : string.Empty,
+                SuppressHusk = true,
+            });
             crystal.DestroyCrystal();
         }
 
