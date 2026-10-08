@@ -125,9 +125,27 @@ namespace CosmicShore.AssetTool.Tests
             Assert.Contains(mode.GetProperty("options").EnumerateArray(), x => x[0].GetString() == "Scurry");
             Assert.Equal("list", fields["Vessels"].GetProperty("kind").GetString());
             Assert.EndsWith(".asset", fields["Vessels"].GetProperty("children")[0].GetProperty("refPath").GetString());
-            // SO_Game.PreviewClip was retired; the asset still carries the key.
-            Assert.True(fields["PreviewClip"].GetProperty("stale").GetBoolean());
             Assert.False(fields["MaxIntensity"].GetProperty("stale").GetBoolean());
+        }
+
+        [Fact]
+        public void Dataset_marks_a_key_the_script_no_longer_has_as_stale()
+        {
+            // A copy of a real data file carrying a key its script dropped (as SO_Game.PreviewClip
+            // was): Unity ignores it, so the DATA page shows it amber. A copy, because the project's
+            // own files get cleaned of such keys over time.
+            var dir = Temp();
+            var copy = Path.Combine(dir, "ArcadeGameScurry.asset");
+            var text = File.ReadAllText(Path.Combine(Root, "Assets/_SO_Assets/Games/ArcadeGameScurry.asset"));
+            File.WriteAllText(copy, text.TrimEnd('\n') + "\n  RetiredByATest: 1\n");
+            using (var doc = Capture(() => EditorData.Dataset(copy)))
+            {
+                var fields = doc.RootElement.GetProperty("objects")[0].GetProperty("fields").EnumerateArray()
+                    .ToDictionary(f => f.GetProperty("key").GetString()!);
+                Assert.True(fields["RetiredByATest"].GetProperty("stale").GetBoolean());
+                Assert.False(fields["MaxIntensity"].GetProperty("stale").GetBoolean());
+            }
+            Directory.Delete(dir, true);
         }
 
         [Fact]

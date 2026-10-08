@@ -188,8 +188,15 @@ namespace CosmicShore.Engine.Audio.Fmod
     public class StudioEventEmitter : MonoBehaviour
     {
         public EventReference EventReference;
-        public EmitterGameEvent PlayEvent = EmitterGameEvent.None;
-        public EmitterGameEvent StopEvent = EmitterGameEvent.None;
+        // FMOD 2.02's names (what the project's prefabs serialize: EventPlayTrigger/EventStopTrigger);
+        // data written under the older names still loads.
+        [CosmicShore.Engine.Serialization.FormerlySerializedAs("PlayEvent")]
+        public EmitterGameEvent EventPlayTrigger = EmitterGameEvent.None;
+        [CosmicShore.Engine.Serialization.FormerlySerializedAs("StopEvent")]
+        public EmitterGameEvent EventStopTrigger = EmitterGameEvent.None;
+        /// <summary>The pre-2.02 names, kept as the original keeps them.</summary>
+        public EmitterGameEvent PlayEvent { get => EventPlayTrigger; set => EventPlayTrigger = value; }
+        public EmitterGameEvent StopEvent { get => EventStopTrigger; set => EventStopTrigger = value; }
         public bool AllowFadeout = true;
         public bool TriggerOnce;
         public bool Preload;
@@ -220,8 +227,8 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         protected void HandleGameEvent(EmitterGameEvent gameEvent)
         {
-            if (PlayEvent == gameEvent && gameEvent != EmitterGameEvent.None) Play();
-            if (StopEvent == gameEvent && gameEvent != EmitterGameEvent.None) Stop();
+            if (EventPlayTrigger == gameEvent && gameEvent != EmitterGameEvent.None) Play();
+            if (EventStopTrigger == gameEvent && gameEvent != EmitterGameEvent.None) Stop();
         }
 
         public void Play()
