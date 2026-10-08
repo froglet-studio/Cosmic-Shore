@@ -2963,6 +2963,9 @@ reinstated exactly this slowdown and was undone.
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
    bug in the Scarab's first-pass transformer and is the reason that method exists.
+   ⚠ *Corrected 2026-10-06:* not in Skim Race — its Squirrel AI seats belong to `SkimRacePilot`,
+   whose shipped configs never drift (`UseDrift: 0`). Watch an `AIPilot`-flown Squirrel, Dolphin
+   or Scarab in another mode (`SQUIRREL_DRIFT.md` §8 step 5 / §10).
 7. **Menu vessel swap preserves speed** on Squirrel, Dolphin and Scarab. Freestyle at speed →
    vessel changer → swap. The new hull must inherit the speed, not drop to a stop
    (`SetInitialSpeed` → the external-write re-seed).
@@ -4608,7 +4611,9 @@ standing gates and `check_ai_no_state_writes.py` (+ `--self-test`) pass.
 4. Optional, same way with `UseLaunchRing: 1`: AIs lay Boost Rings ahead of themselves on a PC.
 5. HUD unchanged: your own Squirrel's ability row and control chips, on pad and keyboard. Fly a
    Dolphin vs AI in The Bends (aim telegraph), a Tollway and a Waystation match — the AI presses
-   there are shared-map bindings and must behave exactly as before.
+   there are shared-map bindings and must behave exactly as before. The AI boost policies resolve
+   their ability through the same lookup: an `AIPilot` Squirrel outside Skim Race must still lay
+   Boost Rings (`SkimRingAIPolicySO`), on a PC and on a handheld.
 6. Revert step 2 (and 4).
 
 **Note — the shipped Skim Race AI never asks to drift.** All four `SkimRaceAIConfig*.asset` ship

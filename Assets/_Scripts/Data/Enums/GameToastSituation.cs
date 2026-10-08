@@ -43,11 +43,13 @@ namespace CosmicShore.Data
         CleaveHalfCut = 51,         // leader is halfway
         CleaveLeaderChanged = 52,   // the lead changes hands after a milestone
 
-        // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
-        WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target
-        WildlifeHuntHalf = 54,       // the leading hunter is halfway
+        // Wildlife Liberation. 53-55: {0} = leading DOMAIN (the controller posts the domain, as
+        // every domain race does - this comment used to say "player name"), {1} = that domain's
+        // kills, {2} = target. 56: {0} = the pilot, {1} = their domain; posted once a match.
+        WildlifeHuntQuarter = 53,    // the leading domain is a quarter of the way to the target
+        WildlifeHuntHalf = 54,       // the leading domain is halfway
         WildlifeLeadChanged = 55,    // the lead changes hands after a milestone
-        WildlifeCoreBreached = 56,   // a hunter has reached the innermost room ({0} = player name)
+        WildlifeCoreBreached = 56,   // the first pilot to fly into the innermost cage's room
 
         // Dog Fight. {0} = leading domain, {1} = that domain's points, {2} = point target.
         DogFightQuarterDown = 57,    // the leading domain is a quarter of the way to the target
@@ -93,6 +95,7 @@ namespace CosmicShore.Data
         BendLanded = 82,                // DebuffHitsLanded rose - a blast debuffed a pilot (The Bends)
         PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
         LifeformKilled = 84,            // LifeformsKilled rose
+        PrismsStolenMilestone = 85,     // PrismStolen crossed a multiple of everyN (Hijack)
 
         // Bloomrush. The cash-out is the mode's whole payoff, so it is the one thing worth
         // announcing: {0} = the pilot, {1} = how many bombs the crystal just cashed. 90/91
@@ -131,12 +134,13 @@ namespace CosmicShore.Data
         BroadsideVerbHint = 115,        // idle hint: your hull already has a weapon - use it
         BroadsideCloseHint = 116,       // idle hint: a contact strike pays more than a round
 
-        // Waystation. TWO IDLE HINTS AND NOTHING ELSE, and the absence is the decision: the
-        // gate-race platform has no gate-threaded hook, so a milestone or lead-change situation
-        // here would have no poster - an enum member nothing raises reads exactly like a feature,
-        // and the next person to look would spend an afternoon finding out it never fires. An
-        // idle hint needs no poster at all (the toast system fires it off idleSeconds), which is
-        // why Regatta authored only hints too. Both take no args, and they are the mode's two
+        // Waystation. TWO IDLE HINTS AND NOTHING ELSE, and when it was authored the absence was
+        // the decision: the gate-race platform had no gate-threaded hook, so a milestone or
+        // lead-change situation here would have had no poster. It has one now -
+        // GateRaceController runs DomainRaceToasts, so the DomainRace* beats below (128+) are
+        // posted in every gate race, Waystation and Regatta included; their generator-owned
+        // configs simply do not author them yet. An idle hint needs no poster at all (the toast
+        // system fires it off idleSeconds), which is why Regatta authored only hints too. Both take no args, and they are the mode's two
         // verbs: a new pilot who never finds the Fold simply orbits the first cluster forever.
         WaystationRingHint = 117,       // idle hint: thread every ring around you
         WaystationFoldHint = 118,       // idle hint: hold the fold and aim at the next cluster
@@ -158,6 +162,29 @@ namespace CosmicShore.Data
         // no args.
         SiroccoLeadChanged = 126,       // the lead changes hands past the first milestone
         SiroccoDustHint = 127,          // idle hint: Dust mode, fly low over the forest
+
+        // DOMAIN RACE BEATS - shared, posted by DomainRaceToasts from any controller that runs it
+        // (the gate-race family through GateRaceController; Rampage, Salvo and Hijack directly).
+        // A local poll over replicated RoundStats on every peer, so nothing crosses the wire.
+        // Generic rather than per-mode because the beats ARE generic: each mode picks the ones it
+        // wants by authoring them, and an unauthored one shows nothing. {0} = leading domain,
+        // {1} = its score, {2} = target, {3} = its best single pilot (a gate race's lead runner).
+        DomainRaceQuarter = 128,        // the leading domain is a quarter of the way to the target
+        DomainRaceHalf = 129,           // the leading domain is halfway
+        DomainRaceLeadChanged = 130,    // the lead changes hands after the quarter beat
+        DomainRaceHomeStretch = 131,    // the leading domain is within the last few of the target
+        DomainRaceFinalLap = 132,       // a lapped course: the leading domain starts its last lap
+
+        // Astro League. Goal: {0} = scorer name, {1} = their domain's goals, {2} = goal limit.
+        // Match point: {0} = leading domain, {1} = its goals, {2} = goal limit. Golden goal takes
+        // no args. All three are posted from the controller's existing announcer ClientRpcs.
+        AstroLeagueGoal = 133,          // a ball crossed a goal line and somebody was credited
+        AstroLeagueMatchPoint = 134,    // a domain is one goal from the limit
+        AstroLeagueGoldenGoal = 135,    // the clock ran out level: next goal wins
+
+        // Salvo. {0} = the pilot whose omni crystal reloaded the wing, {1} = their domain. Posted
+        // only when the domain fields a WINGMAN to reload - the mode's reason to play together.
+        SalvoWingReload = 136,
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

@@ -665,6 +665,12 @@ not (90-128 s, §8.0c).**
 - **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +
   tracking-MPC strike term + no terminal chord); strike-free ceilings 69.9 s (2 AI) and 85-127 s
   (3 AI). Stop condition met; no policy change shipped.
+- **Owed: drift and Boost Ring have never been measured working.** `UseDrift` and `UseLaunchRing` are
+  off in every shipped policy, but neither could fire on a PC until 2026-10-06 (the autopilot lookup
+  handed out the touch controls; `SQUIRREL_DRIFT.md` §10), and the simulator models neither, so the
+  "off" is the C# default rather than a result. Owed: an in-editor A/B per intensity with each on
+  (drift at full depth, `SkimRacePilot.DriftTriggerPull`), and the simulator taught the drift before
+  any tune relies on it.
 - **Owed:** the in-editor matrix for the current pilot code (§8.0) - I2 at players 3 and 4 against
   80 s, I1 at players 3 against 70 s - and an editor compile/test pass for the §6.10/§6.11 code (the
   editor was in a play session during both passes).

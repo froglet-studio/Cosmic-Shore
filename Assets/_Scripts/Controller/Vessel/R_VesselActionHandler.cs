@@ -554,8 +554,10 @@ namespace CosmicShore.Gameplay
         /// <para><b>It answers for the device the vessel is being driven by</b>, by the same rule a
         /// press resolves with (<see cref="TryGetPressedActions"/>): the active device's override
         /// map first, then the shared entries that map does not shadow. Every caller is an
-        /// autopilot that goes on to PRESS the answer, so an answer the press gate would refuse is
-        /// worse than none. It used to sweep shared → touch → gamepad regardless of device, which
+        /// autopilot that either PRESSES the answer (Skim Race, Tollway, Waystation, the Butterfly
+        /// mode driver, the aim telegraph) or starts the returned action itself (the AI boost
+        /// policies' <c>CreateDriver</c>); for both, an answer the press gate would refuse is worse
+        /// than none. It used to sweep shared → touch → gamepad regardless of device, which
         /// on the Squirrel — drift and Boost Ring bound ONLY in the two override maps — handed out
         /// the TOUCH controls (12 / 11), and on a PC (Gamepad, Keyboard, DualMouse and
         /// MouseKeyboard all resolve against the gamepad overrides) the press was refused at

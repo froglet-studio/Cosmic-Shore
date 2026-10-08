@@ -49,7 +49,11 @@ namespace CosmicShore.UI
 
             _riding = false;
             _ridingBlend = 0f;
-            if (ridingIndicator) ridingIndicator.color = ridingOffColor;
+            if (ridingIndicator)
+            {
+                ridingIndicator.fillAmount = 0f;
+                ridingIndicator.color = ridingOffColor;
+            }
         }
 
         /// <param name="normalized">Ammo as a 0..1 fraction of capacity.</param>
@@ -72,6 +76,10 @@ namespace CosmicShore.UI
                 ? target
                 : Mathf.MoveTowards(_ridingBlend, target, Time.deltaTime / ridingBlendSeconds);
 
+            // The lockup adopts this Image as the Mass card's gauge (a vertical fill), so the
+            // binary state is drawn as EMPTY or FULL with only the blend's transition between -
+            // never parked part-way, which would read as a meter.
+            ridingIndicator.fillAmount = _ridingBlend;
             ridingIndicator.color = Color.Lerp(ridingOffColor, ridingOnColor, _ridingBlend);
         }
     }
