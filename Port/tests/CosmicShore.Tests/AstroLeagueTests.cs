@@ -347,7 +347,10 @@ public class AstroLeagueTests
         // xorshift128 generator: seeds 3, 7, 8, 11, 12 tie regulation. Re-swept 2026-09-30 when
         // physics moved into the fixed step and OnTriggerStay began reaching the ball's vessel
         // handler: seeds 5, 10, 23 (of 1-30) tie regulation and are decided by sudden death.
-        var result = RunMatch(players: 4, seed: 5);
+        // Re-swept 2026-10-08 when boxes became oriented and capsules joined the trigger pass
+        // (C3; the same outcome with the contact pass disabled, so the shapes moved it): seeds
+        // 1, 4, 6, 16, 26, 27 tie regulation and are decided by a one-goal sudden death.
+        var result = RunMatch(players: 4, seed: 1);
 
         Assert.True(result.Finished);
         Assert.Empty(result.EngineErrors);

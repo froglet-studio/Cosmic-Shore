@@ -63,6 +63,8 @@ namespace CosmicShore.Content.Shaders
 
             var unit = new Unit(this, prog);
             var uniforms = new StringBuilder();
+            foreach (var p in graph.Properties)
+                if (!string.IsNullOrEmpty(p.Reference)) unit.Declared.Add(UniformName(p.Reference));
             foreach (var p in graph.Properties) unit.DeclareProperty(p, uniforms);
             prog.Uniforms = uniforms.ToString();
 
@@ -85,6 +87,8 @@ namespace CosmicShore.Content.Shaders
             prog.Vertex = "void sg_vertex(out vec3 posOS, out vec3 nrmOS, out vec3 tanOS) {\n" + vs.Body
                 + $"  posOS = {pos};\n  nrmOS = {nrm};\n  tanOS = {tan};\n}}\n";
 
+            // Each stage expands the graph on its own: a value computed in one stage is not visible in the other.
+            top = new Scope { Graph = graph, Prefix = "" };
             var fs = new Stage(unit, fragment: true);
             var assign = new StringBuilder();
             foreach (var b in graph.FragmentBlocks)
@@ -168,6 +172,9 @@ namespace CosmicShore.Content.Shaders
             };
         }
 
+        /// <summary>A vector expression of width <paramref name="from"/> as width <paramref name="to"/>, by Shader Graph's rules.</summary>
+        public static string ConvertVector(string expr, int from, int to) => Cast(new V(expr, VecK(from)), VecK(to)).E;
+
         internal static K SlotKind(SgSlot s) => s.Type switch
         {
             "Vector1" => K.Float, "Vector2" => K.Vec2, "Vector3" => K.Vec3, "Vector4" => K.Vec4,
@@ -205,6 +212,8 @@ namespace CosmicShore.Content.Shaders
             public readonly ShaderGraphProgram Prog;
             public readonly Dictionary<string, string> Helpers = new(StringComparer.Ordinal);
             public readonly List<string> HelperOrder = new();
+            /// <summary>Every uniform name the graph's own properties declare.</summary>
+            public readonly HashSet<string> Declared = new(StringComparer.Ordinal);
             readonly Dictionary<string, string> _assetTextures = new(StringComparer.Ordinal);
 
             public Unit(ShaderGraphCompiler c, ShaderGraphProgram p) { Compiler = c; Prog = p; }
@@ -241,7 +250,10 @@ namespace CosmicShore.Content.Shaders
                     case K.Sampler: return;
                     case K.Gradient: return; // inlined from its value
                     case K.Tex:
-                        sb.Append($"uniform sampler2D {name};\nuniform vec4 {name}_ST;\nuniform vec4 {name}_TexelSize;\n");
+                        sb.Append($"uniform sampler2D {name};\n");
+                        // A graph may declare its own _ST / _TexelSize property (TMP's do): that one wins.
+                        if (!Declared.Contains(name + "_ST")) sb.Append($"uniform vec4 {name}_ST;\n");
+                        if (!Declared.Contains(name + "_TexelSize")) sb.Append($"uniform vec4 {name}_TexelSize;\n");
                         Prog.PropertyUniforms[name] = p.Reference;
                         Prog.PropertyUniforms[name + "_ST"] = p.Reference + "_ST";
                         Prog.PropertyUniforms[name + "_TexelSize"] = p.Reference + "_TexelSize";

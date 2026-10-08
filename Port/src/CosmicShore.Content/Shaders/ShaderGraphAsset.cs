@@ -62,12 +62,13 @@ namespace CosmicShore.Content.Shaders
                     root = doc.RootElement.Clone();
                 }
                 catch (JsonException) { break; } // a truncated tail: keep what parsed
+                if (root.TryGetProperty("m_SerializableNodes", out _)) return ParseV1(root);
                 var id = Str(root, "m_ObjectId");
                 if (id != null) objects[id] = root;
                 if (Str(root, "m_Type") == "UnityEditor.ShaderGraph.GraphData") graphData = root;
             }
             var g = new ShaderGraphAsset();
-            if (graphData is not { } gd) throw new InvalidDataException("no GraphData object (not a Shader Graph v2+ file)");
+            if (graphData is not { } gd) throw new InvalidDataException("no GraphData object (not a Shader Graph file)");
 
             foreach (var r in Refs(gd, "m_Properties"))
                 if (objects.TryGetValue(r, out var p)) { var prop = SgProperty.From(r, p); g.Properties.Add(prop); g.PropertyById[r] = prop; }
@@ -103,6 +104,81 @@ namespace CosmicShore.Content.Shaders
             foreach (var r in Refs(gd, "m_ActiveTargets"))
                 if (objects.TryGetValue(r, out var t) && SgTarget.From(t, objects) is { } target) { g.Target = target; break; }
             return g;
+        }
+
+        /// <summary>
+        /// Shader Graph v1 (one object; nodes, slots, properties and edges each a JSON string in
+        /// <c>JSONnodeData</c> with its type beside it, nodes addressed by guid), rewritten as the
+        /// v2 object stream and parsed as that. The Shader Graph 12 samples still ship in v1.
+        /// </summary>
+        static ShaderGraphAsset ParseV1(JsonElement root)
+        {
+            var objs = new List<System.Text.Json.Nodes.JsonObject>();
+            var graph = new System.Text.Json.Nodes.JsonObject { ["m_Type"] = "UnityEditor.ShaderGraph.GraphData", ["m_ObjectId"] = "v1graph" };
+            var props = new System.Text.Json.Nodes.JsonArray();
+            var nodes = new System.Text.Json.Nodes.JsonArray();
+            var edges = new System.Text.Json.Nodes.JsonArray();
+            string output = "";
+            int slotCounter = 0;
+
+            static System.Text.Json.Nodes.JsonObject Item(JsonElement wrapped)
+            {
+                var data = System.Text.Json.Nodes.JsonNode.Parse(Str(wrapped, "JSONnodeData") ?? "{}") as System.Text.Json.Nodes.JsonObject ?? new();
+                data["m_Type"] = wrapped.TryGetProperty("typeInfo", out var ti) ? Str(ti, "fullName") : "";
+                return data;
+            }
+
+            if (root.TryGetProperty("m_SerializedProperties", out var ps) && ps.ValueKind == JsonValueKind.Array)
+                foreach (var w in ps.EnumerateArray())
+                {
+                    var p = Item(w);
+                    var id = p["m_Guid"]?["m_GuidSerialized"]?.GetValue<string>() ?? ("p" + objs.Count);
+                    p["m_ObjectId"] = id;
+                    props.Add(new System.Text.Json.Nodes.JsonObject { ["m_Id"] = id });
+                    objs.Add(p);
+                }
+            foreach (var w in root.GetProperty("m_SerializableNodes").EnumerateArray())
+            {
+                var n = Item(w);
+                var id = n["m_GuidSerialized"]?.GetValue<string>() ?? ("n" + objs.Count);
+                n["m_ObjectId"] = id;
+                if (n["m_PropertyGuidSerialized"]?.GetValue<string>() is { } pg) n["m_Property"] = new System.Text.Json.Nodes.JsonObject { ["m_Id"] = pg };
+                var slotRefs = new System.Text.Json.Nodes.JsonArray();
+                if (n["m_SerializableSlots"] is System.Text.Json.Nodes.JsonArray slots)
+                    foreach (var s in slots)
+                    {
+                        var se = JsonDocument.Parse(s.ToJsonString()).RootElement;
+                        var slot = Item(se);
+                        var sid = "s" + (slotCounter++);
+                        slot["m_ObjectId"] = sid;
+                        slotRefs.Add(new System.Text.Json.Nodes.JsonObject { ["m_Id"] = sid });
+                        objs.Add(slot);
+                    }
+                n.Remove("m_SerializableSlots");
+                n["m_Slots"] = slotRefs;
+                if ((n["m_Type"]?.GetValue<string>() ?? "").EndsWith("SubGraphOutputNode", StringComparison.Ordinal)) output = id;
+                nodes.Add(new System.Text.Json.Nodes.JsonObject { ["m_Id"] = id });
+                objs.Add(n);
+            }
+            if (root.TryGetProperty("m_SerializableEdges", out var es) && es.ValueKind == JsonValueKind.Array)
+                foreach (var w in es.EnumerateArray())
+                {
+                    var e = Item(w);
+                    System.Text.Json.Nodes.JsonObject End(string side) => new()
+                    {
+                        ["m_Node"] = new System.Text.Json.Nodes.JsonObject { ["m_Id"] = e[side]?["m_NodeGUIDSerialized"]?.GetValue<string>() },
+                        ["m_SlotId"] = e[side]?["m_SlotId"]?.GetValue<int>() ?? 0,
+                    };
+                    edges.Add(new System.Text.Json.Nodes.JsonObject { ["m_OutputSlot"] = End("m_OutputSlot"), ["m_InputSlot"] = End("m_InputSlot") });
+                }
+            graph["m_Properties"] = props;
+            graph["m_Keywords"] = new System.Text.Json.Nodes.JsonArray();
+            graph["m_Nodes"] = nodes;
+            graph["m_Edges"] = edges;
+            graph["m_OutputNode"] = new System.Text.Json.Nodes.JsonObject { ["m_Id"] = output };
+            var sb = new StringBuilder(graph.ToJsonString());
+            foreach (var o in objs) sb.Append('\n').Append(o.ToJsonString());
+            return Parse(sb.ToString());
         }
 
         internal static IEnumerable<string> Refs(JsonElement e, string name)

@@ -87,6 +87,8 @@
   <!-- The desktop player's core, shared verbatim: boot, the frame, the window passes, input, audio. -->
   <ItemGroup>
     <Compile Include="../CosmicShore.Player/PlayerWindow.cs" Link="Player/PlayerWindow.cs" />
+    <Compile Include="../CosmicShore.Player/ShaderCheck.cs" Link="Player/ShaderCheck.cs" />
+    <Compile Include="../CosmicShore.Player/ShaderGallery.cs" Link="Player/ShaderGallery.cs" />
     <Compile Include="../CosmicShore.Player/PlayerBoot.cs" Link="Player/PlayerBoot.cs" />
     <Compile Include="../CosmicShore.Player/PlayerAudio.cs" Link="Player/PlayerAudio.cs" />
     <Compile Include="../CosmicShore.Player/SilkInputBridge.cs" Link="Player/SilkInputBridge.cs" />

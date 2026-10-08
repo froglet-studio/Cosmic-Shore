@@ -9,24 +9,14 @@ using System.Threading;
 namespace CosmicShore.Engine.Networking
 {
     /// <summary>
-    /// The port's transport: reliable, ordered, length-prefixed frames over TCP. The server
+    /// The TCP <see cref="INetTransport"/>: reliable, ordered, length-prefixed frames over TCP. The server
     /// accepts any number of peers; a client holds one connection. Socket I/O runs on background
     /// threads and everything they receive is queued for the main thread, which drains it once
     /// per frame (<see cref="Poll"/>) - the same place the original transport delivers its events.
     /// Every frame is [int32 length][payload]; payload[0] is the message kind.
     /// </summary>
-    internal sealed class NetSocket : IDisposable
+    internal sealed class NetSocket : INetTransport
     {
-        public enum EventKind { Connected, Data, Disconnected }
-
-        public readonly struct Event
-        {
-            public readonly EventKind Kind;
-            public readonly int Peer;
-            public readonly byte[] Payload;
-            public Event(EventKind k, int peer, byte[] payload) { Kind = k; Peer = peer; Payload = payload; }
-        }
-
         sealed class Peer
         {
             public int Id;
@@ -38,7 +28,7 @@ namespace CosmicShore.Engine.Networking
 
         const int MaxFrame = 64 * 1024 * 1024;
 
-        readonly ConcurrentQueue<Event> _inbox = new();
+        readonly ConcurrentQueue<NetEvent> _inbox = new();
         readonly ConcurrentDictionary<int, Peer> _peers = new();
         TcpListener _listener;
         Thread _acceptThread;
@@ -79,7 +69,7 @@ namespace CosmicShore.Engine.Networking
                 {
                     try { client.Dispose(); } catch { }
                     Console.WriteLine($"[net] connect failed: {e.GetBaseException().Message}");
-                    s._inbox.Enqueue(new Event(EventKind.Disconnected, 0, null));
+                    s._inbox.Enqueue(new NetEvent(NetEventKind.Disconnected, 0, null));
                 }
             }) { IsBackground = true, Name = "net-connect" };
             t.Start();
@@ -102,7 +92,7 @@ namespace CosmicShore.Engine.Networking
         {
             var p = new Peer { Id = Interlocked.Increment(ref _nextPeer), Client = client, Stream = client.GetStream() };
             _peers[p.Id] = p;
-            _inbox.Enqueue(new Event(EventKind.Connected, p.Id, null));
+            _inbox.Enqueue(new NetEvent(NetEventKind.Connected, p.Id, null));
             new Thread(() => ReadLoop(p)) { IsBackground = true, Name = $"net-read-{p.Id}" }.Start();
         }
 
@@ -118,7 +108,7 @@ namespace CosmicShore.Engine.Networking
                     if (len < 0 || len > MaxFrame) throw new InvalidDataException($"bad frame length {len}");
                     var buf = new byte[len];
                     ReadExactly(p.Stream, buf, len);
-                    _inbox.Enqueue(new Event(EventKind.Data, p.Id, buf));
+                    _inbox.Enqueue(new NetEvent(NetEventKind.Data, p.Id, buf));
                 }
             }
             catch (Exception) { }
@@ -141,7 +131,7 @@ namespace CosmicShore.Engine.Networking
             if (!_peers.TryRemove(p.Id, out _)) return;
             p.Closed = true;
             try { p.Client.Close(); } catch { }
-            _inbox.Enqueue(new Event(EventKind.Disconnected, p.Id, null));
+            _inbox.Enqueue(new NetEvent(NetEventKind.Disconnected, p.Id, null));
         }
 
         /// <summary>Queue a frame to one peer (0 = the server, from a client).</summary>
@@ -169,7 +159,7 @@ namespace CosmicShore.Engine.Networking
             if (_peers.TryGetValue(peer, out var p)) Drop(p);
         }
 
-        public bool Poll(out Event e) => _inbox.TryDequeue(out e);
+        public bool Poll(out NetEvent e) => _inbox.TryDequeue(out e);
 
         public void Dispose()
         {

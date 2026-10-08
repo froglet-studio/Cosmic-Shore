@@ -17,11 +17,13 @@ namespace CosmicShore.Player
     ///   --replay FILE          seed, start scene, frame count, checkpoint interval and the input
     ///                          stream ("do": InputScript verbs) from a replay file
     ///   --parity-out DIR       write the run's channels: state.jsonl (gameplay state at each
-    ///                          checkpoint), events.jsonl (in order: "fmod" event starts, "game"
+    ///                          checkpoint), events.jsonl (in order: "fmod" event starts and
+    ///                          restarts, "fmod-stop" stop() calls, "fmod-snapshot" mixer snapshots, "game"
     ///                          events - scene loads and the GameDataSO match events - and
     ///                          "contact" starts involving a vessel, sorted by name within a frame),
     ///                          transforms.jsonl (vessels during the first 10 s of each scene;
-    ///                          "t" there is seconds since the scene was entered)
+    ///                          "t" there is seconds since the scene was entered) and run.json
+    ///                          (how the run was made: "audio" native or silent)
     ///   --random-golden DIR    write random_SEED.json for every --seeds S1,S2,... and exit
     ///
     /// The Unity side writes the same files from the same replay (ParityCapture), and
@@ -37,6 +39,7 @@ namespace CosmicShore.Player
         public const double TransformWindowSeconds = 10;
 
         static StreamWriter s_state, s_events, s_transforms;
+        static string s_dir;
         static int s_every = 30;
         static string s_scene;
         static float s_sceneStart;
@@ -73,9 +76,11 @@ namespace CosmicShore.Player
             s_state = new StreamWriter(Path.Combine(dir, "state.jsonl")) { NewLine = "\n" };
             s_events = new StreamWriter(Path.Combine(dir, "events.jsonl")) { NewLine = "\n" };
             s_transforms = new StreamWriter(Path.Combine(dir, "transforms.jsonl")) { NewLine = "\n" };
-            CosmicShore.Engine.Audio.Fmod.RuntimeManager.EventStarted = path => WriteEvent("fmod", path);
+            CosmicShore.Engine.Audio.Fmod.RuntimeManager.EventRecorded = WriteEvent;
+            s_dir = dir;
             SceneManager.sceneLoaded += OnSceneLoaded;
             TriggerPass.ContactStarted = OnContact;
+            TriggerPass.CollisionStarted = OnCollision;
         }
 
         static void WriteEvent(string kind, string name)
@@ -92,16 +97,32 @@ namespace CosmicShore.Player
         {
             if (a.GetComponentInParent<CosmicShore.Gameplay.VesselController>() == null &&
                 b.GetComponentInParent<CosmicShore.Gameplay.VesselController>() == null) return;
-            string na = a.gameObject.name, nb = b.gameObject.name;
-            s_contacts.Add(string.CompareOrdinal(na, nb) <= 0 ? na + "|" + nb : nb + "|" + na);
+            s_contacts.Add(PairName(a, b));
         }
+
+        /// <summary>A solid contact that starts (OnCollisionEnter, the C3 contact pass): every pair, sorted like contacts.</summary>
+        static void OnCollision(Collider a, Collider b) => s_collisions.Add(PairName(a, b));
+
+        static string PairName(Collider a, Collider b)
+        {
+            string na = a.gameObject.name, nb = b.gameObject.name;
+            return string.CompareOrdinal(na, nb) <= 0 ? na + "|" + nb : nb + "|" + na;
+        }
+
+        static readonly List<string> s_collisions = new();
 
         static void FlushContacts()
         {
-            if (s_contacts.Count == 0) return;
-            s_contacts.Sort(StringComparer.Ordinal);
-            foreach (var c in s_contacts) WriteEvent("contact", c);
-            s_contacts.Clear();
+            Flush(s_contacts, "contact");
+            Flush(s_collisions, "collision");
+        }
+
+        static void Flush(List<string> pending, string kind)
+        {
+            if (pending.Count == 0) return;
+            pending.Sort(StringComparer.Ordinal);
+            foreach (var c in pending) WriteEvent(kind, c);
+            pending.Clear();
         }
 
         /// <summary>Hooks the match events of a GameDataSO the first time a controller exposes it.</summary>
@@ -132,13 +153,16 @@ namespace CosmicShore.Player
         public static void End()
         {
             if (!Active) return;
-            CosmicShore.Engine.Audio.Fmod.RuntimeManager.EventStarted = null;
+            CosmicShore.Engine.Audio.Fmod.RuntimeManager.EventRecorded = null;
             SceneManager.sceneLoaded -= OnSceneLoaded;
             TriggerPass.ContactStarted = null;
+            TriggerPass.CollisionStarted = null;
             FlushContacts();
             s_hooked.Clear();
             s_state.Dispose(); s_events.Dispose(); s_transforms.Dispose();
             s_state = s_events = s_transforms = null;
+            // Written last: the audio runtime comes up after Begin, with the boot.
+            File.WriteAllText(Path.Combine(s_dir, "run.json"), new JsonObject { ["audio"] = PlayerAudio.Mode }.ToJsonString() + "\n");
         }
 
         static string F(double v) => v.ToString("R", Inv);

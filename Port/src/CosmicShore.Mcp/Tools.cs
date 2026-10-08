@@ -135,6 +135,15 @@ namespace CosmicShore.Mcp
                 new JsonObject { ["x"] = P("number", "screenshot x"), ["y"] = P("number", "screenshot y (top-left origin)") }, "x", "y"),
             Tool("game_dump_ui", "A UI subtree with world rects, anchors, pivots, sizes and components.",
                 new JsonObject { ["name"] = P("string", "object name"), ["depth"] = P("integer", "levels (default 4)") }, "name"),
+            Tool("game_resize", "Render (and screenshot) at WxH whatever the window's size is; 'off' returns to the window's size. Screenshot coordinates follow it.",
+                new JsonObject { ["size"] = P("string", "WxH, or off") }, "size"),
+            Tool("game_ui_sweep", "C5 UI parity: every screen of the loaded scene (Menu_Main: each MenuScreens value, then each modal; elsewhere the HUD) at each resolution - frames/ui/<view>_<WxH>.png plus ui/<view>_<WxH>.jsonl (every active RectTransform's screen rect, text overflow and size) under dir, the parity golden layout engine_parity diffs.",
+                new JsonObject
+                {
+                    ["dir"] = P("string", "output directory (default: a temp folder)"),
+                    ["sizes"] = P("string", "comma-separated WxH (default 1920x1080,2560x1080,1024x768)"),
+                    ["views"] = P("string", "comma-separated view names to keep (default: all)"),
+                }),
             Tool("game_logs", "The player's recent console output.",
                 new JsonObject { ["lines"] = P("integer", "how many (default 200)"), ["grep"] = P("string", "only lines containing this") }),
             Tool("game_load_scene", "Load a scene by name or build index.",
@@ -231,6 +240,8 @@ namespace CosmicShore.Mcp
                     return new JsonArray(Text(Format(await Command("set", $"{Quote(Str(a, "object"))} {Str(a, "component")} {Str(a, "member")} {Str(a, "value")}"))));
                 case "game_ui_at": return new JsonArray(Text(Format(await Command("ui_at", $"{Str(a, "x")},{Str(a, "y")}"))));
                 case "game_dump_ui": return new JsonArray(Text(Format(await Command("dump_ui", Str(a, "name") + ":" + Int(a, "depth", 4)))));
+                case "game_resize": return new JsonArray(Text(Format(await Command("resize", Str(a, "size")))));
+                case "game_ui_sweep": return new JsonArray(Text(Format(await Command("ui_sweep", $"{Str(a, "dir")};{Str(a, "sizes")};{Str(a, "views")}"))));
                 case "game_logs":
                 {
                     var r = await Command("logs", Int(a, "lines", 200).ToString());
@@ -439,7 +450,7 @@ namespace CosmicShore.Mcp
 
         string PlayerExe() => Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
 
-        static readonly Dictionary<string, string> QuietEnv = new() { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "off", ["COSMIC_SHORE_PROFILE"] = "parity" };
+        static readonly Dictionary<string, string> QuietEnv = new() { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "nrt", ["COSMIC_SHORE_PROFILE"] = "parity" };
 
         async Task<RunResult> RunCase(string replay, string outDir, bool frames)
         {
@@ -530,6 +541,10 @@ namespace CosmicShore.Mcp
                 }
                 string gold = Path.Combine(goldenRoot, name);
                 if (self) await RunCase(replay, gold = Path.Combine(work, name, "run-0"), frames);
+                // Parity runs FMOD non-real-time with the banks; without the runtime the silent model
+                // answers every event description as a one-shot, so the FMOD channel is approximate.
+                if (File.Exists(Path.Combine(run, "run.json")) && (await File.ReadAllTextAsync(Path.Combine(run, "run.json"))).Contains("\"silent\""))
+                    sb.AppendLine($"{name}: audio silent (no FMOD runtime: python3 Port/tools/fetch_native.py) - FMOD descriptions approximate");
                 Add(name, new[]
                 {
                     Prisma.Parity.ParityDiff.State(gold, run),

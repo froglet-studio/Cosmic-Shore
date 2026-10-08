@@ -62,6 +62,17 @@ jobs:
           dotnet test Port/tests/CosmicShore.Tests -nologo -v q
           --filter "FullyQualifiedName!=CosmicShore.Tests.AstroLeagueTests.Match_TiedRegulation_GoesToGoldenGoal_AndSuddenDeathDecidesIt&FullyQualifiedName!=CosmicShore.Tests.PrefabInstanceEditingTests.UnityWrittenOverrideListsReplayByteForByte"
 
+      # C2: the Shader Graph compiler's coverage file is current, and every project graph links
+      # on a real GL driver (Mesa llvmpipe under xvfb) as GLSL 3.30 and GLSL ES 3.00.
+      - name: Shader Graph census is current and every graph links
+        run: |
+          set -o pipefail
+          dotnet build Port/src/CosmicShore.AssetTool -nologo -v q
+          dotnet Port/src/CosmicShore.AssetTool/bin/Debug/net10.0/cs-asset.dll shadergraph-census --json /tmp/shaders.json > /dev/null
+          diff -u Port/parity/shaders.json /tmp/shaders.json || { echo "Port/parity/shaders.json is stale: run cs-asset shadergraph-census"; exit 1; }
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          xvfb-run -a -s "-screen 0 1280x720x24" Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore --check-shaders | grep shader-check
+
       - name: Parity scoreboard is current
         run: python3 Port/tools/gen_parity_scoreboard.py --check
 

@@ -1,0 +1,1528 @@
+{
+  "source": "cs-asset shadergraph-census",
+  "graphs": 56,
+  "subGraphs": 31,
+  "nodeInstances": 2810,
+  "nodeTypes": [
+    {
+      "type": "PropertyNode",
+      "instances": 578,
+      "files": 79,
+      "emitter": true
+    },
+    {
+      "type": "BlockNode",
+      "instances": 341,
+      "files": 56,
+      "emitter": true
+    },
+    {
+      "type": "MultiplyNode",
+      "instances": 295,
+      "files": 71,
+      "emitter": true
+    },
+    {
+      "type": "AddNode",
+      "instances": 110,
+      "files": 46,
+      "emitter": true
+    },
+    {
+      "type": "SampleTexture2DNode",
+      "instances": 93,
+      "files": 29,
+      "emitter": true
+    },
+    {
+      "type": "SubtractNode",
+      "instances": 83,
+      "files": 37,
+      "emitter": true
+    },
+    {
+      "type": "CustomFunctionNode",
+      "instances": 74,
+      "files": 11,
+      "emitter": true
+    },
+    {
+      "type": "BranchNode",
+      "instances": 71,
+      "files": 19,
+      "emitter": true
+    },
+    {
+      "type": "BlendNode",
+      "instances": 60,
+      "files": 26,
+      "emitter": true
+    },
+    {
+      "type": "TimeNode",
+      "instances": 58,
+      "files": 35,
+      "emitter": true
+    },
+    {
+      "type": "PositionNode",
+      "instances": 57,
+      "files": 29,
+      "emitter": true
+    },
+    {
+      "type": "TilingAndOffsetNode",
+      "instances": 56,
+      "files": 39,
+      "emitter": true
+    },
+    {
+      "type": "DivideNode",
+      "instances": 52,
+      "files": 35,
+      "emitter": true
+    },
+    {
+      "type": "ColorNode",
+      "instances": 50,
+      "files": 14,
+      "emitter": true
+    },
+    {
+      "type": "NormalVectorNode",
+      "instances": 50,
+      "files": 21,
+      "emitter": true
+    },
+    {
+      "type": "SplitNode",
+      "instances": 48,
+      "files": 26,
+      "emitter": true
+    },
+    {
+      "type": "UVNode",
+      "instances": 43,
+      "files": 17,
+      "emitter": true
+    },
+    {
+      "type": "DotProductNode",
+      "instances": 38,
+      "files": 23,
+      "emitter": true
+    },
+    {
+      "type": "SubGraphNode",
+      "instances": 35,
+      "files": 18,
+      "emitter": true
+    },
+    {
+      "type": "RedirectNodeData",
+      "instances": 34,
+      "files": 16,
+      "emitter": true
+    },
+    {
+      "type": "ComparisonNode",
+      "instances": 32,
+      "files": 12,
+      "emitter": true
+    },
+    {
+      "type": "FresnelNode",
+      "instances": 32,
+      "files": 28,
+      "emitter": true
+    },
+    {
+      "type": "SubGraphOutputNode",
+      "instances": 31,
+      "files": 31,
+      "emitter": true
+    },
+    {
+      "type": "ClampNode",
+      "instances": 28,
+      "files": 18,
+      "emitter": true
+    },
+    {
+      "type": "OneMinusNode",
+      "instances": 26,
+      "files": 15,
+      "emitter": true
+    },
+    {
+      "type": "RotateAboutAxisNode",
+      "instances": 26,
+      "files": 7,
+      "emitter": true
+    },
+    {
+      "type": "AbsoluteNode",
+      "instances": 24,
+      "files": 16,
+      "emitter": true
+    },
+    {
+      "type": "Vector1Node",
+      "instances": 21,
+      "files": 12,
+      "emitter": true
+    },
+    {
+      "type": "Vector2Node",
+      "instances": 21,
+      "files": 15,
+      "emitter": true
+    },
+    {
+      "type": "SmoothstepNode",
+      "instances": 20,
+      "files": 12,
+      "emitter": true
+    },
+    {
+      "type": "Vector3Node",
+      "instances": 14,
+      "files": 12,
+      "emitter": true
+    },
+    {
+      "type": "ReplaceColorNode",
+      "instances": 13,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "CombineNode",
+      "instances": 12,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "Texture2DPropertiesNode",
+      "instances": 12,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "FractionNode",
+      "instances": 11,
+      "files": 7,
+      "emitter": true
+    },
+    {
+      "type": "LerpNode",
+      "instances": 11,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "ModuloNode",
+      "instances": 10,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "StepNode",
+      "instances": 10,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "DistanceNode",
+      "instances": 9,
+      "files": 9,
+      "emitter": true
+    },
+    {
+      "type": "NoiseNode",
+      "instances": 9,
+      "files": 7,
+      "emitter": true
+    },
+    {
+      "type": "PreviewNode",
+      "instances": 9,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "VertexColorNode",
+      "instances": 9,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "ViewVectorNode",
+      "instances": 9,
+      "files": 7,
+      "emitter": true
+    },
+    {
+      "type": "LengthNode",
+      "instances": 8,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "TangentVectorNode",
+      "instances": 8,
+      "files": 8,
+      "emitter": true
+    },
+    {
+      "type": "NormalizeNode",
+      "instances": 7,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "RotateNode",
+      "instances": 7,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "RoundNode",
+      "instances": 7,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "Texture2DAssetNode",
+      "instances": 7,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "IsFrontFaceNode",
+      "instances": 6,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "MaximumNode",
+      "instances": 6,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "ObjectNode",
+      "instances": 6,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "OrNode",
+      "instances": 6,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "PowerNode",
+      "instances": 6,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "RandomRangeNode",
+      "instances": 6,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "SineNode",
+      "instances": 6,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "VoronoiNode",
+      "instances": 6,
+      "files": 6,
+      "emitter": true
+    },
+    {
+      "type": "BitangentVectorNode",
+      "instances": 5,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "FloorNode",
+      "instances": 5,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "SquareRootNode",
+      "instances": 5,
+      "files": 5,
+      "emitter": true
+    },
+    {
+      "type": "CameraNode",
+      "instances": 4,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "GradientNoiseNode",
+      "instances": 4,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "InvertColorsNode",
+      "instances": 4,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "MinimumNode",
+      "instances": 4,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "ScreenPositionNode",
+      "instances": 4,
+      "files": 4,
+      "emitter": true
+    },
+    {
+      "type": "SpherizeNode",
+      "instances": 4,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "AndNode",
+      "instances": 3,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "NegateNode",
+      "instances": 3,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "PolarCoordinatesNode",
+      "instances": 3,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "RectangleNode",
+      "instances": 3,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "TransformNode",
+      "instances": 3,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "ViewDirectionNode",
+      "instances": 3,
+      "files": 3,
+      "emitter": true
+    },
+    {
+      "type": "ColorspaceConversionNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "CosineNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "CrossProductNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "IntegerNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "NormalFromHeightNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "RemapNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "SceneColorNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "SignNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "TwirlNode",
+      "instances": 2,
+      "files": 2,
+      "emitter": true
+    },
+    {
+      "type": "AllNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "ArcsineNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "BooleanNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "CeilingNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "DDXYNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "EllipseNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "GatherTexture2DNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "GradientNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "HueNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "InverseLerpNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "NoiseSineWaveNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "SampleGradient",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "SceneDepthNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "SliderNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "SphereMaskNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "TransformationMatrixNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "TriangleWaveNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    },
+    {
+      "type": "VertexIDNode",
+      "instances": 1,
+      "files": 1,
+      "emitter": true
+    }
+  ],
+  "customFunctions": [
+    {
+      "function": "Composite_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "ComputeSDF44_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "ComputeSDF_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "CrystalMorphNormal_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "CrystalMorph_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "EvaluateLight_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "GenerateUV_float",
+      "calls": 8,
+      "ported": true
+    },
+    {
+      "function": "GetSurfaceNormal_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "Layer1_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "Layer4_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "PrismBackFaceFade_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismColorLerp_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismCradleDeform_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismDeathClock_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismDestructionSight_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismErosionFade_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "PrismExplosionClock_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "PrismFlightClock_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismFlightSqrDistance_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "PrismGrowScale_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismJiggleClock_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismOcclusionFadeDebris_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "PrismOcclusionFade_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "PrismShieldMorph_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismSuctionClock_float",
+      "calls": 3,
+      "ported": true
+    },
+    {
+      "function": "PrismSuctionConverge_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "PrismSway_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
+      "function": "ScreenSpaceRatio_float",
+      "calls": 4,
+      "ported": true
+    },
+    {
+      "function": "SpindleSway_float",
+      "calls": 1,
+      "ported": true
+    },
+    {
+      "function": "VesselVisionShade_float",
+      "calls": 1,
+      "ported": true
+    }
+  ],
+  "shaders": [
+    {
+      "path": "Assets/NiceVibrations/Demo/_Common/Shaders/MaskedUI.shader",
+      "guid": "645cb8076a0c9a54bad68f9896f992ea",
+      "name": "MoreMountains/MaskedUI",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Bitmap-Custom-Atlas.shader",
+      "guid": "48bb5f55d8670e349b6e614913f9d910",
+      "name": "TextMeshPro/Bitmap Custom Atlas",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Bitmap-Mobile.shader",
+      "guid": "1e3b057af24249748ff873be7fafee47",
+      "name": "TextMeshPro/Mobile/Bitmap",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Bitmap.shader",
+      "guid": "128e987d567d4e2c824d754223b3f3b0",
+      "name": "TextMeshPro/Bitmap",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF Overlay.shader",
+      "guid": "dd89cf5b9246416f84610a006f916af7",
+      "name": "TextMeshPro/Distance Field Overlay",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF SSD.shader",
+      "guid": "14eb328de4b8eb245bb7cea29e4ac00b",
+      "name": "TextMeshPro/Distance Field SSD",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-HDRP LIT.shadergraph",
+      "guid": "ca2ed216f98028c4dae6c5224a952b3c",
+      "name": "Shader Graphs/TMP_SDF-HDRP LIT",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "BlockNode: SurfaceDescription.BentNormal ignored"
+      ]
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-HDRP UNLIT.shadergraph",
+      "guid": "f63d574838ccfb44f84acc05fed0af48",
+      "name": "Shader Graphs/TMP_SDF-HDRP UNLIT",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile Masking.shader",
+      "guid": "bc1ede39bf3643ee8e493720e4259791",
+      "name": "TextMeshPro/Mobile/Distance Field - Masking",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile Overlay.shader",
+      "guid": "a02a7d8c237544f1962732b55a9aebf1",
+      "name": "TextMeshPro/Mobile/Distance Field Overlay",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile SSD.shader",
+      "guid": "c8d12adcee749c344b8117cf7c7eb912",
+      "name": "TextMeshPro/Mobile/Distance Field SSD",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile-2-Pass.shader",
+      "guid": "0178fcb869bafef4690d177d31d17db8",
+      "name": "TextMeshPro/Mobile/Distance Field - 2 Pass",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile.shader",
+      "guid": "fe393ace9b354375a9cb14cdbbc28be4",
+      "name": "TextMeshPro/Mobile/Distance Field",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Surface-Mobile.shader",
+      "guid": "85187c2149c549c5b33f0cdb02836b17",
+      "name": "TextMeshPro/Mobile/Distance Field (Surface)",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Surface.shader",
+      "guid": "f7ada0af4f174f0694ca6a487b8f543d",
+      "name": "TextMeshPro/Distance Field (Surface)",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-URP Lit.shadergraph",
+      "guid": "a3d800b099a06e0478fb790c5e79057a",
+      "name": "Shader Graphs/TMP_SDF-URP Lit",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-URP Unlit.shadergraph",
+      "guid": "124c112a6e8f1a54e8b0870e881b56d8",
+      "name": "Shader Graphs/TMP_SDF-URP Unlit",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF.shader",
+      "guid": "68e6db2ebdc24f95958faec2be5558d6",
+      "name": "TextMeshPro/Distance Field",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Sprite.shader",
+      "guid": "cf81c85f95fe47e1a27f6ae460cf182c",
+      "name": "TextMeshPro/Sprite",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/BlockMaterials/PrismShader.shader",
+      "guid": "d44644427cf263841a84eeb5b1481541",
+      "name": "BlockShaders/Prism",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/AnimatedSpindleGraph.shadergraph",
+      "guid": "19c1e86eb1b8c404dbba26c05d57715a",
+      "name": "Shader Graphs/AnimatedSpindleGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/AxeBubbleDecal.shadergraph",
+      "guid": "4b3590541884f8a4d9da672c50034848",
+      "name": "Shader Graphs/AxeBubbleDecal",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/BallTrail.shader",
+      "guid": "93028aac81a047388d157b961c06d0f2",
+      "name": "CosmicShore/BallTrail",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
+      "guid": "bf8c159f627e64b439094797bff88611",
+      "name": "Shader Graphs/BlockGraph",
+      "route": "family",
+      "why": "hand-tuned family BlockGraph",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph",
+      "guid": "6bb03b2998dc62b4b8f9964d5fe5c97e",
+      "name": "Shader Graphs/CageGraph",
+      "route": "family",
+      "why": "hand-tuned family Cage",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CausticsNoiseGraph.shadergraph",
+      "guid": "b91995b390e015d41812b0f61ac8bbe8",
+      "name": "Shader Graphs/CausticsNoiseGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader",
+      "guid": "3c26ca90a8014ba2894f6d3007b6fdae",
+      "name": "Shader Graphs/ChargeCrystal",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ConicGraph.shadergraph",
+      "guid": "78ad54481b6c43844a7e2589ffcafb67",
+      "name": "Shader Graphs/ConicGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CrystalGraph.shadergraph",
+      "guid": "11986b08af564954bb111977a5cf4dac",
+      "name": "Shader Graphs/CrystalGraph",
+      "route": "family",
+      "why": "hand-tuned family Crystal",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/DandruffGraph.shadergraph",
+      "guid": "17cf152be89b54d4f9e7415df365a486",
+      "name": "Shader Graphs/DandruffGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/DynamicFresnelGraph.shadergraph",
+      "guid": "6bc9984830867b24da8c867644df2112",
+      "name": "Shader Graphs/DynamicFresnelGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/EchoSightHalo.shader",
+      "guid": "6c2b9d4a1e7f43b58a03c6e5d2f7b891",
+      "name": "CosmicShore/EchoSightHalo",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
+      "guid": "de59ec1f616f51044a23e6c1368d6660",
+      "name": "Shader Graphs/ExplodingBlockGraph",
+      "route": "family",
+      "why": "hand-tuned family ExplodingBlockGraph",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ExplodingCrystalGraph.shadergraph",
+      "guid": "db447cf278b8bb043bd4b09492073b93",
+      "name": "Shader Graphs/ExplodingCrystalGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ExplosionGraph.shadergraph",
+      "guid": "4ecce465caf31d44389cf674db4318b9",
+      "name": "Shader Graphs/ExplosionGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/FoldGatePortal.shader",
+      "guid": "4bbb3a527bac48b9aa0f4efe6de383f3",
+      "name": "CosmicShore/FoldGatePortal",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader",
+      "guid": "0d2382aa91a61b6220c03dc1763fd26f",
+      "name": "Shader Graphs/ForcefieldCrackle",
+      "route": "family",
+      "why": "hand-tuned family Forcefield",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader",
+      "guid": "e66cc995d379448caf38b18d87140dde",
+      "name": "Shader Graphs/ForcefieldCrackleCapsule",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ForceFieldGraph.shadergraph",
+      "guid": "4ede039edeebaac44b640e792e4e15f2",
+      "name": "Shader Graphs/ForceFieldGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph",
+      "guid": "f33c42ae12e4e5346be040f81c38d2b1",
+      "name": "Shader Graphs/FresnelGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/HilbertGraph.shadergraph",
+      "guid": "3f08bd03496743143a86c57ab10ba966",
+      "name": "Shader Graphs/HilbertGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/InverseDynamicFresnelGraph.shadergraph",
+      "guid": "65ea5be9e4f162d4bbd2f24f942549e6",
+      "name": "Shader Graphs/InverseDynamicFresnelGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "ObjectNode: world bounds are the object\u0027s origin"
+      ]
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/LaserGraph.shadergraph",
+      "guid": "aa6a525e6669a0641af56779b753396f",
+      "name": "Shader Graphs/LaserGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph",
+      "guid": "ba81f239cd8660e47b1b52247719049a",
+      "name": "Shader Graphs/SuctionGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "ObjectNode: world bounds are the object\u0027s origin"
+      ]
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismGraphs/UnstablePrismGraph.shadergraph",
+      "guid": "3da87730148b471418a113c1694e6670",
+      "name": "Shader Graphs/UnstablePrismGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "ObjectNode: world bounds are the object\u0027s origin"
+      ]
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader",
+      "guid": "7c41d9a06be34f0aa2c1de5b8f37e412",
+      "name": "Hidden/CosmicShore/PrismOcclusionDitherPreview",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismSlice.shader",
+      "guid": "7056edc966584b3b99b6509922ebffe6",
+      "name": "CosmicShore/PrismSlice",
+      "route": "family",
+      "why": "hand-tuned family PrismSlice",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader",
+      "guid": "c451cf0afd834429a6f4e6652dad5b50",
+      "name": "Shader Graphs/ProjectileChargeField",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ProjectileGraph.shadergraph",
+      "guid": "cd6d9de0640c25a4fbbb48977f9f7585",
+      "name": "Shader Graphs/ProjectileGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/RippleGraph.shadergraph",
+      "guid": "e7609cecd3553f746828074af2226b7a",
+      "name": "Shader Graphs/RippleGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "SceneColorNode: no opaque-texture copy: returns black"
+      ]
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SharkSpikeGraph.shadergraph",
+      "guid": "c3a1c67a6ce8e5641a19cc1b273abbda",
+      "name": "Shader Graphs/SharkSpikeGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "SceneColorNode: no opaque-texture copy: returns black"
+      ]
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ShepardGraph.shadergraph",
+      "guid": "71fa822036d425446afa6c9c07046aef",
+      "name": "Shader Graphs/ShepardGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SkimmerGraph.shadergraph",
+      "guid": "45e26bf6e32e3df49b2a5f541e634514",
+      "name": "Shader Graphs/SkimmerGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SkyBoxGraph.shadergraph",
+      "guid": "0e1e12b7dd9dfb449b9c83f701ff0d32",
+      "name": "Shader Graphs/SkyBoxGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SkyboxModelGraph.shadergraph",
+      "guid": "2c9a2006e0ea5154fa732333a4962870",
+      "name": "Shader Graphs/SkyboxModelGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SnowGraph.shadergraph",
+      "guid": "85c2251bbb0f9b746807624041e02ff3",
+      "name": "Shader Graphs/SnowGraph",
+      "route": "family",
+      "why": "hand-tuned family Snow",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SoftSpark.shader",
+      "guid": "dd64da08d275420c881c546e12e14a12",
+      "name": "CosmicShore/SoftSpark",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SpikeGraph.shadergraph",
+      "guid": "cce495ab31453464a9474ea7bf19b1cf",
+      "name": "Shader Graphs/SpikeGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph",
+      "guid": "545a7b2ee58b90744bdb1c9e265a09f4",
+      "name": "Shader Graphs/SpindleGraph",
+      "route": "family",
+      "why": "hand-tuned family Spindle",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StarGraph.shadergraph",
+      "guid": "d9df7b99a4087194e960474470100ea0",
+      "name": "Shader Graphs/StarGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader",
+      "guid": "887013231f4a269178623abc40fc1a02",
+      "name": "CosmicShore/SwarmMemberInstanced",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/TimeCrystalGraph.shadergraph",
+      "guid": "1d480568e6c01d243b816d1f288866dd",
+      "name": "Shader Graphs/TimeCrystalGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VelocityBlockGraphOld.shadergraph",
+      "guid": "1a91fda6b609b5144b172b029f90e0d1",
+      "name": "Shader Graphs/VelocityBlockGraphOld",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VelocityGraphOld.shadergraph",
+      "guid": "a3e8b27f03b506241a7d49d2bdb2d6b6",
+      "name": "Shader Graphs/VelocityGraphOld",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph",
+      "guid": "0236447d5f06b0541a43756d85b5f222",
+      "name": "Shader Graphs/VesselGraph",
+      "route": "family",
+      "why": "hand-tuned family Vessel",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VesselTextureGraph.shadergraph",
+      "guid": "274a3a572459ef441a959ffb39837a0b",
+      "name": "Shader Graphs/VesselTextureGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/WispGraph.shadergraph",
+      "guid": "263efa42ac072ab4e9d4474c9a106b4a",
+      "name": "Shader Graphs/WispGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
+      "guid": "4a2897f9dfc7e5645aee8db7ca02c177",
+      "name": "Shader Graphs/CreatureTextureGraph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign10_Graph.shadergraph",
+      "guid": "1af61eadeb67acd488ca7bc546bfe494",
+      "name": "Shader Graphs/WorldSpaceDesign10_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign11_Graph.shadergraph",
+      "guid": "b8d4160b57f110e4fa41da1947b7c04f",
+      "name": "Shader Graphs/WorldSpaceDesign11_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign12_Graph.shadergraph",
+      "guid": "dcd5996b15f158e478fcc3d5e4411d4e",
+      "name": "Shader Graphs/WorldSpaceDesign12_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign1_Graph.shadergraph",
+      "guid": "12bc1409f9ee3b247a7287c00d1e8b51",
+      "name": "Shader Graphs/WorldSpaceDesign1_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign2_Graph.shadergraph",
+      "guid": "e4c448005b4a6cd47a3dd7f4794fd01c",
+      "name": "Shader Graphs/WorldSpaceDesign2_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign3_Graph.shadergraph",
+      "guid": "1712e46507b3f924591bbcb82456a9b5",
+      "name": "Shader Graphs/WorldSpaceDesign3_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign4_Graph.shadergraph",
+      "guid": "20f180787590dad42a6b7e4c7ce251f7",
+      "name": "Shader Graphs/WorldSpaceDesign4_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign5_Graph.shadergraph",
+      "guid": "40cd6c6e16812ae4793c65fca6076df4",
+      "name": "Shader Graphs/WorldSpaceDesign5_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign6_Graph.shadergraph",
+      "guid": "c3bd2dc6e1bb07544a4b193ebdb4ee73",
+      "name": "Shader Graphs/WorldSpaceDesign6_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign7_Graph.shadergraph",
+      "guid": "3d4f46f75e873e746b4da264017c02b3",
+      "name": "Shader Graphs/WorldSpaceDesign7_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign8_Graph.shadergraph",
+      "guid": "6d9b822355452c14cbdecc4aa16ee127",
+      "name": "Shader Graphs/WorldSpaceDesign8_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign9_Graph.shadergraph",
+      "guid": "aa1bb61f7ebc917409ec9898b15c4cb7",
+      "name": "Shader Graphs/WorldSpaceDesign9_Graph",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/DistortionShader.shader",
+      "guid": "f7e6f65b91ab2a34caa2107186b6b7d5",
+      "name": "Custom/TransparentPerlinDistortion",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
+      "guid": "a8f4e2b6c9d1357024681acf3b5d7e90",
+      "name": "CosmicShore/HyperSeaSkybox",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader",
+      "guid": "5b0f1337aee8b54479d323df2e174fd6",
+      "name": "Shapes_Shader_Pack",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader",
+      "guid": "db3a7d241b308d845a0133c22554acad",
+      "name": "Custom/SpreadFresnelShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/Standard SSU.shader",
+      "guid": "9b821c6360daf3b49b54596024bd6627",
+      "name": "Sprite Shaders Ultimate/Standard SSU",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader",
+      "guid": "20424d64830139e4d856f9eff8565409",
+      "name": "Custom/ViewAngleBasedColorBlendHDR",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader",
+      "guid": "3ed4773a603820f42915cc01f4dd4f76",
+      "name": "Custom/CircularGradientFresnel",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/UI/Gradient.shader",
+      "guid": "9f4c775a34cab734cbb593b61cfd03a7",
+      "name": "UI/Gradient",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/UI/SilhouetteHolo.shader",
+      "guid": "fe36f65ce65147cea1c2fde93872af3c",
+      "name": "CosmicShore/UI/SilhouetteHolo",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/UI/VolumeDisplayShader.shader",
+      "guid": "ed0cdfdab2e823445ac8df7052a701c8",
+      "name": "Custom/VolumeDisplayShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Models/ShieldShader.shadergraph",
+      "guid": "314b60c90bb7d4f468db5b19a788ef91",
+      "name": "Shader Graphs/ShieldShader",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Prefabs/Spacevessels/Components/Jet/Shader_IntegratedEffect.shader",
+      "guid": "92a84fb90c40aca40ac09585e39370b7",
+      "name": "GAPH Custom Shader/Shader_IntegradedEffect",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Scripts/DialogueSystem/Animation/SpriteAnimation.shadergraph",
+      "guid": "f8f13406576b01e4882a08949fa6e144",
+      "name": "Shader Graphs/SpriteAnimation",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Scripts/DialogueSystem/Animation/UI_NoiseDissolve.shadergraph",
+      "guid": "497057140517b5740af3182577e45c4e",
+      "name": "Shader Graphs/UI_NoiseDissolve",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Scripts/Game/Vessel/Animation/JetShader.shader",
+      "guid": "8efe19062b480f445801d12c6fca1ded",
+      "name": "Custom/JetShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    }
+  ]
+}

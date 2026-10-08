@@ -51,7 +51,7 @@ A channel without a golden reports MISSING and does not fail; FAIL names the fir
 | File | One line per | Fields | Compared |
 |---|---|---|---|
 | `state.jsonl` | checkpoint (every `checkpointEvery` frames) | `frame`, `t`, `scene`, `stats{name:{domain,score,crystals}}`, `domainSums{}` | exact (all but `t`) |
-| `events.jsonl` | event, in the order raised | `t`, `kind`, `name`: `fmod` = an FMOD event start (event path); `game` = `scene:<name>` on every scene load, or a `GameDataSO` match event by field name (`OnLaunchGame`, `OnSessionStarted`, `OnInitializeGame`, `OnMiniGameRoundStarted`, `OnMiniGameTurnStarted`, `OnMiniGameTurnEnd`, `OnMiniGameRoundEnd`, `OnMiniGameEnd`, `OnWinnerCalculated`, `OnResetForReplay`, `OnSessionEnded`); `contact` = a trigger contact that starts with a `VesselController` on either side, `name` = the two GameObject names sorted ordinally and joined by `\|`, all of one step written at the END of that step sorted ordinally (contact order inside a step is the physics engine's, not gameplay) | exact order and count over the kinds the golden carries (a kind the golden lacks is named, not compared); `t` within 0.04 s |
+| `events.jsonl` | event, in the order raised | `t`, `kind`, `name`: `fmod` = an FMOD event start or restart (event path; a GUID-only reference is named from `Cosmic Shore/Build/GUIDs.txt`); `fmod-stop` = an explicit `EventInstance.stop()`, `PATH\|ALLOWFADEOUT` or `PATH\|IMMEDIATE` (not a one-shot ending by itself); `fmod-snapshot` = a mixer snapshot, `start:PATH` / `stop:PATH` for an FMOD snapshot (never also written as `fmod`/`fmod-stop`), `start:mixer:MIXER/SNAPSHOT` for a Unity `AudioMixerSnapshot.TransitionTo`; `game` = `scene:<name>` on every scene load, or a `GameDataSO` match event by field name (`OnLaunchGame`, `OnSessionStarted`, `OnInitializeGame`, `OnMiniGameRoundStarted`, `OnMiniGameTurnStarted`, `OnMiniGameTurnEnd`, `OnMiniGameRoundEnd`, `OnMiniGameEnd`, `OnWinnerCalculated`, `OnResetForReplay`, `OnSessionEnded`); `contact` = a trigger contact that starts with a `VesselController` on either side, `name` = the two GameObject names sorted ordinally and joined by `\|`, all of one step written at the END of that step sorted ordinally (contact order inside a step is the physics engine's, not gameplay); `collision` = an `OnCollisionEnter` pair (any colliders, C3), named and ordered like `contact` | exact order and count over the kinds the golden carries (a kind the golden lacks is named, not compared); `t` within 0.04 s |
 | `transforms.jsonl` | vessel per checkpoint, first 10 s of each scene | `frame`, `t` (since scene entered), `scene`, `id` (object name, `#n` for repeats), `p[3]`, `r[4]` | 1e-4 x distance from origin (floor 1 m), 0.1 deg |
 | `random_<seed>.json` | seed | `value[1000]`, then `range[1000]` (`Range(0,1000)`), then `onUnitSphere[1000]`, all from one `InitState(seed)` | exact |
 | `frames/*.png` | recorded frame | `frames/ui/` = UI screens; `frames/masks.json` = `{file:[[x,y,w,h]]}` blanked in both | SSIM >= 0.97 (UI 0.98) |
@@ -75,10 +75,34 @@ What it adds:
 | `Assets/_Scripts/Utility/Replay/ReplayRecorder.cs` | Snapshots `IInputStatus` + `OnButtonPressed/Released` per frame after `ProcessInput()` |
 | `Assets/_Scripts/Utility/Replay/ReplayPlayer.cs` | An `IInputStrategy` that writes recorded frames into `IInputStatus` and raises the recorded `InputEvents` |
 | `Assets/_Scripts/Utility/Replay/DeterministicSession.cs` | `Random.InitState(seed)`, `Time.captureFramerate = 60`, a session seed for the seeded `System.Random` sites |
-| `Assets/_Scripts/Utility/Replay/ParityProbe.cs` | Writes `state` / `events` / `transforms` in the formats above: FMOD starts through one wrapper, `game` events from `SceneManager.sceneLoaded` and the `GameDataSO` events listed above, `contact` events from an `OnTriggerEnter` relay on each vessel's colliders, flushed sorted at end of frame |
+| `Assets/_Scripts/Utility/Replay/ParityProbe.cs` | Writes `state` / `events` / `transforms` in the formats above: the FMOD kinds at the game's FMOD seams (below), `game` events from `SceneManager.sceneLoaded` and the `GameDataSO` events listed above, `contact` events from an `OnTriggerEnter` relay on each vessel's colliders and `collision` events from an `OnCollisionEnter` relay on each dynamic Rigidbody (the Astro League ball), flushed sorted at end of frame |
 | `Assets/_Scripts/Controller/IO/InputController.cs` | One hook: when a `ReplayPlayer` is active it is the strategy |
 | `Assets/_Scripts/Editor/Parity/ParityCapture.cs` | `[CliCommand]` + `FrogletTools/Parity/Capture Goldens`: for each manifest case, play it in Play mode and write `Port/parity/goldens/<case>/`; write `goldens/random/random_<seed>.json` per manifest seed |
 | `Assets/_Scripts/Tests/Editor/ReplayFileTests.cs` | Format round trip; Random sequence per seed |
+
+**The FMOD seams (measured 2026-10-08, C4).** Every start, wherever it comes from, is one
+`EventDescription.setCallback(STARTED | RESTARTED)` on each loaded event: that is `fmod` (and
+`fmod-snapshot start:` for a snapshot description). Explicit stops have exactly three sources in
+the game, and the probe writes `fmod-stop` at each without touching the vendor plugin:
+- `FmodSafe.StopAndRelease` (7 calls). `FmodSafe.TryCreateInstance` is the game's only
+  `RuntimeManager.CreateInstance` (8 callers: music, ship engine and element layers, drift,
+  proximity boost, flora ambient, the one-shot helper).
+- `FMODOneShotVolumeHelper`, which plays every one-shot (create, volume, 3D/attach, `start`,
+  `release`) and rejects a LOOPING event (`isOneshot` false) with `stop(IMMEDIATE)`.
+- `StudioEventEmitter.Stop`: 9 emitters in 7 prefabs (7 play on Object Start, 6 stop on Object
+  Destroy, all `AllowFadeout`) plus the ones `SwarmFauna` adds; a relay on each emitter whose stop
+  trigger is Object Destroy writes the stop from its own `OnDestroy`. A destroyed emitter WITHOUT a
+  stop trigger is only detached (the vendor's `OnDestroy`), so no stop.
+Do not take stops from the `STOPPED` callback: it also fires when a one-shot ends by itself.
+- Snapshots: none today. The FMOD project's snapshot list is empty (`GUIDs.txt`: 3 banks, 2 buses,
+  61 events, 0 snapshots), and `Main_AudioMixer` has only its default snapshot, which no script
+  transitions to. A golden with no `fmod-snapshot` line therefore matches only a Prisma run with none.
+
+The FMOD kinds are compared only when the golden carries them, so a probe that cannot record
+`fmod-stop` still gets a starts-only comparison. Prisma runs parity with `COSMIC_SHORE_AUDIO=nrt`:
+the FMOD runtime and the project's banks, non-real-time with no output, so `isOneshot` and the
+other event descriptions answer exactly as they do in Unity. Without the runtime the run's
+`run.json` says `"audio":"silent"` and `engine_parity` flags the FMOD channel as approximate.
 
 **Input the replay does not cover.** `ReplayPlayer` replays the `IInputStatus` path (`InputController.Update`
 calls `currentStrategy.ProcessInput()`, 6 strategies). 36 scripts also read `Keyboard/Gamepad/Mouse/Touchscreen.current`

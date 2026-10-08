@@ -144,7 +144,7 @@ namespace CosmicShore.Engine
             snapHits.Sort();
         }
 
-        static bool AabbTouches(in Shape sh, Vector3 min, Vector3 max)
+        static bool AabbTouches(in PhysicsShape sh, Vector3 min, Vector3 max)
             => sh.Center.x + sh.Extents.x >= min.x && sh.Center.x - sh.Extents.x <= max.x
             && sh.Center.y + sh.Extents.y >= min.y && sh.Center.y - sh.Extents.y <= max.y
             && sh.Center.z + sh.Extents.z >= min.z && sh.Center.z - sh.Extents.z <= max.z;
@@ -190,7 +190,7 @@ namespace CosmicShore.Engine
             GatherCandidates(position - r, position + r, _qLive);
             _qHits.Clear();
             foreach (int i in _qLive)
-                if (SnapCollider(i, layerMask, qti) is { } c && ShapeSphere(in _shapes[i], position, radius)) _qHits.Add(c);
+                if (SnapCollider(i, layerMask, qti) is { } c && ShapeMath.SphereOverlaps(in _shapes[i], position, radius)) _qHits.Add(c);
             foreach (var c in _arrived)
                 if (!c.destroyedFlag && Accepts(c, layerMask, qti) && SphereOverlapsCollider(position, radius, c) && !InSnapshotHits(c)) _qHits.Add(c);
             return EmitOrdered(_qHits, results);
@@ -202,29 +202,29 @@ namespace CosmicShore.Engine
             var r = new Vector3(radius, radius, radius);
             GatherCandidates(Vector3.Min(p0, p1) - r, Vector3.Max(p0, p1) + r, _qLive);
             _qHits.Clear();
+            PhysicsShape probe = default;
+            ShapeMath.SetCapsule(ref probe, p0, p1, radius);
             foreach (int i in _qLive)
-            {
-                if (SnapCollider(i, layerMask, qti) is not { } c) continue;
-                ref readonly var sh = ref _shapes[i];
-                if (ShapeSphere(in sh, ClosestOnSegment(p0, p1, sh.Center), radius)) _qHits.Add(c);
-            }
+                if (SnapCollider(i, layerMask, qti) is { } c && ShapeMath.Overlap(in probe, in _shapes[i])) _qHits.Add(c);
             foreach (var c in _arrived)
             {
                 if (c.destroyedFlag || !Accepts(c, layerMask, qti) || InSnapshotHits(c)) continue;
-                if (SphereOverlapsCollider(ClosestOnSegment(p0, p1, c.bounds.center), radius, c)) _qHits.Add(c);
+                if (ProbeOverlapsCollider(in probe, c)) _qHits.Add(c);
             }
             return EmitOrdered(_qHits, results);
         }
 
-        internal Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, int layerMask, QueryTriggerInteraction qti)
+        internal Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction qti)
         {
             EnsureQueryScene();
-            GatherCandidates(center - halfExtents, center + halfExtents, _qLive);
+            PhysicsShape probe = default;
+            ShapeMath.SetBox(ref probe, center, orientation, new Vector3(Mathf.Abs(halfExtents.x), Mathf.Abs(halfExtents.y), Mathf.Abs(halfExtents.z)));
+            GatherCandidates(center - probe.Extents, center + probe.Extents, _qLive);
             _qHits.Clear();
             foreach (int i in _qLive)
-                if (SnapCollider(i, layerMask, qti) is { } c) _qHits.Add(c); // AABB touch is the box test
+                if (SnapCollider(i, layerMask, qti) is { } c && ShapeMath.Overlap(in probe, in _shapes[i])) _qHits.Add(c);
             foreach (var c in _arrived)
-                if (!c.destroyedFlag && Accepts(c, layerMask, qti) && BoxOverlapsCollider(center, halfExtents, c) && !InSnapshotHits(c)) _qHits.Add(c);
+                if (!c.destroyedFlag && Accepts(c, layerMask, qti) && ProbeOverlapsCollider(in probe, c) && !InSnapshotHits(c)) _qHits.Add(c);
             var buffer = new Collider[_qHits.Count];
             EmitOrdered(_qHits, buffer);
             return buffer;
@@ -235,20 +235,6 @@ namespace CosmicShore.Engine
         {
             foreach (var h in _qHits) if (ReferenceEquals(h, c)) return true;
             return false;
-        }
-
-        static bool ShapeSphere(in Shape sh, Vector3 center, float radius)
-        {
-            if (sh.Kind == ShapeKind.Sphere)
-            {
-                float r = radius + sh.Radius;
-                return (center - sh.Center).sqrMagnitude <= r * r;
-            }
-            var closest = new Vector3(
-                Mathf.Clamp(center.x, sh.Center.x - sh.Extents.x, sh.Center.x + sh.Extents.x),
-                Mathf.Clamp(center.y, sh.Center.y - sh.Extents.y, sh.Center.y + sh.Extents.y),
-                Mathf.Clamp(center.z, sh.Center.z - sh.Extents.z, sh.Center.z + sh.Extents.z));
-            return (center - closest).sqrMagnitude <= radius * radius;
         }
 
         // ── Rays ───────────────────────────────────────────────────────
@@ -286,7 +272,7 @@ namespace CosmicShore.Engine
             foreach (int i in _qLive)
             {
                 if (SnapCollider(i, layerMask, qti) is not { } c) continue;
-                if (RayShape(origin, direction, in _shapes[i], out float d, out Vector3 n) && d <= maxDistance)
+                if (ShapeMath.Raycast(in _shapes[i], origin, direction, out float d, out Vector3 n) && d <= maxDistance)
                     _rayHits.Add(new RaycastHit { collider = c, distance = d, point = origin + direction * d, normal = n });
             }
             foreach (var c in _arrived)
@@ -305,29 +291,6 @@ namespace CosmicShore.Engine
                 return c != 0 ? c : _bySeqOrLast(a.collider, b.collider);
             });
             return _rayHits;
-        }
-
-        static bool RayShape(Vector3 o, Vector3 d, in Shape sh, out float dist, out Vector3 normal)
-        {
-            dist = 0f; normal = -d;
-            if (sh.Kind == ShapeKind.Sphere)
-            {
-                var oc = o - sh.Center;
-                float b = Vector3.Dot(oc, d), cc = oc.sqrMagnitude - sh.Radius * sh.Radius;
-                if (cc > 0f && b > 0f) return false;
-                float disc = b * b - cc;
-                if (disc < 0f) return false;
-                dist = MathF.Max(0f, -b - MathF.Sqrt(disc));
-                normal = (o + d * dist - sh.Center).normalized;
-                return true;
-            }
-            var bounds = new Bounds(sh.Center, sh.Extents * 2f);
-            if (!bounds.IntersectRay(new Ray(o, d), out dist)) return false;
-            var p = o + d * dist - sh.Center;
-            var e = sh.Extents;
-            float ax = MathF.Abs(p.x / MathF.Max(e.x, 1e-6f)), ay = MathF.Abs(p.y / MathF.Max(e.y, 1e-6f)), az = MathF.Abs(p.z / MathF.Max(e.z, 1e-6f));
-            normal = ax >= ay && ax >= az ? new Vector3(MathF.Sign(p.x), 0, 0) : ay >= az ? new Vector3(0, MathF.Sign(p.y), 0) : new Vector3(0, 0, MathF.Sign(p.z));
-            return true;
         }
     }
 }

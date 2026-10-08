@@ -26,6 +26,10 @@ namespace Prisma.Parity
         public double TransformWindowSeconds { get; set; } = 10;
         public double SsimGameplay { get; set; } = 0.97;
         public double SsimUi { get; set; } = 0.98;
+        /// <summary>UI rects (ui/*.jsonl): each corner within this many screen pixels.</summary>
+        public double UiRectPixels { get; set; } = 1.0;
+        /// <summary>UI text: the (auto-)sized font within this many points.</summary>
+        public double UiFontSize { get; set; } = 0.5;
 
         public static Tolerances Load(string? path)
         {
@@ -58,6 +62,7 @@ namespace Prisma.Parity
                 Events(golden, actual, tol),
                 Transforms(golden, actual, tol),
                 Frames(golden, actual, tol),
+                Ui(golden, actual, tol),
             };
         }
 
@@ -196,6 +201,55 @@ namespace Prisma.Parity
             dot = Math.Min(1.0, dot / (n1 * n2));
             return 2.0 * Math.Acos(dot) * 180.0 / Math.PI;
         }
+
+        // ---- ui: every RectTransform's screen rect, per screen and resolution ------------------------
+
+        /// <summary>
+        /// Every golden ui/&lt;view&gt;_&lt;WxH&gt;.jsonl (written by the Unity capture and by the engine's
+        /// <c>ui_sweep</c>) against the run's file of the same name: the same set of active
+        /// elements (by path), each corner within <see cref="Tolerances.UiRectPixels"/>, and for text
+        /// the same overflow verdict and a font size within <see cref="Tolerances.UiFontSize"/>.
+        /// </summary>
+        public static ChannelResult Ui(string golden, string actual, Tolerances tol)
+        {
+            var gdir = Path.Combine(golden, "ui");
+            if (!Directory.Exists(gdir) || Directory.GetFiles(gdir, "*.jsonl").Length == 0) return new ChannelResult("ui", ChannelStatus.Missing, "no golden");
+            var adir = Path.Combine(actual, "ui");
+            if (!Directory.Exists(adir)) return new ChannelResult("ui", ChannelStatus.Missing, "no run output");
+            int files = 0, elements = 0; double worst = 0; string worstAt = "";
+            foreach (var gf in Directory.GetFiles(gdir, "*.jsonl").OrderBy(f => f, StringComparer.Ordinal))
+            {
+                var name = Path.GetFileName(gf);
+                var af = Path.Combine(adir, name);
+                if (!File.Exists(af)) return new ChannelResult("ui", ChannelStatus.Fail, $"{name}: no rect dump in the run");
+                var g = Lines(gf)!; var a = Lines(af)!;
+                var byPath = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+                foreach (var o in a) byPath.TryAdd(o["path"]!.ToString(), o);
+                var goldenPaths = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var ge in g)
+                {
+                    var path = ge["path"]!.ToString();
+                    goldenPaths.Add(path);
+                    if (!byPath.TryGetValue(path, out var ae))
+                        return new ChannelResult("ui", ChannelStatus.Fail, $"{name}: {path} is active in the golden, not in the run");
+                    double err = new[] { "x0", "y0", "x1", "y1" }.Max(k => Math.Abs(ge[k]!.GetValue<double>() - ae[k]!.GetValue<double>()));
+                    if (err > tol.UiRectPixels + 1e-9)
+                        return new ChannelResult("ui", ChannelStatus.Fail, $"{name}: {path} rect off by {err:0.0} px: golden {RectText(ge)} vs {RectText(ae)}");
+                    if (ge["overflow"] is { } go && ae["overflow"] is { } ao && go.GetValue<bool>() != ao.GetValue<bool>())
+                        return new ChannelResult("ui", ChannelStatus.Fail, $"{name}: {path} text overflow golden {go} vs {ao}");
+                    if (ge["fontSize"] is { } gs && ae["fontSize"] is { } fs && Math.Abs(gs.GetValue<double>() - fs.GetValue<double>()) > tol.UiFontSize + 1e-9)
+                        return new ChannelResult("ui", ChannelStatus.Fail, $"{name}: {path} font size golden {gs} vs {fs}");
+                    if (err > worst) { worst = err; worstAt = $"{name} {path}"; }
+                    elements++;
+                }
+                var extra = a.Select(o => o["path"]!.ToString()).FirstOrDefault(p => !goldenPaths.Contains(p));
+                if (extra != null) return new ChannelResult("ui", ChannelStatus.Fail, $"{name}: {extra} is active in the run, not in the golden");
+                files++;
+            }
+            return new ChannelResult("ui", ChannelStatus.Pass, $"{files} screen(s), {elements} rects; worst corner {worst:0.0} px{(worstAt.Length > 0 ? " (" + worstAt + ")" : "")}");
+        }
+
+        static string RectText(JsonObject o) => $"({o["x0"]},{o["y0"]})-({o["x1"]},{o["y1"]})";
 
         // ---- frames: SSIM per frame ----------------------------------------------------------------------
 

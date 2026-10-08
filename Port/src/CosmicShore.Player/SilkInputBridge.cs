@@ -136,10 +136,13 @@ namespace CosmicShore.Player
         void MoveTo(System.Numerics.Vector2 windowPos)
         {
             // Window coordinates (top-left origin, logical pixels) → Unity screen space
-            // (bottom-left origin, framebuffer pixels).
-            float sx = _window.Size.X > 0 ? (float)_window.FramebufferSize.X / _window.Size.X : 1f;
-            float sy = _window.Size.Y > 0 ? (float)_window.FramebufferSize.Y / _window.Size.Y : 1f;
-            var screen = new EVector2(windowPos.X * sx, _window.FramebufferSize.Y - windowPos.Y * sy);
+            // (bottom-left origin, Screen pixels: the framebuffer, or the control port's
+            // virtual resolution, which the window shows scaled).
+            float fw = CosmicShore.Engine.Screen.width > 0 ? CosmicShore.Engine.Screen.width : _window.FramebufferSize.X;
+            float fh = CosmicShore.Engine.Screen.height > 0 ? CosmicShore.Engine.Screen.height : _window.FramebufferSize.Y;
+            float sx = _window.Size.X > 0 ? fw / _window.Size.X : 1f;
+            float sy = _window.Size.Y > 0 ? fh / _window.Size.Y : 1f;
+            var screen = new EVector2(windowPos.X * sx, fh - windowPos.Y * sy);
             _mouse.position.SetRaw(screen);
             if (_lastWindowPos is { } last)
                 _delta += new System.Numerics.Vector2((windowPos.X - last.X) * sx, -(windowPos.Y - last.Y) * sy);

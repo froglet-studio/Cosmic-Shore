@@ -234,6 +234,61 @@ namespace CosmicShore.Tests
             Assert.Equal(10, t.TransformWindowSeconds);
             Assert.Equal(0.97, t.SsimGameplay);
             Assert.Equal(0.98, t.SsimUi);
+            Assert.Equal(1.0, t.UiRectPixels);
+            Assert.Equal(0.5, t.UiFontSize);
+        }
+
+        // ---- ui: rect dumps (C5) --------------------------------------------------------------------
+
+        const string UiDump =
+            "{\"path\":\"Canvas\",\"x0\":0,\"y0\":0,\"x1\":1920,\"y1\":1080,\"kind\":\"none\"}
+" +
+            "{\"path\":\"Canvas/Title\",\"x0\":760,\"y0\":900,\"x1\":1160,\"y1\":980,\"kind\":\"text\",\"alpha\":1,\"text\":\"COSMIC SHORE\",\"fontSize\":48,\"overflow\":false,\"lines\":1}
+" +
+            "{\"path\":\"Canvas/Item#1\",\"x0\":10,\"y0\":10,\"x1\":110,\"y1\":60,\"kind\":\"image\",\"alpha\":1}
+";
+
+        void WriteUi(string dir, string body)
+        {
+            Directory.CreateDirectory(Path.Combine(dir, "ui"));
+            File.WriteAllText(Path.Combine(dir, "ui", "menu-home_1920x1080.jsonl"), body);
+        }
+
+        [Fact]
+        public void UiIdenticalDumpsPassAndNoGoldenIsMissing()
+        {
+            Assert.Equal(ChannelStatus.Missing, ParityDiff.Ui(Golden, Run, _tol).Status);
+            WriteUi(Golden, UiDump); WriteUi(Run, UiDump);
+            var c = ParityDiff.Ui(Golden, Run, _tol);
+            Assert.Equal(ChannelStatus.Pass, c.Status);
+            Assert.Contains("3 rects", c.Detail);
+        }
+
+        [Fact]
+        public void UiRectBarIsOnePixel()
+        {
+            WriteUi(Golden, UiDump);
+            WriteUi(Run, UiDump.Replace("\"x1\":1160", "\"x1\":1161"));
+            Assert.Equal(ChannelStatus.Pass, ParityDiff.Ui(Golden, Run, _tol).Status);
+            WriteUi(Run, UiDump.Replace("\"x1\":1160", "\"x1\":1161.5"));
+            var c = ParityDiff.Ui(Golden, Run, _tol);
+            Assert.Equal(ChannelStatus.Fail, c.Status);
+            Assert.Contains("Canvas/Title rect off by 1.5 px", c.Detail);
+        }
+
+        [Fact]
+        public void UiPlantedTextAndMembershipDifferencesFail()
+        {
+            WriteUi(Golden, UiDump);
+            WriteUi(Run, UiDump.Replace("\"overflow\":false", "\"overflow\":true"));
+            Assert.Contains("overflow", ParityDiff.Ui(Golden, Run, _tol).Detail);
+            WriteUi(Run, UiDump.Replace("\"fontSize\":48", "\"fontSize\":44"));
+            Assert.Contains("font size golden 48 vs 44", ParityDiff.Ui(Golden, Run, _tol).Detail);
+            WriteUi(Run, UiDump.Replace("Canvas/Item#1", "Canvas/Item"));
+            Assert.Contains("Canvas/Item#1 is active in the golden, not in the run", ParityDiff.Ui(Golden, Run, _tol).Detail);
+            WriteUi(Run, UiDump + "{\"path\":\"Canvas/Extra\",\"x0\":0,\"y0\":0,\"x1\":1,\"y1\":1,\"kind\":\"none\"}
+");
+            Assert.Contains("Canvas/Extra is active in the run, not in the golden", ParityDiff.Ui(Golden, Run, _tol).Detail);
         }
     }
 }

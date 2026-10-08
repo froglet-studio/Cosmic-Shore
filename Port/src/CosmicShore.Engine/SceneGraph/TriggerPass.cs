@@ -20,7 +20,9 @@ namespace CosmicShore.Engine
     ///     <see cref="Collider.isTrigger"/> (no Rigidbody requirement — the port has no
     ///     rigidbodies). Two non-trigger colliders are ignored entirely.
     ///   • Both sides receive the callback: every MonoBehaviour on each collider's own
-    ///     GameObject declaring `OnTriggerEnter(Collider)` / `OnTriggerExit(Collider)`
+    ///     GameObject — and, when the collider belongs to a Rigidbody on another (ancestor)
+    ///     GameObject, on that Rigidbody's GameObject too, as the original engine routes it —
+    ///     declaring `OnTriggerEnter(Collider)` / `OnTriggerExit(Collider)`
     ///     (any visibility, discovered reflectively via <see cref="LifecycleHooks"/>) is
     ///     invoked with the OTHER collider as the argument. Like the original engine,
     ///     delivery ignores the per-behaviour `enabled` flag (the documented quirk that
@@ -31,9 +33,8 @@ namespace CosmicShore.Engine
     ///   • OnTriggerStay fires every physics step for every pair still touching, after the
     ///     step's exits and enters (a pair's first Stay lands in its Enter step).
     ///
-    /// Shapes — exact sphere-sphere; boxes are treated as world-space AABBs (rotation is
-    /// ignored: center transformed through the hierarchy, extents scaled by |lossyScale|).
-    /// OBB support arrives with the full physics phase.
+    /// Shapes — exact tests over spheres, oriented boxes (a mesh collider is the oriented box
+    /// of its mesh's local bounds) and capsules; see <see cref="ShapeMath"/>.
     ///
     /// Determinism — colliders are iterated in registration order (AddComponent order,
     /// which is creation order). Pairs are tested (i, j) with i &lt; j over that order;
@@ -136,7 +137,7 @@ namespace CosmicShore.Engine
 
         internal void RunFrame()
         {
-            if (_enabled.Count == 0 && _activePairs.Count == 0) return;
+            if (_enabled.Count == 0 && _activePairs.Count == 0 && _contactPairs.Count == 0) return;
 
             // 1. Snapshot live participants in registration order. Colliders added by
             //    callbacks during this pass join next frame.
@@ -158,6 +159,9 @@ namespace CosmicShore.Engine
             BuildShapes();
             long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
             SweepCandidates();
+            // Contacts (ContactPass.cs) resolve on the fresh shapes; a body they moved changes
+            // the sweep, so it is rebuilt before the trigger pairs are tested.
+            if (_anyDynamic && SolveContacts()) SweepCandidates();
             // This step's shapes become the scene every query answers from until the next step
             // (committed before dispatch: a trigger callback that queries sees this step).
             CommitQuerySnapshot(_sweptCount);
@@ -212,6 +216,9 @@ namespace CosmicShore.Engine
                 DispatchStay(a, b);
                 DispatchStay(b, a);
             }
+
+            // 6. Collision messages, after the triggers.
+            DispatchContacts();
         }
 
         /// <summary>Exact-test one (earlier, later) registration-order pair (≥1 side is a trigger).</summary>
@@ -229,53 +236,19 @@ namespace CosmicShore.Engine
 
         // ── Broadphase ───────────────────────────────────────────────
 
-        enum ShapeKind : byte { None, Sphere, Box }
-
-        /// <summary>A collider's world-space shape for this frame (mesh colliders are their bounds box).</summary>
-        struct Shape
-        {
-            public ShapeKind Kind;
-            public Vector3 Center, Extents; // Extents = radius on every axis for spheres
-            public float Radius;
-            public bool Trigger;
-        }
-
-        Shape[] _shapes = Array.Empty<Shape>();
+        PhysicsShape[] _shapes = Array.Empty<PhysicsShape>();
         int[] _order = Array.Empty<int>();
         readonly List<int> _sweepActive = new();
         readonly List<long> _candidates = new();
 
+        /// <summary>Resolves every live collider to its world shape for this step (see <see cref="ShapeMath.TryBuild"/>).</summary>
         void BuildShapes()
         {
             int n = _live.Count;
-            if (_shapes.Length < n) { _shapes = new Shape[Math.Max(n, _shapes.Length * 2)]; _order = new int[_shapes.Length]; }
+            if (_shapes.Length < n) { _shapes = new PhysicsShape[Math.Max(n, _shapes.Length * 2)]; _order = new int[_shapes.Length]; }
             for (int i = 0; i < n; i++)
-            {
-                var c = _live[i];
-                ref var sh = ref _shapes[i];
-                sh.Trigger = c.isTrigger;
-                switch (c)
-                {
-                    case SphereCollider sphere:
-                        sh.Kind = ShapeKind.Sphere;
-                        sh.Center = sphere.transform.TransformPoint(sphere.center);
-                        sh.Radius = WorldRadius(sphere);
-                        sh.Extents = new Vector3(sh.Radius, sh.Radius, sh.Radius);
-                        break;
-                    case BoxCollider box:
-                        sh.Kind = ShapeKind.Box;
-                        (sh.Center, sh.Extents) = BoxBounds(box);
-                        break;
-                    case MeshCollider mesh when TryMeshBounds(mesh, out var mc, out var me):
-                        sh.Kind = ShapeKind.Box;
-                        sh.Center = mc;
-                        sh.Extents = me;
-                        break;
-                    default:
-                        sh.Kind = ShapeKind.None; // no overlap test exists for this shape
-                        break;
-                }
-            }
+                if (!ShapeMath.TryBuild(_live[i], out _shapes[i])) _shapes[i].Kind = ShapeKind.None; // no shape (a mesh collider without a mesh)
+            ClassifyBodies();
         }
 
         int _sweptCount;
@@ -283,6 +256,7 @@ namespace CosmicShore.Engine
         void SweepCandidates()
         {
             _candidates.Clear();
+            _contactCandidates.Clear();
             int m = _sweptCount = SortShapesByMinX();
 
             _sweepActive.Clear();
@@ -301,9 +275,11 @@ namespace CosmicShore.Engine
                         _sweepActive.RemoveAt(_sweepActive.Count - 1);
                         continue;
                     }
-                    if (!sa.Trigger && !se.Trigger) continue;
+                    bool solid = !sa.Trigger && !se.Trigger;
+                    if (solid && !_anyDynamic) continue;
                     if (Mathf.Abs(sa.Center.y - se.Center.y) > sa.Extents.y + se.Extents.y) continue;
                     if (Mathf.Abs(sa.Center.z - se.Center.z) > sa.Extents.z + se.Extents.z) continue;
+                    if (solid) { NoteSolidPair(a, e); continue; }
                     int lo = Math.Min(a, e), hi = Math.Max(a, e);
                     _candidates.Add(((long)lo << 32) | (uint)hi);
                 }
@@ -312,24 +288,8 @@ namespace CosmicShore.Engine
             _candidates.Sort();
         }
 
-        /// <summary>The exact tests, over the frame's resolved shapes (same rules as <see cref="Overlaps"/>).</summary>
-        static bool ShapesOverlap(in Shape a, in Shape b)
-        {
-            if (a.Kind == ShapeKind.Sphere && b.Kind == ShapeKind.Sphere)
-            {
-                float r = a.Radius + b.Radius;
-                return (a.Center - b.Center).sqrMagnitude <= r * r;
-            }
-            if (a.Kind == ShapeKind.Box && b.Kind == ShapeKind.Box)
-                return AabbAabb(a.Center, a.Extents, b.Center, b.Extents);
-            ref readonly var s = ref a.Kind == ShapeKind.Sphere ? ref a : ref b;
-            ref readonly var box = ref a.Kind == ShapeKind.Sphere ? ref b : ref a;
-            var closest = new Vector3(
-                Mathf.Clamp(s.Center.x, box.Center.x - box.Extents.x, box.Center.x + box.Extents.x),
-                Mathf.Clamp(s.Center.y, box.Center.y - box.Extents.y, box.Center.y + box.Extents.y),
-                Mathf.Clamp(s.Center.z, box.Center.z - box.Extents.z, box.Center.z + box.Extents.z));
-            return (s.Center - closest).sqrMagnitude <= s.Radius * s.Radius;
-        }
+        /// <summary>The exact tests, over the frame's resolved shapes.</summary>
+        static bool ShapesOverlap(in PhysicsShape a, in PhysicsShape b) => ShapeMath.Overlap(in a, in b);
 
         // ── Dispatch ─────────────────────────────────────────────────
 
@@ -348,7 +308,12 @@ namespace CosmicShore.Engine
 
         static void DispatchStay(Collider receiver, Collider other)
         {
-            var go = receiver.gameObject;
+            DispatchStayOn(receiver.gameObject, other);
+            if (BodyObject(receiver) is { } body) DispatchStayOn(body, other);
+        }
+
+        static void DispatchStayOn(GameObject go, Collider other)
+        {
             if (go is null || go.IsDestroyed || !go.activeInHierarchy) return;
             var components = go.Components;
             for (int i = 0; i < components.Count; i++)
@@ -356,10 +321,31 @@ namespace CosmicShore.Engine
                     mb.RunTriggerStay(other);
         }
 
-        /// <summary>Notify every receiving behaviour on <paramref name="receiver"/>'s GameObject, passing <paramref name="other"/>.</summary>
+        /// <summary>
+        /// The GameObject of the Rigidbody this collider belongs to, when that is a DIFFERENT
+        /// object (a child collider of a body): the original engine sends the collider's
+        /// physics messages there as well. Null when the collider sits on its body's object or
+        /// has no body.
+        /// </summary>
+        internal static GameObject BodyObject(Collider c)
+        {
+            var go = c.gameObject;
+            if (go is null) return null;
+            var rb = c.attachedRigidbody;
+            if (rb is null || rb.destroyedFlag) return null;
+            var bodyGo = rb.gameObject;
+            return ReferenceEquals(bodyGo, go) ? null : bodyGo;
+        }
+
+        /// <summary>Notify every receiving behaviour on <paramref name="receiver"/>'s GameObject (and its body's), passing <paramref name="other"/>.</summary>
         static void DispatchTo(Collider receiver, Collider other, bool enter)
         {
-            var go = receiver.gameObject;
+            DispatchToObject(receiver.gameObject, other, enter);
+            if (BodyObject(receiver) is { } body) DispatchToObject(body, other, enter);
+        }
+
+        static void DispatchToObject(GameObject go, Collider other, bool enter)
+        {
             if (go is null || go.IsDestroyed || !go.activeInHierarchy) return;
 
             // Snapshot — callbacks may add/remove components.
@@ -413,204 +399,16 @@ namespace CosmicShore.Engine
 
         /// <summary>
         /// Box occupancy query — backs <see cref="Physics.CheckBox"/>. True when any
-        /// collider in the query scene overlaps the box. Like the trigger pass's box
-        /// handling, the probe is a world-space AABB (orientation ignored — phase-2
-        /// deviation, see class doc).
+        /// collider in the query scene overlaps the oriented box.
         /// </summary>
-        internal bool CheckBox(Vector3 center, Vector3 halfExtents)
-            => OverlapBox(center, halfExtents, ~0, QueryTriggerInteraction.Collide).Length > 0;
+        internal bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation)
+            => OverlapBox(center, halfExtents, orientation, ~0, QueryTriggerInteraction.Collide).Length > 0;
 
-        static bool BoxOverlapsCollider(Vector3 center, Vector3 extents, Collider collider)
-        {
-            switch (collider)
-            {
-                case SphereCollider s:
-                {
-                    Vector3 sphereCenter = s.transform.TransformPoint(s.center);
-                    float radius = WorldRadius(s);
-                    var closest = new Vector3(
-                        Mathf.Clamp(sphereCenter.x, center.x - extents.x, center.x + extents.x),
-                        Mathf.Clamp(sphereCenter.y, center.y - extents.y, center.y + extents.y),
-                        Mathf.Clamp(sphereCenter.z, center.z - extents.z, center.z + extents.z));
-                    return (sphereCenter - closest).sqrMagnitude <= radius * radius;
-                }
-                case BoxCollider box:
-                {
-                    var (boxCenter, ext) = BoxBounds(box);
-                    return Mathf.Abs(center.x - boxCenter.x) <= extents.x + ext.x
-                        && Mathf.Abs(center.y - boxCenter.y) <= extents.y + ext.y
-                        && Mathf.Abs(center.z - boxCenter.z) <= extents.z + ext.z;
-                }
-                case MeshCollider mesh:
-                {
-                    if (!TryMeshBounds(mesh, out var meshCenter, out var ext)) return false;
-                    return Mathf.Abs(center.x - meshCenter.x) <= extents.x + ext.x
-                        && Mathf.Abs(center.y - meshCenter.y) <= extents.y + ext.y
-                        && Mathf.Abs(center.z - meshCenter.z) <= extents.z + ext.z;
-                }
-                default:
-                    return false;
-            }
-        }
+        /// <summary>A collider tested live (it arrived since the step): its current shape against a probe.</summary>
+        static bool ProbeOverlapsCollider(in PhysicsShape probe, Collider collider)
+            => ShapeMath.TryBuild(collider, out var shape) && ShapeMath.Overlap(in probe, in shape);
 
         static bool SphereOverlapsCollider(Vector3 center, float radius, Collider collider)
-        {
-            switch (collider)
-            {
-                case SphereCollider s:
-                {
-                    Vector3 otherCenter = s.transform.TransformPoint(s.center);
-                    float radii = radius + WorldRadius(s);
-                    return (center - otherCenter).sqrMagnitude <= radii * radii;
-                }
-                case BoxCollider box:
-                {
-                    var (boxCenter, ext) = BoxBounds(box);
-                    var closest = new Vector3(
-                        Mathf.Clamp(center.x, boxCenter.x - ext.x, boxCenter.x + ext.x),
-                        Mathf.Clamp(center.y, boxCenter.y - ext.y, boxCenter.y + ext.y),
-                        Mathf.Clamp(center.z, boxCenter.z - ext.z, boxCenter.z + ext.z));
-                    return (center - closest).sqrMagnitude <= radius * radius;
-                }
-                case MeshCollider mesh:
-                {
-                    if (!TryMeshBounds(mesh, out var meshCenter, out var ext)) return false;
-                    var closest = new Vector3(
-                        Mathf.Clamp(center.x, meshCenter.x - ext.x, meshCenter.x + ext.x),
-                        Mathf.Clamp(center.y, meshCenter.y - ext.y, meshCenter.y + ext.y),
-                        Mathf.Clamp(center.z, meshCenter.z - ext.z, meshCenter.z + ext.z));
-                    return (center - closest).sqrMagnitude <= radius * radius;
-                }
-                default:
-                    return false;
-            }
-        }
-
-        // ── Overlap math ─────────────────────────────────────────────
-        //
-        // MeshColliders participate as their mesh-bounds AABB (see TryMeshBounds) — the
-        // same rotation-ignored world-AABB convention boxes use. Null-mesh colliders
-        // never overlap. Full mesh collision arrives with the physics phase.
-
-        static bool Overlaps(Collider a, Collider b) => (a, b) switch
-        {
-            (SphereCollider sa, SphereCollider sb) => SphereSphere(sa, sb),
-            (SphereCollider s, BoxCollider box) => SphereBox(s, box),
-            (BoxCollider box, SphereCollider s) => SphereBox(s, box),
-            (BoxCollider ba, BoxCollider bb) => BoxBox(ba, bb),
-            (MeshCollider m, _) => MeshOverlaps(m, b),
-            (_, MeshCollider m) => MeshOverlaps(m, a),
-            _ => false,
-        };
-
-        /// <summary>MeshCollider (as its mesh-bounds AABB) vs. any other supported shape.</summary>
-        static bool MeshOverlaps(MeshCollider mesh, Collider other)
-        {
-            if (!TryMeshBounds(mesh, out var center, out var extents)) return false;
-            switch (other)
-            {
-                case SphereCollider s:
-                {
-                    Vector3 sphereCenter = s.transform.TransformPoint(s.center);
-                    float radius = WorldRadius(s);
-                    var closest = new Vector3(
-                        Mathf.Clamp(sphereCenter.x, center.x - extents.x, center.x + extents.x),
-                        Mathf.Clamp(sphereCenter.y, center.y - extents.y, center.y + extents.y),
-                        Mathf.Clamp(sphereCenter.z, center.z - extents.z, center.z + extents.z));
-                    return (sphereCenter - closest).sqrMagnitude <= radius * radius;
-                }
-                case BoxCollider box:
-                {
-                    var (boxCenter, ext) = BoxBounds(box);
-                    return AabbAabb(center, extents, boxCenter, ext);
-                }
-                case MeshCollider otherMesh:
-                {
-                    if (!TryMeshBounds(otherMesh, out var otherCenter, out var otherExtents)) return false;
-                    return AabbAabb(center, extents, otherCenter, otherExtents);
-                }
-                default:
-                    return false;
-            }
-        }
-
-        static bool AabbAabb(Vector3 centerA, Vector3 extA, Vector3 centerB, Vector3 extB)
-            => Mathf.Abs(centerA.x - centerB.x) <= extA.x + extB.x
-            && Mathf.Abs(centerA.y - centerB.y) <= extA.y + extB.y
-            && Mathf.Abs(centerA.z - centerB.z) <= extA.z + extB.z;
-
-        /// <summary>
-        /// World AABB of a mesh collider: mesh local-bounds center transformed through the
-        /// hierarchy, extents scaled by |lossyScale|; rotation ignored (phase-2 deviation,
-        /// see class doc). False when no live mesh is assigned.
-        /// </summary>
-        static bool TryMeshBounds(MeshCollider mesh, out Vector3 center, out Vector3 extents)
-        {
-            var shared = mesh.sharedMesh;
-            if (shared is null || shared.IsDestroyed)
-            {
-                center = default;
-                extents = default;
-                return false;
-            }
-
-            Bounds local = shared.bounds;
-            Vector3 s = mesh.transform.lossyScale;
-            center = mesh.transform.TransformPoint(local.center);
-            extents = new Vector3(
-                Mathf.Abs(local.extents.x * s.x),
-                Mathf.Abs(local.extents.y * s.y),
-                Mathf.Abs(local.extents.z * s.z));
-            return true;
-        }
-
-        static bool SphereSphere(SphereCollider a, SphereCollider b)
-        {
-            Vector3 centerA = a.transform.TransformPoint(a.center);
-            Vector3 centerB = b.transform.TransformPoint(b.center);
-            float radii = WorldRadius(a) + WorldRadius(b);
-            return (centerA - centerB).sqrMagnitude <= radii * radii;
-        }
-
-        static bool SphereBox(SphereCollider sphere, BoxCollider box)
-        {
-            Vector3 center = sphere.transform.TransformPoint(sphere.center);
-            float radius = WorldRadius(sphere);
-            var (boxCenter, ext) = BoxBounds(box);
-
-            // Closest point on the AABB to the sphere center.
-            var closest = new Vector3(
-                Mathf.Clamp(center.x, boxCenter.x - ext.x, boxCenter.x + ext.x),
-                Mathf.Clamp(center.y, boxCenter.y - ext.y, boxCenter.y + ext.y),
-                Mathf.Clamp(center.z, boxCenter.z - ext.z, boxCenter.z + ext.z));
-            return (center - closest).sqrMagnitude <= radius * radius;
-        }
-
-        static bool BoxBox(BoxCollider a, BoxCollider b)
-        {
-            var (centerA, extA) = BoxBounds(a);
-            var (centerB, extB) = BoxBounds(b);
-            return Mathf.Abs(centerA.x - centerB.x) <= extA.x + extB.x
-                && Mathf.Abs(centerA.y - centerB.y) <= extA.y + extB.y
-                && Mathf.Abs(centerA.z - centerB.z) <= extA.z + extB.z;
-        }
-
-        /// <summary>Original-engine sphere scaling: radius × max |lossyScale| component.</summary>
-        static float WorldRadius(SphereCollider sphere)
-        {
-            Vector3 s = sphere.transform.lossyScale;
-            return sphere.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
-        }
-
-        /// <summary>World AABB of a box collider, rotation ignored (phase-2 deviation, see class doc).</summary>
-        static (Vector3 center, Vector3 extents) BoxBounds(BoxCollider box)
-        {
-            Vector3 s = box.transform.lossyScale;
-            var extents = new Vector3(
-                Mathf.Abs(box.size.x * s.x),
-                Mathf.Abs(box.size.y * s.y),
-                Mathf.Abs(box.size.z * s.z)) * 0.5f;
-            return (box.transform.TransformPoint(box.center), extents);
-        }
+            => ShapeMath.TryBuild(collider, out var shape) && ShapeMath.SphereOverlaps(in shape, center, radius);
     }
 }

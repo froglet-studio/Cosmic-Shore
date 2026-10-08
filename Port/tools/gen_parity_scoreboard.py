@@ -117,15 +117,28 @@ def build():
             'tests': s['tests'], 'parity': channels,
         })
 
-    src = port_source_text()
+    # The shader routes come from `cs-asset shadergraph-census` (Port/parity/shaders.json): a
+    # hand-tuned family (keyed by guid), a graph the Shader Graph compiler translates, or missing.
+    # Without that file, fall back to the old name scan of Port/src.
+    census = {r['path']: r for r in (load_json(os.path.join(PORT, 'parity', 'shaders.json'), {}) or {}).get('shaders', [])}
+    src = None if census else port_source_text()
     shader_rows = []
     for path, name in shaders():
-        dedicated = ('"' + name + '"') in src
+        c = census.get(path)
+        if c is not None:
+            translated = c['route'] in ('family', 'compiled')
+            why = {'family': 'hand-tuned family; frames not yet compared per shader (C2)',
+                   'compiled': 'Shader Graph compiler; frames not yet compared per shader (C2)'}.get(c['route'], c.get('why', 'no translation'))
+            if c.get('approximations'):
+                why += '; approximate nodes: ' + ', '.join(a.split(':')[0] for a in c['approximations'])
+        else:
+            translated = src is not None and ('"' + name + '"') in src
+            why = 'dedicated translation; frames not yet compared per shader (C2)' if translated else 'generic material-family fallback'
         shader_rows.append({
             'path': path, 'name': name,
-            'status': 'Approximate' if dedicated else 'Missing',
-            'why': 'dedicated translation; frames not yet compared per shader (C2)' if dedicated else 'generic material-family fallback',
-            'test': 'engine_parity frames' if dedicated else '',
+            'status': 'Approximate' if translated else 'Missing',
+            'why': why,
+            'test': 'ShaderGraphCompilerTests, --check-shaders' if c is not None and c['route'] == 'compiled' else ('engine_parity frames' if translated else ''),
         })
 
     def count(rows):

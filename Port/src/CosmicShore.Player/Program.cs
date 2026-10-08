@@ -110,6 +110,16 @@ namespace CosmicShore.Player
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
+                    case "--check-shaders": PlayerWindow.CheckShaders = true; break;
+                    case "--shader-gallery" when i + 1 < args.Length:
+                    {
+                        var spec = args[++i];
+                        int c = spec.IndexOf(':');
+                        int.TryParse(c > 0 ? spec[..c] : spec, out PlayerWindow.GalleryFrame);
+                        PlayerWindow.GalleryLegend = c > 0 ? spec[(c + 1)..] : null;
+                        break;
+                    }
+                    case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;

@@ -58,6 +58,7 @@ namespace CosmicShore.AssetTool
                     "roundtrip" => RoundTrip(pos.Skip(1).ToList()),
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
                     "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
+                    "shadergraph-census" => ShaderCensus.Run(opts),
                     "addall" => Scripts.AddAll(),
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
@@ -97,6 +98,8 @@ namespace CosmicShore.AssetTool
 
   roundtrip [path...]                       verify parse -> write is byte-identical (default: all of Assets/)
   serialization-audit [path...] [--json]    every script field Unity reads that Prisma drops (and the reverse)
+  shadergraph-census [--json PATH]          Shader Graph compiler coverage: node types, custom functions, each
+                                            shader's route (family / compiled / missing); writes Port/parity/shaders.json
   list   <file>                             GameObjects and their hierarchy paths
   docs   <file>                             every document: fileID, class, type
   get    <file> <object> [field.path]       print a document, or one field of it

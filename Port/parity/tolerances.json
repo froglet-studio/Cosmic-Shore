@@ -6,5 +6,7 @@
   "rotationDegrees": 0.1,
   "transformWindowSeconds": 10,
   "ssimGameplay": 0.97,
-  "ssimUi": 0.98
+  "ssimUi": 0.98,
+  "uiRectPixels": 1.0,
+  "uiFontSize": 0.5
 }
