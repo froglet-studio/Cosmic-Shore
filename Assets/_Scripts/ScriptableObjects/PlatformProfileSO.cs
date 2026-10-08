@@ -74,8 +74,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(-1, 4)] int membraneMaxSubdivisions = -1;
 
         [Tooltip("Ceiling on a wormhole mouth's EXACT-view render resolution, as a fraction of the " +
-                 "gameplay camera's (WormholeView - the Wormhole cell's pair and every Butterfly fold's " +
-                 "pair; the field keeps its fold-gate name so the shipped tier assets need no migration). " +
+                 "gameplay camera's (WormholeView - every Butterfly fold's wormhole pair; the field keeps " +
+                 "its fold-gate name so the shipped tier assets need no migration). " +
                  "The view renders only the mouth's own footprint, so this only bites when a mouth fills " +
                  "the screen - the approach and the carry through. 1 = no cap beyond the mouth's own " +
                  "render scale.")]

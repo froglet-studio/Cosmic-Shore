@@ -72,14 +72,14 @@ namespace CosmicShore.Utility
         /// Where the corridor opens onto for the VIEW being drawn: the vessel, seen through any
         /// portal the gameplay camera has not reached yet.
         ///
-        /// <para>A wormhole (the Wormhole cell's pair, or the pair a Butterfly fold leaves) moves
-        /// the ship the instant it enters, while the chase camera trails it through the mouth a
-        /// moment later (<c>CustomCameraController.CarryThroughSphere</c>). For that moment the
-        /// camera and the ship are on opposite sides of the world, and a corridor drawn between
-        /// them would dissolve a tube of prisms across the whole arena. The camera is framing the
-        /// ship at its position mapped BACK through the pair, so that is where the corridor must
-        /// open too — it is still exactly the camera→ship segment the pilot is looking down, just
-        /// measured in the frame the camera is in.</para>
+        /// <para>A wormhole (the pair a Butterfly fold leaves) moves the ship the instant it
+        /// enters, while the chase camera trails it through the mouth a moment later
+        /// (<c>CustomCameraController.CarryThroughSphere</c>). For that moment the camera and the
+        /// ship are on opposite sides of the world, and a corridor drawn between them would
+        /// dissolve a tube of prisms across the whole arena. The camera is framing the ship at its
+        /// position mapped BACK through the pair, so that is where the corridor must open too — it
+        /// is still exactly the camera→ship segment the pilot is looking down, just measured in the
+        /// frame the camera is in.</para>
         /// </summary>
         public static Vector3 ViewTargetPosition =>
             _target ? _target.position - _viewShift : Vector3.zero;

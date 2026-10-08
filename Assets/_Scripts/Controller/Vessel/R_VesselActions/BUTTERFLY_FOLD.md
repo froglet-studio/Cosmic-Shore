@@ -556,7 +556,7 @@ its own old gate is the only plausible way to do that); the cost would be one ca
 ## The gates became wormholes (2026-10-08)
 
 Every fold now leaves a **wormhole**: two sphere mouths with ONE shared interior
-(`Controller/Environment/Wormhole/`, the same component as the Wormhole cell — `Docs/WORMHOLE_CELL.md`),
+(`Controller/Environment/Wormhole/`, `Docs/WORMHOLES.md` — first prototyped as a standalone cell, since retired),
 centred exactly where the ring gates were, so the pair's translation is still the fold itself.
 
 **What stayed.** One pair per Butterfly; laid at ARRIVAL from the two replicated poses; replaced only
@@ -586,9 +586,9 @@ latch, now pure geometry (`WormholeGeometry.SegmentEntersBall`).
 range and the new `portalWindowFadeBand` 600 its crossfade to the panorama; `portalWindowRenderScale`
 0.75; new `panoramaFaceSize` 256; new `wormholeMaterial` → `Assets/_Graphics/Materials/Wormhole.mat`.
 Retired: `gateExitClearance` (no near zone — arming is geometric) and `portalWindowFadeSeconds` (the
-window fade became a distance band). Wired and gated by `Tools/Build/author_wormhole_cell.py --check`.
+window fade became a distance band). Wired and gated by `Tools/Build/author_wormholes.py --check`.
 
-**Cost.** The same budget as the cell's pair (`Docs/WORMHOLE_CELL.md` §4): at most two exact renders
+**Cost.** (`Docs/WORMHOLES.md` §4): at most two exact renders
 per frame across every mouth on screen, plus one panorama face per mouth whose partner is visible and
 not fully exact. A sealed mouth costs nothing.
 
@@ -611,7 +611,7 @@ target, a camera rig that is not a `CustomCameraController`) was treated as a ri
 - **The lock follows the owner's LIVE domain** (and the rim repaints with it), instead of a domain
   captured at placement — so a Butterfly that changes domain keeps a usable pair.
 
-Not yet re-tested. If it still reads as a ring: select the objects in the Hierarchy. The pair is named
-`FoldWormhole::<pilot>::A` / `::B`; a `FoldGate::<pilot>::A` object means the editor is still running
-the pre-wormhole scripts (check the Console for compile errors).
+**Re-tested 2026-10-08 and confirmed** by the owner ("the butterfly is great"). If it ever regresses
+to a ring: the pair is named `FoldWormhole::<pilot>::A` / `::B` in the Hierarchy; a `FoldGate::…`
+object would mean the editor is running pre-wormhole scripts (check the Console for compile errors).
 

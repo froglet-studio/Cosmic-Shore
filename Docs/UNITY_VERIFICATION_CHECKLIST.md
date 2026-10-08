@@ -4703,62 +4703,15 @@ wrong on a creature whose prefab nests its spindles oddly, report the prefab.
 
 ---
 
-## 🔴 The Wormhole cell (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — NOT EDITOR-VERIFIED
+## 🟢 Butterfly fold gates → wormholes; domain-hued rims (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — VERIFIED IN EDITOR
 
-`Docs/WORMHOLE_CELL.md`. New Cell Selector world: two sphere mouths (`SpawnableWormholes.prefab`,
-`WormholeMouth`, `WormholeView`, `Wormhole.shader`), a sphere camera carry
-(`CustomCameraController.CarryThroughSphere`) and a wormhole branch in `TeleportContinuity`. All
-assets are hand-authored by `Tools/Build/author_wormhole_cell.py` (`--check` green); C# compiled
-against Unity reference assemblies offline; nothing has been run in the editor.
-
-### 1. It is in the selector and it builds
-Menu_Main → fly the Cell Selector → the **Wormhole** station shows a scale model of two dotted
-spheres joined by a dotted throat. Fly it: the world swaps, and two spheres bloom in (~1.5 s), one
-beside the nucleus, one out by the membrane. No console errors, no magenta (shader import).
-
-### 2. The view holds from every side
-Circle a mouth at a few hundred units, then close in from several directions (above, below, behind).
-It should always read as a hole onto the OTHER mouth's surroundings (the nucleus close up through the
-outer mouth, the membrane through the inner one), registering with the world as you move — not a
-picture pasted on a ball. Back off past ~1500–1900 u: it should crossfade to the panorama without a
-pop (things near the far mouth may shift slightly — expected).
-
-### 3. The transit is seamless
-Fly straight into a mouth with the chase camera: the ship should go INTO the picture and keep
-flying in it, the camera following it through with no cut and no flash of the inside of a sphere.
-Repeat entering off-centre, near the rim, and very fast (boost). You come out of the other mouth
-still flying the same heading and speed. Fly straight back in: it should take you back.
-
-### 4. Other cameras
-The Scene view and any preview camera show the panorama (not a smeared copy of the game view).
-
-### 5. Cost
-Profile with both mouths on screen: at most two exact renders + up to two 256² panorama faces per
-frame (`WormholeMouth.RenderExact` / `RenderNextPanoramaFace`). Report anything above that.
-
----
-
-## 🔴 Butterfly fold gates → wormholes; domain-hued rims (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — NOT EDITOR-VERIFIED
-
-`BUTTERFLY_FOLD.md` § "The gates became wormholes", `Docs/WORMHOLE_CELL.md` §7. `FoldGate`,
+`BUTTERFLY_FOLD.md` § "The gates became wormholes", `Docs/WORMHOLES.md`. `FoldGate`,
 `FoldGateGeometry`, `FoldGatePortalView` and `FoldGatePortal.shader/.mat` are deleted; every fold now
-leaves a domain-locked `WormholeMouth` pair. Compiled offline against Unity references; not run.
-
-### 1. A fold leaves a wormhole
-Fly the Butterfly, fold. Two spheres bloom (~0.45 s): one where you left, one around where you
-arrived. Your ship is visible through the destination sphere while it sits inside it, and flying on
-does not send you back. Fold again: the old pair withers away before the new one blooms.
-
-### 2. It carries your domain, and only your domain
-Fly into either mouth: you come out of the other, seamlessly (same checks as the Wormhole cell §3).
-A teammate (same domain) can do the same. Spectate / play a RIVAL domain: the mouths show only a
-coloured bubble outline in the Butterfly's colour with no view through, and flying into one does
-nothing — you pass straight through.
-
-### 3. Rims are the domain's hue
-On both the fold pairs and the Wormhole cell's pair (Blue), the fresnel rim and the transit flare are
-the domain colour, not white. Check each domain (Jade, Ruby, Gold, Blue). If the hue is too faint or
-too hot, tune `_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat`.
+leaves a domain-locked `WormholeMouth` pair. The first playtest showed the pair SEALED against its own
+pilot (rings, no view); fixed in `cf99303f2` (fail-open sealing, the pair knows its owner) and
+playtested by the owner on 2026-10-08: "the butterfly is great". Still worth a look when convenient —
+a RIVAL domain's view (sealed bubble in the Butterfly's colour, flies straight through) and each
+domain's rim hue (`_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat` if it reads faint or hot).
 
 ---
 

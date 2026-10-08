@@ -19,9 +19,9 @@ namespace CosmicShore.Gameplay
     /// blinks out, and nothing is drawn that was not flown.</para>
     ///
     /// <para><b>Through a wormhole the cut is made AT THE MOUTHS</b>
-    /// (<see cref="WormholeMouth.TryResolveTransit"/> — the Wormhole cell's pair, and the pair
-    /// every Butterfly fold leaves): the old ribbon runs into the near sphere and the new one
-    /// starts at the same spot on the far one, so a tail reads as passing through. And the camera
+    /// (<see cref="WormholeMouth.TryResolveTransit"/> — the pair every Butterfly fold leaves): the
+    /// old ribbon runs into the near sphere and the new one starts at the same spot on the far one,
+    /// so a tail reads as passing through. And the camera
     /// following the vessel is carried through the near sphere rather than cut to the other side
     /// (<c>CustomCameraController.CarryThroughSphere</c>) — which is what makes a transit seamless
     /// from the pilot's own seat.</para>

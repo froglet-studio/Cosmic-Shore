@@ -9,7 +9,9 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// One end of a <b>wormhole</b> — a sphere whose inside is the inside of its partner
     /// (<see cref="WormholeGeometry"/> states the model). Fly into either and you come out of the
-    /// other, still flying the way you were.
+    /// other, still flying the way you were. Every Butterfly fold leaves a pair: one mouth where
+    /// it left, one where it arrived (<c>FoldActionExecutor</c>, <c>BUTTERFLY_FOLD.md</c> § "The
+    /// gates became wormholes", <c>Docs/WORMHOLES.md</c>).
     ///
     /// <para><b>Two cameras ride on every mouth</b>, and they are what the sphere's surface shows
     /// — the PARTNER's cameras, since through A you see the place around B:</para>
@@ -17,8 +19,8 @@ namespace CosmicShore.Gameplay
     /// <item><b>The panorama eye</b> sits at the mouth's centre and captures its surroundings in
     /// all six directions (a 90° camera, one face at a time, into a six-slice texture array).
     /// The partner's sphere projects that capture back out in every direction, so the mouth reads
-    /// as a window onto somewhere else from any side, for ANY camera — the menu's preview
-    /// cameras and the editor's scene view included. A capture has no depth, so near things
+    /// as a window onto somewhere else from any side, for ANY camera — a spectator rig, a
+    /// preview camera, the editor's scene view. A capture has no depth, so near things
     /// slide a little against the far ones; that is the cost of a picture taken from one
     /// point.</item>
     /// <item><b>The exact eye</b> is the "player camera cheat", and it is what makes the transit
@@ -31,27 +33,24 @@ namespace CosmicShore.Gameplay
     /// <see cref="ExactRange"/>, and crossfades to the panorama beyond it.</item>
     /// </list>
     ///
-    /// <para><b>Who detects, who moves</b> — the fold gate's rule exactly
-    /// (<see cref="FoldGate"/>): each machine tests only the vessels it OWNS and writes their pose
+    /// <para><b>Who detects, who moves</b> — the rule the Butterfly's ring gates had: each
+    /// machine tests only the vessels it OWNS and writes their pose
     /// through <c>IVessel.SetPose</c>, which replicates. The pose write reaches
     /// <c>VesselTransformer.SetPose</c> on every peer, where <see cref="TeleportContinuity"/> cuts
     /// the ribbons at the two mouths and carries the camera through
     /// (<c>CustomCameraController.CarryThroughSphere</c>). The wormhole needs no networking of its
-    /// own: both mouths are laid by the cell's own environment build, from authored positions, on
-    /// every machine.</para>
+    /// own: every peer lays both mouths itself, from the fold's two replicated poses.</para>
     ///
     /// <para><b>It has no collider.</b> Nothing physical touches it; a transit is decided from the
     /// vessel's own step, like a gate's. A prism laid inside the ball is ordinary mass in the shared
     /// interior — visible through either mouth's exact view, hidden from outside behind both
     /// surfaces.</para>
     ///
-    /// <para><b>Two owners, one component.</b> The Wormhole CELL lays a permanent, open pair
-    /// (<see cref="SpawnableWormholePair"/>); the Butterfly's FOLD lays a domain-locked pair at
-    /// each end of every fold (<c>FoldActionExecutor</c>, <c>BUTTERFLY_FOLD.md</c> § "The gates
-    /// became wormholes"). A <see cref="Settings.DomainLocked"/> mouth carries only vessels of its
-    /// <see cref="Domain"/>, and to a viewer of any other domain it is SEALED — a fresnel outline in
-    /// the domain's colour with no view through it, because a view through is a promise you can go
-    /// there. Either way the rim wears <see cref="Settings.RimTint"/>, the domain's hue.</para>
+    /// <para><b>Domain-locked.</b> A <see cref="Settings.DomainLocked"/> mouth (every fold pair)
+    /// carries only vessels of its <see cref="Domain"/> — its owning Butterfly's live domain — and
+    /// to a viewer of any other domain it is SEALED: a fresnel outline in the domain's colour with
+    /// no view through it, because a view through is a promise you can go there. Either way the rim
+    /// wears <see cref="Settings.RimTint"/>, the domain's hue.</para>
     /// </summary>
     public sealed class WormholeMouth : MonoBehaviour
     {
@@ -74,9 +73,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Everything a mouth is built with, copied at <see cref="Build"/>. A struct rather than a
-        /// reference to its owner, because two very different owners build mouths (the cell's
-        /// environment prefab and the Butterfly's fold) and neither should be a type the other
-        /// has to know about.
+        /// reference to the fold's tuning asset, so the mouth does not depend on the ability that
+        /// places it (and the tuning a pair was laid with cannot change under it).
         /// </summary>
         public struct Settings
         {
@@ -102,7 +100,7 @@ namespace CosmicShore.Gameplay
             /// it has no <see cref="Owner"/>; with one, the owner's LIVE domain wins.</summary>
             public Domains Domain;
             /// <summary>
-            /// The pilot whose mouth this is (a Butterfly's fold pair), or null (the cell's pair).
+            /// The pilot whose mouth this is (the Butterfly whose fold laid it), or null.
             /// The owner is ALWAYS carried and always sees through, and the lock follows the owner's
             /// domain as it is NOW — so a Butterfly that changes domain keeps its pair, and no
             /// capture-time reading of a domain can lock the owner out of its own wormhole.
@@ -164,8 +162,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The ball's WORLD radius: the authored radius, times the bloom it is growing through,
-        /// times whatever scale its parents carry — the cell's suction shrinks a retiring world
-        /// toward its centre, and a mouth must shrink with it rather than keep a stale size.
+        /// times whatever scale its parents carry, so a mouth parented under something that scales
+        /// shrinks with it rather than keeping a stale size.
         /// </summary>
         public float Radius => _radius * _bloom * Mathf.Abs(transform.lossyScale.x);
 
@@ -186,7 +184,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The pilot whose mouth this is, or null for an unowned (cell) mouth.</summary>
+        /// <summary>The pilot whose mouth this is, or null for an unowned mouth.</summary>
         public IVesselStatus Owner => _settings.Owner;
 
         // The domain the rim tint was last painted for, so an owner's domain change repaints it.
@@ -251,8 +249,8 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Wormhole] {name}: built with no surface material - the mouth " +
                                    "will carry pilots but draw nothing.", this);
 
-            // GPU resources only exist in play: an edit-mode environment build (an editor tool
-            // spawning the cell's world) must not leave render targets behind.
+            // GPU resources only exist in play: a mouth built in edit mode (a test, an editor
+            // tool) must not leave render targets behind.
             if (Application.isPlaying) BuildEyes();
 
             ApplyBloom();
