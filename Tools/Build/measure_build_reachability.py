@@ -26,8 +26,10 @@ THREE LIMITS -- read before quoting a number:
   * A RETIRED SERIALIZED KEY STILL GREPS AS A REFERENCE. This reads YAML text,
     so a field the script no longer declares still looks like a live edge; Unity
     drops it at import. This OVER-reports. (Measured instance: 40 SO_ArcadeGame
-    assets still carry a `PreviewClip:` key that SO_ArcadeGame no longer declares,
+    assets carried a `PreviewClip:` key that SO_ArcadeGame no longer declares,
     which pulled 110 MB of video into "ships" -- Docs/LAUNCH_BLOCKER_INDEX.md E2.
+    That key is now RETIRED: retire_preview_clip.py stripped it from every SO_Game
+    card and its --check keeps it off, so this instance no longer over-reports.
     Note the name is NOT globally dead: SO_VesselAbility declares a live
     `PreviewClip` and 24 of its assets carry a real one, so grep the OWNING type,
     never the field name.)
