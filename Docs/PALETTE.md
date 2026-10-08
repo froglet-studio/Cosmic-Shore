@@ -109,6 +109,17 @@ that actually ships, via `_BrightColor`/`_DullColor`).
 > travelling crossing still runs, but writes nothing these shaders read), and the elementals are no
 > longer dimmed below the omni by `ElementalCrystalDimming`. Bringing them back under the live
 > ColorSet means teaching the tint the `_BrightColor`/`_DarkColor` pair — one change for all three.
+>
+> **Second pass, same day — see-through shells need their own fresnel.** Played, the Mass read
+> "too white, not enough blue" embedded and "too lime, not enough dark" free. Cause: the shells are
+> transparent and `Cull Off`, so their BACK faces show, and on the SpreadFresnel ramp a back face is
+> always at the bright end — compiling the fragment with clang over a sphere, 76% of a back face
+> read bright (26% of a front face). Space and Time are opaque and never show theirs.
+> `OmniShepardFresnelShader` gained two opt-ins, inert at their defaults (proved: max 6e-8 from the
+> old formula, so the omni triangles are unchanged): `_FaceForward` (N·V on the camera side, so every
+> face is dark at its centre, front or back) and `_RimPower` (bright weight = rim^p). Mass ships
+> 1 / 3 — about a quarter bright on either side — with the free pair still Space/Time's lime and the
+> embedded pair moved to a saturated blue `(0.2, 0.4, 1)` over a deeper navy `(0, 0.005, 0.18)`.
 
 **Dull is the body; bright is only the rim.** Every crystal shader composes its colour as
 `Blend(Base = Dull, Blend = Bright, Opacity = fresnel)` in **Overwrite** mode — i.e. a straight

@@ -96,6 +96,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Opacity: 1
+    - _FaceForward: 1
     - _Period: 3
     - _ScaleDistance: 1
     - _Start: 0.33
@@ -120,6 +121,7 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _RimPower: 3
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -129,9 +131,9 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0.7012578, g: 0.7012578, b: 1, a: 1}
+    - _BrightColor: {r: 0.2, g: 0.4, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 0, g: 0, b: 0.3018868, a: 1}
+    - _DarkColor: {r: 0, g: 0.005, b: 0.18, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.01, g: 0.01, b: 0.01, a: 0}

@@ -51,6 +51,22 @@ SPACE_MESH_GUID = "39e205c7c7716094991df8c57e3e0753"       # spacecrystalanim.fb
 ACTIVE_DONOR = "LimeCrystalFresnelMaterial"     # a free Space/Time crystal's pair
 INACTIVE_DONOR = "BlueCrystalFresnelMateriall"  # an embedded Space/Time heart's pair
 
+# Fresnel contrast, tuned from play (2026-10-08: "the inactive was too white, not enough blue; the
+# active was too lime, not enough dark"). The shells are SEE-THROUGH, so their back faces show, and
+# on SpreadFresnelShader's ramp a back face is always at the bright end: measured by compiling the
+# shader's fragment with clang over a sphere, 76% of every back face read bright (26% of the
+# front). _FaceForward measures N.V on the camera side, so every face is dark at its centre front
+# or back; _RimPower 3 then pulls the bright colour out to the silhouette - about a quarter bright
+# on both sides. Both are OmniShepardFresnelShader opt-ins, inert at the defaults the omni uses.
+RIM_POWER = 3
+FACE_FORWARD = 1
+
+# Colour pairs. Free (lime) keeps the Space/Time pair exactly, so the three free elementals stay one
+# lime family; the curve above is what makes it read dark. Embedded (blue) leaves the blue-white
+# pair for a saturated blue over a deeper navy: the same hue family, less white, more depth.
+ACTIVE_COLORS = None  # the donor's own _BrightColor / _DarkColor
+INACTIVE_COLORS = ("{r: 0.2, g: 0.4, b: 1, a: 1}", "{r: 0, g: 0.005, b: 0.18, a: 1}")
+
 # One row per shell, in crystalModels order: (shell, active, inactive, exploding, start, stop,
 # scale distance, queue). The bands, scaling and draw order are the Mass crystal's own, unchanged.
 SHELLS = [
@@ -90,12 +106,33 @@ def fmt(x):
     return str(x)
 
 
+def _sub1(text, pattern, repl, label):
+    out, n = re.subn(pattern, repl, text, count=1, flags=re.M)
+    if n != 1:
+        raise SystemExit(f"mass material: {label} not found exactly once")
+    return out
+
+
+def _contrast(text, name, colors):
+    """The tone material plus the Mass crystal's fresnel contrast (and, optionally, its own pair)."""
+    text = _sub1(text, r"^    - _Opacity: 1\n",
+                 lambda m: m.group(0) + f"    - _FaceForward: {FACE_FORWARD}\n", name + " _FaceForward")
+    text = _sub1(text, r"^    - _ReceiveShadows: .*\n",
+                 lambda m: m.group(0) + f"    - _RimPower: {RIM_POWER}\n", name + " _RimPower")
+    if colors:
+        text = _sub1(text, r"^    - _BrightColor: \{.*\}$", f"    - _BrightColor: {colors[0]}", name + " _BrightColor")
+        text = _sub1(text, r"^    - _DarkColor: \{.*\}$", f"    - _DarkColor: {colors[1]}", name + " _DarkColor")
+    return text
+
+
 def material_texts():
     active, inactive = _donor(ACTIVE_DONOR), _donor(INACTIVE_DONOR)
     out = {}
     for _shell, act, ina, _exp, start, stop, scale, queue in SHELLS:
-        out[mat_rel(act)] = _tone_material(act, ACTIVE_DONOR, active, fmt(start), fmt(stop), scale, queue)
-        out[mat_rel(ina)] = _tone_material(ina, INACTIVE_DONOR, inactive, fmt(start), fmt(stop), scale, queue)
+        out[mat_rel(act)] = _contrast(
+            _tone_material(act, ACTIVE_DONOR, active, fmt(start), fmt(stop), scale, queue), act, ACTIVE_COLORS)
+        out[mat_rel(ina)] = _contrast(
+            _tone_material(ina, INACTIVE_DONOR, inactive, fmt(start), fmt(stop), scale, queue), ina, INACTIVE_COLORS)
     return out
 
 

@@ -5248,3 +5248,7 @@ What changed (assets only, no C#; authored by `Tools/Build/author_mass_crystal_l
 5. **Codex / toybox** Mass crystal — unchanged shape.
 6. **Draw order** — the inner shells read through the outer ones without popping or z-fighting;
    if a shell looks wrong only from some angles, compare render queues 2999/3000/3001/3001.
+7. **Second pass (contrast)** — embedded Mass reads as a saturated blue over deep navy (not
+   blue-white); free Mass reads mostly DARK with lime confined to face edges and silhouettes. The
+   omni crystal's falling triangles look exactly as before. Tune in
+   `Tools/Build/author_mass_crystal_look.py` (`RIM_POWER`, `INACTIVE_COLORS`), then re-run it.
