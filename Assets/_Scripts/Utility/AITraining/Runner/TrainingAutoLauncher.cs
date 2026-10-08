@@ -347,11 +347,11 @@ namespace CosmicShore.Utility.AITraining
             // SkimRaceController, JoustController, etc. all extend
             // MultiplayerMiniGameControllerBase which is a NetworkBehaviour, so
             // they require a host. The single-player DuelForTheCell/WildlifeBlitz
-            // scenes were retired in 2026-09, and GameModes.Freestyle (7) is retired.
+            // scenes were retired in 2026-09; GameModes.Freestyle (7) and
+            // MultiplayerFreestyle (28) are retired.
             if (TrainingModeCatalog.TryGet(mode, out _)) return true;
             switch (mode)
             {
-                case GameModes.MultiplayerFreestyle:
                 case GameModes.OnlineDuelForTheCell:
                 case GameModes.Multiplayer2v2CoOpVsAI:
                 case GameModes.CoOpWildlifeBlitz:
@@ -369,7 +369,6 @@ namespace CosmicShore.Utility.AITraining
             if (TrainingModeCatalog.TryGet(mode, out var row)) return row.SceneName;
             switch (mode)
             {
-                case GameModes.MultiplayerFreestyle: return "MinigameFreestyleMultiplayer_Gameplay";
                 case GameModes.OnlineDuelForTheCell: return "MinigameDuelForCellMultiplayer_Gameplay";
                 case GameModes.CoOpWildlifeBlitz: return "MinigameWildlifeBlitzMultuplayerCoOp";
                 default: return "MinigameSkimRace";

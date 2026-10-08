@@ -192,7 +192,6 @@ the (dead) hangar training entries for Rhino and Sparrow point at it — it is i
 | Scene | Game Mode | Controller |
 |---|---|---|
 | `MinigameSkimRace` | `SkimRace (33)` | `SkimRaceController` |
-| `MinigameFreestyleMultiplayer_Gameplay` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
 | `MinigameScurryMultiplayer_Gameplay` | `Scurry (35)` | `ScurryController` |
 | `MinigameDuelForCellMultiplayer_Gameplay` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | `MinigameJoust_Gameplay` | `Joust (34)` | `JoustController` |

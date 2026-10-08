@@ -156,8 +156,9 @@ namespace CosmicShore.Tests
             // GrizzlyCharge took 54 at the 2026-09-12 grizzly-v2 merge, after 44 (Salvo)
             // and 45 (Switchback) were both taken from under it - the fifth such collision -
             // and 62 at the 2026-10-02 merge, after WreckingBall took 54: the sixth.
+            // 61 -> 60 on 2026-10-08: MultiplayerFreestyle (28) retired; 28 stays reserved.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(61, values.Length,
+            Assert.AreEqual(60, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -173,7 +174,6 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.MultiplayerFreestyle, 28)]
         [TestCase(GameModes.OnlineDuelForTheCell, 29)]
         [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]
         [TestCase(GameModes.CoOpWildlifeBlitz, 32)]
@@ -219,7 +219,6 @@ namespace CosmicShore.Tests
             // Convention check: multiplayer modes should be identifiable by name.
             var multiplayerModes = new[]
             {
-                GameModes.MultiplayerFreestyle,
                 GameModes.OnlineDuelForTheCell,
                 GameModes.Multiplayer2v2CoOpVsAI,
                 GameModes.CoOpWildlifeBlitz,

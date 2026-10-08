@@ -38,7 +38,10 @@ namespace CosmicShore.Data
         MazeRun = 25,
         WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
-        MultiplayerFreestyle = 28,
+        // 28 was MultiplayerFreestyle, the prototype multiplayer sandbox (no rules, no clock,
+        // no score) that grew into the Menu_Main lava lamp, freestyle, toybox and lobby, which
+        // replaced it. Removed 2026-10 with its card, scene and controller; the mode is in git.
+        // 28 IS RESERVED FOREVER, exactly like 7, 31 and 47 - saved selections still carry it.
         OnlineDuelForTheCell = 29,
         Multiplayer2v2CoOpVsAI = 30,
         CoOpWildlifeBlitz = 32,
@@ -47,7 +50,7 @@ namespace CosmicShore.Data
         Scurry = 35,
         // Maelstrom (36): session-level meta that chains the domain minigames
         // (SkimRace, Joust, Scurry) into one tournament. See
-        // Docs/MaelstromSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7, 28 and 31 stay reserved.)
         Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
@@ -296,7 +299,7 @@ namespace CosmicShore.Data
         GrizzlyTime = 63,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 61) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 60) in the same commit, and take the next free ID -- 7, 28, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

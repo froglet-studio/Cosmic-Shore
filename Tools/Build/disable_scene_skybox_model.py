@@ -31,7 +31,6 @@ SCENES = [
     "Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity",
     "Assets/_Scenes/Multiplayer Scenes/MinigameScurryMultiplayer_Gameplay.unity",
     "Assets/_Scenes/Multiplayer Scenes/MinigameDuelForCellMultiplayer_Gameplay.unity",
-    "Assets/_Scenes/Multiplayer Scenes/MinigameFreestyleMultiplayer_Gameplay.unity",
     "Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity",
 ]
 # deliberately NOT touched: _Scenes/Tools/Recording Studio, MattsRecording Studio

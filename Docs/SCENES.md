@@ -19,8 +19,10 @@ scored shape-drawing flow was **deleted 2026-08-25** (`ShapeDrawingManager` C15 
 unreachable after the scene went; migrating it would have shipped an untested clock
 path). Recover from git if a scored minigame is wanted. `SegmentSpawner` + spawnable
 shapes + `ShapeDefinition` remain (SkimRace live; painting toy is the successor).
-`MultiplayerFreestyle (28)` is a separate multiplayer sandbox
-game scene and still exists.
+Its multiplayer sibling, `MultiplayerFreestyle (28)` (`MinigameFreestyleMultiplayer_Gameplay.unity`,
+`MultiplayerFreestyleController`, card `ArcadeGameMultiplayerFreestyle.asset`), was the prototype
+that grew into the Menu_Main lava lamp, freestyle, toybox and lobby. It was **removed 2026-10-08**
+with its scene, controller, card and mode preview; ID 28 stays reserved. Do not reintroduce it.
 
 ---
 
@@ -47,7 +49,6 @@ game scene and still exists.
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
 | **MinigameSkimRace** | `_Scenes/Multiplayer Scenes/` | `SkimRace (33)` | `SkimRaceController` |
-| **MinigameFreestyleMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
 | **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
 | **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
@@ -230,7 +231,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-driven turn/round/game flow via ClientRpc synchronization
     │   Replay + Rematch systems via ServerRpc/ClientRpc
     │
-    ├── MultiplayerFreestyleController     — per-player activation, player removal protocol
     ├── CoOpWildlifeBlitzMiniGame    — own ready-sync (not domain-based)
     │
     └── MultiplayerDomainGamesController
@@ -282,7 +282,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 25 | `MazeRun` | SP Arcade | Shared | Scene-configured |
 | 26 | `WildlifeBlitz` | SP Arcade | *(scene retired 2026-09)* | `SinglePlayerWildlifeBlitzController` (BenchmarkStressTest only) |
 | 27 | `ProtectMission` | SP Mission | Shared | Scene-configured |
-| 28 | `MultiplayerFreestyle` | MP | MinigameFreestyleMultiplayer_Gameplay | `MultiplayerFreestyleController` |
+| 28 | *(retired 2026-10: `MultiplayerFreestyle`, reserved)* | | | |
 | 29 | `OnlineDuelForTheCell` | MP | MinigameDuelForCellMultiplayer_Gameplay | `OnlineDuelForTheCellController` |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
 | 32 | `CoOpWildlifeBlitz` | MP | MinigameWildlifeBlitzMultuplayerCoOp | `CoOpWildlifeBlitzMiniGame` |
@@ -482,29 +482,6 @@ Hypersea soccer (Rocket League-inspired) — two domains slam a server-simulated
 - `UseSceneReloadForReplay => true`
 - AI strikers via `AIPilot.SetExternalTargetProvider` (billiard approach behind the ball)
 
-### Multiplayer Freestyle
-
-**Scene**: `MinigameFreestyleMultiplayer_Gameplay.unity`
-**Controller**: `MultiplayerFreestyleController`
-**Base**: `MultiplayerMiniGameControllerBase` (NOT domain games)
-
-Lobby/freestyle sandbox mode. Open-ended multiplayer flying with per-player activation.
-
-**Status (read off the shipped card and scene, 2026-10-08).** Card `ArcadeGameMultiplayerFreestyle.asset`
-("Multiplayer Freestyle": "No rules, time, or score"), listed on `AllGames` and `LaunchPartyAllGames`.
-- **Scores:** nothing decides a winner. The scene's `NetworkScoreTracker` does carry one `VolumeCreated` ×1 config, so a volume stat is tallied. But no turn monitor exists to end the turn and read it.
-- **Shape:** the scene authors `numberOfRounds: 1`, overriding the `int.MaxValue` field default. `TurnMonitorController` has `monitors: []`, though, so the one turn never ends and there is no natural end.
-- **Hulls:** six on the card: Dolphin, Manta, Rhino, Sparrow, Serpent and Squirrel.
-- **Players:** 2–3 on the card. The scene carries the plain `ServerPlayerVesselInitializer`, so there is no AI backfill.
-- **Intensity:** 1–4 on the card. The cell has a single `Barren Cell Config`, so intensity changes nothing in the cell.
-- **Verification:** none recorded. Neither QA nor UVC tracks this mode.
-
-**Key features**:
-- No scoring, no natural end (the scene's turn monitor list is empty)
-- Per-player countdown activation (each player starts individually, not synchronized)
-- Player removal protocol: removes player data from all clients before leaving the session
-- Subscribes to `OnClientReady` to handle late-joining clients
-
 ### Multiplayer Wildlife Blitz Co-op
 
 **Scene**: `MinigameWildlifeBlitzMultuplayerCoOp.unity`
@@ -686,7 +663,6 @@ All scene names are centralized in `SceneNameListSO` (`Assets/_Scripts/Utility/D
 | `BootstrapScene` | `"Bootstrap"` |
 | `AuthenticationScene` | `"Authentication"` |
 | `MainMenuScene` | `"Menu_Main"` |
-| `MultiplayerScene` | `"MinigameFreestyleMultiplayer_Gameplay"` |
 
 Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNameListSO`.
 
@@ -722,7 +698,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `BroodRushController.cs` | `_Scripts/Controller/Arcade/` |
 | Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
-| Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `CoOpWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |

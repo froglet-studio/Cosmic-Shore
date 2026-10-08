@@ -38,7 +38,7 @@ has its own item, and each hull's open vessel checks sit next to the modes that 
 | G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
 | H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
 | I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
-| J | Party cards: Multiplayer Freestyle, Online Duel for the Cell | Never opened or tracked; on no live roster; two players needed | 2 |
+| J | Party card: Online Duel for the Cell | Never opened or tracked; on no live roster; two players needed | 1 |
 | P | The parallel PRs' own Editor checks (#971–#976) | Merged 2026-10-06, never opened in Unity | 6 |
 | Q | The round-3 PRs' own Editor checks (#998, #1001, #1002, #1004, #1005, #1007) | Merged 2026-10-08, never opened in Unity; three need two players | 7 |
 
@@ -1940,13 +1940,16 @@ steering to hit the burr · AI that orbit or crawl · scores that differ between
 speeds, the arrow and (since PR #1004, QA-HIJACK-SHIELD-SYNC) rail prism SHIELDS must now AGREE
 between machines - a shield on one machine and not the other is a failure.
 
-## Priority 0 — Block J: the two party cards — Multiplayer Freestyle and Online Duel for the Cell
+## Priority 0 — Block J: the party card — Online Duel for the Cell
 
-Neither card has ever been opened in Unity, and until this refresh neither was tracked here or in
-`Docs/UNITY_VERIFICATION_CHECKLIST.md` (re-audit G37). Both are on `AllGames.asset` and
+Multiplayer Freestyle (mode 28) was retired 2026-10-08 as a vestige of the prototype the Menu_Main
+lava lamp, freestyle, toybox and lobby replaced, so its item (QA-PARTY-FREESTYLE-MODE) is gone.
+
+The Duel card has never been opened in Unity, and until this refresh it was not tracked here or in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` (re-audit G37). It is on `AllGames.asset` and
 `LaunchPartyAllGames.asset` but on **neither** live roster (`ArcadeGames.asset`,
-`ArenaGames.asset`), so the first thing each item checks is whether a player can reach the card at
-all. Both need **two players**, so run them in one Multiplayer Play Mode session.
+`ArenaGames.asset`), so the first thing the item checks is whether a player can reach the card at
+all. It needs **two players**, so run it in one Multiplayer Play Mode session.
 
 **Two-player setup used by every two-player item in Blocks J and Q:**
 1. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode**. Tick **Player 2** and type a tag for it
@@ -1956,44 +1959,6 @@ all. Both need **two players**, so run them in one Multiplayer Play Mode session
 3. In the main window, click the **+** slot on the party panel and pick the other player. In the
    Player 2 window, press **Accept** on the invite. Wait (up to 15 seconds) until both windows show
    two people in the party. The main window is the **host**; the Player 2 window is the **client**.
-
-### QA-PARTY-FREESTYLE-MODE ⬜ — "Multiplayer Freestyle" has never been opened
-**Source:** `GameModes.MultiplayerFreestyle = 28`; card `ArcadeGameMultiplayerFreestyle.asset`;
-scene `MinigameFreestyleMultiplayer_Gameplay.unity`; `MultiplayerFreestyleController`. Status read
-off the card and scene in `Docs/SCENES.md` § Multiplayer Freestyle (PR #1000, whose step 4 is
-folded in here): no scoring, no natural end (the scene's turn-monitor list is empty), each player
-starts on their own countdown, 2–3 players, no AI fill, six hulls on the card. Re-audit G37.
-
-1. In the Project window, select `Assets/_SO_Assets/Games/ArcadeGameMultiplayerFreestyle.asset`.
-   Read **Vessels**, **Min Players Allowed**, **Max Players Allowed** and **Scene Name**.
-2. Open `MinigameFreestyleMultiplayer_Gameplay.unity` (type its name in the Project window's search
-   box). Select the object that has `TurnMonitorController` and look at its **Monitors** list. Look
-   at the Console for red errors and at the Hierarchy for any `Missing (Mono Script)`.
-3. Do the two-player setup at the top of Block J.
-4. In the host window, open the **Arcade** screen and then the **Arena** screen and look for a card
-   named **Multiplayer Freestyle**. If neither screen has it, stop: mark this item ⛔ BLOCKED and
-   write "no Multiplayer Freestyle card on the Arcade or Arena screen" in the notes.
-5. Open the card, pick a ship, and launch. Watch both windows through the countdown.
-6. In each window, fly for a minute: lay trail, fly through the other player's trail, and find the
-   other player's ship.
-7. Keep flying for five minutes and watch for any end-of-round or winner screen.
-8. In the client window, leave the match with the in-game leave button. Watch both windows.
-
-**PASS:** the card lists six ships (Dolphin, Manta, Rhino, Sparrow, Serpent, Squirrel), 2 and 3
-players, and that scene name; the scene opens with no red errors or missing scripts and its
-Monitors list is empty; both windows get through the countdown and each player can fly; each
-window shows the other player's ship and trail moving smoothly in the same place; the match keeps
-running with no end screen; the leaving player returns to the menu and the host keeps flying with
-no errors.
-**FAIL:** a red error or `Missing (Mono Script)` · a window stuck on the connecting panel or the
-countdown · a player who never gets control · the other player's ship invisible, frozen or in the
-wrong place · an end screen or a winner banner · the leaving player stranded on a black screen, or
-an error in either window when they leave.
-**Known, do not fail on:** there is no score, no timer and no end by design (the card says "No
-rules, time, or score"); intensity changes nothing (the scene has one cell config); no AI fills an
-empty seat; the card has no background render of its own yet.
-**Report:** whether the card was reachable from the menu (step 4), and if not, how (if at all) you
-launched the scene.
 
 ### QA-PARTY-DUEL-MODE ⬜ — "Online Duel for the Cell" has never been opened
 **Source:** `GameModes.OnlineDuelForTheCell = 29`; card `ArcadeGameOnlineDuelForTheCell.asset`;

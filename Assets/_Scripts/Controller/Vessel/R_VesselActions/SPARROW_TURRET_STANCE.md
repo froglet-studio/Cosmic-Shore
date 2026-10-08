@@ -472,7 +472,7 @@ Three silent failure modes survived the first fix, all now closed or screaming:
 ## In-editor verification
 
 Scene: any Sparrow-playable multiplayer scene (`MinigameWildlifeLiberation` or
-`MinigameFreestyleMultiplayer_Gameplay`). Stop with the stationary-mode input (input 6), then
+Menu_Main freestyle). Stop with the stationary-mode input (input 6), then
 hold fire (input 1). Test BOTH visualizations — select `FullAutoBlockShootAction.asset` and flip
 **Flight Visualization** live in play mode.
 
