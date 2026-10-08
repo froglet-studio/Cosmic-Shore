@@ -43,6 +43,9 @@ Other records, for when you need the detail rather than the plan:
 
 A rebuilt flow diagram of the whole layer (two sessions, three doors, the request policy, the
 refresh tick, the recovery paths) is at <https://claude.ai/artifact/28FsHDcaHpfKwEYFu4KqK1>.
+**One point in it is now stale:** it shows the party session as **6 transport slots / 4 displayed**
+and calls that split an invariant. B25's fix collapsed it to **one size, 4**, enforced by the
+session itself. Fix that figure and its legend when you next touch the diagram.
 
 ## Where the work actually stands
 
