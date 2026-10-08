@@ -5163,32 +5163,43 @@ latter including `WormholeTollTests.cs`): 0 errors in project code — a compile
 
 ---
 
-## 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
+## 🔴 The Time crystal's flip wave is procedural and starts from a new vertex every loop (`cece/zen-archimedes-ednrpo`, 2026-10-08) — NOT EDITOR-VERIFIED
 
-`CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
-place `TimeCrystalVertexHop` snaps the model child to a random rotation of the icosahedral group on
-the frame the 2 s flip-wave loop wraps, so the next wave starts from another of the 12 five-fold
-vertices while the crystal never visibly turns. The snap is only invisible because the shape at the
-loop seam is the fully symmetric bind pose — proved from the FBX by
-`python3 Tools/Build/measure_time_crystal_wave.py` (and `--self-test`). The symmetry frame is read at
-runtime from Unity's own import of the five first-ring bones, so no axis-conversion assumption ships.
+Supersedes the vertex-hop entry (`cece/eager-lovelace-i4o8jk`) that stood here. `CrystalTime.prefab` (and
+its variant `CrystalTimeDandruff`) no longer has an Animator: the model's Animator is a removed component,
+`CrystalTimeAnimController` is deleted, and `CrystalFlipWave` poses the 30 plate bones from
+`TimeCrystalFlipWaveProfile.asset` (generated from the old take by
+`python3 Tools/Build/author_time_crystal_flip_wave.py`). `TimeCrystalExport.fbx` is now **Read/Write
+enabled**, so it will reimport on pull. No Unity editor or `unity` CLI was available in the authoring
+session, so `/verify-unity` did not run. What did run: the shipped C# compiled with Roslyn and executed
+against the FBX (0.42 % of the radius, 48/48 axis conversions, negative controls), and 11 of the 13 edit-mode
+tests executed unmodified. Design record: `Docs/TIME_CRYSTAL.md`.
 
-### 1. Run the edit-mode suite's `TimeCrystalVertexHopTests`
+### 1. Run `CrystalFlipWaveTests` in the edit-mode suite
 
-All six pass offline against faithful math stubs. The seventh,
-`CrystalTimePrefab_ResolvesItsWaveAxis_FromTheImportedRig`, only runs in the editor: it resolves the
-wave's start axis from the REAL imported rig. If it fails, nothing else below is worth checking.
+The two that only the Editor can run are the ones that matter most:
+`CrystalTimePrefab_IsWiredForTheProceduralWave` (the Animator removal took, the mesh imports readable, and
+the rig builds on the real prefab) and **`ProceduralWave_MatchesTheImportedTake_FrameByFrame`** (FBX
+parity: it prints the worst error, and should read about 0.4–0.9 % of the radius). If either fails, nothing
+below is worth checking.
 
 ### 2. Watch a Time crystal for ~10 s in any scene that spawns one
 
-- The crystal itself never turns: no tumble, and no jump/pop/twitch at any moment.
-- Each wave starts from a different vertex from the one before it (12 possible), never the same one twice in a row.
-- No `TimeCrystalVertexHop` error in the console.
+- The wave looks like it always did: the lead ring round the start vertex pinches in and flips, then four
+  rings follow 0.2 s apart and roll toward the opposite vertex.
+- Each wave starts from a different vertex than the one before (12 possible), never twice in a row.
+- No pop at the loop wrap, and no Time crystal holding still. A refusal logs one `CrystalFlipWave` error
+  naming the cause.
 
 ### 3. Capture one (Elemental capture / skim)
 
-The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
-rotation; the hop only touches the model child).
+The capture flourish still spins the crystal and flies it into the hull as before. It owns the ROOT's
+rotation, and the wave touches only the bones.
+
+### 4. Profile a crowd
+
+Spawn many Time crystals in view and read `CrystalFlipWave.LateUpdate` in the Profiler. It replaced an
+Animator per crystal that also ran off screen, but no number has been measured yet.
 
 ## 🔴 Grizzly Time (63), Grizzly in the toybox, AI Grizzlies that steer and pump (`cece/eloquent-goodall-g1llta`, 2026-10-06) — NOT EDITOR-VERIFIED
 

@@ -2807,9 +2807,12 @@ that would otherwise cost a round-trip to a human at the editor:
   wrong for half the possible conversions and nothing offline tells you which half. Resolve it at
   RUNTIME from something the import cannot reinterpret: named bones (sub-asset fileIDs are not
   derivable, names are), whose rest positions in the model root's local space name a symmetry axis
-  — `TimeCrystalVertexHop` snaps the first-ring bones' centroid onto the nearest of the 24
-  candidate five-fold axes, which fixes axis AND orientation in one step. Do not reach for
-  `Mesh.vertices`: an `isReadable: 0` mesh has none in a player. Then PROVE the resolver against
+  — the retired `TimeCrystalVertexHop` snapped the first-ring bones' centroid onto the nearest of the 24
+  candidate five-fold axes, which fixes axis AND orientation in one step. Its successor,
+  `FlipWaveRig`, needs every plate's geometry anyway, so it turned the model **Read/Write enabled**
+  and resolves the frame from the plates themselves (each plate's outward direction is a two-fold
+  axis, and only one orientation puts all 30 at 31.72° from two vertices). Either is fine; what is not
+  fine is reading `Mesh.vertices` off an `isReadable: 0` mesh, which has none in a player. Then PROVE the resolver against
   every conversion it could face: export the FBX's bone heads and mesh, apply all **48** signed
   axis permutations in a Roslyn harness, run the shipped resolver on each, and assert it recovers
   the true axis and that every group element leaves the converted mesh congruent (48/48, 6e-7
