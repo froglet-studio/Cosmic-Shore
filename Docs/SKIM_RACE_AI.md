@@ -384,6 +384,34 @@ anyway because it beats v1-i2 by ~21 s and 0/40 -> 30-31/40. The remaining reset
 gain is. Tuned values the code does not read under these switches (`Level*`, `CaptureMargin`,
 `TerminalChordClearance`, `TrackGuardMargin`) are left at their defaults in the asset.
 
+### 6.12 Intensity 4 replaced by Relativity (2026-10-08)
+
+I4's course is now **Relativity** (`SKIMRACE.md` §5a): six rose-petal lobes joined by six core
+passes that weave through the nucleus 64 u apart, the ribbon rolling a quarter turn per pass
+(authored per-waypoint normals), 24 crystals/lap x 2 = 48, crystal anchors ON the ribbon with one
+on every core pass. Everything in §6.2 and §6.7-6.8 about I4 describes the OLD 3D polyline. The
+simulator lays the new course from the scene, normals included (`run.sh` exports `waypointUps` and
+`crystalsPerLap`; `Sim.cs` interpolates the normals exactly as `ResolveBlockPose` does).
+
+Measured (calibrated physics `ph.Dt=0.026 ph.DtJitter=0.5`, `limit=120`, the same 40 fresh seeds,
+`seedbase=99000`; a race is cut at 180 s):
+
+| Policy | 1 AI seat | 2 AI seats (every seat finished) |
+|---|---|---|
+| shipped `skimrace-v1-i4` (tuned on the old polyline) | 40/40, median 150.4 s, worst 173 s | 7/40; first finisher median 150.7 s |
+| CEM, 16 gens x 24 x 8 seeds from it, sigma 0.12 | 39/40, median 145.7 s | 11/40; first finisher median 142.2 s |
+
+Crystal placement was also varied (anchors lifted 0 / 12 / 24 u off the ribbon along its normal,
+24 seeds, shipped policy): median 146 / 150 / 161 s - no gain, anchors stay on the ribbon. The tune
+is within noise of the shipped policy and loses a race, so **no policy change shipped**: the
+shipped I4 policy already completes the new course. Strikes per race (shipped, 1 seat): track
+crossing 3.9, track pull 3.5, own rail 1.5 - fewer than on the old polyline.
+
+The 70 s limit is effectively out of reach on Relativity: two laps of crystal-to-crystal chords
+are ~20,700 u, **69 s at 300 u/s** with zero time lost to any turn, and the ribbon itself is
+22,166 u (74 s). Same situation as I3; re-baselining the I4 limit is a product decision (as I2's
+was, §6.11) and has not been made.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop
@@ -660,7 +688,8 @@ not (90-128 s, §8.0c).**
   The strike-free ceiling is 66-70 s, so 70 s needs essentially zero strikes; the pilot takes ~15-30
   per race and no lever or tune tried reduces that without losing more time (§6.8).
 - **I4: not met, and not reachable with this approach.** Even with every hull contact switched off
-  the simulator needs ~124 s for one AI seat (§6.7).
+  the simulator needs ~124 s for one AI seat (§6.7, old polyline). On Relativity (§6.12) the
+  shipped policy completes in ~150 s median and 70 s is below the ~69-74 s physical floor.
 - **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
   Squirrel tops out at 300 u/s).
 - **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +
