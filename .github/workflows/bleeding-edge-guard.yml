@@ -144,6 +144,7 @@ jobs:
           python3 Tools/Build/check_conditional_compilation.py --self-test
           python3 Tools/Build/check_gamelist_scenes.py --self-test
           python3 Tools/Build/check_hud_onscreen.py --self-test
+          python3 Tools/Build/check_junie_skills.py --self-test
 
       - name: Validate project
         run: python3 Tools/CI/validate_project.py --github
@@ -178,6 +179,12 @@ jobs:
       # back - the components, the indicator objects, or the two prefabs.
       - name: Check the call-to-action surface stays retired
         run: python3 Tools/Build/retire_call_to_action.py --check
+
+      # JetBrains Junie reads skills only from .junie/skills, which is a symlink to
+      # .claude/skills. A real directory there is a second hand-maintained copy, and
+      # the last one drifted 3,920 diff lines before anybody noticed. See AGENTS.md.
+      - name: Check .junie/skills is a link, not a copy
+        run: python3 Tools/Build/check_junie_skills.py
 
       # Authoritative --check gates for shader families the C# clock validator
       # does not name (back-face fade, destruction sight, opaque+clip, corridor)
@@ -525,6 +532,7 @@ jobs:
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
               python3 Tools/Build/retire_call_to_action.py --check
+              python3 Tools/Build/check_junie_skills.py
               python3 Tools/Shaders/wire_prism_backface_fade.py --check
               python3 Tools/Shaders/wire_prism_destruction_sight.py --check
               python3 Tools/Shaders/enable_prism_alpha_clip.py --check

@@ -146,15 +146,21 @@ def build_guid_index(tree):
 # schema (Roslyn, via Tools/Build/unity_refcompile/Schema)
 # --------------------------------------------------------------------------------------------
 def load_schema(rsp):
-    csc = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")))
+    sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
+    import build as refcompile  # noqa: E402  (the toolchain helpers; importing has no side effects)
     tools = os.path.join(CACHE, "tools")
-    if not csc or not os.path.exists(os.path.join(tools, "Microsoft.CodeAnalysis.dll")):
+    if not os.path.exists(os.path.join(tools, "Microsoft.CodeAnalysis.dll")):
         return None, "no Roslyn tools in %s - run `bash Tools/Build/unity_refcompile/run.sh` first" % tools
+    try:
+        csc, (ref, rt, tfm) = refcompile.csc_path(), refcompile.netcore_toolchain()
+    except SystemExit as e:  # no SDK / no usable reference pack: the message says which
+        return None, str(e.code)
     dll = os.path.join(tools, "Schema.dll")
-    fp = hashlib.sha1(open(SCHEMA_SRC, "rb").read()).hexdigest()
+    # rebuilt when the source or the .NET it targets changes (a runtimeconfig naming an uninstalled
+    # runtime cannot start)
+    fp = hashlib.sha1(open(SCHEMA_SRC, "rb").read() + (ref + rt).encode()).hexdigest()
     if not os.path.exists(dll + ".stamp") or open(dll + ".stamp").read() != fp:
-        ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc[-1], "-nologo", "-noconfig", "-nostdlib",
+        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc, "-nologo", "-noconfig", "-nostdlib",
                             "-langversion:latest", "-out:" + dll, SCHEMA_SRC,
                             "-r:" + os.path.join(tools, "Microsoft.CodeAnalysis.dll"),
                             "-r:" + os.path.join(tools, "Microsoft.CodeAnalysis.CSharp.dll")]
@@ -162,8 +168,7 @@ def load_schema(rsp):
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         if r.returncode != 0:
             return None, "Schema tool failed to build:\n" + r.stdout
-        rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
-        json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+        json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
                   open(os.path.join(tools, "Schema.runtimeconfig.json"), "w"))
         open(dll + ".stamp", "w").write(fp)
     out = os.path.join(os.path.dirname(rsp), "schema.json")
