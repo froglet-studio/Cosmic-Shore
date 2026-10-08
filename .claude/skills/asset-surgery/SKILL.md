@@ -1077,6 +1077,12 @@ references, m_Script classes). Four things that cost time on the first run (2026
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
   cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
   is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
+  asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
+  removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
+  as pre-existing and the audit stays green, which reads as "the audit is blind". Commit a key the
+  base never carried (`negativeControlKey: 1`), confirm `[field] 1` names it, then
+  `git reset --hard` back (2026-10-08, Rhino crystal-burst field removal).
 - **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
   `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
   references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
