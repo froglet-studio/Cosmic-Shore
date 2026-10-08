@@ -84,8 +84,15 @@ no longer has a time-scale option, and the recorder fails any race during which 
 left 1.
 
 The pilot writes `IInputStatus.XSum` (yaw), `YSum` (pitch), `YDiff` (roll), `XDiff` (throttle) —
-the same channels the dual-stick strategies write — and presses the hull's own bound controls
-through `PerformShipControllerActions` (drift, Boost Ring; both off in the shipped policy). It reads
+the same channels the dual-stick strategies write — plus `LeftTriggerAnalog`, held at full pull
+while its drift is held (the drift's DEPTH on a pad device; `SkimRacePilot.DriftTriggerPull`), and
+presses the hull's own bound controls through `PerformShipControllerActions` (drift, Boost Ring;
+both off in the shipped policy). The controls are asked for by ability type at every press, and
+`R_VesselActionHandler.TryGetInputForAction` answers for the hull's ACTIVE device: the Squirrel binds
+both abilities only in its touch and pad override maps. **Until 2026-10-06 neither could fire on a
+PC** — the lookup handed out the touch controls, which a PC device refuses — so `UseDrift` /
+`UseLaunchRing` being off has never been measured against a working drift or ring (the simulator
+does not model drift either). See `SQUIRREL_DRIFT.md` §10. It reads
 pose, speed, boost, the transformer's commanded rotation (new read-only `CommandedRotation`), the
 visible track and the live crystal. It never writes a transform, speed, course, crystal, score or
 timer, and grants itself nothing a human pilot does not have.
@@ -702,6 +709,12 @@ not (90-128 s, §8.0c).**
 - **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +
   tracking-MPC strike term + no terminal chord); strike-free ceilings 69.9 s (2 AI) and 85-127 s
   (3 AI). Stop condition met; no policy change shipped.
+- **Owed: drift and Boost Ring have never been measured working.** `UseDrift` and `UseLaunchRing` are
+  off in every shipped policy, but neither could fire on a PC until 2026-10-06 (the autopilot lookup
+  handed out the touch controls; `SQUIRREL_DRIFT.md` §10), and the simulator models neither, so the
+  "off" is the C# default rather than a result. Owed: an in-editor A/B per intensity with each on
+  (drift at full depth, `SkimRacePilot.DriftTriggerPull`), and the simulator taught the drift before
+  any tune relies on it.
 - **Owed:** the in-editor matrix for the current pilot code (§8.0) - I2 at players 3 and 4 against
   80 s, I1 at players 3 against 70 s - and an editor compile/test pass for the §6.10/§6.11 code (the
   editor was in a play session during both passes).

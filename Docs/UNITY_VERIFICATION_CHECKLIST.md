@@ -65,6 +65,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Ability presses run the same actions on every machine — the device travels with the press (`claude/relaxed-heisenberg-t7utre`, 2026-10-06)
+
+No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
+editor: `Tools/Build/unity_refcompile/run.sh` compiled the branch against the real Netcode 2.5.0
+source with 0 errors in project code (negative control: a wrong-arity call planted in the
+ClientRpc fails with CS7036). `Tools/Build/peer_press_harness/run.py` ran the SHIPPED
+`R_VesselActionHandler` as an owner copy and a peer copy over all 13 shipped vessels' maps: the
+pre-fix handler ran something different on the peer for 72 of 825 presses (Squirrel, Manta, Rhino)
+and stranded 48 holds across a device switch (bleeding-edge's handler: 72 and 24); this branch: 0 and 0, the 4 shipped
+`CarriedInputDeviceTests` pass, and `--self-test` catches each of the three mechanisms removed.
+Full record: `Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` §11.
+
+**What landed**
+
+1. `InputStatus.ActiveInputDevice` is an owner-write NetworkVariable (was a local field, so each
+   machine saw a remote pilot as whatever ITS OWN hardware was).
+2. `R_VesselActionHandler`'s press/release RPCs carry the device as one byte; every peer resolves
+   with it. A release resolves with the device its press recorded. This supersedes bleeding-edge's
+   `7e5c950e4` (a second ledger of started action lists), which the merge removed: it still refused
+   the Squirrel's and Rhino's releases at the live-device gate (`SQUIRREL_DRIFT.md` §11).
+
+**Verify in editor** (the Touch half needs a phone build — the editor and every MPPM player read
+`SystemInfo.deviceType` as Desktop)
+
+0. Edit-mode: `CarriedInputDeviceTests` (4) and `DeviceAwareActionLookupTests` pass.
+1. Phone build + PC host, both Squirrels: each pilot's drift lays its drift trail, and each Boost
+   Ring appears, on the OTHER screen too (before: refused there).
+2. Same pair, Mantas: the phone pilot's both-thumbs boost reads as a straight boost on the PC; the
+   PC pad pilot's one-trigger turn shows its flared trail on the phone.
+3. Same pair, Rhinos: the PC pilot's shield swipe shows on the phone.
+4. Phone + Bluetooth pad: hold a touch drift, touch the pad, release — the drift ends on both screens.
+5. Two desktop players (MPPM is fine): presses, AI abilities (Tollway, Waystation, Butterfly modes,
+   Skim Race AI drift) behave as before; no console errors.
+
+---
+
 ### 🔴 Rhino: elemental-crystal pickups no longer explode (`cece/keen-ptolemy-t3nzug`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § Crystal burst):
@@ -3282,6 +3318,9 @@ reinstated exactly this slowdown and was undone.
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
    bug in the Scarab's first-pass transformer and is the reason that method exists.
+   ⚠ *Corrected 2026-10-06:* not in Skim Race — its Squirrel AI seats belong to `SkimRacePilot`,
+   whose shipped configs never drift (`UseDrift: 0`). Watch an `AIPilot`-flown Squirrel, Dolphin
+   or Scarab in another mode (`SQUIRREL_DRIFT.md` §8 step 5 / §10).
 7. **Menu vessel swap preserves speed** on Squirrel, Dolphin and Scarab. Freestyle at speed →
    vessel changer → swap. The new hull must inherit the speed, not drop to a stop
    (`SetInitialSpeed` → the external-write re-seed).
@@ -4896,6 +4935,48 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 AI Squirrel drift / Boost Ring on a PC — device-aware autopilot lookup (`claude/kind-edison-nvml7l`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**What landed.** `R_VesselActionHandler.TryGetInputForAction<T>` / `TryGetBoundAction<T>` now answer
+for the vessel's ACTIVE device, through the same `TryGetPressedActions` rule the press gate uses
+(active override map first, then unshadowed shared entries). Before, they swept shared → touch →
+gamepad regardless of device, so on the Squirrel — drift and ring bound only in the override maps —
+the Skim Race AI was handed the touch controls (12 / 11), which every PC device refuses: no AI
+drift or ring on Windows. `SkimRacePilot` now asks at every press and holds `LeftTriggerAnalog = 1`
+while its drift is held, so an AI drift is full depth on a pad device as well as on keyboard/touch
+(the deliberate depth choice; `SQUIRREL_DRIFT.md` §10). HUD control hints use
+`CollectBoundActions`/`HasBinding`, which are untouched.
+
+**Compiled? Not by Unity.** `/verify-unity` could not run (no editor, no `unity` binary, no
+`Library/` in the session). Out of editor: Roslyn found no structural errors in the changed files;
+the shipped `DeviceAwareActionLookupTests` compiled against the extracted shipped lookup methods
+and RAN 8/8 against the real `Squirrel.prefab`, with three negative controls each failing its test;
+a harness ran the shipped `SkimRacePilot` actuation through the shipped press path on all five
+devices (pre-fix code: drift/ring start on Touch only; fixed code: on every device). The six
+standing gates and `check_ai_no_state_writes.py` (+ `--self-test`) pass.
+
+**Verify:**
+1. Run `DeviceAwareActionLookupTests` and `AimTelegraphBindingTests` in the Test Runner.
+2. Temporarily set `UseDrift: 1` on `Resources/SkimRaceAIConfig_I1.asset` (do not commit — the
+   shipped policy keeps drift off; see note). Skim Race I1 with AI seats, **no pad**: AIs drift on
+   sharp turns (hull swings off the travel line, trail curves).
+3. Same with a **pad connected**: identical drift depth; the AI's `InputStatus.LeftTriggerAnalog`
+   reads 1 while drifting, 0 otherwise.
+4. Optional, same way with `UseLaunchRing: 1`: AIs lay Boost Rings ahead of themselves on a PC.
+5. HUD unchanged: your own Squirrel's ability row and control chips, on pad and keyboard. Fly a
+   Dolphin vs AI in The Bends (aim telegraph), a Tollway and a Waystation match — the AI presses
+   there are shared-map bindings and must behave exactly as before. The AI boost policies resolve
+   their ability through the same lookup: an `AIPilot` Squirrel outside Skim Race must still lay
+   Boost Rings (`SkimRingAIPolicySO`), on a PC and on a handheld.
+6. Revert step 2 (and 4).
+
+**Note — the shipped Skim Race AI never asks to drift.** All four `SkimRaceAIConfig*.asset` ship
+`UseDrift: 0` / `UseLaunchRing: 0`, so in a normal match nothing changes on screen. That setting was
+never measured against a working drift (the simulator does not model drift; PC benchmarks had the
+press refused) — whether to turn it on is a benchmark question.
+
+---
 
 ## 🔴 Nested Gyroid flora + the Urchin's layered ride (`cece/happy-clarke-e0xu4y`, 2026-10-06) — NOT EDITOR-VERIFIED
 
