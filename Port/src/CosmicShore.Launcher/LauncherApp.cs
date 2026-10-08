@@ -243,11 +243,12 @@ namespace CosmicShore.Launcher
                         break;
                     case "ingest": Task.Run(() => IngestSessions(notify: true)); break;
                     case var bn when bn.StartsWith("bench:"):
-                        // bench:SceneA,SceneB[:frames] - presses TIME > RUN (headless, so it works on a server).
+                        // bench:SceneA,SceneB[:frames[:low|ab]] - presses TIME > RUN (headless, so it works on a server).
                         _page = Page.Time;
                         var bp = bn["bench:".Length..].Split(':');
+                        int bgc = bp.Length > 2 ? bp[2] switch { "low" => 1, "ab" => 2, _ => 0 } : 0;
                         _jobs.Benchmark(bp[0].Split(',', StringSplitOptions.RemoveEmptyEntries), bp.Length > 1 && int.TryParse(bp[1], out var bf) ? bf : 300,
-                            1, headless: true, vsync: false, _s.BenchSize);
+                            1, headless: true, vsync: false, _s.BenchSize, bgc);
                         _closeWhenDone = true;
                         break;
                     case "claude-install":

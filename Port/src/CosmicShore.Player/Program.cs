@@ -127,6 +127,12 @@ namespace CosmicShore.Player
                     case "--render-scale" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.RenderScale); break;
                     case "--no-vsync": CosmicShore.Render.RenderQuality.VSync = false; break;
+                    // --gc-latency low: .NET's SustainedLowLatency (no blocking gen-2 collections while
+                    // memory allows), for an A/B of GC pauses against the default Interactive mode.
+                    case "--gc-latency" when i + 1 < args.Length:
+                        System.Runtime.GCSettings.LatencyMode = args[++i] is "low" or "sustained"
+                            ? System.Runtime.GCLatencyMode.SustainedLowLatency : System.Runtime.GCLatencyMode.Interactive;
+                        break;
                     case "--fps" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.TargetFps); break;
                     case "--aniso" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.Anisotropy); break;

@@ -92,6 +92,8 @@ namespace CosmicShore.Launcher
         public int BenchRuns { get; set; } = 1;
         public bool BenchHeadless { get; set; }
         public bool BenchVSync { get; set; }
+        /// <summary>0 the default GC, 1 SustainedLowLatency, 2 both (A/B).</summary>
+        public int BenchGc { get; set; }
         public string BenchSize { get; set; } = "1920x1080";
         public int MpPlayers { get; set; } = 2;
         public string MpScene { get; set; } = "";

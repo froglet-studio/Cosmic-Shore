@@ -61,13 +61,15 @@ The first start shows a one-minute tour of every page; **?** replays it.
 harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
 gameplay rather than an idle scene), pick the length (10 s to 2 min at 60 fps), how many runs of
 each (the median is kept), WINDOW (rendered, so GPU time counts) or HEADLESS (simulation only), the
-window size and VSync. **RUN** builds the Release player if the workspace changed since the last
+window size, VSync and the .NET garbage collector's mode (default, low latency, or **A/B**: every item
+in both, the LOW GC row compared with its default row). **RUN** builds the Release player if the workspace changed since the last
 build, then starts one game per scene and run; each closes itself when its frames are done, writes
 its session report, and the next one starts. Replays play in PLAY's save slot, so log in once from
 PLAY first (a fresh slot stops at the birth-year prompt).
 
 RESULTS shows one row per scene: frame time at the 50th and 95th percentile and the worst frame,
-frames over 33 ms, the simulation's 95th percentile, GPU time, load time, GC pause per frame and
+frames over 33 ms, the simulation's 95th percentile, GPU time (timer queries), load time (the scene's switch
+to its first frame; hover for boot to first frame), GC pause per frame and
 the frame count, each with its change against the previous benchmark on the same machine (green
 faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` and can be picked
 from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
@@ -345,4 +347,4 @@ own clone: *Beside my clone* uses a git worktree next to it.
 folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
 chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
-its own and echoes the log; `--auto "chat:<message>"` sends one chat message; `--auto bench:A,B[:frames]` runs a headless benchmark and exits;
+its own and echoes the log; `--auto "chat:<message>"` sends one chat message; `--auto bench:A,B[:frames[:low|ab]]` runs a headless benchmark (optionally low-latency GC, or both) and exits;

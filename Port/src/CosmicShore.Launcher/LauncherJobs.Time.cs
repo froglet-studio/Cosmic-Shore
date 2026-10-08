@@ -14,6 +14,8 @@ namespace CosmicShore.Launcher
     {
         public string Scene { get; set; } = "";
         public int Run { get; set; }
+        /// <summary>"" the default GC mode, "low" SustainedLowLatency (--gc-latency low).</summary>
+        public string Gc { get; set; } = "";
         public bool Ok { get; set; }
         public string? Problem { get; set; }
         public double Seconds { get; set; }
@@ -28,8 +30,10 @@ namespace CosmicShore.Launcher
         public double RenderP50Ms { get; set; }
         /// <summary>GPU time per frame from timer queries; null when the driver gave none (headless, GLES).</summary>
         public double? GpuP50Ms { get; set; }
-        /// <summary>Seconds from start until the scene was running (content load included).</summary>
+        /// <summary>Seconds the scene took to load, to its first frame (older reports: when it started running).</summary>
         public double LoadSec { get; set; }
+        /// <summary>Process start to the first frame (runtime, content boot, first scene).</summary>
+        public double BootSec { get; set; }
         public double HeapMB { get; set; }
         public double KbPerFrameP95 { get; set; }
         public double GcPauseMsPerFrame { get; set; }
@@ -50,6 +54,8 @@ namespace CosmicShore.Launcher
         public bool Headless { get; set; }
         public bool VSync { get; set; }
         public string Size { get; set; } = "";
+        /// <summary>0 default GC, 1 low latency, 2 A/B (both).</summary>
+        public int GcMode { get; set; }
         public List<BenchResult> Results { get; set; } = new();
         public string File { get; set; } = "";
     }
@@ -99,7 +105,7 @@ namespace CosmicShore.Launcher
         /// and closes it when the frames are done. Each run's session report becomes a row; the
         /// session is saved under bench/ so the next run can be compared with it.
         /// </summary>
-        public void Benchmark(IReadOnlyList<string> scenes, int frames, int runs, bool headless, bool vsync, string size) => Start("Benchmark", async ct =>
+        public void Benchmark(IReadOnlyList<string> scenes, int frames, int runs, bool headless, bool vsync, string size, int gcMode = 0) => Start("Benchmark", async ct =>
         {
             if (scenes.Count == 0) { Log.Add(LogKind.Error, "Pick at least one scene to time."); return false; }
             if (!await EnsureTools(ct)) return false;
@@ -110,18 +116,21 @@ namespace CosmicShore.Launcher
             var session = new BenchSession
             {
                 Started = stamp, Branch = _s.Branch, Commit = Commit?.Sha ?? "", Machine = Environment.MachineName,
-                Frames = frames, Headless = headless, VSync = vsync, Size = size,
+                Frames = frames, Headless = headless, VSync = vsync, Size = size, GcMode = gcMode,
                 File = Path.Combine(BenchDir, $"bench-{stamp:yyyyMMdd-HHmmss}.json"),
             };
             Bench = session;
-            int total = scenes.Count * runs, done = 0;
+            var gcs = gcMode switch { 1 => new[] { "low" }, 2 => new[] { "", "low" }, _ => new[] { "" } };
+            int total = scenes.Count * runs * gcs.Length, done = 0;
             foreach (var scene in scenes)
                 for (int run = 1; run <= runs; run++)
+                foreach (var gc in gcs)
                 {
                     ct.ThrowIfCancellationRequested();
-                    Step($"Timing {scene} ({run}/{runs})", (float)done / total);
-                    var report = Path.Combine(BenchDir, $"run-{stamp:yyyyMMdd-HHmmss}-{Safe(scene)}-{run}.json");
+                    Step($"Timing {scene} ({run}/{runs}{(gc == "low" ? ", low-latency GC" : "")})", (float)done / total);
+                    var report = Path.Combine(BenchDir, $"run-{stamp:yyyyMMdd-HHmmss}-{Safe(scene)}-{run}{(gc == "" ? "" : "-" + gc)}.json");
                     var args = new List<string> { "--session-report", report };
+                    if (gc == "low") { args.Add("--gc-latency"); args.Add("low"); }
                     if (scene.StartsWith("replay:", StringComparison.Ordinal))
                     {
                         // A replay sets its own scene, seed and length.
@@ -136,7 +145,7 @@ namespace CosmicShore.Launcher
                     // PLAY's own save slot: it has already been through the login prompts, so a replay
                     // gets from Bootstrap into its match (a fresh slot stops at the prompts).
                     var psi = PlayerStart(exe, args, audio: false, network: false, profile: string.IsNullOrWhiteSpace(_s.Profile) ? null : _s.Profile.Trim());
-                    var result = new BenchResult { Scene = scene, Run = run, Report = report };
+                    var result = new BenchResult { Scene = scene, Run = run, Gc = gc, Report = report };
                     var sw = Stopwatch.StartNew();
                     using (var p = Process.Start(psi)!)
                     {
@@ -189,11 +198,15 @@ namespace CosmicShore.Launcher
                 if (d.TryGetProperty("gpu", out var g) && g.TryGetProperty("timerQueries", out var tq) && tq.ValueKind == JsonValueKind.True && N(g, "frames") > 0)
                     r.GpuP50Ms = N(g, "p50Ms");
                 if (d.TryGetProperty("memory", out var m)) { r.HeapMB = N(m, "heapMB"); r.KbPerFrameP95 = N(m, "kbPerFrameP95"); r.GcPauseMsPerFrame = N(m, "steadyGcPauseMsPerFrame"); }
+                r.BootSec = N(d, "bootMs") / 1000;
                 if (d.TryGetProperty("scenes", out var sc) && sc.ValueKind == JsonValueKind.Array && sc.GetArrayLength() > 0)
                 {
-                    var first = sc[0];
+                    // The scene asked for; for a replay (Bootstrap, menu, match) the one it played longest.
+                    var list = sc.EnumerateArray().ToList();
+                    var timed = list.FirstOrDefault(x => x.TryGetProperty("name", out var nm) && nm.GetString() == r.Scene);
+                    if (timed.ValueKind != JsonValueKind.Object) timed = list.OrderByDescending(x => N(x, "seconds")).First();
                     // loadMs where the player measures it; else when the scene started running.
-                    r.LoadSec = first.TryGetProperty("loadMs", out var lm) && lm.ValueKind == JsonValueKind.Number ? lm.GetDouble() / 1000 : N(first, "enteredAtSecond");
+                    r.LoadSec = timed.TryGetProperty("loadMs", out var lm) && lm.ValueKind == JsonValueKind.Number ? lm.GetDouble() / 1000 : N(timed, "enteredAtSecond");
                 }
                 if (d.TryGetProperty("counts", out var counts)) { r.Exceptions = (int)N(counts, "exceptions"); r.Errors = (int)N(counts, "errors"); }
                 bool crashed = d.TryGetProperty("crash", out var cr) && cr.ValueKind == JsonValueKind.String;

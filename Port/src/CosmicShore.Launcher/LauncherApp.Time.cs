@@ -37,7 +37,7 @@ namespace CosmicShore.Launcher
             var dl = ImGui.GetWindowDrawList();
             float top = a.Y + 76, leftW = Math.Min(430, (b.X - a.X) * 0.42f);
             var la = new Vector2(a.X, top);
-            var lb = new Vector2(a.X + leftW, top + 452);
+            var lb = new Vector2(a.X + leftW, top + 500);
             Card(dl, la, lb);
             DrawBenchSetup(dl, la, lb);
             var ma = new Vector2(a.X, lb.Y + 14);
@@ -109,7 +109,14 @@ namespace CosmicShore.Launcher
                 Toggle("VSync", () => _s.BenchVSync, v => _s.BenchVSync = v, "Off measures how fast a frame really is; on caps it at the display rate.");
             }
 
-            y += 52;
+            y += 48;
+            ImGui.SetCursorScreenPos(new Vector2(a.X + 16, y));
+            Segmented("benchgc", new[] { "GC DEFAULT", "LOW LATENCY", "A/B" }, Math.Clamp(_s.BenchGc, 0, 2), i => { _s.BenchGc = i; _dirty = true; }, Neon.Violet);
+            Neon.Tooltip(".NET's garbage collector mode. LOW LATENCY (SustainedLowLatency) avoids blocking full\n" +
+                         "collections while memory allows. A/B runs every item in both modes; the LOW rows\n" +
+                         "compare against the DEFAULT row of the same benchmark.");
+
+            y += 48;
             ImGui.SetCursorScreenPos(new Vector2(a.X + 16, y));
             bool running = _jobs.Busy && _jobs.JobName == "Benchmark";
             float bw = b.X - a.X - 32;
@@ -121,7 +128,7 @@ namespace CosmicShore.Launcher
                          enabled: !_jobs.Busy && _s.BenchScenes.Count > 0))
             {
                 var picked = scenes.Where(_s.BenchScenes.Contains).ToList();
-                _jobs.Benchmark(picked, _s.BenchFrames, _s.BenchRuns, _s.BenchHeadless, _s.BenchVSync, _s.BenchSize);
+                _jobs.Benchmark(picked, _s.BenchFrames, _s.BenchRuns, _s.BenchHeadless, _s.BenchVSync, _s.BenchSize, _s.BenchGc);
                 _benchHistory = null; _benchPick = 0;
             }
             if (running) dl.AddText(Neon.Small, 12, new Vector2(a.X + 16, y + 58), Neon.U(Neon.Amber), _jobs.Stage);
@@ -185,13 +192,14 @@ namespace CosmicShore.Launcher
             }
             dl.AddText(Neon.Small, 12, a + new Vector2(16, 34), Neon.U(Neon.Dim),
                 $"{shown.Branch} #{shown.Commit}  ·  {(shown.Headless ? "headless" : shown.Size + (shown.VSync ? ", vsync" : ", no vsync"))}  ·  {shown.Frames} frames" +
+                (shown.GcMode switch { 1 => "  ·  low-latency GC", 2 => "  ·  GC A/B", _ => "" }) +
                 (string.IsNullOrEmpty(shown.Gpu) ? "" : "  ·  " + Trim(shown.Gpu, 40)) + (older != null ? $"  ·  vs {older.Started:dd MMM HH:mm}" : ""));
 
             ImGui.SetCursorScreenPos(a + new Vector2(10, 58));
             var flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.BordersInnerH;
             if (!ImGui.BeginTable("##bench", 9, flags, new Vector2(b.X - a.X - 20, b.Y - a.Y - 70))) return;
             foreach (var h in new[] { "SCENE", "P50", "P95", "WORST", ">33ms", "SIM P95", "GPU", "LOAD", "GC/F" })
-                ImGui.TableSetupColumn(h, h == "SCENE" ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed, h == "SCENE" ? 0 : 74);
+                ImGui.TableSetupColumn(h, h == "SCENE" ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed, h == "SCENE" ? 0 : 62);
             ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.PushFont(Neon.Small);
             ImGui.TableHeadersRow();
@@ -199,11 +207,14 @@ namespace CosmicShore.Launcher
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                var label = r.Scene.StartsWith("replay:", StringComparison.Ordinal) ? "REPLAY " + r.Scene[7..] : r.Scene;
+                var label = r.Scene.StartsWith("replay:", StringComparison.Ordinal) ? "REPLAY " + r.Scene[7..] : SceneName(r.Scene);
+                if (r.Gc == "low") label = "LOW GC  " + label;
                 ImGui.TextColored(r.Ok ? Neon.Ink : Neon.Red, r.Run > 1 ? $"{label}  #{r.Run}" : label);
                 if (!r.Ok) { if (ImGui.IsItemHovered()) ImGui.SetTooltip(r.Problem ?? "failed"); for (int i = 0; i < 8; i++) { ImGui.TableNextColumn(); ImGui.TextColored(Neon.Dim, "-"); } continue; }
                 if (r.Exceptions + r.Errors > 0 && ImGui.IsItemHovered()) ImGui.SetTooltip($"{r.Exceptions} exception(s), {r.Errors} error(s) - see the report:\n{r.Report}");
-                var was = older?.Results.FirstOrDefault(o => o.Scene == r.Scene && o.Ok);
+                // An A/B's LOW row against its own DEFAULT row; everything else against the last benchmark.
+                var was = (r.Gc == "low" ? shown.Results.FirstOrDefault(o => o.Scene == r.Scene && o.Gc == "" && o.Run == r.Run && o.Ok) : null)
+                          ?? older?.Results.FirstOrDefault(o => o.Scene == r.Scene && o.Gc == r.Gc && o.Ok);
                 Ms(r.P50Ms, was?.P50Ms);
                 Ms(r.P95Ms, was?.P95Ms);
                 Ms(r.WorstMs, was?.WorstMs);
@@ -211,7 +222,8 @@ namespace CosmicShore.Launcher
                 Ms(r.SimP95Ms, was?.SimP95Ms);
                 if (r.GpuP50Ms is { } gpu) Ms(gpu, was?.GpuP50Ms);
                 else { ImGui.TableNextColumn(); ImGui.TextColored(Neon.Dim, "n/a"); if (ImGui.IsItemHovered()) ImGui.SetTooltip("No GPU timer queries on this run (headless, or the driver has none)."); }
-                ImGui.TableNextColumn(); ImGui.TextColored(Neon.Ink, $"{r.LoadSec:0.0} s");
+                ImGui.TableNextColumn(); ImGui.TextColored(Neon.Ink, r.LoadSec < 10 ? $"{r.LoadSec:0.00} s" : $"{r.LoadSec:0.0} s");
+                if (ImGui.IsItemHovered()) ImGui.SetTooltip(r.BootSec > 0 ? $"Scene load to its first frame. Boot to the first frame: {r.BootSec:0.00} s." : "Scene load to its first frame.");
                 ImGui.TableNextColumn(); ImGui.TextColored(r.GcPauseMsPerFrame > 1 ? Neon.Amber : Neon.Ink, $"{r.GcPauseMsPerFrame:0.00}");
             }
             ImGui.PopFont();
@@ -226,10 +238,13 @@ namespace CosmicShore.Launcher
                 if (before is { } w && w > 0)
                 {
                     double d = (v - w) / w;
-                    if (Math.Abs(d) >= 0.05)
+                    // 5% either way counts, and not under 0.2 ms: sub-millisecond frames swing by
+                    // hundreds of percent on nothing.
+                    if (Math.Abs(d) >= 0.05 && Math.Abs(v - w) >= 0.2)
                     {
                         ImGui.SameLine(0, 4);
-                        ImGui.TextColored(d < 0 ? Neon.Lime : Neon.Red, $"{d * 100:+0;-0}%");
+                        // ImGui formats the text printf-style: a percent sign is written %%.
+                        ImGui.TextColored(d < 0 ? Neon.Lime : Neon.Red, $"{Math.Clamp(d * 100, -999, 999):+0;-0}%%");
                         if (ImGui.IsItemHovered()) ImGui.SetTooltip($"was {w:0.0} ms");
                     }
                 }

@@ -21,6 +21,11 @@ namespace CosmicShore.Player
         static string s_path;
         static DateTime s_start;
         static readonly List<(string scene, int frame, double seconds)> s_scenes = new();
+        // Load time per scene: from the switch to the first frame presented after it (the new
+        // scene's content instantiated, its Awake/Start run, one frame drawn). -1 = not measured.
+        static readonly List<double> s_loadMs = new();
+        static System.Diagnostics.Stopwatch s_loadWatch;
+        static double s_bootMs = -1;
         // Time histograms: 0.1 ms buckets to 100 ms (a fast simulation tick is well under 0.5 ms).
         const int TimeBuckets = 1001, PerMs = 10;
         static readonly int[] s_buckets = new int[TimeBuckets]; // frame ms histogram
@@ -57,6 +62,8 @@ namespace CosmicShore.Player
                 s_sceneFrame = 0;
                 s_currentScene = next?.name ?? "";
                 s_scenes.Add((s_currentScene, Frame(), (DateTime.UtcNow - s_start).TotalSeconds));
+                s_loadMs.Add(-1);
+                s_loadWatch = System.Diagnostics.Stopwatch.StartNew();
             };
             AppDomain.CurrentDomain.ProcessExit += (_, _) => Write("process exit");
         }
@@ -65,6 +72,15 @@ namespace CosmicShore.Player
         public static void FrameTime(double ms)
         {
             if (s_path == null || ms <= 0) return;
+            if (s_loadWatch != null && s_loadMs.Count > 0)
+            {
+                s_loadMs[^1] = s_loadWatch.Elapsed.TotalMilliseconds;
+                s_loadWatch = null;
+            }
+            // Boot: process start to the first presented frame (runtime start, content boot, first scene).
+            if (s_bootMs < 0)
+                try { s_bootMs = (DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalMilliseconds; }
+                catch (InvalidOperationException) { s_bootMs = 0; }
             s_frames++;
             if (++s_sceneFrame == 30) OpenSteadyWindow();
             long alloc = GC.GetTotalAllocatedBytes(false);
@@ -205,6 +221,8 @@ namespace CosmicShore.Player
             var pause = GC.GetTotalPauseDuration();
             return new
             {
+                // Batch / Interactive (the default) / SustainedLowLatency (--gc-latency low).
+                gcLatencyMode = System.Runtime.GCSettings.LatencyMode.ToString(),
                 allocatedMB = Math.Round(allocated / 1048576.0, 1),
                 kbPerFrameP50 = Rank(s_allocBuckets, 0.50) * 8, // 8 KB buckets
                 kbPerFrameP95 = Rank(s_allocBuckets, 0.95) * 8,
@@ -293,7 +311,8 @@ namespace CosmicShore.Player
                 for (int i = 0; i < s_scenes.Count; i++)
                 {
                     double end = i + 1 < s_scenes.Count ? s_scenes[i + 1].seconds : total;
-                    scenes.Add(new { name = s_scenes[i].scene, enteredAtSecond = Math.Round(s_scenes[i].seconds, 1), seconds = Math.Round(end - s_scenes[i].seconds, 1) });
+                    double? load = i < s_loadMs.Count && s_loadMs[i] >= 0 ? Math.Round(s_loadMs[i], 1) : null;
+                    scenes.Add(new { name = s_scenes[i].scene, enteredAtSecond = Math.Round(s_scenes[i].seconds, 1), seconds = Math.Round(end - s_scenes[i].seconds, 1), loadMs = load });
                 }
                 object Problems(string prefix) => (Log?.Unique ?? new Dictionary<string, int>())
                     .Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal))
@@ -327,6 +346,7 @@ namespace CosmicShore.Player
                         worstMs = Math.Round(s_worstMs, 1),
                         over33Ms = s_buckets.Skip(33 * PerMs).Sum(),
                     },
+                    bootMs = s_bootMs >= 0 ? Math.Round(s_bootMs, 1) : (double?)null,
                     cpu = Cpu(),
                     gpu = Gpu(),
                     memory = Memory(),
