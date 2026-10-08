@@ -79,32 +79,53 @@ namespace CosmicShore.Tests
                 "A party with 3 of 4 slots should still have one open slot.");
         }
 
+        // A party has TWO sizes (HostConnectionDataSO): the game's party size players see
+        // (PartyDisplaySlots, 4 - HasOpenDisplaySlots, what an invite affordance gates on) and the
+        // transport capacity under it (MaxPartySlots, one spare seat of anti-flicker headroom -
+        // HasOpenSlots). These tests asserted HasOpenSlots == false at 4 members from before the
+        // split, so they failed against the shipped design; they now pin both rules.
+
         [Test]
-        public void HasOpenSlots_FourMembers_ReturnsFalse()
+        public void FourMembers_PartyIsFullByTheGameRule_TransportKeepsHeadroom()
         {
             _partyMembers.Add(new PartyPlayerData("p1", "Pilot1", 1));
             _partyMembers.Add(new PartyPlayerData("p2", "Pilot2", 2));
             _partyMembers.Add(new PartyPlayerData("p3", "Pilot3", 3));
             _partyMembers.Add(new PartyPlayerData("p4", "Pilot4", 4));
 
-            Assert.IsFalse(_data.HasOpenSlots,
-                "A party at max capacity (4/4) should have no open slots.");
+            Assert.IsFalse(_data.HasOpenDisplaySlots,
+                "A party at the game's size (4/4) should have no open seat by the game's rule.");
+            Assert.Greater(_data.MaxPartySlots, _data.PartyDisplaySlots,
+                "Transport capacity must sit above the party size (one spare seat of headroom).");
+            Assert.IsTrue(_data.HasOpenSlots,
+                "The transport keeps headroom at 4/4, so a flickering double-count cannot refuse the fourth member.");
         }
 
         [Test]
-        public void HasOpenSlots_AfterRemovingMember_ReturnsTrue()
+        public void HasOpenSlots_AtTransportCapacity_ReturnsFalse()
+        {
+            for (int i = 0; i < _data.MaxPartySlots; i++)
+                _partyMembers.Add(new PartyPlayerData($"p{i}", $"Pilot{i}", i));
+
+            Assert.IsFalse(_data.HasOpenSlots,
+                $"At the transport capacity ({_data.MaxPartySlots}) the session can hold no one else.");
+            Assert.IsFalse(_data.HasOpenDisplaySlots);
+        }
+
+        [Test]
+        public void HasOpenDisplaySlots_AfterRemovingMember_ReturnsTrue()
         {
             _partyMembers.Add(new PartyPlayerData("p1", "Pilot1", 1));
             _partyMembers.Add(new PartyPlayerData("p2", "Pilot2", 2));
             _partyMembers.Add(new PartyPlayerData("p3", "Pilot3", 3));
             _partyMembers.Add(new PartyPlayerData("p4", "Pilot4", 4));
 
-            Assert.IsFalse(_data.HasOpenSlots, "Party should be full before removal.");
+            Assert.IsFalse(_data.HasOpenDisplaySlots, "Party should be full before removal.");
 
             _partyMembers.RemoveAt(3);
 
-            Assert.IsTrue(_data.HasOpenSlots,
-                "Party should have an open slot after removing a member.");
+            Assert.IsTrue(_data.HasOpenDisplaySlots,
+                "Party should have an open seat after removing a member.");
         }
 
         #endregion
@@ -766,12 +787,12 @@ namespace CosmicShore.Tests
             _partyMembers.Add(new PartyPlayerData("p2", "Player2", 2));
             _partyMembers.Add(new PartyPlayerData("p3", "Player3", 3));
 
-            Assert.IsFalse(_data.HasOpenSlots, "Party should be full.");
+            Assert.IsFalse(_data.HasOpenDisplaySlots, "Party should be full.");
             Assert.AreEqual(3, _data.RemotePartyMemberCount);
 
             _data.RemovePartyMember("p2");
 
-            Assert.IsTrue(_data.HasOpenSlots, "Kicking a member should open a slot.");
+            Assert.IsTrue(_data.HasOpenDisplaySlots, "Kicking a member should open a seat.");
             Assert.AreEqual(2, _data.RemotePartyMemberCount);
         }
 

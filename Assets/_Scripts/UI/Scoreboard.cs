@@ -165,6 +165,11 @@ namespace CosmicShore.UI
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised += HideScoreboard;
 
+            // A new turn (or an in-place replay) is a new game for the award latch below.
+            if (gameData?.OnMiniGameTurnStarted != null)
+                gameData.OnMiniGameTurnStarted.OnRaised += ClearCrystalAwardLatch;
+            if (resetEvent != null) resetEvent.OnRaised += ClearCrystalAwardLatch;
+
             // Hide the host nav buttons the moment the main-menu transition is
             // committed (the event only fires after PauseMenu's host guard), so the
             // host can't spam Main Menu / Play Again while the scene unloads.
@@ -180,6 +185,10 @@ namespace CosmicShore.UI
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;
+
+            if (gameData?.OnMiniGameTurnStarted != null)
+                gameData.OnMiniGameTurnStarted.OnRaised -= ClearCrystalAwardLatch;
+            if (resetEvent != null) resetEvent.OnRaised -= ClearCrystalAwardLatch;
 
             if (onClickToMainMenu != null) onClickToMainMenu.OnRaised -= HideHostNavButtons;
         }
@@ -607,6 +616,10 @@ namespace CosmicShore.UI
             }
         }
 
+        bool _crystalsAwardedThisGame;
+
+        void ClearCrystalAwardLatch() => _crystalsAwardedThisGame = false;
+
         /// <summary>
         /// The single crystal-award path (the Scoreboard is the only writer of the wallet). The
         /// local player earns their DOMAIN's placement crystals from
@@ -615,6 +628,11 @@ namespace CosmicShore.UI
         /// </summary>
         void AwardCrystalsToLocalPlayer(string winnerName)
         {
+            // Once per game, whatever raises the end screen. ShowScoreboard has no latch of its
+            // own and runs once per OnShowGameEndScreen raise; GameCanvas carried a second
+            // EndGameSequencer, so every match raised it twice and paid the wallet twice.
+            if (_crystalsAwardedThisGame) return;
+
             var localName = gameData.LocalPlayer?.Name;
             if (string.IsNullOrEmpty(localName)) return;
 
@@ -625,6 +643,7 @@ namespace CosmicShore.UI
             int amount = CrystalsForPlacement(localDomain);
             string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
+            _crystalsAwardedThisGame = true;
             if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
             // Wallet write is an external-service boundary: it runs mid-way through building the

@@ -14,8 +14,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] Transform BottomWing;
         [SerializeField] Transform ThrusterTopLeft;
 
-        const float animationScalar = 82f;
-        const float exaggeratedAnimationScalar = 1.05f * animationScalar;
+        // The BODY lean, in degrees at full stick. The fleet authors this at 25 for a
+        // fuselage (Dolphin/Rhino/Riptide/Urchin 25, Manta 30); the 80-ish scalers
+        // elsewhere are yaw scalers that swing WINGS and ENGINES, not the hull. This
+        // was a hard-coded 82 - over 3x the fleet value for a body - which read as the
+        // ship visually over-rotating relative to where it was actually pointed.
+        // Serialized rather than const so it is tunable in the Inspector like every
+        // other vessel, instead of needing a recompile.
+        [SerializeField, Tooltip("Body lean in degrees at full stick. Fleet standard for a fuselage is 25.")]
+        float animationScalar = 25f;
+
+        /// <summary>Thrusters lean slightly harder than the hull, preserving the original 1.05 ratio.</summary>
+        float exaggeratedAnimationScalar => 1.05f * animationScalar;
 
         protected override void AssignTransforms()
         {
@@ -31,6 +41,13 @@ namespace CosmicShore.Gameplay
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
+            // Pitch leans the OTHER way on this hull: playtest (2026-10-08) read the Grizzly's
+            // pitch puppetry as reversed against its turn. Every animated part sits in an
+            // identity frame under the hull (Grizzly -> OrientationHandle -> Ship_Wedge_Body),
+            // so this is a sign, not a missing composition term - yaw was not reported and is
+            // left as it was.
+            pitch = -pitch;
+
             var pitchScalar = pitch * exaggeratedAnimationScalar;
             var yawScalar = yaw * exaggeratedAnimationScalar;
             var rollScalar = roll * exaggeratedAnimationScalar;

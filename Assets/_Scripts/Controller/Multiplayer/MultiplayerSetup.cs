@@ -587,7 +587,7 @@ namespace CosmicShore.Gameplay
                 if (networkManager != null)
                     networkManager.Shutdown();
 
-                await UniTask.Delay(500);
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
                 gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)

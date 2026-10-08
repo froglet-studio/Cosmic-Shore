@@ -104,13 +104,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised on the frame the race starts for this pilot (race time 0).</summary>
         public event System.Action<SkimRacePilot> RaceStarted;
 
-        /// <summary>Bind to <paramref name="vessel"/>. <paramref name="objective"/> null = this
-        /// match's mode objective (<see cref="SkimRaceObjective.For"/>), which is Skim Race's
-        /// crystals when no mode claims it.</summary>
+        /// <summary>Bind to <paramref name="vessel"/>.</summary>
+        /// <param name="objective">What to race for. Null = this match's mode objective
+        /// (<see cref="SkimRaceObjective.For"/>), which is Skim Race's crystals when no mode claims it.</param>
         /// <param name="handicap">The lobby difficulty's deliberate mistakes
-        /// (<see cref="SkimRaceDifficultySO.For"/>); none for Hard.</param>
-        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config, SkimRaceHandicapLevel handicap,
-                         SkimRaceObjective objective = null)
+        /// (<see cref="SkimRaceDifficultySO.For"/>); none for Hard, and none (the default) on a card
+        /// that does not offer the picker.</param>
+        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config,
+                         SkimRaceObjective objective = null, SkimRaceHandicapLevel handicap = default)
         {
             _vessel = vessel;
             _status = vessel?.VesselStatus;
@@ -125,6 +126,7 @@ namespace CosmicShore.Gameplay
                 _driver.Handicap = new SkimRaceHandicap(handicap, unchecked(System.Environment.TickCount * 31 + GetInstanceID()));
             _objective = objective ?? SkimRaceObjective.For(gameData) ?? new CrystalTrackObjective(gameData);
             _course = null;
+            _objective.Pilot = this; // the team plan (CrystalTrackObjective) plans per pilot
             _aiPilot = _status?.AIPilot;
             _bound = _vessel != null && _status != null && _gameData != null;
             SuppressOtherPilots();
@@ -363,12 +365,8 @@ namespace CosmicShore.Gameplay
             o.TimeSinceCollection = now - _lastCollectionTime;
             o.TimeSinceProgress = _driver.TimeSinceProgress;
 
-            // Target: the objective's (this domain's crystal, or this pilot's next ring). In Skim Race the
-            // team plan comes first: when other AI fly for the same team it shares the crystals out so no
-            // two chase the same one (SkimRaceTeamPlan); a lone AI - or one the plan has no crystal for -
-            // flies the nearest. Rings are each pilot's own, so Regatta has no plan.
-            if (_objective is CrystalTrackObjective crystals)
-                crystals.Planned = SkimRaceTeamPlan.TargetFor(this, _status.Domain);
+            // Target: the objective's (this domain's crystal - shared out by the team plan when
+            // other AI fly for the team - or this pilot's next ring).
             if (_objective.TryGetTarget(_status, o.Position, out var target))
             {
                 o.HasTarget = true;

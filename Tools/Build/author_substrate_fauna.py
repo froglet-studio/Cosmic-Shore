@@ -54,7 +54,7 @@ PREFAB_DIR = swarm.PREFAB_DIR
 GAME_PARAMS = os.path.join(HERE, "substrate_harness", "game_params.json")
 SCRIPTS = ["SubstrateSpecies", "SubstrateFields", "SubstrateCore", "SubstrateTickJob", "SubstrateSpeciesSO",
            "SubstrateAgentFauna", "SubstrateMemberRenderer", "SubstrateCellHost", "SubstrateFauna",
-           "SubstrateKernel", "SubstrateAgentJob"]
+           "SubstrateKernel", "SubstrateAgentJob", "SubstrateSiege"]
 
 ROOT_MB_FID = "6630180297114401201"     # SubstrateFauna on each anchor prefab
 ROOT_GO_FID = "6630180297114401202"
@@ -72,7 +72,7 @@ SPECIES = [
     dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=1,
          engage=260, proxies=7, bites=4, spawns=7),
     dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=1,
-         engage=140, proxies=12, bites=16, spawns=8),
+         engage=140, proxies=8, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
          engage=160, proxies=3, bites=4, spawns=4),
     # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §9). The 620-690 gap between the swarm's inner and
@@ -86,6 +86,12 @@ SPECIES = [
          engage=140, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, 0.866), 55)),
     dict(key="leviathan", title="Leviathan", element="Space", band=(690, 840), seed=0, spread=60, at_flora=0,
          engage=200, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, -0.866), 55)),
+    # Docs/SUBSTRATE_FAUNA.md §10: the SIEGE (lab flight/src/70_siege.js). Its phase machine stalks whichever pilot is
+    # nearest, so its band is only where it hatches and grazes (the pack's 690-1080, Time like the lab's siege crystal);
+    # it is not penned. One cloud of 150 at the anchor (the lab's spread 70). Its 4 proxies came from the locust (12 -> 8:
+    # still 100% of a storm's contacts with the tick job's dangerous-soonest rule, harness group Q).
+    dict(key="siege", title="Siege", element="Time", band=(690, 1080), seed=0, spread=70, at_flora=0,
+         engage=200, proxies=4, bites=6, spawns=4),
 ]
 NEW_SPECIES = ("stampede", "mobber", "leech", "leviathan")
 # the danger-prism effect a collision-free contact (a leech's sip) is applied through
@@ -302,11 +308,20 @@ def verify(out, params):
     sp = re.search(r"public sealed class SubstrateSpeciesParams\s*\{(.*?)public SubstrateSpeciesParams Clone", cs, re.S).group(1)
     sp = re.sub(r"///.*", "", sp)
     sp_fields = []
-    for decl in re.findall(r"public\s+(?:float\[\]|float|int|bool|string|SubstrateRegime)\s+([^;]+);", sp):
+    for decl in re.findall(r"public\s+(?:float\[\]|float|int|bool|string|SubstrateRegime|SubstrateSiegeParams)\s+([^;]+);", sp):
         sp_fields += [re.match(r"\s*(\w+)", part).group(1) for part in decl.split(",")]
+    # the siege's tunables (Docs/SUBSTRATE_FAUNA.md §10), nested under Siege
+    sg = open(os.path.join(SCRIPT_DIR, "SubstrateSiege.cs")).read()
+    sg = re.search(r"public sealed class SubstrateSiegeParams\s*\{(.*?)public SubstrateSiegeParams Clone", sg, re.S).group(1)
+    sg = re.sub(r"///.*", "", sg)
+    siege_fields = []
+    for decl in re.findall(r"public\s+(?:float|int|bool)\s+([^;]+);", sg):
+        siege_fields += [re.match(r"\s*(\w+)", part).group(1) for part in decl.split(",")]
     for k, p in params.items():
         if list(p.keys()) != sp_fields:
             problems.append(f"game_params.json {k}: fields {list(p.keys())} != SubstrateSpeciesParams {sp_fields}")
+        if list(p.get("Siege", {}).keys()) != siege_fields:
+            problems.append(f"game_params.json {k}.Siege: fields {list(p.get('Siege', {}).keys())} != SubstrateSiegeParams {siege_fields}")
         for reg in ("Solitary", "Gregarious"):
             if list(p[reg].keys()) != regime_fields:
                 problems.append(f"game_params.json {k}.{reg}: fields differ from SubstrateRegime {regime_fields}")

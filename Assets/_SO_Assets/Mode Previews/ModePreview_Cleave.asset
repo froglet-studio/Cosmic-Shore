@@ -20,10 +20,10 @@ MonoBehaviour:
     the scene's own ServerPlayerVesselInitializer, and it is LOAD-BEARING because
     this cell has NO NUCLEUS (nucleus radius reads 0, so the computed ring would
     collapse to the cell centre - inside the arena the player is meant to attack
-    from outside). The floor mirrors the scene's SCALAR, which is sized for the
-    2,160-radius rungs; rungs 3 and 4 are 720, so the preview opens further out on
-    those two than a match does. Re-run author_preview_spawns.py after any change
-    to the scene's spawn ring.
+    from outside). SpawnRingRadiusFloorByIntensity mirrors the scene's per-rung
+    list (3150 for the 2,160-radius rungs 1 and 2, 1050 for the 720-radius rungs 3
+    and 4), so the preview opens on the same ring a match does at every intensity.
+    Re-run author_preview_spawns.py after any change to the scene's spawn ring.
   PreviewCell: {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
@@ -40,5 +40,10 @@ MonoBehaviour:
   SpawnFromCellRing: 1
   SpawnDistanceOutsideNucleus: 40
   SpawnRingRadiusFloor: 3150
+  SpawnRingRadiusFloorByIntensity:
+  - 3150
+  - 3150
+  - 1050
+  - 1050
   SpawnFormation: 1
   SpawnPoints: []

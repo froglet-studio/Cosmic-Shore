@@ -276,12 +276,27 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
-                    new PlayerProperty(string.IsNullOrEmpty(displayName) ? "Pilot" : displayName,
-                        VisibilityPropertyOptions.Public));
-                session.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
-                    new PlayerProperty(avatarId.ToString(), VisibilityPropertyOptions.Public));
-                await session.SaveCurrentPlayerDataAsync().AsMainThread();
+                // Through the policy like every other UGS write (LobbyPropertyWriter.SaveAsync is the
+                // model): no single-flight key - two saves may carry different names - and on a retry
+                // the session is re-read first (a stale player index is the usual reason a save
+                // fails, Docs/PresenceSystem/BUGS.md B1). The properties are set INSIDE the attempt so
+                // a re-read can never leave the retry saving without them.
+                bool firstAttempt = true;
+                await _policy.ExecuteAsync(null, async () =>
+                {
+                    if (!firstAttempt)
+                    {
+                        UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
+                        try { await session.RefreshAsync().AsMainThread(); } catch { /* best-effort resync before the retry */ }
+                    }
+                    firstAttempt = false;
+                    session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                        new PlayerProperty(string.IsNullOrEmpty(displayName) ? "Pilot" : displayName,
+                            VisibilityPropertyOptions.Public));
+                    session.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                        new PlayerProperty(avatarId.ToString(), VisibilityPropertyOptions.Public));
+                    await session.SaveCurrentPlayerDataAsync().AsMainThread();
+                });
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Local player properties updated (displayName='{displayName}').");
             }
             catch (Exception e)

@@ -193,6 +193,7 @@ namespace CosmicShore.Gameplay
             // clutter in a volume a court-mode has already filled with play, not of mass the
             // ecology cannot reach.
             float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            outer = LiftBandOutOfNucleus(outer, nucleusFloor, membrane);
             float inner = Mathf.Max(membrane * plantRadiusCellFractionMin, nucleusFloor);
             if (inner >= outer) return outer;
 
@@ -201,6 +202,26 @@ namespace CosmicShore.Gameplay
             float outerCubed = outer * outer * outer;
             return Mathf.Pow(Mathf.Lerp(innerCubed, outerCubed, t), 1f / 3f);
         }
+
+        /// <summary>How far past a control-zone nucleus a band that fits wholly inside it is lifted.</summary>
+        const float NucleusClearance = 1.1f;
+
+        /// <summary>
+        /// The band's outer edge, lifted just clear of a control-zone nucleus when the authored
+        /// band lies wholly inside it.
+        ///
+        /// <para>The lattice prefabs (Gyroid, SchwarzP, Quasicrystal) author an outer fraction of
+        /// 0.2 - 240u in a 1200u cell, inside the 392u nucleus. Clamping only the INNER edge left
+        /// <c>inner &gt;= outer</c>, and the old answer to that was "root at the outer edge", which
+        /// put every such plant inside the nucleus cage: the exact unreachable mass the clamp
+        /// exists to prevent. Lifting the outer edge instead keeps the band's intent (as close in
+        /// as the cell allows) and both <see cref="ResolvePlantRadius"/> and
+        /// <see cref="ClampToPlantingBand"/> read it, so an offspring is not dragged back in.</para>
+        /// </summary>
+        static float LiftBandOutOfNucleus(float outer, float nucleusFloor, float membrane) =>
+            nucleusFloor <= 0f || outer > nucleusFloor
+                ? outer
+                : Mathf.Min(nucleusFloor * NucleusClearance, membrane * 0.95f);
 
         /// <summary>Candidates a SPREAD planting draws (<see cref="FloraConfigurationSO.SpreadPlanting"/>).</summary>
         const int SpreadCandidates = 8;
@@ -829,9 +850,9 @@ namespace CosmicShore.Gameplay
             // Same rule as ResolvePlantRadius: a nucleus is a floor only while it is a CONTROL
             // ZONE. Without this an offspring seeded inside a court-as-nucleus is ejected to the
             // court wall, so a colony would drain out of the arena one birth at a time.
-            float inner = cell.NucleusIsControlZone
-                ? Mathf.Min(cell.ExpectedNucleusWorldRadius, outer)
-                : 0f;
+            float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            outer = LiftBandOutOfNucleus(outer, nucleusFloor, cell.MembraneRadius);
+            float inner = Mathf.Min(nucleusFloor, outer);
 
             Vector3 offset = point - centre;
             float d = offset.magnitude;

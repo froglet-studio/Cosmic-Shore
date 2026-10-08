@@ -305,6 +305,97 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** gate scripts pass; the new EditMode test was not run (Unity not available
   here). Retest is on the handoff playtest list.
 - **PR/commit:** `9e7f9cc6f` + `50d48ea39` (+ docs `701e0acfa`) on `Bug_Hunt` only.
+## Overnight sweep 2026-10-08 — handoff rows 23-79
+
+- **Branch:** `cece/loving-shannon-hxpdy0`, one fix per commit (each commit message carries the
+  symptom, root cause and fix in full - read it with `git show <hash>`).
+- **How they were found:** the open §2.4 / §3.1 / §4 items, then seven parallel read-only hunts
+  (vessels, arcade/scoring, ecology, UI, multiplayer/party, data/economy, input/audio/AI), then a
+  second round of three (projectiles/AOE/toys/assemblers, the newer modes, FTUE/weekly/menus). Every
+  finding was re-traced against the code before it was changed; the ones that were deliberate,
+  unprovable without a playtest, or design calls were NOT changed and are listed in the handoff
+  (§2.5-§2.7, §3.2-§3.4, §4).
+- **Verification:** NOT run in Unity. `bash Tools/Build/unity_refcompile/run.sh` reports 0 errors
+  and 0 unverified in project code for the player config, and 0 errors for `--config editor` (which
+  compiles the four changed test files; its 4 unverified entries are pre-existing editor-only
+  members). Negative control: a planted call to an undefined method in a changed file was reported
+  as **1 unverified**, not as an error (the tool buckets CS0103 while some package references are
+  unavailable) - so read both numbers. Seven changed files `using` the unobtainable
+  `Unity.Services.Multiplayer` (`HostConnectionService`, `PartySessionService`,
+  `PresenceLobbyService`, `LobbyPropertyWriter`, `AcceptanceSignalService`, `MultiplayerSetup`,
+  `GameDataSO`), so their diagnostics are bucketed, not gated; the report was intersected with
+  the diff and **no diagnostic lands on any changed line** in them. The five textual gates
+  (`check_enum_member_references --check`, `check_using_directives --check`,
+  `check_conditional_compilation`, `check_self_referential_locals --all`,
+  `check_console_logging`) pass. Playtest steps are in the handoff under "Playtest items for rows
+  23-79".
+- **Prefab edit:** row 35 removed an added component from `GameCanvas.prefab` by YAML (the
+  `m_AddedComponents` entry, its MonoBehaviour block and the now-unreferenced stripped GameObject
+  stub). No scene references either fileID. Open the prefab once in the Editor to confirm it
+  re-serializes without a missing-script warning.
+
+| Commit | Fix |
+|---|---|
+| `e15f000e7` | fix(app-state): allow MainMenu → Authenticating for the reconnect boot chain |
+| `24c5dd633` | fix(scoring): gate client report RPCs on a running turn and reject NaN volume |
+| `4b3a2c246` | fix(flora,names): roll BranchingFlora trunk count once; name generator reaches the last word |
+| `e6565c7c0` | fix(scoring): an empty domain no longer wins an all-zero tie |
+| `afb66abd0` | fix(ui): suspended thumb cursor/perimeter no longer throw on their first frame |
+| `ada75753c` | fix(trail): index the trail with int so a 65,536th prism does not wrap |
+| `fe9c2fee2` | fix(replay): Play Again no longer misses its fade-in on a scene reload |
+| `c2825eb4c` | fix(party,net): backend waits use unscaled time so a paused menu cannot stall them |
+| `ceabacdd5` | fix(presence): a boot-time presence-lobby join failure is retried |
+| `a0b01f824` | fix(menu-swap): refuse a vessel swap for a player the sender does not own |
+| `1b5c4522c` | fix(arcade): cancel InitializeAfterDelay when the controller is destroyed |
+| `7f6981f19` | fix(net): clear a human Player's DontDestroyWithOwner when the scene will not adopt it |
+| `e68f204f8` | fix(end-game): every match paid its placement crystals twice |
+| `0c0332f23` | fix(end-game): an in-place rematch shows its end screen again |
+| `c95f40461` | fix(pause): pausing a match other players are in no longer freezes time |
+| `02b965040` | fix(comeback): keep the card's per-hull starting elements when the turn starts |
+| `7511d95eb` | fix(results): IsLocalDomainWinner only answers true for the top domain |
+| `4708c810e` | fix(turn-monitor): only the server's clock ends a networked timed turn |
+| `ded3ee7f5` | fix(turn-monitor): timed rounds run their full duration |
+| `f579cc76c` | fix(regatta): placement order agrees with the winner on a tied team total |
+| `8c4207021` | fix(elements): petal loss no longer reads one level low from float drift |
+| `ce645d190` | perf(vessel): edge-trigger the engine flare and the slowed-ship broadcast |
+| `7f20a5af2` | fix(serpent): the cloak ghost frees its baked mesh and material clones |
+| `68bf94d07` | fix(squirrel): tube cleanup never recycles a prism that now belongs to someone else |
+| `7e5c950e4` | fix(input): a release stops the actions its press started |
+| `c848e3d9b` | fix(cell): the OnInitializeGame pass no longer wipes a cell the first crystal already bootstrapped |
+| `5b2e98c2c` | fix(cell): a destroyed cell retires its colony books |
+| `e2eaebf4f` | fix(prisms): Unity fake-null no longer defeats ??= in the Editor (spindle links, super-shield) |
+| `1b7be83c6` | fix(ui): GetComponent() ?? AddComponent() replaced where the Editor's fake null defeats it |
+| `8a0ccadbc` | fix(swarm): stop the swarm loop on destroy; complete the pose job before releasing its inputs |
+| `b76e7ab0c` | fix(audio): vessel audio follows the pilot when a live hull changes hands |
+| `2817eb28e` | fix(input): pad and keyboard face buttons always send their release |
+| `90ff29f37` | fix(touch): lifting the last thumb releases what the touch was holding |
+| `a6480b5aa` | fix(audio): an empty drift-event slot warns once instead of erroring every frame |
+| `a674ebc4b` | fix(profile): an avatar picked before the profile loads is applied, not dropped |
+| `d41622892` | fix(friends): a party invite gets its row even when the sender has a pending friend request |
+| `9b2ecdb9c` | fix(ui): VolumeUI destroys its per-instance material |
+| `979dd6ce7` | fix(progression): a failed immediate save is retried instead of forgotten |
+| `a64d0f6ed` | fix(profile): follow the profile repo when it adopts the real cloud record |
+| `954b15ed0` | fix(cloud-data): progression and stats follow their repositories when the data object is replaced |
+| `b11b9448b` | fix(persistence): DataAccessor saves atomically, keeps a corrupt file, writes UTF-8 |
+| `31a12e090` | fix(hangar): never spend persistent crystals on an unlock that cannot persist |
+| `0929fea75` | fix(toys): the daily toy reward is not claimed before the profile has loaded |
+| `a77541335` | fix(episodes): refuse a paid token grant until the profile has actually loaded |
+| `196bb1758` | fix(episodes): do not start a token purchase before the profile has loaded |
+| `9c90cc7ba` | fix(prefs): SetAvailableProfiles writes under its key, not under the value |
+| `d0395c129` | fix(duel): Cellular Duel's round swap is applied on every peer, not only the host |
+| `9429df4ab` | fix(scoring): legacy metric scorers keep a value per player, not one shared value |
+| `52e9ef9ec` | fix(stats): LifeFormsInCell has one writer, so a flora death is counted once |
+| `52824cb16` | fix(ui): two more non-ASCII UI glyphs that the ALDRICH font renders as tofu |
+| `2bb134f64` | chore(enums): give seven serialized enums explicit values (repo rule) |
+| `b8ccdb3ce` | fix(undertow): the winner banner names the teammate who contributed most |
+| `af1a2bb48` | fix(serpent): a stopped wall seed stops searching for mates |
+| `eb38f9e17` | fix(aoe): conic blasts subscribe to turn end / replay reset and free their material |
+| `504557466` | fix(aoe): AOEBlockCreation retires itself and never destroys pooled prisms |
+| `19e99e26d` | fix(weekly): an abandoned weekly run cannot finish against the next ordinary match |
+| `f5d2d530a` | fix(astro-league): ending a slow-mo no longer un-pauses the match |
+| `8937989ed` | fix(scarab-scramble): clients see the cell-overload toast |
+| `ea324b808` | fix(weekly-leaderboard): the leaderboard refetches every time it opens |
+| `6829a90b2` | fix(weekly-leaderboard): a reused row no longer shows the previous player's avatar |
 
 ---
 

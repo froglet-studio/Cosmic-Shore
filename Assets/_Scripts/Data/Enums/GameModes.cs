@@ -281,8 +281,22 @@ namespace CosmicShore.Data
         Sirocco = 61,
 
 
+        // GrizzlyCharge (62): the Grizzly-only assault mode (in development). Authored as 42
+        // on grizzly-v2, moved to 44 when Bends/ScarabScramble took 42/43, to 54 at the
+        // 2026-09-12 merge after Salvo took 44 and Switchback 45, and to 62 at the 2026-10-02
+        // merge after WreckingBall took 54 (bleeding-edge had run on to Sirocco = 61) - the
+        // parallel-branch collision the Skein and Bloomrush notes above record, hit a SIXTH
+        // time. The ArcadeGameGrizzlyCharge asset's serialized Mode moved with it each time.
+        GrizzlyCharge = 62,
+
+        // GrizzlyTime (63): the Grizzly-only circuit race - Redline's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Grizzly riding its own
+        // trigger-bomb blasts rather than a boost: a corner asks how much launch it is worth. See
+        // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
+        GrizzlyTime = 63,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 59) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 61) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

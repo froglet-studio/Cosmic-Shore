@@ -97,13 +97,37 @@ namespace CosmicShore.Gameplay
 
             // The AUTHORED target drives the course, so the finish line and the number of rings
             // laid cannot drift - the platform reads the same number for the monitor's target.
-            var settings = arena.CourseSettings;
+            //
+            // But the ARENA picks its seed with its OWN ring count (SkeinCourseSettings'), because
+            // BuildAll rejects a seed whose walk lays a different number of rings. A count edited
+            // in the End Game Conditions window must therefore not choose the seed here, or the
+            // two can land on different re-rolls and hang rings on rails the arena never laid. So
+            // the arena's count picks the seed and the authored count is walked on THAT seed. At
+            // the shipped count the two are the same number and this is the one pass it was.
+            var arenaSettings = arena.CourseSettings;
+            var settings = arenaSettings;
             settings.GateCount = Mathf.Max(3, gateCount);
 
             for (int attempt = 0; attempt < 6; attempt++)
             {
-                var build = SkeinCourse.BuildAll(unchecked(arena.CableSeed + attempt * 7919), settings);
+                int cableSeed = unchecked(arena.CableSeed + attempt * 7919);
+                var build = SkeinCourse.BuildAll(cableSeed, arenaSettings);
                 if (build == null) continue;
+
+                if (settings.GateCount != arenaSettings.GateCount)
+                {
+                    build = SkeinCourse.BuildAll(cableSeed, settings);
+                    if (build == null)
+                    {
+                        CourseFailureDetail =
+                            $"The arena's cable (seed {cableSeed}) cannot carry the authored " +
+                            $"{settings.GateCount}-ring course; it was built for " +
+                            $"{arenaSettings.GateCount}. Set Skein back to " +
+                            $"{arenaSettings.GateCount} in FrogletTools > Game Modes > End Game " +
+                            "Conditions, or re-measure Tools/Build/skein_budget.py at the new count.";
+                        return null;
+                    }
+                }
 
                 // The generator works about the ORIGIN and Cell parents the environment container
                 // at localPosition zero, so the cable's frame is the CELL's - not the prefab's,

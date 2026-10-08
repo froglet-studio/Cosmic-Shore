@@ -90,6 +90,10 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            // Suspended (see InitializeCoroutine): nothing sets initialized, so stay inert. Without
+            // this the first frame - before the coroutine disables the component - read the touch
+            // count and threw on every spawn.
+            if (!initialized) return;
             if(!imageEnabled) { return; }
 
             // TODO - Can't have LocalPlayer as static

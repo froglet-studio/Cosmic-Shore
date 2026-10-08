@@ -460,10 +460,16 @@ pure and unit-tested) and picks one of three: **RIDE** (the strand threads the n
 160 u so the pilot launches rather than slips), **REVERSE** (the ring is back the way it came: the
 ride's direction is the pilot's FACING, so the AI swings its nose round, aiming behind AND to one
 side so AIPilot's cross product cannot vanish dead astern) or **LEAVE** (Slip, then the platform's
-gate aiming flies it at the ring). It taps the chain spikes whenever the prism underfoot is a
-rival's colour and the spike ability's own ammo cost is covered, so a hostile lane is converted
-instead of crawled at 20 u/s; a dry hostile crawl leaves the strand unless the ring is within
-80 u. A parked ride (under 6 u/s for 5 s) Slips. In free flight it lays a **Track Projector** rail
+gate aiming flies it at the ring). It taps the chain spikes only at mass the volley can CONVERT:
+the prism underfoot is a rival's colour, it is not super-shielded
+(`UrchinAutopilotDriver.IsConvertible`; `PrismTeamManager.Steal` refuses super-shielded prisms,
+so a volley there would only spend the meter), and the spike ability's own ammo cost is covered.
+That way a hostile lane is converted instead of crawled at 20 u/s. A crawl is DRY
+(`UrchinRailAssessment.IsDryCrawl`) when the ride is slowed on hostile mass and either the spikes
+cannot pay or the mass is super-shielded. Super-shielded mass is always dry, however full the
+meter, because spiking it changes nothing. A hostile ride the Time-5 Slipstream grinds at full
+pace is not a crawl. A dry crawl leaves the strand unless the ring is within 80 u
+(`UrchinAutopilotConfig.DryCrawlArc`). A parked ride (under 6 u/s for 5 s) Slips. In free flight it lays a **Track Projector** rail
 on a long straight shot - nose within 8 degrees of the ring, the ring 3+ track lengths away, and
 the flight line along the ring's axis so the launch goes through the mouth. Every control is found
 by capability on the vessel's own bindings and pressed replicated; every read is the host's own
@@ -1075,3 +1081,40 @@ Every number in its row — 6,699 prisms, 327.3 u minimum gate separation, the p
 launch misses — reproduces the pre-pass output exactly. `PinStride = 1` makes `k % 1 != 0` false at
 every ring, so the collar branch is never taken and consumes no RNG; the seeded draw sequence, and
 therefore the course, is untouched.
+
+## 16. The race length, and where it is authored
+
+| Knob | Where | Shipped |
+|---|---|---|
+| rings in the course (= rings to thread) | **FrogletTools ▸ Game Modes ▸ End Game Conditions** → "Skein - Ring Target" (`Resources/EndConditionOverrides` → `skeinRingTarget`, Build twin `skeinRingTargetBuild`) | **24** |
+| the count the arena's cable is built for | `SkeinCourseSettings.ForIntensity` → `GateCount` | **24** |
+| the count the spacing is proven at | `Tools/Build/skein_budget.py` → `GATE_COUNT` | **24** |
+
+The end condition is ONE count, so it has one row in the window. Until 2026-10 the SO, the asset,
+the `Build` twin, the getter and the `TryGetAuthoredTurnTarget` row all existed and the window drew
+no row, so the only way to change it was to hand-edit the asset. Nothing about the shipped race
+changed when the row was added: the asset already held 24 / 24.
+
+The target travels `EndConditionOverridesSO.GetSkeinRingTarget()` →
+`SkeinController.AuthoredGateTarget()` → both `GateRaceController` (how many rings to lay) and
+`RaceGateTurnMonitor.StartMonitor` (the finish line). There is no Skein-specific monitor any more
+(the `SkeinRingTurnMonitor` in §10 was deleted in the §12 extraction).
+
+**The count is not free to change, and the window's help text says so.** Two reasons:
+
+- **It is geometry.** The rings must close on the finish collar after a whole number of cable
+  laps, so the spacing is `GateLaps · L / (count − 1)` (§15.4). The pinned-ring transfer window and
+  intensity 1's next-ring-on-screen promise are proven by `skein_budget.py` at 24 only.
+- **It picks the seed.** `SkeinCourse.BuildAll` returns null when the walk lays a different number of
+  rings than asked, and both the arena and the controller walk the same six-attempt seed ladder.
+  The arena builds for `SkeinCourseSettings`' own 24, so if the controller picked its seed with the
+  AUTHORED count, a different count could land it on a different re-roll and hang rings on rails the
+  arena never laid. `SkeinController.BuildCourse` therefore picks the seed with the arena's count
+  and walks the authored count on that same seed. At 24 that is exactly the single pass it always
+  was. At another count, a seed that cannot carry it fails the course loudly, naming the fix (set
+  it back, or re-measure the budget at the new count), rather than racing on a phantom cable.
+
+Making the arena itself read the authored count was the other option and was not taken:
+`SpawnableSkein.cs` is compiled and source-hashed by the card-art harness
+(`Tools/Build/render_card_backgrounds.py` `SOURCES`), so touching it re-stales every committed
+card background and needs a harness stub for the SO, for a value nobody has asked to change.

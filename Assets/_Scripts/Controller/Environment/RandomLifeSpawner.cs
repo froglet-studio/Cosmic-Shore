@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled && !host.IsFloraAtCap(floraCfg))
-                    PlantOne(host, floraCfg, excluded);
+                    PlantFlora(host, floraCfg, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < toPlant; i++)
                 {
                     if (!host || !host.FloraPlantingEnabled) break;
-                    PlantOne(host, floraCfg, excluded);
+                    PlantFlora(host, floraCfg, excluded);
                     // Spread instantiation across frames - a species recovering from a crash
                     // seeds its whole floor on one tick, and every plant is a prism-bodied
                     // lifeform (the same reason the initial batch yields).
@@ -136,21 +136,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-
-        /// <summary>
-        /// Plant one flora of this species. When the cell's authored environment prepared ground
-        /// (a garden's beds, trellis feet and hanging baskets - <see cref="FloraPlantingSite"/>),
-        /// the plant roots THERE, oriented to the bed; otherwise it disperses itself across the
-        /// membrane shell exactly as before. Same spawn path either way - a garden gets no
-        /// privileged spawner, only better-chosen ground.
-        /// </summary>
-        static void PlantOne(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
-        {
-            if (host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up))
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up);
-            else
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
-        }
 
         IEnumerator SpawnFaunaTypeLoop_Random(
             Cell host,

@@ -29,6 +29,14 @@ MonoBehaviour:
     padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}
     padGlyphHeld: {fileID: 0}
     keyboardLabel: R
+  - binding: 4
+    padGlyph: {fileID: 21300000, guid: 10b26c3d0d51d9c46bc5fe94b93bde08, type: 3}
+    padGlyphHeld: {fileID: 0}
+    keyboardLabel: Q
+  - binding: 6
+    padGlyph: {fileID: 21300000, guid: f8a4939355545f7409216ea81225cbfb, type: 3}
+    padGlyphHeld: {fileID: 21300000, guid: 6ce06e2ec681ac742956d0e46079a199, type: 3}
+    keyboardLabel: E
   restColor: {r: 0.65, g: 0.65, b: 0.7, a: 1}
   heldColor: {r: 1, g: 1, b: 1, a: 1}
   keyboardLabelSize: 14

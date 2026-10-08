@@ -74,17 +74,8 @@ namespace CosmicShore.Gameplay
             if (victim == null || petals <= 0) return;
             if (element == Element.None) return;
 
-            var set = ElementalCrystalSetSO.Load();
-            var prefab = set ? set.GetPrefab(element) : null;
-            if (!prefab)
-            {
-                // Loud, once per hit rather than per petal: an ejection that cannot mint is a
-                // petal DESTROYED, which breaks the conservation this whole path exists for.
-                CSDebug.LogError($"[ElementalCrystalEjector] No '{element}' prefab in " +
-                    $"Resources/{ElementalCrystalSetSO.ResourcePath} - {petals} petal(s) knocked " +
-                    $"off {victim.PlayerName} could not be minted and are LOST.");
+            if (!TryResolvePrefab(element, petals, victim.PlayerName, out var set, out var prefab))
                 return;
-            }
 
             // NOT victim.Transform: that property is `Vessel.Transform` with no guard, and
             // VesselStatus.Vessel logs an error and returns null - so it THROWS rather than
@@ -112,6 +103,64 @@ namespace CosmicShore.Gameplay
                 Mint(prefab, set, origin + direction * (radius * HullSurfaceFraction),
                      direction * speed);
             }
+        }
+
+        /// <summary>
+        /// Mints <paramref name="petals"/> crystals of <paramref name="element"/> on the SURFACE of
+        /// a sphere, scattered over a cap of <paramref name="spreadDegrees"/> around
+        /// <paramref name="surfacePoint"/>, each thrown straight out along its own surface normal at
+        /// <paramref name="speed"/> - so every petal leaves the ball and settles just outside it.
+        /// Used by a wormhole mouth that strips a rival's petals as it carries them
+        /// (<c>WormholeMouth.LevyToll</c>): the petals stay behind on the mouth they went into.
+        ///
+        /// <para>Radially outward on purpose: the half-space beyond the tangent plane at any surface
+        /// point lies wholly outside the ball, so no crystal can drift INTO the mouth's shared
+        /// interior, where it would be visible only through the partner's window.</para>
+        /// </summary>
+        /// <param name="who">The pilot the petals came off, for the loss message only.</param>
+        public static void ShedOntoSphere(Vector3 centre, float radius, Vector3 surfacePoint,
+                                          float spreadDegrees, Element element, int petals,
+                                          float speed, string who)
+        {
+            if (petals <= 0 || element == Element.None) return;
+            if (!TryResolvePrefab(element, petals, who, out var set, out var prefab)) return;
+
+            Vector3 axis = surfacePoint - centre;
+            axis = axis.sqrMagnitude > 1e-6f ? axis.normalized : Random.onUnitSphere;
+            radius = Mathf.Max(0f, radius);
+            speed = Mathf.Max(MinLaunchSpeed, speed);
+            spreadDegrees = Mathf.Clamp(spreadDegrees, 0f, 180f);
+
+            for (int i = 0; i < petals; i++)
+            {
+                // A random tilt off the entry normal about a random perpendicular: a cap of the
+                // sphere, so a whole flower reads as a scatter over the mouth rather than a clump.
+                Vector3 normal = Quaternion.AngleAxis(Random.Range(0f, spreadDegrees),
+                                                      AnyPerpendicular(axis, Random.onUnitSphere)) * axis;
+                Mint(prefab, set, centre + normal * radius, normal * speed);
+            }
+        }
+
+        static Vector3 AnyPerpendicular(Vector3 axis, Vector3 hint)
+        {
+            Vector3 p = Vector3.Cross(axis, hint);
+            if (p.sqrMagnitude < 1e-6f) p = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right);
+            return p.normalized;
+        }
+
+        static bool TryResolvePrefab(Element element, int petals, string who,
+                                     out ElementalCrystalSetSO set, out Crystal prefab)
+        {
+            set = ElementalCrystalSetSO.Load();
+            prefab = set ? set.GetPrefab(element) : null;
+            if (prefab) return true;
+
+            // Loud, once per hit rather than per petal: an ejection that cannot mint is a
+            // petal DESTROYED, which breaks the conservation this whole path exists for.
+            CSDebug.LogError($"[ElementalCrystalEjector] No '{element}' prefab in " +
+                $"Resources/{ElementalCrystalSetSO.ResourcePath} - {petals} petal(s) knocked " +
+                $"off {who} could not be minted and are LOST.");
+            return false;
         }
 
         static void Mint(Crystal prefab, ElementalCrystalSetSO set, Vector3 position, Vector3 velocity)

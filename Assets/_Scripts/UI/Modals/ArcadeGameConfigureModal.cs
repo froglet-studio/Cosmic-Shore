@@ -3039,6 +3039,9 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // An ordinary launch: drop anything a quit-to-menu left armed or running, or the old
+            // attempt would tick (and finish) against this match.
+            service?.AbandonAttempt();
             gameData.IsWeeklyChallenge = false;
         }
 
