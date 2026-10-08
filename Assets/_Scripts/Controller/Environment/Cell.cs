@@ -1712,6 +1712,23 @@ namespace CosmicShore.Gameplay
 
         void Initialize()
         {
+            // Already bootstrapped by the first-crystal path (OnClientReady can land the first
+            // crystal inside InitDelayMs, so InitilizePostFirstCellItem ran the lazy Initialize
+            // AND started the spawner before OnInitializeGame arrived). The config is sticky
+            // (AssignConfig), the visuals and grids exist, so this pass has nothing to build -
+            // but it used to CLEAR every registry underneath a spawner that was already
+            // planting: the cell forgot its first wave (the seeder planted the floor again,
+            // species caps ignored the forgotten plants, their deaths decremented counts of
+            // plants still tracked) and their seed prisms left LiveVolume and the targeting
+            // grids. Rebind and refresh the stats only.
+            if (postInitilized && cellConfigData)
+            {
+                runtime.Cell = this;
+                runtime.EnsureCellStats(ID);
+                UpdateCellStats();
+                return;
+            }
+
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
