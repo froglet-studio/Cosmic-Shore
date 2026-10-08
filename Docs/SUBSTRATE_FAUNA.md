@@ -502,6 +502,7 @@ dump instead of keeping a stale number. Test F asserts every one, plus every gam
 |---|---|---|
 | **Strike role** | `ChargeEvery` | Only every Nth agent of the block ramps and climbs (the stampede's bulls, every 4th). |
 | **Ramp** (the windup) | `RampS`, `RampSpeed`, `RampR`, `RampOnSight` | An armed role agent (gregarious, or on sight; not resting; a pilot inside `RampR`) holds `RampS` seconds at `RampSpeed` before it may harm. A `Windup` event marks the start. Once ramped it strikes until spent. |
+| **Bite wind-up** | `StrikeWindupS` | A biter without a ramp must show its intent (aggressive at the gregarious end) for `StrikeWindupS` before its bite may land; a `Windup` event marks the start. The clock holds through a dip and resets once spent or at 0.4 x `DangerPhase`. Game pack 0.4 s (bestiary pack.py `WINDUP`, lab fair burns 2026-10-05); 0 elsewhere. |
 | **Strike** | `WStrike`, `StrikeSpeed`, `StrikeAccel`, `StrikeTurn`, `HuntLeadMax` | While ramping and striking it aims at the pilot's lead point (clipped to `HuntLeadMax` s) at its own speed, acceleration and turn rate. The ramped strike IS the danger. |
 | **Turns** | `RampTurns` | At most N agents ramp or strike at one pilot at once. An armed agent past the limit WAITS (negative `Ramp`), and the longest waiter goes next. |
 | **Alarm climb** | `WAlarmClimb` | The role agent turns UP the alarm gradient, scaled by its phase; its own flee, alarm and threat are muted by the same amount. |

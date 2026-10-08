@@ -220,6 +220,18 @@ species, 3 pilot styles × 6 seeds × 3 min, starting at 20 petals.
 
 QA: `QA-SWARM-ROUND11-7` (Docs/QA/QA_BACKLOG.md).
 
+**Fair burns (Oct 2026).** Two fixes from the lab's fair-burns pass (lab `Tools/Ecology/DISCOVERIES.md`, "Fair
+burns", 2026-10-05) took the unread burns left to zero there. Both work the same under Shipped and Tuned.
+- **1 s spawn grace.** A danger contact in the first second after a vessel spawns does nothing (no burn, no
+  sting, no cooldown started). The clock is `ResourceSystem.SpawnedAt`, stamped by `ResetForPlay` and by the go of
+  `StartVessel`. Tune it on the effect asset: `Spawn Grace Seconds` (0 = off).
+- **0.4 s pack wind-up.** A pack hunter's bite lands only after its own intent has shown for 0.4 s, so a strike
+  never lands in the same moment as its telegraph. Substrate pack: `SubstrateSpeciesParams.StrikeWindupS`
+  (Docs/SUBSTRATE_FAUNA.md §9.1). Swarm pack hunter: `SwarmFaunaConfigSO.HuntWindupSeconds`. It composes with the
+  pack's opt-in ring hold: held hunters wind up together after the release.
+
+QA: `QA-FAIR-BURNS-1` (Docs/QA/QA_BACKLOG.md).
+
 ## 5. Every hull can now fight for it
 
 The headline requirement — *every vessel needs the ability to debuff other vessels* — was false
