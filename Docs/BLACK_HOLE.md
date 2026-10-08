@@ -30,8 +30,7 @@
 | The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
 | The test scene | **Not on bleeding-edge.** `BlackHoleTest.unity`, `BlackHoleTestHarness`, `BlackHoleTestConfigSO`, the scene setup tool and the mouse camera `MouseOrbitCamera` stayed on `claude/peaceful-rubin-hhw49n` when the black hole alone was brought over (§7) |
-| The Black Hole cell — a Cell Selector world that is one hole and nothing else (§11) | `SpawnableBlackHole.cs` + `BlackHoleCellAnchor.cs` (same folder), `_Prefabs/Spawnables/SpawnableBlackHole.prefab`, `_SO_Assets/Cell Configs/Black Hole Cell/`, Menu_Main's `Cell.CellConfigs[13]`; gate `BlackHoleCellTests` |
-| The dipole: the white hole (`HolePolarity.Source`), the throat (`BlackHole.Throat`), the wormhole seated in both centres, the warp poles (§12) | `BlackHole.cs`, `BlackHolePhysics.cs`, `BlackHoleGravityField.ApplyVerdicts`, `BlackHoleLens.hlsl` / `.shader` (`BlackHoleLensTraceSigned`, `_BHThroat`), `PrismGravityWarp.hlsl` (signed tides), `SpawnableBlackHole.cs`, `BlackHoleCellAnchor.cs`; gate `BlackHoleDipoleTests` |
+| The crystal wormhole that grew out of the Black Hole cell (attractor + repulsor, smooth wells) | `Docs/CRYSTAL_WORMHOLE.md` |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
 | See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
@@ -62,8 +61,8 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 9 | Every camera gets the lens's depth texture; the on-screen camera, not `Camera.main`, places spawns | §5.1 |
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
-| 12 | The Black Hole cell: a Cell Selector world that is open water around one hole at the centre | §11 |
-| 13 | The warp field (`Docs/WARP_FIELD.md`) and the dipole: a white hole, the wormhole between them, mass carried through | §12 |
+| 12 | The Black Hole cell, then the dipole — now the Crystal Wormhole (`Docs/CRYSTAL_WORMHOLE.md`) | §11–12 |
+| 13 | The warp field (`Docs/WARP_FIELD.md`) | — |
 
 **Untested in the editor, in priority order:** the after-transparents lens pass (`BlackHoleLensPass`,
 Render Graph) on every camera and the Scene view; the lens sky (`BlackHoleSky`) on a low quality
@@ -521,8 +520,8 @@ Editor and development builds, any scene, ignored while a text field has focus:
 | **Shift+B** | Spawn a hole from the config right now — ahead of the camera — without opening anything |
 | `blackhole tool on` / `off` | The same as B, from the DiagnosticsHUD console (`blackhole config` opens the config view) |
 
-**In the Black Hole cell** (Menu_Main freestyle → fly the Cell Selector → the *Black Hole* mini-cell):
-the hole is already at the centre (§11); **B** retunes the config every hole reads.
+**In freestyle** (Menu_Main): **B** opens the tool, Shift+B spawns ahead of the camera. (The Cell Selector's
+*Crystal Wormhole* runs smooth wells, not black holes — `Docs/CRYSTAL_WORMHOLE.md`.)
 
 **In lava-lamp freestyle** (Menu_Main, flying a vessel): **B** → set strength/size/distance → close
 it with B → **Shift+B** while flying: the hole appears straight ahead of your vessel's camera
@@ -669,119 +668,12 @@ Evidence, on the final tree:
   one stretch about a single axis, and the per-prism map would stop being a pure stretch. The larger
   tide wins, as the larger pull wins in the integrator.
 
-## 11. The Black Hole cell (Cell Selector)
+## 11–12. The Black Hole cell and the dipole — superseded
 
-A freestyle world that is **open water around one TINY black hole at the centre, inside a radial
-warp field (`Docs/WARP_FIELD.md`)**: as you fly in, you shrink without near-field tells and the hole
-grows until it fills the view. Nothing else is in it: no
-nucleus (the hole is the centre), no flora, no fauna, no laid structure. Fly the Cell Selector in
-Menu_Main's lava lamp and it is the *Black Hole* mini-cell; fly through it and the world you were in
-suctions away and the hole eases in.
-
-| Piece | What it is |
-|---|---|
-| `Black Hole Warp Field` | A `RadialWarp` (reference radius 1000, exponent 1, floor 0.01): the cell's `WarpField`, so every length a player observes is × (r / 1000) — see `Docs/WARP_FIELD.md` §4 for the growth table |
-| `Black Hole Cell Config` | Barren's anatomy (membrane, cytoplasm, its phase ladder — baseline 0 + the Blob deltas) with `NucleusPrefab` empty and `EnvironmentPrefab` = the spawnable below. Not `BootDefault`: the world is opt-in, like every environment-bearing config |
-| `Black Hole Cell Spawn Profile` | Its own empty profile (a copy of Barren's), so retuning Barren's never grows something here |
-| `SpawnableBlackHole` | The environment. `Spawn` lays NOTHING: it calls `BlackHoleRegistry.Spawn` (so `maxBlackHoles` and `IsSane` gate it like any spawn) at the container's origin, which the Cell puts at its centre. Strength **1** (r_s 2 u, shadow 5.2 u — a speck from 1000 u out; the warp field makes it big), size derived, spin about +Y — authored on the prefab |
-| Its generated points | The Cell Selector's scale model only: 48 plates on the hole's shadow sphere (3√3/2 · r_s), so the mini-cell shows a ball instead of an empty slot. Kept under 64 so `CellMiniatureBuilder`'s signature filter keeps every plate. Never laid |
-| `BlackHoleCellAnchor` | On the container. Its first parent is the cell that adopted it; the next re-parent is that cell retiring the world into its suction root, which calls `BeginDespawn` — the hole stops pulling at once and its shadow eases out, rather than the lens sphere being scaled away while the shader still traces the full horizon |
-
-**What the hole does here** is everything above, unchanged: your trail mass near the centre orbits,
-stretches and falls in; your vessel is pulled (it can boost out, §4 — the warp field scales the pull with your
-vessel, so that stays true at 1% scale). A hole is the cell's only mass
-sink here — there is no ecology to feed. **The Arkway skips this world** (`CellConveyor.NextConfig`):
-it builds its corridor from the selector's list minus the worlds that lay nothing, and a live gravity
-well in a satellite cell would pull the Ark; an authored Arkway `Cells` list can still name it.
-
-**Untested in the editor.** Verify: Menu_Main → freestyle → Cell Selector → the Black Hole mini-cell
-shows a ball → fly it → brief veil, then the hole at the centre with the lens; lay trail near it and
-watch it fall in; fly the selector again to any other world → the hole eases out with the suction and
-`BlackHoleRegistry.Count` returns to 0 (`blackhole list`). `BlackHoleCellTests` holds the wiring.
-
-## 12. The dipole: a white hole, and the wormhole between them
-
-The Black Hole cell's hole is half of a **dipole** (`SpawnableBlackHole.dipole`): a black hole at the
-centre (the SINK) and its antisymmetric twin, a white hole (the SOURCE), 500 u up the spin axis,
-joined by one of the Butterfly fold's wormholes (`Docs/WORMHOLES.md`). Fly in and you shrink as the
-hole grows (`Docs/WARP_FIELD.md` §4); reach its centre and you come out of the white hole, which
-throws you back out while you grow again. Prisms make the same trip.
-
-**A source is the sink with its sign flipped — everything that has a sign** (`HolePolarity`, `BlackHole.Sign`):
-
-| | Sink (black hole) | Source (white hole) |
-|---|---|---|
-| Gravity (`BlackHolePhysics.Acceleration`) | Paczyński–Wiita pull, `GM > 0` | the same magnitude, pushing: `Well.GM < 0` |
-| Horizon | captures (`Verdict.Captured`) | never captures; a body inside it is driven out (its push is strongest there) |
-| Frame dragging | Lense–Thirring about the spin axis | the same axis, turning the other way (`FrameDrag < 0`) |
-| Tides (`PrismGravityWarp.hlsl`) | stretched along the line to it, squeezed across | the tensor negated: FLATTENED along it, spread across; volume still conserved, the ceiling holds in both signs |
-| Lens (`BlackHoleLens.hlsl`) | focusing: arcs, an Einstein ring, a shadow of b_c = 2.6 r_s | diverging (the photon force negated): the background is thinned and pushed apart, nothing is captured, no shadow; far out a ray is bent AWAY by 2 r_s / b |
-| Fallback sphere (no lens) | black | white |
-| Wormhole rim | the material's own | white |
-| Vessels (the FELT law, below) | a current that carries every hull in, up to 2.3× its cruise | a headwind no hull beats at cruise — you boost through |
-
-**The wormhole replaces the black sphere.** A `WormholeMouth` pair (no toll, no owner — a natural
-throat; every pilot rides) is seated in the two centres, each `mouthToShadow` (2.5) × the sink's
-shadow (3√3/2 r_s) — 26 u on the shipped strength-2 hole. The lens already leaves alone every pixel whose scene depth is in front of the hole's
-centre, and the opaque mouth covers exactly the disc it would have painted black — so where the
-shadow was, the player now sees out of the white hole, and flying in carries them there. The lens
-also treats a seated mouth as solid (`_BHThroat`): a bent ray that lands on it takes the sky, so the
-mouth's image is never smeared into the Einstein ring. Each hole's `ThroatRadius` carries the size.
-
-**Mass goes through, it is not destroyed.** The sink's `Throat` is the source: a prism the sink
-captures is translated to the same point inside the source's horizon, keeps its velocity, falls on
-through the source's centre and is driven back out (`BlackHoleGravityField.ApplyVerdicts`,
-`ThroatTransitsTotal`). A lone hole (the console's, Shift+B) still consumes as before.
-
-**Both are poles of the warp field** (`WarpFieldRuntime.AddPole`): you shrink toward either. The
-reach (350 u) is clear of the toy ring and the pole switches, and the two holes' influence spheres
-(~82 u at strength 2) are far apart, so the source never pushes mass back into the sink.
-
-**Retirement.** `BlackHoleCellAnchor` despawns both holes and withers both mouths (0.8 s) when the
-cell retires the world; the source's warp pole fades out with the field.
-
-**Gates.** `BlackHoleDipoleTests` (the source's push, no capture, reversed frame, the prefab's
-wiring, the toy-ring clearance, the two-pole field, the shader paths);
-`Tools/Shaders/verify_black_hole_lens.py` test 3w (no ray captured, bent away by 2/b − 15π/16b² to
-0.3%); `Tools/Shaders/verify_prism_gravity_warp.py` test 14 (the white hole's tide is the sink's
-negated, volume kept, the ceiling held).
-
-**The felt pull on vessels (playtest 1, 2026-10-08: "not sure one was attractive and one repulsive").**
-The physical Paczyński–Wiita pull of a hole this small is felt only in the last ~1.5 mouth radii —
-under the warp that is a second or two before the transit, so the two poles read the same. The
-dipole's holes therefore pull VESSELS by a separate, stated law (`BlackHole.vesselFeltStrength` > 0;
-prisms keep the physical pull):
-
-    felt acceleration = Sign · k · cruise² · R_throat · s(r) / max(r, R_throat)²
-
-measured in the hull's OWN cruise speed (`VesselTransformer.CruiseSpeed` = MinimumSpeed +
-ThrottleScaler) and in the vessel's own frame (the transformer scales the channel by `s`). Unwarped it
-is inverse-square; under the radial warp (`s ∝ r`) it falls as 1/r, so it is felt from ~6 mouth radii
-out, across the whole shrinking approach. Its ceiling is `vesselFeltCap` (1.3) × cruise, raised past
-the transformer's shared 100 u/s for this channel only. Measured in the hull's own speed because the
-fleet's cruise spans 35 → 216 u/s: one fixed force is a wall to a Sparrow and a breeze to a Manta.
-Shipped k = 3, cap 1.3, reach 12 throats (312 u, clear of the toys and pole switches). Modelled
-offline and asserted on the shipped law and numbers (`BlackHoleDipoleTests.FeltLaw_TheSinkCarriesYouIn_TheSourceMustBeBoostedThrough`):
-
-| hull cruise | sink: top speed, fill → through | source at cruise | source boosting 2× |
-|---|---|---|---|
-| 35 | 2.3× cruise, ~2.1 s | held off at the reach | through in ~20 s |
-| 60 | 2.3× cruise, ~1.2 s | held off | ~11 s |
-| 180 | 2.3× cruise, ~0.4 s | held off | ~4 s |
-
-"Fill → through" is from the portal filling the screen (its disc at the camera's 35° half-FOV) to the
-transit: the bigger mouth means it is the portal's own view, not lensing, that fills the screen, and
-the sink's current means you are through a second or so later. A hull carried through the sink keeps
-its inward current, crosses the white hole's interior and is thrown out of its far face. The Scarab's
-speed is not throttle-driven, so its cruise reads 25 and it feels a gentler pole than the rest.
-
-**Untested in the editor:** all of it. Verify: Black Hole cell → fly at the centre → the hole grows,
-its centre shows the view out of the white hole above → fly in → you come out of the white hole at a
-fraction of your size, pushed away, growing as you climb → lay trail near the sink and watch it come
-out of the source and be thrown clear; look at the white hole against prisms behind it — the
-background should spread away from it rather than ring around it.
-
-**Stated limits.** The source's lens has no counterpart to the shadow — a white hole's centre is its
-mouth. The exact physics of a white hole (time-reversed Schwarzschild) is not a repulsive mass; this
-is the antisymmetric GAME object the dipole needs, built by negating every signed quantity. Two
-holes' tides do not add (the stronger wins), as before.
+The Cell Selector world built here first as a "Black Hole cell", then as a black/white-hole dipole
+joined by a wormhole, is now the **Crystal Wormhole** (`Docs/CRYSTAL_WORMHOLE.md`): an attractor and a
+repulsor that are SMOOTH wells, not black holes — the HyperSea is far too big for black holes to make
+sense. What it added to this engine stays and is documented there: polarity (`HolePolarity`, a signed
+GM), smooth wells (`softening`: Plummer gravity, no frame dragging, softened tides, the graded lens),
+`Amplitude`, the throat that carries captured mass through, and the felt pull on vessels. A lone black
+hole (the console's, Shift+B) is unchanged.

@@ -80,6 +80,21 @@ namespace CosmicShore.Gameplay
         [Min(1f)]
         [SerializeField] float vesselFeltReach = 12f;
 
+        [Header("Smooth well (0 = a black hole)")]
+        [Tooltip("Core radius of a SMOOTH well, world units (Docs/CRYSTAL_WORMHOLE.md). Above 0 the hole is " +
+                 "not a black hole at all: its gravity is Plummer-softened (−GM·r / (r² + ε²)^1.5, finite and " +
+                 "smooth everywhere, zero at the centre), it drags no frame, its tides are softened by the same " +
+                 "core, and its lens is a smooth graded bulge (see Lens Strength) with no horizon, shadow or ring. " +
+                 "0 = the black hole: Paczynski-Wiita, Lense-Thirring, the Schwarzschild ray trace.")]
+        [Min(0f)]
+        [SerializeField] float softening = 0f;
+
+        [Tooltip("A smooth well's lens: the peak deflection, as a fraction of the angle its core subtends. " +
+                 "Kept under 1 so the warp never folds the image (no caustic, no ring): an attractor magnifies " +
+                 "what is behind it by up to 1/(1−A), a repulsor shrinks it by 1/(1+A).")]
+        [Range(0f, 0.9f)]
+        [SerializeField] float lensStrength = 0.6f;
+
         const string HorizonName = "Horizon";
 
         static Material s_horizonMaterial;
@@ -89,6 +104,7 @@ namespace CosmicShore.Gameplay
         BlackHoleLens _lens;
         bool _visualBuilt;
         float _weight;
+        float _amplitude = 1f;
         bool _despawning;
         bool _registered;
 
@@ -134,6 +150,36 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float ThroatRadius { get; internal set; }
 
+        /// <summary>Plummer core radius of a smooth well, world units; 0 = a black hole.</summary>
+        public float Softening => softening;
+        public bool IsSmooth => softening > 0f;
+        /// <summary>A smooth well's lens strength A (peak deflection / core angle), before <see cref="Amplitude"/>.</summary>
+        public float LensStrength => lensStrength;
+
+        /// <summary>
+        /// A live multiplier on everything the hole does to its surroundings — its gravity (and so the
+        /// felt pull), its tides and its lens (Docs/CRYSTAL_WORMHOLE.md §4). 1 = as authored, 0 = space
+        /// is flat around it. Driven by a crystal wormhole's formation and annihilation, which is how a
+        /// pair grows out of nothing and interferes back into it.
+        /// </summary>
+        public float Amplitude
+        {
+            get => _amplitude;
+            set => _amplitude = Mathf.Max(0f, value);
+        }
+
+        /// <summary>Make this a smooth well (see <see cref="Softening"/>). Removes a black hole's fallback sphere.</summary>
+        internal void ConfigureSmoothWell(float coreRadius, float lens)
+        {
+            softening = Mathf.Max(0f, coreRadius);
+            lensStrength = Mathf.Clamp(lens, 0f, 0.9f);
+            if (IsSmooth && _horizon != null)
+            {
+                Destroy(_horizon.gameObject);
+                _horizon = null;
+            }
+        }
+
         /// <summary>The felt-pull law's strength k (0 = vessels feel the physical pull). See the field's tooltip.</summary>
         public float VesselFeltStrength => vesselFeltStrength;
         /// <summary>The felt pull's ceiling, × the hull's cruise speed.</summary>
@@ -152,7 +198,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>SIGNED gravitational parameter: positive pulls (sink), negative pushes (source).</summary>
-        public float GM => Sign * BlackHoleRegistry.Config.GM(strength);
+        public float GM => Sign * BlackHoleRegistry.Config.GM(strength) * _amplitude;
         /// <summary>The event-horizon radius in effect: <see cref="Size"/>, or derived from strength.</summary>
         public float HorizonRadius => BlackHoleRegistry.Config.HorizonRadius(strength, horizonRadius);
         public float InfluenceRadius => BlackHoleRegistry.Config.InfluenceRadius(strength, HorizonRadius);
@@ -168,12 +214,14 @@ namespace CosmicShore.Gameplay
             return new BlackHolePhysics.Well
             {
                 Position = new Unity.Mathematics.float3(p.x, p.y, p.z),
-                GM = Sign * gm,
+                GM = Sign * gm * _amplitude,
                 Horizon = BlackHolePhysics.Horizon.Of(rs),
                 InfluenceRadius = config.InfluenceRadius(strength, rs),
                 SpinAxis = new Unity.Mathematics.float3(axis.x, axis.y, axis.z),
-                // A source's frame turns the other way: the dipole is antisymmetric in its spin too.
-                FrameDrag = Sign * BlackHolePhysics.FrameDragCoefficient(gm, rs, config.Spin),
+                // A source's frame turns the other way: the dipole is antisymmetric in its spin too. A
+                // smooth well drags nothing — frame dragging is a horizon's, and it has none.
+                FrameDrag = IsSmooth ? 0f : Sign * _amplitude * BlackHolePhysics.FrameDragCoefficient(gm, rs, config.Spin),
+                Softening = softening,
             };
         }
 

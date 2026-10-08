@@ -33,8 +33,8 @@ survived every refactor since; the controller and all its consumers did not.
 | Camera distance + near clip | `CustomCameraController.UpdateCamera` (point of use, beside `FollowHeightScale`) |
 | Prism size, lane gap, offset, spacing, speed gate, skimmer clearance | `VesselPrismController.SpawnLoopAsync` / `CreateBlock` |
 | FOV speed tunnel reads the FELT speed (`Speed / s`) | `Utility/VesselSpeedTunnel.Tick` |
-| Gates | `WarpFieldTests` (law, no-field = exactly 1, ownership, the Black Hole cell's wiring) |
-| First user | The Black Hole cell (`Docs/BLACK_HOLE.md` §11): `Black Hole Warp Field.asset` |
+| Gates | `WarpFieldTests` (the smooth law, no-field = exactly 1, ownership); `CrystalWormholeTests` (poles as a product, amplitude 0 = flat, frozen poles) |
+| First user | The Crystal Wormhole cell (`Docs/CRYSTAL_WORMHOLE.md`): `Crystal Wormhole Warp Field.asset` |
 
 ## 2. The rules that make it hold
 
@@ -69,39 +69,28 @@ is a candidate consumer — add it by multiplying its authored length by
 `WarpFieldRuntime.ScaleAt(position)`, nothing more. The 2022 version scaled only the player, two
 AI ships, the camera and the trail.
 
-## 4. The radial field, several poles, and the tiny black hole
+## 4. The radial field, its poles, and the crystal wormhole
 
-`RadialWarp`: `s(r) = clamp((r / referenceRadius)^exponent, minScale, maxScale)` from the owning
-cell's centre — and from every extra **pole** an environment registers
-(`WarpFieldRuntime.AddPole`); the scale at a point is the SMALLEST any pole gives it, so the nearest
-pole wins. A pole keeps its last position once its transform is gone, so a pole retired with its
-world shapes the field until the field itself has eased out (no pop); a new field starts with no
-poles. The Black Hole cell (`Docs/BLACK_HOLE.md` §11–§12) ships `referenceRadius 350`,
-`exponent 1`, `minScale 0.01`, `maxScale 1`, with poles at the black hole (the centre) and the white
-hole (500 u up the spin axis) — both reaches clear of the toy ring and the pole switches. With a
-strength-2 hole (r_s = 4 u, shadow 10.4 u) and its 26 u wormhole mouth (2.5 × the shadow):
+`RadialWarp` (smooth since 2026-10-08): `s = √(min² + core²)`, `core = max·y / (1 + y⁴)^¼`,
+`y = (r / referenceRadius)^exponent / max` — proportional to distance near the centre, saturating
+toward its maximum far out, softly floored, **no crease anywhere** (a hard clamp is an interface).
 
-| r (u) | s | a 10 u hull is | the mouth, angular radius | mouth ÷ hull |
-|---|---|---|---|---|
-| 350 | 1.000 | 10 u | 4° | 3× |
-| 150 | 0.429 | 4.3 u | 10° | 6× |
-| 78 | 0.223 | 2.2 u | 19° | 12× |
-| 52 | 0.149 | 1.5 u | 30° | 17× |
-| 26 (the mouth) | 0.074 | 0.74 u | 90° | 35× |
+**Poles.** An environment can register poles (`WarpFieldRuntime.AddPole(transform, amplitude)`). With
+any registered, the field is read around them instead of its centre, composed as a PRODUCT, each
+raised to its live amplitude: `s = Π s_i^{a_i}` — smooth everywhere, and a pole at amplitude 0 is flat
+space. A pole keeps its last position and amplitude once its transform is gone, so it eases out with
+the field (no pop); a new field starts with none. The crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`)
+registers its attractor and repulsor, whose amplitudes beat against each other as the pair forms and
+annihilates; its cell ships `referenceRadius 350`, floor 0.01, both reaches clear of the toys.
 
-The ratio at the mouth is `referenceRadius / hull` whatever the mouth's size — the warp is
-scale-free — so a bigger portal costs the growth nothing.
-
-Because the vessel's world speed is proportional to `r`, a pilot holding a constant felt speed
-approaches EXPONENTIALLY (350 → 26 u in ~15 s at a felt 60 u/s, faster with the sink's current): the hole swells at a steady rate
-for as long as you fly at it. At the mouth you are carried to the white hole, where the same table
-runs backwards — you come out at ~7% scale and GROW as you climb away from it. The holes' push and
-pull on vessels is a FELT law measured in each hull's cruise speed and in its own frame
-(`Docs/BLACK_HOLE.md` §12): the sink carries you in, the white hole must be boosted through.
+Because the vessel's world speed is proportional to `r` near a pole, a pilot holding a constant felt
+speed approaches EXPONENTIALLY: what is ahead swells at a steady rate for as long as they fly at it.
+The poles' pull and push on vessels is a felt law in each hull's own cruise speed and frame
+(`Docs/CRYSTAL_WORMHOLE.md` §3).
 
 ## 5. Verify in the editor (owed)
 
-Menu_Main → freestyle → Cell Selector → **Black Hole**. Fly at the centre: your hull, camera and
+Menu_Main → freestyle → Cell Selector → **Crystal Wormhole**. Fly at the centre: your hull, camera and
 trail should stay the same on screen while the hole grows to fill the view; nothing should pop
 when the world comes in or when you select another world (1.5 s ease). In a session with a second
 player or AI, watch them shrink as they fly in. Check that a 1%-scale trail is still laid (tiny

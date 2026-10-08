@@ -59,21 +59,22 @@ namespace CosmicShore.Gameplay
         static readonly BlackHole[] _wellHoles = new BlackHole[BlackHolePhysics.NativeWells.Capacity];
 
         /// <summary>
-        /// The felt acceleration of a vessel at <paramref name="p"/> toward (sink) or away from
-        /// (source) a hole at <paramref name="centre"/>: <c>sign · k · cruise² · R_t · s / max(d, R_t)²</c>.
-        /// Inverse-square when nothing is warped (s = 1); under a radial warp (s ∝ d) it falls as 1/d.
-        /// Inside the throat it is held at its surface value — that is the wormhole's interior. In
-        /// FELT units (the transformer scales the velocity channel by s); pure, and tested.
+        /// The felt acceleration of a vessel at <paramref name="p"/> toward (attractor) or away from
+        /// (repulsor) a well at <paramref name="centre"/>:
+        /// <c>sign · k · cruise² · R_t · s · r / (d² + R_t²)^1.5</c> — inverse-square far out when nothing
+        /// is warped (s = 1), 1/d under a radial warp (s ∝ d), and SMOOTH through the throat: Plummer-
+        /// softened by the throat radius, so it rises, peaks just inside the throat and falls to zero at
+        /// the centre with no edge anywhere (Docs/CRYSTAL_WORMHOLE.md). In FELT units (the transformer
+        /// scales the velocity channel by s); pure, and tested.
         /// </summary>
         public static float3 FeltAcceleration(float3 p, float3 centre, float sign, float k, float cruise,
             float throatRadius, float warp)
         {
             float3 r = p - centre;
-            float d = math.length(r);
-            if (!(d > 1e-4f)) return float3.zero;
-            float de = math.max(d, math.max(throatRadius, 1e-3f));
-            float mag = k * cruise * cruise * throatRadius * warp / (de * de);
-            return r * (-sign * mag / d);
+            float rt = math.max(throatRadius, 1e-3f);
+            float q = math.lengthsq(r) + rt * rt;
+            float mag = k * cruise * cruise * rt * warp / (q * math.sqrt(q));
+            return r * (-sign * mag);
         }
 
         public static void Tick(IReadOnlyList<BlackHole> holes, BlackHoleConfigSO config, float dt)
@@ -143,7 +144,7 @@ namespace CosmicShore.Gameplay
                         if (d > hole.VesselFeltReach) continue;
                         inside = true;
                         cap = Mathf.Max(cap, hole.VesselFeltCap * cruise);
-                        a += FeltAcceleration(pos, well.Position, hole.Sign, hole.VesselFeltStrength,
+                        a += FeltAcceleration(pos, well.Position, hole.Sign, hole.VesselFeltStrength * hole.Amplitude,
                             cruise, hole.FeltThroatRadius, warp) / math.max(scale, 1e-4f);
                         continue;
                     }

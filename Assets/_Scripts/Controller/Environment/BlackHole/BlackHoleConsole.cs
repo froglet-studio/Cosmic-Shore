@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
         const string TwoWordName = "black";
         const string Usage = "usage: blackhole tool [on|off] | config | spawn [<strength> [x y z] [vx vy vz]] | " +
                              "here <strength> | size <id> <r_s> | move <id> <vx> <vy> <vz> | strength <id> <v> | " +
-                             "spin <id> <ax> <ay> <az> | list | despawn <id>|all";
+                             "spin <id> <ax> <ay> <az> | list | despawn <id>|all | annihilate [seconds]";
         /// <summary>Where a spawn lands when no position is given: this far ahead of the camera.</summary>
         const float SpawnAheadDistance = 300f;
 
@@ -192,6 +192,20 @@ namespace CosmicShore.Gameplay
                     if (hole == null) return $"no black hole #{id}";
                     hole.SpinAxis = axis;
                     return $"#{id} spin axis {hole.SpinAxis}";
+                }
+                case "annihilate":
+                {
+                    // The crystal wormhole's ending (Docs/CRYSTAL_WORMHOLE.md §5), on demand.
+                    float seconds = args.Length > 1 && TryFloat(args[1], out float s) ? s : -1f;
+                    int n = 0;
+                    for (int i = CrystalWormhole.Live.Count - 1; i >= 0; i--)
+                    {
+                        var w = CrystalWormhole.Live[i];
+                        if (w == null || w.IsAnnihilating || w.IsGone) continue;
+                        w.Annihilate(seconds);
+                        n++;
+                    }
+                    return n == 0 ? "no standing crystal wormhole to annihilate" : $"annihilating {n} crystal wormhole(s)";
                 }
                 case "list":
                 {

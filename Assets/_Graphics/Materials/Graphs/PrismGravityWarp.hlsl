@@ -140,6 +140,15 @@ float PrismGravityWarpTide(float d, float rs, float k, float reach)
     return k / (r * r * r) * PrismGravityWarpWindow(d - rs, reach);
 }
 
+// A SMOOTH well's tide (Docs/CRYSTAL_WORMHOLE.md): the Plummer core ε softens 1/r³ to 1/(r² + ε²)^1.5 —
+// finite and smooth through the centre, no horizon floor. ε ≤ 0 is the black hole's tide above.
+float PrismGravityWarpTideSoft(float d, float rs, float k, float reach, float softening)
+{
+    if (!(softening > 0.0)) return PrismGravityWarpTide(d, rs, k, reach);
+    float q = d * d + softening * softening;
+    return k / (q * sqrt(q)) * PrismGravityWarpWindow(max(d - rs, 0.0), reach);
+}
+
 // Position and Normal are OBJECT space. They arrive after grow, shield morph, jiggle, flight and
 // suction, and BEFORE the cradle (see SPLICE ORDER). Outputs are object space too.
 void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
@@ -194,7 +203,7 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
         if (!(d > 1e-4)) continue;                // centre on the singularity: no direction
         if (d - slot.w >= reach) continue;        // beyond the reach: no tide drawn
 
-        float tide = PrismGravityWarpTide(d, slot.w, k, reach);
+        float tide = PrismGravityWarpTideSoft(d, slot.w, k, reach, weight.z);
         if (abs(tide) <= abs(bestTide)) continue;
         bestTide = tide;
         bestDir = rad / d;

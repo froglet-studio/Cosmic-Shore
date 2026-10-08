@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6390517248815536402}
   - component: {fileID: 2875019634480312766}
   m_Layer: 0
-  m_Name: SpawnableBlackHole
+  m_Name: SpawnableCrystalWormhole
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -51,22 +51,25 @@ MonoBehaviour:
   layAcrossFrames: 0
   layBudgetMsPerFrame: 6
   intensityLevel: 1
-  strength: 2
-  horizonRadius: 0
+  repulsorOffset: {x: 0, y: 500, z: 0}
+  strength: 15
+  throatRadius: 26
+  lensStrength: 0.6
   spinAxis: {x: 0, y: 1, z: 0}
-  dipole: 1
-  sourceOffset: {x: 0, y: 500, z: 0}
-  seatWormhole: 1
-  wormholeMaterial: {fileID: 2100000, guid: 97a0b9d33f4289abcfc3b058a3ffb2d3, type: 2}
+  vesselFeltStrength: 4
+  vesselFeltCap: 1.3
+  vesselFeltReach: 12
+  formSeconds: 6
+  annihilateSeconds: 9
+  lifetimeSeconds: 0
+  spiralTurns: 2.5
+  beatCycles: 7
+  beatDepth: 0.5
+  mouthMaterial: {fileID: 2100000, guid: 7b025f919c16662b7fcec10a7a1937bb, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  mouthToShadow: 2.5
-  mouthBloomSeconds: 0.45
   mouthExactRange: 2500
   mouthExactFadeBand: 600
   mouthExactRenderScale: 0.75
   mouthPanoramaFaceSize: 256
-  vesselFeltStrength: 3
-  vesselFeltCap: 1.3
-  vesselFeltReach: 12
   modelPlates: 48
-  modelDipoleBallFraction: 0.12
+  modelBallFraction: 0.12

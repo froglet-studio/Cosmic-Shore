@@ -202,6 +202,39 @@ int main()
         printf("3w. white hole: no ray captured for b in [0, 6] r_s nor from inside its horizon\n");
     }
 
+    // 3m. the SMOOTH lens (a smooth well, Docs/CRYSTAL_WORMHOLE.md): monotone (the image never folds,
+    //     so no ring and no caustic) for |A| < 1; an attractor and a repulsor are mirror images; two equal
+    //     and opposite wells at one point cancel EXACTLY; and the bend is gone at the lens sphere's edge.
+    {
+        const float W = 30.0f, D = 400.0f;
+        float3 eyeRel(-D, 0, 0);
+        int folds = 0; float worstMirror = 0, worstCancel = 0;
+        const float As[3] = { 0.3f, 0.6f, 0.85f };
+        for (float A : As) {
+            float prevSrcA = -1e9f, prevSrcR = -1e9f;
+            for (int i = 0; i <= 400; i++) {
+                float theta = 0.8f * (float)i / 400.0f * (4.0f * W / D);   // out to the 4w edge
+                float3 d = normalize(float3(std::cos(theta), std::sin(theta), 0));
+                float3 ba = BlackHoleSmoothLensDir(eyeRel, d, W, A);
+                float3 br = BlackHoleSmoothLensDir(eyeRel, d, W, -A);
+                float srcA = std::atan2(ba.y, ba.x), srcR = std::atan2(br.y, br.x);
+                if (srcA < prevSrcA - 1e-7f || srcR < prevSrcR - 1e-7f) folds++;
+                prevSrcA = srcA; prevSrcR = srcR;
+                worstMirror = std::max(worstMirror, std::fabs((srcA - theta) + (srcR - theta)));
+                float3 sum = BlackHoleSmoothLensDeflection(eyeRel, d, W, A) + BlackHoleSmoothLensDeflection(eyeRel, d, W, -A);
+                worstCancel = std::max(worstCancel, length(sum));
+            }
+        }
+        float3 dEdge = normalize(float3(std::cos(4.0f * W / D), std::sin(4.0f * W / D), 0));
+        float edge = length(BlackHoleSmoothLensDeflection(eyeRel, dEdge, W, 0.85f));
+        CHECK(folds == 0, "the smooth lens folded the image %d times", folds);
+        CHECK(worstMirror < 1e-4f, "the attractor and repulsor are not mirror images (worst %.3g rad)", worstMirror);
+        CHECK(worstCancel < 1e-6f, "two opposite wells at one point did not cancel (worst %.3g)", worstCancel);
+        CHECK(edge < 2e-4f, "the smooth lens still bends %.3g rad at its sphere's edge — a seam", edge);
+        printf("3m. smooth lens: monotone for A up to 0.85, mirror %.2g, opposite wells cancel %.2g, edge bend %.2g rad\n",
+               worstMirror, worstCancel, edge);
+    }
+
     // 4. inside the horizon
     {
         Trace t = trace(float3(0.5f, 0, 0), float3(1,0,0), 30);

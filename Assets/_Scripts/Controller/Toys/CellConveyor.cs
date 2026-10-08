@@ -464,7 +464,7 @@ namespace CosmicShore.Gameplay
         /// The traversal rotation: the definition's authored list when present, else the host
         /// cell's own configs (the cell selector's list) minus its environment-free entries - a
         /// cell that builds nothing is open water, which the corridor already has between cells -
-        /// and minus its black-hole world (<see cref="SpawnableBlackHole"/>).
+        /// and minus its crystal-wormhole world (<see cref="SpawnableCrystalWormhole"/>).
         /// Shuffle-bag so every world appears before any repeats.
         /// </summary>
         CellConfigDataSO NextConfig()
@@ -477,11 +477,11 @@ namespace CosmicShore.Gameplay
                     : _template ? _template.AvailableConfigs : null;
                 if (source == null) return null;
 
-                // A black-hole world is skipped too: it lays nothing either, and its one hole is a
-                // live gravity well that would pull the Ark and every vessel flying the corridor
-                // (Docs/BLACK_HOLE.md §11). An authored Cells list can still name it on purpose.
+                // A crystal-wormhole world is skipped too: it lays nothing either, and its poles are
+                // live wells that would pull and push the Ark and every vessel in the corridor
+                // (Docs/CRYSTAL_WORMHOLE.md). An authored Cells list can still name it on purpose.
                 foreach (var config in source)
-                    if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableBlackHole
+                    if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableCrystalWormhole
                         && !_bag.Contains(config))
                         _bag.Add(config);
 

@@ -8,15 +8,13 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The warp field (Docs/WARP_FIELD.md): the radial field's law, the runtime's no-field and
-    /// ownership rules, and the Black Hole cell's wiring. The runtime half is the safety net for
+    /// The warp field (Docs/WARP_FIELD.md): the radial field's law, and the runtime's no-field and
+    /// ownership rules. The crystal wormhole's use of it is gated by CrystalWormholeTests. The runtime half is the safety net for
     /// every consumer — a field-free session must read EXACTLY 1 everywhere, or every vessel in
     /// the game would change size.
     /// </summary>
     public class WarpFieldTests
     {
-        const string CellConfigPath = "Assets/_SO_Assets/Cell Configs/Black Hole Cell/Black Hole Cell Config.asset";
-        const string HolePrefabPath = "Assets/_Prefabs/Spawnables/SpawnableBlackHole.prefab";
 
         RadialWarp _field;
         readonly object _owner = new();
@@ -43,12 +41,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Radial_IsProportionalToDistance_FlooredAndCapped()
+        public void Radial_IsProportionalNearTheCentre_SoftlyFlooredAndCapped_WithNoCrease()
         {
-            Assert.AreEqual(1f, _field.ScaleAt(new Vector3(1000f, 0f, 0f)), 1e-5f, "not 1 at the reference radius");
-            Assert.AreEqual(0.25f, _field.ScaleAt(new Vector3(0f, 250f, 0f)), 1e-5f, "not proportional to distance");
-            Assert.AreEqual(0.01f, _field.ScaleAt(Vector3.zero), 1e-6f, "the centre is not floored at minScale");
-            Assert.AreEqual(1f, _field.ScaleAt(new Vector3(0f, 0f, 5000f)), 1e-5f, "not capped at maxScale outside");
+            Assert.AreEqual(0.1f, _field.ScaleAt(new Vector3(0f, 100f, 0f)), 0.002f, "not proportional to distance near the centre");
+            Assert.AreEqual(0.01f, _field.ScaleAt(Vector3.zero), 1e-6f, "the centre is not the floor");
+            Assert.AreEqual(1f, _field.ScaleAt(new Vector3(0f, 0f, 5000f)), 1e-3f, "not saturating toward maxScale far out");
+            // Smooth: the slope never jumps (no crease at the floor or the cap — no interface).
+            float prevSlope = float.NaN, worst = 0f;
+            for (float r = 1f; r < 4000f; r += 1f)
+            {
+                float slope = _field.ScaleAt(new Vector3(r + 1f, 0f, 0f)) - _field.ScaleAt(new Vector3(r, 0f, 0f));
+                if (!float.IsNaN(prevSlope)) worst = Mathf.Max(worst, Mathf.Abs(slope - prevSlope));
+                prevSlope = slope;
+            }
+            // A hard clamp at the floor or cap jumps the slope by ~1/referenceRadius (1e-3 here); the soft
+            // law only curves (worst ~1e-4 where the floor turns over).
+            Assert.Less(worst, 3e-4f, "the radial field has a crease");
         }
 
         [Test]
@@ -67,7 +75,7 @@ namespace CosmicShore.Tests
                 centre.position = new Vector3(500f, 0f, 0f);
                 WarpFieldRuntime.Activate(_owner, _field, centre);
                 Assert.IsTrue(WarpFieldRuntime.IsActive);
-                Assert.AreEqual(0.1f, WarpFieldRuntime.ScaleAt(new Vector3(600f, 0f, 0f)), 1e-4f,
+                Assert.AreEqual(_field.ScaleAt(new Vector3(100f, 0f, 0f)), WarpFieldRuntime.ScaleAt(new Vector3(600f, 0f, 0f)), 1e-5f,
                     "the field is not measured from its centre.");
 
                 WarpFieldRuntime.Release(new object());
@@ -81,29 +89,6 @@ namespace CosmicShore.Tests
             {
                 Object.DestroyImmediate(centre.gameObject);
             }
-        }
-
-        [Test]
-        public void BlackHoleCell_CarriesARadialWarp_AndATinyHole()
-        {
-            var config = AssetDatabase.LoadAssetAtPath<CellConfigDataSO>(CellConfigPath);
-            Assert.IsNotNull(config, $"{CellConfigPath} is missing.");
-            Assert.IsInstanceOf<RadialWarp>(config.WarpField, "the Black Hole cell has no RadialWarp.");
-
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(HolePrefabPath);
-            Assert.IsNotNull(prefab, $"{HolePrefabPath} is missing.");
-            Assert.IsTrue(prefab.TryGetComponent<SpawnableBlackHole>(out var hole), $"{HolePrefabPath} has no SpawnableBlackHole.");
-            float strength = new SerializedObject(hole).FindProperty("strength").floatValue;
-            float rs = BlackHoleRegistry.Config.HorizonRadius(strength, 0f);
-
-            // "Tiny" against the world a player normally flies in: the portal (the mouth seated on the
-            // hole, mouthToShadow × its shadow) is under a tenth of the field's reference radius, so
-            // from where everything is its true size it is a speck — and it is the warp that grows it.
-            var warp = (RadialWarp)config.WarpField;
-            float mouth = rs * SpawnableBlackHole.ShadowPerHorizon * hole.MouthToShadow;
-            Assert.Less(mouth, warp.ReferenceRadius * 0.1f,
-                "the portal is not tiny next to the reference radius — it would not need the warp to look big.");
-            Assert.LessOrEqual(warp.MinScale, 0.02f, "the floor is too high for the hole to grow much.");
         }
     }
 }

@@ -134,6 +134,49 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
     BlackHoleLensTraceSigned(x0, d, lensR, maxSteps, 1.0, outDir, escaped);
 }
 
+// THE SMOOTH LENS — a smooth well's (Docs/CRYSTAL_WORMHOLE.md): no horizon, no ray trace, no shadow,
+// no ring. A ray from the eye (eyeRel = eye − centre, world units; d its unit direction) passing the
+// well at impact parameter b is turned TOWARD the centre by
+//     α = A · (w / max(D, w)) · u · exp(−u²/2),      u = b / w,
+// w the well's core width and D the eye's distance from it; A is SIGNED — positive an attractor
+// (the image is magnified, up to 1/(1−A) at the centre), negative a repulsor (shrunk, 1/(1+A)). In
+// screen angle θ ≈ b/D the map is θ → θ − α with dα/dθ = A·(1 − u²)·exp(−u²/2), so for |A| < 1 it is
+// MONOTONE: the image never folds — no caustic, no Einstein ring, no edge anywhere. It is gone by
+// u ≈ 4 (u·e^(−u²/2) = 0.0013), so a lens sphere of 4w has no seam either. With the eye inside the
+// core (D < w) the angle stays below A·b/w ≤ A. The returned direction is what the pixel shows.
+//
+// SEVERAL WELLS: each contributes a DEFLECTION VECTOR (α along the direction across the ray toward its
+// centre), the vectors are SUMMED, and the ray is turned by the sum. Two equal and opposite wells at
+// one point cancel exactly — the destructive interference a crystal wormhole's annihilation ends in —
+// and every lens sphere computes the same sum, so where two spheres overlap neither leaves a seam.
+float3 BlackHoleSmoothLensDeflection(float3 eyeRel, float3 d, float w, float A)
+{
+    float3 toC = -eyeRel;
+    float D = length(toC);
+    if (!(D > 1e-4) || !(w > 1e-4) || A == 0.0) return float3(0.0, 0.0, 0.0);
+    float tca = dot(toC, d);
+    float3 perp = toC - d * tca;                  // centre's offset from the ray, across it
+    float pl = length(perp);
+    if (!(pl > 1e-6)) return float3(0.0, 0.0, 0.0);   // straight at the centre: no side to turn toward
+    float b = tca > 0.0 ? pl : D;                 // a well behind the eye: its nearest point is the eye
+    float u = b / w;
+    float alpha = A * (w / max(D, w)) * u * exp(-0.5 * u * u);
+    return perp * (alpha / pl);
+}
+
+// Turn d by a summed deflection vector (perpendicular to d; its length is the angle).
+float3 BlackHoleSmoothLensApply(float3 d, float3 deflection)
+{
+    float m = length(deflection);
+    if (!(m > 1e-7)) return d;
+    return normalize(d * cos(m) + deflection * (sin(m) / m));
+}
+
+float3 BlackHoleSmoothLensDir(float3 eyeRel, float3 d, float w, float A)
+{
+    return BlackHoleSmoothLensApply(d, BlackHoleSmoothLensDeflection(eyeRel, d, w, A));
+}
+
 // Fade the bending to zero toward the lens's edge. Light passing at impact parameter b is really
 // deflected by ~2/b rad at any distance — it never reaches zero — so a lens of finite radius
 // would draw a visible seam where it stops. The bend is blended back to the straight ray over the

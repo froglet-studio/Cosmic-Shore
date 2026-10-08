@@ -11,10 +11,10 @@ playtested and confirmed the same day).
 > fold carried it: there is no wormhole cell, and `Tools/Build/author_wormholes.py --check` asserts
 > none is listed in Menu_Main.
 >
-> **A second placer (2026-10-08):** the Black Hole cell seats an untolled, ownerless pair in the
-> centres of its black hole and its white hole, each the size of the black hole's shadow — the sink's
-> mouth is what the player sees where the shadow was (`Docs/BLACK_HOLE.md` §12,
-> `SpawnableBlackHole.SeatWormhole`). It uses the fold's material and the fold's view numbers.
+> **A second placer (2026-10-08):** the crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`) seats an untolled,
+> ownerless pair on its attractor and repulsor, drawn with `WormholeSeamless.mat` — the same shader with
+> `_SoftEdge > 0`: alpha-blended, its view dissolving into the world toward the silhouette, no rim. The
+> fold's `Wormhole.mat` keeps `_SoftEdge 0` (its hard sphere and domain rim, unchanged).
 
 Files:
 

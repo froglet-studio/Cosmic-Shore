@@ -31,12 +31,16 @@ namespace CosmicShore.Gameplay
         static Transform _centre;
         static Vector3 _centreFallback;
         static object _owner;
-        // Further POLES of the same field (a dipole's other end, Docs/BLACK_HOLE.md §12): the field
-        // is read around each, and the scale at a point is the SMALLEST — the nearest pole wins.
-        // A pole keeps its LAST position once its transform is gone, so a pole retired with its
-        // world goes on shaping the field until the field itself has eased out — no pop.
+        // POLES (a crystal wormhole's attractor and repulsor, Docs/CRYSTAL_WORMHOLE.md). With any
+        // registered the field is read around the POLES instead of its centre, and they compose as a
+        // PRODUCT, each raised to its live amplitude: s = Π s_i^a_i — smooth everywhere (no crease where
+        // one pole takes over from the other), and a pole at amplitude 0 is flat space. A pole keeps
+        // its LAST position and amplitude once its transform is gone, so a pole retired with its world
+        // goes on shaping the field until the field itself has eased out — no pop.
         static readonly List<Transform> _poles = new();
         static readonly List<Vector3> _poleLast = new();
+        static readonly List<System.Func<float>> _poleAmplitude = new();
+        static readonly List<float> _poleAmplitudeLast = new();
 
         // The eased weight is evaluated lazily from a start time, so the field needs no driver.
         static float _fromWeight;
@@ -83,12 +87,27 @@ namespace CosmicShore.Gameplay
             if (_field == null) return 1f;
             float w = Weight;
             if (w <= 0f || _field == null) return 1f;
-            float s = _field.ScaleAt(worldPosition - Centre);
-            for (int i = 0; i < _poles.Count; i++)
+            float s;
+            if (_poles.Count == 0)
             {
-                var pole = _poles[i];
-                if (pole) _poleLast[i] = pole.position;
-                s = Mathf.Min(s, _field.ScaleAt(worldPosition - _poleLast[i]));
+                s = _field.ScaleAt(worldPosition - Centre);
+            }
+            else
+            {
+                s = 1f;
+                for (int i = 0; i < _poles.Count; i++)
+                {
+                    var pole = _poles[i];
+                    if (pole)
+                    {
+                        _poleLast[i] = pole.position;
+                        if (_poleAmplitude[i] != null) _poleAmplitudeLast[i] = Mathf.Max(0f, _poleAmplitude[i]());
+                    }
+                    float a = _poleAmplitudeLast[i];
+                    if (a <= 0f) continue;
+                    float si = Mathf.Max(1e-4f, _field.ScaleAt(worldPosition - _poleLast[i]));
+                    s *= a == 1f ? si : Mathf.Pow(si, a);
+                }
             }
             s = Mathf.Max(1e-4f, s);
             return w >= 1f ? s : Mathf.Pow(s, w);
@@ -106,6 +125,8 @@ namespace CosmicShore.Gameplay
             // easing out with it) belong to a world that is gone.
             _poles.Clear();
             _poleLast.Clear();
+            _poleAmplitude.Clear();
+            _poleAmplitudeLast.Clear();
             _field = field;
             _centre = centre;
             _centreFallback = centre ? centre.position : Vector3.zero;
@@ -137,16 +158,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Read the live field around <paramref name="pole"/> as well (its position is read live).
-        /// For a field with several centres — a dipole's source as well as its sink; the scale at a
-        /// point is the smallest any pole gives it. Lives until <see cref="RemovePole"/>, its
-        /// transform's destruction, or the field's end.
+        /// Read the live field around <paramref name="pole"/> (its position, and its amplitude if given,
+        /// are read live). Once any pole is registered the field is read around its poles instead of its
+        /// centre, composed as a product (see the field above). Lives until <see cref="RemovePole"/>, a
+        /// new field, or the field's end — its transform's destruction only freezes it.
         /// </summary>
-        public static void AddPole(Transform pole)
+        public static void AddPole(Transform pole, System.Func<float> amplitude = null)
         {
             if (!pole || _field == null || _poles.Contains(pole)) return;
             _poles.Add(pole);
             _poleLast.Add(pole.position);
+            _poleAmplitude.Add(amplitude);
+            _poleAmplitudeLast.Add(amplitude != null ? Mathf.Max(0f, amplitude()) : 1f);
         }
 
         public static void RemovePole(Transform pole)
@@ -155,7 +178,12 @@ namespace CosmicShore.Gameplay
             if (i < 0) return;
             _poles.RemoveAt(i);
             _poleLast.RemoveAt(i);
+            _poleAmplitude.RemoveAt(i);
+            _poleAmplitudeLast.RemoveAt(i);
         }
+
+        /// <summary>How many poles the live field is read around (0 = its centre).</summary>
+        public static int PoleCount => _poles.Count;
 
         static bool _sceneHooked;
 
@@ -176,6 +204,8 @@ namespace CosmicShore.Gameplay
             _owner = null;
             _poles.Clear();
             _poleLast.Clear();
+            _poleAmplitude.Clear();
+            _poleAmplitudeLast.Clear();
             _fromWeight = _toWeight = 0f;
         }
 

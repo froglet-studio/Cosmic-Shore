@@ -56,6 +56,12 @@ namespace CosmicShore.Gameplay
             /// negated, so its frame turns the other way about the same axis.
             /// </summary>
             public float FrameDrag;
+            /// <summary>
+            /// Plummer core radius ε of a SMOOTH well, u (0 = the black hole's Paczynski-Wiita law):
+            /// <c>a = −GM·r / (r² + ε²)^1.5</c> — finite and smooth everywhere, zero at the centre, the
+            /// pull of a soft distribution of mass rather than of a point (Docs/CRYSTAL_WORMHOLE.md).
+            /// </summary>
+            public float Softening;
         }
 
         /// <summary>
@@ -89,6 +95,11 @@ namespace CosmicShore.Gameplay
             float3 r = p - w.Position;
             float d = math.length(r);
             if (!(d > 1e-6f)) return float3.zero;        // dead centre: no direction to pull along
+            if (w.Softening > 0f)
+            {
+                float q = d * d + w.Softening * w.Softening;
+                return r * (-w.GM / (q * math.sqrt(q)));
+            }
             float gap = math.max(d - w.Horizon.Radius, w.Horizon.MinGap);
             float mag = w.GM / (gap * gap);
             return r * (-mag / d);

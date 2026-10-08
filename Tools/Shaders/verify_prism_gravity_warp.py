@@ -156,9 +156,10 @@ static const float K = GM * TAU * TAU;  // what the bank carries: GM·τ²
 static const float REACH = 100.0f;      // (warpReachMultiplier 6 - 1) x r_s
 static const float LN_MAX = 2.4849066f; // ln(maxTidalStretch 12)
 
+static float g_soft0 = 0.0f;   // slot 0's Plummer core (a smooth well); 0 = the black hole's tide
 static void setBank(int count, float3 U0, float rs0, float k0, float reach0, float lnMax = LN_MAX,
                     float3 U1 = float3(0,0,0), float rs1 = 0, float k1 = 0, float reach1 = 0) {
-    _PrismGravityWarpCentre[0] = float4(U0, rs0); _PrismGravityWarpWeight[0] = float4(k0, reach0, 0, 0);
+    _PrismGravityWarpCentre[0] = float4(U0, rs0); _PrismGravityWarpWeight[0] = float4(k0, reach0, g_soft0, 0);
     _PrismGravityWarpCentre[1] = float4(U1, rs1); _PrismGravityWarpWeight[1] = float4(k1, reach1, 0, 0);
     _PrismGravityWarpCentre[2] = float4(0,0,0,0); _PrismGravityWarpWeight[2] = float4(0,0,0,0);
     _PrismGravityWarpCentre[3] = float4(0,0,0,0); _PrismGravityWarpWeight[3] = float4(0,0,0,0);
@@ -412,6 +413,26 @@ int main()
         float squash = stretchAlong(toWorld(float3(0,0,0)), n);
         CHECK(squash > 1.0f / 12.0f * 0.99f && squash < 1.0f, "an absurd white hole squashed past the ceiling (x%.4f)", squash);
         printf("14. white hole: the tide negated (worst %.2g), volume kept (%.2g), ceiling x%.3f >= 1/12\n", worst, worstVol, squash);
+    }
+
+    // 15. a SMOOTH well (Plummer core eps, Docs/CRYSTAL_WORMHOLE.md): the tide is k / (d^2 + eps^2)^1.5 —
+    //     finite at the centre, exactly the law at any d inside the window, smooth through the core.
+    {
+        const float EPS = 30.0f, SMALL_K = 0.05f * EPS * EPS * EPS;
+        g_soft0 = EPS;
+        float worst = 0;
+        const float ds[4] = { 2.0f, 15.0f, 30.0f, 45.0f };
+        for (float d : ds) {
+            setBank(1, float3(0,0,0), 1.0f, SMALL_K, 1e7f, 13.8f);
+            float3 n = placePrism(d);
+            float3 c = toWorld(float3(0,0,0));
+            float er = std::log(stretchAlong(c, n, 4.0f));
+            float expect = SMALL_K / std::pow(d * d + EPS * EPS, 1.5f);
+            worst = std::max(worst, std::fabs(er - expect) / expect);
+        }
+        g_soft0 = 0.0f;
+        CHECK(worst < 3e-3f, "the smooth well's tide is not k/(d^2+eps^2)^1.5 (worst relative %.3g)", worst);
+        printf("15. smooth well: tide = k/(d^2+eps^2)^1.5 through the core (worst %.2g)\n", worst);
     }
 
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }
