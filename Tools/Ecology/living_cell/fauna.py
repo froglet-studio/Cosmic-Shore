@@ -31,6 +31,14 @@ from .world import K_HERB, FLORA, TRAIL, SKEL, HOARD, K_GRAZE, K_LOCUST, flock_t
 SQ2 = math.sqrt(2.0)
 
 
+def count_within(P, Q, r):
+    """How many points of Q lie within r of each point of P (packs x prey: both small in micro)."""
+    if len(P) == 0 or len(Q) == 0:
+        return np.zeros(len(P), np.int64)
+    d2 = ((P[:, None, :] - Q[None, :, :]) ** 2).sum(-1)
+    return (d2 < r * r).sum(1)
+
+
 def unit(v):
     n = np.linalg.norm(v, axis=-1, keepdims=True)
     return v / np.maximum(n, 1e-9)
@@ -622,6 +630,8 @@ class Pack(Guild):
     a_attack, h_handle = 6.0e-4, 40.0
     hunt_below = 0.6; catch_r = 10.0; prey_sense = 300.0
     hunger_gate = True     # a pack stalks a PILOT only while hungry and with no prey in range (iteration 1)
+    switch_ref = 0.0       # >0: Holling III. Macro: rate x Np/(Np+switch_ref). Micro: a hunter commits to a chase
+                           # only with >= switch_ref/4 prey inside prey_sense (round 2; 0 = off, the R8 cell)
 
     def extra_init(self):
         C = self.capacity
@@ -654,6 +664,9 @@ class Pack(Guild):
         if len(preyP) and hungry.any():
             j, dj = nearest_point(P, preyP, self.prey_sense)
             chase = hungry & (j >= 0); self.prey_near = j >= 0; self._dprey = dj
+            if self.switch_ref > 0:
+                dens = count_within(P, preyP, self.prey_sense)
+                chase &= dens >= self.switch_ref / 4.0
             # a pack goes for whichever is nearer: the prey, or a pilot (iter 5: grazers crowd every pilot)
             dp0, _ = w.dist_to_pilots(P)
             chase &= ~(dp0 < dj)
@@ -727,6 +740,10 @@ class Pack(Guild):
             if Np == 0:
                 continue
             rate = self.a_attack * Np * c / (1.0 + self.a_attack * self.h_handle * Np)
+            if self.switch_ref > 0:
+                # Holling III (round 2): attack efficiency falls when prey is scarce - the hunter switches to
+                # searching / resting instead of grinding the last prey of a region to zero (a prey refuge)
+                rate *= Np / (Np + self.switch_ref)
             kills = min(Np, w.rng.poisson(rate * dt))
             for _ in range(kills):
                 cw = np.array([g.cnt[r] for g in prey], float)
@@ -915,6 +932,7 @@ class Lurker(Guild):
     size = 4.0; color = (0.75, 1.0, 0.45); threat = True
     predator = True; prey_names = ("grazer", "locust")
     a_attack, h_handle = 1.5e-4, 20.0
+    switch_ref = 0.0
     creep_r = 350.0          # creep toward a pilot's line only at ambush range (B used 600 in a 450-u grove; iter 3)
 
     def extra_init(self):

@@ -111,3 +111,20 @@ R9 = {
     "r9_grazed_recruit": dict(FINAL, **GRAZED, flora_recruit=0.05),
     "r9_grazed_nocap": dict(FINAL, **GRAZED, pack_cap=300, lurker_cap=180),   # diagnostic: where food alone stops them
 }
+
+# R9 result: the opening crash is gone (flora 6k -> 2-3k -> 6k instead of 29k -> 4k) but thieves STILL fall
+# 45 -> ~5 by minute 30 (births 28 vs 135 starved). The crash was not the cause. Their own food is stolen trail,
+# ~3 steals/min x 3 vol = 0.15 vol/s for the whole population, against 45 x 0.025 = 1.1 vol/s of metabolism:
+# the trail niche feeds ~6 thieves. Their fallback food (flora, skeletons) is the grazers' food, and the
+# grazers out-eat them. And without caps (r9_grazed_nocap) packs overshoot to 230 and EAT THE PREY OUT
+# (grazers + locusts extinct in seed 3): the pack cap was holding off a predator-prey collapse.
+# R10: (i) partition the carrion - grazers eat plants only, thieves are the scavengers (skeletons + stolen trail
+# + larder); (ii) a real brake on packs instead of the cap: higher metabolism and/or Holling III switching.
+SCAV = dict(GRAZED, **{"grazer.diet": _F, "grazer.macro_mask": _F})
+NOCAP = dict(pack_cap=300, lurker_cap=180)
+R10 = {
+    "r10_scav": dict(FINAL, **SCAV),
+    "r10_scav_nocap_m08": dict(FINAL, **SCAV, **NOCAP, pack_metab=0.08),
+    "r10_scav_nocap_h3": dict(FINAL, **SCAV, **NOCAP, **{"pack.switch_ref": 20.0, "lurker.switch_ref": 20.0}),
+    "r10_scav_nocap_h3_m08": dict(FINAL, **SCAV, **NOCAP, pack_metab=0.08, **{"pack.switch_ref": 20.0, "lurker.switch_ref": 20.0}),
+}
