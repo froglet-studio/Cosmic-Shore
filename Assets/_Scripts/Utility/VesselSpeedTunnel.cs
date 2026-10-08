@@ -270,7 +270,14 @@ namespace CosmicShore.Utility
 
             float target01 = 0f;
             if (!_suppressed && config.Enabled && IsTargetLive())
-                target01 = config.Effect01(_target.Speed);
+            {
+                // The speed the PILOT feels: a warp field (Docs/WARP_FIELD.md) multiplies the world
+                // speed by the vessel's local scale, and a shrunken vessel cruising at its normal
+                // pace must not read as one crawling. Exactly the raw speed with no field.
+                var hull = _target.ShipTransform;
+                float warp = hull ? WarpFieldRuntime.ScaleAt(hull.position) : 1f;
+                target01 = config.Effect01(_target.Speed / warp);
+            }
 
             _effect01 = Mathf.Lerp(_effect01, target01,
                                    1f - Mathf.Exp(-config.Responsiveness * Mathf.Max(0f, deltaTime)));

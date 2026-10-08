@@ -669,21 +669,25 @@ Evidence, on the final tree:
 
 ## 11. The Black Hole cell (Cell Selector)
 
-A freestyle world that is **open water around one black hole at the centre, and nothing else**: no
+A freestyle world that is **open water around one TINY black hole at the centre, inside a radial
+warp field (`Docs/WARP_FIELD.md`)**: as you fly in, you shrink without near-field tells and the hole
+grows until it fills the view. Nothing else is in it: no
 nucleus (the hole is the centre), no flora, no fauna, no laid structure. Fly the Cell Selector in
 Menu_Main's lava lamp and it is the *Black Hole* mini-cell; fly through it and the world you were in
 suctions away and the hole eases in.
 
 | Piece | What it is |
 |---|---|
+| `Black Hole Warp Field` | A `RadialWarp` (reference radius 1000, exponent 1, floor 0.01): the cell's `WarpField`, so every length a player observes is × (r / 1000) — see `Docs/WARP_FIELD.md` §4 for the growth table |
 | `Black Hole Cell Config` | Barren's anatomy (membrane, cytoplasm, its phase ladder — baseline 0 + the Blob deltas) with `NucleusPrefab` empty and `EnvironmentPrefab` = the spawnable below. Not `BootDefault`: the world is opt-in, like every environment-bearing config |
 | `Black Hole Cell Spawn Profile` | Its own empty profile (a copy of Barren's), so retuning Barren's never grows something here |
-| `SpawnableBlackHole` | The environment. `Spawn` lays NOTHING: it calls `BlackHoleRegistry.Spawn` (so `maxBlackHoles` and `IsSane` gate it like any spawn) at the container's origin, which the Cell puts at its centre. Strength 10, size derived, spin about +Y — authored on the prefab |
+| `SpawnableBlackHole` | The environment. `Spawn` lays NOTHING: it calls `BlackHoleRegistry.Spawn` (so `maxBlackHoles` and `IsSane` gate it like any spawn) at the container's origin, which the Cell puts at its centre. Strength **1** (r_s 2 u, shadow 5.2 u — a speck from 1000 u out; the warp field makes it big), size derived, spin about +Y — authored on the prefab |
 | Its generated points | The Cell Selector's scale model only: 48 plates on the hole's shadow sphere (3√3/2 · r_s), so the mini-cell shows a ball instead of an empty slot. Kept under 64 so `CellMiniatureBuilder`'s signature filter keeps every plate. Never laid |
 | `BlackHoleCellAnchor` | On the container. Its first parent is the cell that adopted it; the next re-parent is that cell retiring the world into its suction root, which calls `BeginDespawn` — the hole stops pulling at once and its shadow eases out, rather than the lens sphere being scaled away while the shader still traces the full horizon |
 
 **What the hole does here** is everything above, unchanged: your trail mass near the centre orbits,
-stretches and falls in; your vessel is pulled (it can boost out, §4). A hole is the cell's only mass
+stretches and falls in; your vessel is pulled (it can boost out, §4 — the warp field scales the pull with your
+vessel, so that stays true at 1% scale). A hole is the cell's only mass
 sink here — there is no ecology to feed. **The Arkway skips this world** (`CellConveyor.NextConfig`):
 it builds its corridor from the selector's list minus the worlds that lay nothing, and a live gravity
 well in a satellite cell would pull the Ark; an authored Arkway `Cells` list can still name it.

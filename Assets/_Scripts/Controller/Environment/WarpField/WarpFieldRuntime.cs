@@ -1,5 +1,6 @@
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
@@ -39,8 +40,15 @@ namespace CosmicShore.Gameplay
         /// <summary>The field in effect (possibly still easing out), or null.</summary>
         public static WarpFieldSO Field => _field;
 
-        /// <summary>True while any field contributes (weight above zero).</summary>
-        public static bool IsActive => _field != null && Weight > 0f;
+        /// <summary>True from <see cref="Activate"/> until the field has fully eased out again.</summary>
+        public static bool IsActive
+        {
+            get
+            {
+                _ = Weight;   // retires a field whose ease-out has finished
+                return _field != null;
+            }
+        }
 
         /// <summary>0..1: how far the field is in.</summary>
         public static float Weight
@@ -85,6 +93,14 @@ namespace CosmicShore.Gameplay
             _centreFallback = centre ? centre.position : Vector3.zero;
             _owner = owner;
             Ease(current, 1f, field.EaseSeconds);
+            WarpFieldVesselScaler.EnsureRunning();
+            if (!_sceneHooked)
+            {
+                // A field belongs to the world of one scene; a scene change ends it outright
+                // (the load screen is the transition), never easing into the next scene's vessels.
+                SceneManager.activeSceneChanged += OnActiveSceneChanged;
+                _sceneHooked = true;
+            }
             CSDebug.LogVerbose(CSLogChannel.Ecology,
                 $"[WarpField] {field.name} on, centred at {_centreFallback}, easing in over {field.EaseSeconds:F1}s.");
         }
@@ -101,6 +117,10 @@ namespace CosmicShore.Gameplay
             Ease(Weight, 0f, _field ? _field.EaseSeconds : 0f);
             CSDebug.LogVerbose(CSLogChannel.Ecology, "[WarpField] released, easing out.");
         }
+
+        static bool _sceneHooked;
+
+        static void OnActiveSceneChanged(Scene from, Scene to) => Clear();
 
         static void Ease(float from, float to, float seconds)
         {
@@ -119,6 +139,11 @@ namespace CosmicShore.Gameplay
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => Clear();
+        static void ResetStatics()
+        {
+            Clear();
+            if (_sceneHooked) SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+            _sceneHooked = false;
+        }
     }
 }

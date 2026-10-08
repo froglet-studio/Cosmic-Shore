@@ -107,16 +107,15 @@ namespace CosmicShore.Gameplay
                     a += BlackHolePhysics.Acceleration(pos, well);
                 }
 
-                // In a warped world the vessel is s-sized and its engine runs at s times its speed
-                // (Docs/WARP_FIELD.md), so the pull is felt in the vessel's own units too: scaled by
-                // s, capped at s × the ceiling. In the player's frame the escape rule above is then
-                // unchanged — and the hole, measured in their shrunken lengths, is enormous.
-                float warp = WarpFieldRuntime.ScaleAt(p);
-                var dv = new Vector3(a.x, a.y, a.z) * (scale * dt * warp);
+                // In a warped world (Docs/WARP_FIELD.md) the transformer multiplies this whole
+                // velocity channel by the vessel's local scale, as it does the engine's speed, so
+                // the pull is felt in the vessel's own units and the escape rule above holds in the
+                // player's frame — while the hole, measured in their shrunken lengths, is enormous.
+                var dv = new Vector3(a.x, a.y, a.z) * (scale * dt);
                 pull += dv;
                 if (!inside && config.ReleaseDamping > 0f)
                     pull *= Mathf.Exp(-config.ReleaseDamping * dt);
-                pull = Vector3.ClampMagnitude(pull, maxSpeed * warp);
+                pull = Vector3.ClampMagnitude(pull, maxSpeed);
 
                 if (pull.sqrMagnitude < 1e-4f)
                 {
