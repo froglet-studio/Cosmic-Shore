@@ -17,15 +17,14 @@ namespace CosmicShore.Gameplay
     /// on screen and not already fully covered by its exact view — a 90° square at the authored
     /// face size. No shadows, no anti-aliasing, no post
     /// (the gameplay camera's own post runs over the composited sphere, once). A mouth the player
-    /// cannot see costs nothing — and neither does a SEALED one (below), which shows no view
-    /// through. This is the Butterfly's retired fold-gate window's cost model, widened to a sphere
-    /// the player can see two of.</para>
+    /// cannot see costs nothing — and neither does a SEALED one (an unpaired mouth withering
+    /// away), which shows no view through. This is the Butterfly's retired fold-gate window's
+    /// cost model, widened to a sphere the player can see two of.</para>
     ///
-    /// <para><b>Who may look through.</b> A domain-locked mouth (a Butterfly's fold pair) shows
-    /// its view only to a viewer whose camera follows a pilot of its domain — the pilot whose
-    /// fold it is and their team. To anyone else it is <see cref="WormholeMouth.Sealed"/>: a
-    /// domain-coloured outline with no view through, because a view through is a promise you can
-    /// go there (the fold gate's rule, kept).</para>
+    /// <para><b>Everyone may look through.</b> A view through is a promise you can go there, and
+    /// every pilot can: a mouth carries anyone, and only CHARGES a pilot of another domain
+    /// (<see cref="WormholeMouth.LevyToll"/>). So every viewer gets the view; the rim's domain hue
+    /// is what says whose road it is.</para>
     ///
     /// <para><b>Which camera is looking.</b> The exact view is valid only for the camera it was
     /// rendered for, so the surface uses it only while THAT camera is drawing:
@@ -35,7 +34,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>A ship in the shared interior is seen through either mouth.</b> The two balls are
     /// one place, so a vessel inside (or straddling) ball M is, to a viewer looking through M, a
-    /// vessel inside the partner's ball — and M's exact render draws every vessel M may carry that
+    /// vessel inside the partner's ball — and M's exact render draws every vessel that
     /// is in or cut by M at its mapped position on the far side. That is what shows a nose
     /// disappearing into a mouth in the window, and what shows a Butterfly that has just folded,
     /// sitting at the centre of the destination mouth laid around it, THROUGH that mouth rather
@@ -68,10 +67,6 @@ namespace CosmicShore.Gameplay
         static Transform _subjectRoot;
         static float _subjectRadius;
 
-        // Whose domain is looking: the pilot the gameplay camera follows.
-        static Transform _viewerKey;
-        static VesselStatus _viewerStatus;
-
         // The borrowed pose for the gameplay camera's render during a carry.
         static WormholeMouth _carriedMouth;
         static bool _mainMoved;
@@ -85,8 +80,6 @@ namespace CosmicShore.Gameplay
             _subjectKey = null;
             _subjectRoot = null;
             _subjectRadius = 0f;
-            _viewerKey = null;
-            _viewerStatus = null;
             HullRadii.Clear();
             _carriedMouth = null;
             _mainMoved = false;
@@ -127,19 +120,12 @@ namespace CosmicShore.Gameplay
             var view = controller != null && controller.Camera ? controller.Camera : Camera.main;
             _mainView = view && view.isActiveAndEnabled ? view : null;
 
-            bool knowsDomain = TryResolveViewerDomain(controller, out var viewerDomain);
             for (int i = 0; i < live.Count; i++)
             {
                 var m = live[i];
                 if (!m) continue;
                 m.ExactBlend = 0f;
                 m.PanoramaWanted = false;
-                // Sealed only on POSITIVE evidence that this viewer may not use it: a known domain
-                // that is not the mouth's, and not the mouth's own pilot. A viewer we cannot place
-                // (no follow target yet, a menu rig) sees the view - failing closed here drew a
-                // pilot's own fold pair as a bare outline.
-                m.Sealed = m.DomainLocked && knowsDomain && viewerDomain != m.Domain
-                           && !(m.Owner != null && ReferenceEquals(_viewerStatus, m.Owner));
             }
 
             if (_mainView)
@@ -166,7 +152,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < live.Count; i++)
             {
                 var m = live[i];
-                if (!m || !m.Partner || m.Sealed) continue;
+                if (!m || !m.Partner) continue;
                 float r = m.Radius;
                 if (r <= 0f) continue;
                 if (!GeometryUtility.TestPlanesAABB(FrustumPlanes, new Bounds(m.Centre, Vector3.one * (2f * r))))
@@ -190,7 +176,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < live.Count; i++)
                 {
                     var m = live[i];
-                    if (!m || !m.Partner || m.Sealed || (m.Centre - mouth).sqrMagnitude > 1f) continue;
+                    if (!m || !m.Partner || (m.Centre - mouth).sqrMagnitude > 1f) continue;
                     _carriedMouth = m;
                     if (!Candidates.Contains(m)) Candidates.Add(m);
                     break;
@@ -321,7 +307,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < players.Count; i++)
             {
                 var vessel = players[i]?.Vessel;
-                if (vessel == null || !m.CanCarry(vessel)) continue;
+                if (vessel == null) continue;
                 var root = vessel.Transform;
                 if (!root || MovedRoots.Contains(root)) continue;
                 float reach = r + HullRadius(root);
@@ -357,29 +343,6 @@ namespace CosmicShore.Gameplay
             DeadRadii.Clear();
             foreach (var key in HullRadii.Keys) if (!key) DeadRadii.Add(key);
             for (int i = 0; i < DeadRadii.Count; i++) HullRadii.Remove(DeadRadii[i]);
-        }
-
-        /// <summary>
-        /// The domain of the pilot the gameplay camera is following — the only domain whose locked
-        /// mouths show this viewer a view through. A spectator's camera follows somebody else's
-        /// ship and so sees THAT pilot's mouths, which is what they are watching.
-        /// </summary>
-        static bool TryResolveViewerDomain(CustomCameraController controller, out Domains domain)
-        {
-            domain = Domains.Blue;
-            var target = controller != null ? controller.FollowTarget : null;
-            if (!target) return false;
-            if (target != _viewerKey)
-            {
-                _viewerKey = target;
-                _viewerStatus = target.GetComponentInParent<VesselStatus>();
-            }
-            if (_viewerStatus == null) return false;
-            // IVesselStatus.Domain reads Player and logs when there is none; ask first.
-            IVesselStatus status = _viewerStatus;
-            if (status.Player == null) return false;
-            domain = status.Domain;
-            return true;
         }
 
         /// <summary>Is the followed ship's hull cut by this mouth's sphere?</summary>

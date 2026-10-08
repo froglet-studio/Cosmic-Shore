@@ -336,7 +336,7 @@ screen is unchanged apart from the row itself.
 | Replicated element levels | `R_VesselActionHandler.NetElementLevels`, `R_VesselElementalAbilityHandler.ReplicatedLevel`, `ElementalFloat.EvaluateReplicated` |
 | Dust assets (generated) | `Tools/Build/author_butterfly_dust.py` (`--check`) |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |
-| Fold wormhole (replaced the ring gates 2026-10-08) | `Controller/Environment/Wormhole/WormholeMouth.cs`, `WormholeView.cs`, `WormholeGeometry.cs` (+ `WormholeGeometryTests`); tuning on `ButterflyFoldAction.asset` |
+| Fold wormhole (replaced the ring gates 2026-10-08; carries anyone, rivals pay a petal toll — `BUTTERFLY_FOLD.md` § "Anyone rides") | `Controller/Environment/Wormhole/WormholeMouth.cs`, `WormholeView.cs`, `WormholeGeometry.cs` (+ `WormholeGeometryTests`, `WormholeTollTests`); tuning on `ButterflyFoldAction.asset` |
 | HUD | `UI/Controller/ButterflyHUDController.cs`, `UI/View/ButterflyHUDView.cs` |
 | HUD row + icons (authored) | `Tools/Build/author_butterfly_ability_row.py`, `Tools/Build/author_butterfly_icon_placeholders.py` |
 | Design record | `Assets/Resources/ElementalAbilityMaps/Butterfly.asset` |

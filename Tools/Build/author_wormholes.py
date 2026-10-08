@@ -9,9 +9,10 @@ Emits, deterministically (guid = md5 of a stable name, so a re-run never re-mint
   Assets/_Graphics/Materials/Graphs/Wormhole.shader.meta              the surface shader's meta
   Assets/_Graphics/Materials/Wormhole.mat                             the surface material
 
-and wires ButterflyFoldAction.asset onto that material: every fold leaves a domain-locked wormhole
-pair (they replaced the ring gates), so the asset carries wormholeMaterial / portalWindowFadeBand /
-panoramaFaceSize and not the two ring-only keys (gateExitClearance, portalWindowFadeSeconds).
+and wires ButterflyFoldAction.asset onto that material: every fold leaves a domain-tolled wormhole
+pair (they replaced the ring gates; anyone rides, a rival pays petals), so the asset carries
+wormholeMaterial / portalWindowFadeBand / panoramaFaceSize / rivalTollPetalsPerElement /
+rivalTollShedSpeed and not the two ring-only keys (gateExitClearance, portalWindowFadeSeconds).
 Tuning values a designer may change are only ADDED when absent; the material reference is enforced.
 
 History: this began as author_wormhole_cell.py, which also authored a "Wormhole" Cell Selector
@@ -44,6 +45,9 @@ FOLD_ACTION = A("_SO_Assets", "VesselActions", "Butterfly", "ButterflyFoldAction
 FOLD_ACTION_SCRIPT = A("_Scripts", "Controller", "Vessel", "R_VesselActions", "Data Containers", "FoldActionSO.cs")
 FOLD_RETIRED_KEYS = ("gateExitClearance", "portalWindowFadeSeconds")
 FOLD_ADDED_DEFAULTS = (("portalWindowFadeBand", "600"), ("panoramaFaceSize", "256"))
+# The rival toll's tuning: anchored after gateSettleSeconds (the order FoldActionSO declares them),
+# and like the pair above only ADDED when absent, so a designer's retune is never overwritten.
+FOLD_TOLL_DEFAULTS = (("rivalTollPetalsPerElement", "15"), ("rivalTollShedSpeed", "25"))
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 
 
@@ -241,7 +245,12 @@ def fold_patch(text):
         text = re.sub(r"^  wormholeMaterial: [^\n]*\n", f"  wormholeMaterial: {material}\n", text, flags=re.M)
     else:
         insert += f"  wormholeMaterial: {material}\n"
-    return text[:anchor.end()] + insert + text[anchor.end():]
+    text = text[:anchor.end()] + insert + text[anchor.end():]
+    toll = re.search(r"^  gateSettleSeconds: [^\n]*\n", text, re.M)
+    assert toll, "ButterflyFoldAction.asset has no gateSettleSeconds to anchor the toll on"
+    insert = "".join(f"  {k}: {v}\n" for k, v in FOLD_TOLL_DEFAULTS
+                     if not re.search(rf"^  {k}: ", text, re.M))
+    return text[:toll.end()] + insert + text[toll.end():]
 
 
 def fold_problems(text):
@@ -250,7 +259,8 @@ def fold_problems(text):
     want = fields(FOLD_ACTION_SCRIPT)
     for k in sorted(keys - want):
         problems.append(f"ButterflyFoldAction.asset key '{k}' is not a field of FoldActionSO")
-    for k in ("wormholeMaterial", "portalWindowFadeBand", "panoramaFaceSize"):
+    for k in ("wormholeMaterial", "portalWindowFadeBand", "panoramaFaceSize",
+              "rivalTollPetalsPerElement", "rivalTollShedSpeed"):
         if k not in keys:
             problems.append(f"ButterflyFoldAction.asset does not author '{k}'")
     return problems

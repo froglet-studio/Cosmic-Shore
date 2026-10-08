@@ -548,12 +548,16 @@ namespace CosmicShore.Gameplay
                 ExactRenderScale = so.PortalWindowRenderScale,
                 PanoramaFaceSize = so.PanoramaFaceSize,
                 TransitEvent = gateThreadEvent,
-                // The rim wears the placer's domain: the colour says who may use it.
+                // The rim wears the placer's domain: the colour says who rides it free.
                 RimTint = ToyFactory.DomainAccentColor(_gameData.ThemeManagerData, domain),
-                DomainLocked = true,
+                // Anyone may thread it; a pilot of another domain pays in petals, left on the
+                // mouth's surface as crystals (WormholeMouth.LevyToll).
+                DomainTolled = true,
+                TollPetalsPerElement = so.RivalTollPetalsPerElement,
+                TollShedSpeed = so.RivalTollShedSpeed,
                 Domain = domain,
-                // The pair follows THIS Butterfly: it is always carried and always sees through,
-                // and the lock (and the rim's hue) track its domain live.
+                // The pair follows THIS Butterfly: it always rides free, and the toll (and the
+                // rim's hue) track its domain live.
                 Owner = _status,
                 Theme = _gameData.ThemeManagerData,
             }, _gameData.Players, so.GateRadius);

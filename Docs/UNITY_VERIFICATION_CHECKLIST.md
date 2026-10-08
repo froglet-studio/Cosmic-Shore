@@ -4715,6 +4715,40 @@ domain's rim hue (`_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat` if it re
 
 ---
 
+## 🔴 Butterfly wormholes carry anyone; rivals pay petals (`cece/fervent-gates-ychb6q`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`BUTTERFLY_FOLD.md` § "Anyone rides; rivals pay a toll", `Docs/WORMHOLES.md` §5. The fold pair is no
+longer domain-LOCKED: it carries every pilot and every viewer sees through it (the rival seal is
+deleted — the 🟢 entry above's "sealed bubble" step no longer applies). A pilot NOT of the Butterfly's
+domain has `rivalTollPetalsPerElement` (15 = whole flower) petals stripped per element on each transit,
+left on the surface of the mouth they entered as free-for-all crystals. Runs on every peer from
+`TeleportContinuity`.
+
+1. **Edit-mode:** `WormholeTollTests` (5 tests) and `ElementalDebuffWardTests` stay green.
+2. **Butterfly, own pair (MPPM or solo freestyle):** fold, thread either mouth. Expect: carried, no
+   petals lost, no crystals at the mouth — unchanged from today.
+3. **Rival thread (two domains — MPPM with two clients on different teams, or an AI of another domain
+   flying through):** give the rival some petals (collect crystals), fly it into one mouth. Expect:
+   carried out of the other; its HUD flowers drop to empty (or by the toll); a spill of lime
+   free-for-all crystals, one per petal, on the ENTRY mouth's surface around the entry point, settling
+   ~14 u out — none inside the sphere. Collecting one gives exactly one petal back.
+4. **Rival view:** with the camera on the rival pilot, the pair shows a view through (exact up close,
+   panorama far), not a sealed bubble. The rim still wears the Butterfly's domain hue.
+5. **MPPM two-client:** after a rival transit both clients show the same petal loss on that pilot and
+   each shows its own spill (crystals are per-peer local objects — who collected one may disagree).
+6. **Warded rival:** a Sparrow/Serpent holding an `All` ward threads a rival pair → no petals lost,
+   no crystals.
+7. **Console:** no `[ElementalCrystalEjector] … are LOST` error (that would mean
+   `Resources/ElementalCrystalSet` is missing a prefab).
+
+| Knob (`ButterflyFoldAction.asset`) | First pass | If it plays wrong |
+|---|---|---|
+| `rivalTollPetalsPerElement` | 15 | Reads as a de-facto lock → try 2–3 |
+| `rivalTollShedSpeed` | 25 | Spill too tight / too far from the mouth |
+| `WormholeMouth.TollSpreadDegrees` (const) | 30 | Spill a clump → widen; can't tell whose entry → narrow |
+
+---
+
 ## 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
 
 `CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
