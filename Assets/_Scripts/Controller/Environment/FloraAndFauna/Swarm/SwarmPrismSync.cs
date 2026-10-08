@@ -61,6 +61,13 @@ namespace CosmicShore.Gameplay
             return y > 0.001f ? y : 0.001f;
         }
 
+        /// <summary>The pose's square root. Not MathF.Sqrt: that is an InternalCall in Unity's Mono, which Burst cannot link -
+        /// Editor.log reads "Unable to find internal function `System.MathF::Sqrt`" and Burst then turns off for EVERY job in
+        /// Assembly-CSharp, since they share one Burst library (Docs/SWARM_FAUNA.md §19.4). System.Math.Sqrt is a Burst
+        /// intrinsic, and bit-identical to MathF's here: the correctly rounded double root of a float rounds to the correctly
+        /// rounded float root.</summary>
+        static float Sqrt(float x) => (float)Math.Sqrt(x);
+
         /// <summary>
         /// THE body pose (Docs/SWARM_FAUNA.md §19.2, round 11a-2): the world matrix of member <paramref name="s"/>'s body at
         /// display <paramref name="alpha"/>, COLUMN-MAJOR (the layout of Unity.Mathematics.float4x4 and so of the entity's
@@ -70,8 +77,9 @@ namespace CosmicShore.Gameplay
         ///
         /// Written ONCE, for two callers: the per-frame Burst job (<c>SwarmPoseJob</c>, the glue) and the managed
         /// <see cref="Matrix"/>/<see cref="Matrices"/> the harness runs (R11d). So it is Burst-compilable plain C#: scalar
-        /// floats, field reads of the System.Numerics structs (no Vector3 method or operator), <see cref="MathF"/> only,
-        /// no managed reference, no allocation.
+        /// floats, field reads of the System.Numerics structs (no Vector3 method or operator), MathF.Abs and the
+        /// <see cref="Sqrt"/> helper only (no other MathF member: an InternalCall Burst cannot link), no managed reference,
+        /// no allocation.
         /// </summary>
         public static void PoseMatrix(in SwarmInstance s, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt,
                                       out SwarmPoseMatrix m)
@@ -84,8 +92,8 @@ namespace CosmicShore.Gameplay
             float fx = s.PrevFace.X + (s.CurFace.X - s.PrevFace.X) * alpha;
             float fy = s.PrevFace.Y + (s.CurFace.Y - s.PrevFace.Y) * alpha;
             float fz = s.PrevFace.Z + (s.CurFace.Z - s.PrevFace.Z) * alpha;
-            float fl = MathF.Sqrt(fx * fx + fy * fy + fz * fz);
-            if (fl < 1e-5f) { fx = s.CurFace.X; fy = s.CurFace.Y; fz = s.CurFace.Z; fl = MathF.Sqrt(fx * fx + fy * fy + fz * fz); }
+            float fl = Sqrt(fx * fx + fy * fy + fz * fz);
+            if (fl < 1e-5f) { fx = s.CurFace.X; fy = s.CurFace.Y; fz = s.CurFace.Z; fl = Sqrt(fx * fx + fy * fy + fz * fz); }
 
             // SwarmBasis: bz = face, bx = up x bz (upAlt when face ~ up), by = bz x bx
             float bzx, bzy, bzz;
@@ -93,7 +101,7 @@ namespace CosmicShore.Gameplay
             float ux = up.X, uy = up.Y, uz = up.Z;
             if (MathF.Abs(bzx * ux + bzy * uy + bzz * uz) > 0.98f) { ux = upAlt.X; uy = upAlt.Y; uz = upAlt.Z; }
             float bxx = uy * bzz - uz * bzy, bxy = uz * bzx - ux * bzz, bxz = ux * bzy - uy * bzx;
-            float lx = MathF.Sqrt(bxx * bxx + bxy * bxy + bxz * bxz);
+            float lx = Sqrt(bxx * bxx + bxy * bxy + bxz * bxz);
             if (lx > 1e-6f) { bxx /= lx; bxy /= lx; bxz /= lx; } else { bxx = 1f; bxy = 0f; bxz = 0f; }
             float byx = bzy * bxz - bzz * bxy, byy = bzz * bxx - bzx * bxz, byz = bzx * bxy - bzy * bxx;
 

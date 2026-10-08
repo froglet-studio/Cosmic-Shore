@@ -589,8 +589,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     "not compiled it yet - the Editor compiles in the background after every script change or " +
                     "branch switch - or when Burst cannot compile it. Those rows, and the frame time, are several " +
                     "times too large. Capture again a minute later; if this note is still here, Burst is failing: " +
-                    "run the 'burst' console command and search the Console (or Editor.log) for \"Burst\". " +
-                    "Seen 2026-10-07 for 15 hours on end.");
+                    "run the 'burst' console command - it prints Burst's own refusal from Editor.log (the " +
+                    "jobs it disabled and the externs it could not link). Seen 2026-10-07 for 15 hours on end: " +
+                    "two jobs called MathF.Sqrt/Sin/..., which Burst cannot link, and that disabled every job.");
             }
         }
 

@@ -321,7 +321,8 @@ The main thread pays the array copies (~30 capacity-sized arrays in, 14 out); th
   one-line helpers. It checks that the kernel structs hold only blittable fields, and that the job is
   `[BurstCompile] ... : IJobParallelFor` with only NativeArray/blittable fields and calls the kernel. Negative control:
   the pre-11c step trips 7 rules. Mutations checked by hand: `var`, `Math.`, a `Vector3` local, a managed array, a
-  string field, a managed job field and a missing `[BurstCompile]` each fail it.
+  string field, a managed job field and a missing `[BurstCompile]` each fail it. Since 2026-10-08 it also fails any
+  `MathF` member other than `Min/Max/Abs/PI` anywhere in the kernel file (§7.6), and the pre-11c step trips 7 rules.
 - **Bit-match (group K):** each agent is stepped by the reference and by the kernel from the same saved state. All
   212,859 agent-steps were bit-identical on .NET.
 - **Split tick (group J):** the parked tick plus a main-thread `RunAgentPass` publishes exactly the plain tick.
@@ -367,6 +368,22 @@ Both holds are asserted.
 - **Burst never compiled the job.** Burst is not available here. `Span`/`ReadOnlySpan` locals, `stackalloc` into a
   `Span`, `NativeArray.AsSpan()/AsReadOnlySpan()` and `System.Numerics.Vector3` as a plain struct are Burst-supported
   as far as we know (Burst 1.8 docs), but the Burst Inspector is the proof (QA-SWARM-ROUND11-8).
+- **Found 2026-10-08: the kernel could not link, and that turned Burst off for every job in the game.** The text gate
+  recommended `MathF`. In Unity's Mono, `MathF.Sqrt/Sin/Cos/Acos/Exp/Pow` are InternalCalls: externs with no IL body.
+  Burst's editor JIT resolves an extern through the engine, the engine does not have these, and Editor.log reads
+  `` Unable to find internal function `System.MathF::Sqrt` `` (then Acos, Pow, Exp, Sin, Cos). Every Assembly-CSharp job
+  is built into ONE Burst library (15 entry points), so the failed link left the whole library unusable:
+  `` Burst is disabled for ... due to a failure to resolve one or more `extern` methods ``, for the prism, AOE, LOD and
+  cell-volume jobs too. They ran as managed code in every mode from the day this job and `SwarmPoseJob` landed
+  (`bleeding-edge`, 10-05; `Docs/SKIM_RACE_AI.md` §8.0k). The Burst Inspector compiled each job cleanly on its own and showed nothing.
+  - **Fix.** The kernel calls one-line `(float)System.Math` helpers (`Sqrt`, `Sin`, `Cos`, `Acos`, `Exp`, `Pow`),
+    which Burst lowers to intrinsics. `MathF.Min/Max/Abs` are plain IL and stay. The gate now fails on any other
+    `MathF` member anywhere in the kernel file, checks the helpers' form, and has its own negative control. On the
+    10-07 kernel it names exactly the six functions Editor.log named.
+  - **Bit-match.** `Sqrt` is bit-identical to `MathF.Sqrt`. The other five differ in the last bit on some inputs:
+    98.4 % of agent-steps were bit-identical, max 6e-5 u. `ReferenceStep.cs` now uses the same primitives, because K
+    proves the restructure, and K is back to 100 % (206,100 agent-steps). Every other group passes unchanged.
+  - **Run `burst` in the console to check it in Unity.** It prints Burst's refusal from Editor.log, if there is one.
 - **Burst's floats are not bit-matched.** Burst's math intrinsics may round differently from .NET's. The bit-match is
   .NET-to-.NET. Behaviour under Burst is expected to match to float rounding, not bits.
 - **The safety system was not run.** The job's `[NativeDisableParallelForRestriction]` writes (slot `Live[q]`, not

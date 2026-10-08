@@ -89,3 +89,12 @@
   when an event LAST started and is never cleared, so it cannot tell a held ability from one
   released a minute ago
 - Subscribing to per-`RoundStats` C# stat events (`OnScoreChanged`, `OnAnyStatChanged`, `OnCrystalsCollectedChanged`, …) with cleanup gated on `OnMiniGameTurnEnd`, or unsubscribing by iterating `gameData.RoundStatsList` — `RoundStats` lives on the **persistent** Player NetworkObject (survives every scene transition), a mid-turn scene exit never fires the turn-end cleanup, and `SceneLoader.LoadSceneAsync` clears the roster lists via `ResetRuntimeData()` BEFORE the old scene's objects are destroyed, so list-based unsubscribe loops detach nothing. The leaked delegates fire inside the next game's stat-setter raise chains and can silently kill the game-end flow (`Docs/ScoringSystem/BUGS.md` B15). Instead: track the stats you actually subscribed to and detach from that record in `OnDestroy` (see `NetworkCrystalCollisionTurnMonitor` / `MultiplayerHUD`); `Player.PrepareForNewScene` / `InitializeForMultiplayerMode` purge any stragglers via `RoundStats.ClearEventSubscriptions()` at every scene entry
+- **`System.MathF.Sqrt/Sin/Cos/Acos/Exp/Pow` (or any `MathF` member but `Min/Max/Abs/PI`) in code a `[BurstCompile]`
+  job reaches.** In Unity's Mono those members are InternalCalls, externs with no IL body, and Burst cannot link them.
+  Burst builds EVERY Assembly-CSharp job into one library, so one such call turns Burst off for all of them, including
+  jobs that never touch `MathF`. From 10-05 to 10-08 every game job ran as managed code because `SubstrateKernel` and
+  `SwarmBodyPose` called `MathF`. Their text gates even recommended it. The only report was in `Editor.log`
+  (`` Unable to find internal function `System.MathF::Sqrt` ``, then `Burst is disabled for ...`), while the Burst
+  Inspector compiled each job cleanly. Use `Unity.Mathematics.math`, or a one-line `(float)System.Math.X` helper in
+  pure-C# code shared with a .NET harness. Both are Burst intrinsics. Run the `burst` console command to check: it
+  probes a job and prints Burst's refusal from the log (`Docs/SKIM_RACE_AI.md` §8.0k)

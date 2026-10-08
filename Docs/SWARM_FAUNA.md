@@ -2060,7 +2060,8 @@ jobs.
 
 **What changed:**
 - **The pose is one function.** `SwarmBodyPose.PoseMatrix` is a scalar, Burst-compilable static function: field
-  reads, `MathF`, no `System.Numerics` method, no allocation. Two callers run it:
+  reads, `MathF.Abs` and a one-line `(float)System.Math.Sqrt` helper, no other `MathF` member, no `System.Numerics`
+  method, no allocation. Two callers run it:
   - **The game.** `SwarmPoseJob`, a `[BurstCompile] IJobParallelFor` in batches of 128, writes `float4x4`
     directly. It reads native copies of the published frame and of the shown-slot list, refreshed once per tick (two
     memcpys).
@@ -2069,6 +2070,13 @@ jobs.
     difference is 6e-5 u, which is float rounding at world coordinates.
   - **The Burst gate.** `check_burst_pose.py` runs inside `run.sh`. It is a textual check that the function stays
     inside what Burst compiles. Its negative control is the round-11a pose, which trips 5 rules.
+  - **Found 2026-10-08: `MathF.Sqrt` broke Burst for the whole game.** The pose first called `MathF.Sqrt`, as the
+    gate recommended. In Unity's Mono that is an InternalCall that Burst cannot link. Editor.log reads
+    `` Unable to find internal function `System.MathF::Sqrt` ``. Every Assembly-CSharp job shares one Burst library,
+    so from 10-05 every game job ran as managed code (`Docs/SUBSTRATE_FAUNA.md` §7.6, whose agent kernel had the
+    same defect; `Docs/SKIM_RACE_AI.md` §8.0k). The pose now calls `(float)Math.Sqrt`. That is a Burst intrinsic and bit-identical to `MathF.Sqrt`,
+    and R11d is unchanged. The gate now fails on any `MathF` member other than `Min/Max/Abs/PI` anywhere in
+    `SwarmBodyPose`, and on the 10-07 file it reports the one `MathF.Sqrt`.
 - **The job runs alongside other work.** `SwarmFauna.Update` schedules the job as soon as the frame's alpha is
   known and wakes the workers with `ScheduleBatchedJobs`. It then poses the proxies and issues the heart draw while
   the job runs.

@@ -1,6 +1,11 @@
 // Round 11c (Docs/SUBSTRATE_FAUNA.md §7): the PRE-11c managed agent step, kept verbatim (System.Numerics, the core's
 // arrays, the field grids read in place) as the REFERENCE the Burst-shaped SubstrateKernel.StepAgent is bit-matched
 // against (group K), and as check_burst_substrate.py's negative control: it must FAIL that gate.
+//
+// One deliberate edit to "verbatim" (2026-10-08): its MathF.Sin/Cos/Acos/Exp/Pow became (float)Math.*, the primitives
+// the kernel now calls because Burst cannot link MathF's InternalCalls (Docs/SUBSTRATE_FAUNA.md §7.6). The two differ in
+// the last bit on some inputs (98.4 % of agent-steps bit-identical, max 6e-5 u), and K proves the kernel's RESTRUCTURE,
+// so both sides use the same primitives. The step's logic is untouched.
 using System;
 using System.Numerics;
 
@@ -77,9 +82,9 @@ namespace CosmicShore.Gameplay
                 if (P.QUp < 9f)
                 {
                     float sig = P.QWDens * cnt / P.DensNorm + P.QWProx * prox + P.QWAlarm * MathF.Min(alarm, 2f) + P.QWClose * Closure[i];
-                    float s = sig * MathF.Pow(h, P.QHunger);
+                    float s = sig * (float)Math.Pow(h, P.QHunger);
                     float th = QTarget[i] > 0.5f ? P.QDown : P.QUp;
-                    float tg = 1f / (1f + MathF.Exp(-(s - th) / P.QWidth));
+                    float tg = 1f / (1f + (float)Math.Exp(-(s - th) / P.QWidth));
                     float c = P.QContagion;
                     if (cnt > 0f) tg = (1f - c) * tg + c * MathF.Max(tg, mph);
                     QTarget[i] = resting ? 0f : tg;
@@ -114,9 +119,9 @@ namespace CosmicShore.Gameplay
                 float tt = core.Tick * 0.05f;
                 var ws = WSeed[i];
                 var wv = new Vector3(
-                    MathF.Sin(ws.X + tt) + 0.6f * MathF.Sin(1.7f * ws.Z + tt * 2.1f),
-                    MathF.Sin(ws.Y + tt * 1.3f) + 0.6f * MathF.Sin(1.7f * ws.Y + tt * 2.1f),
-                    MathF.Sin(ws.Z + tt * 0.7f) + 0.6f * MathF.Sin(1.7f * ws.X + tt * 2.1f));
+                    (float)Math.Sin(ws.X + tt) + 0.6f * (float)Math.Sin(1.7f * ws.Z + tt * 2.1f),
+                    (float)Math.Sin(ws.Y + tt * 1.3f) + 0.6f * (float)Math.Sin(1.7f * ws.Y + tt * 2.1f),
+                    (float)Math.Sin(ws.Z + tt * 0.7f) + 0.6f * (float)Math.Sin(1.7f * ws.X + tt * 2.1f));
                 Paint(I, dirs, wv, W.WWander);
                 bool creeping = false;
                 if (pj >= 0)
@@ -135,7 +140,7 @@ namespace CosmicShore.Gameplay
                         var a = SubstrateCore.Unit(new Vector3(-f.Z + 1e-6f, 1e-6f, f.X + 1e-6f));   // cross(f, up)
                         var b = Vector3.Cross(f, a);
                         float an = 2f * MathF.PI * ((i - pop.Start) % P.RingRoles) / P.RingRoles;
-                        var slot = pil.Pos + f * 40f + W.RingR * (MathF.Cos(an) * a + MathF.Sin(an) * b);
+                        var slot = pil.Pos + f * 40f + W.RingR * ((float)Math.Cos(an) * a + (float)Math.Sin(an) * b);
                         Paint(I, dirs, slot - p, W.WRing * ag * near);
                     }
                     PaintD(G, dirs, -tp, W.WFlee * fe * prox);
@@ -227,7 +232,7 @@ namespace CosmicShore.Gameplay
                 var hd = vs > 1e-6f ? vel / vs : IDir[i];
                 var t = IDir[i];
                 float c = Math.Clamp(Vector3.Dot(hd, t), -1f, 1f);
-                float ang = MathF.Acos(c);
+                float ang = (float)Math.Acos(c);
                 float kk = MathF.Min(1f, turn * dt / MathF.Max(ang, 1e-6f));
                 var nd = hd + (t - hd) * kk;
                 nd /= MathF.Max(nd.Length(), 1e-9f);

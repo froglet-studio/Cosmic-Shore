@@ -1,7 +1,8 @@
 // Round 11b-2 (Docs/SUBSTRATE_FAUNA.md §7): ONE agent's step as a static pure function over struct-of-arrays - the
 // research's fused kernel (kernels_nb.fused_step) plus the bestiary primitives - written so Burst compiles it: scalar
-// float maths, MathF, Span reads and writes, nothing else. No System.Numerics method or operator, no System.Math, no
-// allocation, no managed type (Tools/Build/substrate_harness/check_burst_substrate.py is the gate).
+// float maths, MathF.Min/Max/Abs, the (float)System.Math helpers below, Span reads and writes, nothing else. No
+// System.Numerics method or operator, no other MathF member (an InternalCall Burst cannot link), no allocation, no
+// managed type (Tools/Build/substrate_harness/check_burst_substrate.py is the gate).
 //
 // The SAME function runs in three places: SubstrateCore's managed agent pass (the harness, Parallel.For over workers),
 // the game's [BurstCompile] SubstrateAgentJob (an IJobParallelFor per population, chained in population order), and
@@ -111,7 +112,24 @@ namespace CosmicShore.Gameplay
 
         static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
-        static float Len(float x, float y, float z) => MathF.Sqrt(x * x + y * y + z * z);
+        static float Len(float x, float y, float z) => Sqrt(x * x + y * y + z * z);
+
+        // MathF's Sqrt/Sin/Cos/Acos/Exp/Pow are InternalCalls in Unity's Mono (externs with no IL body), and Burst cannot
+        // link one: Editor.log reads "Unable to find internal function `System.MathF::Sqrt`" and then "Burst is disabled
+        // for" every job in Assembly-CSharp, because they all share one Burst library (Docs/SUBSTRATE_FAUNA.md §7.6).
+        // System.Math's are Burst intrinsics. MathF.Min/Max/Abs are plain IL and stay. Sqrt is bit-identical to MathF's
+        // (a correctly rounded double root of a float rounds to the correctly rounded float root).
+        static float Sqrt(float x) => (float)Math.Sqrt(x);
+
+        static float Sin(float x) => (float)Math.Sin(x);
+
+        static float Cos(float x) => (float)Math.Cos(x);
+
+        static float Acos(float x) => (float)Math.Acos(x);
+
+        static float Exp(float x) => (float)Math.Exp(x);
+
+        static float Pow(float x, float y) => (float)Math.Pow(x, y);
 
         static long Hash(long k) => unchecked(k * (long)0x9E3779B97F4A7C15) & 0x7FFFFFFFFFFFFFFF;
 
@@ -253,9 +271,9 @@ namespace CosmicShore.Gameplay
                         float rd = Len(s.Pilots[pj].Pos.X - s.Home[i].X, s.Pilots[pj].Pos.Y - s.Home[i].Y, s.Pilots[pj].Pos.Z - s.Home[i].Z);
                         if (pspd < k.SlowBelow || rd < k.RoostR) sig += k.QWProvoke;
                     }
-                    float sq = sig * MathF.Pow(h, k.QHunger);
+                    float sq = sig * Pow(h, k.QHunger);
                     float th = s.QTarget[i] > 0.5f ? k.QDown : k.QUp;
-                    float tg = 1f / (1f + MathF.Exp(-(sq - th) / k.QWidth));
+                    float tg = 1f / (1f + Exp(-(sq - th) / k.QWidth));
                     float qc = k.QContagion;
                     if (cnt > 0f) tg = (1f - qc) * tg + qc * MathF.Max(tg, mph);
                     s.QTarget[i] = resting && k.RestHoldsPhase == 0 ? 0f : tg;
@@ -309,9 +327,9 @@ namespace CosmicShore.Gameplay
                 float tt = w.Tick * 0.05f;
                 float wsx = s.WSeed[i].X, wsy = s.WSeed[i].Y, wsz = s.WSeed[i].Z;
                 Paint(I, s.Dirs, nd,
-                      MathF.Sin(wsx + tt) + 0.6f * MathF.Sin(1.7f * wsz + tt * 2.1f),
-                      MathF.Sin(wsy + tt * 1.3f) + 0.6f * MathF.Sin(1.7f * wsy + tt * 2.1f),
-                      MathF.Sin(wsz + tt * 0.7f) + 0.6f * MathF.Sin(1.7f * wsx + tt * 2.1f), wWander);
+                      Sin(wsx + tt) + 0.6f * Sin(1.7f * wsz + tt * 2.1f),
+                      Sin(wsy + tt * 1.3f) + 0.6f * Sin(1.7f * wsy + tt * 2.1f),
+                      Sin(wsz + tt * 0.7f) + 0.6f * Sin(1.7f * wsx + tt * 2.1f), wWander);
                 bool creeping = false;
                 bool watched = false;
                 if (pj >= 0)
@@ -354,7 +372,7 @@ namespace CosmicShore.Gameplay
                         float bx = fy * az - fz * ay, by = fz * ax - fx * az, bz = fx * ay - fy * ax;
                         float ang = 2f * MathF.PI * ((i - k.Start) % k.RingRoles) / k.RingRoles;
                         if (holding) ang += HoldOrbit * w.Tick * w.Dt;   // the held ring circles the pilot
-                        float ca = MathF.Cos(ang), sa = MathF.Sin(ang);
+                        float ca = Cos(ang), sa = Sin(ang);
                         float slx = (ppx + fx * 40f) + ringR * (ca * ax + sa * bx);
                         float sly = (ppy + fy * 40f) + ringR * (ca * ay + sa * by);
                         float slz = (ppz + fz * 40f) + ringR * (ca * az + sa * bz);
@@ -510,7 +528,7 @@ namespace CosmicShore.Gameplay
                 else { hx = s.IDir[i].X; hy = s.IDir[i].Y; hz = s.IDir[i].Z; }
                 float tx = s.IDir[i].X, ty = s.IDir[i].Y, tz = s.IDir[i].Z;
                 float c = Clamp(hx * tx + hy * ty + hz * tz, -1f, 1f);
-                float ang = MathF.Acos(c);
+                float ang = Acos(c);
                 float kk = MathF.Min(1f, turn * dt / MathF.Max(ang, 1e-6f));
                 float nx = hx + (tx - hx) * kk, ny = hy + (ty - hy) * kk, nz = hz + (tz - hz) * kk;
                 float nl = MathF.Max(Len(nx, ny, nz), 1e-9f);

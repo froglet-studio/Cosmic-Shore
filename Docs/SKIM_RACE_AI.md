@@ -469,6 +469,46 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0k Why the game's Burst jobs ran managed: two jobs called `MathF` (2026-10-08)
+
+**Release baseline, with the jobs still managed** (editor, Release code optimization, I2, 2 AI seats, 987
+frames, vsync on): 65.8 fps; frame avg 15.2 ms, p50 15.0, p95 19.9, p99 22.9; CPU busy 13.1 ms, GPU 3.7 ms.
+`SkimRace.Pilot.Decide` avg 2.35 / p95 4.83 ms for both seats; `TrackMpc` avg 1.45 / p95 3.64 ms (52% of
+frames, so the stagger holds); `ShellContact.Query` 0.39 ms. `prof` still flags 0.32 ms a frame of managed
+jobs on the main thread: `ShellContactQueryJob` 0.23, `PrismRender.TransformFlush` 0.06, `LOD.Sweep` 0.03.
+Package jobs run as Burst after the cache clean.
+
+**The cause, from `Editor.log`.** Burst wrote it there, while the Burst Inspector compiled the same jobs
+cleanly and showed nothing:
+
+1. `` Unable to find internal function `System.MathF::Sqrt` ``, then the same for `Acos`, `Pow`, `Exp`,
+   `Sin` and `Cos`.
+2. `` Burst is disabled for `...JobStruct`1[[CosmicShore.Gameplay.CellVolumeSumJob ...` due to a failure to
+   resolve one or more `extern` methods called by this entry-point ``. The same line follows for
+   `LodClassifyJob`, `ShellContactQueryJob`, `FindDensestRegionJob` and `WriteLocalToWorldJob`.
+
+In Unity's Mono, `MathF.Sqrt/Sin/Cos/Acos/Exp/Pow` are InternalCalls: externs with no IL body. Burst's JIT
+resolves an extern through the engine, and the engine does not have these. Two jobs that landed on
+`bleeding-edge` on 10-05 call them: `SubstrateAgentJob` (`SubstrateKernel.StepAgent`, all six) and `SwarmPoseJob`
+(`SwarmBodyPose.PoseMatrix`, `Sqrt`). Their text gates recommended `MathF`. Burst builds every Assembly-CSharp
+job into ONE library (the log's compile report: 15 entry points), and one unlinkable extern makes the whole
+library unusable. So Skim Race's shell-contact, render and LOD jobs ran managed although they call no `MathF`,
+and so did the `burst` probe. That is why it held in Debug and Release, with Synchronous Compilation, and
+across a cache clean. The two jobs reached this branch with the 10-06 `Ys-bleeding-edge` merge, which is
+when the managed jobs began (§8.0j).
+
+**Fix (this branch).** Both kernels call one-line `(float)System.Math` helpers, which Burst lowers to
+intrinsics; `MathF.Min/Max/Abs` are plain IL and stay. Both gates now fail on any other `MathF` member in
+the Burst-reached file or class, and on the 10-07 sources they name exactly the functions `Editor.log` named.
+The pose is bit-identical (`Sqrt`). The substrate kernel differs from `MathF` in the last bit, so its
+reference step uses the same primitives and group K is again 100% bit-identical. Every substrate, swarm,
+ecology-LOD and showcase-cell harness passes (`Docs/SUBSTRATE_FAUNA.md` §7.6, `Docs/SWARM_FAUNA.md` §19.4).
+`burst` now also prints Burst's own refusal from the log, counting only lines since the last domain reload.
+
+**Expected in Skim Race:** about 0.3 ms of main thread back (`ShellContact.Query` to ~0.1 ms), and the shell
+query's worker time. It will be more in ecology modes, which run the substrate, swarm and cell-volume jobs.
+**Not yet measured in Unity.**
+
 ### 8.0j The stagger in the editor, and the game's Burst jobs running as managed code (2026-10-07, evening)
 
 `diag` + `prof`, I2 with 2 AI, same machine, on `e8fc01dcd`; all `SkimRaceAITests` green in the editor.

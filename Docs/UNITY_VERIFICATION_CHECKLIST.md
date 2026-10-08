@@ -65,7 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 `burst` console command; `prof` records the run environment (`perf/performance-optimization`, 2026-10-08)
+### 🔴 The game's Burst jobs compile again: no `MathF` externs in Burst code; `burst` reads Burst's refusal from the log (`perf/performance-optimization`, 2026-10-08)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0k): `SubstrateKernel` (SubstrateAgentJob) and `SwarmBodyPose.PoseMatrix`
+(SwarmPoseJob) call one-line `(float)System.Math` helpers instead of `MathF.Sqrt/Sin/Cos/Acos/Exp/Pow`. Those are
+InternalCalls Burst cannot link, and because every Assembly-CSharp job shares one Burst library, they ran every game
+job as managed code. `check_burst_substrate.py` and `check_burst_pose.py` fail on any other `MathF` member. The
+harness's `ReferenceStep.cs` uses the same primitives. `burst` appends Burst's refusal from the editor log
+(`BurstProbe.LogReasons`: jobs disabled, reason, unresolved InternalCalls, since the last domain reload). The prof
+managed-job note points at it.
+
+**Verified without the editor:** both gates fail on the 10-07 sources, naming exactly the six functions Editor.log
+named, and pass now. The substrate harness passes in full, with group K 100% bit-identical over 206,100 agent-steps.
+The swarm core, swarm and substrate glue type-checks, the ecology-LOD and showcase-cell harnesses pass.
+`BurstProbeTests` 4/4 on .NET, plus a mutation the reload test catches. Run against the user's 10-08 Editor.log,
+`burst` names the five disabled jobs and the six externs. unity_refcompile: player and player-dev OK; editor config
+has no errors in changed files (the 4 known old ones elsewhere). The Froglet Engine live compile builds, and its
+tests pass 1596/1596 and 352/352. Gates pass. /verify-unity was not available: not compiled in the Editor.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `BurstProbeTests` (4) and `ProfilerCaptureTests` pass.
+2. Skim Race, Play mode, F7 console: `burst` ends `Run() BURST, Schedule() BURST | log: no Burst refusal since the
+   last domain reload ...`.
+3. `diag`: `ShellContact.Query` ~0.1 ms (0.39 before). `prof`: no managed-job note; the workers' `ShellContactQueryJob`
+   rows read `(Burst)`.
+4. Menu_Main freestyle, Cell Selector > **Swarm** (`Docs/SWARM_FAUNA.md` §5), then a cell with substrate fauna
+   (the demo cell's pack, `Docs/SUBSTRATE_FAUNA.md` §7.7): swarm bodies are posed nose-first, the pack still rings
+   and strikes, and the Console has no new job errors. These two jobs never ran as Burst before, so this is their
+   first run under Burst.
+
+### 🟡 `burst` console command; `prof` records the run environment (`perf/performance-optimization`, 2026-10-08)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0j): `BurstProbe` (DiagnosticsHUD `burst`) prints Burst's
 switches, an attached debugger and the Code Optimization, then runs a `[BurstCompile(CompileSynchronously =
@@ -82,6 +111,9 @@ and editor configs, no errors in the changed files; the Froglet Engine live comp
 2. In Play mode, F7 console: `burst` prints one line ending in `probe job in Assembly-CSharp: Run() …,
    Schedule() …`. On a healthy editor both say `BURST`.
 3. `prof`: the JSON has an `environment` block and the .txt an `environment` line.
+
+**Partly confirmed 2026-10-08:** step 2's line printed in Debug and in Release (both `MANAGED`, which led to the
+fix in the entry above). `BURST` on a healthy editor is still owed.
 
 ### 🔴 Party request discipline — review Phases 0–1 (`Ys-bleeding-edge`, 2026-10-07)
 
