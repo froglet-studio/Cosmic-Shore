@@ -1845,6 +1845,37 @@ If the deliberate error does not fire, the file is not in the build — add it t
 list and start over. Treat "I added a file to the harness" as requiring this check every time; the
 failure mode is a green build that proves nothing, which is the exact thing a harness exists to
 rule out.
+
+### Technique: run a NetworkBehaviour as TWO MACHINES — partial class + an RPC router
+
+A question about REPLICATION ("does every peer run the same thing for this press?") is invisible
+to any single-machine test and normally needs an MPPM session or two devices. When the replication
+is by RE-EXECUTION (an RPC carries an input and each peer resolves it itself), it can be answered
+out of editor from the shipped file, in seconds:
+
+- **Two edits to the real file, nothing else.** Make the class `partial`, and cut its `[ServerRpc]`
+  methods out (signature regex + brace-match, HARD-FAIL if absent). A generated partial supplies
+  same-signature replacements that loop over a `List<Self> Copies` and call each copy's REAL
+  `[ClientRpc]` method — the owner's own copy included, as Netcode does. Everything the RPCs
+  resolve and run is the shipped code; the generator re-derives the signature from the file, so
+  one driver runs an OLD revision (`git show <rev>:path`) and the new one alike — which is the
+  repro and the proof in one tool.
+- **One object per machine, each with its OWN view of the replicated state** (here: a fake input
+  status per copy, so the peer can disagree with the owner about the device). Actions are
+  recorders that log into the status passed to them, so "what did each machine run" is a list
+  compare. Feed it every shipped prefab's data, parsed from YAML, not a hand-built case.
+- **Give every mechanism of the fix its own scenario, or its negative control cannot fire.** The
+  2026-10 press fix had two release mechanisms that back each other up on the ordinary networked
+  path (the owner sends the pressed device; every copy also prefers its own record). Removing
+  either one alone changed NOTHING there — the harness looked blind. Only adding the path each
+  covers alone (the non-networked single machine; a peer that joined mid-hold and never ran the
+  press) made each removal fail. **A mutation that does not fire may mean a sibling covers it, not
+  that the harness cannot see** — find the scenario where it is the only cover before concluding
+  either way. Ship the mutations as `--self-test`.
+- It proves what each machine RESOLVES and RUNS, never Netcode itself (delivery, ordering,
+  ownership) — say so. Worked example: `Tools/Build/peer_press_harness/` (`R_VesselActionHandler`,
+  `R_VesselActions/SQUIRREL_DRIFT.md` §11).
+
 ### Technique: gate a DTO round-trip BY REFLECTION, not field by field
 
 A payload struct that crosses the wire through a hand-written DTO (Unity Netcode's

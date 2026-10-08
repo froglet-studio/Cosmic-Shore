@@ -31,6 +31,9 @@ What it does NOT prove: anything Netcode itself does (delivery, ordering, owners
 InputStatus NetworkVariable, or executor behaviour - actions are recorders. It is a statement about
 what each machine RESOLVES and RUNS for a press, which is where the 2026-10 divergence lived.
 
+A READER: it writes only its own build scratch under $TMPDIR/peer_press_harness/, never the repo
+and never an asset, so it has no output to land (CLAUDE.md, "Tool output is a deliverable").
+
 Needs the .NET 8 SDK: $DOTNET_ROOT, ~/.dotnet or /usr/lib/dotnet (see the asset-surgery skill
 section 4 for a per-user install). Exit 2 if none is found.
 """

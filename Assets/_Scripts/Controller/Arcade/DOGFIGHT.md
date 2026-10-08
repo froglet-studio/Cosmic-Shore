@@ -171,8 +171,8 @@ one the server's own physics sees the same collision with the same attribution a
 **Projectiles are not like that.** A bullet or a skyburst is a pooled **local** object spawned by
 whichever machine's gun fired it: no `NetworkObject`, no RPCs, no replication of the round
 itself. The *press* is replicated, though (`R_VesselActionHandler`: owner →
-`SendButtonPressed_ServerRpc` → `SendButtonPressed_ClientRpc` → `PerformShipControllerActions`
-on every peer, the host included), so every machine flies its own copy of every human's round,
+`SendButtonPressed_ServerRpc` → `SendButtonPressed_ClientRpc` → `StartPressedActions` on every
+peer, the host included), so every machine flies its own copy of every human's round,
 from its own lagged picture of the shooter, and the copies hit or miss independently. The copy
 that counts is the one on the machine that **owns the shooter**. For a client, that copy lives on
 the client, so recorded server-only, **only the host could ever score.**
