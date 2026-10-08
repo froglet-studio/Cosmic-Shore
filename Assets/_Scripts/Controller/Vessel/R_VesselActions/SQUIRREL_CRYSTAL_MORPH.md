@@ -220,5 +220,10 @@ Inspection: set `duration` to 9 (20×) on the asset; every other timing is a fra
   it hides a prism, so this is harmless; pool reuse clears the hold anyway.
 - **DistanceSpreadAndColors' far tint and spread** are not carried by the formula blend: 0.3–2.5%
   of their range at pickup distance. The dissolve tail absorbs it.
+- **How much of it the pilot sees is a playtest question.** The ring is laid 8 u ahead of the hull,
+  and a Squirrel at speed crosses that in a fraction of the 0.44 s window, so the back half of the
+  morph plays behind a chase camera. The panels-first-from-the-front reading may want
+  `panelPhaseStart` lowered (faces land earlier) or the ring's `initialOffset` lengthened — tune it
+  watching, not here.
 - **Other hulls** can take the slot one at a time: a new `VesselOmniCrystalRetirementSO` subclass
   plus a `CrystalMorphRunner` subclass that supplies the target.
