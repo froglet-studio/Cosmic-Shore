@@ -87,7 +87,11 @@ namespace CosmicShore.Core
                 gameData.OnMiniGameEnd.OnRaised -= HandleGameEnd;
 
             if (_ugsDataService != null)
+            {
                 _ugsDataService.OnInitialized -= HandleDataServiceReady;
+                if (_ugsDataService.ProgressionRepo != null)
+                    _ugsDataService.ProgressionRepo.OnDataChanged -= HandleProgressionRepoChanged;
+            }
         }
 
         void Start()
@@ -108,7 +112,11 @@ namespace CosmicShore.Core
             // Use the repo's data directly — unless the backend gate is closed, in which case
             // progression stays session-local (fresh every launch, ideal for FTUE testing).
             if (ProgressionBackendGate.CloudEnabled && _ugsDataService.ProgressionRepo != null)
+            {
                 ProgressionData = _ugsDataService.ProgressionRepo.Data;
+                _ugsDataService.ProgressionRepo.OnDataChanged -= HandleProgressionRepoChanged;
+                _ugsDataService.ProgressionRepo.OnDataChanged += HandleProgressionRepoChanged;
+            }
             else if (!ProgressionBackendGate.CloudEnabled)
                 CSDebug.Log("[GameModeProgressionService] ProgressionBackendGate closed — cloud record " +
                             "ignored; progression is session-local and starts fresh each launch.");
@@ -121,6 +129,24 @@ namespace CosmicShore.Core
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Initialized from UGSDataService. " +
                        $"Unlocked: {ProgressionData.UnlockedModes.Count}, " +
                        $"Completed: {ProgressionData.CompletedQuests.Count}");
+        }
+
+        /// <summary>
+        /// The repository can REPLACE its data object after we bound to it - a failed sign-in load
+        /// that later recovers adopts the cloud record, and a late sign-in after an offline boot
+        /// reloads it. Every write after that went to the old object, which nothing saves, so it
+        /// was silently lost. Rebind to what the repository holds now.
+        /// </summary>
+        void HandleProgressionRepoChanged()
+        {
+            var repoData = _ugsDataService?.ProgressionRepo?.Data;
+            if (!ProgressionBackendGate.CloudEnabled || repoData == null
+                || ReferenceEquals(repoData, ProgressionData)) return;
+
+            ProgressionData = repoData;
+            EnsureFirstModeUnlocked();
+            SyncSOCompletedFlags();
+            RaiseProgressionChanged();
         }
 
         // ── Public API ──────────────────────────────────────────────────────────
