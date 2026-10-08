@@ -386,11 +386,20 @@ namespace CosmicShore.Gameplay.Audio
             HapticController.PlayDrift(Mathf.Lerp(driftHapticFloor01, 1f, ComputeTargetAmount()));
         }
 
+        bool _warnedEmptyDriftEvent;
+
         void BeginActive()
         {
             if (driftEvent.IsNull)
             {
-                CSDebug.LogError($"[DriftAudioController] '{name}' has no Drift Event assigned.", this);
+                // An empty slot is the FMOD convention for an unauthored sound, not a fault, and
+                // the phase stays Idle - so Update calls this again EVERY frame of the drift. Say
+                // it once per component, as a warning (the engine slot's convention).
+                if (!_warnedEmptyDriftEvent)
+                {
+                    _warnedEmptyDriftEvent = true;
+                    CSDebug.LogWarning($"[DriftAudioController] '{name}' has no Drift Event assigned; drift is silent until one is authored.", this);
+                }
                 return;
             }
 
