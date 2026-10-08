@@ -152,7 +152,7 @@ namespace CosmicShore.Editor
                 "also the size of the circuit. Default " +
                 EndConditionOverridesSO.DefaultRedlineGateTarget + ".\n" +
                 "  • Grizzly Time: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
-                "finish the Grizzly bomb-pump circuit; the controller lays target/laps rings, so " +
+                "finish the Grizzly bomb-jump circuit; the controller lays target/laps rings, so " +
                 "this is also the size of the circuit. Default " +
                 EndConditionOverridesSO.DefaultGrizzlyTimeGateTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +

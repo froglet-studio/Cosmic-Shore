@@ -308,7 +308,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 52 | `Bloomrush` | MP | MinigameBloomrush | `BloomrushController` (Manta bomb-tag party game, 120 s timed, volume-destroyed scoring — see `BLOOMRUSH.md`) |
 | 53 | `Redline` | MP | MinigameRedline | `RedlineController` (Manta circuit race — see `REDLINE.md`) |
 | 62 | `GrizzlyCharge` | MP | MinigameGrizzlyCharge | `DogFightController` (Grizzly proving ground — a Dog Fight clone in the Boneyard) |
-| 63 | `GrizzlyTime` | MP | MinigameGrizzlyTime | `GrizzlyTimeController` (Grizzly bomb-pump circuit race — see `GRIZZLYTIME.md`) |
+| 63 | `GrizzlyTime` | MP | MinigameGrizzlyTime | `GrizzlyTimeController` (Grizzly bomb-jump circuit race — see `GRIZZLYTIME.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
