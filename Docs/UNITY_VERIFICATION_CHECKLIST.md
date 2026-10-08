@@ -112,8 +112,9 @@ the authoring session, so `/verify-unity` did NOT run. Out of editor:
    - Haptics fire. Nice Vibrations' `liblofelt_sdk.so` is still 4 KB-aligned; only Play's
      1 Feb 2027 update gate cares, not the phone.
 5. iOS build (Release):
-   - In the exported Xcode project, `Info.plist` has `ITSAppUsesNonExemptEncryption` = NO and the
-     bundle id `com.FrogletGames.CosmicShore`.
+   - In the exported Xcode project, `Info.plist` has `ITSAppUsesNonExemptEncryption` = NO, the
+     bundle id `com.FrogletGames.CosmicShore`, and both photo-library purpose strings reading
+     "Cosmic Shore saves the paintings and screenshots…" (from `ProjectSettings/NativeShare.json`).
    - Archive and upload to TestFlight. The build appears **without** a "Missing Compliance" flag.
 6. Path A: run `ios-unsigned-ipa.yml` once. Its log prints `com.FrogletGames.CosmicShore.dev`, and
    Sideloadly installs it with a free Apple ID.
