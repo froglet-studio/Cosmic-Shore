@@ -204,7 +204,7 @@ namespace CosmicShore.Tests
         [Test]
         public void IsHigherBetter_LegacyFallbackHonoursGolf()
         {
-            var gameData = MakeGameData(GameModes.OnlineDuelForTheCell);
+            var gameData = MakeGameData(GameModes.CoOpWildlifeBlitz);
             Assert.IsFalse(ElementalComebackSystem.IsHigherBetter(gameData, legacyGolfRules: true));
             Assert.IsTrue(ElementalComebackSystem.IsHigherBetter(gameData, legacyGolfRules: false));
         }

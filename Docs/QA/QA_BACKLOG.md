@@ -38,7 +38,7 @@ has its own item, and each hull's open vessel checks sit next to the modes that 
 | G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
 | H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
 | I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
-| J | Party card: Online Duel for the Cell | Never opened or tracked; on no live roster; two players needed | 1 |
+| J | Two-player setup (shared by Block Q); both party cards retired 2026-10-08 | No items | 0 |
 | P | The parallel PRs' own Editor checks (#971–#976) | Merged 2026-10-06, never opened in Unity | 6 |
 | Q | The round-3 PRs' own Editor checks (#998, #1001, #1002, #1004, #1005, #1007) | Merged 2026-10-08, never opened in Unity; three need two players | 7 |
 
@@ -1940,16 +1940,12 @@ steering to hit the burr · AI that orbit or crawl · scores that differ between
 speeds, the arrow and (since PR #1004, QA-HIJACK-SHIELD-SYNC) rail prism SHIELDS must now AGREE
 between machines - a shield on one machine and not the other is a failure.
 
-## Priority 0 — Block J: the party card — Online Duel for the Cell
+## Priority 0 — Block J: two-player setup (the party cards are retired)
 
-Multiplayer Freestyle (mode 28) was retired 2026-10-08 as a vestige of the prototype the Menu_Main
-lava lamp, freestyle, toybox and lobby replaced, so its item (QA-PARTY-FREESTYLE-MODE) is gone.
-
-The Duel card has never been opened in Unity, and until this refresh it was not tracked here or in
-`Docs/UNITY_VERIFICATION_CHECKLIST.md` (re-audit G37). It is on `AllGames.asset` and
-`LaunchPartyAllGames.asset` but on **neither** live roster (`ArcadeGames.asset`,
-`ArenaGames.asset`), so the first thing the item checks is whether a player can reach the card at
-all. It needs **two players**, so run it in one Multiplayer Play Mode session.
+Both party cards were retired 2026-10-08 as prototype vestiges: Multiplayer Freestyle (28),
+replaced by the Menu_Main lava lamp, freestyle, toybox and lobby, and Online Duel for the Cell
+(29), replaced by Brood Rush. Their items (QA-PARTY-FREESTYLE-MODE, QA-PARTY-DUEL-MODE) are gone.
+The two-player setup below stays here because Block Q and later items point at it.
 
 **Two-player setup used by every two-player item in Blocks J and Q:**
 1. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode**. Tick **Player 2** and type a tag for it
@@ -1959,58 +1955,6 @@ all. It needs **two players**, so run it in one Multiplayer Play Mode session.
 3. In the main window, click the **+** slot on the party panel and pick the other player. In the
    Player 2 window, press **Accept** on the invite. Wait (up to 15 seconds) until both windows show
    two people in the party. The main window is the **host**; the Player 2 window is the **client**.
-
-### QA-PARTY-DUEL-MODE ⬜ — "Online Duel for the Cell" has never been opened
-**Source:** `GameModes.OnlineDuelForTheCell = 29`; card `ArcadeGameOnlineDuelForTheCell.asset`;
-scene `MinigameDuelForCellMultiplayer_Gameplay.unity`; `OnlineDuelForTheCellController`. Status in
-`Docs/SCENES.md` § Multiplayer Cellular Duel (PR #1000, whose step 3 is folded in here): exactly two
-players; two rounds of one 120 s turn; at round 2 the controller swaps the two ships
-(`NetworkObject.ChangeOwnership` + `gameData.SwapVessels`) and swaps back on replay; most mass wins
-(`VolumeCreated` + `HostileVolumeDestroyed` + `FriendlyVolumeDestroyed`, ×1 each, no scoring-rule
-asset); no AI fill. The card's hull list is still serialized under the retired `Captains` key, so
-**Vessels** is expected to read empty and each pilot flies the ship they brought. The swap reads
-`Players[0]` and `Players[1]` only. The Urchin's swap throw was fixed by PR #973. Re-audit G37/G38.
-
-1. Select `Assets/_SO_Assets/Games/ArcadeGameOnlineDuelForTheCell.asset`. Look at **Vessels** and
-   write down exactly what it shows: an empty list, six ships, or "Type mismatch" / None entries.
-   Read **Min/Max Players Allowed** and **Min/Max Intensity**.
-2. Open `MinigameDuelForCellMultiplayer_Gameplay.unity`. Look at the Console for red errors and the
-   Hierarchy for `Missing (Mono Script)`. Select the object that has `NetworkTimeBasedTurnMonitor`
-   and read its duration.
-3. Do the two-player setup at the top of Block J. In each window, take control of the ship (click
-   the centre of the screen, or press **Y** on a gamepad), open the Vessel Changer and pick a
-   **different** ship in each window (for example Sparrow in the host, Dolphin in the client).
-4. In the host window, look for an **Online Duel for the Cell** card on the Arcade and Arena
-   screens. If neither has it, stop: mark this item ⛔ BLOCKED and write "no Duel card on the Arcade
-   or Arena screen".
-5. Launch it at intensity 1. Write down which ship each window flies.
-6. Round 1: in both windows, lay trail and fly through the other player's trail for the whole two
-   minutes. Watch both players' scores in both windows.
-7. When round 2 starts, look at each window: which ship are you flying now? Steer it and check the
-   camera follows it.
-8. Play round 2 to the end. Read the end screen in both windows.
-9. Press **Play Again** (or Ready) in both windows. Check which ship each window flies.
-10. Go back to the menu, pick the **Urchin** in one window, and repeat steps 5–7.
-11. Leave the party so you are alone, and try to launch the card.
-
-**PASS:** the card reads 2 / 2 players and intensity 1–2; the scene opens clean and the turn lasts
-120 seconds; both players start round 1 in the ships they picked; scores rise when you lay trail and
-when you destroy the other player's trail, and match in both windows; at round 2 each player is
-flying the ship the **other** player flew in round 1, can steer it, and the camera follows it; the
-match ends after round 2 and both windows name the same winner, the one with the higher score; after
-Play Again each player is back in their original ship; the Urchin swaps with no error; a
-one-player launch is refused (or not offered) rather than starting.
-**FAIL:** a red error or missing script · a window stuck on the connecting panel · after the swap, a
-player steering the wrong ship, a camera left on the old ship, or dead controls · scores that differ
-between windows · the lower score named winner, or the two windows naming different winners ·
-"No network object found in vessel", `NullReferenceException` or `ArgumentOutOfRangeException` in
-the Console · a one-player match that starts.
-**Known, do not fail on:** intensity 2 looks the same as 1 (one cell config); no AI fills the second
-seat; the card has no background render of its own yet.
-**Report:** what **Vessels** shows (step 1) — that decides whether the card's ship list must be
-re-authored — and whether the card was reachable from the menu (step 4).
-
----
 
 ## Priority 0 — Block P: the parallel PRs' own checks (merged 2026-10-06)
 

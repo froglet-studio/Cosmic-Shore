@@ -178,7 +178,7 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 #### Single-Player Game Scenes
 
 **None ship.** `MinigameDuelForTheCell` and `MinigameWildlifeBlitz` were retired in 2026-09 — they had
-been replaced by `MinigameDuelForCellMultiplayer_Gameplay` (`OnlineDuelForTheCell (29)`) and
+been replaced by `MinigameDuelForCellMultiplayer_Gameplay` (`OnlineDuelForTheCell (29)`, itself retired 2026-10) and
 `MinigameWildlifeBlitzMultuplayerCoOp` (`CoOpWildlifeBlitz (32)`), and every ability in them was
 dead (their non-networked Player fails `IsLocalUser`). The `GameModes` members 8 and 26 are KEPT
 (ids are never reused; cloud progress keys on the names). The single-player Wildlife Blitz stack
@@ -193,9 +193,8 @@ the (dead) hangar training entries for Rhino and Sparrow point at it — it is i
 |---|---|---|
 | `MinigameSkimRace` | `SkimRace (33)` | `SkimRaceController` |
 | `MinigameScurryMultiplayer_Gameplay` | `Scurry (35)` | `ScurryController` |
-| `MinigameDuelForCellMultiplayer_Gameplay` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | `MinigameJoust_Gameplay` | `Joust (34)` | `JoustController` |
-| `MinigameWildlifeBlitzMultuplayerCoOp` | `CoOpWildlifeBlitz (32)` | `CoOpWildlifeBlitzMiniGame` |
+| `MinigameWildlifeBlitzMultuplayerCoOp` | `CoOpWildlifeBlitz (32)` | `OnlineDuelForTheCellController` (forked from the duel scene) |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `MinigameBroodRush` | `BroodRush (38)` | `BroodRushController` |
 | `MinigameRampage` | `Rampage (2)` | `RampageController` |

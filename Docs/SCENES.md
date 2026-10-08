@@ -23,6 +23,9 @@ Its multiplayer sibling, `MultiplayerFreestyle (28)` (`MinigameFreestyleMultipla
 `MultiplayerFreestyleController`, card `ArcadeGameMultiplayerFreestyle.asset`), was the prototype
 that grew into the Menu_Main lava lamp, freestyle, toybox and lobby. It was **removed 2026-10-08**
 with its scene, controller, card and mode preview; ID 28 stays reserved. Do not reintroduce it.
+`OnlineDuelForTheCell (29)` (`MinigameDuelForCellMultiplayer_Gameplay.unity`, card
+`ArcadeGameOnlineDuelForTheCell.asset`) followed the same day: Brood Rush replaced it. Its controller
+stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellController`. ID 29 stays reserved.
 
 ---
 
@@ -41,7 +44,7 @@ with its scene, controller, card and mode preview; ID 28 stays reserved. Do not 
 
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
-| ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay` |
+| ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay`, itself retired 2026-10 (Brood Rush replaced the duel) |
 | ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | replaced by `MinigameWildlifeBlitzMultuplayerCoOp` |
 
 ### Multiplayer Game Scenes
@@ -50,9 +53,8 @@ with its scene, controller, card and mode preview; ID 28 stays reserved. Do not 
 |---|---|---|---|
 | **MinigameSkimRace** | `_Scenes/Multiplayer Scenes/` | `SkimRace (33)` | `SkimRaceController` |
 | **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
-| **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
-| **MinigameWildlifeBlitzMultuplayerCoOp** | `_Scenes/Multiplayer Scenes/` | `CoOpWildlifeBlitz (32)` | `CoOpWildlifeBlitzMiniGame` |
+| **MinigameWildlifeBlitzMultuplayerCoOp** | `_Scenes/Multiplayer Scenes/` | `CoOpWildlifeBlitz (32)` | `OnlineDuelForTheCellController` (the scene was forked from the duel; `CoOpWildlifeBlitzMiniGame` is in no scene) |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
@@ -240,7 +242,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         │
         ├── SkimRaceController              — deterministic track, crystal race, golf scoring
         ├── JoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds
+        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (its own mode is retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
@@ -283,7 +285,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 26 | `WildlifeBlitz` | SP Arcade | *(scene retired 2026-09)* | `SinglePlayerWildlifeBlitzController` (BenchmarkStressTest only) |
 | 27 | `ProtectMission` | SP Mission | Shared | Scene-configured |
 | 28 | *(retired 2026-10: `MultiplayerFreestyle`, reserved)* | | | |
-| 29 | `OnlineDuelForTheCell` | MP | MinigameDuelForCellMultiplayer_Gameplay | `OnlineDuelForTheCellController` |
+| 29 | *(retired 2026-10: `OnlineDuelForTheCell`, reserved; Brood Rush replaced it)* | | | |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
 | 32 | `CoOpWildlifeBlitz` | MP | MinigameWildlifeBlitzMultuplayerCoOp | `CoOpWildlifeBlitzMiniGame` |
 | 33 | `SkimRace` | MP Racing | MinigameSkimRace | `SkimRaceController` |
@@ -340,7 +342,7 @@ the scene went; the painting toy is the scoreless successor. Still in the tree:
 
 ### Cellular Duel (Single-Player) — RETIRED 2026-09
 
-> Scene and controller deleted; the online duel (`OnlineDuelForTheCellController`) replaces it. Kept below as a record.
+> Scene and controller deleted; the online duel replaced it, and was itself retired 2026-10 (Brood Rush replaced it). Kept below as a record.
 
 **Scene**: `MinigameDuelForTheCell.unity`
 **Controller**: `SinglePlayerDuelForTheCellController`
@@ -431,28 +433,6 @@ Collision-based competitive duel. Players collide with each other; first to reac
 - `JoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
 - Atomic results sync via `FixedString64Bytes[]` / `float[]` / `int[]` arrays in ClientRpc
 - `_finalResultsSent` guard prevents duplicate end-game processing
-
-### Multiplayer Cellular Duel
-
-**Scene**: `MinigameDuelForCellMultiplayer_Gameplay.unity`
-**Controller**: `OnlineDuelForTheCellController`
-**Base**: `MultiplayerDomainGamesController`
-
-Networked vessel-swapping duel for exactly 2 players. Between rounds, players swap vessels via Netcode `ChangeOwnership()`.
-
-**Status (read off the shipped card and scene, 2026-10-08).** Card `ArcadeGameOnlineDuelForTheCell.asset`
-("Online Duel for the Cell"), listed on `AllGames` and `LaunchPartyAllGames`.
-- **Scores:** most mass. There is no scoring-rule asset. The scene's `NetworkScoreTracker` sums three legacy `ScoringModes` at ×1 each: `VolumeCreated`, `HostileVolumeDestroyed` and `FriendlyVolumeDestroyed`. Points are not golf.
-- **Shape:** two rounds of one turn (`numberOfRounds: 2`), each a 120 s `NetworkTimeBasedTurnMonitor`. You fly round 2 in the hull your opponent flew in round 1.
-- **Hulls:** the card authors no usable hull list. Its hulls are still serialized under the pre-rename `Captains` key, and that key names six `SO_Captain` assets (Manta, Squirrel, Serpent, Sparrow, Dolphin, Rhino), not `SO_Vessel`s. So `Vessels` holds no usable hull, and each pilot flies whatever hull they brought.
-- **Intensity:** 1–2 on the card. The cell has a single `Barren Cell Config`, so intensity changes nothing in the cell.
-- **The 2-player limit is hard.** The card has `MinPlayersAllowed = MaxPlayersAllowed = 2`. The swap indexes `gameData.Players[0]` and `[1]` and nothing else. The scene carries the plain `ServerPlayerVesselInitializer`, not the `…WithAI` one, so nothing backfills an AI into an empty seat. A third pilot would never be swapped, and with only one pilot the swap would index past the end of the list.
-- **Verification:** none recorded. Neither QA nor UVC tracks this mode.
-
-**Key features**:
-- Vessel ownership swap via `NetworkObject.ChangeOwnership()` + `gameData.SwapVessels()`
-- Hardcoded for 2 players (`gameData.Players[0]` and `Players[1]`)
-- Vessels swapped back on replay
 
 ### Multiplayer Crystal Capture
 
