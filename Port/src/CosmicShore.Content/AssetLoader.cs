@@ -239,7 +239,10 @@ namespace CosmicShore.Content
             var body = doc.Body;
             var shaderRef = ObjRef.From(body["m_Shader"]);
             string shaderName = ShaderNameFor(shaderRef, loader.Db);
-            var mat = new Material(Shader.Find(shaderName)) { name = body.Str("m_Name") ?? "Material" };
+            bool builtin = shaderRef.IsNull || shaderRef.Guid == AssetLoader.BuiltinExtraGuid || shaderRef.Guid == AssetLoader.BuiltinDefaultGuid;
+            var shaderPath = builtin ? null : loader.Db.PathOf(shaderRef.Guid);
+            var shader = shaderPath == null ? Shader.Find(shaderName) : Shader.Find(shaderName, shaderRef.Guid, loader.Db.ProjectRelative(shaderPath));
+            var mat = new Material(shader) { name = body.Str("m_Name") ?? "Material" };
             mat.renderQueue = body.Int("m_CustomRenderQueue", -1) is int q && q >= 0 ? q : 2000;
 
             var props = body["m_SavedProperties"];

@@ -16,8 +16,9 @@ namespace CosmicShore.Launcher
     /// Launcher versions, never applied on their own. <see cref="Check"/> says whether the selected
     /// branch has a newer launcher; the user presses UPDATE, or installs any branch, tag or commit.
     /// A version is built from that revision's own source (exported with git archive, published
-    /// with the launcher's dotnet) into its own folder, so every installed version stays available
-    /// and USE switches between them - the running .exe is swapped and the launcher restarts.
+    /// with the launcher's dotnet). Each version gets its own folder, so every
+    /// installed one stays available and USE switches between them - the running .exe is swapped
+    /// and the launcher restarts.
     /// </summary>
     public sealed class LauncherUpdater
     {
@@ -36,6 +37,10 @@ namespace CosmicShore.Launcher
 
         public static string Commit { get; } = Meta("LauncherCommit");
         public static string Date { get; } = Meta("LauncherDate");
+        /// <summary>The launcher's source trees (git tree ids), which a shallow clone can compare without any history.</summary>
+        public static string Tree { get; } = NormTree(Meta("LauncherTree"));
+
+        static string NormTree(string t) => string.Join(",", t.Split(new[] { ';', '\n', '\r', ',', ' ', '-' }, StringSplitOptions.RemoveEmptyEntries));
         public static string Short => Commit.Length >= 7 ? Commit[..7] : "dev";
 
         static string Meta(string key) =>
@@ -48,6 +53,8 @@ namespace CosmicShore.Launcher
         public List<string> Changes { get; } = new();
         public bool Checking { get; private set; }
         public DateTime CheckedAt { get; private set; }
+        /// <summary>Why the last check could not answer (no network, a branch that is gone ...), shown under CHECK.</summary>
+        public string? CheckError { get; private set; }
 
         public bool Installing { get; private set; }
         public float Progress { get; private set; }
@@ -69,28 +76,91 @@ namespace CosmicShore.Launcher
 
         string? GitOut(params string[] args) => ProcessRunner.Capture(Git, new[] { "-C", _ws.Dir }.Concat(args).ToArray());
 
-        /// <summary>Fetches the branch (unless told not to) and compares its newest launcher commit with this build's.</summary>
+        /// <summary>
+        /// Is there a newer launcher for the selected branch? The branch is fetched and its launcher
+        /// source compared with this build's.
+        /// </summary>
         public async Task Check(bool fetch = true)
         {
-            if (Checking || !_ws.Exists || _tools.Git == null) return;
+            if (Checking) return;
             Checking = true;
+            CheckError = null;
             try
             {
-                if (fetch) await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", _s.Branch }, null, null, CancellationToken.None, quiet: true);
-                var rev = "origin/" + _s.Branch;
-                var info = Describe(rev);
-                Changes.Clear();
-                if (info == null || info.Commit == Commit) { Available = null; return; }
-                if (Commit.Length > 0)
+                if (!_ws.Exists || _tools.Git == null)
                 {
-                    var log = GitOut(new[] { "log", "--format=%h  %s", "-n", "12", $"{Commit}..{rev}", "--" }.Concat(SourcePaths).ToArray());
-                    if (log != null) Changes.AddRange(log.Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                    // This launcher is newer than the branch (someone runs a feature build): nothing to offer.
-                    if (log != null && Changes.Count == 0) { Available = null; return; }
+                    Available = null;
+                    CheckError = "Press START once so Prisma has a workspace to build new versions from.";
+                    return;
                 }
-                Available = info with { Source = _s.Branch };
+                await CheckSource(fetch);
             }
+            catch (Exception e) { CheckError = e.Message; }
             finally { Checking = false; CheckedAt = DateTime.Now; }
+        }
+
+        async Task CheckSource(bool fetch)
+        {
+            if (fetch)
+            {
+                var f = await FetchBranch(_s.Branch, null);
+                if (f != null) { Available = null; CheckError = f; return; }
+            }
+            var rev = "origin/" + _s.Branch;
+            Changes.Clear();
+            var tree = TreeOf(rev);
+            if (tree == null) { Available = null; CheckError = $"{_s.Branch} has no launcher."; return; }
+            var info = Describe(rev) ?? Tip(rev);
+            if (info == null) { Available = null; return; }
+            if (Tree.Length > 0)
+            {
+                // Same source as this build: nothing to offer, whatever the commit ids say.
+                if (tree == Tree) { Available = null; return; }
+            }
+            else if (info.Commit == Commit) { Available = null; return; }
+            if (Commit.Length > 0)
+            {
+                var log = GitOut(new[] { "log", "--format=%h  %s", "-n", "12", $"{Commit}..{rev}", "--" }.Concat(SourcePaths).ToArray());
+                if (log != null) Changes.AddRange(log.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                // This launcher is newer than the branch (someone runs a feature build): nothing to offer.
+                if (Tree.Length == 0 && log != null && Changes.Count == 0) { Available = null; return; }
+            }
+            Available = info with { Source = _s.Branch };
+        }
+
+        /// <summary>
+        /// Fetches a branch INTO origin/BRANCH: a plain "fetch origin B" in a single-branch shallow
+        /// clone only fills FETCH_HEAD, so origin/B would stay stale or missing. Returns an error, or null.
+        /// </summary>
+        async Task<string?> FetchBranch(string branch, LogBuffer? log)
+        {
+            var r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", $"+refs/heads/{branch}:refs/remotes/origin/{branch}" },
+                null, log, CancellationToken.None, _ws.GitEnv(), quiet: log == null);
+            if (r.ExitCode == 0) return null;
+            return r.StdErr.Contains("couldn't find remote ref") ? $"The branch {branch} is not on GitHub any more (merged and deleted?). Pick another in SETTINGS > SOURCE."
+                : "git fetch failed: " + r.StdErr.Split('\n').FirstOrDefault(l => l.Trim().Length > 0)?.Trim();
+        }
+
+        /// <summary>The launcher's source trees at <paramref name="rev"/>, in the form <see cref="Tree"/> uses.</summary>
+        string? TreeOf(string rev)
+        {
+            var ids = new List<string>();
+            foreach (var p in SourcePaths)
+            {
+                var id = GitOut("rev-parse", "--verify", "--quiet", $"{rev}:{p}");
+                if (id == null) return null;
+                ids.Add(id);
+            }
+            return string.Join(",", ids);
+        }
+
+        /// <summary>The commit <paramref name="rev"/> points at, for a shallow clone whose history does not reach the last launcher change.</summary>
+        VersionInfo? Tip(string rev)
+        {
+            var line = GitOut("log", "-1", "--format=%H|%cs|%s", rev);
+            if (string.IsNullOrWhiteSpace(line)) return null;
+            var p = line.Split('|', 3);
+            return p.Length < 3 ? null : new VersionInfo(p[0], p[1], p[2], rev, "");
         }
 
         /// <summary>The last commit at or before <paramref name="rev"/> that changed the launcher.</summary>
@@ -148,10 +218,16 @@ namespace CosmicShore.Launcher
                 bool commit = System.Text.RegularExpressions.Regex.IsMatch(rev, "^[0-9a-fA-F]{7,40}$");
                 Phase = "Fetching " + (commit ? rev[..7] : rev);
                 // A branch or tag: fetch just that. A commit already here needs no network.
-                if (!commit || GitOut("cat-file", "-e", rev + "^{commit}") == null)
-                    await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", commit ? "" : rev }.Where(x => x.Length > 0).ToArray(), null, log, CancellationToken.None);
+                if (!commit && GitOut("ls-remote", "--exit-code", "--heads", "origin", rev) != null)
+                {
+                    if (await FetchBranch(rev, log) is { } fe) throw new Exception(fe);
+                }
+                else if (!commit || GitOut("cat-file", "-e", rev + "^{commit}") == null)
+                    await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", commit ? rev : "refs/tags/" + rev + ":refs/tags/" + rev }, null, log, CancellationToken.None, _ws.GitEnv());
                 string resolved = GitOut("rev-parse", "--verify", "--quiet", "origin/" + rev) != null ? "origin/" + rev : rev;
-                var info = Describe(resolved) ?? throw new Exception($"'{rev}' is not a branch, tag or commit that has the launcher.");
+                if (TreeOf(resolved) is not { } tree) throw new Exception($"'{rev}' is not a branch, tag or commit that has the launcher.");
+                // A shallow workspace may not reach the last commit that changed the launcher: build the tip then.
+                var info = Describe(resolved) ?? Tip(resolved) ?? throw new Exception($"'{rev}' could not be read.");
                 Progress = 0.08f;
 
                 var dir = Path.Combine(VersionsDir, info.Short);
@@ -162,7 +238,7 @@ namespace CosmicShore.Launcher
                     if (Directory.Exists(src)) Directory.Delete(src, true);
                     Directory.CreateDirectory(src);
                     var zip = src + ".zip";
-                    var r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "archive", "--format=zip", "-o", zip, info.Commit }.Concat(SourcePaths).ToArray(), null, log, CancellationToken.None);
+                    var r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "archive", "--format=zip", "-o", zip, resolved }.Concat(SourcePaths).ToArray(), null, log, CancellationToken.None);
                     if (r.ExitCode != 0) throw new Exception("git archive failed - see CONSOLE.");
                     ZipFile.ExtractToDirectory(zip, src);
                     File.Delete(zip);
@@ -177,7 +253,7 @@ namespace CosmicShore.Launcher
                         "publish", Path.Combine(src, "Port", "src", "CosmicShore.Launcher"), "-c", "Release",
                         "-r", RuntimeInformation.RuntimeIdentifier, "--self-contained",
                         "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true", "-p:EnableCompressionInSingleFile=true",
-                        "-p:LauncherCommit=" + info.Commit, "-p:LauncherDate=" + info.Date, "-o", tmp,
+                        "-p:LauncherCommit=" + info.Commit, "-p:LauncherDate=" + info.Date, "-p:LauncherTree=" + tree.Replace(",", "-"), "-o", tmp,
                     }, null, log, CancellationToken.None, _tools.DotnetEnv(), onLine: l =>
                     {
                         lines++;
