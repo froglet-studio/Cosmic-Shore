@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Branch Janitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a toolbar over one dense, filterable branch table; a decision drawer docks at the bottom. */
+:root{
+  --bg:#f3f5f9; --panel:#ffffff; --ink:#18202e; --muted:#5d6878; --line:#dde2ea;
+  --accent:#3b5bdb; --accent-ink:#ffffff;
+  --merged:#2f9e6c; --small:#4c8bd6; --medium:#d99a1f; --large:#c2414b; --locked:#8a93a3; --active:#7a5af8;
+  --danger:#c2414b; --danger-soft:#fbe9ea; --ok-soft:#e6f5ee;
+  --display:"Chakra Petch",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f141c; --panel:#161d28; --ink:#e3e8f0; --muted:#97a3b5; --line:#263041;
+  --accent:#7c94f5; --accent-ink:#0f141c; --danger-soft:#3a1a1e; --ok-soft:#14302a; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body)}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 16px 140px}
+h1{font:600 26px/1.1 var(--display);letter-spacing:.02em;margin:0}
+.sub{color:var(--muted);margin:4px 0 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid{display:grid;gap:12px}
+.connect{grid-template-columns:2fr 1fr 1fr auto;align-items:end;margin-top:18px}
+@media (max-width:760px){.connect{grid-template-columns:1fr}}
+label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+input[type=text],input[type=password],input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px var(--mono)}
+button{font:600 13px var(--body);border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{font-size:12px;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 6px}
+.stat{flex:1 1 130px;border-left:4px solid var(--c);padding:8px 12px;background:var(--panel);border-radius:0 8px 8px 0;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat b{display:block;font:600 22px var(--display);font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:8px 0 18px;background:var(--line)}
+.bar i{display:block;height:100%}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.tools input[type=text]{max-width:280px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;background:var(--panel);color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+td.name{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+tr.sel{background:var(--danger-soft)}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;background:var(--c)}
+.why{font-size:12px;color:var(--muted)}
+.msg{max-width:340px;font-size:12.5px}
+.drawer{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+.drawer .in{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.drawer .count{font:600 16px var(--display)}
+.confirm{margin-top:10px;max-width:1280px;margin-inline:auto}
+.log{font:12px/1.5 var(--mono);max-height:220px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre-wrap}
+.ok{color:var(--merged)} .err{color:var(--danger)}
+details summary{cursor:pointer;color:var(--accent)}
+code{font-family:var(--mono);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Branch Janitor</h1>
+  <p class="sub">Find inactive branches in <code id="repoLabel"></code>, tick the ones to remove, and delete them. Every deleted branch is first saved as an <code>archive/&lt;branch&gt;</code> tag, so it can be restored.</p>
+
+  <!--
+    POLICY — mirrors Tools/BranchJanitor/policy.json (used by the Branch cleanup workflow). Change both together.
+    A branch is LOCKED (no checkbox) when any rule below matches. Locked branches are never deleted by this tool.
+  -->
+  <script>
+  const POLICY = {
+    owner: "froglet-studio",
+    repo: "Cosmic-Shore",
+    trunks: ["bleeding-edge", "master"],                 // "unique commits" = commits in none of these
+    neverDelete: ["master", "main", "bleeding-edge", "development", "Ys-bleeding-edge"],
+    neverDeletePatterns: ["^build/", "^release/", "^archive/"],
+    inactiveDays: 30,          // a branch with a commit newer than this is ACTIVE and locked
+    largeCommitThreshold: 11,  // this many unique commits or more = LARGE, locked unless the unlock box is ticked
+    lockOpenPullRequests: true // a branch with an open PR is locked; close the PR on GitHub first
+  };
+  </script>
+
+  <div class="card grid connect">
+    <div>
+      <label for="token">GitHub token</label>
+      <input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
+      <div class="note">Fine-grained token for this repo with <b>Contents: Read and write</b> and <b>Pull requests: Read</b>. Kept in this tab's memory only.</div>
+    </div>
+    <div>
+      <label for="days">Inactive after (days)</label>
+      <input id="days" type="number" min="1">
+    </div>
+    <div>
+      <label for="large">Large from (unique commits)</label>
+      <input id="large" type="number" min="1">
+    </div>
+    <button id="load" class="primary">Load branches</button>
+  </div>
+  <div id="status" class="note" style="margin-top:8px">Not loaded yet.</div>
+
+  <div id="results" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="bar" id="bar" aria-hidden="true"></div>
+
+    <div class="tools">
+      <input id="q" type="text" placeholder="Filter by name, author or message">
+      <div class="chips" id="chips"></div>
+      <span style="flex:1"></span>
+      <button id="selMerged">Tick all merged</button>
+      <button id="selVisible">Tick all visible</button>
+      <button id="clearSel">Clear ticks</button>
+    </div>
+    <div class="tools">
+      <label style="display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0">
+        <input type="checkbox" id="unlockLarge"> Allow ticking LARGE branches (read their archive docs first)
+      </label>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <thead><tr>
+          <th style="width:70px">Delete</th><th>Branch</th><th>Group</th><th class="num">Unique commits</th>
+          <th>Last commit</th><th>Author</th><th>Last message</th><th>Why locked</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="note">"Unique commits" counts commits on the branch that are in none of the trunks (<span id="trunkLabel"></span>). When a branch shares no history with a trunk the count is approximate; when it cannot be measured the branch is treated as LARGE.</p>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" hidden>
+  <div class="in">
+    <span class="count" id="selCount">0 ticked</span>
+    <label style="display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0">
+      <input type="checkbox" id="tagFirst" checked> Save <code>archive/&lt;branch&gt;</code> tag first
+    </label>
+    <span style="flex:1"></span>
+    <button id="exportScript">Copy as shell script</button>
+    <button id="review" class="danger">Review and delete…</button>
+  </div>
+  <div class="confirm" id="confirm" hidden>
+    <p><b id="confirmText"></b> Type <code>DELETE</code> to confirm.</p>
+    <div class="tools"><input id="confirmInput" type="text" autocomplete="off" style="max-width:180px">
+      <button id="go" class="danger" disabled>Delete now</button><button id="cancel">Cancel</button></div>
+    <div class="log" id="log" hidden></div>
+  </div>
+</div>
+
+<script>
+const GROUPS = {
+  merged:{label:"Merged",       c:"var(--merged)", hint:"0 unique commits: nothing is lost"},
+  small: {label:"Small",        c:"var(--small)",  hint:"1–3 unique commits"},
+  medium:{label:"Medium",       c:"var(--medium)", hint:"4–10 unique commits"},
+  large: {label:"Large",        c:"var(--large)",  hint:"protected by default"},
+  active:{label:"Active",       c:"var(--active)", hint:"recent commits"},
+  locked:{label:"Never delete", c:"var(--locked)", hint:"trunks, pipeline, open PRs"}
+};
+const $ = id => document.getElementById(id);
+let token = "", branches = [], selected = new Set(), activeChips = new Set(Object.keys(GROUPS));
+$("repoLabel").textContent = POLICY.owner + "/" + POLICY.repo;
+$("trunkLabel").textContent = POLICY.trunks.join(", ");
+$("days").value = POLICY.inactiveDays; $("large").value = POLICY.largeCommitThreshold;
+
+function status(t, cls){ const s=$("status"); s.textContent=t; s.className="note "+(cls||""); }
+
+async function gql(query, variables){
+  const r = await fetch("https://api.github.com/graphql",{method:"POST",
+    headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({query,variables})});
+  if(!r.ok) throw new Error("GitHub GraphQL "+r.status+": "+(await r.text()).slice(0,200));
+  return r.json(); // {data, errors} — per-alias errors are expected for unrelated histories
+}
+async function rest(method, path, body){
+  const r = await fetch("https://api.github.com/repos/"+POLICY.owner+"/"+POLICY.repo+path,{method,
+    headers:{Authorization:"Bearer "+token,Accept:"application/vnd.github+json"},body:body?JSON.stringify(body):undefined});
+  if(!r.ok && r.status!==204){ const t=await r.text(); throw new Error(r.status+" "+t.slice(0,160)); }
+  return r.status===204?null:r.json();
+}
+
+async function loadBranches(){
+  const out=[]; let cursor=null;
+  do{
+    const res = await gql(`query($o:String!,$r:String!,$c:String){repository(owner:$o,name:$r){
+      refs(refPrefix:"refs/heads/",first:100,after:$c){pageInfo{hasNextPage endCursor}
+        nodes{name target{... on Commit{oid committedDate messageHeadline author{name}}}
+          associatedPullRequests(states:OPEN,first:1){nodes{number url}}}}}}`,{o:POLICY.owner,r:POLICY.repo,c:cursor});
+    if(!res.data) throw new Error((res.errors||[{message:"no data"}])[0].message);
+    const refs=res.data.repository.refs;
+    for(const n of refs.nodes) out.push({name:n.name,sha:n.target.oid,date:n.target.committedDate,
+      msg:n.target.messageHeadline,author:n.target.author?.name||"",pr:n.associatedPullRequests.nodes[0]||null});
+    cursor=refs.pageInfo.hasNextPage?refs.pageInfo.endCursor:null;
+    status("Listed "+out.length+" branches…");
+  }while(cursor);
+  return out;
+}
+
+// aheadBy against each trunk, batched 30 branches per query. null = no common history or error.
+async function measure(list){
+  const esc=s=>JSON.stringify("refs/heads/"+s);
+  for(let i=0;i<list.length;i+=30){
+    const chunk=list.slice(i,i+30);
+    const trunkParts=POLICY.trunks.map((t,ti)=>`t${ti}: ref(qualifiedName:${JSON.stringify("refs/heads/"+t)}){`+
+      chunk.map((b,bi)=>`c${bi}: compare(headRef:${esc(b.name)}){aheadBy}`).join(" ")+"}").join(" ");
+    const res=await gql(`query($o:String!,$r:String!){repository(owner:$o,name:$r){${trunkParts}}}`,{o:POLICY.owner,r:POLICY.repo});
+    chunk.forEach((b,bi)=>{
+      const vals=POLICY.trunks.map((t,ti)=>res.data?.repository?.["t"+ti]?.["c"+bi]?.aheadBy).filter(v=>typeof v==="number");
+      b.unique = vals.length ? Math.min(...vals) : null;
+      b.approx = vals.length < POLICY.trunks.length;
+    });
+    status("Measured "+Math.min(i+30,list.length)+" / "+list.length+" branches…");
+  }
+}
+
+function classify(b){
+  const days=+$("days").value||POLICY.inactiveDays, largeAt=+$("large").value||POLICY.largeCommitThreshold;
+  const age=(Date.now()-new Date(b.date))/864e5;
+  b.lock="";
+  if(POLICY.neverDelete.includes(b.name)||POLICY.neverDeletePatterns.some(p=>new RegExp(p).test(b.name))){b.group="locked";b.lock="Trunk / pipeline branch";return;}
+  if(POLICY.lockOpenPullRequests&&b.pr){b.group="locked";b.lock="Open PR #"+b.pr.number;return;}
+  if(age<days){b.group="active";b.lock="Commit "+Math.floor(age)+" days ago";return;}
+  if(b.unique===null){b.group="large";b.lock="History could not be measured";return;}
+  b.group=b.unique===0?"merged":b.unique<=3?"small":b.unique<largeAt?"medium":"large";
+  if(b.group==="large") b.lock="Large: "+b.unique+" unique commits";
+}
+const selectable=b=>(b.group==="merged"||b.group==="small"||b.group==="medium")||(b.group==="large"&&$("unlockLarge").checked&&b.unique!==null);
+
+function render(){
+  branches.forEach(classify);
+  for(const n of [...selected]){ const b=branches.find(x=>x.name===n); if(!b||!selectable(b)) selected.delete(n); }
+  const counts={}; Object.keys(GROUPS).forEach(k=>counts[k]=0); branches.forEach(b=>counts[b.group]++);
+  $("stats").innerHTML=Object.entries(GROUPS).map(([k,g])=>`<div class="stat" style="--c:${g.c}"><b>${counts[k]}</b><span>${g.label} · ${g.hint}</span></div>`).join("");
+  $("bar").innerHTML=Object.entries(GROUPS).map(([k,g])=>counts[k]?`<i style="background:${g.c};flex:${counts[k]}" title="${g.label}: ${counts[k]}"></i>`:"").join("");
+  $("chips").innerHTML=Object.entries(GROUPS).map(([k,g])=>`<button class="chip" data-k="${k}" aria-pressed="${activeChips.has(k)}">${g.label} ${counts[k]}</button>`).join("");
+  const q=$("q").value.toLowerCase();
+  const rows=branches.filter(b=>activeChips.has(b.group)&&(!q||(b.name+b.author+b.msg).toLowerCase().includes(q)))
+    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const tb=$("rows"); tb.textContent="";
+  for(const b of rows){
+    const tr=document.createElement("tr"); if(selected.has(b.name)) tr.className="sel";
+    const g=GROUPS[b.group];
+    const cb=selectable(b)?`<input type="checkbox" aria-label="Delete ${b.name}" data-n="${encodeURIComponent(b.name)}" ${selected.has(b.name)?"checked":""}>`:`<span class="why">locked</span>`;
+    tr.innerHTML=`<td>${cb}</td><td class="name"></td><td><span class="pill" style="--c:${g.c}">${g.label}</span></td>
+      <td class="num">${b.unique===null?"?":(b.approx?"≈":"")+b.unique}</td><td>${b.date.slice(0,10)}</td><td></td><td class="msg"></td><td class="why"></td>`;
+    tr.children[1].textContent=b.name; tr.children[5].textContent=b.author; tr.children[6].textContent=b.msg;
+    tr.children[7].textContent=b.lock; if(b.pr){const a=document.createElement("a");a.href=b.pr.url;a.target="_blank";a.textContent=" ↗";tr.children[7].append(a);}
+    tb.append(tr);
+  }
+  $("selCount").textContent=selected.size+" ticked for deletion";
+  $("drawer").hidden=false;
+  $("review").disabled=$("exportScript").disabled=selected.size===0;
+}
+
+$("load").onclick=async()=>{
+  token=$("token").value.trim(); if(!token){status("Paste a GitHub token first.","err");return;}
+  $("load").disabled=true;
+  try{
+    branches=await loadBranches();
+    const days=+$("days").value||POLICY.inactiveDays;
+    const toMeasure=branches.filter(b=>(Date.now()-new Date(b.date))/864e5>=days);
+    await measure(toMeasure);
+    branches.forEach(b=>{ if(!("unique" in b)){b.unique=null;b.approx=false;} });
+    selected.clear(); $("results").hidden=false; render();
+    status("Loaded "+branches.length+" branches at "+new Date().toLocaleString()+".","ok");
+  }catch(e){ status("Could not load: "+e.message,"err"); }
+  $("load").disabled=false;
+};
+$("rows").addEventListener("change",e=>{ const n=e.target.dataset?.n; if(!n) return; const name=decodeURIComponent(n);
+  e.target.checked?selected.add(name):selected.delete(name); render(); });
+$("chips").addEventListener("click",e=>{ const k=e.target.dataset?.k; if(!k) return; activeChips.has(k)?activeChips.delete(k):activeChips.add(k); render(); });
+["q","days","large"].forEach(id=>$(id).addEventListener("input",render));
+$("unlockLarge").onchange=render;
+$("selMerged").onclick=()=>{ branches.filter(b=>b.group==="merged").forEach(b=>selected.add(b.name)); render(); };
+$("selVisible").onclick=()=>{ $("rows").querySelectorAll("input[type=checkbox]").forEach(c=>selected.add(decodeURIComponent(c.dataset.n))); render(); };
+$("clearSel").onclick=()=>{ selected.clear(); render(); };
+
+$("review").onclick=()=>{ $("confirm").hidden=false; $("confirmInput").value=""; $("go").disabled=true;
+  $("confirmText").textContent="Delete "+selected.size+" branch"+(selected.size===1?"":"es")+($("tagFirst").checked?", each saved as an archive tag first.":" WITHOUT archive tags.");
+  $("confirmInput").focus(); };
+$("cancel").onclick=()=>{ $("confirm").hidden=true; };
+$("confirmInput").oninput=e=>{ $("go").disabled=e.target.value!=="DELETE"; };
+
+$("go").onclick=async()=>{
+  $("go").disabled=true; const log=$("log"); log.hidden=false; log.textContent="";
+  const line=(t,c)=>{ const s=document.createElement("div"); s.textContent=t; if(c) s.className=c; log.append(s); log.scrollTop=log.scrollHeight; };
+  let done=0, failed=0;
+  for(const name of [...selected]){
+    const b=branches.find(x=>x.name===name); if(!b||!selectable(b)){ line("skip (now locked): "+name); continue; }
+    try{
+      // Re-read the tip so a branch that moved since loading is not deleted blind.
+      const ref=await rest("GET","/git/ref/heads/"+encodeURI(name));
+      if(ref.object.sha!==b.sha){ line("SKIP (new commits since you loaded): "+name,"err"); failed++; continue; }
+      if($("tagFirst").checked){
+        try{ await rest("POST","/git/refs",{ref:"refs/tags/archive/"+name,sha:b.sha}); }
+        catch(e){ if(!/already exists/i.test(e.message)) throw new Error("tag failed, branch kept: "+e.message); }
+      }
+      await rest("DELETE","/git/refs/heads/"+encodeURI(name));
+      line("deleted "+name+($("tagFirst").checked?"  (tag archive/"+name+")":""),"ok"); done++;
+      selected.delete(name); branches=branches.filter(x=>x.name!==name);
+    }catch(e){ line("FAILED "+name+": "+e.message,"err"); failed++; }
+  }
+  line("Finished: "+done+" deleted, "+failed+" failed or skipped.");
+  render();
+};
+
+$("exportScript").onclick=async()=>{
+  const names=[...selected], tag=$("tagFirst").checked;
+  const sh=["#!/usr/bin/env bash","# Generated by Branch Janitor "+new Date().toISOString().slice(0,10),"set -u","git fetch origin --prune --quiet",
+    ...names.map(n=>{ const b=branches.find(x=>x.name===n); const q=JSON.stringify(n);
+      return `if [ "$(git rev-parse -q --verify origin/${n})" = "${b.sha}" ]; then `+
+        (tag?`git push origin ${b.sha}:refs/tags/archive/${n} && `:"")+`git push origin --delete ${q}; else echo "skip (moved): ${n}"; fi`; })].join("\n");
+  try{ await navigator.clipboard.writeText(sh); status("Copied a script for "+names.length+" branches.","ok"); }
+  catch{ const w=$("log"); w.hidden=false; $("confirm").hidden=false; w.textContent=sh; status("Clipboard blocked: the script is shown below, select and copy it."); }
+};
+</script>
+</body>
+</html>

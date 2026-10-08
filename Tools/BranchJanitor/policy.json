@@ -1,0 +1,9 @@
+{
+  "_comment": "Branch cleanup rules, read by branch_cleanup.py (the Branch cleanup workflow). branch-janitor.html carries the same values in its POLICY block; change both together.",
+  "trunks": ["bleeding-edge", "master"],
+  "neverDelete": ["master", "main", "bleeding-edge", "development", "Ys-bleeding-edge"],
+  "neverDeletePatterns": ["^build/", "^release/", "^archive/"],
+  "inactiveDays": 30,
+  "largeCommitThreshold": 11,
+  "lockOpenPullRequests": true
+}

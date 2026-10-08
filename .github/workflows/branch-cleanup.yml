@@ -1,0 +1,68 @@
+name: Branch cleanup
+
+# Deletes inactive branches without anyone needing a personal token or push rights.
+# Rules (what is never deleted, what counts as LARGE) live in Tools/BranchJanitor/policy.json;
+# the logic is Tools/BranchJanitor/branch_cleanup.py. Background: Docs/BranchArchive/README.md.
+#
+#   report   (monthly schedule, or by hand)  lists inactive branches by group. Changes nothing.
+#   dry-run  checks a list of branches and says what delete would do. Changes nothing.
+#   delete   saves each branch as tag archive/<branch>, then deletes it. Skips anything locked:
+#            trunk/pipeline branches, recent commits, open PRs, and LARGE branches unless
+#            allow_large is ticked.
+#
+# Restore a deleted branch:  git fetch origin --tags && git checkout -b <branch> archive/<branch>
+#
+# Uses the API, not a checkout of the repo, for the same reason as sync-build-branches.yml:
+# Cosmic Shore is ~2.7 GB and only refs change here. actions/checkout below is sparse and only
+# fetches Tools/BranchJanitor.
+
+on:
+  schedule:
+    - cron: '17 15 1 * *'   # 1st of each month, report only
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: report lists, dry-run checks the list, delete deletes it
+        type: choice
+        options: [dry-run, delete, report]
+        default: dry-run
+      branches:
+        description: Branch names to delete, separated by spaces, commas or new lines (ignored by report)
+        default: ''
+        required: false
+      allow_large:
+        description: Also delete LARGE branches (11+ unmerged commits) in the list. Read their archive docs first.
+        type: boolean
+        default: false
+
+permissions:
+  contents: write        # create archive tags, delete branches
+  pull-requests: read    # find open PRs
+
+concurrency:
+  group: branch-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: Tools/BranchJanitor
+          sparse-checkout-cone-mode: true
+          fetch-depth: 1
+
+      - name: Run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODE: ${{ inputs.mode || 'report' }}
+          BRANCHES: ${{ inputs.branches }}
+          ALLOW_LARGE: ${{ inputs.allow_large && '--allow-large' || '' }}
+        run: |
+          printf '%s' "$BRANCHES" > "$RUNNER_TEMP/branches.txt"
+          args=(--mode "$MODE")
+          [ "$MODE" != report ] && args+=(--branches-file "$RUNNER_TEMP/branches.txt")
+          [ -n "$ALLOW_LARGE" ] && args+=("$ALLOW_LARGE")
+          python3 Tools/BranchJanitor/branch_cleanup.py "${args[@]}"
