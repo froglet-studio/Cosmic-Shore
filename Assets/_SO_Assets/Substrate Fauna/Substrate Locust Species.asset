@@ -216,6 +216,7 @@ MonoBehaviour:
       FirstCool: 2
       Substeps: 3
       FoodPull: 150
+      Leash: 300
   seedCount: 0
   seedSpread: 80
   seedAtFlora: 1

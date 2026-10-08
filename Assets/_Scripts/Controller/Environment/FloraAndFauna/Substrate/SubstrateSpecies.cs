@@ -763,7 +763,7 @@ namespace CosmicShore.Gameplay
             d["dive_period"] = p.RampS + p.StaminaS + p.RestS;
             var sg = p.Siege ?? new SubstrateSiegeParams();
             sg.Visit((f, v) => d["siege." + f] = v);
-            d["siege.enabled"] = sg.Enabled ? 1f : 0f; d["siege.substeps"] = sg.Substeps; d["siege.food_pull"] = sg.FoodPull;
+            d["siege.enabled"] = sg.Enabled ? 1f : 0f; d["siege.substeps"] = sg.Substeps; d["siege.food_pull"] = sg.FoodPull; d["siege.leash"] = sg.Leash;
             return d;
         }
 

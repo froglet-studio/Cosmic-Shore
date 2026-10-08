@@ -204,7 +204,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "pack": {
@@ -412,7 +413,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "lurker": {
@@ -620,7 +622,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "stampede": {
@@ -828,7 +831,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "mobber": {
@@ -1036,7 +1040,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "leech": {
@@ -1244,7 +1249,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "leviathan": {
@@ -1452,7 +1458,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   },
   "siege": {
@@ -1660,7 +1667,8 @@
       "MinMembers": 12,
       "FirstCool": 2,
       "Substeps": 3,
-      "FoodPull": 150
+      "FoodPull": 150,
+      "Leash": 300
     }
   }
 }

@@ -111,6 +111,10 @@ namespace CosmicShore.Gameplay
         public int Substeps = 3;
         /// <summary>ROAM: how hard a hungry member pulls toward food (u of the roam vector at full hunger).</summary>
         public float FoodPull = 150f;
+        /// <summary>The leash (u): a pilot more than this outside the siege's band is never picked, and a locked target
+        /// that flies further out than this is lost - so the hunt stays in the siege's home band. ROAM stalks a point
+        /// clamped into the band.</summary>
+        public float Leash = 300f;
 
         public SubstrateSiegeParams Clone() => (SubstrateSiegeParams)MemberwiseClone();
 
@@ -248,18 +252,19 @@ namespace CosmicShore.Gameplay
         /// The pilot this sub-step is about: the locked target during an encounter, else the pilot nearest the cloud.
         /// Pilots are sensed once per tick and carried forward by their velocity inside the tick (<paramref name="lead"/>).
         /// </summary>
-        static bool PickPilot(SubstrateCore c, SubstrateSiegeState S, Vector3 g, float lead, out SubstratePilot p)
+        static bool PickPilot(SubstrateCore c, SubstratePopulation pop, Vector3 g, float lead, out SubstratePilot p)
         {
-            var pil = c.TickPilots;
+            var S = pop.Siege; var pil = c.TickPilots; float leash = pop.P.Siege.Leash;
             p = default;
             int best = -1; float bd = float.MaxValue;
             for (int j = 0; j < pil.Length; j++)
             {
                 if (S.Phase != SubstrateSiegePhase.Roam && S.Phase != SubstrateSiegePhase.Scatter)
                 {
-                    if (pil[j].Id == S.Target) { best = j; break; }
+                    if (pil[j].Id == S.Target) { if (PenGap(pop, pil[j].Pos) <= leash) best = j; break; }
                     continue;
                 }
+                if (PenGap(pop, pil[j].Pos) > leash) continue;
                 float d = Vector3.Distance(pil[j].Pos, g);
                 if (d < bd) { bd = d; best = j; }
             }
@@ -267,6 +272,14 @@ namespace CosmicShore.Gameplay
             p = pil[best];
             p.Pos += p.Vel * lead;
             return true;
+        }
+
+        /// <summary>How far (u) a point lies outside the population's band; 0 inside it or with no band (the lab).</summary>
+        static float PenGap(SubstratePopulation pop, Vector3 x)
+        {
+            if (pop.BandOuter <= 0f) return 0f;
+            float r = x.Length();
+            return MathF.Max(0f, MathF.Max(r - pop.BandOuter, pop.BandInner - r));
         }
 
         /// <summary>
@@ -358,7 +371,7 @@ namespace CosmicShore.Gameplay
             g /= n;
             double t = S.Clock;   // the lab's arena.t: the time at the start of this step
             S.Tp += hd; S.Cool -= hd; S.Clock += hd;
-            bool hasP = PickPilot(c, S, g, lead, out var p);
+            bool hasP = PickPilot(c, pop, g, lead, out var p);
             if (!hasP && S.Phase != SubstrateSiegePhase.Roam)
             {
                 // the target left the cell (or the game): the encounter ends as an escape (game: the lab has one pilot)
@@ -367,6 +380,14 @@ namespace CosmicShore.Gameplay
                 Go(c, pop, SubstrateSiegePhase.Roam, t, "lost", 3);
             }
             var C = S.C;
+            // game: with no pilot the whole cloud drifts toward its hungry members' food, so it moves on as it grazes a
+            // patch bare instead of starving on the spot (the lab always had a pilot to follow)
+            var graze = Vector3.Zero;
+            if (!hasP && S.Phase == SubstrateSiegePhase.Roam && K.FoodPull > 0f)
+            {
+                for (int k = 0; k < n; k++) { int i = pop.Live[k]; if (c.Hunger[i] > P.EatHunger) graze += c.GFood[i]; }
+                if (graze != Vector3.Zero) graze = SubstrateCore.Unit(graze) * K.FoodPull;
+            }
             float pd = hasP ? Vector3.Distance(p.Pos, g) : float.MaxValue;
             // ── the phase machine ──
             var ph = S.Phase;
@@ -487,9 +508,9 @@ namespace CosmicShore.Gameplay
                     {
                         var r = g - p.Pos; float rn = MathF.Max(r.Length(), 1e-9f);
                         r = r / rn + K.Lead * p.Vel / pv; rn = MathF.Max(r.Length(), 1e-9f);
-                        q = p.Pos + r / rn * K.Stalk;
+                        q = SubstrateCore.InPen(pop, p.Pos + r / rn * K.Stalk);   // game: stalk from inside the band
                     }
-                    else q = g;
+                    else q = SubstrateCore.InPen(pop, g + graze);   // game: an idle cloud grazes as one, inside its band
                     var a = q - g + (g - xi) * K.RoamCohesion
                             + new Vector3(Gauss(S.Rng) * K.RoamJitter, Gauss(S.Rng) * K.RoamJitter, Gauss(S.Rng) * K.RoamJitter);
                     // game: a hungry member drifts to food (every life form feeds; the lab regrew members instead)

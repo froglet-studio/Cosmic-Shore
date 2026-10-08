@@ -2524,6 +2524,44 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SIEGE-1 ⬜ — the siege: a cloud that surrounds you, leaves a gap, and dives if you stay
+
+**Source:** branch `claude/siege-port`, ported from the flight lab's SIEGE (`Tools/Ecology/flight/src/70_siege.js` on
+`cece/gifted-curie-x2cpd0`). Only the headless harnesses have run (`Tools/Build/substrate_harness/run.sh siege` replays
+five lab encounters event for event; `run.sh all`; `showcase_cell_harness/run.sh quick`; `author_substrate_fauna.py
+--check`); `/verify-unity` was not available and it has never been opened in the editor. Reference:
+`Docs/SUBSTRATE_FAUNA.md` §10. Tunables: the `Siege` block of `Substrate Siege Species.asset`.
+
+**Why it matters:** this is the lab encounter Garrett flew and called scary. It only works if the gap is readable, the
+danger is telegraphed, and staying put is what gets you hurt.
+
+1. **Find it.** Open the Swarm cell (Unity 2021.3.9f1). A cloud of ~150 small Time-coloured bodies hatches as one
+   ball 690-1080 u from the cell centre. With nobody near it drifts slowly as a loose cloud and stays in that band.
+2. **Stalked, then gathered round.** Fly within ~640 u. The cloud slides ahead of your line at ~430 u, then spreads
+   into a shell round you (~300 u radius) with an open cap on one side: the iris. No glow yet; touching a member now
+   must NOT burn petals.
+3. **The glow is the warning.** As the shell closes (to ~130 u) members start to glow and the danger tier rises on
+   exactly the glowing ones. A member must glow for at least a quarter second before it can bite.
+4. **The wall bites.** Brush the shell wall while it is closed: the members you touch bite (a burn), and the wall
+   breaches round that point.
+5. **Stay and it dives.** Hover inside a closed shell. After about a second of HOLD every member dives at once from all
+   sides. Expect one or two burns (the vessel's 1 s danger cooldown), then the cloud scatters and cools off ~10 s.
+6. **The gap is a way out.** Repeat, but fly out through the open cap while it is still closing. You should escape
+   with no burn, and the cloud cools off ~6 s before stalking you again. Then try ramming through members mid-dive:
+   note whether a dive feels like a crystal fountain (rammed members are not shielded; say if they should be).
+7. **The leash.** Get stalked, then fly far out of its band (toward the rim or the core). Once you are ~300 u past
+   the band the cloud gives up and drifts home.
+8. **Budgets.** Physics debugger during a dive: at most 4 siege proxies, locust proxies at most 8, colliders under
+   1,200 in total.
+9. **It lives.** Leave it alone for 10+ minutes, then come back: still roughly 100-160 members, none starving, with
+   new members appearing as it eats the band's flora. Ram 20 or so members and check it recovers over time rather
+   than dwindling (if it dwindles, raise `Metabolism` or lower `BirthStock`).
+
+**PASS:** a readable gather, close, hold and dive with a visible gap; only glowing members burn; flying out the gap
+avoids the bite; hovering gets dived on; the cloud stays in its band when idle and gives up past the leash; budgets
+hold; it feeds and breeds. **FAIL:** a burn from a member that was not glowing · a dive with no hold first · no
+visible gap · the cloud follows you across the cell · proxies or colliders over budget · the cloud dwindles or starves
+
 ### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
 
 **Source:** branch `overnight/balance`. Only the headless showcase harness (`Tools/Build/showcase_cell_harness/run.sh all`,
