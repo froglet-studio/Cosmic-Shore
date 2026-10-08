@@ -2826,6 +2826,18 @@ that would otherwise cost a round-trip to a human at the editor:
   axis permutations in a Roslyn harness, run the shipped resolver on each, and assert it recovers
   the true axis and that every group element leaves the converted mesh congruent (48/48, 6e-7
   here). Negative-control with a tilted frame and the wrong bone set.
+- **To animate PART of a static `MeshFilter` model without re-exporting it, skin a runtime TWIN,
+  and give every reader of the old `MeshFilter` a way back to the source.** The omni crystal's
+  rhombi flip the same way the Time crystal's do, but its body is one unskinned mesh.
+  `RhombusSkinBaker` welds it, finds the 30 rhombus plates, and instantiates a twin with rigid
+  bone weights: bone 0 is the still body, and plate *i* binds to `Translate(-centroid_i)`. The
+  prefab's `MeshRenderer` becomes a `SkinnedMeshRenderer` in place, keeping the same fileID.
+  That swap silently blinds every system that reads `MeshFilter.sharedMesh` (hull fusion and
+  vessel crystal morphs did). Sweep for them and route each through
+  `RhombusSkinBaker.SourceOf(skin.sharedMesh)`, the same idea as
+  `CrystalEdgeArcMeshBaker.TryGetSource`, so they still see the authored asset and not the twin.
+  Then prove the twin at rest draws the source exactly (8.9e-16 here), and that the body's
+  vertices never move.
 
 ## 4.8b Technique: prove a runtime VISUAL claim offline, by walking to the authored value
 

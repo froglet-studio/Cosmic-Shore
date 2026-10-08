@@ -145,6 +145,11 @@ in the 60 boxes, and the frame refuses all 90 directions loudly. Edit-mode:
   fallback to `Vector3.forward` for an unset direction is dead code. A `JustRotate` left at the
   default zero direction rotates nothing, silently. *Inconsistency: a one-line fix in its own
   change.*
+- **The FBX still imports its animation take, and nothing in the game plays it.** It is kept on
+  purpose: it is the reference for `ProceduralWave_MatchesTheImportedTake_FrameByFrame` and the
+  legacy arm of the §7 benchmark. Once the benchmark has been read and the parity test is no longer
+  wanted as a guard, set the import's animation type to None to drop the clip from the build.
+  *Kept deliberately; the decision belongs to whoever retires the benchmark.*
 - **Retired, not open:** the shell's 0.00027 off-centre offset no longer matters. Every plate now turns
   about its own measured centroid, and the shell centre is the mean of those centroids.
 
