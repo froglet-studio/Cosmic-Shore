@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e59100a387c647258d8764d9024095a2, type: 3}
+  m_Name: TetherConfig
+  m_EditorClassIdentifier: 
+  cruiseSpeed: 80
+  planeToleranceDegrees: 20
+  anchorLead: 0.8
+  anchorAngle: 20
+  anchorPeriod: 0.35
+  anchorScale: {x: 3, y: 3, z: 3}
+  minPlantSpeed: 3
+  autoSpeedTarget: 1.15
+  autoStiffness: 0.8
+  autoDamping: 4
+  autoRestFraction: 0.5
+  autoNoseGrip: 6
+  range: 93
+  minHook: 27
+  windowGrowth: 0.5
+  idealDistance01: 0.5
+  sideWeight: 1
+  aheadWeight: 0.6
+  distanceWeight: 0.5
+  planeWeight: 0.3
+  hookCrystals: 1
+  ghostSearchInterval: 0.1
+  reelRate: 40
+  autoReel: 7.4
+  minLength: 19
+  maxSpin: 0.6
+  maxSpeed: 358
+  noseFollowRate: 18
+  releaseBoost: 0.2
+  glide: 1.6
+  glideDecayFactor: 0.15
+  cutRadius: 2.5
+  restitution: 0.33333334
+  debrisSpeedLimit: 200
+  maxSweepSamples: 4
+  longCoreWidth: 0.5
+  longHaloWidth: 3.2
+  longAlpha: 1
+  autoCoreWidth: 0.18
+  autoHaloWidth: 1.3
+  autoAlpha: 0.55
+  tensionWidthGain: 0.8
+  coreWhiteness: 0.6
+  haloAlphaRestToTaut: {x: 0.18, y: 0.45}
+  sparkLifetime: 0.22
+  sparkSpeed: 1.6
+  sparkLength: 3
+  bracketFlashSeconds: 0.25
+  bracketRadius: 2.4
+  retractSeconds: 0.14
+  ghostRadius: 3
+  releaseLineSeconds: 0.6
+  halfTurnColor: {r: 1, g: 0.78, b: 0.25, a: 1}
+  hookShakeIntensity: 0.6
+  hookShakeDuration: 0.18
+  hookHapticStrength: 0.8
+  hookFlashSeconds: 0.2
