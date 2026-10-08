@@ -64,8 +64,34 @@ namespace CosmicShore.Launcher
         {
             var (ok, stdout, stderr) = await Run(args);
             if (!ok) { Error = FirstLine(stderr) ?? "cs-asset failed"; return null; }
-            try { return JsonDocument.Parse(stdout); }
+            try { return JsonDocument.Parse(RepairConsoleText(stdout)); }
             catch (JsonException e) { Error = "cs-asset answered something that is not JSON: " + e.Message; return null; }
+        }
+
+        // What Windows' OEM code page (437) turns these characters into: the control range
+        // doubles as glyphs there, so a cs-asset that predates its ASCII-only JSON (a workspace
+        // that has not pulled it yet) writes '↔' as byte 0x1D - which no JSON parser accepts.
+        static readonly Dictionary<char, char> s_oemGlyphs = new()
+        {
+            ['\u0007'] = '•', ['\u0010'] = '►', ['\u0011'] = '◄', ['\u0012'] = '↕', ['\u0018'] = '↑',
+            ['\u0019'] = '↓', ['\u001A'] = '→', ['\u001B'] = '←', ['\u001D'] = '↔', ['\u001E'] = '▲', ['\u001F'] = '▼',
+        };
+
+        /// <summary>
+        /// cs-asset's stdout made parseable whatever console wrote it: a control character (never
+        /// valid raw inside JSON) becomes the glyph the OEM code page meant, or is dropped. Tab,
+        /// CR and LF stay - they only ever appear between JSON tokens.
+        /// </summary>
+        public static string RepairConsoleText(string text)
+        {
+            if (!text.Any(c => c < ' ' && c is not ('\t' or '\r' or '\n'))) return text;
+            var sb = new System.Text.StringBuilder(text.Length);
+            foreach (var c in text)
+            {
+                if (c >= ' ' || c is '\t' or '\r' or '\n') sb.Append(c);
+                else if (s_oemGlyphs.TryGetValue(c, out var glyph)) sb.Append(glyph);
+            }
+            return sb.ToString();
         }
 
         /// <summary>Runs one command and returns its exit, stdout and stderr (for set, whose output is a diff).</summary>

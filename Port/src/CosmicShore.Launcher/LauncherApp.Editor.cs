@@ -643,7 +643,7 @@ namespace CosmicShore.Launcher
         {
             try
             {
-                using var d = JsonDocument.Parse(json);
+                using var d = JsonDocument.Parse(EditorTool.RepairConsoleText(json));
                 var r = d.RootElement;
                 int frames = r.TryGetProperty("frames", out var f) ? f.GetInt32() : 1;
                 int cols = r.TryGetProperty("cols", out var c) ? c.GetInt32() : 1;

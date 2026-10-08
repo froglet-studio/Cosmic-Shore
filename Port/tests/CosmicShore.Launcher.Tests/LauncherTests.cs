@@ -156,6 +156,18 @@ namespace CosmicShore.Launcher.Tests
 
     public class EditorToolTests
     {
+        [Fact]
+        public void Json_written_through_the_OEM_code_page_still_parses_with_its_arrows()
+        {
+            // An older cs-asset on a Windows console writes '↔' as byte 0x1D: the error the TOOLS page showed.
+            var oem = "{\"summary\":\"Prism \u001D crystal links\",\"n\":1}\r\n";
+            Assert.ThrowsAny<System.Text.Json.JsonException>(() => System.Text.Json.JsonDocument.Parse(oem));
+            using var doc = System.Text.Json.JsonDocument.Parse(EditorTool.RepairConsoleText(oem));
+            Assert.Equal("Prism ↔ crystal links", doc.RootElement.GetProperty("summary").GetString());
+            const string clean = "{\"a\": [1, 2]}\n";
+            Assert.Same(clean, EditorTool.RepairConsoleText(clean)); // nothing to repair: untouched
+        }
+
         // The same inputs and outputs as cs-asset's Text_written_by_set_reads_back_unchanged, which proves
         // these quoted forms survive set -> dataset unchanged.
         [Theory]
