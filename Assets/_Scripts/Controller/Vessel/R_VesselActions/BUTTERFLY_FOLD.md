@@ -237,6 +237,11 @@ no behaviour.
 
 ## Every fold leaves a PAIR OF GATES standing (2026-09-25)
 
+> **Superseded 2026-10-08 — the gates became WORMHOLES** (§ "The gates became wormholes", at the
+> end). The rules below — a pair per fold, domain-locked, replaced only by the next fold, laid from
+> replicated poses, owner-detected — all stand; the RING, its disc window and the planar geometry
+> are gone.
+
 A fold now opens **two portals** — one where the vessel left, one where it arrived — and they stay
 open. Any vessel of the Butterfly's **domain** threads either and is at the other, as often as it
 likes. The pair stands until that Butterfly folds again, and the new pair replaces it.
@@ -406,6 +411,12 @@ is a problem in play.
 
 ## Seamless transit (2026-09-28)
 
+> **Superseded 2026-10-08** by the wormhole pair (§ "The gates became wormholes"): the four pieces
+> below survive in sphere form — pose carried through (`WormholeGeometry.Through`), the mouth is a
+> window (`WormholeView`), the camera is carried through (`CarryThroughSphere`), ribbons cut at the
+> mouths (`TeleportContinuity`). `FoldGate`, `FoldGateGeometry`, `FoldGatePortalView`,
+> `FoldGatePortal.shader` and `Tools/Build/foldgate_harness/` are deleted.
+
 A transit used to be *correct* and still read as a cut: the ring showed the world behind it, the
 pilot flew through, and on one frame the ship was pushed 40 units forward, the chase camera
 snapped across the arena (its teleport guard fires on any jump over 50 u), the tail and jets drew
@@ -541,3 +552,66 @@ its own old gate is the only plausible way to do that); the cost would be one ca
   machine at the exit (only the owner decides a transit).
 - An AI never uses a gate. `AIPilot` steers at objectives and knows nothing about `FoldGate.Live`,
   so a bot teammate walks past a shortcut its Butterfly left for it.
+
+## The gates became wormholes (2026-10-08)
+
+Every fold now leaves a **wormhole**: two sphere mouths with ONE shared interior
+(`Controller/Environment/Wormhole/`, `Docs/WORMHOLES.md` — first prototyped as a standalone cell, since retired),
+centred exactly where the ring gates were, so the pair's translation is still the fold itself.
+
+**What stayed.** One pair per Butterfly; laid at ARRIVAL from the two replicated poses; replaced only
+by that Butterfly folding again (the old pair withers out — `WormholeMouth.Retire` — before the new
+one blooms); no lifespan; each machine tests only the vessels it owns and writes their pose through
+`SetPose`; a transit carries the pose through as a pure translation, rotation and speed untouched;
+it is a teleport, so it still cannot thread a race ring.
+
+**Domain, kept and made visible.** The pair is `DomainLocked` to the placer's domain. A pilot of that
+domain flies into either mouth and out of the other, and sees the far side through it — the EXACT
+view (their own camera carried through the pair) up close, the partner's all-directions PANORAMA
+further out. To a viewer whose camera follows a pilot of any other domain the mouth is **sealed**: no
+view through (a view through is a promise you can go there), only a fresnel shell, and their vessels
+fly straight through it. **Both rims wear the domain's hue** (`ToyFactory.DomainAccentColor`, the
+theme's domain colour, boosted by the material's `_DomainRimBoost`) — on the open view and on the
+sealed shell alike — instead of the material's pale-blue fallback.
+
+**The arriving Butterfly sits INSIDE the destination mouth**, because the mouth is centred on where it
+arrived. That is the shared interior, and it is drawn that way: `WormholeView` renders every vessel a
+mouth may carry that is in or cut by its ball at its mapped position on the far side, so the pilot
+sees their ship through the mouth rather than hidden behind an opaque sphere. It flies out without
+being taken back because a mouth only takes a step that STARTS outside it — the ring gates' arming
+latch, now pure geometry (`WormholeGeometry.SegmentEntersBall`).
+
+**Tuning (`ButterflyFoldAction.asset`).** `gateRadius` 55 is the sphere radius. `minGateSeparation`
+300 (and never under 2.5 radii, so two mouths cannot touch). `portalWindowRange` 2500 is the exact-view
+range and the new `portalWindowFadeBand` 600 its crossfade to the panorama; `portalWindowRenderScale`
+0.75; new `panoramaFaceSize` 256; new `wormholeMaterial` → `Assets/_Graphics/Materials/Wormhole.mat`.
+Retired: `gateExitClearance` (no near zone — arming is geometric) and `portalWindowFadeSeconds` (the
+window fade became a distance band). Wired and gated by `Tools/Build/author_wormholes.py --check`.
+
+**Cost.** (`Docs/WORMHOLES.md` §4): at most two exact renders
+per frame across every mouth on screen, plus one panorama face per mouth whose partner is visible and
+not fully exact. A sealed mouth costs nothing.
+
+**Follow-ups carried over** (the list above, renamed): no HUD marker for a standing pair
+(`WormholeMouth.Live` filtered by `DomainLocked`/`Domain` is the roster one would read); an AI never
+uses one.
+
+### Playtest 1 (2026-10-08): "the Butterfly made no wormholes"
+
+Reported: no wormholes, and the gates looked like rings with no view through. A domain-locked mouth
+that judges its viewer to be of ANOTHER domain draws only its fresnel shell — which, from any angle,
+is a domain-coloured ring with nothing in it — so the report is what a pair SEALED against its own
+pilot looks like. The seal failed CLOSED: any viewer whose domain could not be resolved (no follow
+target, a camera rig that is not a `CustomCameraController`) was treated as a rival. Fixed three ways:
+
+- **Sealing fails open.** A mouth is sealed only on positive evidence: a resolved viewer domain that
+  is not the mouth's, and not the mouth's own pilot.
+- **The pair knows its pilot** (`WormholeMouth.Settings.Owner`). The owning Butterfly is always
+  carried and always sees through, whatever any domain read says.
+- **The lock follows the owner's LIVE domain** (and the rim repaints with it), instead of a domain
+  captured at placement — so a Butterfly that changes domain keeps a usable pair.
+
+**Re-tested 2026-10-08 and confirmed** by the owner ("the butterfly is great"). If it ever regresses
+to a ring: the pair is named `FoldWormhole::<pilot>::A` / `::B` in the Hierarchy; a `FoldGate::…`
+object would mean the editor is running pre-wormhole scripts (check the Console for compile errors).
+
