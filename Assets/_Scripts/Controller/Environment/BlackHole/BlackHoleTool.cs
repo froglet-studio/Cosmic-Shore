@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             UnityEditor.EditorUtility.SetDirty(config);
-            UnityEditor.AssetDatabase.SaveAssetIfDirty(config);
+            UnityEditor.AssetDatabase.SaveAssets();   // the repo's convention (SetDirty + SaveAssets)
             _statusText = "saved " + UnityEditor.AssetDatabase.GetAssetPath(config);
             Refresh();
         }
