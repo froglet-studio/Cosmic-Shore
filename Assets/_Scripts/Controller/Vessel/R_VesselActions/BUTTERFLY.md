@@ -434,8 +434,12 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
   `IProceduralHullSource`, but the codex bake has not been re-run.
 - **The four ability icons are PLACEHOLDERS** (§5.1), white silhouettes for the art pass to replace
   1:1. `upgradedSprite` is empty on all four, so an upgrade is signalled by the card alone.
-- **No card icons.** `SO_Class_Butterfly` authors no `IconActive`/`IconInactive`, so
-  `check_vessel_class_icons.py` is red on this hull. The Scarab's fix
-  (`Tools/Build/render_scarab_card_icons.py`) is the pattern.
+- **The card icons are a PLACEHOLDER.** `SO_Class_Butterfly`'s `IconActive` and `IconInactive`
+  both point at the Spread Wings ability placeholder (`Butterfly_SpreadWings.png`, guid
+  `4470d95b…`), wired in the registration-drift pass (#965, 2026-10) so
+  `check_vessel_class_icons.py` passes (11/11 resolve, re-run 2026-10-06). The guids resolve, but
+  the art is not the hull's own render and active/inactive are the same sprite. A real pair is
+  still owed; the Scarab's renderer (`Tools/Build/render_scarab_card_icons.py`) or the Urchin's
+  (`author_urchin_card_icons.py`) is the pattern.
 - **A standing fold wormhole has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
   (`BUTTERFLY_FOLD.md` § Follow-ups).
