@@ -94,6 +94,22 @@ across six different shaders (audited 2026-08-15: `ShepardGraph` — omni **and*
 `ChargeCrystal.shader`, `CrystalGraph` — Space —, `InverseDynamicFresnelGraph` — Time, the one
 that actually ships, via `_BrightColor`/`_DullColor`).
 
+> **Superseded for the elementals (2026-10-08).** That audit is no longer what ships. Space and
+> Time moved onto `SpreadFresnelShader` (`BlueCrystalFresnelMateriall` / `LimeCrystalFresnelMaterial`,
+> 2026-10-07), whose pair is `_BrightColor`/`_DarkColor` — a name `FindColorPropertyNames` does not
+> accept — so the tint stopped reaching them and they wear their materials' own pairs. **Mass now
+> does the same**: its eight shell materials are on `OmniShepardFresnelShader` (ShepardGraph's band
+> motion and alpha, transcribed, with `SpreadFresnelShader`'s colour formula
+> `lerp(bright, dark, (1 + N·V) / 2)`) and carry the Space/Time pairs — blue-white over deep navy
+> while embedded, lime over near-black once free. The reason is contrast: ShepardGraph's
+> `lerp(dull, bright, (1 − N·V)⁴)` is a hairline rim over a flat body, so the Mass crystal could not
+> read like its neighbours whatever pair it was painted. Authored by
+> `Tools/Build/author_mass_crystal_look.py` (`--check`). Two consequences, stated rather than fixed:
+> the three elementals' heart → pickup change is now a **material swap** (it snaps; §2.3's
+> travelling crossing still runs, but writes nothing these shaders read), and the elementals are no
+> longer dimmed below the omni by `ElementalCrystalDimming`. Bringing them back under the live
+> ColorSet means teaching the tint the `_BrightColor`/`_DarkColor` pair — one change for all three.
+
 **Dull is the body; bright is only the rim.** Every crystal shader composes its colour as
 `Blend(Base = Dull, Blend = Bright, Opacity = fresnel)` in **Overwrite** mode — i.e. a straight
 `lerp(dull, bright, fresnel)` — and the fresnel is `(1 − N·V)⁴` (`FresnelPower4`). At that power

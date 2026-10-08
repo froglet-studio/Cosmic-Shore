@@ -5216,3 +5216,35 @@ gates; both generators' `--check` green; `render_card_backgrounds --check` green
    near-hairpins. AI Grizzlies still complete laps at the new speeds.
 9. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still end and return to their
    pools exactly as before (`HoldAtFlightEnd` defaults off).
+
+## 🔴 Mass crystal — one geometry in every state, Space/Time colour contrast (`cece/lucid-ride-4arncr`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Asked for: *"the blue inactive mass crystal looks correct except its colors should reflect the
+color contrast seen in the space and time crystals. however the active state looks like it changes
+the geometry and animation. this should match the geometry and animation of the inactive state and
+the colors of the space and time crystals when active."* Confirmed with the requester: the correct
+shape is the **static Mass shells** (`MassCrystalExport1_8-21-25.fbx`, four pulsing shells, no spin).
+
+What changed (assets only, no C#; authored by `Tools/Build/author_mass_crystal_look.py --check`):
+- The 8 shell materials (`ActiveMassCrystalMaterial[ 1-3]`, `BlueMassCrystalMaterial[ 1-3]`, guids
+  kept) moved from `ShepardGraph` to `OmniShepardFresnelShader` with the Space/Time colour pairs.
+  Band, scaling and draw order per shell are unchanged.
+- `GyroidFlora`, `TadPoleFauna`, `MassSharkFauna`, `MassBrittlestarFauna`: the per-shell
+  SkinnedMeshRenderer (`spacecrystalanim.fbx`) + `SpaceCrystalAnimator` overrides on their nested
+  `CrystalMass` are gone, so their hearts are the base prefab's shells like every other Mass crystal.
+- New `ExplodingMassCrystalMaterial[ 1-3]` (verbatim copies of the old ShepardGraph shell
+  materials) are the Mass prefabs' `explodingMaterial` and the `MassDandruff` / `Crystal Explosion
+  Dummy` husks' authored material, so the collect shatter (`Impact._velocity`) is unchanged.
+
+1. **Embedded Mass heart** (any Mass flora/fauna, incl. Tadpole / Shark / Brittlestar / Gyroid):
+   four pulsing shells, no block spin; blue-white rim over deep navy, same contrast as an embedded
+   Space or Time heart.
+2. **Kill it** — the dropped crystal keeps the same shells and pulse and turns lime over
+   near-black, matching a dropped Space / Time crystal. (The colour SNAPS on drop, as Space/Time
+   already do — see `Docs/PALETTE.md` §2.2 note.)
+3. **Free pickups** — a petal knocked off a hull, Dog Fight's arena scatter, the Wanderway conveyor:
+   identical to (2).
+4. **Collect** a Mass crystal — the husk still shatters outward and fades as before.
+5. **Codex / toybox** Mass crystal — unchanged shape.
+6. **Draw order** — the inner shells read through the outer ones without popping or z-fighting;
+   if a shell looks wrong only from some angles, compare render queues 2999/3000/3001/3001.
