@@ -773,7 +773,9 @@ reports its band occupancy (69%) instead of asserting the 75% floor, as it does 
 ### 10.4 Proxies
 
 The siege takes 4 proxies within 200 u from the locust (12 -> 8), so the substrate's share stays 39 proxies / 78
-colliders and the Swarm cell's worst case stays 1,192 / 1,200.
+colliders and the Swarm cell's worst case is unchanged by the siege. (On bleeding-edge after the 2026-10-08 merges that
+worst case is 1,178 + 23 threat-flora hearts = 1,201, one over the 1,200 ceiling, so `author_swarm_fauna.py` refuses to
+write; that predates this port and is not the substrate's share.)
 
 A dive arrives from every side at once: 39 dangerous members in the contact horizon together. "Dangerous first, then
 nearest" covered 86% of its harm events at cap 4. The tick job now ranks the DANGEROUS by where they will be a tick from
