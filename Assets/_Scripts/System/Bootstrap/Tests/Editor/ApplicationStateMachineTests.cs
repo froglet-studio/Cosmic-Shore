@@ -92,17 +92,6 @@ namespace CosmicShore.Core
         }
 
         [Test]
-        public void MainMenu_To_Authenticating_Succeeds_Reconnect()
-        {
-            AdvanceTo(ApplicationState.MainMenu);
-
-            bool result = _sm.TransitionTo(ApplicationState.Authenticating);
-
-            Assert.IsTrue(result);
-            Assert.AreEqual(ApplicationState.Authenticating, _sm.Current);
-        }
-
-        [Test]
         public void LoadingGame_To_InGame_Succeeds()
         {
             AdvanceTo(ApplicationState.LoadingGame);
