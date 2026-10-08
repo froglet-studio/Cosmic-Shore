@@ -142,7 +142,8 @@ namespace CosmicShore.Utility
         /// <summary>
         /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
         /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
-        /// hand-off to the real object.
+        /// hand-off to the real object. Also an elemental crystal FUSING onto a hull
+        /// (<c>CrystalHullFusion</c>): the pair, the plate count, the plate size.
         ///
         /// It exists because a morph's dependencies are invisible to it — the thing it lands on
         /// is minted by somebody else — and every way that can fail produces the SAME symptom on
@@ -150,7 +151,7 @@ namespace CosmicShore.Utility
         /// "the retirement never ran" from "the target never arrived" from "the target arrived
         /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
         /// </summary>
-        [CSLogChannelLabel("[CrystalMorph] omni-crystal retirement steps")]
+        [CSLogChannelLabel("[CrystalMorph] crystal morphs: omni retirements and hull fusions")]
         CrystalMorph = 1 << 11,
         /// <summary>
         /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a

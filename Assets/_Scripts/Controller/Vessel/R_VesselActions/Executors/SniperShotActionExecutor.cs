@@ -368,9 +368,15 @@ namespace CosmicShore.Gameplay
                 // Classed Other: this is a gun round rather than a blast or a contact, so neither
                 // the Explosion nor the VesselContact ward should stop it, and only a pilot warded
                 // against everything is spared.
-                ElementalTransfer.ApplyAll(ElementalTransferForm.Eject, victim, attacker: null,
-                                           so.VesselStripPerElement, launch,
-                                           ElementalDebuffSources.Other);
+                //
+                // AUTHORITATIVE, and the Serpent is passed as the attacker. The press replicates, so
+                // every peer resolves this cone from its own lagged picture of both hulls; only the
+                // Serpent's owner decides, and the victim's owner settles. Passing no attacker (the
+                // old shape) routed Local, so every peer took from its own copy and only the
+                // victim's own replay counted.
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, _status,
+                                                        so.VesselStripPerElement, launch,
+                                                        ElementalDebuffSources.Other);
             }
             _vesselScratch.Clear();
         }

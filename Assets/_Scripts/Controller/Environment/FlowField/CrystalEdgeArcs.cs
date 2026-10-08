@@ -20,6 +20,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("0 bakes every plate (the charge crystal). Otherwise only the plates with exactly this many distinct corners are kept - a k-gonal prism has 2k - so the discharge runs on one family of an exploded crystal's plates. The omni crystal uses 10: its 12 pentagonal prisms, the shapes that stand for Charge.")]
         [SerializeField, Min(0)] int plateCorners;
 
+        /// <summary>The plate filter this renderer bakes with, so a reader of the PREFAB (which has
+        /// not run <c>Awake</c>) can ask the baker for the same cached twin an instance draws.</summary>
+        public int PlateCorners => plateCorners;
+
         void Awake()
         {
             var filter = GetComponent<MeshFilter>();

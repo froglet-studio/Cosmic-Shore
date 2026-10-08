@@ -78,6 +78,18 @@ def _position_sets(block, start_key, stop_key):
     return [re.findall(r"x: ([-\d.e]+), y: ([-\d.e]+), z: ([-\d.e]+)", s) for s in body.split("- positions:")[1:]]
 
 
+def _marked_lists(block):
+    """SpawnableWaypointTrack.markedWaypoints: one index list per intensity (empty = every waypoint)."""
+    m = re.search(r"markedWaypoints:\n((?:  - indices: .*\n)*)", block)
+    out = []
+    if m:
+        for h in re.findall(r"  - indices: (.*)", m.group(1)):
+            h = h.strip()
+            out.append([] if h in ("", "[]") else
+                       [int.from_bytes(bytes.fromhex(h[i:i + 8]), "little") for i in range(0, len(h), 8)])
+    return out
+
+
 def read_scene(path=SCENE):
     """Everything the fingerprint (and the simulator) reads, as the scene stores it (numbers as text)."""
     text = open(path, encoding="utf-8").read()
@@ -92,6 +104,12 @@ def read_scene(path=SCENE):
         "laps": _int_list(monitor, "lapsPerIntensity"),
         "optional_laps": int(optional.group(1)) if optional else 4,
         "anchors": _position_sets(crystals, "listOfCrystalPositions", "anchorJitterRadius"),
+        # Simulator-only, NOT in the fingerprint: ribbon normals parallel to the waypoints (empty =
+        # world up), crystals per lap (<= 0 = the waypoint count) and the marked waypoints (empty =
+        # every waypoint) - SpawnableWaypointTrack.waypointUps / crystalsPerLap / markedWaypoints.
+        "ups": _position_sets(track, "waypointUps", "crystalsPerLap") if "\n  waypointUps:" in track else [],
+        "per_lap": _int_list(track, "crystalsPerLap") if re.search(r"^  crystalsPerLap:", track, re.M) else [],
+        "marked": _marked_lists(track),
     }
 
 
@@ -148,7 +166,11 @@ def emit_track(out_path, path=SCENE):
         for i in intensities(data):
             points, spline, laps, anchors = resolved(data, i)
             fmt = lambda pts: ";".join(",".join(p) for p in pts)
-            fh.write(f"{i}|{spline}|{laps}|{fmt(points)}|{fmt(anchors)}\n")
+            k = i - 1
+            ups = data["ups"][k] if k < len(data["ups"]) else []
+            per_lap = data["per_lap"][k] if k < len(data["per_lap"]) else 0
+            marked = ",".join(map(str, data["marked"][k])) if k < len(data["marked"]) else ""
+            fh.write(f"{i}|{spline}|{laps}|{fmt(points)}|{fmt(anchors)}|{fmt(ups)}|{per_lap}|{marked}\n")
 
 
 # ---- the check ---------------------------------------------------------------------------------------

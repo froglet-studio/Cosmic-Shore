@@ -72,6 +72,12 @@ itself from `EffectiveOffset` — the authored `followOffset` with **z mirrored*
 `followOffset` itself. The controller's existing look-at-the-target rotation then points the
 camera back down the ship's forward axis for free.
 
+`EffectiveOffset` also scales the offset's height by `FollowHeightScale` (1 unless a vessel sets
+it — the Butterfly drops it to 0 in Mass mode, `R_VesselActions/BUTTERFLY.md` §2.0). That is not a
+third vantage and does not break the ordering rule below: like a zoom writing the distance, it
+changes the OFFSET the vantages are built from, so the rear view composes with it and mirrors the
+scaled offset (`FollowHeightScaleTests.ComposesWithTheRearView`).
+
 | vessel | authored offset | rear vantage |
 |---|---|---|
 | Urchin | `(0, 0.83, −6.67)` | `(0, 0.83, +6.67)` |

@@ -48,7 +48,8 @@ mkdir -p "$OUT"
 
 # Track geometry straight out of the shipped scene: per intensity the waypoint track (and whether
 # it is a spline), the laps and the crystal anchors - resolved exactly as the game resolves them, by
-# the same reader that computes each intensity's map fingerprint (so a fifth intensity is raced too).
+# the same reader that computes each intensity's map fingerprint (so a fifth intensity is raced too),
+# plus the simulator-only ribbon normals, crystals per lap and marked waypoints.
 python3 "$ROOT/Tools/Build/skimrace_track_fingerprint.py" --emit-track "$OUT/track.txt"
 
 RUNTIME="${SKIMRACE_RUNTIME:-dotnet}"

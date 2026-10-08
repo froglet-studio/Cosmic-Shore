@@ -25,7 +25,10 @@ What each hull did before, measured off the prefabs:
 
 `AIPilot.boostPolicy` (one serialized field) → an `AIBoostPolicySO` asset → at `Initialize` it
 builds a per-pilot `AIBoostDriver` against the vessel's OWN bindings
-(`R_VesselActionHandler.TryGetBoundAction<T>`), or null when the hull binds no such ability. One
+(`R_VesselActionHandler.TryGetBoundAction<T>`), or null when the hull binds no such ability. That
+lookup answers for the vessel's ACTIVE input device (since 2026-10-06, `SQUIRREL_DRIFT.md` §10), so an
+ability bound only in ONE device family's override map gives null on the other; the Squirrel's ring is
+bound in both, so `SkimRingAIPolicySO` builds on every device. One
 subclass per MECHANIC, never per mode:
 
 | policy | asset | mechanic |

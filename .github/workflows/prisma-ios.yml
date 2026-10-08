@@ -37,6 +37,10 @@ on:
       - 'development'
       - 'main'
       - 'build/**'
+      # Agent branches merge bleeding-edge in constantly, which "changes" the request file
+      # whenever bleeding-edge did - a Mac build nobody asked for. claude/** never fires CI on
+      # its own push; dispatch this workflow from the Actions tab for one.
+      - 'claude/**'
 
 permissions:
   contents: read

@@ -100,14 +100,14 @@ sits behind those names is first-party code.
 | Lifecycle | Unity messages (`Awake` … `OnDestroy`, `OnTrigger*`) are found by reflection once per type and bound as open-instance delegates (no `Expression.Compile`, which is slow on iOS's interpreter). They run in Script Execution Order: the `.meta` `executionOrder` (read by Content at boot) overrides `[DefaultExecutionOrder]`, and it orders Awake/OnEnable at a scene load, Start, and every per-frame phase | `SceneGraph/MonoBehaviour.cs`, `LifecycleMethodCache.cs`, `ScriptExecutionOrder.cs` |
 | Frame loop | `GameLoop.Tick` (Figure 4). Headless by design: tests tick it directly | `SceneGraph/GameLoop.cs` |
 | Time | Frame clock, fixed-step accumulator (the project's 0.04 s), unscaled clock | `Time.cs` |
-| Physics | Custom trigger physics. Overlap pairs fire `OnTriggerEnter/Stay/Exit`, sweep-sorted, deterministic. Raycast, SphereCast and OverlapSphere are supported, and Rigidbodies integrate ballistically. Spheres are exact; boxes and meshes are world-space AABBs. There is no contact solver (the game is trigger-driven) | `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
+| Physics | Custom trigger physics. Overlap pairs with a Rigidbody on at least one side whose layers meet in the Layer Collision Matrix (Unity's rules) fire `OnTriggerEnter/Stay/Exit` on the collider's GameObject and its Rigidbody's, sweep-sorted, deterministic. Raycast, SphereCast, OverlapSphere/Capsule/Box and `Collider.ClosestPoint` are supported, and Rigidbodies integrate ballistically. Spheres, oriented boxes and capsules are exact; a mesh is the oriented box of its bounds. A contact pass resolves a dynamic Rigidbody's solid SPHERE against solid colliders and fires `OnCollision*` (the census in §13.1); there is no general solver | `Physics/ShapeMath.cs`, `Physics/ContactPass.cs`, `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
 | Animation | A Mecanim driver: layers, nested state machines, transitions, triggers, 1D/2D/direct blend trees, FBX and `.anim` clips | `Animation/` |
 | Input | The Input System (actions, maps, bindings, composites, devices). `TouchFeed` gives EnhancedTouch semantics on phones | `InputSystem/` |
 | UI | uGUI: anchors, layout groups, masks, `EventSystem` raycasting and navigation, `Selectable` / `Button` / `ScrollRect` / `InputField`. TMP layout builds SDF glyph quads | `UI/` |
 | DI and events | Reflex (`[Inject]`, installers, containers) and Obvious SOAP (variables, events, lists) | `Injection/`, `Soap/` |
 | Async | A frame-driven task scheduler; awaits resume on the game-loop thread | `Tasks/` |
 | Rendering data | `Mesh`, `Material`, `Camera`, `RenderTexture`, volumes, change tracking. **Data only:** the Render project draws | `Rendering/` |
-| Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed | `Audio/` |
+| Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed (which then also answers event descriptions: one-shot, snapshot, length). `RuntimeManager.EventRecorded` is the parity harness's FMOD channel (starts, restarts, stops, FMOD and Unity mixer snapshots); `FmodGuids` names GUID-only references from the build's `GUIDs.txt` | `Audio/` |
 | Networking | Netcode for GameObjects' model over a TCP transport (section 8) | `Networking/` |
 | Services | Authentication, Cloud Save, Friends, Leaderboards and Analytics, kept on local disk | `Services/` |
 
@@ -226,6 +226,15 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 - `NetworkTransform` interpolation;
 - networked scene loads and named messages;
 - RPCs, routed by the prologue from section 3.
+
+**The transport seam.** `NetDriver` never touches a socket. It opens an `INetTransport`
+(`Networking/Wire/INetTransport.cs`) through `NetDriver.TransportFactory`, and reads its events
+in `EarlyUpdate`. The contract is reliable, ordered, whole frames; events come only through `Poll`
+on the main thread; peer 0 is the server; a failed connect reports `Disconnected`; a listen on a
+taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) is the first implementation and the
+default. An internet relay is the next one (C6, after gate G2). `NetTransportContractTests` runs
+the same checks against every implementation (TCP and the in-memory loopback the tests use), and
+`NetDriverTransportTests` drives the driver's handshake over both.
 
 **`DirectoryMultiplayerService`** stands in for the UGS Lobby + Relay. It keeps one JSON file per
 session in a shared folder: roster, per-player properties (the game's invite channel), heartbeat,
@@ -377,7 +386,7 @@ own touch controls.
 | `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 
 Environment variables:
-- `COSMIC_SHORE_AUDIO=off|wav:PATH`
+- `COSMIC_SHORE_AUDIO=off|wav:PATH|nrt` (`nrt`: the FMOD runtime and banks, no output, mixed only on the engine's tick; what `engine_parity` runs)
 - `COSMIC_SHORE_NET=off`
 - `COSMIC_SHORE_PROFILE=b` (second install)
 - `COSMIC_SHORE_PROJECT=DIR` (use another project or packaged data)
@@ -443,7 +452,7 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 
 | Area | Status |
 |---|---|
-| Physics | Triggers and queries only. Boxes and meshes are axis-aligned bounds, and there is no contact solver, so `OnCollision*` never fires |
+| Physics | Contacts for dynamic spheres only (the census below); a dynamic body with any other solid shape gets no contacts and a one-time warning. Meshes are the oriented box of their bounds. Since 2026-10-08 a trigger pair needs a Rigidbody on one side, as in Unity (two static triggers stay silent), and the layer collision matrix (with each collider's include/exclude layers) filters trigger pairs as it does contacts. Gravity is not simulated (no live user) |
 | Shaders | Material families are reproduced, not Unity's compiled shaders. A new Shader Graph needs a translation in `SceneRenderer` |
 | Online services | Local stand-ins: no real UGS accounts, cloud or leaderboards |
 | Provenance | No Unity binary is used. Two spots still follow Unity source too closely (TMP SDF text-shader terms, a Voronoi hash from Unity's docs) and are queued for clean rewrites: `docs/LEGAL_REVIEW.md`. Third-party notices: `THIRD_PARTY_NOTICES.md` |
@@ -452,3 +461,21 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
 | Legacy projects | Data, Game, Cli and Client are kept for their tests; new work goes into Engine, Content, Render or the players |
+
+### 13.1 Physics census (C3, 2026-10-08)
+
+Every runtime use of `Rigidbody` and `OnCollision*` in `Assets/_Scripts`, and the contact behaviour it needs. Only the Astro League ball needs a contact; it is a sphere with bounciness 1 (Maximum) and zero friction (Minimum) hitting spheres, boxes and one capsule, so the contact pass covers it and **no physics library is bound** (ARCHITECTURE_REVIEW E13: BepuPhysics v2 only if mesh contacts or PhysX-like friction are ever needed).
+
+| Script | Use | Contact it needs |
+|---|---|---|
+| `AstroLeagueBall` | Dynamic body on the server; `OnCollisionEnter/Stay` (contact point, normal, collider); runtime PhysicsMaterial; `excludeLayers` TrailBlocks; `AddTorque` | Sphere vs solid hulls (sphere, rotated box, Rhino's capsule; all kinematic) and vs other balls; restitution, no friction; callbacks after the solve. Court walls are analytic (`AstroLeagueBoundary`), goals poll positions |
+| `MantaBomb` | `OnTriggerEnter` on the carrier root | Trigger messages routed to the attached Rigidbody's GameObject |
+| `ShapeCollisionTrigger`, `SpawnableShapeBase` | Kinematic carrier + trigger sphere | Trigger only |
+| `FullAutoBlockShootActionExecutor`, projectile prefabs | `isKinematic` toggles on trigger carriers moved by script | Trigger only |
+| `VesselImpactor`, `ScarabCavitationBlast` | Collider partition by owning Rigidbody | None |
+| `PrismOctahedronShield`, `PrismStellatedOctahedronShield`, `PrismStateManager` | `mass` written | None (never read) |
+| `ProjectileDetonatorSO` | Zeroes velocities | None |
+| `ShipAudioController` | `(Rigidbody)null` to FMOD | None |
+| `SkimmerForcefieldCracklePrismEffectSO` | `Collider.ClosestPoint` | Closest point on a rotated box |
+
+Firework and AxeBubble carry solid gravity bodies but nothing references them.

@@ -74,6 +74,22 @@ the server records, everyone reads. Reach for it whenever a peer
 knows something the server cannot see — and prefer replicated STATE over an announcement whenever a
 peer that looks LATER still needs the answer.
 
+**Every `InputStatus` field is owner-write state — including `ActiveInputDevice`, since 2026-10.**
+`InputStatus` lives on the Player, and every peer runs `InputController.Initialize` for every
+player, which picks a strategy from THAT machine's hardware. So a field that stays local describes
+the watching machine, not the pilot: until the device replicated, a phone treated a PC pilot as
+Touch and a PC treated a phone pilot as Keyboard, and every replica-side reader of it (the per-device
+ability maps, the Manta's trigger-turn trail, trigger depth in `VesselTransformer`) simulated the
+wrong device.
+
+**Ability presses replicate by RE-EXECUTION, and a press carries what it was resolved against.**
+`R_VesselActionHandler` sends owner → server → every peer which INPUT was pressed, and each peer
+resolves it to actions itself — so whatever that resolution depends on must arrive WITH the press,
+not via separately replicated state: a NetworkVariable and an RPC are not ordered against each other.
+The press and release RPCs carry the device as one byte; a release resolves with its press's device.
+`Tools/Build/peer_press_harness/run.py` runs the shipped handler as two machines over every shipped
+vessel's maps (`R_VesselActions/SQUIRREL_DRIFT.md` §11).
+
 **`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used today only by the `BenchmarkStressTest` scene) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 
 **Player identity resolution** (`Player.OnNetworkSpawn()`):
@@ -693,7 +709,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### Race Rules
 
-- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: `EndConditionOverridesSO` (FrogletTools > Game Modes > End Game Conditions; SkimRace entry non-zero) > `SpawnableWaypointTrack` waypoints × laps > default 39. Laps are per-intensity (`lapsPerIntensity`, a `List<int>` matched to the waypoint sets by index, falling back to the scalar `optionalLaps`) — SkimRace runs 3/3/2/2 so the long high-intensity tracks don't demand as many laps as the short ones. There is no per-scene `CrystalCollisions` field (removed on purpose — see the `/EndGameConditions` skill). Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
+- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: `EndConditionOverridesSO` (FrogletTools > Game Modes > End Game Conditions; SkimRace entry non-zero) > the `SpawnableWaypointTrack`'s crystals per lap (`crystalsPerLap[intensity]` when authored, else its waypoint count) × laps > default 39. Intensity 4 is **Relativity** (five distinct lobes, five chords crossing the nucleus at different places, one snaking pass, 26 crystals/lap with marker blocks only at the crystals — `SKIMRACE.md` §5a, authored by `Tools/Build/author_skimrace_relativity_track.py`). Laps are per-intensity (`lapsPerIntensity`, a `List<int>` matched to the waypoint sets by index, falling back to the scalar `optionalLaps`) — SkimRace runs 3/3/2/2 so the long high-intensity tracks don't demand as many laps as the short ones. There is no per-scene `CrystalCollisions` field (removed on purpose — see the `/EndGameConditions` skill). Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
 - **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected (`ScoringMetrics.SumByDomain`) reaches the target, so AI and human teammates finish the race together
 - **Winner detection (domain-aggregated)**: Server-authoritative via `SkimRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
 - **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better

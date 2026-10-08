@@ -69,6 +69,25 @@ namespace CosmicShore.Gameplay
         public Vector3? PlacementAnchor { get; set; }
 
         /// <summary>
+        /// How much of the follow offset's HEIGHT (y) the camera keeps: 1 = the authored offset,
+        /// 0 = level with the vessel, directly behind it. Driven only by the Butterfly's
+        /// <c>SpreadWingsActionExecutor</c> — Mass mode drops the camera to directly behind the
+        /// hull, Dust mode keeps the authored height (<c>R_VesselActions/BUTTERFLY.md</c> §2.0).
+        ///
+        /// <para>Applied at the point of use (<see cref="EffectiveOffset"/>), never by writing
+        /// <see cref="_followOffset"/>, for the same reason as <see cref="RearView"/>: every
+        /// re-applied <c>CameraSettingsSO</c> and zoom ability writes that field, and the first
+        /// of them to fire would silently put the height back. Reset to 1 whenever the follow
+        /// target changes — a height belongs to the ship it was set for.</para>
+        /// </summary>
+        public float FollowHeightScale
+        {
+            get => _followHeightScale;
+            set => _followHeightScale = Mathf.Clamp01(value);
+        }
+        private float _followHeightScale = 1f;
+
+        /// <summary>
         /// The world point the camera frames this frame: the placement anchor if one is set, else
         /// the follow target's own position — seen through a portal the camera has not reached yet
         /// while one is being carried (<see cref="CarryThroughSphere"/>).
@@ -234,8 +253,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The offset actually used to pose the camera this frame: the authored one, or its
-        /// z-mirror while <see cref="RearView"/> is set. Mirroring z alone — not x, not y — is
+        /// The offset actually used to pose the camera this frame: the authored one (its height
+        /// scaled by <see cref="FollowHeightScale"/>), or its z-mirror while
+        /// <see cref="RearView"/> is set. Mirroring z alone — not x, not y — is
         /// what puts the camera directly ahead at the same distance and the same height, rather
         /// than at some reflected vantage the vessel's settings never described.
         ///
@@ -246,9 +266,9 @@ namespace CosmicShore.Gameplay
         /// third case here, not a revival of a flag nothing was setting.</para>
         /// </summary>
         private Vector3 EffectiveOffset =>
-            RearView && !PlacementAnchor.HasValue
-                ? new Vector3(_followOffset.x, _followOffset.y, -_followOffset.z)
-                : _followOffset;
+            new(_followOffset.x,
+                _followOffset.y * _followHeightScale,
+                RearView && !PlacementAnchor.HasValue ? -_followOffset.z : _followOffset.z);
 
         // --- Camera Shake ---
         private float _shakeTimeRemaining;
@@ -415,8 +435,12 @@ namespace CosmicShore.Gameplay
 
         public void SetFollowTarget(Transform target)
         {
-            // A carry belongs to the ship it was started for.
-            if (target != _followTarget) CancelCarry();
+            // A carry and a height scale belong to the ship they were started for.
+            if (target != _followTarget)
+            {
+                CancelCarry();
+                _followHeightScale = 1f;
+            }
 
             // Remember WHO took the target away, so a frozen camera can name its cause instead of
             // being diagnosed by reading every caller in the project (see RecoverLostFollowTarget).

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "scene": "Bootstrap",
+  "seed": 1337,
+  "frames": 4800,
+  "checkpointEvery": 30,
+  "do": ["1500:arcade Bloomrush", "1560:arcade intensity 4", "1620:arcade start", "2100:arcade ready", "2280:hold W 900", "3200:hold A 120", "3340:hold W 1400"],
+  "status": []
+}

@@ -36,6 +36,8 @@ namespace CosmicShore.Player
     ///   dump_ui NAME[:DEPTH]         a UI subtree with rects, anchors and components
     ///   logs [N]                     the last N console lines (default 200)
     ///   scene NAME                   load a scene by name or build index
+    ///   resize WxH | off             render (and capture) at WxH whatever the window is; off = the window's size
+    ///   ui_sweep DIR[;WxH,...]       every screen of the loaded scene at each resolution: PNG + rect dump (UiSweep)
     ///   quit                         close the player
     /// </summary>
     public sealed class ControlServer : IDisposable
@@ -61,6 +63,9 @@ namespace CosmicShore.Player
         /// <summary>The player's window: closes it (quit) and reports the frame rate.</summary>
         public Action Quit;
         public Func<double> FrameMs;
+
+        /// <summary><c>resize WxH</c>: the resolution the game renders and captures at; null = the window's.</summary>
+        public (int w, int h)? VirtualSize;
 
         ControlServer(int port, InputScript script)
         {
@@ -120,6 +125,16 @@ namespace CosmicShore.Player
         /// <summary>Main thread, before the engine ticks: run every queued command, finish the waits that are due.</summary>
         public void BeforeTick(int frame)
         {
+            if (_sweep != null)
+            {
+                _tee.Capture = _sweeping.Output;
+                try
+                {
+                    if (_sweep.Step(frame)) { Finish(_sweeping, _sweep.Ok, _sweep.Result()); _sweep = null; _sweeping = null; }
+                }
+                catch (Exception e) { Console.WriteLine("ui_sweep: " + e.Message); Finish(_sweeping, false, null); _sweep = null; _sweeping = null; }
+                finally { _tee.Capture = null; }
+            }
             for (int i = _waiting.Count - 1; i >= 0; i--)
                 if (frame >= _waiting[i].UntilFrame) { Finish(_waiting[i], true, null); _waiting.RemoveAt(i); }
             while (_queue.TryDequeue(out var p))
@@ -135,6 +150,7 @@ namespace CosmicShore.Player
         /// <summary>Main thread, after a frame is presented: answer the screenshot requests with it.</summary>
         public void AfterPresent(Action<string> capture, int w, int h)
         {
+            if (_sweep?.ShotPath is { } shot) { capture(shot); _sweep.ShotTaken(w, h); }
             foreach (var (p, path) in _shots)
             {
                 try { capture(path); Finish(p, true, new() { ["path"] = path, ["width"] = w, ["height"] = h }); }
@@ -143,7 +159,10 @@ namespace CosmicShore.Player
             _shots.Clear();
         }
 
-        public bool WantsFrame => _shots.Count > 0;
+        public bool WantsFrame => _shots.Count > 0 || _sweep?.ShotPath != null;
+
+        UiSweep _sweep;
+        Pending _sweeping;
 
         void Finish(Pending p, bool ok, Dictionary<string, object> extra)
         {
@@ -166,6 +185,10 @@ namespace CosmicShore.Player
                 case "wait":
                     p.UntilFrame = frame + Math.Max(1, int.TryParse(arg, out var n) ? n : 1);
                     _waiting.Add(p);
+                    return;
+                case "screenshot" when _sweep != null:
+                    Console.WriteLine("a ui_sweep is running");
+                    Finish(p, false, null);
                     return;
                 case "screenshot":
                 {
@@ -191,8 +214,16 @@ namespace CosmicShore.Player
                 case "quit":
                     Quit?.Invoke();
                     break;
+                case "resize":
+                    VirtualSize = UiSweep.ParseSize(arg);
+                    Console.WriteLine(VirtualSize is { } v ? $"[control] rendering at {v.w}x{v.h}" : "[control] rendering at the window size");
+                    break;
+                case "ui_sweep":
+                    _sweep = new UiSweep(arg, this);
+                    _sweeping = p;
+                    return;
                 default:
-                    Console.WriteLine($"unknown command '{p.Cmd}' (state, do, wait, screenshot, find, hierarchy, get, set, ui_at, dump_ui, logs, scene, quit)");
+                    Console.WriteLine($"unknown command '{p.Cmd}' (state, do, wait, screenshot, find, hierarchy, get, set, ui_at, dump_ui, logs, scene, resize, ui_sweep, quit)");
                     Finish(p, false, null);
                     return;
             }

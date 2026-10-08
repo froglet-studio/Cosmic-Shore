@@ -178,7 +178,7 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 #### Single-Player Game Scenes
 
 **None ship.** `MinigameDuelForTheCell` and `MinigameWildlifeBlitz` were retired in 2026-09 — they had
-been replaced by `MinigameDuelForCellMultiplayer_Gameplay` (`OnlineDuelForTheCell (29)`) and
+been replaced by `MinigameDuelForCellMultiplayer_Gameplay` (`OnlineDuelForTheCell (29)`, itself retired 2026-10) and
 `MinigameWildlifeBlitzMultuplayerCoOp` (`CoOpWildlifeBlitz (32)`; itself deleted 2026-10, BH-5.7), and every ability in them was
 dead (their non-networked Player fails `IsLocalUser`). The `GameModes` members 8 and 26 are KEPT
 (ids are never reused; cloud progress keys on the names). The single-player Wildlife Blitz stack
@@ -192,9 +192,7 @@ entries that pointed at it were deleted 2026-10 (BH-5.4).
 | Scene | Game Mode | Controller |
 |---|---|---|
 | `MinigameSkimRace` | `SkimRace (33)` | `SkimRaceController` |
-| `MinigameFreestyleMultiplayer_Gameplay` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
 | `MinigameScurryMultiplayer_Gameplay` | `Scurry (35)` | `ScurryController` |
-| `MinigameDuelForCellMultiplayer_Gameplay` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | `MinigameJoust_Gameplay` | `Joust (34)` | `JoustController` |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `MinigameBroodRush` | `BroodRush (38)` | `BroodRushController` |

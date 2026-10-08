@@ -24,16 +24,18 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time }
 
-        public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1);
+        public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1, string? ClonePathArg = null);
 
         readonly Args _args;
         readonly LauncherSettings _s;
         readonly Toolchain _tools = new();
         readonly Workspace _ws;
         readonly LauncherJobs _jobs;
-        readonly ClaudeChat _chat;
+        readonly ChatStore _chats;
+        /// <summary>The conversation the AGENT page shows; the others keep running behind it.</summary>
+        ClaudeChat _chat => _chats.Active;
 
         IWindow _window = null!;
         GL _gl = null!;
@@ -47,6 +49,7 @@ namespace CosmicShore.Launcher
         Page _page = Page.Play;
         bool _toolsScanned;
         bool _autoFired;
+        bool _closeWhenDone;
         bool _dirty;
         double _saveTimer;
         int _frame;
@@ -62,17 +65,25 @@ namespace CosmicShore.Launcher
         {
             _args = args;
             _s = LauncherSettings.Load();
+            // Opened from Unity (FrogletTools > Prisma > Launch Prisma): remember which clone Unity has open.
+            if (!string.IsNullOrWhiteSpace(args.ClonePathArg) && Directory.Exists(args.ClonePathArg)) { _s.UnityClonePath = Path.GetFullPath(args.ClonePathArg); _s.Save(); }
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
-            _chat = new ClaudeChat(_s, _tools);
+            _git = new SourceControl(_s, _tools, _ws);
+            _chats = new ChatStore(_s, _tools, c =>
+            {
+                c.ReplyFinished += t => { if (_s.VoiceReplies && ReferenceEquals(c, _chats?.Active)) _voice?.Speak(t); };
+                c.Saved += () => _ui.Enqueue(() => OnChatRunEnded(c));
+            });
             _updater = new LauncherUpdater(_s, _tools, _ws);
             // A play session that ends is folded into the tracks, and Prisma says what it found.
             _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
-            _chat.MilestoneStopped += stop => _ui.Enqueue(() => OnMilestoneStopped(stop));
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
-            if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
+            if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) { _projTab = tab; _edTab = tab; }
+            if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
+            if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -111,7 +122,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _chat.Stop(); _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chats.StopAll(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -153,6 +164,7 @@ namespace CosmicShore.Launcher
             (_froglet, _frogletSize) = Texture("froglet.png");
             SetIcon();
 
+            Task.Run(() => _tools.DetectDcc(_s));
             Task.Run(() =>
             {
                 _tools.Detect(_s);
@@ -231,6 +243,15 @@ namespace CosmicShore.Launcher
                         if (pick != null) _updater.Use(pick, _jobs.Log);
                         break;
                     case "ingest": Task.Run(() => IngestSessions(notify: true)); break;
+                    case var bn when bn.StartsWith("bench:"):
+                        // bench:SceneA,SceneB[:frames[:low|ab]] - presses TIME > RUN (headless, so it works on a server).
+                        _page = Page.Time;
+                        var bp = bn["bench:".Length..].Split(':');
+                        int bgc = bp.Length > 2 ? bp[2] switch { "low" => 1, "ab" => 2, _ => 0 } : 0;
+                        _jobs.Benchmark(bp[0].Split(',', StringSplitOptions.RemoveEmptyEntries), bp.Length > 1 && int.TryParse(bp[1], out var bf) ? bf : 300,
+                            1, headless: true, vsync: false, _s.BenchSize, bgc);
+                        _closeWhenDone = true;
+                        break;
                     case "claude-install":
                         _page = Page.Chat;
                         Task.Run(() => _chat.Install(_jobs.Log));
@@ -239,10 +260,6 @@ namespace CosmicShore.Launcher
                         _page = Page.Chat;
                         _chat.Detect();
                         SendChat(c[5..], ClaudeChat.Mode.Plan);
-                        break;
-                    case var m when m.StartsWith("milestone:"):
-                        _chat.Detect();
-                        StartMilestone(m["milestone:".Length..]);
                         break;
                 }
             }
@@ -260,6 +277,8 @@ namespace CosmicShore.Launcher
                 _window.Close();
             }
             else if (_args.Screenshot == null && _args.Frames > 0 && _frame >= _args.Frames) _window.Close();
+            // --auto bench: the launcher closes too once the last run is saved, so a script can wait on it.
+            if (_closeWhenDone && !_jobs.Busy) _window.Close();
         }
 
         void DrawFrame(float dt)
@@ -287,7 +306,9 @@ namespace CosmicShore.Launcher
                 case Page.Console: DrawConsole(contentA, contentB); break;
                 case Page.Tracks: DrawTracks(contentA, contentB); break;
                 case Page.Board: DrawBoard(contentA, contentB); break;
-                case Page.Milestones: DrawMilestones(contentA, contentB); break;
+                case Page.Git: DrawGit(contentA, contentB); break;
+                case Page.Editor: DrawEditor(contentA, contentB); break;
+                case Page.Time: DrawTime(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -389,13 +410,15 @@ namespace CosmicShore.Launcher
                 (Page.Build, "BUILD", Neon.IconPhone),
                 (Page.Project, "PROJECT", Neon.IconSliders),
                 (Page.Chat, "AGENT", Neon.IconChat),
+                (Page.Git, "GIT", IconBranch),
+                (Page.Editor, "EDITOR", IconCube),
+                (Page.Time, "TIME", IconClock),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
-                (Page.Milestones, "MILESTONES", IconFlag),
                 (Page.Options, "SETTINGS", Neon.IconGear),
                 (Page.Console, "CONSOLE", Neon.IconTerminal),
             };
-            const float itemH = 60, step = 63;
+            const float itemH = 56, step = 58; // 12 pages fit an 800 px window
             float y = mb.Y + 18;
             // The selection glides between items rather than jumping.
             if (_railY < 0) _railY = _railTarget;
@@ -417,11 +440,11 @@ namespace CosmicShore.Launcher
                 var col = on ? Neon.Cyan : hov ? Neon.Ink : Neon.Dim;
                 if (on) _railTarget = a.Y;
                 if (hov && !on) Neon.ChamferFill(dl, a, b, 8, Neon.U(Neon.Ink, 0.04f));
-                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 22), Neon.U(col));
+                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 20), Neon.U(col));
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
                 ImGui.PopFont();
-                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 41), Neon.U(col), it.name);
+                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 38), Neon.U(col), it.name);
                 int badge = RailBadge(it.page);
                 if (badge > 0 && !on)
                 {
@@ -497,7 +520,10 @@ namespace CosmicShore.Launcher
                 ImGui.InvisibleButton("commit", new Vector2(colW, 20));
                 Neon.Tooltip($"{c.Author}  ·  {c.When}");
             }
-            y += 84;
+            y += 74;
+            DrawCloneBranch(dl, new Vector2(x0, y), colW);
+            y += 50;
+            y += DrawBehindBanner(dl, new Vector2(x0, y), colW);
 
             // START
             ImGui.SetCursorScreenPos(new Vector2(x0, y));
@@ -560,6 +586,131 @@ namespace CosmicShore.Launcher
             }
         }
 
+        // ---- is Prisma's own copy behind its branch?
+
+        int _pendingSeen = -1;
+        DateTime _pendingChecked;
+
+        /// <summary>
+        /// A banner when Prisma's workspace is not at the tip of its branch on GitHub (so TOOLS, DATA,
+        /// MODELS and PLAY run older code), with UPDATE. Unsaved changes in the workspace block the
+        /// update, and the banner says so instead of offering it: they are never thrown away.
+        /// Returns the height it used (0 when up to date).
+        /// </summary>
+        float DrawBehindBanner(ImDrawListPtr dl, Vector2 p, float w)
+        {
+            _jobs.CheckRemote(_s.Branch);
+            if (!_jobs.Behind(_s.Branch)) return 0;
+            if ((DateTime.Now - _pendingChecked).TotalSeconds > 10 && !_jobs.Busy)
+            {
+                _pendingChecked = DateTime.Now;
+                Task.Run(() => _pendingSeen = _ws.PendingChanges());
+            }
+            const float h = 40;
+            dl.AddRectFilled(p, p + new Vector2(w, h), Neon.U(Neon.Amber, 0.12f), 8);
+            dl.AddRect(p, p + new Vector2(w, h), Neon.U(Neon.Amber, 0.55f), 8, ImDrawFlags.None, 1.2f);
+            string head = _jobs.HeadSha?[..Math.Min(7, _jobs.HeadSha.Length)] ?? "?";
+            string tip = _jobs.RemoteTip?[..Math.Min(7, _jobs.RemoteTip.Length)] ?? "?";
+            ImGui.PushFont(Neon.Small);
+            dl.AddText(Neon.Small, 13, p + new Vector2(12, 4), Neon.U(Neon.Amber), $"Prisma's copy is behind {Trim(_s.Branch, 40)}: it has #{head}, GitHub has #{tip}.");
+            string sub = _pendingSeen > 0
+                ? $"{_pendingSeen} unsaved change{(_pendingSeen == 1 ? "" : "s")} in Prisma's copy block the update: commit or discard them on GIT first."
+                : "The editor tools and the game run the older code until you update.";
+            dl.AddText(Neon.Small, 13, p + new Vector2(12, 21), Neon.U(Neon.Dim), sub);
+            ImGui.PopFont();
+            ImGui.SetCursorScreenPos(new Vector2(p.X + w - 112, p.Y + 6));
+            if (_pendingSeen > 0)
+            {
+                if (SmallButton("GIT", 104, true)) _page = Page.Git;
+            }
+            else if (SmallButton(_jobs.Busy && _jobs.JobName == "Update workspace" ? "UPDATING" : "UPDATE", 104, !_jobs.Busy && !_jobs.GameRunning))
+                _jobs.Update();
+            Neon.Tooltip(_jobs.GameRunning ? "Close the game first." : "Fetch the branch's tip into Prisma's own copy (your Unity checkout is not touched).");
+            return h + 12;
+        }
+
+        // ---- following the branch Unity / GitHub Desktop has checked out
+
+        string? _cloneBranch;
+        DateTime _clonePolled;
+        bool _clonePolling;
+
+        /// <summary>The user's own clone: the one Unity opened Prisma from, else the one set for "beside my clone".</summary>
+        string? ClonePath => !string.IsNullOrWhiteSpace(_s.UnityClonePath) && Directory.Exists(_s.UnityClonePath) ? _s.UnityClonePath
+            : !string.IsNullOrWhiteSpace(_s.MyClonePath) && Directory.Exists(_s.MyClonePath) ? _s.MyClonePath : null;
+
+        /// <summary>Reads the clone's current branch every few seconds; while following, PLAY switches to it.</summary>
+        void PollCloneBranch()
+        {
+            if (_clonePolling || ClonePath is not { } clone || _tools.Git == null || (DateTime.Now - _clonePolled).TotalSeconds < 4) return;
+            _clonePolling = true;
+            _clonePolled = DateTime.Now;
+            Task.Run(() =>
+            {
+                try
+                {
+                    var br = ProcessRunner.Capture(_tools.Git, "-C", clone, "symbolic-ref", "--short", "-q", "HEAD");
+                    _ui.Enqueue(() =>
+                    {
+                        bool changed = br != _cloneBranch;
+                        _cloneBranch = string.IsNullOrWhiteSpace(br) ? null : br;
+                        if (_s.FollowClone && _cloneBranch != null && _cloneBranch != _s.Branch && !_jobs.Busy)
+                        {
+                            var from = _s.Branch;
+                            _s.Branch = _cloneBranch; _dirty = true;
+                            if (changed && _frame > 60)
+                                Notify("Following Unity's branch", $"Unity / GitHub Desktop switched to {_cloneBranch}, so PLAY did too (it was {from}).", NoteKind.Info);
+                        }
+                    });
+                }
+                finally { _clonePolling = false; }
+            });
+        }
+
+        void PickBranch(string br)
+        {
+            _s.Branch = br;
+            // Picking Unity's own branch follows it again; any other branch is Prisma's own choice.
+            _s.FollowClone = _cloneBranch == null || br == _cloneBranch;
+            _dirty = true;
+        }
+
+        /// <summary>The line under the branch: which branch Unity has, and that Prisma may use another one.</summary>
+        void DrawCloneBranch(ImDrawListPtr dl, Vector2 p, float w)
+        {
+            PollCloneBranch();
+            ImGui.PushFont(Neon.Small);
+            if (ClonePath == null)
+            {
+                dl.AddText(Neon.Small, 13, p + new Vector2(4, 4), Neon.U(Neon.Dim),
+                    "Open Prisma from Unity (FrogletTools > Prisma > Launch Prisma) and PLAY follows the branch Unity is on.");
+            }
+            else if (_cloneBranch == null)
+            {
+                dl.AddText(Neon.Small, 13, p + new Vector2(4, 4), Neon.U(Neon.Dim), "Unity / GitHub Desktop: reading its branch...");
+            }
+            else if (_s.Branch == _cloneBranch)
+            {
+                IconBranch(dl, p + new Vector2(10, 12), Neon.U(Neon.Lime));
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 4), Neon.U(Neon.Lime), "Same branch as Unity / GitHub Desktop");
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim),
+                    "Prisma plays its own copy, so you can pick any other branch here without touching Unity's.");
+            }
+            else
+            {
+                IconBranch(dl, p + new Vector2(10, 12), Neon.U(Neon.Amber));
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 4), Neon.U(Neon.Amber), Trim($"Unity / GitHub Desktop is on {_cloneBranch}", 60));
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim), "Prisma plays its own copy of this branch - your Unity checkout is not touched.");
+                ImGui.SetCursorScreenPos(new Vector2(p.X + w - 150, p.Y));
+                if (SmallButton("FOLLOW UNITY", 150, !_jobs.Busy)) PickBranch(_cloneBranch);
+                Neon.Tooltip($"Switch PLAY to {_cloneBranch}, and keep following Unity / GitHub Desktop when it changes branch.");
+            }
+            if (_cloneBranch != null && _jobs.Branches.Count > 0 && !_jobs.Branches.Contains(_cloneBranch) && _s.Branch == _cloneBranch)
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Red),
+                    $"{_cloneBranch} is not on GitHub yet: push it from GitHub Desktop so Prisma can fetch it.");
+            ImGui.PopFont();
+        }
+
         void BranchCombo()
         {
             if (ImGui.BeginCombo("##branch", _s.Branch, ImGuiComboFlags.HeightLarge))
@@ -571,10 +722,10 @@ namespace CosmicShore.Launcher
                 foreach (var br in _jobs.Branches)
                 {
                     if (_branchFilter.Length > 0 && !br.Contains(_branchFilter, StringComparison.OrdinalIgnoreCase)) continue;
-                    if (ImGui.Selectable(br, br == _s.Branch)) { _s.Branch = br; _dirty = true; }
+                    if (ImGui.Selectable(br, br == _s.Branch)) PickBranch(br);
                 }
                 if (_branchFilter.Length > 0 && !_jobs.Branches.Contains(_branchFilter) && ImGui.Selectable($"use \"{_branchFilter}\""))
-                { _s.Branch = _branchFilter; _dirty = true; }
+                PickBranch(_branchFilter);
                 ImGui.EndCombo();
             }
         }
@@ -939,20 +1090,6 @@ namespace CosmicShore.Launcher
                 });
                 Row("Model", () => Text("##cmodel", "default", () => _s.ClaudeModel, v => _s.ClaudeModel = v));
                 Row("CLI path", () => Text("##cpath", "auto-detect", () => _s.ClaudePath, v => _s.ClaudePath = v));
-                Row("Milestone budget", () =>
-                {
-                    // Each milestone run stops at the first limit it reaches and leaves what it tried on the board.
-                    int turns = _s.MilestoneMaxTurns, minutes = _s.MilestoneMaxMinutes;
-                    float usd = (float)_s.MilestoneMaxUsd;
-                    ImGui.PushItemWidth(110);
-                    if (ImGui.InputInt("turns##mt", ref turns, 10)) { _s.MilestoneMaxTurns = Math.Clamp(turns, 1, 1000); _dirty = true; }
-                    ImGui.SameLine(0, 14);
-                    if (ImGui.InputInt("min##mm", ref minutes, 15)) { _s.MilestoneMaxMinutes = Math.Clamp(minutes, 0, 600); _dirty = true; }
-                    ImGui.SameLine(0, 14);
-                    if (ImGui.InputFloat("$##mu", ref usd, 1, 5, "%.0f")) { _s.MilestoneMaxUsd = Math.Clamp(usd, 0, 500); _dirty = true; }
-                    ImGui.PopItemWidth();
-                    Neon.Tooltip("Per milestone run: agentic turns, wall-clock minutes (0 = no limit) and dollars (0 = no cap;\nwith a Claude plan this is the run's nominal cost). When a run stops at a limit, Prisma puts\nwhat it tried on the BOARD and offers CONTINUE.");
-                });
             }
             if (Section("ADVANCED"))
             {
@@ -966,8 +1103,13 @@ namespace CosmicShore.Launcher
                 StatusRow("git", _tools.Git != null, _tools.Git != null ? $"{_tools.GitVersion}" : "not found - install GitHub Desktop");
                 StatusRow(".NET SDK", _tools.Dotnet != null, _tools.Dotnet != null ? _tools.DotnetSdk ?? "" : "installed automatically on START");
                 if (OperatingSystem.IsWindows()) StatusRow("VC++ runtime", _tools.VcRuntime, _tools.VcRuntime ? "present" : "missing - aka.ms/vs/17/release/vc_redist.x64.exe");
+                // Blender / Maya: only .blend and .ma/.mb models need them, so missing is a note, not a fault.
+                DccRow("Blender", _tools.Blender, _tools.BlenderVersion, ".blend models", () => _s.BlenderPath, v => _s.BlenderPath = v,
+                       OperatingSystem.IsWindows() ? "blender.exe|blender.exe" : null);
+                DccRow("Maya", _tools.MayaPy, _tools.MayaVersion, ".ma/.mb models", () => _s.MayaPyPath, v => _s.MayaPyPath = v,
+                       OperatingSystem.IsWindows() ? "mayapy.exe|mayapy.exe" : null);
                 ImGui.Dummy(new Vector2(0, 4));
-                if (SmallButton("RESCAN", 120, !_jobs.Busy)) Task.Run(() => { _tools.Detect(_s); _jobs.RefreshLocalState(); });
+                if (SmallButton("RESCAN", 120, !_jobs.Busy)) Task.Run(() => { _tools.Detect(_s); _tools.DetectDcc(_s); _jobs.RefreshLocalState(); });
                 ImGui.SameLine();
                 if (SmallButton("INSTALL .NET", 160, !_jobs.Busy && _tools.Dotnet == null)) _jobs.InstallDotnet();
                 ImGui.SameLine();
@@ -1079,6 +1221,45 @@ namespace CosmicShore.Launcher
             ImGui.Dummy(total);
             ImGui.PopFont();
         }
+
+        /// <summary>A DCC application's row: found (version, path) or not, with BROWSE and CLEAR for the path.</summary>
+        void DccRow(string name, string? exe, string? version, string forWhat, Func<string> get, Action<string> set, string? filter)
+        {
+            string detail = exe != null
+                ? $"{(version != null ? version + "  ·  " : "")}{Trim(exe, 60)}"
+                : $"not found - only needed for {forWhat}; install it or BROWSE to it";
+            var dl = ImGui.GetWindowDrawList();
+            var p = ImGui.GetCursorScreenPos();
+            dl.AddCircleFilled(p + new Vector2(34, 12), 5, Neon.U(exe != null ? Neon.Lime : Neon.Dim));
+            ImGui.SetCursorScreenPos(p + new Vector2(48, 0));
+            ImGui.TextColored(Neon.Ink, name);
+            ImGui.SameLine(220);
+            ImGui.PushFont(Neon.Small);
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2);
+            ImGui.TextColored(Neon.Dim, detail);
+            ImGui.PopFont();
+            ImGui.SetCursorScreenPos(new Vector2(p.X + 220, ImGui.GetCursorScreenPos().Y + 2));
+            ImGui.PushID("dcc" + name);
+            if (SmallButton("BROWSE", 110, filter != null && !_dccBrowsing))
+            {
+                _dccBrowsing = true;
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        var picked = FilePicker.Open($"Where is {name}?", filter!);
+                        if (picked != null) { set(picked); _dirty = true; _tools.DetectDcc(_s); _edSyncSeen = -1; }
+                    }
+                    finally { _dccBrowsing = false; }
+                });
+            }
+            if (filter == null) Neon.Tooltip("Type the path in launcher.json (BlenderPath / MayaPyPath) on this system, or put it on PATH.");
+            ImGui.SameLine(0, 6);
+            if (SmallButton("CLEAR", 90, get().Length > 0)) { set(""); _dirty = true; Task.Run(() => _tools.DetectDcc(_s)); }
+            ImGui.PopID();
+        }
+
+        bool _dccBrowsing;
 
         void StatusRow(string name, bool ok, string detail)
         {

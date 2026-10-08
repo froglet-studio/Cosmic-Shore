@@ -10,7 +10,8 @@ Sources (all public, fetched read-only, used only as compile references):
     "publicized" re-pack of the engine's managed DLLs - see README for what that does and does
     not prove). The project is on 6000.3.17f1; no 6000.3 package exists on nuget.org.
   * NETStandard.Library 2.0.3 facades (mscorlib/System/System.Core -> netstandard) so the net4x
-    UnityEngine references unify with the netstandard2.1 API profile Unity compiles against.
+    UnityEngine references unify with the netstandard2.1 API profile Unity compiles against, and
+    NETStandard.Library.Ref 2.1.0 (that profile's netstandard.dll) for SDKs that no longer bundle it.
   * Every registry package in Packages/packages-lock.json, as SOURCE, at its exact locked version,
     from the needle-mirror GitHub mirrors of the Unity package registry (packages.unity.com is
     not reachable from this sandbox).
@@ -35,6 +36,9 @@ CACHE = os.environ.get("UNITY_REFCOMPILE_CACHE") or os.path.join(
 NUGET = [
     ("digitalroot.references.unity", "6000.0.75"),
     ("netstandard.library", "2.0.3"),
+    # netstandard.dll 2.1 (Unity's API profile). The .NET 8 SDK bundles this pack, the .NET 10 SDK
+    # no longer does; build.py prefers the SDK's copy and falls back to this one.
+    ("netstandard.library.ref", "2.1.0"),
     # non-publicized Unity 2021.1 UnityEngine.dll/UnityEditor.dll: the accessibility oracle that
     # undoes the publicizing of the 6000.0 references (Depublicize/Program.cs)
     ("unity3d.sdk", "2021.1.14.1"),

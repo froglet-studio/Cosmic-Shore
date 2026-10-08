@@ -26,7 +26,26 @@ namespace CosmicShore.Engine.UI
         static readonly List<RectTransform> s_Queued = new();
 
         /// <summary>Fresh-world reset — a new GameLoop drops marks queued by the old world.</summary>
-        internal static void ResetQueue() => s_Queued.Clear();
+        internal static void ResetQueue() { s_Queued.Clear(); s_ScreenW = s_ScreenH = -1; }
+
+        static int s_ScreenW = -1, s_ScreenH = -1;
+
+        /// <summary>
+        /// A new screen size changes every screen-space root canvas's rect (and its scaler's
+        /// factor), so every rect under it that stretches changes size - the case the original
+        /// engine catches per rect as a dimensions change. Rects here are computed on read, so
+        /// only the layout-driven ones go stale: queue every active layout controller.
+        /// </summary>
+        static void MarkAllIfScreenChanged()
+        {
+            if (Screen.width == s_ScreenW && Screen.height == s_ScreenH) return;
+            bool first = s_ScreenW < 0;
+            s_ScreenW = Screen.width; s_ScreenH = Screen.height;
+            if (first) return; // the first tick's layouts are already queued by their OnEnable
+            foreach (var mb in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+                if (mb is ILayoutController && mb.isActiveAndEnabled && mb.transform is RectTransform rt)
+                    MarkLayoutForRebuild(rt);
+        }
 
         /// <summary>Solves the whole subtree now (both axes, both passes).</summary>
         public static void ForceRebuildLayoutImmediate(RectTransform layoutRoot)
@@ -62,6 +81,7 @@ namespace CosmicShore.Engine.UI
         /// <summary>Rebuilds every queued root. Called by the GameLoop after LateUpdate.</summary>
         public static void FlushQueuedRebuilds()
         {
+            MarkAllIfScreenChanged();
             if (s_Queued.Count == 0) return;
 
             // Snapshot: rebuilds can mark again (e.g. a group resizing a child group);
