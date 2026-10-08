@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
+  m_Name: ThresherSkimmerImpactorDataContainer
+  m_EditorClassIdentifier: 
+  vesselSkimmerEffectsSO:
+  - {fileID: 11400000, guid: c2570a8d81db3ab4eb0ba30f184e081f, type: 2}
+  - {fileID: 11400000, guid: 7e54b5536d0d1fbcda92e10ddf159bf6, type: 2}
+  skimmerPrismEffectsSO:
+  - {fileID: 11400000, guid: 3f1c2a7e9b4d4e5f8a6b0c1d2e3f4a51, type: 2}
+  - {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e, type: 2}
+  - {fileID: 11400000, guid: 5bea3c7d44b956064c78606bba3077b8, type: 2}
+  skimmerCrystalEffectsSO: []

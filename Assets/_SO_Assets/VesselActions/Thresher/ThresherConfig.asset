@@ -31,8 +31,8 @@ MonoBehaviour:
     whiteHotSpeed: 1300
     plough: 0.9
     ploughHot: 0.97
-    chipKeep: 0.8
-    chipsToBreak: 3
+    crushKeep: 0.85
+    bounce: 0.6
     skid: 7
     skidSeconds: 0.3
     lockKeep: 1
@@ -59,4 +59,64 @@ MonoBehaviour:
   ironColor: {r: 0.1, g: 0.09, b: 0.09, a: 1}
   goldColor: {r: 1, g: 0.72, b: 0.18, a: 1}
   whiteHotColor: {r: 1, g: 0.97, b: 0.9, a: 1}
+  skidTrailSeconds: 0.6
+  explosionSizeMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  ballMassMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.75
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
+  chainReachMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.5
+    element: 3
+    UseFloor: 1
+    Floor: 0.6
+  spinMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.75
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
+  smashExplosions:
+  - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
+  explosionDiameter: 16
+  explosionMinInterval: 0.08
+  chainCutRadius: 0.6
+  chainDebrisRestitution: 0.5
+  hitStopMinSeconds: 0.03
+  hitStopMaxSeconds: 0.09
+  hitStopTimeScale: 0.05
+  shakeMin: 0.35
+  shakeMax: 1.8
+  shakeSeconds: 0.22
+  crushShakeFraction: 0.35
+  hapticFloor01: 0.45
+  debrisRestitution: 0.33333334
+  debrisSpeedLimit: 200
+  comboGraceSeconds: 0.4
+  readyMargin: 1.05
+  readyFlickerHz: 14
+  ballVisualScale: 1.25
+  chainLinks: 12
+  chainWidthFraction: 0.18
+  gaugeRadiusScale: 1.45
+  chainColor: {r: 0.22, g: 0.2, b: 0.2, a: 1}
+  fallbackDomainColor: {r: 0.3, g: 0.9, b: 0.85, a: 1}
+  fallbackDangerColor: {r: 1, g: 0.05, b: 0.05, a: 1}
+  fallbackReadyColor: {r: 0.55, g: 0.95, b: 0.15, a: 1}
   skidTrailSeconds: 0.6

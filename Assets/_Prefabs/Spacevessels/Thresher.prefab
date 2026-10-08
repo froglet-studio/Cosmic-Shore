@@ -1169,7 +1169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 5b3e4c9a1d6f4071c8d2e3f4a5b6c773,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &7965853245772039612
@@ -1673,7 +1673,21 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  chipEvent:
+  crushEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  bounceEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sliceEvent:
     Guid:
       Data1: 0
       Data2: 0
@@ -3559,7 +3573,7 @@ PrefabInstance:
         type: 3}
       propertyPath: skimmerImpactorDataContainer
       value: 
-      objectReference: {fileID: 11400000, guid: 643af834f1bcd9946903ac2c71d6d8ff,
+      objectReference: {fileID: 11400000, guid: 4a2d3b8f0c5e4f60b7c1d2e3f4a5b662,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -3631,7 +3645,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: affectSelf
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -3667,7 +3681,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

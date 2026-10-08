@@ -272,7 +272,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Plough_HotterBallKeepsMore_AndChipsKeepChipKeep()
+        public void Plough_HotterBallKeepsMore_AndASlowBallStillDestroysAtCrushKeep()
         {
             var s = Defaults();
             float atSmash = ThresherChainSolver.KeepAfterHit(s.SmashSpeed, s);
@@ -281,9 +281,75 @@ namespace CosmicShore.Tests
             Assert.AreEqual(s.PloughKeep, atSmash, 1e-5f);
             Assert.AreEqual(s.PloughKeepHot, whiteHot, 1e-5f);
             Assert.Greater(whiteHot, atSmash);
-            Assert.AreEqual(s.ChipKeep, slow, 1e-5f);
+            Assert.AreEqual(s.CrushKeep, slow, 1e-5f);
             Assert.IsFalse(ThresherChainSolver.IsSmash(s.SmashSpeed * 0.99f, s));
             Assert.IsTrue(ThresherChainSolver.IsSmash(s.SmashSpeed, s));
+        }
+
+        [Test]
+        public void Wrecker_SmashCostsNothing_ButACrushStillDoes()
+        {
+            var s = Defaults();
+            Assert.AreEqual(1f, ThresherChainSolver.KeepAfterHit(s.SmashSpeed, s, wrecker: true), 1e-6f);
+            Assert.AreEqual(s.CrushKeep, ThresherChainSolver.KeepAfterHit(s.SmashSpeed * 0.5f, s, wrecker: true), 1e-6f,
+                "Mass 5 is about SMASHING; below smash speed the ball pays as usual.");
+        }
+
+        [Test]
+        public void Bounce_ReflectsOnlyTheInwardComponent()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
+            solver.BallVelocity = new Vector3(10f, 0f, -20f);          // driving into a wall facing +z
+            Assert.IsTrue(solver.Bounce(new Vector3(1f, 2f, 3f), Vector3.forward));
+            Assert.AreEqual(10f, solver.BallVelocity.x, 1e-4f, "The sliding component is kept.");
+            Assert.AreEqual(20f * s.BounceRestitution, solver.BallVelocity.z, 1e-4f, "The inward component reflects at the restitution.");
+            Assert.AreEqual(3f, solver.BallPosition.z, 1e-6f, "The ball is put back at the contact point.");
+        }
+
+        [Test]
+        public void Bounce_IgnoresABallAlreadyLeaving()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
+            solver.BallVelocity = new Vector3(0f, 0f, 5f);
+            Assert.IsFalse(solver.Bounce(Vector3.zero, Vector3.forward),
+                "A contact that lasts several frames must bounce once, not every frame.");
+            Assert.AreEqual(5f, solver.BallVelocity.z, 1e-6f);
+        }
+
+        [Test]
+        public void Slingshot_ReleasesTheBallAtLeastAtSmashSpeed()
+        {
+            var s = Defaults();
+            var p = new Pilot(s, s.CruiseSpeed);
+            p.Solver.Plant();
+            p.Fly(0.5f, 0f, payOut: false);
+            Assert.AreEqual(ThresherMode.Pivot, p.Solver.Mode);
+            Vector3 slow = p.Forward * (s.CruiseSpeed * 0.5f);   // yank alone would be far under smash
+            p.Solver.Release(slow, slingshot: true);
+            Assert.AreEqual(s.SmashSpeed, p.Solver.BallSpeed, 1e-3f);
+        }
+
+        [Test]
+        public void ChainLinks_TautChainIsStraightAndNeverLongerThanTheRope()
+        {
+            var links = new ThresherChainLinks(12);
+            Vector3 hull = Vector3.zero, ball = new Vector3(0f, 0f, -20f);
+            links.Reset(hull, ball);
+            for (int f = 0; f < 30; f++) links.Step(hull, ball, 20f);
+            for (int i = 0; i < links.Count; i++)
+                Assert.AreEqual(0f, new Vector3(links.Points[i].x, links.Points[i].y, 0f).magnitude, 1e-3f,
+                    "A taut chain lies on the hull-ball line.");
+
+            // Slack: the hull and ball close in, the chain must not stretch past its rope length.
+            Vector3 nearBall = new Vector3(0f, 0f, -8f);
+            for (int f = 0; f < 30; f++) links.Step(hull, nearBall, 20f);
+            float total = 0f;
+            for (int i = 0; i < links.Count - 1; i++) total += (links.Points[i + 1] - links.Points[i]).magnitude;
+            Assert.LessOrEqual(total, 20f + 1e-2f);
         }
 
         [Test]

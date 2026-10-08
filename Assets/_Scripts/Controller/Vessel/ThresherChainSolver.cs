@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         // Rope coupling
         public float Tug, MinShipFraction, CrackShare;
         // Smashing
-        public float SmashSpeed, WhiteHotSpeed, PloughKeep, PloughKeepHot, ChipKeep;
+        public float SmashSpeed, WhiteHotSpeed, PloughKeep, PloughKeepHot, CrushKeep, BounceRestitution;
         // Lock
         public float SkidRate, SkidSeconds, LockKeep, LockSpinRate, LockMaxSpeed, Yank;
         // Reference
@@ -83,10 +83,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] float plough = 0.9f;
         [Tooltip("Fraction of its speed the ball keeps per smash when white-hot.")]
         [SerializeField] float ploughHot = 0.97f;
-        [Tooltip("Fraction of its speed a too-slow ball keeps per chip (it passes through rather than jamming).")]
-        [SerializeField] float chipKeep = 0.8f;
-        [Tooltip("Chips that break a prism.")]
-        [SerializeField, Min(1)] int chipsToBreak = 3;
+        [Tooltip("Fraction of its speed a ball BELOW smash speed keeps when it breaks a rival prism. " +
+                 "Prisms are binary: a slow ball still destroys rival mass, it just pays more speed for it " +
+                 "and makes no explosion.")]
+        [SerializeField] float crushKeep = 0.85f;
+        [Tooltip("Restitution when the ball bounces off a prism of its own domain (0 = dead stop along " +
+                 "the contact normal, 1 = perfectly elastic).")]
+        [SerializeField] float bounce = 0.6f;
 
         [Header("Lock (left trigger)")]
         [Tooltip("Skid brake on the ball while planting (1/s).")]
@@ -105,7 +108,6 @@ namespace CosmicShore.Gameplay
         /// <summary>Sandbox → game length/speed factor.</summary>
         public float Scale => sandboxCruise > 0f ? gameCruise / sandboxCruise : 1f;
         public float GameCruise => gameCruise;
-        public int ChipsToBreak => chipsToBreak;
 
         public ThresherChainSettings ToSettings()
         {
@@ -128,7 +130,8 @@ namespace CosmicShore.Gameplay
                 WhiteHotSpeed = Mathf.Max(smashSpeed, whiteHotSpeed) * k,
                 PloughKeep = Mathf.Clamp01(plough),
                 PloughKeepHot = Mathf.Clamp01(ploughHot),
-                ChipKeep = Mathf.Clamp01(chipKeep),
+                CrushKeep = Mathf.Clamp01(crushKeep),
+                BounceRestitution = Mathf.Clamp01(bounce),
                 SkidRate = Mathf.Max(0f, skid),
                 SkidSeconds = Mathf.Max(0f, skidSeconds),
                 LockKeep = Mathf.Max(0f, lockKeep),
@@ -246,11 +249,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Left trigger up: the ship flies off on its current velocity and, if the ball
         /// was the pivot, the ball is yanked after it at <see cref="ThresherChainSettings.Yank"/> of
-        /// the ship's speed.</summary>
-        public void Release(Vector3 shipVelocity)
+        /// the ship's speed. <paramref name="slingshot"/> is the Time level-5 upgrade: the yank is never weaker than
+        /// smash speed, so the ball leaves the pivot hot.</summary>
+        public void Release(Vector3 shipVelocity, bool slingshot = false)
         {
             if (Mode == ThresherMode.Pivot)
-                BallVelocity = Vector3.ClampMagnitude(shipVelocity * Settings.Yank, Settings.MaxBallSpeed);
+            {
+                Vector3 yank = shipVelocity * Settings.Yank;
+                if (slingshot && shipVelocity.sqrMagnitude > 1e-6f && yank.magnitude < Settings.SmashSpeed)
+                    yank = shipVelocity.normalized * Settings.SmashSpeed;
+                BallVelocity = Vector3.ClampMagnitude(yank, Settings.MaxBallSpeed);
+            }
             Mode = ThresherMode.Free;
             LockSpeed = 0f;
             _wasSlack = false;
@@ -502,18 +511,39 @@ namespace CosmicShore.Gameplay
         public static float Heat01(float speed, in ThresherChainSettings s)
             => Mathf.Clamp01(Mathf.InverseLerp(s.SmashSpeed, Mathf.Max(s.SmashSpeed + 1e-3f, s.WhiteHotSpeed), speed));
 
-        /// <summary>True when a hit at <paramref name="speed"/> smashes rather than chips.</summary>
+        /// <summary>True when a hit at <paramref name="speed"/> SMASHES (destroys anything, explodes)
+        /// rather than CRUSHES (destroys rival mass only, no explosion).</summary>
         public static bool IsSmash(float speed, in ThresherChainSettings s) => speed >= s.SmashSpeed;
 
         /// <summary>
-        /// The fraction of its speed the ball keeps after one hit: <c>PloughKeep</c> for a smash
-        /// at smash speed rising to <c>PloughKeepHot</c> when white-hot (a hotter ball ploughs
-        /// further), <c>ChipKeep</c> for a chip.
+        /// The fraction of its speed the ball keeps after destroying one prism: <c>PloughKeep</c>
+        /// for a smash at smash speed rising to <c>PloughKeepHot</c> when white-hot (a hotter ball
+        /// ploughs further), <c>CrushKeep</c> below smash speed. <paramref name="wrecker"/> is the
+        /// Mass level-5 upgrade: a smash costs the ball nothing.
         /// </summary>
-        public static float KeepAfterHit(float speed, in ThresherChainSettings s)
+        public static float KeepAfterHit(float speed, in ThresherChainSettings s, bool wrecker = false)
             => IsSmash(speed, s)
-                ? Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s))
-                : s.ChipKeep;
+                ? (wrecker ? 1f : Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s)))
+                : s.CrushKeep;
+
+        /// <summary>
+        /// The ball bounces off a prism it must not destroy (its own domain's). It is put back at
+        /// the <paramref name="contact"/> point and the part of its velocity driving INTO the
+        /// prism is reflected with <see cref="ThresherChainSettings.BounceRestitution"/>; the
+        /// part sliding along the surface is kept. A ball already moving away is left alone, so a
+        /// contact that lasts several frames bounces once. Returns true if it bounced.
+        /// </summary>
+        public bool Bounce(Vector3 contact, Vector3 outwardNormal)
+        {
+            if (Mode == ThresherMode.Pivot || outwardNormal.sqrMagnitude < 1e-8f) return false;
+            Vector3 n = outwardNormal.normalized;
+            float into = Vector3.Dot(BallVelocity, n);
+            if (into >= 0f) return false;
+            BallVelocity -= n * ((1f + Settings.BounceRestitution) * into);
+            BallPosition = contact;
+            _wasSlack = false;
+            return true;
+        }
 
         /// <summary>Apply one hit's speed loss to the ball. Called by the executor per prism, in
         /// path order, so a long row costs the ball speed one prism at a time.</summary>
@@ -521,6 +551,77 @@ namespace CosmicShore.Gameplay
         {
             if (Mode == ThresherMode.Pivot) return;
             BallVelocity *= Mathf.Clamp01(keep);
+        }
+    }
+
+    /// <summary>
+    /// The chain itself: a verlet rope of <c>N</c> links pinned to the hull and the ball. It is
+    /// GAMEPLAY, not decoration — the chain slices prisms, so it is stepped inside the chain step
+    /// on every peer (no rendering involved) and the renderer only draws what it holds. Pure C#.
+    ///
+    /// Links are max-distance only, so a slack chain really sags and a taut one is a straight
+    /// line; space has no gravity, so a slack chain drifts with light damping.
+    /// </summary>
+    public sealed class ThresherChainLinks
+    {
+        public readonly Vector3[] Points;
+        readonly Vector3[] _previous;
+        bool _seeded;
+
+        public ThresherChainLinks(int links)
+        {
+            int n = Mathf.Max(2, links) + 1;
+            Points = new Vector3[n];
+            _previous = new Vector3[n];
+        }
+
+        public int Count => Points.Length;
+
+        /// <summary>Velocity of node <paramref name="i"/> over the last step.</summary>
+        public Vector3 NodeVelocity(int i, float dt)
+            => dt > 0f ? (Points[i] - _previous[i]) / dt : Vector3.zero;
+
+        public void Reset(Vector3 hull, Vector3 ball)
+        {
+            int n = Points.Length;
+            for (int i = 0; i < n; i++)
+                Points[i] = _previous[i] = Vector3.Lerp(hull, ball, i / (float)(n - 1));
+            _seeded = true;
+        }
+
+        /// <param name="length">The chain's current length (the rope's max distance).</param>
+        public void Step(Vector3 hull, Vector3 ball, float length, float damping = 0.92f, int iterations = 6)
+        {
+            if (!_seeded) { Reset(hull, ball); return; }
+            int n = Points.Length;
+
+            // The two pins move with what they are pinned to; their "previous" is where they were.
+            _previous[0] = Points[0];
+            _previous[n - 1] = Points[n - 1];
+            for (int i = 1; i < n - 1; i++)
+            {
+                Vector3 p = Points[i];
+                Points[i] += (p - _previous[i]) * damping;
+                _previous[i] = p;
+            }
+
+            float seg = length / (n - 1);
+            for (int iter = 0; iter < iterations; iter++)
+            {
+                Points[0] = hull;
+                Points[n - 1] = ball;
+                for (int i = 0; i < n - 1; i++)
+                {
+                    Vector3 d = Points[i + 1] - Points[i];
+                    float len = d.magnitude;
+                    if (len <= seg || len < 1e-5f) continue;
+                    Vector3 corr = d * ((len - seg) / len * 0.5f);
+                    if (i != 0) Points[i] += corr;
+                    if (i + 1 != n - 1) Points[i + 1] -= corr;
+                }
+            }
+            Points[0] = hull;
+            Points[n - 1] = ball;
         }
     }
 }
