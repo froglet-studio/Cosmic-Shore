@@ -384,9 +384,16 @@ Explicitly **not** wanted: an event aggregator over the top of SOAP, a generic r
 ### 7.4 The rule that keeps this from regressing
 
 **One cross-cutting decision, one owner.** B24 was four copies of one predicate, and the three
-written sloppily were the three that worked. `UgsRequestPolicy` is now that owner for retries. The
-same question should be asked of every other rule that appears more than once: who owns "is this
-session gone", "is this player in our party", "may this player be invited".
+written sloppily were the three that worked. `UgsRequestPolicy` is now that owner for retries, and
+since 2026-10-08 the rule is **mechanical**: `Tools/Build/check_ugs_request_discipline.py` fails on
+a UGS call that bypasses the executor and on any private failure classifier outside
+`UgsRequestPolicy.cs`. That gate caught a real escape — the converge join bypassed the executor
+for a day after Phase 1 claimed "every UGS call", and only a merge re-check found it. Add it to CI
+in Block 3.
+
+The same question should be asked of every other rule that appears more than once — who owns "is
+this session gone", "is this player in our party", "may this player be invited" — and each answer
+should get a gate like this one, because a convention nothing checks drifts back.
 
 ---
 
