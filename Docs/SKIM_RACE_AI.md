@@ -558,6 +558,16 @@ cache produces: old job layouts, wrong safety names, null pointers.
 **Next:** clean `Library/BurstCache` with the editor closed, then Release. If it still fails, read the stack
 traces in `Editor.log`. Until then, Debug keeps the game running, with the jobs managed.
 
+**After cleaning `Library/BurstCache` (2026-10-08):** in Release the boot arena loads and the errors are gone,
+so the 42% hang was stale compiled code from the old cache. `burst` now reads `... code=Release | probe job in
+Assembly-CSharp: Run() MANAGED, Schedule() MANAGED`. With no cache, nothing compiled fresh reaches the game's
+jobs either. Burst's live (JIT) compiler is not producing new code for them, although the Inspector, which
+compiles one method on demand, does. The next `prof` separates the two remaining readings. Package jobs
+(`FrustumCullingJob`, the Entities Graphics jobs) also had to recompile after the clean. If they still show
+"(Burst)", only Assembly-CSharp is refused. If they have gone managed too, the editor's background Burst
+compiler is failing for everything (antivirus, permissions, the project path), and `Editor.log`, with
+Jobs > Burst > Show Timings on, will say so.
+
 ### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
 
 The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
