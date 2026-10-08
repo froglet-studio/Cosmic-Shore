@@ -468,7 +468,7 @@ reach them, so they were flagged as a separate decision and then removed on the 
 | `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrank a **Rhino's** skimmer to 0.7× for 3 s (`vesselTypesToImpact` was Rhino-only) — i.e. its blade |
 | `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | muted the victim's `RightStickAction` for 5 s and cancelled the action it was driving |
 | `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | froze the victim's trail spawner for 10 s |
-| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's sword crystal burst and vessel crystal blast, and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
+| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's vessel crystal blast (the sword crystal burst stopped spawning a blast 2026-10-08), and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
 
 `ShieldSkimmerScaleConfigSO.ApplyMaxSizeDebuff` is deleted with them (the first row was its only
 caller), along with the `_maxScaleMultiplier` / `_isMaxSizeDebuffed` runtime state it wrote, so

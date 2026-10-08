@@ -425,7 +425,8 @@ measurement attached is worse than no row.
 
 - **`SlowExplosionImpactorDataContainer` is now EMPTY, so three abilities have no vessel-facing
   effect.** Measured: `vesselExplosionEffects: []` and `explosionPrismEffects: []`, referenced by
-  `AOESlowExplosion.prefab` (the Rhino's sword crystal burst + the Rhino's vessel crystal blast)
+  `AOESlowExplosion.prefab` (the Rhino's vessel crystal blast; the sword crystal burst no longer
+  spawns one, 2026-10-08)
   and `AOEShieldedRingSpawner.prefab` (the Squirrel's vessel crystal blast). It held exactly one
   effect (`VesselChangeSpeedByExplosionEffect`, an input mute) and that effect broke the
   control-theft law, so emptying it was correct — but a blast that reaches a pilot and does nothing

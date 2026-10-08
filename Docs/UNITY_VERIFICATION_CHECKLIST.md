@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino: elemental-crystal pickups no longer explode (`cece/keen-ptolemy-t3nzug`, 2026-10-08)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § Crystal burst):
+`RhinoSwordCrystalBurstEffectSO` no longer spawns an `AOESlowExplosion` at the crystal. The sword
+capsule overlaps the hull, so every elemental crystal the Rhino flew through (ejected petals, dropped
+hearts) reached this effect and detonated. The effect now only kicks the blade burst + energy drain.
+The explosion fields were removed from the SO and from `RhinoSwordCrystalBurstEffect.asset`. The
+Rhino's OMNI-crystal vessel blast (`RhinoVesselExplosionByCrystalEffect`) is untouched.
+
+**Not opened in Unity** (no editor/`unity` CLI in the session). Offline: `unity_refcompile` player
+config reports 0 errors in project code.
+
+**Verify in editor:**
+1. Rhino in a mode with lifeforms (or Menu_Main freestyle): fly through an elemental crystal. The crystal
+   is collected (petal gained), the blade bursts and the energy meter drains, and **no explosion spawns**.
+2. Fly through an omni crystal: the Rhino's vessel crystal blast still fires (unchanged).
+3. The inspector on `RhinoSwordCrystalBurstEffect.asset` shows no fields, and the console is clean.
+
+---
+
 ### 🔴 Squirrel omni-crystal morph: the crystal becomes its eight shielded ring prisms (`cece/dreamy-fermat-szo9ck`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`): a Squirrel's omni
