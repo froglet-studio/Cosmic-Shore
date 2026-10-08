@@ -353,6 +353,22 @@ namespace CosmicShore.UI
             SaveProfileImmediateAsync();
         }
 
+        /// <summary>
+        /// Applies an avatar to the in-memory profile (menu UI, LocalPlayerAvatarId, the local
+        /// Player's NetAvatarId) WITHOUT touching the cloud repo. For a pick made before the cloud
+        /// profile has loaded (offline boot, or the window before HandleDataServiceReady): syncing
+        /// then would copy a default profile over the record that has not been read yet, which is
+        /// why <see cref="SetAvatarId"/> is gated on <c>IsInitialized</c> by its caller.
+        /// </summary>
+        public void ApplyAvatarIdLocally(int avatarId)
+        {
+            if (CurrentProfile == null)
+                return;
+
+            CurrentProfile.Identity.AvatarId = avatarId;
+            OnProfileChanged?.Invoke(CurrentProfile);
+        }
+
         public void SetAvatarId(int avatarId)
         {
             if (CurrentProfile == null)
