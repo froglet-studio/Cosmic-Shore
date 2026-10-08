@@ -5,9 +5,10 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One black hole in the HyperSea (Docs/BLACK_HOLE.md). A spawned object with ONE authored
-    /// number — its <see cref="Strength"/> — from which the config derives everything the physics
-    /// needs: the gravitational parameter, the event horizon, the influence radius. It moves
+    /// One black hole in the HyperSea (Docs/BLACK_HOLE.md). A spawned object with two authored
+    /// numbers — its <see cref="Strength"/> (the pull: the gravitational parameter and, with it, the
+    /// influence radius) and its <see cref="Size"/> (the event-horizon radius; 0 derives it from
+    /// the strength, which is what the console's one-number spawn does). It moves
     /// itself along <see cref="Velocity"/> (a hole can be driven through a prism field), spins
     /// about <see cref="SpinAxis"/> (which only the frame dragging reads),
     /// and eases its warp weight in on spawn and out on despawn so the GPU bend never pops.
@@ -31,10 +32,17 @@ namespace CosmicShore.Gameplay
     public sealed class BlackHole : MonoBehaviour
     {
         [Header("Black hole")]
-        [Tooltip("The one authored number. GM, the horizon and the influence radius all scale from it " +
-                 "(BlackHoleConfigSO). 10 is a modest hole; 50 swallows a cell's worth of mass.")]
+        [Tooltip("The hole's PULL. GM and the influence radius scale from it (BlackHoleConfigSO); with " +
+                 "Horizon Radius at 0 so does the size. 10 is a modest hole; 50 swallows a cell's worth " +
+                 "of mass.")]
         [Min(0f)]
         [SerializeField] float strength = 10f;
+
+        [Tooltip("The hole's SIZE: its event-horizon radius r_s, world units — what it swallows and what " +
+                 "the lens draws (the black shadow is ~2.6 r_s in radius). 0 = derived from strength " +
+                 "(BlackHoleConfigSO.horizonPerStrength).")]
+        [Min(0f)]
+        [SerializeField] float horizonRadius = 0f;
 
         [Tooltip("World-space velocity the hole travels at, u/s. Zero is a hole parked where it was " +
                  "spawned; a moving hole drags the mass it passes along with it.")]
@@ -59,6 +67,9 @@ namespace CosmicShore.Gameplay
         public int Id { get; internal set; }
 
         public float Strength => strength;
+
+        /// <summary>The authored size (event-horizon radius, world units); 0 = derived from strength.</summary>
+        public float Size => horizonRadius;
         public Vector3 Velocity { get => velocity; set => velocity = value; }
 
         /// <summary>Unit spin axis; a zero vector authored by hand reads as +Z.</summary>
@@ -75,9 +86,10 @@ namespace CosmicShore.Gameplay
         public bool IsDespawning => _despawning;
 
         public float GM => BlackHoleRegistry.Config.GM(strength);
-        public float HorizonRadius => BlackHoleRegistry.Config.HorizonRadius(strength);
-        public float InfluenceRadius => BlackHoleRegistry.Config.InfluenceRadius(strength);
-        public float WarpReach => BlackHoleRegistry.Config.WarpReach(strength);
+        /// <summary>The event-horizon radius in effect: <see cref="Size"/>, or derived from strength.</summary>
+        public float HorizonRadius => BlackHoleRegistry.Config.HorizonRadius(strength, horizonRadius);
+        public float InfluenceRadius => BlackHoleRegistry.Config.InfluenceRadius(strength, HorizonRadius);
+        public float WarpReach => BlackHoleRegistry.Config.WarpReachForHorizon(HorizonRadius);
 
         /// <summary>The job-side snapshot of this hole for this frame.</summary>
         public BlackHolePhysics.Well ToWell(BlackHoleConfigSO config)
@@ -85,22 +97,24 @@ namespace CosmicShore.Gameplay
             var p = transform.position;
             var v = velocity;
             var axis = SpinAxis;
+            float rs = config.HorizonRadius(strength, horizonRadius);
             return new BlackHolePhysics.Well
             {
                 Position = new Unity.Mathematics.float3(p.x, p.y, p.z),
                 Velocity = new Unity.Mathematics.float3(v.x, v.y, v.z),
                 GM = config.GM(strength),
-                Horizon = BlackHolePhysics.Horizon.Of(config.HorizonRadius(strength)),
-                InfluenceRadius = config.InfluenceRadius(strength),
+                Horizon = BlackHolePhysics.Horizon.Of(rs),
+                InfluenceRadius = config.InfluenceRadius(strength, rs),
                 SpinAxis = new Unity.Mathematics.float3(axis.x, axis.y, axis.z),
                 FrameDragging = config.FrameDragging,
             };
         }
 
         /// <summary>Spawn-time configuration (the registry's path). Idempotent.</summary>
-        internal void Configure(float newStrength, Vector3 newVelocity, Vector3 newSpinAxis)
+        internal void Configure(float newStrength, Vector3 newVelocity, Vector3 newSpinAxis, float newHorizonRadius = 0f)
         {
             strength = Mathf.Max(0f, newStrength);
+            horizonRadius = Mathf.Max(0f, newHorizonRadius);
             velocity = newVelocity;
             spinAxis = newSpinAxis;
             EnsureVisual();
@@ -111,6 +125,13 @@ namespace CosmicShore.Gameplay
         public void SetStrength(float newStrength)
         {
             strength = Mathf.Max(0f, newStrength);
+            ApplyScale();
+        }
+
+        /// <summary>Resize a live hole (event-horizon radius, world units; 0 = derive from strength).</summary>
+        public void SetSize(float newHorizonRadius)
+        {
+            horizonRadius = Mathf.Max(0f, newHorizonRadius);
             ApplyScale();
         }
 

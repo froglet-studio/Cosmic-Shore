@@ -75,7 +75,8 @@ namespace CosmicShore.Gameplay
         /// well list are both sized to it, and a hole the warp cannot bend around is not one the
         /// field should pull toward either.
         /// </summary>
-        public static BlackHole Spawn(Vector3 position, float strength, Vector3 velocity = default, Vector3? spinAxis = null)
+        public static BlackHole Spawn(Vector3 position, float strength, Vector3 velocity = default, Vector3? spinAxis = null,
+            float horizonRadius = 0f)
         {
             Prune();
             var config = Config;
@@ -93,11 +94,41 @@ namespace CosmicShore.Gameplay
             var go = new GameObject($"[BlackHole {_nextId}]");
             go.transform.position = position;
             var hole = go.AddComponent<BlackHole>();   // OnEnable registers it
-            hole.Configure(strength, velocity, spinAxis ?? Vector3.forward);
+            hole.Configure(strength, velocity, spinAxis ?? Vector3.forward, horizonRadius);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[BlackHole] spawned #{hole.Id} strength {strength:F1} at {position} GM {hole.GM:F0} " +
+                $"[BlackHole] spawned #{hole.Id} strength {strength:F1} size {horizonRadius:F1} at {position} GM {hole.GM:F0} " +
                 $"horizon {hole.HorizonRadius:F1} influence {hole.InfluenceRadius:F0} velocity {velocity}");
             return hole;
+        }
+
+        /// <summary>
+        /// Where, and how fast, a hole spawned "in front of the camera" goes: <paramref name="distance"/>
+        /// along the camera's view, with <paramref name="cameraFrameVelocity"/> (x right, y up,
+        /// z forward) turned into world space. The Black Hole tool and the console share it.
+        /// </summary>
+        public static void SpawnPoseAhead(Vector3 cameraPosition, Quaternion cameraRotation, float distance,
+            Vector3 cameraFrameVelocity, out Vector3 position, out Vector3 velocity)
+        {
+            position = cameraPosition + cameraRotation * Vector3.forward * Mathf.Max(0f, distance);
+            velocity = cameraRotation * cameraFrameVelocity;
+        }
+
+        /// <summary>
+        /// Spawn a hole from the config's Spawn section (strength, size, distance, velocity, spin) in
+        /// front of <paramref name="camera"/> — what the Black Hole tool's Spawn button does. Null when
+        /// there is no camera or the spawn is refused (see <see cref="Spawn"/>).
+        /// </summary>
+        public static BlackHole SpawnFromConfig(Camera camera)
+        {
+            if (camera == null) return null;
+            var config = Config;
+            float strength = config.SpawnStrength;
+            float size = config.SpawnHorizonRadius;
+            float rs = config.HorizonRadius(strength, size);
+            var t = camera.transform;
+            SpawnPoseAhead(t.position, t.rotation, rs * config.SpawnDistanceHorizons, config.SpawnVelocity,
+                out var position, out var velocity);
+            return Spawn(position, strength, velocity, config.SpawnSpinAxis, size);
         }
 
         /// <summary>Begin a hole's despawn (eased warp release, then destroy). False if no such id.</summary>

@@ -13,10 +13,14 @@ namespace CosmicShore.Gameplay
     /// this. Editor and development builds only; the shell compiles empty in a release player
     /// (the <c>DiagnosticsHUD</c> pattern, Docs/CONDITIONAL_COMPILATION.md Pattern 1).
     ///
-    /// Commands (<c>blackhole</c>, alias <c>bh</c>):
+    /// Commands (<c>blackhole</c>, aliases <c>bh</c> and <c>black hole …</c>):
     /// <code>
+    ///   blackhole tool [on|off]                          open / close the Black Hole tool (no word = toggle)
+    ///   blackhole config                                 open the tool on its config view
+    ///   blackhole spawn                                  spawn from the config's Spawn section, ahead of the camera
     ///   blackhole spawn &lt;strength&gt; [x y z] [vx vy vz]   spawn at (x,y,z) — default: ahead of the camera
     ///   blackhole here &lt;strength&gt;                        spawn at the main camera's position
+    ///   blackhole size &lt;id&gt; &lt;r_s&gt;                        resize a hole (event-horizon radius; 0 = from strength)
     ///   blackhole move &lt;id&gt; &lt;vx&gt; &lt;vy&gt; &lt;vz&gt;             set a hole's velocity
     ///   blackhole strength &lt;id&gt; &lt;value&gt;                 retune a hole
     ///   blackhole spin &lt;id&gt; &lt;ax&gt; &lt;ay&gt; &lt;az&gt;              set the frame-dragging axis
@@ -31,9 +35,11 @@ namespace CosmicShore.Gameplay
         const string StatsSection = "BlackHole";
         const string CommandName = "blackhole";
         const string Alias = "bh";
-        const string Usage = "usage: blackhole spawn <strength> [x y z] [vx vy vz] | here <strength> | " +
-                             "move <id> <vx> <vy> <vz> | strength <id> <v> | spin <id> <ax> <ay> <az> | " +
-                             "list | despawn <id>|all";
+        // "black hole tool on" — the HUD splits on spaces, so the two-word name is its own command.
+        const string TwoWordName = "black";
+        const string Usage = "usage: blackhole tool [on|off] | config | spawn [<strength> [x y z] [vx vy vz]] | " +
+                             "here <strength> | size <id> <r_s> | move <id> <vx> <vy> <vz> | strength <id> <v> | " +
+                             "spin <id> <ax> <ay> <az> | list | despawn <id>|all";
         /// <summary>Where a spawn lands when no position is given: this far ahead of the camera.</summary>
         const float SpawnAheadDistance = 300f;
 
@@ -52,13 +58,15 @@ namespace CosmicShore.Gameplay
         {
             DiagnosticsHUD.RegisterCommand(CommandName, Handle);
             DiagnosticsHUD.RegisterCommand(Alias, Handle);
-            DiagnosticsHUD.SetStat(StatsSection, "holes", "none — cmd: blackhole spawn <strength> [x y z]");
+            DiagnosticsHUD.RegisterCommand(TwoWordName, HandleTwoWords);
+            DiagnosticsHUD.SetStat(StatsSection, "holes", "none — cmd: blackhole tool on");
         }
 
         void OnDestroy()
         {
             DiagnosticsHUD.UnregisterCommand(CommandName);
             DiagnosticsHUD.UnregisterCommand(Alias);
+            DiagnosticsHUD.UnregisterCommand(TwoWordName);
             DiagnosticsHUD.ClearStats(StatsSection);
             if (_instance == this) _instance = null;
         }
@@ -71,7 +79,7 @@ namespace CosmicShore.Gameplay
             _nextStats = Time.unscaledTime + 0.5f;
             int n = BlackHoleRegistry.Count;
             DiagnosticsHUD.SetStat(StatsSection, "holes", n == 0
-                ? "none — cmd: blackhole spawn <strength> [x y z]"
+                ? "none — cmd: blackhole tool on"
                 : $"{n} live, {BlackHoleGravityField.BodyCount:N0} bodies, {BlackHoleGravityField.CapturedTotal:N0} captured, " +
                   $"{BlackHoleWarp.ResidentPrismCount} warp residents, {BlackHoleVesselPull.PulledVesselCount} vessels pulled");
         }
@@ -94,15 +102,39 @@ namespace CosmicShore.Gameplay
             $"at ({h.transform.position.x:F0}, {h.transform.position.y:F0}, {h.transform.position.z:F0}) " +
             $"v ({h.Velocity.x:F1}, {h.Velocity.y:F1}, {h.Velocity.z:F1})";
 
+        /// <summary>"black hole …" — the second word must be "hole"; the rest is a blackhole command.</summary>
+        string HandleTwoWords(string[] args)
+        {
+            if (args.Length == 0 || args[0].ToLowerInvariant() != "hole") return Usage;
+            var rest = new string[args.Length - 1];
+            System.Array.Copy(args, 1, rest, 0, rest.Length);
+            return Handle(rest);
+        }
+
         string Handle(string[] args)
         {
             if (args.Length == 0) return Usage;
 
             switch (args[0].ToLowerInvariant())
             {
+                case "tool":
+                {
+                    bool? want = BlackHoleToolModel.ParseSwitch(args.Length > 1 ? args[1] : null, out bool recognised);
+                    if (!recognised) return "usage: blackhole tool [on|off]";
+                    BlackHoleTool.SetOpen(want ?? !BlackHoleTool.IsOpen);
+                    return BlackHoleTool.IsOpen ? "black hole tool open (blackhole tool off to close)" : "black hole tool closed";
+                }
+                case "config":
+                    BlackHoleTool.SetOpen(true, showConfig: true);
+                    return "black hole tool open on the config view";
                 case "spawn":
                 {
-                    if (args.Length < 2 || !TryFloat(args[1], out float strength) || strength < 0f)
+                    if (args.Length == 1)
+                    {
+                        var hole0 = BlackHoleRegistry.SpawnFromConfig(Camera.main);
+                        return hole0 == null ? "spawn refused (no main camera, budget full, or config not sane)" : "spawned " + Describe(hole0);
+                    }
+                    if (!TryFloat(args[1], out float strength) || strength < 0f)
                         return Usage;
                     Vector3 position;
                     if (!TryVector(args, 2, out position))
@@ -124,6 +156,15 @@ namespace CosmicShore.Gameplay
                     var position = cam != null ? cam.transform.position : Vector3.zero;
                     var hole = BlackHoleRegistry.Spawn(position, strength);
                     return hole == null ? "spawn refused (see console)" : "spawned " + Describe(hole);
+                }
+                case "size":
+                {
+                    if (args.Length < 3 || !int.TryParse(args[1], out int id) || !TryFloat(args[2], out float size) || size < 0f)
+                        return Usage;
+                    var hole = BlackHoleRegistry.Find(id);
+                    if (hole == null) return $"no black hole #{id}";
+                    hole.SetSize(size);
+                    return "resized " + Describe(hole);
                 }
                 case "move":
                 {

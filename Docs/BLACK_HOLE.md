@@ -21,6 +21,7 @@
 | The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
+| The Black Hole tool — spawn in front of the camera, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
 | The test scene | `Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity`, `BlackHoleTestHarness`, the mouse camera `MouseOrbitCamera` (`_Scripts/Controller/Camera/`, + `MouseOrbitCameraConfigSO` → `Resources/MouseOrbitCameraConfig.asset`, §7.1), `BlackHoleTestConfigSO` → `Resources/BlackHoleTestConfig.asset`, FrogletTools ▸ Scene Setup ▸ **Setup Black Hole Test Scene** |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
@@ -311,17 +312,65 @@ Dials (`BlackHoleConfig`, Lens header): `lensRadiusMultiplier`, `lensFadeStart`,
 From any scene (the HUD and the console auto-spawn; editor and development builds only):
 
 ```
+blackhole tool [on|off]                          open / close the Black Hole tool (§6.1); no word = toggle
+blackhole config                                 open the tool on its config view
+blackhole spawn                                  spawn from the config's Spawn section, ahead of the camera
 blackhole spawn <strength> [x y z] [vx vy vz]   spawn at (x,y,z) — default 300 u ahead of the camera
 blackhole here <strength>                        spawn at the camera
+blackhole size <id> <r_s>                        resize a live hole (event-horizon radius; 0 = from strength)
 blackhole move <id> <vx> <vy> <vz>               set a hole's velocity (drive it through mass)
-blackhole strength <id> <value>                  retune a live hole
+blackhole strength <id> <value>                  retune a live hole's pull
 blackhole spin <id> <ax> <ay> <az>               set its frame-dragging axis
 blackhole list                                   every live hole and its numbers
 blackhole despawn <id> | all                     eased release, then destroy
-bh ...                                           alias
+bh ...  /  black hole ...                        aliases ("black hole tool on" works as typed)
 ```
 
 The HUD's `BlackHole` section shows live holes, bodies, captures, warp residents and pulled vessels.
+
+### 6.1 The Black Hole tool (`BlackHoleTool`, `BlackHoleToolModel`)
+
+`blackhole tool on` opens a panel (top-right, drag it by its title bar; `blackhole tool off` or ×
+closes it). **Its values live in the config ASSET, `Resources/BlackHoleConfig`, not in the tool**, so
+what is on the asset is what spawns — from the tool, or from `blackhole spawn` with no strength.
+
+- **SPAWN** rows edit the asset's Spawn section: **Spawn Strength** (the pull: `GM = strength ×
+  gmPerStrength`), **Spawn Horizon Radius** (the SIZE — the event-horizon radius in world units;
+  0 derives it from the strength), **Spawn Distance Horizons** (how far ahead of the camera, in horizon
+  radii, so a bigger hole lands proportionally farther away), **Spawn Velocity** (u/s in the camera's
+  frame at the moment of spawning: x right, y up, z forward) and **Spawn Spin Axis** (world). A caption
+  shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the distance, GM and the
+  influence radius.
+- **Spawn in front of camera** spawns from exactly those values (`BlackHoleRegistry.SpawnFromConfig`).
+  **Despawn all**; **Save asset** (Editor) writes the asset to disk.
+- **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
+  and **Despawn**.
+- **Config ▾** opens a second panel, docked to the left, with EVERY other field of the asset —
+  physics, budgets, vessels, warp, lens — grouped by its `[Header]`, a slider wherever the field has a
+  `[Range]`, an input otherwise, clamped to its own `[Range]` / `[Min]`; hovering a label shows the
+  field's `[Tooltip]`. It is generated from the SO by reflection (`BlackHoleToolModel.EditableFields`),
+  so a field added to the config appears here with no change to the tool. **Select asset** (Editor)
+  selects it in the Inspector.
+
+Edits apply live. In the Editor they edit the asset itself and mark it dirty (the config is outside
+`_SO_Assets/`, so `PlayModeSOProtector` does not revert it) — **Save asset** persists them now, the
+project's next save otherwise.
+
+**Size and strength are separate.** A hole's horizon radius is its own `Size` when set (> 0), else
+`max(minHorizonRadius, horizonPerStrength × strength)`. So to change how big holes are: set **Spawn
+Horizon Radius** in the tool (or `blackhole size <id> <r_s>` on a live one) for one hole, or
+**horizonPerStrength** / **minHorizonRadius** for every hole that derives its size from strength.
+What the player sees scales from r_s: the shadow is ~2.6 r_s, the lens bends out to
+**lensRadiusMultiplier** r_s, and the warp reaches **warpReachMultiplier** r_s.
+
+**Proof.** `Tools/Build/black_hole_tool_harness/run.sh` compiles the SHIPPED `BlackHoleConfigSO.cs`
+and `BlackHoleToolModel.cs` (with a handful of `UnityEngine` stubs — the engine's reference DLLs have
+no method bodies) and runs them: the tool reaches all 33 config fields, every number is bounded, the
+asset, the SO and the tool agree key for key and the asset loads through the model sane, the size
+helpers, the clamping, the labels and the switch — and two negative controls (a config with an
+unsupported field, an asset with a renamed key) fire. `BlackHoleToolTests` (edit mode) checks the
+model against Unity's own `SerializedObject` view of the asset, the spawn pose, the size helpers, the
+clamping, and builds the real panel and closes it.
 
 ## 7. The test scene
 

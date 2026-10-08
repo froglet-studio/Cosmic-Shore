@@ -6,12 +6,14 @@ namespace CosmicShore.ScriptableObjects
     /// Tuning for BLACK HOLES (<c>BlackHoleRegistry</c>, <c>BlackHoleGravityField</c>,
     /// <c>BlackHoleWarp</c>, <c>PrismGravityWarp.hlsl</c>, Docs/BLACK_HOLE.md).
     ///
-    /// A black hole is spawned with one number — its STRENGTH — and everything else about it is
-    /// derived here, so the console's <c>blackhole spawn 10</c> and a designer's asset edit reach
-    /// the same physics. Strength scales both the gravitational parameter (<c>GM</c>, what pulls)
-    /// and the event horizon (<c>r_s</c>, what swallows), the two numbers the pseudo-Newtonian
-    /// potential needs; the influence radius (how far out mass is simulated at all) follows from
-    /// those plus the acceleration floor below which a pull is not worth a body.
+    /// A black hole has two numbers: its STRENGTH, which sets the gravitational parameter
+    /// (<c>GM</c>, what pulls), and its SIZE, the event-horizon radius (<c>r_s</c>, what swallows
+    /// and what the lens draws). A hole spawned with size 0 derives its size from its strength
+    /// (<see cref="HorizonRadius(float)"/>), so the console's <c>blackhole spawn 10</c> and a
+    /// designer's asset edit reach the same physics; the Black Hole tool (<c>blackhole tool on</c>)
+    /// sets size explicitly from the Spawn section below. The influence radius (how far out mass is
+    /// simulated at all) follows from GM and r_s plus the acceleration floor below which a pull is
+    /// not worth a body.
     ///
     /// The field moves mass (live gameplay data — the movers contract) and the WARP bends what is
     /// drawn (a §4.7 global uniform, photons only); the two halves are tuned separately below and
@@ -190,6 +192,38 @@ namespace CosmicShore.ScriptableObjects
         [Range(16, 192)]
         [SerializeField] int lensSteps = 128;
 
+        [Header("Spawn (the Black Hole tool — blackhole tool on)")]
+        [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
+                 "Spawn Horizon Radius at 0 the strength also sets the size.")]
+        [Range(0f, 100f)]
+        [SerializeField] float spawnStrength = 10f;
+
+        [Tooltip("SIZE of a hole the tool spawns: its event-horizon radius r_s, world units. On screen " +
+                 "the black shadow is ~2.6 r_s in radius and the lens bends the scene out to Lens Radius " +
+                 "Multiplier r_s. 0 = derived from strength (Horizon Per Strength x strength, at least " +
+                 "Min Horizon Radius).")]
+        [Range(0f, 200f)]
+        [SerializeField] float spawnHorizonRadius = 0f;
+
+        [Tooltip("How far ahead of the camera the tool spawns a hole, in horizon radii — so a bigger hole " +
+                 "lands proportionally farther away and its shadow fills the same share of the view.")]
+        [Range(2f, 100f)]
+        [SerializeField] float spawnDistanceHorizons = 12f;
+
+        [Tooltip("Velocity a spawned hole travels at, u/s, in the CAMERA's frame at the moment it spawns " +
+                 "(x right, y up, z forward). Zero parks it where it spawned.")]
+        [SerializeField] Vector3 spawnVelocity = Vector3.zero;
+
+        [Tooltip("Spin axis of a spawned hole, world space: frame dragging sweeps mass into orbits in the " +
+                 "plane perpendicular to it.")]
+        [SerializeField] Vector3 spawnSpinAxis = Vector3.forward;
+
+        public float SpawnStrength => Mathf.Max(0f, spawnStrength);
+        public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
+        public float SpawnDistanceHorizons => Mathf.Max(2f, spawnDistanceHorizons);
+        public Vector3 SpawnVelocity => spawnVelocity;
+        public Vector3 SpawnSpinAxis => spawnSpinAxis.sqrMagnitude > 1e-6f ? spawnSpinAxis.normalized : Vector3.forward;
+
         public bool LensEnabled => lensEnabled;
         public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
         public float LensFadeStart => Mathf.Clamp(lensFadeStart, 0.1f, 0.95f);
@@ -223,25 +257,44 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Gravitational parameter of a hole of the given strength.</summary>
         public float GM(float strength) => Mathf.Max(0f, strength) * GmPerStrength;
 
-        /// <summary>Event-horizon radius of a hole of the given strength.</summary>
+        /// <summary>Event-horizon radius of a hole of the given strength (its size derived from it).</summary>
         public float HorizonRadius(float strength) =>
             Mathf.Max(MinHorizonRadius, Mathf.Max(0f, strength) * HorizonPerStrength);
+
+        /// <summary>
+        /// Event-horizon radius of a hole with an explicit <paramref name="size"/> (world units);
+        /// a size of 0 or less means "derived from strength".
+        /// </summary>
+        public float HorizonRadius(float strength, float size) =>
+            size > 0f ? Mathf.Max(MinHorizonRadius, size) : HorizonRadius(strength);
 
         /// <summary>
         /// Radius at which the pull falls to <see cref="InfluenceAccelerationFloor"/>, capped at
         /// <see cref="MaxInfluenceRadius"/> and never inside the horizon.
         /// </summary>
-        public float InfluenceRadius(float strength)
+        public float InfluenceRadius(float strength) => InfluenceRadius(strength, HorizonRadius(strength));
+
+        /// <summary>
+        /// <see cref="InfluenceRadius(float)"/> for a hole whose horizon is
+        /// <paramref name="horizonRadius"/> (its size may not be the one its strength implies).
+        /// Never inside 1.5 horizons, even when that exceeds the cap — a hole always pulls the shell
+        /// around its own horizon.
+        /// </summary>
+        public float InfluenceRadius(float strength, float horizonRadius)
         {
-            float rs = HorizonRadius(strength);
+            float rs = Mathf.Max(MinHorizonRadius, horizonRadius);
             float gm = GM(strength);
             // Paczynski-Wiita: a = GM / (d - rs)^2  =>  d = rs + sqrt(GM / a_floor).
             float d = rs + Mathf.Sqrt(gm / InfluenceAccelerationFloor);
-            return Mathf.Clamp(d, rs * 1.5f, MaxInfluenceRadius);
+            return Mathf.Max(rs * 1.5f, Mathf.Min(d, MaxInfluenceRadius));
         }
 
         /// <summary>World units the warp reaches beyond a hole's horizon.</summary>
-        public float WarpReach(float strength) => HorizonRadius(strength) * (WarpReachMultiplier - 1f);
+        public float WarpReach(float strength) => WarpReachForHorizon(HorizonRadius(strength));
+
+        /// <summary>World units the warp reaches beyond a horizon of <paramref name="horizonRadius"/>.</summary>
+        public float WarpReachForHorizon(float horizonRadius) =>
+            Mathf.Max(MinHorizonRadius, horizonRadius) * (WarpReachMultiplier - 1f);
 
         /// <summary>
         /// The shape the shader and the integrator can actually run: a positive horizon, a reach

@@ -40,3 +40,8 @@ MonoBehaviour:
   lensRadiusMultiplier: 30
   lensFadeStart: 0.55
   lensSteps: 128
+  spawnStrength: 10
+  spawnHorizonRadius: 0
+  spawnDistanceHorizons: 12
+  spawnVelocity: {x: 0, y: 0, z: 0}
+  spawnSpinAxis: {x: 0, y: 0, z: 1}
