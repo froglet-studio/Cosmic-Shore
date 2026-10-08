@@ -186,7 +186,7 @@ namespace CosmicShore.ScriptableObjects
         [Range(0, 6)]
         [SerializeField] int lensSkyFacesPerFrame = 1;
 
-        [Header("Spawn (the Black Hole tool — blackhole tool on)")]
+        [Header("Spawn (the Black Hole tool — B, or blackhole tool on; Shift+B spawns)")]
         [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
                  "Spawn Horizon Radius at 0 the strength also sets the size.")]
         [Range(0f, 100f)]
@@ -199,8 +199,19 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 200f)]
         [SerializeField] float spawnHorizonRadius = 0f;
 
-        [Tooltip("WHERE the tool's Spawn button (and `blackhole spawn` with no strength) puts a hole: " +
-                 "its centre, world space.")]
+        [Tooltip("ON: a spawn (the tool's Spawn button, Shift+B, `blackhole spawn` with no strength) goes " +
+                 "straight AHEAD of the camera you are looking through — while flying, your vessel's " +
+                 "camera — Spawn Distance Horizons away. OFF: it goes to Spawn Position.")]
+        [SerializeField] bool spawnAheadOfCamera = true;
+
+        [Tooltip("How far ahead of the camera a spawn lands, in HORIZON RADII (with Spawn Ahead Of Camera " +
+                 "on). In horizon radii because a hole is big for its strength: its shadow is ~2.6 r_s in " +
+                 "radius, so much nearer than 3 r_s the camera starts inside the shadow and the vessel " +
+                 "inside the strong pull. 6 is 120 u for a strength-10 hole (r_s 20).")]
+        [Range(3f, 100f)]
+        [SerializeField] float spawnDistanceHorizons = 6f;
+
+        [Tooltip("WHERE a spawn goes when Spawn Ahead Of Camera is off: the hole's centre, world space.")]
         [SerializeField] Vector3 spawnPosition = Vector3.zero;
 
         [Tooltip("Velocity a spawned hole travels at, u/s, world space. Zero parks it at the spawn " +
@@ -214,6 +225,8 @@ namespace CosmicShore.ScriptableObjects
 
         public float SpawnStrength => Mathf.Max(0f, spawnStrength);
         public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
+        public bool SpawnAheadOfCamera => spawnAheadOfCamera;
+        public float SpawnDistanceHorizons => Mathf.Clamp(spawnDistanceHorizons, 3f, 100f);
         public Vector3 SpawnPosition => spawnPosition;
         public Vector3 SpawnVelocity => spawnVelocity;
         public Vector3 SpawnSpinAxis => spawnSpinAxis.sqrMagnitude > 1e-6f ? spawnSpinAxis.normalized : Vector3.forward;

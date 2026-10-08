@@ -12,12 +12,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The BLACK HOLE TOOL (Docs/BLACK_HOLE.md §6.1): a runtime panel for spawning and tuning black
-    /// holes from any scene, opened from the DiagnosticsHUD console with <c>blackhole tool on</c>
-    /// (<c>off</c> closes it; <c>blackhole config</c> opens it on the config view).
+    /// holes from any scene, opened with the <b>B</b> key (<see cref="BlackHoleHotkeys"/>) or from the
+    /// DiagnosticsHUD console with <c>blackhole tool on</c> (<c>off</c> closes it; <c>blackhole config</c>
+    /// opens it on the config view).
     ///
     /// <para><b>The values live in the config ASSET, not in the tool.</b> The Spawn rows edit
     /// <c>BlackHoleConfig</c>'s Spawn section — strength (the pull), size (the event-horizon
-    /// radius; 0 derives it from the strength), world position, velocity, spin axis — and
+    /// radius; 0 derives it from the strength), where (ahead of the camera, or a world position),
+    /// velocity, spin axis — and
     /// <b>Spawn</b> spawns from exactly those
     /// (<see cref="BlackHoleRegistry.SpawnFromConfig"/>), so what is on the asset is what you get,
     /// from the tool or from <c>blackhole spawn</c> with no strength. <b>Config</b> opens every
@@ -131,7 +133,7 @@ namespace CosmicShore.Gameplay
                 _caption.text =
                     $"size {(size > 0f ? "set" : "from strength")}: horizon r_s {rs:F1} u · shadow ≈ {2.6f * rs:F0} u · " +
                     $"lens {config.LensRadiusMultiplier * rs:F0} u\n" +
-                    $"spawns at {Fmt(config.SpawnPosition)}{FromCamera(config.SpawnPosition)} · pull GM {config.GM(strength):N0} · " +
+                    $"{SpawnWhere(config, rs)} · pull GM {config.GM(strength):N0} · " +
                     $"influence {config.InfluenceRadius(strength, rs):F0} u";
 
             var holes = BlackHoleRegistry.Holes;
@@ -164,12 +166,18 @@ namespace CosmicShore.Gameplay
             return cam != null ? $" · {Vector3.Distance(cam.transform.position, p):F0} u from the camera" : "";
         }
 
+        static string SpawnWhere(BlackHoleConfigSO config, float rs) =>
+            config.SpawnAheadOfCamera && Camera.main != null
+                ? $"spawns {rs * config.SpawnDistanceHorizons:F0} u ahead of the camera"
+                : $"spawns at {Fmt(config.SpawnPosition)}{FromCamera(config.SpawnPosition)}" +
+                  (config.SpawnAheadOfCamera ? " (no main camera)" : "");
+
         // ── actions ──
         void Spawn()
         {
             var hole = BlackHoleRegistry.SpawnFromConfig();
             _statusText = hole != null
-                ? $"spawned #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}"
+                ? $"spawned #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}{FromCamera(hole.transform.position)}"
                 : $"spawn refused — {BlackHoleRegistry.Count}/{Config.MaxBlackHoles} live, or the config is not sane";
             Refresh();
         }

@@ -102,16 +102,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Spawn a hole exactly as the config's Spawn section says — strength, size, position,
-        /// velocity, spin, all world space — what the Black Hole tool's Spawn button and
-        /// <c>blackhole spawn</c> with no strength do. Null when the spawn is refused (see
-        /// <see cref="Spawn"/>).
+        /// Where a spawn from the config lands: <see cref="BlackHoleConfigSO.SpawnDistanceHorizons"/>
+        /// horizon radii straight ahead of <paramref name="camera"/> when
+        /// <see cref="BlackHoleConfigSO.SpawnAheadOfCamera"/> is on and there is a camera, else
+        /// <see cref="BlackHoleConfigSO.SpawnPosition"/>.
+        /// </summary>
+        public static Vector3 SpawnPoint(BlackHoleConfigSO config, Transform camera)
+        {
+            if (!config.SpawnAheadOfCamera || camera == null) return config.SpawnPosition;
+            float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
+            return camera.position + camera.forward * (rs * config.SpawnDistanceHorizons);
+        }
+
+        /// <summary>
+        /// Spawn a hole exactly as the config's Spawn section says — strength, size, where
+        /// (<see cref="SpawnPoint"/>, ahead of the main camera — the vessel's camera while flying —
+        /// or at the spawn position), velocity, spin — what the Black Hole tool's Spawn button,
+        /// Shift+B and <c>blackhole spawn</c> with no strength do. Null when refused (see <see cref="Spawn"/>).
         /// </summary>
         public static BlackHole SpawnFromConfig()
         {
             var config = Config;
-            return Spawn(config.SpawnPosition, config.SpawnStrength, config.SpawnVelocity, config.SpawnSpinAxis,
-                config.SpawnHorizonRadius);
+            var cam = Camera.main;
+            return Spawn(SpawnPoint(config, cam != null ? cam.transform : null), config.SpawnStrength,
+                config.SpawnVelocity, config.SpawnSpinAxis, config.SpawnHorizonRadius);
         }
 
         /// <summary>Begin a hole's despawn (eased warp release, then destroy). False if no such id.</summary>

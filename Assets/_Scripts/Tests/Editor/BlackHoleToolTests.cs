@@ -43,13 +43,13 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Tool_SpawnRowsArePositionVelocityAndSpinInWorldSpace()
+        public void Tool_SpawnRowsAreWhereVelocityAndSpin()
         {
-            // The Spawn button places the hole at the config's spawn POSITION — no camera involved — so
-            // the spawn rows are exactly strength, size, position, velocity, spin, and the three vectors
-            // are drawn as vector rows the tool writes straight through to the asset.
+            // The spawn rows are strength, size, WHERE (ahead of the camera or a world position),
+            // velocity and spin, and the vectors are rows the tool writes straight through to the asset.
             CollectionAssert.AreEqual(
-                new[] { "spawnStrength", "spawnHorizonRadius", "spawnPosition", "spawnVelocity", "spawnSpinAxis" },
+                new[] { "spawnStrength", "spawnHorizonRadius", "spawnAheadOfCamera", "spawnDistanceHorizons",
+                        "spawnPosition", "spawnVelocity", "spawnSpinAxis" },
                 BlackHoleToolModel.SpawnFieldNames);
             var fields = BlackHoleToolModel.EditableFields(typeof(BlackHoleConfigSO));
             var config = ScriptableObject.CreateInstance<BlackHoleConfigSO>();
@@ -64,6 +64,38 @@ namespace CosmicShore.Tests
             }
             finally
             {
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void Spawn_LandsAheadOfTheCameraInHorizonRadii_OrAtThePosition()
+        {
+            var config = ScriptableObject.CreateInstance<BlackHoleConfigSO>();
+            var cam = new GameObject("spawn camera").transform;
+            try
+            {
+                var fields = BlackHoleToolModel.EditableFields(typeof(BlackHoleConfigSO));
+                fields.First(f => f.Name == "spawnHorizonRadius").SetNumber(config, 20f);
+                fields.First(f => f.Name == "spawnDistanceHorizons").SetNumber(config, 6f);
+                fields.First(f => f.Name == "spawnPosition").SetVector(config, new Vector3(7f, 8f, 9f));
+                // A camera at (1,2,3) looking along +x (a vessel's camera mid-flight).
+                cam.SetPositionAndRotation(new Vector3(1f, 2f, 3f), Quaternion.Euler(0f, 90f, 0f));
+
+                fields.First(f => f.Name == "spawnAheadOfCamera").SetBool(config, true);
+                var ahead = BlackHoleRegistry.SpawnPoint(config, cam);
+                Assert.That(Vector3.Distance(ahead, new Vector3(121f, 2f, 3f)), Is.LessThan(1e-3f),
+                    $"6 horizon radii (120 u) ahead of the camera, got {ahead}");
+                Assert.AreEqual(new Vector3(7f, 8f, 9f), BlackHoleRegistry.SpawnPoint(config, null),
+                    "with no camera the spawn falls back to the spawn position.");
+
+                fields.First(f => f.Name == "spawnAheadOfCamera").SetBool(config, false);
+                Assert.AreEqual(new Vector3(7f, 8f, 9f), BlackHoleRegistry.SpawnPoint(config, cam),
+                    "with ahead-of-camera off the spawn goes to the spawn position, wherever the camera is.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(cam.gameObject);
                 Object.DestroyImmediate(config);
             }
         }

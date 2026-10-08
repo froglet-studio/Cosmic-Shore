@@ -131,7 +131,7 @@ static class BlackHoleToolHarness
         Check(missingKeys.Count == 0, "config fields missing from the asset: " + string.Join(", ", missingKeys));
         Check(config.IsSane, "the shipped asset, loaded through the tool's model, is not sane");
         Console.WriteLine($"4. asset ⇄ SO ⇄ tool: {keys.Count} asset keys, all known; loaded through the model and sane " +
-                          $"(spawn strength {config.SpawnStrength}, size {config.SpawnHorizonRadius}, position ({config.SpawnPosition.x}, {config.SpawnPosition.y}, {config.SpawnPosition.z}))");
+                          $"(spawn strength {config.SpawnStrength}, size {config.SpawnHorizonRadius}, {(config.SpawnAheadOfCamera ? $"{config.SpawnDistanceHorizons} r_s ahead of the camera" : $"at ({config.SpawnPosition.x}, {config.SpawnPosition.y}, {config.SpawnPosition.z})")})");
 
         // 5. size
         float derived = config.HorizonRadius(10f, 0f);

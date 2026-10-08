@@ -388,7 +388,7 @@ From any scene (the HUD and the console auto-spawn; editor and development build
 ```
 blackhole tool [on|off]                          open / close the Black Hole tool (§6.1); no word = toggle
 blackhole config                                 open the tool on its config view
-blackhole spawn                                  spawn from the config's Spawn section, at its spawn position
+blackhole spawn                                  spawn from the config's Spawn section (ahead of the camera, or at its position)
 blackhole spawn <strength> [x y z] [vx vy vz]   spawn at (x,y,z) — default 300 u ahead of the camera
 blackhole here <strength>                        spawn at the camera
 blackhole size <id> <r_s>                        resize a live hole (event-horizon radius; 0 = from strength)
@@ -411,12 +411,15 @@ what is on the asset is what spawns — from the tool, or from `blackhole spawn`
 
 - **SPAWN** rows edit the asset's Spawn section: **Spawn Strength** (the pull: `GM = strength ×
   gmPerStrength`), **Spawn Horizon Radius** (the SIZE — the event-horizon radius in world units;
-  0 derives it from the strength), **Spawn Position** (WHERE the hole goes — its centre, world space),
+  0 derives it from the strength), **Spawn Ahead Of Camera** (on by default: the hole lands straight
+  ahead of the camera you are looking through — your vessel's while flying) with **Spawn Distance
+  Horizons** (how far, in horizon radii: 6 = 120 u at strength 10; nearer than ~3 the camera is inside
+  the ~2.6 r_s shadow), **Spawn Position** (where it goes instead, world space, when that is off),
   **Spawn Velocity** (u/s, world space; zero parks it) and **Spawn Spin Axis** (world). A caption
   shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the position and how far it is
   from the camera, GM and the influence radius.
-- **Spawn** spawns from exactly those values at the spawn position (`BlackHoleRegistry.SpawnFromConfig`)
-  — no camera involved, and no preset buttons: to put a hole somewhere else, change the position.
+- **Spawn** spawns from exactly those values (`BlackHoleRegistry.SpawnFromConfig`, placement in
+  `SpawnPoint`) — no preset buttons: to put a hole somewhere else, fly there or change the position.
   **Despawn all**; **Save asset** (Editor) writes the asset to disk.
 - **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
   and **Despawn**.
@@ -448,6 +451,27 @@ helpers, the clamping, the labels and the switch — and two negative controls (
 unsupported field, an asset with a renamed key) fire. `BlackHoleToolTests` (edit mode) checks the
 model against Unity's own `SerializedObject` view of the asset, the spawn pose, the size helpers, the
 clamping, and builds the real panel and closes it.
+
+### 6.2 Keys, and how to test it (`BlackHoleHotkeys`)
+
+Editor and development builds, any scene, ignored while a text field has focus:
+
+| Key | Does |
+|---|---|
+| **B** | Open / close the Black Hole tool (in the Editor it also selects `Resources/BlackHoleConfig` in the Inspector) |
+| **Shift+B** | Spawn a hole from the config right now — ahead of the camera — without opening anything |
+| `blackhole tool on` / `off` | The same as B, from the DiagnosticsHUD console (`blackhole config` opens the config view) |
+
+**In the test scene** (`BlackHoleTest.unity`, Bootstrap-on-Play off): Play → **Spawn field** → wait for
+*ready* → **B** → set the spawn rows → **Spawn** (or Shift+B) → orbit the camera around it.
+
+**In lava-lamp freestyle** (Menu_Main, flying a vessel): **B** → set strength/size/distance → close
+it with B → **Shift+B** while flying: the hole appears straight ahead of your vessel's camera
+(Cinemachine drives `Camera.main` from the vessel's virtual camera, so "the camera" is the view you
+fly). It pulls the cell's prisms and your vessel — faster than the local escape speed gets away,
+slower is drawn in and held at the horizon (§4) — so boost out, or **Despawn all** / `blackhole
+despawn all`. Lava lamp's lifeforms are not pulled (§8), and the scene's lighting bake does not
+matter: the lens bends whatever skybox the scene renders (§5.1).
 
 ## 7. The test scene
 

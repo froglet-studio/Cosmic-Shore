@@ -40,6 +40,8 @@ MonoBehaviour:
   lensSkyFacesPerFrame: 1
   spawnStrength: 10
   spawnHorizonRadius: 0
+  spawnAheadOfCamera: 1
+  spawnDistanceHorizons: 6
   spawnPosition: {x: 0, y: 0, z: 0}
   spawnVelocity: {x: 0, y: 0, z: 0}
   spawnSpinAxis: {x: 0, y: 0, z: 1}
