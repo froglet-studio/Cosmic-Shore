@@ -5225,7 +5225,7 @@ the geometry and animation. this should match the geometry and animation of the 
 the colors of the space and time crystals when active."* Confirmed with the requester: the correct
 shape is the **static Mass shells** (`MassCrystalExport1_8-21-25.fbx`, four pulsing shells, no spin).
 
-What changed (assets only, no C#; authored by `Tools/Build/author_mass_crystal_look.py --check`):
+What changed (authored by `Tools/Build/author_mass_crystal_look.py --check`, plus one C# fix in `Crystal.cs`, item 7):
 - The 8 shell materials (`ActiveMassCrystalMaterial[ 1-3]`, `BlueMassCrystalMaterial[ 1-3]`, guids
   kept) moved from `ShepardGraph` to `OmniShepardFresnelShader` with the Space/Time colour pairs.
   Band, scaling and draw order per shell are unchanged.
@@ -5248,7 +5248,12 @@ What changed (assets only, no C#; authored by `Tools/Build/author_mass_crystal_l
 5. **Codex / toybox** Mass crystal — unchanged shape.
 6. **Draw order** — the inner shells read through the outer ones without popping or z-fighting;
    if a shell looks wrong only from some angles, compare render queues 2999/3000/3001/3001.
-7. **Second pass (contrast)** — embedded Mass reads as a saturated blue over deep navy (not
+7. **Dropped-heart husks (C#, `Crystal.cs`)** — collect a heart a lifeform has just DROPPED, for
+   Mass, Space and Time: each husk bursts outward like a free pickup's (before, a dropped heart's
+   husk drifted away whole, because activation overwrote the authored exploding material with the
+   pickup look). A domain-owned crystal (Dolphin's deployed team crystal) still explodes in its
+   domain colours. `Crystal.cs` was not compiled: no editor or compiler in this session.
+8. **Second pass (contrast)** — embedded Mass reads as a saturated blue over deep navy (not
    blue-white); free Mass reads mostly DARK with lime confined to face edges and silhouettes. The
    omni crystal's falling triangles look exactly as before. Tune in
    `Tools/Build/author_mass_crystal_look.py` (`RIM_POWER`, `INACTIVE_COLORS`), then re-run it.

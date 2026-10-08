@@ -29,7 +29,9 @@ this it had two defects, both in the asset data rather than the code:
 The spent husk keeps its shatter. `Impact` drives `_velocity`, which only ShepardGraph reads, so
 each Mass prefab's `explodingMaterial` points at `ExplodingMassCrystalMaterial[ n]` - the four
 shells' previous ShepardGraph materials, carried verbatim - the same split Space and Time have
-(their exploding material is not their default material).
+(their exploding material is not their default material). A dropped heart keeps it too: since
+2026-10-08 `Crystal.LerpCrystalMaterialCoroutine` hands a model settling onto its OWN default
+material its authored husk back instead of overwriting it with the default.
 
 `--check` fails on any drift: a shell material that is not what this script authors, a Mass
 prefab whose exploding material cannot shatter, or a nested `CrystalMass` that swaps its shells.
