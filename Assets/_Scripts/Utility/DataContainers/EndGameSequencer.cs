@@ -74,7 +74,10 @@ namespace CosmicShore.Utility
         void OnEnable()
         {
             if (gameData != null)
+            {
                 gameData.OnWinnerCalculated.OnRaised += HandleWinnerCalculated;
+                gameData.OnResetForReplay.OnRaised += HandleResetForReplay;
+            }
 
             var progression = GameModeProgressionService.Instance;
             if (progression != null)
@@ -87,7 +90,10 @@ namespace CosmicShore.Utility
         void OnDisable()
         {
             if (gameData != null)
+            {
                 gameData.OnWinnerCalculated.OnRaised -= HandleWinnerCalculated;
+                gameData.OnResetForReplay.OnRaised -= HandleResetForReplay;
+            }
 
             var progression = GameModeProgressionService.Instance;
             if (progression != null)
@@ -96,6 +102,25 @@ namespace CosmicShore.Utility
                 progression.OnIntensityUnlocked -= HandleIntensityUnlocked;
             }
 
+            if (_revealRoutine != null)
+            {
+                StopCoroutine(_revealRoutine);
+                _revealRoutine = null;
+            }
+            _toastSeq?.Kill();
+            _isRunning = false;
+        }
+
+        /// <summary>
+        /// An IN-PLACE replay (Cellular Duel's rematch: no scene reload, so this component is
+        /// never disabled) is a new game. Without this the latch stayed set from game one, the
+        /// rematch's OnWinnerCalculated returned early, nothing raised OnShowGameEndScreen, and
+        /// every peer was left in the arena with no scoreboard and no way out. Cleared here and
+        /// not at the end of RunReveal, so a repeated raise within one game still cannot run the
+        /// reveal (and the end screen) twice.
+        /// </summary>
+        void HandleResetForReplay()
+        {
             if (_revealRoutine != null)
             {
                 StopCoroutine(_revealRoutine);
