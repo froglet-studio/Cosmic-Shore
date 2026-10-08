@@ -184,8 +184,23 @@ Relay cost nothing extra for a Steam game. Re-check
 | `bandwidth=KBPS` | Upload cap per peer; frames queue behind it |
 | `down` / `up` | Pull the cable: every peer stops hearing this process (`down`) until `up`. After 10 s down, the peers are disconnected, as UTP's timeout would |
 
-Presets, after Unity's: `broadband` (latency 20, jitter 5), `dsl` (40/10, loss 0.5),
-`4g` (60/20, loss 1), `3g` (120/40, loss 2), `poor` (200/80, loss 5, bandwidth 128).
+Presets, after Unity's: `lan` (latency 1), `broadband` (latency 20, jitter 5), `dsl` (40/10,
+loss 0.5), `4g` (60/20, loss 1), `3g` (120/40, loss 2), `poor` (200/80, loss 5, bandwidth 128).
+
+How to use it (`src/CosmicShore.Engine/Networking/Wire/NetSimulator.cs`):
+
+```bash
+COSMIC_SHORE_NET_SIM=4g CosmicShore ...                  # at launch
+curl -s -X POST -d '{"cmd":"do","arg":"netsim poor"}' http://127.0.0.1:47800/     # live
+curl -s -X POST -d '{"cmd":"do","arg":"netsim latency=150 jitter=30"}' ...        # tokens apply in order
+curl -s -X POST -d '{"cmd":"do","arg":"netsim down"}' ...   # pull the cable; "up" plugs it back in
+curl -s -X POST -d '{"cmd":"do","arg":"netsim off"}' ...
+```
+
+Each process simulates its own line, so a 4-player test can give each player a different one.
+Arriving frames are released when the driver polls (once a frame, like everything the game
+receives); leaving frames are released on time by a small pump thread, so a sender busy loading
+a scene still delivers on schedule.
 
 ### 6.3 Step 3: session-service faults
 
@@ -226,8 +241,8 @@ argument, and TCP treats both channels as reliable).
 | Step | What | Status | Evidence |
 |---|---|---|---|
 | Doc | This file | Done 2026-10-08 | |
-| 0 | Real-time pacing, API gaps, save-path fallback | Planned | |
-| 1 | Network simulator | Planned | |
+| 0 | Real-time pacing, API gaps, save-path fallback | Done 2026-10-08 | `RealtimePacerTests` 4/4; 1200 headless frames: 11.9 s unpaced, 28.3 s with `--realtime`; player builds (it did not: 19 missing `SessionError` codes) |
+| 1 | Network simulator | Done 2026-10-08 | `SimulatedTransportTests` 14/14; the 7 transport contract checks pass behind a bad line (latency 5, jitter 10, loss 20%) over TCP and loopback; `NetDriverTransportTests` approves a real TCP client behind 40 ms each way in >= 80 ms; 5 repeat runs stable |
 | 2 | Stats, `do net`, capture | Planned | |
 | 3 | Session-service faults | Planned | |
 | 4 | Launcher MULTIPLAYER panel, MCP tools | Planned | |

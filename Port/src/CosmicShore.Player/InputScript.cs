@@ -142,6 +142,8 @@ namespace CosmicShore.Player
                     case "lookat": Inspector.LookAt(float.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "vessels": Inspector.Vessels(); break;
                     case "party": Inspector.Party(arg.Trim()); break;
+                    // netsim SPEC: the network simulator (docs/MULTIPLAYER.md §6.2), e.g. "4g", "latency=80", "down", "off".
+                    case "netsim": Console.WriteLine(CosmicShore.Engine.Networking.NetSimulator.Apply(arg)); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
                     case "arcade": Inspector.Arcade(arg.Trim()); break;
                     case "score": Inspector.Score(arg.Trim()); break;

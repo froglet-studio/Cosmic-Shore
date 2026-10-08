@@ -132,6 +132,42 @@ namespace CosmicShore.Tests
         }
 
         [Fact]
+        public void Server_BehindTheSimulator_ApprovesARealSocketClient_AfterTheAddedDelay()
+        {
+            var saved = NetSimulator.Settings;
+            try
+            {
+                NetSimulator.Settings = new NetSimSettings { LatencyMs = 40 };
+                NetDriver.TransportFactory = new TcpTransportFactory();
+                NetSimulator.Install();
+                NetSimulator.Install(); // idempotent: one wrapper, not two
+                Assert.IsType<SimulatedTransportFactory>(NetDriver.TransportFactory);
+                Assert.True(NetDriver.StartServer(nm, "127.0.0.1", 0));
+                using var client = NetSocket.Connect("127.0.0.1", NetDriver.ListenPort, 3000);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                long sentAt = -1;
+                while (sw.ElapsedMilliseconds < 5000)
+                {
+                    NetDriver.EarlyUpdate();
+                    if (client.Poll(out var e))
+                    {
+                        if (e.Kind == NetEventKind.Connected && sentAt < 0) { client.Send(0, new byte[] { ConnectRequest, 0, 0, 0, 0 }); sentAt = sw.ElapsedMilliseconds; }
+                        else if (e.Kind == NetEventKind.Data)
+                        {
+                            Assert.Equal(ConnectAccept, e.Payload[0]);
+                            // The server sits behind 40 ms each way: the answer takes at least the round trip.
+                            Assert.True(sw.ElapsedMilliseconds - sentAt >= 80, $"answered after {sw.ElapsedMilliseconds - sentAt} ms");
+                            return;
+                        }
+                    }
+                    System.Threading.Thread.Sleep(1);
+                }
+                throw new TimeoutException("no ConnectAccept behind the simulator");
+            }
+            finally { NetSimulator.Settings = saved; }
+        }
+
+        [Fact]
         public void Client_WhoseConnectFails_StopsAndReportsTheReason()
         {
             NetDriver.StartClient(nm, "127.0.0.1", 7777, null); // nobody listens on the loopback
