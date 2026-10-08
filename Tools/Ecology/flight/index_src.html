@@ -86,6 +86,7 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
 <div id="toast"></div>
 <div id="top">
   <select id="mode" title="what lives in the cell"></select>
+  <select id="pop" class="wide" title="whole cell: populations scaled up for liveliness, or the scored defaults (900 vs 120 grazers)"><option value="cell">lively cell</option><option value="scored">scored populations</option></select>
   <button id="cam" title="C: chase / orbit camera">chase cam</button>
   <button id="steer" class="wide" title="M: steer with the mouse position">mouse steer: off</button>
   <button id="snd" class="wide" title="sound stingers on telegraph and strike">sound: off</button>
@@ -396,7 +397,7 @@ const membrane = makeMembrane(1200); scene.add(membrane);
 function buildWorld(mode) {
   for (const k in layers) { scene.remove(layers[k].mesh); layers[k].mesh.dispose(); delete layers[k]; }
   dying.length = 0; born.clear();
-  W = new E.FlightWorld(PARAMS, mode === 'creatures' ? 'grazer' : mode, seed, 1); W.mode = mode;
+  W = new E.FlightWorld(PARAMS, mode === 'creatures' ? 'grazer' : mode, seed, 1, { pop: popSel.value }); W.mode = mode;
   R = W.arena.R;
   const ar = W.arena;
   ar.onHit = onHit; ar.onKill = onKill; ar.onRemove = onRemove; ar.onBirth = onBirth;
@@ -997,6 +998,8 @@ function drawPetals(dtF) {
     if (h2 !== petTxt2._h) petTxt2.innerHTML = petTxt2._h = h2;
   }
 }
+const popSel = document.getElementById('pop');
+popSel.onchange = () => { buildWorld(modeSel.value); toast(popSel.selectedOptions[0].textContent, '#7fd6ff'); };
 document.getElementById('rule').onchange = (ev) => { stakeRule = ev.target.value; newStakes(); toast(ev.target.selectedOptions[0].textContent, '#7fd6ff'); };
 function toggleDomain() { hostile = !hostile; const b = document.getElementById('dom'); b.textContent = hostile ? 'cell: hostile' : 'cell: yours'; b.classList.toggle('on', !hostile); newStakes(); toast(hostile ? 'HOSTILE CELL: strikes burn' : 'YOUR CELL: strikes sting', hostile ? '#ff6a4a' : '#6fe3a0'); }
 document.getElementById('dom').onclick = toggleDomain;
@@ -1257,6 +1260,7 @@ resize();
 const q0 = new URLSearchParams(location.search);
 if (q0.get('mode') && MODES.includes(q0.get('mode'))) modeSel.value = q0.get('mode');
 if (q0.get('seed')) seed = +q0.get('seed');
+if (q0.get('pop') === 'scored') popSel.value = 'scored';
 buildWorld(modeSel.value);
 if (q0.get('go')) { document.getElementById('start').style.display = 'none'; paused = false; }
 if (q0.get('auto')) setAuto(true);
