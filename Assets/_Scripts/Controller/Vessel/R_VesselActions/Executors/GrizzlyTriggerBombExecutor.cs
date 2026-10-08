@@ -17,11 +17,12 @@ namespace CosmicShore.Gameplay
     ///   Idle -pull-> Arming -release-> InFlight -pull-> Frozen -release-> (detonate) -> Idle
     ///
     /// <b>Only the trigger detonates a bomb</b> (design ask, 2026-10-08). There is no fuse and no
-    /// contact detonation: the bomb flies THROUGH prisms - lighting them as it passes
-    /// (<see cref="GrizzlyBombVisual"/>, Docs/LIT.md) - and touches nothing (its impact container,
-    /// GrizzlyBombProjectileImpactContainer, is empty), and a bomb nobody freezes eases to rest
-    /// at the end of its throw and HANGS there (<see cref="Projectile.HoldAtFlightEnd"/>), still
-    /// InFlight, until the next pull freezes it and the release blows it.
+    /// contact detonation. The bomb CRUISES (<see cref="Projectile.Cruises"/>): constant velocity,
+    /// no drag, no range limit, THROUGH prisms - lighting them as it passes
+    /// (<see cref="GrizzlyBombVisual"/>, Docs/LIT.md) - and breaking none (its impact container,
+    /// GrizzlyBombProjectileImpactContainer, is empty). Two things stop it: the trigger's next
+    /// pull, and touching ANOTHER vessel (<see cref="Projectile.VesselStruck"/>; its own hull is
+    /// ignored). Either way it is Frozen where it stopped, and the trigger's next release blows it.
     ///
     /// The release that fires reads the PEAK analog pressure of that pull: it sets the ammo
     /// spent, the bomb's visible size and the blast's size together (config
@@ -49,8 +50,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>A bomb never leaks.</b> A live bomb is silently returned (no blast) on turn end,
     /// disable and re-<see cref="Initialize"/>; stale-shell races are guarded with
     /// <see cref="Projectile.FlightGeneration"/> snapshots, the cannon's pattern. A bomb that
-    /// can hang forever is exactly the one that could leak, so these three are the whole of its
-    /// retirement: the trigger, the turn, the vessel.</para>
+    /// can fly forever is exactly the one that could leak, so these three are the whole of its
+    /// retirement: the trigger, the turn, the vessel - a bomb nobody freezes cruises on until one
+    /// of them, however far that takes it (its range is unlimited by design).</para>
     /// </summary>
     public sealed class GrizzlyTriggerBombExecutor : ShipActionExecutorBase
     {
@@ -84,6 +86,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds an autopilot waits for its own replicated press/release to land
         /// before it may send another for the same trigger.</summary>
         const float AiCommandTimeoutSeconds = 0.5f;
+
+        /// <summary>The lifetime handed to the gun. Meaningless for a bomb - it cruises
+        /// (<see cref="Projectile.Cruises"/>) and never runs out - but the gun's API asks for one.</summary>
+        const float NominalFlightSeconds = 1f;
 
         /// <summary>The longest an autopilot holds a frozen bomb before detonating it anyway -
         /// a hull that turned away from its bomb would otherwise wait on it forever.</summary>
@@ -226,12 +232,7 @@ namespace CosmicShore.Gameplay
 
                 case BombState.InFlight:
                     if (ShotIsLive(s))
-                    {
-                        s.Shot.Freeze();
-                        if (s.Shot.TryGetComponent<GrizzlyBombVisual>(out var visual)) visual.Freeze();
-                        s.FrozenSince = Time.time;
-                        SetState(s, BombState.Frozen);
-                    }
+                        FreezeShot(s);
                     else
                     {
                         // The bomb died between frames - this pull arms a new one.
@@ -263,6 +264,16 @@ namespace CosmicShore.Gameplay
                 case BombState.InFlight:
                     break;
             }
+        }
+
+        /// <summary>Stops the bomb where it is and ARMS it - the trigger's pull, or another
+        /// vessel's hull. The trigger's next release detonates it.</summary>
+        void FreezeShot(Slot s)
+        {
+            s.Shot.Freeze();
+            if (s.Shot.TryGetComponent<GrizzlyBombVisual>(out var visual)) visual.Freeze();
+            s.FrozenSince = Time.time;
+            SetState(s, BombState.Frozen);
         }
 
         // ── Fire ──────────────────────────────────────────────────────────────
@@ -298,7 +309,7 @@ namespace CosmicShore.Gameplay
                 inherited,
                 config.ProjectileScaleForSize(size),
                 true,                                  // ignoreCooldown - each trigger owns its rhythm
-                config.ProjectileTime,
+                NominalFlightSeconds,
                 size,                                  // Projectile.Charge carries the size to the blast
                 FiringPatterns.Default,
                 0,
@@ -314,15 +325,15 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // No fuse: when the throw runs out the bomb parks where it is and waits.
-            s.Shot.HoldAtFlightEnd = true;
+            // No fuse, no drag, no range: it flies on at this velocity until it is frozen.
+            s.Shot.Cruises = true;
             s.Size01 = size;
             s.ShotGeneration = s.Shot.FlightGeneration;
             if (s.Shot.TryGetComponent<GrizzlyBombVisual>(out var visual))
-                visual.Arm(BombColor(s.Side), _status.Domain, config.ProjectileTime);
-            s.Shot.FlightEnded += s.Side == GrizzlyBombActionSO.TriggerSide.Left
-                ? HandleLeftFlightEnded
-                : HandleRightFlightEnded;
+                visual.Arm(BombColor(s.Side), _status.Domain);
+            bool left = s.Side == GrizzlyBombActionSO.TriggerSide.Left;
+            s.Shot.FlightEnded += left ? HandleLeftFlightEnded : HandleRightFlightEnded;
+            s.Shot.VesselStruck += left ? HandleLeftVesselStruck : HandleRightVesselStruck;
             SetState(s, BombState.InFlight);
 
             PlayAt(config.FireEvent, gunTf.position);
@@ -354,9 +365,26 @@ namespace CosmicShore.Gameplay
         void HandleLeftFlightEnded(Projectile p, bool stoppedByImpact) => HandleFlightEnded(_slots[0], p);
         void HandleRightFlightEnded(Projectile p, bool stoppedByImpact) => HandleFlightEnded(_slots[1], p);
 
+        void HandleLeftVesselStruck(Projectile p, VesselImpactor vessel) => HandleVesselStruck(_slots[0], p, vessel);
+        void HandleRightVesselStruck(Projectile p, VesselImpactor vessel) => HandleVesselStruck(_slots[1], p, vessel);
+
+        /// <summary>
+        /// The flying bomb touched a hull. Any vessel but the one that fired it stops it dead -
+        /// Frozen, exactly as the trigger's pull would - and the trigger's next release blows it.
+        /// Raised from inside the projectile's swept vessel query, which every peer runs on its
+        /// own copy of the bomb against its own copy of the hulls.
+        /// </summary>
+        void HandleVesselStruck(Slot s, Projectile p, VesselImpactor vessel)
+        {
+            if (p != s.Shot || s.State != BombState.InFlight || !ShotIsLive(s)) return;
+            if (vessel == null || _status == null) return;
+            if (ReferenceEquals(vessel.Vessel, _status.Vessel)) return;   // its own hull, at the muzzle
+            FreezeShot(s);
+        }
+
         /// <summary>
         /// Something OTHER than the trigger ended this bomb's flight. Nothing should: the bomb
-        /// holds at the end of its throw and its impact container is empty. If anything ever
+        /// cruises with no lifetime and its impact container is empty. If anything ever
         /// does, the bomb is simply gone (whoever ended it owns the pool return) - it does NOT
         /// detonate, because only the trigger detonates a bomb.
         /// </summary>
@@ -507,9 +535,11 @@ namespace CosmicShore.Gameplay
         void Forget(Slot s)
         {
             if (s.Shot != null)
-                s.Shot.FlightEnded -= s.Side == GrizzlyBombActionSO.TriggerSide.Left
-                    ? HandleLeftFlightEnded
-                    : HandleRightFlightEnded;
+            {
+                bool left = s.Side == GrizzlyBombActionSO.TriggerSide.Left;
+                s.Shot.FlightEnded -= left ? HandleLeftFlightEnded : HandleRightFlightEnded;
+                s.Shot.VesselStruck -= left ? HandleLeftVesselStruck : HandleRightVesselStruck;
+            }
             s.Shot = null;
         }
 

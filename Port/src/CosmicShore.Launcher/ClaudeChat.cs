@@ -73,7 +73,7 @@ namespace CosmicShore.Launcher
         /// <summary>Raised on the chat thread when a milestone run stops short (never for the user's own STOP).</summary>
         public event Action<SessionStop>? MilestoneStopped;
 
-        // Why a run ended early, as "at the 80-turn limit" (a budget) - set by the result event or the watchdog.
+        // Why a run ended early, as "at the turn limit" - set by the result event.
         volatile string? _stopReason;
         volatile string? _lastError;
         volatile bool _userStopped;
@@ -161,7 +161,9 @@ namespace CosmicShore.Launcher
         /// Prisma itself. MILESTONE: a roadmap checkpoint session - engine work on Port/ toward a
         /// milestone, which never edits the game. Deny rules enforce each side in every mode.
         /// </summary>
-        public enum Scope { Game = 0, Milestone = 1 }
+        /// TOOL: builds one FrogletTools tool natively in Prisma (EDITOR > TOOLS > BUILD) - a cs-asset
+        /// command, its test and its registry entry, and nothing else of Prisma or the game.
+        public enum Scope { Game = 0, Milestone = 1, Tool = 2 }
 
         public Scope CurrentScope { get; }
         public string? Milestone { get; }
@@ -179,7 +181,7 @@ namespace CosmicShore.Launcher
             "You are the Prisma Agent, powered by Claude, running inside Prisma - Froglet's own engine - on a checkout of the Cosmic Shore repository. " +
             "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Prisma. Follow the repository's root CLAUDE.md for game work. " +
             "Do what the user asks and nothing more: do not go looking for other problems, and do not investigate Prisma (Port/) or its recorded problems unless the request is about them. " +
-            "You never change Prisma itself (Port/); engine work happens in Prisma's MILESTONES sessions, so when a cause you meet is in the engine, say so in one line and carry on. " +
+            "You never change Prisma itself (Port/); engine work happens in Claude Code sessions at the repository root, so when a cause you meet is in the engine, say so in one line and carry on. " +
             "When a request is about a bug, a crash, performance or a play run, prisma_tracks has every run Prisma recorded (performance per scene, features, audio, each problem " +
             "with when it was first and last seen) and the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...) reproduce and prove a fix. " +
             "For data and models without Unity: asset_datasets / asset_dataset (ScriptableObject data sets; edit a field with cs-asset set), asset_model / " +
@@ -196,6 +198,48 @@ namespace CosmicShore.Launcher
             "checkpoint to done until you have run that check and it passed, and put the command and its result in the note. Problems you find but do not fix go on " +
             "the board with prisma_board_suggest, each with its own criterion. Keep replies short." + WorkspaceNote;
 
+        /// <summary>Where a TOOL chat may write: cs-asset, its tests, and the native-tools registry and recipes.</summary>
+        public static readonly string[] ToolWritable =
+        {
+            "Port/src/CosmicShore.AssetTool", "Port/tests/CosmicShore.AssetTool.Tests", "Port/tools/froglet-tools",
+        };
+
+        const string ToolScope =
+            "You are building one Unity editor tool (a FrogletTools menu item) NATIVELY for Prisma, Froglet's own engine for Cosmic Shore, so it runs without Unity. " +
+            "Read the tool's C# source (the user names it) and its docs, then implement the same job as a cs-asset command in Port/src/CosmicShore.AssetTool " +
+            "(one file per tool under FrogletTools/, a case in Program.cs's command switch and a line in its usage text), working on the project files the way the " +
+            "other cs-asset commands do (AssetDatabase, the YAML editor, ComponentSerializer, the prefab instance editor). Writers must go through the same editing " +
+            "APIs and refuse to write what does not read back. Add an xunit test in Port/tests/CosmicShore.AssetTool.Tests that runs the command (on a temp copy " +
+            "when it writes). Register it in Port/tools/froglet-tools/tools.json as {\"menu\": the exact menu path, \"args\": the cs-asset arguments, " +
+            "\"writes\": true|false, \"summary\": one line}, and add its recipe (what it checks or changes, how it maps to the Unity tool, what it cannot do) " +
+            "to Port/tools/froglet-tools/README.md. Build (dotnet build Port/src/CosmicShore.AssetTool), run the test, then run the command once and show its output. " +
+            "Those three places are all you may change: never the game (Assets/, Packages/, ProjectSettings/) or the rest of Prisma. If the tool's job truly needs the " +
+            "running Unity editor (play mode, the scene view, an editor-only API with no file equivalent), say exactly why, do not build a half version, and stop. " +
+            "Keep replies short." + WorkspaceNote;
+
+        /// <summary>Everything a TOOL chat may not edit: the Unity project, and every part of Port/ outside <see cref="ToolWritable"/>.</summary>
+        internal static IEnumerable<string> ToolDenies(string workDir)
+        {
+            foreach (var d in UnityDenies) yield return d;
+            var port = Path.Combine(workDir, "Port");
+            if (!Directory.Exists(port)) { yield return "Edit(Port/**)"; yield break; }
+            var allowed = ToolWritable.Select(a => a.Replace('/', Path.DirectorySeparatorChar)).ToList();
+            IEnumerable<string> Walk(string dir)
+            {
+                foreach (var entry in Directory.EnumerateFileSystemEntries(dir))
+                {
+                    var rel = Path.GetRelativePath(workDir, entry);
+                    if (allowed.Any(a => string.Equals(a, rel, StringComparison.OrdinalIgnoreCase))) continue;
+                    // A folder that holds an allowed path is opened up; anything else is denied whole.
+                    if (Directory.Exists(entry) && allowed.Any(a => a.StartsWith(rel + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+                    { foreach (var d in Walk(entry)) yield return d; continue; }
+                    var r = rel.Replace('\\', '/');
+                    yield return Directory.Exists(entry) ? $"Edit({r}/**)" : $"Edit({r})";
+                }
+            }
+            foreach (var d in Walk(port)) yield return d;
+        }
+
         // Edit(path) rules cover every file-editing tool (Edit, Write, NotebookEdit) in every mode.
         static readonly string[] UnityDenies = { "Edit(Assets/**)", "Edit(Packages/**)", "Edit(ProjectSettings/**)" };
 
@@ -209,7 +253,6 @@ namespace CosmicShore.Launcher
             _stopReason = null;
             _lastError = null;
             _userStopped = false;
-            System.Threading.Timer? watchdog = null;
             try
             {
                 var psi = new ProcessStartInfo(Cli!)
@@ -229,24 +272,19 @@ namespace CosmicShore.Launcher
                 if (model.Length > 0 && model != "default") { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(model); }
                 var effort = _s.ClaudeEffort?.Trim() ?? "";
                 if (effort.Length > 0 && effort != "default") { psi.ArgumentList.Add("--effort"); psi.ArgumentList.Add(effort); }
-                if (milestone)
-                {
-                    // Engine work runs unattended for long stretches: give each run a budget.
-                    psi.ArgumentList.Add("--max-turns");
-                    psi.ArgumentList.Add(Math.Max(1, _s.MilestoneMaxTurns).ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    if (_s.MilestoneMaxUsd > 0)
-                    {
-                        psi.ArgumentList.Add("--max-budget-usd");
-                        psi.ArgumentList.Add(_s.MilestoneMaxUsd.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
-                    }
-                }
                 psi.ArgumentList.Add("--disallowedTools");
-                foreach (var d in CurrentScope == Scope.Game ? EngineDenies : UnityDenies) psi.ArgumentList.Add(d);
+                foreach (var d in CurrentScope switch
+                         {
+                             Scope.Game => EngineDenies,
+                             Scope.Tool => ToolDenies(psi.WorkingDirectory),
+                             _ => UnityDenies,
+                         })
+                    psi.ArgumentList.Add(d);
                 foreach (var dir in new[] { extraDir, Path.Combine(LauncherSettings.DataDir, "tracks") })
                     if (dir != null && Directory.Exists(dir)) { psi.ArgumentList.Add("--add-dir"); psi.ArgumentList.Add(dir); }
                 WireEngine(psi, psi.WorkingDirectory);
                 psi.ArgumentList.Add("--append-system-prompt");
-                psi.ArgumentList.Add((CurrentScope == Scope.Game ? GameScope : MilestoneScope()) + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
+                psi.ArgumentList.Add(CurrentScope switch { Scope.Game => GameScope, Scope.Tool => ToolScope, _ => MilestoneScope() } + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
                     ? " You are in PLAN mode: investigate (reading files and using the prisma tools is fine), then make your final message " +
                       "the plan itself - a short title line and numbered steps naming the files to change. The launcher shows that message as the plan " +
                       "with Approve buttons, so do not write plan files and do not ask how to submit it."
@@ -254,13 +292,6 @@ namespace CosmicShore.Launcher
                 if (!string.IsNullOrWhiteSpace(_s.AnthropicApiKey)) psi.Environment["ANTHROPIC_API_KEY"] = _s.AnthropicApiKey.Trim();
 
                 _proc = Process.Start(psi)!;
-                var proc = _proc;
-                if (milestone && _s.MilestoneMaxMinutes > 0)
-                    watchdog = new System.Threading.Timer(_ =>
-                    {
-                        _stopReason = $"at the {_s.MilestoneMaxMinutes}-minute limit";
-                        try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
-                    }, null, TimeSpan.FromMinutes(_s.MilestoneMaxMinutes), System.Threading.Timeout.InfiniteTimeSpan);
                 _proc.StandardInput.Write(text);
                 _proc.StandardInput.Close();
                 var err = _proc.StandardError.ReadToEndAsync();
@@ -282,7 +313,6 @@ namespace CosmicShore.Launcher
             catch (Exception ex) { Add(ChatRole.Error, ex.Message); exit = -1; }
             finally
             {
-                watchdog?.Dispose();
                 if (milestone && !_userStopped && (_stopReason != null || exit != 0))
                 {
                     string reason = _stopReason ?? (_lastError is { } le ? "after an error: " + (le.Length > 90 ? le[..89] + "..." : le) : $"after claude exited with {exit}");
@@ -388,8 +418,8 @@ namespace CosmicShore.Launcher
                                 ContextWindow = cw.GetInt64();
                     string sub = root.TryGetProperty("subtype", out var st) && st.ValueKind == JsonValueKind.String ? st.GetString() ?? "" : "";
                     // A run that ends on a limit says so in subtype (error_max_turns, error_max_budget_usd ...), with no result text.
-                    if (sub == "error_max_turns") _stopReason = $"at the {_s.MilestoneMaxTurns}-turn limit";
-                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = $"at the ${_s.MilestoneMaxUsd:0.##} budget";
+                    if (sub == "error_max_turns") _stopReason = "at the turn limit";
+                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = "at the budget limit";
                     else if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True)
                     {
                         string? text = root.TryGetProperty("result", out var res) ? res.ToString()

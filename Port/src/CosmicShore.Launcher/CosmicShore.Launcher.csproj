@@ -39,6 +39,7 @@
   </Target>
   <ItemGroup>
     <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
+    <Compile Include="../Shared/DccLocator.cs" Link="Shared/DccLocator.cs" />
   </ItemGroup>
 
   <!-- Upgrade path from before the engine was named Prisma: a launcher built then looks for

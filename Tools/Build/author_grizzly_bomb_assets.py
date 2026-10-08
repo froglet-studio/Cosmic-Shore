@@ -8,15 +8,22 @@ Run from the repo root:  python3 Tools/Build/author_grizzly_bomb_assets.py [--ch
 WHAT IT AUTHORS
   1. Assets/_Prefabs/Projectile/GrizzlyBomb.prefab - GrizzlyShell.prefab (the charged cannon's
      round, read off disk every run) plus the bomb's look:
+       - a SPIKE CROWN child ("Spikes": the core's fresnel material on a MeshFilter whose mesh
+         GrizzlyBombVisual generates at Awake - twelve cones, retracted in flight, snapped out
+         when the bomb is armed) so the bomb reads as a sea mine rather than a ball,
        - a camera-facing additive GLOW quad ("Halo", glow1_ADD) the visual breathes with,
-       - a short streak (TrailRenderer, Unity's Default-Line material so the per-shot danger
-         gradient needs no material instance),
+       - a camera-facing additive RING quad ("Ring", ring_ADD) that pings outward in flight and
+         collapses onto the bomb when it is armed,
+       - a plasma COMET (TrailRenderer on the Astro League ball's CosmicShore/BallTrail
+         material, tinted per shot through a property block),
+       - SWEPT VESSEL DETECTION on the Projectile, so a hull the bomb crosses between fixed
+         steps still stops it (GrizzlyTriggerBombExecutor freezes it on Projectile.VesselStruck),
        - its OWN impact container (GrizzlyBombProjectileImpactContainer, all four lists empty):
          a bomb touches nothing - it flies through prisms (lighting them, GrizzlyBombVisual),
          never stops on one, and goes off only on the trigger. GrizzlyShell's container is the
          Sparrow full-auto's (prism damage, a detonate end effect), which is what made the bombs
          carve and blow on contact,
-       - GrizzlyBombVisual on the root, wired to the core, the halo and the streak,
+       - GrizzlyBombVisual on the root, wired to the core, the spikes, the halo, the ring and the comet,
        - the core casts no shadow (a glowing bomb does not).
      The cannon keeps GrizzlyShell untouched: the bombs used to share it, which is why they
      looked like cannon shells.
@@ -54,6 +61,9 @@ G_CONTAINER = lib.guid("asset/GrizzlyBombProjectileImpactContainer")
 EXISTING = {
     "GrizzlyShell":     lib.existing_guid(SHELL),
     "Glow1Add":         "e653836c30661fe419b8992e230ca189",   # Epic Toon FX glow1_ADD (URP particles, additive)
+    "RingAdd":          "35b072e7a7dfe0f429bf5123cfc9a433",   # Epic Toon FX ring_ADD (same shader, a ring sprite)
+    "BallTrail":        "68ceadd522d84c4aa57c8edef427c129",   # Resources/BallTrail.mat (CosmicShore/BallTrail comet)
+    "CoreMaterial":     "4109669bc21cfa844bd19bbbb8697e6f",   # DangerProjectileMaterial (SpreadFresnelShader) - the shell's core
     "ShellContainer":   "c876b418c4188d546996eaabb11d0f26",   # SparrowFullAutoProjectileImpactContainer
     "ImpactContainerSO": lib.existing_guid(
         "Assets/_Scripts/Controller/ImpactEffects/Containers/ProjectileImpactorDataContainerSO.cs"),
@@ -78,6 +88,14 @@ B_HALO_GO = "5130000000000000010"
 B_HALO_TF = "5130000000000000011"
 B_HALO_MF = "5130000000000000012"
 B_HALO_MR = "5130000000000000013"
+B_SPIKES_GO = "5130000000000000020"
+B_SPIKES_TF = "5130000000000000021"
+B_SPIKES_MF = "5130000000000000022"
+B_SPIKES_MR = "5130000000000000023"
+B_RING_GO = "5130000000000000030"
+B_RING_TF = "5130000000000000031"
+B_RING_MF = "5130000000000000032"
+B_RING_MR = "5130000000000000033"
 
 # ── New objects on Grizzly.prefab ──
 GZ_ROOT_GO = "6417075533431866457"
@@ -88,7 +106,7 @@ GZ_POOL = "777000000000000410"
 GZ_FACTORY = "777000000000000411"
 GZ_GUN = "777000000000000412"
 
-TRAIL_SECONDS = 0.3
+TRAIL_SECONDS = 0.4
 
 
 def renderer_tail(materials_block: str, cast_shadows: int) -> str:
@@ -138,7 +156,7 @@ TrailRenderer:
   serializedVersion: 3
 {HEAD}  m_GameObject: {{fileID: {SHELL_ROOT_GO}}}
   m_Enabled: 1
-""" + renderer_tail("  m_Materials:\n  - {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}\n", 0) + f"""  m_Time: {TRAIL_SECONDS}
+""" + renderer_tail(f"  m_Materials:\n  - {{fileID: 2100000, guid: {EXISTING['BallTrail']}, type: 2}}\n", 0) + f"""  m_Time: {TRAIL_SECONDS}
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
@@ -220,16 +238,34 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   core: {{fileID: {SHELL_CORE_MR}}}
+  spikes: {{fileID: {B_SPIKES_TF}}}
+  spikesFilter: {{fileID: {B_SPIKES_MF}}}
+  spikesRenderer: {{fileID: {B_SPIKES_MR}}}
   halo: {{fileID: {B_HALO_TF}}}
   haloRenderer: {{fileID: {B_HALO_MR}}}
+  ring: {{fileID: {B_RING_TF}}}
+  ringRenderer: {{fileID: {B_RING_MR}}}
   trail: {{fileID: {B_TRAIL}}}
-  trailWidthFactor: 0.7
-  pulseHzAtLaunch: 2.5
-  pulseHzAtRest: 11
+  trailWidthFactor: 1.4
+  trailBraidSpread: 0.7
+  trailIntensity: 1.2
+  pulseHz: 4
   haloScale: 3
   pulseAmplitude: 0.22
+  spikesFlightScale: 0.8
+  spikesArmedScale: 1.05
+  spikesDeploySeconds: 0.22
+  spinDegreesPerSecond: 240
+  armedSpinDegreesPerSecond: 45
+  ringPingHz: 1.6
+  ringMinScale: 1.4
+  ringMaxScale: 7
+  armedRingHz: 3.5
+  armedRingMaxScale: 6
+  ringIntensity: 0.9
   armedHaloScale: 5
   armedPulseHz: 14
+  armFlash: 1.2
   rimIntensityPeak: 6
   rimIntensityTrough: 1.5
   sparkColor: {{r: 1, g: 0.92, b: 0.7, a: 1}}
@@ -239,41 +275,52 @@ MonoBehaviour:
   litWakeSeconds: 0.3
 """
 
-HALO = f"""--- !u!1 &{B_HALO_GO}
+def child(go: str, tf: str, mf: str, mr: str, name: str, scale: float, mesh: str, material_guid: str) -> str:
+    """A rendering child of the bomb's root: GameObject + Transform + MeshFilter + MeshRenderer."""
+    return f"""--- !u!1 &{go}
 GameObject:
 {HEAD}  serializedVersion: 6
   m_Component:
-  - component: {{fileID: {B_HALO_TF}}}
-  - component: {{fileID: {B_HALO_MF}}}
-  - component: {{fileID: {B_HALO_MR}}}
+  - component: {{fileID: {tf}}}
+  - component: {{fileID: {mf}}}
+  - component: {{fileID: {mr}}}
   m_Layer: 12
-  m_Name: Halo
+  m_Name: {name}
   m_TagString: Untagged
   m_Icon: {{fileID: 0}}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &{B_HALO_TF}
+--- !u!4 &{tf}
 Transform:
-{HEAD}  m_GameObject: {{fileID: {B_HALO_GO}}}
+{HEAD}  m_GameObject: {{fileID: {go}}}
   serializedVersion: 2
   m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
   m_LocalPosition: {{x: 0, y: 0, z: 0}}
-  m_LocalScale: {{x: 3, y: 3, z: 3}}
+  m_LocalScale: {{x: {scale:g}, y: {scale:g}, z: {scale:g}}}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {{fileID: {SHELL_ROOT_TF}}}
   m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
---- !u!33 &{B_HALO_MF}
+--- !u!33 &{mf}
 MeshFilter:
-{HEAD}  m_GameObject: {{fileID: {B_HALO_GO}}}
-  m_Mesh: {{fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}}
---- !u!23 &{B_HALO_MR}
+{HEAD}  m_GameObject: {{fileID: {go}}}
+  m_Mesh: {mesh}
+--- !u!23 &{mr}
 MeshRenderer:
-{HEAD}  m_GameObject: {{fileID: {B_HALO_GO}}}
+{HEAD}  m_GameObject: {{fileID: {go}}}
   m_Enabled: 1
-""" + renderer_tail(f"  m_Materials:\n  - {{fileID: 2100000, guid: {EXISTING['Glow1Add']}, type: 2}}\n", 0) \
-    + "  m_AdditionalVertexStreams: {fileID: 0}\n"
+""" + renderer_tail(f"  m_Materials:\n  - {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 0) \
+        + "  m_AdditionalVertexStreams: {fileID: 0}\n"
+
+
+QUAD = "{fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}"
+# The spike mesh is generated by GrizzlyBombVisual at Awake (shared by every bomb), so the
+# filter is authored empty - the prefab shows a bare core in the editor, the game a sea mine.
+SPIKES = child(B_SPIKES_GO, B_SPIKES_TF, B_SPIKES_MF, B_SPIKES_MR, "Spikes", 0.8, "{fileID: 0}",
+               EXISTING["CoreMaterial"])
+HALO = child(B_HALO_GO, B_HALO_TF, B_HALO_MF, B_HALO_MR, "Halo", 3, QUAD, EXISTING["Glow1Add"])
+RING = child(B_RING_GO, B_RING_TF, B_RING_MF, B_RING_MR, "Ring", 1.4, QUAD, EXISTING["RingAdd"])
 
 
 def build_bomb(shell: str) -> str:
@@ -290,10 +337,13 @@ def build_bomb(shell: str) -> str:
     bomb = bomb.replace(last_component, last_component +
                         f"  - component: {{fileID: {B_TRAIL}}}\n  - component: {{fileID: {B_VISUAL}}}\n", 1)
     bomb = bomb.replace("  m_Children: []\n  m_Father: {fileID: 0}\n",
-                        f"  m_Children:\n  - {{fileID: {B_HALO_TF}}}\n  m_Father: {{fileID: 0}}\n", 1)
+                        f"  m_Children:\n  - {{fileID: {B_SPIKES_TF}}}\n  - {{fileID: {B_HALO_TF}}}\n"
+                        f"  - {{fileID: {B_RING_TF}}}\n  m_Father: {{fileID: 0}}\n", 1)
     # The core: a glowing bomb casts no shadow.
     core = re.search(rf"--- !u!23 &{SHELL_CORE_MR}\nMeshRenderer:\n(?:(?!--- ).*\n)*", bomb).group(0)
     assert core.count("  m_CastShadows: 1\n") == 1, "core renderer shadow flag not found"
+    assert f"guid: {EXISTING['CoreMaterial']}, type: 2}}" in core, \
+        "GrizzlyShell's core no longer wears DangerProjectileMaterial - the spikes would not match it"
     bomb = bomb.replace(core, core.replace("  m_CastShadows: 1\n", "  m_CastShadows: 0\n"), 1)
     # Its own impact container: a bomb touches nothing (see the module doc).
     impactor = re.search(rf"--- !u!114 &{SHELL_IMPACTOR}\nMonoBehaviour:\n(?:(?!--- ).*\n)*", bomb).group(0)
@@ -304,9 +354,15 @@ def build_bomb(shell: str) -> str:
     bomb = bomb.replace(impactor, impactor.replace(
         shell_ref.group(0),
         f"  projectileImpactorDataContainer: {{fileID: 11400000, guid: {G_CONTAINER}, type: 2}}\n"), 1)
+    # Swept VESSEL detection: a hull the bomb crosses between fixed steps still stops it.
+    projectile = block(bomb, SHELL_PROJECTILE)
+    assert "sweptVesselDetection" not in projectile and projectile.count("  sweptPrismDetection: 1\n") == 1, \
+        "GrizzlyShell's Projectile detection flags changed - re-derive the bomb's"
+    bomb = bomb.replace(projectile, projectile.replace(
+        "  sweptPrismDetection: 1\n", "  sweptPrismDetection: 1\n  sweptVesselDetection: 1\n"), 1)
     if not bomb.endswith("\n"):
         bomb += "\n"
-    return bomb + TRAIL + VISUAL + HALO
+    return bomb + TRAIL + VISUAL + SPIKES + HALO + RING
 
 
 def block(text: str, file_id: str) -> str:
@@ -412,6 +468,14 @@ def ids_ok(name: str, text: str):
 
 ids_ok("GrizzlyBomb.prefab", bomb)
 ids_ok("Grizzly.prefab", grizzly)
+
+# The bomb stops on a hull only if the sweep sees the hull.
+if "  sweptVesselDetection: 1\n" not in block(bomb, SHELL_PROJECTILE):
+    errors.append("GrizzlyBomb's Projectile does not sweep for vessels - a fast bomb would fly through a hull")
+_projectile_src = g.read("Assets/_Scripts/Controller/Projectiles/Projectile.cs")
+for field in ("sweptPrismDetection", "sweptVesselDetection"):
+    if not re.search(rf"\b{field}\s*=", _projectile_src):
+        errors.append(f"Projectile has no serialized field '{field}'")
 
 # The visual's serialized field names must be the script's.
 _visual_src = g.read(VISUAL_CS)

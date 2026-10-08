@@ -505,7 +505,7 @@ What ships is a body plus a three-shell tone chain and a stationary rim, authore
 
 | slot | geometry | default / inactive material | band (s, falling) |
 |---|---|---|---|
-| 0 | **the whole omni model**, static | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
+| 0 | **the whole omni model** (`OmniCrystalBody.prefab`); its 30 rhombi flip, the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
 | 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`OmniShepardFresnelShader`) | 1.000 → 0.833 |
 | 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
 | 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
@@ -544,6 +544,22 @@ give the same bolt-to-edge proportion. Three decisions worth keeping:
 Not done, deliberately: the Scarab forge folds only the body (the overlay leaves with the crystal,
 like the triangle shells), and the toy builders show `crystalModels[0]` alone, so a toy omni has no
 discharge — same as it has no Shepard tone.
+
+**Time's rhombi carry the Time crystal's FLIP WAVE (2026-10-08).** The Time crystal's signature is 30
+golden rhombi turning 180° about a diagonal, ring by ring, from one vertex to the opposite one
+(`Docs/TIME_CRYSTAL.md`), so the omni's 30 rhombi — on the same two-fold axes, in the same 5 / 5 / 10
+/ 5 / 5 rings — now run exactly that wave, on the Time crystal's own generated profile. A plate can only
+turn on a bone, so slot 0 is `OmniCrystalBody.prefab`: a flat copy of the shared
+`TrucatedOctahedron.prefab` with the same ids and its MeshRenderer re-classed in place as a
+SkinnedMeshRenderer (the generator authors it). At runtime `CrystalFlipWave` (`skinRhombi` on, on the
+Crystal root) has `RhombusSkinBaker` clone the body mesh with skin data — the 30 rhombi on their own
+bones, everything else on the still root bone — and flips them. Same body, same materials, same
+renderer slot, so tint, team swap, fade and husk are untouched; the readers that care WHICH mesh is
+drawn (the Scarab/Squirrel forge, the hull fusion) resolve the twin back to the FBX mesh through
+`RhombusSkinBaker.SourceOf`, and a plate caught mid-flip settles onto the rest cage as a forge begins.
+Measured through the real C# on the shipped mesh, under all 48 axis conversions: exactly 30 plates
+skinned (720 of 2,880 split vertices), the still body never moves, the rest pose is the FBX body to
+1e-15. The omni's rhombi are 0.597 short:long, not golden; nothing in the wave reads the ratio.
 
 **Body and triangles are ONE colour system.** The triangles are on `OmniShepardFresnelShader`, the
 body's own family: the body's colour formula verbatim — `lerp(_BrightColor, _DarkColor, (1 + N·V)/2)`,

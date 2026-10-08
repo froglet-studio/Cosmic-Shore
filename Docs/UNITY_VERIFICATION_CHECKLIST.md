@@ -375,32 +375,54 @@ latter including `WormholeTollTests.cs`): 0 errors in project code — a compile
 
 ---
 
-### 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
+### 🔴 The omni crystal's 30 rhombi run the Time crystal's flip wave (`cece/zen-archimedes-ednrpo`, 2026-10-08) — NOT EDITOR-VERIFIED
 
-`CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
-place `TimeCrystalVertexHop` snaps the model child to a random rotation of the icosahedral group on
-the frame the 2 s flip-wave loop wraps, so the next wave starts from another of the 12 five-fold
-vertices while the crystal never visibly turns. The snap is only invisible because the shape at the
-loop seam is the fully symmetric bind pose — proved from the FBX by
-`python3 Tools/Build/measure_time_crystal_wave.py` (and `--self-test`). The symmetry frame is read at
-runtime from Unity's own import of the five first-ring bones, so no axis-conversion assumption ships.
+Slot 0 of `Crystal.prefab` is now `OmniCrystalBody.prefab` (a flat copy of `TrucatedOctahedron.prefab`
+with its MeshRenderer re-classed as a SkinnedMeshRenderer, authored by
+`author_omni_crystal_triangles.py`), and the Crystal root carries `CrystalFlipWave` with `skinRhombi` on:
+at runtime `RhombusSkinBaker` gives the 30 rhombi bones and the Time profile flips them. Out of editor: the
+real C# skinned the shipped omni mesh and ran the wave under all 48 axis conversions (30 plates, still body
+moves by 0, rest pose exact, rigid, seam exact); the synthetic baker test ran unmodified. Design:
+`Docs/TIME_CRYSTAL.md` §5, `Docs/PALETTE.md` §2.10.
 
-#### 1. Run the edit-mode suite's `TimeCrystalVertexHopTests`
+#### 1. Run `CrystalFlipWaveTests.OmniCrystalPrefab_TurnsItsThirtyRhombi_AndLeavesTheBodyStill`
 
-All six pass offline against faithful math stubs. The seventh,
-`CrystalTimePrefab_ResolvesItsWaveAxis_FromTheImportedRig`, only runs in the editor: it resolves the
-wave's start axis from the REAL imported rig. If it fails, nothing else below is worth checking.
+It is the first time Unity imports `OmniCrystalBody.prefab` (a hand-authored SkinnedMeshRenderer) - if the
+prefab shows a "Missing" component or the omni body is invisible, stop here.
 
-#### 2. Watch a Time crystal for ~10 s in any scene that spawns one
+#### 2. Look at an omni crystal for ~10 s (Skim Race, any arcade cell)
 
-- The crystal itself never turns: no tumble, and no jump/pop/twitch at any moment.
-- Each wave starts from a different vertex from the one before it (12 possible), never the same one twice in a row.
-- No `TimeCrystalVertexHop` error in the console.
+- The 30 rhombi flip in a wave from one vertex to the opposite one, a new vertex each loop; the boxes,
+  pentagons and triangles hold still; the Shepard triangles and the pentagon discharges look as before.
+- The omni appears at once on respawn (no new fade), wears its team colours on a team crystal, and bursts
+  into its husk on collect as before.
 
-#### 3. Capture one (Elemental capture / skim)
+#### 3. Forge one into a Scarab ball and into a Squirrel ring
 
-The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
-rotation; the hop only touches the model child).
+The forge still folds the whole body onto the target. A rhombus caught mid-flip settles flat as the fold
+begins (it is read at rest) - check that this reads as part of the fold, not a pop.
+
+---
+
+### 🟡 The Time crystal's flip wave is procedural and starts from a new vertex every loop (`cece/zen-archimedes-ednrpo`, 2026-10-08) — LOOK CONFIRMED IN GAME, TESTS NOT YET RUN
+
+Supersedes the vertex-hop entry (`cece/eager-lovelace-i4o8jk`) that stood here. `CrystalTime.prefab` (and
+its variant `CrystalTimeDandruff`) no longer has an Animator: the model's Animator is a removed component,
+`CrystalTimeAnimController` is deleted, and `CrystalFlipWave` poses the 30 plate bones from
+`TimeCrystalFlipWaveProfile.asset` (generated from the old take by
+`python3 Tools/Build/author_time_crystal_flip_wave.py`). `TimeCrystalExport.fbx` is now **Read/Write
+enabled**. Out of editor: the shipped C# compiled with Roslyn and executed against the FBX (0.42 % of the
+radius, 48/48 axis conversions, negative controls), 11 of the 13 edit-mode tests executed unmodified.
+**2026-10-08: inspected in game by the designer - "looks great".** Design record: `Docs/TIME_CRYSTAL.md`.
+
+#### 1. Run `CrystalFlipWaveTests` in the edit-mode suite (still open)
+
+`CrystalTimePrefab_IsWiredForTheProceduralWave` and **`ProceduralWave_MatchesTheImportedTake_FrameByFrame`**
+(FBX parity - prints the worst error; expect about 0.4–0.9 % of the radius) only run in the Editor.
+
+#### 2. Profile a crowd (still open)
+
+`FrogletTools > Benchmarks > Crystal Flip Wave Benchmark` - see `Docs/TIME_CRYSTAL.md` §7.
 
 ---
 
@@ -510,6 +532,51 @@ gates; both generators' `--check` green; `render_card_backgrounds --check` green
    near-hairpins. AI Grizzlies still complete laps at the new speeds.
 9. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still end and return to their
    pools exactly as before (`HoldAtFlightEnd` defaults off).
+
+---
+
+### 🔴 Grizzly trigger bombs, fourth pass — constant velocity, unlimited range, stop on a hull; sea-mine look (`cece/funny-lamport-bkzvtc`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask (said of "the rhino's bombs" — the trigger bombs are the Grizzly's): *"the bombs are
+stopping due to a friction of some sort. they should continue with constant velocity and no
+limitations on distance until frozen by use of the trigger or hitting another vessel. make the bomb
+look better too."* Full doc: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What changed:
+- **Shared code (`Projectile.cs`, `ProjectileImpactor.cs`):** `Projectile.HoldAtFlightEnd` is
+  replaced by `Projectile.Cruises` — no `cos(πt/2T)` ease-out and no lifetime (default false, reset
+  per flight; the bomb was its only user). New per-flight `VesselStruck` event, raised by the
+  impactor for every hull before the domain rule. `Freeze()` now latches `FlightHalted`, so a freeze
+  from inside a sweep stops at the contact point (the cannon's freeze is unaffected — its loop is
+  already cancelled). The move loop clamps `ApplyFlightGrowth`'s flight fraction to 1 (a cruising round outlives its nominal lifetime).
+- **Bombs:** fired cruising; `GrizzlyTriggerBombConfig.projectileTime` retired (asset key removed);
+  any vessel but the firer's own stops the bomb (Frozen, not detonated); `sweptVesselDetection` on.
+- **Look (`GrizzlyBombVisual` + generator):** a tumbling 12-spike crown (generated mesh, radial
+  normals so the core shader's `_Spread` push keeps it seated) that snaps out when armed; a ping
+  ring that collapses inward when armed; the comet streak now uses `Resources/BallTrail.mat`
+  (`CosmicShore/BallTrail`) tinted per shot; an arming flash. Throw-based pulse rates retired.
+
+What ran out of editor: `unity_refcompile` **player** and **editor** configs — RESULT OK, no errors
+in project code (only the three unfetchable service packages' errors, none in changed files; the
+new `GrizzlyBombSpikeMeshTests` were gated and compiled); `author_grizzly_bomb_assets.py --check`
+(watched failing on the stale prefab before the re-run) and `author_grizzly_time_assets.py --check`
+green; `check_abstract_member_implementations`, `check_conditional_compilation`,
+`check_enum_member_references`, `check_switch_label_collisions`, `check_self_referential_locals`,
+`check_console_logging`, `check_using_directives`, `check_elemental_floats` green. Nothing was RUN:
+no edit-mode tests executed, no play mode.
+
+1. **Compiles; edit-mode suite green** — `GrizzlyTriggerBombTests`, `GrizzlyBombSpikeMeshTests`.
+   No missing scripts on `GrizzlyBomb.prefab`; no pink comet or ring (missing shader).
+2. **No friction** — an unfrozen bomb holds its launch speed and keeps going; 10 s later it is still
+   flying and the trigger still freezes it.
+3. **Stops on a vessel** — fired into an AI's hull it stops AT the hull (not past it), armed, and
+   does not go off; pull + release blows it. The firing Grizzly's own hull never stops it.
+4. **Look** — in flight: a small tumbling spiked mine, ring pings, braided plasma comet in the
+   bomb's danger shade. Frozen: spikes snap out, flash, wide strobing halo, ring collapsing inward.
+5. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still ease out and end exactly
+   as before (`Cruises` defaults off); the cannon's own freeze-and-detonate still works.
+6. **Tuning** — the look's dials are on `GrizzlyBomb.prefab`'s `GrizzlyBombVisual`, authored by
+   `Tools/Build/author_grizzly_bomb_assets.py` (edit there, re-run, `--check`).
 
 ---
 

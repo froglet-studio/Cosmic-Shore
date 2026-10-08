@@ -43,6 +43,10 @@ namespace CosmicShore.Gameplay
                     // here), which at 375 u/s is a 15 u stride across a ~6 u hull window.
                     if (Projectile.UsesSweptVesselDetection && !IsSweepDispatch)
                         break;
+                    // Every hull, before the domain rule below: that rule is about what the
+                    // EFFECTS may hit, and a listener (the Grizzly bomb stopping on a hull) filters
+                    // for itself. A listener that freezes the round halts the rest of the sweep.
+                    Projectile.RaiseVesselStruck(shipImpactee);
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Domain))
                         break;
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;

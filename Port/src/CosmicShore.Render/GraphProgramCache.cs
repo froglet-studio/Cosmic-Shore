@@ -419,7 +419,7 @@ uniform int uVertexColor;
                     case UniformType.FloatVec2:
                     case UniformType.FloatVec3:
                     case UniformType.FloatVec4:
-                        if (u.Size > 1) { UploadArray(u); break; }
+                        if (u.Size > 1) { UploadArray(u, m, block); break; }
                         var v = VectorFor(u.Id, m, block);
                         if (u.Type == UniformType.FloatVec2) _gl.Uniform2(u.Loc, v.x, v.y);
                         else if (u.Type == UniformType.FloatVec3) _gl.Uniform3(u.Loc, v.x, v.y, v.z);
@@ -444,11 +444,12 @@ uniform int uVertexColor;
             _gl.BindTexture(TextureTarget.Texture2D, handle);
         }
 
-        unsafe void UploadArray(Uniform u)
+        /// <summary>A vec4 array: the renderer's block, else the material, else the global (a forcefield's impacts ride the block).</summary>
+        unsafe void UploadArray(Uniform u, Material m, MaterialPropertyBlock block)
         {
             int n = Math.Min(u.Size, _scratch.Length / 4);
             Array.Clear(_scratch, 0, n * 4);
-            var arr = Shader.GetGlobalVectorArray(u.Id);
+            var arr = block?.GetVectorArray(u.Id) ?? m?.GetVectorArray(u.Id) ?? Shader.GetGlobalVectorArray(u.Id);
             if (arr != null)
                 for (int i = 0; i < arr.Length && i < n; i++)
                 { _scratch[i * 4] = arr[i].x; _scratch[i * 4 + 1] = arr[i].y; _scratch[i * 4 + 2] = arr[i].z; _scratch[i * 4 + 3] = arr[i].w; }

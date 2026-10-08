@@ -19,4 +19,10 @@ namespace CosmicShore.Engine.Rendering
         SrcAlphaSaturate = 9,
         OneMinusSrcAlpha = 10,
     }
+
+    /// <summary>Original: UnityEngine.Rendering.CullMode - written into materials' _Cull (values frozen).</summary>
+    public enum CullMode { Off = 0, Front = 1, Back = 2 }
+
+    /// <summary>Original: UnityEngine.Rendering.RenderQueue - the standard queue values (frozen).</summary>
+    public enum RenderQueue { Background = 1000, Geometry = 2000, AlphaTest = 2450, GeometryLast = 2500, Transparent = 3000, Overlay = 4000 }
 }

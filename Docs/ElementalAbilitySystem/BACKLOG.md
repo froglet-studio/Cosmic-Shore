@@ -609,3 +609,30 @@ and the `SkimmerImpactor` whose `skimmer:` field points at it (recorded in
   was controlled against `Skimmer.cs.meta`, which it finds). Every omni-crystal impact on a Grizzly
   walks a null slot. Also: `vesselElementalCrystalEffects` is a serialized key on the Grizzly and
   Sparrow containers that no C# reads (`git grep -n vesselElementalCrystalEffects -- '*.cs'` → empty).
+
+## From the Grizzly trigger-bomb cruise branch (`cece/funny-lamport-bkzvtc`, 2026-10-08)
+
+Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
+
+- **[report, needs a look decision] Every `DangerProjectileMaterial` body renders one world unit
+  fatter than its authored scale.** Measured 2026-10-08: `grep -c _Spread
+  Assets/_Graphics/Materials/DangerProjectileMaterial.mat` → 0, so `Custom/SpreadFresnelShader` uses
+  its property default `(1,1,1)` and pushes every vertex a constant world unit along its normal; no
+  projectile code writes `_Spread` (`grep -rn '"_Spread"\|SpreadId' Assets/_Scripts/Controller/Projectiles`
+  → nothing). Seven prefabs/assets wear that material (`grep -rl 4109669bc21cfa844bd19bbbb8697e6f
+  Assets --include=*.prefab --include=*.asset`), among them every Grizzly round. The trigger bomb's
+  size table (2.5–5) is therefore 4.5–7 on screen. Nothing chose this; whether to author `_Spread: 0`
+  on the material (shrinks every round that wears it) or keep the look is a design call. If zeroed,
+  the bomb's spike crown still works — its radial normals are only REQUIRED while the push exists
+  (vessel skill rule 41).
+- **[debt created] `GrizzlyTriggerBombExecutor.NominalFlightSeconds` exists only because
+  `Gun.FireGun` demands a lifetime, and `Projectile.Cruises` must be set AFTER the fire call** (the
+  move loop's first step runs inside it). One user today (`grep -rn "Cruises = true" Assets/_Scripts`
+  → 1). If a second cruising round appears, give `FireGun` a `cruise` argument so `Initialize` sets
+  the flag before the first step, and retire both the constant and the ordering rule.
+- **[report, needs MPPM] The hull stop is decided per peer.** `Projectile.VesselStruck` is raised by
+  each peer's own sweep of its own bomb copy against its own (replicated, lagged) hull copies, so a
+  bomb that only GRAZES a rival can stop on one peer and fly on on another; nothing replicates the
+  stop. Unmeasured — what to measure: two MPPM clients, fire bombs past a rival at decreasing miss
+  distances, and record the distance below which the peers disagree. If that band is wide enough to
+  see, route the stop through the owner (an RPC carrying the stop position, as the press replay does).

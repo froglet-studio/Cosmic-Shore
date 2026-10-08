@@ -102,9 +102,18 @@ namespace CosmicShore.Engine
         public static int vSyncCount;
     }
 
+    /// <summary>Original: UnityEngine.Rendering.CopyTextureSupport (flags).</summary>
+    [Flags]
+    public enum CopyTextureSupport { None = 0, Basic = 1, Copy3D = 2, DifferentTypes = 4, TextureToRT = 8, RTToTexture = 16 }
+
     public static partial class SystemInfo
     {
         public static DeviceType deviceType = DeviceType.Desktop;
+
+        /// <summary>What <see cref="Graphics.CopyTexture(Texture, int, int, Texture, int, int)"/> can do: everything once a backend provides the copy, None until then.</summary>
+        public static CopyTextureSupport copyTextureSupport => Graphics.CopyTextureHook != null
+            ? CopyTextureSupport.Basic | CopyTextureSupport.Copy3D | CopyTextureSupport.DifferentTypes | CopyTextureSupport.TextureToRT | CopyTextureSupport.RTToTexture
+            : CopyTextureSupport.None;
 
         /// <summary>
         /// Original contract: a stable per-device id. Derived from the machine +
