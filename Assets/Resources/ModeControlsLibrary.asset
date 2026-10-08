@@ -42,11 +42,6 @@ MonoBehaviour:
     ShowAbilityRows: 1
     Abilities: 0100000002000000
     Vessel: -1
-  - Mode: 29
-    Rows: []
-    ShowAbilityRows: 1
-    Abilities: 
-    Vessel: -1
   - Mode: 30
     Rows: []
     ShowAbilityRows: 1
