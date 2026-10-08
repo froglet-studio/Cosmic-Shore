@@ -886,7 +886,16 @@ namespace CosmicShore.Core
 
             try
             {
-                await repo.SaveAsync();
+                // SaveAsync reports a failed upload by returning false - it does not throw - so the
+                // catch below never saw it, nothing marked the repo dirty, and a quest claim or an
+                // unlock saved only through this path was lost to the older cloud record on the
+                // next online launch.
+                if (!await repo.SaveAsync())
+                {
+                    CSDebug.LogWarning("[GameModeProgressionService] Immediate save did not reach the cloud. Queuing debounced save.");
+                    ScheduleDebouncedSave();
+                    return;
+                }
                 CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameModeProgressionService] Saved progression data immediately.");
             }
             catch (Exception e)
