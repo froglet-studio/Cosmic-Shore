@@ -368,6 +368,12 @@ namespace CosmicShore.Gameplay
         {
             var binding = new Binding { Spec = spec, Tool = this };
             var labelText = Label(parent, spec.Label, new Vector2(indent, y), LabelW, RowH, 12, LabelColor);
+            // The longest names ("Influence Acceleration Floor", ~190 px at 12 pt) outrun the column:
+            // shrink to fit rather than wrap into the next row.
+            labelText.resizeTextForBestFit = true;
+            labelText.resizeTextMinSize = 9;
+            labelText.resizeTextMaxSize = 12;
+            labelText.verticalOverflow = VerticalWrapMode.Truncate;
             var hover = labelText.gameObject.AddComponent<HoverHint>();
             hover.Init(this, spec);
             labelText.raycastTarget = true;
