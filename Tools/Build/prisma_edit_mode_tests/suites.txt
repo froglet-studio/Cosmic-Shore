@@ -1,0 +1,39 @@
+# Test files run by default: the multiplayer / party / presence / bootstrap / UGS suites plus the
+# shared GameData, scoring and lobby files they lean on. One path per line, relative to the repo root.
+# SceneFlowIntegrationTests and ModePreviewSpawnFloorTests are left out: they need UnityEditor APIs
+# (scene and prefab editing) that the shim does not provide.
+Assets/_Scripts/Controller/Multiplayer/Tests/Editor/PartyAcceptFlowPlayModeTests.cs
+Assets/_Scripts/Controller/Multiplayer/Tests/Editor/ServerPlayerVesselInitializerWithAITests.cs
+Assets/_Scripts/System/Bootstrap/Tests/Editor/ApplicationLifecycleManagerTests.cs
+Assets/_Scripts/System/Bootstrap/Tests/Editor/ApplicationStateMachineTests.cs
+Assets/_Scripts/System/Bootstrap/Tests/Editor/BootstrapConfigSOTests.cs
+Assets/_Scripts/System/Bootstrap/Tests/Editor/BootstrapControllerTests.cs
+Assets/_Scripts/System/Bootstrap/Tests/Editor/EditModeLifecycle.cs
+Assets/_Scripts/System/Bootstrap/Tests/Editor/SceneTransitionManagerTests.cs
+Assets/_Scripts/Tests/Editor/AnalyticsWaveCohortTests.cs
+Assets/_Scripts/Tests/Editor/ArcadeLobbySnapshotTests.cs
+Assets/_Scripts/Tests/Editor/DisconnectNoticeTests.cs
+Assets/_Scripts/Tests/Editor/EcologyNetworkAuthorityTests.cs
+Assets/_Scripts/Tests/Editor/ElementalTransferRouteTests.cs
+Assets/_Scripts/Tests/Editor/GameDataSOTests.cs
+Assets/_Scripts/Tests/Editor/HostConnectionDataSOTests.cs
+Assets/_Scripts/Tests/Editor/IRoundStatsCleanupTests.cs
+Assets/_Scripts/Tests/Editor/InputDeviceUnificationTests.cs
+Assets/_Scripts/Tests/Editor/JoinTargetValidatorTests.cs
+Assets/_Scripts/Tests/Editor/MaelstromStateMachineTests.cs
+Assets/_Scripts/Tests/Editor/MenuFreestyleToggleTests.cs
+Assets/_Scripts/Tests/Editor/NetworkExplodeParamsTests.cs
+Assets/_Scripts/Tests/Editor/PartyInviteControllerTests.cs
+Assets/_Scripts/Tests/Editor/PartyInviteDataTests.cs
+Assets/_Scripts/Tests/Editor/PartyInviteSystemTests.cs
+Assets/_Scripts/Tests/Editor/PartyPlayerDataTests.cs
+Assets/_Scripts/Tests/Editor/PartyRosterTests.cs
+Assets/_Scripts/Tests/Editor/RaceRankToastDriverTests.cs
+Assets/_Scripts/Tests/Editor/RegattaTeamPlayTests.cs
+Assets/_Scripts/Tests/Editor/ScoringRuleFieldedDomainTests.cs
+Assets/_Scripts/Tests/Editor/SliceArenaGeometryTests.cs
+Assets/_Scripts/Tests/Editor/SparrowCombatTierTests.cs
+Assets/_Scripts/Tests/Editor/SparrowMissileFuzeTests.cs
+Assets/_Scripts/Tests/Editor/SpectatorSessionTests.cs
+Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs
+Assets/_Scripts/Tests/Editor/WeeklyChallengeLeaderboardTests.cs

@@ -1846,3 +1846,46 @@ card with one guest flying and one guest cold-joining, host backs out and picks 
 - `RepublishHumanCount` reads the connected clients inside `OnClientDisconnectCallback` and so
   inherits whatever that callback's ordering guarantees are — the same dependency
   `ExpectedHumanCount` already had. A transient over-count costs one AI chip for a tick.
+
+## B25 — Nothing enforces the four-player party size: two simultaneous Joins on a 3/4 party seat a fifth 🔴 (diagnosed 2026-10-08 from code; not reproduced; not fixed)
+
+**Shape.** A party has two sizes (`HostConnectionDataSO`): `partyDisplaySlots` = **4**, the size
+players see and the game's rule, and `maxPartySlots` = **6**, the transport capacity with spare
+seats so a flickering double-count in the polled roster cannot refuse the fourth member (the
+header comment on the field). Every check of the GAME's size runs on the **joining or inviting
+client**, against **published, polled** data:
+
+| Where | What it checks | Against |
+|---|---|---|
+| `FriendsListPanel` (Invite button) | `HasOpenDisplaySlots` (4) | the local roster |
+| `JoinTargetValidator` (Accept / Join / Spectate pre-flight, review Phase 1c) | target's `partyCount >= partyMax` | the target's **presence-lobby properties**, refreshed on the presence poll (seconds old) |
+| `HostConnectionService.SendInviteAsync` backstop (`:639`) | `HasOpenSlots` | **6**, the transport size |
+| The party session itself | `CreateAsync(connectionData.MaxPartySlots)` | **6** |
+
+Nothing on the **host** compares the live member count with `PartyDisplaySlots` after a join.
+
+**Failure.** Party at 3/4. Two players press **Join** on it within one presence-refresh window.
+Both pre-flights read `3/4` and pass; both `JoinSessionByIdAsync` calls succeed because the
+session holds 6; the party is 5/4. What follows is unspecified: the arcade lobby draws four slots,
+`PARTY_MAX_KEY` publishes 4 while the count says 5, and a 4-seat card launches with five humans.
+The same window lets an invite to a full party out of the host (`:639` checks 6), though there the
+acceptor's pre-flight usually catches it with "…party is full".
+
+**Why it has not been seen.** It needs two joins inside one refresh interval on a party that is
+exactly one short; MPPM runs so far have used two or three instances. The hardening plan's L1 test
+"two guests join-direct simultaneously → both seated" (HARDENING_PLAN_STEAM_LAUNCH.md §5.1 #2) is
+written for a party with room for both, and **passes on exactly the case that breaks**.
+
+**Fix (proposed, not applied - LOCKED party system, needs the owner's call).**
+1. Host-authoritative admission: when the host's reconcile sees `PartyMembers.Count >
+   PartyDisplaySlots`, it removes the most recent joiner(s) (`RemovePlayerAsync`, the kick path at
+   `HostConnectionService.cs:1090`) with a "party is full" reason the joiner's bounce path already
+   toasts. Keeps the transport headroom for flicker; makes 4 a rule instead of a hint.
+2. `SendInviteAsync`'s backstop gates on `HasOpenDisplaySlots`, the property its own doc comment
+   names as the one "an invite affordance must gate on".
+3. L1 tests: "party at 3/4, two guests join simultaneously → exactly one seated, the other toasted
+   'party is full' and back in its own menu"; and the existing 4/4 variant.
+
+**Evidence.** Read from code on `Ys-bleeding-edge` 280c0475: the call-site table above
+(`grep -rn 'HasOpenSlots\|HasOpenDisplaySlots\|PartyDisplaySlots\|MaxPartySlots' Assets/_Scripts`).
+The capacity split itself is pinned by `PartyInviteSystemTests.FourMembers_PartyIsFullByTheGameRule_TransportKeepsHeadroom`.
