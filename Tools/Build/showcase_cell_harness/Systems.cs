@@ -1046,6 +1046,18 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
                 f.SetValue(P, reg);
                 continue;
             }
+            if (f.FieldType == typeof(SubstrateSiegeParams))
+            {
+                // the siege's tunables (Docs/SUBSTRATE_FAUNA.md §10), read back from the asset like the regimes
+                var sg = ((SubstrateSiegeParams)f.GetValue(P)!).Clone();
+                foreach (var g in typeof(SubstrateSiegeParams).GetFields())
+                {
+                    if (!v.TryGetProperty(g.Name, out var gv)) throw new Exception($"substrate {key}: {f.Name}.{g.Name} missing");
+                    g.SetValue(sg, ToField(g.FieldType, gv));
+                }
+                f.SetValue(P, sg);
+                continue;
+            }
             f.SetValue(P, ToField(f.FieldType, v));
         }
         foreach (var prop in sp.EnumerateObject())

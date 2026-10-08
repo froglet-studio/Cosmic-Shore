@@ -10,100 +10,100 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 616507327e6850e772f83e235ef5507f, type: 3}
-  m_Name: Substrate Locust Species
+  m_Name: Substrate Siege Species
   m_EditorClassIdentifier:
   species:
-    Name: locust
-    N0: 40
-    Capacity: 360
+    Name: siege
+    N0: 150
+    Capacity: 160
     Solitary:
-      Speed: 31.4
-      Burst: 2.44
-      Turn: 2.2
-      Accel: 50
+      Speed: 120
+      Burst: 1
+      Turn: 3
+      Accel: 120
       WFood: 1
-      WCoh: 0.05
-      WAlign: 0.05
-      WSep: 1.4
-      WWander: 0.5
-      WCurious: 2.43
-      Comfort: 68.6
-      WFlee: 1.4
+      WCoh: 0.3
+      WAlign: 0.3
+      WSep: 0.6
+      WWander: 0.3
+      WCurious: 0
+      Comfort: 120
+      WFlee: 1
       WHunt: 0
       WRing: 0
       RingR: 90
       WTrail: 0
-      WAlarm: 0.6
-      WThreat: 0.3
+      WAlarm: 0.5
+      WThreat: 0.5
       WHome: 0
-      Crowd: 0.5
-      GaitHz: 2.15
-      GaitAmp: 27.6
-      Aspect: 1.06
-      Size: 2.2
+      Crowd: 1
+      GaitHz: 0
+      GaitAmp: 0
+      Aspect: 1.6
+      Size: 3.4
       Trample: 0
     Gregarious:
-      Speed: 95
-      Burst: 1.5
-      Turn: 4
-      Accel: 160
-      WFood: 0.6
-      WCoh: 0.9
-      WAlign: 1.2
+      Speed: 120
+      Burst: 1
+      Turn: 3
+      Accel: 120
+      WFood: 1
+      WCoh: 0.3
+      WAlign: 0.3
       WSep: 0.6
-      WWander: 0.08
+      WWander: 0.3
       WCurious: 0
-      Comfort: 90
-      WFlee: 0
-      WHunt: 1.8
+      Comfort: 120
+      WFlee: 1
+      WHunt: 0
       WRing: 0
       RingR: 90
       WTrail: 0
-      WAlarm: 0
-      WThreat: 0
+      WAlarm: 0.5
+      WThreat: 0.5
       WHome: 0
-      Crowd: 2
+      Crowd: 1
       GaitHz: 0
       GaitAmp: 0
-      Aspect: 2.2
-      Size: 3.2
+      Aspect: 1.6
+      Size: 4.4
       Trample: 0
     NbrR: 30
-    DensNorm: 5
-    Metabolism: 0.02
-    EatR: 7
-    EatHunger: 0.15
+    DensNorm: 6
+    Metabolism: 0.0015
+    EatR: 8
+    EatHunger: 0.25
     HungerPerVol: 0.02
-    FearGain: 1.45
+    FearGain: 1
     AggrBase: 0
-    FearDecay: 1.27
-    Sense: 220
-    CuriosityRate: 0.33
-    QUp: 0.55
-    QDown: 0.3
-    QWidth: 0.06
-    QRate: 0.5
-    QContagion: 0.6
+    FearDecay: 0.5
+    Sense: 250
+    CuriosityRate: 0.3
+    QUp: 9
+    QDown: 9
+    QWidth: 0.05
+    QRate: 0.4
+    QContagion: 0.5
     QWDens: 1
     QWProx: 0
     QWAlarm: 0
     QHunger: 1
-    BiteR: 8
-    BiteCool: 1.2
-    StarveS: 30
-    BirthStock: 90
+    BiteR: 10
+    BiteCool: 1.5
+    StarveS: 120
+    BirthStock: 60
     Stock0: 25
     GrowS: 2
     DepositThreat: 0
-    DepositAlarm: 0.3
+    DepositAlarm: 0.5
     NDirs: 18
     FracK: 4
     RingRoles: 0
     SpacingSpring: 1
     Momentum: 0.15
     IntentBlend: 0
-    AttnR: 150
-    AttnUrg: 0.6
+    AttnR: 0
+    AttnUrg: 1
     QWClose: 0
     CloseR: 350
     StaminaS: 0
@@ -122,7 +122,7 @@ MonoBehaviour:
     PreyName: ''
     WPrey: 0
     PreySense: 150
-    ScentDeposit: 0.2
+    ScentDeposit: 0
     DangerPhase: 0.5
     AttachRate: 0.5
     AttachOnH: 0.3
@@ -174,7 +174,7 @@ MonoBehaviour:
     RingHoldSeconds: 0
     StrikeWindupS: 0
     Siege:
-      Enabled: 0
+      Enabled: 1
       Stalk: 430
       Detect: 640
       Cruise: 120
@@ -218,8 +218,8 @@ MonoBehaviour:
       FoodPull: 150
       Leash: 300
   seedCount: 0
-  seedSpread: 80
-  seedAtFlora: 1
+  seedSpread: 70
+  seedAtFlora: 0
   seedClusters: 0
   sectorAxis: {x: 1, y: 0, z: 0}
   sectorHalfAngle: 0
@@ -230,13 +230,13 @@ MonoBehaviour:
   heartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
   heartPrismGap: 0.6
   bodyThin: 0.6
-  engageRadius: 140
-  maxProxies: 8
+  engageRadius: 200
+  maxProxies: 4
   proxyLingerSeconds: 2
-  maxSpawnsPerFrame: 8
+  maxSpawnsPerFrame: 4
   vesselRadius: 6
   biteRadius: 24
-  maxBitesPerTick: 16
+  maxBitesPerTick: 6
   cellCapacity: 1024
   simulateOffMainThread: 1
   extinctLingerSeconds: 8

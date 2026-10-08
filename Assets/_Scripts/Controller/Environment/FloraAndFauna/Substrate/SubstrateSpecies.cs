@@ -205,10 +205,16 @@ namespace CosmicShore.Gameplay
         /// that species' wind-up). 0 = off, the research step bit for bit.</summary>
         public float StrikeWindupS = 0f;
 
+        /// <summary>The SIEGE (Docs/SUBSTRATE_FAUNA.md §10): with <see cref="SubstrateSiegeParams.Enabled"/> the
+        /// population is moved by the siege phase machine (ROAM, GATHER, CLOSE, HOLD, DIVE, SCATTER) instead of the
+        /// agent kernel. Off for every other species.</summary>
+        public SubstrateSiegeParams Siege = new SubstrateSiegeParams();
+
         public SubstrateSpeciesParams Clone()
         {
             var c = (SubstrateSpeciesParams)MemberwiseClone();
             c.BodySlots = BodySlots != null ? (float[])BodySlots.Clone() : new float[0];
+            c.Siege = Siege != null ? Siege.Clone() : new SubstrateSiegeParams();
             return c;
         }
 
@@ -582,7 +588,37 @@ namespace CosmicShore.Gameplay
             ("leviathan", "danger_attached", "1: an assembled member burns to touch (bestiary leviathan)"),
             ("leviathan", "body_curious", "0.8: the body turns toward a pilot inside 700 u (bestiary curiosity)"),
             ("leviathan", "gulp_r", "220: a pilot ahead of the mouth inside 220 u (cos > 0.7) gets the gulp: jaws flare 1.2 s, surge 115 u/s for 1.6 s, rest 4 s (bestiary)"),
+
+            // ── the siege (lab flight/src/70_siege.js; the phase machine's numbers are the lab's, asserted by group siege) ──
+            ("siege", "siege.enabled", "1: moved by the siege phase machine, not the agent kernel (Docs/SUBSTRATE_FAUNA.md §10)"),
+            ("siege", "n0", "150: the lab's N"),
+            ("siege", "capacity", "160: room for the fed to split while the rammed regrow"),
+            ("siege", "solitary.size", "3.4: the lab's SIZE (also the bite reach: pilot radius + size + 4)"),
+            ("siege", "solitary.aspect", "1.6: the lab's aspect"),
+            ("siege", "solitary.speed", "120: the lab's CRUISE (a seed's first drift)"),
+            ("siege", "gregarious.size", "4.4: the glow - the drawn body swells 1.3x as intent rises to 1 (the lab colours it violet to white-hot)"),
+            ("siege", "gregarious.aspect", "1.6: the lab's aspect"),
+            ("siege", "gregarious.speed", "120"),
+            ("siege", "metabolism", "0.0015: the lab siege never ate; 150 mouths on the cell's scarce flora (SUBSTRATE_FAUNA.md §9.9 C4) need a slow burn - ~13 min from fed to starving"),
+            ("siege", "starve_s", "120: a lurker's reserve"),
         };
+
+        /// <summary>The SIEGE (lab flight/src/70_siege.js; Docs/SUBSTRATE_FAUNA.md §10): a cloud of 150 that stalks the
+        /// nearest pilot, surrounds it on a shell with an open iris, closes, holds, and dives all at once. Every number
+        /// of its phase machine is the lab's (<see cref="SubstrateSiegeParams"/> defaults).</summary>
+        public static SubstrateSpeciesParams GameSiege()
+        {
+            var p = SiegeBase();
+            p.Siege.Enabled = true;
+            p.N0 = 150; p.Capacity = 160;
+            p.Solitary.Size = 3.4f; p.Solitary.Aspect = 1.6f; p.Solitary.Speed = 120f;
+            p.Gregarious.Size = 4.4f; p.Gregarious.Aspect = 1.6f; p.Gregarious.Speed = 120f;
+            p.Metabolism = 0.0015f; p.StarveS = 120f;
+            return p;
+        }
+
+        /// <summary>The siege's base: the substrate defaults (it has no research substrate set).</summary>
+        public static SubstrateSpeciesParams SiegeBase() => new SubstrateSpeciesParams { Name = "siege" };
 
         public static SubstrateSpeciesParams GameLocust()
         {
@@ -677,7 +713,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Every species the game ships, in population order.</summary>
-        public static readonly string[] Names = { "locust", "pack", "lurker", "stampede", "mobber", "leech", "leviathan" };
+        public static readonly string[] Names = { "locust", "pack", "lurker", "stampede", "mobber", "leech", "leviathan", "siege" };
 
         /// <summary>Species with a research SUBSTRATE set (species.py) - asserted number for number (harness F).</summary>
         public static readonly string[] ResearchNames = { "locust", "pack", "lurker", "stampede", "leviathan" };
@@ -725,6 +761,9 @@ namespace CosmicShore.Gameplay
             p.Visit((f, v) => d[f] = v); p.VisitPrimitives((f, v) => d[f] = v);
             p.Solitary.Visit((f, v) => d["solitary." + f] = v); p.Gregarious.Visit((f, v) => d["gregarious." + f] = v);
             d["dive_period"] = p.RampS + p.StaminaS + p.RestS;
+            var sg = p.Siege ?? new SubstrateSiegeParams();
+            sg.Visit((f, v) => d["siege." + f] = v);
+            d["siege.enabled"] = sg.Enabled ? 1f : 0f; d["siege.substeps"] = sg.Substeps; d["siege.food_pull"] = sg.FoodPull; d["siege.leash"] = sg.Leash;
             return d;
         }
 
@@ -737,6 +776,7 @@ namespace CosmicShore.Gameplay
             "mobber" => game ? GameMobber() : MobberBase(),
             "leech" => game ? GameLeech() : LeechBase(),
             "leviathan" => game ? GameLeviathan() : Leviathan(),
+            "siege" => game ? GameSiege() : SiegeBase(),
             _ => throw new ArgumentException("no such substrate species: " + name),
         };
     }
