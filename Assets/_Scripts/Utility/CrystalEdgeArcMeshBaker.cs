@@ -27,6 +27,14 @@ namespace CosmicShore.Utility
     ///
     /// Results are cached by source mesh and SHARED — a scene full of crystals bakes once and
     /// keeps one mesh, so instancing/batching is unaffected and there is no per-instance cost.
+    ///
+    /// PLATE FILTER. An exploded crystal is a set of disjoint plates, and on the omni crystal each
+    /// family of plates stands for one element (20 triangular prisms = Mass, 12 pentagonal prisms =
+    /// Charge — Docs/PALETTE.md §2.10). <c>plateCorners</c> keeps only the plates with exactly that
+    /// many distinct corners (a k-gonal prism has 2k), so the charge discharge can be drawn on the
+    /// omni's pentagons and nowhere else. 0 keeps every triangle — the charge crystal itself.
+    /// The filtered bake keeps the SOURCE's model radius, so every size the shader reads stays a
+    /// fraction of the crystal's radius rather than of whichever plates were kept.
     /// </summary>
     public static class CrystalEdgeArcMeshBaker
     {
@@ -46,7 +54,11 @@ namespace CosmicShore.Utility
         /// diagonals; anything between roughly 6 and 57 separates the two populations cleanly.</summary>
         const float CoplanarAngleDegrees = 20.0f;
 
-        static readonly Dictionary<Mesh, Mesh> s_cache = new();
+        /// <summary>Every baked mesh's name ends with this, so a renderer already wearing one is
+        /// recognised and not baked twice (a pooled crystal re-awakening on the shared mesh).</summary>
+        public const string BakedSuffix = "(EdgeArcs)";
+
+        static readonly Dictionary<(Mesh source, int plateCorners), Mesh> s_cache = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetCache() => s_cache.Clear();
@@ -55,11 +67,14 @@ namespace CosmicShore.Utility
         /// Returns the arc-baked twin of <paramref name="source"/>, building it on first request.
         /// Returns null (and logs once) when the source mesh is not CPU-readable — the shader is
         /// fail-safe for that case and renders the crystal body without discharges.
+        /// <paramref name="plateCorners"/> &gt; 0 bakes only the plates with that many distinct
+        /// corners (see PLATE FILTER above); 0 bakes the whole mesh.
         /// </summary>
-        public static Mesh GetOrBake(Mesh source)
+        public static Mesh GetOrBake(Mesh source, int plateCorners = 0)
         {
             if (source == null) return null;
-            if (s_cache.TryGetValue(source, out var cached) && cached != null) return cached;
+            var key = (source, plateCorners);
+            if (s_cache.TryGetValue(key, out var cached) && cached != null) return cached;
 
             if (!source.isReadable)
             {
@@ -67,16 +82,23 @@ namespace CosmicShore.Utility
                     $"[CrystalEdgeArcMeshBaker] '{source.name}' is not CPU-readable, so its crease " +
                     "edges cannot be baked and the charge crystal will render without discharges. " +
                     "Fix: enable Read/Write on the model importer (isReadable: 1).");
-                s_cache[source] = null;
+                s_cache[key] = null;
                 return null;
             }
 
-            var baked = Bake(source);
-            s_cache[source] = baked;
+            var baked = Bake(source, plateCorners);
+            // Shared and static from here on: drop the CPU copy.
+            if (baked != null) baked.UploadMeshData(true);
+            s_cache[key] = baked;
             return baked;
         }
 
-        static Mesh Bake(Mesh source)
+        /// <summary>
+        /// Builds the baked twin, still CPU-readable and uncached (callers outside
+        /// <see cref="GetOrBake"/> own it — the edit-mode tests read its channels back). Returns null
+        /// when <paramref name="plateCorners"/> matches no plate.
+        /// </summary>
+        internal static Mesh Bake(Mesh source, int plateCorners)
         {
             var srcVerts = source.vertices;
             var srcNormals = source.normals;
@@ -106,6 +128,20 @@ namespace CosmicShore.Utility
             {
                 subTriangles[s] = source.GetTriangles(s);
                 triangleCount += subTriangles[s].Length / 3;
+            }
+
+            if (plateCorners > 0)
+            {
+                triangleCount = KeepPlates(subTriangles, weldIds, weldLookup.Count, plateCorners);
+                if (triangleCount == 0)
+                {
+                    Debug.LogError(
+                        $"[CrystalEdgeArcMeshBaker] '{source.name}' has no plate with exactly " +
+                        $"{plateCorners} corners, so nothing was baked and its discharge will not " +
+                        "draw. The model was re-exported with different plates, or the renderer's " +
+                        "CrystalEdgeArcs.plateCorners names the wrong shape.");
+                    return null;
+                }
             }
 
             var faceNormals = new Vector3[triangleCount];
@@ -247,7 +283,9 @@ namespace CosmicShore.Utility
 
             var mesh = new Mesh
             {
-                name = source.name + " (EdgeArcs)",
+                name = plateCorners > 0
+                    ? $"{source.name} ({plateCorners}-corner plates) {BakedSuffix}"
+                    : $"{source.name} {BakedSuffix}",
                 // Runtime-only: never let a generated mesh get serialized into a scene.
                 hideFlags = HideFlags.DontSave,
                 indexFormat = vertexCount > 65535
@@ -263,8 +301,58 @@ namespace CosmicShore.Utility
             mesh.SetUVs(3, edgeSeed);
             for (int s = 0; s < subMeshCount; s++) mesh.SetTriangles(newSubTriangles[s], s, false);
             mesh.RecalculateBounds();
-            mesh.UploadMeshData(true);
             return mesh;
+        }
+
+        /// <summary>
+        /// Rewrites <paramref name="subTriangles"/> in place to the triangles of the plates (connected
+        /// components over WELDED corners) that have exactly <paramref name="plateCorners"/> distinct
+        /// corners. Welded, because the importer splits a plate's corners by face normal — a pentagonal
+        /// prism arrives as 30 raw vertices and is 10 corners. Returns the kept triangle count.
+        /// </summary>
+        static int KeepPlates(int[][] subTriangles, int[] weldIds, int weldCount, int plateCorners)
+        {
+            var parent = new int[weldCount];
+            for (int i = 0; i < weldCount; i++) parent[i] = i;
+
+            int Find(int a)
+            {
+                while (parent[a] != a) a = parent[a] = parent[parent[a]];
+                return a;
+            }
+
+            foreach (var tris in subTriangles)
+                for (int i = 0; i < tris.Length; i += 3)
+                {
+                    int a = Find(weldIds[tris[i]]);
+                    parent[Find(weldIds[tris[i + 1]])] = a;
+                    parent[Find(weldIds[tris[i + 2]])] = a;
+                }
+
+            var cornersPerPlate = new Dictionary<int, int>();
+            for (int w = 0; w < weldCount; w++)
+            {
+                int root = Find(w);
+                cornersPerPlate.TryGetValue(root, out int n);
+                cornersPerPlate[root] = n + 1;
+            }
+
+            int kept = 0;
+            for (int s = 0; s < subTriangles.Length; s++)
+            {
+                var tris = subTriangles[s];
+                var keep = new List<int>(tris.Length);
+                for (int i = 0; i < tris.Length; i += 3)
+                {
+                    if (cornersPerPlate[Find(weldIds[tris[i]])] != plateCorners) continue;
+                    keep.Add(tris[i]);
+                    keep.Add(tris[i + 1]);
+                    keep.Add(tris[i + 2]);
+                }
+                subTriangles[s] = keep.ToArray();
+                kept += keep.Count / 3;
+            }
+            return kept;
         }
 
         static float Max3(Vector3 v) => Mathf.Max(v.x, Mathf.Max(v.y, v.z));

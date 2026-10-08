@@ -1173,11 +1173,13 @@ colours mean something when they do appear.
 **Two wearers sit outside the toybox**, and both say something about the SWITCH rather than about
 the pilot. The Scarab's placed switch is the first: the domain colour names the domain the switch
 *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is decides who it pays).
-The Butterfly's **fold gate** is the second, one notch further out: there the colour names **who
-may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). A gate
-declines a pilot who is not already in its domain and can never put anyone into one, so it is a
-gate on use rather than a grant. Nothing in either case changes a pilot's domain, so the two
-readings never share a screen; both are listed in the test's allow-list with their reason. Do not
+The Butterfly's **fold gate** was the second, one notch further out: there the colour named **who
+may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). **The gates
+became wormholes on 2026-10-08** (`BUTTERFLY_FOLD.md` § "The gates became wormholes") and are no
+longer switch RINGS — a mouth is a sphere whose rim wears the domain's hue, outside this vocabulary
+and off the test's allow-list — but the reading is unchanged: the colour says who may use it, a mouth
+declines a pilot who is not already in its domain, and it can never put anyone into one. Nothing in
+either case changes a pilot's domain, so the two readings never share a screen. Do not
 add a toybox wearer without settling which reading wins. It draws in the **live** per-domain prism material —
 the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
 injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the
@@ -1385,7 +1387,9 @@ so there is always a field of structures ahead.
 **Scale — 30,000 conserved prisms, built once behind a veil.** The belt's whole stock is
 `poolSize × prismBudgetPerScene` (**20 × 1500 = 30,000** at the authored defaults — the same order as
 an authored cell environment, which is the proven envelope for the instanced render path + collider
-LOD). It is built **up front**, on the first pass through the toy, behind the same
+LOD; a device tier may override the BUILT config, never the asset: MobileLow phones run 8 × 150 =
+1,200 with no lifeform scenes and 2 concurrent arrivals — `PlatformProfileSO.WanderwayBudget`,
+applied in `WanderToy.Configure`, `Docs/PLATFORM_UNIFICATION.md` §3.6). It is built **up front**, on the first pass through the toy, behind the same
 `EnvironmentLoadVeil` the Cell Selector raises for a world swap: `MicrosceneConveyor.PrimeAsync`
 brackets `PrismTrailBuilder.BeginArenaBuild`/`EndArenaBuild`, raises the veil, and lays all
 `poolSize` scenes concurrently through `PrismTrailBuilder.LayBudgetedAsync` — the time-budgeted,
@@ -1513,12 +1517,14 @@ back from. Starting one does three things, and all three are undone when it ends
   the run's tick — the tail advances a prism at a time and a station that teleported after it would
   read as a pop.
 
-> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — the one sanctioned place
-> trail mass is recycled, granted by explicit sign-off so the Wanderway can be an endless runner
+> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — a sanctioned place
+> trail mass is recycled (the other is the phone race cap, `RaceTrailCap`, MobileLow Skim Race /
+> Joust only), granted by explicit sign-off so the Wanderway can be an endless runner
 > without an ever-growing world. It is mechanically the reverted `maxTrailBlocks` cap, and it is
-> fenced so it cannot leak: `WanderwayRun.RollTether` is the ONLY caller of `Trail.RemoveOldest`,
+> fenced so it cannot leak: `WanderwayRun.RollTether` is the tether's only removal path,
 > it runs only while a run is live, and `VesselPrismController` grew no cap field — outside a run
-> the trail is untouched and the law holds in full. **Continuity of existence is not waived**: a
+> the tether never touches the trail. The device-tier trail policy (`MenuCrystalClickHandler`)
+> never holds the pen during a run (`WanderwayRun.AnyRunning`): the tether needs a trail to ride. **Continuity of existence is not waived**: a
 > retiring prism withers on the GPU clock (one grow-clock re-stamp toward a near-zero scale — the
 > belt's own collapse, `Docs/PRISM_ANIMATION.md` §5 C8) and returns to the pool only once it has
 > shrunk away. Full record: `Docs/ECOSYSTEM.md` §0. Do not generalise it; do not revert it.

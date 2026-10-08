@@ -20,12 +20,15 @@ MonoBehaviour:
   upgradeRangeMultiplier: 2
   gateRadius: 55
   minGateSeparation: 300
-  gateExitClearance: 40
   gateBloomSeconds: 0.45
   gateSettleSeconds: 0.75
+  rivalTollPetalsPerElement: 15
+  rivalTollShedSpeed: 25
   portalWindowRange: 2500
-  portalWindowFadeSeconds: 0.3
   portalWindowRenderScale: 0.75
+  portalWindowFadeBand: 600
+  panoramaFaceSize: 256
+  wormholeMaterial: {fileID: 2100000, guid: 97a0b9d33f4289abcfc3b058a3ffb2d3, type: 2}
   ghostTravelSpeed: 1400
   departSeconds: 0.22
   arriveSeconds: 0.3

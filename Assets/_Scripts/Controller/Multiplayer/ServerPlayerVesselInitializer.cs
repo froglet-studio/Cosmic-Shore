@@ -775,6 +775,9 @@ namespace CosmicShore.Gameplay
                 var v = vessels[i];
                 if (v is not UnityEngine.Object o || !o || v.VesselStatus == null) continue;
                 if (ReferenceEquals(v.VesselStatus.Player, networkPlayer)) continue;
+                // A card's pinned opponent grid (Regatta's Squirrels) sits outside arena seating:
+                // a human who picked that hull keeps it.
+                if (gameData.IsPinnedOpponent(v.VesselStatus.Player, v.VesselStatus.VesselType)) continue;
                 _arenaHullsInUse.Add(v.VesselStatus.VesselType);
             }
 

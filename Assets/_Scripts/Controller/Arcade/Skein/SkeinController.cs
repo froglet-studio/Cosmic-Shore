@@ -97,13 +97,37 @@ namespace CosmicShore.Gameplay
 
             // The AUTHORED target drives the course, so the finish line and the number of rings
             // laid cannot drift - the platform reads the same number for the monitor's target.
-            var settings = arena.CourseSettings;
+            //
+            // But the ARENA picks its seed with its OWN ring count (SkeinCourseSettings'), because
+            // BuildAll rejects a seed whose walk lays a different number of rings. A count edited
+            // in the End Game Conditions window must therefore not choose the seed here, or the
+            // two can land on different re-rolls and hang rings on rails the arena never laid. So
+            // the arena's count picks the seed and the authored count is walked on THAT seed. At
+            // the shipped count the two are the same number and this is the one pass it was.
+            var arenaSettings = arena.CourseSettings;
+            var settings = arenaSettings;
             settings.GateCount = Mathf.Max(3, gateCount);
 
             for (int attempt = 0; attempt < 6; attempt++)
             {
-                var build = SkeinCourse.BuildAll(unchecked(arena.CableSeed + attempt * 7919), settings);
+                int cableSeed = unchecked(arena.CableSeed + attempt * 7919);
+                var build = SkeinCourse.BuildAll(cableSeed, arenaSettings);
                 if (build == null) continue;
+
+                if (settings.GateCount != arenaSettings.GateCount)
+                {
+                    build = SkeinCourse.BuildAll(cableSeed, settings);
+                    if (build == null)
+                    {
+                        CourseFailureDetail =
+                            $"The arena's cable (seed {cableSeed}) cannot carry the authored " +
+                            $"{settings.GateCount}-ring course; it was built for " +
+                            $"{arenaSettings.GateCount}. Set Skein back to " +
+                            $"{arenaSettings.GateCount} in FrogletTools > Game Modes > End Game " +
+                            "Conditions, or re-measure Tools/Build/skein_budget.py at the new count.";
+                        return null;
+                    }
+                }
 
                 // The generator works about the ORIGIN and Cell parents the environment container
                 // at localPosition zero, so the cable's frame is the CELL's - not the prefab's,
@@ -202,25 +226,77 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// While ATTACHED, aim down the pilot's own rail rather than at the ring.
+        /// The Urchin's kit, for every AI on the cable (<see cref="UrchinAutopilotDriver"/>).
+        /// Created on first use rather than in a field initializer, so it loads its config on the
+        /// main thread during play rather than while Unity deserialises the scene.
+        /// </summary>
+        UrchinAutopilotDriver _urchinAI;
+        UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
+
+        /// <summary>
+        /// While ATTACHED, ride the cable toward this pilot's next ring; while FREE, fly at it the
+        /// platform's way (and lay a Track Projector rail when it is a long straight shot).
         ///
         /// <para>The ride constrains POSITION and never attitude, so where an attached AI looks
         /// is also where it LAUNCHES when the ribbon runs out - and every break in this arena is
-        /// aimed by construction, so a competent AI is one that holds the throttle and lets the
-        /// geometry throw it. Off-rail this returns false and the platform's ordinary gate
-        /// aiming takes over, which is exactly right: then the pilot IS flying.</para>
+        /// aimed by construction. What the AI could not do before is CHOOSE: above intensity 1
+        /// most rings are pinned to one strand, and a pilot that only aims down whatever it
+        /// touched threads the rings its strands happen to pass and no others.
+        /// <see cref="UrchinAutopilotDriver.TryRideToward"/> walks the strand both ways from the
+        /// pilot and rides it (it goes through the ring, or closes most of the way at grind
+        /// speed), REVERSES onto it (the ring is back the way it came - the ride's direction is
+        /// the pilot's facing), or SLIPS off it; and it taps the chain spikes while the strand
+        /// underfoot is a rival's colour, so a hostile lane is converted rather than crawled.
+        /// Every aim it returns while riding is down the strand's own tangent, which keeps the
+        /// range falling (OrbitDetector stays reset) and <c>LookingAtCrystal</c> - and with it the
+        /// authored <c>ram</c> throttle - engaged.</para>
+        ///
+        /// <para>Off-rail this returns false and the platform's ordinary gate aiming takes over,
+        /// which is exactly right: then the pilot IS flying.</para>
         /// </summary>
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
             var status = pilot?.Vessel?.VesselStatus;
             var tf = pilot?.Vessel?.Transform;
-            if (status == null || tf == null || !status.IsAttached || status.AttachedPrism == null)
-                return false;
+            if (status == null || tf == null) return false;
 
-            Vector3 along = status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : tf.forward;
-            target = tf.position + along * aiRailLeadDistance;
+            bool hasGate = TryGetAIGate(pilot, out var gate);
+
+            if (status.IsAttached && status.AttachedPrism != null)
+            {
+                // Finished, or the course has not landed: ride on down the strand.
+                if (!hasGate)
+                {
+                    Vector3 along = status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : tf.forward;
+                    target = tf.position + along * aiRailLeadDistance;
+                    return true;
+                }
+
+                // False the frame it Slips off: fall through to flying at the ring.
+                return UrchinAI.TryRideToward(pilot, gate.Position, gate.Radius, out target, aiRailLeadDistance);
+            }
+
+            if (hasGate) UrchinAI.TryProjectTrackToward(pilot, gate.Position, gate.Axis);
+            return false;
+        }
+
+        /// <summary>The ring <paramref name="pilot"/> must thread next, from the same course and
+        /// the same progress counter the platform's own gate aiming reads.</summary>
+        bool TryGetAIGate(IPlayer pilot, out RaceGate gate)
+        {
+            gate = default;
+            if (_course.Count == 0) return false;
+            int index = pilot.RoundStats?.SwitchesThreaded ?? 0;
+            if (index < 0 || index >= RaceLength) return false;
+            gate = _course[RingIndexFor(index)];
             return true;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _urchinAI?.Clear();
+            base.OnNetworkDespawn();
         }
     }
 }

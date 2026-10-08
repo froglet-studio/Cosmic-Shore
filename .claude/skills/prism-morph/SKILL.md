@@ -426,6 +426,17 @@ wrong. Two things follow:
 
 ---
 
+- **A morph that LANDS ON prisms someone just laid inherits their arrival animations.** A freshly
+  laid prism blooms in on the clock (boost pool: `k = 2.5/s`, ~61% grown at 0.37 s) and a shield
+  engaged on a live prism blooms its faces. Reveal the prisms at the hand-off without settling those
+  and the pilot sees the morph land on full-size targets, then the targets jump smaller and grow back.
+  The morph IS their arrival: hold their photons (`Prism.SetOwnerHidden`, never `HideForTransport`),
+  and at the hand-off — still covered — `CompleteCreationImmediately` if needed,
+  `CompleteGrowthImmediately`, shield `Engage(instant: true)`, THEN unhide. Worked example:
+  `R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md` §2.5.
+
+---
+
 ## 11. Docs you must update
 
 | File | What |

@@ -54,6 +54,15 @@ namespace CosmicShore.Gameplay
         
         public List<CrystalModelData> CrystalModels => crystalModels;
 
+        /// <summary>
+        /// Raised when a model's renderer settles onto a new material — a domain change or an
+        /// activation reaching the end of its lerp. For an overlay that wears the crystal's colour
+        /// without being one of its models: the omni crystal's charge edges
+        /// (<see cref="CrystalAccentTint"/>), which are not a crystalModels slot so they neither
+        /// burst into a husk nor need a team material of their own.
+        /// </summary>
+        public event System.Action ModelMaterialSettled;
+
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
@@ -651,7 +660,7 @@ namespace CosmicShore.Gameplay
                         var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
                         var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                         if (spentAnimator && thisAnimator)
-                            spentAnimator.timer = thisAnimator.timer;
+                            spentAnimator.SyncPhaseFrom(thisAnimator);
                     }
 
                     impact.HandleImpact(
@@ -832,6 +841,7 @@ namespace CosmicShore.Gameplay
             }
 
             renderer.sharedMaterial = targetMaterial;
+            ModelMaterialSettled?.Invoke();
 
             // Update the explodingMaterial for the matching crystal model entry
             for (int i = 0; i < crystalModels.Count; i++)

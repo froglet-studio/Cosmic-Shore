@@ -113,6 +113,15 @@ namespace CosmicShore.Gameplay.Audio
             "registers.")]
         float tickEpsilon = 0.02f;
 
+        [SerializeField, Range(0f, 0.5f), Tooltip(
+            "Minimum real-time seconds between successive boost-tick one-shots. " +
+            "Dense continuous skimming pins BoostMultiplier near max, where per-frame " +
+            "boost decay + a per-frame skim contact makes EVERY frame a fresh rising " +
+            "edge. Without this cap the one-shot fires at frame rate (60-240/sec) and " +
+            "fuses into a harsh buzz instead of distinct skim clicks. ~0.07 caps it at " +
+            "~14 clicks/sec. 0 = no rate limit (legacy).")]
+        float minTickInterval = 0.07f;
+
         [Header("Loop Smoothing")]
         [SerializeField, Range(0f, 30f), Tooltip(
             "Exponential smoothing rate for the boost amount parameter on " +
@@ -194,6 +203,10 @@ namespace CosmicShore.Gameplay.Audio
         // independent of normalisation, so we don't miss a tick if base /
         // max change at runtime.
         float _lastRawMultiplier = float.NaN;
+
+        // Real-time stamp of the last boost-tick one-shot, for minTickInterval. Unscaled, so a
+        // timescale change cannot stretch or squeeze the click cadence.
+        float _lastTickTime = float.NegativeInfinity;
 
         void Awake()
         {
@@ -323,7 +336,7 @@ namespace CosmicShore.Gameplay.Audio
             if (!_classGatePass || !_localGatePass) return;
 
             // The SOAP event is global; every vessel (incl. the remote owner's
-            // per-frame DecayBoost) raises it. Filter by source-vessel identity so
+            // DecayBoost) raises it. Filter by source-vessel identity so
             // we only react to our own vessel's boost. Robust where two vessels
             // momentarily share a multiplier - the old multiplier-match filter
             // mis-fired in that case.
@@ -365,6 +378,15 @@ namespace CosmicShore.Gameplay.Audio
         /// </summary>
         void FireTickOneShot()
         {
+            // Rate limit (see minTickInterval): only the audible one-shot is throttled - the loop
+            // layer and the boost itself are untouched.
+            if (minTickInterval > 0f)
+            {
+                float now = Time.unscaledTime;
+                if (now - _lastTickTime < minTickInterval) return;
+                _lastTickTime = now;
+            }
+
             float volume = ResolveSFXVolume();
 
             if (attachTickEventToShip)

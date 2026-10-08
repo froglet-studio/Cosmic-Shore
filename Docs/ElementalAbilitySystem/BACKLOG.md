@@ -224,14 +224,15 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 
 ## Skim-visual follow-ups (opened by `claude/dolphin-skim-effect-7sd2w1`)
 
-21. **The Squirrel still runs BOTH skim visuals.** `SquirrelSkimmerImpactorDataContainer` holds
-    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam) *and*
-    `SkimmerForcefieldCracklePrismEffect` (its replacement) — the same doubled state the Dolphin
-    was just cleaned out of. It was left alone deliberately: the Dolphin's removal was a
-    playtest call on one vessel, and the Squirrel's beam may be reading as intentional on a
-    vessel whose whole loop is trail-riding. Decide it explicitly — either retire the beam
-    fleet-wide and delete `SkimmerFXPrismEffectSO` with it, or state in the SO's summary that
-    the two are meant to compose and drop the `[Obsolete]`. Do not leave it as an accident.
+21. ~~**The Squirrel still runs BOTH skim visuals.**~~ **Decided 2026-10-06 (project owner): the
+    beam is retired.** `SquirrelSkimmerImpactorDataContainer` no longer holds
+    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam); the forcefield crackle is the
+    Squirrel's only skim visual, as on the Dolphin (branch `claude/serene-edison-lfv24f`, Step 6
+    of `Docs/PLATFORM_UNIFICATION.md`; Garrett's Android strip had already run it that way). No
+    live container references the beam now. Left for a cleanup pass: deleting
+    `SkimmerFXPrismEffectSO` and its asset — `SkimFxRunner` stays, `VesselFXPrismEffectSO` uses
+    it — which wants item 22's dead Dolphin override swept first, since that override is the
+    asset's last reference.
 22. **The Dolphin prefab carries three DEAD prefab-instance overrides** on its inactive nested
     legacy `Skimmer.prefab` instance (`m_IsActive: 0`), writing
     `skimmerPrismEffectsSO.Array.{size,data[0..2]}` — a field that is **commented out** on
@@ -456,7 +457,9 @@ measurement attached is worse than no row.
   the surviving `vesselSkimmerEffectsSO.data[0]` points at the haptics effect, which IS live — via
   the CONTAINER, not via this override. Removing them is a prefab-YAML edit with no behaviour to
   change, and the real fix is to finish the container migration the comments describe.
-- **Two mode generators are red and were red before this branch** — proven by running both at
+- ~~**Two mode generators are red and were red before this branch**~~ [Edit 2026-10-06: both are
+  green - #969 stopped Dog Fight emitting the retired key and #967 guarded Wildlife Liberation's
+  spent clone; all 25 `author_*_assets.py --check` pass. Kept for the record:] proven by running both at
   `origin/bleeding-edge`: `author_dogfight_assets.py --check` fails its asset-key validation on
   `CallToActionTargetType` (a field the call-to-action retirement deleted from `SO_ArcadeGame`, so
   re-running it would re-introduce a retired key), and `author_wildlife_liberation_assets.py`
@@ -525,3 +528,29 @@ measurement attached is worse than no row.
   text onto the omni card at runtime, keeping its font and material — but the authored position is
   now a lie a reader will believe. Either author it under a `BlastTallyButton` host at the view
   root, or leave it and say so in the wirer's comment. No prefab was edited on this branch.
+
+## From the Butterfly omni-crystal bloom branch (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+
+- **`ExplosionImpactorDataContainerSO.explosionPrismEffects` has no producer.** Measured:
+  `grep -rl explosionPrismEffects Assets --include=*.asset` → 8 containers, all `explosionPrismEffects: []`;
+  no concrete `ExplosionPrismEffectSO` subclass exists after this branch retired its only one. Its
+  consumers are the Physics fallback in `ExplosionImpactor.AcceptImpactee`, the new
+  `SweepPrismEffects` (affectsPrisms-OFF blasts), and a never-assigned private field on
+  `PrismImpactor` (`PrismImpactor.cs:16`). The Burst batch path never runs it at all, so an
+  affectsPrisms-ON blast that authored one would run it only when the spatial index is down.
+  DEBT this branch WALKED PAST (and widened: the sweep is a second consumer). Decide: either keep
+  it as the container half of `IExplosionPrismPayload` and make the batch path honour it, or
+  retire the field and the dead `PrismImpactor` copy. *Shape (`/refactor` §3): a consumer with no
+  producer, read by two paths that disagree about when it runs.*
+
+- **Why the Butterfly bloom's `ExplosionScaleDustPrismEffectSO` asset loaded as null is UNKNOWN.**
+  Three playtests, every repo-side cause ruled out, a forced re-import did not help; the fix routed
+  around it (`BUTTERFLY.md §3.3a`). The next new SO type authored by a generator may hit it again.
+  To measure: author a throwaway new SO type + asset by script, have a human pull it and select the
+  asset before entering play mode, and record what the inspector says. *Report, not a fix.*
+
+- **Two pre-existing orphaned doc comments** (a `/// </summary>` immediately followed by
+  `/// <summary>`, both present at merge base `2cf25d8e`): `ExplosionImpactor.cs` above
+  `SweptCylinder` (the `SweepCrystals` doc stacked on the narrowphase struct's) and `CSDebug.cs:40`
+  (the `CSLogChannel` usage note stacked on `CSLogChannelLabelAttribute`'s). Move each down onto
+  its member or delete it. *Shape: a member inserted between a doc and its declaration.*

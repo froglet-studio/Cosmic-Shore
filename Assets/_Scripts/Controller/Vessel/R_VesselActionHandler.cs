@@ -142,55 +142,66 @@ namespace CosmicShore.Gameplay
         // launched two rockets from one pull of the trigger, and the Butterfly's right trigger -
         // a TOGGLE - flipped Mass -> Dust -> Mass on every pull and read as a dead button. A
         // duplicate release is equally silent, so the pair is latched together rather than only
-        // the press. The latch is _inputHandlersAttached below.
-
-        // Actual handler attachment vs. subscription INTENT. OnDisable must detach the
-        // handlers (the scriptable events outlive this object), but a disable/enable
-        // cycle - HUD fades that toggle an ancestor, pooling, pause flows - must not
-        // permanently sever ability input. Intent survives the cycle; OnEnable re-attaches.
-        bool _inputHandlersAttached;
-        bool _wantsInputSubscription;
+        // the press.
+        bool _subscribedToInputEvents;
 
         void SubscribeToInputEvents()
         {
-            _wantsInputSubscription = true;
-            AttachInputHandlers();
+            if (_subscribedToInputEvents) return;
+            _onButtonPressed.OnRaised  += OnButtonPressed;
+            _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribedToInputEvents = true;
+            ReportDiagnostic("listening", "yes");
         }
 
         void UnsubscribeFromInputEvents()
         {
-            _wantsInputSubscription = false;
-            DetachInputHandlers();
-        }
-
-        void AttachInputHandlers()
-        {
-            if (_inputHandlersAttached) return;
-            _onButtonPressed.OnRaised  += OnButtonPressed;
-            _onButtonReleased.OnRaised += OnButtonReleased;
-            _inputHandlersAttached = true;
-        }
-
-        void DetachInputHandlers()
-        {
-            if (!_inputHandlersAttached) return;
+            if (!_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
-            _inputHandlersAttached = false;
+            _subscribedToInputEvents = false;
+            ReportDiagnostic("listening", "no");
         }
 
+        // THE BUTTON CHANNELS FOLLOW THE PAUSE STATE, NOT THE PAUSE EVENTS. For the local pilot
+        // this handler is meant to be listening exactly while input is un-paused, and that used
+        // to be maintained only by edges: OnToggleInputPaused, plus the explicit
+        // ToggleSubscription calls at spawn and handover. An edge that is not delivered strands
+        // the handler deaf with nothing to report it - the vessel still FLIES, because flight
+        // reads InputStatus directly, while every ability is silently dead. Two ways an edge goes
+        // missing are visible from here: n_paused is a NetworkVariable, whose OnValueChanged
+        // fires only on a CHANGE, so a pause write that matches the replicated value says
+        // nothing; and OnDisable drops both the button channels and the pause source, while
+        // nothing re-attached them on the way back. So the state is RECONCILED: once a frame,
+        // for the local pilot only (one bool compare), the subscription is brought into line with
+        // the pause state it is supposed to mirror. The edges still do the work; this makes a
+        // missed one heal on the next frame instead of never.
         void OnEnable()
         {
-            if (_wantsInputSubscription)
-            {
-                AttachInputHandlers();
-            }
+            if (HasLivePilot()) AttachInputPause();
+        }
+
+        void Update()
+        {
+            if (!_subscribedToInputPaused || _pauseSource == null) return;
+            // The pause source lives on the PILOT; a scene teardown can destroy it first.
+            if (_pauseSource is UnityEngine.Object source && source == null) return;
+            bool listen = !_pauseSource.Paused;
+            if (listen != _subscribedToInputEvents) ToggleSubscription(listen);
+        }
+
+        /// <summary>A pilot is on this vessel and still exists - `== null` on the IPlayer
+        /// interface is a reference compare, so a destroyed Player needs the Unity check.</summary>
+        bool HasLivePilot()
+        {
+            var player = vesselStatus?.Player;
+            return player != null && !(player is UnityEngine.Object o && o == null);
         }
 
         void OnDisable()
         {
             if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
-            DetachInputHandlers();
+            UnsubscribeFromInputEvents();
 
             // During scene teardown the Player may already be destroyed.
             // The event lives on the Player, so it's GC'd with it - skip the unsubscribe.
@@ -205,6 +216,9 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             if (IsOwner) UnsubscribeFromInputEvents();
+            // Stop the reconcile with it: between despawn and the deferred Destroy (a vessel swap)
+            // Update would otherwise re-subscribe the dying hull to the global button channel.
+            DetachInputPause();
             ShipHelper.DestroyRuntimeActions(_runtimeInstances);
         }
 
@@ -296,6 +310,7 @@ namespace CosmicShore.Gameplay
             _inputAbilityStartTimes[controlType] = Time.time;
             _heldInputs.Add(controlType);
             var actions = ResolveActions(controlType);
+            ReportRan(controlType, actions.Count);
 
             foreach (var t in actions)
                 t.StartAction(_executors, vesselStatus);
@@ -356,10 +371,46 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        void OnToggleInputPaused(bool toggle)
+        void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
+
+        string GetActiveDeviceName() =>
+            vesselStatus?.InputStatus == null ? "no input" : vesselStatus.InputStatus.ActiveInputDevice.ToString();
+
+        /// <summary>
+        /// One row of the on-screen DiagnosticsHUD ("Abilities"), for the LOCAL pilot's vessel
+        /// only: whether this handler is listening to the button channels, the last press it
+        /// heard and what it resolved to, and the last dispatch that reached the actions. It
+        /// separates the three ways "the ability did nothing" happens - not listening, heard but
+        /// unbound, dispatched but the executor produced nothing - on a device, where the
+        /// console is out of reach. Compiled out (arguments included) outside the editor and
+        /// development builds, where the overlay does not exist.
+        /// </summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void ReportDiagnostic(string label, string value)
         {
-            ToggleSubscription(!toggle);
+            if (!DiagnosticsWanted()) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", label, value);
         }
+
+        /// <summary>The press row. Its own conditional method so the bound/unbound lookup and the
+        /// string are compiled out of release builds and skipped for every pilot but the local one.</summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void ReportPress(InputEvents ie)
+        {
+            if (!DiagnosticsWanted()) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities",
+                HasAction(ie) ? "press" : "unbound", $"{ie} ({GetActiveDeviceName()})");
+        }
+
+        /// <summary>The dispatch row, filtered before its string is built (see <see cref="ReportPress"/>).</summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void ReportRan(InputEvents ie, int actionCount)
+        {
+            if (!DiagnosticsWanted()) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", "ran", $"{ie} x{actionCount}");
+        }
+
+        bool DiagnosticsWanted() => HasLivePilot() && vesselStatus.IsLocalUser;
 
         /// <summary>
         /// Detach the input-pause subscription from the pilot currently on this vessel. Call
@@ -560,9 +611,15 @@ namespace CosmicShore.Gameplay
         void OnButtonPressed(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled)
+            {
+                ReportDiagnostic("press", $"{ie}: ignored (autopilot)");
                 return;
-            if (_suppressedInputs.Contains(ie)) return;
-            if (IsInputMuted(ie)) return;
+            }
+            if (_suppressedInputs.Contains(ie)) { ReportDiagnostic("press", $"{ie}: suppressed"); return; }
+            if (IsInputMuted(ie)) { ReportDiagnostic("press", $"{ie}: muted"); return; }
+            // Unbound presses (IdleAction, the straight-line gestures) arrive every few frames,
+            // so they get their own row rather than overwriting the ability that was pressed.
+            ReportPress(ie);
             if (IsSpawned && IsOwner)
             {
                 SendButtonPressed_ServerRpc(ie);
@@ -571,7 +628,7 @@ namespace CosmicShore.Gameplay
             {
                 PerformShipControllerActions(ie);
             }
-
+            
             OnInputEventStarted?.Invoke(ie);
         }
 

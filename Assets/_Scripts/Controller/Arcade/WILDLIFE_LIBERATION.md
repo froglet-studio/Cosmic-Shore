@@ -532,8 +532,8 @@ Rungs ride the leader's *own* progress rather than a cross-domain total, so they
 point in the race rather than at a point a busy lobby reaches several times faster.
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a
-toast, never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone
-feedback** (same state as Cleave).
+toast, never a rule. Since #976 (2026-10-06) `GameToastConfig_WildlifeLiberation.asset` authors
+the copy, so the shake and the toast land together.
 
 ## End condition
 
@@ -633,7 +633,7 @@ the band and the PhaseThresholds cannot drift apart.
 | `ScoringMetric` / `ScoringMetrics.Read` | `LifeformsKilled = 7` |
 | `GameDataSO` | `LifeformTargetCount` |
 | `ElementalComebackSystem` | the rule's `DomainValue` (`LifeformsKilled`), domain-aggregated like every other source |
-| `EndConditionOverridesSO` (+ window + asset) | `wildlifeKillTarget` live/build/getter, default 500 |
+| `EndConditionOverridesSO` (+ window + asset) | `wildlifeKillTarget` live/build/getter, default 30 (`DefaultWildlifeKillTarget`; the shipped asset authors 30 live and build) |
 | `GameToastSituation` | `WildlifeHuntQuarter = 53`, `WildlifeHuntHalf = 54`, `WildlifeLeadChanged = 55`, `WildlifeCoreBreached = 56` |
 | `ServerPlayerVesselInitializerWithAI` | clamps the AI's vessel class into the mode's allowed set |
 | `IRoundStatsCleanupTests` | asserts the new stat zeroes |
@@ -725,12 +725,14 @@ the band and the PhaseThresholds cannot drift apart.
 - **The Clawfish row is unplaytested.** It joined once its prefab had a body (four fluke-rib
   `HealthPrism`s, `Docs/ECOSYSTEM.md` §46.2); confirm in play that shooting a fluke kills it and
   the kill scores, and retune its 40 / 90 row in `wildlife_cage_budget.py` if it reads wrong.
-- **500 is unmeasured** — see the pacing flag.
-- **Toast copy is unauthored.** The four `GameToastSituation` values exist but no
-  `GameToastConfigSO` authors definitions, so they are silently skipped (which is how a mode opts
-  out). Author a `GameToastConfig_WildlifeLiberation.asset` with `{0}`=hunter, `{1}`=kills,
-  `{2}`=target to make them visible. `WildlifeCoreBreached` has **no publisher yet** — it is
-  reserved for a "somebody got into the core" callout.
+- **30 is unmeasured** — see the pacing flag. (This line and the touchpoints row said 500 until
+  2026-10-06; the shipped asset, the C# default and the generator all say 30, and the shipped
+  value is the one recorded.)
+- **Toast copy is first-pass.** Since #976 (2026-10-06) `GameToastConfig_WildlifeLiberation.asset`
+  authors all four situations (53 quarter, 54 halfway, 55 lead change, 56 core breached), the
+  creatures-hunted stat toast (84) and the comeback toast (30). `WildlifeCoreBreached` now has a
+  publisher: the server posts it once per match, through `AnnounceCoreBreached_ClientRpc`, for the
+  first pilot inside the core cage. The copy has not been read in play.
 - **Cage radii do not vary with intensity.** "Bigger cages at later intensities" was interpreted
   as *denser and boxier*, because the outer radius is what the spawn ring, the AI aim points and
   the arena silhouette are all defined against (the same reason Cleave fixes its outer radius).

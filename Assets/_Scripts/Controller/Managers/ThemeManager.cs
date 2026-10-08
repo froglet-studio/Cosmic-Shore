@@ -49,6 +49,12 @@ namespace CosmicShore.Gameplay
             materialSet.CrystalMaterial1 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial1);
             materialSet.CrystalMaterial2 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial2);
             materialSet.CrystalMaterial3 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial3);
+            // Slot 4 is optional (only the omni crystal has a fifth model), so a base set that
+            // does not author it must not throw here - new Material(null) would take down every
+            // domain's whole material set with it.
+            materialSet.CrystalMaterial4 = _dataContainer.BaseMaterialSet.CrystalMaterial4
+                ? new Material(_dataContainer.BaseMaterialSet.CrystalMaterial4)
+                : null;
             materialSet.ExplodingBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ExplodingBlockMaterial);
             materialSet.ShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ShieldedBlockMaterial);
             materialSet.TransparentShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentShieldedBlockMaterial);
@@ -85,6 +91,21 @@ namespace CosmicShore.Gameplay
             materialSet.CrystalMaterial2.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
             materialSet.CrystalMaterial3.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
             materialSet.CrystalMaterial3.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
+
+            // The omni crystal's body and Shepard triangles are on the Spread Fresnel shader family,
+            // which names its pair _BrightColor (silhouette) / _DarkColor (facing). The domain crystal
+            // pair maps onto it one-to-one - Dull is authored black on Jade/Ruby/Gold, exactly the
+            // lime body's near-black face - so a team omni is the lime omni in its domain's colour.
+            // SetColor on a material without the property is a no-op, so the ShepardGraph-era
+            // materials and the _BrightCrystalColor writes above are unaffected.
+            foreach (var crystal in new[] { materialSet.CrystalMaterial, materialSet.CrystalMaterial1,
+                                            materialSet.CrystalMaterial2, materialSet.CrystalMaterial3,
+                                            materialSet.CrystalMaterial4 })
+            {
+                if (!crystal) continue;
+                crystal.SetColor("_BrightColor", colorSet.BrightCrystalColor);
+                crystal.SetColor("_DarkColor", colorSet.DullCrystalColor);
+            }
             
             // The pooled debris prefab's own shared material is the one the batched debris path
             // actually draws with (PrismDebris reads mesh/material off it) and its colours arrive
