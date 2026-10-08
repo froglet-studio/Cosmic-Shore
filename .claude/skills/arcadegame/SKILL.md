@@ -128,8 +128,11 @@ block, and nothing re-runs `author_preview_spawns.py` for you: Cleave moved its 
 opened the card's preview INSIDE the arena the floor exists to keep pilots out of. **Re-run
 `author_preview_spawns.py --check` whenever a mode's spawn ring, formation or distance moves** -
 it reports every definition that would change, so it costs nothing to run and is invisible if you
-do not. Its blind spot is worth stating too: it mirrors the SCALAR floor, so a mode with a
-per-intensity ring gets its scalar on every rung.
+do not. It mirrors the per-intensity floor list (`spawnRingRadiusFloorByIntensity` ->
+`SpawnRingRadiusFloorByIntensity`) as well as the scalar, and `ModePreviewDefinitionSO.
+ResolveSpawnRingRadiusFloor` resolves it by the server's rule, so a mode with a per-intensity
+ring (Cleave) previews on each rung's own ring. A scene with no list writes no list, so the
+other previews are unchanged; `ModePreviewSpawnFloorTests` holds the rule.
 
 **And `PreviewCellsByIntensity` outlives a deleted cell config as a DANGLING guid.** Shortening a
 ladder means pruning that list by hand - Unity keeps an unresolvable reference silently, and the

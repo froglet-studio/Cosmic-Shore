@@ -927,7 +927,8 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   Flight at intensity 1, then step the intensity row to 3. The arena should rebuild and the vessel
   should arrive about 1,050 units from the centre, outside the 720-radius cage, rather than 3,150
   units out. The `ArcadeLaunch` channel's `[ModePreview] Spawn` line prints the cell-relative
-  position; its `floor=` field still prints the scalar.
+  position and the resolved floor for that intensity. `ModePreviewSpawnFloorTests` (edit mode)
+  holds the resolve rule and reads the shipped asset's four rungs.
 - **⚠ Intensity 2 is the least-known thing in the mode.** It is brand-new geometry at a scale
   nobody has flown, and unlike its three siblings it is not a variation on anything that has been:
   five closed meandering roads is a different proposition from a stack of surfaces, and whether a
