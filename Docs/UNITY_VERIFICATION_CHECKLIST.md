@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
+
+**Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
+`Crystal.prefab` slot 0 = whole omni model on the new, self-contained `OmniCrystalFresnelShader`
+(the elemental crystals' SpreadFresnel look, plus CrystalMorph + a screen-door dissolve); slots 1-3 = Shepard shells drawing only the 20 triangles
+(`Assets/_Models/OmniCrystalTriangles.asset`, a mesh baked from `MassCrystalExport3ExpandedTri`),
+sweeping from 2x the crystal's radius down onto its surface. `SpreadFresnelShader` is NOT touched
+(the omni shader compiles to SPIR-V offline). One C# edit:
+`ScarabCrystalMorph.AdoptShells` skips the triangle shells on a verbose channel instead of warning.
+No Unity CLI in the authoring container, so none of this has been opened in the editor.
+
+**Verify in editor**
+1. Console after import: no shader errors on `OmniCrystalFresnelShader` (it includes
+   `Assets/_Graphics/Materials/Graphs/CrystalMorph.hlsl` by project-absolute path). No C# errors.
+2. Space + Time crystals look exactly as before (their shader is untouched).
+3. Open `Crystal.prefab`: `OmniCrystalBody` shows the lime Fresnel omni; the three
+   `OmniShepardTriangles` children show the `OmniCrystalTriangles` mesh. In play the triangles fall
+   in from outside the crystal, brightening, and land ON the body's own triangles. If they sit
+   rotated or offset against the body, the mesh bake's axis conversion is wrong (see the generator).
+4. The omni blooms in (dithered) when it appears, instead of popping.
+5. Scarab: forge an omni crystal — the body folds onto the ball and dissolves; the triangle shells
+   just leave with the crystal. No warnings in the console.
+6. A toy/matrix that shows the omni's shape (`SpawnMatrixToy`, `ElementCrystalModelBuilder`)
+   shows the whole omni model, not just triangles.
+
+**First-pass tuning:** `OUTER_REACH = 2.0` in the generator (how far out the tone starts); band
+period is the Mass materials' 3 s.
+
 ### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
 Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
