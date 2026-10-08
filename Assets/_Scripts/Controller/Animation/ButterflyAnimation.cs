@@ -87,6 +87,21 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds for the wings to close into (and out of) the fold pose.")]
         [SerializeField, Min(0.01f)] float foldBlendSeconds = 0.35f;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played ONCE PER BEAT, at the top of the stroke (the start of the " +
+                 "downstroke), attached to the hull. Its rate follows the beat, so it speeds up " +
+                 "with the vessel. Leave empty for silence - never point it at a borrowed event " +
+                 "to hear something.")]
+        [SerializeField] FMODUnity.EventReference wingbeatEvent;
+        [Tooltip("Beat half-amplitude, in degrees, below which a beat is SILENT. The fold closes " +
+                 "the wings and drives the amplitude to zero; a wing that is not moving makes no " +
+                 "sound. The glide (beatAmplitudeAtCruise) and the spread both stay above it.")]
+        [SerializeField, Min(0f)] float wingbeatMinAmplitude = 4f;
+
+        // Phase (in beats) inside each cycle where the voice lands: sin peaks at 0.25, the top of
+        // the stroke, which is where a real wing's downstroke starts.
+        const float WingbeatVoicePhase = 0.25f;
+
         ButterflyHullBuilder _hullBuilder;
 
         float _beatPhase;          // beats, accumulated — never reset, so the beat never jumps
@@ -175,6 +190,7 @@ namespace CosmicShore.Gameplay
             _spreadBlend = Mathf.MoveTowards(_spreadBlend, _spreadTarget, spreadStep);
 
             float hz = Mathf.Lerp(beatHz, beatHzAtCruise, speed01);
+            float previousPhase = _beatPhase;
             _beatPhase += hz * Time.deltaTime;
 
             float amplitude = Mathf.Lerp(beatAmplitude, beatAmplitudeAtCruise, speed01);
@@ -190,6 +206,8 @@ namespace CosmicShore.Gameplay
             // and a wing that kept flapping into the closed pose would read as a stuck animation.
             amplitude *= 1f - _foldBlend;
 
+            VoiceWingbeat(previousPhase, _beatPhase, amplitude);
+
             float foreBeat = Mathf.Sin(_beatPhase * Mathf.PI * 2f) * amplitude;
             float hindBeat = Mathf.Sin((_beatPhase - hindLagBeats) * Mathf.PI * 2f) * amplitude;
 
@@ -204,6 +222,22 @@ namespace CosmicShore.Gameplay
             ApplyWing(ForeWingR, +1, foreBeat + lift + asym + closed, sweep);
             ApplyWing(HindWingL, -1, hindBeat + lift * 0.6f - asym * 0.7f + closed, sweep);
             ApplyWing(HindWingR, +1, hindBeat + lift * 0.6f + asym * 0.7f + closed, sweep);
+        }
+
+        /// <summary>
+        /// One voice per beat cycle: fires when the phase crosses <see cref="WingbeatVoicePhase"/>
+        /// of a cycle, so it is keyed to the beat itself and never to the frame rate. A frame long
+        /// enough to cross two cycles still voices once. Empty slot = silence.
+        /// </summary>
+        void VoiceWingbeat(float fromPhase, float toPhase, float amplitude)
+        {
+            if (wingbeatEvent.IsNull) return;
+            if (Mathf.FloorToInt(toPhase - WingbeatVoicePhase) ==
+                Mathf.FloorToInt(fromPhase - WingbeatVoicePhase)) return;
+            if (amplitude < wingbeatMinAmplitude) return;
+
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEventAttached(wingbeatEvent, gameObject);
         }
 
         /// <summary>

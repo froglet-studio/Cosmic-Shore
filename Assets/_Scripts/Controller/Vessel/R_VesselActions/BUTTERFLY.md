@@ -517,9 +517,17 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
   - `ButterflyDustField` on `Components/ButterflyDustSkimmer.prefab` — `scaleDustBiteEvent`
     (Charge; played by `VesselElementalDebuffBySkimmerEffectSO` after its per-victim cooldown),
     `dustTendEvent` / `dustBlightEvent` (Space; played by `SkimmerScaleDustPrismEffectSO`,
-    throttled per kind by `dustReachSoundInterval`).
-  Still slotless: the **wingbeat** (it would live on `ButterflyAnimation`, keyed to the beat phase)
-  and Scale Dust's heart wither/refresh (`Skimmer*LifeformByCrystalEffectSO`).
+    throttled per kind by `dustReachSoundInterval`), and `heartWitherEvent` / `heartNourishEvent`
+    (the heart halves: played by `SkimmerWitherLifeformByCrystalEffectSO` only when the kill
+    landed and by `SkimmerNourishLifeformByCrystalEffectSO` only when the refresh landed, at the
+    heart, each on its own `dustReachSoundInterval` clock; the effects find the field with
+    `TryGetComponent` on the skimmer, so any other adopter of those effects stays silent).
+  - `ButterflyAnimation` on `Butterfly.prefab` — `wingbeatEvent`, one voice per beat cycle at the top of the
+    stroke (phase 0.25, the start of the downstroke), attached to the hull, so its rate follows the
+    speed-driven beat. Silent while the beat's half-amplitude is under `wingbeatMinAmplitude`
+    (default 4°), which is what the fold drives it to; the glide (16°) and spread stay above it.
+  The new slots serialize empty on the prefab's next save; no prefab carries a value for them.
+  The Butterfly has no slotless sound left.
 - **The hull's morph bake duplicates the Scarab's.** `BakeMorphSet`/`BlendPart`/`AssertSameTopology`
   are the same machinery with different geometry. Extracting a shared `ProceduralHullMorph` is a
   genuine refactor, deliberately **logged and not acted on** inside a new-vessel branch.
