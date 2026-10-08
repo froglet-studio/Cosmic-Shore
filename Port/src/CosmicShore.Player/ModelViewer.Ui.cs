@@ -63,7 +63,7 @@ namespace CosmicShore.Player
             s_root = model;
             s_font = content.Fonts.DefaultFont;
             s_rest = model.GetComponentsInChildren<Transform>(true).Select(t => (t, t.localPosition, t.localRotation, t.localScale)).ToList();
-            s_takes = FbxAnimationImporter.ListClips(s_model);
+            s_takes = s_model != null ? FbxAnimationImporter.ListClips(s_model) : new List<(string, long)>();
 
             var canvasGo = new GameObject("ModelViewerUi", typeof(RectTransform));
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -166,14 +166,16 @@ namespace CosmicShore.Player
             if (s_info == null) return;
             var content = ContentRuntime.Current;
             string prefab = s_sources.Count > 0 ? s_sources[s_source] : null;
-            int tris = s_renderers.Sum(r => (r.mesh.Mesh?.triangles.Length ?? 0) / 3);
-            string colours = prefab == null
+            int tris = s_renderers.Sum(r => ((r.mesh?.Mesh ?? (r.mr != null ? r.mr.GetComponent<MeshFilter>()?.sharedMesh : r.smr.sharedMesh))?.triangles.Length ?? 0) / 3);
+            string colours = s_model == null ? "the prefab's own materials"
+                : prefab == null
                 ? "the model's own materials"
                 : "materials from " + Clip(System.IO.Path.GetFileNameWithoutExtension(prefab), 40) + ".prefab";
             string pick = s_sources.Count > 1 ? $"  <color=#8899AA>({s_source + 1}/{s_sources.Count}, Tab)</color>" : "";
             s_info.text = $"<b>{System.IO.Path.GetFileName(Path)}</b>\n"
                           + $"Colours: {colours}{pick}\n"
-                          + $"<color=#8899AA>{s_renderers.Count} renderers · {tris:N0} triangles · {s_shapes.Count} blend shapes · {s_takes.Count} takes</color>";
+                          + $"<color=#8899AA>{s_renderers.Count} renderers · {tris:N0} triangles · {s_shapes.Count} blend shapes · {s_takes.Count} takes"
+                          + (s_particles > 0 ? $" · {s_particles} particle systems" : "") + "</color>";
         }
 
         static void SetTake(int take)

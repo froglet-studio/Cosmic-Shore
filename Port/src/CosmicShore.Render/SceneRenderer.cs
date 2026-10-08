@@ -1164,6 +1164,7 @@ void main(){
             var v = ToNumerics(view);
             System.Numerics.Matrix4x4.Invert(v, out var inv);
             var fwd = camera.transform.forward;
+            _camRight = camera.transform.right; _camUp = camera.transform.up; _camFwd = fwd;
             _graphs.BeginFrame(new GraphFrame
             {
                 View = v, InvView = inv, Proj = ToNumerics(proj), ViewProj = ToNumerics(viewProj),
@@ -1194,6 +1195,7 @@ void main(){
             long tm0 = System.Diagnostics.Stopwatch.GetTimestamp();
             if (s_slowCollect) CollectAllRenderers(mask, camPos);
             else CollectSlotted(mask, camPos);
+            CollectProceduralLines(mask, camPos);
             if (s_census && _frame % 30 == 0) { Renderer.CollectLive(_renderers); RendererCensus(); }
             long te = System.Diagnostics.Stopwatch.GetTimestamp();
             _cLoop = te - tm0;
@@ -1221,6 +1223,11 @@ void main(){
             if (r is TrailRenderer || r is LineRenderer)
             {
                 CollectRibbon(r, mask, camPos);
+                return;
+            }
+            if (r is ParticleSystemRenderer psr)
+            {
+                CollectParticles(psr, mask, camPos);
                 return;
             }
             if (r is not MeshRenderer && r is not SkinnedMeshRenderer) return;
@@ -1372,7 +1379,7 @@ void main(){
         byte ClassifySlot(Renderer r, out Mesh mesh)
         {
             mesh = null;
-            if (r is TrailRenderer || r is LineRenderer || r is SkinnedMeshRenderer) return SlotAlways;
+            if (r is TrailRenderer || r is LineRenderer || r is SkinnedMeshRenderer || r is ParticleSystemRenderer) return SlotAlways;
             if (r is not MeshRenderer) return SlotIgnore;
             mesh = r.GetComponent<MeshFilter>()?.sharedMesh;
             if (mesh == null) return SlotIgnore; // assigning a mesh marks the renderer dirty
@@ -2002,6 +2009,157 @@ void main(){
             _transparent.Add(item);
         }
 
+        // ── Particles: camera-facing quads rebuilt each frame from the simulation ──
+
+        EVector3 _camRight = EVector3.right, _camUp = EVector3.up, _camFwd = EVector3.forward;
+        readonly ConditionalWeakTable<Renderer, Mesh> _particleMeshes = new();
+        ParticleSystem.RenderParticle[] _particleScratch = new ParticleSystem.RenderParticle[64];
+
+        /// <summary>
+        /// A ParticleSystemRenderer's live particles as one world-space mesh of quads: Billboard faces
+        /// the camera, Stretch lies along the velocity (length scale plus velocity scale),
+        /// Horizontal lies flat, Vertical stays upright; Mesh mode draws billboards (no per-particle
+        /// meshes yet). Vertex colour carries each particle's colour; the material draws it.
+        /// </summary>
+        void CollectParticles(ParticleSystemRenderer r, int mask, EVector3 camPos)
+        {
+            var go = r.gameObject;
+            if ((mask & (1 << go.layer)) == 0 || !go.activeInHierarchy || go.isPrefabAsset) return;
+            if (r.renderMode == ParticleSystemRenderMode.None) return;
+            if (!r.TryGetComponent<ParticleSystem>(out var ps)) return;
+            int n = ps.GetRenderParticles(ref _particleScratch);
+            if (n == 0) return;
+            _cShown++;
+            var verts = new EVector3[n * 4];
+            var cols = new Color[n * 4];
+            var uvs = new Vector2[n * 4];
+            var tris = new int[n * 6];
+            for (int i = 0; i < n; i++)
+            {
+                ref var p = ref _particleScratch[i];
+                float hx = p.Size.x * 0.5f, hy = p.Size.y * 0.5f;
+                EVector3 right, up;
+                switch (r.renderMode)
+                {
+                    case ParticleSystemRenderMode.Stretch:
+                    {
+                        var v = p.Velocity - _camFwd * EVector3.Dot(p.Velocity, _camFwd);
+                        float speed = p.Velocity.magnitude;
+                        up = v.sqrMagnitude > 1e-8f ? v.normalized : _camUp;
+                        right = EVector3.Cross(up, _camFwd).normalized;
+                        hy = 0.5f * (p.Size.y * r.lengthScale + speed * r.velocityScale);
+                        break;
+                    }
+                    case ParticleSystemRenderMode.HorizontalBillboard:
+                        right = EVector3.right; up = EVector3.forward; break;
+                    case ParticleSystemRenderMode.VerticalBillboard:
+                    {
+                        var f = new EVector3(_camFwd.x, 0f, _camFwd.z);
+                        right = f.sqrMagnitude > 1e-8f ? EVector3.Cross(EVector3.up, f.normalized) : _camRight;
+                        up = EVector3.up;
+                        break;
+                    }
+                    default:
+                        right = _camRight; up = _camUp; break;
+                }
+                if (p.Rotation != 0f && r.renderMode != ParticleSystemRenderMode.Stretch)
+                {
+                    float c = MathF.Cos(-p.Rotation), sn = MathF.Sin(-p.Rotation);
+                    var r2 = right * c + up * sn;
+                    up = up * c - right * sn;
+                    right = r2;
+                }
+                var a = right * hx; var b = up * hy;
+                int o = i * 4;
+                verts[o] = p.Position - a - b; verts[o + 1] = p.Position + a - b;
+                verts[o + 2] = p.Position + a + b; verts[o + 3] = p.Position - a + b;
+                cols[o] = cols[o + 1] = cols[o + 2] = cols[o + 3] = p.Color;
+                uvs[o] = new Vector2(0f, 0f); uvs[o + 1] = new Vector2(1f, 0f); uvs[o + 2] = new Vector2(1f, 1f); uvs[o + 3] = new Vector2(0f, 1f);
+                int t = i * 6;
+                tris[t] = o; tris[t + 1] = o + 2; tris[t + 2] = o + 1;
+                tris[t + 3] = o; tris[t + 4] = o + 3; tris[t + 5] = o + 2;
+            }
+            var mesh = _particleMeshes.GetValue(r, _ => new Mesh { name = "particles" });
+            mesh.Clear();
+            mesh.vertices = verts;
+            mesh.colors = cols;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+
+            var mats = r.sharedMaterials;
+            var m = mats is { Length: > 0 } && mats[0] != null ? mats[0] : BuiltinMaterials.DefaultParticle;
+            if (!_ribbonMats.TryGetValue(m, out var st) || st.Revision != m.Revision)
+            {
+                st = Classify(m);
+                // Particles are translucent quads whatever the material queue says; cull nothing.
+                if (!st.Transparent) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; }
+                st.Cull = 0;
+                _ribbonMats[m] = st;
+            }
+            _transparent.Add(new Item { Renderer = r, Mesh = mesh, Submesh = 0, Material = m, State = st, WorldSpace = true,
+                                        Distance = (r.transform.position - camPos).sqrMagnitude });
+        }
+
+        // ── Code-drawn ribbons (ProceduralLines: the approximate VFX Graphs) ──
+
+        readonly List<Mesh> _procMeshes = new();
+        static Material s_additiveLine;
+        static Material AdditiveLineMaterial => s_additiveLine ??= new Material(Shader.Find("Legacy Shaders/Particles/Additive")) { name = "Procedural-Additive", renderQueue = 3000 };
+
+        void CollectProceduralLines(int mask, EVector3 camPos)
+        {
+            var lines = ProceduralLines.Current;
+            for (int li = 0; li < lines.Count; li++)
+            {
+                var line = lines[li];
+                if ((mask & (1 << line.Layer)) == 0) continue;
+                var pts = line.Points;
+                int n = pts.Length;
+                var verts = new EVector3[n * 2];
+                var cols = new Color[n * 2];
+                var uvs = new Vector2[n * 2];
+                var tris = new int[(n - 1) * 6];
+                float halfWidth = line.Width * 0.5f;
+                for (int i = 0; i < n; i++)
+                {
+                    var p = pts[i];
+                    var tangent = pts[Math.Min(i + 1, n - 1)] - pts[Math.Max(i - 1, 0)];
+                    var side = EVector3.Cross(tangent, camPos - p);
+                    float len = side.magnitude;
+                    side = len > 1e-6f ? side / len : EVector3.up;
+                    verts[i * 2] = p - side * halfWidth;
+                    verts[i * 2 + 1] = p + side * halfWidth;
+                    cols[i * 2] = cols[i * 2 + 1] = line.Color;
+                    float u = (float)i / (n - 1);
+                    uvs[i * 2] = new Vector2(u, 0f); uvs[i * 2 + 1] = new Vector2(u, 1f);
+                    if (i < n - 1)
+                    {
+                        int o = i * 6, a = i * 2;
+                        tris[o] = a; tris[o + 1] = a + 2; tris[o + 2] = a + 1;
+                        tris[o + 3] = a + 1; tris[o + 4] = a + 2; tris[o + 5] = a + 3;
+                    }
+                }
+                while (_procMeshes.Count <= li) _procMeshes.Add(new Mesh { name = "procedural-line" });
+                var mesh = _procMeshes[li];
+                mesh.Clear();
+                mesh.vertices = verts;
+                mesh.colors = cols;
+                mesh.uv = uvs;
+                mesh.triangles = tris;
+                var m = line.Additive ? AdditiveLineMaterial : DefaultLineMaterial;
+                if (!_ribbonMats.TryGetValue(m, out var st) || st.Revision != m.Revision)
+                {
+                    st = Classify(m);
+                    if (line.Additive) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.One; st.ZWrite = false; }
+                    else if (!st.Transparent) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; }
+                    st.Cull = 0;
+                    _ribbonMats[m] = st;
+                }
+                _transparent.Add(new Item { Renderer = null, Mesh = mesh, Submesh = 0, Material = m, State = st, WorldSpace = true,
+                                            Distance = (pts[n / 2] - camPos).sqrMagnitude });
+            }
+        }
+
         sealed class MorphState { public Mesh Clone; public Mesh Source; public float[] Weights = Array.Empty<float>(); }
         readonly ConditionalWeakTable<SkinnedMeshRenderer, MorphState> _morphs = new();
         readonly ConditionalWeakTable<Mesh, Dictionary<(int, int), (EVector3[] V, EVector3[] N)>> _deltas = new();
@@ -2123,7 +2281,7 @@ void main(){
                 if (_entities.TryGet(ent, SlotGrowStart, out var gs)) growStart = gs.x;
                 if (_entities.TryGet(ent, SlotGrowFrac, out var gf)) frac = gf;
             }
-            else if (it.Renderer.HasPropertyBlock())
+            else if (it.Renderer != null && it.Renderer.HasPropertyBlock())
             {
                 var b = it.Renderer.PropertyBlockFor(it.Submesh);
                 if (b != null)
@@ -2141,7 +2299,7 @@ void main(){
             {
                 // _VesselVisionTint (a per-material-index property block, VesselVisionShading.Stamp);
                 // alpha 0 = nobody stamped this object, so the law leaves it alone.
-                var tb = ent < 0 && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
+                var tb = ent < 0 && it.Renderer != null && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
                 bright = tb != null && tb.HasColor(IdVisionTint) ? tb.GetColor(IdVisionTint) : new Color(0, 0, 0, 0);
             }
             d[o + 16] = dark.r; d[o + 17] = dark.g; d[o + 18] = dark.b; d[o + 19] = dark.a;
