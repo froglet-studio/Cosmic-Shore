@@ -299,9 +299,10 @@ namespace CosmicShore.Utility
             if (toastCanvasGroup == null)
             {
                 var toast = FindUnderRoot("ScoreRevealToast");
-                if (toast != null)
-                    toastCanvasGroup = toast.GetComponent<CanvasGroup>()
-                        ?? toast.gameObject.AddComponent<CanvasGroup>();
+                // TryGetComponent, not `GetComponent() ?? AddComponent()`: a missing component is
+                // a fake-null object in the Editor, which the coalesce keeps.
+                if (toast != null && !toast.TryGetComponent(out toastCanvasGroup))
+                    toastCanvasGroup = toast.gameObject.AddComponent<CanvasGroup>();
             }
 
             if (gameOverCounterText == null && toastCanvasGroup != null)

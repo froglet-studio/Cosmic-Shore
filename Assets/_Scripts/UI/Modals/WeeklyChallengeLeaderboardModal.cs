@@ -449,8 +449,9 @@ namespace CosmicShore.UI
             if (_rewardGroup) return _rewardGroup;
             if (!rankRewardPanel) return null;
 
-            _rewardGroup = rankRewardPanel.GetComponent<CanvasGroup>()
-                        ?? rankRewardPanel.AddComponent<CanvasGroup>();
+            // TryGetComponent: GetComponent() ?? AddComponent() keeps the Editor's fake null.
+            if (!rankRewardPanel.TryGetComponent(out _rewardGroup))
+                _rewardGroup = rankRewardPanel.AddComponent<CanvasGroup>();
             return _rewardGroup;
         }
 

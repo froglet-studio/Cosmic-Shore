@@ -498,7 +498,8 @@ namespace CosmicShore.UI
             var row = new Row
             {
                 Root = clone,
-                Group = clone.GetComponent<CanvasGroup>() ?? clone.gameObject.AddComponent<CanvasGroup>(),
+                // TryGetComponent: GetComponent() ?? AddComponent() keeps the Editor's fake null.
+                Group = clone.TryGetComponent(out CanvasGroup group) ? group : clone.gameObject.AddComponent<CanvasGroup>(),
                 Rank = Resolve<TMP_Text>(clone, _rankPath) ?? FindByName<TMP_Text>(clone, "rank"),
                 Avatar = Resolve<Image>(clone, _avatarPath) ?? FindByName<Image>(clone, "avatar")
                          ?? FindByName<Image>(clone, "icon") ?? FindByName<Image>(clone, "profile"),
