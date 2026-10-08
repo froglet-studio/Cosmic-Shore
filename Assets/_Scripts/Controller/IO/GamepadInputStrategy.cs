@@ -19,6 +19,28 @@ namespace CosmicShore.Gameplay
         private bool prevLeftTriggerActive;
         private bool prevRightTriggerActive;
 
+        // Face-button held state, edge-detected from isPressed rather than the frame flags
+        // (SingleStickMouseInputStrategy's shape). wasReleasedThisFrame is only seen while this
+        // strategy runs: a button held as the player switched devices, or released while the
+        // window was unfocused (InputController skips unfocused frames), never sent its release,
+        // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
+        private bool prevButton1, prevButton2, prevButton3, prevFlip;
+
+        private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
+        {
+            if (isPressed && !prev) inputStatus.OnButtonPressed.Raise(evt);
+            if (!isPressed && prev) inputStatus.OnButtonReleased.Raise(evt);
+            prev = isPressed;
+        }
+
+        private void ReleaseHeldButtons()
+        {
+            EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
+            EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevFlip, InputEvents.FlipAction);
+        }
+
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
@@ -37,6 +59,7 @@ namespace CosmicShore.Gameplay
         // KeyboardInputStrategy, which releases the same state in the same two places.
         public override void OnStrategyDeactivated()
         {
+            ReleaseHeldButtons();
             ReleaseHeldTriggers();
             ReleaseSpeedEffects();
             ResetInput();
@@ -105,53 +128,11 @@ namespace CosmicShore.Gameplay
 
         private void ProcessButtonInput()
         {
-            // Primary action buttons
-            if (Gamepad.current.buttonSouth.wasPressedThisFrame)
-            {
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
-            }
-                //vessel.PerformShipControllerActions(InputEvents.Button1Action);
-            if (Gamepad.current.buttonSouth.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
-                // vessel.StopShipControllerActions(InputEvents.Button1Action);
-
-            if (Gamepad.current.buttonEast.wasPressedThisFrame)
-            {
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
-            }
-                // vessel.PerformShipControllerActions(InputEvents.Button2Action);
-            if (Gamepad.current.buttonEast.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
-                // vessel.StopShipControllerActions(InputEvents.Button2Action);
-
-            if (Gamepad.current.buttonWest.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
-                // vessel.PerformShipControllerActions(InputEvents.Button3Action);
-            if (Gamepad.current.buttonWest.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
-                // vessel.StopShipControllerActions(InputEvents.Button3Action);
-
-            // Shoulder buttons and triggers
-            if (Gamepad.current.leftShoulder.wasPressedThisFrame)
-            {
-                //inputStatus.Idle = true;
-                //inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);;
-                // vessel.PerformShipControllerActions(InputEvents.IdleAction);
-            }
-            if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
-            {
-                //inputStatus.Idle = false;
-                //inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);;
-                // vessel.StopShipControllerActions(InputEvents.IdleAction);
-            }
-
-            // Right shoulder for flip action
-            if (Gamepad.current.rightShoulder.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
-                // vessel.PerformShipControllerActions(InputEvents.FlipAction);
-            if (Gamepad.current.rightShoulder.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-            // vessel.StopShipControllerActions(InputEvents.FlipAction);
+            // Primary action buttons, then the right shoulder for flip.
+            EdgeFire(Gamepad.current.buttonSouth.isPressed, ref prevButton1, InputEvents.Button1Action);
+            EdgeFire(Gamepad.current.buttonEast.isPressed, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(Gamepad.current.buttonWest.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevFlip, InputEvents.FlipAction);
 
             // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping

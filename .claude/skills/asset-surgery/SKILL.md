@@ -1066,6 +1066,18 @@ references, m_Script classes). Four things that cost time on the first run (2026
   Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
   `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
   read the bucket, because everything ELSE in your test file was bound for real.
+- **A planted `CS0103` (undefined name) is reported as *unverified*, not as an error (2026-10-08).**
+  While any package reference is unavailable, the tool buckets name-not-found diagnostics, so a
+  negative control built on an undefined method call leaves `ERRORS in project code: 0` and moves
+  the unverified count from 0 to 1. Read BOTH numbers: green means "0 errors AND 0 unverified".
+  A control on a missing MEMBER of a known type (`gameData.NoSuchMember()`, CS1061) is the sharper
+  plant if you want it to land in the error count.
+- **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
+  gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
+  `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
+  in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
+  `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
+  on changed lines is the evidence; "the run was green" is not.
 - **Negative-control both tools before quoting them**: plant a call to a missing member in a file
   you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
   key in an asset you changed (the audit must name the file and the key). Restore, then

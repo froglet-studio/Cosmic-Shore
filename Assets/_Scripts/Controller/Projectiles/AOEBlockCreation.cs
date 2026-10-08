@@ -39,11 +39,11 @@ namespace CosmicShore.Gameplay
             // 1. Stop any active spawning tasks
             CancelExplosion();
 
-            // 2. Destroy all the blocks we spawned
-            foreach (var block in from trail in trails where trail != null from block in trail.TrailList where block select block)
-            {
-                Destroy(block.gameObject);
-            }
+            // 2. Forget the blocks we laid - but never Destroy them. They are POOLED prisms
+            //    (PrismType.Interactive through the spawn channel), and one may already have gone
+            //    back to the pool and been reissued into somebody else's trail; destroying it
+            //    corrupts the pool (CellConveyor's note). Prism lifetime belongs to the pool, as in
+            //    every sibling AOE spawner.
             trails.Clear();
 
             // 3. Destroy this spawner object
@@ -85,6 +85,13 @@ namespace CosmicShore.Gameplay
                 }
             }
             catch (OperationCanceledException) { /* expected on TurnEnd/Reset */ }
+            finally
+            {
+                // Nothing left to own once the rings are laid: retire the shell instead of leaving
+                // one subscribed AOE object behind per Kabloom (AOEBlockSpawner's lifecycle).
+                if (!ct.IsCancellationRequested && this != null)
+                    Destroy(gameObject);
+            }
         }
 
         protected void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)

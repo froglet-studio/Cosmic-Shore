@@ -31,19 +31,38 @@ namespace CosmicShore.Utility
         /// <param name="data">Instance of the object to save</param>
         public static void Save<T>(string fileName, T data) where T : new ()
         {
+            string path = GetFilePath(fileName);
+            // UTF-8, not ASCII: ASCII turned every non-ASCII character in a saved string into '?'.
+            // A file written as ASCII is valid UTF-8, so existing saves still load.
+            byte[] bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings()
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }));
+
+            // Write a temp file and swap it in. Opening the real file with FileMode.Create
+            // truncated it FIRST, so a kill or crash mid-write (painting progress saves after every
+            // stroke) left a truncated file - which Load then failed to parse and deleted.
+            string tmp = path + ".tmp";
+            try
+            {
+                File.WriteAllBytes(tmp, bytes);
+                if (File.Exists(path)) File.Replace(tmp, path, null);
+                else File.Move(tmp, path);
+                return;
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is PlatformNotSupportedException)
+            {
+                // The swap can be refused (another MPPM virtual player holding the file open, a
+                // platform without File.Replace). Fall back to the direct write, which is no worse
+                // than before.
+                try { if (File.Exists(tmp)) File.Delete(tmp); } catch (IOException) { }
+            }
+
             // FileShare.ReadWrite so a concurrent reader (e.g. another MPPM virtual
             // player sharing the same persistentDataPath) does not hit a sharing violation.
             using FileStream dataStream = new FileStream(
-                GetFilePath(fileName), FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            BinaryFormatter converter = new BinaryFormatter();
-            //converter.Serialize(dataStream, data);
-
-            dataStream.Write(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings()
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            })));
-
-            dataStream.Close();
+                path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+            dataStream.Write(bytes, 0, bytes.Length);
         }
 
         /// <summary>
@@ -75,7 +94,7 @@ namespace CosmicShore.Utility
                     byte[] data = new byte[dataStream.Length];
                     dataStream.Read(data, 0, (int)dataStream.Length);
 
-                    string json = Encoding.ASCII.GetString(data);
+                    string json = Encoding.UTF8.GetString(data);
 
                     Data = (T)JsonConvert.DeserializeObject(json, typeof(T));
 
@@ -92,6 +111,11 @@ namespace CosmicShore.Utility
 
                     dataStream.Close();
 
+                    // Set the unreadable file ASIDE rather than deleting it: a truncated or
+                    // half-migrated save is still somebody's progress, and a copy is what makes it
+                    // recoverable by hand. The fresh default below then saves over the original.
+                    try { File.Copy(FilePath, FilePath + ".corrupt", true); }
+                    catch (IOException) { }
                     File.Delete(FilePath);
 
                     Data = new T();
