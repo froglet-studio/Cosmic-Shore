@@ -138,6 +138,8 @@ FAUNA = [
     ("Mobber", ["Substrate Fauna/Substrate Mobber Fauna Config Data.asset"]),
     ("Leech", ["Substrate Fauna/Substrate Leech Fauna Config Data.asset"]),
     ("Leviathan", ["Substrate Fauna/Substrate Leviathan Fauna Config Data.asset"]),
+    ("Shoal", ["Substrate Fauna/Substrate Shoal Fauna Config Data.asset"]),
+    ("Harrier", ["Substrate Fauna/Substrate Harrier Fauna Config Data.asset"]),
     ("Fortress Builders", ["Cell Configs/Swarm Cell/Swarm Fortress Builder Fauna Config Data.asset"]),
     ("Thief Nest", ["Cell Configs/Swarm Cell/Swarm Thief Nest Builder Fauna Config Data.asset"]),
     ("Wearer Builders", ["Cell Configs/Swarm Cell/Swarm Wearer Builder Fauna Config Data.asset"]),
@@ -202,6 +204,10 @@ DESCRIPTIONS = {
              "hard to fling them off. Charge crystals. Needs flora.",
     "Leviathan": "A shoal of grazers that assembles into a 120u manta when fed, opens its jaws and "
                  "surges into a ship ahead of it. Space crystals. Falls apart unfed: needs flora.",
+    "Shoal": "120 small fish that school as the lab's evolved herd: tight, aligned schools that swerve "
+             "round a hunter or a ship. Harmless; ram them. Time crystals. Needs flora.",
+    "Harrier": "8 sprinters that hunt the shoal as a pack. A hunter streaks out when it bursts and can burn "
+               "only after 0.4 s of it. Charge crystals. Spawn with a Shoal or it scavenges flora.",
     "Fortress Builders": "48 workers that steal loose prisms and your trail to wall in their nest. A cut "
                          "wall knits shut and defenders sting. Mass crystals. Fly a trail to feed them.",
     "Thief Nest": "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it "

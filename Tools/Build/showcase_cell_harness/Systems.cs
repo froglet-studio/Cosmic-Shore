@@ -1058,6 +1058,18 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
                 f.SetValue(P, sg);
                 continue;
             }
+            if (f.FieldType == typeof(SubstrateArmsParams))
+            {
+                // the arms race's pond (Docs/SUBSTRATE_FAUNA.md §11)
+                var ar = ((SubstrateArmsParams)f.GetValue(P)!).Clone();
+                foreach (var g in typeof(SubstrateArmsParams).GetFields())
+                {
+                    if (!v.TryGetProperty(g.Name, out var gv)) throw new Exception($"substrate {key}: {f.Name}.{g.Name} missing");
+                    g.SetValue(ar, ToField(g.FieldType, gv));
+                }
+                f.SetValue(P, ar);
+                continue;
+            }
             f.SetValue(P, ToField(f.FieldType, v));
         }
         foreach (var prop in sp.EnumerateObject())
@@ -1326,7 +1338,9 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
     /// sector, counted, and the summed distance outside the band (printed at the end of the run).</summary>
     static readonly bool s_occTrace = Environment.GetEnvironmentVariable("SHOWCASE_OCC_TRACE") == "1";
     public readonly Dictionary<string, (long below, long above, long sector, long n, double beyond)> OccWhy = new();
-    /// <summary>C8: members inside the population's pen - its band, and its sector when it has one (SubstrateCore.SetSector).</summary>
+    /// <summary>C8: members inside the population's pen - its band, and its sector when it has one (SubstrateCore.SetSector).
+    /// An arms-race pond's pen is the pond itself (Docs/SUBSTRATE_FAUNA.md §11): a sphere about SubstrateArms.PondCentre
+    /// that reaches past the band it is centred in - the lab's world, which its members never leave.</summary>
     public void Occupancy(Cell c, List<(string, int, int)> into)
     {
         foreach (var p in _pops)
@@ -1346,6 +1360,11 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
                     var (b0, a0, s0, n0, d0) = OccWhy.GetValueOrDefault(p.Key);
                     float beyond = below ? pop.BandInner - r : above ? r - pop.BandOuter : 0f;
                     OccWhy[p.Key] = (b0 + (below ? 1 : 0), a0 + (above ? 1 : 0), s0 + (outSector ? 1 : 0), n0 + 1, d0 + beyond);
+                }
+                if (pop.Arms != null)
+                {
+                    if (Vector3.Distance(at, SubstrateArms.PondCentre(pop)) <= pop.P.Arms.PondR + 1f) inPen++;
+                    continue;
                 }
                 if (below || above || outSector) continue;
                 inPen++;
