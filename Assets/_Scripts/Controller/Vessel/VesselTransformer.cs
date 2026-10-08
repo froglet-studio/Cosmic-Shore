@@ -318,6 +318,10 @@ public class VesselTransformer : MonoBehaviour
         // ApplyVelocityModifiers pass normalizes the material once, as it always did.
         bool _bodyFlaring = true;
 
+        // Same edge-trigger for the engine flare. Seeded true so the first pass writes the
+        // rest state once.
+        bool _engineFlaring = true;
+
         /// <summary>Current additive world-space displacement (the ModifyVelocity channel),
         /// summed on top of speed * Course by MoveShip. Read-only view for systems that need
         /// the vessel's ACTUAL travel direction (e.g. barrel-roll bridging prisms).</summary>
@@ -504,6 +508,7 @@ public class VesselTransformer : MonoBehaviour
             ExternalTurnRateMultiplier = 1f;  // ...nor a slowed turn
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
+            _engineFlaring = true;
 
             // Vector flight model: drop the momentum vector and re-seed on the next frame from
             // whatever `speed` is by then, so an inherited-speed swap (SetInitialSpeed after a
@@ -1342,7 +1347,7 @@ public class VesselTransformer : MonoBehaviour
                 if (modifier.elapsedTime >= modifier.duration)
                 {
                     ThrottleModifiers.RemoveAt(i);
-                    if (ThrottleModifiers.Count == 0)
+                    if (ThrottleModifiers.Count == 0 && VesselStatus.IsSlowed)
                     {
                         VesselStatus.IsSlowed = false;
                         Vessel.RemoveSlowedShipTransformFromGameData();
@@ -1351,8 +1356,13 @@ public class VesselTransformer : MonoBehaviour
                 else if (modifier.initialValue < 1f)
                 {
                     accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
-                    VesselStatus.IsSlowed = true;
-                    Vessel.AddSlowedShipTransformToGameData();
+                    // On the TRANSITION only: the add is a ServerRpc + ClientRpc broadcast, and
+                    // it used to go out every frame for as long as the slow lasted.
+                    if (!VesselStatus.IsSlowed)
+                    {
+                        VesselStatus.IsSlowed = true;
+                        Vessel.AddSlowedShipTransformToGameData();
+                    }
                 }
                 else
                 {
@@ -1362,7 +1372,7 @@ public class VesselTransformer : MonoBehaviour
 
             accumulatedThrottleModification = Mathf.Clamp(accumulatedThrottleModification, 0f, speedModifierMax);
 
-            if (accumulatedThrottleModification < 0.001f)
+            if (accumulatedThrottleModification < 0.001f && VesselStatus.IsSlowed)
             {
                 VesselStatus.IsSlowed = false;
                 Vessel.RemoveSlowedShipTransformFromGameData();
@@ -1370,10 +1380,16 @@ public class VesselTransformer : MonoBehaviour
 
             throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);
 
-            if (throttleMultiplier > 1f)
-                VesselStatus.VesselAnimation?.FlareEngine();
-            else
-                VesselStatus.VesselAnimation?.StopFlareEngine();
+            // Edge-triggered, like the body flare: FlareEngine/StopFlareEngine write through
+            // SkinnedMeshRenderer.materials[3], which allocates the array (and instances the
+            // materials) on every call - and this ran every frame for every flying hull.
+            bool engineFlaring = throttleMultiplier > 1f;
+            if (engineFlaring != _engineFlaring)
+            {
+                if (engineFlaring) VesselStatus.VesselAnimation?.FlareEngine();
+                else VesselStatus.VesselAnimation?.StopFlareEngine();
+                _engineFlaring = engineFlaring;
+            }
         }
 
         /// <param name="translationRestricted">While true, every modifier still ages out, but
