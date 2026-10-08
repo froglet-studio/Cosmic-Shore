@@ -1,0 +1,1019 @@
+{
+ "summary": {
+  "levels": "93/93",
+  "effects": "7/7",
+  "cross": "5/5",
+  "fails": 0
+ },
+ "levels": [
+  {
+   "policy": "wander",
+   "metric": "eat grazer<-env",
+   "cls": "shared",
+   "js": 22140.83,
+   "py": 20503.99,
+   "diff": 1636.84,
+   "tol": 7749.29,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat leviathan<-env",
+   "cls": "shared",
+   "js": 380.11,
+   "py": 342.69,
+   "diff": 37.42,
+   "tol": 1085.59,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat leviathan<-wake",
+   "cls": "shared",
+   "js": 215.0,
+   "py": 175.55,
+   "diff": 39.45,
+   "tol": 153.09,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat locust<-env",
+   "cls": "shared",
+   "js": 5810.53,
+   "py": 7383.79,
+   "diff": -1573.26,
+   "tol": 3458.03,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat locust<-wake",
+   "cls": "shared",
+   "js": 1466.67,
+   "py": 1887.22,
+   "diff": -420.55,
+   "tol": 876.97,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat snaptrap<-env",
+   "cls": "shared",
+   "js": 471.79,
+   "py": 137.06,
+   "diff": 334.73,
+   "tol": 440.54,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat snaptrap<-wake",
+   "cls": "shared",
+   "js": 51.11,
+   "py": 156.66,
+   "diff": -105.55,
+   "tol": 150.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat stampede<-env",
+   "cls": "shared",
+   "js": 656.26,
+   "py": 578.87,
+   "diff": 77.39,
+   "tol": 325.66,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "eat stampede<-wake",
+   "cls": "shared",
+   "js": 172.22,
+   "py": 161.11,
+   "diff": 11.11,
+   "tol": 150.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits locust",
+   "cls": "",
+   "js": 52.83,
+   "py": 49.72,
+   "diff": 3.11,
+   "tol": 85.37,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits lurker",
+   "cls": "",
+   "js": 1.44,
+   "py": 1.0,
+   "diff": 0.44,
+   "tol": 1.82,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits mobber",
+   "cls": "",
+   "js": 0.78,
+   "py": 1.17,
+   "diff": -0.39,
+   "tol": 2.07,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits pack",
+   "cls": "",
+   "js": 4.28,
+   "py": 4.11,
+   "diff": 0.17,
+   "tol": 1.33,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits stampede",
+   "cls": "",
+   "js": 8.22,
+   "py": 8.61,
+   "diff": -0.39,
+   "tol": 5.12,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits thief",
+   "cls": "",
+   "js": 17.78,
+   "py": 31.56,
+   "diff": -13.78,
+   "tol": 15.42,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "hits total",
+   "cls": "",
+   "js": 86.06,
+   "py": 97.0,
+   "diff": -10.94,
+   "tol": 76.77,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "move fortress<-env",
+   "cls": "shared",
+   "js": 44668.64,
+   "py": 50024.73,
+   "diff": -5356.1,
+   "tol": 47142.33,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "move fortress<-wake",
+   "cls": "shared",
+   "js": 35332.22,
+   "py": 24501.66,
+   "diff": 10830.56,
+   "tol": 12366.28,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end fortress",
+   "cls": "",
+   "js": 48.0,
+   "py": 48.0,
+   "diff": 0.0,
+   "tol": 7.2,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end grazer",
+   "cls": "",
+   "js": 1600.0,
+   "py": 1600.0,
+   "diff": 0.0,
+   "tol": 240.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end leviathan",
+   "cls": "",
+   "js": 140.0,
+   "py": 140.0,
+   "diff": 0.0,
+   "tol": 21.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end locust",
+   "cls": "",
+   "js": 360.0,
+   "py": 360.0,
+   "diff": 0.0,
+   "tol": 54.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end lurker",
+   "cls": "",
+   "js": 16.0,
+   "py": 16.0,
+   "diff": 0.0,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end mobber",
+   "cls": "",
+   "js": 50.0,
+   "py": 50.0,
+   "diff": 0.0,
+   "tol": 7.5,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end pack",
+   "cls": "",
+   "js": 7.0,
+   "py": 7.0,
+   "diff": 0.0,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end snaptrap",
+   "cls": "",
+   "js": 45.0,
+   "py": 42.5,
+   "diff": 2.5,
+   "tol": 6.75,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end stampede",
+   "cls": "",
+   "js": 72.0,
+   "py": 72.0,
+   "diff": 0.0,
+   "tol": 10.8,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_end thief",
+   "cls": "",
+   "js": 18.0,
+   "py": 18.0,
+   "diff": 0.0,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean fortress",
+   "cls": "",
+   "js": 48.0,
+   "py": 48.0,
+   "diff": 0.0,
+   "tol": 7.2,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean grazer",
+   "cls": "",
+   "js": 1570.14,
+   "py": 1571.09,
+   "diff": -0.94,
+   "tol": 235.66,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean leviathan",
+   "cls": "",
+   "js": 140.0,
+   "py": 140.0,
+   "diff": 0.0,
+   "tol": 21.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean locust",
+   "cls": "",
+   "js": 244.15,
+   "py": 262.53,
+   "diff": -18.38,
+   "tol": 40.36,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean lurker",
+   "cls": "",
+   "js": 16.0,
+   "py": 16.0,
+   "diff": 0.0,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean mobber",
+   "cls": "",
+   "js": 50.0,
+   "py": 50.0,
+   "diff": 0.0,
+   "tol": 7.5,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean pack",
+   "cls": "",
+   "js": 7.0,
+   "py": 7.0,
+   "diff": 0.0,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean snaptrap",
+   "cls": "",
+   "js": 43.36,
+   "py": 41.46,
+   "diff": 1.9,
+   "tol": 6.5,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean stampede",
+   "cls": "",
+   "js": 72.0,
+   "py": 72.0,
+   "diff": 0.0,
+   "tol": 10.8,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "pop_mean thief",
+   "cls": "",
+   "js": 18.0,
+   "py": 18.0,
+   "diff": 0.0,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "steal fortress<-env",
+   "cls": "shared",
+   "js": 790.56,
+   "py": 805.0,
+   "diff": -14.44,
+   "tol": 1030.38,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "metric": "steal fortress<-wake",
+   "cls": "shared",
+   "js": 521.11,
+   "py": 351.67,
+   "diff": 169.44,
+   "tol": 182.39,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals fortress",
+   "cls": "",
+   "js": 9.94,
+   "py": 8.06,
+   "diff": 1.89,
+   "tol": 3.05,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals grazer",
+   "cls": "",
+   "js": 0.89,
+   "py": 2.83,
+   "diff": -1.94,
+   "tol": 4.54,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals leviathan",
+   "cls": "",
+   "js": 4.72,
+   "py": 5.22,
+   "diff": -0.5,
+   "tol": 2.35,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals locust",
+   "cls": "",
+   "js": 9.94,
+   "py": 20.5,
+   "diff": -10.56,
+   "tol": 20.72,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals lurker",
+   "cls": "",
+   "js": 2.06,
+   "py": 1.5,
+   "diff": 0.56,
+   "tol": 1.08,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals mobber",
+   "cls": "",
+   "js": 1.0,
+   "py": 2.44,
+   "diff": -1.44,
+   "tol": 5.56,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals pack",
+   "cls": "",
+   "js": 1.94,
+   "py": 1.72,
+   "diff": 0.22,
+   "tol": 0.58,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "crystals thief",
+   "cls": "",
+   "js": 0.61,
+   "py": 1.5,
+   "diff": -0.89,
+   "tol": 2.04,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat grazer<-env",
+   "cls": "shared",
+   "js": 21802.69,
+   "py": 21281.68,
+   "diff": 521.01,
+   "tol": 7630.94,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat leviathan<-env",
+   "cls": "shared",
+   "js": 143.22,
+   "py": 283.01,
+   "diff": -139.78,
+   "tol": 674.03,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat leviathan<-wake",
+   "cls": "shared",
+   "js": 607.78,
+   "py": 492.22,
+   "diff": 115.55,
+   "tol": 312.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat locust<-env",
+   "cls": "shared",
+   "js": 7026.51,
+   "py": 6173.63,
+   "diff": 852.88,
+   "tol": 5199.21,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat locust<-locust",
+   "cls": "own",
+   "js": 286.21,
+   "py": 873.11,
+   "diff": -586.9,
+   "tol": 925.86,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat locust<-wake",
+   "cls": "shared",
+   "js": 1185.56,
+   "py": 1942.22,
+   "diff": -756.66,
+   "tol": 1725.61,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat snaptrap<-env",
+   "cls": "shared",
+   "js": 558.32,
+   "py": 163.31,
+   "diff": 395.01,
+   "tol": 497.1,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat stampede<-env",
+   "cls": "shared",
+   "js": 597.29,
+   "py": 792.47,
+   "diff": -195.18,
+   "tol": 577.01,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "eat stampede<-wake",
+   "cls": "shared",
+   "js": 318.33,
+   "py": 260.0,
+   "diff": 58.33,
+   "tol": 351.43,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits fortress",
+   "cls": "",
+   "js": 1.06,
+   "py": 0.94,
+   "diff": 0.11,
+   "tol": 1.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits leviathan",
+   "cls": "",
+   "js": 2.39,
+   "py": 2.44,
+   "diff": -0.06,
+   "tol": 1.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits locust",
+   "cls": "",
+   "js": 3.28,
+   "py": 8.78,
+   "diff": -5.5,
+   "tol": 8.27,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits lurker",
+   "cls": "",
+   "js": 1.17,
+   "py": 0.89,
+   "diff": 0.28,
+   "tol": 1.13,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits mobber",
+   "cls": "",
+   "js": 0.67,
+   "py": 1.72,
+   "diff": -1.06,
+   "tol": 4.46,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits stampede",
+   "cls": "",
+   "js": 7.56,
+   "py": 7.28,
+   "diff": 0.28,
+   "tol": 8.64,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits thief",
+   "cls": "",
+   "js": 14.33,
+   "py": 23.06,
+   "diff": -8.72,
+   "tol": 21.55,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "hits total",
+   "cls": "",
+   "js": 31.72,
+   "py": 46.67,
+   "diff": -14.94,
+   "tol": 24.52,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-env",
+   "cls": "shared",
+   "js": 28264.27,
+   "py": 32855.97,
+   "diff": -4591.7,
+   "tol": 39645.06,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-grazer",
+   "cls": "cross",
+   "js": 204.88,
+   "py": 502.74,
+   "diff": -297.86,
+   "tol": 1044.45,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-leviathan",
+   "cls": "cross",
+   "js": 304.44,
+   "py": 146.66,
+   "diff": 157.78,
+   "tol": 254.4,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-locust",
+   "cls": "cross",
+   "js": 3768.74,
+   "py": 3204.92,
+   "diff": 563.82,
+   "tol": 9682.2,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-lurker",
+   "cls": "cross",
+   "js": 205.55,
+   "py": 120.0,
+   "diff": 85.55,
+   "tol": 282.23,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-pack",
+   "cls": "cross",
+   "js": 648.0,
+   "py": 330.67,
+   "diff": 317.33,
+   "tol": 1032.66,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "move fortress<-wake",
+   "cls": "shared",
+   "js": 50722.78,
+   "py": 44680.56,
+   "diff": 6042.22,
+   "tol": 17752.97,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end fortress",
+   "cls": "",
+   "js": 37.67,
+   "py": 39.5,
+   "diff": -1.83,
+   "tol": 5.92,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end grazer",
+   "cls": "",
+   "js": 1600.0,
+   "py": 1600.0,
+   "diff": 0.0,
+   "tol": 240.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end leviathan",
+   "cls": "",
+   "js": 126.33,
+   "py": 124.5,
+   "diff": 1.83,
+   "tol": 18.95,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end locust",
+   "cls": "",
+   "js": 360.0,
+   "py": 360.0,
+   "diff": 0.0,
+   "tol": 54.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end lurker",
+   "cls": "",
+   "js": 9.83,
+   "py": 11.5,
+   "diff": -1.67,
+   "tol": 3.24,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end mobber",
+   "cls": "",
+   "js": 47.0,
+   "py": 42.67,
+   "diff": 4.33,
+   "tol": 16.67,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end snaptrap",
+   "cls": "",
+   "js": 46.17,
+   "py": 42.17,
+   "diff": 4.0,
+   "tol": 6.92,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end stampede",
+   "cls": "",
+   "js": 71.83,
+   "py": 71.67,
+   "diff": 0.17,
+   "tol": 10.77,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_end thief",
+   "cls": "",
+   "js": 16.17,
+   "py": 13.5,
+   "diff": 2.67,
+   "tol": 6.13,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean fortress",
+   "cls": "",
+   "js": 42.02,
+   "py": 42.69,
+   "diff": -0.66,
+   "tol": 6.4,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean grazer",
+   "cls": "",
+   "js": 1570.21,
+   "py": 1571.1,
+   "diff": -0.89,
+   "tol": 235.67,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean leviathan",
+   "cls": "",
+   "js": 131.86,
+   "py": 133.29,
+   "diff": -1.43,
+   "tol": 19.99,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean locust",
+   "cls": "",
+   "js": 254.81,
+   "py": 244.45,
+   "diff": 10.35,
+   "tol": 53.29,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean lurker",
+   "cls": "",
+   "js": 12.51,
+   "py": 13.77,
+   "diff": -1.25,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean mobber",
+   "cls": "",
+   "js": 47.86,
+   "py": 44.91,
+   "diff": 2.95,
+   "tol": 12.56,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean pack",
+   "cls": "",
+   "js": 2.84,
+   "py": 3.47,
+   "diff": -0.63,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean snaptrap",
+   "cls": "",
+   "js": 43.87,
+   "py": 41.15,
+   "diff": 2.73,
+   "tol": 6.58,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean stampede",
+   "cls": "",
+   "js": 71.92,
+   "py": 71.86,
+   "diff": 0.06,
+   "tol": 10.79,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "pop_mean thief",
+   "cls": "",
+   "js": 17.16,
+   "py": 16.16,
+   "diff": 0.99,
+   "tol": 3.0,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "steal fortress<-env",
+   "cls": "shared",
+   "js": 552.41,
+   "py": 600.78,
+   "diff": -48.36,
+   "tol": 917.99,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "metric": "steal fortress<-wake",
+   "cls": "shared",
+   "js": 1240.0,
+   "py": 1043.33,
+   "diff": 196.67,
+   "tol": 434.0,
+   "ok": true
+  }
+ ],
+ "effects": [
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "crystals leviathan",
+   "cls": "",
+   "js": -36.56,
+   "py": -29.28,
+   "diff": -7.28,
+   "tol": 12.24,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "eat leviathan<-wake",
+   "cls": "shared",
+   "js": 418.33,
+   "py": 234.44,
+   "diff": 183.89,
+   "tol": 334.35,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "hits leviathan",
+   "cls": "",
+   "js": -9.44,
+   "py": -10.06,
+   "diff": 0.61,
+   "tol": 3.02,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "pop_end leviathan",
+   "cls": "",
+   "js": 110.17,
+   "py": 87.33,
+   "diff": 22.83,
+   "tol": 36.82,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "pop_mean leviathan",
+   "cls": "",
+   "js": 47.01,
+   "py": 44.06,
+   "diff": 2.94,
+   "tol": 14.64,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "ablation": "-grazer",
+   "metric": "eat locust<-env",
+   "cls": "shared",
+   "js": -7474.51,
+   "py": -6114.25,
+   "diff": -1360.26,
+   "tol": 5382.75,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-grazer",
+   "metric": "eat locust<-env",
+   "cls": "shared",
+   "js": -6293.44,
+   "py": -8762.62,
+   "diff": 2469.18,
+   "tol": 7319.69,
+   "ok": true
+  }
+ ]
+}

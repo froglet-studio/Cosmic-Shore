@@ -1563,18 +1563,208 @@ for the four species with no step sensitivity. The fidelity summary is baked int
 
 - **No human has rated anything yet.** The page is the instrument; the evidence starts when five or more pilots
   export ratings for `ratings.py`.
-- **Cross-species interactions are unvalidated.** In whole-cell mode thieves and fortress workers compete for the same
+- ~~**Cross-species interactions are unvalidated.** In whole-cell mode thieves and fortress workers compete for the same
   wake, grazers and locusts graze the same mass, and so on. No Python scores those interactions, so the whole-cell
-  mode is faithful species by species, not as an ecosystem.
+  mode is faithful species by species, not as an ecosystem.~~ **Covered (2026-10-08):** a Python twin of the whole
+  cell now scores them; see "Whole-cell gate" below.
 - **Whole-cell populations are scaled for vibrancy, not scored.** Grazers start at 900 (cap 1,600) against the
-  scored 120 (cap 240); locusts are capped at 360. Single-species modes use the scored defaults.
+  scored 120 (cap 240); locusts are capped at 360. Single-species modes use the scored defaults. **Since 2026-10-08**
+  the page has a "scored populations" picker (`?pop=scored`) that builds the cell at the scored defaults; the lively
+  cell stays the default.
 - **The fortress lattice is 12 sites each way in JS, 40 in Python.** Its Q template is below 0.05 past 52 u, so no
   rule reads or writes past 96 u; the fortress passes the gate at both steps.
 - **The flight world slows the player only on a burn or a snap.** The bestiary's slow-on-every-hit belongs to the
   flora harness; in flight a hit flashes, toasts and logs.
 - **Frame time is not measured on real graphics hardware** (see Performance).
-- **The page uses the game's NUMBERS (turn rate, boost ratio, chase offset), not its flight model.** It has no drift,
-  no element scaling and no abilities beyond ramming.
+- ~~**The page uses the game's NUMBERS (turn rate, boost ratio, chase offset), not its flight model.** It has no drift,
+  no element scaling and no abilities beyond ramming.~~ **Covered (2026-10-08):** the page now flies the game's own
+  scalar VesselTransformer with the Manta's authored numbers, the game's drift, Time/Mass element scaling, and the
+  Manta's Soar and Yastri. The old model is `?flight=arcade`. What still differs is listed under "Game flight model"
+  below.
+
+### Game flight model (2026-10-08)
+
+**Source.** Branch `bleeding-edge`, read with `git show`. All paths below are under `Assets/_Scripts/Controller/`
+unless they start with `Assets/`. The Manta runs the base `Vessel/VesselTransformer.cs` (script guid on
+`Assets/_Prefabs/Spacevessels/Manta.prefab:1895`) on its SCALAR path: `vectorFlightModel` and
+`holdSpeedWhileDrifting` default off (`VesselTransformer.cs:65`, `:100`), and the prefab leaves them unset.
+
+**The Manta's numbers** (`Manta.prefab:1898-1925`):
+
+| field | value |
+|---|---|
+| `DefaultThrottleScaler` | 180 |
+| `DefaultMinimumSpeed` | 0 |
+| `PitchScaler` / `YawScaler` / `RollScaler` | 50 / 30 / 100 deg/s |
+| `RotationThrottleScaler` | 0.2 deg/s per u/s |
+| `BoostSpeedMultiplier` | ElementalFloat on Time: 1 at rest, 1.3 at level 10, floor 0.7 |
+| `ThrottleScalerMultiplier` | disabled |
+| `VesselStatus.boostMultiplier` | 4 (`Manta.prefab:1879`; default 4 at `Vessel/VesselStatus.cs:78`) |
+| wake `trailVolume` | ElementalFloat on Mass: 1 to 2.5 (`Manta.prefab:1950-1955`) |
+
+**Formulas, one frame.**
+- **Stick.** `XSum = Ease(L.x + R.x)`, `YSum = -Ease(L.y + R.y)`, throttle `XDiff = (R.x - L.x + 2) / 4`
+  (`IO/GamepadInputStrategy.cs:238-241`). `Ease(x) = sign(x) (1 - cos(x pi/4))` (`IO/BaseInputStrategy.cs:34-39`),
+  so ONE full stick is only 0.29 of the turn rate; both thumbs together give 1.
+- **Rotation.** `accumulated = AngleAxis(stick * (speed * RotationThrottleScaler + Scaler) * dt, hull axis) *
+  accumulated` for roll (YDiff), yaw (XSum) and pitch (YSum) (`VesselTransformer.cs:894-916`). The hull then follows:
+  `rotation = Slerp(rotation, accumulated, 1.5 dt)` (`:548`, `:574`, `LERP_AMOUNT` at `:44`). That is a 0.67 s lag.
+  - So the Manta's turn rate GROWS with speed. Yaw is 30 + 0.2 v deg/s: 57 at 135 u/s, 66 at 180, and about 200 in
+    a full Soar. Pitch is 20 deg/s higher.
+- **Speed.**
+  - `target = XDiff * 180 * CurrentBoostAmount() + 0` (`:971-973`).
+  - `CurrentBoostAmount = BoostMultiplier * BoostSpeedMultiplier(Time)` while boosting, else 1 (`:918-930`).
+  - `speed = Lerp(speed, target, 1.5 dt)` (`:1041`). A zero target also brakes at a constant 180 / 2 s
+    (`Vessel/MinimumThrottleBrake.cs:9-38`).
+  - Boost multiplies the THROTTLE target, so a Soar at zero throttle does nothing.
+- **ElementalFloat.** `LerpUnclamped(Min, Max, level / 10)`, then floored if `UseFloor` (`Vessel/ElementalFloat.cs:137-138`).
+  The level is petals / 10 (`Vessel/ResourceSystem.cs:152`, `PetalNormalized`), so the page's flower petals ARE the
+  game's element levels.
+- **Drift.** `Vessel/R_VesselActions/Data Containers/DriftActionSO.cs:11-29` calls `BeginDrift(Mult, driftDamping)`.
+  - Each frame the trigger sum eases toward 0/1 at 12 /s for non-gamepad input (`VesselTransformer.cs:369`, `:396-410`).
+  - `ApplyAnalogDrift` scales the Pitch/Yaw/Roll scalers by `lerp(1, Mult, trig)` and sets
+    `Grip = lerp(1, driftDamping, trig)` (`:852-890`).
+  - In `MoveShipScalar`, `driftedCourse = Grip > 0.001 ? Slerp(Course, forward, Grip dt) : Course`, then
+    `Course = Slerp(forward, driftedCourse, trig)`. Outside a drift, `Course = forward` (`:1272-1293`).
+  - Position moves along `Course` at the throttle-driven speed. The throttle stays live in a drift.
+  - On release the trigger eases back to 0. Only then do the scalers restore and `IsDrifting` clear (`:404-410`, `:749-772`).
+- **The Manta binds no drift.** `Manta.prefab:2131-2152` binds four actions:
+  - OnlyRightStick: YawsteryAction-Right.
+  - OnlyLeftStick: YawsteryAction-Left.
+  - BothSticks: BoostAction.
+  - The gamepad (and keyboard) override binds MantaAnalogTurnBoostAction to all three.
+
+  The drift on the page is therefore one of the game's two shipped single-tier drift assets:
+  - **Dolphin** (Mult 1.5, damping 0) is the default: the course freezes.
+  - **Squirrel** (`?drift=squirrel`): Mult 1.8, damping 0.25.
+- **Soar and the trigger Yastri** (`Vessel/R_VesselActions/Executors/MantaAnalogTurnBoostExecutor.cs:98-125`). Yaw is
+  `(rt - lt) * 60 deg/s` (60 from `Manta.prefab:1330`). `BoostMultiplier = 1 + (4 - 1) * min(lt, rt)`, and boosting
+  is on while `min(lt, rt) > 0.01`. On keyboard the two Shifts are the two triggers.
+- **Touch Yastri** (`Executors/YawsteryActionExecutor.cs:115`, `:142`, `:214-220`). Lift one thumb after flying on
+  two (`IO/TouchInputStrategy.cs:262-284`). Lifting the right thumb turns LEFT.
+  - Yaw is `80 * (1 + Speed/100)^0.25 * intensity` deg/s.
+  - Intensity ramps in by smoothstep over 0.35 s and out linearly over 0.25 s.
+  - Turning to the other side ramps out first.
+- **Element scaling the Manta actually has** (`Assets/Resources/ElementalAbilityMaps/Manta.asset:17-64`):
+  - **Time** scales Soar's top speed.
+  - **Mass** scales the trail's prism volume (Yastri's turn rate is deliberately unscaled).
+  - **Charge** scales the Sting bomb bay.
+  - **Space** scales Kabloom's blast.
+  - Nothing scales turn rate or cruise speed.
+
+**What the page does.** `?flight=game` is the default; `G` toggles to arcade. Controls:
+
+| input | action |
+|---|---|
+| W/S | throttle (XDiff) |
+| A/D, arrows, mouse | the eased stick, treated as both thumbs moving together |
+| Q/E | roll |
+| Shift, pad A or RB, touch BOOST | Soar (both triggers) |
+| Z / X, pad LT / RT | the Manta's two triggers |
+| touch: lift one thumb | the ramped Yastri |
+| Space, pad LB, touch DRIFT | drift |
+
+- The HUD line reads `game flight · DRIFT 60° · YASTRI ◀ · SOAR ×4.60 · wake ×1.75`. During a drift a flight-path
+  marker shows where the vessel is actually going.
+- Element levels come from the stakes flower; with stakes off they are at rest (level 0). Mass petals set
+  `arena.trail_vol = 10 x lerp(1, 2.5, mass/10)`. The conservation ledger still closes to a residual of 0.
+- The step is allocation-free: scratch vectors, and reused input and autopilot objects.
+
+**Verified** (`browser_test.py` section 6). Both models are stepped deterministically on a paused page:
+
+| check | measured |
+|---|---|
+| plain turn: course vs nose | 0.000 deg off |
+| Dolphin drift: heading over 1 s | turned 55.5 deg |
+| Dolphin drift: velocity direction over the same 1 s | moved 0.00 deg |
+| Dolphin drift: slip | 59.5 deg |
+| slip 0.4 s after release | 0 |
+| X trigger | 60.0 deg/s to the right |
+| touch lift | intensity 1 after 0.35 s; 51.74 deg in 0.5 s against 51.74 expected; left |
+| Soar | x4.60 at 5 Time petals, x5.20 at 10, x4.00 at 0; 180 to 814 u/s in 2.5 s |
+| wake | 10 at Mass 0, 25 at Mass 10 |
+| audit residual | 0 |
+
+`?flight=arcade` shows none of these behaviours. The thief and pack reaction checks, the stakes test and the
+showcase test all still pass. Screenshots: `shots/desktop_drift.png`, `shots/desktop_soar.png`.
+
+**What still differs from the game.**
+- **Scale.** At the Manta's Soar (720-940 u/s) the cell (R = 1,200) is crossed in about 3 s. The membrane
+  turn-back is a page rule, not the game's, and is scaled with speed so that it still holds. It also bends a
+  drifting course inward.
+  - The creatures' speeds and the fidelity gate were tuned against a 120-160 u/s pilot. A Soaring Manta outruns
+    everything, which is the game's number, not a tuning choice.
+- **Control layout.** The page uses one stick for pitch and yaw, mapped as `Ease(2v)`. The game's dual-stick scheme
+  (`XSum` from both sticks' x, throttle from their spread) is not reproduced on gamepad or touch.
+- **Keyboard.** The game's keyboard reads mouse DELTA for yaw and pitch and A/D for roll (`IO/KeyboardMouseInputStrategy.cs:192-195`).
+  The page keeps its own layout.
+- **Not implemented.**
+  - Sting/Kabloom bombs: Charge and Space.
+  - Mass-5 shielded turn trails.
+  - Yastri's outer-lane trail flare.
+  - The AI's Soar-when-straight drive (the page autopilot never Soars).
+  - Gyro.
+  - The touch nose-response option (`touchNoseResponse`, 0 on the Manta anyway).
+  - The vector flight model (no shipped Manta uses it).
+- **Drift on the Manta is borrowed.** The page binds the Dolphin's or Squirrel's drift to a hull that has none in
+  the game. On a pad, drift is a binary LB eased at 12 /s rather than an analog trigger sum, because the Manta's
+  triggers are already Yastri and Soar.
+- **Step size.** The page steps at a fixed 30 Hz; the game runs per rendered frame. The slerp and lerp use `k * dt`
+  the same way, so 30 Hz is slightly softer than 60 Hz (the per-second retention of the 1.5 /s lag differs by about 2%).
+- **Wake orientation.** Wake prisms are laid along the travel direction (Course). In the game, trail prisms orient
+  by facing (`blockRotation`), so in a drift the page's wake prisms point along the slide and the game's point
+  along the nose.
+
+### Whole-cell gate (2026-10-08, `cell_py.py` / `cell_js.js` / `cell_fidelity.py`)
+
+**What it checks.** The species gate above scores each species alone in its own harness. This one scores what only
+exists when they share a cell. `cell_py.py` builds the page's 'cell' composition in ONE Python arena: BArena, 4,200
+scattered prisms, the pilot's trail booked as its wake (domain 1, trail flag), the fortress at its page anchor, and
+snap-trap clumps in the 0.3-0.75 R band. Every rule is each species' own Python. `cell_js.js` runs the page's own
+`FlightWorld` (new `opts`: `pilot`, `drop`, `pop`) with a scripted pilot in place of the player. Both book every eat,
+destroy, steal and haul to the species whose step made it AND to the creator of the prism: `env`, `wake`, or the
+species that laid it (a kill's skeleton, a fortress brick). Pilots wander and hunter, 6 seeds x 3 min, dt 0.1.
+
+**Result: it agrees.** Tolerance per row is max(abs floor, rel x max, 2.5 x combined SE), as in `fidelity.py`.
+
+| check | agree |
+|---|---|
+| levels: hits by species, mass flows by species x creator, populations, crystals | **93 / 93** |
+| of which cross-species flows (one species taking another's mass) | 5 / 5 |
+| interaction effects: full cell minus the cell without grazers / locusts / fortress | **7 / 7** |
+| negative control `locust.CHEW=20` (JS only) | fails 4 rows (locust intake, population, wake eaten, thief hits) |
+| negative control `grazer.CHEW=1` (JS only) | fails 1 row (wander thief hits) - weak: the gate is coarse for grazers |
+
+The table per row is `flight/results/cell_fidelity.md`.
+
+**What the cell does that no single species shows** (both languages agree):
+- **Grazers halve the locusts' food.** Without grazers, locusts eat 6,000-9,000 more env volume per minute.
+- **The fortress is the cell's biggest mover.** It hauls 25,000-50,000 vol/min, most of it the pilot's wake. Under a
+  hunter it also hauls the skeletons other species leave (the 5 cross-species rows: grazer, leviathan, locust, lurker
+  and pack mass, 120-3,800 vol/min each).
+- Grazers, locusts and the leviathan also eat skeletons in both languages, but under 150 vol/min, below the gate's floor.
+- **The fortress shields the leviathan from a hunter.** This is an artefact of publishing: each species overwrites
+  the arena's target list in turn and the fortress publishes after the leviathan, so a hunter pilot chases the
+  fortress core. Without the fortress it hunts the leviathan (+37 leviathan crystals/min). It is identical in both
+  languages and concerns only scripted pilots; the player chooses for themselves.
+
+**Tilts inside tolerance** (worth knowing, not failures):
+- JS fortress takes about 40% more wake than Python, by both haul and steal. Thieves then get less warm wake: JS thief
+  hits on a wanderer are 18/min against 32/min.
+- JS snap traps eat about 3x more env (470-560 vol/min against 140-160) and less wake. The seed spread is large
+  (Python 0-420 per run), so the rows pass.
+- Neither was chased further. The fortress lattice difference (12 vs 40 sites) is the first suspect.
+
+**One bug found in the reference, not the page.** BArena never records a pilot's previous position (only
+FloraArena does). The snap trap sweeps ram/burn contacts along prev -> pos, so its first run swept the whole flight
+path and logged 20x the hits. `cell_py.py` now records prev every step, as the page's arena does.
+
+**Speed.** The Python grazer's all-pairs schooling at 1,600 grazers cost 0.9 s a step. `grazer.flock()` now visits
+only the columns inside each spatially sorted row block's box + 30 u. It matches the all-pairs maths to 1e-9
+(`python grazer.py --check-flock`), and the step dropped to 0.14 s. JS runs the same cell at about 10 ms a step.
+
+**Not covered.** The player's own flight model is not in either reference: scripted pilots fly the arena's turn
+model. dt 1/30 was not run for the whole cell. The siege (JS-original) is not in the cell gate.
 
 ## Living cell (Direction G, branch `cece/eco-living-cell`, 2026-10-02)
 

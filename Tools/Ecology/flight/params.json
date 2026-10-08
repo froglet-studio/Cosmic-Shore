@@ -65,6 +65,7 @@
    },
    "init": {
     "cap": null,
+    "clusters": 4,
     "n": 120
    },
    "source": "flight/grazer.py"

@@ -15,6 +15,8 @@ Local rules (weighted sum, no branch picks a behaviour):
   * breed:    a gut >= FULL buds a newborn whose body is paid from the gut (cap CAP: production gating)
 Threat: none (intent 0, no hits). Payoff: each grazer a crystal, but they scatter from a charging pilot.
 """
+import sys
+
 import numpy as np
 
 from core import Herd, unit, steer, contain, pairwise, separation
@@ -25,14 +27,42 @@ CAP = 240
 SPEED, FLEE_V, SENSE, COMFORT, CHEW, FULL, BREED = 34.0, 90.0, 200.0, 70.0, 4.0, 30.0, 10.0
 
 
+def flock(P, V, rows=96):
+    """Schooling sums: align / cohere inside 30 u, separate inside 9 u - the all-pairs maths of bestiary/core.py
+    (pairwise + separation), but each block of spatially sorted rows only visits the columns inside its bounding box
+    grown by 30 u, so a 1,600-strong cell flock costs its neighbours, not n^2. Pairs outside 30 u add exact zeros in
+    the all-pairs version, so only the summation order differs (agrees to ~1e-12 relative;
+    `python grazer.py --check-flock`)."""
+    n = len(P)
+    align = np.zeros_like(P); coh = np.zeros_like(P); sep = np.zeros_like(P)
+    if n == 0:
+        return align, coh, sep
+    key = np.floor(P / 30.0).astype(np.int64)
+    order = np.lexsort((key[:, 2], key[:, 1], key[:, 0]))
+    for a in range(0, n, rows):
+        I = order[a:a + rows]
+        lo = P[I].min(0) - 30.0; hi = P[I].max(0) + 30.0
+        J = np.flatnonzero(np.all((P >= lo) & (P <= hi), axis=1))
+        D = P[J][None, :, :] - P[I][:, None, :]
+        d = np.linalg.norm(D, axis=2)
+        d[I[:, None] == J[None, :]] = np.inf
+        m = d < 30
+        cnt = np.maximum(m.sum(1, keepdims=True), 1)
+        align[I] = (m[:, :, None] * V[J][None, :, :]).sum(1) / cnt
+        coh[I] = (m[:, :, None] * D).sum(1) / cnt
+        w = np.clip(1.0 - d / 9.0, 0, None)
+        sep[I] = -(D / np.maximum(d[:, :, None], 1e-6) * w[:, :, None]).sum(axis=1)
+    return align, coh, sep
+
+
 class Grazer(Herd):
     name = "grazer"
 
-    def __init__(self, arena, n=120, cap=CAP):
+    def __init__(self, arena, n=120, cap=CAP, clusters=4):
         super().__init__(arena, cap, spread=60.0, size=2.5, body=4.0)
         env = np.flatnonzero(arena.mass_owner < 0)
-        c = arena.mass_pos[arena.rng.choice(env, 4, replace=False)]
-        self.pos = c[np.arange(cap) % 4] + arena.rng.normal(0, 40.0, (cap, 3))
+        c = arena.mass_pos[arena.rng.choice(env, clusters, replace=False)]
+        self.pos = c[np.arange(cap) % clusters] + arena.rng.normal(0, 40.0, (cap, 3))
         self.alive[n:] = False; self.body[n:] = 0.0
         self.gut[:n] = 10.0
         self.fear = np.zeros(cap)
@@ -48,12 +78,7 @@ class Grazer(Herd):
         if len(idx) == 0:
             return
         P = self.pos[idx]; V = self.vel[idx]
-        D, d = pairwise(P)
-        m = d < 30
-        cnt = np.maximum(m.sum(1, keepdims=True), 1)
-        align = (m[:, :, None] * V[None, :, :]).sum(1) / cnt
-        coh = (m[:, :, None] * D).sum(1) / cnt
-        sep = separation(D, d, 9.0)
+        align, coh, sep = flock(P, V)
         self.tick += 1
         turn = (idx + self.tick) % 4 == 0
         for ii in np.flatnonzero(turn | (self.food[idx] < 0)):
@@ -115,3 +140,14 @@ ABLATIONS = {"nofear": "never scatters (fear pinned 0)"}
 def make(arena, ablate=None):
     sp = Grazer(arena); sp.ablate = ablate
     return sp
+
+
+if __name__ == "__main__" and "--check-flock" in sys.argv:
+    rng = np.random.default_rng(1)
+    for n in (5, 130, 900, 1600):
+        P = rng.normal(0, 60, (n, 3)); V = rng.normal(0, 30, (n, 3))
+        D, d = pairwise(P); m = d < 30; cnt = np.maximum(m.sum(1, keepdims=True), 1)
+        ref = ((m[:, :, None] * V[None, :, :]).sum(1) / cnt, (m[:, :, None] * D).sum(1) / cnt, separation(D, d, 9.0))
+        got = flock(P, V)
+        assert all(np.allclose(x, y, rtol=1e-9, atol=1e-9) for x, y in zip(ref, got)), n
+    print("flock: matches pairwise + separation")

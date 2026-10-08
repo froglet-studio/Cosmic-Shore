@@ -1,0 +1,13 @@
+wander  seed  101  hits/min 197.67     59.7 ms/step  (108 s)
+wander  seed    7  hits/min 203.00     60.2 ms/step  (109 s)
+wander  seed   41  hits/min  67.67     62.0 ms/step  (112 s)
+wander  seed   23  hits/min  82.67     64.0 ms/step  (116 s)
+wander  seed  303  hits/min  84.67     64.1 ms/step  (224 s)
+hunter  seed   23  hits/min  21.00     64.6 ms/step  (232 s)
+hunter  seed    7  hits/min  49.67     68.8 ms/step  (236 s)
+wander  seed  202  hits/min 158.33     72.5 ms/step  (238 s)
+hunter  seed   41  hits/min  63.33     75.5 ms/step  (360 s)
+hunter  seed  202  hits/min  62.33     71.5 ms/step  (365 s)
+hunter  seed  101  hits/min  20.00     73.8 ms/step  (365 s)
+hunter  seed  303  hits/min  60.00     71.4 ms/step  (367 s)
+wrote /home/claude/cosmic-shore/Tools/Ecology/flight/results/cell_py_minus_grazer.json
