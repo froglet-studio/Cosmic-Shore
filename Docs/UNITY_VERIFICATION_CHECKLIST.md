@@ -95,6 +95,13 @@ crystal FBXs. Offline: all 40 crystal × hull-FBX pairs solve with every point o
 §12). `/verify-unity` did not run (no `unity` CLI); compiled headless against Unity references
 (player + editor, negative-controlled), geometry suite 45/45.
 
+**First fleet playtest (2026-10-08):** Charge/Space/Time worked on Squirrel and Dolphin. **Mass**
+"shrank to a point" on both: fixed (the band freeze was being discarded every frame, doc §12), and
+the outer shell now flies while the three shrinking shells fade. **Grizzly** "didn't work at all":
+cause unconfirmed; hardened (hull found by the bake's own mesh, a lost pin no longer ends the
+fusion). Re-test Mass on any hull and anything on the Grizzly; if the Grizzly still plays the old
+capture, the console's `[CrystalHullFusion]` warning names why.
+
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
    still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.

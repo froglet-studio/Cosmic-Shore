@@ -154,6 +154,11 @@ namespace CosmicShore.Gameplay
         bool _hasArcIntensity, _hasArcDuty;
         float _startTime;
 
+        Renderer[] _companions;             // crystal shells fading in place, then hidden
+        MaterialPropertyBlock[] _companionBlocks;
+        int[] _companionOpacityId;
+        float[] _companionStartOpacity;
+
         /// <summary>Seconds from start until every face is down — when the pickup sound belongs.</summary>
         public float MateDelaySeconds => _entry.MateSecondsFromStart;
 
@@ -210,26 +215,23 @@ namespace CosmicShore.Gameplay
         /// BODY plus every mesh part under that body. Null when there is neither - the Butterfly's
         /// hull mesh is generated at runtime and has no asset to solve against.
         /// </summary>
-        public static HullRig FindHull(Transform root, bool requireActive = true)
+        public static HullRig FindHull(Transform root, bool requireActive = true, Mesh bakedKey = null)
         {
             if (!root) return null;
-            var skinned = FindHullRenderer(root, requireActive);
-            if (skinned)
+
+            // A bake names the mesh it was solved on: find THAT one first, whatever else the vessel
+            // is drawing at the moment (a larger effect mesh, a renderer an ability switched off), so
+            // the runtime and the bake cannot disagree about which hull this is.
+            if (bakedKey)
             {
-                var bones = skinned.bones ?? Array.Empty<Transform>();
-                var pins = new Transform[bones.Length + 1];
-                Array.Copy(bones, pins, bones.Length);
-                pins[bones.Length] = skinned.transform;
-                return new HullRig
-                {
-                    Space = skinned.transform,
-                    Bones = pins,
-                    KeyMesh = skinned.sharedMesh,
-                    VertexCount = skinned.sharedMesh.vertexCount,
-                    PartCount = 1,
-                    Skinned = skinned,
-                };
+                foreach (var candidate in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    if (candidate && candidate.sharedMesh == bakedKey) return SkinnedRig(candidate);
+                foreach (var candidate in root.GetComponentsInChildren<MeshFilter>(true))
+                    if (IsHullPart(candidate) && candidate.sharedMesh == bakedKey) return StaticRig(candidate);
             }
+
+            var skinned = FindHullRenderer(root, requireActive);
+            if (skinned) return SkinnedRig(skinned);
 
             MeshFilter body = null;
             int bodyVertices = -1;
@@ -241,8 +243,28 @@ namespace CosmicShore.Gameplay
                 body = filter;
                 bodyVertices = filter.sharedMesh.vertexCount;
             }
-            if (!body) return null;
+            return body ? StaticRig(body) : null;
+        }
 
+        static HullRig SkinnedRig(SkinnedMeshRenderer skinned)
+        {
+            var bones = skinned.bones ?? Array.Empty<Transform>();
+            var pins = new Transform[bones.Length + 1];
+            Array.Copy(bones, pins, bones.Length);
+            pins[bones.Length] = skinned.transform;
+            return new HullRig
+            {
+                Space = skinned.transform,
+                Bones = pins,
+                KeyMesh = skinned.sharedMesh,
+                VertexCount = skinned.sharedMesh.vertexCount,
+                PartCount = 1,
+                Skinned = skinned,
+            };
+        }
+
+        static HullRig StaticRig(MeshFilter body)
+        {
             // Parts are taken regardless of their active or enabled state, in hierarchy order, so the
             // prefab the bake read and the live vessel always list the SAME transforms at the same
             // indices - a part an ability hides mid-flight does not renumber the rest.
@@ -265,10 +287,10 @@ namespace CosmicShore.Gameplay
             }
             rig.Bones[parts.Count] = body.transform;
             return rig;
-
-            static bool IsHullPart(MeshFilter filter) =>
-                filter && filter.sharedMesh && filter.TryGetComponent<MeshRenderer>(out _);
         }
+
+        static bool IsHullPart(MeshFilter filter) =>
+            filter && filter.sharedMesh && filter.TryGetComponent<MeshRenderer>(out _);
 
         /// <summary>
         /// The hull is the renderer the vessel's ELEMENT display lives on — the skinned mesh carrying
@@ -304,12 +326,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The mesh a crystal (prefab or instance) DRAWS, the source asset it was baked from, and
         /// the renderer drawing it (<paramref name="model"/> is that renderer's GameObject - the
-        /// space the mesh lives in). The first crystal model with a mesh wins:
+        /// space the mesh lives in):
         ///
         ///   CHARGE - a MeshRenderer whose filter holds <see cref="CrystalEdgeArcs"/>' twin on an
         ///            instance; on a prefab the baker hands back the same cached twin.
-        ///   MASS   - four nested MeshRenderer shells of ONE mesh, told apart only by their shader's
-        ///            scale band, which the fusion freezes (<see cref="Adopt"/>) - so the first will do.
+        ///   MASS   - four nested MeshRenderer shells of ONE mesh. Three ride a Shepard band that
+        ///            SHRINKS them (<c>_ScaleDistance</c> on); the outer one holds its size. The outer
+        ///            one is the body that flies (<see cref="ShellRank"/>); the other three fade in
+        ///            place (<see cref="IsCompanionShell"/>).
         ///   SPACE  - a SkinnedMeshRenderer spinning its blocks on blend shapes.
         ///   TIME   - a SkinnedMeshRenderer on a CHILD of the model, flipping its blocks on bones.
         /// </summary>
@@ -323,40 +347,73 @@ namespace CosmicShore.Gameplay
             var models = crystal ? crystal.CrystalModels : null;
             if (models == null) return false;
 
+            GameObject best = null;
+            int bestRank = int.MinValue;
             foreach (var data in models)
             {
                 var candidate = data?.model;
                 if (candidate == null) continue;
-
-                if (candidate.TryGetComponent<MeshFilter>(out var filter) && filter.sharedMesh &&
+                Renderer candidateRenderer = null;
+                if (candidate.TryGetComponent<MeshFilter>(out var candidateFilter) && candidateFilter.sharedMesh &&
                     candidate.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                {
-                    drawn = filter.sharedMesh;
-                    if (drawn.name.EndsWith(CrystalEdgeArcMeshBaker.BakedSuffix))
-                        CrystalEdgeArcMeshBaker.TryGetSource(drawn, out source, out plateCorners);
-                    else
-                    {
-                        source = drawn;
-                        if (candidate.TryGetComponent<CrystalEdgeArcs>(out var arcs))
-                        {
-                            plateCorners = arcs.PlateCorners;
-                            var baked = CrystalEdgeArcMeshBaker.GetOrBake(source, plateCorners);
-                            if (baked != null) drawn = baked;
-                        }
-                    }
-                    renderer = meshRenderer;
-                }
+                    candidateRenderer = meshRenderer;
                 else
                 {
                     var skinned = candidate.GetComponentInChildren<SkinnedMeshRenderer>(true);
-                    if (!skinned || !skinned.sharedMesh) continue;
-                    drawn = source = skinned.sharedMesh;
-                    renderer = skinned;
+                    if (skinned && skinned.sharedMesh) candidateRenderer = skinned;
                 }
-                model = renderer.gameObject;
-                return source != null;
+                if (!candidateRenderer) continue;
+
+                int rank = ShellRank(candidateRenderer);
+                if (rank <= bestRank) continue;   // ties keep the first
+                best = candidate;
+                bestRank = rank;
+                renderer = candidateRenderer;
             }
-            return false;
+            if (!best) return false;
+
+            if (renderer is SkinnedMeshRenderer skin)
+                drawn = source = skin.sharedMesh;
+            else
+            {
+                drawn = best.GetComponent<MeshFilter>().sharedMesh;
+                if (drawn.name.EndsWith(CrystalEdgeArcMeshBaker.BakedSuffix))
+                    CrystalEdgeArcMeshBaker.TryGetSource(drawn, out source, out plateCorners);
+                else
+                {
+                    source = drawn;
+                    if (best.TryGetComponent<CrystalEdgeArcs>(out var arcs))
+                    {
+                        plateCorners = arcs.PlateCorners;
+                        var baked = CrystalEdgeArcMeshBaker.GetOrBake(source, plateCorners);
+                        if (baked != null) drawn = baked;
+                    }
+                }
+            }
+            model = renderer.gameObject;
+            return source != null;
+        }
+
+        /// <summary>
+        /// Which crystal model flies: one whose shader holds its size (a Shepard shell with
+        /// <c>_ScaleDistance</c> off - the Mass crystal's big outer shell) beats an ordinary model,
+        /// which beats a shell whose band shrinks it. Every Mass shell is the same mesh, so the pick
+        /// never changes what a bake was solved against.
+        /// </summary>
+        static int ShellRank(Renderer renderer)
+        {
+            var material = renderer ? renderer.sharedMaterial : null;
+            if (!material || !material.HasProperty(BandScaleId)) return 1;
+            return material.GetFloat(BandScaleId) > 0.5f ? 0 : 2;
+        }
+
+        /// <summary>A crystal renderer that is NOT the one flying but can fade where it is - the
+        /// Mass crystal's three shrinking shells.</summary>
+        static bool IsCompanionShell(Renderer renderer, Renderer flying)
+        {
+            if (!renderer || renderer == flying || !renderer.enabled) return false;
+            var material = renderer.sharedMaterial;
+            return material && (material.HasProperty(ShepardOpacityId) || material.HasProperty(OpacityId));
         }
 
         /// <summary>
@@ -538,11 +595,10 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    HullRig hull = null;
                     foreach (var entry in config.Entries)
                     {
                         if (entry == null || entry.vessel != vesselStatus.VesselType) continue;
-                        hull ??= FindHull(animationRoot);
+                        var hull = FindHull(animationRoot, bakedKey: entry.bake ? entry.bake.HullMesh : null);
                         if (hull == null) return;
 
                         var set = ElementalCrystalSetSO.Load();
@@ -681,7 +737,7 @@ namespace CosmicShore.Gameplay
             using (s_beginMarker.Auto())
             {
                 var animation = vesselStatus.VesselAnimation;
-                var hull = animation ? FindHull(animation.transform) : null;
+                var hull = animation ? FindHull(animation.transform, bakedKey: entry.bake ? entry.bake.HullMesh : null) : null;
                 if (hull == null)
                 {
                     WarnOnce($"nohull:{vesselStatus.VesselType}",
@@ -716,8 +772,16 @@ namespace CosmicShore.Gameplay
 
                 // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can
                 // retire it when the faces are down - the pickup sound and the cell bookkeeping are its own.
+                // Its other fadeable shells (the Mass crystal's three shrinking ones) stay where they are
+                // and fade out while the faces fly; the tint block is the fusion's from here on.
+                crystal.BeginCaptureVisual();
+                var companions = new List<Renderer>();
                 foreach (var r in crystal.GetComponentsInChildren<Renderer>(true))
-                    r.enabled = false;
+                {
+                    if (IsCompanionShell(r, renderer)) companions.Add(r);
+                    else r.enabled = false;
+                }
+                fusion.AdoptCompanions(companions);
 
                 fusion._startTime = Time.time;
                 fusion.LateUpdate(); // frame 0 is drawn THIS frame - the crystal is already hidden
@@ -778,6 +842,48 @@ namespace CosmicShore.Gameplay
             if (_hasArcDuty) _baseArcDuty = material.GetFloat(ArcDutyId);
         }
 
+        void AdoptCompanions(List<Renderer> companions)
+        {
+            _companions = companions.ToArray();
+            _companionBlocks = new MaterialPropertyBlock[_companions.Length];
+            _companionOpacityId = new int[_companions.Length];
+            _companionStartOpacity = new float[_companions.Length];
+            for (int c = 0; c < _companions.Length; c++)
+            {
+                var material = _companions[c].sharedMaterial;
+                int id = material.HasProperty(ShepardOpacityId) ? ShepardOpacityId : OpacityId;
+                var block = new MaterialPropertyBlock();
+                _companions[c].GetPropertyBlock(block);
+                _companionBlocks[c] = block;
+                _companionOpacityId[c] = id;
+                _companionStartOpacity[c] = block.HasFloat(id) ? block.GetFloat(id) : material.GetFloat(id);
+            }
+        }
+
+        /// <summary>The companion shells fade over the peel and the flight - gone by the time the
+        /// faces are down, which is when the crystal itself is retired.</summary>
+        void FadeCompanions(CrystalHullFusionConfigSO.Phase phase, float u)
+        {
+            if (_companions == null || _companions.Length == 0) return;
+            var e = _entry;
+            float span = e.peelSeconds + e.flightSeconds;
+            float done = phase switch
+            {
+                CrystalHullFusionConfigSO.Phase.Peel => u * e.peelSeconds,
+                CrystalHullFusionConfigSO.Phase.Flight => e.peelSeconds + u * e.flightSeconds,
+                _ => span,
+            };
+            float keep = 1f - CrystalHullFusionConfigSO.Smooth(span > 0f ? done / span : 1f);
+            for (int c = 0; c < _companions.Length; c++)
+            {
+                var shell = _companions[c];
+                if (!shell || !shell.enabled) continue;
+                if (keep <= 0f) { shell.enabled = false; continue; }
+                _companionBlocks[c].SetFloat(_companionOpacityId[c], _companionStartOpacity[c] * keep);
+                shell.SetPropertyBlock(_companionBlocks[c]);
+            }
+        }
+
         /// <summary>
         /// The per-pickup half: each face's start in the world, and which patch it takes. The
         /// crystal is read at its COLLECT pose (a host respawn may already have moved it), and an
@@ -792,6 +898,8 @@ namespace CosmicShore.Gameplay
 
             _bones = _hull.Bones;
             _boneToWorld = new Matrix4x4[_bones.Length];
+            for (int b = 0; b < _bones.Length; b++)
+                _boneToWorld[b] = _bones[b] ? _bones[b].localToWorldMatrix : hullTransform.localToWorldMatrix;
 
             Vector3 lossy = hullTransform.lossyScale;
             _hullScale = (Mathf.Abs(lossy.x) + Mathf.Abs(lossy.y) + Mathf.Abs(lossy.z)) / 3f;
@@ -1026,11 +1134,10 @@ namespace CosmicShore.Gameplay
                 if (phase != CrystalHullFusionConfigSO.Phase.Peel)
                 {
                     // One native read per bone, then every point is managed matrix maths.
+                    // A pin destroyed mid-fusion (a hull part an ability removed) holds its last pose:
+                    // only the faces on it stop following, the fusion does not end.
                     for (int b = 0; b < _bones.Length; b++)
-                    {
-                        if (!_bones[b]) { Destroy(gameObject); return; }
-                        _boneToWorld[b] = _bones[b].localToWorldMatrix;
-                    }
+                        if (_bones[b]) _boneToWorld[b] = _bones[b].localToWorldMatrix;
                     PosePoints(phase, u);
                 }
                 WriteMesh(phase, u, anchor);
@@ -1163,8 +1270,12 @@ namespace CosmicShore.Gameplay
             };
             float opacity = phase == CrystalHullFusionConfigSO.Phase.Dissolve ? 1f - CrystalHullFusionConfigSO.EaseIn(u) : 1f;
 
+            FadeCompanions(phase, u);
             if (!_renderer) return;
-            _renderer.GetPropertyBlock(_block);
+            // The block is OURS and persistent: Adopt seeded it with the crystal's own block and the
+            // frozen Shepard band. Re-reading it from the renderer each frame (as this once did) read
+            // back an EMPTY block on frame 0 and threw the freeze away - the Mass faces then rode a
+            // live band that scaled them about the hull's origin, and "shrank to a point".
             if (_hasTint)
             {
                 Color dull = _startDull, bright = _startBright;
@@ -1188,6 +1299,10 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_mesh) Destroy(_mesh);
+            // A fusion cut short must not leave a half-faded shell hanging where the crystal was.
+            if (_companions != null)
+                foreach (var shell in _companions)
+                    if (shell) shell.enabled = false;
         }
 
         static void WarnOnce(string key, string message)

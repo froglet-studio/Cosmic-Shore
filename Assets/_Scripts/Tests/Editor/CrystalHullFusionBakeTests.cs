@@ -52,6 +52,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void MassCrystal_FliesTheShellThatHoldsItsSize()
+        {
+            // Three of the Mass crystal's four shells ride a band that SHRINKS them; flying one of
+            // those is what read as "it just shrinks to a point". The outer shell holds its size.
+            var set = ElementalCrystalSetSO.Load();
+            Assert.IsNotNull(set);
+            var mass = set.GetPrefab(CosmicShore.Data.Element.Mass);
+            Assert.IsNotNull(mass);
+            Assert.IsTrue(CrystalHullFusion.TryResolveCrystal(mass, out _, out _, out _, out _, out var renderer));
+            var material = renderer.sharedMaterial;
+            Assert.IsTrue(material.HasProperty("_ScaleDistance"), $"'{material.name}' is not a Shepard shell");
+            Assert.AreEqual(0f, material.GetFloat("_ScaleDistance"), $"'{renderer.name}' wears '{material.name}', a shrinking shell");
+        }
+
+        [Test]
         public void StaticHull_IsTheBodyAndEveryPartUnderIt()
         {
             // The Rhino flies a body plus wings and engines as separate MeshRenderers - no skin.

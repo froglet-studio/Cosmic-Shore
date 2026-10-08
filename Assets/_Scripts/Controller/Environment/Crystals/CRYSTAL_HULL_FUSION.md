@@ -337,7 +337,7 @@ Measured with `BuildPanels` on each crystal FBX (assimp export), then confirmed 
 | Crystal | Drawn by | Faces that fly | Template (verts) | Shader family → what the fusion does |
 |---|---|---|---|---|
 | Charge | MeshRenderer (edge-arc twin) | 60 pentagons | 10,440 | `_Dull/_BrightCrystalColor` tint, `_opacity` fade, discharge |
-| Mass | 4 nested MeshRenderer shells, one mesh | 60 triangles | 6,120 | `OmniShepardFresnelShader`: its band SCALES the mesh about the object origin — the fusion's origin is the hull — so `_ScaleDistance` 0 and `_Start = _Stop = 0.05` (alpha 1); fade on `_Opacity`; rim `_BrightColor` converges, `_DarkColor` held |
+| Mass | 4 nested MeshRenderer shells, one mesh | 60 triangles | 6,120 | `OmniShepardFresnelShader`. The **outer shell** (the one whose band holds its size, `_ScaleDistance` 0) is the one that flies; the three shrinking shells **fade in place** over the peel and flight (`_Opacity`), gone by the mate. On the fusion the band is pinned anyway — it scales about the object origin, which is the hull — `_ScaleDistance` 0 and `_Start = _Stop = 0.05` (alpha 1); fade on `_Opacity`; rim `_BrightColor` converges, `_DarkColor` held |
 | Space | SkinnedMeshRenderer, blend-shape spin | 60 kites | 8,280 | `SpreadFresnelShader`, OPAQUE: no fade property, so the faces **shrink to their centroids** through the dissolve |
 | Time | SkinnedMeshRenderer on a CHILD of the model, 30 bones | 30 rhombi | 4,140 | `SpreadFresnelShader`, as Space |
 
@@ -354,6 +354,16 @@ caught mid-flip peels from mid-flip. A `BakeMesh` + measured-scale version was w
 discarded: its scale would have been measured off edge lengths that Space's linear blend shapes
 shrink mid-spin. The skin needs the crystal mesh readable at runtime (warns once if not).
 
+**First fleet playtest (2026-10-08): Mass "just shrinks to a point", on Squirrel and Dolphin.**
+The band freeze never reached the GPU. `Adopt` wrote it into the fusion's property block, and every
+`WriteMaterial` began by `GetPropertyBlock`-ing the renderer — whose block was still EMPTY on frame
+0 — over it. So the faces rode a live band scaling them by 0–0.33 about the hull's pivot: the whole
+fusion collapsing onto the hull's origin. Charge, Space and Time never noticed, because nothing they
+need lived only in that seed block (the tint is rewritten every frame). Fixed: the block is the
+fusion's own and is never re-read. *A block a component owns must not be round-tripped through the
+renderer — the read-back returns what the renderer had, not what you meant.* The same playtest
+asked for the outer shell to fly and the other three to fade, which is what ships now.
+
 ### The hulls
 
 | Vessels | Hull | How it is pinned |
@@ -361,6 +371,14 @@ shrink mid-spin. The skin needs the crystal mesh readable at runtime (warns once
 | Squirrel, Manta, Termite, Falcon, Shrike, Dolphin, Serpent, Sparrow, Scarab | skinned (`FindHullRenderer`) | bones + bind poses, as authored |
 | Rhino, Urchin, Grizzly | **static**: a body MeshRenderer + wings / engines / jets / guns / fins as separate MeshRenderers, no skin | `HullRig`: the largest mesh renderer is the BODY and the rig's space; every mesh part under it (in hierarchy order, regardless of active state, so prefab and instance list the same transforms) is a rigid "bone" whose bind pose is the inverse of where it sat against the body when solved. A puppeted Rhino wing carries its patches. |
 | Butterfly | runtime-generated mesh | none — no entry |
+
+**At runtime the hull is found by the bake's own mesh first** (`FindHull(…, bakedKey)`): the
+skinned renderer or static body whose mesh the bake names, whatever else is drawing under the
+vessel at that moment. Only an unbaked entry falls back to "element-shape skin, else largest
+skin, else largest mesh renderer". And a pin that is destroyed mid-fusion holds its last pose
+instead of ending the fusion (it used to `Destroy` the whole thing). Both came out of the Grizzly
+reading "didn't work at all" in the first fleet playtest, cause **not yet confirmed** — the
+console's one-time `[CrystalHullFusion]` warning names it if it is still there.
 
 The fingerprint grew a part count; the runtime check is the key mesh (skinned mesh or body mesh),
 the total vertex count across parts and the part count. The edit-time content hash covers every
