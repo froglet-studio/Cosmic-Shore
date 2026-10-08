@@ -120,6 +120,16 @@ MAT_BODY_INACTIVE = mat_guid("OmniCrystalBodyInactive")
 MAT_SHEPARD = [mat_guid(f"OmniShepardTriangles {i}") for i in range(3)]
 MAT_SHEPARD_INACTIVE = [mat_guid(f"OmniShepardTrianglesInactive {i}") for i in range(3)]
 
+# The STATIONARY rim shell - the Mass crystal's fourth shell, carried over. It never moves
+# (_ScaleDistance 0), so at the shell prefab's scale it sits exactly at s = 1, the radius where
+# each tone shell is born, and its band (1.03 -> 0.98) holds it at alpha 0.02..0.07 - the birth
+# alpha of the incoming shell (0.05). That is what hides the pop: a shell appearing at the outer
+# edge appears ON a faint copy of itself instead of out of nothing. An omni-only copy of
+# ActiveMassCrystalMaterial 3 with its values unchanged, so the Mass crystal keeps its own.
+RIM_NAME = "OmniShepardTrianglesRim"
+RIM_DONOR = "ActiveMassCrystalMaterial 3"
+MAT_RIM = mat_guid(RIM_NAME)
+
 
 def _donor(name):
     return open(os.path.join(ROOT, MAT_DIR, name + ".mat")).read()
@@ -153,6 +163,8 @@ def material_texts():
         t = _sub1(t, r"^  m_Parent: \{fileID: 2100000, guid: \w+, type: 2\}",
                   f"  m_Parent: {{fileID: 2100000, guid: {MAT_SHEPARD[i]}, type: 2}}", iname + " m_Parent")
         out[iname] = t
+    out[RIM_NAME] = _sub1(_donor(RIM_DONOR), rf"^  m_Name: {re.escape(RIM_DONOR)}$",
+                          f"  m_Name: {RIM_NAME}", RIM_NAME)
     return {f"{MAT_DIR}/{n}.mat": t for n, t in out.items()}
 
 
@@ -184,6 +196,13 @@ SLOTS = [
     (3428511433788108504, 2369276566672717888, 1039871714678528508, "OmniShepardTriangles (1)"),
     (5888802945109814545, 6831084959271910281, 8089558117201123893, "OmniShepardTriangles (2)"),
 ]
+
+# The stationary rim shell is a fifth CHILD but deliberately NOT a crystalModels entry:
+# CrystalManager calls ChangeDomain on every spawn, and ThemeManagerDataContainerSO.
+# GetTeamCrystalMaterial answers indices 0..3 only, so a fifth model would warn on every spawn of
+# a domain-owned omni and borrow slot 0's team material (and would add a fifth husk on explode).
+# As a plain child it rides the crystal - spawn, move, despawn - and Crystal leaves it alone.
+RIM_SLOT = (3086241560104200021, 3086241560104200022, 3086241560104200023, RIM_NAME)
 
 
 # ── measurement ──────────────────────────────────────────────────────────────
@@ -569,6 +588,9 @@ def crystal_children_text():
         mat = MAT_BODY if body else MAT_SHEPARD[i - 1]
         out.append(_instance_block(inst, guid, t_go, t_tr, t_mr, name, mat))
         out.append(_stripped_blocks(inst, guid, stripped_tr, stripped_go, t_tr, t_go))
+    inst, stripped_tr, stripped_go, name = RIM_SLOT
+    out.append(_instance_block(inst, SHELL_PREFAB_GUID, SHELL_GO, SHELL_TR, SHELL_MR, name, MAT_RIM))
+    out.append(_stripped_blocks(inst, SHELL_PREFAB_GUID, stripped_tr, stripped_go, SHELL_TR, SHELL_GO))
     return "".join(out)
 
 
@@ -596,11 +618,11 @@ MODELS_BLOCK = re.compile(r"^  crystalModels:\n(?:  - model:.*?\n(?:    .*\n)*)+
 def build_crystal_prefab(existing):
     head = existing[:CHILDREN_START.search(existing).start()]
     head, n = MODELS_BLOCK.subn(crystal_models_text(), head)
-    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS)
-    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){4}", lambda x: x.group(1) + children,
+    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS + [RIM_SLOT])
+    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){4,5}", lambda x: x.group(1) + children,
                       head, count=1, flags=re.M)
     if m != 1:
-        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (4 entries) not found")
+        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (4-5 entries) not found")
     if n != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: expected exactly one crystalModels block, found {n}")
     return head + crystal_children_text()

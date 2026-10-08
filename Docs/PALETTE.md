@@ -482,6 +482,17 @@ What ships is a body plus a three-shell tone chain, authored by
 | 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`ShepardGraph`) | 1.000 → 0.833 |
 | 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
 | 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
+| — | triangles only, **stationary** (a plain child, not a model) | `OmniShepardTrianglesRim` | 1.03 → 0.98, unscaled |
+
+**The stationary rim is what hides the pop.** The Mass crystal's fourth shell never moves
+(`_ScaleDistance 0`) and holds alpha 0.02–0.07 at the full radius, so each new shell is born on a
+faint copy of itself instead of out of nothing. The omni carries the same shell at its tone's birth
+radius (s = 1, twice the crystal): an omni-only copy of `ActiveMassCrystalMaterial 3`, values
+unchanged. It is a fifth CHILD but deliberately not a `crystalModels` entry — `CrystalManager` calls
+`ChangeDomain` on every spawn and `GetTeamCrystalMaterial` answers 0..3, so a fifth model would warn
+on every domain-owned spawn and add a fifth husk on explode. The trade: Crystal does not touch it, so
+it keeps its authored Mass colours rather than the runtime CTA tint the moving shells get — at alpha
+≤ 0.07 that is not expected to read, and is the first thing to check if the outer edge looks off.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
 `crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
