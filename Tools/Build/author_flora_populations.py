@@ -201,6 +201,10 @@ OWNED_ELSEWHERE = {
     # placed grove back into an ordinary spreading plant.
     "Swarm Snap Trap Flora ": ("prefix", "Tools/Build/author_threat_flora.py"),
     "Swarm Physarum Flora ": ("prefix", "Tools/Build/author_threat_flora.py"),
+    # The nested gyroid: a colony species whose seed floor / cap its own generator authors
+    # (Docs/ECOSYSTEM.md §58.9). Its configs sit in no SpawnProfile today; registered so an
+    # adopting cell's copy stands down by name rather than being re-modelled here.
+    "Nested Gyroid": ("species", "Tools/Build/author_nested_gyroid_flora_assets.py"),
 }
 
 

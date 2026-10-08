@@ -130,6 +130,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: f030f2cceed64578930cd5c47c405595, type: 2}
     - {fileID: 11400000, guid: 52d54f8478ac41449607e8b2f81e602f, type: 2}
     - {fileID: 11400000, guid: e4ae88c4d7b4450a8c7b649336780938, type: 2}
+  - Name: Nested Gyroid
+    ElementConfigs:
+    - {fileID: 11400000, guid: 6e701b36d4cf67162c0c8be83591d947, type: 2}
+    - {fileID: 11400000, guid: 37a51388051823a65d85d7fe8cc8c150, type: 2}
+    - {fileID: 11400000, guid: 77b554ddd8defe5c3d8afd3fcd35efd8, type: 2}
+    - {fileID: 11400000, guid: a48efe19a5a79b73d175370a963e90d2, type: 2}
   - Name: Borromean
     ElementConfigs:
     - {fileID: 11400000, guid: e61deb54b42a17dc301eedd9cf2a3b2a, type: 2}

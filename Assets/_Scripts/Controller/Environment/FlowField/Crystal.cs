@@ -651,7 +651,7 @@ namespace CosmicShore.Gameplay
                         var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
                         var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                         if (spentAnimator && thisAnimator)
-                            spentAnimator.timer = thisAnimator.timer;
+                            spentAnimator.SyncPhaseFrom(thisAnimator);
                     }
 
                     impact.HandleImpact(

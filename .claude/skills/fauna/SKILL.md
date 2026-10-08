@@ -59,8 +59,8 @@ by measurement, before you conclude a creature is fine.
    by shooting it**, carries no conserved mass in its body, and leaves no §26 skeleton.
    (The Clawfish was in that state for two years; `Docs/ECOSYSTEM.md §46.2` is the fix, and
    the recipe is measured poses on the creature's own extremities, not eyeballed ones —
-   §26's ordered wither runs farthest-from-the-heart first, so the extremities are where
-   body prisms belong.)
+   §26's starvation wither runs outside-in along the spindle tree (deepest limb first, ties
+   farthest-from-the-heart), so the extremities are where body prisms belong.)
 
 ---
 

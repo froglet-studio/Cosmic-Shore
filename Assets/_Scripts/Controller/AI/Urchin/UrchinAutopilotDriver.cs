@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Flies an AUTOPILOTED Urchin's kit - the three verbs <see cref="AIPilot"/> cannot reach on
-    /// its own. Shared by every mode that seats an AI Urchin (Skein and Hijack today), the
+    /// its own. Shared by every mode that seats an AI Urchin (Skein, Hijack and Regatta), the
     /// <see cref="ButterflyAutopilotModeDriver"/> shape: a plain object the mode controller owns,
     /// asked from inside the mode's own <c>SetExternalTargetProvider</c> closure, so it needs no
     /// scene wiring and nothing in <see cref="AIPilot"/> changes.
@@ -25,8 +25,11 @@ namespace CosmicShore.Gameplay
     /// <item><b>Slip</b> is how it leaves: the ride constrains position, never attitude, so no
     /// amount of steering gets an Urchin off a rail. Also the stall escape for a ride that has
     /// genuinely parked.</item>
-    /// <item><b>Chain Spikes</b> are tapped while the prism underfoot is HOSTILE and the meter can
-    /// pay: the volley converts the rail ahead, and the crawl becomes a grind again.</item>
+    /// <item><b>Chain Spikes</b> are tapped while the prism underfoot is HOSTILE, CONVERTIBLE and
+    /// the meter can pay: the volley converts the rail ahead, and the crawl becomes a grind again.
+    /// Super-shielded mass (Regatta's rails) refuses every steal, so it is never spiked and a
+    /// crawl over it is always "dry" - the assessment leaves it unless the objective is a short
+    /// crawl away (<see cref="UrchinRailAssessment.IsDryCrawl"/>).</item>
     /// <item><b>Track Projector</b> is fired on a long, straight, lined-up shot at the objective
     /// (<see cref="TryProjectTrackToward"/>) - the track is laid along the NOSE and launched off
     /// at 1.2x grind speed, so it is only worth it when that line goes where the pilot is
@@ -114,9 +117,11 @@ namespace CosmicShore.Gameplay
             float now = Time.time;
 
             // Spike the road ahead. Asked on every attached frame, rail or not: rolling a hostile
-            // burr is the same question as grinding a hostile rail.
+            // burr is the same question as grinding a hostile rail. Never at mass the volley
+            // cannot convert (super-shielded - Regatta's rails): that would only spend the meter.
             bool hostile = prism.Domain != pilot.Domain;
-            if (hostile) TrySpike(pilot);
+            bool convertible = IsConvertible(prism);
+            if (hostile && convertible) TrySpike(pilot);
 
             // Only a 1D ribbon has a direction to choose. A shell or a solid (a burr) is ridden
             // across its surface by the nose, so the caller's own aim is already the right one.
@@ -140,8 +145,14 @@ namespace CosmicShore.Gameplay
             {
                 s.NextAssess = now + _config.AssessIntervalSeconds;
                 s.AssessedTrail = trail;
+                // Slowed is read off the ride itself where the hull carries one (so a Time-5
+                // Slipstream, which grinds hostile mass at full pace, is not a crawl); a hull with
+                // no follower is assumed to crawl hostile mass, the conservative reading.
+                bool slowed = s.Follower != null ? s.Follower.IsCrawlTerrain(prism) : hostile;
                 s.Verdict = Assess(s, status, trail, prism, course, pos, objective, objectiveRadius,
-                                   crawlingDry: hostile && !CanAffordSpike(status, _config.SpikeMinAmmo));
+                                   crawlingDry: UrchinRailAssessment.IsDryCrawl(
+                                       hostile, slowed, convertible,
+                                       convertible && CanAffordSpike(status, _config.SpikeMinAmmo)));
             }
 
             switch (s.Verdict)
@@ -182,8 +193,11 @@ namespace CosmicShore.Gameplay
 
             int step = TravelStep(s, trail, index, course);
             var points = new TrailPoints(trail);
-            var ahead = UrchinRailAssessment.Scan(ref points, index, step, objective, _config.ScanArc);
-            var behind = UrchinRailAssessment.Scan(ref points, index, -step, objective, _config.ScanArc);
+            // A closed lane (Regatta) wraps, as the ride does - or a ring just past the seam reads
+            // as unreachable.
+            bool loop = trail.IsLoop;
+            var ahead = UrchinRailAssessment.Scan(ref points, index, step, objective, _config.ScanArc, loop);
+            var behind = UrchinRailAssessment.Scan(ref points, index, -step, objective, _config.ScanArc, loop);
 
             var rules = new UrchinRailRules
             {
@@ -330,6 +344,14 @@ namespace CosmicShore.Gameplay
             if (ammo.CurrentAmount < so.AmmoCost) return false;
             return ammo.MaxAmount <= 0f || ammo.CurrentAmount / ammo.MaxAmount >= minAmmo01;
         }
+
+        /// <summary>
+        /// False for mass no spike can ever take: a super-shielded prism refuses every steal
+        /// (<c>PrismTeamManager.Steal</c>), so a volley at it converts nothing and a crawl over
+        /// it cannot be ended by the meter - only by leaving.
+        /// </summary>
+        public static bool IsConvertible(Prism prism) =>
+            prism && (prism.prismProperties == null || !prism.prismProperties.IsSuperShielded);
 
         /// <summary>True when the prism under <paramref name="pilot"/>'s ride is not its own colour.</summary>
         public static bool IsHostileUnderfoot(IPlayer pilot)

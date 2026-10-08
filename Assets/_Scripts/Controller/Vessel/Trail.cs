@@ -43,6 +43,11 @@ namespace CosmicShore.Gameplay
         public Vector3 RidePoint(Prism p) => p.transform.position;
 
         bool isLoop;
+
+        /// <summary>True for a CLOSED trail (the ride wraps past the ends instead of reflecting or
+        /// launching). Read-only; set once by the constructor.</summary>
+        public bool IsLoop => isLoop;
+
         public List<Prism> TrailList { get; }
         Dictionary<Prism, ushort> trailBlockIndices;
 
