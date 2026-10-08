@@ -254,3 +254,19 @@ R16 = {
 # rule) gain a little more quiet but lose a colony in one seed. Thieves sit at their colony size in every variant:
 # with a pilot to rob they are never food-limited, so the nest size is what sets their number (stated, not hidden).
 FINAL2 = dict(FINAL2, **{"thief.hoard_target": 10})
+
+# ---- Round 3 (2026-10-08): quiet time back, physarum fed -------------------------------------------------------
+# Probe (FINAL2 seed 2, 25 min): the pilot's noisy time was tailing/carrying thieves 31%, gaping lurkers 21%,
+# physarum 6%, snap-traps 4%. The physarum grove had no plants in it and laid its whole 5,000-vol reserve as tubes
+# in the first minute (reserve ~5 vol from then on, 4 vol digested in 14 min).
+# Physarum: germinate on the richest food (phys_site food), never lay a tube from below a 2,000-vol floor unless it
+# sits on food, and sporulate (resorb, drift, re-germinate on food) when starving.
+# Thieves: a nest sends at most `raiders` magpies out at once. Lurkers: breed only where the region holds < territory.
+PHYS3 = {"phys_site": "food", "physarum.keep": 2000.0, "physarum.sporulate": True}
+B17 = dict(FINAL2, **PHYS3)
+R17 = {
+    "r17_phys": B17,
+    "r17_r2t2f": dict(B17, **{"thief.raiders": 2, "lurker.territory": 2, "thief.F_half": 600.0}),
+    "r17_r1t2f": dict(B17, **{"thief.raiders": 1, "lurker.territory": 2, "thief.F_half": 600.0}),
+    "r17_r2t2f_q": dict(B17, **{"thief.raiders": 2, "lurker.territory": 2, "thief.F_half": 400.0}),
+}

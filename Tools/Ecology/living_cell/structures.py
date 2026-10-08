@@ -506,6 +506,14 @@ class Physarum:
     period, wave_speed, ex_ticks, refr = 3.0, 50.0, 2, 4
     upkeep = 0.004            # vol/s per tube from the reserve
     tube_cap = 1400
+    # round 3 (feed and reproduce): `keep` is a reserve floor a tube is never laid from (except one over food);
+    # `sporulate` lets a network that is starving on a bare grove resorb itself into a sclerotium and re-germinate
+    # where the food is (mass carried, nothing created). 0 / False = the round-2 behaviour.
+    keep = 0.0
+    sporulate = False
+    spore_window = 180.0      # s of digest history a starvation verdict reads
+    spore_cool = 300.0        # s after germinating before it may sporulate again
+    spore_lo = 0.3            # starving = reserve < spore_lo * keep and income < half the upkeep
 
     def __init__(self, w, centre, Rg=380.0, G=40, n_agents=6000, n_hearts=3, reserve=5000.0):
         self.w = w; self.c = np.asarray(centre, float); self.Rg = Rg; self.G = G; self.h = 2 * Rg / G
@@ -525,6 +533,7 @@ class Physarum:
         self.wave_acc = 0.0; self.sec = 0.0
         self.digested = 0.0; self.laid = 0; self.resorbed = 0; self.burns = 0; self.food_vox = np.zeros(0, np.int64)
         self.food_idx = np.zeros(0, np.int64)
+        self.dig_hist = []; self.germ_t = 0.0; self.spores = 0; self.moves = []
         w.held_fns.append(lambda: float(self.reserve))
 
     def vox(self, P):
@@ -571,8 +580,15 @@ class Physarum:
         grow = np.argwhere(~tube & self.inside & (self.S > self.on))
         if len(grow):
             grow = grow[np.argsort(-self.S[grow[:, 0], grow[:, 1], grow[:, 2]])]
+        if self.keep > 0 and len(grow):
+            fm = np.zeros(self.T.shape, bool)
+            if len(self.food_vox):
+                fm[self.food_vox[:, 0], self.food_vox[:, 1], self.food_vox[:, 2]] = True
+            grow = grow[np.argsort(~fm[grow[:, 0], grow[:, 1], grow[:, 2]], kind="stable")]   # food voxels first
         for x, y, z in grow:
             if self.reserve < self.pv or self.n_tubes() >= self.tube_cap:
+                break
+            if self.keep > 0 and self.reserve - self.pv < self.keep and not fm[x, y, z]:
                 break
             self.reserve -= self.pv
             self.vox_prism[x, y, z] = w.add(self.cen[x, y, z], self.pv, 0, TUBE, owner=20000)
@@ -584,6 +600,9 @@ class Physarum:
             for j in self.food_idx[on]:
                 if w.rng.random() < self.digest and w.alive[j] and not w.excl[j]:
                     v = w.eat(int(j), self.name); self.reserve += v; self.digested += v
+        self.dig_hist.append(self.digested)
+        if self.sporulate:
+            self._maybe_sporulate()
         # upkeep: the network pays to exist; a starving network resorbs its weakest tubes
         n = self.n_tubes(); due = self.upkeep * n
         pay = min(self.reserve, due); self.reserve -= pay; w.N += pay
@@ -597,6 +616,63 @@ class Physarum:
                 if w.alive[j]:
                     v = w.resorb(int(j)); take = min(v, short); w.N += take; self.reserve += v - take; short -= take
                 self.vox_prism[x, y, z] = -1
+
+    def _maybe_sporulate(self):
+        w = self.w
+        win = int(self.spore_window)
+        if len(self.dig_hist) <= win or w.t - self.germ_t < self.spore_cool:
+            return
+        income = (self.dig_hist[-1] - self.dig_hist[-1 - win]) / win
+        if not (self.reserve < self.spore_lo * self.keep and income < 0.5 * self.upkeep * max(self.n_tubes(), 1)):
+            return
+        site = self.best_site()
+        if site is None:
+            return
+        # resorb the whole network into the sclerotium, drift there as spores, germinate
+        for j in self.vox_prism[self.vox_prism >= 0]:
+            if w.alive[j] and w.kind[j] == TUBE:
+                self.reserve += w.resorb(int(j)); self.resorbed += 1
+        self.vox_prism[:] = -1
+        self.moves.append(dict(t=round(w.t, 1), frm=np.round(self.c).tolist(), to=np.round(site).tolist(),
+                               reserve=round(self.reserve, 1)))
+        self.place(site)
+        self.spores += 1; self.germ_t = w.t; self.dig_hist = []
+
+    def place(self, centre):
+        """(Re)germinate the grove around `centre`: fields cleared, agents and hearts re-seeded there."""
+        w = self.w
+        old = self.c.copy(); self.c = np.asarray(centre, float)
+        self.cen = self.cen - old + self.c
+        self.T[:] = 0; self.T2[:] = 0; self.S[:] = 0; self.E[:] = 0
+        d = w.rng.normal(size=(len(self.A), 3)); d /= np.linalg.norm(d, axis=1, keepdims=True)
+        self.A[:] = self.c + d * (self.Rg * 0.6) * np.cbrt(w.rng.random(len(self.A)))[:, None]
+        self.hearts = self.c + w.ball(len(self.hearts), 0.0, 0.5 * self.Rg)
+        self.food_idx = np.zeros(0, np.int64); self.food_vox = np.zeros((0, 3), np.int64)
+
+    def best_site(self, avoid=None, avoid_r=500.0):
+        """The candidate centre (every plant, carcass and trail prism, pulled inside the cell) with the most
+        digestible volume within 0.6 Rg - where a slime mould would land."""
+        w = self.w
+        f = w.within(np.zeros(3), w.R, K_DIGEST)
+        f = f[~w.shield[f] & (w.excl[f] == 0)] if len(f) else f
+        if not len(f):
+            return None
+        cand = w.pos[f[w.rng.choice(len(f), min(len(f), 300), replace=False)]]
+        r = np.linalg.norm(cand, axis=1, keepdims=True)
+        lim = w.R - self.Rg - 20.0
+        cand = np.where(r > lim, cand / np.maximum(r, 1e-9) * lim, cand)
+        if avoid is not None:
+            cand = cand[np.linalg.norm(cand - avoid, axis=1) > avoid_r]
+            if not len(cand):
+                return None
+        best, bv = None, -1.0
+        for q in cand:
+            g = w.within(q, 0.6 * self.Rg, K_DIGEST)
+            g = g[~w.shield[g]] if len(g) else g
+            v = float(w.vol[g].sum()) if len(g) else 0.0
+            if v > bv:
+                best, bv = q, v
+        return best
 
     def _waves(self, dt):
         """Greenberg-Hastings on the tube voxels, stepped at wave_speed / voxel."""

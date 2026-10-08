@@ -84,6 +84,7 @@ class Guild:
     prey_names: tuple = ()
     a_attack = 0.0; h_handle = 1.0          # macro Holling II (fitted, see run.py calibrate)
     body_paid = True                         # NEGATIVE CONTROL hook: False = births conjure the child's body
+    territory = 0                            # round 3: max adults per region a parent may breed in (0 = off)
 
     def __init__(self, world, params=None):
         self.w = world
@@ -252,6 +253,14 @@ class Guild:
             return
         room = self.cap - self.count()
         free = np.flatnonzero(~self.alive)
+        if self.territory > 0:
+            # round 3: a territorial species breeds only where its region holds < territory adults
+            ra = w.region_of(self.pos[a]); occ = np.bincount(ra, minlength=w.nreg) + self.cnt
+            rp = w.region_of(self.pos[par]); ok = np.zeros(len(par), bool)
+            for kk, r in enumerate(rp):
+                if occ[r] < self.territory:
+                    ok[kk] = True; occ[r] += 1
+            par = par[ok]
         par = par[:max(0, min(room, len(free)))]
         for i, j in zip(par, free[:len(par)]):
             self.st[i] -= (self.body if self.body_paid else 0.0) + self.e0
@@ -388,12 +397,14 @@ class Guild:
                 if c == 0:
                     w.N += S; S = 0.0; S2 = 0.0
             # births: the part above e_birth splits off one offspring each (paid body + e0)
-            if c > 0 and self.count() < self.cap:
+            if c > 0 and self.count() < self.cap and (self.territory <= 0 or c < self.territory):
                 m = S / c; var = max(S2 / c - m * m, 0.25); sd = math.sqrt(var)
                 a = (self.e_birth - m) / sd
                 pa = 1.0 - _Phi(a)
                 nb = w.rng.binomial(c, min(1.0, pa)) if pa > 1e-6 else 0
                 nb = min(nb, max(0, self.cap - self.count()), int(S // (self.body + self.e0)))
+                if self.territory > 0:
+                    nb = min(nb, self.territory - c)
                 if nb > 0:
                     lam = _phi(a) / max(pa, 1e-12)
                     mu = m + sd * lam
@@ -821,6 +832,7 @@ class Thief(Guild):
     leash = 900.0                         # territory: a thief never tails a ship beyond this from its nest (iter 3)
     hoard_target = 0; hoard_r = 120.0      # round 2: raid only while the nest holds < hoard_target hoard prisms
     feed_fix = False                      # round 2: starving thieves go home; the larder feeds a thief to e_max
+    raiders = 0                           # round 3: magpies out raiding per nest at once (0 = no limit)
 
     def extra_init(self):
         C = self.capacity
@@ -887,6 +899,18 @@ class Thief(Guild):
         else:
             want = np.ones(len(idx), bool)
         look = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free] & want[free]]
+        if self.raiders > 0 and len(self.nests):
+            # round 3: a nest sends at most `raiders` magpies at a time (claim or carry); the rest stay home
+            al = np.flatnonzero(self.alive)
+            busy = al[(self.tclaim[al] >= 0) | (self.carry[al] >= 0)]
+            out_ = np.bincount(self.nest_of[busy], minlength=len(self.nests))
+            raid = np.zeros(len(idx), bool)
+            for kk in look:
+                nn = self.nest_of[idx[kk]]
+                if out_[nn] < self.raiders:
+                    raid[kk] = True; out_[nn] += 1
+            want = want & (raid | (tc >= 0) | laden)
+            look = look[raid[look]]
         if len(look):
             got = w.nearest(P[look], 400.0, 1 << TRAIL, tmin=w.t - 1.5)
             for kk, j in zip(look, got):

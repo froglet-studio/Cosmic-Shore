@@ -92,6 +92,10 @@ class Cell:
             g = w.ball(8, 0.5 * w.R, 0.6 * w.R)
             gc = g[np.argmax(np.linalg.norm(g - core, axis=1))]           # far from the fortress
             self.phys = Physarum(w, gc, n_agents=cfg["phys_agents"])
+            if cfg.get("phys_site") == "food":                          # round 3: germinate on the food
+                w.rebuild(); site = self.phys.best_site(avoid=core)
+                if site is not None:
+                    self.phys.place(site)
         else:
             self.phys = None
         for k, v in cfg.items():                 # structure overrides: "physarum.upkeep": 0.002
