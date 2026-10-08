@@ -1,0 +1,322 @@
+using UnityEngine;
+
+namespace CosmicShore.ScriptableObjects
+{
+    /// <summary>
+    /// Tuning for BLACK HOLES (<c>BlackHoleRegistry</c>, <c>BlackHoleGravityField</c>,
+    /// <c>BlackHoleWarp</c>, <c>PrismGravityWarp.hlsl</c>, Docs/BLACK_HOLE.md).
+    ///
+    /// A black hole has two numbers: its STRENGTH, which sets the gravitational parameter
+    /// (<c>GM</c>, what pulls), and its SIZE, the event-horizon radius (<c>r_s</c>, what swallows
+    /// and what the lens draws). A hole spawned with size 0 derives its size from its strength
+    /// (<see cref="HorizonRadius(float)"/>), so the console's <c>blackhole spawn 10</c> and a
+    /// designer's asset edit reach the same physics; the Black Hole tool (<c>blackhole tool on</c>)
+    /// sets size explicitly from the Spawn section below. The influence radius (how far out mass is
+    /// simulated at all) follows from GM and r_s plus the acceleration floor below which a pull is
+    /// not worth a body.
+    ///
+    /// The field moves mass (live gameplay data — the movers contract) and SPAGHETTIFICATION draws
+    /// what its tides do to that mass (a §4.7 global uniform, photons only); the two halves are tuned
+    /// separately below and the second never changes anything the first simulates.
+    ///
+    /// Place the asset at <c>Resources/BlackHoleConfig</c>. With no asset the defaults below
+    /// apply, so a spawn works with nothing authored.
+    /// </summary>
+    [CreateAssetMenu(fileName = "BlackHoleConfig", menuName = "ScriptableObjects/Environment/Black Hole Config")]
+    public class BlackHoleConfigSO : ScriptableObject
+    {
+        [Header("Physics (per unit of strength)")]
+        [Tooltip("Gravitational parameter GM per unit of strength, in world-units^3 / s^2. A hole of " +
+                 "strength S pulls with GM = S x this. At the default, strength 10 gives a circular " +
+                 "orbital speed of ~45 u/s at 100 u and an escape speed of ~70 u/s there — a cruising " +
+                 "Squirrel (54 u/s) is caught, a boosting Dolphin is not.")]
+        [Min(0f)]
+        [SerializeField] float gmPerStrength = 20000f;
+
+        [Tooltip("Event-horizon radius per unit of strength, world units (physically r_s is linear in " +
+                 "mass). Anything whose centre crosses the horizon is CAPTURED: a prism is consumed " +
+                 "into the singularity, a vessel is held at the ceiling pull. The horizon is also the " +
+                 "radius of the black sphere drawn at the hole.")]
+        [Min(0.01f)]
+        [SerializeField] float horizonPerStrength = 2f;
+
+        [Tooltip("Minimum event-horizon radius, world units, so a feeble hole still has a visible " +
+                 "sphere and a finite singularity to integrate against.")]
+        [Min(0.01f)]
+        [SerializeField] float minHorizonRadius = 1.5f;
+
+        [Tooltip("Acceleration floor, u/s^2: the influence radius is where the hole's pull falls to " +
+                 "this. Beyond it mass is not simulated (it would barely move and the body budget is " +
+                 "better spent nearer the hole). Lower = larger reach, more bodies.")]
+        [Min(0.0001f)]
+        [SerializeField] float influenceAccelerationFloor = 0.6f;
+
+        [Tooltip("Hard ceiling on the influence radius, world units, whatever the strength says. Bounds " +
+                 "the spatial query and the body count for an operator who types strength 10000.")]
+        [Min(1f)]
+        [SerializeField] float maxInfluenceRadius = 900f;
+
+        [Tooltip("The hole's dimensionless SPIN a* (Kerr): 0 = non-rotating (Schwarzschild), 0.998 = the " +
+                 "astrophysical limit. A spinning hole drags the local inertial frame around its spin " +
+                 "axis at ω = a*·c·r_s²/(2r³) (Lense-Thirring, c² = 2GM/r_s) — a 1/r³ effect, so mass " +
+                 "falling from rest comes in nearly radially and winds up only within a few horizon " +
+                 "radii. Lasting orbits need angular momentum the mass brings with it (a moving hole, a " +
+                 "moving prism), exactly as around a real hole.")]
+        [Range(0f, 0.998f)]
+        [SerializeField] float spin = 0.9f;
+
+        [Tooltip("Damping applied to a body's velocity once it is OUTSIDE every hole's influence, 1/s. " +
+                 "A body a hole has flung clear decelerates at this rate and is released from the " +
+                 "simulation when it is slower than Release Speed — so mass settles rather than " +
+                 "coasting across the arena forever.")]
+        [Min(0f)]
+        [SerializeField] float releaseDamping = 1.5f;
+
+        [Tooltip("Speed, u/s, below which a body outside every influence sphere is released back to " +
+                 "static mass.")]
+        [Min(0.01f)]
+        [SerializeField] float releaseSpeed = 0.75f;
+
+        [Tooltip("Substep ceiling for the integrator. A body near the horizon is stepped up to this " +
+                 "many times per frame so the pseudo-Newtonian pole is integrated rather than jumped.")]
+        [Range(1, 16)]
+        [SerializeField] int maxSubsteps = 8;
+
+        [Header("Budgets")]
+        [Tooltip("Hard ceiling on prism bodies under gravity across every live hole, per frame. The " +
+                 "nearest prisms to a hole win. This is the whole per-frame cost of the field: one " +
+                 "Burst job over this many transforms, one bulk render write, one bulk index write.")]
+        [Min(0)]
+        [SerializeField] int maxBodies = 6000;
+
+        [Tooltip("How many black holes may be live at once (console spawns past this are refused). " +
+                 "Mirrors PRISM_GRAVITY_WARP_SLOTS in PrismGravityWarp.hlsl — change both together.")]
+        [Range(1, 4)]
+        [SerializeField] int maxBlackHoles = 4;
+
+        [Tooltip("Seconds between admission sweeps (the spatial query that finds new prisms inside " +
+                 "an influence sphere). Bodies already admitted integrate every frame regardless.")]
+        [Min(0.02f)]
+        [SerializeField] float admissionInterval = 0.1f;
+
+        [Header("Vessels")]
+        [Tooltip("Master switch for pulling VESSELS. The pull goes through " +
+                 "VesselTransformer.ModifyVelocity, so a vessel's own engine still works against it " +
+                 "— a vessel faster than the local escape speed gets away, bent; one slower is drawn " +
+                 "in. Applied only on the machine that drives the vessel (owner or non-networked).")]
+        [SerializeField] bool pullVessels = true;
+
+        [Tooltip("Scales the gravitational acceleration a vessel feels relative to a prism (1 = the " +
+                 "same physics). Below 1 makes holes a hazard rather than a trap.")]
+        [Min(0f)]
+        [SerializeField] float vesselPullScale = 1f;
+
+        [Tooltip("Ceiling on the accumulated gravitational velocity a vessel carries, u/s. " +
+                 "VesselTransformer clamps its whole velocity-shift channel at 100 u/s anyway; this " +
+                 "keeps the hole's share below that so knockbacks still register on a falling ship.")]
+        [Min(0f)]
+        [SerializeField] float maxVesselPullSpeed = 90f;
+
+        [Header("Spaghettification (photons only — Docs/BLACK_HOLE.md §5)")]
+        [Tooltip("Master switch for the tidal stretch. Off publishes an empty bank, which makes the " +
+                 "shader's first branch return the untouched vertex.")]
+        [SerializeField] bool warpEnabled = true;
+
+        [Tooltip("How soft prisms are to tides, seconds. The stretch is the tidal tensor of general " +
+                 "relativity for radial free fall, (GM/r³)·diag(2, −1, −1), acting for this long on a " +
+                 "body: log-stretch ε = GM·τ²/r³ along the radial and −ε/2 across it — volume is " +
+                 "conserved, the stretch is strongest at the horizon and falls as 1/r³, and a SMALLER " +
+                 "hole shreds harder at its horizon than a big one (ε(r_s) ∝ 1/M², as in reality). " +
+                 "0 = rigid prisms, no stretch.")]
+        [Range(0f, 3f)]
+        [SerializeField] float tidalResponseSeconds = 0.9f;
+
+        [Tooltip("Ceiling on how many times longer a prism can be drawn than it is, so a prism at the " +
+                 "horizon of a tiny hole is a long needle rather than a line to infinity. The stretch " +
+                 "eases into it through a soft minimum — the physics to 1.5% up to half the ceiling — " +
+                 "and never clips.")]
+        [Range(1.5f, 30f)]
+        [SerializeField] float maxTidalStretch = 12f;
+
+        [Tooltip("How far beyond the horizon the stretch is computed, as a multiple of the horizon " +
+                 "radius. The tide is drawn exactly across the inner half of that shell and faded " +
+                 "smoothly to zero across the outer half, where the 1/r³ tide is already ≤ 1/43 of the " +
+                 "horizon's (at 6) — so no prism beyond pays for it and none pops at the edge.")]
+        [Min(1.01f)]
+        [SerializeField] float warpReachMultiplier = 6f;
+
+        [Tooltip("Seconds the stretch takes to reach full strength after a spawn, and to let go after a " +
+                 "despawn. A bare on/off would snap every prism in the shell on one frame.")]
+        [Min(0f)]
+        [SerializeField] float warpEaseSeconds = 0.5f;
+
+        [Header("Lens (photons only — what the player sees of the hole, Docs/BLACK_HOLE.md §5.1)")]
+        [Tooltip("Master switch for the gravitational-lens visual. Off draws the plain black sphere " +
+                 "instead. The lens bends the opaque scene behind the hole, so while it is on the " +
+                 "main camera's opaque and depth textures are switched on (only while a hole is live).")]
+        [SerializeField] bool lensEnabled = true;
+
+        [Tooltip("How far around the hole the bending is drawn, in horizon radii. Light passing at b " +
+                 "is really deflected by ~2/b — it never reaches zero — so the bend is faded out over " +
+                 "the outer part of this radius (Lens Fade Start). Larger reaches farther, costs more " +
+                 "screen pixels.")]
+        [Range(6f, 120f)]
+        [SerializeField] float lensRadiusMultiplier = 30f;
+
+        [Tooltip("Where the bend starts fading back to the straight ray, as a fraction of the lens " +
+                 "radius. Inside it the ray trace is exact.")]
+        [Range(0.1f, 0.95f)]
+        [SerializeField] float lensFadeStart = 0.55f;
+
+        [Tooltip("Ray-march step budget per pixel. Rays near the photon sphere (1.5 horizon radii) " +
+                 "need the most; 128 traces one full loop around it.")]
+        [Range(16, 192)]
+        [SerializeField] int lensSteps = 128;
+
+        [Tooltip("Resolution of each of the six faces of the SKY the lens bends — the scene's own skybox " +
+                 "(Lighting > Environment > Skybox Material), rendered for rays bent off the screen. " +
+                 "Higher is sharper stars at the lens's outer edge; each face costs one skybox draw of " +
+                 "this size.")]
+        [Range(128, 2048)]
+        [SerializeField] int lensSkyResolution = 1024;
+
+        [Tooltip("How many of the sky's six faces are re-rendered each frame, round-robin, so an animated " +
+                 "skybox stays in step with the real one. 0 = render once (and again whenever the skybox " +
+                 "material or the resolution changes).")]
+        [Range(0, 6)]
+        [SerializeField] int lensSkyFacesPerFrame = 1;
+
+        [Header("Spawn (the Black Hole tool — B, or blackhole tool on; Shift+B spawns)")]
+        [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
+                 "Spawn Horizon Radius at 0 the strength also sets the size.")]
+        [Range(0f, 100f)]
+        [SerializeField] float spawnStrength = 10f;
+
+        [Tooltip("SIZE of a hole the tool spawns: its event-horizon radius r_s, world units. On screen " +
+                 "the black shadow is ~2.6 r_s in radius and the lens bends the scene out to Lens Radius " +
+                 "Multiplier r_s. 0 = derived from strength (Horizon Per Strength x strength, at least " +
+                 "Min Horizon Radius).")]
+        [Range(0f, 200f)]
+        [SerializeField] float spawnHorizonRadius = 0f;
+
+        [Tooltip("ON: a spawn (the tool's Spawn button, Shift+B, `blackhole spawn` with no strength) goes " +
+                 "straight AHEAD of the camera you are looking through — while flying, your vessel's " +
+                 "camera — Spawn Distance Horizons away. OFF: it goes to Spawn Position.")]
+        [SerializeField] bool spawnAheadOfCamera = true;
+
+        [Tooltip("How far ahead of the camera a spawn lands, in HORIZON RADII (with Spawn Ahead Of Camera " +
+                 "on). In horizon radii because a hole is big for its strength: its shadow is ~2.6 r_s in " +
+                 "radius, so much nearer than 3 r_s the camera starts inside the shadow and the vessel " +
+                 "inside the strong pull. 6 is 120 u for a strength-10 hole (r_s 20).")]
+        [Range(3f, 100f)]
+        [SerializeField] float spawnDistanceHorizons = 6f;
+
+        [Tooltip("WHERE a spawn goes when Spawn Ahead Of Camera is off: the hole's centre, world space.")]
+        [SerializeField] Vector3 spawnPosition = Vector3.zero;
+
+        [Tooltip("Velocity a spawned hole travels at, u/s, world space. Zero parks it at the spawn " +
+                 "position; a moving hole is what sets the mass it passes ORBITING (it pulls, it does " +
+                 "not tow).")]
+        [SerializeField] Vector3 spawnVelocity = Vector3.zero;
+
+        [Tooltip("Spin axis of a spawned hole, world space: the frame dragging winds infalling mass " +
+                 "around it, in the plane perpendicular to it.")]
+        [SerializeField] Vector3 spawnSpinAxis = Vector3.forward;
+
+        public float SpawnStrength => Mathf.Max(0f, spawnStrength);
+        public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
+        public bool SpawnAheadOfCamera => spawnAheadOfCamera;
+        public float SpawnDistanceHorizons => Mathf.Clamp(spawnDistanceHorizons, 3f, 100f);
+        public Vector3 SpawnPosition => spawnPosition;
+        public Vector3 SpawnVelocity => spawnVelocity;
+        public Vector3 SpawnSpinAxis => spawnSpinAxis.sqrMagnitude > 1e-6f ? spawnSpinAxis.normalized : Vector3.forward;
+
+        public bool LensEnabled => lensEnabled;
+        public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
+        public float LensFadeStart => Mathf.Clamp(lensFadeStart, 0.1f, 0.95f);
+        public int LensSteps => Mathf.Clamp(lensSteps, 16, 192);
+        public int LensSkyResolution => Mathf.Clamp(lensSkyResolution, 128, 2048);
+        public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
+
+        public float GmPerStrength => Mathf.Max(0f, gmPerStrength);
+        public float HorizonPerStrength => Mathf.Max(0.01f, horizonPerStrength);
+        public float MinHorizonRadius => Mathf.Max(0.01f, minHorizonRadius);
+        public float InfluenceAccelerationFloor => Mathf.Max(0.0001f, influenceAccelerationFloor);
+        public float MaxInfluenceRadius => Mathf.Max(1f, maxInfluenceRadius);
+        public float Spin => Mathf.Clamp(spin, 0f, 0.998f);
+        public float ReleaseDamping => Mathf.Max(0f, releaseDamping);
+        public float ReleaseSpeed => Mathf.Max(0.01f, releaseSpeed);
+        public int MaxSubsteps => Mathf.Clamp(maxSubsteps, 1, 16);
+        public int MaxBodies => Mathf.Max(0, maxBodies);
+        public int MaxBlackHoles => Mathf.Clamp(maxBlackHoles, 1, 4);
+        public float AdmissionInterval => Mathf.Max(0.02f, admissionInterval);
+        public bool PullVessels => pullVessels;
+        public float VesselPullScale => Mathf.Max(0f, vesselPullScale);
+        public float MaxVesselPullSpeed => Mathf.Max(0f, maxVesselPullSpeed);
+        public bool WarpEnabled => warpEnabled;
+        public float TidalResponseSeconds => Mathf.Clamp(tidalResponseSeconds, 0f, 3f);
+        public float MaxTidalStretch => Mathf.Clamp(maxTidalStretch, 1.5f, 30f);
+        public float WarpReachMultiplier => Mathf.Max(1.01f, warpReachMultiplier);
+        public float WarpEaseSeconds => Mathf.Max(0f, warpEaseSeconds);
+
+        /// <summary>Gravitational parameter of a hole of the given strength.</summary>
+        public float GM(float strength) => Mathf.Max(0f, strength) * GmPerStrength;
+
+        /// <summary>Event-horizon radius of a hole of the given strength (its size derived from it).</summary>
+        public float HorizonRadius(float strength) =>
+            Mathf.Max(MinHorizonRadius, Mathf.Max(0f, strength) * HorizonPerStrength);
+
+        /// <summary>
+        /// Event-horizon radius of a hole with an explicit <paramref name="size"/> (world units);
+        /// a size of 0 or less means "derived from strength".
+        /// </summary>
+        public float HorizonRadius(float strength, float size) =>
+            size > 0f ? Mathf.Max(MinHorizonRadius, size) : HorizonRadius(strength);
+
+        /// <summary>
+        /// Radius at which the pull falls to <see cref="InfluenceAccelerationFloor"/>, capped at
+        /// <see cref="MaxInfluenceRadius"/> and never inside the horizon.
+        /// </summary>
+        public float InfluenceRadius(float strength) => InfluenceRadius(strength, HorizonRadius(strength));
+
+        /// <summary>
+        /// <see cref="InfluenceRadius(float)"/> for a hole whose horizon is
+        /// <paramref name="horizonRadius"/> (its size may not be the one its strength implies).
+        /// Never inside 1.5 horizons, even when that exceeds the cap — a hole always pulls the shell
+        /// around its own horizon.
+        /// </summary>
+        public float InfluenceRadius(float strength, float horizonRadius)
+        {
+            float rs = Mathf.Max(MinHorizonRadius, horizonRadius);
+            float gm = GM(strength);
+            // Paczynski-Wiita: a = GM / (d - rs)^2  =>  d = rs + sqrt(GM / a_floor).
+            float d = rs + Mathf.Sqrt(gm / InfluenceAccelerationFloor);
+            return Mathf.Max(rs * 1.5f, Mathf.Min(d, MaxInfluenceRadius));
+        }
+
+        /// <summary>World units the warp reaches beyond a hole's horizon.</summary>
+        public float WarpReach(float strength) => WarpReachForHorizon(HorizonRadius(strength));
+
+        /// <summary>World units the warp reaches beyond a horizon of <paramref name="horizonRadius"/>.</summary>
+        public float WarpReachForHorizon(float horizonRadius) =>
+            Mathf.Max(MinHorizonRadius, horizonRadius) * (WarpReachMultiplier - 1f);
+
+        /// <summary>
+        /// The tidal log-stretch ε at distance <paramref name="d"/> from a hole of gravitational
+        /// parameter <paramref name="gm"/>: <c>GM·τ²/d³</c> (radial ×e^ε, transverse ×e^(−ε/2)), before
+        /// the shader's fade and ceiling — what the warp publishes as <c>GM·τ²</c> per hole.
+        /// </summary>
+        public float TidalLogStretch(float gm, float d) =>
+            Mathf.Max(0f, gm) * TidalResponseSeconds * TidalResponseSeconds / Mathf.Max(d * d * d, 1e-6f);
+
+        /// <summary>
+        /// The shape the shader and the integrator can actually run: a positive horizon, a reach
+        /// beyond it, a stretch ceiling above 1. An insane asset degrades to "off" rather than to
+        /// a divide by zero.
+        /// </summary>
+        public bool IsSane =>
+            HorizonPerStrength > 0f && MinHorizonRadius > 0f &&
+            WarpReachMultiplier > 1f && MaxTidalStretch > 1f && TidalResponseSeconds >= 0f &&
+            InfluenceAccelerationFloor > 0f;
+    }
+}
