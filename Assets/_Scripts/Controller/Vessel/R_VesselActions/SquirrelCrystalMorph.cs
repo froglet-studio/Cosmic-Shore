@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
             if (!morph.Adopt(crystal))
             {
                 CSDebug.LogWarning($"[SquirrelCrystalMorph] '{crystal.name}' exposed no drawable body " +
-                                   "(a model with a MeshFilter AND a MeshRenderer) — nothing to " +
+                                   "(a model with a MeshFilter and MeshRenderer, or a SkinnedMeshRenderer) — nothing to " +
                                    "morph, so this pickup retires with no animation.");
                 Destroy(go);
                 return null;
