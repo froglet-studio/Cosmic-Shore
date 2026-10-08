@@ -55,26 +55,31 @@ jobs:
           dotnet build Port/src/CosmicShore.Player -nologo -v q
           dotnet build Port/src/CosmicShore.Mcp -nologo -v q
 
-      # The two excluded tests fail at bf0015838 without the parity work (board B-2: AstroLeague's
-      # golden-goal seed, 140/153 Unity-written prefab overrides). Drop the filter when B-2 is fixed.
       - name: Engine unit tests
-        run: >-
-          dotnet test Port/tests/CosmicShore.Tests -nologo -v q
-          --filter "FullyQualifiedName!=CosmicShore.Tests.AstroLeagueTests.Match_TiedRegulation_GoesToGoldenGoal_AndSuddenDeathDecidesIt&FullyQualifiedName!=CosmicShore.Tests.PrefabInstanceEditingTests.UnityWrittenOverrideListsReplayByteForByte"
+        run: dotnet test Port/tests/CosmicShore.Tests -nologo -v q
 
-      # C2: the Shader Graph compiler's coverage file is current, and every project graph links
-      # on a real GL driver (Mesa llvmpipe under xvfb) as GLSL 3.30 and GLSL ES 3.00.
-      - name: Shader Graph census is current and every graph links
+      # C2: every project graph links on a real GL driver (Mesa llvmpipe under xvfb) as GLSL 3.30
+      # and GLSL ES 3.00 - a graph the compiler cannot link is a real failure.
+      - name: Every Shader Graph links
         run: |
           set -o pipefail
-          dotnet build Port/src/CosmicShore.AssetTool -nologo -v q
-          dotnet Port/src/CosmicShore.AssetTool/bin/Debug/net10.0/cs-asset.dll shadergraph-census --json /tmp/shaders.json > /dev/null
-          diff -u Port/parity/shaders.json /tmp/shaders.json || { echo "Port/parity/shaders.json is stale: run cs-asset shadergraph-census"; exit 1; }
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           xvfb-run -a -s "-screen 0 1280x720x24" Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore --check-shaders | grep shader-check
 
-      - name: Parity scoreboard is current
-        run: python3 Port/tools/gen_parity_scoreboard.py --check
+      # The coverage file and the scoreboard are generated from Assets/: a Unity-side change (a new
+      # .shader, a new graph) makes them stale without anything being broken. That is a WARNING on
+      # the run, never a red X on someone's Unity push; refresh them on a Port branch.
+      - name: Shader census and parity scoreboard are current (warning only)
+        run: |
+          dotnet build Port/src/CosmicShore.AssetTool -nologo -v q
+          dotnet Port/src/CosmicShore.AssetTool/bin/Debug/net10.0/cs-asset.dll shadergraph-census --json /tmp/shaders.json > /dev/null
+          if ! diff -q Port/parity/shaders.json /tmp/shaders.json > /dev/null; then
+            echo "::warning title=Prisma shader census is stale::Assets/ shaders changed since Port/parity/shaders.json was written. Refresh: cs-asset shadergraph-census, then python3 Port/tools/gen_parity_scoreboard.py"
+            diff -u Port/parity/shaders.json /tmp/shaders.json | head -60 || true
+          fi
+          if ! python3 Port/tools/gen_parity_scoreboard.py --check; then
+            echo "::warning title=Prisma parity scoreboard is stale::Refresh: python3 Port/tools/gen_parity_scoreboard.py"
+          fi
 
       - name: List the enabled build scenes
         id: scenes

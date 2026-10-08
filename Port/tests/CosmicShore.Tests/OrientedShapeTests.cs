@@ -213,6 +213,13 @@ public class OrientedShapeTests
         Assert.Contains(target.GetComponent<SphereCollider>(), Physics.OverlapBox(Vector3.zero, half, rot));
         Assert.True(Physics.CheckBox(Vector3.zero, half, rot));
         Assert.False(Physics.CheckBox(Vector3.zero, half)); // unrotated: 3 m above a 0.5 half-height
+
+        // The NonAlloc form (NestedGyroidFlora's overlap audit): same hits into the caller's buffer.
+        var buffer = new Collider[4];
+        Assert.Equal(1, Physics.OverlapBoxNonAlloc(Vector3.zero, half, buffer, rot, ~0, QueryTriggerInteraction.Collide));
+        Assert.Same(target.GetComponent<SphereCollider>(), buffer[0]);
+        Assert.Equal(0, Physics.OverlapBoxNonAlloc(Vector3.zero, half, buffer, Quaternion.identity));
+        Assert.Equal(0, Physics.OverlapBoxNonAlloc(Vector3.zero, half, System.Array.Empty<Collider>(), rot)); // no room: none written
     }
 
     [Fact]

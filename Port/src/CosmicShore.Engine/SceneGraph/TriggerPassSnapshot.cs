@@ -216,6 +216,21 @@ namespace CosmicShore.Engine
 
         internal Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction qti)
         {
+            GatherBox(center, halfExtents, orientation, layerMask, qti);
+            var buffer = new Collider[_qHits.Count];
+            EmitOrdered(_qHits, buffer);
+            return buffer;
+        }
+
+        /// <summary>Physics.OverlapBoxNonAlloc: the same oriented-box query into the caller's buffer (as many as fit).</summary>
+        internal int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation, int layerMask, QueryTriggerInteraction qti)
+        {
+            GatherBox(center, halfExtents, orientation, layerMask, qti);
+            return EmitOrdered(_qHits, results);
+        }
+
+        void GatherBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction qti)
+        {
             EnsureQueryScene();
             PhysicsShape probe = default;
             ShapeMath.SetBox(ref probe, center, orientation, new Vector3(Mathf.Abs(halfExtents.x), Mathf.Abs(halfExtents.y), Mathf.Abs(halfExtents.z)));
@@ -225,9 +240,6 @@ namespace CosmicShore.Engine
                 if (SnapCollider(i, layerMask, qti) is { } c && ShapeMath.Overlap(in probe, in _shapes[i])) _qHits.Add(c);
             foreach (var c in _arrived)
                 if (!c.destroyedFlag && Accepts(c, layerMask, qti) && ProbeOverlapsCollider(in probe, c) && !InSnapshotHits(c)) _qHits.Add(c);
-            var buffer = new Collider[_qHits.Count];
-            EmitOrdered(_qHits, buffer);
-            return buffer;
         }
 
         /// <summary>An arrival that was ALSO in the step's snapshot (left and came back) is reported once.</summary>

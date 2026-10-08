@@ -48,6 +48,8 @@ namespace CosmicShore.AssetTool
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
+                // --json is a flag, or names the file to write when a .json path follows (shadergraph-census --json PATH).
+                if (args[i] == "--json" && i + 1 < args.Length && args[i + 1].EndsWith(".json", StringComparison.OrdinalIgnoreCase)) { opts["json"] = args[++i]; continue; }
                 if (args[i] is "--dry-run" or "--force" or "--all" or "--json") { opts[args[i][2..]] = "1"; continue; }
                 if (args[i].StartsWith("--", StringComparison.Ordinal) && i + 1 < args.Length) { opts[args[i][2..]] = args[++i]; continue; }
                 pos.Add(args[i]);

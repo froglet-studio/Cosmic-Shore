@@ -1445,6 +1445,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader",
+      "guid": "ab68fa1bd374aa8ce953141437b86c68",
+      "name": "CosmicShore/StaticSkyPanorama",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader",
       "guid": "20424d64830139e4d856f9eff8565409",
       "name": "Custom/ViewAngleBasedColorBlendHDR",

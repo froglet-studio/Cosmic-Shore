@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 26 | 6 |
-| Shaders | 0 | 54 | 23 |
+| Shaders | 0 | 54 | 24 |
 
 ## Subsystems
 
@@ -119,6 +119,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shapes_Shader_Pack | `Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
 | Sprite Shaders Ultimate/Standard SSU | `Assets/_Graphics/Materials/Shaders/Standard SSU.shader` | Missing | hand-written .shader: no translation yet |
+| CosmicShore/StaticSkyPanorama | `Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/ViewAngleBasedColorBlendHDR | `Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/CircularGradientFresnel | `Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
 | UI/Gradient | `Assets/_Graphics/Materials/Shaders/UI/Gradient.shader` | Missing | hand-written .shader: no translation yet |

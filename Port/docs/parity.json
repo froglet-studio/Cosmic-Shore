@@ -17,7 +17,7 @@
     "shaders": {
       "Faithful": 0,
       "Approximate": 54,
-      "Missing": 23
+      "Missing": 24
     }
   },
   "subsystems": [
@@ -949,6 +949,13 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/Standard SSU.shader",
       "name": "Sprite Shaders Ultimate/Standard SSU",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader",
+      "name": "CosmicShore/StaticSkyPanorama",
       "status": "Missing",
       "why": "hand-written .shader: no translation yet",
       "test": ""

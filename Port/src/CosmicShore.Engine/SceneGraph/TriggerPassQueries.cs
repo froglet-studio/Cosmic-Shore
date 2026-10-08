@@ -121,6 +121,10 @@ namespace CosmicShore.Engine
             QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => Pass?.OverlapBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction) ?? Array.Empty<Collider>();
 
+        public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation = default, int layerMask = AllLayers,
+            QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+            => Pass?.OverlapBoxNonAlloc(center, halfExtents, results, orientation, layerMask, queryTriggerInteraction) ?? 0;
+
         public static bool CheckSphere(Vector3 position, float radius, int layerMask = AllLayers,
             QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => OverlapSphereNonAlloc(position, radius, new Collider[1], layerMask, queryTriggerInteraction) > 0;
