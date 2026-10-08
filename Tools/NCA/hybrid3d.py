@@ -109,6 +109,7 @@ class ConfigH:
     blowup_factor: float = 20.0
     seed: int = 0
     threads: int = 1
+    device: str = "cpu"         # cuda on a GPU box (the run's files are device-free: load with map_location)
 
 
 def train(cfg: ConfigH, out_dir: str, resume: bool = False):
@@ -121,21 +122,23 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
         with open(os.path.join(out_dir, "config.json"), "w") as f:
             json.dump(asdict(cfg), f, indent=2)
     torch.set_num_threads(cfg.threads)
+    dev = torch.device(cfg.device)
+    torch.set_default_device(dev)
     torch.manual_seed(cfg.seed + start)
     rng = np.random.default_rng(cfg.seed + start)
-    fr = torch.from_numpy(load_form_frames())                        # [F, K, D, H, W, 4]
+    fr = torch.from_numpy(load_form_frames()).to(dev)                # [F, K, D, H, W, 4]
     if not os.path.isfile(os.path.join(out_dir, "frames.npy")):
-        np.save(os.path.join(out_dir, "frames.npy"), fr.numpy().astype(np.float16))
+        np.save(os.path.join(out_dir, "frames.npy"), fr.cpu().numpy().astype(np.float16))
     NF, K = fr.shape[:2]
     ca = CA3D(16, 128, cfg.fire_rate)
     if resume:
-        ca.load_state_dict(torch.load(os.path.join(out_dir, "model.pt")))
+        ca.load_state_dict(torch.load(os.path.join(out_dir, "model.pt"), map_location=dev))
     elif cfg.init3d:
-        ca.load_state_dict(torch.load(cfg.init3d))
+        ca.load_state_dict(torch.load(cfg.init3d, map_location=dev))
     opt = torch.optim.Adam(ca.parameters(), lr=cfg.lr, eps=1e-7)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [cfg.lr_drop_step], 0.1)
     eye = torch.eye(NF)
-    seeds = make_seed(eye)                                           # [F, ...]
+    seeds = make_seed(eye.cpu()).to(dev)                                           # [F, ...]
     P = cfg.pool_per_form
     pool = seeds.repeat_interleave(P, 0)                             # [F*P, ...], form = index // P
     J, Pd = cfg.window, cfg.period
@@ -145,7 +148,7 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
     if resume:
         rollbacks = json.load(open(os.path.join(out_dir, "state.json"))).get("rollbacks", 0)
         if os.path.isfile(os.path.join(out_dir, "opt.pt")):
-            opt.load_state_dict(torch.load(os.path.join(out_dir, "opt.pt")))
+            opt.load_state_dict(torch.load(os.path.join(out_dir, "opt.pt"), map_location=dev))
         for _ in range(start):
             sched.step()
         log = list(np.load(os.path.join(out_dir, "loss.npy")))[:start + 1]
@@ -175,12 +178,12 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
                 for f in range(NF):                                  # per form: worst first; worst -> seed
                     sl = slice(f * cfg.per_form, (f + 1) * cfg.per_form)
                     e = frame_mse(x0[sl], fr[f]).min(1).values
-                    o = torch.argsort(e, descending=True).numpy() + f * cfg.per_form
+                    o = torch.argsort(e, descending=True).cpu().numpy() + f * cfg.per_form
                     x0[sl], idx[sl] = x0[o].clone(), idx[o]
                     x0[f * cfg.per_form] = seeds[f]
                     if cfg.damage_per_form:
                         d = cfg.damage_per_form
-                        x0[(f + 1) * cfg.per_form - d:(f + 1) * cfg.per_form] *= sphere_damage(d, *GRID, rng)
+                        x0[(f + 1) * cfg.per_form - d:(f + 1) * cfg.per_form] *= sphere_damage(d, *GRID, rng).to(dev)
             n = int(rng.integers(cfg.min_iter, cfg.max_iter + 1))
 
         checks = [n - (J - 1 - j) * Pd for j in range(J)]
@@ -210,7 +213,7 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
             gl = gl / len(snaps)
         loss = shape_loss + cfg.genome_w * gl * 0.01                 # genome err ~1 vs shape err ~1e-2
 
-        L = float(loss)
+        L = float(loss.detach())
         recent = [v for v in log[-50:] if math.isfinite(v)]
         med = float(np.median(recent)) if len(recent) >= 10 else float("inf")
         extinct = not bool((x.detach()[..., 3] > 0.1).flatten(1).any(1).all())
@@ -248,7 +251,7 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
             dt = time.time() - t0
             spi = dt / (step - start + 1)
             per = [float(l.mean()) for l in losses]
-            gr = genome_readout(xd).numpy().round(2).tolist()
+            gr = genome_readout(xd).cpu().numpy().round(2).tolist()
             json.dump({"step": step, "steps": cfg.steps, "phase": "clock" if clock else "pool", "loss": L,
                        "shape": {f: round(p, 5) for f, p in zip(FORMS, per)}, "genome_loss": float(gl),
                        "s_per_it": round(spi, 2), "eta_h": round((cfg.steps - step) * spi / 3600, 2),
@@ -257,15 +260,15 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
             print(f"[hyb] {'clock' if clock else 'pool '} {step:5d} loss {L:.5f} " +
                   " ".join(f"{f[0]}={p:.4f}" for f, p in zip(FORMS, per)) + f" g={float(gl):.3f} {spi:.2f}s/it", flush=True)
         if step % 50 == 0 or step == cfg.steps:
-            torch.save(ca.state_dict(), os.path.join(out_dir, "model.tmp")); os.replace(os.path.join(out_dir, "model.tmp"), os.path.join(out_dir, "model.pt"))
+            torch.save({k: v.cpu() for k, v in ca.state_dict().items()}, os.path.join(out_dir, "model.tmp")); os.replace(os.path.join(out_dir, "model.tmp"), os.path.join(out_dir, "model.pt"))
             torch.save(opt.state_dict(), os.path.join(out_dir, "opt.tmp")); os.replace(os.path.join(out_dir, "opt.tmp"), os.path.join(out_dir, "opt.pt"))
             np.save(os.path.join(out_dir, "loss.npy"), np.array(log))
             json.dump({"step": step, "rollbacks": rollbacks}, open(os.path.join(out_dir, "state.json"), "w"))
         if step % 250 == 0 or step == cfg.steps:
-            ims = [render(xd[i], px=96) for i in range(B)]
+            ims = [render(xd[i].cpu(), px=96) for i in range(B)]
             Image.fromarray((np.concatenate(ims, 1) * 255).astype(np.uint8)).save(os.path.join(out_dir, f"batch_{step:05d}.png"))
             if step % 1000 == 0:
-                torch.save(ca.state_dict(), os.path.join(out_dir, f"model_{step:05d}.pt"))
+                torch.save({k: v.cpu() for k, v in ca.state_dict().items()}, os.path.join(out_dir, f"model_{step:05d}.pt"))
     return ca
 
 
