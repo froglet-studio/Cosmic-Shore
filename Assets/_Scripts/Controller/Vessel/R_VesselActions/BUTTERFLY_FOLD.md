@@ -300,7 +300,7 @@ chosen are the only two that do:
 The tempting alternative is to derive the destination from the HOLD — `_heldSeconds` does
 accumulate on every peer, and `ResolveTarget` is pure. It is correct on the owner and **tens of
 units out everywhere else**, because the press and the release arrive over the wire: at
-`reachSpeed 900`, 50 ms of jitter is 45 units against a 55-unit mouth. *A quantity every peer can
+`reachSpeed 900`, 50 ms of jitter is 45 units against a 33-unit mouth. *A quantity every peer can
 compute is not a quantity every peer computes the same.*
 
 A peer waits up to `gateSettleSeconds` for the replicated pose to actually move. If the two ends
