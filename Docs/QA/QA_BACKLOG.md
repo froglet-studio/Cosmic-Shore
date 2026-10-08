@@ -3290,7 +3290,9 @@ whether it reads better or worse at gameplay distance.
 / `_ArcDuty` / `_ArcSpeed` for the discharge; `_RimStrength` / `_FacetAmbient` /
 `_EmissionStrength` for the body.
 
-### QA-MENU-VEIL-PAUSE ⬜ — the menu-return veil hold and the prewarmed pause menu
+### QA-MENU-VEIL-PAUSE 🔴 — the menu-return veil hold and the prewarmed pause menu
+**Last QA:** FAIL on `5663cc4b3` (2026-10-08, akouroshm) — The menu-return/loading veil does not hide the build: prisms are visibly **popping in during loading**, and on entering a game the player sees a **"metal seal" opening up** — an animation that appears to be a remnant of an old loading-screen concept, not the current veil. The teardown/build is not being covered. (Observed on 71d67ba9b.)
+
 **Source:** PRs #672, #693, #698. The prewarm crashed the **Windows player** on every
 login (#693) and the root was a type-punned `pauseMenuPanel` reference (#698) — so this
 item is the Editor half; the player half is QA-BUILD-WINDOWS-PLAYER.
@@ -3828,16 +3830,6 @@ button is never left disabled.
 **FAIL:** a screen that will not navigate, a dead Home button, or a modal that cannot be
 reopened after one of the close paths.
 
-### QA-STATE-RESET ⬜ — runtime game state resets to defaults between sessions
-**Source:** PR #647. **Run this alongside QA-SCORING-CLIENT-MIRROR** — they are the two
-halves of "nothing leaks between games", and B17 is the networked half.
-1. Play a game to the end, return to the menu, and launch a **different** mode.
-2. Repeat with the same mode twice (use Play Again where available).
-
-**PASS:** the second launch starts with a clean score, intensity, player count and
-domain assignment — no leakage from the previous round.
-**FAIL:** any carried-over score, stale player count, or a domain that was not reassigned.
-
 ### QA-TOOLING-SHIP-PANEL ⬜ — the editor tool ship panel actually pushes
 **Source:** PR #663 (buttons never pressed in a running editor). **Do this on a throwaway
 branch, not on `bleeding-edge`.**
@@ -4066,17 +4058,6 @@ is never stranded, and a pilot who leaves mid-game leaves a ship that keeps flyi
 departed ship freeze or pop out; no exceptions on either machine.
 **FAIL:** a client stranded after leaving · a departed ship that freezes or vanishes
 instantly (breaking continuity) · an exception on either machine on a leave.
-
-### QA-AI-SKIMRACE ⬜ — the Squirrel Skim Race AI actually races and wins
-**Source:** PR #945. A trained Skim Race AI for the Squirrel that should win intensity 2
-inside the 80-second limit.
-1. Launch **Skim Race** solo with AI backfill at intensity 2 on the **Squirrel**.
-2. Watch an AI racer: it should fly the track, collect crystals, and make real progress —
-   not orbit or stall.
-3. Let the race run and confirm an AI can **finish** within the time limit.
-
-**PASS:** the AI races the track competently and can complete intensity 2 within ~80 s.
-**FAIL:** an AI that orbits, stalls, flies off-track, or never finishes.
 
 ### QA-OFFLINE-FALLBACK ⬜ — single-player offline fallback and the online/offline toggle
 **Source:** PR #812. When UGS/Relay is unreachable the game falls back to a local host,
