@@ -339,6 +339,91 @@ namespace CosmicShore.AssetTool.Tests
             Assert.Null(Prisma.DccLocator.MayaVersion("/opt/tools/mayapy"));
         }
 
+        /// <summary>
+        /// E3a: a new FBX dropped into a project gets a .meta with a fresh GUID and the importer
+        /// settings the project's models share (majority values, model-specific tables emptied),
+        /// Prisma's importer reads it, and --prefab writes a prefab nesting it that loads through
+        /// the engine with the model drawn. Run on a small temp project, never the checkout.
+        /// </summary>
+        [Fact]
+        public void A_new_model_gets_the_projects_import_settings_and_loads_inside_a_prefab()
+        {
+            var root = Temp();
+            try
+            {
+                var models = Path.Combine(root, "Assets", "Models");
+                Directory.CreateDirectory(models);
+                File.WriteAllText(models + ".meta", "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n");
+                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/MassCrystalExport1_8-21-25.fbx" })
+                {
+                    File.Copy(Path.Combine(Root, donor), Path.Combine(models, Path.GetFileName(donor)));
+                    File.Copy(Path.Combine(Root, donor + ".meta"), Path.Combine(models, Path.GetFileName(donor) + ".meta"));
+                }
+                var db = new AssetDatabase(root);
+                var r = JsonSerializer.SerializeToElement(CosmicShore.AssetTool.Program.ModelImport(db, Path.Combine(Root, "Assets/_Models/Orb.fbx"),
+                    new System.Collections.Generic.Dictionary<string, string> { ["to"] = "Assets/Imported/Orbs", ["name"] = "NewOrb", ["prefab"] = "1" }));
+                string path = r.GetProperty("path").GetString()!, guid = r.GetProperty("guid").GetString()!, prefab = r.GetProperty("prefab").GetString()!;
+                Assert.Equal("Assets/Imported/Orbs/NewOrb.fbx", path);
+                Assert.Matches("^[0-9a-f]{32}$", guid);
+                Assert.True(r.GetProperty("meshes").GetInt32() > 0);
+                Assert.True(r.GetProperty("renderers").GetInt32() > 0, "the prefab loads with the model drawn");
+                Assert.Equal("Assets/Imported/Orbs/NewOrb.prefab", prefab);
+                var meta = File.ReadAllText(Path.Combine(root, path + ".meta"));
+                Assert.Contains("guid: " + guid, meta);
+                Assert.Contains("serializedVersion: 22200", meta);         // the newest importer version among the donors
+                Assert.Contains("isReadable: 0", meta);                    // the majority (2 of 3), not the cleanest donor's own 1
+                Assert.Contains("internalIDToNameTable: []", meta);
+                Assert.Contains("clipAnimations: []", meta);
+                Assert.True(File.Exists(Path.Combine(root, "Assets/Imported.meta")) && File.Exists(Path.Combine(root, "Assets/Imported/Orbs.meta")), "new folders get metas");
+                // Re-importing over it is refused rather than overwriting.
+                Assert.Throws<ArgumentException>(() => CosmicShore.AssetTool.Program.ModelImport(db, Path.Combine(Root, "Assets/_Models/Orb.fbx"),
+                    new System.Collections.Generic.Dictionary<string, string> { ["to"] = "Assets/Imported/Orbs", ["name"] = "NewOrb" }));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+
+        /// <summary>
+        /// E2c: a new data file is what Unity's Create menu writes - the same header bytes and the
+        /// same field order as a real asset of the type (TrainingArchiveSO's Archive.asset), every
+        /// field at its default - and a NativeFormatImporter .meta. Written on a temp project.
+        /// </summary>
+        [Fact]
+        public void A_new_data_file_matches_what_Unity_writes_for_its_type()
+        {
+            var db = new AssetDatabase(Root);
+            var types = new CosmicShore.Content.Scenes.ScriptTypeMap(db, new[] { typeof(CosmicShore.Core.AppManager).Assembly, typeof(DG.Tweening.DOTween).Assembly, typeof(CosmicShore.Engine.GameObject).Assembly });
+            var catalog = new CosmicShore.Content.Editing.ScriptCatalog(db, types);
+            var text = (string)CosmicShore.AssetTool.Program.NewAsset(db, catalog, "TrainingArchiveSO", "Assets/__probe/Fresh.asset", dryRun: true);
+            var real = File.ReadAllText(Path.Combine(Root, "Assets/_SO_Assets/AI Training/Archive.asset")).Replace("\r\n", "\n");
+            string[] Head(string t) => t.Split('\n').Take(14).Select(l => l.StartsWith("  m_Name:") ? "  m_Name: *" : l).ToArray();
+            Assert.Equal(Head(real), Head(text));
+            static string[] Keys(string t) => t.Split('\n').Where(l => Regex.IsMatch(l, "^  [A-Za-z_]")).Select(l => l.Split(':')[0].Trim()).ToArray();
+            Assert.Equal(Keys(real), Keys(text));
+            Assert.False(File.Exists(Path.Combine(Root, "Assets/__probe/Fresh.asset")), "a dry run writes nothing");
+
+            // Written for real on a temp project that carries the script.
+            var root = Temp();
+            try
+            {
+                var scripts = Path.Combine(root, "Assets", "Scripts");
+                Directory.CreateDirectory(scripts);
+                var src = Directory.EnumerateFiles(Path.Combine(Root, "Assets"), "TrainingArchiveSO.cs", SearchOption.AllDirectories).First();
+                File.Copy(src, Path.Combine(scripts, "TrainingArchiveSO.cs"));
+                File.Copy(src + ".meta", Path.Combine(scripts, "TrainingArchiveSO.cs.meta"));
+                var tdb = new AssetDatabase(root);
+                var tcat = new CosmicShore.Content.Editing.ScriptCatalog(tdb, new CosmicShore.Content.Scenes.ScriptTypeMap(tdb, new[] { typeof(CosmicShore.Core.AppManager).Assembly, typeof(CosmicShore.Engine.GameObject).Assembly }));
+                var r = JsonSerializer.SerializeToElement(CosmicShore.AssetTool.Program.NewAsset(tdb, tcat, "TrainingArchiveSO", "Assets/Data/Fresh.asset"));
+                Assert.Equal("Assets/Data/Fresh.asset", r.GetProperty("path").GetString());
+                var meta = File.ReadAllText(Path.Combine(root, "Assets/Data/Fresh.asset.meta"));
+                Assert.Contains("NativeFormatImporter:", meta);
+                Assert.Contains("mainObjectFileID: 11400000", meta);
+                Assert.Contains("guid: " + r.GetProperty("guid").GetString(), meta);
+                Assert.Contains("m_Name: Fresh", File.ReadAllText(Path.Combine(root, "Assets/Data/Fresh.asset")));
+                Assert.Throws<ArgumentException>(() => CosmicShore.AssetTool.Program.NewAsset(tdb, tcat, "TrainingArchiveSO", "Assets/Data/Fresh.asset"));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+
         [Fact]
         public void Preview_draws_the_model_into_the_frame()
         {

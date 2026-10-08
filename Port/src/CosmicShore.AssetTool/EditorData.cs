@@ -36,7 +36,7 @@ namespace CosmicShore.AssetTool
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.BasicLatin),
         };
 
-        static int Write(object o) { Console.WriteLine(JsonSerializer.Serialize(o, Json)); return 0; }
+        internal static int Write(object o) { Console.WriteLine(JsonSerializer.Serialize(o, Json)); return 0; }
 
         static string Rel(string full) => Path.GetRelativePath(Scripts.Db.ProjectRoot, full).Replace('\\', '/');
 

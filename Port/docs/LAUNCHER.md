@@ -282,10 +282,13 @@ script edit), and every edit lands in the workspace, where GIT commits it.
 
 **TOOLS** - every FrogletTools menu item in the project (95 on 2026-10-08), read from source: its
 category, importance (the dots), description, whether it is a window or one click, and whether it
-writes assets. Filter by category or search. **RUN WITH CLAUDE** opens a new agent chat that reads
-the tool's source and does its job on the project files without Unity - an audit gives you its
-report, a writer plans first (PLAN mode) - or says plainly when the job needs the running Unity
-editor. **SOURCE** opens the script, **DOCS** its documentation.
+writes assets. Filter by category or search. A tool Prisma has a native version of shows **RUN**: it
+runs that `cs-asset` command on Prisma's workspace (output on CONSOLE, a writer's changes on GIT).
+Every other tool shows **BUILD**: an agent chat that builds the native version - reads the tool's
+source, plans first, then adds a `cs-asset` command, its test and an entry in
+`Port/tools/froglet-tools/tools.json`, after which the card shows RUN. That chat may change only
+cs-asset, its tests and that folder (the TOOL scope, enforced by deny rules), and says plainly when
+a tool's job needs the running Unity editor. **SOURCE** opens the script, **DOCS** its documentation.
 
 ![DATA](architecture/launcher_editor_data.png)
 
@@ -294,9 +297,17 @@ see its fields as Unity's inspector labels them, with the script's headers, tool
 ranges. Toggles, numbers (sliders where the script has a `[Range]`), text, enums, vectors and
 colours are edited in place: each change is one `cs-asset set` that rewrites only that line. A
 reference shows the file it points at; click a data file or model to open it. Keys the script no
-longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about the file.
+longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about the file. **+ NEW**
+creates a data file of the selected type with the script's defaults, as Unity's Create menu writes it
+(`cs-asset new-asset TYPE PATH`: same header and field order, a NativeFormatImporter `.meta` with a
+fresh GUID), and opens it for editing.
 
 ![MODELS](architecture/launcher_editor_models.png)
+
+**+ IMPORT** brings a new model in (`cs-asset model-import`): the file is copied to the folder you
+pick with a `.meta` in the import settings the project's models share (majority values, a fresh
+GUID, no tables from another model), Prisma's importer reads it back, and optionally a prefab that
+holds it is written and loaded through the engine as proof.
 
 **MODELS** - every model by folder: the 66 FBX files, and Blender (`.blend`) and Maya (`.ma`/`.mb`)
 files, tagged BLENDER / MAYA. Unity cannot read those two either: its importer runs the installed
