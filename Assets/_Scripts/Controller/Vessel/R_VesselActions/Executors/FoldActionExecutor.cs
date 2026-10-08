@@ -50,10 +50,11 @@ namespace CosmicShore.Gameplay
     /// <para><b>Every fold leaves a WORMHOLE standing</b> — two sphere mouths with one shared
     /// interior, one where the vessel left and one where it arrived (<see cref="WormholeMouth"/>;
     /// they replaced the original ring gates, <c>BUTTERFLY_FOLD.md</c> § "The gates became
-    /// wormholes"). The pair is DOMAIN-LOCKED: any vessel of the Butterfly's domain flies into
-    /// either and comes out of the other, as often as it likes, and sees the far side through it;
-    /// to every other domain it is a sealed bubble in the Butterfly's colour that they fly
-    /// straight through. Both rims wear the domain's hue. The pair stands until this Butterfly
+    /// wormholes"). ANY vessel flies into either and comes out of the other, as often as it
+    /// likes, and everyone sees the far side through it. The pair is DOMAIN-TOLLED: a pilot not
+    /// of the Butterfly's domain has petals stripped at the mouth they enter, left on its surface
+    /// as crystals (<see cref="WormholeMouth.LevyToll"/>, § "Anyone rides; rivals pay a toll").
+    /// Both rims wear the domain's hue — whose road it is, and who rides it free. The pair stands until this Butterfly
     /// folds again and the new pair replaces the old one, which is an ACTIVE player act and never
     /// a clock — there is no lifespan here and there must never be one. The Butterfly cannot
     /// out-fly anybody; what it can do is leave a shortcut its whole team keeps.</para>
@@ -548,12 +549,16 @@ namespace CosmicShore.Gameplay
                 ExactRenderScale = so.PortalWindowRenderScale,
                 PanoramaFaceSize = so.PanoramaFaceSize,
                 TransitEvent = gateThreadEvent,
-                // The rim wears the placer's domain: the colour says who may use it.
+                // The rim wears the placer's domain: the colour says who rides it free.
                 RimTint = ToyFactory.DomainAccentColor(_gameData.ThemeManagerData, domain),
-                DomainLocked = true,
+                // Anyone may thread it; a pilot of another domain pays in petals, left on the
+                // mouth's surface as crystals (WormholeMouth.LevyToll).
+                DomainTolled = true,
+                TollPetalsPerElement = so.RivalTollPetalsPerElement,
+                TollShedSpeed = so.RivalTollShedSpeed,
                 Domain = domain,
-                // The pair follows THIS Butterfly: it is always carried and always sees through,
-                // and the lock (and the rim's hue) track its domain live.
+                // The pair follows THIS Butterfly: it always rides free, and the toll (and the
+                // rim's hue) track its domain live.
                 Owner = _status,
                 Theme = _gameData.ThemeManagerData,
             }, _gameData.Players, so.GateRadius);

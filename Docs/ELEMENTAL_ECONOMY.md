@@ -12,7 +12,7 @@ exactly one of three places:
 | Form | Who gets the petals | Which verbs | Conserves? |
 |---|---|---|---|
 | **Steal** | the attacker, immediately | contact — the Squirrel's joust, the Rhino's sword | yes |
-| **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle | yes |
+| **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle; and a rival threading a Butterfly's wormhole (the toll, left on the mouth's surface — `Docs/WORMHOLES.md` §5) | yes |
 | **Burn** | nobody, ever — destroyed | a **hostile danger prism**, and nothing else | **no — this is the sink** |
 
 So elements circulate. Inside a match, lifeform reproduction and spawning are the only **source**,

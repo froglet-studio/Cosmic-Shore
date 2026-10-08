@@ -109,9 +109,12 @@ its sphere's footprint at `portalWindowRenderScale` (0.75) of the screen — cap
 **one panorama face per mouth** whose partner is on screen and not already fully exact (256², per
 `panoramaFaceSize`). No shadows, no MSAA, no post on any of them: the sphere is composited into the
 world and the gameplay camera's post runs over it once. A mouth nobody can see costs nothing, and
-neither does a sealed one (§5). No colliders and no prisms.
+neither does a sealed one (an unpaired mouth withering away, §5). Since the toll replaced the lock
+(§5) every viewer is shown the view through, so a rival watching a pair now pays the same two-render
+cap its owner always did — the cap is per frame, not per mouth, so the ceiling is unchanged. No
+colliders and no prisms.
 
-## 5. The rim, the domain lock, and how a fold lays its pair
+## 5. The rim, the domain toll, and how a fold lays its pair
 
 **The rim wears a domain's hue.** The only part of the surface that is the mouth itself is the
 fresnel rim, and it is painted in the owning domain's colour — the theme's
@@ -120,17 +123,42 @@ fresnel rim, and it is painted in the owning domain's colour — the theme's
 the owner changes domain. `_RimColor` is only the fallback for a mouth built with no tint. The transit
 flare uses the same hue.
 
-**Domain-locked.** Every fold pair is `WormholeMouth.Settings.DomainLocked`: it carries only vessels
-of its `Domain`, which is its `Owner`'s (the fold's Butterfly's) LIVE domain, and the owner is always
-carried and always sees through. To a viewer whose camera follows a pilot of another domain the mouth
-is **sealed** (`WormholeView` decides per frame, `_WormholeSealed`): no view through, only a fresnel
-shell in the domain colour, interior clipped in colour and depth, and that viewer's own ship flies
-straight through it. Sealing is decided only on POSITIVE evidence of a rival viewer — an unresolvable
-viewer sees the view (it first shipped failing closed, which drew a pilot's own pair as a bare ring).
-A sealed mouth gets no exact render and asks for no panorama — it costs nothing. An unpaired mouth
-(one withering away, `WormholeMouth.Retire`) is sealed too.
+**Anyone rides; a rival pays (2026-10-08 — replaced the domain LOCK).** Every fold pair is
+`WormholeMouth.Settings.DomainTolled`. It carries EVERY vessel, of any domain, and every viewer sees
+through it — a view through is a promise you can go there, and now everyone can. What the domain
+decides is the PRICE: a pilot who is not of the mouth's `Domain` (its `Owner`'s — the fold's
+Butterfly's — LIVE domain) has `rivalTollPetalsPerElement` petals stripped off each of their four
+elements on every transit (shipped 15, i.e. the whole flower, overcharge included), and those petals
+are left behind on the surface of the mouth they went IN by, as free-for-all elemental crystals —
+one crystal per petal, scattered over a 30° cap around the entry point and thrown straight out along
+the surface normal at `rivalTollShedSpeed` (25 u/s; they settle ~14 u out). Radially outward is
+deliberate: the half-space beyond the tangent plane at any surface point lies wholly outside the
+ball, so no crystal can drift into the shared interior.
 
-**Laying a pair.** The fold builds a domain-locked pair (radius `gateRadius` 55) at the two ends of
+- **Who pays** (`WormholeMouth.OwesToll`, pinned by `WormholeTollTests`): not the owner, ever; not
+  the owner's domain; and not a pilot whose domain cannot be read — a toll is a restriction, applied
+  only on positive evidence (`vessel` skill §4.ac).
+- **It conserves.** The take is `ResourceSystem.AccrueElementalLoss` with the new
+  `ElementalDebuffSources.WormholeToll` class: clamped to what the pilot holds above level 0, whole
+  petals only, and stopped by a ward that covers it (only an "everything" ward does — the Sparrow /
+  Serpent `All` grants). Every petal taken becomes exactly one crystal
+  (`ElementalCrystalEjector.ShedOntoSphere`). It is an EJECT in the economy's terms
+  (`Docs/ELEMENTAL_ECONOMY.md`), never a burn.
+- **Where it runs.** On EVERY peer, from `TeleportContinuity.OnTeleported` (the one place every pose
+  write lands, already resolving the transit to cut the ribbons) — not from the mouth's own
+  `Transit`, which only the vessel's owner runs. Elemental levels are simulated per peer like every
+  other transfer, so each machine strips its own copy of the pilot and mints its own local crystals.
+  A peer whose tolerant `TryResolveTransit` misses a transit misses that toll too; same stance as
+  every per-peer crystal.
+
+An unpaired mouth (one withering away, `WormholeMouth.Retire`) is still **sealed**
+(`_WormholeSealed`): no view through, only the fresnel shell. That is now the only seal.
+
+*History:* the pair first shipped domain-LOCKED — rivals were not carried and saw a sealed shell —
+and its first playtest sealed the Butterfly against its own pair (`BUTTERFLY_FOLD.md` § "Playtest
+1"). The fail-open rule and `Settings.Owner` that fixed it carry straight over to the toll.
+
+**Laying a pair.** The fold builds a domain-tolled pair (radius `gateRadius` 55) at the two ends of
 every fold — origin and destination, exactly where its ring gates used to stand — once the arrival
 pose has replicated, and only when the two ends are at least `minGateSeparation` (300, never under
 2.5 radii) apart; the previous pair withers out first (`BUTTERFLY_FOLD.md` § "The gates became
@@ -142,7 +170,7 @@ takes a step that starts outside it.
 
 - **The exact view is for the player's camera only.** Every other camera (preview, scene view,
   spectator rigs that are not the active `CustomCameraController`) sees the panorama.
-- **Only the followed ship's TAIL is drawn back after a transit.** Every carriable vessel inside a
+- **Only the followed ship's TAIL is drawn back after a transit.** Every vessel inside a
   ball is seen through that ball, but the part of another pilot's hull still sticking out of the far
   mouth's near face is clipped from the near mouth's window until it is inside.
 - **A ship that turns round inside the shared interior and leaves by the face it came in** comes out
@@ -163,5 +191,7 @@ takes a step that starts outside it.
 | W3 | inconsistency (left) | `PlatformProfileSO.foldGateWindowMaxRenderScale` now caps the wormhole exact views; the name describes a retired system. Kept to avoid migrating the tier assets. | its tooltip says so | rename with `[FormerlySerializedAs]` + re-save the profile set, or leave? |
 | W4 | dead surface (walked past) | `CustomCameraController.PendingPortalShift` is public with zero readers (it was before this branch too). | `grep -rn PendingPortalShift Assets` → the declaration only | delete? |
 | W5 | incompleteness (report) | With no `CopyTextureSupport.DifferentTypes` the panorama never captures, so beyond exact range a mouth shows `_VoidColor`. No device in the shipped tiers is known to lack it — unmeasured. | `WormholeMouth.EnsurePanorama` | does any target device report no `DifferentTypes`? |
-| W6 | incompleteness (report) | No HUD marker for a standing fold pair, and no AI uses one (carried over from the ring gates). | `BUTTERFLY_FOLD.md` § Follow-ups | design, not cleanup |
+| W6 | incompleteness (report) | No HUD marker for a standing fold pair, and no AI uses one (carried over from the ring gates). An AI flying its own course may now thread a RIVAL pair by accident and pay the toll — it does not steer round one. | `BUTTERFLY_FOLD.md` § Follow-ups | design, not cleanup |
+| W7 | verify | The rival toll (§5) is unplayed: the default (15 = whole flower), the shed speed and the 30° spill cap are first-pass numbers, and nothing on screen tells a rival the price before they pay it beyond the rim's domain hue. | `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Butterfly wormholes carry anyone" | is a whole-flower toll the intended price, or should it be a few petals per element? |
+| W8 | inconsistency (walked past) | `FoldActionExecutor` still tags its verbose logs `[FoldGate]`, naming the retired ring gates (5 sites). Harmless, and a log filter keyed on it would break on a rename. | `grep -rn '\[FoldGate\]' Assets --include=*.cs` → 5 | rename to `[FoldWormhole]`? |
 

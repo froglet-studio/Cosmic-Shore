@@ -114,6 +114,21 @@ namespace CosmicShore.Gameplay
                  "outcome as a fold too short to keep.")]
         [SerializeField, Min(0f)] float gateSettleSeconds = 0.75f;
 
+        [Header("Toll (pilots of other domains)")]
+        [Tooltip("Whole petals stripped from EACH of a rival's four elements every time they thread " +
+                 "this Butterfly's wormhole. Anyone may fly through; a pilot not of the Butterfly's " +
+                 "domain pays, and the petals are left on the surface of the mouth they went in by as " +
+                 "collectable crystals (one crystal per petal). Clamped to what the pilot holds above " +
+                 "level 0, so 15 takes the whole flower, overcharge included. 0 = everyone rides free. " +
+                 "The Butterfly itself and its own domain never pay.")]
+        [SerializeField, Range(0, 15)] int rivalTollPetalsPerElement = 15;
+
+        [Tooltip("World units/second the stripped crystals are thrown straight out off the mouth's " +
+                 "surface. They bleed it off and settle in about two seconds, roughly speed / 1.8 " +
+                 "units out (EjectedCrystal) - so this is how far from the surface the spill lands. " +
+                 "Floored at 12 so a toll always visibly expels.")]
+        [SerializeField, Min(0f)] float rivalTollShedSpeed = 25f;
+
         [Header("Feel")]
         [Tooltip("World units per second the ghost eases toward its commanded position. It " +
                  "starts ON the vessel and TRAVELS, so the pilot watches it go rather than " +
@@ -144,6 +159,8 @@ namespace CosmicShore.Gameplay
         public int PanoramaFaceSize => panoramaFaceSize;
         public Material WormholeMaterial => wormholeMaterial;
         public float PortalWindowRenderScale => portalWindowRenderScale;
+        public int RivalTollPetalsPerElement => Mathf.Max(0, rivalTollPetalsPerElement);
+        public float RivalTollShedSpeed => rivalTollShedSpeed;
 
         /// <summary>
         /// The recharge this vessel actually pays, at its live TIME level. Read at USE time, never
