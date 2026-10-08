@@ -22,6 +22,9 @@ namespace CosmicShore.AssetTool.Tests
             Console.SetOut(sw);
             try { Assert.Equal(0, run()); }
             finally { Console.SetOut(old); }
+            // What Windows' OEM code page would mangle never reaches stdout: the JSON is plain ASCII.
+            var bad = sw.ToString().FirstOrDefault(c => c > 127 || (c < 32 && c != '\n' && c != '\r'));
+            Assert.True(bad == default(char), $"stdout carries U+{(int)bad:X4}");
             return JsonDocument.Parse(sw.ToString());
         }
 
@@ -48,6 +51,9 @@ namespace CosmicShore.AssetTool.Tests
             Assert.StartsWith("Opens Prisma", launch.Description);
             // " & " inside a name is not a hotkey.
             Assert.Contains(tools, t => t.Menu.EndsWith("Warnings & Errors Only", StringComparison.Ordinal));
+            // Text with non-ASCII characters (the occlusion tools' summaries use "↔") still come out as JSON that parses.
+            using var doc = Capture(EditorData.Tools);
+            Assert.Contains(doc.RootElement.GetProperty("tools").EnumerateArray(), t => t.TryGetProperty("summary", out var d) && d.GetString()!.Contains('↔'));
         }
 
         [Fact]

@@ -31,7 +31,9 @@ namespace CosmicShore.AssetTool
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            // Plain ASCII on stdout (every other character as \uXXXX): on Windows a redirected console
+            // writes in the OEM code page, where "↔" becomes byte 0x1D and the reader's JSON breaks.
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.BasicLatin),
         };
 
         static int Write(object o) { Console.WriteLine(JsonSerializer.Serialize(o, Json)); return 0; }

@@ -42,6 +42,8 @@ namespace CosmicShore.AssetTool
     {
         static int Main(string[] args)
         {
+            // UTF-8 out, whatever the console's code page (Windows redirects in the OEM page otherwise).
+            Console.OutputEncoding = new System.Text.UTF8Encoding(false);
             var opts = new Dictionary<string, string>();
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
