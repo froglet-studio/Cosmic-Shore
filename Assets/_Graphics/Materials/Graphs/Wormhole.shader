@@ -43,10 +43,21 @@
 // world beyond the far mouth directly instead of the inside of a sphere — and the carry hands over at
 // that same distance, so the hand-over is a change of frame with nothing on screen to show it.
 //
+// IT NEVER HIDES THE PILOT'S SHIP. A fold lays its destination mouth AROUND the Butterfly, and while
+// it blooms (or whenever a mouth ends up between the chase camera and the ship) its front face stands
+// between the two. The mouth honours the camera->ship occlusion corridor (a PLATFORM LAW,
+// PrismOcclusionCorridor.cs / Docs/PRISM_ANIMATION.md §4.7) through the same PrismOcclusionFade_float
+// the prism graphs call: inside the corridor the surface dissolves through the same screen door prism
+// mass does, in the depth pass as well as the colour pass, so the ship behind it is drawn as itself.
+// The one mouth that must NOT open is the one the camera is being carried through: there the corridor
+// target is the ship mapped back through the pair and the exact view is what shows it, so a hole would
+// show the empty near-side interior instead. WormholeView clears _WormholeCorridor on that mouth.
+//
 // RENDER STATE. Opaque, ZWrite On, Cull Back: from outside the sphere covers its whole footprint;
 // from inside, its back faces are culled (and the clearance drops the rest).
 //
-// COST. One screen-space fetch, or one array fetch, per fragment; a small rim term. The real cost is
+// COST. One screen-space fetch, or one array fetch, per fragment; a small rim term; the corridor's
+// segment test (~10 ALU), whose dither kernel runs only on fragments inside it. The real cost is
 // the renders that fill the two textures, which WormholeView budgets.
 
 Shader "CosmicShore/Wormhole"
@@ -78,6 +89,7 @@ Shader "CosmicShore/Wormhole"
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "PrismOcclusionCorridor.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
             float4 _RimColor;
@@ -101,10 +113,16 @@ Shader "CosmicShore/Wormhole"
         float _WormholeFlare;            // 1 on a transit, decaying
         float4 _WormholeRimTint;         // rgb the domain's hue (linear); a = 1 when set
         float _WormholeSealed;           // 1 = this viewer may not thread it: outline only
+        float _WormholeCorridor;         // 1 = dissolve inside the camera->ship occlusion corridor
 
         // GLOBAL (WormholeView).
         float _WormholeMainView;         // 1 while the gameplay camera is drawing
         float _WormholeClearance;        // world units; a camera this close to the surface is IN it
+
+        // GLOBAL (PrismOcclusionCorridor.cs; the prism graphs declare them as graph properties, a
+        // hand-written shader declares them itself — SwarmMemberInstanced does the same).
+        float4 _PrismOcclusionTarget;
+        float4 _PrismOcclusionParams;
 
         // Dropped for a camera inside (or at) the mouth — shared by every pass so depth and colour
         // always agree.
@@ -112,6 +130,17 @@ Shader "CosmicShore/Wormhole"
         {
             float dist = distance(_WorldSpaceCameraPos, _WormholeSphere.xyz);
             clip(dist - (_WormholeSphere.w + max(_WormholeClearance, 0.0)));
+        }
+
+        // Dropped where the mouth stands between the camera and the pilot's ship — the prisms'
+        // screen door, shared by every pass so depth and colour always agree.
+        void ClipForOcclusionCorridor(float3 positionWS)
+        {
+            if (_WormholeCorridor < 0.5) return;
+            float alpha, threshold;
+            PrismOcclusionFade_float(positionWS, _PrismOcclusionTarget.xyz, _PrismOcclusionParams.xyz,
+                1.0, alpha, threshold);
+            clip(alpha - threshold);
         }
 
         // The rim's colour: the owning domain's hue when the mouth was given one.
@@ -226,6 +255,7 @@ Shader "CosmicShore/Wormhole"
             half4 frag (Varyings input) : SV_Target
             {
                 ClipForInsideCamera();
+                ClipForOcclusionCorridor(input.positionWS);
 
                 if (_WormholeSealed > 0.5)
                 {
@@ -309,6 +339,7 @@ Shader "CosmicShore/Wormhole"
             half fragDepth (VaryingsDepth input) : SV_Target
             {
                 ClipForInsideCamera();
+                ClipForOcclusionCorridor(input.positionWS);
                 if (_WormholeSealed > 0.5) SealedShell(input.positionWS);
                 return input.positionCS.z;
             }

@@ -76,6 +76,17 @@ panorama across `portalWindowFadeBand` (600). The face table lives in **three** 
 `WormholeGeometryTests.Panorama_FaceUV_IsWhereTheFaceCameraSeesTheDirection` is the contract between
 them. The array is ours end to end, so no cubemap orientation convention is involved.
 
+**A mouth never hides the pilot's ship.** A fold lays its destination mouth *around* the Butterfly,
+so while it blooms — and whenever a mouth ends up between the chase camera and the ship — its front
+face stands between the two. The surface therefore honours the camera→ship **occlusion corridor**
+(`PrismOcclusionCorridor`, `Docs/PRISM_ANIMATION.md` §4.7) through the same
+`PrismOcclusionFade_float` the prism graphs call: inside the corridor it dissolves through the
+prisms' screen door, in the depth pass as well as the colour pass, and the ship behind it is drawn as
+itself. It uses the live-mass nose clearance, so a nose threading a mouth (§3) still disappears into
+a solid surface. The one exception is the mouth the camera is being **carried** through (§3, step 3):
+there the corridor opens onto the ship mapped back through the pair — i.e. onto the exact view, which
+is what shows the ship — so `WormholeView` clears that mouth's `_WormholeCorridor` for the carry.
+
 ## 3. The transit, frame by frame
 
 1. **Nose in.** The hull crosses A's sphere. A's surface hides the part inside the ball; the exact
@@ -180,6 +191,10 @@ takes a step that starts outside it.
   the panorama; inside `exactRange` this never shows.
 - **No recursion.** Every mouth is hidden inside every wormhole render (each samples targets those
   renders draw into), so A is never seen *through* B.
+- **Through the corridor's hole you see THIS side.** Where a mouth dissolves for the ship, the
+  pixels inside the ship-sized hole show the world behind the mouth on the near side, not the far
+  side's view — the ship itself is drawn correctly either way (it is also drawn through the exact
+  view, §3), so only the background inside a soft ship-sized column differs.
 - **The transit sound ships empty** (`FoldActionExecutor.gateThreadEvent`) per the FMOD convention.
 
 ## 7. Follow-ups and recorded debt (ship pass, 2026-10-08 — rows, not fixes)
