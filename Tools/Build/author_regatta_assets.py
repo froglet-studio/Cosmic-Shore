@@ -378,9 +378,6 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Regatta.asset", G_ASSE
 g.register_preview(G_ASSET["ModePreviewRegatta"])
 
 # ── 8. Scene: clone MinigameRedline, swap the mode-specific wiring ───────────
-scene = g.read(f"{lib.SCENES_DIR}/MinigameRedline.unity")
-scene = lib.swap_guid(scene, EXISTING["RedlineController"], G_SCRIPT["RegattaController"], "controller")
-
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RedlineScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
   courseOuterRadius: 1080
@@ -420,25 +417,47 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RegattaScoringRule'
   startLineRadius: 120
   aiRailLeadDistance: 260
 """
-scene = lib.replace_block(scene, OLD_FIELDS, NEW_FIELDS, "controller fields")
+CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['RegattaController']}, type: 3}}\n"
 
 # THE CELL becomes INTENSITY-WISE over the four rail arenas.
-scene = lib.replace_block(scene,
-    f"  CellConfigs:\n  - {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n  cellTypeChoiceOptions: 0\n",
-    "  CellConfigs:\n" + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
-    + "  cellTypeChoiceOptions: 1\n",
-    "cell config")
+OLD_CELL_BLOCK = (f"  CellConfigs:\n  - {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n"
+                  "  cellTypeChoiceOptions: 0\n")
+NEW_CELL_BLOCK = ("  CellConfigs:\n"
+                  + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
+                  + "  cellTypeChoiceOptions: 1\n")
 
 # THE AI ROSTER draws its hull from the CARD: vesselClass 0 (Random) makes
 # ServerPlayerVesselInitializerWithAI.PickAIVesselType roll uniformly over the card's Vessels,
 # so a bot grid is a mixed grid too. (The donor's 2 = Dolphin, Headlong's inheritance from
 # Switchback, was clamped to the Manta by Redline's card; here it would pin every bot to one hull.)
-scene, n = re.subn(r"^  - vesselClass: 2\n(    PlayerName: AI \d)", r"  - vesselClass: 0\n\1", scene, flags=re.M)
-assert n == 4, f"AI templates swapped {n} times (expected 4)"
+AI_TEMPLATES = tuple(f"  - vesselClass: 0\n    PlayerName: AI {i}\n" for i in range(4))
 
 # Sanity: everything else the donor authored is what this mode wants.
-for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),):
-    assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+INHERITED_PROBES = ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),)
+
+
+def clone_scene() -> str:
+    scene = g.read(f"{lib.SCENES_DIR}/MinigameRedline.unity")
+    scene = lib.swap_guid(scene, EXISTING["RedlineController"], G_SCRIPT["RegattaController"], "controller")
+    scene = lib.replace_block(scene, OLD_FIELDS, NEW_FIELDS, "controller fields")
+    scene = lib.replace_block(scene, OLD_CELL_BLOCK, NEW_CELL_BLOCK, "cell config")
+    scene, n = re.subn(r"^  - vesselClass: 2\n(    PlayerName: AI \d)", r"  - vesselClass: 0\n\1", scene, flags=re.M)
+    assert n == 4, f"AI templates swapped {n} times (expected 4)"
+    for probe, why in INHERITED_PROBES:
+        assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+    return scene
+
+
+# The clone is a one-shot: once MinigameRegatta.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, and a re-clone would revert them to Redline's. The
+# committed scene is adopted, the blocks this script authors (controller, cell ladder, the four
+# Random-hull AI templates) must still be in it, and the donor asserts STAND DOWN when Redline
+# moves on (CLAUDE.md "spent one-shot"). See lib.committed_scene.
+scene, _scene_errors = lib.committed_scene(
+    f"{lib.SCENES_DIR}/MinigameRegatta.unity", clone_scene,
+    authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_FIELDS, NEW_CELL_BLOCK) + AI_TEMPLATES)
+_scene_errors += [f"MinigameRegatta.unity no longer provides: {why}"
+                  for probe, why in INHERITED_PROBES if not re.search(probe, scene, re.M)]
 g.emit_scene("MinigameRegatta", G_ASSET["MinigameRegatta.unity"], scene)
 
 # ── 9-12. The shared registries ──────────────────────────────────────────────
@@ -448,7 +467,7 @@ g.register_build_scene("MinigameRedline", "MinigameRegatta", G_ASSET["MinigameRe
 g.set_end_condition("regattaGateTarget", after="redlineGateTarget", value=GATE_TARGET)
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 if COURSE_STALE:
     errors.append("regatta_course_measurements.json is STALE: its sourceHash does not match the pure course "
