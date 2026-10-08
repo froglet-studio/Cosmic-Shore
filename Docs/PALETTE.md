@@ -973,6 +973,22 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 
 ## 7. Follow-ups
 
+- **Squirrel crystal morph — rows from its ship pass, 2026-10-08 (`SQUIRREL_CRYSTAL_MORPH.md`).**
+  - **`OmniCrystalFresnelShader.PrismFresnelColor` is a second transcription of BlockGraph's
+    colour** (FresnelColors → FresnelPower4, back-face branch `(d+1)·0.2`). If either subgraph
+    changes, the morph's last frame stops matching the prism and nothing fails. Fix: move the
+    formula into an HLSL include both a Custom Function in FresnelColors and the omni shader call,
+    or gate it (a check that re-reads the two subgraphs' node values — power 4, the 0.2, the
+    Greater-than-0 branch — and fails when they move). Debt this branch created.
+  - **`CrystalMorphRunner.ResolveCrystal` falls back to `Crystal.Active` by `Id`.** For a
+    manager-less local mint (the conveyor toy) ids may not be unique, so the morph could adopt a
+    DIFFERENT omni's renderers — the same look today, a wrong one if those crystals ever differ.
+    Measure first: what `Id` do manager-less mints carry, and are two ever live at once?
+  - **The ring's prisms are unhidden by reference at teardown** with no life check; harmless while
+    nothing else that draws from the boost pool hides a prism (`SetOwnerHidden` callers today:
+    the swarm and substrate fauna, neither uses the boost pool). A report, not a fix — revisit if
+    a boost-pool consumer ever calls `SetOwnerHidden`.
+
 - **Omni crystal (§2.10) — rows from its ship pass, 2026-10-08.**
   - **A TEAM omni's husks fade in place instead of drifting.** After a domain change
     `Crystal.LerpCrystalMaterialCoroutine` overwrites each model's `explodingMaterial` with the team
