@@ -629,6 +629,7 @@ class Pack(Guild):
     predator = True; prey_names = ("grazer", "locust", "thief")
     a_attack, h_handle = 6.0e-4, 40.0
     hunt_below = 0.6; catch_r = 10.0; prey_sense = 300.0
+    hunt_prey_below = 0.0
     hunger_gate = True     # a pack stalks a PILOT only while hungry and with no prey in range (iteration 1)
     switch_ref = 0.0       # >0: Holling III. Macro: rate x Np/(Np+switch_ref). Micro: a hunter commits to a chase
                            # only with >= switch_ref/4 prey inside prey_sense (round 2; 0 = off, the R8 cell)
@@ -665,6 +666,10 @@ class Pack(Guild):
         des = np.zeros_like(P)
         # --- prey: hungry hunters chase the nearest prey agent
         hungry = self.st[idx] < self.hunt_below * self.e_max
+        # round 2: a hunter keeps hunting PREY up to hunt_prey_below (>= e_birth / e_max, so a fed pack can
+        # breed); pilots are still stalked only below hunt_below. Default = hunt_below (the R8 cell).
+        hp = self.hunt_prey_below if self.hunt_prey_below > 0 else self.hunt_below
+        hungry_prey = self.st[idx] < hp * self.e_max
         preyP, preyRef = [], []
         for g in w.guild_list:
             if g.name in self.prey_names:
@@ -673,9 +678,9 @@ class Pack(Guild):
         self.prey_near = np.zeros(n, bool)
         preyP = np.concatenate(preyP) if preyP else np.zeros((0, 3))
         chase = np.zeros(n, bool); self.prey_near = np.zeros(n, bool); self._dprey = np.full(n, np.inf)
-        if len(preyP) and hungry.any():
+        if len(preyP) and hungry_prey.any():
             j, dj = nearest_point(P, preyP, self.prey_sense)
-            chase = hungry & (j >= 0); self.prey_near = j >= 0; self._dprey = dj
+            chase = hungry_prey & (j >= 0); self.prey_near = j >= 0; self._dprey = dj
             if self.switch_ref > 0:
                 dens = count_within(P, preyP, self.prey_sense)
                 chase &= dens >= self.switch_ref / 4.0
@@ -745,7 +750,8 @@ class Pack(Guild):
         for r in rs:
             c = int(self.cnt[r])
             m = self.S[r] / c
-            if m > self.hunt_below * self.e_max:
+            hp = self.hunt_prey_below if self.hunt_prey_below > 0 else self.hunt_below
+            if m > hp * self.e_max:
                 continue
             prey = [g for g in guilds.values() if g.name in self.prey_names and g.cnt[r] > 0 and not g.hot[r]]
             Np = sum(int(g.cnt[r]) for g in prey)
@@ -1056,6 +1062,7 @@ class Lurker(Guild):
     eff = 1.0
     carcass = Pack.carcass
     hunt_below = 0.8
+    hunt_prey_below = 0.0
 
     def threat_agents(self):
         a = np.flatnonzero(self.alive)

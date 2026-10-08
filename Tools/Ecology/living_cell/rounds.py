@@ -144,3 +144,18 @@ R11 = {
     "r11_eff03_nocap": dict(B11, **NOCAP, **{"pack.eff": 0.3}),
     "r11_eff04_m06_nocap": dict(B11, **NOCAP, pack_metab=0.06, **{"pack.eff": 0.4}),
 }
+
+# R11 result: THIEVES FIXED - 400-630 births per 3 runs (was 28), no thief extinction in any seed; they now reach
+# their 150 cap in some seeds (steals 13-33/min, quiet down to 0.33-0.40: a thief tailing you is an active
+# threat). Packs with eff < 1 NEVER BRED (0-1 births, stuck at 24): the hunger gate stopped them hunting at
+# 0.6 e_max = 54, under e_birth = 70, so only a lucky big kill ever lifted a pack over e_birth. That is the
+# lifecycle rule broken by a threshold; with eff = 1 it was hidden. Soil: N still climbs at 40-85% of input.
+# R12: hunters hunt PREY up to 0.85 e_max (above e_birth; pilots are still stalked only below 0.6), packs eat
+# thieves again (a thief population that breeds now needs a predator), and plant recruitment as the soil sink.
+B12 = dict(B11, **NOCAP, **{"pack.hunt_prey_below": 0.85, "pack.prey_names": ("grazer", "locust", "thief")})
+R12 = {
+    "r12_eff05": dict(B12, **{"pack.eff": 0.5}),
+    "r12_eff035": dict(B12, **{"pack.eff": 0.35}),
+    "r12_eff05_rec05": dict(B12, flora_recruit=0.5, **{"pack.eff": 0.5}),
+    "r12_eff05_rec2": dict(B12, flora_recruit=2.0, **{"pack.eff": 0.5}),
+}
