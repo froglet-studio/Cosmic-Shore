@@ -153,6 +153,56 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   is the point: to a player they are the same mistake. The difference is scope: the nucleus
   overload is about balls banked in the wall, the cell overload about balls loose in the room.
 
+## AI
+
+Every AI Scarab gets one `AIPilot.SetExternalTargetProvider` hook, armed in
+`OnCountdownTimerEnded` and cleared at full time. Steering is the only thing the hook sets, so
+nothing leaks into other modes. The Scarab transformer runs full throttle under autopilot on its
+own.
+
+**Steering.** The AI picks one target per resample (`aiRetargetSeconds`), and picks again early
+if the target dies:
+
+| State | Aim |
+|---|---|
+| Its domain has a live ball | escort it: a point `aiApproachLead` behind the predicted ball, on the far side from the nearest hoop |
+| No ball, and a rival ball is nearer than the nearest forge crystal, within `aiStealHuntRange` (260) | fly through the rival ball's predicted position (steal it) |
+| Otherwise | the nearest forge-source crystal (forging is flying through it), else the court centre |
+
+**The juke** (`TryAIJuke`, each frame while `IsJukeArmed`). It fires at most one committed dash,
+through `ScarabJukeController.TryAutopilotDash`. That is the same `Fire` path a human's perimeter
+push takes, so the steal window, the spin and the cavitation plate all ride it with nothing special
+for the AI. The AI is simulated on the server, which is also where the ball's strike test runs, so
+the window opens where it is read with no RPC. The geometry is pure and unit-tested
+(`ScarabScrambleJukePlanner`, `Tests/Editor/ScarabScrambleJukePlannerTests.cs`):
+
+- **Steal.** It fires for any rival-domain loose ball (not studded in the nucleus) when two things
+  hold. First, the constant-velocity closest approach must fall inside the steal window, between
+  `aiStealMinLeadSeconds` (0.1) and the juke's own `JukeDurationSeconds` (0.5 on `Scarab.prefab`).
+  Second, the dash's own sideways
+  travel by that moment must close the miss to within the hull radius plus the ball's live radius.
+  The sideways travel is the transformer's `v·(cos(πs/T)/2+1)` curve integrated, `v·(t + T/2π·sin(πt/T))`,
+  with `v` = `JukeSpeed` (80) and `T` = `JukeDurationSeconds`.
+  A dash any earlier closes the window before contact (a bump, not a steal). A dash at a ball
+  dead ahead would overshoot it, so for that ball the AI waits until the travel matches the miss.
+  This check runs while escorting too, so the AI also steals balls that cross its line.
+- **Escort.** It fires only on a long straight. The escort point must be at least
+  `aiEscortDashMinDistance` (150) ahead and within `aiEscortDashMaxAngleDegrees` (30) of the course.
+  Its sideways offset must be at least one full dash (`v·T` = 40), so the dash cannot overshoot the
+  line it is correcting. The AI's own ball must be at least `aiEscortDashBallClearance` (70) away,
+  outside the plate (~45 wide, ~54 long).
+
+**Rate limit: the dash's own.** Nothing on the mode side paces it. `TryAutopilotDash` refuses
+while the roll is live or the juke is spent. The juke's cooldown ships at 0, so the AI's fastest
+cadence is one dash per roll (0.5 s), the same as a human's. The plate keeps its own
+CHARGE-scaled cooldown (2.5 s at rest), so a back-to-back dash dodges but does not punch twice.
+
+The dash's duration and speed are not mode knobs. `TryAIJuke` reads them live off the hull's
+`ScarabJukeController.JukeDurationSeconds` / `JukeSpeed`, so retuning the juke on `Scarab.prefab`
+retunes the AI's plan with it, and nothing can drift. The remaining six knobs are serialized on
+the controller (Bends-style), not on `ScarabScrambleSettingsSO`. The scene does not serialize them
+yet, so the C# defaults are the shipped values until the next scene save writes them out.
+
 ## Known limitations / follow-ups
 
 - **A studding (nucleus-seeded) ball is no longer a pinned kinematic object, and the change is
@@ -196,10 +246,14 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   cannot prove name resolution. The collision set under `using System;` + `using UnityEngine;`
   is exactly `Object` and `Random` — grep for those two before trusting an offline pass, and
   treat the first real Editor compile as the authority.
-- **AI cannot juke or blast** (`ScarabJukeController` is inert under autopilot), so AI
-  play is fetch-and-escort only (`ArmRollers`: nearest crystal ↔ escort own ball behind
-  the predicted position toward the nearest hoop, full throttle via the Scarab
-  transformer's autopilot branch).
+- **The AI jukes, steals and blasts, but the tuning is a model, not a playtest** (2026-10).
+  `ArmRollers` now calls `ScarabJukeController.TryAutopilotDash`, the committed-dash entry
+  Wrecking Ball, Undertow and Broadside already use. See **AI** above for the two triggers. Two
+  things are unmeasured. (1) How often the steal actually converts: the plate fires on the same
+  dash, and it can throw the rival ball off the line before the hull arrives. Either result is
+  legitimate defence, but only a playtest gives the ratio. (2) Whether the escort dash helps or
+  just looks busy. The dash's window and speed are read off the juke itself
+  (`JukeDurationSeconds` / `JukeSpeed`), not copied, so they cannot go stale.
 - **No disarmed-ball visual**: an enemy-touched ball looks identical to an armed one. A
   future flicker/dim needs a replicated arming bit; deferred.
 - **No forge-exclusion zone around hoop mouths**: a crystal spawning at a hoop is a
@@ -296,5 +350,12 @@ by `MaxLivePopulation` (8+4+22).
 10. **MPPM two-client**: forged balls appear on the client at the correct SIZE (the
     `n_SizeScale` fix) and colour; goals sync; a client's juke-dash steals (the
     `NotifyJukeFired_ServerRpc` round-trip).
-11. **Ecology**: idle until trail silts the court (~Restless 12000 volume) → foragers
+11. **AI jukes** (solo + 2 AI domains, intensity 1; turn on FrogletTools ▸ Toolbox ▸
+    Logging ▸ `ScarabDash` to see each `[ScarabJuke] Fired` line): an AI Scarab with no ball
+    of its own, with a rival ball nearer than any crystal, flies at that ball and dashes as it
+    arrives. The ball turns the AI's colour, or the plate throws it off its line. An AI
+    escorting its own ball down a long straight dashes sideways toward its line about once per
+    straight. It never dashes faster than once per 0.5 s, never at its own ball inside
+    ~70 units, and never after the final whistle.
+12. **Ecology**: idle until trail silts the court (~Restless 12000 volume) → foragers
     pour over the court wall and graze.

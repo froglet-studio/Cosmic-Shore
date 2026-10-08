@@ -65,9 +65,10 @@ old numbers were not derived from anything, and a spec that prices a 30-point ce
 three petals cannot also price a 12-point graze at five.
 
 OWNERSHIP. This file owns `debuffMagnitude` / `buffMagnitude` on the assets listed below and
-nothing else on them. One of those is authored WHOLE by another generator
-(`author_manta_kit_assets.py`, which writes MantaBombDebuffByExplosionEffect.asset from scratch),
-so that script READS the live magnitude back instead of restating it - two generators owning one
+nothing else on them. Two of those are authored WHOLE by another generator
+(`author_manta_kit_assets.py`, which writes MantaBombDebuffByExplosionEffect.asset from scratch,
+and `author_butterfly_dust.py`, which writes ButterflyBloomDebuffByExplosionEffect.asset), so each
+of those scripts READS the live magnitude back instead of restating it - two generators owning one
 field means whichever ran last wins and the loser's --check reports a drift belonging to nobody's
 change. If you add a drain asset that another generator authors, do the same there.
 
@@ -100,6 +101,10 @@ DRAINS = [
     ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset",
      "debuff", "debuffMagnitude", None, "debuffDuration",
      "Manta Kabloom bloom (Mass + Space only)"),
+    ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/ButterflyBloomDebuffByExplosionEffect.asset",
+     "debuff", "debuffMagnitude", None, "debuffDuration",
+     "Butterfly omni-crystal bloom - strips all four elements as ejected crystals (authored whole "
+     "by author_butterfly_dust.py, which READS this magnitude back)"),
     ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselOvertakeBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Squirrel joust overtake (the ally BUFF mirrors the debuff). The STEAL is additionally "

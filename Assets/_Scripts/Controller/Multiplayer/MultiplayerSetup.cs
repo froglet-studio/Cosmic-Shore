@@ -350,7 +350,7 @@ namespace CosmicShore.Gameplay
                 {
                     CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
                     if (IsRateLimitException(sx))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
+                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS, DelayType.UnscaledDeltaTime);
                     continue;
                 }
                 catch (Exception ex)
@@ -400,7 +400,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
             }
 
@@ -445,7 +445,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
             }
         }
@@ -593,7 +593,7 @@ namespace CosmicShore.Gameplay
                 if (networkManager != null)
                     networkManager.Shutdown();
 
-                await UniTask.Delay(500);
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
                 gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)

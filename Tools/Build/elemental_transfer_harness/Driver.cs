@@ -130,7 +130,7 @@ static class Driver
         Check(PetalBurnRules.Magnitude((PetalBurnRule)7, shipped, tuned) == shipped,
               "  ... and an unknown rule falls back to Shipped");
         Check((int)PetalBurnRule.Shipped == 0 && (int)PetalBurnRule.Tuned == 1,
-              "  ... and the enum's serialized values are Shipped=0, Tuned=1 (a silent cell plays Shipped)");
+              "  ... and the enum's serialized values are Shipped=0, Tuned=1 (a silent cell plays the field default, Tuned)");
         // The effect burns -magnitude on each of the four elements; a start-of-match pilot holds 5.
         int burnedS = 0, burnedT = 0;
         for (int el = 0; el < 4; el++) { burnedS += new Pot(0.5f).Accrue(-ms); burnedT += new Pot(0.5f).Accrue(-mt); }
@@ -148,6 +148,32 @@ static class Driver
               "Shipped on a 3-petal element is clamped to 3, leaving it empty, not negative");
         var bare = new Pot(0f);
         Check(bare.Accrue(-mt) == 0 && bare.Pending == 0f, "Tuned on an empty element burns nothing and banks nothing");
+
+        // The networked eject (ElementalTransfer.ApplyAllAuthoritative): only the shooter's owner
+        // relays, every other replay moves nothing, and the settled count survives the packing
+        // that carries it to the other peers. The NotOurs row is the double-take control: route
+        // it Local and a victim hit by a human would pay once per peer that replayed the shot.
+        Console.WriteLine("T9  a networked eject is settled once, by the shooter's owner, on the victim's owner");
+        var ej = ElementalTransferForm.Eject;
+        Check(ElementalTransfer.RouteFor(ej, false, false, false) == ElementalTransferRoute.Local, "offline settles locally");
+        Check(ElementalTransfer.RouteFor(ej, true, true, false) == ElementalTransferRoute.Local, "a victim with no relay settles locally");
+        Check(ElementalTransfer.RouteFor(ej, true, true, true) == ElementalTransferRoute.Relay, "the shooter's owner relays to the victim's owner");
+        Check(ElementalTransfer.RouteFor(ej, true, false, true) == ElementalTransferRoute.NotOurs, "a replay of somebody else's shot moves nothing");
+        Check(ElementalTransfer.RouteFor(ElementalTransferForm.Steal, true, false, true) == ElementalTransferRoute.Local &&
+              ElementalTransfer.RouteFor(ElementalTransferForm.Burn, true, false, true) == ElementalTransferRoute.Local,
+              "  ... and only an eject is relayed (steal and burn settle where they ran, as before)");
+        uint pk = ElementalTransfer.PackPetals(1, 0, 3, 15);
+        Check(ElementalTransfer.PetalsIn(pk, Element.Charge) == 1 && ElementalTransfer.PetalsIn(pk, Element.Mass) == 0 &&
+              ElementalTransfer.PetalsIn(pk, Element.Space) == 3 && ElementalTransfer.PetalsIn(pk, Element.Time) == 15,
+              "settled counts round-trip through the packing");
+        Check(ElementalTransfer.TotalPetals(pk) == 19, "  ... and sum to what settled");
+        Check(ElementalTransfer.PackPetals(0, 0, 0, 0) == 0u, "nothing settled packs to 0 (publish nothing)");
+        uint ov = ElementalTransfer.PackPetals(-4, 300, 0, 0);
+        Check(ElementalTransfer.PetalsIn(ov, Element.Charge) == 0 && ElementalTransfer.PetalsIn(ov, Element.Mass) == 255 &&
+              ElementalTransfer.PetalsIn(ov, Element.Space) == 0, "a count clamps to its own byte and never bleeds into the next element");
+        Check(ElementalTransfer.ApplyAllAuthoritative(ej, null, null, 0.3f, UnityEngine.Vector3.zero,
+                                                      ElementalDebuffSources.Other) == 0,
+              "a null victim settles nothing on the local route");
 
         Console.WriteLine(_fail == 0 ? "\nALL PASS" : $"\n{_fail} FAILED");
         return _fail == 0 ? 0 : 1;

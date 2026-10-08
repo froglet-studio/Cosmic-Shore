@@ -46,11 +46,12 @@ namespace CosmicShore.Gameplay
     /// interior — visible through either mouth's exact view, hidden from outside behind both
     /// surfaces.</para>
     ///
-    /// <para><b>Domain-locked.</b> A <see cref="Settings.DomainLocked"/> mouth (every fold pair)
-    /// carries only vessels of its <see cref="Domain"/> — its owning Butterfly's live domain — and
-    /// to a viewer of any other domain it is SEALED: a fresnel outline in the domain's colour with
-    /// no view through it, because a view through is a promise you can go there. Either way the rim
-    /// wears <see cref="Settings.RimTint"/>, the domain's hue.</para>
+    /// <para><b>Domain-tolled.</b> A mouth carries ANYONE, and every viewer sees through it. A
+    /// <see cref="Settings.DomainTolled"/> mouth (every fold pair) charges for it: a pilot who is
+    /// not of its <see cref="Domain"/> — its owning Butterfly's live domain — has elemental petals
+    /// stripped off at the surface they went in through, and they are left there as collectable
+    /// crystals (<see cref="LevyToll"/>). The rim wears <see cref="Settings.RimTint"/>, the
+    /// domain's hue, so the colour says whose road it is and who rides it free.</para>
     /// </summary>
     public sealed class WormholeMouth : MonoBehaviour
     {
@@ -70,6 +71,7 @@ namespace CosmicShore.Gameplay
         static readonly int FlareId = Shader.PropertyToID("_WormholeFlare");
         static readonly int RimTintId = Shader.PropertyToID("_WormholeRimTint");
         static readonly int SealedId = Shader.PropertyToID("_WormholeSealed");
+        static readonly int CorridorId = Shader.PropertyToID("_WormholeCorridor");
 
         /// <summary>
         /// Everything a mouth is built with, copied at <see cref="Build"/>. A struct rather than a
@@ -94,16 +96,21 @@ namespace CosmicShore.Gameplay
             public FMODUnity.EventReference TransitEvent;
             /// <summary>The rim's hue — the owning domain's colour (sRGB, as the theme authors it).</summary>
             public Color RimTint;
-            /// <summary>Carry only vessels of <see cref="Domain"/>, and seal the view for every other.</summary>
-            public bool DomainLocked;
-            /// <summary>The domain that owns the mouth (its rim colour, and its lock if locked) when
+            /// <summary>Charge every pilot not of <see cref="Domain"/> a petal toll per transit.</summary>
+            public bool DomainTolled;
+            /// <summary>Whole petals stripped from EACH element of a tolled pilot per transit,
+            /// clamped to what they hold (so a large value takes the whole flower).</summary>
+            public int TollPetalsPerElement;
+            /// <summary>World units/second the stripped crystals are thrown out off the surface.</summary>
+            public float TollShedSpeed;
+            /// <summary>The domain that owns the mouth (its rim colour, and its toll if tolled) when
             /// it has no <see cref="Owner"/>; with one, the owner's LIVE domain wins.</summary>
             public Domains Domain;
             /// <summary>
             /// The pilot whose mouth this is (the Butterfly whose fold laid it), or null.
-            /// The owner is ALWAYS carried and always sees through, and the lock follows the owner's
-            /// domain as it is NOW — so a Butterfly that changes domain keeps its pair, and no
-            /// capture-time reading of a domain can lock the owner out of its own wormhole.
+            /// The owner always rides free, and the toll follows the owner's domain as it is NOW —
+            /// so a Butterfly that changes domain keeps its pair, and no capture-time reading of a
+            /// domain can charge the owner for its own wormhole.
             /// </summary>
             public IVesselStatus Owner;
             /// <summary>Theme the rim's domain hue is read from when the owner's domain changes.</summary>
@@ -173,7 +180,7 @@ namespace CosmicShore.Gameplay
         /// <summary>True once <see cref="Retire"/> has run — a closing mouth is never a passage.</summary>
         public bool IsRetiring => _retiring;
 
-        /// <summary>The domain that owns the mouth (its rim's hue; its lock, if locked).</summary>
+        /// <summary>The domain that owns the mouth (its rim's hue; its toll, if tolled).</summary>
         public Domains Domain
         {
             get
@@ -191,17 +198,16 @@ namespace CosmicShore.Gameplay
         Domains _tintDomain;
         bool _tintPainted;
 
-        /// <summary>Does this mouth carry only its own domain?</summary>
-        public bool DomainLocked => _settings.DomainLocked;
+        /// <summary>Does this mouth charge pilots of other domains a petal toll?</summary>
+        public bool DomainTolled => _settings.DomainTolled;
 
-        /// <summary>Who this mouth may carry — and draw carried through in a view of it.</summary>
+        /// <summary>Whom this mouth carries — and draws carried through in a view of it.</summary>
         public IReadOnlyList<IPlayer> Players => _players;
 
-        /// <summary>
-        /// Set each frame by <see cref="WormholeView"/>: the viewer on this machine may not thread
-        /// this mouth, so it shows no view through — only its domain-coloured outline.
-        /// </summary>
-        public bool Sealed { get; set; }
+        /// <summary>How far round the mouth, from the point a tolled pilot went in, the stripped
+        /// crystals are scattered: a cap wide enough that a whole flower reads as a spill over the
+        /// surface, narrow enough that it is plainly THAT pilot's entry point.</summary>
+        const float TollSpreadDegrees = 30f;
 
         /// <summary>The sphere's own renderer, hidden by <see cref="WormholeView"/> inside every
         /// wormhole render (its surface samples the very targets those renders draw into).</summary>
@@ -215,6 +221,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>How much of this frame the surface shows the exact view, 0..1.</summary>
         public float ExactBlend { get; set; }
+
+        /// <summary>
+        /// Does the surface dissolve inside the camera→ship occlusion corridor this frame? True for
+        /// every mouth — a mouth must never hide the pilot's ship, least of all the one a fold has just
+        /// laid around it — except the one the gameplay camera is being carried through, whose exact
+        /// view is what shows the ship (<see cref="WormholeView"/> clears it there).
+        /// </summary>
+        public bool HonorsOcclusionCorridor { get; set; } = true;
 
         /// <summary>Set by <see cref="WormholeView"/> when something on screen is looking through
         /// the PARTNER, i.e. at this mouth's panorama.</summary>
@@ -280,18 +294,68 @@ namespace CosmicShore.Gameplay
             _partner = null;
         }
 
-        /// <summary>Would this mouth carry <paramref name="vessel"/>? Its domain, if it is locked.</summary>
-        public bool CanCarry(IVessel vessel)
+        // ---- the toll ------------------------------------------------------------------------
+
+        /// <summary>
+        /// Does a transit by <paramref name="status"/> owe this mouth its toll? Only on POSITIVE
+        /// evidence (<c>vessel</c> skill §4.ac): the owner never pays, and a pilot whose domain
+        /// cannot be read is carried free rather than charged on a guess.
+        /// </summary>
+        public bool OwesToll(IVesselStatus status)
         {
-            if (vessel == null) return false;
-            if (!_settings.DomainLocked) return true;
-            var status = vessel.VesselStatus;
             if (status == null) return false;
-            // The owner is never locked out of its own wormhole, whatever the domain reads say.
-            if (_settings.Owner != null && ReferenceEquals(status, _settings.Owner)) return true;
+            bool isOwner = _settings.Owner != null && ReferenceEquals(status, _settings.Owner);
             // IVesselStatus.Domain reads Player and logs when there is none; ask first.
-            return status.Player != null && status.Domain == Domain;
+            bool known = status.Player != null;
+            return OwesToll(_settings.DomainTolled, _settings.TollPetalsPerElement, isOwner, known,
+                            known ? status.Domain : Domains.Blue, Domain);
         }
+
+        /// <summary>The toll rule with every read already made — pure, for the edit-mode tests.</summary>
+        public static bool OwesToll(bool tolled, int petalsPerElement, bool isOwner,
+                                    bool pilotDomainKnown, Domains pilotDomain, Domains mouthDomain) =>
+            tolled && petalsPerElement > 0 && !isOwner && pilotDomainKnown && pilotDomain != mouthDomain;
+
+        /// <summary>
+        /// Strip the toll off a pilot this mouth has just carried, and leave it on this mouth's
+        /// surface around <paramref name="entryPoint"/> as collectable crystals. Returns the whole
+        /// petals taken (0 for a pilot who rides free, holds nothing, or is warded).
+        ///
+        /// <para><b>Called on EVERY peer</b>, from <see cref="TeleportContinuity"/> — the one place
+        /// every pose write lands — not from <see cref="Transit"/>, which only the vessel's owner
+        /// runs. Elemental levels are simulated per peer exactly as every other elemental transfer
+        /// is (<see cref="ElementalTransfer"/>), so each machine takes the toll off its own copy of
+        /// the pilot and mints its own local crystals, the platform's stance for loose crystals.</para>
+        ///
+        /// <para><b>It conserves.</b> The take is <see cref="ResourceSystem.AccrueElementalLoss"/>:
+        /// clamped to what the pilot holds above resting level 0, whole petals only, honouring a
+        /// ward against <see cref="ElementalDebuffSources.WormholeToll"/> — and every petal it
+        /// returns becomes exactly one crystal (<see cref="ElementalCrystalEjector"/>). Nothing is
+        /// burned; the toll changes hands with whoever collects it.</para>
+        /// </summary>
+        public int LevyToll(IVesselStatus status, Vector3 entryPoint)
+        {
+            if (!OwesToll(status)) return 0;
+            var resources = status.ResourceSystem;
+            if (resources == null) return 0;
+
+            float amount = _settings.TollPetalsPerElement * ResourceSystem.PetalNormalized;
+            int total = 0;
+            for (int i = 0; i < TollElements.Length; i++)
+            {
+                var element = TollElements[i];
+                int petals = resources.AccrueElementalLoss(element, amount, ElementalDebuffSources.WormholeToll);
+                if (petals <= 0) continue;
+                ElementalCrystalEjector.ShedOntoSphere(Centre, Radius, entryPoint, TollSpreadDegrees,
+                                                       element, petals, _settings.TollShedSpeed,
+                                                       status.PlayerName);
+                total += petals;
+            }
+            return total;
+        }
+
+        static readonly Element[] TollElements =
+            { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         void BuildEyes()
         {
@@ -367,7 +431,6 @@ namespace CosmicShore.Gameplay
                 // Only the machine that OWNS a vessel decides that vessel moved: the pose write
                 // replicates, so a peer acting too would be two machines teleporting one ship.
                 if (!vessel.IsNetworkOwner) continue;
-                if (!CanCarry(vessel)) continue;
 
                 Vector3 cur = vessel.Transform.position;
                 bool first = !_lastPos.TryGetValue(vessel, out var prev);
@@ -725,7 +788,10 @@ namespace CosmicShore.Gameplay
             }
             var tint = _settings.RimTint;
             _block.SetColor(RimTintId, new Color(tint.r, tint.g, tint.b, tint.a > 0f ? 1f : 0f));
-            _block.SetFloat(SealedId, Sealed || !partner ? 1f : 0f);
+            // Sealed only while unpaired (withering away): anyone may thread a live pair, so
+            // everyone is shown the view through it.
+            _block.SetFloat(SealedId, !partner ? 1f : 0f);
+            _block.SetFloat(CorridorId, HonorsOcclusionCorridor ? 1f : 0f);
             _renderer.SetPropertyBlock(_block);
         }
 

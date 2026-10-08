@@ -47,6 +47,12 @@ namespace CosmicShore.Gameplay
         // teardown. ReturnToPool self-unsubscribes, so it is safe on an already-returned prism.
         readonly List<Prism> _tubePrisms = new();
 
+        // The owner-id prefixes this executor has laid tubes under ("{pilot}::Tube::"). A tube
+        // prism that went back to the pool by another path (a cell swap's retire, a toy's own
+        // return) can be handed out again to someone else's lay site; Cleanup must not pull it
+        // out from under its new owner. Same job as UrchinTrack's trail-identity test.
+        readonly HashSet<string> _tubeOwnerPrefixes = new();
+
         /// <summary>
         /// Cooldown remaining as a 0-1 fraction: 1 right after a deploy (full cooldown left),
         /// 0 when ready again. Read by the Squirrel HUD to drive the tube cooldown icon fill.
@@ -130,6 +136,10 @@ namespace CosmicShore.Gameplay
             _spawnCts?.Dispose();
             _spawnCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
+            // Freestyle has no turn end, so without pruning the list grew with every tube ever
+            // laid. Dead entries are dropped at each new lay.
+            _tubePrisms.RemoveAll(p => !p || p.destroyed);
+
             SpawnTubeAsync(so, status, pose, _spawnCts.Token).Forget();
         }
 
@@ -145,6 +155,7 @@ namespace CosmicShore.Gameplay
                 so.Danger ? PrismKind.Danger : PrismKind.Plain);
             string playerName = status.PlayerName;
             Domains domain = status.Domain;
+            _tubeOwnerPrefixes.Add($"{playerName}::Tube::");
             int ringsPerFrame = Mathf.Max(1, so.SpawnPerFrame / spec.Segments);
 
             // MASS level-5 'Twin Rings': the deploy gains extra rings while the Mass upgrade is
@@ -168,6 +179,15 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Cleanup ----------------
 
+        bool IsStillOurTubePrism(Prism p)
+        {
+            var id = p.ownerID;
+            if (string.IsNullOrEmpty(id)) return false;
+            foreach (var prefix in _tubeOwnerPrefixes)
+                if (id.StartsWith(prefix, System.StringComparison.Ordinal)) return true;
+            return false;
+        }
+
         void Cleanup()
         {
             _spawnCts?.Cancel();
@@ -182,10 +202,12 @@ namespace CosmicShore.Gameplay
             {
                 var p = _tubePrisms[i];
                 if (!p || p.destroyed) continue;
+                if (!IsStillOurTubePrism(p)) continue;
                 PrismKinds.Clear(p);
                 p.ReturnToPool();
             }
             _tubePrisms.Clear();
+            _tubeOwnerPrefixes.Clear();
         }
     }
 }

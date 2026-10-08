@@ -43,6 +43,7 @@ namespace CosmicShore.Gameplay
         public void ApplyElementalEffect(Element element, float magnitude, float duration,
             ElementalDebuffSources source = ElementalDebuffSources.Other) { }
         public bool AdjustLevel(Element element, float amount) => false;
+        public float SpawnedAt => float.NegativeInfinity;
     }
 
     // Assets/_Scripts/Controller/Vessel/IVesselStatus.cs

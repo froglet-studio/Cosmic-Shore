@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
     /// (<c>CustomCameraController.CarryThroughSphere</c>) — which is what makes a transit seamless
     /// from the pilot's own seat.</para>
     ///
+    /// <para><b>The wormhole's toll is taken here too</b>
+    /// (<see cref="WormholeMouth.LevyToll"/>): a pilot not of the pair's domain loses petals at the
+    /// near mouth, left on its surface as crystals. Here, not in the mouth's own transit, because
+    /// only the vessel's owner runs that, and every peer has to take the toll off its own copy of
+    /// the pilot's elemental levels.</para>
+    ///
     /// <para><b>Every trail, not only the marked ones.</b> <see cref="VesselTailAndJets"/> scopes
     /// its COLOUR work to the tail/jet markers so it never fights a trail somebody else paints
     /// (the Rhino's blade tracers). A cut is a different kind of operation: it copies whatever
@@ -47,8 +53,11 @@ namespace CosmicShore.Gameplay
         /// The vessel rooted at <paramref name="vessel"/> has just been moved from
         /// <paramref name="from"/> to <paramref name="to"/>. <paramref name="speed"/> is its speed
         /// at the jump, used only to estimate how old each point of a ribbon was.
+        /// <paramref name="status"/> is the pilot that jumped, charged a wormhole's toll if it owes
+        /// one; null skips the toll.
         /// </summary>
-        public static void OnTeleported(Transform vessel, Vector3 from, Vector3 to, float speed)
+        public static void OnTeleported(Transform vessel, Vector3 from, Vector3 to, float speed,
+                                        IVesselStatus status)
         {
             if (!vessel) return;
             if ((to - from).sqrMagnitude < MinimumJump * MinimumJump) return;
@@ -64,6 +73,7 @@ namespace CosmicShore.Gameplay
                 departAt = entry;
                 arriveAt = exit;
                 CarryCameras(vessel, mouth, exit - entry);
+                mouth.LevyToll(status, entry);
             }
 
             CutRibbons(vessel, departAt, arriveAt, speed);

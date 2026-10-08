@@ -162,6 +162,39 @@ makes); `check_generated_assets.py` audits the new prefab/material clean (negati
 
 ---
 
+### 🟡 Butterfly omni-crystal bloom: strips pilots, scores a hit, dusts prisms (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+
+**Landed** (`R_VesselActions/BUTTERFLY.md §3.3a`, generator `Tools/Build/author_butterfly_dust.py --check`):
+the 900-unit bloom used to carry only a heart-kill. Its container now also carries
+`ButterflyBloomDebuffByExplosionEffect` (all four elements ejected as crystals, -0.12 each, priced by
+`author_combat_debuff_magnitudes.py`) and the shared `VesselCombatHitByCrystalBlast` reporter. Its
+prism outcome — the Dust-mode capsule's own one-of-three roll — is applied by `ButterflyBloomDust` on
+`AOEButterflyBloom.prefab`, an `IExplosionPrismPayload` dispatched by the new
+`ExplosionImpactor.SweepPrismEffects` (spherical, `affectsPrisms: 0` blasts only, 48/frame). The same
+component draws the bloom as the capsule's motes and puffs on every changed prism, and logs a
+per-bloom tally on `[ButterflyBloom]`.
+
+**Confirmed in editor (playtest, 2026-10-08):** the dust look; prism outcomes (after round 4).
+
+**Still to verify**
+1. An AI pilot inside the bloom sheds elemental crystals (~1 petal per element), and you score a
+   Debuff hit (points + hit toast). Your own pilot is untouched.
+2. The Dust-mode capsule behaves exactly as before (own trail grows / danger / shield; opposing trail
+   destroyed / shrunk / stolen).
+3. MPPM: host and owning client reach the same prism outcomes (a third client sees no bloom — known,
+   BUTTERFLY.md §9).
+
+**History.** Rounds 1-3 routed the prism outcome through a separate `ExplosionScaleDustPrismEffectSO`
+container asset; in the playtester's editor it loaded as null three times running
+(`explosionPrismEffects[0] is empty`, `reached=858 dispatched=0`) with every repo-side cause of a
+null slot ruled out, and a forced re-import did not help. Round 4 deleted that type and moved the
+outcome onto the prefab component, which fixed it. Root cause of the null load is still unknown.
+
+**First-pass tuning**: bloom radius 450 (`BLOOM_SCALE`), strip 1.2 petals/element, 2400 bloom motes,
+5 motes per changed prism, per-frame budget 48.
+
+---
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
@@ -2439,7 +2472,7 @@ Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
   (`Button2Action`). All four L5 upgrades gate on
   `R_VesselElementalAbilityHandler.IsUpgradeActive(element)` — the replicated unlock bit — never a
   raw local level read.
-- **Scoring.** `Player.ReportPrismStolen_ServerRpc(float volume)` + `StatsManager.CreditPrismSteal`.
+- **Scoring.** `Player.ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)` + `StatsManager.CreditPrismSteal` / `DebitPrismSteal` (BUGS.md B19).
   `StatsManager.PrismStolen` opened with `if (!_allowRecord) return;` and `_allowRecord` is false
   on clients, so **a client's steals scored nothing** — a gap that predates the Urchin and affects
   every steal source in the game. Only the stealer's half travels (identity comes from RPC
@@ -4995,6 +5028,29 @@ wrong on a creature whose prefab nests its spindles oddly, report the prefab.
 
 ---
 
+## 🔴 A wormhole mouth never hides the pilot's ship — occlusion-corridor dither (`cece/exciting-maxwell-0k43yb`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Docs/WORMHOLES.md` §2 "A mouth never hides the pilot's ship". `Wormhole.shader` now includes
+`PrismOcclusionCorridor.hlsl` and clips through `PrismOcclusionFade_float` (colour AND depth pass), so
+a mouth standing between the camera and the local ship dissolves through the prisms' screen door.
+`WormholeMouth.HonorsOcclusionCorridor` → per-renderer `_WormholeCorridor`; `WormholeView` clears it
+on the mouth the camera is being carried through. Verified out of editor: both passes' vertex and
+fragment entry points compile under DXC 1.8 against a stubbed URP `Core.hlsl` (with a negative
+control that fails), and both C# files parse clean under Roslyn — not an editor compile.
+
+1. **Fold with the camera outside the destination mouth** (Butterfly, any freestyle): fold, watch the
+   destination mouth bloom around the ship. Expect: the ship stays visible the whole bloom, through a
+   ship-sized dithered hole in the mouth's front face; the rest of the sphere shows the view through.
+2. **Fly away, turn back** so a standing mouth sits between camera and ship. Expect: the same hole;
+   it closes as soon as the mouth is no longer between them.
+3. **Thread a mouth.** Expect: the transit is unchanged — the nose disappears into a SOLID surface
+   (the nose clearance keeps the piercing point solid), and during the carry the near mouth does NOT
+   open a hole (its exact view shows the ship).
+4. **Scene view** during 1: a hole toward the ship from the scene camera too — the corridor is per
+   camera (`_WorldSpaceCameraPos`), same as prisms. Expected, not a bug.
+
+---
+
 ## 🟢 Butterfly fold gates → wormholes; domain-hued rims (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — VERIFIED IN EDITOR
 
 `BUTTERFLY_FOLD.md` § "The gates became wormholes", `Docs/WORMHOLES.md`. `FoldGate`,
@@ -5004,6 +5060,41 @@ pilot (rings, no view); fixed in `cf99303f2` (fail-open sealing, the pair knows 
 playtested by the owner on 2026-10-08: "the butterfly is great". Still worth a look when convenient —
 a RIVAL domain's view (sealed bubble in the Butterfly's colour, flies straight through) and each
 domain's rim hue (`_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat` if it reads faint or hot).
+
+---
+
+## 🔴 Butterfly wormholes carry anyone; rivals pay petals (`cece/fervent-gates-ychb6q`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`BUTTERFLY_FOLD.md` § "Anyone rides; rivals pay a toll", `Docs/WORMHOLES.md` §5. The fold pair is no
+longer domain-LOCKED: it carries every pilot and every viewer sees through it (the rival seal is
+deleted — the 🟢 entry above's "sealed bubble" step no longer applies). A pilot NOT of the Butterfly's
+domain has `rivalTollPetalsPerElement` (15 = whole flower) petals stripped per element on each transit,
+left on the surface of the mouth they entered as free-for-all crystals. Runs on every peer from
+`TeleportContinuity`. Headless `Tools/Build/unity_refcompile/run.sh` (player AND editor configs, the
+latter including `WormholeTollTests.cs`): 0 errors in project code — a compile, not a run.
+
+1. **Edit-mode:** `WormholeTollTests` (5 tests) and `ElementalDebuffWardTests` stay green.
+2. **Butterfly, own pair (MPPM or solo freestyle):** fold, thread either mouth. Expect: carried, no
+   petals lost, no crystals at the mouth — unchanged from today.
+3. **Rival thread (two domains — MPPM with two clients on different teams, or an AI of another domain
+   flying through):** give the rival some petals (collect crystals), fly it into one mouth. Expect:
+   carried out of the other; its HUD flowers drop to empty (or by the toll); a spill of lime
+   free-for-all crystals, one per petal, on the ENTRY mouth's surface around the entry point, settling
+   ~14 u out — none inside the sphere. Collecting one gives exactly one petal back.
+4. **Rival view:** with the camera on the rival pilot, the pair shows a view through (exact up close,
+   panorama far), not a sealed bubble. The rim still wears the Butterfly's domain hue.
+5. **MPPM two-client:** after a rival transit both clients show the same petal loss on that pilot and
+   each shows its own spill (crystals are per-peer local objects — who collected one may disagree).
+6. **Warded rival:** a Sparrow/Serpent holding an `All` ward threads a rival pair → no petals lost,
+   no crystals.
+7. **Console:** no `[ElementalCrystalEjector] … are LOST` error (that would mean
+   `Resources/ElementalCrystalSet` is missing a prefab).
+
+| Knob (`ButterflyFoldAction.asset`) | First pass | If it plays wrong |
+|---|---|---|
+| `rivalTollPetalsPerElement` | 15 | Reads as a de-facto lock → try 2–3 |
+| `rivalTollShedSpeed` | 25 | Spill too tight / too far from the mouth |
+| `WormholeMouth.TollSpreadDegrees` (const) | 30 | Spill a clump → widen; can't tell whose entry → narrow |
 
 ---
 
@@ -5033,3 +5124,172 @@ wave's start axis from the REAL imported rig. If it fails, nothing else below is
 
 The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
 rotation; the hop only touches the model child).
+
+## 🔴 Grizzly Time (63), Grizzly in the toybox, AI Grizzlies that steer and pump (`cece/eloquent-goodall-g1llta`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+No Unity editor or `unity` CLI in the authoring session, so `/verify-unity` did not run. What
+DID run: the course + its 14-test suite and Redline's 14 (shared solver) compiled with Roslyn
+and executed over 400 seeds x 4 intensities, watched failing under a mutated course; the pump
+executor + config type-checked with Roslyn against stubs transcribed from the real declarations
+(and watched failing on a bad member); every Tools/Build gate. Full steps:
+`_Scripts/Controller/Arcade/GRIZZLYTIME.md` §7. The short list:
+
+1. **Compiles in the editor** — the new/changed C#: `GrizzlyTimeController`, `GrizzlyTimeCourse`,
+   `GrizzlyTriggerBombExecutor` (was `GrizzlyBombPumpExecutor`; see the 2026-10-08 entry below), `GrizzlyTriggerBombConfigSO`, `EndConditionOverridesSO`
+   + its window, `MiniGameHUD`, `ToyVesselRoster`, and the tests. Edit-mode suite green,
+   especially `GrizzlyTimeCourseTests`, `GrizzlyTriggerBombTests`, `EnumIntegrityTests` (61 modes),
+   `ToyVesselRosterCoverageTests`.
+2. **Toybox** — Menu freestyle: the Vessel Changer and the Spawn Matrix hangar each offer a
+   **Grizzly** station; flying into it swaps you into a Grizzly. Releasing an AI Grizzly from the
+   hangar gives a companion that **steers and bomb-jumps** (it never steered before: `AIPilot` was
+   serialized disabled on `Grizzly.prefab`).
+3. **Arcade** — both **Grizzly Charge** and **Grizzly Time** cards show, clickable on a fresh
+   account, each pinned to the Grizzly. Grizzly Time launches into a 14-ring circuit, two laps.
+4. **Grizzly Charge regression** — its AI Grizzlies now steer (same prefab fix); confirm the
+   match still plays as Jonathan left it.
+5. **Lava-lamp** — the menu autopilot Grizzly now bomb-jumps on the straights. If that is too busy,
+   `GrizzlyTriggerBombConfig.aiFireStickBand` = 0 turns the drive off.
+
+## 🔴 Grizzly trigger bombs — LT/RT fire, freeze, detonate, launch (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Replaces the bomb pump after a playtest found its blasts never launched the pilot (they were
+spawned with `AffectSelfOverride = false`, which is also what makes the shooter a valid target for
+the self-launch impulse). Full design, numbers and steps: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What ran out of editor: `GrizzlyTriggerBombExecutor`, `GrizzlyTriggerBombConfigSO`,
+`GrizzlyBombActionSO` and `GrizzlyTriggerBombTests` type-checked with Roslyn against stubs
+transcribed from the real declarations (watched failing on two mutated members); the config's maps
+run for real (9/9) against the card-art harness's `Mathf`; `GrizzlyTimeCourseTests` 14/14 and
+`RedlineCourseTests` 14/14 on the launch model. The `GrizzlyHUDController` / `GrizzlyHUDView`
+ammo-bar change was read, not compiled (the controller pulls in five other executors).
+`Grizzly.prefab` surgery validated by script: no duplicate fileIDs, no dangling local refs.
+
+1. **Compiles; edit-mode suite green** — especially `GrizzlyTriggerBombTests`,
+   `GrizzlyTimeCourseTests`, `ControlChipBindingTests`. The executor and config were RENAMED in
+   place (script GUIDs kept), and `GrizzlyBombNetworkRelay` was DELETED along with its component on
+   `Grizzly.prefab` — confirm the prefab opens with no missing-script warnings.
+2. **Fire / freeze / blow / launch** — RT full squeeze: a visible bomb leaves faster than you,
+   Ammo bar (orange, above Energy) drops ~1/3. Pull RT again: it freezes. Fly up to it, release:
+   it blows and **you are thrown forward along your nose** (~3× cruise for ~1 s).
+3. **Pressure** — a feather pull fires a small bomb, a small Ammo dip and a 15 u blast; a full
+   squeeze a big bomb and a 60 u blast.
+4. **Independence** — LT and RT bombs in flight / frozen / detonated independently.
+5. **Fuse + impact** — an unfrozen bomb goes off where it comes to rest (~3 s) or on the first prism.
+6. **Ammo** — a low pool fires a smaller bomb; an empty one fizzles; refills ~0.15/s.
+7. **AI** — an AI Grizzly fires, freezes and blows bombs just ahead of itself and lunges each time.
+8. **MPPM two clients** — peers see each other's bombs at the same places and sizes.
+9. **Regression** — X still fires the charged cannon unchanged; Energy bar unaffected.
+
+## 🔴 Grizzly trigger bombs, second pass — thrown AWAY from the bomb, own bomb look, small bomb / big blast (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask: *"the bombs should launch you away from the bomb and make the bomb look good… smaller
+before it explodes but bigger explosion."* Full doc: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What changed: the self-launch moved into `GrizzlyTriggerBombExecutor.LaunchSelf` (bomb → hull
+direction, full at the bomb, half at the edge) and the blast now spawns with
+`AffectSelfOverride = false` (own trail spared); a new `GrizzlyBomb.prefab` (generated by
+`Tools/Build/author_grizzly_bomb_assets.py` from `GrizzlyShell`) with `GrizzlyBombVisual` (domain
+tint, fuse pulse, armed flare, streak) and its own pool / factory / `Gun` on `Grizzly.prefab`; bomb
+2.5–5, blast 50–200; the AI flies past its bomb and blows it behind.
+
+What ran out of editor: executor, visual, config, action SO and tests type-checked with Roslyn
+against stubs in the real namespaces (watched failing on three mutated members);
+`GrizzlyTriggerBombTests` 11/11 with real math; `GrizzlyTimeCourseTests` + `RedlineCourseTests`
+28/28; the bomb generator's `--check` (watched failing on a hand-edited prefab and on a dead field
+key); both prefabs validated (no duplicate fileIDs, no dangling local refs).
+
+1. **Compiles; no missing scripts** on `GrizzlyBomb.prefab` / `Grizzly.prefab`.
+2. **Looks** — a small glowing bomb in your domain colour with a short streak, its glow breathing
+   faster as the fuse burns; frozen, it flares and strobes. Compare with X's cannon shell (unchanged).
+3. **Launch away** — freeze, fly past, release just behind you: thrown forward. Beside: sideways.
+   Ahead: stopped. Far edge of the blast: weaker.
+4. **Big blast** — a full squeeze blows ~100 u wide; your own trail inside it survives, an enemy's breaks.
+5. **AI** — fires, freezes, flies past, blows it behind, lunges forward.
+6. **Tuning** — if the halo glow reads wrong (too dim / too big), the dials are on `GrizzlyBomb.prefab`'s
+   `GrizzlyBombVisual`, authored by the generator (edit there, re-run).
+
+## 🔴 Grizzly trigger bombs, third pass — launch 3×, trigger-only detonation, lit prisms, danger shades; Grizzly Time re-cut (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask: *"the bombs should launch the grizzly 3x more. the bombs should not detonate with time
+or on impact. they can cause prisms to become lit as they pass through so it doesn't look like a
+clip. but bombs should only detonate when the trigger tells them to. make both bombs the danger
+color, but shift the colors a bit so they look different."* Full doc:
+`R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`; course: `Arcade/GRIZZLYTIME.md` §1, §3.
+
+What changed:
+- **Shared code:** `ShipVelocityModifier.ceiling` + `VesselTransformer.ModifyVelocity(…, ceiling)`
+  — a live modifier may RAISE the 100 u/s shared velocity ceiling for its own lifetime (0 = no
+  change; every existing call site passes 0). `Projectile.HoldAtFlightEnd` — a round that parks at
+  the end of its flight instead of ending it (default false; reset per flight).
+- **Bombs:** `selfLaunchMultiplier` 1.5 → 4.5 and `selfLaunchCeiling` 300; fired with
+  `stopOnFirstPrismImpact: false` + `HoldAtFlightEnd`; a new, EMPTY
+  `GrizzlyBombProjectileImpactContainer` (was the Sparrow full-auto container — prism damage + a
+  detonate end effect); a natural flight end no longer detonates; danger colour ± 0.045 hue per
+  trigger; a LIT cylinder-wake / sphere published by `GrizzlyBombVisual` (domain-tinted).
+- **Grizzly Time:** top speed 150 → 350 u/s, so the circuit is now 8 gates on an 800 u ring, 3 laps
+  (target 28 → 24), Headlong's mouths, AI approach 380 / 420 / 285, plausible-speed clamp 1400,
+  comeback 0.3. Card art re-rendered.
+
+What ran out of editor: executor, visual, config, action SO and tests type-checked with Roslyn
+against stubs in the real namespaces (watched failing on a reverted call); `GrizzlyTriggerBombTests`
+14/14 with real math (Unity's HSV conversions transcribed into the shim) — watched failing on a 0
+hue shift, the old multiplier and the old ceiling; `GrizzlyTimeCourseTests` + `RedlineCourseTests`
+28/28 over 400 seeds × 4 intensities — watched failing with the old 100 ceiling and the old 14
+gates; both generators' `--check` green; `render_card_backgrounds --check` green.
+`VesselTransformer.cs` / `Projectile.cs` edits were read, not compiled (too much of the engine to stub).
+
+1. **Compiles; edit-mode suite green** — especially `ShipModifierTests`, `GrizzlyTriggerBombTests`,
+   `GrizzlyTimeCourseTests`, `PrismLitTests`. No missing scripts on `GrizzlyBomb.prefab`.
+2. **3× launch** — freeze, fly past, release just behind you: thrown forward at ~350 u/s for a
+   second (~300 u). A Sparrow / Rhino knock-back, a Rush or the cannon kick are **unchanged**.
+3. **No fuse** — an unfrozen bomb stops ~270 u out and hangs there, pulsing, indefinitely.
+4. **No contact** — a bomb fired into prisms passes through them; they **light** in your domain
+   colour as it passes and fade behind it; nothing breaks, nothing blows.
+5. **Trigger detonates** — pull on a hanging bomb freezes it (flare + strobe), release blows it.
+6. **Colours** — LT bomb crimson-magenta, RT red-orange; both unmistakably danger red.
+7. **Turn end** with a bomb hanging — it vanishes, no blast; no bomb leaks into the next turn.
+8. **Grizzly Time** — 8 rings, 3 laps, goal row 8/24; at intensity 4 a triangle with two
+   near-hairpins. AI Grizzlies still complete laps at the new speeds.
+9. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still end and return to their
+   pools exactly as before (`HoldAtFlightEnd` defaults off).
+
+## 🔴 Mass crystal — one geometry in every state, Space/Time colour contrast (`cece/lucid-ride-4arncr`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Asked for: *"the blue inactive mass crystal looks correct except its colors should reflect the
+color contrast seen in the space and time crystals. however the active state looks like it changes
+the geometry and animation. this should match the geometry and animation of the inactive state and
+the colors of the space and time crystals when active."* Confirmed with the requester: the correct
+shape is the **static Mass shells** (`MassCrystalExport1_8-21-25.fbx`, four pulsing shells, no spin).
+
+What changed (authored by `Tools/Build/author_mass_crystal_look.py --check`, plus one C# fix in `Crystal.cs`, item 7):
+- The 8 shell materials (`ActiveMassCrystalMaterial[ 1-3]`, `BlueMassCrystalMaterial[ 1-3]`, guids
+  kept) moved from `ShepardGraph` to `OmniShepardFresnelShader` with the Space/Time colour pairs.
+  Band, scaling and draw order per shell are unchanged.
+- `GyroidFlora`, `TadPoleFauna`, `MassSharkFauna`, `MassBrittlestarFauna`: the per-shell
+  SkinnedMeshRenderer (`spacecrystalanim.fbx`) + `SpaceCrystalAnimator` overrides on their nested
+  `CrystalMass` are gone, so their hearts are the base prefab's shells like every other Mass crystal.
+- New `ExplodingMassCrystalMaterial[ 1-3]` (verbatim copies of the old ShepardGraph shell
+  materials) are the Mass prefabs' `explodingMaterial` and the `MassDandruff` / `Crystal Explosion
+  Dummy` husks' authored material, so the collect shatter (`Impact._velocity`) is unchanged.
+
+1. **Embedded Mass heart** (any Mass flora/fauna, incl. Tadpole / Shark / Brittlestar / Gyroid):
+   four pulsing shells, no block spin; blue-white rim over deep navy, same contrast as an embedded
+   Space or Time heart.
+2. **Kill it** — the dropped crystal keeps the same shells and pulse and turns lime over
+   near-black, matching a dropped Space / Time crystal. (The colour SNAPS on drop, as Space/Time
+   already do — see `Docs/PALETTE.md` §2.2 note.)
+3. **Free pickups** — a petal knocked off a hull, Dog Fight's arena scatter, the Wanderway conveyor:
+   identical to (2).
+4. **Collect** a Mass crystal — the husk still shatters outward and fades as before.
+5. **Codex / toybox** Mass crystal — unchanged shape.
+6. **Draw order** — the inner shells read through the outer ones without popping or z-fighting;
+   if a shell looks wrong only from some angles, compare render queues 2999/3000/3001/3001.
+7. **Dropped-heart husks (C#, `Crystal.cs`)** — collect a heart a lifeform has just DROPPED, for
+   Mass, Space and Time: each husk bursts outward like a free pickup's (before, a dropped heart's
+   husk drifted away whole, because activation overwrote the authored exploding material with the
+   pickup look). A domain-owned crystal (Dolphin's deployed team crystal) still explodes in its
+   domain colours. `Crystal.cs` was not compiled: no editor or compiler in this session.
+8. **Second pass (contrast)** — embedded Mass reads as a saturated blue over deep navy (not
+   blue-white); free Mass reads mostly DARK with lime confined to face edges and silhouettes. The
+   omni crystal's falling triangles look exactly as before. Tune in
+   `Tools/Build/author_mass_crystal_look.py` (`RIM_POWER`, `INACTIVE_COLORS`), then re-run it.

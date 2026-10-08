@@ -19,6 +19,10 @@ namespace CosmicShore.Gameplay
         public Material explodingMaterial;
         public Material inactiveMaterial;
         public SpaceCrystalAnimator spaceCrystalAnimator;
+
+        /// <summary>The <see cref="explodingMaterial"/> this model was authored with, latched by
+        /// <see cref="Crystal"/> before its first material change overwrites the live field.</summary>
+        [System.NonSerialized] public Material authoredExplodingMaterial;
     }
 
     public class Crystal : CellItem
@@ -862,14 +866,22 @@ namespace CosmicShore.Gameplay
             renderer.sharedMaterial = targetMaterial;
             ModelMaterialSettled?.Invoke();
 
-            // Update the explodingMaterial for the matching crystal model entry
+            // The husk follows the look: a model handed someone else's material (a domain's team
+            // crystal) explodes in it. But a model settling back onto its OWN default takes back
+            // the husk authored for that look - ExplodingMassCrystalMaterial, ActiveSpaceCrystal-
+            // Material, the omni's CrystalMaterial - because those exist precisely because the
+            // look's shader carries no _velocity for Impact to shatter. Overwriting them here is
+            // what made every dropped heart's husk drift whole instead of bursting.
             for (int i = 0; i < crystalModels.Count; i++)
             {
-                if (crystalModels[i].model == model)
-                {
-                    crystalModels[i].explodingMaterial = targetMaterial;
-                    break;
-                }
+                var data = crystalModels[i];
+                if (data.model != model) continue;
+
+                if (!data.authoredExplodingMaterial) data.authoredExplodingMaterial = data.explodingMaterial;
+                data.explodingMaterial = targetMaterial == data.defaultMaterial && data.authoredExplodingMaterial
+                    ? data.authoredExplodingMaterial
+                    : targetMaterial;
+                break;
             }
 
             _lerpTempMaterials.Remove(tempMaterial);

@@ -51,13 +51,15 @@ namespace CosmicShore.UI
             //
             // They live in the QWER + Space cluster so one resting left hand reaches all of them,
             // assigned in REVERSE priority order: the mouse buttons carry the two highest-priority
-            // abilities, so Space takes the next and R the one after. Q is last and is bound by no
-            // vessel today. There is ONE keyboardLabel per control, so these must match whatever
-            // the strategies actually raise or the chip is confidently wrong — which is the
+            // abilities, so Space takes the next and R the one after, then Q (the Grizzly's fire,
+            // since its triggers became its bombs). There is ONE keyboardLabel per control,
+            // so these must match whatever the strategies actually raise or the chip is confidently wrong — which is the
             // failure this whole table exists to prevent.
             [HintBinding.KeySpace] = new[] { InputEvents.Button1Action },
             [HintBinding.KeyR]     = new[] { InputEvents.Button2Action },
             [HintBinding.KeyQ]     = new[] { InputEvents.Button3Action },
+            // E raises FlipAction (the pad's right shoulder) in both desktop schemes.
+            [HintBinding.KeyE]     = new[] { InputEvents.FlipAction },
         };
 
         /// <summary>
@@ -82,6 +84,7 @@ namespace CosmicShore.UI
             HintBinding.KeySpace      => HintBinding.PadButtonSouth,
             HintBinding.KeyR          => HintBinding.PadButtonEast,
             HintBinding.KeyQ          => HintBinding.PadButtonWest,
+            HintBinding.KeyE          => HintBinding.PadRightShoulder,
             _                         => binding,
         };
 

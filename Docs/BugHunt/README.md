@@ -34,3 +34,21 @@ and how to handle the same kinds of problems next time.
 
 The same "a fix is not believed until the game proves it" rule drives the in-editor Bug Ledger;
 see [`../DIAGNOSTICS.md`](../DIAGNOSTICS.md).
+
+## Finding the next batch (what worked on 2026-10-08)
+
+A read-only hunt split by subsystem (vessels, arcade/scoring, ecology, UI, multiplayer/party,
+data/economy, input/audio/AI; then projectiles/AOE, the newer modes, FTUE/weekly/menus), each
+asked for "small, local fix, large consequence" findings with a CONCRETE caller-to-failure trace
+and a confidence level, produced ~45 real bugs from ~55 reports. Two rules made that ratio:
+
+- **Verify every finding yourself before touching code.** Re-read the path and check the asset
+  wiring (grep the script's `.meta` guid in prefabs/scenes; a serialized field's value per
+  instance). About one report in six was deliberate, latent behind an unassigned field, or a
+  design call - those go to the handoff, not into a commit.
+- **Recurring classes worth sweeping on their own:** scaled waits in code that runs at
+  `timeScale 0` (every non-HOME menu screen), `??`/`??=` on Unity objects (Editor fake null), a
+  latch with no reset on the in-place replay path, server-only code whose effect every peer needs
+  (and the reverse), runtime `new Material`/`new Mesh` never destroyed, and saves that report
+  failure by returning `false` rather than throwing.
+

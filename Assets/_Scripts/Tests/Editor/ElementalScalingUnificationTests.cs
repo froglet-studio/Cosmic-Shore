@@ -142,6 +142,32 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void PetalLossLandsOnEveryIntegerLevel()
+        {
+            // The direction the refutation above does NOT cover. Loss subtracts 0.1f from an
+            // exact start (1.0f after an overcharge drains via MoveTowards, or an authored 0.7f),
+            // and THAT drifts down: 1.0f - 0.1f - 0.1f is 0.79999995f, which a bare
+            // FloorToInt(x * 10) reads as 7. ResourceSystem.ToLevel must read 8.
+            float level = 1f;
+            for (int expected = 9; expected >= 0; expected--)
+            {
+                level -= 0.1f;                             // AccrueElementalLoss -> AdjustLevel
+                Assert.AreEqual(expected, ResourceSystem.ToLevel(level),
+                    $"petal loss to {expected} read as {ResourceSystem.ToLevel(level)} ({level:R})");
+            }
+
+            Assert.AreEqual(6, ResourceSystem.ToLevel(0.7f - 0.1f), "authored 0.7f minus one petal");
+
+            // And the upward path still lands exactly.
+            float accumulated = 0f;
+            for (int expected = 1; expected <= 15; expected++)
+            {
+                accumulated += 0.1f;
+                Assert.AreEqual(expected, ResourceSystem.ToLevel(accumulated));
+            }
+        }
+
+        [Test]
         public void TheRetiredGenericChannelIsGone()
         {
             // A structural assert, not a behavioural one: if either surface comes back, scaling can

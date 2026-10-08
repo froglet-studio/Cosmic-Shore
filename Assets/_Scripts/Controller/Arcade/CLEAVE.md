@@ -634,13 +634,20 @@ leaves another blank gets the scalar rather than the centre of the cell. It is r
 from `GameDataSO.SelectedIntensity`, which is set before the scene loads, so it does not meet the
 config-sync race that bites a CLIENT computing an intensity-derived value.
 
-**The arcade card's PREVIEW mirrors the scalar, and only the scalar.**
+**The arcade card's PREVIEW mirrors the per-intensity list as well as the scalar.**
 `ModePreview_Cleave.asset` carries its own copy of the spawn block, written by
 `Tools/Build/author_preview_spawns.py` straight off the scene's
-`ServerPlayerVesselInitializer` — so the preview satellite opens a pilot where the match would.
-That tool reads the SCALAR field, which this scene sizes for its two big rungs, so the preview
-stands a pilot at **3150** on all four intensities where rungs 3 and 4 spawn at 1050 in a real
-match: further out than it needs to be, never inside the arena, which is the safe direction.
+`ServerPlayerVesselInitializer`, so the preview satellite opens a pilot where the match would.
+The tool copies `spawnRingRadiusFloorByIntensity` into the definition's
+`SpawnRingRadiusFloorByIntensity` (3150 / 3150 / 1050 / 1050), and
+`ModePreviewDefinitionSO.ResolveSpawnRingRadiusFloor` resolves it by the server's rule: clamp past
+the end, and a 0 entry or an empty list defers to the scalar. `ModePreviewArena` latches the
+intensity it stood at and hands it to the spawn, and `ArenaDiffers` reports a different floor as a
+different preview, so moving the intensity row re-seats the vessel on that rung's ring. Before
+this the tool copied only the scalar, so the preview stood a pilot at 3150 on all four rungs, about
+three times further out than a match does on rungs 3 and 4. The list is copied only when the scene
+authors one, so every other mode's preview is byte-identical (`author_preview_spawns.py --check`
+reports 0 changes for the other 31).
 It went stale once already — the preview still said **576** after two envelope passes had moved
 the scene to 1050 and then 3150, which would have opened the preview *inside* the intensity-1 and
 -2 arenas — so **re-run `author_preview_spawns.py --check` whenever the scene's spawn ring moves**;
@@ -913,14 +920,15 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 - **The 1,200 / 1,200 / 1,500 / 1,500 targets are unmeasured for all four arenas** — see the pacing
   flag. The split makes every rung ask for a comparable FRACTION of its own arena, which is a real
   improvement over one shared number, but nothing here says what the resulting match LENGTH is.
-- **The arcade card's preview opens at 3,150 on every rung**, because
-  `author_preview_spawns.py` mirrors the scene's SCALAR spawn-ring floor and this mode's is sized
-  for its two big arenas. Rungs 3 and 4 spawn at 1,050 in a real match, so the preview stands the
-  pilot three times further out than the arena needs — further away, never inside, which is the
-  safe direction, but it makes the two small arenas read as specks on the card. The honest fix is
-  a per-intensity floor on `ModePreviewDefinitionSO` mirroring the one
-  `ServerPlayerVesselInitializer` now has; out of scope here, and it is the only mode in the
-  project whose rungs differ in envelope by 3x, so nothing else is waiting on it.
+- **The arcade card's preview spawn per intensity is authored headless and not yet flown.** The
+  preview used to open at 3,150 on every rung because `author_preview_spawns.py` mirrored only the
+  scalar floor. It now mirrors the scene's per-intensity list (see "Spawning outside the arena" above), so rungs 3
+  and 4 should open at 1,050 like a match. To check in the Editor: open the Cleave card, Test
+  Flight at intensity 1, then step the intensity row to 3. The arena should rebuild and the vessel
+  should arrive about 1,050 units from the centre, outside the 720-radius cage, rather than 3,150
+  units out. The `ArcadeLaunch` channel's `[ModePreview] Spawn` line prints the cell-relative
+  position and the resolved floor for that intensity. `ModePreviewSpawnFloorTests` (edit mode)
+  holds the resolve rule and reads the shipped asset's four rungs.
 - **⚠ Intensity 2 is the least-known thing in the mode.** It is brand-new geometry at a scale
   nobody has flown, and unlike its three siblings it is not a variation on anything that has been:
   five closed meandering roads is a different proposition from a stack of surfaces, and whether a

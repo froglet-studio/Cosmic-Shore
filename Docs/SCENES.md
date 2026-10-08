@@ -71,6 +71,8 @@ game scene and still exists.
 | **MinigameSkein** | `_Scenes/Multiplayer Scenes/` | `Skein (51)` | `SkeinController` |
 | **MinigameBloomrush** | `_Scenes/Multiplayer Scenes/` | `Bloomrush (52)` | `BloomrushController` |
 | **MinigameRedline** | `_Scenes/Multiplayer Scenes/` | `Redline (53)` | `RedlineController` |
+| **MinigameGrizzlyCharge** | `_Scenes/Singleplayer Scenes/` | `GrizzlyCharge (62)` | `DogFightController` |
+| **MinigameGrizzlyTime** | `_Scenes/Multiplayer Scenes/` | `GrizzlyTime (63)` | `GrizzlyTimeController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
@@ -305,6 +307,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 51 | `Skein` | MP | MinigameSkein | `SkeinController` (Urchin cable race — see `SKEIN.md`) |
 | 52 | `Bloomrush` | MP | MinigameBloomrush | `BloomrushController` (Manta bomb-tag party game, 120 s timed, volume-destroyed scoring — see `BLOOMRUSH.md`) |
 | 53 | `Redline` | MP | MinigameRedline | `RedlineController` (Manta circuit race — see `REDLINE.md`) |
+| 62 | `GrizzlyCharge` | MP | MinigameGrizzlyCharge | `DogFightController` (Grizzly proving ground — a Dog Fight clone in the Boneyard) |
+| 63 | `GrizzlyTime` | MP | MinigameGrizzlyTime | `GrizzlyTimeController` (Grizzly bomb-jump circuit race — see `GRIZZLYTIME.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
@@ -436,6 +440,15 @@ Collision-based competitive duel. Players collide with each other; first to reac
 
 Networked vessel-swapping duel for exactly 2 players. Between rounds, players swap vessels via Netcode `ChangeOwnership()`.
 
+**Status (read off the shipped card and scene, 2026-10-08).** Card `ArcadeGameOnlineDuelForTheCell.asset`
+("Online Duel for the Cell"), listed on `AllGames` and `LaunchPartyAllGames`.
+- **Scores:** most mass. There is no scoring-rule asset. The scene's `NetworkScoreTracker` sums three legacy `ScoringModes` at ×1 each: `VolumeCreated`, `HostileVolumeDestroyed` and `FriendlyVolumeDestroyed`. Points are not golf.
+- **Shape:** two rounds of one turn (`numberOfRounds: 2`), each a 120 s `NetworkTimeBasedTurnMonitor`. You fly round 2 in the hull your opponent flew in round 1.
+- **Hulls:** the card authors no usable hull list. Its hulls are still serialized under the pre-rename `Captains` key, and that key names six `SO_Captain` assets (Manta, Squirrel, Serpent, Sparrow, Dolphin, Rhino), not `SO_Vessel`s. So `Vessels` holds no usable hull, and each pilot flies whatever hull they brought.
+- **Intensity:** 1–2 on the card. The cell has a single `Barren Cell Config`, so intensity changes nothing in the cell.
+- **The 2-player limit is hard.** The card has `MinPlayersAllowed = MaxPlayersAllowed = 2`. The swap indexes `gameData.Players[0]` and `[1]` and nothing else. The scene carries the plain `ServerPlayerVesselInitializer`, not the `…WithAI` one, so nothing backfills an AI into an empty seat. A third pilot would never be swapped, and with only one pilot the swap would index past the end of the list.
+- **Verification:** none recorded. Neither QA nor UVC tracks this mode.
+
 **Key features**:
 - Vessel ownership swap via `NetworkObject.ChangeOwnership()` + `gameData.SwapVessels()`
 - Hardcoded for 2 players (`gameData.Players[0]` and `Players[1]`)
@@ -477,8 +490,17 @@ Hypersea soccer (Rocket League-inspired) — two domains slam a server-simulated
 
 Lobby/freestyle sandbox mode. Open-ended multiplayer flying with per-player activation.
 
+**Status (read off the shipped card and scene, 2026-10-08).** Card `ArcadeGameMultiplayerFreestyle.asset`
+("Multiplayer Freestyle": "No rules, time, or score"), listed on `AllGames` and `LaunchPartyAllGames`.
+- **Scores:** nothing decides a winner. The scene's `NetworkScoreTracker` does carry one `VolumeCreated` ×1 config, so a volume stat is tallied. But no turn monitor exists to end the turn and read it.
+- **Shape:** the scene authors `numberOfRounds: 1`, overriding the `int.MaxValue` field default. `TurnMonitorController` has `monitors: []`, though, so the one turn never ends and there is no natural end.
+- **Hulls:** six on the card: Dolphin, Manta, Rhino, Sparrow, Serpent and Squirrel.
+- **Players:** 2–3 on the card. The scene carries the plain `ServerPlayerVesselInitializer`, so there is no AI backfill.
+- **Intensity:** 1–4 on the card. The cell has a single `Barren Cell Config`, so intensity changes nothing in the cell.
+- **Verification:** none recorded. Neither QA nor UVC tracks this mode.
+
 **Key features**:
-- No scoring, no natural end (`numberOfRounds = int.MaxValue`)
+- No scoring, no natural end (the scene's turn monitor list is empty)
 - Per-player countdown activation (each player starts individually, not synchronized)
 - Player removal protocol: removes player data from all clients before leaving the session
 - Subscribes to `OnClientReady` to handle late-joining clients
@@ -585,7 +607,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |

@@ -213,6 +213,8 @@ the (dead) hangar training entries for Rhino and Sparrow point at it — it is i
 | `MinigameSkein` | `Skein (51)` | `SkeinController` |
 | `MinigameBloomrush` | `Bloomrush (52)` | `BloomrushController` |
 | `MinigameRedline` | `Redline (53)` | `RedlineController` |
+| `MinigameGrizzlyCharge` | `GrizzlyCharge (62)` | `DogFightController` |
+| `MinigameGrizzlyTime` | `GrizzlyTime (63)` | `GrizzlyTimeController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.

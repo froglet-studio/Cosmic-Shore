@@ -455,6 +455,23 @@ a `view: {fileID: 257326519381942953}` pointing at nothing since before this ses
 a checker run only on your output reports that as damage you caused. The signal you want is
 "document count fell by exactly the N I removed, and the dangling set is **unchanged**".
 
+### Technique: REVERTING a nested instance's component swap (added + removed components)
+
+A swap made on a nested prefab instance (here: four lifeforms removed `CrystalMass`'s shell
+MeshRenderers and added SkinnedMeshRenderer + `SpaceCrystalAnimator` per shell) lives in FOUR places,
+and all four must go together: the `m_AddedComponents` entries (3 lines each; the target line may
+wrap), the added components' own documents, the `m_RemovedComponents` entries for the source's
+components (empty list → `m_RemovedComponents: []`), and every `m_Modifications` entry that pointed
+a source field at an added component (`crystalModels.Array.data[i].spaceCrystalAnimator`). Then
+drop the `--- !u!1 &id stripped` GameObject docs that existed only so the added components had an
+owner — but only once nothing references them (loop until no orphan remains). Assert no surviving
+`{fileID: id}` names a dropped document. `Tools/Build/author_mass_crystal_look.py` is the worked
+example and keeps the result held under `--check`. **Splitting on `"\n--- "` loses the file's final
+newline when the LAST document is one you drop** — the newline belonged to it. Restore it
+explicitly (`if text.endswith("\n") and not out.endswith("\n")`) and diff the output's tail; a
+missing final newline is a one-line diff noise on every future edit and the tell that a splitter
+was wrong.
+
 ### Technique: ADDING a nested prefab instance (and referencing a component inside it)
 
 The read side of nested instances is covered above (§3's two-ways rule, §4.9). Writing one is
@@ -1066,6 +1083,18 @@ references, m_Script classes). Four things that cost time on the first run (2026
   Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
   `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
   read the bucket, because everything ELSE in your test file was bound for real.
+- **A planted `CS0103` (undefined name) is reported as *unverified*, not as an error (2026-10-08).**
+  While any package reference is unavailable, the tool buckets name-not-found diagnostics, so a
+  negative control built on an undefined method call leaves `ERRORS in project code: 0` and moves
+  the unverified count from 0 to 1. Read BOTH numbers: green means "0 errors AND 0 unverified".
+  A control on a missing MEMBER of a known type (`gameData.NoSuchMember()`, CS1061) is the sharper
+  plant if you want it to land in the error count.
+- **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
+  gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
+  `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
+  in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
+  `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
+  on changed lines is the evidence; "the run was green" is not.
 - **Negative-control both tools before quoting them**: plant a call to a missing member in a file
   you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
   key in an asset you changed (the audit must name the file and the key). Restore, then
@@ -1410,6 +1439,20 @@ It is the cheapest way to make a look call honestly without an editor, and it ca
 failures (a term that never reaches the screen, an effect too faint to read at its real pixel size).
 State plainly that it is a render of the MATH, not a capture — it proves the shape, not the
 compile, the render state or the bloom.
+
+### Trap: a SEE-THROUGH shell on a Fresnel ramp washes to its BRIGHT colour — the back faces did it
+
+`lerp(bright, dark, (1 + N·V) / 2)` (`SpreadFresnelShader` and its transcriptions) is built for an
+OPAQUE body: the only faces you see face you, so the ramp spans dark centre → bright silhouette. Put
+it on a transparent `Cull Off` / `ZWrite Off` shell and every BACK face is drawn too, with N·V < 0 —
+the bright half of the ramp. Compiling the fragment with clang over a sphere (§4.5c): **76% of a
+back face reads bright vs 26% of a front face**, so the Mass crystal's shells read "too white" /
+"too lime" on the same colour pair the opaque Space and Time crystals wear well. Tuning the colours
+cannot fix it. Measure N·V on the camera side (`rim = 1 − |N·V|`, `_FaceForward` on
+`OmniShepardFresnelShader`) and shape it with a power (`_RimPower`); ship both as OPT-INS whose
+defaults reproduce the old formula, and PROVE that with the harness (max |Δ| 6e-8) so every other
+material on the shader is untouched. Whenever a look complaint is "washed out" on a transparent
+mesh, count the back faces before touching a colour.
 
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
@@ -2418,6 +2461,23 @@ any `Assets/...` include into the work dir at the same relative path, and compil
 `HLSLPROGRAM` vertex+fragment with and without `INSTANCING_ON`. It proves the shader's OWN code
 type-checks, nothing about URP; negative-control it (drop an argument from a call) before quoting.
 
+**A hand-written URP `.shader` can be compiled by a REAL HLSL compiler — Microsoft's DXC — with
+no substitutions at all.** The clang shim above rewrites the language (`out` params, constructors,
+scalar overloads) and the glslang mock compiles a GLSL translation; DXC compiles the HLSL as written,
+so `out` params, swizzles, `clip`, `Texture2DArray` and an `#include` of a shared `.hlsl` all behave
+exactly as on device. The Linux release downloads and runs in this container (2026-10, wormhole
+corridor change):
+`curl -sSL -o dxc.tgz https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.8.2407/linux_dxc_2024_07_31.x86_64.tar.gz`,
+untar into scratch, run as `LD_LIBRARY_PATH=<dir>/lib <dir>/bin/dxc -T ps_6_0 -E frag -HV 2018 -I <stubdir>
+-I Assets/_Graphics/Materials/Graphs pass0.hlsl -Fo /dev/null` (the `bin/dxc` binary needs `lib/` on the
+loader path or it fails to start). Build each pass's file as `HLSLINCLUDE` + that pass's `HLSLPROGRAM`
+with the `#pragma` lines dropped (entry names come from `#pragma vertex/fragment`), and swap the URP
+`Core.hlsl` include for a ~15-line stub: `CBUFFER_START/END`, `TEXTURE2D[_ARRAY]`, `SAMPLER`,
+`SAMPLE_TEXTURE2D[_ARRAY]`, `_WorldSpaceCameraPos`, `_ScreenParams`, `_ProjectionParams`, `_Time`,
+`UNITY_MATRIX_V/P`, `TransformObjectToWorld`, `TransformWorldToHClip`. Compile vertex AND fragment of
+every pass (`vs_6_0`/`ps_6_0`), then negative-control it (delete one global the pass reads — DXC must
+name it). Like the glslang route it proves the shader's own code and its includes, nothing about URP.
+
 **Reuse an existing harness's shim for a DIFFERENT function in the same file — do not write a
 second one.** `Tools/Shaders/verify_prism_shard3d.py` exposes `SHIM`, `translate()` and
 `clang_cmd()` as module members, so a scratch script can `import verify_prism_shard3d as H`,
@@ -3146,6 +3206,31 @@ never fold it into a fix for something else.
   are verifiable from the repo in about a minute, and ruling them out is itself a finding:
   if the branch's data is clean, the hole is in the reporter's *working tree*, which is a
   different conversation than a code bug.
+- **…and a fifth that the repo cannot show at all: a BRAND-NEW ScriptableObject type whose first
+  asset was written outside Unity can load as null in the playtester's editor with all four
+  checks passing.** The Butterfly bloom's `ExplosionScaleDustPrismEffectSO` asset did exactly
+  that three playtests running (`explosionPrismEffects[0] is empty`), and changing the asset's
+  bytes to force a re-import did NOT fix it — so "imported before its script compiled" was a
+  guess, not the cause, and the cause was never found because nobody looked at the asset in the
+  inspector. Two rules came out of it. **Ask for the inspector first**: one sentence from the
+  human ("select X — what does the inspector show?") names the cause, where each speculative fix
+  costs a full playtest round. **Prefer a field on something already proven to load**: the fix
+  that worked moved the reference onto a MonoBehaviour on the blast prefab (a new script too, but
+  a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
+  `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
+  SO type is unavoidable, have the human open its first asset once before the playtest.
+- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+  `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
+  surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
+  syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL
+  https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir /opt/dotnet`
+  works through the agent proxy. The build is RED on bleeding-edge for reasons outside your diff
+  (engine gaps: on 2026-10-08, `Graphics.CopyTexture` in `WormholeMouth.cs` and
+  `Physics.OverlapBoxNonAlloc` in `NestedGyroidFlora.cs`), so filter the error list to the files
+  you touched rather than reading "N errors" as yours, and confirm the synced copy of each new file
+  is under `Port/src/CosmicShore.Live/obj/live-src/`. It caught nothing on the bloom branch and
+  that is the point: "no errors in any touched file" is evidence a Roslyn syntax pass cannot give.
+  It does NOT exercise Unity's asset loader — the null-loading asset above compiled cleanly here.
 - **A feature can be dead in several places at once, and fixing the first one makes the
   SYMPTOM stop while the feature stays dead.** The Dolphin's shard toggle had an unwired SO
   reference (the error you could see), a bus whose two broadcast bodies were commented out,

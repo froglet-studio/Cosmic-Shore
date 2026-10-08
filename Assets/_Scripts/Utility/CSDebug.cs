@@ -305,6 +305,17 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[Training] overnight GA bring-up")]
         AITraining = 1 << 29,
+        /// <summary>
+        /// <c>[ButterflyBloom]</c> — one line per omni-crystal bloom as it retires: how many
+        /// prisms its sweep reached and what the dust did to them, by outcome.
+        ///
+        /// It exists because the bloom's failure mode reads as "it did nothing", which is the
+        /// same report whether the sweep found no prisms, found prisms and dispatched nothing, or
+        /// dispatched outcomes too subtle to see at the Butterfly's camera range. The tally
+        /// separates the three.
+        /// </summary>
+        [CSLogChannelLabel("[ButterflyBloom] omni-crystal bloom sweep and dust outcomes")]
+        ButterflyBloom = 1 << 30,
         All = ~0
     }
 

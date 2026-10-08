@@ -800,11 +800,32 @@ Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arc
 `Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
 is now a different mode, and the doc's measured ladder is the first thing to go stale.
 
+### 4.ab2 "Make it N× stronger" — find the CLAMP before you touch the multiplier
+
+Every displacement a vessel takes through `VesselTransformer.ModifyVelocity` is summed and then
+**clamped to one shared ceiling** (`velocityModifierMax`, 100 u/s). A shove that already reaches
+that ceiling is not made stronger by a bigger multiplier — it is made LONGER at the same speed,
+which a pilot cannot feel. The Grizzly's bomb launch (2026-10-08, "launch 3× more") was sitting on
+the 100 for its whole second at full squeeze, so `selfLaunchMultiplier` 1.5 -> 4.5 alone would have
+shipped a change that changed nothing. Two rules:
+
+- **Compute the shove's peak against the clamp first** (`impulse × 1.5` — the cosine ease's
+  birth weight — vs. the ceiling). If it saturates, the knob that matters is the ceiling.
+- **Never raise the shared ceiling for one ability** — it also lifts every knock-back, Rush and
+  kick that vessel takes. Use the per-modifier form, `ModifyVelocity(amount, duration,
+  ignoresTranslationRestriction, ceiling)` (`ShipVelocityModifier.ceiling`): a live modifier may
+  RAISE the cap for its own lifetime, never lower it, and 0 means "the vessel's own".
+
+And then §4.ab applies: a stronger shove is a faster vessel, so any mode cut against that
+vessel's curve has to be re-cut (Grizzly Time went 14 gates on 560 u -> 8 on 800 u).
+
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
-Some placed objects look different to different pilots: the Butterfly's fold wormhole shows a
-view through only to its own domain, and to a rival it is a sealed, domain-coloured outline
-(`WormholeView`, `BUTTERFLY_FOLD.md` § "The gates became wormholes"). The first cut decided
+Some placed objects look different to different pilots: the Butterfly's fold wormhole first
+showed a view through only to its own domain, and to a rival a sealed, domain-coloured outline
+(`WormholeView`, `BUTTERFLY_FOLD.md` § "The gates became wormholes" — since replaced by a TOLL:
+anyone rides and sees through, and a rival pays petals, `WormholeMouth.OwesToll`, which keeps
+both rules below). The first cut decided
 "rival" whenever the VIEWER's domain could not be resolved (no follow target, a camera rig that
 is not a `CustomCameraController`) and compared against a domain CAPTURED at placement — so the
 pilot's own pair rendered sealed, and the first playtest reported "the Butterfly made no
@@ -822,6 +843,17 @@ And one playtest rule: **when a replacement's degraded state looks like the thin
 "new code misbehaving" and "old code still running". Give the replacement a distinguishable
 GameObject name (`FoldWormhole::<pilot>::A`, the old gates were `FoldGate::…`) and tell the
 tester to check the Hierarchy — one look separates the two.
+
+
+**A consequence of a TELEPORT that changes shared state must run where EVERY peer sees the jump,
+not where the owner decides it.** A wormhole's `Transit` (and any owner-side detector like it) runs
+only on the machine that owns the vessel; the pose then replicates through `SetPose`, and
+`VesselTransformer.SetPose` -> `TeleportContinuity.OnTeleported` is the one place every machine
+sees that jump, already resolving WHICH mouth it went through (`WormholeMouth.TryResolveTransit`).
+Elemental levels are simulated per peer, so the rival toll (`WormholeMouth.LevyToll`, 2026-10-08)
+is levied there: putting it in `Transit` would have stripped petals on the owner only and desynced
+every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
+server re-broadcasts to everyone else), so a hook there fires once per machine.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

@@ -303,7 +303,7 @@ trio, and the traps).
   units — and those children exist to equalize apparent EXTENT, which at 1.0/1.0/1.34/1.42 they
   already did within 7% (measured from FBX `Vertices` bounds normalized by `UnitScaleFactor`;
   Space's file is unit-1, the others unit-100). Mass is raised to 1.38 anyway because it reads
-  thin rather than small — four concentric `ShepardGraph` shells vs Space's solid `_spread`
+  thin rather than small — four concentric Shepard-tone shells (`OmniShepardFresnelShader`) vs Space's solid `_spread`
   body — and that number is an eye-calibration pending playtest, not a measurement. A
   per-element size fix belongs on that element's crystal PREFAB child; putting it on the root
   moves the collect reward with it, since that reads the root's `lossyScale`. `Docs/ECOSYSTEM.md §33`.

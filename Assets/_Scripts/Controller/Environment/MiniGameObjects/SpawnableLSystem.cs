@@ -11,14 +11,14 @@ namespace CosmicShore.Gameplay
     {
         public enum LSystemPreset
         {
-            Custom,
-            BasicTree,
-            Tree3D,
-            HilbertCurve3D,
-            KochSnowflake3D,
-            SphericalSpiral,
-            FractalCoral,
-            CrystalStructure
+            Custom = 0,
+            BasicTree = 1,
+            Tree3D = 2,
+            HilbertCurve3D = 3,
+            KochSnowflake3D = 4,
+            SphericalSpiral = 5,
+            FractalCoral = 6,
+            CrystalStructure = 7
         }
 
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
