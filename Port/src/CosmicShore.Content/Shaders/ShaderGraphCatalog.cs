@@ -42,6 +42,9 @@ namespace CosmicShore.Content.Shaders
             if (string.IsNullOrEmpty(guid)) return null;
             return _programs.GetOrAdd(guid, g =>
             {
+                // A hand-written .shader with a hand translation draws through the same path.
+                if (HandShaders.Has(g) && _db.PathOf(g) is { } shaderPath && !IsGraphPath(shaderPath))
+                    return HandShaders.For(g, shaderPath, _db.ProjectRelative(shaderPath));
                 var asset = LoadAsset(g);
                 if (asset == null || asset.IsSubGraph) return null;
                 var prog = _compiler.Compile(asset, name ?? "Shader Graphs/" + Path.GetFileNameWithoutExtension(asset.Path));

@@ -143,10 +143,7 @@ namespace CosmicShore.Engine
         static bool ShouldCollide(Collider a, Collider b)
         {
             if (Physics.IsCollisionIgnored(a, b)) return false;
-            int la = a.gameObject.layer, lb = b.gameObject.layer;
-            if ((a.excludeLayers.value & (1 << lb)) != 0 || (b.excludeLayers.value & (1 << la)) != 0) return false;
-            if ((a.includeLayers.value & (1 << lb)) != 0 || (b.includeLayers.value & (1 << la)) != 0) return true;
-            return !Physics.GetIgnoreLayerCollision(la, lb);
+            return Physics.LayersInteract(a, b);
         }
 
         /// <summary>Push out and apply the restitution/friction impulse. Returns the impulse on the sphere's body.</summary>

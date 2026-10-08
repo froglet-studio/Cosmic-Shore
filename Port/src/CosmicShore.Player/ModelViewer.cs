@@ -10,13 +10,15 @@ using CosmicShore.Engine.InputSystem;
 namespace CosmicShore.Player
 {
     /// <summary>
-    /// <c>--view-model FILE</c>: the model on its own, drawn by the engine's renderer with the
+    /// <c>--view-model FILE</c> (a model, or a .prefab as the game spawns it, particles and all):
+    /// the model on its own, drawn by the engine's renderer with the
     /// materials the game gives it (<see cref="ModelMaterialUsage"/>: the prefab that draws its
     /// meshes), on a turntable. Drag to turn it, wheel to zoom, right-drag to pan, F to frame it,
     /// R to reset, Space to stop or start the spin, Tab to show the next prefab's materials
-    /// (0 is the model's own). No game scene loads: nothing else is in the picture.
+    /// (0 is the model's own). Blend-shape sliders, the animation takes and the controls are on
+    /// screen (<c>ModelViewer.Ui.cs</c>). No game scene loads: nothing else is in the picture.
     /// </summary>
-    static class ModelViewer
+    static partial class ModelViewer
     {
         /// <summary>The model to show (project-relative or full); null when not viewing.</summary>
         public static string Path;
@@ -31,6 +33,8 @@ namespace CosmicShore.Player
         static Vector3 s_center, s_pan;
         static float s_radius = 1f, s_yaw = 145f, s_pitch = 22f, s_distance = 3f;
         static bool s_spin = true;
+        static int s_particles;
+        static bool s_framedLines;
         static Vector3 s_lastMouse;
         static Transform s_camera;
 
@@ -41,31 +45,44 @@ namespace CosmicShore.Player
             var db = content.Db;
             string full = System.IO.Path.IsPathRooted(Path) ? Path : System.IO.Path.GetFullPath(System.IO.Path.Combine(db.ProjectRoot, Path));
             var guid = db.GuidOf(full);
-            s_model = guid == null ? null : db.LoadModel(guid);
-            if (s_model == null) { Console.WriteLine($"[viewer] {Path} is not a model this project imports"); return; }
+            // A .prefab shows as the game spawns it: its own materials, its particle systems playing.
+            bool prefab = full.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase);
+            s_model = guid == null || prefab ? null : db.LoadModel(guid);
+            if (s_model == null && !prefab) { Console.WriteLine($"[viewer] {Path} is not a model this project imports"); return; }
+            if (guid == null) { Console.WriteLine($"[viewer] {Path} is not in this project"); return; }
 
             foreach (var other in Camera.allCameras) other.enabled = false;
-            var template = content.Assets.Load<GameObject>(new ObjRef(ModelFileIds.PrefabAsset, guid, 3));
-            if (template == null) { Console.WriteLine($"[viewer] {Path}: no model prefab"); return; }
+            var template = content.Assets.Load<GameObject>(new ObjRef(prefab ? 100100000 : ModelFileIds.PrefabAsset, guid, 3));
+            if (template == null) { Console.WriteLine($"[viewer] {Path}: no {(prefab ? "prefab" : "model prefab")}"); return; }
             var go = CosmicShore.Engine.Object.Instantiate(template);
             go.name = System.IO.Path.GetFileNameWithoutExtension(full);
             go.transform.position = Vector3.zero;
             go.SetActive(true);
 
-            foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
-                if (s_model.Meshes.FirstOrDefault(m => ReferenceEquals(m.Mesh, mf.sharedMesh)) is { } im && mf.TryGetComponent<MeshRenderer>(out var mr))
-                    s_renderers.Add((mr, null, im));
-            foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                if (s_model.Meshes.FirstOrDefault(m => ReferenceEquals(m.Mesh, smr.sharedMesh)) is { } im)
-                    s_renderers.Add((null, smr, im));
+            if (prefab)
+            {
+                foreach (var mr in go.GetComponentsInChildren<MeshRenderer>(true)) s_renderers.Add((mr, null, null));
+                foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true)) s_renderers.Add((null, smr, null));
+                s_sources = new List<string>();
+            }
+            else
+            {
+                foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
+                    if (s_model.Meshes.FirstOrDefault(m => ReferenceEquals(m.Mesh, mf.sharedMesh)) is { } im && mf.TryGetComponent<MeshRenderer>(out var mr))
+                        s_renderers.Add((mr, null, im));
+                foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    if (s_model.Meshes.FirstOrDefault(m => ReferenceEquals(m.Mesh, smr.sharedMesh)) is { } im)
+                        s_renderers.Add((null, smr, im));
 
-            s_uses = ModelMaterialUsage.Find(db, s_model);
-            ModelMaterialUsage.Resolve(s_model, s_uses, out var best);
-            s_sources = new List<string> { null };
-            s_sources.AddRange(s_uses.Select(u => u.Prefab).Distinct().OrderBy(p => p == best ? 0 : 1).ThenBy(p => p, StringComparer.OrdinalIgnoreCase));
-            s_source = best != null ? 1 : 0;
+                s_uses = ModelMaterialUsage.Find(db, s_model);
+                ModelMaterialUsage.Resolve(s_model, s_uses, out var best);
+                s_sources = new List<string> { null };
+                s_sources.AddRange(s_uses.Select(u => u.Prefab).Distinct().OrderBy(p => p == best ? 0 : 1).ThenBy(p => p, StringComparer.OrdinalIgnoreCase));
+                s_source = best != null ? 1 : 0;
+            }
+            s_particles = go.GetComponentsInChildren<ParticleSystem>(true).Length;
 
-            (s_center, s_radius) = RendererBounds() ?? Bounds(s_model);
+            (s_center, s_radius) = RendererBounds() ?? (s_model != null ? Bounds(s_model) : (go.transform.position, 2f));
             Frame();
 
             var camGo = new GameObject("ModelViewerCamera") { tag = "MainCamera" };
@@ -88,14 +105,22 @@ namespace CosmicShore.Player
             RenderSettings.sun = light;
             RenderSettings.ambientSkyColor = new Color(0.45f, 0.47f, 0.52f, 1f);
 
+            BuildUi(go, guid);
             ApplySource();
-            Console.WriteLine($"[viewer] {db.ProjectRelative(full)}: {s_renderers.Count} renderers, radius {s_radius:G3}; "
-                              + "drag to turn, wheel to zoom, right-drag to pan, F frame, R reset, Space spin, Tab materials");
+            Console.WriteLine($"[viewer] {db.ProjectRelative(full)}: {s_renderers.Count} renderers, radius {s_radius:G3}, "
+                              + $"{s_shapes.Count} blend shapes, {s_takes.Count} takes; drag to turn, wheel to zoom, right-drag to pan, "
+                              + "F frame, R reset, Space spin, Tab materials, T take, P pause, B zero shapes, H help");
         }
 
         static void ApplySource()
         {
             var content = ContentRuntime.Current;
+            if (s_model == null)
+            {
+                SetTitle?.Invoke($"Prisma model viewer - {System.IO.Path.GetFileName(Path)} - its own materials");
+                RefreshInfo();
+                return;
+            }
             string prefab = s_sources.Count > 0 ? s_sources[s_source] : null;
             var resolved = prefab == null
                 ? s_model.Meshes.Where(m => m.Mesh != null).ToDictionary(m => m.FileId, m => ModelMaterialUsage.Own(s_model, m))
@@ -110,6 +135,7 @@ namespace CosmicShore.Player
             string label = prefab == null ? "the model's own materials" : "materials from " + content.Db.ProjectRelative(prefab);
             Console.WriteLine($"[viewer] showing {label}");
             SetTitle?.Invoke($"Prisma model viewer - {System.IO.Path.GetFileName(Path)} - {label}");
+            RefreshInfo();
         }
 
         static Material s_default;
@@ -130,14 +156,24 @@ namespace CosmicShore.Player
         public static void Tick(float dt)
         {
             if (s_camera == null) return;
+            // A prefab with nothing but effects: frame what they drew on the first frame they drew.
+            if (s_renderers.Count == 0 && !s_framedLines && ProceduralLines.Current.Count > 0)
+            {
+                s_framedLines = true;
+                var b = new Bounds(ProceduralLines.Current[0].Points[0], Vector3.zero);
+                foreach (var l in ProceduralLines.Current) foreach (var p in l.Points) b.Encapsulate(p);
+                (s_center, s_radius) = (b.center, Math.Max(0.5f, b.extents.magnitude));
+                Frame();
+            }
             var mouse = Mouse.current;
             var keys = Keyboard.current;
             var pos = mouse != null ? (Vector3)mouse.position.ReadValue() : Vector3.zero;
             var d = pos - s_lastMouse;
             s_lastMouse = pos;
+            bool onUi = TickUi(dt, mouse, keys);
             if (mouse != null)
             {
-                if (mouse.leftButton.isPressed) { s_yaw += d.x * 0.35f; s_pitch = Math.Clamp(s_pitch - d.y * 0.35f, -89f, 89f); s_spin = false; }
+                if (mouse.leftButton.isPressed && !onUi) { s_yaw += d.x * 0.35f; s_pitch = Math.Clamp(s_pitch - d.y * 0.35f, -89f, 89f); s_spin = false; }
                 if (mouse.rightButton.isPressed || mouse.middleButton.isPressed)
                 {
                     var rot = Quaternion.Euler(s_pitch, s_yaw, 0f);

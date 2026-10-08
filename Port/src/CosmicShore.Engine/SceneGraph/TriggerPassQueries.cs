@@ -154,5 +154,18 @@ namespace CosmicShore.Engine
 
         public static bool GetIgnoreLayerCollision(int layer1, int layer2)
             => (uint)layer1 <= 31 && (uint)layer2 <= 31 && (s_layerMatrix[layer1] & (1u << layer2)) == 0;
+
+        /// <summary>
+        /// Whether two colliders' layers let them meet, as Unity filters every pair - solid contacts
+        /// AND trigger messages: a collider's excludeLayers wins, then its includeLayers, then the
+        /// Layer Collision Matrix (Project Settings > Physics).
+        /// </summary>
+        internal static bool LayersInteract(Collider a, Collider b)
+        {
+            int la = a.gameObject.layer, lb = b.gameObject.layer;
+            if ((a.excludeLayers.value & (1 << lb)) != 0 || (b.excludeLayers.value & (1 << la)) != 0) return false;
+            if ((a.includeLayers.value & (1 << lb)) != 0 || (b.includeLayers.value & (1 << la)) != 0) return true;
+            return !GetIgnoreLayerCollision(la, lb);
+        }
     }
 }

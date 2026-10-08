@@ -50,12 +50,12 @@ namespace CosmicShore.AssetTool
             }
 
             var shaders = new List<object>();
-            int family = 0, compiled = 0, missing = 0;
+            int family = 0, compiled = 0, hand = 0, own = 0, missing = 0;
             foreach (var p in paths.Where(p => p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".shader", StringComparison.OrdinalIgnoreCase)))
             {
                 var guid = db.GuidOf(p);
                 var rel = db.ProjectRelative(p);
-                string route, why;
+                string route, why, name = null;
                 var approx = new List<string>();
                 if (guid != null && MaterialFamilies.ByGuid.TryGetValue(guid, out var f)) { route = "family"; why = "hand-tuned family " + f.Kind; family++; }
                 else if (p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase) && catalog.For(guid) is { } prog)
@@ -63,8 +63,14 @@ namespace CosmicShore.AssetTool
                     if (prog.Ok) { route = "compiled"; why = "Shader Graph compiler"; approx.AddRange(prog.Approximations); compiled++; }
                     else { route = "missing"; why = "graph did not compile: " + prog.Error; missing++; }
                 }
+                else if (HandShaders.Has(guid) && catalog.For(guid) is { } handProg)
+                {
+                    if (handProg.Ok) { route = "hand"; why = "hand translation (Content/Shaders/Hand)"; approx.AddRange(handProg.Approximations); hand++; }
+                    else { route = "missing"; why = "hand translation failed: " + handProg.Error; missing++; }
+                }
+                else if (OwnRenderer(name = MaterialImporter.ShaderNameFor(new ObjRef(4800000, guid, 3), db)) is { } by) { route = "own"; why = by; own++; }
                 else { route = "missing"; why = "hand-written .shader: no translation yet"; missing++; }
-                shaders.Add(new { path = rel, guid, name = MaterialImporter.ShaderNameFor(new ObjRef(4800000, guid, 3), db), route, why, approximations = approx });
+                shaders.Add(new { path = rel, guid, name = name ?? MaterialImporter.ShaderNameFor(new ObjRef(4800000, guid, 3), db), route, why, approximations = approx });
             }
 
             int instances = nodeCounts.Values.Sum(v => v.Instances);
@@ -76,7 +82,7 @@ namespace CosmicShore.AssetTool
             Console.WriteLine($"{functions.Values.Sum()} custom function calls, {functions.Count} distinct functions ({unported.Count} not in ShaderGraphLibrary.glsl)");
             foreach (var (fn, count) in functions.OrderByDescending(kv => kv.Value))
                 Console.WriteLine($"  {count,5}  {fn}{(ShaderGraphLibrary.Defines(fn) ? "" : "   <-- NOT PORTED")}");
-            Console.WriteLine($"{shaders.Count} first-party shaders: {family} hand-tuned family, {compiled} compiled from the graph, {missing} missing");
+            Console.WriteLine($"{shaders.Count} first-party shaders: {family} hand-tuned family, {compiled} compiled from the graph, {hand} hand-translated, {own} drawn by their own renderer, {missing} missing");
 
             var json = opts.TryGetValue("json", out var j) && j != "1" ? j : Path.Combine(root, "Port", "parity", "shaders.json");
             var doc = new
@@ -91,5 +97,12 @@ namespace CosmicShore.AssetTool
             Console.WriteLine("wrote " + db.ProjectRelative(json));
             return unsupported.Count + unported.Count;
         }
+
+        /// <summary>Shaders a dedicated renderer draws (not a material program): TextMesh Pro's, the HyperSea skybox.</summary>
+        static string OwnRenderer(string shaderName) =>
+            shaderName == null ? null
+            : shaderName.StartsWith("TextMeshPro/", StringComparison.Ordinal) ? "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)"
+            : shaderName == "CosmicShore/HyperSeaSkybox" ? "skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs)"
+            : null;
     }
 }
