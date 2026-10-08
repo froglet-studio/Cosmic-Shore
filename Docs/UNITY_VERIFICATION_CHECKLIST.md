@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
+
+**Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
+`Crystal.prefab` slot 0 = whole omni model on the new, self-contained `OmniCrystalFresnelShader`
+(the elemental crystals' SpreadFresnel look, plus CrystalMorph + the forge's `_Opacity` dissolve);
+slots 1-3 = Shepard shells and slot 4 = a stationary rim, drawing only the 20 triangles
+(`Assets/_Models/OmniCrystalTriangles.asset`, a mesh baked from `MassCrystalExport3ExpandedTri`) on
+`OmniShepardFresnelShader` (the body's colour formula and pair), sweeping from 2x the crystal's radius
+down onto its surface. `OriginalMaterialSet` now points team crystals at those five materials;
+`ThemeManager` paints them in domain colours (`SO_MaterialSet.CrystalMaterial4` added). `SpreadFresnelShader` is NOT touched
+(the omni shader compiles to SPIR-V offline). One C# edit:
+`ScarabCrystalMorph.AdoptShells` skips the triangle shells on a verbose channel instead of warning;
+`ThemeManager` / `ThemeManagerDataContainerSO` / `SO_MaterialSet` gained slot 4 + Fresnel painting.
+Compiled against Unity reference assemblies (`unity_refcompile`, 0 project errors); not opened in the editor.
+
+**Verify in editor**
+1. Console after import: no shader errors on `OmniCrystalFresnelShader` (it includes
+   `Assets/_Graphics/Materials/Graphs/CrystalMorph.hlsl` by project-absolute path). No C# errors.
+2. Space + Time crystals look exactly as before (their shader is untouched).
+3. Open `Crystal.prefab`: `OmniCrystalBody` shows the lime Fresnel omni; the three
+   `OmniShepardTriangles` children show the `OmniCrystalTriangles` mesh. In play the triangles fall
+   in from outside the crystal, brightening, and land ON the body's own triangles. If they sit
+   rotated or offset against the body, the mesh bake's axis conversion is wrong (see the generator).
+   A faint stationary triangle rim (`OmniShepardTrianglesRim`) sits at the outer radius, so no
+   shell visibly pops in where it is born.
+4. In Skim Race, a collected crystal's replacement appears at once (no slow fade-in) - the omni
+   shaders deliberately ignore FadeIn's `_opacity`.
+5. Scarab: forge an omni crystal — the body folds onto the ball and dissolves; the triangle shells
+   just leave with the crystal. No warnings in the console.
+6. A toy/matrix that shows the omni's shape (`SpawnMatrixToy`, `ElementCrystalModelBuilder`)
+   shows the whole omni model, not just triangles.
+
+7. **Colour match (2026-10-08):** the falling triangles are the body's lime, see-through - same hue
+   and the same dark-face / bright-silhouette shading as the plates they land on.
+8. **Team crystals:** a Skim Race track crystal and a Dolphin-produced crystal look exactly like the
+   lime omni (body the same size, triangles falling inward onto it, faint rim) in Jade / Ruby / Gold
+   instead of lime. Nothing shrinks toward the centre. Console: no "Invalid crystal material index".
+9. A `MazeCrystal` taken by a domain shows the omni body in that domain's colour.
+
+**First-pass tuning:** `OUTER_REACH = 2.0` in the generator (how far out the tone starts); band
+period is the Mass materials' 3 s.
+
 ### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
 Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
