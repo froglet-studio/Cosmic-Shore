@@ -117,7 +117,8 @@ about 4.7 ms on CoreCLR. It runs on a worker thread; see §6 for players.
 ## 3. Budgets
 
 - **Colliders**, worst case in the Swarm cell: 2 lizards × (heart + one hit prism) = 4. `author_swarm_fauna.py`
-  counts them, giving 1178 of the 1200 ceiling.
+  counts them, giving 1178 of the 1200 ceiling before the threat grove's 23 hearts (1,201 with them, over the gate;
+  the swarm proxy trim in `SWARM_FAUNA.md` §14.3 brought it to 1,148 + 23 = 1,171).
 - **Volume**: 2 × 1975 u³ is added to the cell's phase-ladder volume.
 - **Draw**: at most `MaxShown` (1600) prism entities per lizard; a grown lizard draws about 1250 (the harness measured 1249 skin cells, with 439 interior cells culled).
 
