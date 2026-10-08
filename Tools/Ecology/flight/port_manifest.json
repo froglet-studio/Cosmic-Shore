@@ -16,7 +16,7 @@
   "builders/nest.py": "478f7f30f0183226f90b164a70812e3411ef3df73146ebb2025a9099969c1012",
   "common/arena.py": "79d06954fad9adf058c91583f79e4ba7c5e2bc402a425353378892516bbd133c",
   "common/scorecard.py": "5ef3c505ea3c4030f75643138c5bab65f7c24091ce52308fa7b0ec96f01e9930",
-  "flight/grazer.py": "660be796031ab4c84546ab74384c697ca5bea67708fdf0138af3d70009b9e782",
+  "flight/grazer.py": "fe4b43bef5574a0124884eae3471fa4f4dc29db7d616c4005498c82d8e3af494",
   "flora/harness.py": "ed8a4f22135bdc5362b958a5610ecc9181d81a466df7c42c05fdb8f632df83b9",
   "flora/snaptrap.py": "d46f5ac0b6e5d0f2ed137d314ac8221ede1f9a23cdf3217c89badc98f45907a7"
  }
