@@ -96,8 +96,16 @@ Confidence scale:
 | 69 | **Seven serialized enums carry explicit values** (assigned in declaration order, so nothing serialized moves). | `StatModuleSO`, `AICinematicBehavior`, `CameraSettingsSO`, `ShapeDefinition`, `SpawnableLSystem`, `RewardData` |
 | 70 | **Undertow's winner banner names the teammate who contributed most** (the representative is ordered with the rule's kill weighting). | `UndertowController` |
 | 71 | **`IsPartyClient`'s comment no longer claims `IsPartyHost` is never written.** | `ArcadeConfigSyncManager` |
+| 72 | **A stopped Serpent wall seed stops searching** (`WallAssembler`'s inner loop ignored `isStopped` and its handle was never kept, so every cloak left a loop stamping and pulling prisms within 40u forever). | `WallAssembler` |
+| 73 | **Conic blasts (Dolphin cone, Sparrow skyburst) subscribe to turn end / replay reset and free their material.** | `AOEConicExplosion` |
+| 74 | **`AOEBlockCreation` (Manta Kabloom) retires itself and never `Destroy`s pooled prisms on replay reset.** | `AOEBlockCreation` |
+| 75 | **An abandoned weekly run cannot finish against the next ordinary match** (quit-to-menu cleared nothing; the attempt ticked, completed and submitted a leaderboard time in another mode). | `WeeklyChallengeService`, `ArcadeGameConfigureModal` |
+| 76 | **Astro League's celebration slow-mo / hitstop no longer un-pause a paused solo match.** | `AstroLeagueController`, `AstroLeagueBall` |
+| 77 | **Scarab Scramble clients see the cell-overload toast** (subscribed only in the server-only forge hooks). | `ScarabScrambleController` |
+| 78 | **The weekly leaderboard refetches on every open** (its work ran in `OnEnable`, once per menu load, because closing only hides the CanvasGroup). | `WeeklyChallengeLeaderboardModal` |
+| 79 | **A reused leaderboard row no longer shows the previous player's avatar.** | `WeeklyChallengeLeaderboardPanel` |
 
-Rows 23-71 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
+Rows 23-79 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -164,7 +172,7 @@ Rows 23-71 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight swe
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
   invites, and no hang on the invite button (a hang would mean a lock deadlock).
 
-### Playtest items for rows 23-71 (overnight sweep, none run in Unity)
+### Playtest items for rows 23-79 (overnight sweep, none run in Unity)
 - **Crystal payout (35):** finish any match and note the wallet before and after - it must rise by the placement payout ONCE, the GameEnd sound and reveal toast play once, and only one crystals-earned event is sent.
 - **Party pause (37):** host plus one client in any arcade mode. Host presses Escape: the client keeps flying normally and the host's AI keep moving. Client presses Escape: other vessels keep moving on the client's screen. A solo match still freezes on pause.
 - **Play Again fade (29):** Skim Race / Bloomrush → finish → Play Again, host and client, three times. The screen must fade in every time and the arena should be built (not popping) when it does.
@@ -178,6 +186,10 @@ Rows 23-71 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight swe
 - **Editor flora (50):** in Editor play, graze the leaves off a branch - the branch must evaporate (it did in builds only).
 - **Profile edge cases (56, 60, 63):** boot offline, pick an avatar (it shows everywhere for the session); boot with a fresh install while Cloud Save is blocked, unblock, earn crystals - the real record's crystals and name must survive.
 - **Painting progress (61):** paint, kill the process mid-session, relaunch - progress is intact.
+- **Weekly challenge (75, 78, 79):** start a weekly run, quit via Pause > Main Menu, then play an ordinary match of another mode to the end - the weekly card must NOT show completed and no leaderboard time is submitted. Open the weekly leaderboard twice in one menu visit (after the first fetch failed offline, then online): the second open refetches and animates in; switch World/Friends - no face appears beside the wrong name.
+- **Serpent cloak (72):** cloak a few times near enemy trails; nearby prisms must not keep resizing/being pulled after the cloak ends.
+- **Astro League (76):** solo match, score a goal and open the pause menu during the celebration slow-mo - the match stays frozen until Resume.
+- **Scarab Scramble (77):** two peers, get four balls into one cell - the client sees the overload toast.
 
 ---
 
@@ -198,6 +210,11 @@ Nothing open at this tier. Everything found by the 2026-10-08 sweep that was sma
 - **Where:** `Boid.CalculateBehavior` (~:401): `cohesion = (cohesion - transform.position).normalized` subtracts an absolute position from a weighted direction sum, and divides by `prismCount - 1` (all prisms in radius, not boids).
 - **Consequence:** every boid gets a constant `cohesionWeight` pull toward world origin - out of any off-origin cell (Arkway traversal cells, satellites).
 - **Fix:** count boid neighbours separately and `cohesion = (cohesion / boidCount).normalized`, no `- transform.position`. Steering may be tuned around the current term (ecology is LOCKED - use `/ecology`), so playtest before changing.
+
+### 2.8 Final-score ClientRpcs match players by DISPLAY NAME — Medium
+- **Where:** `SyncFinalScores_ClientRpc` in Undertow, Tapestry, Dustup, Sirocco, Broadside, AstroLeague, GateRace (`GateRaceController`), Hijack, ScarabScramble, Tollway, Salvo, DogFight, WildlifeLiberation (and Bloomrush): `RoundStatsList.FirstOrDefault(s => s.Name == sName)`. `GameDataSO.RemovePlayerData(name)` shares the weakness.
+- **Problem:** two players with the same name (two humans with one display name, or a human named like an AI profile) both match the FIRST entry: it takes the second player's Score/metric/Domain and the second is never written; on the host the Score write replicates, so a domain can vanish from Results and placement, and placement crystals go to the wrong side.
+- **Fix:** skip the loop on the host (its values are authoritative); on clients match each entry once (`HashSet<IRoundStats> used`); durable fix is to send the RoundStats `NetworkObjectId` and match on it. Thirteen near-identical edits - do it as one change with a shared helper.
 
 ### 2.7 `PrismTimerManager.CancelScheduledActions` is O(N²) on mass cancels (was §4)
 - Deliberately NOT changed overnight: CLAUDE.md says profile first. A per-owner count map would make the common "nothing scheduled" cancel O(1). Profile a mass explosion first.
@@ -226,6 +243,12 @@ Nothing open at this tier. Everything found by the 2026-10-08 sweep that was sma
 | `TrainingGameProgressSystem.ReportProgress` NREs on first call | reads `Progress` without `LoadProgress()`; hangar training is dead (§5) | retire with hangar training |
 | Legacy `UnityEngine.Input` in unreachable code | `PhoneFlipDetector` (disabled in Menu_Main; `DeviceOrientationHandler` covers it), `ArcadeProfileWidget` (no referrer), `CaptureScreenShot` (`#if UNITY_EDITOR`, no referrer) | delete or port to `Accelerometer.current` / `Keyboard.current` if revived |
 | `??=` on serialized impactor fields | `NetworkVesselImpactor`, `VesselImpactor`, `MineImpactor`, `PrismImpactor`, `CrystalImpactor` | latent: every asset assigns them; use explicit Unity-null tests if one ever ships unassigned |
+| Conic blasts ignore `DevastatingOverride` / `DurationOverride` | `AOEConicExplosion.Initialize` replaces the base and never applies them | apply both (changes cone tuning - decide with design) |
+| Kabloom's "flower" never blooms | `AOEFlowerCreation.FlowerAsync` is only reached from `BeginExplosion`, which nothing calls; Kabloom lays `AOEBlockCreation`'s three rings | design: is the ring the intended visual? |
+| Grizzly puppetry allocates a `List` per frame | `BufoAnimation.PerformShipPuppetry` (`new List<Transform>{...}`) | cache the thruster array in `AssignTransforms` (profile first; file is on an active Grizzly branch) |
+| Wall assembler stamped on pooled prisms is never removed | `SeedAssemblerActionExecutor.EnsureAssembler` (Gyroid kind also maps to `WallAssembler`) | remove on stop, or pool-reset it |
+| A departed player's RoundStats removal is dead code | `MultiplayerDomainGamesController.OnPlayerLeavingFromSession` parses a UGS id with `ulong.TryParse` | delete it - "fixing" the parse would wipe the departed pilot's team score that the AI takeover promises to keep |
+| Waystation AI fold may teleport past a ring | Waystation fold aims at the ring plane; a teleport never threads a gate | confirm in play |
 | AI objective distance: `sqr` vs linear | `AIPilot.cs:~755` | **Deliberately NOT fixed** — the behaviour is tuned around it. Change only with a playtest. |
 
 ## 5. Follow-ups from the scene cleanup (#5)
