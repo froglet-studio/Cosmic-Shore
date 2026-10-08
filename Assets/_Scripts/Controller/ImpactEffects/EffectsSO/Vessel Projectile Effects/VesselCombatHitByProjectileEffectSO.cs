@@ -13,13 +13,19 @@ namespace CosmicShore.Gameplay
     /// publish the fact that a shot connected. Keeping it separate is what lets a mode score
     /// gunnery without any vessel or weapon knowing which mode it is in.
     ///
-    /// <b>Authority.</b> Projectiles are local objects with no NetworkObject, so this runs on
-    /// exactly one machine: whichever fired the shot. It raises unconditionally and lets
-    /// <c>StatsManager.CombatHitLanded</c> arbitrate - the server credits directly (its own
-    /// guns and every AI's, since AI players are server-owned), a client forwards only its own
-    /// shot through the Player object it owns, and an AI's gun that happens to also fire on a
-    /// client is dropped there on the name check. That is the same arrangement the fauna kill
-    /// path uses, and for the same reason.
+    /// <b>Authority.</b> Projectiles are local objects with no NetworkObject, but a human's press is
+    /// replicated (owner, then server, then every peer through
+    /// <c>R_VesselActionHandler.SendButtonPressed_ClientRpc</c>), so every peer fires its OWN copy
+    /// of the round, the host included. Before Oct 2026 this effect raised on every copy and let
+    /// <c>StatsManager.CombatHitLanded</c> arbitrate. That arbitration filters a client's replays
+    /// by name, but the SERVER credits whatever it sees, so the host's replay of a client's round
+    /// was credited directly and the client's own copy was credited again through
+    /// <c>Player.ReportCombatHit_ServerRpc</c>: one hit, two scores (and one score for a hit only
+    /// the host's lagged copy landed). So the effect now runs only on the machine that OWNS the
+    /// shooter (<see cref="ElementalTransfer.IsDecidedHere"/>): the shooter's own client, or the
+    /// server for the host and every AI. That is the same machine <see cref="CombatHitDrain"/>
+    /// settles the petals from, so the score and the drain cannot disagree. Offline (an unspawned
+    /// hull) every hit is decided here, as before.
     ///
     /// <b>The hit class is authored, not inferred.</b> One script serves both weapons: drop
     /// this asset into the full-auto container marked <see cref="CombatHitClass.Bullet"/> and
@@ -57,6 +63,12 @@ namespace CosmicShore.Gameplay
             var projectile = impactee?.Projectile;
             var shooterStatus = projectile?.VesselStatus;
             if (victimStatus == null || shooterStatus == null) return;
+
+            // Only the SHOOTER's owner reports, scores and drains this hit (see the class doc).
+            // A human's press replicates, so this round also exists on every other peer, the host
+            // included. Without this gate the host's replay of a client's shot was credited here
+            // AND the client's own copy was credited again through ReportCombatHit_ServerRpc.
+            if (!ElementalTransfer.IsDecidedHere(shooterStatus)) return;
 
             // A vessel class filter is available on the base for weapons that should only score
             // against particular hulls; empty (the default) means "any opponent".

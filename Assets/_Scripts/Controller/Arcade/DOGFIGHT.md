@@ -106,7 +106,8 @@ Sparrow lands a shot on an OPPOSING vessel
   └─ blast        → ExplosionImpactor.AcceptImpactee  → VesselCombatHitByExplosionEffectSO
         │  (both claim the SAME VesselCombatHitLatch window per shooter/victim/class)
         ▼
-GameDataSO.OnCombatHitLanded.Raise(CombatHitStats)          [shooter's machine only]
+GameDataSO.OnCombatHitLanded.Raise(CombatHitStats)          [shooter's OWNER only:
+        │                                                     ElementalTransfer.IsDecidedHere]
         ▼
 StatsManager.CombatHitLanded
         ├─ [server]  credit directly
@@ -168,9 +169,13 @@ one the server's own physics sees the same collision with the same attribution a
 `StatsManager` records it server-side — which is why Rampage and Cleave need no RPC at all.
 
 **Projectiles are not like that.** A bullet or a skyburst is a pooled **local** object spawned by
-whichever machine's gun fired it: no `NetworkObject`, no RPCs, no replication. A shot a client
-just landed does not exist on the server at all. Recorded server-only, **only the host could ever
-score.**
+whichever machine's gun fired it: no `NetworkObject`, no RPCs, no replication of the round
+itself. The *press* is replicated, though (`R_VesselActionHandler`: owner →
+`SendButtonPressed_ServerRpc` → `SendButtonPressed_ClientRpc` → `PerformShipControllerActions`
+on every peer, the host included), so every machine flies its own copy of every human's round,
+from its own lagged picture of the shooter, and the copies hit or miss independently. The copy
+that counts is the one on the machine that **owns the shooter**. For a client, that copy lives on
+the client, so recorded server-only, **only the host could ever score.**
 
 So `StatsManager.CombatHitLanded` has a client branch — the second one in that class, after the
 fauna path, and for the same underlying reason:
@@ -186,9 +191,37 @@ default and the server credits the RoundStats of the `Player` object the RPC arr
 client can only ever credit itself. The hit class travels as an int and is re-validated
 server-side rather than trusted.
 
-If an AI's gun happens to also fire on a client, that client sees the name mismatch and drops
-the hit; the server's own copy is the one that counts. No configuration makes that
-double-count.
+**Only the shooter's owner raises the hit at all (Oct 2026).** The three reporters
+(`VesselCombatHitByProjectileEffectSO`, `…ByExplosionEffectSO`, `…BySkimmerEffectSO`) return
+before the latch unless `ElementalTransfer.IsDecidedHere(shooter)`. That is true offline, or on
+the machine that owns the shooter's hull: the shooter's own client, or the server for the host and
+every AI. The petal drain routes on the same predicate (`CombatHitDrain` →
+`ElementalTransfer.ApplyAllAuthoritative`), so a hit is scored and drained on one machine. The
+server branch of `StatsManager.CombatHitLanded` also credits only shooters it simulates
+(`OwnsAttacker`, the environment-kill rule from `Docs/ScoringSystem/BUGS.md` B17), so a reporter
+that forgets the gate cannot reopen the double score (B20).
+
+*Why the gate was needed: a client's hit was scored twice.* Before it, the reporters raised on
+every copy of the round and `StatsManager` was the only filter. The filter was one-sided:
+
+1. The client fires. The press reaches the host through `SendButtonPressed_ClientRpc`, and
+   `FireGunActionExecutor.Fire` / `FullAutoActionExecutor` have no ownership check, so **the host
+   spawns its own copy of the client's round.**
+2. The host's copy connects. The reporter raises with `ShooterName` = the client. On the server
+   `_allowRecord` is true, so `StatsManager` credits `TryGetRoundStats(client)` **directly**.
+3. The client's own copy connects too. The client's `StatsManager` sees its own name and sends
+   `ReportCombatHit_ServerRpc`, and the server credits the same `RoundStats` **again**.
+4. Nothing deduplicates the two. `VesselCombatHitLatch` is per machine, and the RPC path calls
+   `CombatHitScoring.Credit` without consulting the server's latch at all.
+
+So a client's hit paid twice whenever both copies connected. It paid once, for a hit the client
+never saw, whenever only the host's lagged copy connected. The name check only ever filtered the
+reverse case, a client replaying the host's or an AI's round. It still does, as a second line
+behind the gate. The host's own shots and the AI's were never affected: their copies on clients
+were dropped by name, and the server's own copy was the one credited. The skimmer reporter
+already gated on the shooter's owner (`requireOwningMachine`, default on), and so did the
+Dolphin/Scarab crystal blasts, so the double score was the Sparrow's bullets and rockets and the
+Urchin's spikes, in every mode that prices them (Dog Fight first among them).
 
 > A client can spam the RPC to inflate its own score. So can it spam the joust and fauna-kill
 > RPCs. Anti-cheat is out of scope for the party-game layer; noted so nobody assumes otherwise.
@@ -838,7 +871,11 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 9. **A CLIENT'S HITS SCORE.** In a real lobby (host + at least one client), have the CLIENT do
    all the shooting for 30 s. Their score must rise on **both** machines. If it rises only on the
    client, the `ReportCombatHit_ServerRpc` path is broken — and note the reverse test is not
-   equivalent, because the host records directly.
+   equivalent, because the host records directly. **And it must rise ONCE per hit.** Have the
+   client land single bullets on a stationary host (one press, one round): each landed bullet is
+   **+1** on the host's domain panel, not +2. A rocket's centre-punch is **+30**, not +60.
+   Before Oct 2026 the host's replay of the client's round was credited on top of the client's
+   own report (§ Multiplayer).
 10. **Teammates score nothing.** In a 2v2, shoot a teammate: no damage, no points, and the
     scoreboard does not move. Splash one with a rocket: same.
 11. **Regression — the skyburst blast.** Play **Wildlife Liberation** and freestyle: a skyburst
@@ -959,7 +996,10 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
   `AccrueElementalLoss` (ward, clamp, whole petals), mints the crystals and publishes the settled
   count, and every other peer mints the same number. The levels then reach the other peers on
   `NetElementLevels`, as any level change does. **Needs an MPPM pass** (see the PR's
-  host + client list).
+  host + client list). The reporters now gate their SCORE on the same predicate
+  (`ElementalTransfer.IsDecidedHere`), so the hit the victim's flowers pay for is exactly the hit
+  the scoreboard counts; that gate is also what closed the client double score described under
+  "Multiplayer".
 - **Toast copy is authored** in `GameToastConfig_DogFight.asset` (`{0}`=domain, `{1}`=points,
   `{2}`=target) for `DogFightQuarterDown`, `DogFightHalfDown`, `DogFightLeadChanged`,
   `RocketHit` and the comeback notice. Edit the copy there.
