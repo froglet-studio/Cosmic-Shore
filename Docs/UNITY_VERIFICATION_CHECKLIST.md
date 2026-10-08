@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Crystal → hull fusion: Squirrel × Charge (`cece/nice-babbage-j6sejq`, 2026-10-08)
+### 🟡 Crystal → hull fusion: Squirrel × Charge (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
 **What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
 The crystal's 60 prisms fold into their outer pentagons, which lift off, fly to the hull and lie ON
@@ -81,9 +81,9 @@ built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms
 
 **Bake (third push, 2026-10-08):** the fusion is now solved at EDIT TIME by
 **FrogletTools > Vessels > Bake Crystal Hull Fusions** into
-`Assets/_SO_Assets/CrystalHullFusion/Squirrel_Charge_HullFusionBake.asset`. **The bake has not been
-run** — it needs Unity's own import of the two models. Until it is, the game solves on a worker
-thread and warns once.
+`Assets/_SO_Assets/CrystalHullFusion/Squirrel_Charge_HullFusionBake.asset`. **Baked and pushed
+(`22fba704`) and play-tested working.** Bake reads 60 × 31 points, 1,860/1,860 on the skin. Still
+open: steps 3–6 below (wing flap, other pairs unchanged, tests) and a Profiler read.
 
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → Squirrel × Charge CURRENT, then **Validate & Push** in the window.

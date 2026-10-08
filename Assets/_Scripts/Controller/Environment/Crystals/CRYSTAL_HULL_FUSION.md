@@ -249,9 +249,11 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   removed, face normals inverted.
 - **Shipped geometry on the real meshes** (scratch driver over the FBX exports): numbers in §1–§3.
 - `AssignMinCost` matches brute force on 300 random matrices.
-- **Not yet seen in the editor, and the bake has not been run** — it needs Unity's own import of
-  the two models, which only the editor has. Until it is run the game takes the fallback path and
-  says so once in the console.
+- **Baked in the editor and play-tested working (2026-10-08, `22fba704`).** The editor's bake
+  agrees with the offline run on the FBX exports: 60 faces × 31 points, **1,860 of 1,860 points on
+  the skin**, template 10,440 vertices, patch radius 0.260 (offline 0.263) - so the headless
+  harness's numbers are Unity's numbers. Not yet confirmed: the wing-flap step, MPPM, and a
+  Profiler read of `CrystalHullFusion.Begin` / `.Frame`.
 
 ### In-editor verification
 

@@ -39,7 +39,10 @@ namespace CosmicShore.Editor
             Validate = ValidateAll,
             CommitType = "feat",
             CommitScope = "crystal",
-            CommitSubject = n => $"feat(crystal): bake {n} crystal hull fusion(s)",
+            // The panel passes the STAGED-PATH count (bake + meta + folder meta + config), not the
+            // number of fusions - the first real push read "bake 4 fusions" for one - so the subject
+            // names none.
+            CommitSubject = _ => "feat(crystal): bake crystal hull fusions",
         };
 
         /// <summary>One entry's bake, judged against the assets as they are now.</summary>
