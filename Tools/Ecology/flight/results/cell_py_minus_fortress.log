@@ -1,0 +1,13 @@
+wander  seed  101  hits/min  72.67    138.2 ms/step  (249 s)
+wander  seed   23  hits/min 199.33    145.2 ms/step  (261 s)
+wander  seed    7  hits/min 110.33    155.3 ms/step  (280 s)
+wander  seed   41  hits/min  62.67    160.0 ms/step  (288 s)
+wander  seed  202  hits/min  93.33    151.7 ms/step  (522 s)
+wander  seed  303  hits/min 109.67    145.1 ms/step  (523 s)
+hunter  seed    7  hits/min  45.00    150.3 ms/step  (550 s)
+hunter  seed   23  hits/min  35.67    150.9 ms/step  (560 s)
+hunter  seed  101  hits/min  42.67    134.3 ms/step  (764 s)
+hunter  seed   41  hits/min  64.33    143.7 ms/step  (781 s)
+hunter  seed  202  hits/min  51.00    140.8 ms/step  (803 s)
+hunter  seed  303  hits/min  19.00    138.4 ms/step  (809 s)
+wrote /home/claude/cosmic-shore/Tools/Ecology/flight/results/cell_py_minus_fortress.json

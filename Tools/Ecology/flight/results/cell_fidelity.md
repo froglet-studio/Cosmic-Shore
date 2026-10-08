@@ -98,3 +98,14 @@
 | hunter | steal fortress<-env | shared | 552.41 | 600.78 | -48.36 | 917.99 | ok |
 | hunter | steal fortress<-wake | shared | 1240.0 | 1043.33 | 196.67 | 434.0 | ok |
 
+### Interaction effects (full cell - ablated cell): 7/7 agree
+
+| pilot | ablation | metric | class | JS | Python | diff | tol | |
+|---|---|---|---|---:|---:|---:|---:|---|
+| hunter | -fortress | crystals leviathan |  | -36.56 | -29.28 | -7.28 | 12.24 | ok |
+| hunter | -fortress | eat leviathan<-wake | shared | 418.33 | 234.44 | 183.89 | 334.35 | ok |
+| hunter | -fortress | hits leviathan |  | -9.44 | -10.06 | 0.61 | 3.02 | ok |
+| hunter | -fortress | pop_end leviathan |  | 110.17 | 87.33 | 22.83 | 36.82 | ok |
+| hunter | -fortress | pop_mean leviathan |  | 47.01 | 44.06 | 2.94 | 14.64 | ok |
+| wander | -grazer | eat locust<-env | shared | -7474.51 | -6114.25 | -1360.26 | 5382.75 | ok |
+| hunter | -grazer | eat locust<-env | shared | -6293.44 | -8762.62 | 2469.18 | 7319.69 | ok |

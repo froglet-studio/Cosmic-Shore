@@ -1563,11 +1563,14 @@ for the four species with no step sensitivity. The fidelity summary is baked int
 
 - **No human has rated anything yet.** The page is the instrument; the evidence starts when five or more pilots
   export ratings for `ratings.py`.
-- **Cross-species interactions are unvalidated.** In whole-cell mode thieves and fortress workers compete for the same
+- ~~**Cross-species interactions are unvalidated.** In whole-cell mode thieves and fortress workers compete for the same
   wake, grazers and locusts graze the same mass, and so on. No Python scores those interactions, so the whole-cell
-  mode is faithful species by species, not as an ecosystem.
+  mode is faithful species by species, not as an ecosystem.~~ **Covered (2026-10-08):** a Python twin of the whole
+  cell now scores them; see "Whole-cell gate" below.
 - **Whole-cell populations are scaled for vibrancy, not scored.** Grazers start at 900 (cap 1,600) against the
-  scored 120 (cap 240); locusts are capped at 360. Single-species modes use the scored defaults.
+  scored 120 (cap 240); locusts are capped at 360. Single-species modes use the scored defaults. **Since 2026-10-08**
+  the page has a "scored populations" picker (`?pop=scored`) that builds the cell at the scored defaults; the lively
+  cell stays the default.
 - **The fortress lattice is 12 sites each way in JS, 40 in Python.** Its Q template is below 0.05 past 52 u, so no
   rule reads or writes past 96 u; the fortress passes the gate at both steps.
 - **The flight world slows the player only on a burn or a snap.** The bestiary's slow-on-every-hit belongs to the
@@ -1711,6 +1714,57 @@ showcase test all still pass. Screenshots: `shots/desktop_drift.png`, `shots/des
 - **Wake orientation.** Wake prisms are laid along the travel direction (Course). In the game, trail prisms orient
   by facing (`blockRotation`), so in a drift the page's wake prisms point along the slide and the game's point
   along the nose.
+
+### Whole-cell gate (2026-10-08, `cell_py.py` / `cell_js.js` / `cell_fidelity.py`)
+
+**What it checks.** The species gate above scores each species alone in its own harness. This one scores what only
+exists when they share a cell. `cell_py.py` builds the page's 'cell' composition in ONE Python arena: BArena, 4,200
+scattered prisms, the pilot's trail booked as its wake (domain 1, trail flag), the fortress at its page anchor, and
+snap-trap clumps in the 0.3-0.75 R band. Every rule is each species' own Python. `cell_js.js` runs the page's own
+`FlightWorld` (new `opts`: `pilot`, `drop`, `pop`) with a scripted pilot in place of the player. Both book every eat,
+destroy, steal and haul to the species whose step made it AND to the creator of the prism: `env`, `wake`, or the
+species that laid it (a kill's skeleton, a fortress brick). Pilots wander and hunter, 6 seeds x 3 min, dt 0.1.
+
+**Result: it agrees.** Tolerance per row is max(abs floor, rel x max, 2.5 x combined SE), as in `fidelity.py`.
+
+| check | agree |
+|---|---|
+| levels: hits by species, mass flows by species x creator, populations, crystals | **93 / 93** |
+| of which cross-species flows (one species taking another's mass) | 5 / 5 |
+| interaction effects: full cell minus the cell without grazers / locusts / fortress | **7 / 7** |
+| negative control `locust.CHEW=20` (JS only) | fails 4 rows (locust intake, population, wake eaten, thief hits) |
+| negative control `grazer.CHEW=1` (JS only) | fails 1 row (wander thief hits) - weak: the gate is coarse for grazers |
+
+The table per row is `flight/results/cell_fidelity.md`.
+
+**What the cell does that no single species shows** (both languages agree):
+- **Grazers halve the locusts' food.** Without grazers, locusts eat 6,000-9,000 more env volume per minute.
+- **The fortress is the cell's biggest mover.** It hauls 25,000-50,000 vol/min, most of it the pilot's wake. Under a
+  hunter it also hauls the skeletons other species leave (the 5 cross-species rows: grazer, leviathan, locust, lurker
+  and pack mass, 120-3,800 vol/min each).
+- Grazers, locusts and the leviathan also eat skeletons in both languages, but under 150 vol/min, below the gate's floor.
+- **The fortress shields the leviathan from a hunter.** This is an artefact of publishing: each species overwrites
+  the arena's target list in turn and the fortress publishes after the leviathan, so a hunter pilot chases the
+  fortress core. Without the fortress it hunts the leviathan (+37 leviathan crystals/min). It is identical in both
+  languages and concerns only scripted pilots; the player chooses for themselves.
+
+**Tilts inside tolerance** (worth knowing, not failures):
+- JS fortress takes about 40% more wake than Python, by both haul and steal. Thieves then get less warm wake: JS thief
+  hits on a wanderer are 18/min against 32/min.
+- JS snap traps eat about 3x more env (470-560 vol/min against 140-160) and less wake. The seed spread is large
+  (Python 0-420 per run), so the rows pass.
+- Neither was chased further. The fortress lattice difference (12 vs 40 sites) is the first suspect.
+
+**One bug found in the reference, not the page.** BArena never records a pilot's previous position (only
+FloraArena does). The snap trap sweeps ram/burn contacts along prev -> pos, so its first run swept the whole flight
+path and logged 20x the hits. `cell_py.py` now records prev every step, as the page's arena does.
+
+**Speed.** The Python grazer's all-pairs schooling at 1,600 grazers cost 0.9 s a step. `grazer.flock()` now visits
+only the columns inside each spatially sorted row block's box + 30 u. It matches the all-pairs maths to 1e-9
+(`python grazer.py --check-flock`), and the step dropped to 0.14 s. JS runs the same cell at about 10 ms a step.
+
+**Not covered.** The player's own flight model is not in either reference: scripted pilots fly the arena's turn
+model. dt 1/30 was not run for the whole cell. The siege (JS-original) is not in the cell gate.
 
 ## Living cell (Direction G, branch `cece/eco-living-cell`, 2026-10-02)
 

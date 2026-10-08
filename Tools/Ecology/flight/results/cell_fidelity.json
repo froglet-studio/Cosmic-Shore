@@ -1,7 +1,7 @@
 {
  "summary": {
   "levels": "93/93",
-  "effects": "0/0",
+  "effects": "7/7",
   "cross": "5/5",
   "fails": 0
  },
@@ -937,5 +937,83 @@
    "ok": true
   }
  ],
- "effects": []
+ "effects": [
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "crystals leviathan",
+   "cls": "",
+   "js": -36.56,
+   "py": -29.28,
+   "diff": -7.28,
+   "tol": 12.24,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "eat leviathan<-wake",
+   "cls": "shared",
+   "js": 418.33,
+   "py": 234.44,
+   "diff": 183.89,
+   "tol": 334.35,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "hits leviathan",
+   "cls": "",
+   "js": -9.44,
+   "py": -10.06,
+   "diff": 0.61,
+   "tol": 3.02,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "pop_end leviathan",
+   "cls": "",
+   "js": 110.17,
+   "py": 87.33,
+   "diff": 22.83,
+   "tol": 36.82,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-fortress",
+   "metric": "pop_mean leviathan",
+   "cls": "",
+   "js": 47.01,
+   "py": 44.06,
+   "diff": 2.94,
+   "tol": 14.64,
+   "ok": true
+  },
+  {
+   "policy": "wander",
+   "ablation": "-grazer",
+   "metric": "eat locust<-env",
+   "cls": "shared",
+   "js": -7474.51,
+   "py": -6114.25,
+   "diff": -1360.26,
+   "tol": 5382.75,
+   "ok": true
+  },
+  {
+   "policy": "hunter",
+   "ablation": "-grazer",
+   "metric": "eat locust<-env",
+   "cls": "shared",
+   "js": -6293.44,
+   "py": -8762.62,
+   "diff": 2469.18,
+   "tol": 7319.69,
+   "ok": true
+  }
+ ]
 }
