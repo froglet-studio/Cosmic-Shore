@@ -3,23 +3,40 @@
 ```
 bash Tools/Build/unity_refcompile/run.sh                       # player config (the shipped IL2CPP release)
 bash Tools/Build/unity_refcompile/run.sh --config player-dev   # + DEVELOPMENT_BUILD / ENABLE_PROFILER / DEBUG
-bash Tools/Build/unity_refcompile/run.sh --config editor       # APPROXIMATE: UNITY_EDITOR branches + changed Editor-folder files
+bash Tools/Build/unity_refcompile/run.sh --config editor       # APPROXIMATE: UNITY_EDITOR branches + Assembly-CSharp-Editor
 bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't list, the unverifiable buckets
 ```
 
 Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
-changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
-First run ~10 min (fetch + ~90 assemblies), later runs ~3 min (package assemblies are compiled once,
-player-mode, into a shared cache keyed by input fingerprint; only Assets assemblies recompile).
+changed since `origin/bleeding-edge` (committed or not, untracked included) tagged `[CHANGED-TONIGHT]`;
+exit 2 = offline with no cache.
+First run ~10 min (the fetch, then ~2 min compiling ~90 assemblies). Later runs take ~30 s: package
+assemblies are compiled once, player-mode, into a cache keyed by input fingerprint and shared by every
+config and worktree, and only Assets assemblies recompile. Runs that share a cache or `TMPDIR` take
+turns (a lock), so starting several at once is safe.
+Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
+back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
 **The `editor` config is approximate.** It compiles the project's runtime code with `UNITY_EDITOR`
-(Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the `Editor/`-folder files changed
-since `--changed-base`, into the same compilation with NUnit (`com.unity.ext.nunit`). The references
-are the newest **non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs.
-Those engine DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
+(Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the loose `Editor/`-folder
+scripts the way Unity does: as their own **`Assembly-CSharp-Editor`** (`-Editor-firstpass` under
+`Plugins/` and `Standard Assets/`), with NUnit (`com.unity.ext.nunit`), referencing the runtime
+assemblies, which cannot see it. So an Editor file's `namespace CosmicShore.Editor` no longer shadows
+UnityEditor's `Editor` for a runtime `#if UNITY_EDITOR` class, and runtime code that names an
+Editor-folder type fails as it does in Unity. Only errors in the Editor-folder files **changed since
+`--changed-base`** gate: committed, uncommitted and untracked alike, so run it before you commit. The
+unchanged ones are compiled as context, so a changed tool binds against `FrogletTool`,
+`FrogletEditorPalette` and the rest, and their errors are listed separately (37 on bleeding-edge on
+2026-10-08, every one a reference-set artifact, see "Editor reference gaps" below). `Assembly-CSharp`
+never emits a DLL here, because the unfetchable-package files always fail it, so the editor assembly
+is **bound against its source** (`Diagnose --source-ref`): a runtime error is reported once, in the
+runtime file, not as missing types in the Editor files. The references are the newest
+**non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs. Those engine
+DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
 `UIBehaviour.OnValidate` and `Reset` are reported as "unverified", not as errors. Packages stay
-player-compiled. Use it to catch errors in editor branches. A green editor run is weaker evidence than
-a green player run.
+player-compiled, and editor-only asmdefs (`Obvious.Soap.Editor`, `FMODUnityEditor`, package editor
+assemblies) and the test framework are not compiled. Use it to catch errors in editor branches. A
+green editor run is weaker evidence than a green player run.
 
 ## What it does
 
@@ -30,7 +47,8 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    `versionDefines`, `overrideReferences`/`precompiledReferences`/`autoReferenced`, name and GUID
    references.
 2. **Assigns loose scripts** to `Assembly-CSharp-firstpass` (`Assets/Plugins`, `Standard Assets`)
-   and `Assembly-CSharp`; `Editor/` folders are skipped in the player configs.
+   and `Assembly-CSharp`; `Editor/` folders are skipped in the player configs and go to
+   `Assembly-CSharp-Editor(-firstpass)` in the editor config.
 3. **Precompiled DLLs** (DOTween, FMOD, ILSupport, ...): managed-only, platform and
    `isExplicitlyReferenced` read from each `.meta`'s PluginImporter block.
 4. **Source generators** labelled `RoslynAnalyzer` run for the owning asmdef and every assembly that
@@ -42,9 +60,14 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    `ENABLE_INPUT_SYSTEM` only — `activeInputHandler: 1`) and `UNITY_6000_3_17` version defines.
 6. For project assemblies it re-runs the compile through `Diagnose/` (the Roslyn API): **csc stops
    after declaration errors**, so one file naming an unfetchable package would otherwise hide every
-   method-body error in every other file. `Diagnose` binds all bodies regardless.
+   method-body error in every other file. `Diagnose` binds all bodies regardless. It names each
+   compilation after its `-out:` file, as csc does, so `[InternalsVisibleTo("Assembly-CSharp-Editor")]`
+   (`Assets/_Scripts/AssemblyInfo.cs`) applies. With `--source-ref <dep>.rsp` it binds against a
+   failed dependency's source instead of its (missing) DLL.
 7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
-   package that cannot be fetched**, and **missing-type errors while a referenced package failed**.
+   package that cannot be fetched**, **missing-type errors naming a type or namespace that a failed
+   package declares** or (editor config) an `EDITOR_REFERENCE_GAPS` entry, and (editor config)
+   **errors in Editor-folder files not changed since `--changed-base`**.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
 
@@ -56,7 +79,7 @@ clones). Offline with no cache → exit 2 with a message; offline with a cache �
 |---|---|---|
 | UnityEngine modules, UnityEngine.UI, TextMeshPro | nuget `Digitalroot.References.Unity` **6000.0.75** (no 6000.3 build is published anywhere reachable) | real engine metadata, **publicized** by the re-packer — see below |
 | Accessibility oracle | nuget `Unity3D.SDK` 2021.1.14.1 `UnityEngine.dll` (non-publicized) | real |
-| netstandard facades | nuget `NETStandard.Library` 2.0.3 + the SDK's `NETStandard.Library.Ref` 2.1 | real |
+| netstandard facades | nuget `NETStandard.Library` 2.0.3 + `NETStandard.Library.Ref` 2.1 (the SDK's; nuget's when the SDK no longer bundles it, as 10.0 does not) | real |
 | Every registry package in `packages-lock.json` (Entities 1.4.2, Entities.Graphics 1.4.15, Collections 2.6.6, Mathematics 1.3.3, Netcode 2.5.0, Transport 2.6.0, InputSystem 1.14.2, Cinemachine 3.1.2, Services.Core/Auth/CloudSave/Analytics, Purchasing, Splines, Timeline, ...) | source at the **exact locked tag** from the `needle-mirror` GitHub mirrors | real source |
 | UniTask, Reflex, ParrelSync | source at the locked commit | real source |
 | SRP Core / URP / URP-config / ShaderGraph / VFX | `Unity-Technologies/Graphics` branch `6000.0/staging` | real source, **17.0.x not the locked 17.3.0** (17.3 needs 6000.3-only engine API the references lack) |
@@ -95,46 +118,54 @@ sources at their locked versions and the real (6000.0.75) engine API — includi
 
 Does not prove:
 - `#if UNITY_EDITOR` blocks and `Editor/` folders against the real Unity 6 `UnityEditor`: none is
-  obtainable. The `editor` config checks them against 2021.1, and only the changed Editor-folder files.
+  obtainable. The `editor` config checks them against 2021.1, and gates only the changed Editor-folder
+  files; editor-only asmdefs and the files inside them are not compiled at all.
 - Engine API added between 6000.0.75 and 6000.3.17 (would show as a false error, not a false pass);
   engine members whose accessibility changed in a way neither the 2021.1 oracle nor package code
   reveals (stay public: a possible false pass on use of an engine internal).
 - Code in files that `using` an unfetchable package, for errors that involve those types.
 - ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
 - Package assemblies listed as "did not compile" (Purchasing.Stores/Codeless, InputSystem.ForUI) —
-  dependents were compiled without them; any project use of their types would surface as an error.
+  dependents were compiled without them, and a project use of a type they declare is listed as
+  unverified, not judged.
 
 ## Outputs, and the asset audit that reads them
 
 Assets assemblies and their `.rsp` files land in `$TMPDIR/unity_refcompile_out/<tree>-<hash>/<config>/`, one
 directory per working tree, so several worktrees can share a TMPDIR without reading each other's compile.
-Package assemblies are shared in `$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
+Package assemblies (and the `UnityEngine.UnityConsentModule` stub) are shared in
+`$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
 compilation, once with the player defines and once adding `UNITY_EDITOR`, and writes every type's serialized
 fields, bases and enum members. `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
 so run this tool before it.
 
 
+## Editor reference gaps (`EDITOR_REFERENCE_GAPS` in `build.py`)
+
+Compiled together on bleeding-edge (2026-10-08), the 322 loose Editor-folder scripts give 37 errors in
+10 files, and none of them is the code's fault. Both numbers move with the tree: the run prints the
+first (`editor config: + N Editor-folder script(s)`) and lists the second, so re-read them there. Unity 6 editor API that the 2021.1 `UnityEditor`
+reference lacks, and the test framework, which is not fetched.
+
+| Gap | Errors | Files |
+|---|---|---|
+| `MaterialProperty.propertyType` (Unity 6) | 13 | `SSUShaderGUI.cs`, `CodingHelper.cs` |
+| `NamedBuildTarget`, `PlayerSettings.Get/SetScriptingDefineSymbols` (2021.2) | 5 | `Build/CosmicShoreBuildPipeline.cs` |
+| `PrefabStageUtility` out of `Experimental` (2021.2) | 3 | `CanvasUpgrader/CanvasUpgraderWindow.cs` |
+| `EditorUtility.EntityIdToObject` (6000.2) | 1 | `FrogletTools/GameCanvasUnifier.cs` |
+| `UnityEditor.TestTools` (test framework) | 10 | `AI/SkimRaceBenchmarkRemote.cs` |
+| `LogAssert` (test framework) | 5 | four test files |
+
+Each gap is matched on its whole error message and listed as "unverified" wherever it appears, so a
+branch that changes one of these files is not failed by the reference set, and a typo on the same API
+(`propertyTyp`, `LogAsert`) still gates. A newly used Unity 6 editor API reads as a project error until
+it gets an entry: add one only for documented Unity API, with the version that introduced it.
+
 ## Known issues (open)
 
-- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`.**
-  Seen 2026-10-06 on `claude/serene-edison-lfv24f`: 4 errors in three untouched runtime files
-  (`Controller/Camera/CameraSettingsSOEditor.cs:8`, `UI/ResourceDisplay.cs:286`,
-  `UI/UniversalStatsProviderEditor.cs:14` plus a follow-on CS1503 at `:40`), all from a branch that
-  changed `Assets/_Scripts/Editor/UrpAssetPlayModeRestore.cs` (`namespace CosmicShore.Editor`). The
-  editor config compiles changed Editor-folder files INTO the runtime compilation, so a runtime class
-  inside `namespace CosmicShore.*` that derives from UnityEditor's `Editor` resolves the name to the
-  namespace first. 123 Editor-folder files declare `CosmicShore.Editor` and no runtime file does,
-  so any branch touching one of them gets these. Fix: compile changed Editor-folder files as a
-  separate Assembly-CSharp-Editor that references Assembly-CSharp. Done when such a branch reports
-  0, and a planted error in an Editor file and in a runtime `#if UNITY_EDITOR` block still fail.
-- **`--config editor` only sees Editor-folder files COMMITTED since `--changed-base`.** The set
-  is `git diff --name-only <base>...HEAD`, so a NEW test file that is still untracked or only
-  staged is not compiled at all — and a planted error in it passes green (seen 2026-10-08 on
-  `cece/dreamy-fermat-szo9ck`: a runtime plant failed the run, the same plant in a new
-  `Tests/Editor/*.cs` did not). Commit first, then run the editor config; the run then lists the
-  file under `editor config: + N Editor-folder file(s)`. Fix: union in `git status --porcelain`
-  paths (an unmerged branch, `claude/hopeful-heisenberg-murjor`, does this).
-- **`depublicize()` needs a net8.0 reference pack under `DOTNET_ROOT`.** With only a .NET 10 SDK it
-  raises `IndexError: list index out of range` (`build.py`, the `Microsoft.NETCore.App.Ref/*/ref/net8.0`
-  glob) after the full fetch. Workaround: point `DOTNET_ROOT` at an 8.0 install. Fix: accept any
-  installed ref pack, or say which one is missing.
+- **`check_generated_assets.py` audits committed changes only.** It lists assets with
+  `git diff --name-status <base>...HEAD` (`changed_assets()`; re-grep, ~line 607), while `build.py`'s
+  `changed_since()` counts uncommitted and untracked files too. So an audit run before committing
+  reports `audited 0 added + 0 modified` and passes without having read your assets. Fix: reuse
+  `changed_since()` and read changed assets from the working tree. The audit's base-relative
+  "new findings only" filter needs the base blob, which `git show <merge-base>:<path>` still gives.

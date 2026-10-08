@@ -113,7 +113,8 @@ step of the Mac build in the status bar (15-25 minutes), then downloads the `.ip
 Token: GitHub Desktop's sign-in works as-is. With a typed token (SETTINGS > Source) it needs
 **Actions: read & write** (fine-grained) or the `workflow` scope. Until the workflow is on the
 default branch, the launcher starts it by committing `Port/ios-build-request.txt` to your feature
-branch, which needs **Contents: read & write**.
+branch, which needs **Contents: read & write**. A `claude/**` branch never starts it by push
+(agent branches are excluded from CI); use Run workflow there.
 
 ## PROJECT - the engine's Project Settings
 
