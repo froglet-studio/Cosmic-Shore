@@ -93,6 +93,7 @@ namespace CosmicShore.Gameplay
                 case 1: return set.CrystalMaterial1;
                 case 2: return set.CrystalMaterial2;
                 case 3: return set.CrystalMaterial3;
+                case 4: return set.CrystalMaterial4;
                 default:
                     CSDebug.LogWarning($"Invalid crystal material index {index} for domain {domain}. Returning default crystal material.");
                     break;
