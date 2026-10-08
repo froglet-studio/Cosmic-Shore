@@ -232,7 +232,10 @@ namespace CosmicShore.Gameplay
                 StampCondense();
 
             if (LifeForm) LifeForm.AddSpindle(this);
-            parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
+            // Explicit Unity-null test: an unassigned serialized reference is a fake-null object in
+            // the Editor, which `??=` treats as set (see HealthPrism.ResolveSpindle).
+            if (!parentSpindle && transform.parent)
+                parentSpindle = transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
         }
 

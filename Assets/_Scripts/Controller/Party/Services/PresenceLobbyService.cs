@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
                     // sides deterministically pick the SAME one instead of staying
                     // split.  A symmetric "join the first rival" merge could have both
                     // sides swap into each other's lobby and end up split again.
-                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS);
+                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS, DelayType.UnscaledDeltaTime);
                     await ConvergeToCanonicalAsync(maxPlayers);
                 }
             }
@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
                 catch (Exception e)
                 {
@@ -436,7 +436,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
             }
 
@@ -465,7 +465,7 @@ namespace CosmicShore.Gameplay
                 {
                     CSDebug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
                     if (IsRateLimitException(e))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
+                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS, DelayType.UnscaledDeltaTime);
                 }
             }
 
@@ -511,7 +511,7 @@ namespace CosmicShore.Gameplay
                     {
                         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                         CSDebug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await UniTask.Delay(delay);
+                        await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                     }
                 }
             }

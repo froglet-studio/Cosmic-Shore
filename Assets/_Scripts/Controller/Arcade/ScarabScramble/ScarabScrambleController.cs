@@ -154,6 +154,12 @@ namespace CosmicShore.Gameplay
                 InstallForgeHooks();
             }
 
+            // EVERY peer: the overload notice is raised from a ClientRpc and is the mode's one
+            // explanation of its live-ball rule. It used to be subscribed inside the server-only
+            // forge hooks, so no client ever saw the toast - only that every ball detonated.
+            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
+            AstroLeagueBall.OnCellOverload += HandleCellOverload;
+
             n_CourtRadius.OnValueChanged += (_, _) => ApplyCourtConfig();
             n_HoopCount.OnValueChanged += (_, _) => ApplyCourtConfig();
             n_HoopMouthRadius.OnValueChanged += (_, _) => ApplyCourtConfig();
@@ -162,6 +168,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
             RemoveForgeHooks();
             base.OnNetworkDespawn();
         }
@@ -264,7 +271,6 @@ namespace CosmicShore.Gameplay
             // any way in), so the mode installs no per-domain refusal. ScarabBallForge.ForgeGate
             // stays a live platform capability for a future mode — null means always allowed.
             ScarabBallForge.OnForged += HandleBallForged;
-            AstroLeagueBall.OnCellOverload += HandleCellOverload;
             _forgeHooksInstalled = true;
         }
 
@@ -272,7 +278,6 @@ namespace CosmicShore.Gameplay
         {
             if (!_forgeHooksInstalled) return;
             ScarabBallForge.OnForged -= HandleBallForged;
-            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
             _forgeHooksInstalled = false;
             _forgerByBall.Clear();
         }

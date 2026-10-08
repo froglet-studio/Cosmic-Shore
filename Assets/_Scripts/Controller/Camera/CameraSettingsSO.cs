@@ -4,9 +4,9 @@ namespace CosmicShore.Gameplay
 {
     public enum CameraMode
     {
-        FixedCamera, 
-        DynamicCamera,   
-        Orthographic    
+        FixedCamera = 0,
+        DynamicCamera = 1,
+        Orthographic = 2
     }
 
     [CreateAssetMenu(fileName = "CameraSettings", menuName = "ScriptableObjects/Camera/CameraSettingsSO", order = 30)]

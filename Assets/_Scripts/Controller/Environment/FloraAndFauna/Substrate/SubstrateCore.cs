@@ -54,6 +54,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The population's body assembled (Value = members attached) / dissolved.</summary>
         Assemble = 10,
         Dissolve = 11,
+        /// <summary>A siege changed phase (Docs/SUBSTRATE_FAUNA.md §10). Index = the population's first slot, Value =
+        /// the new <see cref="SubstrateSiegePhase"/>, Other = why: 0 its clock, 1 the pilot escaped, 2 the pilot breached
+        /// the wall (everyone dives), 3 the pilot was lost.</summary>
+        SiegePhase = 12,
     }
 
     public struct SubstrateEvent
@@ -129,6 +133,9 @@ namespace CosmicShore.Gameplay
         internal int PreyPop = -1;
         /// <summary>This tick's kernel numbers (built by SubstrateCore.BeginStep).</summary>
         internal SubstrateKernelPop Kernel;
+        /// <summary>A siege population's phase machine and shell (Docs/SUBSTRATE_FAUNA.md §10); null for every other
+        /// species. A siege is moved by <see cref="SubstrateSiege"/> in BeginStep, never by the agent kernel.</summary>
+        public readonly SubstrateSiegeState Siege;
 
         internal SubstratePopulation(int index, int start, SubstrateSpeciesParams p)
         {
@@ -140,6 +147,7 @@ namespace CosmicShore.Gameplay
             int bk = p.BodyK;
             SlotW = new Vector3[bk]; SlotV = new Vector3[bk];
             for (int k = 0; k < bk; k++) MouthZ = Math.Max(MouthZ, p.BodySlots[3 * k + 2]);
+            if (p.Siege != null && p.Siege.Enabled) Siege = new SubstrateSiegeState(Cap, p.Siege.FirstCool, 7919 * (start + 1));
         }
     }
 
@@ -525,6 +533,13 @@ namespace CosmicShore.Gameplay
                 }
                 MsFields += Ms(t0);
                 pop.Kernel = KernelPop(pop);
+                // a siege is moved here, on the tick's thread, by its phase machine - the agent pass skips it
+                if (pop.Siege != null)
+                {
+                    t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    SubstrateSiege.Step(this, pop);
+                    MsAgents += Ms(t0);
+                }
             }
         }
 
@@ -538,7 +553,7 @@ namespace CosmicShore.Gameplay
             {
                 var pop = Pops[q];
                 int n = pop.LiveCount;
-                if (!pop.Active || n == 0) continue;
+                if (!pop.Active || n == 0 || pop.Siege != null) continue;   // a siege moved in BeginStep
                 if (Stepper != null)
                 {
                     Span<float> I = stackalloc float[pop.Dirs.Length];
@@ -885,6 +900,8 @@ namespace CosmicShore.Gameplay
                         now = Trampling(i, P.TrampleClose);
                 }
                 if (!riding && P.DangerAttached && pop.BodyActive && Attach[i] > 0.5f && Rest[i] <= 0f) now = true;
+                // a siege member is dangerous while its phase machine says it may bite (the glow is up, it has not bitten)
+                if (pop.Siege != null) now = pop.Siege.Dangerous[i - pop.Start];
                 Danger[i] = now;
                 if (now) striking++;
                 if (now && !was) { pop.Strikes++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Strike, Index = i }); }
@@ -915,6 +932,7 @@ namespace CosmicShore.Gameplay
             pop.Striking = striking;
 
             if (cling) Latch(pop);
+            else if (pop.Siege != null) { }   // a siege's bites are its phase machine's (SubstrateSiege: one per BiteGap)
             else
                 // bites: one harm EVENT per pilot per bite_cool (a swarm nibbles, it does not machine-gun)
                 for (int j = 0; j < _npil; j++)
@@ -1365,7 +1383,7 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────── helpers
 
-        void ClampMembrane(int i)
+        internal void ClampMembrane(int i)
         {
             float r = Pos[i].Length();
             if (r > 0.98f * R) Pos[i] *= 0.98f * R / r;

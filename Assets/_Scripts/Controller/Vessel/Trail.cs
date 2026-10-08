@@ -49,13 +49,15 @@ namespace CosmicShore.Gameplay
         public bool IsLoop => isLoop;
 
         public List<Prism> TrailList { get; }
-        Dictionary<Prism, ushort> trailBlockIndices;
+        // int, not ushort: a long freestyle trail passes 65,535 prisms, and a ushort index wrapped
+        // there - GetBlockIndex then answered with a prism near the HEAD for one near the tail.
+        Dictionary<Prism, int> trailBlockIndices;
 
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
             TrailList = new List<Prism>();
-            trailBlockIndices = new Dictionary<Prism, ushort>();
+            trailBlockIndices = new Dictionary<Prism, int>();
         }
 
         public void Add(Prism block)
@@ -65,7 +67,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
                 return;
             }
-            trailBlockIndices.Add(block, (ushort)TrailList.Count);
+            trailBlockIndices.Add(block, TrailList.Count);
             TrailList.Add(block);
             
             // Note: If you need to access prismProperties, ensure it's initialized on the block
@@ -110,7 +112,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < TrailList.Count; i++)
             {
                 var block = TrailList[i];
-                if (block) trailBlockIndices[block] = (ushort)i;
+                if (block) trailBlockIndices[block] = i;
             }
 
             OnOldestRemoved?.Invoke();
@@ -139,7 +141,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < TrailList.Count; i++)
             {
                 var block = TrailList[i];
-                if (block) trailBlockIndices[block] = (ushort)i;
+                if (block) trailBlockIndices[block] = i;
             }
 
             for (int i = 0; i < count; i++)

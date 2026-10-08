@@ -244,7 +244,7 @@ Swarm Cell folder. Run both scripts; both `--check`s must pass.
 | snap-trap hearts | **+15** (cap) | 15 × 27 = 405 body prisms |
 | sclerotium hearts | **+8** (cap) | 8 × 6 = 48 shell prisms |
 | physarum tubes | 0 hearts | ≤ 400 tube prisms (`MaxTubes`) |
-| **total** | **1,197 < 1,200** as measured by `author_threat_flora.py` at the sclerotium cap change (the swarm cell had grown to 1,174 by then; `COLLIDER_CEILING`, asserted by both author scripts) | ≤ 853 ordinary flora prisms |
+| **total** | **1,197 < 1,200** as measured by `author_threat_flora.py` at the sclerotium cap change (the swarm cell had grown to 1,174 by then; the NCA creatures' +4 later made it 1,201, and `SWARM_FAUNA.md` §14.3's proxy trim brought it to **1,171**; `COLLIDER_CEILING`, asserted by both author scripts) | ≤ 853 ordinary flora prisms |
 
 The body prisms are ordinary LOD-culled flora prisms, like every plant's plates. The gate counts always-on
 hearts plus engaged proxies, as §14.3 does. The grove adds ~800 prisms to the cell at its caps: about 5% of the

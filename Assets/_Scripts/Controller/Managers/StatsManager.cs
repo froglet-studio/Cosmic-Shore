@@ -144,33 +144,16 @@ namespace CosmicShore.Gameplay
             _allowRecord = false;
         }
 
-        public void LifeformCreated(int cellID)
-        {
-            if (!_allowRecord || cellData == null) return;
+        // LifeFormsInCell has ONE writer: Cell.UpdateCellStats sets it from spawnedLifeForms.Count
+        // whenever a lifeform registers or unregisters. These two handlers (wired to
+        // onLifeFormCreated / onLifeFormDestroyed in StatsManager.prefab) also ++/-- the same field,
+        // so a flora death - LifeForm.Die unregisters (correct count), then DieCoroutine raises
+        // onLifeFormDestroyed - took a second one off: two plants, kill one, the count read 0 and
+        // AllLifeFormsDestroyedTurnMonitor ended the turn with a plant still alive. Kept as no-ops so
+        // the prefab's UnityEvent wiring still resolves.
+        public void LifeformCreated(int cellID) { }
 
-            var cellStatsList = cellData.CellStatsList;
-
-            if (!cellStatsList.ContainsKey(cellID))
-                cellStatsList[cellID] = new CellStats();
-
-            var cs = cellStatsList[cellID];
-            cs.LifeFormsInCell++;
-            cellStatsList[cellID] = cs;
-        }
-
-        public void LifeformDestroyed(int cellID)
-        {
-            if (!_allowRecord || cellData == null) return;
-
-            var cellStatsList = cellData.CellStatsList;
-
-            if (!cellStatsList.ContainsKey(cellID))
-                cellStatsList[cellID] = new CellStats();
-
-            var cs = cellStatsList[cellID];
-            cs.LifeFormsInCell--;
-            cellStatsList[cellID] = cs;
-        }
+        public void LifeformDestroyed(int cellID) { }
 
         /// <summary>
         /// A fauna died to an attributed force - credit the killer. Raised on

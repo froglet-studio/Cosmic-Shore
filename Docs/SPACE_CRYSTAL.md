@@ -11,7 +11,7 @@ start, and the cycle can snap back to rest without a visible pop.
 | Shipped mesh (what every space crystal renders) | `Assets/_Models/spacecrystalanim.fbx`, mesh fileID `-5993354799466719267` |
 | Generator (source to shipped, with correct normals) | `Tools/Build/author_space_crystal_mesh.py` (`--check`, `--report`) |
 | Driver | `Assets/_Scripts/Controller/Environment/Crystals/SpaceCrystalAnimator.cs` |
-| Consumers | `CrystalSpace`, `ActiveCrystalSpace`, `SpaceDandruff`, and the heart crystals on `GyroidFlora`, `TadPoleFauna`, `MassSharkFauna` and `MassBrittlestarFauna` (11 renderers, one mesh). The flora prefabs nest `CrystalSpace`. |
+| Consumers | `CrystalSpace`, `ActiveCrystalSpace`, `SpaceDandruff`. The flora prefabs nest `CrystalSpace`. (Until 2026-10-08 the **Mass** hearts on `GyroidFlora`, `TadPoleFauna`, `MassSharkFauna` and `MassBrittlestarFauna` also wore this mesh, as per-shell SkinnedMeshRenderer + `SpaceCrystalAnimator` overrides on their nested `CrystalMass` — so a Mass crystal spun on the Space crystal's blocks on four species and nowhere else. `Tools/Build/author_mass_crystal_look.py` strips those overrides and its `--check` fails if one comes back.) |
 
 ## 1. The shape-key design
 
@@ -127,8 +127,9 @@ call `KEY_SYSTEMS_AND_CONVENTIONS.md` records for the Charge crystal.
 material *variant* of `SpaceCrystalMaterial` whose only override is `_spread: 0.15`. Their look
 is unchanged, and colour edits to the parent still reach them.
 
-The heart crystals on fauna use `BlueMassCrystalMaterial` (`ShepardGraph`). At rest its vertex
-stage is a uniform scale pulse about the origin, which keeps blocks intact, so it is unchanged.
+The Mass crystal's shells (`BlueMassCrystalMaterial*` / `ActiveMassCrystalMaterial*`) are on
+`OmniShepardFresnelShader` since 2026-10-08 — still a uniform scale pulse about the origin — and
+draw `MassCrystalExport1_8-21-25.fbx`, not this mesh.
 
 If the breathing is wanted back, make it **radial** (a uniform scale, like `ShepardGraph`), never
 along face normals.

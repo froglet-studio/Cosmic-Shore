@@ -364,9 +364,11 @@ namespace CosmicShore.Gameplay
         /// True when this peer is a CLIENT in a live party - the one case in which tapping an
         /// arcade card must NOT open the configure modal, because only the host configures.
         ///
-        /// Deliberately NOT <c>HostConnectionDataSO.IsPartyHost</c>: that field is written by
-        /// nothing outside the edit-mode tests, so a gate built on it would read false for the
-        /// host as well and silently stand the whole arcade down. Under the locked EAGER-Relay
+        /// Read off the transport, not <c>HostConnectionDataSO.IsPartyHost</c>: that flag is the
+        /// party layer's bookkeeping (HostConnectionService sets it when this peer creates its own
+        /// Relay session and clears it on joining someone else's), so it lags the transport across
+        /// a join/leave and is never set on an offline host. NetworkManager answers the question
+        /// actually being asked - "is somebody else the server?". Under the locked EAGER-Relay
         /// design a solo player IS the server, so this is also correctly false offline and in
         /// single player.
         /// </summary>

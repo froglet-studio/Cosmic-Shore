@@ -9,8 +9,9 @@ Author the shipped space-crystal mesh from the artist's export, with CORRECT ble
 SOURCE  Assets/_Models/SpaceCrystalExport1_7-17-25.fbx   (Blender export: 60 rigid blocks,
         four shape keys - 5PointRotate 1st/2nd half spin, 3PointRotate 1st/2nd half spin)
 TARGET  Assets/_Models/spacecrystalanim.fbx              (the mesh every space crystal renders:
-        CrystalSpace, ActiveCrystalSpace, SpaceDandruff and the crystals on GyroidFlora,
-        TadPoleFauna, MassSharkFauna and MassBrittlestarFauna - 11 renderers, one mesh)
+        CrystalSpace, ActiveCrystalSpace and SpaceDandruff. The Mass hearts on GyroidFlora,
+        TadPoleFauna, MassSharkFauna and MassBrittlestarFauna no longer borrow it - see
+        author_mass_crystal_look.py)
 
 WHY THE NORMALS WERE WRONG
     A spin is two keys STACKED: the 1st half runs 0->100, then the 2nd half runs 0->100 with the

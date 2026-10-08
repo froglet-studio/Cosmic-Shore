@@ -1006,9 +1006,23 @@ namespace CosmicShore.Gameplay.Audio
             }
             else if (_creationState == CreationState.SkippedRemote)
             {
-                // Remote / AI ship with onlyAudibleToController on - never
-                // make any sound on this client. Skip the per-frame work
-                // entirely.
+                // Remote / AI ship with onlyAudibleToController on - no sound on this client.
+                // But ownership can change on a LIVE hull (Cellular Duel's round swap, the arena
+                // PilotSwap - VesselController.ChangePlayer), so this is re-checked rather than
+                // final: a hull handed to the local pilot starts its engine.
+                if (_status == null || _status.Player == null || !_status.IsLocalUser) return;
+
+                _creationState = CreationState.PendingEvaluation;
+                TryEvaluateAndCreate();
+                if (_creationState != CreationState.Created) return;
+            }
+            else if (onlyAudibleToController && !forceAttachToListener
+                     && _status != null && _status.Player != null && !_status.IsLocalUser)
+            {
+                // The reverse: the local pilot left this hull, which kept its 2D engine running at
+                // full volume driven by a ship they no longer fly. Release it; the next frame
+                // re-evaluates and settles on SkippedRemote.
+                StopAndRelease();
                 return;
             }
 

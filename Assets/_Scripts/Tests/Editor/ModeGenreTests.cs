@@ -83,7 +83,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.OmniCrystals,      Element.Time)]
         [TestCase(ScoringMetric.ElementalCrystals, Element.Time)]
         [TestCase(ScoringMetric.Goals,             Element.Time)]   // Astro League, Scarab Scramble
-        [TestCase(ScoringMetric.SwitchesThreaded,  Element.Time)]   // Switchback, Headlong, Skein, Regatta, Redline, Breakwater
+        [TestCase(ScoringMetric.SwitchesThreaded,  Element.Time)]   // Switchback, Headlong, Skein, Regatta, Redline, Breakwater, Grizzly Time
         [TestCase(ScoringMetric.PrismsRemaining,   Element.Mass)]
         [TestCase(ScoringMetric.PrismsStolen,      Element.Mass)]   // Hijack - nothing is destroyed to score it
         [TestCase(ScoringMetric.VolumeRemaining,   Element.Mass)]   // Tapestry - the mass you hold standing

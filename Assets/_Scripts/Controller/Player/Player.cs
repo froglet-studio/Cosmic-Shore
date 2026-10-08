@@ -422,13 +422,33 @@ namespace CosmicShore.Gameplay
             if (!NetMaelstromRoster.Value.Equals(roster)) NetMaelstromRoster.Value = roster;
         }
 
+        /// <summary>
+        /// Shared gate for every owner-detects / server-records report RPC below: there must be
+        /// a RoundStats to credit, and the turn must still be running. A client keeps detecting
+        /// for the round trip it takes the turn-end RPC to reach it, so without the turn gate a
+        /// hit, kill or steal landed after the server froze the result is credited into the live
+        /// RoundStats - which then replicates over the frozen scoreboard. The same gate keeps the
+        /// pre-countdown window (arena build, countdown) from scoring through a client.
+        /// </summary>
+        bool CanCreditReport() =>
+            RoundStats != null && gameData != null && gameData.IsTurnRunning;
+
+        /// <summary>
+        /// A volume off the wire is credited only when it is a real, finite, non-negative number.
+        /// <c>volume &lt; 0f</c> alone lets NaN through (every comparison with NaN is false), and a
+        /// single NaN poisons the running volume total, the domain score and every ratio built on
+        /// it for the rest of the match.
+        /// </summary>
+        static bool IsCreditableVolume(float volume) =>
+            volume >= 0f && !float.IsInfinity(volume);
+
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
         {
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
+            if (!CanCreditReport()) return;
             RoundStats.LifeformsKilled++;
         }
 
@@ -457,7 +477,7 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
+            if (!CanCreditReport()) return;
 
             // Validate against the DECLARED set rather than testing for one member and
             // collapsing everything else onto Bullet. That earlier shape was a latent
@@ -497,7 +517,7 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
+            if (!CanCreditReport()) return;
             RoundStats.FusesBeaten += Mathf.Clamp(count, 0, 32);
         }
 
@@ -530,8 +550,8 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (volume < 0f) return;
+            if (!CanCreditReport()) return;
+            if (!IsCreditableVolume(volume)) return;
 
             var resolved = System.Enum.IsDefined(typeof(Domains), prismDomain)
                 ? (Domains)prismDomain
@@ -574,9 +594,8 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
+            if (!CanCreditReport()) return;
             if (gateIndex < 0) return;
-            if (gameData == null || !gameData.IsTurnRunning) return;
 
             SwitchThreadScoring.Credit(RoundStats, gateIndex);
         }
@@ -609,8 +628,8 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (volume < 0f) return;
+            if (!CanCreditReport()) return;
+            if (!IsCreditableVolume(volume)) return;
 
             StatsManager.CreditPrismSteal(RoundStats, volume);
 
