@@ -24,6 +24,8 @@
 | Spaghettification's GPU half — the tidal tensor, one affine map per prism | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
 | The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `BlackHoleSky.cs` (the scene's own skybox in six faces, for rays bent off-screen), `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
+| The lens's own render pass — copies the camera colour AFTER the transparents and draws every lens from it (Render Graph, injected from script; §5.1) | `BlackHoleLensPass.cs` |
+| Keys: **B** opens/closes the tool, **Shift+B** spawns ahead of the camera on screen (§6.2) | `BlackHoleHotkeys.cs` |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
 | The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
@@ -31,6 +33,37 @@
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
 | See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
+
+## 0.1 Where it stands (2026-10-08) — read this first
+
+Everything below was built on `claude/peaceful-rubin-hhw49n` in one working session, in this order,
+each step pushed with its offline proof. **None of it has been run in the Unity editor by the
+author** (no `/verify-unity` in that session); the user playtested the lens, the tool and lava-lamp
+spawning between steps, and every fault they reported is fixed and recorded in this file.
+
+| # | Step | Where it is documented |
+|---|---|---|
+| 1 | Gravity: Paczyński–Wiita pull, ECS/Burst prism mover (three chained jobs), vessel pull, captures through `Prism.Consume` | §2, §3, §4 |
+| 2 | Burst `MathF` errors in the substrate/swarm kernels fixed with `KernelMath` | §9.1 |
+| 3 | The lens: a per-pixel Schwarzschild ray trace on a lens-sized sphere (right from every viewpoint, inside it too) | §5.1 |
+| 4 | Painted accretion disc built, then REMOVED at the user's request — the hole is its shadow and the bent scene | §5.1, §10 |
+| 5 | Made physical: Lense–Thirring frame dragging (`spin`), GR tidal spaghettification (`tidalResponseSeconds`, `maxTidalStretch`) | §2, §5, §9.2 |
+| 6 | The Black Hole tool (`B` / `blackhole tool on`): spawn rows, live holes, every config field | §6.1 |
+| 7 | Spawn placement: ahead of the camera ON SCREEN (in horizon radii) or a world position; Shift+B | §6.1, §6.2 |
+| 8 | The lens sky is the scene's OWN skybox (`BlackHoleSky`), never URP's baked default | §5.1 |
+| 9 | Every camera gets the lens's depth texture; the on-screen camera, not `Camera.main`, places spawns | §5.1 |
+| 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
+| 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
+
+**Untested in the editor, in priority order:** the after-transparents lens pass (`BlackHoleLensPass`,
+Render Graph) on every camera and the Scene view; the lens sky (`BlackHoleSky`) on a low quality
+level; Shift+B in lava-lamp freestyle with a vessel flying; the edit-mode suites `BlackHoleTests`,
+`BlackHolePhysicsTests`, `BlackHoleToolTests` (written, never run).
+
+**What builds on it next:** the Stoat vessel, whose ability spawns these holes (planned on the same
+branch). Anything the Stoat needs from the black hole (per-hole spin and size, pulling more kinds of
+mass, ownership so a hole does not pull the vessel that made it) is added HERE, to the black hole,
+and recorded in this file — the vessel only spawns and despawns holes.
 
 ## 1. What it is, in one paragraph
 
