@@ -1,65 +1,200 @@
 # What the packages needle-mirror does not carry declare, for a run that cannot fetch them from
-# packages.unity.com either: an Assets error is bucketed "unobtainable" only when it names one of
-# these (README step 7). Written by `build.py --write-declarations` from the real tarballs at their
-# locked versions, assemblies Assets code references only, public top-level types only. Do not edit.
-# P package version tarball-sha1 | A assembly | N namespace | T namespace type
+# packages.unity.com either: an Assets error goes to the "unobtainable" bucket only when it names
+# one of these (README step 7). Written by `run.sh --write-declarations` from the real tarballs at
+# their locked versions, for the assemblies Assets code references. Do not edit by hand.
+# P package version tarball-sha1 | A assembly | T type | N namespace (with every prefix)
 P	com.unity.multiplayer.playmode	1.6.1	3acaa705f0f994547817cc7e4e98b83a8596a677
 A	Unity.Multiplayer.Playmode
+T	CurrentPlayer
+N	Unity
+N	Unity.Multiplayer
 N	Unity.Multiplayer.Playmode
-T	Unity.Multiplayer.Playmode	CurrentPlayer
 P	com.unity.multiplayer.widgets	1.0.1	8f9a1d20b6e1dce4d12d3544c4e2562b723a3f53
 A	Unity.Multiplayer.Widgets.Core
-N	Unity.Multiplayer.Widgets
-T	Unity.Multiplayer.Widgets	ConnectionMode
-T	Unity.Multiplayer.Widgets	ConnectionType
-T	Unity.Multiplayer.Widgets	CustomWidgetsNetworkHandler
-T	Unity.Multiplayer.Widgets	MultiplayerWidgetsSettings
-T	Unity.Multiplayer.Widgets	WidgetConfiguration
-T	Unity.Multiplayer.Widgets	WidgetServiceInitialization
 A	Unity.Multiplayer.Widgets.Session
+T	AdditionalOptions
+T	ChatOption
+T	Configuration
+T	ConnectionMode
+T	ConnectionType
+T	CreateSession
+T	CustomWidgetsNetworkHandler
+T	EnterSessionBase
+T	EnterSessionData
+T	IAudioDevice
+T	IChatEvents
+T	IChatMessage
+T	IChatParticipant
+T	IChatParticipantEvents
+T	IChatService
+T	IPlayerId
+T	IServiceInitialization
+T	ISessionEvents
+T	ISessionLifecycleEvents
+T	ISessionProvider
+T	IWidget
+T	IWidgetConfigurationProvider
+T	JoinSessionByCode
+T	JoinSessionWithMatchmaker
+T	LazySingleton
+T	LeaveSession
+T	ManagerFactory
+T	MultiplayerWidgetsSettings
+T	QuickJoinSession
+T	SessionAction
+T	SessionConstants
+T	SessionExtensions
+T	SessionItem
+T	SessionList
+T	SessionManager
+T	SessionPlayerList
+T	SessionPlayerListItem
+T	ShowJoinCode
+T	VivoxAudioInputDevice
+T	VivoxAudioOutputDevice
+T	VivoxChatMessage
+T	VivoxChatParticipant
+T	VivoxChatService
+T	WidgetBehaviour
+T	WidgetConfiguration
+T	WidgetDependencies
+T	WidgetEventDispatcher
+T	WidgetServiceInitialization
+T	WidgetServiceInitializationInternal
+N	Unity
+N	Unity.Multiplayer
 N	Unity.Multiplayer.Widgets
 P	com.unity.services.friends	1.1.1	1e7c5a43f1526aad8bbe8ec5f80afe80dd4534c0
 A	Unity.Services.Friends
+A	Unity.Services.Friends.Internal
+A	Unity.Services.Friends.Internal.Generated
+T	AddRelationshipRequest
+T	ApiTelemetryScope
+T	ApiTelemetryScopeFactory
+T	AsyncOpRetry
+T	Availability
+T	AvailabilityOptions
+T	BaseApiClient
+T	BlankActivity
+T	Configuration
+T	CreateRelationshipRequest
+T	DeleteRelationshipRequest
+T	DeserializationException
+T	DeserializationSettings
+T	Detail
+T	EngineStateHelper
+T	EnumParseHelper
+T	Error
+T	ErrorExtensions
+T	ExceptionPredicate
+T	ExtendedUser
+T	ExtendedUserAllOf
+T	FriendsApi
+T	FriendsChannel
+T	FriendsErrorCode
+T	FriendsEventCallbacks
+T	FriendsEventConnectionState
+T	FriendsPackageInitializer
+T	FriendsService
+T	FriendsServiceException
+T	FriendsServiceProvider
+T	GetNotificationsAuthRequest
+T	GetPresenceRequest
+T	GetRelationshipsRequest
+T	HttpClient
+T	HttpClientResponse
+T	HttpException
+T	IDeserializable
+T	IFriendsApi
+T	IFriendsEvents
+T	IFriendsService
+T	IFriendsServiceInternal
+T	IHttpClient
+T	IMessageReceivedEvent
+T	IMessagingApiClient
+T	IMessagingService
+T	INotificationsApiClient
+T	INotificationsStateChangedEvent
+T	IOneOf
+T	IPresenceApiClient
+T	IPresenceUpdatedEvent
+T	IRelationshipAddedEvent
+T	IRelationshipDeletedEvent
+T	IRelationshipsApiClient
+T	IRetryPolicy
+T	IRetryPolicyProvider
+T	InitializeOptions
+T	InternalFriendsService
+T	IsolatedJsonConvert
+T	JsonHelpers
+T	JsonObject
+T	JsonObjectCollectionConverter
+T	JsonObjectConverter
+T	JsonSerialization
+T	Logger
+T	Member
+T	MemberAllOf
+T	MemberIdentity
+T	MemberOptions
+T	MemberRole
+T	MessageReceivedEvent
+T	MessageRequest
+T	MessageRequestAllOf
+T	MessagingApiBaseRequest
+T	MessagingApiClient
+T	MessagingApiNames
+T	MissingMemberHandling
+T	Notification
+T	NotificationAuth
+T	NotificationStateChangedEvent
+T	NotificationsApiBaseRequest
+T	NotificationsApiClient
+T	NotificationsApiNames
+T	PagingOptions
+T	Presence
+T	PresenceApiBaseRequest
+T	PresenceApiClient
+T	PresenceApiNames
+T	PresenceAvailabilityOptions
+T	PresenceRequest
+T	PresenceUpdatedEvent
+T	Profile
+T	Relationship
+T	RelationshipAddedEvent
+T	RelationshipDeletedEvent
+T	RelationshipErrorCode
+T	RelationshipNotFoundException
+T	RelationshipOptions
+T	RelationshipType
+T	RelationshipsApiBaseRequest
+T	RelationshipsApiClient
+T	RelationshipsApiNames
+T	RelationshipsServiceException
+T	Response
+T	ResponseDeserializationException
+T	ResponseHandler
+T	RetryPolicy
+T	RetryPolicyConfig
+T	RetryPolicyProvider
+T	Role
+T	SetPresenceRequest
+T	StatusCodePolicyConfig
+T	ThreadHelper
+T	UnityWebRequestHelpers
+T	User
+T	UserPresence
+T	UserProfile
+T	WireTokenProvider
+T	WrappedFriendsApi
+T	WrappedFriendsService
+N	Unity
+N	Unity.Services
 N	Unity.Services.Friends
 N	Unity.Services.Friends.Exceptions
 N	Unity.Services.Friends.Http
-N	Unity.Services.Friends.Models
-N	Unity.Services.Friends.Notifications
-N	Unity.Services.Friends.Options
-T	Unity.Services.Friends	FriendsPackageInitializer
-T	Unity.Services.Friends	FriendsService
-T	Unity.Services.Friends	IFriendsService
-T	Unity.Services.Friends	IMessagingService
-T	Unity.Services.Friends.Exceptions	FriendsErrorCode
-T	Unity.Services.Friends.Exceptions	FriendsServiceException
-T	Unity.Services.Friends.Exceptions	RelationshipErrorCode
-T	Unity.Services.Friends.Exceptions	RelationshipNotFoundException
-T	Unity.Services.Friends.Exceptions	RelationshipsServiceException
-T	Unity.Services.Friends.Models	Availability
-T	Unity.Services.Friends.Models	Member
-T	Unity.Services.Friends.Models	MemberRole
-T	Unity.Services.Friends.Models	Presence
-T	Unity.Services.Friends.Models	PresenceAvailabilityOptions
-T	Unity.Services.Friends.Models	Profile
-T	Unity.Services.Friends.Models	Relationship
-T	Unity.Services.Friends.Models	RelationshipType
-T	Unity.Services.Friends.Notifications	FriendsEventCallbacks
-T	Unity.Services.Friends.Notifications	FriendsEventConnectionState
-T	Unity.Services.Friends.Notifications	IFriendsEvents
-T	Unity.Services.Friends.Notifications	IMessageReceivedEvent
-T	Unity.Services.Friends.Notifications	INotificationsStateChangedEvent
-T	Unity.Services.Friends.Notifications	IPresenceUpdatedEvent
-T	Unity.Services.Friends.Notifications	IRelationshipAddedEvent
-T	Unity.Services.Friends.Notifications	IRelationshipDeletedEvent
-T	Unity.Services.Friends.Options	InitializeOptions
-T	Unity.Services.Friends.Options	PagingOptions
-T	Unity.Services.Friends.Options	RelationshipOptions
-A	Unity.Services.Friends.Internal
 N	Unity.Services.Friends.Internal
-N	Unity.Services.Friends.Internal.Generated.Notifications
-N	Unity.Services.Friends.Internal.Notifications
-A	Unity.Services.Friends.Internal.Generated
 N	Unity.Services.Friends.Internal.Generated
+N	Unity.Services.Friends.Internal.Generated.Apis
 N	Unity.Services.Friends.Internal.Generated.Apis.Messaging
 N	Unity.Services.Friends.Internal.Generated.Apis.Notifications
 N	Unity.Services.Friends.Internal.Generated.Apis.Presence
@@ -73,12 +208,124 @@ N	Unity.Services.Friends.Internal.Generated.Notifications
 N	Unity.Services.Friends.Internal.Generated.Presence
 N	Unity.Services.Friends.Internal.Generated.Relationships
 N	Unity.Services.Friends.Internal.Generated.Scheduler
+N	Unity.Services.Friends.Internal.Notifications
+N	Unity.Services.Friends.Models
+N	Unity.Services.Friends.Notifications
+N	Unity.Services.Friends.Options
 P	com.unity.services.leaderboards	2.3.3	43cb0b25a6c68978516f28d495083b3a52773a19
 A	Unity.Services.Leaderboards
+T	AddLeaderboardPlayerScore400OneOf
+T	AddLeaderboardPlayerScore400OneOfJsonConverter
+T	AddLeaderboardPlayerScoreRequest
+T	AddLeaderboardScore
+T	AddPlayerScoreOptions
+T	AsyncOpRetry
+T	AuthenticationWrapper
+T	BaseApiClient
+T	BasicErrorResponse
+T	Configuration
+T	DeserializationException
+T	DeserializationSettings
+T	EngineStateHelper
+T	GetLeaderboardPlayerRange400OneOf
+T	GetLeaderboardPlayerRange400OneOfJsonConverter
+T	GetLeaderboardPlayerRangeRequest
+T	GetLeaderboardPlayerScore400OneOf
+T	GetLeaderboardPlayerScore400OneOfJsonConverter
+T	GetLeaderboardPlayerScoreRequest
+T	GetLeaderboardScores400OneOf
+T	GetLeaderboardScores400OneOfJsonConverter
+T	GetLeaderboardScoresByPlayerIdsRequest
+T	GetLeaderboardScoresByTierRequest
+T	GetLeaderboardScoresRequest
+T	GetLeaderboardVersionPlayerRangeRequest
+T	GetLeaderboardVersionPlayerScore400OneOf
+T	GetLeaderboardVersionPlayerScore400OneOfJsonConverter
+T	GetLeaderboardVersionPlayerScoreRequest
+T	GetLeaderboardVersionScores400OneOf
+T	GetLeaderboardVersionScores400OneOfJsonConverter
+T	GetLeaderboardVersionScoresByPlayerIdsRequest
+T	GetLeaderboardVersionScoresByTierRequest
+T	GetLeaderboardVersionScoresRequest
+T	GetLeaderboardVersions400OneOf
+T	GetLeaderboardVersions400OneOfJsonConverter
+T	GetLeaderboardVersionsRequest
+T	GetPlayerRangeOptions
+T	GetPlayerScoreOptions
+T	GetScoresByPlayerIdsOptions
+T	GetScoresByTierOptions
+T	GetScoresOptions
+T	GetVersionPlayerRangeOptions
+T	GetVersionPlayerScoreOptions
+T	GetVersionScoresByPlayerIdsOptions
+T	GetVersionScoresByTierOptions
+T	GetVersionScoresOptions
+T	GetVersionsOptions
+T	HttpClient
+T	HttpClientResponse
+T	HttpException
+T	IAuthentication
+T	IDeserializable
+T	IHttpClient
+T	IInternalLeaderboardsApiClient
+T	ILeaderboardsApiClientInternal
+T	ILeaderboardsApiErrorHandler
+T	ILeaderboardsService
+T	IOneOf
+T	IRateLimiter
+T	IncludeMetadataOptions
+T	InternalLeaderboardsApiClient
+T	JsonHelpers
+T	JsonObject
+T	JsonObjectCollectionConverter
+T	JsonObjectConverter
+T	JsonSerialization
+T	LeaderboardEntry
+T	LeaderboardPlayerIds
+T	LeaderboardScore
+T	LeaderboardScores
+T	LeaderboardScoresPage
+T	LeaderboardScoresWithNotFoundPlayerIds
+T	LeaderboardTierScoresPage
+T	LeaderboardVersion
+T	LeaderboardVersionEntry
+T	LeaderboardVersionScores
+T	LeaderboardVersionScoresPage
+T	LeaderboardVersionScoresWithNotFoundPlayerIds
+T	LeaderboardVersionTierScoresPage
+T	LeaderboardVersionWrapper
+T	LeaderboardVersions
+T	LeaderboardsApiBaseRequest
+T	LeaderboardsApiClientInternal
+T	LeaderboardsApiErrorHandler
+T	LeaderboardsException
+T	LeaderboardsExceptionReason
+T	LeaderboardsInitializer
+T	LeaderboardsRateLimitedException
+T	LeaderboardsService
+T	LeaderboardsServiceInternal
+T	LeaderboardsValidationErrorDetail
+T	LeaderboardsValidationException
+T	MissingMemberHandling
+T	PaginationOptions
+T	PagingParams
+T	RangeOptions
+T	RateLimiter
+T	Response
+T	ResponseDeserializationException
+T	ResponseHandler
+T	ThreadHelper
+T	UnityServicesExtensions
+T	UnityWebRequestHelpers
+T	ValidationError
+T	ValidationErrorResponse
+N	Unity
+N	Unity.Services
 N	Unity.Services.Core
 N	Unity.Services.Leaderboards
 N	Unity.Services.Leaderboards.Exceptions
 N	Unity.Services.Leaderboards.Internal
+N	Unity.Services.Leaderboards.Internal.Apis
 N	Unity.Services.Leaderboards.Internal.Apis.Leaderboards
 N	Unity.Services.Leaderboards.Internal.Helpers
 N	Unity.Services.Leaderboards.Internal.Http
@@ -86,47 +333,356 @@ N	Unity.Services.Leaderboards.Internal.Leaderboards
 N	Unity.Services.Leaderboards.Internal.Models
 N	Unity.Services.Leaderboards.Internal.Scheduler
 N	Unity.Services.Leaderboards.Models
-T	Unity.Services.Core	UnityServicesExtensions
-T	Unity.Services.Leaderboards	AddPlayerScoreOptions
-T	Unity.Services.Leaderboards	GetPlayerRangeOptions
-T	Unity.Services.Leaderboards	GetPlayerScoreOptions
-T	Unity.Services.Leaderboards	GetScoresByPlayerIdsOptions
-T	Unity.Services.Leaderboards	GetScoresByTierOptions
-T	Unity.Services.Leaderboards	GetScoresOptions
-T	Unity.Services.Leaderboards	GetVersionPlayerRangeOptions
-T	Unity.Services.Leaderboards	GetVersionPlayerScoreOptions
-T	Unity.Services.Leaderboards	GetVersionScoresByPlayerIdsOptions
-T	Unity.Services.Leaderboards	GetVersionScoresByTierOptions
-T	Unity.Services.Leaderboards	GetVersionScoresOptions
-T	Unity.Services.Leaderboards	GetVersionsOptions
-T	Unity.Services.Leaderboards	ILeaderboardsService
-T	Unity.Services.Leaderboards	IncludeMetadataOptions
-T	Unity.Services.Leaderboards	LeaderboardsService
-T	Unity.Services.Leaderboards	PaginationOptions
-T	Unity.Services.Leaderboards	RangeOptions
-T	Unity.Services.Leaderboards.Exceptions	LeaderboardsException
-T	Unity.Services.Leaderboards.Exceptions	LeaderboardsExceptionReason
-T	Unity.Services.Leaderboards.Exceptions	LeaderboardsRateLimitedException
-T	Unity.Services.Leaderboards.Exceptions	LeaderboardsValidationErrorDetail
-T	Unity.Services.Leaderboards.Exceptions	LeaderboardsValidationException
-T	Unity.Services.Leaderboards.Internal.Models	AddLeaderboardScore
-T	Unity.Services.Leaderboards.Models	LeaderboardEntry
-T	Unity.Services.Leaderboards.Models	LeaderboardScores
-T	Unity.Services.Leaderboards.Models	LeaderboardScoresPage
-T	Unity.Services.Leaderboards.Models	LeaderboardScoresWithNotFoundPlayerIds
-T	Unity.Services.Leaderboards.Models	LeaderboardTierScoresPage
-T	Unity.Services.Leaderboards.Models	LeaderboardVersion
-T	Unity.Services.Leaderboards.Models	LeaderboardVersionEntry
-T	Unity.Services.Leaderboards.Models	LeaderboardVersionScores
-T	Unity.Services.Leaderboards.Models	LeaderboardVersionScoresPage
-T	Unity.Services.Leaderboards.Models	LeaderboardVersionScoresWithNotFoundPlayerIds
-T	Unity.Services.Leaderboards.Models	LeaderboardVersionTierScoresPage
-T	Unity.Services.Leaderboards.Models	LeaderboardVersions
 P	com.unity.services.multiplayer	1.1.8	34def56704ad0a5fe3e7ec2c421f070f2a5bff1e
 A	Unity.Services.Multiplayer
+T	ABAnalytics
+T	ABRemoteConfig
+T	AbTestingResult
+T	AllocateResponseBody
+T	Allocation
+T	AllocationData
+T	AllocationRequest
+T	AllocationUtils
+T	ApiErrorExtender
+T	ApiTelemetryScope
+T	ApiTelemetryScopeFactory
+T	ApproveBackfillTicketRequest
+T	AsyncOpRetry
+T	BackfillApiBaseRequest
+T	BackfillApiClient
+T	BackfillApiCompatibilityExtensions
+T	BackfillTicket
+T	BackfillTicketProperties
+T	BackfillingConfiguration
+T	BaseApiClient
+T	BaseJwt
+T	BaseSessionOptions
+T	BasicError
+T	BulkUpdateLobbyRequest
+T	BulkUpdateRequest
+T	ChangedLobbyValue
+T	ChangedOrRemovedLobbyValue
+T	CommonErrors
+T	Configuration
+T	ConnectPayload
+T	ConnectionInfo
+T	ConnectionMetadata
+T	ConnectionModule
+T	ConnectionOption
+T	ConnectionProvider
+T	ConversionExtensions
+T	CreateAllocationRequest
+T	CreateBackfillTicketOptions
+T	CreateBackfillTicketRequest
+T	CreateBackfillTicketResponse
+T	CreateJoincodeRequest
+T	CreateLobbyOptions
+T	CreateLobbyRequest
+T	CreateOrJoinLobbyRequest
+T	CreateRequest
+T	CreateSessionRequest
+T	CreateTicketOptions
+T	CreateTicketRequest
+T	CreateTicketResponse
+T	DaBuilder
+T	DaHandler
+T	DataObject
+T	DateTimeWrapper
+T	DefaultClock
+T	DeleteBackfillTicketRequest
+T	DeleteLobbyRequest
+T	DeleteTicketRequest
+T	DeserializationException
+T	DeserializationSettings
+T	Detail
+T	DistributedAuthorityApiBaseRequest
+T	DistributedAuthorityApiClient
+T	DistributedAuthorityExceptionReason
+T	DistributedAuthorityService
+T	DistributedAuthorityServiceException
+T	DistributedAuthorityTransport
+T	EngineStateHelper
+T	EntitiesDriverConstructor
+T	EntitiesNetcodeNetworkHandler
+T	ErrorDetail
+T	ErrorResponseBody
+T	ErrorStatus
+T	ExceptionPredicate
+T	FieldOptions
+T	FilterField
+T	FilterOperation
+T	FilterOption
+T	GameObjectsNetcodeNetworkHandler
+T	GetHostedLobbiesRequest
+T	GetJoinedLobbiesRequest
+T	GetLobbyRequest
+T	GetMatchmakingResultsRequest
+T	GetTicketStatusRequest
+T	HeartbeatRequest
+T	HttpClient
+T	HttpClientResponse
+T	HttpException
+T	IABAnalytics
+T	IABRemoteConfig
+T	IBackfillApiClient
+T	IClock
+T	IDaBuilder
+T	IDaHandler
+T	IDateTimeWrapper
+T	IDeserializable
+T	IDistributedAuthorityApiClient
+T	IDistributedAuthoritySDKConfiguration
+T	IDistributedAuthorityService
+T	IError
+T	IHostSession
+T	IHttpClient
+T	IInternalDaLobbyService
+T	IJwtDecoder
+T	ILobbyApiClient
+T	ILobbyBuilder
+T	ILobbyChanges
+T	ILobbyEvents
+T	ILobbyHandler
+T	ILobbyService
+T	ILobbyServiceInternal
+T	ILobbyServiceSDK
+T	ILobbyServiceSDKConfiguration
+T	ILobbyServiceSdk
+T	ILobbySettings
+T	IMatchesApiClient
+T	IMatchmakerManager
+T	IMatchmakerSdkConfiguration
+T	IMatchmakerService
+T	IMatchmakerServiceSdk
+T	IModule
+T	IModuleOption
+T	IModuleProvider
+T	IModuleRegistry
+T	IMultiplayerService
+T	INetworkBuilder
+T	INetworkHandler
+T	IOneOf
+T	IPayloadProxyApiClient
+T	IPlayer
+T	IReadOnlyPlayer
+T	IRelayAllocationsApiClient
+T	IRelayBuilder
+T	IRelayHandler
+T	IRelayService
+T	IRelayServiceSDK
+T	IRelayServiceSDKConfiguration
+T	IRelayServiceSdk
+T	IRetryPolicy
+T	IRetryPolicyProvider
+T	IServerSession
+T	IServiceID
+T	ISession
+T	ISessionInfo
+T	ISessionManager
+T	ISessionMatchmaking
+T	ISessionQuerier
+T	ITicketsApiClient
+T	IValueProperty
+T	IVisibilityProperty
+T	IndexOptions
+T	InternalDaLobbyService
+T	InternalLobbyService
+T	InternalMatchmakerServiceSdk
+T	InternalRelayService
+T	InternalServiceID
+T	IsolatedJsonConvert
+T	JoinAllocation
+T	JoinAllocationAllOf
+T	JoinByCodeRequest
+T	JoinByIdRequest
+T	JoinCodeData
+T	JoinCodeRequest
+T	JoinCodeResponseBody
+T	JoinData
+T	JoinLobbyByCodeOptions
+T	JoinLobbyByCodeRequest
+T	JoinLobbyByIdOptions
+T	JoinLobbyByIdRequest
+T	JoinRelayRequest
+T	JoinRequest
+T	JoinResponseBody
+T	JoinSessionOptions
+T	JsonHelpers
+T	JsonObject
+T	JsonObjectCollectionConverter
+T	JsonObjectConverter
+T	JsonSerialization
+T	JwtDecoder
+T	KeyValuePair
+T	LegacyBackfillTicket
+T	ListRegionsRequest
+T	Lobby
+T	LobbyApiBaseRequest
+T	LobbyApiClient
+T	LobbyApiNames
+T	LobbyBuilder
+T	LobbyCacher
+T	LobbyChannel
+T	LobbyConverter
+T	LobbyEventCallbacks
+T	LobbyEventConnectionState
+T	LobbyExceptionReason
+T	LobbyHandler
+T	LobbyPatch
+T	LobbyPatcher
+T	LobbyPatcherChanges
+T	LobbyPatches
+T	LobbyPlayerChanges
+T	LobbyPlayerJoined
+T	LobbyService
+T	LobbyServiceException
+T	LobbyServiceExceptionExtensions
+T	LobbySessionInfo
+T	LobbySettings
+T	LobbyState
+T	LobbyValue
+T	LobbyValueChangeType
+T	LobbyVivoxTokenProvider
+T	LobbyWireTokenProvider
+T	Logger
+T	MPConstants
+T	MatchIdAssignment
+T	MatchProperties
+T	MatchesApiBaseRequest
+T	MatchesApiClient
+T	Matchmaker
+T	MatchmakerAssignmentType
+T	MatchmakerExceptionReason
+T	MatchmakerExtensions
+T	MatchmakerInitializationOption
+T	MatchmakerManager
+T	MatchmakerModule
+T	MatchmakerModuleOption
+T	MatchmakerOptions
+T	MatchmakerProvider
+T	MatchmakerService
+T	MatchmakerServiceException
+T	MatchmakerServiceSdk
+T	MatchmakerState
+T	MatchmakingResults
+T	MissingMemberHandling
+T	ModuleRegistry
+T	MultiplayAssignment
+T	MultiplayerInitializer
+T	MultiplayerService
+T	NetcodeType
+T	NetcodeUtils
+T	NetworkBuilder
+T	NetworkConfiguration
+T	NetworkOption
+T	NetworkOptions
+T	NetworkRole
+T	NetworkStreamDrivers
+T	NetworkType
+T	OpOptions
+T	Override
+T	PayloadProxyClient
+T	Player
+T	PlayerDataObject
+T	PlayerProfile
+T	PlayerProperty
+T	PlayerUpdateRequest
+T	ProblemDetails
+T	PropertyIndex
+T	QosCalculator
+T	QosResult
+T	QueryFilter
+T	QueryLobbiesOptions
+T	QueryLobbiesRequest
+T	QueryOrder
+T	QueryRequest
+T	QueryResponse
+T	QuerySessionsOptions
+T	QuerySessionsResults
+T	QuickJoinLobbyOptions
+T	QuickJoinLobbyRequest
+T	QuickJoinOptions
+T	QuickJoinRequest
+T	ReconnectRequest
+T	ReconnectSessionOptions
+T	Region
+T	RegionsData
+T	RegionsResponseBody
+T	RelayAllocationsApiBaseRequest
+T	RelayAllocationsApiClient
+T	RelayBuilder
+T	RelayExceptionReason
+T	RelayHandler
+T	RelayServer
+T	RelayServerEndpoint
+T	RelayService
+T	RelayServiceException
+T	RelayServiceSdk
+T	RelayState
+T	RemovePlayerRequest
+T	RequestTokensRequest
+T	Response
+T	ResponseDeserializationException
+T	ResponseHandler
+T	ResponseLinks
+T	ResponseMeta
+T	RetryPolicy
+T	RetryPolicyConfig
+T	RetryPolicyProvider
+T	ServerAccessToken
+T	Session
+T	SessionError
+T	SessionEventConnectionState
+T	SessionException
+T	SessionHandler
+T	SessionManager
+T	SessionOptions
+T	SessionOptionsExtensions
+T	SessionProperty
+T	SessionQuerier
+T	SessionState
+T	SortField
+T	SortOption
+T	SortOrder
+T	StatusCodePolicyConfig
+T	StatusOptions
+T	StoredMatchProperties
+T	StoredMatchmakingResults
+T	Team
+T	ThreadHelper
+T	TicketStatusResponse
+T	TicketStatusResponseJsonConverter
+T	TicketStatusResponseOneOf
+T	TicketStatusResponseOneOfJsonConverter
+T	TicketsApiBaseRequest
+T	TicketsApiClient
+T	TokenData
+T	TokenRequest
+T	TokenResponse
+T	TokenTypeOptions
+T	UnityServicesExtensions
+T	UnityWebRequestHelpers
+T	UpdateBackfillTicketRequest
+T	UpdateLobbyOptions
+T	UpdateLobbyRequest
+T	UpdatePlayerOptions
+T	UpdatePlayerRequest
+T	UpdateRequest
+T	VisibilityOptions
+T	VisibilityPropertyOptions
+T	WrappedDistributedAuthorityService
+T	WrappedLobbyService
+T	WrappedMatchmakerService
+T	WrappedMultiplayerService
+T	WrappedRelayService
+N	Lobbies
+N	Lobbies.SDK
 N	Lobbies.SDK.LobbyCacher
+N	Unity
+N	Unity.Services
 N	Unity.Services.Core
 N	Unity.Services.DistributedAuthority
+N	Unity.Services.DistributedAuthority.Apis
 N	Unity.Services.DistributedAuthority.Apis.DistributedAuthority
 N	Unity.Services.DistributedAuthority.DistributedAuthority
 N	Unity.Services.DistributedAuthority.ErrorMitigation
@@ -138,6 +694,7 @@ N	Unity.Services.DistributedAuthority.Models
 N	Unity.Services.DistributedAuthority.SDK
 N	Unity.Services.DistributedAuthority.Scheduler
 N	Unity.Services.Lobbies
+N	Unity.Services.Lobbies.Apis
 N	Unity.Services.Lobbies.Apis.Lobby
 N	Unity.Services.Lobbies.ErrorMitigation
 N	Unity.Services.Lobbies.Helpers
@@ -147,6 +704,7 @@ N	Unity.Services.Lobbies.Lobby
 N	Unity.Services.Lobbies.Models
 N	Unity.Services.Lobbies.Scheduler
 N	Unity.Services.Matchmaker
+N	Unity.Services.Matchmaker.Apis
 N	Unity.Services.Matchmaker.Apis.Backfill
 N	Unity.Services.Matchmaker.Apis.Matches
 N	Unity.Services.Matchmaker.Apis.Tickets
@@ -162,6 +720,7 @@ N	Unity.Services.Matchmaker.Scheduler
 N	Unity.Services.Matchmaker.Tickets
 N	Unity.Services.Multiplayer
 N	Unity.Services.Relay
+N	Unity.Services.Relay.Apis
 N	Unity.Services.Relay.Apis.RelayAllocations
 N	Unity.Services.Relay.ErrorMitigation
 N	Unity.Services.Relay.Helpers
@@ -169,149 +728,3 @@ N	Unity.Services.Relay.Http
 N	Unity.Services.Relay.Models
 N	Unity.Services.Relay.RelayAllocations
 N	Unity.Services.Relay.Scheduler
-T		LobbyEventCallbacks
-T	Unity.Services.Core	UnityServicesExtensions
-T	Unity.Services.Lobbies	ChangedLobbyValue
-T	Unity.Services.Lobbies	ChangedOrRemovedLobbyValue
-T	Unity.Services.Lobbies	CreateLobbyOptions
-T	Unity.Services.Lobbies	ILobbyChanges
-T	Unity.Services.Lobbies	ILobbyEvents
-T	Unity.Services.Lobbies	ILobbyService
-T	Unity.Services.Lobbies	ILobbyServiceSDK
-T	Unity.Services.Lobbies	ILobbyServiceSDKConfiguration
-T	Unity.Services.Lobbies	JoinLobbyByCodeOptions
-T	Unity.Services.Lobbies	JoinLobbyByIdOptions
-T	Unity.Services.Lobbies	LobbyEventConnectionState
-T	Unity.Services.Lobbies	LobbyExceptionReason
-T	Unity.Services.Lobbies	LobbyPlayerChanges
-T	Unity.Services.Lobbies	LobbyPlayerJoined
-T	Unity.Services.Lobbies	LobbyService
-T	Unity.Services.Lobbies	LobbyServiceException
-T	Unity.Services.Lobbies	LobbyValue
-T	Unity.Services.Lobbies	LobbyValueChangeType
-T	Unity.Services.Lobbies	QueryLobbiesOptions
-T	Unity.Services.Lobbies	QuickJoinLobbyOptions
-T	Unity.Services.Lobbies	UpdateLobbyOptions
-T	Unity.Services.Lobbies	UpdatePlayerOptions
-T	Unity.Services.Lobbies.Http	DeserializationException
-T	Unity.Services.Lobbies.Http	DeserializationSettings
-T	Unity.Services.Lobbies.Http	IDeserializable
-T	Unity.Services.Lobbies.Http	JsonObject
-T	Unity.Services.Lobbies.Http	JsonObjectConverter
-T	Unity.Services.Lobbies.Http	MissingMemberHandling
-T	Unity.Services.Lobbies.Models	CreateRequest
-T	Unity.Services.Lobbies.Models	DataObject
-T	Unity.Services.Lobbies.Models	Detail
-T	Unity.Services.Lobbies.Models	ErrorStatus
-T	Unity.Services.Lobbies.Models	IOneOf
-T	Unity.Services.Lobbies.Models	JoinByCodeRequest
-T	Unity.Services.Lobbies.Models	JoinByIdRequest
-T	Unity.Services.Lobbies.Models	Lobby
-T	Unity.Services.Lobbies.Models	Player
-T	Unity.Services.Lobbies.Models	PlayerDataObject
-T	Unity.Services.Lobbies.Models	PlayerProfile
-T	Unity.Services.Lobbies.Models	PlayerUpdateRequest
-T	Unity.Services.Lobbies.Models	QueryFilter
-T	Unity.Services.Lobbies.Models	QueryOrder
-T	Unity.Services.Lobbies.Models	QueryRequest
-T	Unity.Services.Lobbies.Models	QueryResponse
-T	Unity.Services.Lobbies.Models	QuickJoinRequest
-T	Unity.Services.Lobbies.Models	TokenData
-T	Unity.Services.Lobbies.Models	TokenRequest
-T	Unity.Services.Lobbies.Models	UpdateRequest
-T	Unity.Services.Matchmaker	CreateBackfillTicketOptions
-T	Unity.Services.Matchmaker	CreateTicketOptions
-T	Unity.Services.Matchmaker	IMatchmakerSdkConfiguration
-T	Unity.Services.Matchmaker	IMatchmakerService
-T	Unity.Services.Matchmaker	MatchmakerExceptionReason
-T	Unity.Services.Matchmaker	MatchmakerService
-T	Unity.Services.Matchmaker	MatchmakerServiceException
-T	Unity.Services.Matchmaker.Http	DeserializationSettings
-T	Unity.Services.Matchmaker.Http	IDeserializable
-T	Unity.Services.Matchmaker.Http	MissingMemberHandling
-T	Unity.Services.Matchmaker.Models	AbTestingResult
-T	Unity.Services.Matchmaker.Models	BackfillTicket
-T	Unity.Services.Matchmaker.Models	BackfillTicketProperties
-T	Unity.Services.Matchmaker.Models	CreateBackfillTicketResponse
-T	Unity.Services.Matchmaker.Models	CreateTicketResponse
-T	Unity.Services.Matchmaker.Models	MatchIdAssignment
-T	Unity.Services.Matchmaker.Models	MatchProperties
-T	Unity.Services.Matchmaker.Models	MatchmakingResults
-T	Unity.Services.Matchmaker.Models	MultiplayAssignment
-T	Unity.Services.Matchmaker.Models	Override
-T	Unity.Services.Matchmaker.Models	Player
-T	Unity.Services.Matchmaker.Models	QosResult
-T	Unity.Services.Matchmaker.Models	StoredMatchProperties
-T	Unity.Services.Matchmaker.Models	StoredMatchmakingResults
-T	Unity.Services.Matchmaker.Models	Team
-T	Unity.Services.Matchmaker.Models	TicketStatusResponse
-T	Unity.Services.Matchmaker.PayloadProxy	TokenResponse
-T	Unity.Services.Multiplayer	BackfillingConfiguration
-T	Unity.Services.Multiplayer	BaseSessionOptions
-T	Unity.Services.Multiplayer	FilterField
-T	Unity.Services.Multiplayer	FilterOperation
-T	Unity.Services.Multiplayer	FilterOption
-T	Unity.Services.Multiplayer	IHostSession
-T	Unity.Services.Multiplayer	IMultiplayerService
-T	Unity.Services.Multiplayer	INetworkHandler
-T	Unity.Services.Multiplayer	IPlayer
-T	Unity.Services.Multiplayer	IReadOnlyPlayer
-T	Unity.Services.Multiplayer	IServerSession
-T	Unity.Services.Multiplayer	ISession
-T	Unity.Services.Multiplayer	ISessionInfo
-T	Unity.Services.Multiplayer	JoinSessionOptions
-T	Unity.Services.Multiplayer	MatchmakerExtensions
-T	Unity.Services.Multiplayer	MatchmakerOptions
-T	Unity.Services.Multiplayer	MatchmakerState
-T	Unity.Services.Multiplayer	MultiplayerService
-T	Unity.Services.Multiplayer	NetworkConfiguration
-T	Unity.Services.Multiplayer	NetworkRole
-T	Unity.Services.Multiplayer	NetworkType
-T	Unity.Services.Multiplayer	PlayerProperty
-T	Unity.Services.Multiplayer	PropertyIndex
-T	Unity.Services.Multiplayer	QuerySessionsOptions
-T	Unity.Services.Multiplayer	QuerySessionsResults
-T	Unity.Services.Multiplayer	QuickJoinOptions
-T	Unity.Services.Multiplayer	ReconnectSessionOptions
-T	Unity.Services.Multiplayer	SessionError
-T	Unity.Services.Multiplayer	SessionEventConnectionState
-T	Unity.Services.Multiplayer	SessionException
-T	Unity.Services.Multiplayer	SessionOptions
-T	Unity.Services.Multiplayer	SessionOptionsExtensions
-T	Unity.Services.Multiplayer	SessionProperty
-T	Unity.Services.Multiplayer	SessionState
-T	Unity.Services.Multiplayer	SortField
-T	Unity.Services.Multiplayer	SortOption
-T	Unity.Services.Multiplayer	SortOrder
-T	Unity.Services.Multiplayer	VisibilityPropertyOptions
-T	Unity.Services.Relay	IRelayService
-T	Unity.Services.Relay	IRelayServiceSDK
-T	Unity.Services.Relay	IRelayServiceSDKConfiguration
-T	Unity.Services.Relay	RelayExceptionReason
-T	Unity.Services.Relay	RelayService
-T	Unity.Services.Relay	RelayServiceException
-T	Unity.Services.Relay.Http	DeserializationSettings
-T	Unity.Services.Relay.Http	MissingMemberHandling
-T	Unity.Services.Relay.Models	AllocateResponseBody
-T	Unity.Services.Relay.Models	Allocation
-T	Unity.Services.Relay.Models	AllocationData
-T	Unity.Services.Relay.Models	AllocationRequest
-T	Unity.Services.Relay.Models	AllocationUtils
-T	Unity.Services.Relay.Models	ErrorResponseBody
-T	Unity.Services.Relay.Models	IOneOf
-T	Unity.Services.Relay.Models	JoinAllocation
-T	Unity.Services.Relay.Models	JoinAllocationAllOf
-T	Unity.Services.Relay.Models	JoinCodeData
-T	Unity.Services.Relay.Models	JoinCodeRequest
-T	Unity.Services.Relay.Models	JoinCodeResponseBody
-T	Unity.Services.Relay.Models	JoinData
-T	Unity.Services.Relay.Models	JoinRequest
-T	Unity.Services.Relay.Models	JoinResponseBody
-T	Unity.Services.Relay.Models	KeyValuePair
-T	Unity.Services.Relay.Models	Region
-T	Unity.Services.Relay.Models	RegionsData
-T	Unity.Services.Relay.Models	RegionsResponseBody
-T	Unity.Services.Relay.Models	RelayServer
-T	Unity.Services.Relay.Models	RelayServerEndpoint
-T	Unity.Services.Relay.Models	ResponseLinks
-T	Unity.Services.Relay.Models	ResponseMeta

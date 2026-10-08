@@ -12,9 +12,12 @@ namespace CosmicShore.Gameplay
     /// beats. It climbs the slow trail gradient at HeartSpeed, so the crystal ends up inside the pulsing cables.
     ///
     /// <para><b>Ecology.</b> A seeded sclerotium brings its planted share of the network (tube bodies plus its own
-    /// shell). The shell is paid from the network's reserve and re-laid only from it. Tubes belong to the network,
-    /// not to a heart: a heart that is jousted stops beating and climbing (its agents freeze, as in the research),
-    /// its shell stays as a skeleton, and the cables it fed are resorbed only while another heart lives.</para>
+    /// shell). The shell is paid from the network's reserve and re-laid only from it. While the reserve holds a whole
+    /// shell, a living sclerotium buds a daughter through the platform's one offspring path
+    /// (<see cref="Flora.TrySpawnOneOffspring"/>, so the cell's cap and the Frenzy freeze apply); she brings no mass
+    /// and lays her shell from the reserve, so the network turns what it digested into a new heart. Tubes belong to
+    /// the network, not to a heart: a heart that is jousted stops beating and climbing (its agents freeze, as in the
+    /// research), its shell stays as a skeleton, and the cables it fed are resorbed only while another heart lives.</para>
     /// </summary>
     public class PhysarumSclerotium : Flora
     {
@@ -26,6 +29,7 @@ namespace CosmicShore.Gameplay
         ThreatGrove _grove;
         int _heart = -1;
         Spindle _limb;
+        bool _budded;   // set on a daughter by her parent (ConfigureOffspring) before Initialize
         readonly HealthPrism[] _shell = new HealthPrism[ThreatGroveDefaults.ShellPrisms];
         bool _beat;
 
@@ -48,7 +52,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             Vector3 at = TryGetPlantPositionOverride(out var pinned) ? pinned : _grove.PickSclerotiumSite();
-            _heart = _grove.RegisterSclerotium(this, at, healthPrism);
+            _heart = _grove.RegisterSclerotium(this, at, healthPrism, _budded);
             transform.position = _grove.HeartPosition(_heart);
             LayShell();
         }
@@ -57,6 +61,27 @@ namespace CosmicShore.Gameplay
         public override void Grow()
         {
             if (_grove && _heart >= 0 && !IsDying) LayShell();
+        }
+
+        /// <summary>The network's reserve holds a whole shell: bud a daughter (ThreatGrove.BudSclerotium).</summary>
+        public void TryBud()
+        {
+            if (_grove && _heart >= 0 && !IsDying) TrySpawnOneOffspring();
+        }
+
+        /// <summary>A daughter is planted where a seeded sclerotium would be (inside the grove); she climbs the trail
+        /// from there like every heart.</summary>
+        protected override bool TryResolveOffspringPlacement(out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            position = _grove ? _grove.PickSclerotiumSite() : transform.position;
+            rotation = transform.rotation;
+            up = null;
+            return true;
+        }
+
+        protected override void ConfigureOffspring(Flora child)
+        {
+            if (child is PhysarumSclerotium daughter) daughter._budded = true;
         }
 
         void LayShell()

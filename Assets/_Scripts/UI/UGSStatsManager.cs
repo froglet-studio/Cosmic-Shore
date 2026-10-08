@@ -54,7 +54,13 @@ namespace CosmicShore.Core
                 Instance = null;
 
             if (_ugsDataService != null)
+            {
                 _ugsDataService.OnInitialized -= HandleDataServiceReady;
+                if (_ugsDataService.ModeStatsRepo != null)
+                    _ugsDataService.ModeStatsRepo.OnDataChanged -= RebindRepoData;
+                if (_ugsDataService.HangarRepo != null)
+                    _ugsDataService.HangarRepo.OnDataChanged -= RebindRepoData;
+            }
         }
 
         void HandleDataServiceReady()
@@ -62,13 +68,33 @@ namespace CosmicShore.Core
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             // Use the repo's data directly - no separate cloud load needed
+            RebindRepoData();
+
+            // A repository can REPLACE its data object later (a failed sign-in load that recovers
+            // adopts the cloud record; a late sign-in after an offline boot reloads it). Stats
+            // written to the old object were never saved. Follow the repository instead.
+            if (_ugsDataService.ModeStatsRepo != null)
+            {
+                _ugsDataService.ModeStatsRepo.OnDataChanged -= RebindRepoData;
+                _ugsDataService.ModeStatsRepo.OnDataChanged += RebindRepoData;
+            }
+            if (_ugsDataService.HangarRepo != null)
+            {
+                _ugsDataService.HangarRepo.OnDataChanged -= RebindRepoData;
+                _ugsDataService.HangarRepo.OnDataChanged += RebindRepoData;
+            }
+
+            _isReady = true;
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSStats] Initialized from UGSDataService repositories.");
+        }
+
+        void RebindRepoData()
+        {
+            if (_ugsDataService == null) return;
             if (_ugsDataService.ModeStatsRepo != null)
                 _modeStats = _ugsDataService.ModeStatsRepo.Data;
             if (_ugsDataService.HangarRepo != null)
                 _hangar = _ugsDataService.HangarRepo.Data;
-
-            _isReady = true;
-            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSStats] Initialized from UGSDataService repositories.");
         }
 
         #region Scoring direction

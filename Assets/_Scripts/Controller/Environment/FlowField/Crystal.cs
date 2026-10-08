@@ -19,6 +19,10 @@ namespace CosmicShore.Gameplay
         public Material explodingMaterial;
         public Material inactiveMaterial;
         public SpaceCrystalAnimator spaceCrystalAnimator;
+
+        /// <summary>The <see cref="explodingMaterial"/> this model was authored with, latched by
+        /// <see cref="Crystal"/> before its first material change overwrites the live field.</summary>
+        [System.NonSerialized] public Material authoredExplodingMaterial;
     }
 
     public class Crystal : CellItem
@@ -53,6 +57,15 @@ namespace CosmicShore.Gameplay
         #endregion
         
         public List<CrystalModelData> CrystalModels => crystalModels;
+
+        /// <summary>
+        /// Raised when a model's renderer settles onto a new material — a domain change or an
+        /// activation reaching the end of its lerp. For an overlay that wears the crystal's colour
+        /// without being one of its models: the omni crystal's charge edges
+        /// (<see cref="CrystalAccentTint"/>), which are not a crystalModels slot so they neither
+        /// burst into a husk nor need a team material of their own.
+        /// </summary>
+        public event System.Action ModelMaterialSettled;
 
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
@@ -469,6 +482,25 @@ namespace CosmicShore.Gameplay
                 renderer.SetPropertyBlock(null);
         }
 
+        /// <summary>
+        /// The crystal pair <paramref name="domain"/> paints a crystal in — what this crystal would
+        /// wear if that domain owned it. A hull fusion converges onto it, so a pickup that becomes
+        /// part of a vessel ends in that vessel's colours rather than the lime it was collected in.
+        /// False for a domain with no crystal pair (<see cref="Domains.Blue"/> is the unresolved
+        /// sentinel and is refused, not answered — Docs/PALETTE.md §2.8) or an unwired theme.
+        /// </summary>
+        public bool TryGetDomainCrystalColors(Domains domain, out Color bright, out Color dull)
+        {
+            bright = default;
+            dull = default;
+            if (domain is not (Domains.Jade or Domains.Ruby or Domains.Gold)) return false;
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return false;
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var set) || set == null) return false;
+            bright = set.BrightCrystalColor;
+            dull = set.DullCrystalColor;
+            return true;
+        }
+
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
 
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;
@@ -651,7 +683,7 @@ namespace CosmicShore.Gameplay
                         var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
                         var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                         if (spentAnimator && thisAnimator)
-                            spentAnimator.timer = thisAnimator.timer;
+                            spentAnimator.SyncPhaseFrom(thisAnimator);
                     }
 
                     impact.HandleImpact(
@@ -832,15 +864,24 @@ namespace CosmicShore.Gameplay
             }
 
             renderer.sharedMaterial = targetMaterial;
+            ModelMaterialSettled?.Invoke();
 
-            // Update the explodingMaterial for the matching crystal model entry
+            // The husk follows the look: a model handed someone else's material (a domain's team
+            // crystal) explodes in it. But a model settling back onto its OWN default takes back
+            // the husk authored for that look - ExplodingMassCrystalMaterial, ActiveSpaceCrystal-
+            // Material, the omni's CrystalMaterial - because those exist precisely because the
+            // look's shader carries no _velocity for Impact to shatter. Overwriting them here is
+            // what made every dropped heart's husk drift whole instead of bursting.
             for (int i = 0; i < crystalModels.Count; i++)
             {
-                if (crystalModels[i].model == model)
-                {
-                    crystalModels[i].explodingMaterial = targetMaterial;
-                    break;
-                }
+                var data = crystalModels[i];
+                if (data.model != model) continue;
+
+                if (!data.authoredExplodingMaterial) data.authoredExplodingMaterial = data.explodingMaterial;
+                data.explodingMaterial = targetMaterial == data.defaultMaterial && data.authoredExplodingMaterial
+                    ? data.authoredExplodingMaterial
+                    : targetMaterial;
+                break;
             }
 
             _lerpTempMaterials.Remove(tempMaterial);

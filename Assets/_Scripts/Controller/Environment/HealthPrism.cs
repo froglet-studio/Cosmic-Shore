@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
                 LifeForm.AddHealthBlock(this);
 
             // Spindle logic disabled for now
-            spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthPrism requires a spindle parent
+            ResolveSpindle(); // Every healthPrism requires a spindle parent
             if (spindle) spindle.AddHealthBlock(this);
         }
 
@@ -102,9 +102,25 @@ namespace CosmicShore.Gameplay
             PrismSway.Clear(this);
         }
 
+        /// <summary>
+        /// Fills <see cref="spindle"/> from the parent when it is not set. An explicit Unity-null
+        /// test, never <c>??=</c>: the field is serialized and unassigned on every leaf prefab, and
+        /// in the EDITOR an unassigned serialized reference is a "fake null" object that <c>??=</c>
+        /// treats as set - so leaves never linked to their spindle in Editor play (branches did not
+        /// evaporate with their leaves) while they did in builds. Also parent-safe: a skeleton left
+        /// with no cell sits at the scene root, and the old form dereferenced a null parent on its
+        /// next hit.
+        /// </summary>
+        void ResolveSpindle()
+        {
+            if (spindle) return;
+            var parent = transform.parent;
+            spindle = parent ? parent.GetComponent<Spindle>() : null;
+        }
+
         public void Reparent(Transform newParent)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             transform.parent = newParent;
@@ -139,7 +155,7 @@ namespace CosmicShore.Gameplay
             // body before (a swarm member's body is hidden while the swarm draws it, Docs/SWARM_FAUNA.md §14).
             SetOwnerHidden(false);
 
-            spindle ??= transform.parent ? transform.parent.GetComponent<Spindle>() : null;
+            ResolveSpindle();
             if (spindle)
             {
                 spindle.RemoveHealthBlock(this);
@@ -169,7 +185,7 @@ namespace CosmicShore.Gameplay
         protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
                                         float debrisSpeedLimit = 0f)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
@@ -190,7 +206,7 @@ namespace CosmicShore.Gameplay
         
         protected override void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Implode(targetTransform, domain, playerName, devastate);

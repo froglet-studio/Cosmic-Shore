@@ -77,13 +77,17 @@ trio, and the traps).
   its chain), but an override that lets a creature survive losing its whole body breaks the rule.
 - **Starvation = wither-to-crystal, and a joust is that wither RUN BACKWARDS.** A starving creature
   withers from its extremity spindles inward — a shark's fins / a brittlestar's arms evaporate
-  *before* the core body (farthest-from-the-heart first, emergent from geometry) — and the heart is
-  the LAST thing standing, so its crystal becomes collectable by any vessel only when the wither
-  reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and fauna alike)
-  runs the identical geometry in the opposite direction: it never detonates, the heart is freed at
-  the strike and **auto-collected by the jouster**
-  (`ElementalCrystalImpactor.CollectBy`), and the spindles unravel *from the heart outward* around
-  the hole it left. Both leave the body prisms standing as a **skeleton** — ordinary cell mass the
+  *before* the core body (deepest in the spindle tree first, ties farthest-from-the-heart first) —
+  and the heart is the LAST thing standing, so its crystal becomes collectable by any vessel only
+  when the wither reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and
+  fauna alike) runs the identical tree in the opposite direction: it never detonates, the heart is
+  freed at the strike and **auto-collected by the jouster** (`ElementalCrystalImpactor.CollectBy`),
+  and the spindles unravel *from the missing crystal to the leaves* around the hole it left.
+  **Every standing spindle and prism of a lifeform always has a path of standing spindles to its
+  crystal** — in growth, under grazing, and through every death — **with the crystal joust as the one
+  sanctioned exception** (`Spindle.OrderOutsideIn` / `Spindle.OrderHeartOutward`,
+  `Spindle.AttachToParent`, `Docs/ECOSYSTEM.md` §26.10). Both leave the
+  body prisms standing as a **skeleton** — ordinary cell mass the
   food web then grazes, so a creature's frame is conserved instead of dying with its husk (before
   this only the heart survived a death, which was passive mass removal hiding inside a death
   animation). Predation is neither: a devoured body suctions into the mouth, because there the mass
@@ -299,7 +303,7 @@ trio, and the traps).
   units — and those children exist to equalize apparent EXTENT, which at 1.0/1.0/1.34/1.42 they
   already did within 7% (measured from FBX `Vertices` bounds normalized by `UnitScaleFactor`;
   Space's file is unit-1, the others unit-100). Mass is raised to 1.38 anyway because it reads
-  thin rather than small — four concentric `ShepardGraph` shells vs Space's solid `_spread`
+  thin rather than small — four concentric Shepard-tone shells (`OmniShepardFresnelShader`) vs Space's solid `_spread`
   body — and that number is an eye-calibration pending playtest, not a measurement. A
   per-element size fix belongs on that element's crystal PREFAB child; putting it on the root
   moves the collect reward with it, since that reads the root's `lossyScale`. `Docs/ECOSYSTEM.md §33`.

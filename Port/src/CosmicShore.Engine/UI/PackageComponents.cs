@@ -32,7 +32,7 @@ namespace CosmicShore.Engine
     public enum HorizontalWrapMode { Wrap = 0, Overflow = 1 }
     public enum VerticalWrapMode { Truncate = 0, Overflow = 1 }
 
-    /// <summary>Capsule-shaped collider (data; the trigger pass treats it as its bounds).</summary>
+    /// <summary>Capsule-shaped collider: a segment along local axis <see cref="direction"/> (0 X, 1 Y, 2 Z) swept by <see cref="radius"/> (see ShapeMath).</summary>
     public class CapsuleCollider : Collider
     {
         public Vector3 center = Vector3.zero;
@@ -145,15 +145,72 @@ namespace CosmicShore.Engine.UI
         public int numberOfSteps { get => m_NumberOfSteps; set => m_NumberOfSteps = value; }
     }
 
-    /// <summary>Keeps a RectTransform at an aspect ratio (original contract: AspectRatioFitter).</summary>
+    /// <summary>
+    /// Keeps a RectTransform at an aspect ratio, width / height (original contract:
+    /// AspectRatioFitter, from its documented modes):
+    ///   WidthControlsHeight - the height follows the width;
+    ///   HeightControlsWidth - the width follows the height;
+    ///   FitInParent         - the largest rect of that ratio inside the parent, centred on the pivot;
+    ///   EnvelopeParent      - the smallest rect of that ratio that covers the parent.
+    /// The two parent modes stretch the anchors over the parent and express the size as sizeDelta.
+    /// A self layout controller: the rebuild applies it, and it re-queues itself when its parent's size changes.
+    /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class AspectRatioFitter : MonoBehaviour
+    public class AspectRatioFitter : MonoBehaviour, CosmicShore.Engine.UI.ILayoutSelfController
     {
         public enum AspectMode { None = 0, WidthControlsHeight = 1, HeightControlsWidth = 2, FitInParent = 3, EnvelopeParent = 4 }
         [SerializeField] AspectMode m_AspectMode;
         [SerializeField] float m_AspectRatio = 1f;
-        public AspectMode aspectMode { get => m_AspectMode; set => m_AspectMode = value; }
-        public float aspectRatio { get => m_AspectRatio; set => m_AspectRatio = value; }
+        public AspectMode aspectMode { get => m_AspectMode; set { m_AspectMode = value; SetDirty(); } }
+        public float aspectRatio { get => m_AspectRatio; set { m_AspectRatio = value; SetDirty(); } }
+
+        Vector2 _parentSize = new(float.NaN, float.NaN);
+
+        void OnEnable() => SetDirty();
+
+        void Update()
+        {
+            if (m_AspectMode is AspectMode.FitInParent or AspectMode.EnvelopeParent && ParentSize() != _parentSize) SetDirty();
+        }
+
+        protected void SetDirty()
+        {
+            if (transform is RectTransform rt) CosmicShore.Engine.UI.LayoutRebuilder.MarkLayoutForRebuild(rt);
+        }
+
+        Vector2 ParentSize() => transform.parent is RectTransform p ? p.rect.size : Vector2.zero;
+
+        public void SetLayoutHorizontal() => UpdateRect();
+        public void SetLayoutVertical() => UpdateRect();
+
+        void UpdateRect()
+        {
+            if (transform is not RectTransform rt || !isActiveAndEnabled || m_AspectRatio <= 0f) return;
+            var parent = ParentSize();
+            _parentSize = parent;
+            switch (m_AspectMode)
+            {
+                case AspectMode.WidthControlsHeight:
+                    rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rt.rect.width / m_AspectRatio);
+                    break;
+                case AspectMode.HeightControlsWidth:
+                    rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rt.rect.height * m_AspectRatio);
+                    break;
+                case AspectMode.FitInParent:
+                case AspectMode.EnvelopeParent:
+                {
+                    // Width at the parent's height; if that is too wide (fit) or too narrow (envelope), go by the parent's width.
+                    float w = parent.y * m_AspectRatio, h = parent.y;
+                    bool byWidth = m_AspectMode == AspectMode.FitInParent ? w > parent.x : w < parent.x;
+                    if (byWidth) { w = parent.x; h = parent.x / m_AspectRatio; }
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.anchoredPosition = Vector2.zero;
+                    rt.sizeDelta = new Vector2(w - parent.x, h - parent.y);
+                    break;
+                }
+            }
+        }
     }
 
     /// <summary>Per-event listener table (original contract: EventTrigger).</summary>

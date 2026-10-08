@@ -69,6 +69,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The base order (team total, then enum order) with <see cref="ResolveWinner"/>'s pick
+        /// first. They differ only on a tied team total, which Regatta gives to the finisher's
+        /// team: left to the base, the banner and VICTORY went to the finisher while the placement
+        /// crystals and the Maelstrom fold paid first place to the enum-order team.
+        /// </summary>
+        public override List<Domains> ResolvePlacementOrder(GameDataSO gameData)
+        {
+            var order = base.ResolvePlacementOrder(gameData);
+            var winner = ResolveWinner(gameData);
+            if (order.Remove(winner)) order.Insert(0, winner);
+            return order;
+        }
+
+        /// <summary>
         /// The first active domain (Jade → Ruby → Gold) with a pilot who has flown the whole
         /// course. Only one pilot can cross on the frame the race ends, so in practice there is
         /// one; the fixed order only matters for a same-poll double finish.

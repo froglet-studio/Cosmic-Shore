@@ -94,8 +94,16 @@ namespace CosmicShore.Gameplay
             GhostAsync(ghostSeconds, _cts.Token).Forget();
         }
 
+        // Bumped by every ghost window. A cancelled UniTask's finally runs a frame AFTER the
+        // cancel, by which point Slip() may already have armed the NEXT ghost - so an unguarded
+        // finally re-solidified the hull and killed the new ghost (URCHIN_BACKLOG U16). Only the
+        // window that is still current may restore; a superseded one was already restored by
+        // the CancelGhost(restore: true) that superseded it.
+        int _ghostGeneration;
+
         async UniTaskVoid GhostAsync(float seconds, CancellationToken token)
         {
+            int generation = ++_ghostGeneration;
             SetHullSolid(false);
 
             try
@@ -114,7 +122,7 @@ namespace CosmicShore.Gameplay
                 // finally. Without it an interrupted slip leaves the Urchin permanently
                 // intangible - a vessel that can fly through the entire prismscape, which
                 // reads as a physics bug rather than as a spent ability.
-                SetHullSolid(true);
+                if (generation == _ghostGeneration) SetHullSolid(true);
             }
         }
 

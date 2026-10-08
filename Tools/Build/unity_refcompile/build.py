@@ -6,8 +6,9 @@ Mini re-implementation of Unity's script-compilation pipeline (enough of it to t
   * evaluates includePlatforms/excludePlatforms, defineConstraints and versionDefines for the
     chosen configuration (player = StandaloneWindows64 / IL2CPP / NET Standard 2.1, the project's
     shipped target; see DEFINES below);
-  * assigns loose Assets scripts to Assembly-CSharp-firstpass / Assembly-CSharp (Editor folders
-    excluded in the player configuration);
+  * assigns loose Assets scripts to Assembly-CSharp-firstpass / Assembly-CSharp; Editor-folder
+    scripts are excluded in the player configurations, and in the editor configuration go to
+    Assembly-CSharp-Editor(-firstpass), which references the runtime assemblies;
   * resolves name and GUID references, auto-referenced asmdefs and precompiled managed DLLs
     (PluginImporter .meta: platform, isExplicitlyReferenced, defineConstraints);
   * runs Roslyn source generators labelled RoslynAnalyzer for the asmdef that owns them and every
@@ -88,11 +89,17 @@ CONFIGS = {
     "player-dev": ["ENABLE_IL2CPP", "DEVELOPMENT_BUILD", "ENABLE_PROFILER", "UNITY_ASSERTIONS", "DEBUG", "TRACE"],
     # APPROXIMATE editor compile of the project's runtime code: UNITY_EDITOR branches type-checked
     # against the newest non-publicized UnityEditor obtainable (2021.1 - see README), plus the
-    # Editor-folder files changed since --changed-base (with NUnit). Packages stay player-compiled.
+    # Editor-folder scripts in their own Assembly-CSharp-Editor (with NUnit), gated on the ones changed
+    # since --changed-base (see EDITOR_PREDEFINED). Packages stay player-compiled.
     "editor": ["ENABLE_MONO", "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN", "ENABLE_PROFILER",
                "UNITY_ASSERTIONS", "DEBUG", "TRACE", "ENABLE_UNITY_COLLECTIONS_CHECKS", "UNITY_INCLUDE_TESTS"],
 }
 PLAYER_PLATFORM = "WindowsStandalone64"
+# Unity's predefined EDITOR assemblies, for loose scripts under an Editor/ folder (Plugins/ and
+# Standard Assets/ ones go to -firstpass). They reference the runtime assemblies, never the other way
+# round. Only the editor config fills them; it gates on errors in the Editor-folder files changed
+# since --changed-base and lists the rest's, which are compiled only so the changed ones bind.
+EDITOR_PREDEFINED = ("Assembly-CSharp-Editor-firstpass", "Assembly-CSharp-Editor")
 
 
 # --- helpers -----------------------------------------------------------------------------------
@@ -347,16 +354,50 @@ def owner_of(path, owners, stop):
 
 
 # --- compile -----------------------------------------------------------------------------------
+def version_key(name):
+    """Numeric sort key for a version directory name: "10.0.12" sorts after "8.0.31" (a plain string
+    sort puts it first, and picked .NET 8 over 10 whenever both were installed)."""
+    return tuple(int(x) for x in re.findall(r"\d+", name))
+
+
 def csc_path():
-    c = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")))
+    c = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")),
+               key=lambda p: version_key(p.split(os.sep)[-4]))
     if not c:
         sys.exit("csc.dll not found under %s/sdk (set DOTNET_ROOT)" % DOTNET_ROOT)
     return c[-1]
 
 
+def netcore_toolchain():
+    """(reference-pack dir, runtime version, tfm) for building and running the helper tools
+    (Depublicize, Diagnose, Schema). Any .NET SDK from 8.0 up will do: the tools are compiled against
+    the newest Microsoft.NETCore.App reference pack the newest installed runtime can run."""
+    shared = os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")
+    runtimes = sorted((r for r in (os.listdir(shared) if os.path.isdir(shared) else []) if version_key(r)),
+                      key=version_key)
+    if not runtimes:
+        sys.exit("no .NET runtime under %s (DOTNET_ROOT=%s): install a .NET SDK, 8.0 or newer" % (shared, DOTNET_ROOT))
+    rt = runtimes[-1]
+    packs = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net*.0")),
+                   key=lambda p: version_key(p.split(os.sep)[-3]))
+    usable = [p for p in packs if version_key(p.split(os.sep)[-3])[:1] <= version_key(rt)[:1]]
+    if not usable:
+        sys.exit("no Microsoft.NETCore.App reference pack that runtime %s can run under %s/packs (found: %s): "
+                 "install a .NET SDK, not only a runtime" % (rt, DOTNET_ROOT, ", ".join(packs) or "none"))
+    return usable[-1], rt, os.path.basename(usable[-1])
+
+
 def base_refs():
-    ns = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "NETStandard.Library.Ref", "*", "ref", "netstandard2.1",
-                                       "netstandard.dll")))[-1]
+    """netstandard 2.1 (Unity's API profile) + the NETStandard 2.0 facades. netstandard.dll comes from
+    the SDK's NETStandard.Library.Ref pack when the SDK bundles one (8.0 does, 10.0 does not), else
+    from the nuget copy fetch.py caches."""
+    sdk = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "NETStandard.Library.Ref", "*", "ref", "netstandard2.1",
+                                        "netstandard.dll")), key=lambda p: version_key(p.split(os.sep)[-4]))
+    nuget = os.path.join(CACHE, "nuget", "netstandard.library.ref.2.1.0", "ref", "netstandard2.1", "netstandard.dll")
+    ns = (sdk[-1:] + [nuget])[0]
+    if not os.path.exists(ns):
+        sys.exit("netstandard.dll 2.1 not found: no NETStandard.Library.Ref pack under %s/packs and no %s - "
+                 "rerun fetch.py (needs network once)" % (DOTNET_ROOT, nuget))
     fac = os.path.join(CACHE, "nuget", "netstandard.library.2.0.3", "build", "netstandard2.0", "ref")
     refs = [ns] + [p for p in glob.glob(os.path.join(fac, "*.dll")) if os.path.basename(p) != "netstandard.dll"]
     return refs
@@ -372,6 +413,30 @@ UGUI_ALIASES = ["Unity.ugui", "UnityEngine.UI", "Unity.TextMeshPro", "GUID:2bafa
                 "GUID:6055be8ebefd69e48b49212b09b47b2f", "GUID:6546d7765b4165b40850b3667f981c26"]
 
 
+def depublicize_tool():
+    """Build (cached per toolchain) Depublicize/Program.cs - the Mono.Cecil rewriter, also the engine index."""
+    cecil = os.path.join(CACHE, "packages", "com.unity.nuget.mono-cecil@1.11.6", "Mono.Cecil.dll")
+    tool_src = os.path.join(HERE, "Depublicize", "Program.cs")
+    tools = os.path.join(CACHE, "tools")
+    dll = os.path.join(tools, "Depublicize.dll")
+    ref, rt, tfm = netcore_toolchain()
+    fp = fingerprint([tool_src, cecil, csc_path(), ref, rt])
+    stamp = dll + ".stamp"
+    if os.path.exists(dll) and os.path.exists(stamp) and open(stamp).read() == fp:
+        return dll
+    os.makedirs(tools, exist_ok=True)
+    cmd = [os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib", "-langversion:latest",
+           "-r:" + cecil, "-out:" + dll, tool_src] + ["-r:" + x for x in glob.glob(os.path.join(ref, "*.dll"))]
+    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if r.returncode != 0:
+        sys.exit("Depublicize tool failed to build:\n" + r.stdout)
+    shutil.copyfile(cecil, os.path.join(tools, "Mono.Cecil.dll"))
+    json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+              open(os.path.join(tools, "Depublicize.runtimeconfig.json"), "w"))
+    open(stamp, "w").write(fp)
+    return dll
+
+
 def depublicize():
     """Build (once, cached) the de-publicized copies of the Unity 6 reference DLLs - see
     Depublicize/Program.cs. Rebuilt whenever overrides.txt or the tool changes."""
@@ -380,31 +445,22 @@ def depublicize():
     cecil = os.path.join(CACHE, "packages", "com.unity.nuget.mono-cecil@1.11.6", "Mono.Cecil.dll")
     tool_src = os.path.join(HERE, "Depublicize", "Program.cs")
     ovr = os.path.join(HERE, "depublicize_overrides.txt")
-    tools = os.path.join(CACHE, "tools")
     out = os.path.join(CACHE, "engine_refs")
     stage = os.path.join(CACHE, "engine_refs_in")
-    fp = fingerprint([tool_src, ovr, cecil])
+    dll = depublicize_tool()
+    # the output depends on the inputs' content, not on which .NET built the tool or where the inputs
+    # sit: a new SDK or a fresh checkout must not rewrite the engine references (that would recompile
+    # every cached package assembly)
+    fp = content_fingerprint([tool_src, ovr, cecil])
     stamp = os.path.join(out, ".stamp")
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return out
-    os.makedirs(tools, exist_ok=True)
     os.makedirs(stage, exist_ok=True)
     for p in glob.glob(os.path.join(src, "*.dll")):
         b = os.path.basename(p).replace("-publicized", "")
         if b.startswith("UnityEngine") or b == "Unity.TextMeshPro.dll":
             if not b.startswith("UnityEngine.SpatialTracking") and not b.startswith("UnityEngine.XR.Legacy"):
                 shutil.copyfile(p, os.path.join(stage, b))
-    ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-    rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
-    dll = os.path.join(tools, "Depublicize.dll")
-    cmd = [os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib", "-langversion:latest",
-           "-r:" + cecil, "-out:" + dll, tool_src] + ["-r:" + x for x in glob.glob(os.path.join(ref, "*.dll"))]
-    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if r.returncode != 0:
-        sys.exit("Depublicize tool failed to build:\n" + r.stdout)
-    shutil.copyfile(cecil, os.path.join(tools, "Mono.Cecil.dll"))
-    json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
-              open(os.path.join(tools, "Depublicize.runtimeconfig.json"), "w"))
     if os.path.isdir(out):
         shutil.rmtree(out)
     r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, stage, out, oracle, ovr],
@@ -443,12 +499,11 @@ def diagnose_tool():
     src = os.path.join(HERE, "Diagnose", "Program.cs")
     dll = os.path.join(tools, "Diagnose.dll")
     stamp = dll + ".stamp"
-    fp = fingerprint([src, csc_path()])
+    ref, rt, tfm = netcore_toolchain()
+    fp = fingerprint([src, csc_path(), ref, rt])
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return dll
     bincore = os.path.dirname(csc_path())
-    ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-    rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
     os.makedirs(tools, exist_ok=True)
     for b in ("Microsoft.CodeAnalysis.dll", "Microsoft.CodeAnalysis.CSharp.dll"):
         shutil.copyfile(os.path.join(bincore, b), os.path.join(tools, b))
@@ -458,7 +513,7 @@ def diagnose_tool():
     r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     if r.returncode != 0:
         sys.exit("Diagnose tool failed to build:\n" + r.stdout)
-    json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+    json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
               open(os.path.join(tools, "Diagnose.runtimeconfig.json"), "w"))
     open(stamp, "w").write(fp)
     return dll
@@ -477,6 +532,18 @@ def engine_refs():
     return out, {"UnityEngine.UI": os.path.join(d, "UnityEngine.UI.dll"), "Unity.TextMeshPro": os.path.join(d, "Unity.TextMeshPro.dll")}
 
 
+def content_fingerprint(paths):
+    """fingerprint() on file CONTENT, not path and mtime: a checkout, a rebase or another worktree's
+    copy of the same file must not invalidate what was built from it (and, through the engine
+    references, every cached package assembly)."""
+    h = hashlib.sha1()
+    for p in paths:
+        h.update(os.path.basename(p).encode())
+        with open(p, "rb") as f:
+            h.update(hashlib.sha1(f.read()).digest())
+    return h.hexdigest()
+
+
 def fingerprint(items):
     h = hashlib.sha1()
     for it in items:
@@ -489,248 +556,147 @@ def fingerprint(items):
 
 # Packages needle-mirror does not carry come from the Unity registry (fetch.py) where that host is
 # reachable, and are compiled like any other. Where it is not, such a package is ABSENT from the run:
-# an error that names something it declares (or a cascade of one) is bucketed "unobtainable", never
-# gated. What each one declares is snapshotted here from its real tarball at the locked version by
-# `build.py --write-declarations` (run where they ARE fetched); see README step 7.
+# an error that names a type it declares (or a cascade of one) is bucketed "unobtainable", not gated.
+# What each one declares is snapshotted from its real tarball at the locked version by
+# `build.py --write-declarations`, run where they ARE fetched; see README step 7.
 UNOBTAINABLE_SNAPSHOT = os.path.join(HERE, "unobtainable_declarations.tsv")
+REFRESH_HINT = "refresh it where packages.unity.com is reachable: run.sh --write-declarations"
 MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
-# Errors that can be cascades of an unresolved type rather than a name of their own: `out var x` from
-# an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, a member of a List<Unknown> -> CS1061.
-# Diagnose suffixes each with the named error types its expression involves.
+# Errors that can be cascades of an unresolved type rather than a name of their own: `out var x` from an
+# unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, a member of a List<Unknown> -> CS1061.
+# Diagnose appends the named error types each one's expression involves: " [unresolved types: A, B]".
 CASCADE_CODES = {"CS0165", "CS0019", "CS1061"}
-REFRESH_HINT = ("refresh it where packages.unity.com is reachable: run.sh (fetch), then "
-                "build.py --write-declarations")
 UNRESOLVED_RE = re.compile(r" \[unresolved types: ([^\]]*)\]$")
-
-# Missing-type messages, by code: the name (and namespace / assembly) each one is about.
-MISSING_SIMPLE = re.compile(r"The type or namespace name '([^']+)' could not be found|"
-                            r"The name '([^']+)' does not exist in the current context|"
-                            r"'([^']+)' in explicit interface declaration is not an interface")
-MISSING_IN_NS = re.compile(r"The type (?:or namespace )?name '([^']+)' (?:does not exist in|could not be found in) the namespace '([^']+)'")
-MISSING_ASM = re.compile(r"(?:reference to|forwarded to) assembly '([^',]+)")
-USING_RE = re.compile(r"^\s*using\s+(static\s+)?(?:\w+\s*=\s*)?(?:global::)?([\w.]+)\s*;", re.M)
-NAMESPACE_RE = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
-
-
-def no_declarations():
-    return {"asms": set(), "namespaces": set(), "types": {}}
-
-
-def add_declaration(decl, f):
-    """One Diagnose --declarations record, split on tabs: "N", ns | "T", ns, name."""
-    if f[0] == "N":
-        parts = f[1].split(".")
-        decl["namespaces"].update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
-    elif f[0] == "T":
-        decl["types"].setdefault(f[2], set()).add(f[1])
+# Editor config: errors that are the 2021.1 UnityEditor reference (the newest non-publicized one
+# obtainable) or the unfetched test framework, not the code. Matched on the whole message, so a typo
+# on the same type still gates. Add an entry only for documented Unity API, naming where it came from.
+EDITOR_REFERENCE_GAPS = [
+    (r"'MaterialProperty' does not contain a definition for 'propertyType'", "MaterialProperty.propertyType, Unity 6"),
+    (r"name 'NamedBuildTarget'", "UnityEditor.Build.NamedBuildTarget, 2021.2"),
+    (r"'PlayerSettings' does not contain a definition for '[GS]etScriptingDefineSymbols'",
+     "PlayerSettings.Get/SetScriptingDefineSymbols(NamedBuildTarget), 2021.2"),
+    (r"name 'PrefabStageUtility' does not exist", "UnityEditor.SceneManagement.PrefabStageUtility (out of Experimental), 2021.2"),
+    (r"'EditorUtility' does not contain a definition for 'EntityIdToObject'", "EditorUtility.EntityIdToObject, 6000.2"),
+    (r"name 'TestTools' does not exist in the namespace 'UnityEditor'", "com.unity.test-framework (not fetched)"),
+    (r"name 'LogAssert' does not exist", "UnityEngine.TestTools.LogAssert, com.unity.test-framework (not fetched)"),
+]
+_DECLARED_TYPE = re.compile(r"\b(?:class|struct|interface|enum|record)\s+(\w+)|\bdelegate\s+[^;{(=]*?\b(\w+)\s*(?:<[^>]*>)?\s*\(")
+# Comments and string/char literals, blanked before _DECLARED_TYPE reads a file: package docs say "the
+# class to ..." and "an interface for ...", and every such word would otherwise read as a declared type
+# (32 in the five registry-only packages: `instance`, `property`, `range`, `version`, ...), so a local
+# misspelled as one of them would be bucketed instead of gated.
+_NOT_CODE = re.compile(r'//[^\n]*|/\*.*?\*/|@"(?:[^"]|"")*"|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])+\'', re.S)
 
 
-def merge_declarations(decls):
-    out = no_declarations()
-    for d in decls:
-        out["asms"] |= d["asms"]
-        out["namespaces"] |= d["namespaces"]
-        for name, nss in d["types"].items():
-            out["types"].setdefault(name, set()).update(nss)
-    return out
+def declared_names(files):
+    """(type names, namespaces) declared in these sources - what a dependent cannot see while the
+    assembly they compile into has failed."""
+    types, namespaces = set(), set()
+    for f in files:
+        try:
+            txt = _NOT_CODE.sub(" ", open(f, encoding="utf-8-sig", errors="replace").read())
+        except OSError:
+            continue
+        types.update(m.group(1) or m.group(2) for m in _DECLARED_TYPE.finditer(txt))
+        for ns in re.findall(r"\bnamespace\s+([\w.]+)", txt):
+            parts = ns.split(".")
+            namespaces.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+    return types, namespaces
 
 
-def declared(rsp):
-    """Diagnose --declarations for one assembly: its "N\t<ns>" and "T\t<ns>\t<public type>" lines."""
-    r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), "--declarations", rsp],
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if r.returncode != 0:
-        sys.exit("Diagnose --declarations failed for %s:\n%s" % (rsp, r.stdout))
-    return r.stdout.splitlines()
+def names_failed_package(msg, failed, types, namespaces):
+    """Can this missing-type error stem from a failed package? Only if the name it cannot find is
+    one that package declares (or, CS0012, it names the package's assembly). Anything else - a typo,
+    a type from an Editor folder - is a real error, however many packages failed."""
+    if any("assembly '%s," % k in msg for k in failed):
+        return True
+    m = re.search(r"'([^']+)' does not exist in the namespace '([^']+)'", msg)
+    if m and m.group(2) + "." + m.group(1) in namespaces:
+        return True
+    m = re.search(r"'([^']+)'", msg)
+    if not m:
+        return False
+    name = re.sub(r"<.*", "", m.group(1))
+    return name in namespaces or name.split(".")[-1] in types
 
 
-def declarations(rsps):
-    """What the assemblies compiled from these .rsp files declare, read from their own sources with
-    their own defines (Diagnose --declarations): {"asms", "namespaces" (with every prefix), "types":
-    {public top-level type name: {namespace}}}."""
-    decl = no_declarations()
-    for name, rsp in rsps.items():
-        decl["asms"].add(name)
-        for line in declared(rsp):
-            add_declaration(decl, line.split("\t"))
-    return decl
+def names_absent_package(code, msg, asms, types, namespaces):
+    """names_failed_package for a package this run could not fetch (asms/types/namespaces: what it
+    declares, from the snapshot), plus its cascades: a CASCADE_CODES error stems from it only when one
+    of the unresolved types Diagnose found in its expression is a type it declares. With none (a real
+    unassigned local, a missing member of a known type) the error gates, like a misspelled name."""
+    m = UNRESOLVED_RE.search(msg)
+    if code in CASCADE_CODES:
+        return bool(m) and any(n.strip().split(".")[-1] in types for n in m.group(1).split(","))
+    return code in MISSING_CODES and names_failed_package(msg[:m.start()] if m else msg, asms, types, namespaces)
 
 
 def load_snapshot(path=UNOBTAINABLE_SNAPSHOT):
-    """unobtainable_declarations.tsv -> {package: {"version", "asms", "namespaces", "types"}}."""
+    """unobtainable_declarations.tsv -> {package: {"version", "asms", "types", "namespaces"}}."""
     snap, cur = {}, None
     if not os.path.exists(path):
         return snap
     for line in open(path, encoding="utf-8"):
         f = line.rstrip("\n").split("\t")
-        if not f[0] or f[0].startswith("#"):
-            continue
         if f[0] == "P":
-            cur = snap[f[1]] = dict(no_declarations(), version=f[2])
-        elif f[0] == "A":
-            cur["asms"].add(f[1])
-        else:
-            add_declaration(cur, f)
+            cur = snap[f[1]] = {"version": f[2], "asms": set(), "types": set(), "namespaces": set()}
+        elif f[0] in ("A", "T", "N"):
+            cur[{"A": "asms", "T": "types", "N": "namespaces"}[f[0]]].add(f[1])
     return snap
 
 
 def write_snapshot(packages, path=UNOBTAINABLE_SNAPSHOT):
-    """packages: [(package, version, sha1, {assembly: rsp})] -> unobtainable_declarations.tsv."""
+    """packages: [(package, version, tarball sha1, {assembly: [source files]})]. Declared names come
+    from declared_names, the same reading a failed package gets."""
     lines = ["# What the packages needle-mirror does not carry declare, for a run that cannot fetch them from",
-             "# packages.unity.com either: an Assets error is bucketed \"unobtainable\" only when it names one of",
-             "# these (README step 7). Written by `build.py --write-declarations` from the real tarballs at their",
-             "# locked versions, assemblies Assets code references only, public top-level types only. Do not edit.",
-             "# P package version tarball-sha1 | A assembly | N namespace | T namespace type"]
+             "# packages.unity.com either: an Assets error goes to the \"unobtainable\" bucket only when it names",
+             "# one of these (README step 7). Written by `run.sh --write-declarations` from the real tarballs at",
+             "# their locked versions, for the assemblies Assets code references. Do not edit by hand.",
+             "# P package version tarball-sha1 | A assembly | T type | N namespace (with every prefix)"]
     for pkg, ver, sha, asms in sorted(packages):
+        types, namespaces = declared_names([f for files in asms.values() for f in files])
         lines.append("P\t%s\t%s\t%s" % (pkg, ver, sha))
-        for asm in sorted(asms):
-            lines.append("A\t" + asm)
-            lines += sorted(set(declared(asms[asm])))
+        lines += ["A\t" + a for a in sorted(asms)] + ["T\t" + t for t in sorted(types)] \
+            + ["N\t" + n for n in sorted(namespaces)]
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
 
-def from_absent_assembly(code, msg, src, decl):
-    """True when a missing-type error can stem from an assembly absent from this compile (decl: what
-    it declares - a referenced package assembly that did not compile, or a package this run could not
-    fetch). It must name one of them, or a namespace or top-level type they declare that this file can
-    see: its namespace is `using`d, encloses the file, or is global. A misspelled local, member or type
-    is anything else, and gates."""
-    if code not in MISSING_CODES or not (decl["asms"] or decl["types"]):
-        return False
-    m = MISSING_ASM.search(msg)
-    if m and m.group(1) in decl["asms"]:
-        return True
-    visible, static = {""}, []
-    for st, ns in USING_RE.findall(src):
-        if st:
-            static.append(ns)
-        else:
-            visible.add(ns)
-    for ns in NAMESPACE_RE.findall(src):
-        parts = ns.split(".")
-        visible.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
-
-    def declares(ns, name):
-        name = re.sub(r"<.*", "", name)
-        names = {name, name + "Attribute"} | ({name[:-len("Attribute")]} if name.endswith("Attribute") else set())
-        return any(ns in decl["types"].get(n, ()) for n in names)
-    # `using static N.T;` of a type they declare: any simple name in this file may be one of its members
-    if code in ("CS0103", "CS0246") and any(declares(*s.rpartition(".")[::2]) for s in static):
-        return True
-    m = MISSING_IN_NS.search(msg)
-    if m:
-        name, ns = m.group(1), m.group(2).replace("global::", "")
-        return declares(ns, name) or (code == "CS0234" and ns + "." + re.sub(r"<.*", "", name) in decl["namespaces"])
-    m = MISSING_SIMPLE.search(msg)
-    if not m:
-        return False
-    name = re.sub(r"<.*", "", next(g for g in m.groups() if g)).replace("global::", "")
-    if "." in name:
-        ns, _, name = name.rpartition(".")
-        return declares(ns, name)
-    if any(declares(ns, name) for ns in visible):
-        return True
-    # a type-or-namespace name may be the next segment of a namespace only they declare
-    return code == "CS0246" and any((v + "." + name).lstrip(".") in decl["namespaces"] for v in visible)
-
-
-def stems_from(code, msg, src, decl):
-    """from_absent_assembly, plus cascades: a CASCADE_CODES error stems from the absent assembly when
-    one of the unresolved types Diagnose found in its expression is a name it declares that this file
-    can see. With no such type (a real flow error, a missing member of a known type) it gates."""
-    m = UNRESOLVED_RE.search(msg)
-    if code in CASCADE_CODES:
-        return any(from_absent_assembly("CS0246", "The type or namespace name '%s' could not be found" % n.strip(), src, decl)
-                   for n in (m.group(1).split(",") if m else []))
-    return from_absent_assembly(code, msg[:m.start()] if m else msg, src, decl)
-
-
 def self_test():
-    """Classifier fixtures (no dotnet, no cache): planted misspellings gate; names an absent assembly
-    declares, and their cascades, are bucketed only where the file can see them."""
-    decl = {"asms": {"UnityEngine.Purchasing.Stores"},
-            "namespaces": {"UnityEngine", "UnityEngine.Purchasing", "UnityEngine.Purchasing.Extension"},
-            "types": {"StandardPurchasingModule": {"UnityEngine.Purchasing"}, "IStoreListener": {"UnityEngine.Purchasing"},
-                      "CodelessIAPStoreListener": {"UnityEngine.Purchasing"}, "IAPButtonAttribute": {"UnityEngine.Purchasing"}}}
-    iap = "using UnityEngine;\nusing UnityEngine.Purchasing;\nnamespace CosmicShore.Store {\n"
-    plain = "using UnityEngine;\nnamespace CosmicShore.Controller {\n"
-    cases = [
-        # (expect bucketed, code, message, source)
-        (False, "CS0103", "The name 'nearClipPlan' does not exist in the current context", plain),
-        (False, "CS0103", "The name 'nearClipPlan' does not exist in the current context", iap),
-        (False, "CS0246", "The type or namespace name 'Vectr3' could not be found (are you missing a using directive or an assembly reference?)", iap),
-        (False, "CS0246", "The type or namespace name 'IStoreListener' could not be found (are you missing a using directive or an assembly reference?)", plain),
-        (False, "CS0234", "The type or namespace name 'Extensoin' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", iap),
-        (False, "CS0012", "The type 'Foo' is defined in an assembly that is not referenced. You must add a reference to assembly 'CosmicShore.Data, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.", plain),
-        (False, "CS1061", "'Camera' does not contain a definition for 'nearClipPlan' and no accessible extension method", iap),
-        (True, "CS0246", "The type or namespace name 'IStoreListener' could not be found (are you missing a using directive or an assembly reference?)", iap),
-        (True, "CS0246", "The type or namespace name 'IStoreListener' could not be found (are you missing a using directive or an assembly reference?)", "namespace UnityEngine.Purchasing.Custom {\n"),
-        (True, "CS0246", "The type or namespace name 'IAPButton' could not be found (are you missing a using directive or an assembly reference?)", iap),
-        (True, "CS0103", "The name 'StandardPurchasingModule' does not exist in the current context", iap),
-        (True, "CS0103", "The name 'Instance' does not exist in the current context", "using static UnityEngine.Purchasing.StandardPurchasingModule;\n" + plain),
-        (True, "CS0538", "'IStoreListener' in explicit interface declaration is not an interface", iap),
-        (True, "CS0538", "'UnityEngine.Purchasing.IStoreListener' in explicit interface declaration is not an interface", plain),
-        (True, "CS0234", "The type or namespace name 'Extension' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", plain),
-        (True, "CS0234", "The type or namespace name 'CodelessIAPStoreListener' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", plain),
-        (True, "CS0012", "The type 'IStoreListener' is defined in an assembly that is not referenced. You must add a reference to assembly 'UnityEngine.Purchasing.Stores, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.", plain),
-    ]
-    # an unobtainable package, as the snapshot gives it: the party services' shape
-    ugs = {"asms": {"Unity.Services.Multiplayer"},
-           "namespaces": {"Unity", "Unity.Services", "Unity.Services.Multiplayer"},
-           "types": {n: {"Unity.Services.Multiplayer"} for n in
-                     ("ISession", "ISessionInfo", "IReadOnlyPlayer", "MultiplayerService", "PlayerProperty")}}
-    party = "using System;\nusing Unity.Services.Multiplayer;\nusing UnityEngine;\nnamespace CosmicShore.Gameplay {\n"
+    """Bucketing fixtures (no dotnet, no cache): an error in a file that uses a package this run could
+    not fetch is bucketed only when it names a type that package declares, or is a cascade of one."""
+    asms = {"Unity.Services.Multiplayer"}
+    types = {"ISession", "ISessionInfo", "IReadOnlyPlayer", "MultiplayerService", "PlayerProperty"}
+    namespaces = {"Unity", "Unity.Services", "Unity.Services.Multiplayer"}
     nf = "The type or namespace name '%s' could not be found (are you missing a using directive or an assembly reference?)"
-    ugs_cases = [
-        (False, "CS0103", "The name 'sesion' does not exist in the current context", party),
-        (False, "CS0246", nf % "ISesion", party),
-        (False, "CS0234", "The type or namespace name 'Multiplayr' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)", party),
-        (False, "CS0246", nf % "ISession", plain),
-        (False, "CS1061", "'HostConnectionDataSO' does not contain a definition for 'LocalPlayr' and no accessible extension method 'LocalPlayr' accepting a first argument of type 'HostConnectionDataSO' could be found (are you missing a using directive or an assembly reference?)", party),
-        (False, "CS0165", "Use of unassigned local variable 'parsed'", party),
-        (False, "CS0165", "Use of unassigned local variable 'parsed' [unresolved types: Vectr3]", party),
-        (False, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: ISessionInfo]", plain),
-        (False, "CS0029", "Cannot implicitly convert type 'string' to 'int' [unresolved types: ISession]", party),
-        (True, "CS0234", "The type or namespace name 'Multiplayer' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)", party),
-        (True, "CS0246", nf % "ISession", party),
-        (True, "CS0246", nf % "Unity.Services.Multiplayer.ISession", plain),
-        (True, "CS0103", "The name 'MultiplayerService' does not exist in the current context", party),
-        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer]", party),
-        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer, Vectr3]", party),
-        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: ISessionInfo]", party),
-        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: Unity.Services.Multiplayer.ISessionInfo]", plain),
-        (True, "CS1061", "'List<ISession>' does not contain a definition for 'Lenght' and no accessible extension method 'Lenght' accepting a first argument of type 'List<ISession>' could be found [unresolved types: ISession]", party),
+    no_ns = "The type or namespace name '%s' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)"
+    cases = [
+        # (expect bucketed, code, message)
+        (False, "CS0103", "The name 'otps' does not exist in the current context"),
+        (False, "CS0246", nf % "ISesion"),
+        (False, "CS0234", no_ns % "Multiplayr"),
+        (False, "CS0012", "The type 'Foo' is defined in an assembly that is not referenced. You must add a reference to assembly 'CosmicShore.Data, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'."),
+        (False, "CS1061", "'HostConnectionDataSO' does not contain a definition for 'NoSuchMember' and no accessible extension method 'NoSuchMember' accepting a first argument of type 'HostConnectionDataSO' could be found (are you missing a using directive or an assembly reference?)"),
+        (False, "CS0165", "Use of unassigned local variable 'plantUnset'"),
+        (False, "CS0165", "Use of unassigned local variable 'parsed' [unresolved types: Vectr3]"),
+        (False, "CS0019", "Operator '>' cannot be applied to operands of type 'int' and 'string'"),
+        (False, "CS0029", "Cannot implicitly convert type 'string' to 'int' [unresolved types: ISession]"),
+        (True, "CS0234", no_ns % "Multiplayer"),
+        (True, "CS0246", nf % "ISession"),
+        (True, "CS0246", nf % "Unity.Services.Multiplayer.ISession"),
+        (True, "CS0103", "The name 'MultiplayerService' does not exist in the current context"),
+        (True, "CS0012", "The type 'ISession' is defined in an assembly that is not referenced. You must add a reference to assembly 'Unity.Services.Multiplayer, Version=1.1.8.0, Culture=neutral, PublicKeyToken=null'."),
+        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer]"),
+        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer, Vectr3]"),
+        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: ISessionInfo]"),
+        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: Unity.Services.Multiplayer.ISessionInfo]"),
+        (True, "CS1061", "'List<ISession>' does not contain a definition for 'Lenght' and no accessible extension method 'Lenght' accepting a first argument of type 'List<ISession>' could be found [unresolved types: ISession]"),
     ]
-    nothing = no_declarations()
-    bad = [(want, code, msg) for want, code, msg, src in cases if stems_from(code, msg, src, decl) != want]
-    bad += [(want, code, msg) for want, code, msg, src in ugs_cases if stems_from(code, msg, src, ugs) != want]
-    bad += [(False, code, msg) for want, code, msg, src in cases + ugs_cases if stems_from(code, msg, src, nothing)]
-    # the committed snapshot: every name the party services use from the five packages is declared, and a
-    # misspelling is not (the names below are the ones a run without packages.unity.com reports)
+    bad = [(want, code, msg) for want, code, msg in cases if names_absent_package(code, msg, asms, types, namespaces) != want]
+    bad += [(False, code, msg) for want, code, msg in cases if names_absent_package(code, msg, set(), set(), set())]
+    # the committed snapshot: matches the lock, and declares every name a run without packages.unity.com
+    # reports from the party services, the friends/leaderboards facades and MultiplayerSetup
     snap = load_snapshot()
-    real = merge_declarations(snap.values())
-    friends = ("using Unity.Services.Friends;\nusing Unity.Services.Friends.Models;\nusing Unity.Services.Friends.Exceptions;\n"
-               "using Unity.Services.Friends.Notifications;\n" + plain)
-    board = "using Unity.Services.Leaderboards;\n" + plain
-    snap_cases = [(True, "CS0103", "The name '%s' does not exist in the current context" % n, party)
-                  for n in ("MultiplayerService", "VisibilityPropertyOptions", "FilterField", "FilterOperation")]
-    snap_cases += [(True, "CS0246", nf % n, party) for n in
-                   ("ISession", "ISessionInfo", "IReadOnlyPlayer", "PlayerProperty", "SessionProperty", "SessionOptions",
-                    "JoinSessionOptions", "QuerySessionsOptions", "FilterOption", "SessionException", "SessionError",
-                    "PropertyIndex", "IMultiplayerService")]
-    snap_cases += [(True, "CS0246", nf % n, friends) for n in
-                   ("FriendsService", "IFriendsService", "FriendsServiceException", "Availability", "Relationship", "MemberRole",
-                    "RelationshipType", "IRelationshipAddedEvent", "IRelationshipDeletedEvent", "IPresenceUpdatedEvent")]
-    snap_cases += [(True, "CS0246", nf % n, board) for n in
-                   ("LeaderboardsService", "AddPlayerScoreOptions", "GetScoresOptions", "GetScoresByPlayerIdsOptions")]
-    snap_cases += [(True, "CS0234", "The type or namespace name '%s' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)" % n, plain)
-                   for n in ("Multiplayer", "Friends", "Leaderboards")]
-    snap_cases += [(False, "CS0103", "The name 'sesion' does not exist in the current context", party),
-                   (False, "CS0246", nf % "ISesion", party),
-                   # declared, but in Friends.Notifications, which this file does not `using`
-                   (False, "CS0246", nf % "IRelationshipAddedEvent", "using Unity.Services.Friends;\n" + plain)]
-    bad += [(want, code, msg) for want, code, msg, src in snap_cases if stems_from(code, msg, src, real) != want]
     lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
     for pkg, d in sorted(snap.items()):
         if lock.get(pkg, {}).get("version") != d["version"]:
@@ -738,10 +704,36 @@ def self_test():
                         % (pkg, d["version"], lock.get(pkg, {}).get("version", "absent"), REFRESH_HINT)))
     if not snap:
         bad.append((True, "-", "unobtainable_declarations.tsv is missing or empty: " + REFRESH_HINT))
+    s_asms, s_types, s_ns = (set().union(*(d[k] for d in snap.values())) if snap else set()
+                             for k in ("asms", "types", "namespaces"))
+    used = ["MultiplayerService", "VisibilityPropertyOptions", "FilterField", "FilterOperation", "ISession", "ISessionInfo",
+            "IReadOnlyPlayer", "PlayerProperty", "SessionProperty", "SessionOptions", "JoinSessionOptions",
+            "QuerySessionsOptions", "FilterOption", "SessionException", "SessionError", "PropertyIndex",
+            "IMultiplayerService", "FriendsService", "IFriendsService", "FriendsServiceException", "Availability",
+            "Relationship", "RelationshipType", "MemberRole", "IRelationshipAddedEvent", "IRelationshipDeletedEvent",
+            "IPresenceUpdatedEvent", "LeaderboardsService", "AddPlayerScoreOptions", "GetScoresOptions",
+            "GetScoresByPlayerIdsOptions", "CurrentPlayer"]
+    snap_cases = [(True, "CS0246", nf % n) for n in used]
+    snap_cases += [(True, "CS0234", no_ns % n) for n in ("Multiplayer", "Friends", "Leaderboards")]
+    snap_cases += [(True, "CS0234", "The type or namespace name 'Playmode' does not exist in the namespace 'Unity.Multiplayer' (are you missing an assembly reference?)"),
+                   (False, "CS0103", "The name 'otps' does not exist in the current context"),
+                   (False, "CS0246", nf % "ISesion")]
+    bad += [(want, code, msg) for want, code, msg in snap_cases if names_absent_package(code, msg, s_asms, s_types, s_ns) != want]
+    # declared_names reads code, not prose: a word after `class` in a comment or a string is not a type
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".cs", delete=False) as f:
+        f.write('// the class to call\n/* an interface for it */ var s = "class Fake"; var v = @"enum ""Junk""";\n'
+                "char q = '\"'; namespace N.M { public class Real {} enum E { X } delegate void D(int x); }\n")
+    got = declared_names([f.name])
+    os.remove(f.name)
+    if got != ({"Real", "E", "D"}, {"N", "N.M"}):
+        bad.append((True, "-", "declared_names read %s from a fixture declaring Real, E, D in N.M" % (got,)))
+    junk = sorted(s_types & {"to", "for", "is", "that", "instance", "property", "range", "version"})
+    if junk:
+        bad.append((True, "-", "unobtainable_declarations.tsv lists comment words as types: %s - %s" % (junk, REFRESH_HINT)))
     for want, code, msg in bad:
         print("[self-test] FAIL: expected %s: %s %s" % ("bucketed" if want else "project error", code, msg))
-    n = len(cases) + len(ugs_cases) + len(snap_cases)
-    print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", n))
+    print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", len(cases) + len(snap_cases)))
     return 1 if bad else 0
 
 LEARN_0507 = re.compile(r"overriding 'public' inherited member '([^']+)'")
@@ -756,7 +748,7 @@ def engine_index():
     global _INDEX
     if _INDEX is None:
         tsv = os.path.join(CACHE, "engine_refs_index.tsv")
-        dll = os.path.join(CACHE, "tools", "Depublicize.dll")
+        dll = depublicize_tool()
         subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, "--index", os.path.join(CACHE, "engine_refs_in"), tsv],
                        check=True)
         _INDEX = [l.rstrip("\n").split("\t") for l in open(tsv)]
@@ -818,7 +810,43 @@ def learn(errs):
     return bool(new)
 
 
+def changed_since(base):
+    """Absolute paths of the .cs files changed since `base` (from the merge-base, as `base...HEAD`),
+    uncommitted and untracked ones INCLUDED: the tool is run before a commit (CLAUDE.md: verify every
+    C# change before committing it), so the working tree is what it judges. They decide what gates in
+    the Editor folders and what is tagged [CHANGED-TONIGHT]."""
+    def git(*a):
+        r = subprocess.run(["git"] + list(a), cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        return r.stdout if r.returncode == 0 else ""
+    mb = git("merge-base", base, "HEAD").strip()
+    if not mb:
+        print("[build] WARNING: --changed-base %s not found - only untracked files count as changed" % base)
+    names = (git("diff", "-z", "--name-only", mb, "--", "*.cs") if mb else "") \
+        + git("ls-files", "-z", "--others", "--exclude-standard", "--", "*.cs")
+    return {os.path.join(ROOT, x) for x in names.split("\0") if x}
+
+
+def lock_shared_state():
+    """One run at a time per cache and per output root. The engine references, the helper tools and
+    the shared package assemblies are rewritten in place, and a run reading them mid-write fails at
+    random (seen: Unity.Entities "FAILED: 2 errors" while a parallel run rebuilt the references)."""
+    import fcntl
+    held = []
+    out_root = os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out")
+    for d in dict.fromkeys(os.path.realpath(x) for x in (CACHE, out_root)):
+        os.makedirs(d, exist_ok=True)
+        f = open(os.path.join(d, ".build.lock"), "w")
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("[build] waiting for another unity_refcompile run using %s" % d, flush=True)
+            fcntl.flock(f, fcntl.LOCK_EX)
+        held.append(f)
+    return held
+
+
 def main():
+    _locks = lock_shared_state()  # noqa: F841 (held until the process exits)
     for attempt in range(8):
         rc = run_once()
         if rc != 3:
@@ -837,7 +865,7 @@ def run_once():
     ap.add_argument("--max-errors", type=int, default=400)
     ap.add_argument("--changed-base", default="origin/bleeding-edge")
     ap.add_argument("--quiet-buckets", action="store_true", help="count, do not list, the unverifiable buckets")
-    ap.add_argument("--self-test", action="store_true", help="check the error bucketing on fixtures, then exit")
+    ap.add_argument("--self-test", action="store_true", help="check the unobtainable bucketing on fixtures, then exit")
     ap.add_argument("--write-declarations", action="store_true",
                     help="rewrite unobtainable_declarations.tsv from the packages this cache got from packages.unity.com")
     args = ap.parse_args()
@@ -858,11 +886,8 @@ def run_once():
     pkg_out = os.path.join(out_root, "_packages")
     os.makedirs(pkg_out, exist_ok=True)
     editor = args.config == "editor"
-    editor_included = []
-    changed_files = set()
-    r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
-                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    changed_files = {os.path.join(ROOT, x) for x in r.stdout.split()}
+    editor_files = []   # editor config: every loose Editor-folder script (Assembly-CSharp-Editor and -firstpass)
+    changed_files = changed_since(args.changed_base)
     os.makedirs(out, exist_ok=True)
     apply_source_patches()
     roots, versions = package_roots()
@@ -893,14 +918,21 @@ def run_once():
             continue
         head = open(sp, encoding="utf-8").read(2048)
         if n.startswith("UnityEngine."):
-            # engine-module stub: compiled up front and added to every assembly's engine references
-            edll = os.path.join(out, n + ".dll")
-            r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib",
-                                "-target:library", "-langversion:9.0", "-out:" + edll, sp]
-                               + ["-r:" + x for x in base_refs() + eng], stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, text=True)
-            if r.returncode != 0:
-                sys.exit("engine stub %s failed:\n%s" % (n, r.stdout))
+            # engine-module stub: added to every assembly's engine references, so it is built once into
+            # the shared package directory. A fresh copy per run and per config (as it was) changed
+            # every package's fingerprint, and no package assembly was ever served from the cache.
+            edll = os.path.join(pkg_out, n + ".dll")
+            srefs = base_refs() + eng
+            fp = content_fingerprint([sp]) + fingerprint(srefs)
+            stamp = edll + ".stamp"
+            if not (os.path.exists(edll) and os.path.exists(stamp) and open(stamp).read() == fp):
+                r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib",
+                                    "-target:library", "-langversion:9.0", "-deterministic", "-out:" + edll, sp]
+                                   + ["-r:" + x for x in srefs], stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True)
+                if r.returncode != 0:
+                    sys.exit("engine stub %s failed:\n%s" % (n, r.stdout))
+                open(stamp, "w").write(fp)
             eng.append(edll)
             engine_stubs.append(n)
             continue
@@ -914,8 +946,7 @@ def run_once():
     # assign sources
     assets = os.path.join(ROOT, "Assets")
     firstpass_roots = [os.path.join(assets, d) + os.sep for d in ("Plugins", "Standard Assets", "Pro Standard Assets")]
-    pre = {"Assembly-CSharp-firstpass": Asm("Assembly-CSharp-firstpass", assets, "predefined"),
-           "Assembly-CSharp": Asm("Assembly-CSharp", assets, "predefined")}
+    pre = {n: Asm(n, assets, "predefined") for n in ("Assembly-CSharp-firstpass", "Assembly-CSharp") + EDITOR_PREDEFINED}
     editor_skipped = 0
     for kind, root, p in sources:
         o = owner_of(p, owners, root)
@@ -926,15 +957,20 @@ def run_once():
             continue  # package scripts outside any asmdef are not compiled by Unity
         rel = os.path.relpath(p, assets).split(os.sep)
         if "Editor" in rel[:-1]:
-            if editor and p in changed_files:
-                pre["Assembly-CSharp"].files.append(p)
-                editor_included.append(p)
+            if editor:
+                # ALL of them, as Unity compiles them: a changed one needs its unchanged neighbours
+                # (FrogletTool, FrogletEditorPalette, ...) to bind. Only the changed ones are gated.
+                firstpass = any(p.startswith(r) for r in firstpass_roots)
+                pre["Assembly-CSharp-Editor-firstpass" if firstpass else "Assembly-CSharp-Editor"].files.append(p)
+                editor_files.append(p)
                 continue
             editor_skipped += 1
             continue
         tgt = "Assembly-CSharp-firstpass" if any(p.startswith(r) for r in firstpass_roots) else "Assembly-CSharp"
         pre[tgt].files.append(p)
     pre["Assembly-CSharp"].refs = ["Assembly-CSharp-firstpass"]
+    pre["Assembly-CSharp-Editor-firstpass"].refs = ["Assembly-CSharp-firstpass"]
+    pre["Assembly-CSharp-Editor"].refs = ["Assembly-CSharp-firstpass", "Assembly-CSharp", "Assembly-CSharp-Editor-firstpass"]
 
     # precompiled managed DLLs
     auto_dlls, named_dlls, analyzers = [], {}, []
@@ -967,13 +1003,15 @@ def run_once():
 
     live = {n: a for n, a in allasm.items()
             if a.excluded_reason is None and (a.files or getattr(a, "dlls", None))}
-    # predefined assemblies reference every auto-referenced asmdef
-    for pn in ("Assembly-CSharp-firstpass", "Assembly-CSharp"):
-        extra = [n for n, a in live.items() if a.origin not in ("predefined",) and a.auto]
-        pre[pn].refs = pre[pn].refs + extra
+    # predefined assemblies reference every auto-referenced asmdef, and an EMPTY predefined assembly
+    # does not exist (Unity creates none), so it is not a reference either
+    extra = [n for n, a in live.items() if a.origin not in ("predefined",) and a.auto]
+    for pn in pre:
+        pre[pn].refs = [r for r in pre[pn].refs if r not in pre or r in live] + extra
 
-    # drop transitively-unneeded assemblies: compile only what Assembly-CSharp needs
-    need, stack = set(), ["Assembly-CSharp"]
+    # drop transitively-unneeded assemblies: compile only what Assembly-CSharp (and, in the editor
+    # config, the editor assemblies) needs
+    need, stack = set(), ["Assembly-CSharp"] + [n for n in EDITOR_PREDEFINED if n in live]
     missing = {}
     while stack:
         n = stack.pop()
@@ -1008,19 +1046,16 @@ def run_once():
 
     csc = csc_path()
     nsrefs = base_refs()
-    changed = set()
-    try:
-        r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
-                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        changed = {os.path.join(ROOT, x) for x in r.stdout.split()}
-    except Exception:
-        pass
+    changed = changed_files
 
     outputs = {}
     results = {}
+    editor_changed = [p for p in editor_files if p in changed_files]
+    editor_unchanged = set(editor_files) - set(editor_changed)
     if editor:
-        print("[build] editor config: + %d Editor-folder file(s) changed since %s: %s" % (
-            len(editor_included), args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_included) or "none"))
+        print("[build] editor config: + %d Editor-folder script(s) as %s; gated: the %d changed since %s: %s" % (
+            len(editor_files), " + ".join(n for n in EDITOR_PREDEFINED if n in live) or "-", len(editor_changed),
+            args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_changed) or "none"))
     print("[build] config=%s, %d assemblies to compile (of %d discovered), %d Editor-folder scripts skipped"
           % (args.config, len(order), len(allasm), editor_skipped))
 
@@ -1041,6 +1076,7 @@ def run_once():
         return res
 
     relearn = False
+    rsps = {}   # Assets assembly -> the .rsp it was compiled from
     for n in order:
         a = live[n]
         if getattr(a, "dlls", None):
@@ -1061,6 +1097,13 @@ def run_once():
         # A package assembly that failed (a reference-set artifact, listed in the summary) is left
         # out and its dependents still compile; Assets errors that stem from it name its types.
         refs += [x for d in trans if d in outputs for x in outputs[d]]
+        # An editor assembly is instead BOUND against the source of a failed Assets reference
+        # (Diagnose --source-ref): compiled without it, one runtime error would read as dozens of
+        # missing types in the changed Editor files. Dependency order, as Diagnose takes them.
+        source_refs = [d for d in order if d in blocked and d in rsps] if n in EDITOR_PREDEFINED else []
+        blocked = [d for d in blocked if d not in source_refs]
+        if source_refs:
+            print("[build] %-55s binding against the SOURCE of failed reference(s): %s" % (n, ", ".join(source_refs)))
         if blocked:
             print("[build] %-55s compiling WITHOUT failed reference(s): %s" % (n, ", ".join(blocked[:6])))
         if a.override:
@@ -1099,6 +1142,23 @@ def run_once():
             f.write('-out:"%s"\n' % dll)
             for s in sorted(a.files):
                 f.write('"%s"\n' % s)
+        if not a.origin.startswith("package:"):
+            rsps[n] = rsp
+        if source_refs:
+            # nothing to emit (a reference has no DLL): full diagnostics are the whole result
+            d = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), rsp]
+                               + [x for sr in source_refs for x in ("--source-ref", rsps[sr])],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            errs = [l for l in d.stdout.splitlines() if ": error " in l]
+            if d.returncode == 0 and not errs:
+                results[n] = ("bound", [])
+                print("[build] %-55s ok (%d files, bound only - no DLL while a reference failed)" % (n, len(a.files)))
+            else:
+                results[n] = ("FAILED", errs or d.stdout.splitlines()[-20:])
+                print("[build] %-55s FAILED: %d errors (%s)" % (n, len(results[n][1]), a.origin))
+            if args.only and n == args.only:
+                break
+            continue
         r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc, "@" + rsp], stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, text=True)
         errs = [l for l in r.stdout.splitlines() if ": error " in l]
@@ -1128,16 +1188,15 @@ def run_once():
         return 3
     if args.write_declarations:
         # what Assets code can see of each registry-only package: the assemblies an Assets assembly
-        # references directly (auto-referenced ones included), read from the rsp they compiled from
+        # references directly (auto-referenced ones included)
         seen = {resolve(r).name for x in live.values() if x.origin in ("assets", "predefined") and x.name in need
                 for r in x.refs if resolve(r) is not None}
         snap = []
         for pkg, d in sorted(registry.items()):
             url, ver, sha = open(os.path.join(d, ".registry")).read().split()
-            rsps = {n: os.path.join(pkg_out, n + ".rsp") for n in seen
-                    if n in live and live[n].origin == "package:" + pkg and os.path.exists(os.path.join(pkg_out, n + ".rsp"))}
-            snap.append((pkg, ver, sha, rsps))
-            print("[build] declarations of %s@%s: %s" % (pkg, ver, ", ".join(sorted(rsps)) or "NO assembly Assets references"))
+            pa = {n: live[n].files for n in seen if n in live and live[n].origin == "package:" + pkg}
+            snap.append((pkg, ver, sha, pa))
+            print("[build] declarations of %s@%s: %s" % (pkg, ver, ", ".join(sorted(pa)) or "NO assembly Assets references"))
         write_snapshot(snap)
         print("[build] wrote %s" % os.path.relpath(UNOBTAINABLE_SNAPSHOT, ROOT))
     # report
@@ -1153,22 +1212,15 @@ def run_once():
         for k in pkg_failed:
             errs = results[k][1]
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
-    # what each failed assembly declares, read from its own sources: an Assets missing-type error is a
-    # reference-set artifact only when it names one of these, from an assembly k actually references
-    decl_cache = {}
-
-    def failed_decl(k):
-        up = tuple(sorted(d for d in refs_closure(k) if d in failed))
-        if up not in decl_cache:
-            decl_cache[up] = declarations({d: os.path.join(pkg_out if live[d].origin.startswith("package:") else out,
-                                                           d + ".rsp") for d in up})
-        return decl_cache[up]
+    real, unobtainable, unverified, editor_context = [], [], [], []
+    failed_types, failed_namespaces = declared_names([f for k in pkg_failed for f in live[k].files])
     # packages this run could not fetch: what each declares comes from the committed snapshot
     lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
     snapshot = load_snapshot()
     present = {n for n, _ in roots}
     absent = {p: d for p, d in snapshot.items() if p not in present}
-    absent_decl = merge_declarations(absent.values())
+    absent_asms, absent_types, absent_ns = (set().union(*(d[k] for d in absent.values())) if absent else set()
+                                            for k in ("asms", "types", "namespaces"))
     for p, d in sorted(absent.items()):
         if lock.get(p, {}).get("version") != d["version"]:
             print("[build] WARNING: %s is absent and unobtainable_declarations.tsv describes %s, not the locked %s - %s"
@@ -1183,7 +1235,6 @@ def run_once():
         if snapshot.get(p, {}).get("version") != ver:
             print("[build] NOTE: unobtainable_declarations.tsv does not describe %s@%s, which this cache got from "
                   "packages.unity.com - rerun with --write-declarations to refresh it" % (p, ver))
-    real, unobtainable, unverified = [], [], []
     for k in failed:
         if k in pkg_failed:
             continue
@@ -1193,14 +1244,19 @@ def run_once():
                 real.append((k, e))
                 continue
             path, code = m.group(1), m.group(2)
-            src = open(path, encoding="utf-8-sig", errors="replace").read() if os.path.exists(path) else ""
-            if stems_from(code, m.group(3), src, absent_decl):
+            if path in editor_unchanged:
+                # compiled only so the changed Editor files bind; against UnityEditor 2021.1 and without
+                # the (unfetched) test framework, an unchanged one is not evidence either way
+                editor_context.append((k, e))
+            elif names_absent_package(code, m.group(3), absent_asms, absent_types, absent_ns):
                 unobtainable.append((k, e))
             elif editor and code in ("CS0115", "CS0117", "CS1061") and re.search(r"'(OnValidate|Reset)'|\.(OnValidate|Reset)\(\)", m.group(3)):
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
-            elif stems_from(code, m.group(3), src, failed_decl(k)):
+            elif editor and any(re.search(rx, m.group(3)) for rx, _ in EDITOR_REFERENCE_GAPS):
+                unverified.append((k, e))
+            elif code in MISSING_CODES and names_failed_package(m.group(3), pkg_failed, failed_types, failed_namespaces):
                 unverified.append((k, e))
             else:
                 real.append((k, e))
@@ -1214,24 +1270,30 @@ def run_once():
         if len(rows) > limit:
             print("    ... %d more (report.json)" % (len(rows) - limit))
     show("ERRORS in project code", real, args.max_errors)
-    show("unobtainable: names declared by a package this run could not fetch (%s), and their cascades"
+    show("unobtainable: types declared by a package this run could not fetch (%s), and their cascades"
          % (", ".join(sorted(absent)) or "none"), unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("unverified: names declared by a referenced assembly that did not compile, or editor-only members absent from the player-build reference DLLs", unverified,
+    show("unverified: types a failed package declares, editor-only members absent from the player-build reference DLLs, "
+         "or Unity 6 editor API / the test framework absent from the editor references (EDITOR_REFERENCE_GAPS)", unverified,
          0 if args.quiet_buckets else args.max_errors)
+    if editor:
+        show("unverified: errors in Editor-folder files NOT changed since %s (compiled as context for the changed ones; "
+             "UnityEditor 2021.1, no test framework)" % args.changed_base, editor_context,
+             0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
     stubbed = [k for k in need if live[k].origin == "stub"] + engine_stubs
     print("[build] stubbed assemblies: %s" % (", ".join(sorted(stubbed)) or "none"))
     unresolved = sorted({r for v in missing.values() for r in v})
     print("[build] unresolved asmdef references (Unity would also skip these): %s" % (", ".join(unresolved) or "none"))
-    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "package_failed": pkg_failed,
-               "absent_packages": sorted(absent)},
+    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "editor_context": editor_context,
+               "package_failed": pkg_failed, "absent_packages": sorted(absent)},
               open(os.path.join(out, "buckets.json"), "w"), indent=1)
     if real:
         print("[build] RESULT: FAILED - %d error(s) in project code (%d in files changed since %s)"
               % (len(real), n_changed, args.changed_base))
         return 1
-    print("[build] RESULT: OK - no errors in project code (%d assemblies; %d unobtainable and %d unverified "
-          "errors bucketed above)" % (len(order), len(unobtainable), len(unverified)))
+    print("[build] RESULT: OK - no errors in project code (%d assemblies; %d unobtainable-package and %d unverified "
+          "missing-type errors%s listed above)" % (len(order), len(unobtainable), len(unverified),
+                                                   ", %d in unchanged Editor files," % len(editor_context) if editor else ""))
     return 0
 
 

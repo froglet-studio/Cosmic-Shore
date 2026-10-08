@@ -232,7 +232,8 @@ DANGER_EFFECT_ASSET = "Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselElem
 DANGER_EFFECT_CS    = "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffectSO.cs"
 CELL_CONFIG_SCRIPT  = "01f934d50526431a9392a6ceca1dc33d"   # CellConfigDataSO
 RUNTIME_CELL_DATA   = "8d4e8398eedc76c4dadb8604f89b9e1b"   # Runtime Cell Data.asset
-TUNED_CELLS         = {"Swarm Cell Config"}                 # the demo cell (author_swarm_fauna.py PETAL_BURN_RULE)
+SILENT_RULE         = 1                                     # CellConfigDataSO.PetalBurnRule's initializer: Tuned (2026-10-08)
+CELL_CONFIG_CS      = "Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs"
 EXPECTED_PETALS     = {"Shipped": 5, "Tuned": 1}           # per element per hostile contact (burn-rules.md)
 
 
@@ -244,7 +245,8 @@ def petals_per_contact(magnitude, held_petals):
 
 
 def cell_rules(cells=None):
-    """{cell config name: PetalBurnRule int} for every CellConfigDataSO asset (a silent asset is 0)."""
+    """{cell config name: PetalBurnRule int} for every CellConfigDataSO asset (a silent asset plays the field's
+    initializer, SILENT_RULE)."""
     if cells is not None:
         return cells
     out = {}
@@ -253,11 +255,11 @@ def cell_rules(cells=None):
         if f"guid: {CELL_CONFIG_SCRIPT}" not in txt:
             continue
         m = re.search(r"^  PetalBurnRule: (\d+)\s*$", txt, re.M)
-        out[os.path.basename(path)[:-6]] = int(m.group(1)) if m else 0
+        out[os.path.basename(path)[:-6]] = int(m.group(1)) if m else SILENT_RULE
     return out
 
 
-def check_petal_burn_switch(asset=None, cs=None, cells=None):
+def check_petal_burn_switch(asset=None, cs=None, cells=None, cfg_cs=None):
     print("\n5. the petal-burn switch resolves as documented")
     asset = asset if asset is not None else read(DANGER_EFFECT_ASSET)
     cs = cs if cs is not None else read(DANGER_EFFECT_CS)
@@ -296,15 +298,16 @@ def check_petal_burn_switch(asset=None, cs=None, cells=None):
     else:
         print("   ok   burn and own-domain debuff both use the resolved size")
 
+    if "PetalBurnRule PetalBurnRule = PetalBurnRule.Tuned;" not in (cfg_cs if cfg_cs is not None else read(CELL_CONFIG_CS)):
+        fail("CellConfigDataSO.PetalBurnRule no longer defaults to Tuned - every silent cell would play Shipped")
+    if "PetalBurnRule.Tuned;" not in body[body.find("liveConfig ?"):body.find("liveConfig ?") + 120]:
+        fail("the danger-prism effect no longer falls back to Tuned when no cell is live")
     rules = cell_rules(cells)
-    tuned = {n for n, v in rules.items() if v == 1}
-    unknown = {n: v for n, v in rules.items() if v not in (0, 1)}
-    if unknown:
-        fail(f"cells author an unknown PetalBurnRule (plays Shipped silently): {unknown}")
-    if tuned != TUNED_CELLS:
-        fail(f"Tuned cells are {sorted(tuned)}, expected exactly {sorted(TUNED_CELLS)}")
+    shipped = sorted(n for n, v in rules.items() if v != 1)
+    if shipped:
+        fail(f"cells not on the Tuned burn (Garrett 2026-10-08: Tuned everywhere): {shipped}")
     else:
-        print(f"   ok   {len(rules)} cell configs: Tuned = {sorted(tuned)}, the other {len(rules) - len(tuned)} Shipped")
+        print(f"   ok   all {len(rules)} cell configs play Tuned (1 petal per element per contact)")
 
 
 def self_test():
@@ -350,10 +353,18 @@ def self_test():
     expect_fail("the own-domain debuff decoupled from the burn",
                 lambda: check_petal_burn_switch(cs=read(DANGER_EFFECT_CS).replace(
                     "ApplyElementalEffect(AllElements[i], magnitude,", "ApplyElementalEffect(AllElements[i], debuffMagnitude,")))
-    expect_fail("a second cell switched to Tuned",
-                lambda: check_petal_burn_switch(cells=dict(cell_rules(), **{"Arboretum Cell Config": 1})))
+    expect_fail("a cell switched back to Shipped",
+                lambda: check_petal_burn_switch(cells=dict(cell_rules(), **{"Arboretum Cell Config": 0})))
     expect_fail("the demo cell left on Shipped",
                 lambda: check_petal_burn_switch(cells=dict(cell_rules(), **{"Swarm Cell Config": 0})))
+    expect_fail("an unknown burn rule",
+                lambda: check_petal_burn_switch(cells=dict(cell_rules(), **{"Arboretum Cell Config": 7})))
+    expect_fail("the cell default reverted to Shipped",
+                lambda: check_petal_burn_switch(cfg_cs=read(CELL_CONFIG_CS).replace(
+                    "PetalBurnRule PetalBurnRule = PetalBurnRule.Tuned;", "PetalBurnRule PetalBurnRule = PetalBurnRule.Shipped;")))
+    expect_fail("the no-cell fallback reverted to Shipped",
+                lambda: check_petal_burn_switch(cs=read(DANGER_EFFECT_CS).replace(
+                    "liveConfig.PetalBurnRule : PetalBurnRule.Tuned;", "liveConfig.PetalBurnRule : PetalBurnRule.Shipped;")))
 
     _fails = []
     print("\n" + ("SELF-TEST PASS" if ok else "SELF-TEST FAILED"))

@@ -36,6 +36,9 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Allow a real transport (the player turns it on; headless tests stay single-process).</summary>
         public static bool Enabled { get; set; }
 
+        /// <summary>Opens the transport (TCP unless a test or a backend swaps it). Read at StartServer/StartClient.</summary>
+        internal static INetTransportFactory TransportFactory { get; set; } = new TcpTransportFactory();
+
         /// <summary>Verbose connection/spawn tracing (CS_PORT_TRACE_NET=1).</summary>
         static readonly bool Trace = Environment.GetEnvironmentVariable("CS_PORT_TRACE_NET") == "1";
 
@@ -55,7 +58,7 @@ namespace CosmicShore.Engine.Networking
             public readonly List<byte[]> Pending = new();
         }
 
-        static NetSocket s_sock;
+        static INetTransport s_sock;
         static NetworkManager s_nm;
         static bool s_server;
         static readonly Dictionary<int, ClientConn> s_byPeer = new();
@@ -84,10 +87,10 @@ namespace CosmicShore.Engine.Networking
         internal static bool StartServer(NetworkManager nm, string address, int port)
         {
             Stop();
-            try { s_sock = NetSocket.Listen(address, port); }
+            try { s_sock = TransportFactory.Listen(address, port); }
             catch (Exception)
             {
-                try { s_sock = NetSocket.Listen(address, 0); }
+                try { s_sock = TransportFactory.Listen(address, 0); }
                 catch (Exception e) { Console.WriteLine($"[net] listen failed: {e.Message}"); s_sock = null; return false; }
             }
             s_nm = nm;
@@ -107,7 +110,7 @@ namespace CosmicShore.Engine.Networking
             s_clientPaused = false;
             s_connectPayload = payload ?? Array.Empty<byte>();
             s_timeBase = Now;
-            s_sock = NetSocket.Connect(address, port, 10000);
+            s_sock = TransportFactory.Connect(address, port, 10000);
             Console.WriteLine($"[net] connecting to {address}:{port}");
         }
 
@@ -208,7 +211,7 @@ namespace CosmicShore.Engine.Networking
                 if (c.Id != except && (!syncedOnly || c.Synced)) ToClient(c, bytes);
         }
 
-        static void Handle(NetSocket.Event e)
+        static void Handle(NetEvent e)
         {
             if (s_server) HandleServer(e);
             else HandleClient(e);
@@ -216,15 +219,15 @@ namespace CosmicShore.Engine.Networking
 
         // ── Server side ─────────────────────────────────────────────
 
-        static void HandleServer(NetSocket.Event e)
+        static void HandleServer(NetEvent e)
         {
             var nm = s_nm;
             switch (e.Kind)
             {
-                case NetSocket.EventKind.Connected:
+                case NetEventKind.Connected:
                     s_byPeer[e.Peer] = new ClientConn { Peer = e.Peer };
                     return;
-                case NetSocket.EventKind.Disconnected:
+                case NetEventKind.Disconnected:
                     if (s_byPeer.Remove(e.Peer, out var gone) && gone.Approved) ServerClientGone(gone);
                     return;
             }
@@ -343,12 +346,12 @@ namespace CosmicShore.Engine.Networking
 
         // ── Client side ─────────────────────────────────────────────
 
-        static void HandleClient(NetSocket.Event e)
+        static void HandleClient(NetEvent e)
         {
             var nm = s_nm;
             switch (e.Kind)
             {
-                case NetSocket.EventKind.Connected:
+                case NetEventKind.Connected:
                 {
                     var w = Begin(Msg.ConnectRequest);
                     w.Write(s_connectPayload.Length);
@@ -356,7 +359,7 @@ namespace CosmicShore.Engine.Networking
                     SendRaw(0, End());
                     return;
                 }
-                case NetSocket.EventKind.Disconnected:
+                case NetEventKind.Disconnected:
                     ClientLost(string.IsNullOrEmpty(nm.DisconnectReason) ? "disconnected from server" : nm.DisconnectReason);
                     return;
             }

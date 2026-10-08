@@ -9,7 +9,9 @@ edit `Assets/_Scripts`, because the engine compiles those files live.
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the
 port only *reads* `Assets/`. A port branch may change, outside `Port/`, only `.gitignore`
 `Port/**` rules, `.github/workflows/prisma-*` and `.claude/skills/prisma*` (the legacy `froglet-*`
-names are still accepted). Check before every commit:
+names are still accepted), plus one editor-only file the port owns:
+`Assets/_Scripts/Editor/LaunchPrisma.cs` (**FrogletTools > Prisma > Launch Prisma**, which builds
+`Prisma.exe` from the checkout into `Library/Prisma` and opens it). Check before every commit:
 
 ```bash
 python3 Port/tools/check_unity_isolation.py        # or the MCP tool unity_isolation_check
@@ -29,9 +31,11 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `src/CosmicShore.Render` | The OpenGL renderer (GL 3.3 / GL ES 3.0), post stack, uGUI and TMP drawing |
 | `src/CosmicShore.Player` | `CosmicShore.exe`: window, headless mode, scripted input, **control port** |
 | `src/CosmicShore.Mobile` · `src/CosmicShore.Build` | Phone player · `cs-build` (player data, APK/AAB, iOS) |
-| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
+| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, agent chats, GIT, the EDITOR page (TOOLS, DATA, MODELS) |
+| `src/CosmicShore.AssetTool` | `cs-asset`: edit scenes/prefabs/assets without Unity, plus the JSON the EDITOR page and the `asset_*` MCP tools read (`EditorData.cs`) |
 | `src/CosmicShore.Mcp` | `prisma-mcp`: this engine as an MCP server for Claude Code |
 | `ProjectSettings/PrismaProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
+| `parity/` | The parity harness (C1): replays, Unity goldens, C9 tolerances, scoreboard catalogue. `engine_parity` diffs; `tools/gen_parity_scoreboard.py` writes `docs/PARITY.md`. Read `parity/README.md` |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
@@ -42,14 +46,17 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | Session | Scope | May edit | Started from |
 |---|---|---|---|
 | **Prisma Agent** (powered by Claude) | the game, as it runs in Prisma | `Assets/` and the rest of the repo, **never `Port/`** | Prisma's AGENT page |
-| **Milestone session** | the engine, toward a roadmap checkpoint | `Port/`, **never `Assets/`, `Packages/`, `ProjectSettings/`** | Prisma's MILESTONES page (START) |
-| Engine development in Claude Code | the engine | `Port/` (this file's rules) | the repo root |
+| **Engine development / milestones** | the engine, toward a roadmap checkpoint | `Port/` (this file's rules), **never `Assets/`, `Packages/`, `ProjectSettings/`** | Claude Code at the repo root |
+| **Tool build** | one FrogletTools tool, made native | `Port/src/CosmicShore.AssetTool`, `Port/tests/CosmicShore.AssetTool.Tests`, `Port/tools/froglet-tools` only | Prisma's EDITOR > TOOLS > BUILD |
 
-Deny rules on the Claude Code CLI enforce the first two in every mode. A milestone session
+Deny rules on the Claude Code CLI enforce the agent's scope in every mode. Prisma runs any number of
+agent chats side by side, all in Prisma's workspace (not the user's clone): their edits
+stay uncommitted there until the user commits and pushes them on Prisma's GIT page, so a session
+in Prisma does not commit, push or switch branches unless asked, and START never discards them. Milestone work
 records progress in `docs/milestones.json` (status plus a dated note with evidence), and marks a
-checkpoint done only after running its exit criterion. Each milestone run has a budget (turns,
-minutes, optional dollars; Prisma's Settings > CLAUDE); a run that stops short leaves a board item
-listing what it tried, a note on the checkpoint, and a CONTINUE button.
+checkpoint done only after running its exit criterion. Prisma plays its own workspace, so it can be
+on a different branch from the user's Unity checkout; opened from Unity's Launch Prisma it follows
+Unity's branch (`--clone`) until the user picks another.
 
 ## Prisma's memory: tracks and the board
 
@@ -63,6 +70,18 @@ that came from the tracks is verified by them (not seen in 3 runs through its sc
 relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wrong), `prisma_board`,
 `prisma_board_suggest`. Code: `src/Shared/PrismaTracks.cs`, `src/Shared/PrismaBoard.cs`.
 
+## The editor (M2): tools, data sets, models - not a hierarchy
+
+Prisma's editor starts where the work is (`docs/ROADMAP.md` § M2, decided 2026-10-08): EDITOR >
+TOOLS (every FrogletTools tool, handed to the agent with its source), DATA (the ScriptableObject
+data sets, edited field by field through `cs-asset set`) and MODELS (each FBX, and `.blend`/`.ma`/`.mb`
+through the installed Blender/Maya as Unity does, with a CPU-drawn drag turntable in the colours of
+the materials the game's prefabs give it, and VIEW IN ENGINE: the player's `--view-model FILE`). There is no hierarchy or scene inspector: scene and prefab structure is
+edited by the agent through `cs-asset`. MCP: `asset_froglet_tools`, `asset_datasets`,
+`asset_dataset`, `asset_model`, `asset_model_preview`. Tests: `tests/CosmicShore.AssetTool.Tests`
+(cs-asset's editor commands) and `tests/CosmicShore.Launcher.Tests` (Prisma.exe's chats, usage, git
+and the DATA page's quoting).
+
 ## The loop
 
 With the **prisma MCP server** (preferred - see below), the loop is tools:
@@ -75,6 +94,13 @@ With the **prisma MCP server** (preferred - see below), the loop is tools:
    "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
    `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
+
+When something that used to work is broken, `prisma_bisect` (good, bad, check) finds the commit:
+`git bisect run` over the commits that touch `Port/`, in a scratch worktree (your checkout never
+moves), each candidate built there and judged by an `engine_smoke` error `signature` (substring or
+`/regex/`) or a replay diff (`check: parity`, against the good commit's own replay). A candidate
+that does not build is skipped. One engine build per step, so it is slow; `Port/tools/bisect_demo.py`
+proves it on a planted regression.
 
 Without MCP, the same from a shell:
 

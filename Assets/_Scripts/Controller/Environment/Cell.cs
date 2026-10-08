@@ -1417,6 +1417,19 @@ namespace CosmicShore.Gameplay
                     grid?.Dispose();
                 countGrids.Clear();
             }
+
+            // The colony books are static and keyed by cell. ResetCell and Initialize retire this
+            // cell's entries, but a cell destroyed with its scene went through neither, and after
+            // the unload every Clear(cell) returns at its `!cell` guard - so the key could never be
+            // removed: each Menu_Main load leaked the previous colony's books (each entry pinning a
+            // destroyed AssembledFlora's object graph) and the colony census counted dead worlds'
+            // sites. `this` still passes the guard inside OnDestroy.
+            GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
         }
 
         void ResetCell()
@@ -1445,6 +1458,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -1711,6 +1725,23 @@ namespace CosmicShore.Gameplay
 
         void Initialize()
         {
+            // Already bootstrapped by the first-crystal path (OnClientReady can land the first
+            // crystal inside InitDelayMs, so InitilizePostFirstCellItem ran the lazy Initialize
+            // AND started the spawner before OnInitializeGame arrived). The config is sticky
+            // (AssignConfig), the visuals and grids exist, so this pass has nothing to build -
+            // but it used to CLEAR every registry underneath a spawner that was already
+            // planting: the cell forgot its first wave (the seeder planted the floor again,
+            // species caps ignored the forgotten plants, their deaths decremented counts of
+            // plants still tracked) and their seed prisms left LiveVolume and the targeting
+            // grids. Rebind and refresh the stats only.
+            if (postInitilized && cellConfigData)
+            {
+                runtime.Cell = this;
+                runtime.EnsureCellStats(ID);
+                UpdateCellStats();
+                return;
+            }
+
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
@@ -1728,6 +1759,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -2531,6 +2563,7 @@ namespace CosmicShore.Gameplay
             liveFloraCounts.Clear();
             liveFauna.Clear();
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -2673,6 +2706,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -3256,13 +3290,27 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetDensestRegionAnyDomain()
         {
-            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
-                return GetCellAnchorPosition();
-
-            var region = anyGrid.FindDensestRegion();
-            if (anyGrid.LastResultDensity <= 0f)
-                return GetCellAnchorPosition();
+            TryGetDensestRegionAnyDomain(out var region);
             return region;
+        }
+
+        /// <summary>
+        /// <see cref="GetDensestRegionAnyDomain"/> as a QUESTION: false when the cell holds no
+        /// mass at all, in which case <paramref name="region"/> is the same anchor fallback the
+        /// demand form returns. Lets a caller that has a better idea than "the crystal" for an
+        /// empty cell (the Spawn Matrix releasing into the Barren cell) tell the two apart.
+        /// </summary>
+        public bool TryGetDensestRegionAnyDomain(out Vector3 region)
+        {
+            region = GetCellAnchorPosition();
+            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
+                return false;
+
+            var densest = anyGrid.FindDensestRegion();
+            if (anyGrid.LastResultDensity <= 0f)
+                return false;
+            region = densest;
+            return true;
         }
 
         /// <summary>

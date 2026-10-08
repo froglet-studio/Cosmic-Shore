@@ -95,6 +95,18 @@ namespace CosmicShore.Render
             }
         }
 
+        readonly Dictionary<uint, uint> _solids = new();
+
+        /// <summary>A 1x1 linear texture of one colour (a shader's black / grey / bump default), made once.</summary>
+        public uint Solid(byte r, byte g, byte b, byte a)
+        {
+            uint key = (uint)(r << 24 | g << 16 | b << 8 | a);
+            if (key == 0xFFFFFFFF) return White;
+            if (!_solids.TryGetValue(key, out var h))
+                _solids[key] = h = Upload(new[] { r, g, b, a }, 1, 1, srgb: false, EngineFilter.Point, EngineWrap.Repeat, EngineWrap.Repeat, false);
+            return h;
+        }
+
         /// <summary>Resolves a GPU-produced texture (a camera's RenderTexture) to its GL handle; 0 = not rendered yet.</summary>
         public Func<EngineTexture, uint> External;
 

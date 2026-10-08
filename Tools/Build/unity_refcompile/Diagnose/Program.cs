@@ -1,7 +1,6 @@
 // Full-diagnostics pass for one assembly, from the same .rsp the build hands csc.
 //
-//   Diagnose <file.rsp>
-//   Diagnose --declarations <file.rsp>
+//   Diagnose <file.rsp> [--source-ref <dependency.rsp>]...
 //
 // Why it exists: csc stops after the DECLARATION phase when any declaration error exists (e.g. a
 // file whose `using` names a package we cannot fetch), so method-body errors in every OTHER file go
@@ -9,14 +8,18 @@
 // package can no longer hide a real error elsewhere. Source generators (-analyzer:) run first, as in
 // csc. Output lines use csc's "path(line,col): error CSxxxx: message" format.
 //
-// An error that is not itself an unresolved name (see Roots) is suffixed with the named error types
-// its expression involves: " [unresolved types: A, B]". `out var v` from an unknown TryGetValue ->
-// CS0165, `unknown.Count > 0` -> CS0019: the build files such a cascade with its root, not as a gate.
+// --source-ref: a dependency whose own compile FAILED has no DLL, so the assembly that references it
+// would otherwise be bound without it and report every use of its types as missing. Each one given
+// is built in memory from its .rsp and referenced as a compilation (Roslyn binds against its source
+// symbols, errors and all), so only the main assembly's own errors are reported. List them in
+// dependency order: each also references the ones listed before it.
 //
-// --declarations parses (does not bind) the rsp's sources with its defines and prints what they
-// declare: "N\t<namespace>" per namespace and "T\t<namespace>\t<name>" per PUBLIC top-level type
-// (no package grants Assets code InternalsVisibleTo). The build reads it for a package assembly that
-// failed, and to write unobtainable_declarations.tsv, to tell which project errors stem from its absence.
+// Every compilation is named after its -out: file, as csc names it, so [InternalsVisibleTo] grants
+// (Assembly-CSharp -> Assembly-CSharp-Editor) apply here exactly as they do in csc.
+//
+// An error that is not itself an unresolved name (see Roots) is suffixed with the named error types its
+// expression involves: " [unresolved types: A, B]". `out var v` from an unknown TryGetValue -> CS0165,
+// `unknown.Count > 0` -> CS0019: the build files such a cascade with its root instead of gating it.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -58,32 +61,19 @@ static class Program
 
     static int Main(string[] args)
     {
-        if (args[0] == "--declarations") return Declarations(args[1]);
-        var refs = new List<string>(); var files = new List<string>(); var analyzers = new List<string>();
-        var defines = new List<string>(); var nowarn = new List<string>(); bool unsafeCode = false;
-        foreach (var t in Tokens(args[0]))
+        var sourceRefs = new List<MetadataReference>();
+        for (int i = 1; i < args.Length; i++)
         {
-            if (t.StartsWith("-r:")) refs.Add(t.Substring(3));
-            else if (t.StartsWith("-analyzer:")) analyzers.Add(t.Substring(10));
-            else if (t.StartsWith("-define:")) defines.AddRange(t.Substring(8).Split(';', StringSplitOptions.RemoveEmptyEntries));
-            else if (t.StartsWith("-nowarn:")) nowarn.AddRange(t.Substring(8).Split(',').Select(x => x.StartsWith("CS") ? x : "CS" + x.PadLeft(4, '0')));
-            else if (t == "-unsafe") unsafeCode = true;
-            else if (!t.StartsWith("-")) files.Add(t);
+            if (args[i] != "--source-ref" || i + 1 >= args.Length)
+            {
+                Console.Error.WriteLine("usage: Diagnose <file.rsp> [--source-ref <dependency.rsp>]...");
+                return 2;
+            }
+            // a referenced compilation's own errors are its own report's business, not this one's
+            sourceRefs.Add(Build(args[++i], sourceRefs.ToList(), out _).ToMetadataReference());
         }
-        var po = new CSharpParseOptions(LanguageVersion.CSharp9, preprocessorSymbols: defines);
-        var trees = files.Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f), po, f)).ToList();
-        var opts = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: unsafeCode,
-            specificDiagnosticOptions: nowarn.Select(n => new KeyValuePair<string, ReportDiagnostic>(n, ReportDiagnostic.Suppress)));
-        Compilation comp = CSharpCompilation.Create("Diagnose", trees,
-            refs.Select(r => (MetadataReference)MetadataReference.CreateFromFile(r)), opts);
-        var loader = new Loader();
-        var gens = analyzers.SelectMany(a => new AnalyzerFileReference(a, loader).GetGenerators(LanguageNames.CSharp)).ToList();
-        if (gens.Count > 0)
-        {
-            var driver = CSharpGeneratorDriver.Create(gens, parseOptions: po);
-            driver.RunGeneratorsAndUpdateCompilation(comp, out comp, out var genDiags);
-            foreach (var d in genDiags.Where(d => d.Severity == DiagnosticSeverity.Error)) Console.WriteLine(Format(d));
-        }
+        var comp = Build(args[0], sourceRefs, out var genDiags);
+        foreach (var d in genDiags) Console.WriteLine(Format(d));
         int errors = 0;
         var models = new Dictionary<SyntaxTree, SemanticModel>();
         foreach (var d in comp.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error)
@@ -92,7 +82,7 @@ static class Program
             Console.WriteLine(Format(d) + Unresolved(comp, models, d));
             errors++;
         }
-        return errors == 0 ? 0 : 1;
+        return errors == 0 && genDiags.Count == 0 ? 0 : 1;
     }
 
     // Diagnostics that ARE the unresolved name; every other error may be a cascade of one.
@@ -158,37 +148,40 @@ static class Program
         }
     }
 
-    static int Declarations(string rsp)
+    // The compilation one .rsp describes, source generators applied; generator errors come back separately.
+    static Compilation Build(string rsp, IEnumerable<MetadataReference> extraRefs, out List<Diagnostic> genErrors)
     {
-        var defines = new List<string>(); var files = new List<string>();
+        var refs = new List<string>(); var files = new List<string>(); var analyzers = new List<string>();
+        var defines = new List<string>(); var nowarn = new List<string>(); bool unsafeCode = false;
+        string outPath = null;
         foreach (var t in Tokens(rsp))
         {
-            if (t.StartsWith("-define:")) defines.AddRange(t.Substring(8).Split(';', StringSplitOptions.RemoveEmptyEntries));
+            if (t.StartsWith("-r:")) refs.Add(t.Substring(3));
+            else if (t.StartsWith("-out:")) outPath = t.Substring(5);
+            else if (t.StartsWith("-analyzer:")) analyzers.Add(t.Substring(10));
+            else if (t.StartsWith("-define:")) defines.AddRange(t.Substring(8).Split(';', StringSplitOptions.RemoveEmptyEntries));
+            else if (t.StartsWith("-nowarn:")) nowarn.AddRange(t.Substring(8).Split(',').Select(x => x.StartsWith("CS") ? x : "CS" + x.PadLeft(4, '0')));
+            else if (t == "-unsafe") unsafeCode = true;
             else if (!t.StartsWith("-")) files.Add(t);
         }
         var po = new CSharpParseOptions(LanguageVersion.CSharp9, preprocessorSymbols: defines);
-        var seen = new HashSet<string>();
-        foreach (var f in files)
+        var trees = files.Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f), po, f)).ToList();
+        var opts = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: unsafeCode,
+            specificDiagnosticOptions: nowarn.Select(n => new KeyValuePair<string, ReportDiagnostic>(n, ReportDiagnostic.Suppress)));
+        var name = outPath != null ? Path.GetFileNameWithoutExtension(outPath) : "Diagnose";
+        Compilation comp = CSharpCompilation.Create(name, trees,
+            refs.Select(r => (MetadataReference)MetadataReference.CreateFromFile(r)).Concat(extraRefs), opts);
+        genErrors = new List<Diagnostic>();
+        var loader = new Loader();
+        var gens = analyzers.SelectMany(a => new AnalyzerFileReference(a, loader).GetGenerators(LanguageNames.CSharp)).ToList();
+        if (gens.Count > 0)
         {
-            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(f), po, f).GetRoot();
-            foreach (var node in root.DescendantNodes(n => n is CompilationUnitSyntax || n is BaseNamespaceDeclarationSyntax))
-            {
-                var ns = string.Join(".", node.AncestorsAndSelf().OfType<BaseNamespaceDeclarationSyntax>().Reverse().Select(n => n.Name.ToString()));
-                string line = node switch
-                {
-                    BaseNamespaceDeclarationSyntax _ => "N\t" + ns,
-                    BaseTypeDeclarationSyntax t when IsPublic(t.Modifiers) => "T\t" + ns + "\t" + t.Identifier.Text,
-                    DelegateDeclarationSyntax d when IsPublic(d.Modifiers) => "T\t" + ns + "\t" + d.Identifier.Text,
-                    _ => null,
-                };
-                if (line != null && seen.Add(line)) Console.WriteLine(line);
-            }
+            var driver = CSharpGeneratorDriver.Create(gens, parseOptions: po);
+            driver.RunGeneratorsAndUpdateCompilation(comp, out comp, out var genDiags);
+            genErrors.AddRange(genDiags.Where(d => d.Severity == DiagnosticSeverity.Error));
         }
-        return 0;
+        return comp;
     }
-
-    // A partial type is public when any of its parts says so; seen dedups the parts.
-    static bool IsPublic(SyntaxTokenList modifiers) => modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword));
 
     static string Format(Diagnostic d)
     {

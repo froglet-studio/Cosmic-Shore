@@ -1024,14 +1024,27 @@ namespace CosmicShore.Utility
         public bool IsLocalDomain(Domains domain) =>
             LocalPlayer != null && domain == LocalPlayer.Domain;
 
+        /// <summary>
+        /// True when the local player's domain tops <see cref="DomainStatsList"/>, which
+        /// <see cref="CalculateDomainStats"/> leaves sorted best-first - the same entry the
+        /// scoreboard banner names. <paramref name="stats"/> is the local domain's entry.
+        ///
+        /// It used to compare the local domain against its OWN entry, which is true whenever the
+        /// local domain fielded anyone: both Duel pilots got VICTORY and the WinMatch quest.
+        /// </summary>
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
-            foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
+            if (LocalPlayer == null || DomainStatsList == null || DomainStatsList.Count == 0)
+                return false;
+
+            foreach (var stat in DomainStatsList)
             {
+                if (stat.Domain != LocalPlayer.Domain) continue;
                 stats = stat;
+                break;
             }
-            return stats.Domain == LocalPlayer.Domain;
+            return DomainStatsList[0].Domain == LocalPlayer.Domain;
         }
 
         // ----- Domain aggregation helpers (per-domain sums for team-based scoring) -----
