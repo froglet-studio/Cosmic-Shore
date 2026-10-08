@@ -34,6 +34,8 @@ Not in `CLAUDE.md` because it only matters to JetBrains Junie, which loads proje
 `.junie/skills/<name>/SKILL.md` and never reads `.claude/skills` itself. **Edit skills in
 `.claude/skills/` only.** `.junie/skills` is one committed symlink (`../.claude/skills`), so Junie
 sees every skill, including new ones, the moment it lands. There is nothing to sync.
+`python3 Tools/Build/check_junie_skills.py` runs in both CI workflows. It fails if the link ever
+becomes a real directory again, and its failure message prints the commands that restore it.
 
 It used to be a copy. Junie offers to import `.claude/skills` into `.junie/skills`, and that import
 COPIES. The 2026-08-25 merge `def29f5e1` committed one such copy: the nine skills that existed
