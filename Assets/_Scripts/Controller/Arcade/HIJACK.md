@@ -385,6 +385,13 @@ item is a real check a human has to perform, in this order (load-bearing first).
     e. **Late join:** start a match host-only, steal a burr or two, then join a client mid-match.
        Its yard must show those burrs in the host's colour once laid, not their painted colour.
     f. Score still agrees on both machines (unchanged path).
+    g. **Shields agree.** Give the CLIENT pilot Mass 5 and ride one of its own rail thirds: the
+       prisms come up shielded on the client and, within ~0.1s, on the HOST. Now ride a host AI
+       (or the host pilot) over that third: the first pass only breaks the shields (prisms stay
+       the client's colour, on both screens), the second pass flips them. Repeat with roles
+       swapped (host Mass 5, client steals).
+    h. **Late join keeps shields:** with some Mass-5 armour laid, join a second client - its yard
+       shows the same prisms shielded.
 
 ---
 
@@ -429,9 +436,9 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   trails (an Urchin's own trail, if it ever lays one here) still diverges per peer. Within the
   yard, a peer believes a flip into a domain it simulates a pilot of, so a peer also believes its
   PROXY of a remote teammate; that can make a teammate's steal land early, never hand a prism to
-  the wrong team. **Shield state is not part of the table**: a Mass-5 rail prism shielded on one
-  machine may not be on another, so whether a steal is refused (`Steal` drops a shield instead of
-  flipping) can still differ. The SCORE path is unchanged and was already correct on every peer.
+  the wrong team. Shield state rides the same table since 2026-10 (§11), with the same trust unit:
+  a peer that simulates any rival of a prism's owner believes a proxy's break of that owner's
+  shield. The SCORE path is unchanged and was already correct on every peer.
 - **The Urchin HUD is placeholder art.** Since #973 (2026-10) `Urchin.prefab` wires
   `VesselStatus.vesselHUDController` to an `UrchinVesselHUDController` driving a nested
   `UrchinHUDVariant.prefab` (a Prefab Variant of `VesselHUDPrefab`, authored by
@@ -477,13 +484,36 @@ moved.
 
 - **Addressing.** A prism is `(slot, index)`: slot = burrs in `HijackYard.Burrs` order then rails
   in `HijackYard.Rails` order; index = position in that trail's append-only `TrailList`, laid in
-  the same order on every peer. One packed `int` per change: `domain << 24 | slot << 16 | index`.
+  the same order on every peer. One packed `int` per change: `state << 24 | slot << 16 | index`,
+  where the state byte is `domain` (bits 0-3) `| shield << 4` (bits 4-5: 0 none, 1 shielded,
+  2 super-shielded) `| via-break << 6` (client reports only, below). An unshielded entry is
+  bit-identical to the original `domain << 24 | …` layout, and bit 31 is never set.
 - **Who is believed.** A flip is authoritative on the machine that simulates a pilot of the NEW
   domain (server: host pilot + every AI; client: its own pilot) — `StatsManager.OwnsAttacker`'s
   rule, applied to the prism. The server writes its own straight into the table; a client reports
   its own (`ReportOwnership_ServerRpc`) and the server accepts only entries in the SENDER's
   domain, taken from its own copy of the sender's `Player`. A rejected entry is answered with the
   table's value so the sender converges.
+- **Shield state is in the word.** `PrismTeamManager.Steal` drops a shield instead of flipping a
+  shielded prism and refuses a super-shielded one, so a shield that existed on one machine only
+  used to make the same pass a steal there and a shield-break elsewhere. The ledger now carries
+  each prism's armour with its owner, and applies both (owner first, then `ActivateShield` /
+  `ActivateSuperShield` / `DeactivateShields`) wherever it applies a state. Who is believed
+  follows who could have caused the change: a shield GAINED with no flip is the owner's (the
+  Mass-5 "Reinforced Wake" armours only your own mass), and a shield DROPPED with no flip is a
+  rival's (a steal that met it). The server accepts a client's shield only on the sender's own
+  mass and a client's break only of a rival's.
+- **The steal-against-shield race is settled on the TABLE.** A client can flip a prism before it
+  hears the owner shielded it. The server applies `Steal`'s own rule to its table: a reported flip
+  of a table-shielded prism lands as a break (owner kept, shield gone), a flip of a
+  super-shielded prism is refused, and the sender is answered with what landed, so it converges.
+  A client that did see the shield and broke it before taking the prism sets the via-break bit,
+  so a break-then-steal that coalesced into one flush is not mistaken for the race.
+- **Shield changes are swept, not evented.** A flip raises `OnTeamChanged`; a shield raises
+  nothing, and `PrismStateManager` is shared platform code this mode does not change. The ledger
+  checks `shieldSweepBudget` (4,096) discovered prisms a frame, round-robin, two bool reads each:
+  a peak 9,930-prism yard is covered every ~3 frames, well inside the 0.1s flush the change then
+  waits for. Profiled under `HijackOwnershipLedger.SweepShields`.
 - **Everything else is provisional.** A remote pilot's proxy grinding a rail on this machine
   still flips prisms locally (the ride code is shared and untouched); those flips stay on screen
   for `ownershipGraceSeconds` (0.5s) so the owner's real change can arrive, then are put back to
@@ -492,12 +522,13 @@ moved.
   `ownershipFlushSeconds` (0.1s), 4 bytes each, chunked at 512 per RPC — a 100-prism cascade is
   one ~400-byte message. Server → clients: `SyncOwnership_ClientRpc`.
 - **Late join.** Every client sends `RequestOwnershipSnapshot_ServerRpc` on spawn; the server
-  answers (to that client only) with every prism that has EVER changed hands. Everything else is
+  answers (to that client only) with every prism that has EVER changed hands or armour. Everything else is
   still the colour the closed-form generator painted, which the joiner's own yard already shows.
   A key that names a prism the joiner has not laid yet waits in its table and applies the moment
   the prism appears.
 - **Readers.** `HijackYard.HostileMassAt` / `HasHostileMass` / `NearestHostileBurr` /
-  `OwnFractionOfRail` / `DomainOf` read the table, so the arrow and the AI's rail choice and
+  `OwnFractionOfRail` / `DomainOf` read the table (loot excludes a super-shielded prism, which no
+  steal can take; a shielded one still counts, since the first pass breaks it), so the arrow and the AI's rail choice and
   "hostile underfoot" test agree on every peer. Ride speed (`TrailFollower`, vessel code) still
   reads the prism, and agrees because the ledger keeps every yard prism showing the table's
   value (immediately for a replicated change; within the grace window for a provisional one).

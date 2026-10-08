@@ -129,6 +129,12 @@ namespace CosmicShore.Gameplay
                  "flickers; short enough that a steal that never happened does not linger.")]
         [SerializeField, Min(0f)] float ownershipGraceSeconds = 0.5f;
 
+        [Tooltip("Yard prisms checked per frame for a shield change. Shields raise no event, so " +
+                 "the ownership table sweeps for them round-robin (two bool reads per prism); at " +
+                 "4096 a peak 9,930-prism yard is covered every ~3 frames, well inside the flush " +
+                 "cadence the change then waits for.")]
+        [SerializeField, Min(64)] int shieldSweepBudget = 4096;
+
         /// <summary>Entries per ownership RPC. 512 packed ints is 2 KB - well inside one
         /// transport payload, so a big late-join snapshot goes as several plain messages rather
         /// than leaning on fragmentation.</summary>
@@ -173,7 +179,8 @@ namespace CosmicShore.Gameplay
             // players started a match already on the board).
             if (IsServer) ZeroStealCounters();
 
-            _ownership = new HijackOwnershipLedger(IsServer, IsLocallyAuthoritative, ownershipGraceSeconds);
+            _ownership = new HijackOwnershipLedger(IsServer, IsLocallyAuthoritative, SimulatesRivalOf,
+                                                   ownershipGraceSeconds, shieldSweepBudget);
             _nextOwnershipFlush = 0f;
 
             // Every client pulls the table once, not just a late joiner: early in a match it is
@@ -193,10 +200,11 @@ namespace CosmicShore.Gameplay
         // ── Replicated prism ownership ───────────────────────────────────────
 
         /// <summary>
-        /// Keeps the yard's prisms showing the SERVER's ownership on every peer - which is what
-        /// makes ride speed (<c>TrailFollower</c> reads the prism it is on), the objective arrow
-        /// and the AI's rail choice (both read <see cref="HijackYard"/>, which reads the table)
-        /// agree between machines. See <see cref="HijackOwnershipLedger"/> for who is believed
+        /// Keeps the yard's prisms showing the SERVER's ownership and shield state on every peer -
+        /// which is what makes ride speed (<c>TrailFollower</c> reads the prism it is on), what a
+        /// steal does (a shield takes the hit instead of the prism), the objective arrow and the
+        /// AI's rail choice (both read <see cref="HijackYard"/>, which reads the table) agree
+        /// between machines. See <see cref="HijackOwnershipLedger"/> for who is believed
         /// and why; this method is the per-frame driver and the wire.
         /// </summary>
         void LateUpdate()
@@ -243,7 +251,16 @@ namespace CosmicShore.Gameplay
         /// test as <c>StatsManager.OwnsAttacker</c>. Cached per frame: a spike cascade asks this
         /// once per prism it flips.
         /// </summary>
-        bool IsLocallyAuthoritative(Domains domain)
+        bool IsLocallyAuthoritative(Domains domain) => (AuthorityMask() & (1 << (int)domain)) != 0;
+
+        /// <summary>
+        /// Does this machine simulate a pilot of any domain OTHER than
+        /// <paramref name="domain"/> - someone whose steal could have broken a shield that
+        /// domain's owner laid? Same per-frame mask as <see cref="IsLocallyAuthoritative"/>.
+        /// </summary>
+        bool SimulatesRivalOf(Domains domain) => (AuthorityMask() & ~(1 << (int)domain)) != 0;
+
+        int AuthorityMask()
         {
             if (_authorityMaskFrame != Time.frameCount)
             {
@@ -260,7 +277,7 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
-            return (_authorityMask & (1 << (int)domain)) != 0;
+            return _authorityMask;
         }
 
         static int[] Chunk(int[] packed, int offset)
@@ -279,9 +296,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// CLIENT → SERVER: this client's own steals. The server accepts each only in the
-        /// SENDER's domain - taken from the server's copy of the Player that owns the RPC, never
-        /// from the payload - and re-broadcasts what it accepted on its next flush.
+        /// CLIENT → SERVER: this client's own changes - steals, shields on its own mass, shields
+        /// it broke on a rival's. The server accepts each only if the SENDER could have caused
+        /// it - the sender's domain is taken from the server's copy of the Player that owns the
+        /// RPC, never from the payload - applies the shield rule against its own table, and
+        /// re-broadcasts what landed on its next flush.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
         void ReportOwnership_ServerRpc(int[] packed, ServerRpcParams rpcParams = default)
@@ -292,7 +311,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// CLIENT → SERVER: send me every prism that has changed hands so far. Answered to the
+        /// CLIENT → SERVER: send me every prism that has changed hands or armour so far. Answered to the
         /// asker only; deltas after it ride the normal broadcast, in order behind it.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
