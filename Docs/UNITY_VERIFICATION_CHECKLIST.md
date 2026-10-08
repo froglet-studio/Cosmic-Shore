@@ -65,6 +65,44 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Tether (14) — prototype light-tether flyer: auto-tethers, long tether, light-sword cuts (`cece/loving-feynman-hlgf18`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+A new vessel cloned from the Squirrel. Full design, numbers and steps:
+`R_VesselActions/TETHER.md` (§ "In-editor verification" is the step list).
+
+What ran out of editor: `bash Tools/Build/unity_refcompile/run.sh` (player and `--config editor`)
+bound every changed file against real Unity references — no errors in project code.
+`bash Tools/Build/tether_harness/run.sh` compiled the three shipped maths files AND the shipped
+`TetherMathTests.cs` against Unity-shaped stubs and RAN all 12 tests green, three of them negative
+controls. `Tether.prefab` surgery validated by script: unique fileIDs, zero dangling local refs (as
+the Squirrel), exactly one transformer; `check_network_prefab_hashes.py` OK and negative-controlled
+against the Squirrel's hash; `peer_press_harness` 0 divergences with the Tether's maps included.
+Nothing was opened in Unity. **The visuals, the feel numbers and the auto-tether rhythm are unseen.**
+
+1. **Compiles; edit-mode suite green** — `TetherMathTests`, `EnumIntegrityTests` (count now 16; it
+   was already red on bleeding-edge at 14 vs 15), `OneThumbVesselCoverageTests`,
+   `ToyVesselRosterCoverageTests`. Open `Tether.prefab`: no missing scripts; the transformer shows
+   its **Tether** field wired to the `TetherExecutor` under `ShipActions`.
+2. **Regression first** — fly the Squirrel, the Dolphin and the Manta: unchanged. (`VesselTransformer`
+   gained four default-off seams; `VesselPrismController.CreateBlock`'s tail moved into a shared
+   `Lay` unchanged.)
+3. **Toy Box ▸ Vessel Changer ▸ Tether**, then TETHER.md steps 3-9 (auto-tethers, search plane,
+   long tether, chaining, cutting, MPPM).
+
+First-pass tuning (all on `_SO_Assets/VesselActions/Tether/TetherConfig.asset`; the auto-tether set
+is a starting guess, the long-tether set is the sandbox's × 80/380):
+
+| Knob | Ships | Try if… |
+|---|---|---|
+| `anchorPeriod` | 0.35 s | the beat feels frantic (↑) or absent (↓) |
+| `autoStiffness` | 0.8 | no surge felt (↑) / pinned at the 1.15 cap (↓) |
+| `autoNoseGrip` | 6 /s | steering feels slidey (↑ to 10-15) / no sway felt (↓) |
+| `anchorLead` / `anchorAngle` | 0.8 s / 20° | beams too long/short or too splayed |
+| `range` / `minHook` | 93 / 27 | nothing in reach in a sparse cell (↑) |
+| `reelRate` | 40 | swings spin up too slowly (↑) |
+
+---
+
 ### 🔴 Rhino: elemental-crystal pickups no longer explode (`cece/keen-ptolemy-t3nzug`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § Crystal burst):

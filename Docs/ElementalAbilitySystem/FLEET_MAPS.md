@@ -65,6 +65,7 @@ day after the channel it referred to had been deleted.
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
+| **Tether** | 0/4 | 4/4 | 4/4 | *(added 2026-10-08 — prototype; all four map slots are OPEN design slots pending sign-off (`TETHER.md` §11). The scaling and L5 columns count the Squirrel channels it inherits as a Squirrel clone, not anything of its own)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
