@@ -2650,6 +2650,27 @@ that would otherwise cost a round-trip to a human at the editor:
 - **Mesh size and orientation**: decompress `Geometry → Vertices`, take bounds; identify a
   mesh's "nose" by comparing cross-section extents near each end of its long axis (the
   radially-symmetric end is the nose, the asymmetric one is the fins).
+- **"When does this block start moving?" is NOT "the first key that differs".** An eased curve
+  often carries a key at t=0 and the next one much later with a sub-degree difference (the Time
+  crystal's `89`: −270.00 at 0 s, −269.46 at 0.64 s), so a `diff(values) > ε` scan reports motion
+  from t=0 when nothing visible happens for 0.6 s. Sample the curve on a fine grid and threshold
+  the VISIBLE quantity (1° of rotation, a few mm of translation) against the value at the instant
+  you care about. The first reading said "no still window at the loop seam" and would have killed
+  a correct design.
+- **A snap to a symmetry of an IMPORTED model needs the frame Unity actually produced, and a
+  Z-up FBX has no anchor in this repo.** Unity's conversion permutes and signs axes, and for a
+  shape whose symmetry has two coordinate-aligned orientations (the icosahedron's
+  (0,±1,±φ) vs (0,±φ,±1) families) the SIGN decides which one you get — so a hard-coded group is
+  wrong for half the possible conversions and nothing offline tells you which half. Resolve it at
+  RUNTIME from something the import cannot reinterpret: named bones (sub-asset fileIDs are not
+  derivable, names are), whose rest positions in the model root's local space name a symmetry axis
+  — `TimeCrystalVertexHop` snaps the first-ring bones' centroid onto the nearest of the 24
+  candidate five-fold axes, which fixes axis AND orientation in one step. Do not reach for
+  `Mesh.vertices`: an `isReadable: 0` mesh has none in a player. Then PROVE the resolver against
+  every conversion it could face: export the FBX's bone heads and mesh, apply all **48** signed
+  axis permutations in a Roslyn harness, run the shipped resolver on each, and assert it recovers
+  the true axis and that every group element leaves the converted mesh congruent (48/48, 6e-7
+  here). Negative-control with a tilted frame and the wrong bone set.
 
 ## 4.8b Technique: prove a runtime VISUAL claim offline, by walking to the authored value
 
