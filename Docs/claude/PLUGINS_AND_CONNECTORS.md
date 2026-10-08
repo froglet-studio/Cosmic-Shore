@@ -78,6 +78,9 @@ where a Release `diag` / `prof` measures the gain (`Docs/PERFORMANCE_OPTIMIZATIO
   `GetComponentsInChildren`), 8 in per-frame coroutines, 62 `yield return new` inside a loop. The scanner
   prints how many allocations 30 KB implies; size the target before fixing anything.
 
+**Handoff:** `Docs/prompts/PERFORMANCE_PLUGIN_RESTART_PROMPT.md` (2026-10-08: still not enabled when the
+session that planned this ended, so the restart moved to a new session).
+
 **Order:**
 
 1. **`/unity-performance`**: audit the hot paths, given the latest `diag` and `prof` JSON. Rank by measured
