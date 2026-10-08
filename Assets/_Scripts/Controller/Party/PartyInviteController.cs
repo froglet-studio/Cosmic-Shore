@@ -350,6 +350,7 @@ namespace CosmicShore.Gameplay
             if (hcs == null) return true;
             if (hcs.TryValidateJoinTarget(targetPlayerId, sessionId, asSpectator, out var refusal)) return true;
             CSDebug.LogWarning($"[PartyInviteController] Refused before teardown: {refusal}");
+            NetSessionRecorder.Mark("refused", refusal);
             bounceToastChannel?.ShowPrefix(refusal);
             return false;
         }
@@ -659,6 +660,7 @@ namespace CosmicShore.Gameplay
         private async UniTask BounceToSoloMenuAsync(string toastMessage)
         {
             CSDebug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
+            NetSessionRecorder.Mark("bounce", toastMessage);
             await RecoverFromFailedTransitionAsync();
             // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
             // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by

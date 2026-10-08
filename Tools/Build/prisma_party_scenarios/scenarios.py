@@ -21,7 +21,7 @@ import sys
 import time
 import traceback
 
-from driver import (Inst, boot_to_menu, console, double_tap, is_solo, party, press_enter_together,
+from driver import (Inst, boot_to_menu, console, double_tap, is_solo, party, run_together,
                     score_rows, until, vessels, wait_party)
 
 MATCH_MODE = "Bloomrush"
@@ -87,7 +87,7 @@ class Session:
         for i in (A, E):
             wait_joinable(i, B)
         marks = {i.label: i.log_mark() for i in (A, E)}
-        skew = press_enter_together([A, E], f"party join {B.name}")
+        skew = run_together([A, E], f"party join {B.name}")
         b = wait_party(B, host_at(4), "the host to count 4", 180)
         states = {}
         for i in (A, E):
@@ -99,7 +99,7 @@ class Session:
         seated = [i for i in (A, E) if seated_in(b)(states[i.label])]
         bounced = [i for i in (A, E) if is_solo(states[i.label])]
         ok = len(seated) == 1 and len(bounced) == 1
-        detail = {"enter_skew_ms": skew, "host": b, "A": states["A"], "E": states["E"]}
+        detail = {"press_skew_ms": skew, "host": b, "A": states["A"], "E": states["E"]}
         if ok:
             self.winner, self.loser = seated[0], bounced[0]
             log = self.loser.log_since(marks[self.loser.label])
@@ -133,11 +133,11 @@ class Session:
         A, B, E = self.A, self.B, self.E
         for i in (A, E):
             wait_joinable(i, B)
-        skew = press_enter_together([A, E], f"party join {B.name}")
+        skew = run_together([A, E], f"party join {B.name}")
         b = wait_party(B, host_at(4), "the host to count 4", 180)
         states = {i.label: wait_party(i, lambda s: seated_in(b)(s) and s.get("members") == members(4),
                                       f"{i} to be seated with a full roster", 180) for i in (A, E)}
-        return True, {"enter_skew_ms": skew, "host": b, **states}
+        return True, {"press_skew_ms": skew, "host": b, **states}
 
     # ── T5 (join) ─────────────────────────────────────────────────────────────
     def t5_double_join(self):
@@ -219,6 +219,26 @@ class Session:
         ok = b.get("humans") == "2" and b.get("conns") == "3" and len(after) == len(before)
         return ok, {"spectator": e, "host": b, "vessels_before": len(before), "vessels_after": len(after)}
 
+    # ── Block 1: the session record knows who it is and what happened ─────────
+    def net_record(self):
+        # The one moment all three roles exist at once: B hosts, C is a member, E spectates.
+        roles = {}
+        for i, want in ((self.B, "host"), (self.C, "client"), (self.E, "spectator")):
+            line = console(i, "net") or ""
+            fields = [f.strip() for f in line.split("|")]
+            roles[i.label] = {"want": want, "got": fields[1] if len(fields) > 1 else None, "line": line}
+        dumped = console(self.B, "net dump") or ""
+        path = dumped.split("wrote ", 1)[1].strip() if "wrote " in dumped else None
+        events = set()
+        if path and os.path.exists(path):
+            events = {e.get("e") for e in json.load(open(path)).get("lifecycle", [])}
+        # What this run has put the host through by now: party transitions, approvals, leavers,
+        # the ready gate passing (T4) and a ship handed to the AI (T3).
+        need = {"party", "clientApproved", "clientLeft", "readyGate", "leaverToAI"}
+        ok = all(r["got"] == r["want"] for r in roles.values()) and need <= events
+        return ok, {"roles": roles, "host_record": path, "missing_events": sorted(need - events),
+                    "host_events": sorted(e for e in events if e)}
+
     # ── T7 / B10 ──────────────────────────────────────────────────────────────
     def t7_host_drop(self):
         B, C, E = self.B, self.C, self.E
@@ -270,6 +290,7 @@ SCENARIOS = [
     ("T4", "B20", "A leaver at the ready gate does not strand the other three", Session.t4_leaver_at_ready_gate),
     ("T3", "B21", "A leaver mid-match: ship flies on under AI, score row survives", Session.t3_leaver_mid_match),
     ("T6", "SPECTATOR §6", "Spectator: no Player/vessel, not a human, counted as a spectator", Session.t6_spectator),
+    ("net", "Block 1", "Session record: each peer names its role; the host's timeline holds the lifecycle", Session.net_record),
     ("T7", "B10", "Host killed: each remaining peer lands in its own working menu", Session.t7_host_drop),
     ("T4-lobby", "B20", "A leaver at the arcade launch lobby does not strand the other three", Session.t4_leaver_at_launch_lobby),
 ]

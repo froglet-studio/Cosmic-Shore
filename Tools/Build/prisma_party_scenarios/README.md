@@ -18,13 +18,18 @@ its own save folder and its own control port. Netcode's model runs over TCP, and
 are a shared session directory. Then `scenarios.py` plays one continuous session through
 `driver.py`. It presses only what a person presses: the `party` console command
 (`Assets/_Scripts/Controller/Party/PartyConsoleCommand.cs`, which calls exactly what the buttons
-call) and the port's `arcade` / `vessels` / `score` verbs. It asserts on what each machine reports.
+call), the HUD's Ready button, and the port's `arcade` / `vessels` / `score` verbs.
+
+It sends **no key events**. A console line is set into the field through the control port, then
+the overlay's own Run button is clicked. That button is on the topmost canvas, so the click cannot
+reach the game. Typing plus Enter used to leak: on a menu that had just loaded, the Enter opened
+the arcade card the screen had selected for gamepad navigation. It asserts on what each machine reports.
 
 | id | closes | scenario |
 |---|---|---|
 | T1 | B2 / T1 | Invite → Accept: the guest is seated and both rosters agree |
 | T5-accept | single-flight | Double-tapped Accept starts one accept flow |
-| **T2b** | **B25** | Two Joins on a 3/4 party, Enter pressed on both behind a barrier (skew < 1 ms): the host ends at **4/4**, one joiner is seated, the other is back in its own menu with "That party is full." `refused_by` says whether the loser passed the pre-flight, which means the session's 4 seats refused it — the race B25 is about — or was stopped by the pre-flight |
+| **T2b** | **B25** | Two Joins on a 3/4 party, Run pressed on both consoles behind a barrier (skew < 1 ms): the host ends at **4/4**, one joiner is seated, the other is back in its own menu with "That party is full." `refused_by` says whether the loser passed the pre-flight, which means the session's 4 seats refused it — the race B25 is about — or was stopped by the pre-flight |
 | kick / leave | — | The member lands in its own working menu, and the host recounts |
 | T2 | B5 / T2 | Two Joins at once with room for both: both are seated |
 | T5-join | single-flight | Double-tapped Join starts one direct join, and the controller ignores the second |
@@ -32,6 +37,7 @@ call) and the port's `arcade` / `vessels` / `score` verbs. It asserts on what ea
 | T4 | B20 | Three press the HUD's Ready button (once it shows) and the fourth leaves: the host's gate goes 3/4 → 3/3 and the countdown starts |
 | T3 | B21 | A guest leaves mid-race: the host hands its ship to the AI (owner flips to the server, and the ship keeps moving), and its score row survives |
 | T6 | spectator §6 | A spectator joins the running match: the host counts `humans=2 spectators=1`, and no vessel is added |
+| net | Block 1 | While a host, a member and a spectator all exist, `net` names each one's role, and the host's dumped session record holds the lifecycle marks (`party`, `clientApproved`, `clientLeft`, `readyGate`, `leaverToAI`) |
 | T7 | B10 | The host is `kill -9`ed: each remaining peer (a member and the spectator) lands in its own working menu |
 | T4-lobby | B20 | A new host fills a party of four and opens a card. Three press Start, then the fourth leaves: the lobby launches the three. On 2026-10-08 this caught the lobby half of B20 never working: the commit-time head-count floor kept the gate at 3/4 |
 

@@ -211,6 +211,13 @@ namespace CosmicShore.Core
             }
 
             CSDebug.LogVerbose(CSLogChannel.Boot, "[OfflineModeService] Offline local host running - session is offline until app restart.");
+
+            // The session record's verdict counts only a fallback taken while the device HAD a
+            // network (B24's shape: "we were online and gave up anyway"). A deliberate choice -
+            // the menu toggle - is not a fallback at all. This is the one place the flag is set
+            // for good, so it is the one place that says which it was.
+            if (OfflinePreferred) NetSessionRecorder.Mark("offlineChosen");
+            else NetSessionRecorder.MarkOfflineFallback(NetSessionRecorder.DeviceOnlineProvider());
             return true;
         }
 

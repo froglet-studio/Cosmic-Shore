@@ -482,6 +482,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Approved client {request.ClientNetworkId} as a SPECTATOR (no player object).");
             }
 
+            NetSessionRecorder.Mark("clientApproved", spectator ? $"{request.ClientNetworkId} spectator" : request.ClientNetworkId.ToString());
             response.Approved           = true;
             response.CreatePlayerObject = !spectator;
             response.Position           = Vector3.zero;
@@ -498,6 +499,7 @@ namespace CosmicShore.Gameplay
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    NetSessionRecorder.Mark("clientLeft", clientId.ToString());
                     SpectatorSession.ServerUnregister(clientId);
                     // Netcode backstop for hard drops (client crash) that may beat the
                     // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is

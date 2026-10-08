@@ -615,6 +615,7 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                 $"[FLOW-9] [{GetType().Name}] All players ready - starting countdown.");
+            NetSessionRecorder.Mark("readyGate", $"{GetType().Name}: {because}");
             _readyClients.Clear();
             OnAllPlayersReady();
         }

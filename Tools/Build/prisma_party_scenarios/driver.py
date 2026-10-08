@@ -4,8 +4,8 @@ Each instance is a separate process with its own NetworkManager, so the game cod
 the real code, end to end - this module only presses what a person would press and reads what a
 person (or the DiagnosticsHUD console) would read:
 
-  - `console(inst, line)` types a line into the DiagnosticsHUD console and returns the command's
-    result as the game logged it (`[DiagnosticsHUD] <line> → <result>`).
+  - `console(inst, line)` sets a line into the DiagnosticsHUD console, presses its Run button, and
+    returns the command's result as the game logged it (`[DiagnosticsHUD] <line> → <result>`).
   - `party(inst)` is `console(inst, "party")` parsed into a dict (PartyConsoleCommand.Describe).
   - `inst.do(...)` is the port's input script: `click x,y`, `type text`, `key Enter`, and the
     port's inspector verbs (`arcade <Mode>`, `arcade start`, `arcade ready`, `score`, `vessels`).
@@ -97,13 +97,24 @@ def until(pred, timeout_s, what, step=1.0):
     raise TimeoutError(f"timed out after {timeout_s}s waiting for {what}" + (f" (last error: {last_err})" if last_err else ""))
 
 
+def set_console_text(inst, line):
+    """Put `line` into the console's input field through the control port, not the keyboard."""
+    echo = inst.out("set", f"CmdInput InputField text {line}")
+    if f'= "{line}"' not in echo:
+        raise RuntimeError(f"{inst}: could not set the console text: {echo.strip()[:200]}")
+
+
 def console(inst, line, settle=10):
-    """Run a DiagnosticsHUD console line; return the result the game logged for it (or None)."""
-    inst.click("CmdInput")
-    inst.wait(3)
-    inst.do(f"type {line}")
-    inst.wait(3)
-    inst.do("key Enter")
+    """Run a DiagnosticsHUD console line and return the result the game logged for it (or None).
+
+    The text is SET into the field and the overlay's own Run button is clicked. Typing it and
+    pressing Enter used to leak: on a menu screen that had just loaded, the Enter reached the arcade
+    card the screen had selected for gamepad navigation and opened its lobby, which changed the run
+    under test. The Run button sits on the overlay's canvas (sortingOrder 32760, the topmost), so a
+    click on it cannot reach the game, and no key event is sent at all.
+    """
+    set_console_text(inst, line)
+    inst.click("Btn_Run")
     inst.wait(settle)
     tag = f"[DiagnosticsHUD] {line} → "
     for l in reversed(inst.logs(400).splitlines()):
@@ -166,19 +177,23 @@ def boot_to_menu(inst, timeout_s=900):
     raise TimeoutError(f"{inst}: never reached Menu_Main")
 
 
-def press_enter_together(insts, line):
-    """Stage `line` in each console, then press Enter on all of them behind one barrier: the
-    closest this harness gets to several people pressing the same button at once. Returns the
-    wall-clock skew between the first and last Enter, in ms."""
+def run_together(insts, line):
+    """Stage `line` in each console, then press Run on all of them behind one barrier: the closest
+    this harness gets to several people pressing the same button at once. Returns the wall-clock
+    skew between the first and last press, in ms."""
     import threading
+    targets = {}
     for i in insts:
-        i.click("CmdInput"); i.wait(3); i.do(f"type {line}"); i.wait(3)
+        set_console_text(i, line)
+        r = i.rect("Btn_Run")
+        targets[i.port] = ((r[0] + r[2]) // 2, (r[1] + r[3]) // 2)
     bar, stamps = threading.Barrier(len(insts)), {}
 
     def go(i):
+        x, y = targets[i.port]
         bar.wait()
         stamps[i.port] = time.time()
-        i.do("key Enter")
+        i.do(f"click {x},{y}")
 
     threads = [threading.Thread(target=go, args=(i,)) for i in insts]
     [t.start() for t in threads]
@@ -187,11 +202,16 @@ def press_enter_together(insts, line):
 
 
 def double_tap(inst, line):
-    """Run `line` twice back to back - the second press lands while the first is in flight."""
-    r = inst.rect("CmdInput")
+    """Run `line` twice, the second press two frames after the first - while the first is still
+    in flight, as a person's second tap is. (Back to back in one frame, both presses would read
+    the field before the first one cleared it, and only one command would ever run.)"""
+    r = inst.rect("Btn_Run")
     x, y = (r[0] + r[2]) // 2, (r[1] + r[3]) // 2
-    for _ in range(2):
-        inst.do(f"click {x},{y}"); inst.do(f"type {line}"); inst.do("key Enter")
+    set_console_text(inst, line)
+    inst.do(f"click {x},{y}")
+    inst.wait(2)
+    set_console_text(inst, line)
+    inst.do(f"click {x},{y}")
 
 
 def vessels(inst):

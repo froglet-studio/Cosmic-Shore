@@ -65,6 +65,44 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Session record: who this peer is, and what happened (Block 1's remainder) (`Ys-bleeding-edge`, 2026-10-08)
+
+**What landed:**
+- **Providers.** `AppManager.InstallNetSessionProviders`, next to the existing `NetworkDiagnostics`
+  wiring, gives `NetSessionRecorder` its three providers:
+  - **role:** `host` / `server` / `client` / `spectator` / `offline` / `none`.
+  - **offline:** the session's `IsOfflineSession`.
+  - **device-online:** the device's reachability.
+- **The offline mark.** `OfflineModeService` marks how a session went offline:
+  `MarkOfflineFallback(deviceWasOnline)` for a fallback nobody asked for, or `offlineChosen` for
+  the menu toggle. Before this, the record's `verdict.offlineFallbacksWhileOnline` could only ever
+  read 0, because nothing called it.
+- **Lifecycle marks,** one line each where the event already logs:
+  - `party` (every `PartyStateMachine` transition);
+  - `refused` (pre-flight refusal);
+  - `bounce`;
+  - `clientApproved` / `clientLeft` (host);
+  - `readyGate` (match gate passed);
+  - `leaverToAI`.
+
+**Proven without the editor:**
+- **The `net` scenario,** added to `Tools/Build/prisma_party_scenarios/`, passed in run 6 (14/14):
+  - `net` named each peer `host`, `client` and `spectator`. Before this it printed `unknown` on
+    every peer.
+  - The host's `net dump` record held `party`, `clientApproved`, `clientLeft`, `readyGate` and
+    `leaverToAI`.
+- **`unity_refcompile` player config:** 0 project errors, 0 unverified.
+- **Not run:** `/verify-unity`.
+
+**Needs the editor:**
+1. Two MPPM players in a party, then type `net` on each. Expect `net CLEAN | host | …` and
+   `net CLEAN | client | …`, each with a non-zero event count.
+2. On the host, type `net dump` and open the JSON it names. `lifecycle` reads in order: the party
+   transitions, `clientApproved`, and so on.
+3. Pull the network and let the boot fall back to offline, then type `net`. The role reads
+   `offline`, `/offline` is shown, and `offlineWhileOnline` stays 0 when the device really had
+   no network.
+
 ### 🔴 `party` console command, the five-process party scenarios, and B20's lobby half (`Ys-bleeding-edge`, 2026-10-08)
 
 **What landed:**
@@ -99,6 +137,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   | 2 | 12/13 | T4-lobby failed on the real B20 defect above |
   | 3 | 12/13 | T4-lobby could not reach its lobby: the new host's first invite expired on the new host the moment it was sent, and the guest's pre-flight read the host's old session (investigation in progress) |
   | 4 (game clock paced to the wall) | 12/13 | Same as run 3 |
+| 5 (keyless driver) | 6/14 | Harness: the double-tap's two presses landed in one frame, so the second read an empty field |
+| 6 | **14/14** | T4-lobby passed: `All players ready (client 3 left) - launching game` |
 
 - **Every other scenario passed on runs 2–4:**
   - **T2b (B25).** The two Enters were 0.38 ms apart; both passed the pre-flight; the session's 4
@@ -112,8 +152,12 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   approximation: two changed Editor-folder files that declare `namespace CosmicShore.Editor` get
   compiled into the runtime compilation.
 - **Textual gates:** green.
-- **Not run:** `/verify-unity` (cloud container, no Editor). The lobby clamp has not yet passed
-  T4-lobby on any run.
+- **Not run:** `/verify-unity` (cloud container, no Editor).
+- **The cause of runs 3–4.** Both followed the same harness leak: an Enter, typed into the
+  console on a menu that had just loaded, opened the arcade card the screen had selected for
+  gamepad navigation. The driver now sets the console text through the control port and clicks
+  the overlay's own Run button, and the failure has not recurred. Its exact mechanism (an invite
+  expiring on the send, and a stale session in the guest's pre-flight) was not established.
 
 **Needs the editor:**
 1. Press **F7** in a dev build and type `party`. Expect `party role=host state=InParty … members=1/4

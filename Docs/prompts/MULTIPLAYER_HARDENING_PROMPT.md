@@ -233,10 +233,102 @@ sites), so Block 1 shrank on measurement. **Landed:** `NetSessionRecord`, `NetSe
 `NetSessionConsoleCommand` (`net` / `net dump` / `net reset` / `net mark`) and
 `NetSessionRecorderTests` — **11 pass / 0 fail in the project's own headless harness**
 (`bash Tools/Build/prisma_edit_mode_tests/run.sh`, registered in its `suites.txt`), which
-supersedes the earlier shim run. `/verify-unity` not run. **Still to do, in the Editor, because they need authored assets:** the
-`NetStatsMonitorConfiguration` + `RuntimeNetStatsMonitor` attach, the `NetworkSimulatorPreset` set,
-assigning the recorder's three providers, and adding `Mark(...)` at the lifecycle points. Do not
-write the RNSM wiring blind — the component displays nothing without its configuration asset.
+supersedes the earlier shim run. `/verify-unity` not run.
+
+**Also landed (2026-10-08):** the three providers and the lifecycle marks.
+
+- **The earlier note was wrong.** It listed these as Editor work, but they need no authored asset.
+  `AppManager.InstallNetSessionProviders` answers role / offline / device-online.
+- **`OfflineModeService` marks how a session went offline:** `MarkOfflineFallback` for a fallback
+  nobody asked for, `offlineChosen` for the toggle. Until then the verdict's
+  `offlineFallbacksWhileOnline` could only read 0.
+- **Marks at the existing log sites:** `party` (every state transition), `refused`, `bounce`,
+  `clientApproved` / `clientLeft`, `readyGate`, `leaverToAI`.
+- **Proven on the five-process run.** `net` named host, client and spectator correctly (it had
+  printed `unknown` on every peer), and the host's record held the marks.
+
+**Still to do, in the Editor, because they need authored assets:** the
+`NetStatsMonitorConfiguration` + `RuntimeNetStatsMonitor` attach, and the `NetworkSimulatorPreset`
+set. Do not write the RNSM wiring blind — the component displays nothing without its configuration
+asset.
+
+### Block 3 status (2026-10-08)
+
+**Route taken: one process per player, not NGO's in-process harness.** Neither in-process route
+reaches this layer:
+- **The helpers can't be referenced.** NGO's helpers compile into `Unity.Netcode.Runtime.Tests`,
+  which references `Unity.Netcode.TestHelpers.Runtime`, an assembly name absent from the package.
+  Their time-travel pieces use internals visible only to NGO's own named test assemblies.
+- **The tests can't see the code from an asmdef.** The project's tests compile into
+  `Assembly-CSharp-Editor`. An asmdef, the only thing `testables` can feed, cannot reference
+  `Assembly-CSharp`.
+- **Decisively, there is one `Singleton` per process.** `NetworkManager.Singleton` is read at
+  **161 sites in 54 runtime files**. Two `NetworkManager`s in one process share one `Singleton`, so
+  the "~150 lines against the public API" fallback hits the same wall.
+
+**Landed:**
+- **`PartyConsoleCommand`,** the dev-only `party` command. Each button's method is reachable from
+  the console, and `party` prints one `key=value` state line.
+- **`Tools/Build/prisma_party_scenarios/`.** Five instances of the game, each its own process, on
+  Prisma (`Port/`) with the real `Assets/_Scripts`.
+  - Netcode's model runs over TCP, and a shared directory stands in for Lobby + Relay.
+  - One command plays **14 scenarios** and writes `results.json`.
+  - The game clock is paced to the wall, and no key event is ever sent to the game.
+
+**Run 6: 14/14 passed.**
+- **T1 accept.**
+- **T5 single-flight.** A double-tapped Join started one direct join, and the controller ignored
+  the second. For a double-tapped Accept, the second tap finds the invite already consumed, so the
+  controller's own Accept guard is **not** exercised.
+- **T2b (B25).** The two presses were 0.3 ms apart. Both passed the pre-flight; the session's
+  4 seats refused one, which got "That party is full."
+- **kick / leave.**
+- **T2.**
+- **The match launch.**
+- **T4 (B20, match gate).** 3/4 became 3/3, and the countdown started.
+- **T3 (B21).** The leaver's ship went to the AI and kept flying; its score row survived.
+- **T6.** The spectator counted as `humans=2 spectators=1`, and no vessel was added.
+- **`net`.** See Block 1 above.
+- **T7 (B10).** The host was `kill -9`ed; each peer became a solo host in ~2.5 s wall. TCP sees a
+  dead peer at once, while UTP waits out its 10 s timeout.
+- **T4-lobby (B20, launch lobby).**
+
+What a pass there does **not** prove is in the tool's README: the Unity runtime, UGS's exact
+error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay 🟡 until MPPM.
+
+**Defects the runs found:**
+1. **B20's lobby half never worked when the leaver was unready.**
+   `ArcadeConfigSyncManager.ExpectedHumanCount = Max(committed, connected)`. A departure never
+   lowered the floor, so the re-decide compared 3 with 4 and held in silence.
+   - Fix: a departure clamps the floor.
+   - The lobby gate now logs every re-decision.
+   - T4-lobby failed before the fix (run 2) and passed after it (run 6).
+2. **B25's loser logged a red `JoinPartyDirect error`.** The Phases 0–1 checklist promised a
+   warning. Fixed: `LogJoinFailure`.
+3. **Not fixed, and the owner's call: NetDiag labels a full party `class=Transient`.**
+   `NetworkDiagnostics.ClassifyException` has no Full label. It is the log classifier, kept
+   separate from `UgsRequestPolicy.Classify` on purpose. Proposal: derive the NetDiag label from the
+   policy's class.
+4. **Not fixed: a possible false "party is no longer available".** A new host's invite carries its
+   new session id at once, but its presence `partySession` property updates only on its next
+   refresh tick. A guest who accepts inside that gap is refused by the pre-flight's
+   `SessionChanged` check. This was seen once, after a host drop. The pre-flight cannot tell a
+   stale invite from stale presence without a timestamp.
+
+**Harness faults found and fixed along the way:**
+- Ready was pressed through the controller before the HUD showed the button.
+- The game clock ran ~200× the wall clock.
+- A typed Enter opened an arcade card.
+- Profile folders landed in the repo root, because .NET returns "" for a missing XDG directory.
+- A double-tap's two presses fell into one frame.
+
+**Next: T8, the seven offline cases. They are Block 4's work.** Two gaps are already confirmed by
+reading `HostConnectionService`:
+- **The offline flag is checked only at entry.** `EnsurePartySessionAsync` checks
+  `IsOfflineSession` at entry only, so a call queued on its mutex, or inside its `ShutdownAsync`,
+  carries on to build a Relay session over a live offline host. That breaks the §4.2 invariant.
+- **A late sign-in re-joins the presence lobby.** `EnsureInitializedAsync` has no offline guard,
+  so a sign-in that lands late re-joins the presence lobby of an offline session.
 
 ## The original asks, for the record
 

@@ -51,6 +51,17 @@ session itself. Fix that figure and its legend when you next touch the diagram.
 
 **Landed and verified by a real test run:**
 
+- **Block 3, by the multi-process route (2026-10-08).** `Tools/Build/prisma_party_scenarios/run.sh`
+  runs five game processes on Prisma and **14/14** scenarios pass. Covered: T1, T2, T2b (B25),
+  T3 (B21), T4 (B20 match + lobby), T5, T6, T7 (B10), kick, leave and the session record.
+  - NGO's in-process harness cannot reach this layer. The brief's Block 3 status says why
+    (161 `NetworkManager.Singleton` sites).
+  - The runs found two real defects, both fixed: B20's lobby half had never worked, and B25's
+    loser logged a red error.
+  - **Prisma is not Unity:** the tickets read "passed on Prisma" and stay 🟡 until MPPM.
+- **Block 1's code remainder.** The recorder's providers and the lifecycle marks are in. On the
+  five-process run, `net` names host, client and spectator and the record holds the marks.
+
 - **Block 1's code half.** `NetSessionRecord` (the JSON schema as a DTO), `NetSessionRecorder` (the
   lifecycle timeline + the writer), `NetSessionConsoleCommand` (`net` / `net dump` / `net reset` /
   `net mark <text>`), `NetSessionRecorderTests` — **11 pass / 0 fail** in the project's own headless
@@ -72,11 +83,18 @@ session itself. Fix that figure and its legend when you next touch the diagram.
   ready gate, a leaver takes their score out, Scoreboard exit unwired, arcade lobby doesn't follow
   the host. All 🟡.
 
-**Not started:** Blocks 2–6, and the `HostConnectionService` decomposition.
+**Not started:** Blocks 2, 5, 6, and the `HostConnectionService` decomposition. **Block 4** (offline,
+the seven §4.1 cases = Block 3's T8) is in progress: see the brief's Block 3 status for the two
+gaps already confirmed in `HostConnectionService`.
 
 ## What to do next
 
-1. **Block 3 — the in-process multi-NetworkManager harness.** This is the highest-value thing you
+0. **Block 4 — the seven offline cases as L1 tests** (Block 3's T8), plus the two
+   `HostConnectionService` gaps the brief's Block 3 status names. Then re-run
+   `prisma_party_scenarios` after anything touching the party layer: it takes ~15 minutes and
+   is the only multi-player check that runs without the owner.
+1. *(Done 2026-10-08 by a different route - kept for the record.)* **Block 3 — the in-process
+   multi-NetworkManager harness.** This is the highest-value thing you
    can do without the owner at a keyboard, and it converts the whole 🟡 pile into CI tests.
    `PartyAcceptFlowPlayModeTests.cs` says in its own comment that it needs two NetworkManagers in
    one process and cannot do it. **NGO 2.13.3 already ships that harness** in
@@ -114,6 +132,10 @@ session itself. Fix that figure and its legend when you next touch the diagram.
   `bash Tools/Build/prisma_edit_mode_tests/run.sh [path/to/XTests.cs …]`, suites listed in that
   folder's `suites.txt`. Needs .NET 10 — install to `$HOME/.dotnet10` and pass
   `DOTNET10_ROOT=$HOME/.dotnet10`. **Register any new suite in `suites.txt` and actually run it.**
+- **`bash Tools/Build/prisma_party_scenarios/run.sh`** runs five game processes through 14 party
+  scenarios (~15 min, needs .NET 10). Each scenario is driven through the `party` console command.
+  It writes `results.json`, and its README says what a pass does not prove. Add a scenario there
+  before a party fix, not after.
 - **`python3 Tools/Build/check_ugs_request_discipline.py`** fails on a UGS call that bypasses
   `UgsRequestPolicy.ExecuteAsync` and on any private failure classifier outside
   `UgsRequestPolicy.cs`. It has already caught a real escape. Run it with the other gates.
