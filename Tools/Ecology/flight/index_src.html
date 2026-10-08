@@ -58,6 +58,9 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
 .stick{position:fixed;bottom:20px;width:130px;height:130px;border-radius:50%;border:2px solid #ffffff30;background:#ffffff0c;z-index:7;display:none;touch-action:none}
 .stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:#ffffff38;border:2px solid #ffffff60}
 #stickL{left:18px}#stickR{right:18px}
+#fpm{position:fixed;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;border:2px solid #7fd6ff;border-radius:50%;z-index:4;pointer-events:none;display:none;box-shadow:0 0 8px #7fd6ff88}
+#fpm:before,#fpm:after{content:'';position:absolute;top:8px;width:9px;height:2px;background:#7fd6ff}#fpm:before{left:-11px}#fpm:after{right:-11px}
+#dbtn{position:fixed;right:160px;bottom:112px;z-index:7;display:none;width:62px;height:62px;border-radius:50%;background:#7fd6ff2e;border:2px solid #7fd6ff88;color:#7fd6ff;font-weight:700;font-size:11px}
 #tbtn{position:fixed;right:160px;bottom:40px;z-index:7;display:none;width:62px;height:62px;border-radius:50%;background:#ffc94d2e;border:2px solid #ffc94d88;color:var(--gold);font-weight:700}
 #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;background:radial-gradient(#0b1430dd,#02040add)}
 #start .panel{padding:20px 22px;width:min(520px,94vw)}
@@ -110,6 +113,7 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
     <div class="bar" id="boostbar"><i style="width:100%"></i></div>
     <div id="hdg" style="margin-top:5px;color:var(--mute)">hdg 0° · pitch 0°</div>
     <div id="pos" style="color:var(--mute)">r 0%</div>
+    <div id="fm" style="color:var(--mute)"></div>
   </div>
 </div>
 <div id="enc" class="panel" style="display:none"></div>
@@ -118,22 +122,27 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
 <div class="stick" id="stickL"><i></i></div>
 <div class="stick" id="stickR"><i></i></div>
 <button id="tbtn">BOOST</button>
+<button id="dbtn">DRIFT</button>
+<div id="fpm" title="where you are actually going (drift)"></div>
 <div id="help" class="panel">
   <h2>Fly among the ecology</h2>
   <table>
-    <tr><td>W / S</td><td>throttle up / down (cruise 120 u/s)</td></tr>
-    <tr><td>A / D, ← / →</td><td>yaw (110°/s)</td></tr>
+    <tr><td>G</td><td>flight model: <b>game</b> (the Manta's VesselTransformer, default) or arcade (<code>?flight=arcade</code>)</td></tr>
+    <tr><td>W / S</td><td>throttle up / down (game: 0-180 u/s; arcade: cruise 120, max 160)</td></tr>
+    <tr><td>A / D, ← / →</td><td>yaw (game: 30°/s + 0.2 × speed, nose lags; arcade: 110°/s)</td></tr>
     <tr><td>↑ / ↓ or mouse</td><td>pitch (nose up / down)</td></tr>
     <tr><td>Q / E</td><td>roll</td></tr>
-    <tr><td>Shift</td><td>boost to 300 u/s (meter)</td></tr>
+    <tr><td>Shift</td><td>game: <b>Soar</b>, both triggers: target × 4 × Time (×1 → ×1.3 by 10 Time petals), no meter; arcade: boost to 300 u/s (meter)</td></tr>
+    <tr><td>Space</td><td>game: <b>drift</b> (hold): the course stays where it was while the nose turns, turn rates × 1.5 (<code>?drift=squirrel</code>: × 1.8, course regrips at 0.25/s)</td></tr>
+    <tr><td>Z / X</td><td>game: <b>Yastri</b> trigger turn left / right, 60°/s (the Manta's one-trigger turn); Mass petals grow your wake up to × 2.5</td></tr>
     <tr><td>M</td><td>mouse steer: the cursor's offset from centre is the stick</td></tr>
     <tr><td>C</td><td>chase / free orbit camera (drag, wheel)</td></tr>
     <tr><td>R</td><td>rate the last encounter</td></tr>
     <tr><td>O</td><td>cell owner: hostile (strikes BURN petals for good) or yours (strikes only sting for 4 s)</td></tr>
     <tr><td>P</td><td>autopilot (a scripted wanderer flies)</td></tr>
     <tr><td>` (backquote)</td><td>debug: frame time, agents, mass audit</td></tr>
-    <tr><td>Gamepad</td><td>left stick pitch/yaw, right stick roll/throttle, A or RB boost</td></tr>
-    <tr><td>Touch</td><td>left stick pitch/yaw, right stick roll/throttle, BOOST</td></tr>
+    <tr><td>Gamepad</td><td>left stick pitch/yaw, right stick roll/throttle, A or RB boost/Soar, LB drift; game: LT/RT are the Manta's triggers (one = Yastri turn, both = Soar); arcade: LT/RT throttle</td></tr>
+    <tr><td>Touch</td><td>left stick pitch/yaw, right stick roll/throttle, BOOST, DRIFT; game: fly on both sticks and lift one thumb for Yastri (lift right = turn left), 80°/s ramped</td></tr>
   </table>
   <p style="color:var(--mute)">Ram a creature to kill it: it drops a crystal of its element; fly through it for +1 petal. <b>Stakes:</b> your flower holds 4 elements of up to 10 petals. In a hostile cell every danger strike (bite, burn, snap, sting; a peck is a quarter) BURNS petals from all four, for good, with a 1 s cooldown. Crystals are the only way back. Your trail is conserved mass: thieves steal it, grazers and herds eat it. Every rule is a JS port of the scored Python species, gated against it headless (flight/fidelity.py).</p>
   <button class="btn" id="helpClose">close</button>
@@ -162,7 +171,7 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
   <div class="panel">
     <h1>Flyable ecology</h1>
     <p>A cell of live species reacting to <b>you</b>: thieves tailing your wake, a pack that rings you, locusts that tip from shy to storm, a lurker that gapes, a herd that stampedes, a leviathan that assembles, mobbing birds, a fortress colony, snap-trap flora and the grazers they all live among.</p>
-    <p>Pick "one species" from the menu to judge one at a time; rate encounters with <b>R</b>. Keys: W/S throttle · A/D yaw · arrows or mouse pitch · Q/E roll · Shift boost · ? help.</p>
+    <p>Pick "one species" from the menu to judge one at a time; rate encounters with <b>R</b>. Keys: W/S throttle · A/D yaw · arrows or mouse pitch · Q/E roll · Shift Soar · Space drift · Z/X Yastri · G arcade/game flight · ? help.</p>
     <button class="btn on" id="go" style="margin-top:8px;padding:9px 16px">fly</button>
   </div>
 </div>
@@ -413,7 +422,7 @@ function buildWorld(mode) {
   ensurePrisms(ar.n);
   lastN = ar.n; if (trailDir.length < 3 * ar.cap) trailDir = new Float32Array(3 * ar.cap * 2);
   stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0; newStakes(W ? W.arena.t : 0);
-  flight.speed = 120; flight.throttle = 0.75; flight.boost = 1;
+  flight.speed = 120; flight.throttle = 0.75; flight.boost = 1; resetGameFlight();
   const pl = W.player;
   flight.q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...pl.vel).normalize());
   prevPos.set(...pl.pos); curPos.set(...pl.pos);
@@ -423,20 +432,59 @@ function buildWorld(mode) {
 }
 
 // ------------------------------------------------------------------------------------------------ flight model
-// Numbers: cruise 120 u/s and boost 300 u/s (Tools/Ecology/common/arena.py Pilot: wanderer 120, hunter 160; the brief's
-// "boost ~300"); turn 110 deg/s (Dolphin, CLAUDE.md); chase offset ~ (0, 10, -50) (SparrowCameraSettingsSO followOffset).
-const flight = { q: new THREE.Quaternion(), speed: 120, throttle: 0.75, boost: 1, boosting: false, yawR: 0, pitchR: 0, rollR: 0, bank: 0, auto: false, invert: false };
+// TWO models, picked by ?flight= (default 'game'; 'arcade' keeps the original page model):
+//
+// ARCADE (?flight=arcade): cruise 120 u/s and boost 300 u/s (Tools/Ecology/common/arena.py Pilot: wanderer 120, hunter
+// 160; the brief's "boost ~300"); turn 110 deg/s (Dolphin, CLAUDE.md); a draining boost meter. Eased rates, no drift.
+//
+// GAME (default): the game's own VesselTransformer, scalar path, with the Manta's authored numbers (branch
+// bleeding-edge; file:line in DISCOVERIES "Game flight model"). Per 30 Hz step:
+//   rotation  accumulated q += AngleAxis(stick * (speed * RotationThrottleScaler + Scaler) deg/s, HULL axis)
+//             (VesselTransformer.cs:894-916); the hull slerps to it at LERP_AMOUNT 1.5 * dt (:44, :548, :574).
+//   speed     target = XDiff * ThrottleScaler * boost + MinimumSpeed (:971-973); speed = lerp(speed, target, 1.5 dt)
+//             plus the terminal brake at ThrottleScaler / 2 s when the target is 0 (:1041-1045, MinimumThrottleBrake.cs:9-38).
+//   boost     x BoostMultiplier (4) x the Manta's Time ElementalFloat lerp(1, 1.3, time/10) floored 0.7 (:918-930).
+//   drift     DriftActionSO: scalers x lerp(1, Mult, trig), grip = lerp(1, damping, trig); the course only slerps
+//             back to the nose at grip * dt, blended by the eased trigger sum (12 /s) (:396-410, :716-890, :1272-1293).
+//   stick     the game's cosine ease, Ease(x) = sign(x) (1 - cos(x pi/4)), applied to BOTH thumbs' sum (BaseInputStrategy.cs:34)
+const FQ = new URLSearchParams(location.search);
+const FM = { game: FQ.get('flight') !== 'arcade' };
+const GAME = {
+  THROTTLE: 180, MIN_SPEED: 0,              // Manta.prefab VesselTransformer DefaultThrottleScaler / DefaultMinimumSpeed
+  PITCH: 50, YAW: 30, ROLL: 100, ROT_THR: 0.2,  // Manta.prefab PitchScaler / YawScaler / RollScaler / RotationThrottleScaler
+  LERP: 1.5,                                // VesselTransformer.LERP_AMOUNT
+  BOOST: 4,                                 // Manta.prefab VesselStatus.boostMultiplier
+  SOAR_TIME: [1, 1.3, 0.7],                 // Manta.prefab BoostSpeedMultiplier: Time, min 1, max 1.3, floor 0.7
+  WAKE_MASS: [1, 2.5],                      // Manta.prefab VesselPrismController.trailVolume: Mass, min 1, max 2.5
+  TRIG_YAW: 60,                             // Manta.prefab MantaAnalogTurnBoostExecutor.maxYawDegPerSec (net trigger yaw)
+  YASTRI: { MAX: 80, IN: 0.35, OUT: 0.25, EXP: 0.25 },   // YawsteryAction-Left/Right.asset (touch: lift one thumb)
+  BRAKE_S: 2,                               // MinimumThrottleBrake.DefaultBrakeSeconds
+  DRIFT_EASE: 12,                           // VesselTransformer.DRIFT_EASE_SPEED (non-gamepad trigger ramp)
+};
+// The Manta binds NO drift. These are the game's two shipped single-tier DriftActionSO assets; ?drift= picks one.
+const DRIFTS = { dolphin: { mult: 1.5, grip: 0 }, squirrel: { mult: 1.8, grip: 0.25 } };
+const DRIFT = DRIFTS[FQ.get('drift')] || DRIFTS.dolphin; DRIFT.name = DRIFTS[FQ.get('drift')] ? FQ.get('drift') : 'dolphin';
+const flight = { q: new THREE.Quaternion(), speed: 120, throttle: 0.75, boost: 1, boosting: false, yawR: 0, pitchR: 0, rollR: 0, bank: 0, auto: false, invert: false,
+  // game model state (VesselTransformer fields): accumulatedRotation, Course, the drift tier, Yastri's executor, Soar
+  qa: new THREE.Quaternion(), course: new THREE.Vector3(0, 0, 1), qPub: new THREE.Quaternion(),
+  drifting: false, driftOn: false, driftEase: false, driftBase: false, trig: 0, grip: 0, rotMult: 1,
+  ya: { run: false, sign: 0, next: 0, ph: 0, i: 0, t: 0, u: 0, start: 0 }, yastri: 0, trigYaw: 0, soar: 0, boostAmt: 1,
+  lvTime: 0, lvMass: 0, wakeMul: 1, slip: 0 };
 const MAX_V = 160, BOOST_V = 300, TURN = 110 * DEG, ROLL = 160 * DEG;
-const input = { keys: new Set(), mouseSteer: false, mx: 0, my: 0, touchL: [0, 0], touchR: [0, 0], touchBoost: false, gp: null };
+const input = { keys: new Set(), mouseSteer: false, mx: 0, my: 0, touchL: [0, 0, 0], touchR: [0, 0, 0], touchBoost: false, touchDrift: false, touchBoth: false, gp: null };
 const _f = new THREE.Vector3(), _u = new THREE.Vector3(), _r = new THREE.Vector3(), _qd = new THREE.Quaternion(), _e = new THREE.Euler();
+const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _fax = new THREE.Vector3();
+const _inp = { yaw: 0, pitch: 0, roll: 0, thr: 0, boost: false, drift: false, lt: 0, rt: 0, lift: 0 };
 function readInput() {
-  let yaw = 0, pitch = 0, roll = 0, thr = 0, boost = false;
+  let yaw = 0, pitch = 0, roll = 0, thr = 0, boost = false, drift = false, lt = 0, rt = 0, lift = 0;
   const k = input.keys;
   if (k.has('KeyA') || k.has('ArrowLeft')) yaw += 1; if (k.has('KeyD') || k.has('ArrowRight')) yaw -= 1;
   if (k.has('ArrowUp')) pitch += 1; if (k.has('ArrowDown')) pitch -= 1;
   if (k.has('KeyQ')) roll -= 1; if (k.has('KeyE')) roll += 1;
   if (k.has('KeyW')) thr += 1; if (k.has('KeyS')) thr -= 1;
   if (k.has('ShiftLeft') || k.has('ShiftRight')) boost = true;
+  if (k.has('Space')) drift = true;
+  if (k.has('KeyZ')) lt = 1; if (k.has('KeyX')) rt = 1;          // the game's keyboard path: one trigger each
   if (input.mouseSteer) {
     const dz = 0.06, sx = input.mx, sy = input.my;
     const ax = Math.abs(sx) < dz ? 0 : (sx - Math.sign(sx) * dz) / (1 - dz), ay = Math.abs(sy) < dz ? 0 : (sy - Math.sign(sy) * dz) / (1 - dz);
@@ -444,22 +492,35 @@ function readInput() {
   }
   yaw += -input.touchL[0]; pitch += -input.touchL[1]; roll += input.touchR[0]; thr += -input.touchR[1];
   if (input.touchBoost) boost = true;
+  if (input.touchDrift) drift = true;
+  // touch, game model: lifting ONE thumb after flying on two is the Manta's Yastri (TouchInputStrategy.cs:262-284):
+  // right thumb lifted -> OnlyLeftStickAction -> YawsteryAction-Left; left thumb lifted -> YawsteryAction-Right.
+  const tl = input.touchL[2], tr = input.touchR[2];
+  if (tl && tr) input.touchBoth = true; else if (!tl && !tr) input.touchBoth = false;
+  if (input.touchBoth && tl && !tr) lift = 1; else if (input.touchBoth && tr && !tl) lift = -1;
+  if (input.touchBoost || input.touchDrift) lift = 0;   // a thumb that left its stick for BOOST / DRIFT is not a Yastri lift
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   for (const g of pads) {
     if (!g || !g.connected) continue;
     const ax = g.axes, dz = v => Math.abs(v) < 0.12 ? 0 : v;
     yaw += -dz(ax[0] || 0); pitch += -dz(ax[1] || 0); roll += dz(ax[2] || 0); thr += -dz(ax[3] || 0);
-    if (g.buttons[7] && g.buttons[7].value > 0.1) thr += g.buttons[7].value; if (g.buttons[6] && g.buttons[6].value > 0.1) thr -= g.buttons[6].value;
+    const L = g.buttons[6] ? g.buttons[6].value : 0, Rt = g.buttons[7] ? g.buttons[7].value : 0;
+    if (FM.game) { lt = Math.max(lt, L); rt = Math.max(rt, Rt); }   // the Manta's analog triggers (turn + Soar)
+    else { if (Rt > 0.1) thr += Rt; if (L > 0.1) thr -= L; }
     if ((g.buttons[0] && g.buttons[0].pressed) || (g.buttons[5] && g.buttons[5].pressed)) boost = true;
+    if (g.buttons[4] && g.buttons[4].pressed) drift = true;
     break;
   }
   if (flight.invert) pitch = -pitch;
-  return { yaw: clampV(yaw), pitch: clampV(pitch), roll: clampV(roll), thr: clampV(thr), boost };
+  _inp.yaw = clampV(yaw); _inp.pitch = clampV(pitch); _inp.roll = clampV(roll); _inp.thr = clampV(thr); _inp.boost = boost;
+  _inp.drift = drift; _inp.lt = lt; _inp.rt = rt; _inp.lift = lift;
+  return _inp;
 }
 function clampV(v) { return v < -1 ? -1 : v > 1 ? 1 : v; }
+function flyStep(dt) { if (FM.game) flyGame(dt); else flyArcade(dt); }
 /** one fixed sim step of the player's flight (30 Hz): rates ease toward the stick, the frame rotates in LOCAL axes,
  *  speed eases toward the throttle (or boost) target and a danger contact's slow is the arena's own (flora harness). */
-function flyStep(dt) {
+function flyArcade(dt) {
   const pl = W.player;
   let inp = readInput();
   if (flight.auto) inp = autoPilot(pl);
@@ -477,27 +538,185 @@ function flyStep(dt) {
   _qd.setFromEuler(_e); flight.q.multiply(_qd).normalize();
   // the membrane turns you back: a soft inward yaw/pitch as you approach it (you cannot leave the cell)
   _f.set(0, 0, 1).applyQuaternion(flight.q);
-  const r = Math.hypot(pl.pos[0], pl.pos[1], pl.pos[2]);
-  if (r > 0.9 * R) {
-    const k = Math.min(1, (r - 0.9 * R) / (0.07 * R)) * 1.8 * dt;
-    _u.set(-pl.pos[0], -pl.pos[1], -pl.pos[2]).normalize();
-    const tq = new THREE.Quaternion().setFromUnitVectors(_f, _f.clone().lerp(_u, k).normalize()); flight.q.premultiply(tq).normalize();
-    _f.set(0, 0, 1).applyQuaternion(flight.q);
-  }
+  membraneTurn(pl, flight.q, 1, dt);
+  _f.set(0, 0, 1).applyQuaternion(flight.q);
   const slow = W.arena.speedFactor(pl);
   const v = flight.speed * slow;
   pl.speed = v; pl.vel[0] = _f.x * v; pl.vel[1] = _f.y * v; pl.vel[2] = _f.z * v;
   flight.bank += ((-flight.yawR / TURN) * 0.75 - flight.bank) * (1 - Math.exp(-dt * 5));
+  W.arena.trail_vol = 10;
+}
+/** page rule, not the game's: near the membrane rotate q (and a drifting course) inward. k scales with speed so a
+ *  700 u/s Soar is turned back in the same distance as a 160 u/s cruise. Allocation-free. */
+function membraneTurn(pl, q, speedK, dt) {
+  const r = Math.hypot(pl.pos[0], pl.pos[1], pl.pos[2]);
+  if (r <= 0.9 * R) return false;
+  const k = Math.min(1, Math.min(1, (r - 0.9 * R) / (0.07 * R)) * 1.8 * speedK * dt);
+  _f.set(0, 0, 1).applyQuaternion(q);
+  _u.set(-pl.pos[0], -pl.pos[1], -pl.pos[2]).normalize();
+  _v1.copy(_f).lerp(_u, k).normalize();
+  _qd.setFromUnitVectors(_f, _v1); q.premultiply(_qd).normalize();
+  return true;
+}
+/** Unity's Vector3.Slerp for unit vectors, into out (out may alias a or b). */
+function slerpDir(out, a, b, t) {
+  let d = a.x * b.x + a.y * b.y + a.z * b.z; d = d < -1 ? -1 : d > 1 ? 1 : d;
+  const th = Math.acos(d) * t;
+  _v2.set(b.x - a.x * d, b.y - a.y * d, b.z - a.z * d);
+  const L = _v2.length();
+  if (L < 1e-6 || th < 1e-7) return out.set(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t).normalize();
+  const c = Math.cos(th), s = Math.sin(th) / L;
+  return out.set(a.x * c + _v2.x * s, a.y * c + _v2.y * s, a.z * c + _v2.z * s).normalize();
+}
+/** the game's stick curve (BaseInputStrategy.Ease) on the sum of both thumbs: the page's one stick v stands for two
+ *  thumbs held together, so v = 1 is Ease(2) = 1 (full rate) and v = 0.5 is Ease(1) = 0.29. */
+function gameEase(v) { const x = 2 * v; return x < 0 ? Math.cos(x * Math.PI / 4) - 1 : 1 - Math.cos(x * Math.PI / 4); }
+/** an element's normalized level (petals / 10) from the HUD flower; resting 0 when stakes are off (ResourceSystem). */
+function elemLevel(e) {
+  if (!stakes || stakeRule === 'off') return 0;
+  const n = stakes.transient[e].length ? stakes.effective(e, W.arena.t) : stakes.base[e];
+  return n / 10;
+}
+function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+/** YawsteryActionExecutor (Yastri, touch): hold = smoothstep ramp-in over 0.35 s, release = linear ramp-out over 0.25 s,
+ *  the other side mid-turn = ramp out then in. want: +1 left, -1 right, 0 none (page sign). Returns signed intensity. */
+function yastriStep(dt, want) {
+  const Y = flight.ya, cur = Y.ph === 4 ? Y.next : Y.sign;
+  if (want !== 0 && (!Y.run || cur !== want)) {
+    if (Y.run && Y.ph !== 4 && Y.sign !== want) { Y.ph = 4; Y.start = Y.i; Y.u = 0; Y.next = want; }
+    else if (Y.run && Y.ph === 4) Y.next = want;
+    else { Y.run = true; Y.sign = want; Y.ph = 1; Y.t = 0; }
+  } else if (want === 0 && Y.run) { Y.run = false; Y.ph = 3; Y.start = Y.i; Y.u = 0; }
+  const P = GAME.YASTRI;
+  if (Y.ph === 1) { Y.t += dt; Y.i = smooth01(Y.t / P.IN); if (Y.i >= 1) Y.ph = 2; }
+  else if (Y.ph === 3 || Y.ph === 4) {
+    Y.u += dt; Y.i = Y.start * (1 - Math.min(1, Y.u / P.OUT));
+    if (Y.i <= 0) { Y.i = 0; if (Y.ph === 4) { Y.sign = Y.next; Y.ph = 1; Y.t = 0; } else { Y.ph = 0; Y.sign = 0; } }
+  }
+  return Y.i * Y.sign;
+}
+function rotAbout(q, x, y, z, rad) { _fax.set(x, y, z); _qd.setFromAxisAngle(_fax, rad); q.premultiply(_qd); }
+/** one fixed step of the GAME model (see the header). */
+function flyGame(dt) {
+  const pl = W.player, G = GAME;
+  let inp = readInput();
+  if (flight.auto) inp = autoPilot(pl);
+  // adopt outside writes to the hull / speed (buildWorld, screenshot rigs), as VesselTransformer.SyncExternalWrites does
+  if (Math.abs(flight.q.dot(flight.qPub)) < 0.999999) { flight.qa.copy(flight.q); _f.set(0, 0, 1).applyQuaternion(flight.q); flight.course.copy(_f); }
+  flight.throttle = clampV(flight.throttle + inp.thr * dt * 0.6); if (flight.throttle < 0) flight.throttle = 0;
+  flight.lvTime = elemLevel('time'); flight.lvMass = elemLevel('mass');
+
+  // ---- drift (DriftActionSO Start/Stop -> BeginDrift / EndDrift; the non-gamepad trigger sum eases at 12 /s)
+  if (inp.drift && !flight.driftOn) { flight.driftOn = true; flight.driftEase = false; flight.driftBase = true; flight.drifting = true; }
+  else if (!inp.drift && flight.driftOn) { flight.driftOn = false; flight.driftEase = true; }
+  const raw = flight.driftOn ? 1 : 0, step = G.DRIFT_EASE * dt;
+  flight.trig = flight.trig < raw ? Math.min(raw, flight.trig + step) : Math.max(raw, flight.trig - step);
+  if (flight.driftEase && flight.trig < 0.01) { flight.trig = 0; flight.driftEase = false; flight.driftBase = false; flight.drifting = false; }
+  const inDrift = flight.driftBase && (flight.drifting || flight.driftEase);
+  flight.rotMult = inDrift ? 1 + (DRIFT.mult - 1) * flight.trig : 1;           // ApplyAnalogDrift, single tier
+  flight.grip = inDrift ? 1 + (DRIFT.grip - 1) * flight.trig : 0;
+
+  // ---- Soar: the Manta's analog triggers (MantaAnalogTurnBoostExecutor). Shift / A / RB / BOOST = both triggers full.
+  let lt = inp.lt, rt = inp.rt; if (inp.boost) { lt = 1; rt = 1; }
+  if (lt < 0.05) lt = 0; if (rt < 0.05) rt = 0;
+  const soar = Math.min(lt, rt);
+  flight.boosting = soar > 0.01; flight.soar = soar;
+  const boostMul = flight.boosting ? 1 + (G.BOOST - 1) * soar : G.BOOST;
+  const tm = G.SOAR_TIME, timeMul = Math.max(tm[2], tm[0] + (tm[1] - tm[0]) * flight.lvTime);
+  flight.boostAmt = flight.boosting ? boostMul * timeMul : 1;                  // CurrentBoostAmount()
+  flight.boost = soar;
+
+  // ---- rotation: Roll, Yaw, Pitch onto the accumulated rotation about the HULL's axes (page sign: +yaw = left)
+  const s = flight.speed, sT = s * G.ROT_THR, m = flight.rotMult, q = flight.q, qa = flight.qa;
+  _f.set(0, 0, 1).applyQuaternion(q); _u.set(0, 1, 0).applyQuaternion(q); _r.set(1, 0, 0).applyQuaternion(q);
+  const yDiff = gameEase(inp.roll), xSum = gameEase(inp.yaw), ySum = gameEase(inp.pitch);
+  rotAbout(qa, _f.x, _f.y, _f.z, yDiff * (sT + G.ROLL * m) * DEG * dt);
+  rotAbout(qa, _u.x, _u.y, _u.z, xSum * (sT + G.YAW * m) * DEG * dt);
+  rotAbout(qa, _r.x, _r.y, _r.z, -ySum * (sT + G.PITCH * m) * DEG * dt);
+  // net trigger yaw (keyboard Z/X, pad LT/RT): (rt - lt) * 60 deg/s, right positive in the game
+  flight.trigYaw = rt - lt;
+  if (Math.abs(rt - lt) > 0.001) rotAbout(qa, _u.x, _u.y, _u.z, (lt - rt) * G.TRIG_YAW * DEG * dt);
+  // Yastri (touch lift): 80 deg/s * (1 + Speed/100)^0.25 * intensity
+  const yi = yastriStep(dt, inp.lift); flight.yastri = yi;
+  if (yi !== 0) rotAbout(qa, _u.x, _u.y, _u.z, yi * G.YASTRI.MAX * Math.pow(1 + Math.max(0, pl.speed) * 0.01, G.YASTRI.EXP) * DEG * dt);
+  // page rule: the membrane turns the commanded rotation back (and the course, so a drift cannot slide you out)
+  const near = membraneTurn(pl, qa, Math.max(1, s / 160), dt);
+  qa.normalize();
+  q.slerp(qa, Math.min(1, G.LERP * dt));                                        // RotateShip: Slerp(rot, target, 1.5 dt)
+  flight.qPub.copy(q);
+
+  // ---- speed (MoveShipScalar): exponential toward the throttle target, the terminal brake when the target is 0
+  const target = flight.throttle * G.THROTTLE * flight.boostAmt + G.MIN_SPEED;
+  let sp = s + (target - s) * Math.min(1, G.LERP * dt);
+  if (target === 0 && s > 0) sp = Math.max(0, Math.min(sp, s - G.THROTTLE / G.BRAKE_S * dt));
+  flight.speed = sp;
+
+  // ---- course: the nose outside a drift; inside one it converges only at grip * dt, blended by the trigger sum
+  _f.set(0, 0, 1).applyQuaternion(q);
+  if (inDrift) {
+    const amt = Math.min(1, Math.max(0, flight.trig));
+    if (flight.grip > 0.001) slerpDir(_v1, flight.course, _f, Math.min(1, flight.grip * dt)); else _v1.copy(flight.course);
+    slerpDir(flight.course, _f, _v1, amt);
+  } else flight.course.copy(_f);
+  if (near) {   // page rule: keep a drifting course inside the cell
+    _u.set(-pl.pos[0], -pl.pos[1], -pl.pos[2]).normalize();
+    if (flight.course.dot(_u) < 0) slerpDir(flight.course, flight.course, _u, Math.min(1, 1.8 * Math.max(1, s / 160) * dt));
+  }
+  const c = flight.course;
+  flight.slip = Math.acos(Math.max(-1, Math.min(1, c.dot(_f)))) / DEG;
+  const v = sp * W.arena.speedFactor(pl);                                     // throttleMultiplier: a danger slow
+  pl.speed = v; pl.vel[0] = c.x * v; pl.vel[1] = c.y * v; pl.vel[2] = c.z * v;
+  // Mass grows the wake (VesselPrismController.trailVolume, Manta: x1 -> x2.5 at level 10); the ledger counts it
+  const wm = G.WAKE_MASS; flight.wakeMul = Math.max(0.01, wm[0] + (wm[1] - wm[0]) * flight.lvMass);
+  W.arena.trail_vol = 10 * flight.wakeMul;
+  // cosmetic bank (the camera's horizon tilt), from the yaw being commanded
+  const yawCmd = xSum * (sT + G.YAW * m) + (lt - rt) * G.TRIG_YAW + yi * G.YASTRI.MAX;
+  flight.bank += (Math.max(-1, Math.min(1, yawCmd / 110)) * -0.75 - flight.bank) * (1 - Math.exp(-dt * 5));
 }
 // a scripted wanderer for screenshots / watching (the arena's own wander rule, turned into stick input)
-const _ag = [0, 0, 0];
+const _ag = [0, 0, 0], _apD = new THREE.Vector3(), _apOut = { yaw: 0, pitch: 0, roll: 0, thr: 0, boost: false, drift: false, lt: 0, rt: 0, lift: 0 };
 function autoPilot(pl) {
   if (!autoGoal || Math.hypot(autoGoal[0] - pl.pos[0], autoGoal[1] - pl.pos[1], autoGoal[2] - pl.pos[2]) < 80) autoGoal = W.arena.ball(0.2 * R, 0.75 * R, [0, 0, 0]);
   _f.set(0, 0, 1).applyQuaternion(flight.q); _u.set(0, 1, 0).applyQuaternion(flight.q); _r.set(1, 0, 0).applyQuaternion(flight.q);
-  const d = new THREE.Vector3(autoGoal[0] - pl.pos[0], autoGoal[1] - pl.pos[1], autoGoal[2] - pl.pos[2]).normalize();
-  return { yaw: clampV(-d.dot(_r) * 3), pitch: clampV(d.dot(_u) * 3), roll: clampV(-_r.y * 1.5), thr: 0, boost: false };
+  const d = _apD.set(autoGoal[0] - pl.pos[0], autoGoal[1] - pl.pos[1], autoGoal[2] - pl.pos[2]).normalize();
+  _apOut.yaw = clampV(-d.dot(_r) * 3); _apOut.pitch = clampV(d.dot(_u) * 3); _apOut.roll = clampV(-_r.y * 1.5);
+  if (FM.game && d.dot(_f) < 0) _apOut.yaw = _apOut.yaw >= 0 ? 1 : -1;   // behind: commit to one side (the nose lags)
+  return _apOut;
 }
 let autoGoal = null;
+function resetGameFlight() {
+  flight.qPub.set(0, 0, 0, 0); flight.drifting = flight.driftOn = flight.driftEase = flight.driftBase = false; flight.trig = 0; flight.grip = 0; flight.rotMult = 1;
+  const Y = flight.ya; Y.run = false; Y.sign = 0; Y.next = 0; Y.ph = 0; Y.i = 0; flight.yastri = 0; flight.trigYaw = 0; flight.soar = 0; flight.boostAmt = 1; flight.slip = 0;
+  flight.boosting = false; flight.boost = FM.game ? 0 : 1; flight.yawR = flight.pitchR = flight.rollR = 0;
+}
+function setFlightModel(game) {
+  FM.game = game; resetGameFlight(); if (W) W.arena.trail_vol = 10;
+  toast(game ? 'GAME FLIGHT (Manta)' : 'ARCADE FLIGHT', '#7fd6ff');
+}
+/** the HUD's flight-model line; rewritten only when what it says changes */
+/** the flight-path marker: where the vessel is actually GOING, shown while the course is off the nose (a drift) */
+const fpmEl = document.getElementById('fpm'), _fp = new THREE.Vector3(); let fpmOn = false;
+function drawFpm() {
+  let show = FM.game && camMode === 'chase' && flight.slip > 2;
+  if (show) { _fp.copy(ship.position).addScaledVector(flight.course, 400).project(cam); show = _fp.z < 1 && Math.abs(_fp.x) < 1 && Math.abs(_fp.y) < 1; }
+  if (show) fpmEl.style.transform = `translate(${((_fp.x + 1) / 2 * innerWidth).toFixed(0)}px,${((1 - _fp.y) / 2 * innerHeight).toFixed(0)}px)`;
+  if (show !== fpmOn) { fpmOn = show; fpmEl.style.display = show ? 'block' : 'none'; }
+}
+let fmKey = '';
+const fmEl = document.getElementById('fm');
+function fmHud() {
+  let k;
+  if (!FM.game) k = 'arcade flight';
+  else {
+    k = 'game flight';
+    if (flight.drifting) k += ` · DRIFT ${Math.round(flight.slip)}°`;
+    const y = flight.yastri !== 0 ? flight.yastri : (flight.boosting ? 0 : -flight.trigYaw);
+    if (Math.abs(y) > 0.02) k += y > 0 ? ' · YASTRI ◀' : ' · YASTRI ▶';
+    if (flight.boosting) k += ` · SOAR ×${flight.boostAmt.toFixed(2)}`;
+    if (flight.wakeMul > 1.001) k += ` · wake ×${flight.wakeMul.toFixed(2)}`;
+  }
+  if (k !== fmKey) { fmKey = k; fmEl.textContent = k; fmEl.style.color = /DRIFT|YASTRI|SOAR/.test(k) ? '#7fd6ff' : ''; }
+}
 
 // ------------------------------------------------------------------------------------------------ events
 function onHit(p, kind, amt, src, who, standing) {
@@ -1160,6 +1379,7 @@ function frame(now) {
   const r0 = performance.now();
   nHalo = 0;
   updateCamera(dtF, alpha);
+  drawFpm();
   if (window.__camHook) window.__camHook(cam, dtF);     // headless shots: take the camera over after the page placed it
   if (W) { if (!paused) bigStep(dtF); writePrisms(alpha); writeAgents(alpha); writeFlora(alpha); writeCrystals(dtF); bigDraw(); }
   for (let i = dying.length - 1; i >= 0; i--) { const d = dying[i]; d.t += dtF; const k = 1 - d.t / 0.6; if (k <= 0) { dying.splice(i, 1); continue; } halo(d.x, d.y, d.z, d.c[0] * k, d.c[1] * k, d.c[2] * k, d.s * (0.6 + 0.6 * k)); }
@@ -1171,7 +1391,8 @@ function frame(now) {
   if (W) {
     drawArrows();
     const a = drawAttitude();
-    spdEl.textContent = `${Math.round(W.player.speed)} u/s${flight.boosting ? '  BOOST' : ''}`;
+    spdEl.textContent = `${Math.round(W.player.speed)} u/s${flight.boosting ? (FM.game ? '  SOAR' : '  BOOST') : ''}`;
+    fmHud();
     thrBar.style.width = (flight.throttle * 100).toFixed(0) + '%'; boostBar.style.width = (flight.boost * 100).toFixed(0) + '%';
     hdgEl.textContent = `hdg ${a.hdg.toFixed(0)}° · pitch ${a.pitch.toFixed(0)}° · roll ${a.roll.toFixed(0)}°`;
     const rr = Math.hypot(...W.player.pos) / R; posEl.textContent = `r ${(rr * 100).toFixed(0)}% of membrane${rr > 0.9 ? '  (membrane)' : ''}`;
@@ -1222,6 +1443,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyC') setCam(camMode === 'chase' ? 'orbit' : 'chase');
   if (e.code === 'KeyM') setSteer(!input.mouseSteer);
   if (e.code === 'KeyP') setAuto(!flight.auto);
+  if (e.code === 'KeyG') setFlightModel(!FM.game);
   if (e.code === 'KeyR') openRate(enc.last);
   if (e.code === 'Backquote') { dbgOn = !dbgOn; dbgEl.style.display = dbgOn ? 'block' : 'none'; }
   if (e.code === 'KeyH' || e.key === '?') helpEl.style.display = helpEl.style.display === 'block' ? 'none' : 'block';
@@ -1238,9 +1460,9 @@ canvas.addEventListener('wheel', e => { if (camMode === 'orbit') { orbit.dist = 
 // touch: two virtual sticks + a boost button
 function stick(el, out) {
   const knob = el.querySelector('i'); let id = null, cx = 0, cy = 0;
-  el.addEventListener('touchstart', e => { const t = e.changedTouches[0]; id = t.identifier; const r = el.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(t); e.preventDefault(); }, { passive: false });
+  el.addEventListener('touchstart', e => { const t = e.changedTouches[0]; id = t.identifier; out[2] = 1; const r = el.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(t); e.preventDefault(); }, { passive: false });
   el.addEventListener('touchmove', e => { for (const t of e.changedTouches) if (t.identifier === id) move(t); e.preventDefault(); }, { passive: false });
-  const end = e => { for (const t of e.changedTouches) if (t.identifier === id) { id = null; out[0] = 0; out[1] = 0; knob.style.transform = ''; } };
+  const end = e => { for (const t of e.changedTouches) if (t.identifier === id) { id = null; out[0] = 0; out[1] = 0; out[2] = 0; knob.style.transform = ''; } };
   el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
   function move(t) { let dx = (t.clientX - cx) / 50, dy = (t.clientY - cy) / 50; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } out[0] = dx; out[1] = dy; knob.style.transform = `translate(${dx * 40}px,${dy * 40}px)`; }
 }
@@ -1248,7 +1470,10 @@ stick(document.getElementById('stickL'), input.touchL); stick(document.getElemen
 const tbtn = document.getElementById('tbtn');
 tbtn.addEventListener('touchstart', e => { input.touchBoost = true; e.preventDefault(); }, { passive: false });
 tbtn.addEventListener('touchend', () => { input.touchBoost = false; });
-function showTouch() { for (const id of ['stickL', 'stickR', 'tbtn']) document.getElementById(id).style.display = 'block'; }
+const dbtn = document.getElementById('dbtn');
+dbtn.addEventListener('touchstart', e => { input.touchDrift = true; e.preventDefault(); }, { passive: false });
+dbtn.addEventListener('touchend', () => { input.touchDrift = false; }); dbtn.addEventListener('touchcancel', () => { input.touchDrift = false; });
+function showTouch() { for (const id of ['stickL', 'stickR', 'tbtn', 'dbtn']) document.getElementById(id).style.display = 'block'; }
 if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) showTouch();
 window.addEventListener('touchstart', showTouch, { once: true });
 
@@ -1262,7 +1487,7 @@ if (q0.get('go')) { document.getElementById('start').style.display = 'none'; pau
 if (q0.get('auto')) setAuto(true);
 if (q0.get('cam') === 'orbit') setCam('orbit');
 if (q0.get('debug')) { dbgOn = true; dbgEl.style.display = 'block'; }
-window.__eco = { get W() { return W; }, flight, input, stats, enc, setAuto, setCam, buildWorld, perf, openRate, exportJSON, snapshot, flyStep };
+window.__eco = { get W() { return W; }, flight, FM, GAME, DRIFT, input, stats, enc, setAuto, setCam, buildWorld, perf, openRate, exportJSON, snapshot, flyStep };
 requestAnimationFrame(frame);
 </script>
 </body>
