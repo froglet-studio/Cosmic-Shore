@@ -72,7 +72,7 @@ namespace CosmicShore.ScriptableObjects
         [Header("Arkway - the corridor of cells")]
         [SerializeField, Tooltip("Explicit traversal-cell rotation. Leave EMPTY to read the host Cell's own " +
                                  "AvailableConfigs (the cell selector's list) minus its environment-free " +
-                                 "entries - the Cell stays the single source of truth for what a cell here " +
+                                 "entries and its black-hole world - the Cell stays the single source of truth for what a cell here " +
                                  "can be.")]
         List<CellConfigDataSO> cells = new();
 
