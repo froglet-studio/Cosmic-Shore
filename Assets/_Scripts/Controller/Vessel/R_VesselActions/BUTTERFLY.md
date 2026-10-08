@@ -101,6 +101,16 @@ default** — so the fleet value belongs in the initializer, and a gate belongs 
 The rest of its camera block is deliberate and unflagged: `dynamicMinDistance 10` /
 `dynamicMaxDistance 40`, `followSmoothTime 0.2`, `rotationSmoothTime 5`, adaptive zoom off.
 
+**The height follows the mode (2026-10-08).** In **Mass mode** the camera drops to directly behind
+the hull — the offset's 37.4 of height goes to 0 and the 204 of distance is kept; **Dust mode**
+keeps the authored `(0, 37.4, -204)`. `SpreadWingsActionSO.massModeCameraHeight` (0..1, default 0)
+is the fraction of the height Mass mode keeps, and the executor eases it on the same
+`widthBlendSeconds` blend as the wake and the HUD's Mass card. It is written as
+`CustomCameraController.FollowHeightScale`, a multiplier applied at the point of use like
+`RearView` — never into `_followOffset`, which every re-applied `CameraSettingsSO` and zoom
+ability rewrites — and only while the player rig is following THIS Butterfly
+(`CameraFollowTarget` identity); the rig resets it to 1 whenever its follow target changes.
+
 ### 2.1 What the elements do to the shape
 
 The four morphs are `Generate` run at perturbed settings, so "level 7 Mass and level 3 Space" is the
@@ -201,6 +211,9 @@ is the other option and is one enum change away). A Butterfly spawns in **Mass m
   `VesselPrismController.WidthMultiplier`, eased over `widthBlendSeconds` (1.5 s) so a mode change
   reads as a stroke rather than a snap.
 - **Dust mode**: the wings fold, the wake narrows to the unmultiplied key, and the capsule goes live.
+
+The follow camera moves with the mode: directly behind the hull in Mass mode, at its authored
+height in Dust mode (§2.0).
 
 `WidthMultiplier` is a new, general knob on the prism controller (default 1, so every other vessel
 is byte-identical). A widened prism **states** its size through `Prism.AdmitTargetScale` after
