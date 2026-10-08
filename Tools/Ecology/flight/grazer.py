@@ -28,11 +28,11 @@ SPEED, FLEE_V, SENSE, COMFORT, CHEW, FULL, BREED = 34.0, 90.0, 200.0, 70.0, 4.0,
 class Grazer(Herd):
     name = "grazer"
 
-    def __init__(self, arena, n=120, cap=CAP):
+    def __init__(self, arena, n=120, cap=CAP, clusters=4):
         super().__init__(arena, cap, spread=60.0, size=2.5, body=4.0)
         env = np.flatnonzero(arena.mass_owner < 0)
-        c = arena.mass_pos[arena.rng.choice(env, 4, replace=False)]
-        self.pos = c[np.arange(cap) % 4] + arena.rng.normal(0, 40.0, (cap, 3))
+        c = arena.mass_pos[arena.rng.choice(env, clusters, replace=False)]
+        self.pos = c[np.arange(cap) % clusters] + arena.rng.normal(0, 40.0, (cap, 3))
         self.alive[n:] = False; self.body[n:] = 0.0
         self.gut[:n] = 10.0
         self.fear = np.zeros(cap)

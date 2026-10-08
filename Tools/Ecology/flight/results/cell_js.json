@@ -1,0 +1,1490 @@
+{
+ "dt": 0.1,
+ "minutes": 3,
+ "drop": [],
+ "pop": "cell",
+ "broken": [],
+ "runs": [
+  {
+   "policy": "wander",
+   "seed": 7,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "pack": 4,
+    "lurker": 4.667,
+    "locust": 129,
+    "leviathan": 1,
+    "stampede": 5,
+    "mobber": 0.667,
+    "thief": 2
+   },
+   "hits_per_min": 146.333,
+   "eat": {
+    "stampede": {
+     "env": 578.17,
+     "wake": 106.67
+    },
+    "grazer": {
+     "env": 28378.04
+    },
+    "snaptrap": {
+     "env": 145.08,
+     "wake": 3.33
+    },
+    "locust": {
+     "env": 2749.4,
+     "wake": 2400
+    },
+    "leviathan": {
+     "wake": 173.33
+    }
+   },
+   "destroy": {},
+   "steal": {
+    "fortress": {
+     "env": 561.45,
+     "wake": 396.67
+    }
+   },
+   "move": {
+    "fortress": {
+     "env": 43716.74,
+     "wake": 29400
+    }
+   },
+   "pop_mean": {
+    "grazer": 1572.53,
+    "locust": 217.5,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 41.91
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 42
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 0,
+    "lurker": 0,
+    "leviathan": 0,
+    "fortress": 0,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 11.55,
+   "dt": 0.1
+  },
+  {
+   "policy": "wander",
+   "seed": 23,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "lurker": 0.667,
+    "pack": 3.333,
+    "stampede": 6.333,
+    "thief": 11.667,
+    "locust": 77.333
+   },
+   "hits_per_min": 99.333,
+   "eat": {
+    "grazer": {
+     "env": 22934.87,
+     "wake": 10
+    },
+    "snaptrap": {
+     "env": 282.03,
+     "wake": 36.67
+    },
+    "stampede": {
+     "env": 706.81,
+     "wake": 173.33
+    },
+    "locust": {
+     "env": 4982.68,
+     "wake": 1950
+    },
+    "leviathan": {
+     "env": 12.42,
+     "wake": 113.33
+    }
+   },
+   "destroy": {},
+   "steal": {
+    "fortress": {
+     "env": 1857.66,
+     "wake": 480
+    }
+   },
+   "move": {
+    "fortress": {
+     "env": 88914.9,
+     "wake": 29693.33
+    }
+   },
+   "pop_mean": {
+    "grazer": 1568.56,
+    "locust": 227.85,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 43.41
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 44
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 0,
+    "lurker": 0,
+    "leviathan": 0,
+    "fortress": 0,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 11.8,
+   "dt": 0.1
+  },
+  {
+   "policy": "wander",
+   "seed": 41,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "pack": 4.333,
+    "stampede": 8.667,
+    "snaptrap": 1,
+    "lurker": 0.667,
+    "thief": 17.667,
+    "mobber": 0.333
+   },
+   "hits_per_min": 32.667,
+   "eat": {
+    "stampede": {
+     "env": 741.32,
+     "wake": 213.33
+    },
+    "grazer": {
+     "env": 20077.92,
+     "wake": 153.33
+    },
+    "snaptrap": {
+     "env": 242,
+     "wake": 126.67
+    },
+    "locust": {
+     "env": 8720.16,
+     "wake": 906.67
+    },
+    "leviathan": {
+     "wake": 303.33
+    }
+   },
+   "destroy": {},
+   "steal": {
+    "fortress": {
+     "wake": 653.33,
+     "env": 90.95
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 46190,
+     "env": 9809.71
+    }
+   },
+   "pop_mean": {
+    "grazer": 1568.81,
+    "locust": 265.91,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 41.78
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 43
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 0,
+    "lurker": 0,
+    "leviathan": 0,
+    "fortress": 0,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 12.21,
+   "dt": 0.1
+  },
+  {
+   "policy": "wander",
+   "seed": 101,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "pack": 4.333,
+    "stampede": 7.667,
+    "thief": 21.333,
+    "leviathan": 0.667,
+    "lurker": 1.333,
+    "mobber": 3.333
+   },
+   "hits_per_min": 38.667,
+   "eat": {
+    "stampede": {
+     "env": 533.99,
+     "wake": 190
+    },
+    "grazer": {
+     "env": 17019.96,
+     "wake": 130
+    },
+    "locust": {
+     "env": 9154.02,
+     "wake": 1200
+    },
+    "snaptrap": {
+     "env": 188.29
+    },
+    "leviathan": {
+     "wake": 286.67,
+     "env": 43.23
+    }
+   },
+   "destroy": {},
+   "steal": {
+    "fortress": {
+     "wake": 486.67,
+     "env": 212.45
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 38703.33,
+     "env": 17348.62
+    }
+   },
+   "pop_mean": {
+    "grazer": 1568.68,
+    "locust": 285.39,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40.82
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 41
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 0,
+    "lurker": 0,
+    "leviathan": 0,
+    "fortress": 0,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 13.34,
+   "dt": 0.1
+  },
+  {
+   "policy": "wander",
+   "seed": 202,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "stampede": 9.667,
+    "lurker": 1,
+    "pack": 3.333,
+    "thief": 30,
+    "locust": 110.667,
+    "mobber": 0.333
+   },
+   "hits_per_min": 155,
+   "eat": {
+    "grazer": {
+     "env": 22862.46,
+     "wake": 186.67
+    },
+    "stampede": {
+     "env": 672.16,
+     "wake": 146.67
+    },
+    "snaptrap": {
+     "env": 1020.54,
+     "wake": 46.67
+    },
+    "locust": {
+     "env": 5898.37,
+     "wake": 1726.67
+    },
+    "leviathan": {
+     "wake": 266.67,
+     "env": 67.99
+    }
+   },
+   "destroy": {},
+   "steal": {
+    "fortress": {
+     "env": 1747.31,
+     "wake": 536.67
+    }
+   },
+   "move": {
+    "fortress": {
+     "env": 88294.13,
+     "wake": 31613.33
+    }
+   },
+   "pop_mean": {
+    "grazer": 1572.87,
+    "locust": 272.77,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 46.57
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 50
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 0,
+    "lurker": 0,
+    "leviathan": 0,
+    "fortress": 0,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 10.75,
+   "dt": 0.1
+  },
+  {
+   "policy": "wander",
+   "seed": 303,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "pack": 6.333,
+    "thief": 24,
+    "stampede": 12,
+    "leviathan": 0.667,
+    "fortress": 0.667,
+    "snaptrap": 0.333,
+    "lurker": 0.333
+   },
+   "hits_per_min": 44.333,
+   "eat": {
+    "grazer": {
+     "env": 21571.71,
+     "wake": 113.33
+    },
+    "stampede": {
+     "env": 705.13,
+     "wake": 203.33
+    },
+    "locust": {
+     "env": 3358.55,
+     "wake": 616.67
+    },
+    "snaptrap": {
+     "env": 952.77,
+     "wake": 93.33
+    },
+    "leviathan": {
+     "env": 2157.02,
+     "wake": 146.67
+    }
+   },
+   "destroy": {},
+   "steal": {
+    "fortress": {
+     "wake": 573.33,
+     "env": 273.56
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 36393.33,
+     "env": 19927.72
+    }
+   },
+   "pop_mean": {
+    "grazer": 1569.41,
+    "locust": 195.49,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 45.66
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 50
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 0,
+    "lurker": 0,
+    "leviathan": 0,
+    "fortress": 0,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 11.92,
+   "dt": 0.1
+  },
+  {
+   "policy": "hunter",
+   "seed": 7,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "thief": 38,
+    "leviathan": 2.667,
+    "fortress": 2,
+    "pack": 1,
+    "lurker": 0.667
+   },
+   "hits_per_min": 44.333,
+   "eat": {
+    "stampede": {
+     "env": 339.1,
+     "wake": 10
+    },
+    "grazer": {
+     "env": 27424.39,
+     "wake": 290,
+     "leviathan": 21.33,
+     "pack": 48,
+     "lurker": 20,
+     "grazer": 258.6
+    },
+    "snaptrap": {
+     "env": 153.32
+    },
+    "locust": {
+     "env": 5557.42,
+     "wake": 396.67,
+     "leviathan": 5.33,
+     "pack": 16,
+     "locust": 41.58
+    },
+    "leviathan": {
+     "wake": 540,
+     "env": 20.46,
+     "leviathan": 10.67,
+     "pack": 16,
+     "grazer": 42.38
+    }
+   },
+   "destroy": {
+    "fortress": {
+     "wake": 93.33,
+     "lurker": 6.67
+    }
+   },
+   "steal": {
+    "fortress": {
+     "wake": 1563.33,
+     "env": 112.28,
+     "lurker": 13.33,
+     "leviathan": 13.33,
+     "pack": 32,
+     "grazer": 160.16,
+     "locust": 36.25
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 59246.67,
+     "env": 7628.54,
+     "lurker": 500,
+     "leviathan": 354.67,
+     "pack": 368,
+     "grazer": 1229.31,
+     "locust": 797.43
+    }
+   },
+   "pop_mean": {
+    "grazer": 1572.59,
+    "locust": 218.56,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 16.96,
+    "pack": 3.86,
+    "lurker": 12.99,
+    "leviathan": 131.31,
+    "fortress": 41.3,
+    "snaptrap": 41.9
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 16,
+    "pack": 2,
+    "lurker": 11,
+    "leviathan": 126,
+    "fortress": 34,
+    "snaptrap": 42
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 2,
+    "locust": 0.667,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0.667,
+    "pack": 1.667,
+    "lurker": 1.667,
+    "leviathan": 5.667,
+    "fortress": 11.333,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 11.11,
+   "dt": 0.1
+  },
+  {
+   "policy": "hunter",
+   "seed": 23,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "thief": 12,
+    "lurker": 2,
+    "leviathan": 2,
+    "stampede": 12.333,
+    "fortress": 0.667,
+    "pack": 1
+   },
+   "hits_per_min": 30,
+   "eat": {
+    "grazer": {
+     "env": 22861.81,
+     "lurker": 33.33,
+     "leviathan": 13.33,
+     "wake": 110,
+     "pack": 64
+    },
+    "snaptrap": {
+     "env": 397.9
+    },
+    "stampede": {
+     "env": 1052.4,
+     "wake": 636.67
+    },
+    "locust": {
+     "env": 3860.83,
+     "wake": 100,
+     "pack": 48
+    },
+    "leviathan": {
+     "wake": 670,
+     "lurker": 6.67,
+     "leviathan": 8,
+     "env": 783.16
+    }
+   },
+   "destroy": {
+    "fortress": {
+     "env": 66.87,
+     "wake": 136.67
+    }
+   },
+   "steal": {
+    "fortress": {
+     "env": 1488.44,
+     "wake": 1236.67,
+     "lurker": 26.67,
+     "leviathan": 5.33,
+     "pack": 48
+    }
+   },
+   "move": {
+    "fortress": {
+     "env": 65976.46,
+     "wake": 44980,
+     "lurker": 280,
+     "leviathan": 256,
+     "pack": 1600
+    }
+   },
+   "pop_mean": {
+    "grazer": 1568.78,
+    "locust": 232.5,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 17.4,
+    "pack": 3.25,
+    "lurker": 10.41,
+    "leviathan": 132.07,
+    "fortress": 41.22,
+    "snaptrap": 43.33
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 17,
+    "pack": 0,
+    "lurker": 7,
+    "leviathan": 126,
+    "fortress": 37,
+    "snaptrap": 44
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0.333,
+    "pack": 2.333,
+    "lurker": 3,
+    "leviathan": 4.667,
+    "fortress": 12.667,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 12.06,
+   "dt": 0.1
+  },
+  {
+   "policy": "hunter",
+   "seed": 41,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "pack": 0.667,
+    "fortress": 1.667,
+    "leviathan": 2.667,
+    "lurker": 2.333,
+    "snaptrap": 1.333,
+    "stampede": 2.333
+   },
+   "hits_per_min": 11,
+   "eat": {
+    "stampede": {
+     "env": 568.74,
+     "wake": 160
+    },
+    "grazer": {
+     "env": 15499.62,
+     "pack": 96,
+     "leviathan": 10.67,
+     "lurker": 26.67
+    },
+    "snaptrap": {
+     "env": 268.73,
+     "wake": 140,
+     "lurker": 13.33
+    },
+    "locust": {
+     "env": 9538.13,
+     "wake": 173.33
+    },
+    "leviathan": {
+     "wake": 1076.67,
+     "leviathan": 13.33,
+     "env": 10.41
+    }
+   },
+   "destroy": {
+    "fortress": {
+     "wake": 53.33
+    }
+   },
+   "steal": {
+    "fortress": {
+     "wake": 1400,
+     "env": 14.9,
+     "leviathan": 13.33
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 57656.67,
+     "env": 1287.52,
+     "leviathan": 453.33
+    }
+   },
+   "pop_mean": {
+    "grazer": 1568.87,
+    "locust": 264.36,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 2.13,
+    "lurker": 12.37,
+    "leviathan": 132.96,
+    "fortress": 39.42,
+    "snaptrap": 42.26
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 1,
+    "lurker": 9,
+    "leviathan": 127,
+    "fortress": 32,
+    "snaptrap": 43
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0.667,
+    "locust": 0,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 0,
+    "pack": 2,
+    "lurker": 2.333,
+    "leviathan": 4.333,
+    "fortress": 11.667,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 12.17,
+   "dt": 0.1
+  },
+  {
+   "policy": "hunter",
+   "seed": 101,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "stampede": 15.667,
+    "mobber": 4,
+    "pack": 0.667,
+    "leviathan": 2.333,
+    "fortress": 0.667,
+    "lurker": 1,
+    "locust": 0.667
+   },
+   "hits_per_min": 25,
+   "eat": {
+    "stampede": {
+     "env": 330.34,
+     "wake": 423.33,
+     "leviathan": 10.67,
+     "locust": 98.77
+    },
+    "grazer": {
+     "env": 19606.93,
+     "mobber": 3,
+     "pack": 64,
+     "lurker": 6.67,
+     "grazer": 43.95
+    },
+    "locust": {
+     "env": 10468.37,
+     "wake": 920,
+     "pack": 32,
+     "grazer": 4.67,
+     "leviathan": 24,
+     "mobber": 0.5,
+     "lurker": 13.33,
+     "locust": 50
+    },
+    "snaptrap": {
+     "env": 394.66
+    },
+    "leviathan": {
+     "wake": 640,
+     "leviathan": 8,
+     "env": 24.5,
+     "lurker": 13.33
+    }
+   },
+   "destroy": {
+    "fortress": {
+     "wake": 73.33,
+     "leviathan": 2.67
+    }
+   },
+   "steal": {
+    "fortress": {
+     "wake": 1240,
+     "env": 119.98,
+     "leviathan": 13.33,
+     "lurker": 20,
+     "locust": 50
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 51810,
+     "env": 9095.82,
+     "leviathan": 597.33,
+     "lurker": 453.33,
+     "locust": 250.01
+    }
+   },
+   "pop_mean": {
+    "grazer": 1568.69,
+    "locust": 285.29,
+    "stampede": 72,
+    "mobber": 41.41,
+    "thief": 18,
+    "pack": 2.01,
+    "lurker": 13.34,
+    "leviathan": 129.27,
+    "fortress": 42.24,
+    "snaptrap": 41.77
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 40,
+    "thief": 18,
+    "pack": 1,
+    "lurker": 11,
+    "leviathan": 123,
+    "fortress": 40,
+    "snaptrap": 45
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 2,
+    "locust": 2.667,
+    "stampede": 0,
+    "mobber": 3.333,
+    "thief": 0,
+    "pack": 2,
+    "lurker": 1.667,
+    "leviathan": 5.667,
+    "fortress": 8.333,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 11.16,
+   "dt": 0.1
+  },
+  {
+   "policy": "hunter",
+   "seed": 202,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "stampede": 14,
+    "leviathan": 1.667,
+    "pack": 1.333,
+    "thief": 30,
+    "lurker": 0.667,
+    "locust": 11.333
+   },
+   "hits_per_min": 59,
+   "eat": {
+    "grazer": {
+     "env": 28024.25,
+     "lurker": 13.33,
+     "wake": 146.67,
+     "pack": 32,
+     "locust": 333.62
+    },
+    "stampede": {
+     "env": 899.25,
+     "wake": 586.67,
+     "locust": 11.27
+    },
+    "snaptrap": {
+     "env": 1034.33,
+     "leviathan": 2.67,
+     "wake": 6.67
+    },
+    "locust": {
+     "env": 3341.46,
+     "wake": 3076.67,
+     "locust": 800.19,
+     "leviathan": 260.64,
+     "pack": 16,
+     "lurker": 13.33
+    },
+    "leviathan": {
+     "env": 13.31,
+     "wake": 293.33,
+     "leviathan": 8,
+     "pack": 16,
+     "locust": 2
+    }
+   },
+   "destroy": {
+    "fortress": {
+     "env": 108.87,
+     "wake": 63.33
+    }
+   },
+   "steal": {
+    "fortress": {
+     "env": 1478.52,
+     "wake": 1000,
+     "pack": 32,
+     "locust": 554.12
+    }
+   },
+   "move": {
+    "fortress": {
+     "env": 73583.62,
+     "wake": 42626.67,
+     "pack": 1920,
+     "locust": 21304.97
+    }
+   },
+   "pop_mean": {
+    "grazer": 1572.96,
+    "locust": 266.17,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 14.59,
+    "pack": 3.66,
+    "lurker": 13.48,
+    "leviathan": 133.63,
+    "fortress": 44.81,
+    "snaptrap": 47.12
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 10,
+    "pack": 2,
+    "lurker": 12,
+    "leviathan": 131,
+    "fortress": 43,
+    "snaptrap": 51
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0,
+    "locust": 32.333,
+    "stampede": 0,
+    "mobber": 0,
+    "thief": 2.667,
+    "pack": 1.667,
+    "lurker": 1.333,
+    "leviathan": 3,
+    "fortress": 9,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 10.76,
+   "dt": 0.1
+  },
+  {
+   "policy": "hunter",
+   "seed": 303,
+   "minutes": 3,
+   "drop": [],
+   "pop": "cell",
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap"
+   ],
+   "hits_by": {
+    "pack": 0.667,
+    "leviathan": 3,
+    "fortress": 1.333,
+    "lurker": 0.333,
+    "locust": 7.667,
+    "snaptrap": 1,
+    "stampede": 1,
+    "thief": 6
+   },
+   "hits_per_min": 21,
+   "eat": {
+    "grazer": {
+     "env": 17399.12,
+     "pack": 32,
+     "lurker": 46.67,
+     "leviathan": 8,
+     "locust": 233.05,
+     "mobber": 1.5
+    },
+    "stampede": {
+     "env": 393.92,
+     "wake": 93.33
+    },
+    "locust": {
+     "env": 9392.85,
+     "wake": 2446.67,
+     "leviathan": 24,
+     "locust": 825.48,
+     "grazer": 12.46,
+     "stampede": 24.41,
+     "mobber": 2.5
+    },
+    "snaptrap": {
+     "env": 1101.01,
+     "wake": 180
+    },
+    "leviathan": {
+     "pack": 64,
+     "wake": 426.67,
+     "leviathan": 5.33,
+     "env": 7.51,
+     "locust": 246.63
+    }
+   },
+   "destroy": {
+    "fortress": {
+     "wake": 13.33
+    }
+   },
+   "steal": {
+    "fortress": {
+     "wake": 1000,
+     "leviathan": 5.33,
+     "env": 100.36,
+     "locust": 8.67
+    }
+   },
+   "move": {
+    "fortress": {
+     "wake": 48016.67,
+     "leviathan": 165.33,
+     "env": 12013.67,
+     "locust": 260
+    }
+   },
+   "pop_mean": {
+    "grazer": 1569.38,
+    "locust": 261.96,
+    "stampede": 71.54,
+    "mobber": 45.73,
+    "thief": 18,
+    "pack": 2.11,
+    "lurker": 12.48,
+    "leviathan": 131.93,
+    "fortress": 43.15,
+    "snaptrap": 46.85
+   },
+   "pop_end": {
+    "grazer": 1600,
+    "locust": 360,
+    "stampede": 71,
+    "mobber": 42,
+    "thief": 18,
+    "pack": 1,
+    "lurker": 9,
+    "leviathan": 125,
+    "fortress": 40,
+    "snaptrap": 52
+   },
+   "pop_start": {
+    "grazer": 900,
+    "locust": 30,
+    "stampede": 72,
+    "mobber": 50,
+    "thief": 18,
+    "pack": 7,
+    "lurker": 16,
+    "leviathan": 140,
+    "fortress": 48,
+    "snaptrap": 40
+   },
+   "crystals_per_min": {
+    "grazer": 0.667,
+    "locust": 24,
+    "stampede": 0.333,
+    "mobber": 2.667,
+    "thief": 0,
+    "pack": 2,
+    "lurker": 2.333,
+    "leviathan": 5,
+    "fortress": 6.667,
+    "snaptrap": 0
+   },
+   "conservation": 0,
+   "ms_per_step": 12.5,
+   "dt": 0.1
+  }
+ ]
+}

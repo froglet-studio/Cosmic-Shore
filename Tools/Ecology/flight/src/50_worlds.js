@@ -60,21 +60,42 @@ function now() { return (typeof performance !== 'undefined' ? performance.now() 
 
 // ------------------------------------------------------------------------------------------------ the flight world
 /** One cell for the page: scattered flora mass, the player as the only pilot, and the chosen species.
- *  mode: 'cell' = every species at once (vibrancy), or a species key (judge one at a time). */
-function FlightWorld(PARAMS, mode, seed, scale) {
-  this.P = PARAMS; this.mode = mode; scale = scale || 1;
+ *  mode: 'cell' = every species at once (vibrancy), or a species key (judge one at a time).
+ *  opts (all optional): pop 'scored' = the scored populations (grazers 120 / cap 240) instead of the vibrant ones;
+ *  pilot 'wander' | 'hunter' = a scripted pilot instead of the player (cell_js.js, the whole-cell gate);
+ *  drop = species keys left out (the gate's ablations). */
+function FlightWorld(PARAMS, mode, seed, scale, opts) {
+  opts = opts || {};
+  this.P = PARAMS; this.mode = mode; scale = scale || 1; this.pop = opts.pop || 'cell';
+  const drop = opts.drop || [];
   const ar = this.arena = new Arena(seed || 7, { world: 'flight' });
   ar.scatterMass(mode === 'cell' || mode === 'showcase' ? 4200 : 3000);
   ar.enableTrails(15, 10); ar.trailDom = 1; ar.trailFlag = 1;   // the player's wake: conserved mass, theirs to lose
-  const pl = this.player = new Pilot('player', 120, 'you'); pl.rams = true; pl.turn = 0;
-  ar.addPilot(pl);
-  pl.pos = [0, 0, -0.62 * ar.R]; pl.vel = [0, 0, 120];
   this.species = [];
-  const add = (key, o) => { const sp = new SPECIES[key](ar, PARAMS.species[key], Object.assign({ seed: seed || 7 }, o || {})); sp.key = key; this.species.push(sp); return sp; };
+  const add = (key, o) => {
+    if (drop.indexOf(key) >= 0) return null;
+    const sp = new SPECIES[key](ar, PARAMS.species[key], Object.assign({ seed: seed || 7 }, o || {})); sp.key = key; this.species.push(sp); return sp;
+  };
   const R = ar.R;
+  if (opts.pilot) {
+    // the gate's order (cell_py.py): species first, then the pilot, placed by the arena like any scored pilot
+    this.addSpecies(mode, add, R, scale);
+    const pl = this.player = makePilot(opts.pilot); ar.addPilot(pl);
+  } else {
+    const pl = this.player = new Pilot('player', 120, 'you'); pl.rams = true; pl.turn = 0;
+    ar.addPilot(pl);
+    pl.pos = [0, 0, -0.62 * ar.R]; pl.vel = [0, 0, 120];
+    this.addSpecies(mode, add, R, scale);
+  }
+  ar.species = this.species.find(s => s.key === 'snaptrap') || null;
+  this.start = ar.liveVolume() + this.speciesHeld();
+  this.view = {};
+}
+FlightWorld.prototype.addSpecies = function (mode, add, R, scale) {
   if (mode === 'cell' || mode === 'showcase') {
     // near the player's start, the rest spread round the cell; positions only - every rule is the species' own
-    add('grazer', { n: Math.round(900 * scale), cap: Math.round(1600 * scale), clusters: 10 });
+    if (this.pop === 'scored') add('grazer');
+    else add('grazer', { n: Math.round(900 * scale), cap: Math.round(1600 * scale), clusters: 10 });
     add('locust', { cap: Math.round(360 * scale) });
     add('stampede');
     add('mobber');
@@ -86,7 +107,7 @@ function FlightWorld(PARAMS, mode, seed, scale) {
     add('snaptrap', { placeClump: (a, C, o) => { a.ball(0.3 * R, 0.75 * R, C, o); } });
     // the showcase: the whole cell plus the siege, starting on the far side so the first minute is the calm cell
     // first siege after ~40 s, then one every ~40 s, so the cell gets to be a cell between them
-    if (mode === 'showcase') { const sg = add('siege', { centre: [0.25 * R, 0.15 * R, 0.45 * R], K: { T_COOL: 30, T_COOL_ESC: 25 } }); sg.cool = 40; }
+    if (mode === 'showcase') { const sg = add('siege', { centre: [0.25 * R, 0.15 * R, 0.45 * R], K: { T_COOL: 30, T_COOL_ESC: 25 } }); if (sg) sg.cool = 40; }
   } else if (mode === 'snaptrap') {
     add('snaptrap', { placeClump: (a, C, o) => { a.ball(0.15 * R, 0.55 * R, C, o); C[o + 2] -= 0.25 * R; } });
   } else if (mode === 'siege') {
@@ -97,10 +118,7 @@ function FlightWorld(PARAMS, mode, seed, scale) {
   } else {
     add(mode, { centre: [0, 0, -0.3 * R] });
   }
-  ar.species = this.species.find(s => s.key === 'snaptrap') || null;
-  this.start = ar.liveVolume() + this.speciesHeld();
-  this.view = {};
-}
+};
 FlightWorld.prototype.speciesHeld = function () { let s = 0; for (const sp of this.species) s += sp.ledger ? sp.ledger() : 0; return s; };
 FlightWorld.prototype.step = function (dt) {
   const ar = this.arena;
