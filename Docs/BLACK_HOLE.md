@@ -40,12 +40,21 @@
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
 | The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
-| The test scene | `Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity`, `BlackHoleTestHarness`, the mouse camera `MouseOrbitCamera` (`_Scripts/Controller/Camera/`, + `MouseOrbitCameraConfigSO` → `Resources/MouseOrbitCameraConfig.asset`, §7.1), `BlackHoleTestConfigSO` → `Resources/BlackHoleTestConfig.asset`, FrogletTools ▸ Scene Setup ▸ **Setup Black Hole Test Scene** |
+| The test scene | **Not on bleeding-edge.** `BlackHoleTest.unity`, `BlackHoleTestHarness`, `BlackHoleTestConfigSO`, the scene setup tool and the mouse camera `MouseOrbitCamera` stayed on `claude/peaceful-rubin-hhw49n` when the black hole alone was brought over (§7) |
+| The crystal wormhole that grew out of the Black Hole cell (attractor + repulsor, smooth wells) | `Docs/CRYSTAL_WORMHOLE.md` |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
 | See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
 
 ## 0.1 Where it stands (2026-10-08) — read this first
+
+> **Two branches, one engine (merged 2026-10-08).** `cece/charming-cerf-alf1j1` took the black hole
+> from this branch file by file (at `1eb1d0b5f`) and grew it into the CRYSTAL WORMHOLE (§12,
+> `Docs/CRYSTAL_WORMHOLE.md`); this branch grew it into white holes, drifting pairs and the Stoat
+> (§11). The merge took that commit as the true base for every copied file, so neither side's work
+> was re-derived, and kept BOTH pair styles behind one switch (§13). Names are charming-cerf's:
+> `HolePolarity.Sink` (attractor) / `.Source` (repulsor), the sign carried in `GM`, `Throat` for the
+> other pole.
 
 Everything below was built on `claude/peaceful-rubin-hhw49n` in one working session, in this order,
 each step pushed with its offline proof. **None of it has been run in the Unity editor by the
@@ -65,14 +74,19 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 9 | Every camera gets the lens's depth texture; the on-screen camera, not `Camera.main`, places spawns | §5.1 |
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
-| 12 | WHITE holes and black–white PAIRS: the radial law reversed, the horizon emitting, captured mass passed through to the partner, the pair drifting apart and annihilating; tool buttons, N/M keys, `blackhole white|pair`, `bhtest pair` | §11 |
-| 13 | The STOAT (`VesselClassType.Stoat = 14`): a Squirrel-prefab clone whose triggers sling a black–white pair across the hull, hold = size, black on the pressed side; the Sparrow's stop on X; generator + gates | §11 "The Stoat", `R_VesselActions/STOAT.md` |
+| 12 | WHITE holes and black–white PAIRS: the radial law reversed, the horizon emitting, captured mass passed through to the other pole, the pair drifting apart and annihilating; tool buttons, N/M keys, `blackhole white|pair` | §11 |
+| 13 | The STOAT (`VesselClassType.Stoat = 14`): a Squirrel-prefab clone whose triggers sling an attractor–repulsor pair across the hull, hold = size, attractor on the pressed side; the Sparrow's stop on X; generator + gates | §11, `R_VesselActions/STOAT.md` |
+| 14 | (charming-cerf) The Black Hole cell, then the dipole — now the Crystal Wormhole: smooth wells, the graded lens, the felt pull, the seamless mouths, formation and annihilation | §12, `Docs/CRYSTAL_WORMHOLE.md` |
+| 15 | (charming-cerf) The warp field | `Docs/WARP_FIELD.md` |
+| 16 | The merge: both pair styles on one engine, a pair-style switch on the Stoat's sling and in the Black Hole tool | §13 |
 
-**Untested in the editor, in priority order:** white holes and pairs (§11 — the repulsion on a vessel,
-the pass-through of captured prisms, the core's look, the drift and annihilation); the after-transparents lens pass (`BlackHoleLensPass`,
-Render Graph) on every camera and the Scene view; the lens sky (`BlackHoleSky`) on a low quality
-level; Shift+B in lava-lamp freestyle with a vessel flying; the edit-mode suites `BlackHoleTests`,
-`BlackHolePhysicsTests`, `BlackHoleToolTests` (written, never run).
+**Untested in the editor, in priority order:** the pair-style switch and a crystal-style sling (§13);
+white holes and pairs (§11 — the repulsion on a vessel, the pass-through of captured prisms, the core
+drawn over the now-diverging source lens, the drift and annihilation); the Crystal Wormhole cell end to
+end (§12); the after-transparents lens pass (`BlackHoleLensPass`, Render Graph) on every camera and the
+Scene view; the lens sky (`BlackHoleSky`) on a low quality level; Shift+B in lava-lamp freestyle with a
+vessel flying; the edit-mode suites `BlackHoleTests`, `BlackHolePhysicsTests`, `BlackHoleToolTests`,
+`CrystalWormholeTests`, `WarpFieldTests` (written, never run).
 
 **What builds on it next:** the Stoat vessel, whose ability spawns these holes (row 13; prototype on
 the same branch, `R_VesselActions/STOAT.md`). Anything the Stoat needs from the black hole (per-hole spin and size, pulling more kinds of
@@ -528,8 +542,8 @@ Editor and development builds, any scene, ignored while a text field has focus:
 | **N** / **M** | Spawn a black–white PAIR across the camera — black on the LEFT (N) or the RIGHT (M); N sits left of M on the keyboard. The Stoat's sling, from any vessel (§11) |
 | `blackhole tool on` / `off` | The same as B, from the DiagnosticsHUD console (`blackhole config` opens the config view) |
 
-**In the test scene** (`BlackHoleTest.unity`, Bootstrap-on-Play off): Play → **Spawn field** → wait for
-*ready* → **B** → set the spawn rows → **Spawn** (or Shift+B) → orbit the camera around it.
+**In freestyle** (Menu_Main): **B** opens the tool, Shift+B spawns ahead of the camera. (The Cell Selector's
+*Crystal Wormhole* runs smooth wells, not black holes — `Docs/CRYSTAL_WORMHOLE.md`.)
 
 **In lava-lamp freestyle** (Menu_Main, flying a vessel): **B** → set strength/size/distance → close
 it with B → **Shift+B** while flying: the hole appears straight ahead of your vessel's camera
@@ -541,52 +555,12 @@ matter: the lens bends whatever skybox the scene renders (§5.1).
 
 ## 7. The test scene
 
-`Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity` (not in Build Settings, like every
-Game_TestDesign scene; regenerable by **FrogletTools ▸ Scene Setup ▸ Setup Black Hole Test Scene**,
-a keeper that only repairs). Before Play: FrogletTools ▸ Scene Setup ▸ Testing Multiplayer ▸ **Do not
-load Bootstrap Scene on Play**. Then:
-
-1. **Spawn field** — a 25³ lattice at 24 u pitch cut to the inscribed spheroid (~8k prisms, jittered,
-   randomly rotated; the Cuboid/Spheroid button toggles the cut, `side`/`gap` resize it). Wait for
-   **ready** — prisms register with the spatial index behind a budget, and only indexed prisms can
-   be pulled.
-2. **Hole at centre** (strength from the field) — the mass at rest falls in, wound the way the hole
-   spins as it nears the horizon, spaghettified on the way, and is consumed. The readout shows
-   bodies / captured.
-3. **Fly-through** — a strength-8 hole starts 150 u outside the field's −X edge and crosses it at
-   60 u/s: relative to the hole, every prism it reaches is moving sideways, so this is where ORBITS
-   happen — mass is swung around, captured or flung, stretched as it passes the horizon — and it
-   retires itself past the far edge.
-4. **Despawn holes** / **Clear**.
-
-Console: `bhtest <total>` (near-cube field), `bhtest shape cuboid|spheroid`, `bhtest hole [strength]`,
-`bhtest fly [strength] [speed]`, `bhtest despawn`, `bhtest clear`, `bhtest zoom <0..1>`, `bhtest frame`;
-and the global `blackhole` commands work here too (e.g. `blackhole spawn 10 200 0 0 -40 0 0`).
-
-### 7.1 The mouse camera (`MouseOrbitCamera`)
-
-The scene's camera is a strategy-game mouse camera, Transport Fever style — it looks at a PIVOT from
-a distance, and the mouse moves the pivot, turns around it and dollies toward it:
-
-| Input | Does |
-|---|---|
-| **Right-drag** | Pan — the world moves with the cursor as if grabbed (exact at the pivot's depth: world-per-pixel is derived from the distance and the FOV) |
-| **Left-drag** on empty space, or **Alt + right-drag** | Orbit — yaw and pitch about the pivot, pitch held short of the poles; the cursor hides and locks while orbiting |
-| **Wheel** | Zoom toward the point under the cursor, which stays fixed on screen (exact: `pivot' = pivot + (p − pivot)(1 − new/old)`) |
-| **Middle-drag** up / down | Zoom in / out about the pivot |
-| **WASD** / **Q E** | Pan / turn; **Shift** = faster |
-| **F** or **Home** (or the **Frame (F)** button, `bhtest frame`) | Back to the home view of the field |
-
-A drag only starts from a press that is NOT on UI, so the panel's buttons and the DiagnosticsHUD still
-click; keys are ignored while a text field has focus, so typing a console command never flies the
-camera. Zoom is proportional (every notch is the same fraction of the distance at any range) and the
-whole camera eases on unscaled time, so it works while paused. The harness never writes the camera's
-transform — it says where home is (`SetHome` / `FrameHome`) and how far to sit (`SetDistance`, the
-zoom slider, which follows the wheel back). Bindings and speeds: `MouseOrbitCameraConfigSO` →
-`Resources/MouseOrbitCameraConfig.asset`; Transport Fever's own hand (left-drag pan, right-drag
-orbit) is a two-field swap there. Not a gameplay camera — vessels fly on `CustomCameraController`,
-which this does not touch. Math held by `MouseOrbitCameraTests` (pan anchoring, zoom-toward-cursor
-fixed point, viewport round trip, wheel scale, shipped bindings).
+**Not on bleeding-edge.** `BlackHoleTest.unity` (a prism-lattice field, a centre hole and a
+fly-through, driven by `BlackHoleTestHarness` / `bhtest`), its config `BlackHoleTestConfigSO`, the
+**Setup Black Hole Test Scene** tool and the Transport-Fever-style `MouseOrbitCamera` (§7.1 on that
+branch) live on `claude/peaceful-rubin-hhw49n` and were deliberately left there when the black hole
+alone was brought over. The in-game place to see a hole is the Black Hole cell (§11), or Shift+B
+anywhere (§6.2). Bring the scene over as its own change if it is wanted; nothing here depends on it.
 
 ## 8. Stated limits of the simple version
 
@@ -636,7 +610,7 @@ Offline, in this order; nothing was run in the editor:
   namespace` false positives in untouched files. `check_generated_assets.py`: 4 added + 2 modified
   assets OK against the compiled schema.
 - Edit-mode: `BlackHoleTests` (HLSL/bank/slot agreement, splice order on both graphs, validator
-  specs, config sanity, residency budget, test scene wiring) and `BlackHolePhysicsTests` (eleven
+  specs, config sanity, residency budget; the test-scene wiring test stayed with the scene, §7) and `BlackHolePhysicsTests` (eleven
   claims about what a hole does, run through the shipped integrator) — written, to be run in the
   editor with the rest of the suite.
 
@@ -719,25 +693,29 @@ Evidence, on the final tree:
 ## 11. White holes and black–white pairs (2026-10-08)
 
 **A white hole is the same spacetime run the other way.** Outside the horizon the Schwarzschild
-geometry is identical, so a white hole bends light exactly as a black hole does and raises the same
-tides; what differs is the horizon: nothing can enter it and everything inside it comes out. In this
-project that is one sign — `HolePolarity` on `BlackHole`, `Well.Polarity` in the physics:
+geometry is identical; what differs is the horizon: nothing can enter it and everything inside it
+comes out. In this project that is one sign — `HolePolarity.Source` on `BlackHole`, a NEGATIVE `GM`
+(and frame drag) in the physics `Well`. (This branch first carried it as a separate `Well.Polarity`;
+the merge with charming-cerf, which had built the same thing as a signed GM, kept theirs. Their
+source also flips the tides and the lens, below — the antisymmetric twin rather than the time-reversed
+one.)
 
-| | Black | White |
+| | Sink (black, attractor) | Source (white, repulsor) |
 |---|---|---|
 | Radial law (§2) | `a = −GM/(r − r_s)²` toward it | the same magnitude AWAY from it |
 | Frame dragging (§2) | ω about the spin axis | −ω (angular momentum flips under time reversal) |
 | Capture | a body at r ≤ r_s is captured | never — a body inside the horizon is one it is emitting, and the pole guard's floor gives it the kick out |
-| Tides (§5) | `GM·τ²/r³` stretch along the radial | the same (tides are even under time reversal) — an emitted body starts a needle and relaxes as it leaves: the capture movie backwards |
-| Lens (§5.1) | the same bending; rays through the horizon draw the SHADOW | the same bending; rays through the horizon draw the CORE |
+| Tides (§5) | `GM·τ²/r³` stretch along the radial | the signed GM in the bank FLATTENS instead (charming-cerf's choice, kept) |
+| Lens (§5.1) | rays through the horizon draw the SHADOW | the trace runs with polarity −1: the lens DIVERGES and nothing falls in; the CORE is drawn over the horizon's disc |
 | Vessels (§4) | pulled | pushed, through the same channel |
 
-**The core.** For a ray the backward trace pushed through the horizon, the trace now reports the
-line it crossed on; a black hole paints black, a white hole paints the light that came OUT along that
-line. What comes out is what fell into its paired black hole from the far side — the sky continues
-through the tunnel — so the core samples the scene's own skybox (`BlackHoleSky`) in the crossing
-direction, under a glow that is white-hot at the core's centre and gone at its rim (the photon-capture
-radius, 2.6 r_s): `core = sky(crossing) × whiteCoreSkyMix + whiteCoreBrightness × (1 − b/b_c)²`. With
+**The core.** What comes out of a white hole is what fell into its paired black hole from the far
+side — the sky continues through the tunnel — so the core samples the scene's own skybox
+(`BlackHoleSky`) under a glow that is white-hot at the core's centre and gone at its rim (the
+photon-capture radius, 2.6 r_s): `core = sky × whiteCoreSkyMix + whiteCoreBrightness × (1 − b/b_c)²`.
+Since the merge the source's lens diverges, so no backward ray falls in to report the line it crossed
+on; the core is drawn over the disc a sink's shadow would cover (the UNBENT impact parameter b < b_c)
+and samples the sky straight through. A smooth well (§12) has no horizon and so no core. With
 HDR on and no tonemapper, a brightness above 1 clips to pure white at the centre. Stated
 approximation: the emitted light is the SKY behind the black hole, not the prisms around it (that would
 need a camera render per hole); the lensed background outside the core is the real scene.
@@ -752,23 +730,24 @@ them), and if one is despawned alone the other goes too. From a camera (the tool
 to its left and right. A vessel between them is pulled toward the black hole and pushed from the white
 one — the sling toward the black hole's side. A pair takes two of the four hole slots.
 
-**Pass-through.** A prism captured by a black hole WITH a partner is not consumed: it comes out of the
-white hole at the point reflection of its entry (relative to each centre), with the velocity it went
-in with — which points outward there — at least 1.05 r_s from the white centre, and stays a body under
-the field, now repelled; `BlackHoleGravityField.EmittedTotal` counts them. A lone black hole still
+**Pass-through.** A prism captured by a black hole WITH a `Throat` (its pair's other pole) is not
+consumed: it comes out of the white hole at the point reflection of its entry (relative to each
+centre), with the velocity it went in with — which points outward there — at least 1.05 r_s from the
+white centre, and stays a body under the field, now repelled. A SMOOTH well's core (§12) carries by a
+pure translation instead (charming-cerf's rule, kept for their style); both go through the prism's
+own notify. `BlackHoleGravityField.ThroatTransitsTotal` counts both. A lone black hole still
 consumes. The prism's own notify (index + queued render matrix) moves it, the mover's contract.
 
 **Proof.** `BlackHolePhysicsTests`: a white hole repels with the black hole's magnitude and turns its
-frame the other way, an unset polarity reads as black (every pre-existing well still pulls), a white
-hole never captures and pushes a body at its horizon past its influence sphere, the pair's half-gap
+frame the other way (the source's sign in GM and frame drag), a white hole never captures and pushes a body at its horizon past its influence sphere, the pair's half-gap
 is widest at half-life and back at birth at the end, the exit is the point reflection with the entry
 velocity outward. `verify_black_hole_lens.py` property 9: 2,000 captured rays report a unit, finite,
 inward crossing direction. `render_black_hole_lens.py --white` renders the core offline.
 
 **The Stoat** (`R_VesselActions/STOAT.md`) is the vessel built on this: its triggers call
-`BlackHoleRegistry.SpawnPair` from the HULL's frame rather than the camera's — midpoint
-`aheadHorizons` ahead, the holes on the hull's own horizontal, the BLACK hole on the side of the
-trigger pressed, the squeeze's depth (its hold time without analog triggers) setting the strength
+`BlackHoleRegistry.SpawnPair` (or, in the crystal style, `SpawnCrystalPair` — §13) from the HULL's
+frame rather than the camera's — midpoint `aheadHorizons` ahead, the holes on the hull's own
+horizontal, the ATTRACTOR on the side of the trigger pressed, the squeeze's depth (its hold time without analog triggers) setting the strength
 between 2 and 12, the half-gap Space-scaled — and it annihilates its own previous pair before
 slinging the next. The hull then does what §4 says: falls toward the black hole, is shoved off the
 white one. The sling works from a standstill, which is why the Stoat carries the Sparrow's stop.
@@ -777,3 +756,14 @@ white one. The sling works from a standstill, which is why the Stoat carries the
 empty on `StoatSlingConfig`); the pair's AI/network replication (pairs exist on the machine that
 spawned them, like holes — a remote Stoat's press/release edges do replicate, so each peer lays its
 own copy at the replicated pose, but the copies are not one object).
+
+
+## 12. The Crystal Wormhole (charming-cerf) — the Black Hole cell and the dipole, superseded
+
+The Cell Selector world built here first as a "Black Hole cell", then as a black/white-hole dipole
+joined by a wormhole, is now the **Crystal Wormhole** (`Docs/CRYSTAL_WORMHOLE.md`): an attractor and a
+repulsor that are SMOOTH wells, not black holes — the HyperSea is far too big for black holes to make
+sense. What it added to this engine stays and is documented there: polarity (`HolePolarity`, a signed
+GM), smooth wells (`softening`: Plummer gravity, no frame dragging, softened tides, the graded lens),
+`Amplitude`, the throat that carries captured mass through, and the felt pull on vessels. A lone black
+hole (the console's, Shift+B) is unchanged.

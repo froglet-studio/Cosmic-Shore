@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>A WHITE hole is the same spacetime run the other way</b> (Docs/BLACK_HOLE.md §11):
     /// outside the horizon the Schwarzschild geometry is identical, so the lens and the tides are
     /// the black hole's; what differs is the horizon. Nothing can enter it and everything inside it
-    /// comes out. In this integrator that is the SIGN of the radial law (<see cref="Well.Polarity"/>):
+    /// comes out. In this integrator that is the SIGN of <see cref="Well.GM"/> (negative = a source):
     /// a white hole repels with the same magnitude the black hole pulls, its frame turns the other
     /// way (angular momentum flips under time reversal), and it never captures — a body at its
     /// horizon is one it is emitting, and the pole guard's floor gives that body the kick out. A
@@ -48,7 +48,11 @@ namespace CosmicShore.Gameplay
         public struct Well
         {
             public float3 Position;
-            /// <summary>Gravitational parameter GM, u^3/s^2.</summary>
+            /// <summary>
+            /// SIGNED gravitational parameter GM, u^3/s^2: positive pulls (a sink, a black hole),
+            /// negative pushes (a source, a white hole — Docs/BLACK_HOLE.md §12). A source never
+            /// captures: nothing crosses its horizon inward, and a body inside it is driven out.
+            /// </summary>
             public float GM;
             /// <summary>Event-horizon radius r_s, u. Inside it a body is captured.</summary>
             public Horizon Horizon;
@@ -58,19 +62,18 @@ namespace CosmicShore.Gameplay
             public float3 SpinAxis;
             /// <summary>
             /// Lense-Thirring coefficient, u^3/s: the frame turns at <c>FrameDrag / r³</c> rad/s.
-            /// <see cref="FrameDragCoefficient"/> builds it from GM, r_s and the spin.
+            /// <see cref="FrameDragCoefficient"/> builds it from |GM|, r_s and the spin; a source's is
+            /// negated, so its frame turns the other way about the same axis.
             /// </summary>
             public float FrameDrag;
             /// <summary>
-            /// +1 (or 0, the default of an unset well) = a BLACK hole: pulls, captures. −1 = a WHITE
-            /// hole: repels with the same magnitude, turns its frame the other way, never captures.
-            /// Read through <see cref="PolaritySign"/>, which maps the unset 0 to black.
+            /// Plummer core radius ε of a SMOOTH well, u (0 = the black hole's Paczynski-Wiita law):
+            /// <c>a = −GM·r / (r² + ε²)^1.5</c> — finite and smooth everywhere, zero at the centre, the
+            /// pull of a soft distribution of mass rather than of a point (Docs/CRYSTAL_WORMHOLE.md).
             /// </summary>
-            public float Polarity;
+            public float Softening;
         }
 
-        /// <summary>+1 for a black hole (including an unset <see cref="Well.Polarity"/>), −1 for a white one.</summary>
-        public static float PolaritySign(in Well w) => w.Polarity < 0f ? -1f : 1f;
 
         /// <summary>
         /// A horizon radius with its pole guard, so the two numbers that must agree live in one
@@ -106,9 +109,14 @@ namespace CosmicShore.Gameplay
             float3 r = p - w.Position;
             float d = math.length(r);
             if (!(d > 1e-6f)) return float3.zero;        // dead centre: no direction to pull along
+            if (w.Softening > 0f)
+            {
+                float q = d * d + w.Softening * w.Softening;
+                return r * (-w.GM / (q * math.sqrt(q)));
+            }
             float gap = math.max(d - w.Horizon.Radius, w.Horizon.MinGap);
             float mag = w.GM / (gap * gap);
-            return r * (-mag * PolaritySign(w) / d);
+            return r * (-mag / d);
         }
 
         /// <summary>Escape speed at distance <paramref name="d"/> under the pseudo-Newtonian potential.</summary>
@@ -153,7 +161,7 @@ namespace CosmicShore.Gameplay
         /// captured, and the weak-field law is not asked to describe what it cannot).
         /// </summary>
         public static float FrameAngularVelocity(float d, in Well w) =>
-            w.FrameDrag <= 0f ? 0f : w.FrameDrag / math.pow(math.max(d, w.Horizon.Radius), 3f);
+            w.FrameDrag == 0f ? 0f : w.FrameDrag / math.pow(math.max(d, w.Horizon.Radius), 3f);
 
         /// <summary>
         /// Velocity of the dragged frame at <paramref name="p"/>: a rotation about the spin axis at
@@ -165,8 +173,8 @@ namespace CosmicShore.Gameplay
         {
             float3 r = p - w.Position;
             float d = math.length(r);
-            if (!(d > 1e-6f) || w.FrameDrag <= 0f) return float3.zero;
-            return math.cross(w.SpinAxis, r) * (FrameAngularVelocity(d, w) * PolaritySign(w));
+            if (!(d > 1e-6f) || w.FrameDrag == 0f) return float3.zero;
+            return math.cross(w.SpinAxis, r) * FrameAngularVelocity(d, w);
         }
 
         /// <summary>Everything one integration step reads besides the wells.</summary>
@@ -234,9 +242,9 @@ namespace CosmicShore.Gameplay
                     var w = wells[i];
                     float3 r = p - w.Position;
                     float d = math.length(r);
-                    // Only a black hole captures: a body inside a WHITE horizon is one it is emitting,
-                    // and the repulsion (floored at the pole guard) carries it out.
-                    if (d <= w.Horizon.Radius && PolaritySign(w) > 0f)
+                    // Only a SINK captures. A source's horizon is where its push is strongest: a body
+                    // inside it (one carried through a dipole's throat) is driven straight out.
+                    if (w.GM > 0f && d <= w.Horizon.Radius)
                     {
                         capturedBy = i;
                         return Verdict.Captured;

@@ -38,13 +38,13 @@ namespace CosmicShore.Gameplay
         const string StatsSection = "BlackHole";
         const string CommandName = "blackhole";
         const string Alias = "bh";
-        // Player-facing these are WORMHOLES — attractor (polarity Black) and repulsor (White).
+        // Player-facing these are WORMHOLES — attractor (polarity Sink) and repulsor (Source).
         const string WormholeName = "wormhole";
         // "black hole tool on" — the HUD splits on spaces, so the two-word name is its own command.
         const string TwoWordName = "black";
         const string Usage = "usage: blackhole tool [on|off] | config | spawn [<strength> [x y z] [vx vy vz]] | " +
                              "attractor|repulsor [<strength> [x y z]] | white [<strength> [x y z]] | pair [left|right] | here <strength> | size <id> <r_s> | " +
-                             "move <id> <vx> <vy> <vz> | strength <id> <v> | spin <id> <ax> <ay> <az> | list | despawn <id>|all";
+                             "move <id> <vx> <vy> <vz> | strength <id> <v> | spin <id> <ax> <ay> <az> | list | despawn <id>|all | annihilate [seconds]";
         /// <summary>Where a spawn lands when no position is given: this far ahead of the camera.</summary>
         const float SpawnAheadDistance = 300f;
 
@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay
         }
 
         static string Describe(BlackHole h) =>
-            $"{(h.IsWhite ? "repulsor" : "attractor")} #{h.Id} strength {h.Strength:F1} GM {h.GM:F0} horizon {h.HorizonRadius:F1} influence {h.InfluenceRadius:F0} " +
+            $"{(h.IsSource ? "repulsor" : "attractor")} #{h.Id} strength {h.Strength:F1} GM {h.GM:F0} horizon {h.HorizonRadius:F1} influence {h.InfluenceRadius:F0} " +
             $"at ({h.transform.position.x:F0}, {h.transform.position.y:F0}, {h.transform.position.z:F0}) " +
             $"v ({h.Velocity.x:F1}, {h.Velocity.y:F1}, {h.Velocity.z:F1})";
 
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (args.Length == 1)
                     {
-                        var w0 = BlackHoleRegistry.SpawnFromConfig(HolePolarity.White);
+                        var w0 = BlackHoleRegistry.SpawnFromConfig(HolePolarity.Source);
                         return w0 == null ? "spawn refused (budget full, or config not sane)" : "spawned " + Describe(w0);
                     }
                     if (!TryFloat(args[1], out float wStrength) || wStrength < 0f)
@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
                             ? cam.transform.position + cam.transform.forward * SpawnAheadDistance
                             : Vector3.zero;
                     }
-                    var white = BlackHoleRegistry.Spawn(wPosition, wStrength, Vector3.zero, null, 0f, HolePolarity.White);
+                    var white = BlackHoleRegistry.Spawn(wPosition, wStrength, Vector3.zero, null, 0f, HolePolarity.Source);
                     return white == null ? "spawn refused (see console)" : "spawned " + Describe(white);
                 }
                 case "pair":
@@ -230,6 +230,20 @@ namespace CosmicShore.Gameplay
                     if (hole == null) return $"no black hole #{id}";
                     hole.SpinAxis = axis;
                     return $"#{id} spin axis {hole.SpinAxis}";
+                }
+                case "annihilate":
+                {
+                    // The crystal wormhole's ending (Docs/CRYSTAL_WORMHOLE.md §5), on demand.
+                    float seconds = args.Length > 1 && TryFloat(args[1], out float s) ? s : -1f;
+                    int n = 0;
+                    for (int i = CrystalWormhole.Live.Count - 1; i >= 0; i--)
+                    {
+                        var w = CrystalWormhole.Live[i];
+                        if (w == null || w.IsAnnihilating || w.IsGone) continue;
+                        w.Annihilate(seconds);
+                        n++;
+                    }
+                    return n == 0 ? "no standing crystal wormhole to annihilate" : $"annihilating {n} crystal wormhole(s)";
                 }
                 case "list":
                 {

@@ -40,8 +40,10 @@ Shader "CosmicShore/BlackHoleLens"
     {
         [Header(Written per hole by BlackHoleLens.cs through a MaterialPropertyBlock)]
         _BHHorizon ("Horizon radius r_s (world units), eased", Float) = 1
-        _BHLens ("Lens (radius in r_s, step budget, unused, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
-        _BHWhite ("1 = a WHITE hole: the core emits instead of the shadow", Float) = 0
+        _BHLens ("Lens (radius in r_s, step budget, polarity +1 sink / -1 source, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
+        _BHThroat ("Wormhole mouth radius at the centre (world units, 0 = none)", Float) = 0
+        _BHSmooth ("Smooth well lens strength A, signed by polarity outside (0 = the black hole's ray trace)", Float) = 0
+        _BHWhite ("1 = a WHITE hole: its horizon disc emits a white-hot core", Float) = 0
         _BHCore ("White core (brightness HDR, sky mix, 0, 0)", Vector) = (4, 0.8, 0, 0)
     }
 
@@ -79,12 +81,20 @@ Shader "CosmicShore/BlackHoleLens"
             CBUFFER_START(UnityPerMaterial)
                 float _BHHorizon;
                 float4 _BHLens;
+                float _BHThroat;
+                float _BHSmooth;
                 float _BHWhite;
                 float4 _BHCore;
             CBUFFER_END
 
             // The scene as the camera drew it up to the lens — opaques, skybox and transparents —
             // copied by BlackHoleLensPass.cs (sampler_LinearClamp comes with URP's Core.hlsl).
+            // The SMOOTH WELLS, every one (BlackHoleLens.PublishSmoothWells, per frame): xyz centre, w core
+            // width; strength.x the signed, amplitude-scaled lens strength. Summed by every smooth lens.
+            float4 _SmoothWellCentre[4];
+            float4 _SmoothWellStrength[4];
+            float _SmoothWellCount;
+
             TEXTURE2D(_BlackHoleSceneColor);
 
             float3 BlackHoleSceneColour(float2 uv)
@@ -190,23 +200,45 @@ Shader "CosmicShore/BlackHoleLens"
 
                 float3 bent;
                 float escaped;
-                BlackHoleLensTrace(x0, d, lensR, (int)_BHLens.y, bent, escaped);
+                // _BHLens.z is the polarity: +1 an attractor / black hole, −1 a repulsor / white hole.
+                float polarity = _BHLens.z < 0.0 ? -1.0 : 1.0;
+                if (_BHSmooth > 0.0)
+                {
+                    // A SMOOTH well (Docs/CRYSTAL_WORMHOLE.md): the graded bulge replaces the trace —
+                    // nothing is captured, nothing folds — and it is the SUM over every smooth well, so
+                    // overlapping lenses agree and opposite wells cancel.
+                    float3 deflection = float3(0.0, 0.0, 0.0);
+                    for (int w = 0; w < 4; w++)
+                    {
+                        if (w >= (int)_SmoothWellCount) break;
+                        float4 wc = _SmoothWellCentre[w];
+                        deflection += BlackHoleSmoothLensDeflection(eye - wc.xyz, d, wc.w, _SmoothWellStrength[w].x);
+                    }
+                    bent = BlackHoleSmoothLensApply(d, deflection);
+                    escaped = 1.0;
+                }
+                else
+                {
+                    BlackHoleLensTraceSigned(x0, d, lensR, (int)_BHLens.y, polarity, bent, escaped);
+                }
 
                 float3 background = float3(0.0, 0.0, 0.0);
-                if (escaped < 0.5 && _BHWhite > 0.5)
+                if (_BHWhite > 0.5 && b < 2.598)
                 {
-                    // A WHITE hole (Docs/BLACK_HOLE.md §11): light comes OUT of the horizon. The
-                    // backward trace crossed it travelling along `bent`; that is the line the light
-                    // came out on, carrying what fell into the paired black hole from the far side —
-                    // the sky continues through the tunnel. White-hot at the core's centre (b → 0),
-                    // the emitted sky showing through toward its rim (b → b_c = 2.598 r_s).
+                    // A WHITE hole's core (Docs/BLACK_HOLE.md §11): light comes OUT of the horizon. Its
+                    // lens diverges (polarity −1, §12), so no backward ray ever falls in to say where
+                    // from: the core is drawn over the disc a sink's shadow would cover (unbent impact
+                    // parameter b < b_c = 2.598 r_s), carrying the sky straight through — what fell into
+                    // the paired black hole comes out here. White-hot at the centre (b → 0), the
+                    // emitted sky showing through toward its rim.
                     float t = saturate(b / 2.598);
                     float glow = (1.0 - t) * (1.0 - t);
-                    background = BlackHoleSkyColour(bent) * _BHCore.y + _BHCore.x * glow;
+                    background = BlackHoleSkyColour(d) * _BHCore.y + _BHCore.x * glow;
                 }
                 else if (escaped > 0.5)
                 {
-                    float3 dirOut = BlackHoleLensFadeDir(d, bent, b, lensR, _BHLens.w);
+                    // The smooth lens fades itself (Gaussian); the trace is faded toward the lens edge.
+                    float3 dirOut = _BHSmooth > 0.0 ? bent : BlackHoleLensFadeDir(d, bent, b, lensR, _BHLens.w);
 
                     // The sky in that direction: the scene's own skybox (BlackHoleSky.cs).
                     float3 sky = BlackHoleSkyColour(dirOut);
@@ -220,13 +252,18 @@ Shader "CosmicShore/BlackHoleLens"
                     if (onScreen > 0.0)
                     {
                         float sampleEye = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
-                        float behind = step(holeEye - rs, sampleEye);
+                        // A wormhole mouth seated at the centre (Docs/BLACK_HOLE.md §12) is solid to
+                        // the lens: a bent ray that lands on it is something the copy cannot see past,
+                        // so it takes the sky — the mouth is seen only where it is, in place of the
+                        // shadow (the depth test above already shows it there), never in the rings.
+                        float front = _BHThroat > 0.0 ? holeEye + _BHThroat : holeEye - rs;
+                        float behind = step(front, sampleEye);
                         scene = lerp(sky, BlackHoleSceneColour(uv), onScreen * behind);
                     }
                     background = scene;
                 }
 
-                // The bent scene, the shadow's black, or the white hole's core.
+                // The bent scene, the shadow's black (a sink only), or a white hole's core.
                 return half4(background, 1.0);
             }
             ENDHLSL

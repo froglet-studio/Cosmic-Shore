@@ -86,6 +86,7 @@ static inline float saturate(float v){return std::min(1.0f,std::max(0.0f,v));}
 static inline float min(float a,float b){return a<b?a:b;}
 static inline float max(float a,float b){return a>b?a:b;}
 static inline float abs(float a){return a<0?-a:a;}
+static inline float sign(float a){return a>0?1.0f:(a<0?-1.0f:0.0f);}
 static inline float3 operator-(float3 a){return float3(-a.x,-a.y,-a.z);}
 static inline float smoothstep(float e0,float e1,float x){float t=saturate((x-e0)/(e1-e0));return t*t*(3.0f-2.0f*t);}
 using std::pow; using std::sqrt; using std::exp;
@@ -155,9 +156,10 @@ static const float K = GM * TAU * TAU;  // what the bank carries: GM·τ²
 static const float REACH = 100.0f;      // (warpReachMultiplier 6 - 1) x r_s
 static const float LN_MAX = 2.4849066f; // ln(maxTidalStretch 12)
 
+static float g_soft0 = 0.0f;   // slot 0's Plummer core (a smooth well); 0 = the black hole's tide
 static void setBank(int count, float3 U0, float rs0, float k0, float reach0, float lnMax = LN_MAX,
                     float3 U1 = float3(0,0,0), float rs1 = 0, float k1 = 0, float reach1 = 0) {
-    _PrismGravityWarpCentre[0] = float4(U0, rs0); _PrismGravityWarpWeight[0] = float4(k0, reach0, 0, 0);
+    _PrismGravityWarpCentre[0] = float4(U0, rs0); _PrismGravityWarpWeight[0] = float4(k0, reach0, g_soft0, 0);
     _PrismGravityWarpCentre[1] = float4(U1, rs1); _PrismGravityWarpWeight[1] = float4(k1, reach1, 0, 0);
     _PrismGravityWarpCentre[2] = float4(0,0,0,0); _PrismGravityWarpWeight[2] = float4(0,0,0,0);
     _PrismGravityWarpCentre[3] = float4(0,0,0,0); _PrismGravityWarpWeight[3] = float4(0,0,0,0);
@@ -384,6 +386,53 @@ int main()
         float alongNear = stretchAlong(c, float3(1,0,0)), across = stretchAlong(c, float3(0,1,0));
         CHECK(alongNear > 1.2f && across < 1.0f, "the nearer hole did not set the stretch (along %.3f, across %.3f)", alongNear, across);
         printf("12. two holes: the nearer one's tide stretches the prism (x%.2f along, x%.2f across)\n", alongNear, across);
+    }
+
+    // 14. a WHITE HOLE (negative k, Docs/BLACK_HOLE.md §12) is the black hole's tide NEGATED: along the
+    //     line to it the prism is squashed by exactly what the sink stretches it by, across it spread by
+    //     what the sink squeezes — volume still conserved — and the ceiling holds in that sign too.
+    {
+        const float SMALL_K = 0.25f * RS * RS * RS;
+        float worst = 0, worstVol = 0;
+        for (int i = 0; i < 50; i++) {
+            float d = rnd(1.2f, 3.0f) * RS;
+            float3 n = placePrism(d);
+            float3 c = toWorld(float3(0,0,0));
+            float3 t = anyPerp(n);
+            setBank(1, float3(0,0,0), RS, SMALL_K, REACH, 13.8f);
+            float erSink = std::log(stretchAlong(c, n, 4.0f)), etSink = std::log(stretchAlong(c, t, 4.0f));
+            setBank(1, float3(0,0,0), RS, -SMALL_K, REACH, 13.8f);
+            float erSrc = std::log(stretchAlong(c, n, 4.0f)), etSrc = std::log(stretchAlong(c, t, 4.0f));
+            worst = std::max(worst, std::max(std::fabs(erSrc + erSink), std::fabs(etSrc + etSink)) / std::fabs(erSink));
+            worstVol = std::max(worstVol, std::fabs(erSrc + 2.0f * etSrc));
+        }
+        CHECK(worst < 3e-3f, "the white hole's tide is not the black hole's negated (worst relative %.3g)", worst);
+        CHECK(worstVol < 1e-3f, "the white hole's map does not conserve volume (worst log-volume %.3g)", worstVol);
+        setBank(1, float3(0,0,0), RS, -1e9f, REACH);
+        float3 n = placePrism(1.1f * RS);
+        float squash = stretchAlong(toWorld(float3(0,0,0)), n);
+        CHECK(squash > 1.0f / 12.0f * 0.99f && squash < 1.0f, "an absurd white hole squashed past the ceiling (x%.4f)", squash);
+        printf("14. white hole: the tide negated (worst %.2g), volume kept (%.2g), ceiling x%.3f >= 1/12\n", worst, worstVol, squash);
+    }
+
+    // 15. a SMOOTH well (Plummer core eps, Docs/CRYSTAL_WORMHOLE.md): the tide is k / (d^2 + eps^2)^1.5 —
+    //     finite at the centre, exactly the law at any d inside the window, smooth through the core.
+    {
+        const float EPS = 30.0f, SMALL_K = 0.05f * EPS * EPS * EPS;
+        g_soft0 = EPS;
+        float worst = 0;
+        const float ds[4] = { 2.0f, 15.0f, 30.0f, 45.0f };
+        for (float d : ds) {
+            setBank(1, float3(0,0,0), 1.0f, SMALL_K, 1e7f, 13.8f);
+            float3 n = placePrism(d);
+            float3 c = toWorld(float3(0,0,0));
+            float er = std::log(stretchAlong(c, n, 4.0f));
+            float expect = SMALL_K / std::pow(d * d + EPS * EPS, 1.5f);
+            worst = std::max(worst, std::fabs(er - expect) / expect);
+        }
+        g_soft0 = 0.0f;
+        CHECK(worst < 3e-3f, "the smooth well's tide is not k/(d^2+eps^2)^1.5 (worst relative %.3g)", worst);
+        printf("15. smooth well: tide = k/(d^2+eps^2)^1.5 through the core (worst %.2g)\n", worst);
     }
 
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }

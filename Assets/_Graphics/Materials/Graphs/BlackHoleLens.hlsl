@@ -28,6 +28,12 @@
 // harness holds the two numbers that make it a black hole and not a lens: the capture threshold is
 // b_c = 2.598 r_s, and a ray passing far out at b is deflected by 2 r_s / b (Einstein's 4GM/c²b).
 //
+// POLARITY. A WHITE HOLE (Docs/BLACK_HOLE.md §12) is the same trace with the force NEGATED: light is
+// pushed away from it, so the lens DIVERGES — the background around it is thinned out and pushed
+// apart where the black hole's gathers it into arcs and rings — and no ray is ever captured, so there
+// is no shadow. Far out a ray at b is deflected by −2 r_s / b, the sink's bend reversed. The
+// polarity-free entry points below are the sink and stay byte-for-byte what they were.
+//
 // UNITS. Everything inside the trace is in units of the horizon radius r_s, centred on the hole.
 // The shader converts world → hole units on the way in and back to a world direction on the way
 // out, so the same trace serves a strength-1 hole and a strength-100 one.
@@ -70,13 +76,17 @@ float3 BlackHoleLensAccel(float3 x, float h2)
     return x * (-1.5 * h2 / (r2 * r2 * r));
 }
 
+// The same force with a polarity: +1 a black hole (attracts light), −1 a white hole (repels it).
+float3 BlackHoleLensAccelSigned(float3 x, float h2, float polarity)
+{
+    return BlackHoleLensAccel(x, h2) * polarity;
+}
+
 // Trace one ray backwards from the eye. x0: the eye in hole units; d: unit view direction.
 // Returns (by out): the escaping direction (unit, world-aligned) and whether it escaped (1) or
-// fell through the horizon (0) — the shadow. For a ray that fell through, outDir is the direction
-// it was travelling as it crossed the horizon: a BLACK hole paints that pixel black, a WHITE hole
-// (the same trace — the spacetime outside the horizon is the same) paints the light that comes
-// OUT along that line, the sky that fell into its paired black hole (BlackHoleLens.shader).
-void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out float3 outDir, out float escaped)
+// fell through the horizon (0) — the shadow.
+void BlackHoleLensTraceSigned(float3 x0, float3 d, float lensR, int maxSteps, float polarity,
+                              out float3 outDir, out float escaped)
 {
     outDir = d;
     escaped = 1.0;
@@ -89,17 +99,17 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
     float3 v = d;
     float3 hv = cross(x, v);
     float h2 = dot(hv, hv);
-    float3 accel = BlackHoleLensAccel(x, h2);
+    float3 accel = BlackHoleLensAccelSigned(x, h2, polarity);
 
     for (int i = 0; i < BLACK_HOLE_LENS_MAX_STEPS; i++)
     {
         if (i >= maxSteps) break;
 
         float r = length(x);
-        if (r < 1.0)
+        if (polarity > 0.0 && r < 1.0)
         {
             escaped = 0.0;                        // through the horizon: no light from here (black)
-            outDir = normalize(v);                // ...or, for a white hole, the line the light comes out along
+            outDir = normalize(v);
             return;
         }
         if (r > lensR && dot(x, v) > 0.0)
@@ -112,11 +122,60 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
         float ds = max(BLACK_HOLE_LENS_STEP_FRACTION * r, 0.005) / max(length(v), 1e-4);
         float3 vHalf = v + accel * (0.5 * ds);
         x = x + vHalf * ds;
-        float3 accelNew = BlackHoleLensAccel(x, h2);
+        float3 accelNew = BlackHoleLensAccelSigned(x, h2, polarity);
         v = vHalf + accelNew * (0.5 * ds);
         accel = accelNew;
     }
     outDir = normalize(v);
+}
+
+// The black hole — the original entry point, which the harness executes.
+void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out float3 outDir, out float escaped)
+{
+    BlackHoleLensTraceSigned(x0, d, lensR, maxSteps, 1.0, outDir, escaped);
+}
+
+// THE SMOOTH LENS — a smooth well's (Docs/CRYSTAL_WORMHOLE.md): no horizon, no ray trace, no shadow,
+// no ring. A ray from the eye (eyeRel = eye − centre, world units; d its unit direction) passing the
+// well at impact parameter b is turned TOWARD the centre by
+//     α = A · (w / max(D, w)) · u · exp(−u²/2),      u = b / w,
+// w the well's core width and D the eye's distance from it; A is SIGNED — positive an attractor
+// (the image is magnified, up to 1/(1−A) at the centre), negative a repulsor (shrunk, 1/(1+A)). In
+// screen angle θ ≈ b/D the map is θ → θ − α with dα/dθ = A·(1 − u²)·exp(−u²/2), so for |A| < 1 it is
+// MONOTONE: the image never folds — no caustic, no Einstein ring, no edge anywhere. It is gone by
+// u ≈ 4 (u·e^(−u²/2) = 0.0013), so a lens sphere of 4w has no seam either. With the eye inside the
+// core (D < w) the angle stays below A·b/w ≤ A. The returned direction is what the pixel shows.
+//
+// SEVERAL WELLS: each contributes a DEFLECTION VECTOR (α along the direction across the ray toward its
+// centre), the vectors are SUMMED, and the ray is turned by the sum. Two equal and opposite wells at
+// one point cancel exactly — the destructive interference a crystal wormhole's annihilation ends in —
+// and every lens sphere computes the same sum, so where two spheres overlap neither leaves a seam.
+float3 BlackHoleSmoothLensDeflection(float3 eyeRel, float3 d, float w, float A)
+{
+    float3 toC = -eyeRel;
+    float D = length(toC);
+    if (!(D > 1e-4) || !(w > 1e-4) || A == 0.0) return float3(0.0, 0.0, 0.0);
+    float tca = dot(toC, d);
+    float3 perp = toC - d * tca;                  // centre's offset from the ray, across it
+    float pl = length(perp);
+    if (!(pl > 1e-6)) return float3(0.0, 0.0, 0.0);   // straight at the centre: no side to turn toward
+    float b = tca > 0.0 ? pl : D;                 // a well behind the eye: its nearest point is the eye
+    float u = b / w;
+    float alpha = A * (w / max(D, w)) * u * exp(-0.5 * u * u);
+    return perp * (alpha / pl);
+}
+
+// Turn d by a summed deflection vector (perpendicular to d; its length is the angle).
+float3 BlackHoleSmoothLensApply(float3 d, float3 deflection)
+{
+    float m = length(deflection);
+    if (!(m > 1e-7)) return d;
+    return normalize(d * cos(m) + deflection * (sin(m) / m));
+}
+
+float3 BlackHoleSmoothLensDir(float3 eyeRel, float3 d, float w, float A)
+{
+    return BlackHoleSmoothLensApply(d, BlackHoleSmoothLensDeflection(eyeRel, d, w, A));
 }
 
 // Fade the bending to zero toward the lens's edge. Light passing at impact parameter b is really

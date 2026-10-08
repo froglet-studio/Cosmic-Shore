@@ -2,8 +2,9 @@
 
 > **Naming.** Player-facing, the Stoat lays **WORMHOLES**: an **attractor** (pulls) and a
 > **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's
-> types (`BlackHole`, `HolePolarity.Black` = attractor, `.White` = repulsor) because the real wormhole
-> mechanics are being built on `cece/charming-cerf-alf1j1` on those types (Docs/BLACK_HOLE.md, top).
+> types (`BlackHole`, `HolePolarity.Sink` = attractor, `.Source` = repulsor — the names `cece/charming-cerf-alf1j1`
+> chose, adopted when that branch was merged here). The real wormhole mechanics are built there on those
+> types; both pair styles now live side by side here (Docs/BLACK_HOLE.md §13, `StoatSlingConfig.pairStyle`).
 > What the Stoat flies with today is the PLACEHOLDER: the pull, the lens, the pass-through.
 
 `VesselClassType.Stoat = 14`. A two-thumb hull whose ONE ability lays an **attractor–repulsor wormhole pair**

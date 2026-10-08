@@ -100,13 +100,13 @@ namespace CosmicShore.Gameplay
         /// field should pull toward either.
         /// </summary>
         public static BlackHole Spawn(Vector3 position, float strength, Vector3 velocity = default, Vector3? spinAxis = null,
-            float horizonRadius = 0f, HolePolarity polarity = HolePolarity.Black)
+            float horizonRadius = 0f, HolePolarity polarity = HolePolarity.Sink)
         {
             Prune();
             var config = Config;
             if (!HasRoom(1, config)) return null;
 
-            string kind = polarity == HolePolarity.White ? "WhiteHole" : "BlackHole";
+            string kind = polarity == HolePolarity.Source ? "WhiteHole" : "BlackHole";
             var go = new GameObject($"[{kind} {_nextId}]");
             go.transform.position = position;
             var hole = go.AddComponent<BlackHole>();   // OnEnable registers it
@@ -168,16 +168,16 @@ namespace CosmicShore.Gameplay
             var a = axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.right;
             halfGap = Mathf.Max(0f, halfGap);
             BlackHolePairMath.Positions(midpoint, a, halfGap, out var blackPos, out var whitePos);
-            var black = Spawn(blackPos, strength, Vector3.zero, spinAxis, horizonRadius, HolePolarity.Black);
+            var black = Spawn(blackPos, strength, Vector3.zero, spinAxis, horizonRadius, HolePolarity.Sink);
             if (black == null) return null;
-            var white = Spawn(whitePos, strength, Vector3.zero, spinAxis, horizonRadius, HolePolarity.White);
+            var white = Spawn(whitePos, strength, Vector3.zero, spinAxis, horizonRadius, HolePolarity.Source);
             if (white == null)
             {
                 black.BeginDespawn();
                 return null;
             }
-            black.Partner = white;
-            white.Partner = black;
+            black.Throat = white;
+            white.Throat = black;
             black.OwnerVessel = ownerVessel;
             white.OwnerVessel = ownerVessel;
             var pair = new Pair
@@ -295,7 +295,7 @@ namespace CosmicShore.Gameplay
         /// or at the spawn position), velocity, spin — what the Black Hole tool's Spawn button,
         /// Shift+B and <c>blackhole spawn</c> with no strength do. Null when refused (see <see cref="Spawn"/>).
         /// </summary>
-        public static BlackHole SpawnFromConfig(HolePolarity polarity = HolePolarity.Black)
+        public static BlackHole SpawnFromConfig(HolePolarity polarity = HolePolarity.Sink)
         {
             var config = Config;
             var cam = BlackHoleLens.ViewCamera();
@@ -378,6 +378,7 @@ namespace CosmicShore.Gameplay
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
             BlackHoleWarp.Flush(_warpHoles, config);
+            BlackHoleLens.PublishSmoothWells(_warpHoles);
             // The lens reads the camera's opaque + depth copies; keep them on for EVERY enabled game
             // camera while any lens is live (a vessel spawn, the death or end camera switch cameras).
             BlackHoleLens.CameraSupport.Maintain();
@@ -402,10 +403,10 @@ namespace CosmicShore.Gameplay
                     {
                         var h = _holes[i];
                         if (h == null) continue;
-                        sb.Append($"{(h.IsWhite ? "W" : "B")}#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
+                        sb.Append($"{(h.IsSource ? "R" : "A")}#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
                     }
                     sb.Append($"pairs {_pairs.Count}; bodies {BlackHoleGravityField.BodyCount} (captured {BlackHoleGravityField.CapturedThisSecond}/s, " +
-                              $"total {BlackHoleGravityField.CapturedTotal}, emitted {BlackHoleGravityField.EmittedTotal}), " +
+                              $"total {BlackHoleGravityField.CapturedTotal}, through the throat {BlackHoleGravityField.ThroatTransitsTotal}), " +
                               $"stretching holes {BlackHoleWarp.LiveSlotCount}, vessels pulled {BlackHoleVesselPull.PulledVesselCount}");
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, sb.ToString());
                 }

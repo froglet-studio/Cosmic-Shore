@@ -123,8 +123,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Captures since <see cref="ResetSecondCounters"/> (the verbose report's rate).</summary>
         public static int CapturedThisSecond { get; private set; }
 
-        /// <summary>Bodies a paired black hole handed to its white hole, which emitted them (Docs/BLACK_HOLE.md §11).</summary>
-        public static int EmittedTotal { get; private set; }
+        /// <summary>Prisms carried through a dipole's throat since the last reset (session total).</summary>
+        public static int ThroatTransitsTotal { get; private set; }
 
         public static void ResetSecondCounters() => CapturedThisSecond = 0;
 
@@ -352,20 +352,26 @@ namespace CosmicShore.Gameplay
                     {
                         int by = _capturedBy[i];
                         var hole = by >= 0 && by < _wellHoles.Length ? _wellHoles[by] : null;
-                        var partner = hole != null ? hole.Partner : null;
-                        if (partner != null && partner.IsWhite && !partner.IsDespawning)
+                        // A PAIRED sink is a throat, not a singularity: nothing is consumed, so the pair
+                        // conserves the mass it moves, and the body stays a body (the job keeps
+                        // integrating it, now under the other pole). How it comes out depends on the pair:
+                        //  - a SMOOTH well's (the crystal wormhole, Docs/CRYSTAL_WORMHOLE.md §1): carried to the
+                        //    same point relative to the repulsor, velocity and all — it falls on through the
+                        //    repulsor's centre and is driven back out (a pure translation, like the mouths);
+                        //  - a HORIZON's (the drift pair, Docs/BLACK_HOLE.md §11): out of the repulsor at the
+                        //    point reflection of where it went in, just outside its horizon, with the velocity
+                        //    it went in with — outward there (BlackHolePairMath.ExitPosition).
+                        // The job left the velocity on the component; only the position changes, through the
+                        // mover's own notify (index + queued render matrix, flushed this frame).
+                        var throat = hole != null ? hole.Throat : null;
+                        if (throat != null && !throat.IsDespawning)
                         {
-                            // The tunnel (BlackHolePairMath): the body comes out of the white hole at the
-                            // point reflection of where it went in, with the velocity it went in with —
-                            // outward there — and the white hole's repulsion carries it off. It stays a
-                            // body: the job keeps integrating it, now under the white hole. The job left
-                            // its velocity on the component; only the position changes, through the
-                            // mover's own notify (index + queued render matrix, flushed this frame).
-                            var exit = BlackHolePairMath.ExitPosition(_points[i], hole.transform.position,
-                                partner.transform.position, partner.HorizonRadius, partner.transform.position - hole.transform.position);
-                            p.transform.position = exit;
+                            p.transform.position = hole.IsSmooth
+                                ? p.transform.position + (throat.transform.position - hole.transform.position)
+                                : BlackHolePairMath.ExitPosition(_points[i], hole.transform.position,
+                                    throat.transform.position, throat.HorizonRadius, throat.transform.position - hole.transform.position);
                             p.NotifyPositionChanged();
-                            EmittedTotal++;
+                            ThroatTransitsTotal++;
                             break;
                         }
                         Transform sink = hole != null ? hole.transform : p.transform;
@@ -565,7 +571,7 @@ namespace CosmicShore.Gameplay
             _nextAdmission = 0f;
             CapturedTotal = 0;
             CapturedThisSecond = 0;
-            EmittedTotal = 0;
+            ThroatTransitsTotal = 0;
             DisposeLedger();
             DisposeOutputs();
         }

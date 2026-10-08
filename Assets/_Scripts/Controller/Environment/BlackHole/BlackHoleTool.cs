@@ -149,7 +149,7 @@ namespace CosmicShore.Gameplay
                 string away = cam != null ? $" · {Vector3.Distance(cam.transform.position, h.transform.position):F0} u away" : "";
                 var pair = BlackHoleRegistry.PairOf(h);
                 string paired = pair != null ? $" · pair {pair.Lifetime - pair.Age:F1} s" : "";
-                _live[row].Bind(h, $"{(h.IsWhite ? "R" : "A")}#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}{paired}");
+                _live[row].Bind(h, $"{(h.IsSource ? "R" : "A")}#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}{paired}");
                 row++;
             }
             for (; row < LiveRows; row++) _live[row].Bind(null, row == 0 && BlackHoleRegistry.Count == 0 ? "no wormholes live" : "");
@@ -182,7 +182,7 @@ namespace CosmicShore.Gameplay
         {
             var hole = BlackHoleRegistry.SpawnFromConfig(polarity);
             _statusText = hole != null
-                ? $"spawned {(hole.IsWhite ? "white" : "black")} #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}{FromCamera(hole.transform.position)}"
+                ? $"spawned {(hole.IsSource ? "white" : "black")} #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}{FromCamera(hole.transform.position)}"
                 : $"spawn refused — {BlackHoleRegistry.Count}/{Config.MaxBlackHoles} live, or the config is not sane";
             Refresh();
         }
@@ -314,8 +314,8 @@ namespace CosmicShore.Gameplay
             _caption = Label(_panel, "", new Vector2(Pad, y), PanelWidth - 2 * Pad, 34, 12, Dim);
             y -= 38f;
 
-            Button(_panel, "Attractor", new Vector2(Pad, y), 104, SpawnBg, () => Spawn(HolePolarity.Black));
-            Button(_panel, "Repulsor", new Vector2(Pad + 110, y), 104, WhiteBg, () => Spawn(HolePolarity.White));
+            Button(_panel, "Attractor", new Vector2(Pad, y), 104, SpawnBg, () => Spawn(HolePolarity.Sink));
+            Button(_panel, "Repulsor", new Vector2(Pad + 110, y), 104, WhiteBg, () => Spawn(HolePolarity.Source));
             Button(_panel, "Despawn all", new Vector2(Pad + 220, y), 104, DangerBg, DespawnAll);
 #if UNITY_EDITOR
             Button(_panel, "Save asset", new Vector2(Pad + 330, y), 110, ButtonBg, SaveAsset);

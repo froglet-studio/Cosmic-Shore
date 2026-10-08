@@ -69,7 +69,8 @@ namespace CosmicShore.Gameplay
                     var p = h.transform.position;
                     _centre[count] = new Vector4(p.x, p.y, p.z, h.HorizonRadius);
                     // GM·τ², eased by the weight: the tidal log-stretch at distance r is this / r³.
-                    _weight[count] = new Vector4(h.GM * tau2 * w, h.WarpReach, 0f, 0f);
+                    // z: a smooth well's Plummer core (0 = a black hole's tide, floored at the horizon).
+                    _weight[count] = new Vector4(h.GM * tau2 * w, h.WarpReach, h.Softening, 0f);
                     count++;
                 }
             }

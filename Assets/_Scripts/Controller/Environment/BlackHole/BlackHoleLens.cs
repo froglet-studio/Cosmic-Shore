@@ -40,6 +40,48 @@ namespace CosmicShore.Gameplay
         static readonly int LensId = Shader.PropertyToID("_BHLens");
         static readonly int WhiteId = Shader.PropertyToID("_BHWhite");
         static readonly int CoreId = Shader.PropertyToID("_BHCore");
+        static readonly int ThroatId = Shader.PropertyToID("_BHThroat");
+        static readonly int SmoothId = Shader.PropertyToID("_BHSmooth");
+
+        /// <summary>A smooth well's lens sphere, in core widths: its bend is u·e^(−u²/2), gone by u = 4.</summary>
+        const float SmoothLensRadius = 4f;
+
+        static readonly int SmoothCentreId = Shader.PropertyToID("_SmoothWellCentre");
+        static readonly int SmoothStrengthId = Shader.PropertyToID("_SmoothWellStrength");
+        static readonly int SmoothCountId = Shader.PropertyToID("_SmoothWellCount");
+        static readonly Vector4[] s_smoothCentre = new Vector4[4];
+        static readonly Vector4[] s_smoothStrength = new Vector4[4];
+        static int s_publishedSmooth;
+
+        /// <summary>
+        /// Publish every smooth well (Docs/CRYSTAL_WORMHOLE.md) to the lens shader's global bank once a
+        /// frame: centre, core width (eased by the warp weight), and the SIGNED lens strength scaled by
+        /// the hole's amplitude. Every smooth lens sphere sums the whole bank, so overlapping lenses agree
+        /// and an attractor and a repulsor meeting cancel. Skipped entirely while there are none.
+        /// </summary>
+        internal static void PublishSmoothWells(IReadOnlyList<BlackHole> holes)
+        {
+            int count = 0;
+            for (int i = 0; i < holes.Count && count < s_smoothCentre.Length; i++)
+            {
+                var h = holes[i];
+                if (h == null || !h.IsSmooth) continue;
+                var p = h.transform.position;
+                s_smoothCentre[count] = new Vector4(p.x, p.y, p.z, h.Softening * h.WarpWeight);
+                s_smoothStrength[count] = new Vector4(h.Sign * h.LensStrength * h.Amplitude, 0f, 0f, 0f);
+                count++;
+            }
+            if (count == 0 && s_publishedSmooth == 0) return;
+            for (int i = count; i < s_smoothCentre.Length; i++)
+            {
+                s_smoothCentre[i] = Vector4.zero;
+                s_smoothStrength[i] = Vector4.zero;
+            }
+            Shader.SetGlobalVectorArray(SmoothCentreId, s_smoothCentre);
+            Shader.SetGlobalVectorArray(SmoothStrengthId, s_smoothStrength);
+            Shader.SetGlobalFloat(SmoothCountId, count);
+            s_publishedSmooth = count;
+        }
 
         /// <summary>Icosahedron subdivisions of <see cref="LensSphere"/> (2 = 320 triangles).</summary>
         const int LensSphereSubdivisions = 2;
@@ -241,16 +283,22 @@ namespace CosmicShore.Gameplay
 
             // The hole grows in on spawn and shrinks away on despawn: the effective horizon rides
             // the same eased weight as the prism warp, so the shadow never pops.
-            float rs = _hole.HorizonRadius * _hole.WarpWeight;
-            float lensR = config.LensRadiusMultiplier;
+            // A smooth well's "horizon" in the shader is its CORE WIDTH, and its lens a graded bulge.
+            bool smooth = _hole.IsSmooth;
+            float rs = (smooth ? _hole.Softening : _hole.HorizonRadius) * _hole.WarpWeight;
+            float lensR = smooth ? SmoothLensRadius : config.LensRadiusMultiplier;
             transform.localScale = Vector3.one * Mathf.Max(2f * lensR * rs, 1e-3f);
             transform.localRotation = Quaternion.identity;
 
             _renderer.GetPropertyBlock(_block);
             _block.SetFloat(HorizonId, rs);
-            _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, 1f, config.LensFadeStart));
-            // A white hole: the same lens, its horizon emitting instead of swallowing (§11).
-            _block.SetFloat(WhiteId, _hole.IsWhite ? 1f : 0f);
+            // z: the polarity — +1 a black hole, −1 a white hole (Docs/BLACK_HOLE.md §12): a source's lens diverges.
+            _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, _hole.Sign, config.LensFadeStart));
+            _block.SetFloat(ThroatId, smooth ? 0f : _hole.ThroatRadius);
+            // A flag for the smooth path; the strengths it sums come from the global bank.
+            _block.SetFloat(SmoothId, smooth ? 1f : 0f);
+            // A white hole's horizon emits (§11): a white-hot core over its disc. A smooth well has no horizon.
+            _block.SetFloat(WhiteId, _hole.IsSource && !smooth ? 1f : 0f);
             _block.SetVector(CoreId, new Vector4(config.WhiteCoreBrightness, config.WhiteCoreSkyMix, 0f, 0f));
             _renderer.SetPropertyBlock(_block);
         }

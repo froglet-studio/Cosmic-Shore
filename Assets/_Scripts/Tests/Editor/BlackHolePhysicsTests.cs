@@ -255,8 +255,10 @@ namespace CosmicShore.Tests
 
         static BlackHolePhysics.Well White(float3 position, float gm = GM, float rs = RS, float spin = 0f, float influence = 2000f)
         {
+            // A source carries its sign in GM and in its frame drag (BlackHolePhysics.Well.GM).
             var w = Well(position, gm, rs, spin, influence);
-            w.Polarity = -1f;
+            w.GM = -w.GM;
+            w.FrameDrag = -w.FrameDrag;
             return w;
         }
 
@@ -274,10 +276,6 @@ namespace CosmicShore.Tests
             var fB = BlackHolePhysics.FrameVelocity(p, black);
             var fW = BlackHolePhysics.FrameVelocity(p, white);
             Assert.AreEqual(-fB.y, fW.y, 1e-4f, "a white hole's frame turns the other way (angular momentum flips under time reversal)");
-            // An unset polarity is a black hole: every well authored before white holes existed still pulls.
-            var unset = Well(float3.zero);
-            unset.Polarity = 0f;
-            Assert.AreEqual(1f, BlackHolePhysics.PolaritySign(unset));
         }
 
         [Test]

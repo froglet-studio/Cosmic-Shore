@@ -17,9 +17,9 @@ namespace CosmicShore.Gameplay
     /// thrown from its velocity, and a sling ends the hold-still stance so the pull can launch it.
     ///
     /// <para><b>Naming.</b> Player-facing these are WORMHOLES (attractor / repulsor). In code they
-    /// are still the black-hole system's types (<c>BlackHole</c> with <c>HolePolarity.Black</c> /
-    /// <c>White</c>) — the real wormhole mechanics are being built on <c>cece/charming-cerf-alf1j1</c>
-    /// on those same types, so a rename here would only collide with it.</para>
+    /// are still the black-hole system's types (<c>BlackHole</c> with <c>HolePolarity.Sink</c> /
+    /// <c>Source</c>, the names <c>cece/charming-cerf-alf1j1</c> chose) — the real wormhole mechanics are
+    /// built there on those same types, so a rename here would only collide with it.</para>
     ///
     /// <para><b>Why the hold is tracked per frame, not read at release.</b> The release edge is
     /// raised when the trigger crosses back below the deadzone, so it reads ~0 by the time
