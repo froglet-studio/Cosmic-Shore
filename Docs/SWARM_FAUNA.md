@@ -1392,7 +1392,7 @@ SwarmFauna (anchor, main thread)                               worker thread (Th
   prefab and each element's crystal models off `ElementalCrystalSetSO`. `DrawMembersOnGpu` off (or a device
   without vertex-stage structured buffers) = every member gets a GameObject as in round 6, warned once.
 - **Proxies.** A member within `EngageRadius` (160) of a vessel becomes a real `SwarmTadpoleFauna` - heart,
-  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (160) per swarm, created
+  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (155; 160 until 2026-10-08, §14.3) per swarm, created
   under the cell-wide `MaxSpawnsPerFrame` (24) and kept `ProxyLingerSeconds` (2) after it leaves range. Its
   living visuals are hidden (`Prism.SetOwnerHidden`: the render entity exists but is not drawn; crystal and
   spindle renderers off) because the GPU draw already shows it; `OnDeath` un-hides them first, so the
@@ -1439,6 +1439,12 @@ seeded floor (59,021 volume) already sits above RestlessEnter, so the food web i
 
 Worst case 978, asserted under `COLLIDER_CEILING` 1,200 by the author script. 2,295 starting tadpoles
 (up to ~2,880 if all three became whales) carry **zero** colliders.
+
+**2026-10-08 trim: `MaxProxies` 160 → 155.** Two merges that each passed the gate alone (the physarum
+sclerotium cap 5 → 8, +3 grove hearts; the NCA creatures, +4) put the cell at 1,178 + 23 = **1,201 / 1,200**
+together. Five fewer proxies per swarm frees 30 colliders: **1,148 + 23 = 1,171 / 1,200**. Only the five
+farthest of each swarm's nearest members lose their collider; members past the proxy set were already
+GPU-only. The ladder counts proxies as prisms, so `FrenzyEnter` moved 17,300 → 17,200.
 
 ### 14.4 Invariants - what holds, and what each costs
 
@@ -1905,6 +1911,11 @@ locked economy rule decides the cost (`Docs/ELEMENTAL_ECONOMY.md` §4): an **opp
 | Mass | **lurker** | while half-startled: `LurkCalm < startle < DangerEnter` | rush it so it bolts (safe), never creep up on it |
 | Space | **locust** | a quarter of the cloud at a time, the quarter moving every `LocustPhaseSeconds` | read the shimmer and thread the safe gaps |
 | Time | **pack hunter** | startle above `HuntEnter` (0.2, earlier than the pufferfish), until below `DangerExit` | keep your distance; they turn on you early |
+
+**Fair burns (2026-10-08).** The pufferfish and the pack hunter now WIND UP: the plate goes up only after the
+startle has shown above its threshold for `PuffWindupSeconds` / `HuntWindupSeconds` (0.4 s each, the lab's
+bestiary `WINDUP`), so a strike never lands on the frame it is telegraphed (`SwarmTickJob.WindUp`;
+Docs/ELEMENTAL_ECONOMY.md §4.1 "Fair burns").
 
 `SwarmFaunaConfigSO.Bestiary` (default **on**, so every existing swarm config gets it without an asset edit) turns
 it off. The rule is `SwarmTickJob.BestiaryStrike`: pure per-member arithmetic on data the tick already had, no new

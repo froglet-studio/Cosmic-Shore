@@ -424,7 +424,7 @@ Flora is never LOD'd. A grove's mass is the world's, and its bodies are prisms.
   - The `ThreatFloraMath.FarTimeScale` rule.
   - A near/far/near schedule over 60 s: network time 22.50 s vs 22.50 expected.
   - Ledger 0 every frame.
-  - 178 tubes vs 183 at full rate, under the cap.
+  - 164 tubes vs 170 at full rate (after the budding hold-back, Docs/THREAT_FLORA.md §3.2), under the cap.
   - Far frames cost 25% of full rate.
 
 ### 6.4 The swarm's starvation stays on the round-9 clock (decision)

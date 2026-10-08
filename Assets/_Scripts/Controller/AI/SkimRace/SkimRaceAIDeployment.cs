@@ -50,15 +50,19 @@ namespace CosmicShore.Gameplay
             var config = PolicyFor(intensity);
             // The host's lobby pick, independent of intensity (intensity is the map, difficulty is
             // the opponent): the same per-intensity policy, plus the difficulty's deliberate mistakes
-            // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it,
-            // racing this mode's objective (Skim Race's crystals, Regatta's rings).
+            // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it.
+            // Only where the card OFFERS the picker (AIDifficultyRules.IsOfferedFor - Skim Race): the
+            // pick is pre-launch config that outlives the card it was made on, so without this a host
+            // who chose Easy on Skim Race would hand Regatta's AI mistakes its lobby never showed.
             var difficulty = AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty);
-            var handicap = SkimRaceDifficultySO.Load().For(difficulty);
-            pilot.Bind(vessel, gameData, config, handicap, SkimRaceObjective.For(gameData));
+            var handicap = AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+                ? SkimRaceDifficultySO.Load().For(difficulty)
+                : default;
+            pilot.Bind(vessel, gameData, config, SkimRaceObjective.For(gameData), handicap);
             CSDebug.LogVerbose(CSLogChannel.AITraining,
                 $"[SkimRaceAI] {vessel.VesselStatus.PlayerName} flies the Skim Race pilot " +
-                $"({config.PolicyVersion}, I{intensity}, {pilot.Objective?.GetType().Name}, {difficulty}" +
-                (handicap.IsNone ? ")." : $": reaction {handicap.ReactionSeconds:0.##} s, mistake chance {handicap.MistakeChance:0.##})."));
+                $"({config.PolicyVersion}, I{intensity}, {pilot.Objective?.GetType().Name}, " +
+                (handicap.IsNone ? "no handicap)." : $"{difficulty}: reaction {handicap.ReactionSeconds:0.##} s, mistake chance {handicap.MistakeChance:0.##})."));
             return pilot;
         }
 

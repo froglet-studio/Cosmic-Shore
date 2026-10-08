@@ -291,18 +291,22 @@ namespace CosmicShore.Gameplay.Audio
             }
             if (!_classGatePass) return;
 
-            // Local-user gating: skip remote/AI vessels in default mode. We
-            // can't decide until Player is set, so retry each frame until
-            // either we know it's remote (and skip forever) or we know it's
-            // local and proceed.
+            // Local-user gating: skip remote/AI vessels in default mode. Re-checked every frame
+            // rather than settled once by disabling the component: a LIVE hull can change pilot
+            // (Cellular Duel's round swap, the arena PilotSwap), and a hull that read as remote
+            // once used to lose drift audio and drift haptics for the rest of the session.
             if (onlyAudibleToController && !forceAttachToListener)
             {
                 if (_status.Player == null) return;
                 if (!_status.IsLocalUser)
                 {
-                    enabled = false;
-                    if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
-                        CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' is remote/AI; disabling.", this);
+                    // The local pilot just left this hull mid-drift: let its sound go.
+                    if (_phase != DriftPhase.Idle)
+                    {
+                        StopAndRelease(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+                        _phase = DriftPhase.Idle;
+                    }
+                    _hapticWasDrifting = false;
                     return;
                 }
             }
@@ -382,11 +386,20 @@ namespace CosmicShore.Gameplay.Audio
             HapticController.PlayDrift(Mathf.Lerp(driftHapticFloor01, 1f, ComputeTargetAmount()));
         }
 
+        bool _warnedEmptyDriftEvent;
+
         void BeginActive()
         {
             if (driftEvent.IsNull)
             {
-                CSDebug.LogError($"[DriftAudioController] '{name}' has no Drift Event assigned.", this);
+                // An empty slot is the FMOD convention for an unauthored sound, not a fault, and
+                // the phase stays Idle - so Update calls this again EVERY frame of the drift. Say
+                // it once per component, as a warning (the engine slot's convention).
+                if (!_warnedEmptyDriftEvent)
+                {
+                    _warnedEmptyDriftEvent = true;
+                    CSDebug.LogWarning($"[DriftAudioController] '{name}' has no Drift Event assigned; drift is silent until one is authored.", this);
+                }
                 return;
             }
 

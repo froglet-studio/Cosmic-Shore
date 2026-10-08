@@ -31,6 +31,7 @@ namespace CosmicShore.UI
                      "on cards whose AI reads it (AIDifficultyRules.IsOfferedFor); every other " +
                      "card carries the default and nothing reads it.")]
             public AIDifficulty AIDifficulty = AIDifficultyRules.Default;
+
             [System.NonSerialized]
             [Tooltip("The hull a teammate picked for each placed AI, parallel to AIDomains " +
                      "(entry i is bot i). Random = no pick: the spawner draws from the card. " +

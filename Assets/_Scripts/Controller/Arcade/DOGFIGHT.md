@@ -938,13 +938,28 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
   comeback rate is untouched and still correct — it is a function of the TARGET
   (`bonusLevels = deficit × rate`) and the target did not move — but the *shape* of a match
   almost certainly did. Time a full match and note the bullet/rocket split (step 20).
-- **Hits are not replicated as FEELING, only as score.** The victim's spin / debuff runs on the
-  shooter's machine (projectiles are local), so a pilot being shot does not see themselves get
-  knocked about the way the shooter does. That is pre-existing behaviour for every Sparrow
-  weapon, not something this branch introduced, but a dogfight is the first mode where it
-  matters — a `ClientRpc` broadcast of the confirmed hit (the joust's
-  `NetworkVesselImpactor.ExecuteJoust_ClientRpc` shape) is the clean fix and is deliberately out
-  of scope here.
+- **A hit's petals are settled on the victim's owner, as the shooter's owner saw the hit (Oct
+  2026).** The spin and the skimmer shrink this bullet used to describe were removed in September
+  (`Docs/ELEMENTAL_ECONOMY.md §9`), so the petal drain is the only thing a hit does to its victim.
+  Before this fix the drain was settled per peer, against each machine's own copy of the victim,
+  and only the owner's copy counts (`NetElementLevels` is owner-write). That made two bugs:
+  - **A client shot by an AI kept every petal.** An AI's guns fire on the server only
+    (`AIPilot` starts its abilities locally), so the rounds never exist on the client. The host
+    scored the hit, and the drain landed on the host's proxy, where nobody reads it.
+  - **A human shot by a human lost petals only when their OWN replay of the shot connected.** A
+    press is replicated, so every peer flies the round, but each peer flies it from its own lagged
+    picture of the shooter. The scoreboard (shooter-authoritative, see "Multiplayer" above) and
+    the victim's flowers could disagree about the same shot.
+
+  Now `CombatHitDrain.Apply` goes through `ElementalTransfer.ApplyAllAuthoritative`. Only the
+  machine that owns the SHOOTER settles: the shooter's own client, or the server for an AI. That
+  is the machine whose hit is scored. Every other peer's replay moves nothing.
+  `NetworkVesselImpactor` relays the take to the victim's owner, using the joust's ServerRpc ->
+  ClientRpc shape narrowed to the owner with `ClientRpcParams`. The owner settles it through
+  `AccrueElementalLoss` (ward, clamp, whole petals), mints the crystals and publishes the settled
+  count, and every other peer mints the same number. The levels then reach the other peers on
+  `NetElementLevels`, as any level change does. **Needs an MPPM pass** (see the PR's
+  host + client list).
 - **Toast copy is authored** in `GameToastConfig_DogFight.asset` (`{0}`=domain, `{1}`=points,
   `{2}`=target) for `DogFightQuarterDown`, `DogFightHalfDown`, `DogFightLeadChanged`,
   `RocketHit` and the comeback notice. Edit the copy there.

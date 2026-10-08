@@ -10,7 +10,7 @@ namespace CosmicShore.ScriptableObjects
     /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Maelstrom
     /// (how many placement points a domain needs to win the whole shuffle - "race to N").
     ///
-    /// Authored ONLY through <c>Tools &gt; Cosmic Shore &gt; End Game Conditions</c>
+    /// Authored ONLY through <c>FrogletTools &gt; Game Modes &gt; End Game Conditions</c>
     /// (the <c>EndConditionOverridesWindow</c> editor tool) - there are intentionally no
     /// per-scene inspector override fields anymore. The turn monitors / <c>MaelstromDataSO</c>
     /// load this asset from <c>Resources/EndConditionOverrides</c> at runtime.
@@ -151,15 +151,19 @@ namespace CosmicShore.ScriptableObjects
         /// stations already laid.</summary>
         public const int DefaultBreakwaterLaps = 2;
 
-        /// <summary>Skein course length used when <see cref="skeinRingTarget"/> is 0. Read by
-        /// BOTH SkeinRingTurnMonitor (the target) and SkeinController (how many rings to lay), so
-        /// the course and the number counting it cannot drift.</summary>
+        /// <summary>Skein course length used when <see cref="skeinRingTarget"/> is 0. Read
+        /// through <c>SkeinController.AuthoredGateTarget</c> by <c>RaceGateTurnMonitor</c> (the
+        /// target), by <c>SkeinController</c> (how many rings to lay) and by
+        /// <c>SpawnableSkein</c> (the ring count its cable is built and re-rolled for), so the
+        /// course, the arena and the number counting it cannot drift. Must equal
+        /// <c>SkeinCourseSettings.ForIntensity</c>'s GateCount and skein_budget.py's GATE_COUNT,
+        /// the count the ring spacing is proven at.</summary>
         public const int DefaultSkeinRingTarget = 24;
 
         /// <summary>Headlong RACE length used when <see cref="headlongGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
-        /// Read by <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c>
-        /// to size the circuit, so the two cannot drift.</summary>
+        /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
+        /// <c>HeadlongController</c> to size the circuit, so the two cannot drift.</summary>
         public const int DefaultHeadlongGateTarget = 24;
 
         /// <summary>Redline RACE length used when <see cref="redlineGateTarget"/> is 0 - gate
@@ -167,6 +171,13 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
         /// <c>RedlineController</c> to size the circuit, so the two cannot drift.</summary>
         public const int DefaultRedlineGateTarget = 24;
+
+        /// <summary>Grizzly Time RACE length used when <see cref="grizzlyTimeGateTarget"/> is 0 -
+        /// gate threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate
+        /// circuit (28 = two laps of fourteen until the bomb launch was tripled, 2026-10-08).
+        /// Read by <c>GrizzlyTimeController</c> both to size the circuit and (through
+        /// it) by the turn monitor for the finish line, so the two cannot drift.</summary>
+        public const int DefaultGrizzlyTimeGateTarget = 24;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -292,6 +303,11 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int redlineGateTarget = 24;
 
+        [Tooltip("Grizzly Time: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
+        [Min(0)] public int grizzlyTimeGateTarget = 24;
+
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
                  "must be a multiple of eight; the controller races laps = target / 8. 24 = " +
@@ -361,6 +377,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int redlineGateTargetBuild = 24;
+        [Min(0)] public int grizzlyTimeGateTargetBuild = 24;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
@@ -529,8 +546,10 @@ namespace CosmicShore.ScriptableObjects
         public int GetWaystationRingTarget() =>
             waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget;
 
-        /// <summary>Skein course length ("thread all N rings"). Read twice on purpose - by
-        /// SkeinRingTurnMonitor for the target and by SkeinController for how many to lay.</summary>
+        /// <summary>Skein course length ("thread all N rings"). Read on purpose by every party
+        /// that needs it - <c>RaceGateTurnMonitor</c> for the target (through the controller),
+        /// <c>SkeinController</c> for how many to lay, <c>SpawnableSkein</c> for the ring count
+        /// its cable is built for.</summary>
         public int GetSkeinRingTarget() =>
             skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget;
 
@@ -558,10 +577,12 @@ namespace CosmicShore.ScriptableObjects
         public int GetBreakwaterCrossingTarget() =>
             BreakwaterCourseSettings.CrossingTarget(GetBreakwaterStationTarget(), GetBreakwaterLaps());
 
+        /// <summary>
         /// Headlong race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultHeadlongGateTarget"/>. Read twice on purpose - by
-        /// <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c> to size
-        /// the circuit - so the finish line and the course cannot drift apart.
+        /// <c>RaceGateTurnMonitor</c> (through <c>HeadlongController.AuthoredGateTarget</c>) for
+        /// the target and by <c>HeadlongController</c> to size the circuit - so the finish line
+        /// and the course cannot drift apart.
         /// </summary>
         public int GetHeadlongGateTarget() =>
             headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget;
@@ -574,6 +595,14 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetRedlineGateTarget() =>
             redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget;
+
+        /// <summary>
+        /// Grizzly Time race length ("thread N gates", i.e. laps x rings): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultGrizzlyTimeGateTarget"/>. Read by
+        /// <c>GrizzlyTimeController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetGrizzlyTimeGateTarget() =>
+            grizzlyTimeGateTarget > 0 ? grizzlyTimeGateTarget : DefaultGrizzlyTimeGateTarget;
 
         /// <summary>
         /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
@@ -695,6 +724,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Redline                   => redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget,
+                GameModes.GrizzlyTime               => GetGrizzlyTimeGateTarget(),
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -750,6 +780,7 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTarget == skeinRingTargetBuild &&
             headlongGateTarget == headlongGateTargetBuild &&
             redlineGateTarget == redlineGateTargetBuild &&
+            grizzlyTimeGateTarget == grizzlyTimeGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -784,6 +815,7 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTarget = skeinRingTargetBuild;
             headlongGateTarget = headlongGateTargetBuild;
             redlineGateTarget = redlineGateTargetBuild;
+            grizzlyTimeGateTarget = grizzlyTimeGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -819,6 +851,7 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTargetBuild = skeinRingTarget;
             headlongGateTargetBuild = headlongGateTarget;
             redlineGateTargetBuild = redlineGateTarget;
+            grizzlyTimeGateTargetBuild = grizzlyTimeGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;

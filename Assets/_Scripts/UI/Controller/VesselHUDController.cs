@@ -85,9 +85,12 @@ namespace CosmicShore.UI
             // The switcher is what knows which device the player is holding. It is ENSURED rather
             // than required: three HUDs never had one, which is exactly why their authored glyphs
             // were never lit, never device-matched and never placed.
+            // Explicit Unity-null tests, not `??`: a missing component can come back as a
+            // fake-null object in the Editor, which `??` keeps.
             if (!_iconSetSwitcher)
-                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true)
-                                ?? gameObject.AddComponent<InputDeviceIconSetSwitcher>();
+                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
+            if (!_iconSetSwitcher)
+                _iconSetSwitcher = gameObject.AddComponent<InputDeviceIconSetSwitcher>();
 
             _iconSetSwitcher.OnSetChanged -= HandleControlDeviceChanged;
             _iconSetSwitcher.OnSetChanged += HandleControlDeviceChanged;

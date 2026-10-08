@@ -333,13 +333,24 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}
 """)
 
-# ── 6. Toasts: two idle hints and the comeback line ─────────────────────────
+# ── 6. Toasts: two idle hints, the comeback line, and the shared race beats ──
+# The race beats (DomainRaceHalf / LeadChanged / HomeStretch / FinalLap = 129-132) are posted by
+# GateRaceController's DomainRaceToasts for every gate race, Regatta included; a beat this config
+# does not author shows nothing. Worded in the gate-race family's voice (Headlong, Redline,
+# Breakwater): {0} = leading domain, {1} = its score, {2} = the target. No Quarter (128) - no
+# gate race authors it; the halfway beat is the first one worth a toast on a course.
+# Regatta's {1} is the TEAM SUM (RegattaScoringRuleSO.DomainValue) and {2} one pilot's course,
+# so the numbers say "gates", not "gate N" - a team's tally is not a position on the course.
 g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Regatta.asset", G_ASSET["GameToastConfigRegatta"],
              lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_Regatta") +
              f"  gameMode: {MODE_ID}\n  toasts:\n" +
              lib.toast(110, "The rail in your colour is the racing line - and it cannot be shot away", idle=1, idle_seconds=25) +
              lib.toast(111, "Urchins: latch on and ride. Squirrels: skim it for boost. Everyone else: fly beside it", idle=1, idle_seconds=50) +
-             lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
+             lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9) +
+             lib.toast(129, "{0} is halfway home - {1}/{2} gates", tint_domain=1, domain_names=0) +
+             lib.toast(130, "{0} takes the lead - {1}/{2} gates", tint_domain=1, domain_names=0) +
+             lib.toast(131, "{0} is on the home stretch - {1}/{2} gates", tint_domain=1, domain_names=0) +
+             lib.toast(132, "{0} is on the final lap", tint_domain=1, domain_names=0))
 g.register_toast_config(G_ASSET["GameToastConfigRegatta"])
 
 # ── 7. Mode preview ──────────────────────────────────────────────────────────

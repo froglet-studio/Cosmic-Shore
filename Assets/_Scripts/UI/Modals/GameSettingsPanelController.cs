@@ -554,7 +554,7 @@ namespace CosmicShore.UI
             resolutionDropdown.ClearOptions();
             var labels = new List<string> { "Native" };
             for (int i = 1; i < _resolutions.Count; i++)
-                labels.Add($"{_resolutions[i].width} × {_resolutions[i].height}");
+                labels.Add($"{_resolutions[i].width} x {_resolutions[i].height}");
             resolutionDropdown.AddOptions(labels);
             resolutionDropdown.onValueChanged.RemoveListener(SetResolutionIndex);
             resolutionDropdown.onValueChanged.AddListener(SetResolutionIndex);

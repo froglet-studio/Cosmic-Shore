@@ -1,7 +1,9 @@
 // CrystalMorph.hlsl — a crystal's body carried onto another shape, on the clock.
 //
-// The GPU half of the Squirrel's omni-crystal morph
-// (_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md). The CPU bakes a
+// The GPU half of every vessel's bespoke omni-crystal retirement — the Squirrel's crystal
+// becoming its eight shielded ring prisms (SQUIRREL_CRYSTAL_MORPH.md) and the Scarab's crystal
+// closing onto the ball it forged (SCARAB_CRYSTAL_MORPH.md), both under
+// _Scripts/Controller/Vessel/R_VesselActions/. The CPU bakes a
 // per-vertex TARGET into TEXCOORD2 and stamps three numbers once; the vertex stage runs
 // the whole animation from there, so it costs nothing per frame and nothing per vertex on
 // the CPU — the same contract Docs/PRISM_ANIMATION.md §4 puts on every prism visual.
@@ -40,17 +42,32 @@
 // shape they were absorbed into is finished. Stagger 0 collapses that to one synchronised
 // move.
 //
-// Duration <= 0 means UNSTAMPED and returns Position untouched. Every crystal material in
-// the project carries this node with (0, 0, 0) and is therefore bit-identical to before it
-// existed; only an object the morph has stamped moves.
+// Duration <= 0 means UNSTAMPED and returns Position untouched. Two shaders carry it —
+// ShepardGraph (as Custom Function nodes) and OmniCrystalFresnelShader, the omni body (by
+// #include) — and every material on either ships with (0, 0, 0), so it is bit-identical to
+// before it existed; only an object a vessel's retirement has stamped moves.
 // -----------------------------------------------------------------------------
-void CrystalMorph_float(float3 Position, float4 Target, float Clock, float3 Morph,
-    out float3 Out)
+// -----------------------------------------------------------------------------
+// The eased progress [0,1] of ONE vertex through the morph — the single schedule every
+// other function here runs on, so position, normal and colour can never drift apart.
+//
+//   Target    .w = this vertex's face PHASE [0,1] (the xyz are not read)
+//   Clock     _PrismClock
+//   Morph     x = stamped start time, y = duration (seconds), z = stagger [0,1)
+//
+// Duration <= 0 means UNSTAMPED and returns exactly 0. A shader that blends anything by this
+// weight is therefore bit-identical to its unmorphed self on every crystal nobody stamped.
+//
+// Exposed in its own right (not only as a helper) because a shader that carries the morph
+// may also have to carry the SHADING across: the omni body's colour formula is not the
+// target's, and OmniCrystalFresnelShader lerps from one to the other on this weight.
+// -----------------------------------------------------------------------------
+void CrystalMorphEase_float(float4 Target, float Clock, float3 Morph, out float Out)
 {
     float duration = Morph.y;
     if (duration <= 0.0)
     {
-        Out = Position;
+        Out = 0.0;
         return;
     }
 
@@ -62,7 +79,20 @@ void CrystalMorph_float(float3 Position, float4 Target, float Clock, float3 Morp
     float span = max(1e-4, 1.0 - stagger);
     float e = saturate((t - saturate(Target.w) * stagger) / span);
 
-    e = e * e * (3.0 - 2.0 * e);   // smoothstep: zero end tangents, so it settles rather than arrives
+    Out = e * e * (3.0 - 2.0 * e);   // smoothstep: zero end tangents, so it settles rather than arrives
+}
+
+void CrystalMorph_float(float3 Position, float4 Target, float Clock, float3 Morph,
+    out float3 Out)
+{
+    if (Morph.y <= 0.0)
+    {
+        Out = Position;
+        return;
+    }
+
+    float e;
+    CrystalMorphEase_float(Target, Clock, Morph, e);
     Out = lerp(Position, Target.xyz, e);
 }
 
@@ -93,20 +123,14 @@ void CrystalMorph_float(float3 Position, float4 Target, float Clock, float3 Morp
 void CrystalMorphNormal_float(float3 Normal, float4 Target, float Clock, float3 Morph,
     out float3 Out)
 {
-    float duration = Morph.y;
-    if (duration <= 0.0)
+    if (Morph.y <= 0.0)
     {
         Out = Normal;
         return;
     }
 
-    float t = saturate((Clock - Morph.x) / duration);
-
-    float stagger = saturate(Morph.z);
-    float span = max(1e-4, 1.0 - stagger);
-    float e = saturate((t - saturate(Target.w) * stagger) / span);
-
-    e = e * e * (3.0 - 2.0 * e);
+    float e;
+    CrystalMorphEase_float(Target, Clock, Morph, e);
     float3 n = lerp(Normal, Target.xyz, e);
     float len = length(n);
     Out = len > 1e-5 ? n / len : Target.xyz;

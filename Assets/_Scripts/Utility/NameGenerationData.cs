@@ -17,7 +17,8 @@ namespace CosmicShore.Utility
 
         public string GenerateName()
         {
-            // Length is exclusive upper bound; Length-1 skipped the last word forever.
+            // Random.Range(int, int) excludes its max, so the bound is Length, not Length - 1
+            // (which never picked the last word of either list).
             var firstWord = FirstWordList[Random.Range(0, FirstWordList.Length)];
             var secondWord = SecondWordList[Random.Range(0, SecondWordList.Length)];
 

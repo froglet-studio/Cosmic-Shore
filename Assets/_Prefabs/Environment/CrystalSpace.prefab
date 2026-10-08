@@ -54,10 +54,12 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
+  - {fileID: 2100000, guid: 8e9bcad022cf0e543937d40129bc918e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -75,9 +77,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 1
@@ -119,6 +123,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cycleSpeed: 1
+  pauseAfterSpin: 0.1
   timer: 0
   collectDuration: 0.35
   shrinkDuration: 0.25
@@ -239,12 +244,13 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 4392772427238215531}
-    defaultMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: 3fbc5051c8a40814186ae69a0cba15ff, type: 2}
     explodingMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb, type: 2}
-    inactiveMaterial: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: 8e9bcad022cf0e543937d40129bc918e, type: 2}
     spaceCrystalAnimator: {fileID: 1117890586458808163}
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 0
+  colorTransitionSeconds: 0.8
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!82 &6588436222817790494
 AudioSource:

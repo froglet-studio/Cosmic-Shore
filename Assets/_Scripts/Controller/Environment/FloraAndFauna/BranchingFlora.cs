@@ -147,8 +147,8 @@ namespace CosmicShore.Gameplay
         }
         void SeedBranches()
         {
-            // Roll once. Random.Range in the for-condition re-rolls every iteration, so the
-            // loop length drifts (and can run forever when a late roll stays above i).
+            // Rolled ONCE. Re-rolling in the loop condition re-drew the bound every iteration,
+            // so the trunk count skewed hard toward minTrunks and maxTrunks was almost never hit.
             int trunkCount = Random.Range(minTrunks, maxTrunks + 1);
             for (int i = 0; i < trunkCount; i++)
             {

@@ -423,12 +423,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// True only while a turn is running. The owner-reported stat RPCs ignore anything that
-        /// arrives outside a turn: a client keeps detecting for the round trip it takes the turn
-        /// end to reach it, and a late or forged report must not change a result the server has
-        /// already frozen (see <see cref="ReportSwitchThreaded_ServerRpc"/>).
+        /// Shared gate for every owner-detects / server-records report RPC below: there must be
+        /// a RoundStats to credit, and the turn must still be running. A client keeps detecting
+        /// for the round trip it takes the turn-end RPC to reach it, so without the turn gate a
+        /// hit, kill or steal landed after the server froze the result is credited into the live
+        /// RoundStats - which then replicates over the frozen scoreboard. The same gate keeps the
+        /// pre-countdown window (arena build, countdown) from scoring through a client.
         /// </summary>
-        bool TurnAcceptsStatReports => gameData != null && gameData.IsTurnRunning;
+        bool CanCreditReport() =>
+            RoundStats != null && gameData != null && gameData.IsTurnRunning;
+
+        /// <summary>
+        /// A volume off the wire is credited only when it is a real, finite, non-negative number.
+        /// <c>volume &lt; 0f</c> alone lets NaN through (every comparison with NaN is false), and a
+        /// single NaN poisons the running volume total, the domain score and every ratio built on
+        /// it for the rest of the match.
+        /// </summary>
+        static bool IsCreditableVolume(float volume) =>
+            volume >= 0f && !float.IsInfinity(volume);
 
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
@@ -436,8 +448,7 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (!TurnAcceptsStatReports) return;
+            if (!CanCreditReport()) return;
             RoundStats.LifeformsKilled++;
         }
 
@@ -466,8 +477,7 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (!TurnAcceptsStatReports) return;
+            if (!CanCreditReport()) return;
 
             // Validate against the DECLARED set rather than testing for one member and
             // collapsing everything else onto Bullet. That earlier shape was a latent
@@ -507,8 +517,7 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (!TurnAcceptsStatReports) return;
+            if (!CanCreditReport()) return;
             RoundStats.FusesBeaten += Mathf.Clamp(count, 0, 32);
         }
 
@@ -541,9 +550,8 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (!(volume >= 0f)) return; // also rejects NaN, which `volume < 0f` lets through
-            if (!TurnAcceptsStatReports) return;
+            if (!CanCreditReport()) return;
+            if (!IsCreditableVolume(volume)) return;
 
             var resolved = System.Enum.IsDefined(typeof(Domains), prismDomain)
                 ? (Domains)prismDomain
@@ -586,9 +594,8 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
+            if (!CanCreditReport()) return;
             if (gateIndex < 0) return;
-            if (gameData == null || !gameData.IsTurnRunning) return;
 
             SwitchThreadScoring.Credit(RoundStats, gateIndex);
         }
@@ -605,24 +612,31 @@ namespace CosmicShore.Gameplay
         /// and <c>_allowRecord</c> is false on clients, so a client's steals scored exactly
         /// nothing.
         ///
-        /// IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the Player
-        /// object the RPC arrived on. **Only the stealer's half travels.** The victim's
-        /// PrismsRemaining/VolumeRemaining cannot be debited here without trusting a
-        /// client-supplied name, so on a client-side steal the victim's remaining-mass tally
-        /// drifts. That is a deliberate trade (an untrusted name is worse than a soft tally)
-        /// and is recorded in Docs/ScoringSystem/BUGS.md.
+        /// THE THIEF'S IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the
+        /// Player object the RPC arrived on, never a name. **The victim's identity is a
+        /// client-supplied name** (<paramref name="victimName"/>), and the server debits that
+        /// player's PrismsRemaining/VolumeRemaining with it. That is a deliberate trade, recorded
+        /// in Docs/ScoringSystem/BUGS.md B19: without the name a client-side steal never debited
+        /// the victim (the server's own detection returns at StatsManager's OwnsAttacker gate
+        /// before the debit), and those tallies feed cell control and volume scoring. A forged
+        /// name can only lower the remaining-mass tally of a player who is actually on the
+        /// roster, and only by the volume the credit half already takes on trust.
         /// </summary>
         [ServerRpc]
-        public void ReportPrismStolen_ServerRpc(float volume)
+        public void ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)
         {
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (RoundStats == null) return;
-            if (!(volume >= 0f)) return; // also rejects NaN, which `volume < 0f` lets through
-            if (!TurnAcceptsStatReports) return;
+            if (!CanCreditReport()) return;
+            if (!IsCreditableVolume(volume)) return;
 
             StatsManager.CreditPrismSteal(RoundStats, volume);
+
+            var victim = victimName.ToString();
+            if (string.IsNullOrEmpty(victim) || gameData == null) return;
+            if (gameData.TryGetRoundStats(victim, out IRoundStats victimStats))
+                StatsManager.DebitPrismSteal(victimStats, volume);
         }
 
         /// <summary>

@@ -203,8 +203,8 @@ vessel left and drains from its tail at the rate it would have aged out, and the
 starts again where the vessel arrived. Every trail rather than only the markers, because a cut
 copies what the renderer shows at that instant and hands the renderer back untouched, so it fights
 nobody's colour work — and a streak across the arena is a defect on every ribbon. Through a
-Butterfly fold gate the cut points are the two mouths, so a tail reads as passing through the
-portal (`R_VesselActions/BUTTERFLY_FOLD.md` § "Seamless transit").
+wormhole (the pair every Butterfly fold leaves) the cut points are the two mouths' spheres, so a
+tail reads as passing through (`Docs/WORMHOLES.md` §3).
 
 ## 4. Placement: the rules, and every vessel's numbers
 
