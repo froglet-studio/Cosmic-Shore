@@ -220,7 +220,7 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
         L = float(loss.detach())
         recent = [v for v in log[-50:] if math.isfinite(v)]
         med = float(np.median(recent)) if len(recent) >= 10 else float("inf")
-        extinct = not bool((x.detach()[..., 3] > 0.1).flatten(1).any(1).all())
+        extinct = not bool((x.detach()[..., 3] > 0.1).any())   # the whole batch died (one cut-out sample is reseeded below)
         if not math.isfinite(L) or L > cfg.blowup_factor * med or extinct:
             rollbacks += 1
             if good is not None:
