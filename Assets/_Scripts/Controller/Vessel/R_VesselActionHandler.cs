@@ -109,6 +109,8 @@ namespace CosmicShore.Gameplay
         /// records when an event LAST started and is never cleared, so it cannot tell a held
         /// ability from one released a minute ago.</summary>
         readonly HashSet<InputEvents> _heldInputs = new();
+        // The list each held input's press resolved, so its release stops exactly that list.
+        readonly Dictionary<InputEvents, List<ShipActionSO>> _startedActions = new();
         readonly List<InputEvents> _heldScratch = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
         readonly HashSet<InputEvents> _suppressedInputs = new();
@@ -310,6 +312,7 @@ namespace CosmicShore.Gameplay
             _inputAbilityStartTimes[controlType] = Time.time;
             _heldInputs.Add(controlType);
             var actions = ResolveActions(controlType);
+            _startedActions[controlType] = actions;
             ReportRan(controlType, actions.Count);
 
             foreach (var t in actions)
@@ -332,7 +335,14 @@ namespace CosmicShore.Gameplay
             });
 
             _heldInputs.Remove(controlType);
-            var actions = ResolveActions(controlType);
+
+            // Stop what the PRESS started. ResolveActions picks overrides by the LIVE input
+            // device, so a press on touch and a release after the pilot moved to the pad (or a
+            // release that arrives one RPC round trip later) stopped the gamepad's override SOs
+            // and never the touch ones - the started ability stayed held.
+            var actions = _startedActions.Remove(controlType, out var started)
+                ? started
+                : ResolveActions(controlType);
 
             for (int i = 0; i < actions.Count; i++)
                 actions[i].StopAction(_executors, vesselStatus);
