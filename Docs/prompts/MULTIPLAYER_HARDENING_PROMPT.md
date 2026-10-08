@@ -229,8 +229,9 @@ risk is lobby write pressure, not matchmaking.
 The counters already existed (`UgsRequestTelemetry`, 14 of them, instrumented at the real call
 sites), so Block 1 shrank on measurement. **Landed:** `NetSessionRecord`, `NetSessionRecorder`,
 `NetSessionConsoleCommand` (`net` / `net dump` / `net reset` / `net mark`) and
-`NetSessionRecorderTests` — compiled and run against shims, 12 checks green, `/verify-unity` not
-run. **Still to do, in the Editor, because they need authored assets:** the
+`NetSessionRecorderTests` — **11 pass / 0 fail in the project's own headless harness**
+(`bash Tools/Build/prisma_edit_mode_tests/run.sh`, registered in its `suites.txt`), which
+supersedes the earlier shim run. `/verify-unity` not run. **Still to do, in the Editor, because they need authored assets:** the
 `NetStatsMonitorConfiguration` + `RuntimeNetStatsMonitor` attach, the `NetworkSimulatorPreset` set,
 assigning the recorder's three providers, and adding `Mark(...)` at the lifecycle points. Do not
 write the RNSM wiring blind — the component displays nothing without its configuration asset.
