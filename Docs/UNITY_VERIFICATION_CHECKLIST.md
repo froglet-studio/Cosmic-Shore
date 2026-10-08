@@ -89,8 +89,8 @@ makes); `check_generated_assets.py` audits the new prefab/material clean (negati
 3. The bolts read like the charge crystal's (compare a `CrystalCharge` side by side): thin, white-hot
    heads, lime tails, a faint idle shimmer on the pentagon wireframe. If they are invisible, check the
    console for `[CrystalEdgeArcMeshBaker] ... no plate with exactly 10 corners`.
-4. Skim Race team crystals (domain-owned): bolt tails turn the domain colour about 1 s after the
-   crystal does (the moment its body snaps), not lime.
+4. Skim Race team crystals (domain-owned): bolt tails turn the domain colour on the same frame the
+   body does (the Fresnel pair cannot lerp, so the body snaps and the bolts follow it), not lime.
 5. Collect an omni: the replacement appears at once with its bolts; only the body/tone husks burst
    (no extra pentagon husk).
 6. `CrystalEdgeArcMeshBakerTests` pass in the Test Runner.
