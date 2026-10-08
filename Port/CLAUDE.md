@@ -87,7 +87,9 @@ With the **prisma MCP server** (preferred - see below), the loop is tools:
 
 1. Edit code.
 2. `engine_build` (target `player`) - fix every error it lists. `engine_smoke` then boots the
-   game headless and answers PASS/FAIL with every error, exception and warning it logged.
+   game headless and answers PASS/FAIL with every error, exception and warning it logged. Each run
+   gets its own report and a fresh, deleted-after save profile, so several may run at once
+   (`python3 Port/tools/check_smoke_concurrency.py` checks that).
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
 4. Look and act (and read `prisma_tracks` first when chasing a reported problem): `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
    "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /

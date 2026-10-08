@@ -413,7 +413,9 @@ main thread between frames, where a `--do` step runs (`src/CosmicShore.Player/Co
 
 `cs-mcp` (`src/CosmicShore.Mcp`) wraps it, plus build, test and the Unity isolation check, as an
 MCP server, so Claude Code drives the engine with tools: `engine_build`, `engine_test`,
-`engine_smoke` (a headless boot that answers PASS/FAIL with every logged problem),
+`engine_smoke` (a headless boot that answers PASS/FAIL with every logged problem; each run has its
+own report file and a fresh save profile it deletes after, so smokes run side by side -
+`tools/check_smoke_concurrency.py` proves it),
 `unity_isolation_check`, `game_start` / `game_stop`, `game_screenshot` (returned as an image),
 `game_input`, `game_wait`, `game_find`, `game_hierarchy`, `game_get` / `game_set`, `game_ui_at`,
 `game_dump_ui`, `game_logs`, `game_load_scene`. On a server without a display it runs the game

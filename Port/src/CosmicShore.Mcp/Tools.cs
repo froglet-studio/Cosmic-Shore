@@ -448,18 +448,33 @@ namespace CosmicShore.Mcp
 
         async Task<SmokeResult> SmokeRun(JsonObject a)
         {
-            var sb = new StringBuilder();
             if (Bool(a, "build", true))
             {
                 var b = await Build("player");
                 if (!b.StartsWith("build ok")) return new SmokeResult("FAIL (build)\n" + b, false, true, new List<string>());
             }
             var exe = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
-            var report = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"smoke-{DateTime.Now:HHmmss}.json");
+            // Every run owns its report and its save profile, so smokes running side by side (several agents,
+            // a local matrix) never read each other's report or share one prefs.json. The profile is fresh,
+            // as on a CI runner, and deleted afterwards. tools/check_smoke_concurrency.py proves it.
+            var run = $"{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}";
+            var report = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"smoke-{run}.json");
+            var profile = "smoke-" + run;
+            try { return await SmokeRun(a, exe, report, profile); }
+            finally { try { Directory.Delete(ProfileDir(profile), true); } catch { } }
+        }
+
+        /// <summary>The save folder a COSMIC_SHORE_PROFILE gets (Application.persistentDataPath in EngineCompat.cs).</summary>
+        static string ProfileDir(string profile) =>
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CosmicShore-" + profile);
+
+        async Task<SmokeResult> SmokeRun(JsonObject a, string exe, string report, string profile)
+        {
+            var sb = new StringBuilder();
             int frames = Int(a, "frames", 1200);
             var args = new List<string> { "--headless", "--quiet", "--frames", frames.ToString(), "--session-report", report };
             if (Str(a, "scene").Length > 0) { args.Add("--scene"); args.Add(Str(a, "scene")); }
-            var env = new Dictionary<string, string> { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "off", ["COSMIC_SHORE_PROFILE"] = "smoke" };
+            var env = new Dictionary<string, string> { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "off", ["COSMIC_SHORE_PROFILE"] = profile };
             var r = await Run(exe, args, _repo, TimeSpan.FromMinutes(20), env);
             if (!File.Exists(report))
             {
