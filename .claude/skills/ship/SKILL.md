@@ -321,6 +321,18 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+  **That check sees only what has MERGED. The collision that costs a whole branch is the one
+  still in flight.** Two sessions were given the same refcompile bug within minutes of each other
+  (2026-10-06). Both fixed it, and the second to reach the base conflicted in four files. The other
+  branch was even NAMED in a base README this branch merged (*"an unmerged branch,
+  `claude/hopeful-heisenberg-murjor`, does this"*). One `git log` of it would have shown the
+  duplicate fix before the PR opened, not after the PR conflicted. Listing every remote branch is
+  no help (`git ls-remote origin 'refs/heads/*'` returns 500+), so follow the names. Before opening
+  the PR, grep the files you changed for branch names
+  (`git grep -ohE '(claude|cece)/[a-z0-9-]+' origin/<base> -- <your changed files> | sort -u`).
+  For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
+  `git fetch --depth=50 origin <name>` and then
+  `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
 - **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
   they do not — ask about scope before you discard either.** The collision above assumes two
   implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
