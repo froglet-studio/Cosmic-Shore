@@ -34,15 +34,27 @@ namespace CosmicShore.Tests
         public void TearDown() => PrefabUtility.UnloadPrefabContents(_root);
 
         [Test]
-        public void CrystalsPerLap_LegacyIntensitiesFallBackToWaypointCount_RelativityAuthors25()
+        public void CrystalsPerLap_LegacyIntensitiesFallBackToWaypointCount_RelativityAuthors26()
         {
             for (int intensity = 1; intensity <= 3; intensity++)
                 Assert.AreEqual(_track.waypoints[intensity - 1].positions.Count, _track.CrystalsPerLap(intensity),
                     $"I{intensity} authors no crystalsPerLap, so a lap must stay worth one crystal per waypoint");
 
-            Assert.AreEqual(25, _track.CrystalsPerLap(4));
-            Assert.Greater(_track.waypoints[3].positions.Count, 25,
+            Assert.AreEqual(26, _track.CrystalsPerLap(4));
+            Assert.Greater(_track.waypoints[3].positions.Count, 26,
                 "I4's waypoints are a dense spline sample - if this fails the target would be waypoints x laps");
+        }
+
+        [Test]
+        public void Markers_LegacyIntensitiesMarkEveryWaypoint_RelativityMarksOnlyItsCrystals()
+        {
+            for (int intensity = 1; intensity <= 3; intensity++)
+                Assert.AreEqual(_track.waypoints[intensity - 1].positions.Count,
+                    _track.GetPreviewBlocks(intensity).Count(b => b.IsMarker),
+                    $"I{intensity} authors no marker list, so every waypoint keeps its marker block");
+
+            // The wide marker means "a crystal appears near here": one per crystal anchor, no more.
+            Assert.AreEqual(_track.CrystalsPerLap(4), _track.GetPreviewBlocks(4).Count(b => b.IsMarker));
         }
 
         [Test]

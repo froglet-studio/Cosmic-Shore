@@ -7,7 +7,7 @@ A closed space curve that threads the cell's nucleus five times a lap, built fro
     tensegrity icosahedron (two parallel struts per axis, X split along Z, Y along X, Z along Y)
     and is then tilted off its axis and pushed 130-185 u from the centre, so the five chords cross
     the cage at five different places, like string art - never all at one point. Every pass is
-    still a near-miss with the others (>= 100 u), and racers on different lobes keep seeing each
+    still a near-miss with the others (>= 139 u), and racers on different lobes keep seeing each
     other cut across the core.
   * FIVE LOBES - one petal per pair of consecutive passes, leaving along one chord and returning
     along the next. Every lobe has its own character: reach 700 -> 1070 u, apex turn radius
@@ -20,6 +20,14 @@ reach to the asserts below while pulling the lobes' turn radii and reaches onto 
 first, fully symmetric version had six identical petals and six passes within 64 u of the centre,
 and was rejected in review for exactly that ("repetition of curvature, piled up in the center").
 The asserts now hold the line: MIN_LOBE_REACH_SPREAD, MIN_LOBE_TURN_SPREAD, MIN_CENTRE_MISS.
+
+ONE PASS SNAKES (SNAKE): every lobe turns the same way round in the pilot's frame, so pass 4 bows
+110 u sideways across its floor AGAINST that turn - right, left, right through lobe 3, the bow and
+lobe 4 - and the lap no longer only turns one way (asserted: MIN_COUNTER_TURN_RUN).
+
+MARKERS MARK CRYSTALS: the wide marker block says "a crystal appears near here", so waypoints are
+laid with a knot at every crystal anchor and only those waypoints are listed in the track's
+markedWaypoints (I1-I3 list none = every waypoint marked, unchanged).
 
 The ribbon lies flat in each lobe's plane (its floor). Each core pass rolls the ribbon about the
 direction of travel onto the next lobe's floor - here 2, 74, -74, 75 and 12 degrees: some passes
@@ -83,6 +91,18 @@ LOBES = [
     (738.4, 0.528, 0.055, -0.211),
     (836.3, 0.474, 0.078, -0.074),
 ]
+# One pass is not straight: it SNAKES round the other chords - bowing one way, then the other -
+# so the core has a stretch of alternating curvature (every lobe is a long turn the same way round;
+# without this the lap only ever turns one way). Displacement off the chord:
+#   PERIODS 0.5:  A * sin^3(pi u)                      - one bow
+#   otherwise:    A * sin(2 pi PERIODS u) * sin^2(pi u) - an S
+# u = 0..1 along the pass; zero offset, slope and curvature at both ends, so the lobes still meet
+# a straight line. SIDE is
+# the bend direction about the pass, in degrees from the incoming floor's normal (90 = sideways
+# across the floor, 0 = up off it). HALF_EXTRA lengthens that pass so the snake has room; the two
+# lobes either side of it reach that much further too, so their petals keep the same room to turn.
+#        pass  amplitude  periods  side   half_extra
+SNAKE = (4,    110.0,     0.5,     270.0, 60.0)
 WAYPOINT_SPACING = 70.0
 ANCHOR_SPACING = 470.0  # target arc between crystal anchors; each pass->pass span is divided evenly
 ANCHOR_LIFT = 0.0       # crystal anchors sit this far above the ribbon, along its normal (the local floor)
@@ -95,6 +115,8 @@ MIN_CENTRE_MISS = 100.0       # no pass comes nearer the cell centre than this (
 MIN_CURVATURE_RADIUS = 200.0  # Squirrel: 300 u/s at 120 deg/s turns on a 143 u circle, before lag
 MIN_LOBE_REACH_SPREAD = 200.0 # farthest lobe reach - nearest lobe reach: the lobes must not repeat
 MIN_LOBE_TURN_SPREAD = 60.0   # widest lobe turn radius - tightest: nor may their turns
+MIN_COUNTER_TURN_RUN = 150.0  # the lap must hold a stretch at least this long turning AGAINST its
+MAX_COUNTER_TURN_R = 400.0    # dominant direction (pilot's frame), at least this tightly - the snake
 MAX_SPLINE_DEVIATION = 3.0    # laid ribbon vs the analytic curve
 MAX_UP_STEP_DEG = 25.0        # ribbon roll between consecutive waypoints (the runtime interpolates)
 LAP_RANGE = (10500.0, 13500.0)
@@ -135,7 +157,20 @@ def strut(i):
     axis, side, travel, tilt, offset, half = PASSES[i % len(PASSES)]
     d = rotvec(mul(AXES[axis], float(travel)), tilt)
     o = mul(unit(rotvec(mul(AXES[OFFSET_AXIS[axis]], float(side)), tilt)), offset)
+    if i % len(PASSES) == SNAKE[0]:
+        half += SNAKE[4]
     return o, d, half
+
+
+def snake_offset(i, u, floor_in, d):
+    """Lateral displacement of pass i at u (0..1) - zero except on the SNAKE pass."""
+    k, amp, periods, side_deg, _ = SNAKE
+    if i != k or amp == 0.0:
+        return (0.0, 0.0, 0.0)
+    side = rotate_about(floor_in, d, math.radians(side_deg))
+    if periods == 0.5:   # a single bow round the neighbouring chords: sin^3 keeps the ends straight
+        return mul(side, amp * math.sin(math.pi * u) ** 3)
+    return mul(side, amp * math.sin(2 * math.pi * periods * u) * math.sin(math.pi * u) ** 2)
 
 
 def lobe_normal(i):
@@ -180,12 +215,14 @@ def dense_curve(step=3.0, lobe_samples=1400):
         m = int(2 * h0 / step)
         for k in range(m):
             u = k / m
-            p = add(o0, mul(d0, -h0 + 2 * h0 * u))
+            p = add(add(o0, mul(d0, -h0 + 2 * h0 * u)), snake_offset(i, u, floors[i - 1], d0))
             out.append((p, rotate_about(floors[i - 1], d0, rolls[i] * smoothstep(u)), ("S", i, u)))
         # lobe i: a petal from pass i's exit (along d0) back into pass i+1 (along d1)
         e1, e2 = d0, mul(d1, -1.0)
         nl = lobe_normal(i)
         reach, full, warp, skew = LOBES[i]
+        if SNAKE[4] and i in ((SNAKE[0] - 1) % n, SNAKE[0]):
+            reach += SNAKE[4]   # the snake pass is longer: its two lobes keep their room to turn
         for k in range(lobe_samples):
             # f eases in and out: r - base grows like sin^FULL, so uniform steps would leave the dense
             # reference coarse exactly where the lobe meets the pass.
@@ -277,14 +314,6 @@ def build():
     if nrms[apex_k][1] < 0:   # the start floor faces up (sign of a ribbon normal is cosmetic)
         nrms = [mul(v, -1.0) for v in nrms]
 
-    # Waypoints: uniform arc length from the apex.
-    count = int(round(lap / WAYPOINT_SPACING))
-    waypoints, ups = [], []
-    for j in range(count):
-        k, p = sample_at(pts, s_tab, s0 + lap * j / count)
-        waypoints.append(p)
-        ups.append(project_normal(nrms[k], tans[k]))
-
     # Anchors: one on every core pass, at its point of closest approach to the centre (the chord's
     # midpoint - the pickup sits inside the weave), and each pass-to-pass span (the lobe between
     # them) divided evenly at ~ANCHOR_SPACING. A long lobe carries more crystals than a short one, so
@@ -298,6 +327,26 @@ def build():
         anchor_abs += [a0 + (a1 - a0) * j / k for j in range(k)]
     anchor_s = sorted(((x - s0) % lap) for x in anchor_abs)
     anchor_s = [x for x in anchor_s if x > 1e-6] + [x for x in anchor_s if x <= 1e-6]
+    # Waypoints: knots at the start apex and at every crystal anchor, each span between knots divided
+    # evenly at ~WAYPOINT_SPACING. Every anchor is therefore a waypoint, and ONLY those waypoints are
+    # marked (the wide marker block says "a crystal appears near here" - marking every waypoint of a
+    # dense spline would say it everywhere).
+    knots = [0.0] + [x for x in anchor_s if x > 1e-6]
+    waypoint_s, marked = [], []
+    for j, k0 in enumerate(knots):
+        k1 = knots[j + 1] if j + 1 < len(knots) else lap
+        if j > 0:
+            marked.append(len(waypoint_s))
+        m = max(1, int(round((k1 - k0) / WAYPOINT_SPACING)))
+        waypoint_s += [k0 + (k1 - k0) * q / m for q in range(m)]
+    if any(x <= 1e-6 for x in anchor_s):   # an anchor exactly on the start line marks waypoint 0
+        marked.append(0)
+    waypoints, ups = [], []
+    for x in waypoint_s:
+        k, p = sample_at(pts, s_tab, s0 + x)
+        waypoints.append(p)
+        ups.append(project_normal(nrms[k], tans[k]))
+
     anchors = []
     for x in anchor_s:
         k, p = sample_at(pts, s_tab, s0 + x)
@@ -314,7 +363,7 @@ def build():
 
     return {"pts": pts, "s_tab": s_tab, "lap": lap, "waypoints": waypoints, "ups": ups,
             "anchors": anchors, "anchor_tags": anchor_tags, "curve": curve,
-            "lobe_reach": lobe_reach, "lobe_turn": lobe_turn}
+            "lobe_reach": lobe_reach, "lobe_turn": lobe_turn, "marked": marked}
 
 
 # ---------------------------------------------------------------- SpawnableWaypointTrack, ported
@@ -441,6 +490,13 @@ def validate(d):
     if not 0 < ahead < 600:
         errs.append(f"the first crystal {fmt_vec(a0)} is not just past the start line ({ahead:.0f} u)")
 
+    marked = d["marked"]
+    if sorted(marked) != sorted(set(marked)) or len(marked) != len(anchors):
+        errs.append(f"{len(marked)} marked waypoints for {len(anchors)} crystal anchors - one marker per crystal")
+    off = max(min(norm(sub(wps[m], a)) for m in marked) for a in anchors) if marked else 1e9
+    if off > 1.0:
+        errs.append(f"a crystal anchor is {off:.1f} u from every marked waypoint - markers must sit on the crystals")
+
     # 7. the core threads the nucleus once per pass, without piling up on the centre
     nucleus_hits = sum(1 for k in range(n) if norm(pos[k]) < NUCLEUS_R and norm(pos[k - 1]) >= NUCLEUS_R)
     if nucleus_hits != len(PASSES):
@@ -457,10 +513,29 @@ def validate(d):
     if turn_spread < MIN_LOBE_TURN_SPREAD:
         errs.append(f"lobe turn radii span only {turn_spread:.0f} u (< {MIN_LOBE_TURN_SPREAD}) - the turns repeat")
 
+    # 9. it does not only turn one way: yaw in the pilot's frame (ribbon up = floor), the dominant
+    # sense, and the longest run turning against it at <= MAX_COUNTER_TURN_R
+    yaw = []
+    for k in range(n):
+        h = 6
+        kv = sub(add(pos[k - h], pos[(k + h) % n]), mul(pos[k], 2))
+        yaw.append(dot(kv, cross(laid[k][2], laid[k][1])) / (12 * h) ** 2)
+    dominant = 1.0 if sum(1 for y in yaw if y > 0) >= n / 2 else -1.0
+    best_run = run = 0
+    for k in range(2 * n):
+        y = yaw[k % n] * -dominant
+        run = run + 1 if y >= 1.0 / MAX_COUNTER_TURN_R else 0
+        best_run = max(best_run, min(run, n))
+    counter_run = best_run * 12.0
+    if counter_run < MIN_COUNTER_TURN_RUN:
+        errs.append(f"the longest counter-turn is {counter_run:.0f} u (< {MIN_COUNTER_TURN_RUN}) - the lap only turns one way")
+    counter_r = 1.0 / max(max(y * -dominant for y in yaw), 1e-9)
+
     stats = {"prisms": n, "clearance": clearance, "min_turn_radius": min_r, "spline_dev": dev,
              "up_step": step, "lap": lap, "waypoints": len(wps), "max_r": max(norm(p) for p in pos),
              "core_passes": nucleus_hits, "centre_miss": centre_miss, "crystals": len(anchors),
-             "lobe_reach": [round(x) for x in d["lobe_reach"]], "lobe_turn": [round(x) for x in d["lobe_turn"]]}
+             "lobe_reach": [round(x) for x in d["lobe_reach"]], "lobe_turn": [round(x) for x in d["lobe_turn"]],
+             "counter_run": counter_run, "counter_r": counter_r}
     return errs, stats
 
 
@@ -545,6 +620,19 @@ def patch_track(text, d):
     return text[:m.start()] + block + tail
 
 
+def patch_markers(text, d):
+    """markedWaypoints (declared after waypointDomain): only intensity 4 marks a subset."""
+    sets = [[] for _ in range(4)]
+    sets[INTENSITY - 1] = sorted(d["marked"])
+    block = "  markedWaypoints:\n" + "".join(
+        f"  - indices: {int_list_hex(x)}\n" if x else "  - indices: []\n" for x in sets)
+    text = re.sub(r"(?m)^  markedWaypoints:\n(?:  - indices: [^\n]*\n)*", "", text)
+    m = re.search(r"(?m)^  waypointDomain: .*\n", text)
+    if not m:
+        raise SystemExit("no waypointDomain field to anchor markedWaypoints after")
+    return text[:m.end()] + block + text[m.end():]
+
+
 def track_doc_span(text):
     """(start, end) of the SpawnableWaypointTrack MonoBehaviour document."""
     guid = re.search(r"guid: ([0-9a-f]{32})",
@@ -567,7 +655,7 @@ def doc_span_with(text, key):
 
 def render_scene(text, d):
     a, b = track_doc_span(text)
-    text = text[:a] + patch_track(text[a:b], d) + text[b:]
+    text = text[:a] + patch_markers(patch_track(text[a:b], d), d) + text[b:]
     a, b = doc_span_with(text, "listOfCrystalPositions:")
     body = replace_set(text[a:b], "listOfCrystalPositions", "anchorJitterRadius", INTENSITY - 1,
                        render_set(d["anchors"], fmt_vec))
@@ -581,7 +669,7 @@ def render_scene(text, d):
 
 def render_bake(text, d):
     a, b = track_doc_span(text)
-    return text[:a] + patch_track(text[a:b], d) + text[b:]
+    return text[:a] + patch_markers(patch_track(text[a:b], d), d) + text[b:]
 
 
 def track_body(text):
@@ -601,6 +689,7 @@ def main():
           f"spline dev {st['spline_dev']:.2f} u, max roll/waypoint {st['up_step']:.1f} deg, "
           f"reach {st['max_r']:.0f} u, nucleus passes/lap {st['core_passes']}, nearest the centre {st['centre_miss']:.0f} u")
     print(f"  lobe reach {st['lobe_reach']}  lobe turn radius {st['lobe_turn']}")
+    print(f"  counter-turn (the snake): {st['counter_run']:.0f} u against the lap's dominant turn, tightest r {st['counter_r']:.0f} u")
     if errs:
         for e in errs:
             print("ERROR:", e)

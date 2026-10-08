@@ -48,6 +48,9 @@ static class Json
                 Anchors = ParsePts(parts[4]),
                 Ups = parts.Length > 5 ? ParsePts(parts[5]) : new List<Vector3>(),
                 CrystalsPerLap = parts.Length > 6 ? int.Parse(parts[6], CultureInfo.InvariantCulture) : 0,
+                Marked = parts.Length > 7 && parts[7].Length > 0
+                    ? new HashSet<int>(parts[7].Split(',').Select(x => int.Parse(x, CultureInfo.InvariantCulture)))
+                    : null,
             };
             result[def.Intensity] = def;
         }
@@ -77,6 +80,7 @@ class TrackDef
     public List<Vector3> Anchors;
     public List<Vector3> Ups;       // ribbon normal per waypoint (SpawnableWaypointTrack.waypointUps); empty = world up
     public int CrystalsPerLap;      // <= 0 = the waypoint count (SpawnableWaypointTrack.CrystalsPerLap)
+    public HashSet<int> Marked;     // waypoints carrying a 2x marker block (markedWaypoints); null = every waypoint
     public int Required => (CrystalsPerLap > 0 ? CrystalsPerLap : Waypoints.Count) * Laps;
 }
 
@@ -175,8 +179,9 @@ class TrackPrisms
                 Points.Add(pos);
                 Normals.Add(rot * Vector3.up);
                 Rotations.Add(rot);
-                // SpawnableWaypointTrack: scale (10,1,3); the waypoint marker (i == 0) is 2x.
-                Vector3 leaf = i == 0 ? new Vector3(20, 2, 6) : new Vector3(10, 1, 3);
+                // SpawnableWaypointTrack: scale (10,1,3); the waypoint marker (i == 0 on a marked waypoint) is 2x.
+                bool marker = i == 0 && (def.Marked == null || def.Marked.Contains(seg));
+                Vector3 leaf = marker ? new Vector3(20, 2, 6) : new Vector3(10, 1, 3);
                 ShellHalf.Add(leaf * 1.5f);
             }
         }

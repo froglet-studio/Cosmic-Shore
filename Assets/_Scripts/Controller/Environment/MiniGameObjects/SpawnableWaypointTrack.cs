@@ -7,6 +7,13 @@ using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
+/// <summary>A list of waypoint indices - one intensity's entry in <see cref="SpawnableWaypointTrack"/>'s marker list.</summary>
+[System.Serializable]
+public class WaypointIndexSet
+{
+    public List<int> indices;
+}
+
 public class SpawnableWaypointTrack : SpawnableBase
 {
     [Header("Waypoints")]
@@ -53,6 +60,11 @@ public class SpawnableWaypointTrack : SpawnableBase
     [SerializeField] Prism waypointPrism;
     [Tooltip("Domain for waypoint markers")]
     [SerializeField] Domains waypointDomain = Domains.Jade;
+    [Tooltip("Optional per-intensity list of the waypoints that get a marker block. The wide marker " +
+             "tells the pilot a crystal appears near here, so a densely sampled track marks only the " +
+             "waypoints at its crystal anchors. An intensity with no entry (or an empty one) marks " +
+             "every waypoint.")]
+    [SerializeField] List<WaypointIndexSet> markedWaypoints;
 
     [Header("Track Domain")]
     [SerializeField] Domains trackDomain = Domains.Gold;
@@ -93,6 +105,17 @@ public class SpawnableWaypointTrack : SpawnableBase
             return null;
         }
         return ups;
+    }
+
+    /// <summary>
+    /// The waypoints that carry a marker block at a 1-based intensity, or null for all of them.
+    /// </summary>
+    private HashSet<int> ResolveMarked(int intensity)
+    {
+        int index = intensity - 1;
+        if (markedWaypoints == null || index < 0 || index >= markedWaypoints.Count) return null;
+        var list = markedWaypoints[index]?.indices;
+        return list is { Count: > 0 } ? new HashSet<int>(list) : null;
     }
 
     /// <summary>Crystals one lap of the given 1-based intensity is worth (see <see cref="crystalsPerLap"/>).</summary>
@@ -185,6 +208,7 @@ public class SpawnableWaypointTrack : SpawnableBase
 
         var positions = waypoints[intensityLevel - 1].positions;
         var ups = ResolveUps(intensityLevel, positions);
+        var marked = ResolveMarked(intensityLevel);
         int segmentCount = positions.Count;
         bool spline = UseSpline(intensityLevel);
 
@@ -201,7 +225,7 @@ public class SpawnableWaypointTrack : SpawnableBase
                     out Vector3 position, out Quaternion rotation);
 
                 // Determine if this is a waypoint marker position
-                bool isWaypointMarker = markWaypoints && i == 0;
+                bool isWaypointMarker = markWaypoints && i == 0 && (marked == null || marked.Contains(segment));
 
                 Vector3 blockScale = isWaypointMarker ? scale * waypointScaleMultiplier : scale;
                 Prism blockPrism = (isWaypointMarker && waypointPrism != null) ? waypointPrism : prism;
@@ -269,6 +293,7 @@ public class SpawnableWaypointTrack : SpawnableBase
         intensityLevel = intensityLevelArg; // ResolveBlocksThisSegment may consult this
         var positions = waypoints[intensityLevelArg - 1].positions;
         var ups = ResolveUps(intensityLevelArg, positions);
+        var marked = ResolveMarked(intensityLevelArg);
         int segmentCount = positions.Count;
         bool spline = UseSpline(intensityLevelArg);
 
@@ -281,7 +306,7 @@ public class SpawnableWaypointTrack : SpawnableBase
                 ResolveBlockPose(positions, ups, segment, i, blocksThisSegment, spline,
                     out Vector3 position, out Quaternion rotation);
 
-                bool isMarker = markWaypoints && i == 0;
+                bool isMarker = markWaypoints && i == 0 && (marked == null || marked.Contains(segment));
                 Vector3 blockScale = isMarker ? scale * waypointScaleMultiplier : scale;
 
                 yield return new PreviewBlock(position, rotation, blockScale, isMarker);

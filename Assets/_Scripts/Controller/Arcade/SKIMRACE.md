@@ -184,9 +184,9 @@ segmentSpawner.Initialize();
 | 1 | 8 | 3 | 24 | Linear | Flat octagon, radius 700 |
 | 2 | 10 | 3 | 30 | Catmull-Rom | Undulating tilted loop (±610 Y) |
 | 3 | 28 | 2 | 56 | Catmull-Rom | Dumbbell circuit: two sinusoidal lanes at z = ±60 running 2,770 units along X (amplitude ±20 Y, 2 periods, antiphase — they braid in side view and are ridden in opposite directions), joined by two flat circles (R = 360, centers (340, 0, 0) and (−3140, 0, 0), ~341° sweep). The east circle's far pole is pinned at (700, 0, 0) by the shared spawns, so the track extends west to x ≈ −3500 (lap ≈ 9,846 units, ~848 prisms). Crystal anchors: each lane peak/valley (8) + 3 per circle (14 total), advancing in traversal order from the pole. |
-| 4 | 171 (25 crystals/lap) | 2 | 50 | Catmull-Rom + ribbon normals | **Relativity** — five lobes, each its own shape, joined by five chords that cross the nucleus cage at five different places (§5a). Lap 11,954 u, 1,026 prisms |
+| 4 | 182 (26 crystals/lap, marker blocks on those 26 only) | 2 | 52 | Catmull-Rom + ribbon normals | **Relativity** — five lobes, each its own shape, joined by five chords that cross the nucleus cage at five different places; pass 4 bows against the lap's turn (§5a). Lap 12,345 u, 1,015 prisms |
 
-The target is **crystals per lap × laps**, where crystals per lap is `SpawnableWaypointTrack.crystalsPerLap[intensity]` when authored (> 0) and the waypoint count otherwise. I1–I3 author nothing there, so they keep waypoints × laps exactly as before; I4's waypoint list is a dense spline sample (171 points) carrying 25 crystal anchors, so it authors 25.
+The target is **crystals per lap × laps**, where crystals per lap is `SpawnableWaypointTrack.crystalsPerLap[intensity]` when authored (> 0) and the waypoint count otherwise. I1–I3 author nothing there, so they keep waypoints × laps exactly as before; I4's waypoint list is a dense spline sample (182 points) carrying 26 crystal anchors, so it authors 26.
 
 `lapsPerIntensity` is a `List<int>` matched to the waypoint sets by index (index 0 = intensity 1), the same convention `SpawnableWaypointTrack.useSplinePerIntensity` uses. An entry ≤ 0, or an intensity the list doesn't cover, falls back to the scalar `optionalLaps` — so scenes authored before the list (e.g. Crystal Capture) keep their original single-value behavior.
 
@@ -212,12 +212,32 @@ centre point. Strands never come within 119 u of each other.
 | 0 (start) | 701 u | 215 u | the hairpin — tight, pointed, the start apex |
 | 1 | 1,069 u | 405 u | the sweeper — the widest, slowest-turning lobe, bowed out of its plane |
 | 2 | 984 u | 342 u | long and round |
-| 3 | 803 u | 250 u | short, apex skewed early (the turn tightens as you enter) |
-| 4 | 880 u | 298 u | medium, apex skewed late |
+| 3 | 863 u | 261 u | apex skewed early (the turn tightens as you enter) |
+| 4 | 942 u | 319 u | apex skewed late |
+
+**The snake (pass 4).** Every lobe is a long turn the same way round in the pilot's frame (ribbon
+floor down: all five turn right), so without help the lap only ever turns one way. Pass 4 is not
+straight: it bows **110 u sideways across its floor**, against that turn (`SNAKE` in the
+generator: `A·sin³(πu)`, straight and curvature-free at both ends), and is 60 u longer each side to
+give the bow room (its two lobes reach 60 u further so their petals keep the same room to turn). The
+stretch reads right → **left (r 211 u)** → right: lobe 3, the bow round the neighbouring chords,
+lobe 4. The pass's crystal sits on the bow's apex. The generator measures the yaw of the laid
+ribbon in the pilot's frame and asserts a counter-turn of ≥ 150 u at ≤ 400 u radius (measured
+180 u at 211 u; with the snake removed it is 0 and the assert fires).
+
+**Markers mark crystals.** The wide waypoint marker block means "a crystal appears near here".
+On a dense spline every waypoint would get one, so the track now authors
+`SpawnableWaypointTrack.markedWaypoints`: per intensity, the waypoints that carry a marker (no entry
+= every waypoint, so I1–I3 are unchanged). I4's waypoints are laid with a knot at every crystal
+anchor — every anchor IS a waypoint — and only those 26 are marked. The generator asserts one
+marker per crystal, each on its anchor.
 
 **History — why it looks like this.** The first Relativity (2026-10-08, morning) was fully
 symmetric (S6): six identical rose petals and six struts all within 64 u of the centre. Review
-rejected it: *"too much repetition of curvature and piled up too much in the center."* The tables
+rejected it: *"too much repetition of curvature and piled up too much in the center."* The
+second review added two more: the wide marker prisms were on every waypoint ("over used" — they
+are meant to signal where crystals appear), and the lap still only turned one way — hence the
+markers list and the snake above. The tables
 were then found by a cross-entropy search over pass offsets/tilts/lengths and lobe reach,
 fullness, warp and skew, holding every constraint below while pulling the lobes' turn radii and
 reaches onto a ladder. The generator now ASSERTS both review points: lobe reaches must span
@@ -235,19 +255,22 @@ core pass rolls the ribbon about the direction of travel onto the next lobe's fl
 the first crystal is ~70 u past the apex, and the hairpin dives into the nucleus.
 
 **Crystals.** One anchor on every core pass (its point of closest approach to the centre — the
-pickup is inside the weave) and each pass-to-pass span divided evenly at ~470 u, so a long lobe
-carries more crystals than a short one: 25 per lap × 2 = **50**.
+pickup is inside the weave; on the snake pass, the bow's apex) and each pass-to-pass span divided
+evenly at ~470 u, so a long lobe carries more crystals than a short one: 26 per lap × 2 = **52**.
 
 **What the generator proves before it writes** (on the prisms as `Spawn` lays them — 12 u
-Catmull-Rom spacing, same up interpolation): strand clearance ≥ 100 u (measured 119.4), tightest
-turn radius ≥ 200 u (209; the Squirrel turns a 143 u circle at 300 u/s before lag), centre miss
-≥ 100 u (130), lobe reach spread ≥ 200 u (368), lobe turn spread ≥ 60 u (190), spline within 3 u
-of the analytic curve (1.50), ribbon roll ≤ 25° between waypoints (14.1), laid up ⊥ forward,
-start alignment, every anchor on the ribbon with one per core pass, exactly five passes inside
-r = 330 per lap, lap 10.5–13.5 k u. A mutated scene is named by `--check`.
+Catmull-Rom spacing, same up interpolation): strand clearance ≥ 100 u (measured 139.5), tightest
+turn radius ≥ 200 u (202; the Squirrel turns a 143 u circle at 300 u/s before lag), centre miss
+≥ 100 u (130), lobe reach spread ≥ 200 u, lobe turn spread ≥ 60 u, a counter-turn ≥ 150 u long at
+≤ 400 u radius (180 u at 211 u), one marker per crystal on its anchor, spline within 3 u of the
+analytic curve (1.43), ribbon roll ≤ 25° between waypoints (13.3), laid up ⊥ forward, start
+alignment, every anchor on the ribbon with one per core pass, exactly five passes inside r = 330
+per lap, lap 10.5–13.5 k u. Every review-driven assert was watched fail: the symmetric placeholder
+(variety), a 30 u pass offset (centre pile), the snake removed (one-way turning). A mutated scene
+is named by `--check`.
 
-**Numbers.** Lap 11,954 u, 171 waypoints, 1,026 prisms, reach 1,069 u. Two laps of crystal
-chords are ~22,700 u (76 s at the Squirrel's 300 u/s top speed); the ribbon is 23,900 u (80 s).
+**Numbers.** Lap 12,345 u, 182 waypoints, 1,015 prisms, reach 1,069 u. Two laps of crystal chords
+are ~23,500 u (78 s at the Squirrel's 300 u/s top speed); the ribbon is 24,700 u (82 s).
 
 ### 6. Ready State & Countdown
 
