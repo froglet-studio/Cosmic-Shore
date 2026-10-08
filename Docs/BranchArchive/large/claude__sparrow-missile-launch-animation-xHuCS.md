@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Sparrow missile launch animations**
+
+Made the Sparrow vessel visible in game and set up animations for its missile bay opening and firing, including a remade missile model. It also carried a batch of old build fixes (mobile input, Android SDK bump, Odin removal) pulled from an older development line. The goal was a Sparrow whose missile launch looks animated rather than instant.
+
+- **Status:** Redone elsewhere
+- **Areas:** Sparrow vessel, vessel animation, missiles
+- **Already in bleeding-edge:** bleeding-edge has Assets/_Scripts/Controller/Animation/SparrowAnimationController.cs and commit 07266750a 'feat(sparrow): bay-animated skyburst launch with the real missile model' (PR #708), plus 4d88122f5 fitting the missile hit sphere to its model.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The Sparrow bay-animated missile launch was rebuilt and merged in bleeding-edge via PR #708.
+
+## Evidence
 
 - **Last commit:** 2026-04-09 by Braden Hamilton
 - **Unmerged commits:** 26

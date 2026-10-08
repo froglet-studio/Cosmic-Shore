@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Unified crystal reward service and displays**
+
+Built one central RewardService that pays out every crystal reward. It points every crystal balance at the same wallet, removes the per-scene payout tables in favour of a RewardTable asset, adds two on-screen reward displays and an editor tool that places them, and documents the economy. It also carries the first version of the Arkway toy (a corridor of cells an Ark sails through).
+
+- **Status:** Unique work
+- **Areas:** Economy/crystal rewards, Game HUD reward displays, Editor tooling, Toys (Arkway)
+- **Already in bleeding-edge:** The Arkway landed and was later merged into the Wander toy ('bc6b98d52 feat(toys): merge Wanderway and Arkway into one Wander toy'). No reward system found in bleeding-edge: RewardService, RewardTableSO, RewardGrant, RewardKind and RewardGrantedChannel.asset are all absent.
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — The unified crystal reward economy exists nowhere else.
+
+## Evidence
 
 - **Last commit:** 2026-09-01 by Claude
 - **Unmerged commits:** 11

@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Early 2024 multiplayer prototype plus FMOD project**
+
+A spring-2024 branch that experimented with the first networked multiplayer: making ships network objects, a lobby using Unity Gaming Services, a server-synced timer, and reworked input for multiplayer testing. It also imported PlayFab editor extensions and added an FMOD audio project file. All of this was built on the old 2024 code layout (Game/Managers/GameManager etc.) that no longer exists.
+
+- **Status:** Redone elsewhere
+- **Areas:** multiplayer/netcode, lobby, input, PlayFab, FMOD audio
+- **Already in bleeding-edge:** Multiplayer was later rebuilt from scratch: bleeding-edge has Assets/_Scripts/Controller/Multiplayer/* (ServerPlayerVesselInitializer, NetworkPlayerClientCache) and a full Party/Lobby system (Assets/_Scripts/Controller/Party/*); FMOD audio is in use throughout. No NetworkTimer or the branch's NetworkPlayer.cs exists in bleeding-edge.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Early multiplayer prototype on a long-gone 2024 codebase, fully replaced by the current Netcode/Party architecture.
+
+## Evidence
 
 - **Last commit:** 2024-04-24 by simoesnm
 - **Unmerged commits:** 16

@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Fake Artist arcade game mode**
+
+A complete new arcade game mode, 'Fake Artist' (mode 39), modeled on the party game: players draw a shared picture with their vessel trails, one of them is a secret faker, and everyone votes. It includes the minigame core, vote scoring, a gallery view, a per-player winner display for free-for-all modes, replicated pen-up trail state, an arcade card, scene and assets, a setup tool, tests and design docs.
+
+- **Status:** Unique work
+- **Areas:** Game modes (Fake Artist), Arcade cards, Vessel trails, Scoring/End conditions, Editor tools
+- **Already in bleeding-edge:** None found. No FakeArtist files or commits exist in bleeding-edge, and GameModes id 39 has since been taken by Cleave.
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — This is a complete, tested game mode found nowhere else; reviving it would need a new mode id.
+
+## Evidence
 
 - **Last commit:** 2026-07-23 by Claude
 - **Unmerged commits:** 13

@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Merge development into app-shell with fixes**
+
+An integration branch from March 2026 that merged the development line into the 'app shell' line and collected ~15 small fix PRs (compile errors, null guards in impacts/explosions/daily challenge/squads, lobby invite-accept crash, arcade configure modal null check). Most of its content is merges.
+
+- **Status:** Sync / merge branch
+- **Areas:** integration/merge, compile fixes, impact effects, party lobby, arcade UI
+- **Already in bleeding-edge:** Bleeding-edge evolved past this via other merges; equivalent guards present (DailyChallengeSystem.cs, ArcadeExploreView.cs, Party/HostConnectionService.cs handles LobbyPatcher). Commit subjects themselves not in bleeding-edge.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — A stale sync branch whose small fixes were superseded by later rewrites of the same files.
+
+## Evidence
 
 - **Last commit:** 2026-03-07 by Yash Sadhukhan
 - **Unmerged commits:** 33

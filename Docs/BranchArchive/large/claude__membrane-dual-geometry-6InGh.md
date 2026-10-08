@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Hex/pentagon dual-geodesic membrane experiment**
+
+An experiment from Feb-Mar 2026 to give the cell membrane (the arena's boundary sphere) a honeycomb look made of hexagons and pentagons, built as the 'dual' of a geodesic sphere. It added a mesh generator editor tool, a short-lived runtime component (later reverted), a smooth-normals shader fix, and a dual-sphere spawnable hooked into Crystal Capture and HexRace. It was last touched in September by a one-line GameCard fix.
+
+- **Status:** Abandoned experiment
+- **Areas:** Cell membrane visuals, Environment geometry, Editor tooling, HexRace/Crystal Capture (retired)
+- **Already in bleeding-edge:** None found: DualMeshGenerator.cs, DualMembrane.cs, DualMeshUtility.cs and SpawnableDualSpherene.cs are absent from bleeding-edge (only SpawnableSpherene exists). The modes it was wired into (HexRace, Crystal Capture) have since been retired.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — It is an old visual experiment tied to retired modes, and the archive keeps the generator code if someone revisits the look.
+
+## Evidence
 
 - **Last commit:** 2026-09-02 by Claude
 - **Unmerged commits:** 11

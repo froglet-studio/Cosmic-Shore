@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Reintroduce Falcon vessel with weapon modes**
+
+Started as 'Reintroduce-Falcon' (Nov 2025 - Apr 2026): bringing back the Falcon vessel with a spinning gun ring, switchable fire modes, full-auto fire, a Falcon boost and trail ability and a Falcon HUD. The final commits wire arcade game settings through to spawners and fix AI not spawning, for playtesting vessels.
+
+- **Status:** Partly landed
+- **Areas:** vessels, Falcon, abilities/weapons, vessel HUD, arcade spawning
+- **Already in bleeding-edge:** Falcon exists in bleeding-edge (VesselClassType Falcon = 9 in Assets/_Scripts/Data/Enums/VesselClassType.cs, Assets/_Prefabs/Spacevessels/Falcon.prefab, FalconProjectile.prefab), but this branch's GunRingTransformer, FalconModeSwitchingFireSO, FalconBoost/Trail actions are absent.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — Falcon shipped in some form, but the gun-ring and mode-switching weapon prototypes exist only here and may be wanted for Falcon design.
+
+## Evidence
 
 - **Last commit:** 2026-04-03 by Claude
 - **Unmerged commits:** 21

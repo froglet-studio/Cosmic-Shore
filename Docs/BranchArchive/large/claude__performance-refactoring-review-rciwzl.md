@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Performance audit and wave-3 optimization sweep**
+
+A performance pass that reviewed every unmerged performance branch, wrote a Docs/PERFORMANCE.md ledger and a sequenced merge plan, and re-applied the still-useful optimizations: cached prism volumes to remove a ~23ms ecology cost, a cheaper super-shield render, removal of redundant AOE growers and cheaper projectile launches. It also extended the benchmark capture format and planned networked fauna sync for the menu's lava-lamp mode.
+
+- **Status:** Partly landed
+- **Areas:** Performance, Prisms, Ecology/Cell, Projectiles/AOE, Benchmark, Docs
+- **Already in bleeding-edge:** Partial. Docs/PERFORMANCE.md is not in bleeding-edge (only Docs/PERFORMANCE_OPTIMIZATION.md exists), and no matching perf commits for the volume cache or the tetra super-shield were found. Bleeding-edge has since changed many of the same files (PrismScaleManager, Cell.cs) along other lines, and fauna sync landed separately (FaunaNetworkSync).
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — The audit ledger and several measured optimizations, including the ~23ms volume cache, do not appear in bleeding-edge and could still be harvested.
+
+## Evidence
 
 - **Last commit:** 2026-07-02 by Claude
 - **Unmerged commits:** 18

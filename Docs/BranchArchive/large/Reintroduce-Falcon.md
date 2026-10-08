@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Reintroduce Falcon vessel with gun ring**
+
+Brought the Falcon vessel back into the game: fixed its shooting, added a ring of spinning guns, switchable fire modes, a Falcon boost ability, a Falcon trail, camera settings and a Falcon HUD. It was worked on from Nov 2025 to Apr 2026 against the old folder layout (Game/Ship) and also started a BrittleStar prefab. Many commits are merges from development.
+
+- **Status:** Partly landed
+- **Areas:** Falcon vessel, vessel abilities, weapons, vessel HUD
+- **Already in bleeding-edge:** bleeding-edge has Assets/_Prefabs/Spacevessels/Falcon.prefab and FalconProjectile.prefab, but no FalconModeSwitchingFireSO, FalconBoostAction, FalconHUDVessel or GunRingTransformer; that work moved to the Bleeding-Edge-Reintroduce-Falcon / BrittleStar branches (claude/intelligent-cannon-2uqj0), also unmerged.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** can be deleted after archiving — Written against a pre-restructure layout and continued in the BrittleStar branches, which carry the same gun-ring and mode-switch ideas in current paths.
+
+## Evidence
 
 - **Last commit:** 2026-04-22 by Philip Appoh
 - **Unmerged commits:** 19

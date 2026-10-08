@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Build pipeline and analytics consent**
+
+Set up automated build-branch syncing and promotion through CI, with a click-by-click setup checklist. It also carries a batch of analytics and privacy work: a runtime privacy-consent dialog, a PostHog/UGS analytics handbook, event lists for the UGS dashboard, menu freestyle counted as flight time, and a fix for the Falcon's blank name in hangar data.
+
+- **Status:** Redone elsewhere
+- **Areas:** Build/CI, Analytics (PostHog/UGS), Privacy consent UI, Vessels (Falcon data)
+- **Already in bleeding-edge:** bleeding-edge has .github/workflows/sync-build-branches.yml and build-branch-ci.yml, Docs/Analytics/ANALYTICS_HANDBOOK.html, Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs and Assets/_Scripts/Editor/AnalyticsConsentDevWindow.cs.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The CI workflows, consent UI and analytics docs are all in bleeding-edge.
+
+## Evidence
 
 - **Last commit:** 2026-08-06 by Claude
 - **Unmerged commits:** 20

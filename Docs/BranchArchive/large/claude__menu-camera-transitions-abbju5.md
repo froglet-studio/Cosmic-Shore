@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Config-driven main menu camera rig**
+
+Replaced the main menu's Cinemachine camera with a simpler rig that frames the player's vessel and is tuned from a settings asset. It carries the same shared analytics/PostHog and Falcon-name commits as the other 2026-08-06 branches. Its tip was merged into a local bleeding-edge that was later rewritten, so it shows up as unmerged.
+
+- **Status:** Redone elsewhere
+- **Areas:** Main menu camera, Cinemachine, Analytics/PostHog
+- **Already in bleeding-edge:** bleeding-edge has Assets/_Scripts/Controller/Camera/MenuCameraConfigSO.cs and MainMenuCameraController.cs, plus Docs/CameraMigrationReview.md.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The menu camera config rig exists in bleeding-edge; the rest is the shared analytics bundle that also landed.
+
+## Evidence
 
 - **Last commit:** 2026-08-06 by Claude
 - **Unmerged commits:** 13

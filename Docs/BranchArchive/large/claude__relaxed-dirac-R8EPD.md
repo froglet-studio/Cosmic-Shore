@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**BrittleStar gun ring tweaks**
+
+An earlier sibling of the BrittleStar vessel branches: adjusting BrittleStar, trying to make the spinning gun-ring guns work, and skipping empty modes when cycling fire modes. Nearly all its commits are also in claude/intelligent-cannon-2uqj0.
+
+- **Status:** Partly landed
+- **Areas:** BrittleStar vessel, weapons
+- **Already in bleeding-edge:** Not in bleeding-edge; all but one commit (the button-3 null-mode skip and ring fire interval tweak) are contained in claude/intelligent-cannon-2uqj0.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Its work is almost entirely contained in intelligent-cannon; only a small tuning commit is unique and is captured by the archive.
+
+## Evidence
 
 - **Last commit:** 2026-05-29 by Claude
 - **Unmerged commits:** 13

@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**BrittleStar vessel parity with Falcon**
+
+The most complete BrittleStar vessel branch: adds the BrittleStar as a playable vessel matching Falcon's setup, with boost, full-auto, mode-switching ring fire and a seed-wall ability, telemetry, prism controller, training and class data, and wiring into menus and Freestyle. It is the latest form of the Reintroduce-Falcon line, rebased on the current folder layout.
+
+- **Status:** Unique work
+- **Areas:** BrittleStar vessel, vessel abilities, Freestyle, vessel registry
+- **Already in bleeding-edge:** No BrittleStar vessel in bleeding-edge (no BrittleStar in VesselClassType, no BrittleStar.prefab under Spacevessels, no BrittleStarPrismController).
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — It is the only place the BrittleStar vessel exists in a form close to the current codebase.
+
+## Evidence
 
 - **Last commit:** 2026-06-03 by Claude
 - **Unmerged commits:** 14

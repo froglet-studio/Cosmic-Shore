@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Fix Joust GO button with AI**
+
+Fixed a bug where pressing GO in the Joust game mode did nothing when an AI opponent filled the empty player slot, so the match never started. The change was in the multiplayer domain games controller's ready logic. The rest is shared older history (sound changes, input fixes).
+
+- **Status:** Redone elsewhere
+- **Areas:** Joust game mode, AI backfill, ready/start flow
+- **Already in bleeding-edge:** No commit with this exact subject found; bleeding-edge's MultiplayerDomainGamesController.cs has a reworked ready flow (OnReadyClicked_ServerRpc / OnAllPlayersReady) and the AI backfill pipeline is documented in Docs/claude/MULTIPLAYER_AND_SOCIAL.md, so the code path has been rewritten since.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — A one-commit fix against a controller that has since been rewritten; the AI backfill/ready path in bleeding-edge is different code.
+
+## Evidence
 
 - **Last commit:** 2026-04-21 by Claude
 - **Unmerged commits:** 13

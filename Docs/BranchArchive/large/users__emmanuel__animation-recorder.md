@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Editor Animation Recorder window**
+
+An editor tool to record gameplay movement into animation clips (an 'Animation Recorder' window), first built in mid-2024 to Will's GUI specs and revived in late 2025 with refactoring. The latest commits say it is still unstable ('player game object does not show up when a level starts', 'DOES NOT WORK!'). The branch also carries a lot of old-layout dialogue system and minigame files from its 2024 base.
+
+- **Status:** Partly landed
+- **Areas:** editor tooling, animation recording, cinematics
+- **Already in bleeding-edge:** An AnimationRecorder EditorWindow exists in bleeding-edge at Assets/_Scripts/Utility/Recording/AnimationRecorderWindow.cs, so the 2024 version landed; the late-2025 rework commits (unstable, self-described as not working) did not.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The working recorder already lives in bleeding-edge; the unmerged follow-up is a self-described broken refactor.
+
+## Evidence
 
 - **Last commit:** 2025-12-10 by Emmanuel
 - **Unmerged commits:** 17

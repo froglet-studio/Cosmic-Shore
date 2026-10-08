@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Evolutionary AI pilot training, hardened version**
+
+The fuller copy of the evolutionary AI pilot work: intensity-scaled AI behaviour for HexRace prism skimming, a genome/population/fitness training loop that can run overnight unattended, spectator and play-along training modes, and a final 'harden for unattended operation' commit. It was the February 2026 first attempt at automatically tuning AI opponents.
+
+- **Status:** Redone elsewhere
+- **Areas:** AI opponents, AI training/evolution, HexRace, intensity levels
+- **Already in bleeding-edge:** Redone elsewhere: bleeding-edge has 'feat(ai): train a Skim Race Squirrel intensity-4 genome', 'fix(ai-training): carry the saved session key and docs across the SkimRace rename', Port population tournament training, Docs/AI_TRAINING_CONSOLIDATION.md. Classes PilotGenome/PilotEvolution/PlayAlongTrainingController are absent.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Genome-based AI training was rebuilt in the Port engine and Skim Race pipeline; this early version targets old code paths.
+
+## Evidence
 
 - **Last commit:** 2026-02-27 by Claude
 - **Unmerged commits:** 21

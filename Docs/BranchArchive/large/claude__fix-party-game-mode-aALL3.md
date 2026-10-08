@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Party Game mode, most complete fix pass**
+
+The most complete version of the 'Party Game' mode (five mini-games in one session). On top of the earlier drafts it adds ~30 fixes so HexRace, Joust and Crystal Capture work inside the party: crystal spawning, scorecards, timers, winner calculation, end-game cinematics, networking workarounds, plus a written change report, and a port onto the newer Controller/Arcade code layout.
+
+- **Status:** Unique work
+- **Areas:** game modes, Party Game, mini-games, multiplayer/netcode, HUD/UI, docs
+- **Already in bleeding-edge:** None found: no PartyGameController/PartyVesselSpawner/IsServerSafe or Party GameModes entry in bleeding-edge. Contains all commits of the two add-party-game-mode branches.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — The only full copy of the never-shipped Party Game mode and its change report; keep (or archive this one carefully) if a playlist mode might return.
+
+## Evidence
 
 - **Last commit:** 2026-02-27 by Claude
 - **Unmerged commits:** 61

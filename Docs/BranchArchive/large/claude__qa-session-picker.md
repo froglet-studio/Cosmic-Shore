@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**QA session window fixes and party fixes**
+
+Fixed confusing parts of the in-editor QA testing window: testers inherited someone else's session file, step 2 looked like a destination, and the test preview looked already opened. It also carries a shared bundle of fixes: the windowed camera, analytics startup state, party join retries, the party always showing x/4, a guest following the host to the arcade screen, plus the Arkway toy.
+
+- **Status:** Redone elsewhere
+- **Areas:** QA tooling, Party/invite lobby, Camera, Analytics, Toys (Arkway)
+- **Already in bleeding-edge:** bleeding-edge has Assets/_Scripts/Editor/QA/QASessionWindow.cs and Tools/QA/session.py with per-tester session-file handling, and PR #827 'claude/qa-preview-add-button' merged. The Arkway was folded into the Wander toy (bc6b98d52), and party lobby-follow-host was redone in 9cf08c830.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The QA window, party and toy work all appear in bleeding-edge in later forms.
+
+## Evidence
 
 - **Last commit:** 2026-09-01 by Claude
 - **Unmerged commits:** 13

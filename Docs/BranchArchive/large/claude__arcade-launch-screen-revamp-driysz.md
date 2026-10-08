@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Party join/re-invite fixes for arcade lobby**
+
+Despite the name, this branch is mostly multiplayer party fixes around the arcade launch screen. The open arcade lobby is replicated as shared state so a friend is always pulled into the chosen game card; a host can re-invite a guest; presence stays live during a match; and stray network objects are cleaned up so a restarted host can take guests again. It also carries the shared camera, analytics and Arkway commits.
+
+- **Status:** Redone elsewhere
+- **Areas:** Arcade launch screen, Party/invite lobby, Presence, Netcode
+- **Already in bleeding-edge:** Equivalent later work is in bleeding-edge: '9cf08c830 fix(party): make the arcade card lobby follow the host on every client', '9f02589d1 feat(party): synced party seating', and re-invite handling in Assets/_Scripts/Controller/Party/HostConnectionService.cs. Arkway was folded into Wander (bc6b98d52).
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** can be deleted after archiving — Later party/lobby work in bleeding-edge covers the same behaviour.
+
+## Evidence
 
 - **Last commit:** 2026-09-02 by Claude
 - **Unmerged commits:** 19

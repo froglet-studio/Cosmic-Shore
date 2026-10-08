@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Stop Blue fauna; add rabid fauna**
+
+Stopped creatures (fauna) of the Blue team from spawning and added a 'rabid' behavior where fauna turn aggressive based on nearby prisms. It changed the cell spawner, Fauna and LightFauna scripts. The rest is shared older history.
+
+- **Status:** Abandoned experiment
+- **Areas:** ecology, fauna, cell spawning
+- **Already in bleeding-edge:** No 'rabid' fauna or matching commit found in bleeding-edge; the ecology system has since been heavily rebuilt (locked ecosystem principles, food web, volume-based spawning).
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — A single quick fix against ecology code that has since been redesigned under locked principles.
+
+## Evidence
 
 - **Last commit:** 2026-05-02 by Claude
 - **Unmerged commits:** 13

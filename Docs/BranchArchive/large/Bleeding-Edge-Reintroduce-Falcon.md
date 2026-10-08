@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**BrittleStar vessel (human working branch)**
+
+The human designer's own working branch for the BrittleStar vessel and Falcon reintroduction: new BrittleStar abilities, a gun-ring arrangement of weapons, a prefab and build-settings tweaks, with an attempt to fix the guns as its latest commit ('Tried fix guns'). It is a near-twin of claude/falcon-brittlestar-reintro-oyx1q1.
+
+- **Status:** Unique work
+- **Areas:** Vessels (BrittleStar, Falcon), Abilities/guns, Build settings
+- **Already in bleeding-edge:** None found. No BrittleStar vessel class, GunRingTransformer or BrittleStar executors exist in bleeding-edge (slot 12 is Scarab).
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — It is a human-authored branch holding an unshipped vessel and was touched most recently (2026-07-15); confirm with its author before deleting, possibly keeping just one of the two twin branches.
+
+## Evidence
 
 - **Last commit:** 2026-07-15 by Philip Appoh
 - **Unmerged commits:** 19

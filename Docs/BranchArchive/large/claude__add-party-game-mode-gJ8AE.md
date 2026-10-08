@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Party Game mode first draft**
+
+The first draft of the 'Party Game' mode that chains five mini-games into one session with round tabs, a party scoreboard and pause panel, a new scene and config ScriptableObject. It is a strict subset of the Go0YH and aALL3 branches that continued it.
+
+- **Status:** Abandoned experiment
+- **Areas:** game modes, Party Game, mini-games, HUD/UI
+- **Already in bleeding-edge:** None found in bleeding-edge (no PartyGameController / Party GameModes entry). Its commits are all contained in claude/fix-party-game-mode-aALL3.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Strict subset of later Party Game branches; nothing unique.
+
+## Evidence
 
 - **Last commit:** 2026-02-25 by Shombith03
 - **Unmerged commits:** 28

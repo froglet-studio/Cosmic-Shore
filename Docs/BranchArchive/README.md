@@ -17,7 +17,7 @@ The audit found **505** remote branches; **363** had no commit since 2026-09-08.
 | Already merged (every commit is in `bleeding-edge` or `master`) | 114 | **108 to delete**, script below. The other 6 are kept, see next table. |
 | Small unmerged work (1–3 commits) | 141 | Archived in this folder, one file per branch. Not deleted. |
 | Medium unmerged work (4–10 commits) | 51 | Archived in this folder, one file per branch. Not deleted. |
-| Large unmerged work (11+ commits) | 56 | Not archived yet. Not deleted. |
+| Large unmerged work (11+ commits) | 56 | Archived in [`large/`](large/) with a plain-language summary each. **Protected: kept.** |
 | `master` | 1 | Trunk. Keep. |
 
 **Merged but kept:**
@@ -301,3 +301,67 @@ Not covered here: the 56 **large** branches (11+ unmerged commits) and `master` 
 | 49 | [`claude/tmp-font-assets-setup-9z96he`](medium/claude__tmp-font-assets-setup-9z96he.md) | 2026-08-25 | Claude | 8 | #797 | feat(ui): T5 re-derived against Style Foundation v0.3 |
 | 50 | [`claude/uithemeso-color-audit-0zfqjz`](medium/claude__uithemeso-color-audit-0zfqjz.md) | 2026-08-25 | Shombith | 6 | — | refactor(ui): make UIThemeSO 25 fields and nothing else, and prove the reference |
 | 51 | [`cece/funny-edison-v3z7hq`](medium/cece__funny-edison-v3z7hq.md) | 2026-08-26 | Claude | 4 | — | fix(squirrel): the morph starts where the crystal WAS, and carries its normals |
+
+## Index — large branches (11+ unmerged commits) — PROTECTED, kept
+
+Each has a full evidence doc under [`large/`](large/) (patches capped at 80 lines per commit). The summaries were written from
+the commit history on 2026-10-08 and checked against `bleeding-edge` for the same feature. Treat "Suggest" as a starting point for discussion.
+
+| Branch | What it is | Unmerged commits | Last commit | Status | Risk if deleted | Suggest |
+|---|---|---|---|---|---|---|
+| [`claude/quirky-cannon-sk8a02`](large/claude__quirky-cannon-sk8a02.md) | Prisma port menu and managers | 168 | 2026-07-10 | Redone elsewhere | low | can go |
+| [`claude/android-build-no-unity-gh65ai`](large/claude__android-build-no-unity-gh65ai.md) | Prisma port Android APK build | 111 | 2026-07-07 | Redone elsewhere | low | can go |
+| [`Ys-rescue-2026-08-24`](large/Ys-rescue-2026-08-24.md) | Rescue branch: party roster and presence | 110 | 2026-08-24 | Partly landed | medium | keep |
+| [`claude/documentation-audit-p5ov1g`](large/claude__documentation-audit-p5ov1g.md) | Docs audit plus prism/crystal visual fixes | 106 | 2026-08-15 | Partly landed | medium | can go |
+| [`claude/qa-bleeding-edge-process-ht3g08`](large/claude__qa-bleeding-edge-process-ht3g08.md) | QA backlog runs and Andrew's test results | 71 | 2026-09-03 | Partly landed | medium | keep |
+| [`qa/results-2026-09-07-garrett`](large/qa__results-2026-09-07-garrett.md) | Garrett QA results, Dolphin audio, Drumfire | 65 | 2026-09-07 | Partly landed | medium | can go |
+| [`claude/fix-party-game-mode-aALL3`](large/claude__fix-party-game-mode-aALL3.md) | Party Game mode, most complete fix pass | 61 | 2026-02-27 | Unique work | medium | keep |
+| [`claude/unified-systems-refactor-apze59`](large/claude__unified-systems-refactor-apze59.md) | Unified systems cleanup and solo retirement | 59 | 2026-08-01 | Partly landed | medium | keep |
+| [`claude/vessel-jet-fx-audit-rdze50`](large/claude__vessel-jet-fx-audit-rdze50.md) | Fleet-wide jet FX plus Dolphin/Sparrow tuning | 48 | 2026-08-15 | Partly landed | high | keep |
+| [`claude/add-party-game-mode-Go0YH`](large/claude__add-party-game-mode-Go0YH.md) | Party Game: five-round mini-game playlist mode | 35 | 2026-02-25 | Abandoned experiment | low | can go |
+| [`claude/merge-dev-to-app-shell-EpONe`](large/claude__merge-dev-to-app-shell-EpONe.md) | Merge development into app-shell with fixes | 33 | 2026-03-07 | Sync / merge branch | low | can go |
+| [`claude/fix-aoe-spawner-null-djCL8`](large/claude__fix-aoe-spawner-null-djCL8.md) | Null-guard fixes for explosions and impacts | 29 | 2026-03-06 | Sync / merge branch | low | can go |
+| [`claude/add-party-game-mode-gJ8AE`](large/claude__add-party-game-mode-gJ8AE.md) | Party Game mode first draft | 28 | 2026-02-25 | Abandoned experiment | low | can go |
+| [`claude/adjust-crosshairs-position-LGoev`](large/claude__adjust-crosshairs-position-LGoev.md) | Spider swinging vessel prototype | 28 | 2026-06-29 | Unique work | medium | keep |
+| [`claude/sparrow-missile-launch-animation-xHuCS`](large/claude__sparrow-missile-launch-animation-xHuCS.md) | Sparrow missile launch animations | 26 | 2026-04-09 | Redone elsewhere | low | can go |
+| [`claude/audit-flora-pooling-f5vmD`](large/claude__audit-flora-pooling-f5vmD.md) | Flora prism pooling performance pass | 24 | 2026-06-12 | Partly landed | medium | keep |
+| [`claude/epic-darwin-g0Ehi`](large/claude__epic-darwin-g0Ehi.md) | Ecology volume, wither and crystal drops | 22 | 2026-06-11 | Partly landed | medium | can go |
+| [`claude/extend-ai-training-duration-vfMGG`](large/claude__extend-ai-training-duration-vfMGG.md) | Evolutionary AI pilot training (overnight runs) | 21 | 2026-02-25 | Redone elsewhere | low | can go |
+| [`claude/ai-pilot-intensity-levels-XK6ST`](large/claude__ai-pilot-intensity-levels-XK6ST.md) | Evolutionary AI pilot training, hardened version | 21 | 2026-02-27 | Redone elsewhere | low | can go |
+| [`claude/review-mobile-apk-build-W3iaf`](large/claude__review-mobile-apk-build-W3iaf.md) | Android APK build script and mobile fixes | 21 | 2026-02-27 | Partly landed | low | can go |
+| [`claude/pull-benchmark-tool-Z9AmX`](large/claude__pull-benchmark-tool-Z9AmX.md) | Performance benchmark tool and session runner | 21 | 2026-03-08 | Redone elsewhere | low | can go |
+| [`claude/vessel-playtest-dksnr`](large/claude__vessel-playtest-dksnr.md) | Reintroduce Falcon vessel with weapon modes | 21 | 2026-04-03 | Partly landed | medium | keep |
+| [`claude/fix-gun-focus-vvYxp`](large/claude__fix-gun-focus-vvYxp.md) | BrittleStar vessel weapon fixes | 20 | 2026-05-29 | Unique work | high | keep |
+| [`claude/branch-sync-automated-builds-avwjb6`](large/claude__branch-sync-automated-builds-avwjb6.md) | Build pipeline and analytics consent | 20 | 2026-08-06 | Redone elsewhere | low | can go |
+| [`claude/display-name-validation-hpqi3c`](large/claude__display-name-validation-hpqi3c.md) | Display-name validation plus analytics batch | 20 | 2026-08-06 | Redone elsewhere | low | can go |
+| [`Reintroduce-Falcon-2`](large/Reintroduce-Falcon-2.md) | Falcon reintroduction plus dogfight event | 19 | 2026-04-22 | Partly landed | low | can go |
+| [`Reintroduce-Falcon`](large/Reintroduce-Falcon.md) | Reintroduce Falcon vessel with gun ring | 19 | 2026-04-22 | Partly landed | medium | can go |
+| [`claude/fix-multiplayer-scoring-Jsl98`](large/claude__fix-multiplayer-scoring-Jsl98.md) | Fix multiplayer scoring and team colors | 19 | 2026-05-01 | Abandoned experiment | medium | can go |
+| [`claude/falcon-brittlestar-reintro-oyx1q1`](large/claude__falcon-brittlestar-reintro-oyx1q1.md) | BrittleStar vessel and Falcon reintroduction | 19 | 2026-07-03 | Unique work | medium | keep |
+| [`Bleeding-Edge-Reintroduce-Falcon`](large/Bleeding-Edge-Reintroduce-Falcon.md) | BrittleStar vessel (human working branch) | 19 | 2026-07-15 | Unique work | high | keep |
+| [`claude/sparrow-ability-redesign-norbgz`](large/claude__sparrow-ability-redesign-norbgz.md) | Sparrow abilities redesign: no overheat, ward | 19 | 2026-08-06 | Redone elsewhere | low | can go |
+| [`claude/arcade-launch-screen-revamp-driysz`](large/claude__arcade-launch-screen-revamp-driysz.md) | Party join/re-invite fixes for arcade lobby | 19 | 2026-09-02 | Redone elsewhere | medium | can go |
+| [`claude/fix-menu-text-pptr-B1TSn`](large/claude__fix-menu-text-pptr-B1TSn.md) | Compile and null fixes, March 2026 | 18 | 2026-03-06 | Sync / merge branch | low | can go |
+| [`claude/fix-benchmark-config-error-7FSRC`](large/claude__fix-benchmark-config-error-7FSRC.md) | Aggressive mobile performance and visuals tuning | 18 | 2026-03-09 | Abandoned experiment | low | can go |
+| [`claude/performance-refactoring-review-rciwzl`](large/claude__performance-refactoring-review-rciwzl.md) | Performance audit and wave-3 optimization sweep | 18 | 2026-07-02 | Partly landed | medium | keep |
+| [`users/emmanuel/animation-recorder`](large/users__emmanuel__animation-recorder.md) | Editor Animation Recorder window | 17 | 2025-12-10 | Partly landed | low | can go |
+| [`fmod-2024-master`](large/fmod-2024-master.md) | Early 2024 multiplayer prototype plus FMOD project | 16 | 2024-04-24 | Redone elsewhere | low | can go |
+| [`claude/game-data-json-schema-u2mubn`](large/claude__game-data-json-schema-u2mubn.md) | Analytics data layer and event schema | 16 | 2026-08-06 | Redone elsewhere | low | can go |
+| [`Audio_Playground`](large/Audio_Playground.md) | FMOD engine and boost sounds prototype | 15 | 2026-04-23 | Redone elsewhere | low | can go |
+| [`claude/optimistic-maxwell-uet05g`](large/claude__optimistic-maxwell-uet05g.md) | Networked fauna and flora sync | 15 | 2026-07-17 | Redone elsewhere | low | can go |
+| [`claude/game-pause-menu-perf-lwjxh2`](large/claude__game-pause-menu-perf-lwjxh2.md) | Smoother pause menu and return-to-menu | 15 | 2026-08-06 | Redone elsewhere | low | can go |
+| [`claude/swordfish-flagship-fauna-q234zd`](large/claude__swordfish-flagship-fauna-q234zd.md) | Swordfish flagship fauna creature | 15 | 2026-09-01 | Unique work | high | keep |
+| [`claude/intelligent-cannon-2uqj0`](large/claude__intelligent-cannon-2uqj0.md) | BrittleStar vessel parity with Falcon | 14 | 2026-06-03 | Unique work | high | keep |
+| [`claude/astro-league-game-dPwTO`](large/claude__astro-league-game-dPwTO.md) | Astro League ship-soccer game mode | 14 | 2026-06-12 | Redone elsewhere | low | can go |
+| [`claude/update-claude-md-guidance-Igb5G`](large/claude__update-claude-md-guidance-Igb5G.md) | Add emergent-systems guidance to CLAUDE.md | 13 | 2026-04-20 | Redone elsewhere | low | can go |
+| [`claude/fix-joust-ai-start-5Mr98`](large/claude__fix-joust-ai-start-5Mr98.md) | Fix Joust GO button with AI | 13 | 2026-04-21 | Redone elsewhere | low | can go |
+| [`claude/merge-bleeding-edge-master-Gt2By`](large/claude__merge-bleeding-edge-master-Gt2By.md) | Merge bleeding-edge into master | 13 | 2026-04-30 | Sync / merge branch | low | can go |
+| [`claude/fix-blue-fauna-spawn-Td1rp`](large/claude__fix-blue-fauna-spawn-Td1rp.md) | Stop Blue fauna; add rabid fauna | 13 | 2026-05-02 | Abandoned experiment | low | can go |
+| [`claude/relaxed-dirac-R8EPD`](large/claude__relaxed-dirac-R8EPD.md) | BrittleStar gun ring tweaks | 13 | 2026-05-29 | Partly landed | low | can go |
+| [`claude/connect-dots-arcade-game-xtu44w`](large/claude__connect-dots-arcade-game-xtu44w.md) | Fake Artist arcade game mode | 13 | 2026-07-23 | Unique work | high | keep |
+| [`claude/menu-camera-transitions-abbju5`](large/claude__menu-camera-transitions-abbju5.md) | Config-driven main menu camera rig | 13 | 2026-08-06 | Redone elsewhere | low | can go |
+| [`claude/qa-session-picker`](large/claude__qa-session-picker.md) | QA session window fixes and party fixes | 13 | 2026-09-01 | Redone elsewhere | low | can go |
+| [`claude/ecs-migration-guide-Db42i`](large/claude__ecs-migration-guide-Db42i.md) | ECS prism AOE bridge and benchmark | 12 | 2026-06-12 | Redone elsewhere | low | can go |
+| [`claude/add-swinging-vessel-iHrfl`](large/claude__add-swinging-vessel-iHrfl.md) | Spider vessel with web-swinging tethers | 11 | 2026-02-25 | Unique work | medium | keep |
+| [`claude/game-reward-system-crystals-3dl6pf`](large/claude__game-reward-system-crystals-3dl6pf.md) | Unified crystal reward service and displays | 11 | 2026-09-01 | Unique work | high | keep |
+| [`claude/membrane-dual-geometry-6InGh`](large/claude__membrane-dual-geometry-6InGh.md) | Hex/pentagon dual-geodesic membrane experiment | 11 | 2026-09-02 | Abandoned experiment | low | can go |

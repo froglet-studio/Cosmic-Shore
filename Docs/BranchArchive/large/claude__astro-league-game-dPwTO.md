@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Astro League ship-soccer game mode**
+
+Created Astro League, a Rocket League-style game mode where vessels push a ball into goals, with billiard-style ball physics, an arena, AI opponent and scoring. The last commit rebuilt it as a polished 'hypersea soccer' mode after merging bleeding-edge.
+
+- **Status:** Redone elsewhere
+- **Areas:** Astro League game mode, arcade, ball physics, AI opponent
+- **Already in bleeding-edge:** bleeding-edge has Assets/_Scripts/Controller/Arcade/AstroLeague/ (AstroLeagueArena.cs, AstroLeagueBall.cs, AstroLeagueBoundary.cs), AstroLeagueBall.prefab, a card background, and commit f5d2d530a 'fix(astro-league): ending a slow-mo no longer un-pauses the match'.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Astro League ships in bleeding-edge and has been iterated on there since.
+
+## Evidence
 
 - **Last commit:** 2026-06-12 by Claude
 - **Unmerged commits:** 14

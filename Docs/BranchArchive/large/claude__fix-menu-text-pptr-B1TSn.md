@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Compile and null fixes, March 2026**
+
+A batch of small fixes merged together in early March 2026: resolving compile errors across ~20 files, removing an orphaned unlock-vessel button from the main menu, null checks for daily challenge and prism shield audio, and switching the arcade explore screen to dependency injection for audio. It is a subset of the merge-dev-to-app-shell integration branch.
+
+- **Status:** Sync / merge branch
+- **Areas:** compile fixes, main menu UI, daily challenge, audio
+- **Already in bleeding-edge:** Same fixes appear in rewritten form in bleeding-edge (DailyChallengeSystem.cs Arcade.Instance null guard; ArcadeExploreView.cs injected AudioSystem). All commits contained in claude/merge-dev-to-app-shell-EpONe.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Strict subset of another integration branch; code since rewritten.
+
+## Evidence
 
 - **Last commit:** 2026-03-06 by Claude
 - **Unmerged commits:** 18

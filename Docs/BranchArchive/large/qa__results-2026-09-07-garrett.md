@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Garrett QA results, Dolphin audio, Drumfire**
+
+Mostly a stale copy of bleeding-edge from early September (Sparrow missile tiers, Hijack tuning, an on-screen UI diagnostics tool, the Drumfire and Switchback game-mode work). On top of that are three unique commits: Garrett's QA session results doc for 2026-09-07, and two audio commits by aradia1 that added Dolphin sounds, tweaked the Squirrel's drift, and did a mixing pass in the FMOD project and vessel prefabs.
+
+- **Status:** Partly landed
+- **Areas:** QA results, Audio/FMOD, Dolphin vessel, Squirrel vessel, Drumfire (retired), Diagnostics tooling
+- **Already in bleeding-edge:** OnScreenUIReport.cs and HIJACK.md are in bleeding-edge. Drumfire was retired (its controller and scene are absent). One of the new FMOD events ({918db840...}.xml) is byte-identical in bleeding-edge, and bleeding-edge has its own later 'mixing pass' commits, but the branch's SFX.bank and the Dolphin/Squirrel/Sparrow prefabs differ. Docs/QA/RESULTS/2026-09-07-garrett.md is absent.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** can be deleted after archiving — The audio has moved on in bleeding-edge and the rest is stale, but first copy Garrett's results doc and have the audio designer confirm the Dolphin sounds were carried over.
+
+## Evidence
 
 - **Last commit:** 2026-09-07 by Garrett Milliron
 - **Unmerged commits:** 65

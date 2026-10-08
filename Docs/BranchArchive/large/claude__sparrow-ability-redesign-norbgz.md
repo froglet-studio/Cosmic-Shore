@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Sparrow abilities redesign: no overheat, ward**
+
+Redesigned the Sparrow vessel's abilities: removed the overheat mechanic, freed up the roll, and added an elemental 'ward' protective ability. It also bundles the menu camera rig, a runtime-built privacy consent dialog, the Analytics Handbook doc and the shared analytics commits. PR #675 merged an earlier tip of this branch; the remaining commit is a later rewrite of the same day's work.
+
+- **Status:** Redone elsewhere
+- **Areas:** Sparrow vessel, Vessel abilities, Elemental ward, Privacy consent, Analytics
+- **Already in bleeding-edge:** Merge commit c85eba30e 'Merge pull request #675 from .../sparrow-ability-redesign-norbgz' is in bleeding-edge; VesselWardByCrystalEffectSO.cs, SPARROW_SKYBURST_BAY.md, PrivacyConsentConfigSO.cs and MenuCameraConfigSO.cs all exist. The Sparrow has since been reworked repeatedly (missile bay, gun spread, boost speed PRs).
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The PR merged, and later Sparrow work replaced this design.
+
+## Evidence
 
 - **Last commit:** 2026-08-06 by Claude
 - **Unmerged commits:** 19

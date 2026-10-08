@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Add emergent-systems guidance to CLAUDE.md**
+
+Added a CLAUDE.md instruction file telling AI assistants to prefer emergent game systems over one-off bespoke solutions. The rest of the branch is older shared history (sound tweaks for projectiles, mobile input and build fixes). It is a documentation/process change, not gameplay.
+
+- **Status:** Redone elsewhere
+- **Areas:** AI assistant docs, design philosophy
+- **Already in bleeding-edge:** bleeding-edge CLAUDE.md now points to Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md ('Favor Emergent Systems Over Bespoke Solutions'), a much fuller version of the same guidance.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The emergent-design guidance exists in an expanded form in bleeding-edge's CLAUDE.md and Docs/claude/.
+
+## Evidence
 
 - **Last commit:** 2026-04-20 by Claude
 - **Unmerged commits:** 13

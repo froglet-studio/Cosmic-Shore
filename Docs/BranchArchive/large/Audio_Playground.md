@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**FMOD engine and boost sounds prototype**
+
+An audio experimentation branch that added the FMOD audio middleware and built vessel engine sounds, boost and crystal pickup sounds, with variations for all four elements. The final commit claims the FMOD engine sound system is complete. Most changed files are the FMOD plugin itself.
+
+- **Status:** Redone elsewhere
+- **Areas:** audio, FMOD, vessel engine sound
+- **Already in bleeding-edge:** bleeding-edge has the FMOD plugin (Assets/Plugins/FMOD/Resources/FMODStudioSettings.asset), a LOCKED FMOD exposed-field convention (Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md) and many audio commits (e.g. b76e7ab0c 'fix(audio): vessel audio follows the pilot when a live hull changes hands').
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — FMOD integration and vessel audio landed in bleeding-edge under a stricter convention; this branch was a playground.
+
+## Evidence
 
 - **Last commit:** 2026-04-23 by aradia1
 - **Unmerged commits:** 15

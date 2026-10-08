@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**BrittleStar vessel weapon fixes**
+
+Continues the Falcon work as a new vessel called BrittleStar: its own full-auto gun, ring-fire mode switching, boost, plus general fixes: projectiles fire along the muzzle direction, pooled projectiles get dependency injection, and gamepad/touch right-stick input is populated. Also adds BrittleStar to the vessel list and prefab container.
+
+- **Status:** Unique work
+- **Areas:** BrittleStar vessel, Falcon vessel, guns/projectiles, input
+- **Already in bleeding-edge:** BrittleStar is not a vessel in bleeding-edge (VesselClassType has Falcon = 9 but no BrittleStar; only a 'MassBrittleStar' fauna asset uses the name). GunRingTransformer and BrittleStarModeSwitchingFireSO are absent. The projectile/input fixes were not found by subject.
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — Holds BrittleStar vessel work and general gun/projectile/input fixes (10 commits) not present anywhere else, including not in intelligent-cannon.
+
+## Evidence
 
 - **Last commit:** 2026-05-29 by Claude
 - **Unmerged commits:** 20

@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Flora prism pooling performance pass**
+
+A performance pass on plants (flora): reuse prisms and spindles from object pools instead of creating/destroying them, remove per-frame memory allocations, fix a 51ms/frame spike in prism effects, defer colliders until growth completes, and speed up scene teardown. The final commit ported these optimizations onto the restructured codebase.
+
+- **Status:** Partly landed
+- **Areas:** flora, prism performance, object pooling, physics
+- **Already in bleeding-edge:** bleeding-edge has per-vessel prism pools (Assets/_Prefabs/Pools/*PrismPool.prefab) and pooling fixes (504557466 'AOEBlockCreation ... never destroys pooled prisms'), but SpindlePoolManager and PrismActivationQueue do not exist there.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — Specific flora/spindle pooling and frame-spike fixes (SpindlePoolManager, PrismActivationQueue) were not found in bleeding-edge and may still be useful performance work.
+
+## Evidence
 
 - **Last commit:** 2026-06-12 by Claude
 - **Unmerged commits:** 24

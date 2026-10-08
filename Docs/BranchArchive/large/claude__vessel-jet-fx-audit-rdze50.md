@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Fleet-wide jet FX plus Dolphin/Sparrow tuning**
+
+Gave every vessel the Squirrel's two-layer engine jet effect, tinted to the player's team colour, with a config asset, an audit editor tool and tests. It also carries earlier work: the Dolphin's Echo Sight ability and passive crystal seeding, a Dolphin ram cost, prism-collision slowdowns for the Sparrow, Dolphin and Manta on the Squirrel's numbers, a Sparrow bullet-growth change, and a four-intensity rework of the Rampage game mode.
+
+- **Status:** Partly landed
+- **Areas:** Vessel jet FX, Dolphin vessel, Sparrow vessel, Manta vessel, Rampage game mode, Editor tooling
+- **Already in bleeding-edge:** Echo Sight landed (EchoSightHalo.shader; 59 files; commit a2abbd248 'feat(dolphin): Echo Sight paints super-shields in the danger colour'). The jet FX system is NOT in bleeding-edge: VesselJetFX.cs, VesselJetFXConfigSO.cs, Resources/VesselJetFXConfig.asset, Editor/VesselJetFXAudit.cs, VesselJetFXMountResolutionTests.cs and Docs/VESSEL_JET_FX.md are all absent.
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — The fleet-wide jet FX system, its tool, tests and doc exist only on this branch.
+
+## Evidence
 
 - **Last commit:** 2026-08-15 by Claude
 - **Unmerged commits:** 48

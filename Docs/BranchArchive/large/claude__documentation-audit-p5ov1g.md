@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Docs audit plus prism/crystal visual fixes**
+
+A long session with two halves. The first is a documentation audit (Docs/DOCUMENTATION_AUDIT.md) listing doc problems, each with a prompt to fix it. The second is gameplay and visual work: super-shielded prisms jiggle when hit, shield animations run on the GPU, the Rhino gets blade tracers and a lower sword mount, the crystals change colour, keyboard and gamepad controls are fixed, a lifeform's heart changes colour and its crystal-pickup sound plays, plus skill/doc notes.
+
+- **Status:** Partly landed
+- **Areas:** Documentation, Prisms/shields, Rhino vessel, Crystals, Ecology hearts, Input (keyboard/gamepad)
+- **Already in bleeding-edge:** Most gameplay work is in bleeding-edge: Assets/Resources/PrismSuperShieldJiggleConfig.asset (44 files mention jiggle), RhinoSwordFXController.cs and RHINO_ENERGY_SWORD.md (blade tracers), and PrismDestructionSight is referenced in the BlockGraph shadergraphs. Not found in bleeding-edge: Docs/DOCUMENTATION_AUDIT.md, plus the branch's copies of PrismDestructionSight.cs and CRYSTAL_CAPTURE.md.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** can be deleted after archiving — The gameplay work landed; only the documentation audit report is unique, it is two months old, and the archive keeps it.
+
+## Evidence
 
 - **Last commit:** 2026-08-15 by Claude
 - **Unmerged commits:** 106

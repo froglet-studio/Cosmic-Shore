@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Performance benchmark tool and session runner**
+
+Added an editor performance benchmark tool: a window that measures frame-rate metrics, a deterministic mode for repeatable runs, and an automated session runner that launches arcade games at several intensities, presses Go, samples 20s of gameplay and reports reproducibility. It also pulled in mobile input fixes, Android SDK 35 bump and Odin reference cleanup, plus a fix so the chosen vessel is respected when launching arcade games.
+
+- **Status:** Redone elsewhere
+- **Areas:** performance benchmarking, editor tooling, mobile input, arcade launch
+- **Already in bleeding-edge:** A different benchmark system exists in bleeding-edge: Assets/_Scripts/Utility/PerformanceBenchmark/BENCHMARK_ARCHITECTURE.md, Assets/_Scripts/Editor/AI/SkimRaceBenchmarkWindow.cs, Docs/PRISM_EXPLOSION_BENCHMARK.md. This branch's BenchmarkWindow/PerformanceSampler/DeterministicBenchmarkController files are absent.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Benchmarking was rebuilt under Utility/PerformanceBenchmark; this early version is redundant.
+
+## Evidence
 
 - **Last commit:** 2026-03-08 by Claude
 - **Unmerged commits:** 21

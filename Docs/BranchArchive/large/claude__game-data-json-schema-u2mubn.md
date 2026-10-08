@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Analytics data layer and event schema**
+
+Groundwork for the analytics data layer: salvaged tools and docs from an earlier attribution branch, hardened the PostHog sink and locked it to the EU region, wrote a data-layer handoff and action list, and reconciled the git branching rules. It also shares the consent-dialog, handbook and hangar-data commits with the two analytics branches above.
+
+- **Status:** Redone elsewhere
+- **Areas:** Analytics (PostHog/UGS), Data schema, Privacy consent, Git process docs
+- **Already in bleeding-edge:** bleeding-edge has Docs/Analytics/EVENT_SCHEMA.json, DATA_ARCHITECTURE.md, ANALYTICS_HANDOFF.md and POSTHOG_SETUP.md, Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs and PrivacyConsentOverlay.cs, and later analytics commits such as 'feat(analytics): cohort every player by invite wave (R9)'.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The analytics data layer and its docs exist in bleeding-edge and have moved further since.
+
+## Evidence
 
 - **Last commit:** 2026-08-06 by Claude
 - **Unmerged commits:** 16

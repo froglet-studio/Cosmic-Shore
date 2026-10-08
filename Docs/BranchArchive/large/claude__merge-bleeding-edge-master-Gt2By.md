@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Merge bleeding-edge into master**
+
+A sync branch whose only own commit is a merge of bleeding-edge into master, carrying along older shared history (sound tweaks, mobile input and build fixes). It contains no feature work of its own.
+
+- **Status:** Sync / merge branch
+- **Areas:** branch sync
+- **Already in bleeding-edge:** Content is a merge; the shared commits are the same old history found on several other branches. No unique feature work.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — It is a one-off merge branch with no unique work.
+
+## Evidence
 
 - **Last commit:** 2026-04-30 by Claude
 - **Unmerged commits:** 13

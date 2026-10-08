@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Prisma port menu and managers**
+
+A long sequence of Prisma (.NET port) work that made more of the real game code run in the port: the audio system, camera manager, stats manager and stats reporters, the scoring family, captain economy and XP, game-mode progression, and the Hangar, Leaderboards and Store menu screens. It ends with a pause-point progress report in PORT_PLAN.
+
+- **Status:** Redone elsewhere
+- **Areas:** Port/Prisma engine, Menus (Hangar, Store, Leaderboards), Audio, Scoring/Stats, Progression
+- **Already in bleeding-edge:** bleeding-edge has Port/src/CosmicShore.Game/System/Playfab/Economy/CaptainManager.cs, Port/src/CosmicShore.Game/Controller/Managers/StatsManager.cs, Port/src/CosmicShore.Game/UI/UGSStatsManager.cs and Port/tests/CosmicShore.Tests/StatsManagerTests.cs.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The units this branch ported now exist in bleeding-edge's Port/ tree.
+
+## Evidence
 
 - **Last commit:** 2026-07-10 by Claude
 - **Unmerged commits:** 168

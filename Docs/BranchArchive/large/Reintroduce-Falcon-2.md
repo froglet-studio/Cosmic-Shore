@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Falcon reintroduction plus dogfight event**
+
+A copy of the Reintroduce-Falcon branch (bringing back the Falcon vessel with a spinning gun ring, switchable fire modes and a boost) with one extra commit adding a missile dog-fight event channel asset. Most of its unmerged commits are merges of the old development branch.
+
+- **Status:** Partly landed
+- **Areas:** Falcon vessel, weapons, Dog Fight mode
+- **Already in bleeding-edge:** Falcon.prefab, FalconProjectile.prefab and VesselClassType Falcon = 9 exist in bleeding-edge, and Dog Fight exists (Assets/_Scripts/Controller/Arcade/DogFightController.cs), but EventOnMissileDogFight, FalconModeSwitchingFireSO, FalconBoost and GunRingTransformer are not in bleeding-edge.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Its only content beyond Reintroduce-Falcon is one event asset; the Falcon work itself continued in the later BrittleStar branches.
+
+## Evidence
 
 - **Last commit:** 2026-04-22 by Philip Appoh
 - **Unmerged commits:** 19

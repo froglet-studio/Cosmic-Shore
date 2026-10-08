@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Display-name validation plus analytics batch**
+
+Adds validation for player display names (rules held in a config asset, plus a Cloud Save index requirement) and documents the pattern. It also carries the same analytics, privacy-consent and build-pipeline commits as the build-sync branch, plus notes for the AI skills.
+
+- **Status:** Redone elsewhere
+- **Areas:** Authentication/Player profile, Analytics, Privacy consent UI, Docs/skills
+- **Already in bleeding-edge:** bleeding-edge contains the commit 'Merge remote-tracking branch origin/claude/display-name-validation-hpqi3c into bleeding-edge', along with Assets/_Scripts/ScriptableObjects/DisplayNameValidationConfigSO.cs, Assets/Resources/DisplayNameValidationConfig.asset and PrivacyConsentOverlay.cs.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The branch was merged into bleeding-edge and its features are present there.
+
+## Evidence
 
 - **Last commit:** 2026-08-06 by Claude
 - **Unmerged commits:** 20

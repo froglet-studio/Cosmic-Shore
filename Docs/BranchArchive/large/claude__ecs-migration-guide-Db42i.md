@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**ECS prism AOE bridge and benchmark**
+
+An early experiment in moving prism (the glowing building blocks vessels leave behind) explosion/area-of-effect processing onto Unity's ECS/DOTS data-oriented engine for speed. It wrote an ECS migration guide, a 'Phase 0' hybrid bridge between normal prisms and ECS entities, profiler instrumentation, and an automated benchmark comparing Physics vs Burst vs ECS for explosions. It also left a handoff doc for porting the AOE fix to bleeding-edge.
+
+- **Status:** Redone elsewhere
+- **Areas:** Prisms, ECS/DOTS, Performance, AOE explosions, Benchmark tools
+- **Already in bleeding-edge:** bleeding-edge has Assets/_Scripts/Utility/Tools/AOEBenchmarkOverlay.cs and AOEBenchmarkRunner.cs, Docs/PRISM_ECS_MIGRATION.md, a full Assets/_Scripts/Controller/ECS/ tree (CosmicShoreEntitiesBootstrap.cs, PrismComponents.cs) and com.unity.entities 1.4.2 in the manifest. The branch's own PrismEntityBridge.cs is not present; ECS was redone along a different path.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The benchmark tools and the ECS migration landed in bleeding-edge in a more developed form, and this branch still uses the old Game/ folder layout.
+
+## Evidence
 
 - **Last commit:** 2026-06-12 by Claude
 - **Unmerged commits:** 12

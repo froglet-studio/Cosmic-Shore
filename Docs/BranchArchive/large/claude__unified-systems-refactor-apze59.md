@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Unified systems cleanup and solo retirement**
+
+A big cleanup that audited duplicated and dead systems and then removed them: retired the single-player path (every mode runs networked), retired Cellular Duel, Wildlife Blitz and the standalone Freestyle mode, moved scoring onto shared rule assets, deleted the old NetworkScoreTracker, wired the progression/quest service into boot, and fixed input drift, trigger calibration and inverted touch controls. It also restructured CLAUDE.md.
+
+- **Status:** Partly landed
+- **Areas:** Game modes, Scoring, Multiplayer, Input, Progression/FTUE, Docs
+- **Already in bleeding-edge:** Partial. bleeding-edge GameModes.cs marks DuelForTheCell and WildlifeBlitz as 'single-player scene retired 2026-09' and Freestyle 7 as retired, CLAUDE.md is now the lean routing dictionary, and 'merge(progression): wire the service' landed. However, Assets/_Scripts/Controller/Arcade/NetworkScoreTracker.cs and LaunchPartyAllGames.asset still exist, and ObjectiveTurnMonitor is absent.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — Much of it was redone, but some deletions, the scoring base class and the input fixes do not appear in bleeding-edge and its audit docs may still guide cleanup.
+
+## Evidence
 
 - **Last commit:** 2026-08-01 by Yash Sadhukhan
 - **Unmerged commits:** 59

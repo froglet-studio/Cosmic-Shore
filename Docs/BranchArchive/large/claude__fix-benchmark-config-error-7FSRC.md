@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Aggressive mobile performance and visuals tuning**
+
+A March 2026 push for high mobile frame rates: a MobilePerformanceManager that throttles physics, budgets audio, culls camera and strips URP features, plus bloom/FXAA tweaks, disabling silhouettes and trail/elemental UI, MaterialPropertyBlock optimizations in fauna/jets, unlocking HexRace and Dolphin for new players, and a Dolphin cone explosion fix. Several commits are trial-and-error ('sacrifice visuals for frame rate', then restore bloom).
+
+- **Status:** Abandoned experiment
+- **Areas:** mobile performance, rendering/URP, graphics settings, FTUE unlocks, Dolphin vessel
+- **Already in bleeding-edge:** No MobilePerformanceManager in bleeding-edge; graphics quality is now handled by Assets/_Scripts/Controller/Settings/GraphicsSettingsApplier.cs and performance work proceeded separately (Docs/claude/SHADERS_AND_PERFORMANCE.md). None of these commit subjects appear in bleeding-edge.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — A blunt 'sacrifice visuals for FPS' experiment on old code paths, superseded by later graphics settings and perf work.
+
+## Evidence
 
 - **Last commit:** 2026-03-09 by Claude
 - **Unmerged commits:** 18

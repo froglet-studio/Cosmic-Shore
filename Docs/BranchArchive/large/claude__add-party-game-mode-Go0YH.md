@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Party Game: five-round mini-game playlist mode**
+
+Added a 'Party Game' mode: one session that runs five mini-games back to back (e.g. HexRace, Joust, Crystal Capture) with round tabs, a party scoreboard, a pause panel, ready-up lobby and per-round spawn points. It included a new MinigamePartyGame scene, a PartyGameController and config ScriptableObject, and many null-ref fixes to make existing mini-games run inside it. This is the later of two copies of the same work.
+
+- **Status:** Abandoned experiment
+- **Areas:** game modes, Party Game, mini-games, HUD/UI, multiplayer
+- **Already in bleeding-edge:** None found: no PartyGameController, PartyPhase, PartyGameConfigSO or MinigamePartyGame scene in bleeding-edge, and no Party member in GameModes. (Bleeding-edge 'Party' code is the unrelated friends/invite lobby.) Continued further on claude/fix-party-game-mode-aALL3.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Fully contained in claude/fix-party-game-mode-aALL3 (the most complete version), and the feature never shipped; archive it.
+
+## Evidence
 
 - **Last commit:** 2026-02-25 by Shombith03
 - **Unmerged commits:** 35

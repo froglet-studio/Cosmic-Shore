@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**BrittleStar vessel and Falcon reintroduction**
+
+Hand-made work, cleaned up by Claude, on a new 'BrittleStar' vessel class (enum value 12) and on bringing back the Falcon. It adds BrittleStar boost and mode-switching fire abilities, a GunRingTransformer that arranges guns in a ring (with a fix for muzzle meshes being transformed twice), the BrittleStar prefab, and tweaks to the capsule membrane and camera. It is a near-twin of Bleeding-Edge-Reintroduce-Falcon, plus an enum test and the gun-ring fix.
+
+- **Status:** Unique work
+- **Areas:** Vessels (BrittleStar, Falcon), Abilities/guns, Environment (capsule membrane), Camera
+- **Already in bleeding-edge:** No BrittleStar vessel in bleeding-edge: VesselClassType 12 is now Scarab, and GunRingTransformer and BrittleStar*Executor are absent. Only a Brittlestar fauna creature (MassBrittlestarFauna.prefab) exists, which is unrelated. Falcon = 9 already exists in bleeding-edge.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — This is an unreleased vessel design with custom abilities found nowhere else; its enum slot 12 now collides with Scarab, so any revival needs renumbering.
+
+## Evidence
 
 - **Last commit:** 2026-07-03 by Claude
 - **Unmerged commits:** 19

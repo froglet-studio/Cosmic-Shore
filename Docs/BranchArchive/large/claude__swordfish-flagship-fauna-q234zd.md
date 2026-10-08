@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Swordfish flagship fauna creature**
+
+Added the Swordfish as the ecosystem's flagship (apex) creature in the Blob cell. It is a drilling creature with a sword-like charge attack, with body prisms fitted to its skeleton, four elemental lifeform variants, strike data, a prefab, and the whole thing generated end to end. It also carries the shared party, camera and analytics fixes and the Arkway toy.
+
+- **Status:** Unique work
+- **Areas:** Ecology/fauna, Swordfish creature, Blob cell, Toys (Arkway)
+- **Already in bleeding-edge:** Only the art model reached bleeding-edge (Assets/_Models/Fauna/SwordFish_A.fbx). SwordfishFauna.cs, SwordfishChargeDriver.cs, SwordfishStrikeDataSO.cs, SwordfishFauna.prefab and the 'Swordfish Fauna' configs are absent, and no bleeding-edge commit mentions the swordfish.
+- **Risk if deleted:** high
+- **Suggestion (2026-10-08):** keep — The working Swordfish creature (code, prefab, configs) exists only on this branch.
+
+## Evidence
 
 - **Last commit:** 2026-09-01 by Claude
 - **Unmerged commits:** 15

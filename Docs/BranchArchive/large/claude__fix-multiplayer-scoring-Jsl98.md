@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Fix multiplayer scoring and team colors**
+
+A series of fixes for online matches where scores and team colors were wrong: the scoreboard cards, the player's team (domain) replication over the network, and round stats being reset properly at the start of each round. It also touched Skim Race (HexRace) co-op crystal scoring. Several commits add diagnostic logging, and it went back and forth on approaches.
+
+- **Status:** Abandoned experiment
+- **Areas:** multiplayer, scoring, scoreboard, Skim Race
+- **Already in bleeding-edge:** No matching commits by subject; bleeding-edge has since reworked these paths (e.g. 9bb4954dc 'fix(vessel): omni card wore the no-team sentinel's colour', the domain-picker fix documented in CLAUDE.md, 826ec4a9f multiplayer rematch work). The specific NetServerDomain/ServerRpc workaround was not found.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** can be deleted after archiving — Iterative debugging with diagnostic logs whose root cause (nulled domain-picker wiring) was later fixed differently in bleeding-edge.
+
+## Evidence
 
 - **Last commit:** 2026-05-01 by Claude
 - **Unmerged commits:** 19

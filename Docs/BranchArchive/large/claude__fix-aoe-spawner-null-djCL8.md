@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Null-guard fixes for explosions and impacts**
+
+A cluster of March 2026 crash fixes: guards against missing objects in the area-of-effect explosion pipeline and all impactors (skimmer, prism, mine, crystal), squad captain list, daily challenge, prism shield audio, plus compile fixes. These were small PRs merged into an integration branch (merge-dev-to-app-shell) that itself never reached bleeding-edge.
+
+- **Status:** Sync / merge branch
+- **Areas:** impact effects, explosions, daily challenge, compile fixes
+- **Already in bleeding-edge:** Equivalent fixes exist in bleeding-edge in rewritten form, e.g. DailyChallengeSystem.cs guards 'if (Arcade.Instance == null)', ArcadeExploreView.cs documents the injected AudioSystem fix, SquadSystem.cs handles CaptainList set externally. Commit subjects themselves are not in bleeding-edge; code has since been heavily rewritten.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Content is contained in claude/merge-dev-to-app-shell-EpONe and the affected code has been rewritten since.
+
+## Evidence
 
 - **Last commit:** 2026-03-06 by Claude
 - **Unmerged commits:** 29

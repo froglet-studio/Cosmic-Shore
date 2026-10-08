@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Prisma port Android APK build**
+
+A large stretch of work on Prisma, the studio's .NET re-implementation of the game outside Unity (under Port/). It adds an Android APK build that needs no Unity, fixes touch steering on Android, and ports many more game systems faithfully: Joust, Crystal Capture, Tournament/Maelstrom, the lava-lamp freestyle mode, cell ecology, prism performance managers and AI tournament avatars.
+
+- **Status:** Redone elsewhere
+- **Areas:** Port/Prisma engine, Android build, Game modes (Joust, Crystal Capture, Maelstrom), Ecology, Prisms
+- **Already in bleeding-edge:** bleeding-edge has Port/src/CosmicShore.Build/AndroidBuild.cs, Port/build-android.bat and Port/src/CosmicShore.Mobile/Platforms/Android/MainActivity.cs, plus later commits such as 'fix(port): iOS keeps the SDK's trimming switch' and 'feat(prisma): engine APIs the new swarm, substrate and builder fauna use'. The port has moved on well beyond this branch.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The Android head and these port units are present in bleeding-edge's Port/ tree, which has advanced further since.
+
+## Evidence
 
 - **Last commit:** 2026-07-07 by Claude
 - **Unmerged commits:** 111

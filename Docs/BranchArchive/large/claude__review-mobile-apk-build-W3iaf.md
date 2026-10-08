@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Android APK build script and mobile fixes**
+
+Work to get an Android phone build compiling: an Android APK build script with an editor menu and command-line support, re-enabling touch input, wrapping editor-only scripts so they don't break the phone build, removing stale Odin Inspector references, bumping Android target SDK to 35, and adding the Authentication scene to the build list.
+
+- **Status:** Partly landed
+- **Areas:** mobile/Android build, build tooling, touch input, compile fixes
+- **Already in bleeding-edge:** Partly landed: touch input exists (Assets/_Scripts/Controller/IO/TouchInputStrategy.cs), conditional-compilation gate tooling exists (Tools/Build/check_conditional_compilation.py), and the same Odin/SDK fixes were redone on claude/pull-benchmark-tool-Z9AmX. No BuildAndroid.cs build script in bleeding-edge.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Mobile compile fixes were redone later; the small APK build script is the only unique piece and is preserved in the archive.
+
+## Evidence
 
 - **Last commit:** 2026-02-27 by Garrett Milliron
 - **Unmerged commits:** 21

@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Networked fauna and flora sync**
+
+Made the living ecosystem (creatures and plants inside the Cell) consistent across multiplayer players. The server decides what creatures do and clients mirror them as 'puppets' that graze, and plant growth decisions are replicated without resetting the world. It includes a rollout tool and prefab updates for sharks, brittlestars and tadpoles.
+
+- **Status:** Redone elsewhere
+- **Areas:** Ecology (fauna/flora), Multiplayer/Netcode, Cell, Editor tools
+- **Already in bleeding-edge:** bleeding-edge LightFauna.cs contains UpdatePuppetGraze() ('A replicated puppet takes the GRAZING half'), FaunaNetworkSync is referenced across bleeding-edge (BoidManager.cs, CellLifeSpawnerBase.cs), and there is the commit 'feat(wildlife-liberation): kill target 250; fauna sync retires the divergence caveat'.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Server-authoritative fauna/flora sync is live in bleeding-edge.
+
+## Evidence
 
 - **Last commit:** 2026-07-17 by Yash Sadhukhan
 - **Unmerged commits:** 15

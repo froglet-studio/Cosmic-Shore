@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Spider vessel with web-swinging tethers**
+
+Prototyped a new vessel class, first called Froglet then renamed Spider, with Spider-Man-style swinging: the ship fires two tethers and swings around anchor points. It added a Swing ability, a Spider HUD, a crosshair, a prefab, captains and wired the vessel into game modes. It was never merged.
+
+- **Status:** Unique work
+- **Areas:** vessels, new vessel class (Spider), abilities, vessel HUD
+- **Already in bleeding-edge:** None found: no Spider in VesselClassType (Assets/_Scripts/Data/Enums/VesselClassType.cs), no SwingingVesselTransformer or SwingActionSO in bleeding-edge.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — A complete, unique new-vessel prototype exists only here; keep (or archive with clear notes) in case the Spider design is revisited.
+
+## Evidence
 
 - **Last commit:** 2026-02-25 by Claude
 - **Unmerged commits:** 11

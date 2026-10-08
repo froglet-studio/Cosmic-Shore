@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Evolutionary AI pilot training (overnight runs)**
+
+Built an evolutionary AI training system: AI pilots have a 'genome' of tuning values, a population competes, fitness is tracked, and the best genomes are kept, with unattended overnight training and a play-along mode. It also improved AI flying in HexRace (prism skimming, collision prediction, crystal targeting by team). Same commits as claude/ai-pilot-intensity-levels-XK6ST minus its final hardening commit.
+
+- **Status:** Redone elsewhere
+- **Areas:** AI opponents, AI training/evolution, HexRace
+- **Already in bleeding-edge:** Concept landed in a different form: bleeding-edge commits 'feat(ai): train a Skim Race Squirrel intensity-4 genome', 'feat(port): population tournament eval; document 12-generation training result', and Docs/AI_TRAINING_CONSOLIDATION.md; the Unity-side PilotGenome/PilotEvolution/AITrainingController classes do not exist.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — Strict subset of claude/ai-pilot-intensity-levels-XK6ST, and AI genome training was redone (Port + Skim Race pipeline).
+
+## Evidence
 
 - **Last commit:** 2026-02-25 by Claude
 - **Unmerged commits:** 21

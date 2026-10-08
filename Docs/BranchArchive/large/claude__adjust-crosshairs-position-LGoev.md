@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Spider swinging vessel prototype**
+
+A prototype for a new vessel class first called 'Froglet' and then 'Spider'. It swings through the world on two tethers, Spider-Man style, and fires the tethers at prisms through on-screen crosshairs that later became 'spinneret arms'. A lightsaber sweep slices through prisms. The branch includes a HUD, a Swing ability, prefab, captains and game-mode wiring, plus some unrelated cleanup of leftover Odin Inspector code.
+
+- **Status:** Unique work
+- **Areas:** Vessels (Spider), Vessel HUD, Abilities (Swing/tether), Prisms, Soap plugin cleanup
+- **Already in bleeding-edge:** None found. bleeding-edge's VesselClassType has no Spider (12 is Scarab, 13 is Butterfly), and SwingingVesselTransformer, SwingActionSO and SpiderVesselHUD* are absent. The branch also predates the Game/ to Controller/ folder restructure.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — This is the only copy of a complete swinging-vessel prototype; if the design is ever revisited it would be costly to rebuild, though it would need a heavy port onto the current layout.
+
+## Evidence
 
 - **Last commit:** 2026-06-29 by Claude
 - **Unmerged commits:** 28

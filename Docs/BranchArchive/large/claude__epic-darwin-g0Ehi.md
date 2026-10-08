@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Ecology volume, wither and crystal drops**
+
+A big ecology pass: creatures spawn based on which team controls the area, starvation makes creatures wither into collectible elemental crystals that buff the collector, all prisms count toward per-team volume, fauna spawn in the Skim Race cell, plus docs locking 'nothing pops in or out' and mass conservation. It also wrote the ecology master plan and the /ecology skill.
+
+- **Status:** Partly landed
+- **Areas:** ecology, fauna, flora, elemental crystals, Skim Race, docs
+- **Already in bleeding-edge:** Much of this direction is in bleeding-edge: Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md (LOCKED), the /ecology skill, volume-based Cell.LiveVolume, LifeFormCrystal/ElementalCrystal powerups, and commits like 7cd11fb1f 'conserved stomach' ecology LOD. Specific commits (extremity-first wither, HexRace fauna) were not found by subject.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** can be deleted after archiving — Its core ideas (volume, crystal drops, locked invariants, /ecology skill) landed in bleeding-edge and the ecology has since moved well past this branch.
+
+## Evidence
 
 - **Last commit:** 2026-06-11 by Claude
 - **Unmerged commits:** 22

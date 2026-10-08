@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**Smoother pause menu and return-to-menu**
+
+Made pausing a match and leaving it for the main menu feel smoother. The pause panel is loaded ahead of time so the first tap does not stutter, and the trip back to the menu hides the loading behind a cover. The branch also carries a shared bundle of analytics work (PostHog and Unity Gaming Services setup, the privacy-consent gate, EU data region) and a fix for the Falcon vessel's blank name, which was being saved to the hangar data. This is a pre-rebase copy from 2026-08-06; the same work was later merged under different commit IDs.
+
+- **Status:** Redone elsewhere
+- **Areas:** Pause menu, Scene loading, Analytics/PostHog, Privacy consent, Falcon vessel data
+- **Already in bleeding-edge:** bleeding-edge Assets/_Scripts/UI/PauseMenu.cs has Prewarm()/PrewarmAsync; SceneLoader.cs contains the veil logic; Assets/_Scripts/Editor/AnalyticsConsentDevWindow.cs and PostHogConfigSO.cs exist; PR #988 'qa-menu-veil-pause-clarify' merged. Commit IDs differ because the work was rebased.
+- **Risk if deleted:** low
+- **Suggestion (2026-10-08):** can be deleted after archiving — The pause prewarm, menu veil and analytics files are all in bleeding-edge; this is a stale pre-rebase copy.
+
+## Evidence
 
 - **Last commit:** 2026-08-06 by Claude
 - **Unmerged commits:** 15

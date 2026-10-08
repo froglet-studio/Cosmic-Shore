@@ -2,7 +2,19 @@
 
 _Snapshot 2026-10-08. Index: [README](../README.md). **Large branch — protected from automatic deletion.**_
 
-<!-- SUMMARY -->
+## What this branch is
+
+**QA backlog runs and Andrew's test results**
+
+The working branch for the QA process from August to early September 2026. It records Andrew's play-test results session by session (passes and failures for Salvo, Maelstrom, Dogfight, Scarab, the arcade menu revamp, Rampage and more) and applies them to the QA backlog after each run, adding a curated 'quick wins' section. It is documentation only, with no game code.
+
+- **Status:** Partly landed
+- **Areas:** QA process, QA backlog, Play-test results
+- **Already in bleeding-edge:** bleeding-edge has its own, later-regenerated Docs/QA/QA_BACKLOG.md, ARCHIVE.md and DEV_TASKS.md, but none of Andrew's 13 result files (Docs/QA/RESULTS/2026-08-07-andrew.md to 2026-09-03-andrew.md); RESULTS holds only the caleb/akouroshm/progression files.
+- **Risk if deleted:** medium
+- **Suggestion (2026-10-08):** keep — Andrew's raw play-test result records exist nowhere else; copy them into bleeding-edge Docs/QA/RESULTS or archive them in full before deleting.
+
+## Evidence
 
 - **Last commit:** 2026-09-03 by Claude
 - **Unmerged commits:** 71
