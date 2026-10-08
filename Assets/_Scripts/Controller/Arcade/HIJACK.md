@@ -290,7 +290,14 @@ by CAPABILITY on the vessel's own bindings (`TryGetBoundAction<UrchinSpikeAction
 `<UrchinSlipActionSO>`) rather than by a named trigger, and gates a tap on the spike ability's own
 `AmmoIndex` / `AmmoCost` - the two numbers the executor's `CanPay` checks - on top of this mode's
 `aiMinSpikeAmmo` floor, so a re-bound or retuned Urchin cannot leave the raider pressing a trigger
-that no-ops. The cadence and floor are still this controller's authored fields. The driver's rail
+that no-ops. The cadence and floor are still this controller's authored fields. Since #986 the
+driver's own ride logic (Skein, Regatta) spikes only CONVERTIBLE hostile mass -
+`UrchinAutopilotDriver.IsConvertible` skips super-shielded prisms, which `PrismTeamManager.Steal`
+always refuses, so a volley there would only spend the meter. Hijack does not route through that
+gate: it calls `TrySpike` directly after its own hostile test (`IsHostileUnderfoot`, read from the
+replicated yard table), and the yard's rails and burrs are never super-shielded (a Mass-5 shield
+is an ordinary shield, which a steal drops rather than flips), so the rule changes nothing here
+today. If the yard ever authors super-shielded mass, add `IsConvertible` to that test. The driver's rail
 CHOICE (ride / reverse / leave) is not used here: this yard's rails are 20 degree arcs chosen by
 `ChooseRail`, and the RIDE state already rides each one to its end. Its Track Projector is not
 used here either, deliberately: the yard is under 1,850 u across, and a projected track's 360 u/s
@@ -425,15 +432,16 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   the wrong team. **Shield state is not part of the table**: a Mass-5 rail prism shielded on one
   machine may not be on another, so whether a steal is refused (`Steal` drops a shield instead of
   flipping) can still differ. The SCORE path is unchanged and was already correct on every peer.
-- **The Urchin has no HUD prefab.** There is no `UrchinHUDVariant.prefab` and the vessel wires
-  none, so an Urchin-only mode ships with no ability lockup row, no elemental petal bars, no
-  control chips and **no ammo gauge** — while the pilot's only weapon is gated on exactly that
-  meter. It is also noisy: `VesselStatus.VesselHUDController` logs an error whenever the field
-  does not implement the interface, which includes null, and it is read on every vessel spawn and
-  every HUD hide/show. Latent and not reachable from this mode: four call sites in
-  `VesselController` dereference the same getter unguarded, so any mode that calls `ChangePlayer`
-  on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
-  uncontrollable.
+- **The Urchin HUD is placeholder art.** Since #973 (2026-10) `Urchin.prefab` wires
+  `VesselStatus.vesselHUDController` to an `UrchinVesselHUDController` driving a nested
+  `UrchinHUDVariant.prefab` (a Prefab Variant of `VesselHUDPrefab`, authored by
+  `Tools/Build/author_urchin_hud.py`): the four-icon row Chain Spikes / Trail Rider / Track
+  Projector / Slip with RT / LT / B chips, the elemental petal bars, the **ammo gauge** on the
+  Charge card (the meter this mode's only weapon spends), the riding indicator on Mass and the
+  Track Projector's recharge veil on Space. The four icons are white placeholder silhouettes
+  awaiting the art pass, and the Chain Spikes hold-to-charge has no gauge yet (the executor does
+  not expose charge progress). The old "no HUD" state also logged `VesselHUDController is null`
+  on every spawn; that is gone with the wiring.
 - **`ram: 1` is a fleet-wide AI field, and it was audited (2026-10) rather than narrowed.**
   `Urchin.prefab` is shared, so every AI Urchin flies at full throttle whenever it is lined up on
   its objective. Every context one flies in WANTS that: Skein and Regatta both aim an attached AI
