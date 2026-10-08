@@ -58,7 +58,7 @@ namespace CosmicShore.Core
             [ApplicationState.MainMenu] = new HashSet<ApplicationState>
             {
                 ApplicationState.LoadingGame,
-                ApplicationState.Authenticating, // reconnect re-runs the boot chain from the menu
+                ApplicationState.Authenticating, // ReconnectService re-runs the boot chain (reconnect / go offline)
             },
             [ApplicationState.LoadingGame] = new HashSet<ApplicationState>
             {

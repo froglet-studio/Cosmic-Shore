@@ -205,6 +205,13 @@ namespace CosmicShore.Gameplay
             {
                 oneThumbActive = false;
                 throttleCarry = 0f;
+                // No thumb on the glass is a let-go of everything. The drift already ends on
+                // 1 -> 0 (HandleDriftTransitions); the stick abilities a thumb LIFT started and
+                // the straight-line speed gestures used to stay held until two thumbs landed again
+                // (StopStickEffects ran only from ProcessMultiTouch), so a Dolphin kept drifting
+                // and charging, or a Sparrow kept firing, with the pilot's hands off the screen.
+                StopStickEffects();
+                ReleaseSpeedEffects();
                 ResetInput();
                 if (!inputStatus.Idle)
                 {
@@ -295,6 +302,36 @@ namespace CosmicShore.Gameplay
             if (prevTouchCount >= 2 && touchCount == 0)
             {
                 StopDrift();
+            }
+        }
+
+        // The strategy can stop running with thumbs down (a pad or keyboard takes over, or the game
+        // pauses), and then never sees the lift. Release everything a held touch started.
+        public override void OnStrategyDeactivated()
+        {
+            StopDrift();
+            StopStickEffects();
+            ReleaseSpeedEffects();
+        }
+
+        public override void OnPaused()
+        {
+            StopDrift();
+            StopStickEffects();
+            ReleaseSpeedEffects();
+        }
+
+        private void ReleaseSpeedEffects()
+        {
+            if (fullSpeedStraightEffectsStarted)
+            {
+                fullSpeedStraightEffectsStarted = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
+            }
+            if (minimumSpeedStraightEffectsStarted)
+            {
+                minimumSpeedStraightEffectsStarted = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
             }
         }
 

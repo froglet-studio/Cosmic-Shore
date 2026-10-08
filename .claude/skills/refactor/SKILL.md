@@ -182,7 +182,8 @@ somebody will run**: one prompt file was still instructing a future session to a
 the branch had just deleted.
 
 **3.10 A one-shot migration `assert` above a generator's validation makes `--check` vacuous.**
-Six of eight mode generators were red and nobody was reading them. A spent one-shot must STAND
+Measured 2026-09-09, six of the eight mode generators then checked were red and nobody was reading
+them (all 25 `author_*_assets.py` pass `--check` since #969/#967, measured 2026-10-06). A spent one-shot must STAND
 DOWN, not abort. And *a `--check` that never reads the disk is not a check.*
 
 **3.11 "Referenced by SOMETHING" is also a statement about what you searched** — the mirror of

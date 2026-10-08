@@ -141,6 +141,21 @@ namespace CosmicShore.UI
             // whichever of the two comes first.
             Wire();
 
+            OnModalOpened -= HandleOpened;
+            OnModalOpened += HandleOpened;
+        }
+
+        /// <summary>
+        /// The open-time work: fetch, reset the reward tooltip, play the open. It used to run in
+        /// OnEnable, but Menu_Main authors this window ACTIVE and ModalWindowOut only hides its
+        /// CanvasGroup, so OnEnable ran once - at scene load, hidden - and every later open showed
+        /// the board as it was when the menu loaded (empty for good if that first fetch failed),
+        /// with the last tab and an open tooltip carried over and no open animation.
+        /// OnModalOpened fires on every real closed-to-open transition (ArcadeExploreView and
+        /// ToyboxModal ride it for the same reason).
+        /// </summary>
+        void HandleOpened()
+        {
             PublishFriendSource();
             CloseRewardPanel(instant: true);
             RedrawHeader();
@@ -150,6 +165,7 @@ namespace CosmicShore.UI
 
         protected override void OnDisable()
         {
+            OnModalOpened -= HandleOpened;
             base.OnDisable();
 
             // A killed tween leaves its target mid-flight, so the content root is snapped back to
@@ -449,8 +465,9 @@ namespace CosmicShore.UI
             if (_rewardGroup) return _rewardGroup;
             if (!rankRewardPanel) return null;
 
-            _rewardGroup = rankRewardPanel.GetComponent<CanvasGroup>()
-                        ?? rankRewardPanel.AddComponent<CanvasGroup>();
+            // TryGetComponent: GetComponent() ?? AddComponent() keeps the Editor's fake null.
+            if (!rankRewardPanel.TryGetComponent(out _rewardGroup))
+                _rewardGroup = rankRewardPanel.AddComponent<CanvasGroup>();
             return _rewardGroup;
         }
 

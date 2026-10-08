@@ -144,33 +144,16 @@ namespace CosmicShore.Gameplay
             _allowRecord = false;
         }
 
-        public void LifeformCreated(int cellID)
-        {
-            if (!_allowRecord || cellData == null) return;
+        // LifeFormsInCell has ONE writer: Cell.UpdateCellStats sets it from spawnedLifeForms.Count
+        // whenever a lifeform registers or unregisters. These two handlers (wired to
+        // onLifeFormCreated / onLifeFormDestroyed in StatsManager.prefab) also ++/-- the same field,
+        // so a flora death - LifeForm.Die unregisters (correct count), then DieCoroutine raises
+        // onLifeFormDestroyed - took a second one off: two plants, kill one, the count read 0 and
+        // AllLifeFormsDestroyedTurnMonitor ended the turn with a plant still alive. Kept as no-ops so
+        // the prefab's UnityEvent wiring still resolves.
+        public void LifeformCreated(int cellID) { }
 
-            var cellStatsList = cellData.CellStatsList;
-
-            if (!cellStatsList.ContainsKey(cellID))
-                cellStatsList[cellID] = new CellStats();
-
-            var cs = cellStatsList[cellID];
-            cs.LifeFormsInCell++;
-            cellStatsList[cellID] = cs;
-        }
-
-        public void LifeformDestroyed(int cellID)
-        {
-            if (!_allowRecord || cellData == null) return;
-
-            var cellStatsList = cellData.CellStatsList;
-
-            if (!cellStatsList.ContainsKey(cellID))
-                cellStatsList[cellID] = new CellStats();
-
-            var cs = cellStatsList[cellID];
-            cs.LifeFormsInCell--;
-            cellStatsList[cellID] = cs;
-        }
+        public void LifeformDestroyed(int cellID) { }
 
         /// <summary>
         /// A fauna died to an attributed force - credit the killer. Raised on
@@ -500,7 +483,9 @@ namespace CosmicShore.Gameplay
 
             var local = gameData.LocalPlayer;
             if (local is Player netPlayer && local.IsLocalUser && local.Name == prismStats.OwnName)
-                netPlayer.ReportPrismStolen_ServerRpc(prismStats.Volume);
+                netPlayer.ReportPrismStolen_ServerRpc(
+                    prismStats.Volume,
+                    new Unity.Collections.FixedString64Bytes(prismStats.AttackerName ?? string.Empty));
         }
 
         public void PrismRestored(PrismStats prismStats)
@@ -546,6 +531,20 @@ namespace CosmicShore.Gameplay
             thief.VolumeRemaining += volume;
         }
 
+        /// <summary>
+        /// SERVER: debit one stolen prism from its victim - the other half of
+        /// <see cref="CreditPrismSteal"/>, shared the same way so the client round-trip and the
+        /// server's own detection cannot drift. Before it existed the client path carried only
+        /// the thief's half, so a remote client's steal inflated the victim's
+        /// PrismsRemaining/VolumeRemaining (URCHIN_BACKLOG U2, Docs/ScoringSystem/BUGS.md B19).
+        /// </summary>
+        internal static void DebitPrismSteal(IRoundStats victim, float volume)
+        {
+            if (victim == null) return;
+            victim.PrismsRemaining--;
+            victim.VolumeRemaining -= volume;
+        }
+
         public void PrismStolen(PrismStats prismStats)
         {
             // CLIENT: the server never saw this steal - Prism.Steal is entirely local, exactly
@@ -567,17 +566,16 @@ namespace CosmicShore.Gameplay
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
 
-            stealingPlayerStats.PrismStolen++;
-            stealingPlayerStats.PrismsRemaining++;
-            stealingPlayerStats.VolumeStolen += prismStats.Volume;
-            stealingPlayerStats.VolumeRemaining += prismStats.Volume;
+            CreditPrismSteal(stealingPlayerStats, prismStats.Volume);
 
+            // A REMOTE player's steal returned at the OwnsAttacker gate above, so its victim is
+            // debited where the credit lands: Player.ReportPrismStolen_ServerRpc, which carries
+            // the victim's name for exactly this. Each steal is debited once on either path.
             var victimPlayerName = prismStats.AttackerName;
             if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
                 return;
 
-            victimPlayerStats.PrismsRemaining--;
-            victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+            DebitPrismSteal(victimPlayerStats, prismStats.Volume);
         }
 
         public void RegisterAbilityExecuted(AbilityStats abilityStats)

@@ -393,7 +393,7 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
 
     bool Lineages => Cell.F(_cfg, "MultiDomain") > 0.5f && Cell.F(_cfg, "Model") == 2f;
 
-    /// <summary>SwarmFauna.BuildTickSettings (Bestiary / HuntEnter / LurkCalm / LocustPhaseSeconds are not in the asset:
+    /// <summary>SwarmFauna.BuildTickSettings (Bestiary / HuntEnter / HuntWindupSeconds / PuffWindupSeconds / LurkCalm / LocustPhaseSeconds are not in the asset:
     /// the SO's own field defaults apply, as Unity does for a missing key - SwarmFaunaConfigSO.cs).</summary>
     SwarmTickSettings TickSettings()
     {
@@ -405,6 +405,8 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
             DangerEnter = Cell.F(_cfg, "DangerEnter"), DangerExit = Cell.F(_cfg, "DangerExit"),
             Bestiary = true, HuntEnter = 0.2f, LurkCalm = 0.05f,
             LocustPhaseTicks = Math.Max(1, (int)MathF.Round(2f * _hz)),
+            HuntWindupTicks = Math.Max(0, (int)MathF.Round(0.4f * _hz)),   // SwarmFaunaConfigSO.HuntWindupSeconds
+            PuffWindupTicks = Math.Max(0, (int)MathF.Round(0.4f * _hz)),   // SwarmFaunaConfigSO.PuffWindupSeconds
             EngageRadius = _engage, MaxEngaged = (int)Cell.F(_cfg, "MaxProxies"),
             MultiDomain = Lineages,
         };
@@ -1044,6 +1046,18 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
                 f.SetValue(P, reg);
                 continue;
             }
+            if (f.FieldType == typeof(SubstrateSiegeParams))
+            {
+                // the siege's tunables (Docs/SUBSTRATE_FAUNA.md §10), read back from the asset like the regimes
+                var sg = ((SubstrateSiegeParams)f.GetValue(P)!).Clone();
+                foreach (var g in typeof(SubstrateSiegeParams).GetFields())
+                {
+                    if (!v.TryGetProperty(g.Name, out var gv)) throw new Exception($"substrate {key}: {f.Name}.{g.Name} missing");
+                    g.SetValue(sg, ToField(g.FieldType, gv));
+                }
+                f.SetValue(P, sg);
+                continue;
+            }
             f.SetValue(P, ToField(f.FieldType, v));
         }
         foreach (var prop in sp.EnumerateObject())
@@ -1553,6 +1567,7 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         {
             Capacity = Cell.F(k, "WorkerStomach"), Metabolism = Cell.F(k, "WorkerMetabolism"), Torpor = Cell.F(k, "WorkerMetabolism"),
             HungryBelow = Cell.F(k, "WorkerHungryBelow"), BirthAbove = Cell.F(k, "WorkerBirthAbove"), BirthCost = Cell.F(k, "WorkerBirthCost"),
+            OwnDomainBelow = Cell.F(k, "WorkerOwnDomainBelow"),
         },
     };
 
@@ -1567,6 +1582,7 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         {
             Capacity = Cell.F(k, "ThiefStomach"), Metabolism = Cell.F(k, "ThiefMetabolism"), Torpor = Cell.F(k, "ThiefTorpor"),
             HungryBelow = Cell.F(k, "ThiefHungryBelow"), BirthAbove = Cell.F(k, "ThiefBirthAbove"), BirthCost = Cell.F(k, "ThiefBirthCost"),
+            OwnDomainBelow = Cell.F(k, "ThiefOwnDomainBelow"),
         },
     };
 
@@ -1583,6 +1599,7 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         {
             Capacity = Cell.F(k, "WearerStomach"), FounderFill = 0.6f, Metabolism = Cell.F(k, "WearerMetabolism"), Torpor = Cell.F(k, "WearerMetabolism"),
             HungryBelow = Cell.F(k, "WearerHungryBelow"), BirthAbove = 0.9f, BirthCost = Cell.F(k, "WearerBirthCost"),
+            OwnDomainBelow = Cell.F(k, "WearerOwnDomainBelow"),
         },
     };
 

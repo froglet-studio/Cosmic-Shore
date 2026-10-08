@@ -192,6 +192,39 @@ void ChargeCrystalArcs(
     node *= arc;
 }
 
+// ─── Discharge colour ───────────────────────────────────────────────────────
+//
+// The edge effect on its own: cool halo in the crystal's own bright colour, hot near-white
+// core, and the terminal flash. Zero wherever no bolt is — including every fragment of an
+// unbaked mesh — so an ADDITIVE pass drawing only this term (the omni crystal's pentagons,
+// OmniChargeEdgesShader) adds the charge crystal's signature and nothing else.
+
+float3 ChargeCrystalDischarge(
+    float3 bary,
+    float3 edgeH,
+    float3 edgeSeed,
+    float  time,
+    float3 brightColor,
+    float3 arcCoreColor,
+    float  arcIntensity,
+    float  arcWidth,
+    float  arcLength,
+    float  arcSpeed,
+    float  arcDuty,
+    float  arcJitter,
+    float  arcShimmer,
+    float  nodeRadius,
+    float  nodeIntensity)
+{
+    float arc, heat, node;
+    ChargeCrystalArcs(bary, edgeH, edgeSeed, time,
+                      arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius,
+                      arc, heat, node);
+
+    float3 arcColor = lerp(brightColor, arcCoreColor, saturate(heat * heat));
+    return arcColor * (arc * arcIntensity) + arcCoreColor * (node * nodeIntensity);
+}
+
 // ─── Full surface ───────────────────────────────────────────────────────────
 //
 // Unlit by design (matching the rest of the crystal family) but self-shaded off the flat
@@ -238,14 +271,10 @@ void ChargeCrystalSurface(
     float3 body = lerp(dullColor.rgb, brightColor.rgb, saturate(fresnel * rimStrength)) * facet;
     float3 emissive = brightColor.rgb * (emissionStrength * fresnel);
 
-    float arc, heat, node;
-    ChargeCrystalArcs(bary, edgeH, edgeSeed, time,
-                      arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius,
-                      arc, heat, node);
-
-    // Cool halo in the crystal's own bright colour, hot near-white core.
-    float3 arcColor = lerp(brightColor.rgb, arcCoreColor, saturate(heat * heat));
-    float3 discharge = arcColor * (arc * arcIntensity) + arcCoreColor * (node * nodeIntensity);
+    float3 discharge = ChargeCrystalDischarge(bary, edgeH, edgeSeed, time,
+                                              brightColor.rgb, arcCoreColor, arcIntensity,
+                                              arcWidth, arcLength, arcSpeed, arcDuty, arcJitter,
+                                              arcShimmer, nodeRadius, nodeIntensity);
 
     color = body + emissive + discharge;
 }

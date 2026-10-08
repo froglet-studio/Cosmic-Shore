@@ -109,7 +109,7 @@ def defaults():
         r"public static readonly Vector3 %s = new Vector3\(([\d.]+)f, ([\d.]+)f, ([\d.]+)f\);" % k, cs).groups())
     d = {k: num(k) for k in ("GroveInnerRadius", "GroveOuterRadius", "GroveHalfAngleDegrees", "SnapTrapClumps",
                              "SnapTrapSeedFloor", "SnapTrapCap", "ClumpRadius", "ClumpSpreadDegrees",
-                             "RootBitesPerAbsorb", "Sclerotia", "ShellPrisms", "ShellRadius",
+                             "RootBitesPerAbsorb", "Sclerotia", "SclerotiumCap", "ShellPrisms", "ShellRadius",
                              "PlantedTubesPerSclerotium", "MaxTubes", "SimHz", "TrapRootDepthMin", "TrapRootDepthMax",
                              "HelioConeDegrees", "SnapTrapElement", "PhysarumElement", "OuterSwarmBandEdge",
                              "MembraneRadius")}
@@ -138,13 +138,13 @@ def profile_guids():
 def always_on_hearts():
     """Heart colliders the grove adds at its caps: one crystal per trap, one per sclerotium (§5)."""
     d = defaults()
-    return int(d["SnapTrapCap"] + d["Sclerotia"])
+    return int(d["SnapTrapCap"] + d["SclerotiumCap"])
 
 
 def prism_colliders():
     """Body-prism colliders at the caps (LOD-culled like every flora prism; not in the always-on gate)."""
     d = defaults()
-    return int(d["SnapTrapCap"] * SLOTS_PER_TRAP + d["MaxTubes"] + d["Sclerotia"] * d["ShellPrisms"])
+    return int(d["SnapTrapCap"] * SLOTS_PER_TRAP + d["MaxTubes"] + d["SclerotiumCap"] * d["ShellPrisms"])
 
 
 # ── assets ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -171,8 +171,8 @@ def flora_asset(name, prefab, floor, cap, element, d):
         f"  FloraPrefab: {{fileID: {ROOT_MB_FID}, guid: {guid(rel(prefab_path(prefab)))}, type: 3}}\n"
         f"  SpawnProbability: 1\n  InitialSpawnCount: {floor}\n  OverrideDefaultPlantPeriod: 0\n"
         f"  NewPlantPeriod: 9999999\n  PopulationSize: {floor}\n  MaxLivePopulation: {cap}\n"
-        # 0 = no per-plant growth quota: a snap trap buds from the colony's rhizome (TrySpawnOneOffspring), a
-        # sclerotium does not reproduce (the seeder holds the network at its floor)
+        # 0 = no per-plant growth quota: both bud through TrySpawnOneOffspring from what their colony digested - a
+        # snap trap when the rhizome holds a whole body, a sclerotium when the network's reserve holds a whole shell
         "  GrowthPerOffspring: 0\n  OffspringPerBirth: 1\n  ReproductionCooldownSeconds: 5\n  MaturityFraction: 0\n"
         "  OffspringSpread: 60\n"
         f"  Element: {element}\n"
@@ -226,7 +226,7 @@ def emit():
         GROVE_NAME: grove_asset(d),
         SNAP_NAME: flora_asset(SNAP_NAME, "SnapTrapFlora", int(d["SnapTrapSeedFloor"]), int(d["SnapTrapCap"]),
                                int(d["SnapTrapElement"]), d),
-        PHYS_NAME: flora_asset(PHYS_NAME, "PhysarumSclerotium", int(d["Sclerotia"]), int(d["Sclerotia"]),
+        PHYS_NAME: flora_asset(PHYS_NAME, "PhysarumSclerotium", int(d["Sclerotia"]), int(d["SclerotiumCap"]),
                                int(d["PhysarumElement"]), d),
     }
     for name, text in assets.items():
@@ -275,6 +275,8 @@ def verify(out, d):
         problems.append(f"{tot['colliders_engaged']} + {always_on_hearts()} grove hearts = {engaged} colliders >= the ceiling {asf.COLLIDER_CEILING}")
     if d["SnapTrapCap"] < d["SnapTrapSeedFloor"]:
         problems.append("the snap-trap cap is below its seed floor")
+    if d["SclerotiumCap"] <= d["Sclerotia"]:
+        problems.append("the sclerotium cap leaves no headroom over its seed floor (a heart could never bud)")
     # the ScriptableObject's C# defaults ARE ThreatGroveDefaults (a config made by hand matches the cell's)
     so = read(CONFIG_CS)
     for k in ("StalkLeaf", "LobeLeaf", "ToothLeaf", "TubeLeaf", "ShellLeaf"):
@@ -315,7 +317,7 @@ def report(d, tot, engaged):
     print(f"  snap traps: {int(d['SnapTrapClumps'])} clumps, seed floor {int(d['SnapTrapSeedFloor'])}, cap "
           f"{int(d['SnapTrapCap'])}, {SLOTS_PER_TRAP} prisms each, rooted {d['TrapRootDepthMin']:.0f}-{d['TrapRootDepthMax']:.0f} u "
           f"inside the rim, turning within {d['HelioConeDegrees']:.0f} deg of the cell centre; Element {ELEMENT_NAME[int(d['SnapTrapElement'])]}")
-    print(f"  physarum: {int(d['Sclerotia'])} sclerotia, tube cap {int(d['MaxTubes'])}, {int(d['ShellPrisms'])}-prism "
+    print(f"  physarum: {int(d['Sclerotia'])} sclerotia seeded, cap {int(d['SclerotiumCap'])}, tube cap {int(d['MaxTubes'])}, {int(d['ShellPrisms'])}-prism "
           f"beat shell each; {d['SimHz']:.0f} Hz; Element {ELEMENT_NAME[int(d['PhysarumElement'])]}")
     print(f"  colliders: +{always_on_hearts()} always-on hearts -> {tot['colliders_engaged']} + {always_on_hearts()} = "
           f"{engaged} worst case (ceiling 1200); body prisms at the caps <= {prism_colliders()} "

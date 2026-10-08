@@ -127,6 +127,13 @@ so run this tool before it.
   so any branch touching one of them gets these. Fix: compile changed Editor-folder files as a
   separate Assembly-CSharp-Editor that references Assembly-CSharp. Done when such a branch reports
   0, and a planted error in an Editor file and in a runtime `#if UNITY_EDITOR` block still fail.
+- **`--config editor` only sees Editor-folder files COMMITTED since `--changed-base`.** The set
+  is `git diff --name-only <base>...HEAD`, so a NEW test file that is still untracked or only
+  staged is not compiled at all — and a planted error in it passes green (seen 2026-10-08 on
+  `cece/dreamy-fermat-szo9ck`: a runtime plant failed the run, the same plant in a new
+  `Tests/Editor/*.cs` did not). Commit first, then run the editor config; the run then lists the
+  file under `editor config: + N Editor-folder file(s)`. Fix: union in `git status --porcelain`
+  paths (an unmerged branch, `claude/hopeful-heisenberg-murjor`, does this).
 - **`depublicize()` needs a net8.0 reference pack under `DOTNET_ROOT`.** With only a .NET 10 SDK it
   raises `IndexError: list index out of range` (`build.py`, the `Microsoft.NETCore.App.Ref/*/ref/net8.0`
   glob) after the full fetch. Workaround: point `DOTNET_ROOT` at an 8.0 install. Fix: accept any

@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -29,6 +30,15 @@ namespace CosmicShore.Gameplay
     /// <para>Every post carries the same four arguments: <c>{0}</c> the leading domain,
     /// <c>{1}</c> its score, <c>{2}</c> the target, <c>{3}</c> the name of its best single
     /// pilot (the lead runner in a gate race; the top contributor in a summed race).</para>
+    ///
+    /// <para><b>A TEAM-SUMMED race scales every threshold by the leading team's size.</b> The
+    /// rule's target is ONE pilot's course (Regatta: 24 gates), but a summed
+    /// <see cref="ScoringRuleSO.DomainValue"/> is every pilot's gates added up - so comparing the
+    /// two fired halfway, home stretch and final lap early the moment a team had two pilots
+    /// (a pair each a quarter of the way round read as "halfway"). A mode that sums passes
+    /// <see cref="CountPilots"/>; the leading team's target, home stretch and final-lap mark
+    /// are then that many courses' worth (<see cref="Evaluate"/>). Without it - every other mode -
+    /// the arithmetic is exactly what it was.</para>
     /// </summary>
     public sealed class DomainRaceToasts
     {
@@ -47,6 +57,7 @@ namespace CosmicShore.Gameplay
         public const float PollSeconds = 0.5f;
 
         readonly ScoringRuleSO _rule;
+        readonly Func<GameDataSO, Domains, int> _pilotsPerDomain;
 
         float _turnStartTime = float.NaN;
         bool _seeded;
@@ -58,7 +69,62 @@ namespace CosmicShore.Gameplay
         Domains _leader = Domains.Blue;
         float _lastLeadToastTime = float.NegativeInfinity;
 
-        public DomainRaceToasts(ScoringRuleSO rule) => _rule = rule;
+        /// <param name="pilotsPerDomain">For a TEAM-SUMMED race only (<see cref="CountPilots"/>):
+        /// how many courses a domain's score is the sum of. Null = one, every other mode.</param>
+        public DomainRaceToasts(ScoringRuleSO rule, Func<GameDataSO, Domains, int> pilotsPerDomain = null)
+        {
+            _rule = rule;
+            _pilotsPerDomain = pilotsPerDomain;
+        }
+
+        /// <summary>The pilots flying for <paramref name="domain"/> - the size of its summed
+        /// score. Read off the replicated RoundStats every peer holds.</summary>
+        public static int CountPilots(GameDataSO gameData, Domains domain)
+        {
+            int n = 0;
+            var list = gameData?.RoundStatsList;
+            if (list == null) return 0;
+            for (int i = 0, c = list.Count; i < c; i++)
+                if (list[i] != null && list[i].Domain == domain) n++;
+            return n;
+        }
+
+        /// <summary>Which beats a score has reached. Pure, so the shipped thresholds are the
+        /// tested ones.</summary>
+        public readonly struct Beats
+        {
+            public readonly bool Quarter, Half, Home, FinalLap;
+            /// <summary>The target the beats were measured against - posted as <c>{2}</c>.</summary>
+            public readonly int Target;
+
+            public Beats(bool quarter, bool half, bool home, bool finalLap, int target)
+            {
+                Quarter = quarter; Half = half; Home = home; FinalLap = finalLap; Target = target;
+            }
+        }
+
+        /// <summary>
+        /// The beat thresholds for a leading score of <paramref name="best"/>.
+        /// <paramref name="courseTarget"/>, <paramref name="homeStretchRemaining"/> and
+        /// <paramref name="finalLapAt"/> are ONE pilot's; <paramref name="pilots"/> is how many
+        /// such courses the score sums (1 for every mode but a team-summed one, and a value
+        /// below 1 is read as 1), and every threshold scales by it.
+        /// </summary>
+        public static Beats Evaluate(int best, int courseTarget, int homeStretchRemaining, int finalLapAt,
+                                     int pilots = 1)
+        {
+            int p = Mathf.Max(1, pilots);
+            int target = courseTarget * p;
+            int homeRemaining = homeStretchRemaining * p;
+            int finalAt = finalLapAt * p;
+
+            bool quarter = best >= QuarterFraction * target;
+            bool half = best >= HalfFraction * target;
+            bool home = homeStretchRemaining > 0 && target > homeRemaining * 2
+                        && best >= target - homeRemaining && best < target;
+            bool finalLap = finalLapAt > 0 && finalAt < target && best >= finalAt && best < target;
+            return new Beats(quarter, half, home, finalLap, target);
+        }
 
         /// <summary>
         /// Call every frame (it throttles itself) while the turn runs, on EVERY peer.
@@ -102,13 +168,21 @@ namespace CosmicShore.Gameplay
                 if (value > best) { best = value; leader = d; tied = false; }
                 else if (value == best && value > 0) tied = true;
             }
+            var top = leader;   // the team the thresholds are sized by, tie or not
             if (tied) leader = Domains.Blue;
 
-            bool quarter = best >= QuarterFraction * target;
-            bool half = best >= HalfFraction * target;
-            bool home = homeStretchRemaining > 0 && target > homeStretchRemaining * 2
-                        && best >= target - homeStretchRemaining && best < target;
-            bool finalLap = finalLapAt > 0 && finalLapAt < target && best >= finalLapAt && best < target;
+            // The LEADING team's size: its summed score is measured against its own courses.
+            // Sized off the top team even in a tie, so a silent seed during a tie records the
+            // same thresholds the next announced poll will test.
+            int pilots = _pilotsPerDomain != null && top != Domains.Blue
+                ? _pilotsPerDomain(gameData, top)
+                : 1;
+            var beats = Evaluate(best, target, homeStretchRemaining, finalLapAt, pilots);
+            target = beats.Target;
+            bool quarter = beats.Quarter;
+            bool half = beats.Half;
+            bool home = beats.Home;
+            bool finalLap = beats.FinalLap;
 
             if (!_seeded)
             {

@@ -28,6 +28,9 @@ namespace CosmicShore.Gameplay
         private IVesselStatus _vesselStatus;
         private Projectile _lastProjectile;
 
+        /// <summary>Most recently fired projectile — may be despawned; callers must guard with FlightGeneration.</summary>
+        public Projectile LastProjectile => _lastProjectile;
+
         private bool _onCooldown;
 
         /// <summary>

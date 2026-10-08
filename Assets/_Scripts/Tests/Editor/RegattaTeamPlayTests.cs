@@ -131,6 +131,17 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ATie_PlacesTheFinishersTeamFirst_SoCrystalsFollowTheBanner()
+        {
+            var rule = MakeRule();
+            var race = MakeRace(24, ("A", Domains.Jade, 12), ("B", Domains.Jade, 12), ("C", Domains.Ruby, 24));
+            Assert.AreEqual(Domains.Ruby, rule.ResolveWinner(race));
+            var placement = rule.ResolvePlacementOrder(race);
+            Assert.AreEqual(Domains.Ruby, placement[0], "24 v 24 - placement must agree with the winner");
+            Assert.AreEqual(Domains.Jade, placement[1]);
+        }
+
+        [Test]
         public void Scores_AreEachPilotsOwnGates_SoDomainTotalsAreTheTeamSums()
         {
             var rule = MakeRule();

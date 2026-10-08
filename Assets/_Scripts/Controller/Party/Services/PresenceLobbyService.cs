@@ -160,7 +160,7 @@ namespace CosmicShore.Gameplay
                     // sides deterministically pick the SAME one instead of staying
                     // split.  A symmetric "join the first rival" merge could have both
                     // sides swap into each other's lobby and end up split again.
-                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS);
+                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS, DelayType.UnscaledDeltaTime);
                     await ConvergeToCanonicalAsync(maxPlayers);
                 }
             }

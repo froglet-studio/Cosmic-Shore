@@ -198,11 +198,15 @@ so a base that expects to be subclassed should expose a named hook rather than a
 
 ## Toasts
 
-**Two idle hints and nothing else**, and the absence is a decision: the gate-race platform has no
-gate-threaded hook, so a milestone or lead-change situation here would have **no poster** — and an
-enum member nothing raises reads exactly like a feature. An idle hint needs no poster (the toast
-system fires it off `idleSeconds`), which is why Regatta authored only hints too. They are the
-mode's two verbs, because a pilot who never finds the Fold simply orbits the first cluster forever.
+**Two idle hints and the shared race beats.** The hints are the mode's two verbs, because a pilot
+who never finds the Fold simply orbits the first cluster forever; an idle hint needs no poster (the
+toast system fires it off `idleSeconds`). The mode shipped with the hints ONLY, deliberately: the
+gate-race platform had no gate-threaded hook, so a milestone situation would have had no poster,
+and an enum member nothing raises reads exactly like a feature. `DomainRaceToasts` (#976) is that
+hook - `GateRaceController` ticks it for every gate race - so the config now authors halfway /
+lead change / home stretch (`DomainRaceHalf` 129, `DomainRaceLeadChanged` 130,
+`DomainRaceHomeStretch` 131) in Skein's voice (`ring {1}/{2}`). Not the quarter (128, no gate race
+authors it) and not the final lap (132): one pass of clusters has no last lap, so it never fires.
 
 ## Assets
 
@@ -253,7 +257,6 @@ gameplay monolith), so they have had a syntax pass and an API-surface read and n
   guard for respawns and ejects, and the teleport counter is what declines a fold, so the
   generosity costs nothing — but it is inherited rather than derived, and a tighter value would
   describe this hull.
-- **No milestone toasts** (above).
 
 ## The scene registration, and why the card failed to launch once
 

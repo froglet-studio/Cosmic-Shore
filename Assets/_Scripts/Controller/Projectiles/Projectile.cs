@@ -292,6 +292,17 @@ namespace CosmicShore.Gameplay
         public bool SpareOwnDomain { get; private set; }
 
         /// <summary>
+        /// Per-flight: when the lifetime runs out the round comes to REST where it is and stays
+        /// live, rendered and detonatable - no <see cref="FlightEnded"/>, no end effects, no pool
+        /// return - until its owner retires it (<see cref="ReturnToFactory"/>). The flight
+        /// already eases to a stop (<c>cos(pi t / 2T)</c>), so the round simply parks at the end
+        /// of its throw. The Grizzly trigger bomb is the one user: it goes off when the trigger
+        /// says so and never on its own clock. A proximity fuze still ends the flight normally.
+        /// Cleared by <see cref="Initialize"/>, so set it AFTER the gun fires.
+        /// </summary>
+        public bool HoldAtFlightEnd { get; set; }
+
+        /// <summary>
         /// What THIS flight is carrying. Reset to <see cref="ProjectilePayload.Default"/> by
         /// <see cref="Initialize"/>, so a pooled reissue can never inherit the previous shot's
         /// payload and a caller that says nothing gets the prefab's own authoring.
@@ -555,6 +566,7 @@ namespace CosmicShore.Gameplay
             StopOnFirstPrismImpact = stopOnFirstPrismImpact;
             SpareOwnDomain = spareOwnDomain;
             IsCarriedByHost = carriedByHost;
+            HoldAtFlightEnd = false;
 
             // Per-flight: a pooled reissue must not inherit the previous shooter's
             // end-of-flight handler, and the once-only latches must re-arm.
@@ -798,6 +810,16 @@ namespace CosmicShore.Gameplay
         bool _embedded;
 
         /// <summary>
+        /// The sweep loops' one exit test. An EMBEDDED round has stopped where it struck but has
+        /// not raised <c>FlightEnded</c> yet (<see cref="EmbedAndRetire"/> defers that by the
+        /// dwell), so <c>_flightEndRaised</c> alone let a spike that had visibly stopped keep
+        /// dispatching the rest of that frame's hits - stealing and chain-firing from inside the
+        /// prism it stuck in - then step on to the segment's end and run the fuze test
+        /// (URCHIN_BACKLOG U4).
+        /// </summary>
+        bool FlightHalted => _flightEndRaised || _embedded;
+
+        /// <summary>
         /// Halts this round where it struck and leaves it standing in the prism for
         /// <paramref name="dwellSeconds"/>, then fades it out and returns it to the pool.
         /// This is the modern <c>TrailBlockImpactEffects.Stop</c> — the Urchin spike sticking
@@ -921,7 +943,9 @@ namespace CosmicShore.Gameplay
                     {
                         using (s_SweepVesselsMarker.Auto())
                             SweepVesselsAlong(sweepFrom, t.position);
-                        if (_flightEndRaised) return;
+                        // FlightHalted, not _flightEndRaised: it also covers _embedded, so a
+                        // projectile that lodged mid-sweep stops sweeping too.
+                        if (FlightHalted) return;
                     }
 
                     if (!sweptPrismDetection && HasVirtualPrisms())
@@ -930,7 +954,7 @@ namespace CosmicShore.Gameplay
                         // creature that is only data, Docs/SWARM_FAUNA.md §19) has no collider, so the index's own
                         // virtual entries are swept for (and join the same dispatch) explicitly
                         SweepPrismsAlong(sweepFrom, t.position, virtualOnly: true);
-                        if (_flightEndRaised) return;
+                        if (FlightHalted) return;
                     }
 
                     if (sweptPrismDetection)
@@ -942,7 +966,8 @@ namespace CosmicShore.Gameplay
                         // (RaiseFlightEnded + ReturnToFactory). Returning rather than
                         // breaking is deliberate: the loop's tail would otherwise fire the
                         // end effects a second time on an instance already back in the pool.
-                        if (_flightEndRaised)
+                        // An embedded round has stopped too, and owns its own retirement.
+                        if (FlightHalted)
                             return;
                     }
 
@@ -986,6 +1011,14 @@ namespace CosmicShore.Gameplay
 
                     elapsedTime += deltaTime;
                     await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
+                }
+
+                // A round that HOLDS at the end of its flight parks where its throw ran out and
+                // waits for its owner (HoldAtFlightEnd). A fuzed or cancelled flight never parks.
+                if (HoldAtFlightEnd && !fuzed && !token.IsCancellationRequested)
+                {
+                    Velocity = Vector3.zero;
+                    return;
                 }
 
                 // Death point #1: the lifetime expired, or the proximity fuze tripped. Signal
@@ -1892,8 +1925,8 @@ namespace CosmicShore.Gameplay
                 projectileImpactor.AcceptImpacteeFromSweep(impactor);
 
                 // A stopping impact ran the whole end-of-flight path from inside that call;
-                // the shot rests here.
-                if (_flightEndRaised) return;
+                // the shot rests here. So does one that EMBEDDED in this prism.
+                if (FlightHalted) return;
             }
 
             // Pierced everything it met — finish the frame's step.
@@ -2020,7 +2053,7 @@ namespace CosmicShore.Gameplay
 
                     // A vessel impact can end the flight (the skyburst detonates on its direct
                     // hit); the shot rests where it landed.
-                    if (_flightEndRaised) return;
+                    if (FlightHalted) return;
                 }
 
                 transform.position = to;
@@ -2037,6 +2070,17 @@ namespace CosmicShore.Gameplay
             _moveCts.Cancel();
             _moveCts.Dispose();
             _moveCts = null;
+        }
+
+        /// <summary>
+        /// Halts the projectile in place while keeping it alive, rendered, and detonatable
+        /// (the cancelled move loop skips FlightEnded / end effects / pool return).
+        /// Velocity is zeroed so a later FaceExitVelocity detonation cannot read stale motion.
+        /// </summary>
+        public void Freeze()
+        {
+            Stop();
+            Velocity = Vector3.zero;
         }
     }
 }
