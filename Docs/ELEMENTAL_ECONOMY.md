@@ -215,10 +215,25 @@ species, 3 pilot styles × 6 seeds × 3 min, starting at 20 petals.
 - **Tuned spares skill.** A skilled pilot loses 0.22 petals/min. A careless one still loses 3.25.
 - **Most burns were readable either way:** 92-93% were telegraphed. A strike counts as telegraphed
   when the striker showed intent > 0.5 for ≥ 0.25 s before contact.
-- **The lab recommends Tuned.** Garrett has not chosen yet, so the shipped value stays and only the
-  demo cell plays Tuned.
+- **The lab recommends Tuned.** ~~Garrett has not chosen yet, so the shipped value stays and only the
+  demo cell plays Tuned.~~ **Decided 2026-10-08: Tuned everywhere.** `CellConfigDataSO.PetalBurnRule`
+  defaults to Tuned, so every cell plays 1 petal per element per contact, and so does a scene with no live
+  cell. Shipped stays available per cell. `check_elemental_economy.py` §5 requires every cell on Tuned.
 
 QA: `QA-SWARM-ROUND11-7` (Docs/QA/QA_BACKLOG.md).
+
+**Fair burns (Oct 2026).** Two fixes from the lab's fair-burns pass (lab `Tools/Ecology/DISCOVERIES.md`, "Fair
+burns", 2026-10-05) took the unread burns left to zero there. Both work the same under Shipped and Tuned.
+- **1 s spawn grace.** A danger contact in the first second after a vessel spawns does nothing (no burn, no
+  sting, no cooldown started). The clock is `ResourceSystem.SpawnedAt`, stamped by `ResetForPlay` and by the go of
+  `StartVessel`. Tune it on the effect asset: `Spawn Grace Seconds` (0 = off).
+- **0.4 s wind-up.** A pack hunter's bite, and a pufferfish's puff, lands only after its own intent has shown for
+  0.4 s, so a strike never lands in the same moment as its telegraph. Substrate pack:
+  `SubstrateSpeciesParams.StrikeWindupS` (Docs/SUBSTRATE_FAUNA.md §9.1). Swarm pack hunter and pufferfish:
+  `SwarmFaunaConfigSO.HuntWindupSeconds` / `PuffWindupSeconds`. It composes with the pack's ring hold (6 s,
+  decided 2026-10-08): held hunters wind up together after the release.
+
+QA: `QA-FAIR-BURNS-1` (Docs/QA/QA_BACKLOG.md).
 
 ## 5. Every hull can now fight for it
 
@@ -285,7 +300,25 @@ still gets their comeback bonus on top.
 - **Ejected crystals are per-peer local objects**, exactly as the food web's crystals are per-peer
   unless a species sets `NetworkSynced`. Two peers can disagree about who collected one. That is
   the platform's existing stance rather than a new compromise; `FloraNetworkSync` is the precedent
-  if a mode ever needs them authoritative.
+  if a mode ever needs them authoritative. **How many** crystals a combat hit ejects is now agreed,
+  though. See the next bullet.
+- **A combat hit's take is settled once, on the victim's owner (Oct 2026).** Element levels are
+  owner state (`NetElementLevels` is owner-write). Every peer replays a combat contact: a human's
+  press is replicated, and an AI's guns fire on the server only. So `CombatHitDrain.Apply` routes
+  through `ElementalTransfer.ApplyAllAuthoritative`. The machine that owns the SHOOTER (the one
+  `StatsManager` scores the hit for) relays the take through `NetworkVesselImpactor` to the
+  victim's owner. The owner settles it with `AccrueElementalLoss`, mints the crystals and
+  publishes the settled count so every other peer mints the same number. Every other replay moves
+  nothing. The route table is `ElementalTransfer.RouteFor` (harness T9,
+  `ElementalTransferRouteTests`). Before this, a client shot by an AI kept every petal (the AI's
+  rounds never exist on a client), and a human shot by a human lost petals only when their own
+  replay of the shot connected. **Still per-peer, outside this fix:** the other callers of
+  `ElementalTransfer`. Those are `SniperShotActionExecutor.StripVessels` (it passes no attacker),
+  `VesselElementalDebuffByExplosionEffectSO`, `VesselOvertakeBySkimmerEffectSO` (a STEAL: it would
+  have to pay the attacker on the attacker's owner too) and the danger-prism burn. The burn is
+  fine as it is, because prisms sit in the same place on every peer and only the owner's copy of
+  the victim counts. The first three can adopt `ApplyAllAuthoritative` once they pass the
+  attacker.
 - **The ally buff stays temporary.** A buff is not a transfer — there is no victim to take it from
   — so making the Squirrel's mirrored overtake buff permanent would mint petals out of nothing and
   break "lifeforms are the only source". Jousting an enemy *moves* material; jousting a friend only
@@ -295,7 +328,7 @@ still gets their comeback bonus on top.
 
 | What | How |
 |---|---|
-| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 8 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
+| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 9 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. T9 is the networked eject's route table and petal packing (§7). The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
 | The economy's five invariants | `python3 Tools/Build/check_elemental_economy.py` (`--self-test`: twelve controls, all fire). §5 is the petal-burn switch. |
 | The switch's asset half | `python3 Tools/Build/author_petal_burn_rule.py --check` (effect asset) · `python3 Tools/Build/author_swarm_fauna.py --check` (the Swarm cell's `PetalBurnRule: 1`) |
 | The drain magnitudes | `python3 Tools/Build/author_combat_debuff_magnitudes.py --check` |
@@ -332,6 +365,11 @@ with flora to graze (Rampage, Wrecking Ball, Bloomrush, The Bends). What a human
    crystals leave their hull.
 6. **MPPM two-client**: confirm both peers agree on the flower levels after a joust, and note
    whether they agree on who collected an ejected crystal (they may not — §6).
+7. **MPPM host + client, combat (§7, "settled once").** Run Dog Fight with the client's pilot
+   holding petals. (a) Let an AI shoot the client: the CLIENT's own flowers step down, and both
+   windows show the same number of crystals leave the hull. (b) Host shoots client, then client
+   shoots host: in each case the victim's flowers step down on BOTH windows, and only on hits the
+   shooter's window scored.
 
 ---
 

@@ -50,7 +50,6 @@ Attaching is **two flags and no reparenting**:
 
 ```
 contact  →  VesselAttachPrismEffectSO      sets IVesselStatus.IsAttached + .AttachedPrism
-            (+ GunsActive, see below)
               │
               ▼
          GunVesselTransformer.MoveShip     edge-detects the flag
@@ -109,14 +108,6 @@ platform given** (see `CLAUDE.md` § Impact Effects). Squirrel / Dolphin / Sparr
 `VesselChangeSpeedByPrismEffectSO`; Rhino and Serpent do not. `UrchinImpactorDataContainer` does
 not list one either, so the Urchin currently takes **no speed penalty from any prism**, danger
 prisms included. That is an open item, not a design position.
-
-## Attaching arms the guns
-
-`VesselAttachPrismEffectSO` also sets `vesselStatus.GunsActive = true` (`armGunsOnAttach`,
-default on). The Urchin's loop is *ride to reach enemy mass, then convert it*, so an attach that
-leaves the guns cold makes the ride a movement option with no payoff. This was lost in the
-vessel-layer port and is restored **in the effect** rather than in the transformer, so it lands on
-whatever attaches, not just on the Urchin.
 
 ## What was broken, and what each break looked like
 
@@ -1157,7 +1148,6 @@ exactly as before. Gate: `Tools/Build/nested_gyroid_harness/run.sh` (ride model 
 | `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **36**) | u/s bleed-off of the speed carried off a ride. The kicked 360 → the 65 cruise takes ~8 s. A RATE, so it does not scale itself: left at the old 12 the same glide would run 25 s, which reads as a permanent speed bonus rather than as momentum. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
 | `endLaunchSpeedKick` | `GunVesselTransformer` (C# default **1.2**) | What running OUT of ribbon multiplies the grind speed by on the way into free flight. Along the exit TANGENT only — every launch in the game is aimed by geometry, so a lateral impulse would throw the pilot off the thing the arena aimed them at. 1 restores the old behaviour. Does NOT apply to a Slip or to a trail cleared under the rider: those are letting go, not being thrown. |
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
-| `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
 | `drapeReach` | `Resources/PrismCradleConfig.asset` | **6** u past the hull's SURFACE at which the drape reaches zero — the width of the lip the mass rises into, not a cutoff (the falloff is C1 at both ends, so there is no seam there to widen away from). Mass INSIDE the hull is fully wrapped whatever this says. |
 | `drapeExponent` | `Resources/PrismCradleConfig.asset` | **1.5** — the silkiness. 1 is a broad soft drape that starts rising a long way out; larger pulls the fabric tight against the hull with a longer flat tail. Floored at 1: below that the falloff's derivative diverges at the far edge and puts a crease exactly where the effect is supposed to vanish without one. |
 | `maxStrength` | `Resources/PrismCradleConfig.asset` | **1** — the ceiling the eased strength runs to. The map is affine in it, so 0.5 is the same drape at half depth, never a differently-shaped one. THE dial for "the effect is too strong"; never tone it down with the reach, which decides WHICH mass is involved rather than how far it goes. |

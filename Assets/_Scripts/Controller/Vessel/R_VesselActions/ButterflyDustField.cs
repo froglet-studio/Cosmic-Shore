@@ -79,9 +79,22 @@ namespace CosmicShore.Gameplay
                  "destroyed, shrunk or stolen). At the prism. Leave empty for silence.")]
         [SerializeField] FMODUnity.EventReference dustBlightEvent;
 
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust WITHERS an opposing creature " +
+                 "(its heart passed through the capsule and it began to die). At the heart. " +
+                 "Played by SkimmerWitherLifeformByCrystalEffectSO only when the kill actually " +
+                 "landed. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference heartWitherEvent;
+
+        [Tooltip("DUST (ally lifeform) - FMOD event when the dust NOURISHES a lifeform of the " +
+                 "pilot's own domain (a creature's starvation clock resets, a plant's growth " +
+                 "advances). At the heart. Played by SkimmerNourishLifeformByCrystalEffectSO only " +
+                 "when the refresh actually landed. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference heartNourishEvent;
+
         [Tooltip("Minimum seconds between two Dust Reach one-shots of the SAME kind. The capsule " +
                  "sweeps a whole wall of prisms in a few frames, and one voice per prism would be " +
-                 "a hundred one-shots stacked on one frame.")]
+                 "a hundred one-shots stacked on one frame. The heart wither / nourish voices share " +
+                 "this interval, each on its own clock.")]
         [SerializeField, Min(0f)] float dustReachSoundInterval = 0.08f;
 
         // The palette. Injected: the dust skimmer is a child of the vessel prefab, and vessels are
@@ -100,6 +113,8 @@ namespace CosmicShore.Gameplay
         static bool s_warnedNoMaterial;
         float _nextTendSoundTime;
         float _nextBlightSoundTime;
+        float _nextWitherSoundTime;
+        float _nextNourishSoundTime;
 
         /// <summary>True while the dust is live.</summary>
         public bool IsActive => _active;
@@ -167,6 +182,25 @@ namespace CosmicShore.Gameplay
                 _nextBlightSoundTime = now + dustReachSoundInterval;
                 Play(dustBlightEvent, position);
             }
+        }
+
+        /// <summary>Scale Dust withered an opposing lifeform. Throttled by
+        /// <c>dustReachSoundInterval</c>; empty slot = silence.</summary>
+        public void PlayHeartWither(Vector3 position)
+            => PlayThrottled(heartWitherEvent, ref _nextWitherSoundTime, position);
+
+        /// <summary>The dust nourished an ally lifeform. Throttled by
+        /// <c>dustReachSoundInterval</c>; empty slot = silence.</summary>
+        public void PlayHeartNourish(Vector3 position)
+            => PlayThrottled(heartNourishEvent, ref _nextNourishSoundTime, position);
+
+        void PlayThrottled(FMODUnity.EventReference reference, ref float nextTime, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            float now = Time.time;
+            if (now < nextTime) return;
+            nextTime = now + dustReachSoundInterval;
+            Play(reference, position);
         }
 
         static void Play(FMODUnity.EventReference reference, Vector3 position)

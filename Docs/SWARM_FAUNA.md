@@ -1906,6 +1906,11 @@ locked economy rule decides the cost (`Docs/ELEMENTAL_ECONOMY.md` §4): an **opp
 | Space | **locust** | a quarter of the cloud at a time, the quarter moving every `LocustPhaseSeconds` | read the shimmer and thread the safe gaps |
 | Time | **pack hunter** | startle above `HuntEnter` (0.2, earlier than the pufferfish), until below `DangerExit` | keep your distance; they turn on you early |
 
+**Fair burns (2026-10-08).** The pufferfish and the pack hunter now WIND UP: the plate goes up only after the
+startle has shown above its threshold for `PuffWindupSeconds` / `HuntWindupSeconds` (0.4 s each, the lab's
+bestiary `WINDUP`), so a strike never lands on the frame it is telegraphed (`SwarmTickJob.WindUp`;
+Docs/ELEMENTAL_ECONOMY.md §4.1 "Fair burns").
+
 `SwarmFaunaConfigSO.Bestiary` (default **on**, so every existing swarm config gets it without an asset edit) turns
 it off. The rule is `SwarmTickJob.BestiaryStrike`: pure per-member arithmetic on data the tick already had, no new
 neighbour queries, so the cost stays flat. Far members show the strike through the GPU tier colour; near ones get it

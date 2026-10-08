@@ -26,7 +26,7 @@ the harness runs the shipped files headless. The Unity glue is thin.
 | glue | `ThreatFlora/ThreatGroveConfigSO.cs` | The authored grove: where it is, the leaves, rates and palette. |
 | glue | `ThreatFlora/ThreatGrove.cs` | The per-cell driver, created on demand. It steps the cores on their own clocks and turns events into prism work. |
 | glue | `ThreatFlora/SnapTrapFlora.cs` | `Flora`: one trap, one crystal. It lays and forgets prisms when the grove tells it to, and buds through `TrySpawnOneOffspring`. |
-| glue | `ThreatFlora/PhysarumSclerotium.cs` | `Flora`: one heart, one crystal, and a six-prism beat shell. |
+| glue | `ThreatFlora/PhysarumSclerotium.cs` | `Flora`: one heart, one crystal, and a six-prism beat shell. It buds through `TrySpawnOneOffspring` when the network's reserve holds a whole shell. |
 
 **No per-frame CPU on a prism.** Prisms move only at a core **keyframe**: a state change, or one heliotropic re-pose
 per 4° of turn. At a keyframe the glue writes the final transform once (collider, spatial index and entity matrix
@@ -137,6 +137,13 @@ flight clock carries translation only, so a plate's attitude settles at the stam
   domain, so a network meeting another network's heart changes colour there. Regions differ; none is prescribed.
 - **The beat's sting is its shell.** The research stung within 50 u of the heart. The game's sting is six danger
   prisms (6 u cubes) 14 u from the crystal, laid from the network's reserve. That is smaller, and fully readable.
+- **A sclerotium buds from the reserve.** The tube pass keeps one beat shell (`ShellVolume`, 1,296) in the
+  reserve and extends the cables only with the surplus. Without that hold-back every pass spent the reserve to
+  under one tube, so a lost shell prism was never re-laid and no heart could ever bud. While the reserve holds a
+  shell, `ThreatGrove.BudSclerotium` asks a living heart (`PhysarumCore.BudParent`, parents in turn) to bud, at
+  most every `BudRetrySeconds`, through `Flora.TrySpawnOneOffspring` (the species cap and the Frenzy freeze
+  apply). The daughter is planted at a sclerotium site, brings no mass (`AddBud`), and lays her shell from the
+  reserve, so the shell blooms in like every other. At the cap the held shell simply waits in the reserve.
 - **Tubes belong to the network, not to a heart.** A jousted heart stops beating and climbing, and its agents
   freeze (`live = heart_alive[owner]`, as in the research). Its shell stays as a skeleton. The cables it fed are
   resorbed only while another heart lives.
@@ -216,10 +223,11 @@ The script writes:
   | species | seed floor | cap | element |
   |---|---|---|---|
   | snap trap | 9 | 15 | Time |
-  | sclerotium | 5 | 5 | Space |
+  | sclerotium | 5 | 8 | Space |
 
-  Both have `GrowthPerOffspring` 0. A trap buds from the rhizome through `TrySpawnOneOffspring`, and the seeder
-  holds the network at its floor.
+  Both have `GrowthPerOffspring` 0. Both bud through `TrySpawnOneOffspring` from what their colony digested: a
+  trap when the rhizome holds a whole body, a sclerotium when the network's reserve holds a whole shell
+  (`ThreatGroveDefaults.SclerotiumCap`; `--check` fails if the cap leaves no headroom over the floor).
 
 The Swarm cell's spawn profile is owned by `author_swarm_fauna.py`. Its `profile_asset()` now lists the two
 species through `author_threat_flora.profile_guids()`. Its collider gate adds `always_on_hearts()`. The assets
@@ -234,9 +242,9 @@ Swarm Cell folder. Run both scripts; both `--check`s must pass.
 | substrate proxies (round 11b, `SWARM_FAUNA.md` §20) | +78 engaged → 1,056 | |
 | builder proxies (round 11e, `BUILDERS_AND_THIEVES.md`) | +84 engaged → 1,140 | structures add 0 |
 | snap-trap hearts | **+15** (cap) | 15 × 27 = 405 body prisms |
-| sclerotium hearts | **+5** | 5 × 6 = 30 shell prisms |
+| sclerotium hearts | **+8** (cap) | 8 × 6 = 48 shell prisms |
 | physarum tubes | 0 hearts | ≤ 400 tube prisms (`MaxTubes`) |
-| **total** | **1,160 < 1,200** (`COLLIDER_CEILING`, asserted by both author scripts) | ≤ 835 ordinary flora prisms |
+| **total** | **1,197 < 1,200** as measured by `author_threat_flora.py` at the sclerotium cap change (the swarm cell had grown to 1,174 by then; `COLLIDER_CEILING`, asserted by both author scripts) | ≤ 853 ordinary flora prisms |
 
 The body prisms are ordinary LOD-culled flora prisms, like every plant's plates. The gate counts always-on
 hearts plus engaged proxies, as §14.3 does. The grove adds ~800 prisms to the cell at its caps: about 5% of the
@@ -247,7 +255,7 @@ FrenzyEnter count (15,500). The phase ladder is unchanged (§7).
 All commands run in `/home/claude/wt-flora` with `DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`.
 
 ```
-bash Tools/Build/threat_flora_harness/run.sh            # 54 passed, 0 failed (~110 s)
+bash Tools/Build/threat_flora_harness/run.sh            # 66 passed, 0 failed (~110 s)
 bash Tools/Build/swarm_core_harness/run.sh              # OK (unchanged)
 bash Tools/Build/swarm_glue_typecheck/run.sh            # type-check OK
 python3 Tools/Build/author_threat_flora.py --check      # OK
@@ -278,7 +286,7 @@ S7 route bias:
 - **Heliotropism alone** (a fixed clump, no growth, 12 seeds): **1.25×**, against a no-turn control of **1.01×**.
 - **Full ecology:** 1.15× (asserted ≥ 1.0). §7 explains why this differs from the research.
 
-**Physarum (P1-P5):**
+**Physarum (P1-P5, P7; P6, the far cadence, is in `Docs/ECOLOGY_LOD.md` §6.3):**
 
 | test | asserts | measured |
 |---|---|---|
@@ -288,7 +296,8 @@ S7 route bias:
 | P1 refractory | a 1 s pacemaker pulses no faster than the refractory | 1.90 s ≥ 1.49 s |
 | P2 telegraph | 5 seeds × 2 min of wander | 14 burns, lead **p10 0.73 s** (≥ 0.7, the research's unwarned bar), median **4.15 s** (≥ 2); 1.40 hits/min (research 1.33); mass drift 0 |
 | P3 reroute | a 120 u ball through the densest tubes is cut at t = 60 s, same 5 seeds as the research | median t50 **41.1 s**, 3/5 half back within 90 s; research on the same seeds: t50 17.1 s, 4/5 |
-| P4 game grove | forms a network under its cap, beats, ledger, cost | 166 tubes after warm-up, 183 after 60 s (cap 400); 95 beats; ledger 0; **1.39 ms per 10 Hz step** |
+| P4 game grove | forms a network under its cap, beats, ledger, cost | 158 tubes after warm-up, 170 after 60 s (cap 400; 166 / 183 before the shell hold-back); 95 beats; ledger 0; **1.25 ms per 10 Hz step** |
+| P7 budding | no bud below a whole shell; only a living parent; the daughter brings no mass and lays her shell from the reserve; the game grove under the glue's rule buds from what it digests, every bud mass-neutral, daughters beat | 3 buds in 120 s (5 → 8 hearts, the cap); ledger 0 |
 | P5 cost | | 6.3 ms per step at 16k agents / 56³ (research numpy 20.7 ms); 11.6 ms at 32k / 64³ |
 
 **Not proved:**

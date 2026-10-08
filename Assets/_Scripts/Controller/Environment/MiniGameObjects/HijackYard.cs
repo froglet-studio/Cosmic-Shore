@@ -28,13 +28,14 @@ namespace CosmicShore.Gameplay
     /// replication. It is cleared on disable, so a cell swap or a scene reload cannot leave a
     /// consumer pointing at a destroyed yard.</para>
     ///
-    /// <para><b>OWNERSHIP is replicated, and every read here goes through it.</b> The shape is
-    /// identical on every peer but who owns each prism is not - a steal is a local call on
-    /// whichever machine ran it. While a Hijack match is live, <see cref="HijackController"/>
-    /// binds its server-authoritative table (<see cref="Ownership"/>, a
-    /// <see cref="HijackOwnershipLedger"/>) to this yard, and <see cref="DomainAt"/> answers from
-    /// that table instead of the local prism. Outside a match (the mode preview's satellite
-    /// arena) nothing is bound and the reads fall back to the prism's own domain.</para>
+    /// <para><b>OWNERSHIP and SHIELD STATE are replicated, and every read here goes through
+    /// them.</b> The shape is identical on every peer but who owns each prism, and whether it is
+    /// armoured, is not - a steal or a shield is a local call on whichever machine ran it. While
+    /// a Hijack match is live, <see cref="HijackController"/> binds its server-authoritative
+    /// table (<see cref="Ownership"/>, a <see cref="HijackOwnershipLedger"/>) to this yard, which
+    /// keeps every yard prism SHOWING the table's owner and armour, and <see cref="StateAt"/>
+    /// answers from that table instead of the local prism. Outside a match (the mode preview's
+    /// satellite arena) nothing is bound and the reads fall back to the prism's own state.</para>
     ///
     /// <para><b>Burr colour is READ LIVE, never stored.</b> The whole mode is players flipping
     /// this mass back and forth, so a cached domain would be a lie within seconds. A burr reports
@@ -109,6 +110,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Owner AND armour of the <paramref name="index"/>th prism of trail
+        /// <paramref name="slot"/>, from the replicated table, or the prism's own state when no
+        /// table is bound or the table has not seen this prism yet.
+        /// </summary>
+        void StateAt(int slot, int index, Prism prism, out Domains domain,
+                     out HijackOwnershipLedger.Shield shield)
+        {
+            var table = Ownership;
+            if (table != null && table.TryReadState(slot, index, out domain, out shield)) return;
+            domain = prism.Domain;
+            shield = HijackOwnershipLedger.LocalShield(prism);
+        }
+
+        /// <summary>
+        /// Is this prism worth anything to <paramref name="domain"/>? Hostile, and not
+        /// super-shielded - <c>PrismTeamManager.Steal</c> refuses a super-shielded prism outright,
+        /// so it is not loot however many times it is ridden. A plain shield still counts: the
+        /// first pass breaks it, the next one takes the prism.
+        /// </summary>
+        bool IsLootFor(int slot, int index, Prism prism, Domains domain)
+        {
+            StateAt(slot, index, prism, out var owner, out var shield);
+            return owner != domain && shield != HijackOwnershipLedger.Shield.SuperShielded;
+        }
+
+        /// <summary>
         /// The replicated owner of any prism in this yard - the same answer on every peer. A
         /// prism that is not one of the yard's own (or with no table bound) reports its local
         /// domain.
@@ -166,7 +193,8 @@ namespace CosmicShore.Gameplay
         /// How many prisms in this burr are worth STEALING to <paramref name="domain"/> right
         /// now - the only measure of a burr that means anything in this mode, since the painted
         /// colour is just where it started. A destroyed prism counts: it is restored and then
-        /// taken on the same ride hop (<c>GunVesselTransformer.ApplyPrismscapePayoff</c>).
+        /// taken on the same ride hop (<c>GunVesselTransformer.ApplyPrismscapePayoff</c>). A
+        /// super-shielded one does not (<see cref="IsLootFor"/>).
         /// </summary>
         public int HostileMassAt(int index, Domains domain)
         {
@@ -179,7 +207,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < list.Count; i++)
             {
                 var prism = list[i];
-                if (prism && DomainAt(slot, i, prism) != domain) hostile++;
+                if (prism && IsLootFor(slot, i, prism, domain)) hostile++;
             }
             return hostile;
         }
@@ -199,7 +227,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < list.Count; i++)
             {
                 var prism = list[i];
-                if (prism && DomainAt(slot, i, prism) != domain) return true;
+                if (prism && IsLootFor(slot, i, prism, domain)) return true;
             }
             return false;
         }

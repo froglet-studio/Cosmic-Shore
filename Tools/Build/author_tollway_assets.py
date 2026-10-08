@@ -740,7 +740,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
   IconActive: {{fileID: 0}}
   IconInactive: {{fileID: 0}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: 0}}
   GolfScoring: 0
   SceneName: MinigameTollway
   Vessels:
@@ -1211,8 +1210,10 @@ def cs_fields(path):
     return out
 
 
+# No `PreviewClip`: SO_Game.PreviewClip is RETIRED (arcade_mode_lib.RETIRED_CARD_KEYS). Listing
+# it here is what let the card keep emitting the dead key past the key-validation below.
 SO_BASE = {"Mode", "IsMultiplayer", "DisplayName", "Description", "IconActive", "IconInactive",
-           "CardBackground", "PreviewClip", "GolfScoring", "SceneName"}
+           "CardBackground", "GolfScoring", "SceneName"}
 CHECKS = [
     ("Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),

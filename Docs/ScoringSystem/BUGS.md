@@ -520,3 +520,32 @@ rung's own target. Measured 7.4x-9.3x on the shipped arenas (targets 1,200 / 1,2
 
 **Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
 (MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).
+
+## B19 — a remote client's steal never debited the victim (the trade the RPC now makes)
+
+**Symptom.** A client's Urchin converts 20 of a rival's trail prisms: the client is credited
+(`PrismStolen`, `VolumeStolen`, its own `PrismsRemaining` / `VolumeRemaining` all rise) but the
+rival's `PrismsRemaining` / `VolumeRemaining` do not fall. Those two tallies feed cell control and
+volume scoring, so every client-side steal minted mass out of nothing.
+
+**Root cause.** Two paths, and the debit was on neither for a remote thief. The server's own
+detection (`StatsManager.PrismStolen`) returns at `OwnsAttacker(thief)` before the victim debit, so
+that it does not double-credit a steal the client will report itself. The client's report
+(`Player.ReportPrismStolen_ServerRpc(float volume)`) carried only the thief's half, because the
+thief's identity comes from RPC ownership and the RPC had no victim to name. `Player.cs`'s docstring
+claimed the trade was recorded here; it was not (URCHIN_BACKLOG U2).
+
+**Fix — and the trade it makes.** The RPC now carries the victim's name
+(`ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)`) and the server debits
+that player through `StatsManager.DebitPrismSteal`, the twin of `CreditPrismSteal`; the server-local
+path uses the same two helpers, so each steal is credited and debited exactly once on either path.
+**The victim's name is client-supplied and therefore trusted.** That was previously judged worse
+than a soft tally; it is accepted now because the alternative inflates a scored stat on every
+client steal, and the blast radius of a forged name is bounded: it must name a rostered player, it
+can only LOWER that player's remaining-mass tally, and only by the volume the credit half already
+takes on trust. The thief's identity still never comes from a name.
+
+**Verification.** Compiled against the Unity reference assemblies; engine verification pending
+(MPPM, 1 host + 1 client: steal ~20 of the host's trail prisms with the client's Urchin and
+confirm the host's `PrismsRemaining` / `VolumeRemaining` fall by the same count/volume the client
+gains; then steal with the host and confirm the client's tallies move exactly once, not twice).

@@ -3260,13 +3260,27 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetDensestRegionAnyDomain()
         {
-            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
-                return GetCellAnchorPosition();
-
-            var region = anyGrid.FindDensestRegion();
-            if (anyGrid.LastResultDensity <= 0f)
-                return GetCellAnchorPosition();
+            TryGetDensestRegionAnyDomain(out var region);
             return region;
+        }
+
+        /// <summary>
+        /// <see cref="GetDensestRegionAnyDomain"/> as a QUESTION: false when the cell holds no
+        /// mass at all, in which case <paramref name="region"/> is the same anchor fallback the
+        /// demand form returns. Lets a caller that has a better idea than "the crystal" for an
+        /// empty cell (the Spawn Matrix releasing into the Barren cell) tell the two apart.
+        /// </summary>
+        public bool TryGetDensestRegionAnyDomain(out Vector3 region)
+        {
+            region = GetCellAnchorPosition();
+            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
+                return false;
+
+            var densest = anyGrid.FindDensestRegion();
+            if (anyGrid.LastResultDensity <= 0f)
+                return false;
+            region = densest;
+            return true;
         }
 
         /// <summary>

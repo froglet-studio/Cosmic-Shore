@@ -50,6 +50,7 @@ assert os.path.isdir(os.path.join(REPO, "Assets")), REPO
 sys.path.insert(0, HERE)
 import swarm_plans  # noqa: E402
 import author_builders  # noqa: E402  round 11e: the builder colonies live in this cell (their own generator)
+import author_nca_creatures  # noqa: E402  the NCA lizard lives in this cell's middle shell (its own generator)
 
 A = lambda *p: os.path.join(REPO, "Assets", *p)
 SWARM_DIR = A("_SO_Assets", "Swarm Fauna")
@@ -647,7 +648,10 @@ def model(plans):
     # round 11b-2: the substrate's bodies are BindVirtualMass volume in LiveVolume, so the ladder sees them
     tot["substrate_bodies"] = substrate().body_volume()
     tot["builder_bodies"] = author_builders.body_volume()
-    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"]
+    # the NCA creatures (Docs/NCA_CREATURES.md): a heart + at most one hit prism each; bodies are BindVirtualMass
+    tot["nca_colliders"] = author_nca_creatures.colliders()
+    tot["nca_bodies"] = author_nca_creatures.body_volume()
+    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"] + tot["nca_colliders"]
     return rows, tot, eggs
 
 
@@ -658,7 +662,8 @@ def ladder(tot):
     prisms = tot["prisms"] + MAX_PROXIES * TOTAL_SWARMS
     # round 11c: plus the substrate populations' bodies (their entries are BindVirtualMass: LiveVolume counts them);
     # round 11-10: plus the builder colonies' member bodies (the same BindVirtualMass entries, author_builders.body_volume)
-    volume = tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0) + tot.get("builder_bodies", 0.0)
+    volume = (tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0) + tot.get("builder_bodies", 0.0)
+              + tot.get("nca_bodies", 0.0))
     return {
         "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100),
         "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
@@ -697,6 +702,7 @@ def profile_asset():
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
     faunas += author_builders.profile_entries()   # round 11e: the fortress colony and the thief nest
+    faunas += author_nca_creatures.cell_profile_entries()   # the NCA lizard (author_nca_creatures.py owns it)
     return SO_HEADER % (SO_SCRIPT["profile"], f"{PREFIX} Cell Spawn Profile") + (
         "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"
         "  FloraSpawnIntervalSeconds: 0\n  FloraPopulationScale: 1\n  FloraPlantBudgetScale: 1\n"
@@ -710,8 +716,8 @@ def profile_asset():
 
 
 # Round 11g (Docs/ELEMENTAL_ECONOMY.md §4.1): the demo cell plays the TUNED petal burn - one petal
-# per element per danger contact instead of five - while every other cell keeps what shipped
-# (CellConfigDataSO.PetalBurnRule defaults to Shipped = 0). Flip it here: 0 = Shipped, 1 = Tuned.
+# per element per danger contact instead of five. Since 2026-10-08 every cell does (Garrett: Tuned
+# everywhere; CellConfigDataSO.PetalBurnRule defaults to Tuned = 1). Kept explicit here: 0 = Shipped, 1 = Tuned.
 PETAL_BURN_RULE = 1
 
 # Round 11h (QA-SWARM-ROUND11-13): the demo cell STARTS HOSTILE. Every creature wears the cell's

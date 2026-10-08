@@ -2786,6 +2786,24 @@ petals (ELEMENTAL_ECONOMY.md §8 step 0).
 - An element sticks at 1 petal under repeated hostile contact.
 - The own-domain dip is a different size from the burn.
 
+
+### QA-FAIR-BURNS-1 ⬜ — spawn grace and the pack wind-up
+
+**Source:** PR "Fair burns: pack wind-up and spawn grace". Proven headless (substrate harness P/H, swarm core
+harness "pack hunter wind-up", player and editor refcompile). Not run in the editor. Reference:
+`Docs/ELEMENTAL_ECONOMY.md` §4.1 "Fair burns".
+
+1. **Inspect.** `VesselElementalDebuffByDangerPrismEffect.asset` shows Spawn Grace ▸ Spawn Grace Seconds **1**.
+   `Substrate Pack Hunter Species.asset` has `StrikeWindupS` **0.4**. A swarm config shows Hunt Windup Seconds and
+   Puff Windup Seconds **0.4**. Any Cell Config shows Stakes ▸ Petal Burn Rule **Tuned**.
+2. **Spawn grace.** Start freestyle in the Swarm cell as the non-controlling domain and fly straight into a striking
+   creature within the first second of the go. No petal should burn. Touch again after 1 s: it burns as usual.
+3. **Wind-up, substrate pack.** Let the Time pack ring you. After the ring closes, the hunters should visibly turn
+   on you (swell, sprint) for a beat before the first bite can land. Flying out through the gap in that beat
+   should escape without a burn.
+4. **Wind-up, swarm pack hunter and pufferfish.** Startle a Time swarm, then a Charge swarm. Their plates should
+   light about 0.4 s after they turn on you, not on the same frame.
+5. **Tuned everywhere.** In a cell other than Swarm, touch a hostile danger prism: each flower loses one petal.
 ### QA-SWARM-ROUND11-2 ⬜ — the Living Ecology substrate: a pack that surrounds you and dives in at once
 
 **Source:** branch `overnight/substrate`. Proven by the headless harness and Roslyn type-check only; not run in the
