@@ -1084,17 +1084,20 @@ references, m_Script classes). Four things that cost time on the first run (2026
   base never carried (`negativeControlKey: 1`), confirm `[field] 1` names it, then
   `git reset --hard` back (2026-10-08, Rhino crystal-burst field removal).
 - **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
-  `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
-  references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
-  Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
-  `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
-  read the bucket, because everything ELSE in your test file was bound for real.
-- **A planted `CS0103` (undefined name) is reported as *unverified*, not as an error (2026-10-08).**
-  While any package reference is unavailable, the tool buckets name-not-found diagnostics, so a
-  negative control built on an undefined method call leaves `ERRORS in project code: 0` and moves
-  the unverified count from 0 to 1. Read BOTH numbers: green means "0 errors AND 0 unverified".
-  A control on a missing MEMBER of a known type (`gameData.NoSuchMember()`, CS1061) is the sharper
-  plant if you want it to land in the error count.
+  `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which `fetch.py` skips, so a
+  new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*. That is by name:
+  only what `unity_refcompile/test_framework_declarations.tsv` lists (`LogAssert`, `UnityTest`,
+  `TestRunnerApi`, ...) is bucketed, in changed Editor-folder files only. A misspelled name in the
+  same test still gates. Confirm the same call already compiles in an existing test
+  (`GameObjectExtensionTests` uses `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than
+  reading it as a defect.
+- **Before 2026-10-08 a planted `CS0103` or `CS0246` was reported as *unverified*, not as an
+  error.** Three package assemblies fail on every run (Purchasing.Stores/Codeless,
+  InputSystem.ForUI), and the summary bucketed EVERY missing-type error whenever any package had
+  failed. So a negative control built on an undefined name left `ERRORS in project code: 0`, and
+  only the unverified count moved. Now a missing-type error is unverified only when it names
+  something a failed (or, for an Editor test, unfetched) assembly declares, and a misspelled local
+  or type gates. If you are reading an older run log, still read BOTH numbers.
 - **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
   gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
   `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
@@ -1102,9 +1105,7 @@ references, m_Script classes). Four things that cost time on the first run (2026
   `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
   on changed lines is the evidence; "the run was green" is not.
 - **Negative-control both tools before quoting them**: plant a call to a missing member in a file
-  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`; a misspelled local
-  or type, CS0103/CS0246, gates too since 2026-10-06, before which every run bucketed it
-  "unverified" behind the three package assemblies that always fail), and misspell one
+  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
   key in an asset you changed (the audit must name the file and the key). Restore, then
   `git status --short` the paths. Both discriminated on their first try here.
 

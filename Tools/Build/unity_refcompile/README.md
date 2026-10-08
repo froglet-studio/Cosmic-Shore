@@ -52,6 +52,10 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    that the file can see: the type's namespace is `using`d (or `using static`), encloses the file,
    or the name is fully qualified. Every other missing-type error gates, so a misspelled local
    (CS0103) or type (CS0246) fails the run, even though three package assemblies fail on every run.
+   In `--config editor`, a changed Editor-folder file also gets the declarations of
+   `com.unity.test-framework`, which is never fetched. `test_framework_declarations.tsv` holds them,
+   with the command that made it, so `LogAssert` and `[UnityTest]` are unverified there and a
+   misspelling still gates.
    `python3 Tools/Build/unity_refcompile/build.py --self-test` checks the rule on fixtures in about
    a second, with no .NET SDK and no cache.
 

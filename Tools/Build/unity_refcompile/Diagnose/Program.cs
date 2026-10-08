@@ -10,8 +10,9 @@
 // csc. Output lines use csc's "path(line,col): error CSxxxx: message" format.
 //
 // --declarations parses (does not bind) the rsp's sources with its defines and prints what they
-// declare: "N\t<namespace>" per namespace and "T\t<namespace>\t<name>" per top-level type. The build
-// reads it for a package assembly that failed, to tell which project errors can stem from its absence.
+// declare: "N\t<namespace>" per namespace and "T\t<namespace>\t<name>" per PUBLIC top-level type (the
+// only kind another assembly can name). The build reads it for an assembly that failed, to tell which
+// project errors can stem from its absence.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -105,11 +106,12 @@ static class Program
             foreach (var node in root.DescendantNodes(n => n is CompilationUnitSyntax || n is BaseNamespaceDeclarationSyntax))
             {
                 var ns = string.Join(".", node.AncestorsAndSelf().OfType<BaseNamespaceDeclarationSyntax>().Reverse().Select(n => n.Name.ToString()));
+                bool pub = node is MemberDeclarationSyntax m && m.Modifiers.Any(x => x.IsKind(SyntaxKind.PublicKeyword));
                 string line = node switch
                 {
                     BaseNamespaceDeclarationSyntax _ => "N\t" + ns,
-                    BaseTypeDeclarationSyntax t => "T\t" + ns + "\t" + t.Identifier.Text,
-                    DelegateDeclarationSyntax d => "T\t" + ns + "\t" + d.Identifier.Text,
+                    BaseTypeDeclarationSyntax t when pub => "T\t" + ns + "\t" + t.Identifier.Text,
+                    DelegateDeclarationSyntax d when pub => "T\t" + ns + "\t" + d.Identifier.Text,
                     _ => null,
                 };
                 if (line != null && seen.Add(line)) Console.WriteLine(line);

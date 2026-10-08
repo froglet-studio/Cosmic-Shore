@@ -506,10 +506,28 @@ USING_RE = re.compile(r"^\s*using\s+(static\s+)?(?:\w+\s*=\s*)?(?:global::)?([\w
 NAMESPACE_RE = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
 
 
-def declarations(rsps):
+# com.unity.test-framework is not fetched (fetch.py SKIP), so --config editor compiles changed
+# Editor-folder tests without it; what it declares is committed instead (the file says how it was made).
+TEST_FRAMEWORK_DECLARATIONS = os.path.join(HERE, "test_framework_declarations.tsv")
+TEST_FRAMEWORK_ASMS = {"UnityEngine.TestRunner", "UnityEditor.TestRunner"}
+
+
+def read_declarations(lines, decl):
+    """Fold Diagnose --declarations output ("N\tns" / "T\tns\tname" lines) into decl."""
+    for line in lines:
+        f = line.rstrip("\n").split("\t")
+        if f[0] == "N":
+            parts = f[1].split(".")
+            decl["namespaces"].update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+        elif f[0] == "T":
+            decl["types"].setdefault(f[2], set()).add(f[1])
+    return decl
+
+
+def declarations(rsps, test_framework=False):
     """What the assemblies compiled from these .rsp files declare, read from their own sources with
     their own defines (Diagnose --declarations): {"asms", "namespaces" (with every prefix), "types":
-    {top-level type name: {namespace}}}."""
+    {public top-level type name: {namespace}}}. test_framework adds com.unity.test-framework."""
     decl = {"asms": set(), "namespaces": set(), "types": {}}
     for name, rsp in rsps.items():
         decl["asms"].add(name)
@@ -517,13 +535,11 @@ def declarations(rsps):
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         if r.returncode != 0:
             sys.exit("Diagnose --declarations failed for %s:\n%s" % (name, r.stdout))
-        for line in r.stdout.splitlines():
-            f = line.split("\t")
-            if f[0] == "N":
-                parts = f[1].split(".")
-                decl["namespaces"].update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
-            elif f[0] == "T":
-                decl["types"].setdefault(f[2], set()).add(f[1])
+        read_declarations(r.stdout.splitlines(), decl)
+    if test_framework:
+        decl["asms"].update(TEST_FRAMEWORK_ASMS)
+        with open(TEST_FRAMEWORK_DECLARATIONS) as f:
+            read_declarations(f, decl)
     return decl
 
 
@@ -603,6 +619,18 @@ def self_test():
     bad = [(want, code, msg) for want, code, msg, src in cases if from_failed_assembly(code, msg, src, decl) != want]
     nothing = {"asms": set(), "namespaces": set(), "types": {}}
     bad += [(False, code, msg) for want, code, msg, src in cases if from_failed_assembly(code, msg, src, nothing)]
+    # a changed Editor-folder test in --config editor: the committed test-framework declarations
+    tf = read_declarations(open(TEST_FRAMEWORK_DECLARATIONS), {"asms": set(), "namespaces": set(), "types": {}})
+    test = "using NUnit.Framework;\nusing UnityEngine.TestTools;\nnamespace CosmicShore.Tests {\n"
+    tf_cases = [
+        (True, "CS0103", "The name 'LogAssert' does not exist in the current context", test),
+        (True, "CS0246", "The type or namespace name 'UnityTest' could not be found (are you missing a using directive or an assembly reference?)", test),
+        (True, "CS0234", "The type or namespace name 'TestRunner' does not exist in the namespace 'UnityEditor.TestTools' (are you missing an assembly reference?)", plain),
+        (False, "CS0103", "The name 'LogAsert' does not exist in the current context", test),
+        (False, "CS0103", "The name 'LogAssert' does not exist in the current context", plain),
+    ]
+    bad += [(want, code, msg) for want, code, msg, src in tf_cases if from_failed_assembly(code, msg, src, tf) != want]
+    cases += tf_cases
     for want, code, msg in bad:
         print("[self-test] FAIL: expected %s: %s %s" % ("unverified" if want else "project error", code, msg))
     print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", len(cases)))
@@ -998,14 +1026,15 @@ def run_once():
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
     # what each failed assembly declares, read from its own sources: an Assets missing-type error is a
     # reference-set artifact only when it names one of these, from an assembly k actually references
+    # (plus, for a changed Editor-folder file in --config editor, the unfetched test framework)
     decl_cache = {}
 
-    def failed_decl(k):
-        up = tuple(sorted(d for d in refs_closure(k) if d in failed))
-        if up not in decl_cache:
-            decl_cache[up] = declarations({d: os.path.join(pkg_out if live[d].origin.startswith("package:") else out,
-                                                           d + ".rsp") for d in up})
-        return decl_cache[up]
+    def failed_decl(k, path):
+        key = (tuple(sorted(d for d in refs_closure(k) if d in failed)), editor and path in editor_included)
+        if key not in decl_cache:
+            decl_cache[key] = declarations({d: os.path.join(pkg_out if live[d].origin.startswith("package:") else out,
+                                                            d + ".rsp") for d in key[0]}, test_framework=key[1])
+        return decl_cache[key]
     real, unobtainable, unverified = [], [], []
     for k in failed:
         if k in pkg_failed:
@@ -1023,7 +1052,7 @@ def run_once():
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
-            elif from_failed_assembly(code, m.group(3), src, failed_decl(k)):
+            elif from_failed_assembly(code, m.group(3), src, failed_decl(k, path)):
                 unverified.append((k, e))
             else:
                 real.append((k, e))
@@ -1039,7 +1068,8 @@ def run_once():
     show("ERRORS in project code", real, args.max_errors)
     show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("unverified: names declared by a referenced assembly that did not compile, or editor-only members absent from the player-build reference DLLs", unverified,
+    show("unverified: names declared by a referenced assembly that did not compile (or, in a changed Editor-folder "
+         "file, by the unfetched test framework), or editor-only members absent from the player-build reference DLLs", unverified,
          0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
     stubbed = [k for k in need if live[k].origin == "stub"] + engine_stubs
