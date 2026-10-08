@@ -1847,7 +1847,7 @@ card with one guest flying and one guest cold-joining, host backs out and picks 
   inherits whatever that callback's ordering guarantees are — the same dependency
   `ExpectedHumanCount` already had. A transient over-count costs one AI chip for a tick.
 
-## B25 — Nothing enforces the four-player party size: two simultaneous Joins on a 3/4 party seat a fifth 🔴 (diagnosed 2026-10-08 from code; not reproduced; not fixed)
+## B25 — Nothing enforces the four-player party size: two simultaneous Joins on a 3/4 party seat a fifth 🟡 (diagnosed + fixed 2026-10-08; needs the MPPM retest)
 
 **Shape.** A party has two sizes (`HostConnectionDataSO`): `partyDisplaySlots` = **4**, the size
 players see and the game's rule, and `maxPartySlots` = **6**, the transport capacity with spare
@@ -1876,7 +1876,17 @@ exactly one short; MPPM runs so far have used two or three instances. The harden
 "two guests join-direct simultaneously → both seated" (HARDENING_PLAN_STEAM_LAUNCH.md §5.1 #2) is
 written for a party with room for both, and **passes on exactly the case that breaks**.
 
-**Fix (proposed, not applied - LOCKED party system, needs the owner's call).**
+**Fix (applied 2026-10-08, the owner's call: "only four players, no six anywhere").** One party
+size, 4. `partyDisplaySlots` / `PartyDisplaySlots` / `HasOpenDisplaySlots` are gone;
+`maxPartySlots` is 4 in code and in `HostConnectionData.asset`, and the party session is created
+with 4 seats, so **UGS itself refuses the fifth join** - the authority the client checks lacked.
+The loser of the race gets "That party is full." (`PartyInviteController` catches the policy's
+`Full` class and bounces to its own menu with that toast, instead of a red error and a silent
+bounce). `SendInviteAsync`'s backstop now checks 4. `HasOpenSlots` counts distinct player ids,
+which is what the spare seats used to absorb. A spectator also takes a seat, so a full party
+can no longer be spectated; `JoinTargetValidator` refuses that before teardown.
+
+**Options considered before that call** (kept for the record):
 1. Host-authoritative admission: when the host's reconcile sees `PartyMembers.Count >
    PartyDisplaySlots`, it removes the most recent joiner(s) (`RemovePlayerAsync`, the kick path at
    `HostConnectionService.cs:1090`) with a "party is full" reason the joiner's bounce path already

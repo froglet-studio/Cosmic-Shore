@@ -77,8 +77,13 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Spectate_TargetInMatch_IsOkEvenWhenFull() =>
-            Assert.AreEqual(JoinTargetVerdict.Ok, Validate(new[] { Player("A", "S1", count: 4, max: 4, match: "Dogfight") }, "A", "S1", spectate: true));
+        public void Spectate_TargetInMatch_WithASeat_IsOk() =>
+            Assert.AreEqual(JoinTargetVerdict.Ok, Validate(new[] { Player("A", "S1", count: 3, max: 4, match: "Dogfight") }, "A", "S1", spectate: true));
+
+        [Test]
+        public void Spectate_FullParty_IsPartyFull() =>
+            // A spectator takes a seat in the party's session, whose seat count is the party size.
+            Assert.AreEqual(JoinTargetVerdict.PartyFull, Validate(new[] { Player("A", "S1", count: 4, max: 4, match: "Dogfight", name: "Ada") }, "A", "S1", spectate: true, expectMessageContains: "Ada's party is full"));
 
         [Test]
         public void Spectate_TargetNotInMatch_IsNotInMatch() =>

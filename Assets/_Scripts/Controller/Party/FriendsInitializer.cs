@@ -178,7 +178,7 @@ namespace CosmicShore.Gameplay
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
             // The party size players SEE (4), never the transport capacity (6).
-            int maxSlots = hostConnectionData != null ? hostConnectionData.PartyDisplaySlots : 0;
+            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Online,
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
             // The party size players SEE (4), never the transport capacity (6).
-            int maxSlots = hostConnectionData != null ? hostConnectionData.PartyDisplaySlots : 0;
+            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Busy,

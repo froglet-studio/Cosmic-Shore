@@ -88,7 +88,7 @@ Each phase is independently shippable, has a gate, and the gate is a **run**, no
 | P1.1 | **Phase 3 — reconnection grace** | Today an 8-second Wi-Fi blip permanently converts your ship to AI and dumps you in a menu. Every part needed already exists and none are wired: `PartyState.Reconnecting`, `ISession.ReconnectAsync()`, a 120 s lobby retention window, `NetUgsPlayerId` as a stable slot identity, and an approval-payload token |
 | P1.2 | **Host-loss resilience → true migration** | A host drop currently ends the party; the clean-reform half is done (B10). Keeping four people together through one disconnect is a retention feature |
 | P1.3 | **The 90 s / 120 s timeout inversion** | `SceneLoader`'s client follow (90 s) sits *inside* NGO's scene-load timeout (120 s). Wrong way round: a lost scene load reports as a follow failure before NGO ever gives up. Tighten NGO to 60 s or raise the follow to 150 s |
-| P1.4 | **One roster** | Three disagreeing views of party membership (§7 of the diagram). The flicker they produce is why `maxPartySlots` carries spare seats — a transport parameter widened to hide a reconciliation artefact |
+| P1.4 | **One roster** | Three disagreeing views of party membership (§7 of the diagram). The flicker they produce is why `maxPartySlots` carries spare seats — a transport parameter widened to hide a reconciliation artefact *(2026-10-08: the spare seats are gone - one party size, 4, which is the session's seat count; `HasOpenSlots` counts distinct ids instead. B25.)* |
 | P1.5 | **Invite scan cost** | O(n²) across the lobby. Irrelevant at 4, measurable at 40. Phase 2's event subscription removes most of it |
 
 ### P2 — Scale and polish. Only if the numbers say so.

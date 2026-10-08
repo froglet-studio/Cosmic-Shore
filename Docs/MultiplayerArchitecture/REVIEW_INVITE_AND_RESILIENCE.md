@@ -621,7 +621,7 @@ IRoundStatsCleanup 11.
 
 | # | Finding | Status |
 |---|---|---|
-| F1 | **Nothing enforces the 4-player party size.** The session holds 6 (transport headroom); every 4-check runs on the joining/inviting client against polled data; two Joins on a 3/4 party inside one presence refresh seat a fifth. `SendInviteAsync`'s backstop checks 6. | 🔴 open - `Docs/PartySystem/BUGS.md` **B25**, fix proposed (host-authoritative admission) |
+| F1 | **Nothing enforces the 4-player party size.** The session holds 6 (transport headroom); every 4-check runs on the joining/inviting client against polled data; two Joins on a 3/4 party inside one presence refresh seat a fifth. `SendInviteAsync`'s backstop checks 6. | 🟡 fixed 2026-10-08 (one party size, 4: the session's seat count, so UGS refuses a fifth) - **B25**, needs the MPPM retest |
 | F2 | Two UGS calls still bypassed `UgsRequestPolicy` after Phase 1a: the canonical-lobby converge join, and the party session's name/avatar save. Neither had a retry loop, which is what the Phase 1 census counted. | ✅ fixed b1aa0a0c, and gated (R1) |
 | F3 | Upstream c2825eb4 moved every backend wait to unscaled time (Menu_Main screens set `timeScale = 0`). The policy's own back-off was already unscaled; two settle waits lost the flag in conflict resolution and got it back. | ✅ in the merge, gated (R5) |
 | F4 | The landed merge dcead731 dropped upstream 1b5c4522 (InitializeAfterDelay is cancelled when its controller is destroyed - the host-loss bounce raised InitializeGame into the next scene), dropped the thumb controls' inert-until-initialised guard, and declared `MainMenu_To_Authenticating_Succeeds_Reconnect` twice (CS0111 - the whole editor test assembly would not compile). | ✅ fixed 226448c0 |
