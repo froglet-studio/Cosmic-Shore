@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
         void UpdateScore(IRoundStats roundStats)
         {
             // Score for this scoring rule = friendly prisms destroyed * multiplier
-            Score = roundStats.FriendlyPrismsDestroyed * scoreMultiplier;
+            SetScore(roundStats, roundStats.FriendlyPrismsDestroyed * scoreMultiplier);
 
             // Recompute total across all scoring rules for this player
             ScoreTracker.CalculateTotalScore(roundStats.Name);

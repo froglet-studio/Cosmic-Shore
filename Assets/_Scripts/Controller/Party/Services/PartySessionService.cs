@@ -210,14 +210,14 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Transient session error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
             }
         }
@@ -263,14 +263,14 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Join rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Join transient error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                    await UniTask.Delay(delay);
+                    await UniTask.Delay(delay, DelayType.UnscaledDeltaTime);
                 }
             }
         }

@@ -51,7 +51,13 @@ RIM_SPRITE = "a0f080f0"         # Rectangle 1127 (2).png - the card rim
 
 # ---- the numbers. The editor tool mirrors these (HomeHubWiringWindow.ToyLayout). --------------
 TOY_CELL = (400.0, 250.0)
-TOY_SPACING = (20.0, 20.0)
+# x = 10, not the 20 this script first wrote: the UI owner re-tuned the shipped grid in the
+# Editor on 2026-09-09 (050ee6e82, "Update Menu_Main.unity") to a FIXED THREE-COLUMN grid
+# (m_Constraint 1 / m_ConstraintCount 3, which this script does not author) with 10 between
+# columns (3 x 400 + 2 x 10 + the 36/16 insets = 1272 wide). The scene is the design; this
+# constant follows it, and so does HomeHubWiringWindow.ToyLayout.ToySpacing (+ ToyColumns 3), so
+# a WIRE IT re-run cannot widen the gutter again.
+TOY_SPACING = (10.0, 20.0)
 TOY_PADDING = 16
 VARIANT_CELL = (275.0, 88.0)
 VARIANT_SPACING = (16.0, 14.0)

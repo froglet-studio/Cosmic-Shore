@@ -129,9 +129,13 @@ g.emit_asset(
       "  PlayUserAction: 0\n"
       f"  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}\n")
 
-# ── toasts: TWO IDLE HINTS AND NOTHING ELSE ─────────────────────────────────
-# The gate-race platform has no gate-threaded hook, so a milestone situation here would have no
-# poster. An idle hint needs none - the toast system fires it off idleSeconds.
+# ── toasts: two idle hints and the shared race beats ────────────────────────
+# The idle hints need no poster - the toast system fires them off idleSeconds. The race beats
+# (DomainRaceHalf / LeadChanged / HomeStretch = 129-131) are posted by GateRaceController's
+# DomainRaceToasts for every gate race; a beat this config does not author shows nothing. Worded
+# in the open-chain gate races' voice (Skein says "ring" too): {0} = leading domain, {1} = its
+# lead runner's rings, {2} = the ring target. No Quarter (128, no gate race authors it) and no
+# FinalLap (132): Waystation is one pass of clusters, LapsPerRace 1, so that beat never fires.
 g.emit_asset(
     "Assets/_SO_Assets/Game Toasts/GameToastConfig_Waystation.asset",
     G_ASSET["GameToastConfig_Waystation"],
@@ -140,7 +144,10 @@ g.emit_asset(
     + lib.toast(117, "Thread every ring around you - they only count in order",
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=25)
     + lib.toast(118, "Out of rings? HOLD the fold and aim where you want to land",
-                tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40))
+                tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40)
+    + lib.toast(129, "{0} is halfway home - ring {1}/{2}", tint_domain=1, domain_names=0)
+    + lib.toast(130, "{0} takes the lead - ring {1}/{2}", tint_domain=1, domain_names=0)
+    + lib.toast(131, "{0} is on the home stretch - ring {1}/{2}", tint_domain=1, domain_names=0))
 
 # ── the preview: shell-only, like every gate race ──────────────────────────
 NOTES = (

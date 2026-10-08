@@ -50,6 +50,36 @@ namespace CosmicShore.ScriptableObjects
                  "already agree when they overlap.")]
         [Range(0.1f, 1f)] public float colourBlendFraction = 0.8f;
 
+        [Header("Overlays")]
+        [Tooltip("Fraction of the GEOMETRY half over which the crystal's OVERLAYS fade out — the " +
+                 "omni's falling Shepard-tone triangles and their stationary rim (Docs/PALETTE.md " +
+                 "§2.10). They are a different mesh from the body, so they cannot fold with it; " +
+                 "they leave as the cage opens instead of vanishing on the pickup frame.")]
+        [Range(0.05f, 1f)] public float overlayFadeFraction = 0.3f;
+
+        [Header("Panel census (octahedra targets — the Squirrel's boost ring)")]
+        [Tooltip("Phase of the cage's LEFTOVER faces — its struts and panel rims, which have no " +
+                 "octahedron face to become and collapse into the shield instead. 0 = absorbed " +
+                 "first, so nothing is left hanging when the panels land.")]
+        [Range(0f, 1f)] public float fillerPhase = 0f;
+
+        [Tooltip("Phase of each octahedron's FIRST face to land. Phases spread from here to Panel " +
+                 "Phase End across a shield's eight faces, so it assembles rather than appearing whole.")]
+        [Range(0f, 1f)] public float panelPhaseStart = 0.55f;
+
+        [Tooltip("Phase of each octahedron's LAST face to land.")]
+        [Range(0f, 1f)] public float panelPhaseEnd = 1f;
+
+        [Tooltip("Seconds a morph waits for the mass it lands on before giving up and fading the " +
+                 "crystal out. The Squirrel's ring is laid by a SIBLING effect in the same dispatch, " +
+                 "so it normally arrives at once; this only bounds a ring that never comes.")]
+        [Min(0.05f)] public float targetGraceSeconds = 1.5f;
+
+        [Tooltip("How far (world units) a laid ring's centre may sit from where the crystal was " +
+                 "collected and still be THIS pickup's ring. Guards a peer that lays two rings of " +
+                 "one domain inside the grace window (two Squirrels on a team).")]
+        [Min(1f)] public float ringCaptureRadius = 60f;
+
         static CrystalMorphConfigSO _instance;
 
         /// <summary>

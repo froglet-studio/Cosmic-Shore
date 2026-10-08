@@ -425,8 +425,8 @@ every peer runs `InputController.Initialize` for every player (`Player.OnNetwork
 a strategy from THAT machine's hardware (`SystemInfo.deviceType == Handheld` → Touch). So a phone saw
 a PC pilot as Touch and a PC saw a phone pilot as Keyboard, and each resolved the remote press
 against the wrong map. Measured from the shipped prefabs by `Tools/Build/peer_press_harness`, which
-compiles the real handler and routes its RPCs between an owner copy and a peer copy: of 675 presses
-(13 vessels × owner device × what the peer thinks the device is × bound input), **72 ran something
+compiles the real handler and routes its RPCs between an owner copy and a peer copy: of 825 presses
+on the 2026-10-08 tree (13 vessels × owner device × what the peer thinks the device is × bound input), **72 ran something
 different on the peer**, all on the three hulls that author device overrides:
 
 | Hull | Owner → peer | What diverged |
@@ -461,6 +461,18 @@ stranded the held ability, and on the Manta the release stopped an ability that 
    press started; and the owner's release carries that device, for a peer that never ran the press
    (joined mid-hold).
 
+**A parallel fix for the release half, superseded in the merge.** `7e5c950e4` ("a release stops
+the actions its press started", bleeding-edge 2026-10-08) attacked the same release defect from the
+other side: it recorded each press's resolved action LIST in a second ledger (`_startedActions`) and
+stopped that list on release. But the release still ran the `HasAction` gate against the LIVE device
+first, so an input the new device does not bind at all was refused before the record was ever read.
+Measured with `peer_press_harness --rev origin/bleeding-edge` on that handler: stranded holds 48 →
+24 (the Manta's fixed; the Squirrel's ring and drift and the Rhino's swipes still stuck), late-joiner
+releases still 48 wrong, and the cross-peer 72 untouched. This branch keeps ONE ledger, the device
+record above, because the device is what the wire needs anyway (a release carries it to a peer that
+never ran the press); the merge removed `_startedActions` rather than leave two bookkeepers for one
+release.
+
 **Rejected:** carrying the resolved action LIST (needs an action-index scheme every peer agrees on,
 costs more than a byte per press, and still leaves the executors' own device reads divergent); the
 NetworkVariable alone (the first press after a switch races it, and the release mismatch remains);
@@ -488,8 +500,10 @@ gated on the LOCAL pilot (`VesselTransformer.IsLocalHumanTouchPilot`,
 `/verify-unity` did not run. Out of editor: `Tools/Build/unity_refcompile/run.sh` compiled the
 branch against the real Netcode 2.5.0 source and Unity reference assemblies with 0 errors in project
 code (negative control: a wrong-arity call planted in the ClientRpc fails it with CS7036, tagged as
-a changed file). `peer_press_harness` on the pre-fix handler (`--rev` of the merge base): 72 / 72
-divergent presses, 48 stranded holds; on this branch: 0 everywhere, plus the 4 shipped
+a changed file). `peer_press_harness` against the 2026-10-08 prefabs: the pre-fix handler
+(`--rev 40c9b744`) runs 72 of 825 presses differently on the peer (and 72 AI presses), strands 48
+holds and stops the wrong thing on 48 late-joiner releases; bleeding-edge's handler 72 / 24 / 48;
+this branch: 0 everywhere, plus the 4 shipped
 `CarriedInputDeviceTests` run green; `--self-test` catches all three removals. What none of that
 covers: Netcode delivery itself, the variable's replication, and what an executor DOES with a press
 — those need two real machines.

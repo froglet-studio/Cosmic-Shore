@@ -221,9 +221,24 @@ namespace CosmicShore.Core
                     TryBindCloud();
             }
 
-            if (_attemptRunning)
+            if (_attemptRunning && IsWeeklyRun)
                 TickAttempt();
         }
+
+        /// <summary>
+        /// True only while the CURRENT launch is the weekly run. Quitting a run through the pause
+        /// menu's Main Menu raises neither OnMiniGameEnd nor OnSessionEnded, so the attempt was
+        /// never cleared, and the next ORDINARY match - a different mode - ticked it, could
+        /// complete it, and submitted its time to the weekly leaderboard. Every launch path writes
+        /// the flag (true for the weekly run, false otherwise), so it is the right gate.
+        /// </summary>
+        bool IsWeeklyRun => _gameData != null && _gameData.IsWeeklyChallenge;
+
+        /// <summary>
+        /// Drops an armed or running attempt without recording anything - an ordinary launch is
+        /// starting, so whatever was left over from an abandoned weekly run is over.
+        /// </summary>
+        public void AbandonAttempt() => ClearAttempt();
 
         // ── Challenge resolution ───────────────────────────────────────────────
 
@@ -499,13 +514,13 @@ namespace CosmicShore.Core
         {
             // The mode reached its own end condition first (target hit, race over). Record what
             // the player actually achieved.
-            if (_attemptRunning)
+            if (_attemptRunning && IsWeeklyRun)
                 FinishAttemptAtEnd();
         }
 
         void HandleGameEnded()
         {
-            if (_attemptRunning || (_attemptArmed && !_attemptFinished))
+            if (IsWeeklyRun && (_attemptRunning || (_attemptArmed && !_attemptFinished)))
                 FinishAttemptAtEnd();
 
             ClearAttempt();

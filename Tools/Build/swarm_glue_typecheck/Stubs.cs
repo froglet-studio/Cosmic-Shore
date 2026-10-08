@@ -169,6 +169,7 @@ namespace CosmicShore.Gameplay
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; }
     public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false;
         public void BindVirtualMass(int spatialIndexId, Domains domain) { }   // Cell.cs (round 11a)
+        public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain) => true;   // Cell.cs (the builders' platform diet)
         // Cell.cs (round 8)
         public static int VolumeSlotOf(Domains d) => 0; public void SetVirtualVolume(Object source, double[] bySlot) { } public void ClearVirtualVolume(Object source) { } }
     // PrismSpatialIndex.cs:678-700 - the virtual-entry contract (PR #944 + round 11a)

@@ -1061,8 +1061,9 @@ def check_against_harness(env, problems):
 #
 # A key a type no longer declares is not an error in Unity: it deserializes to nothing, the asset
 # still loads, and the cell quietly runs on the field's default. That is the same shape as the 40
-# SO_ArcadeGame assets still carrying a retired `PreviewClip` (Docs/LAUNCH_BLOCKER_INDEX.md E2) -
-# so the templates below are checked against the live C# rather than assumed to have kept up.
+# SO_ArcadeGame assets that carried a retired `PreviewClip` (Docs/LAUNCH_BLOCKER_INDEX.md E2; now
+# stripped and guarded by retire_preview_clip.py) - so the templates below are checked against the
+# live C# rather than assumed to have kept up.
 SERIALIZED_OWNERS = {
     "Garland Cell Config.asset": ["CellConfigDataSO.cs", "CellPhaseThresholds.cs"],
     "Garland Cell Spawn Profile.asset": ["SpawnProfileSO.cs"],

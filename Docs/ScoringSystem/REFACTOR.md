@@ -314,3 +314,15 @@ when the stat-row surface itself changes.
   confusion behind `BUGS.md` B13/B14. Re-save the prefab (refreshes serialized
   field names) and delete the rematch subtree when the prefab is next touched;
   re-check the three scenes' overrides afterward.
+- **(2026-10-08 bug sweep) Final-score ClientRpcs match rows by display name in ~14 modes.**
+  Measured: `grep -rn "RoundStatsList.FirstOrDefault(s => s.Name == sName)" Assets/_Scripts`
+  lists every `SyncFinalScores_ClientRpc` that does it. Two players sharing a name corrupt the
+  result (bug-hunt handoff §2.8). Inconsistency, not incompleteness: one shared helper that
+  matches by the RoundStats `NetworkObjectId` (and skips the loop on the host) replaces the
+  per-mode copies. Fits R10 ("one server-authoritative ranked results list").
+- **(2026-10-08) `BaseScoring` now has two storage modes** — per-player `SetScore`/`ScoreFor`
+  (the seven metric scorers) and the shared `Score` (LifeFormsKilled, ElementalCrystals-
+  CollectedBlitz, deliberately co-op totals). `ScoreFor` falls back to `Score` when a scorer has
+  no per-player entry. Debt this sweep CREATED: when the legacy scorers retire (the Cellular
+  Duel is their last live consumer), delete both; until then, a new legacy scorer must pick one
+  mode explicitly. Blocking question: does Duel move onto a `ScoringRuleSO`?

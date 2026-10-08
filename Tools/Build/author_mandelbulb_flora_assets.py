@@ -302,11 +302,18 @@ def config_text(p, elem):
         # asked for it - but a cap of 3 still has to be affordable in the cell they ask in.
         "  PopulationSize: %d" % M.POPULATION_SIZE,
         "  MaxLivePopulation: %d" % M.MAX_LIVE_POPULATION,
-        # One whole form per child: a plant funds a daughter only once it has grown itself.
-        f"  GrowthPerOffspring: {p['elements'][elem]['prisms']}",
+        # Three quarters of a form per child, so an undisturbed plant can breed: the Time law
+        # (Flora.ScaleGrowthQuota) multiplies the quota by 1.25 on Charge, Mass and Space, and a
+        # quota of one whole form came out past what the plant can ever hold - only Time bred.
+        # 0.75 x 1.25 = 0.94 of the form on those three, 0.6 on Time.
+        f"  GrowthPerOffspring: {p['elements'][elem]['prisms'] * 3 // 4}",
         "  OffspringPerBirth: 1",
         "  ReproductionCooldownSeconds: 5",
-        "  MaturityFraction: 0.5",
+        # Maturity is measured against the species BUDGET, but a plant stops at its own form,
+        # which is smaller on some elements (Watershed Space: 1550 of 4150) - so state it as
+        # half of THIS element's form, or that element can never come of age.
+        "  MaturityFraction: %s" % _fraction(0.5 * p['elements'][elem]['prisms']
+                                             / M.budget_for(p["species"])),
         "  OffspringSpread: 120",
         f"  Element: {ELEMENT_ID[elem]}",
         "  Variant:",
@@ -360,6 +367,11 @@ def upsert_toy_row(toy, p):
     nxt = re.search(r"^  (?!- |  )\S", toy[m.end():], re.M)
     insert = m.end() + (nxt.start() if nxt else 0)
     return toy[:insert] + row + toy[insert:]
+
+
+def _fraction(x):
+    """A 0-1 fraction as Unity serializes a float field: up to 3 decimals, no trailing zeros."""
+    return ("%.3f" % min(0.5, x)).rstrip("0").rstrip(".")
 
 
 def write(path, text, changed, check):

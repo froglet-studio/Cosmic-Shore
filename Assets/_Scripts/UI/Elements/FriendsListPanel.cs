@@ -634,8 +634,11 @@ namespace CosmicShore.UI
             if (!gameObject.activeSelf)
                 Show();
 
-            // If a row already exists for this sender, leave it (refresh of existing entry).
-            var existing = FindEntryByPlayerId<RequestInfoEntry>(_spawnedRequests, invite.HostPlayerId);
+            // If an INVITE row already exists for this sender, leave it (refresh of existing entry).
+            // By kind, like the friend-request path: a pending friend-request row from the same
+            // player used to count as "existing", so no invite row was made and - once the popup
+            // auto-hid - the player had no way left to accept the invite.
+            var existing = FindRequestEntryByKind(invite.HostPlayerId, RequestInfoEntry.Kind.PartyInvite);
             if (existing == null)
                 SpawnPartyInviteEntry(invite);
         }

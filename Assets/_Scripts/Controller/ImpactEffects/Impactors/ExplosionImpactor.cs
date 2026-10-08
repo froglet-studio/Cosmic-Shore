@@ -27,6 +27,19 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// A component on a blast PREFAB that acts on each prism the blast's prism-effect sweep
+    /// reaches (<see cref="ExplosionImpactor"/>, a blast with <c>affectsPrisms</c> OFF). The
+    /// sibling of the container's <c>explosionPrismEffects</c>, for a payload that belongs to one
+    /// blast prefab and needs its own per-blast state beside the outcome — the Butterfly bloom's
+    /// dust (<see cref="ButterflyBloomDust"/>) applies the capsule's roll AND draws a puff where
+    /// it landed. Same once-per-blast ledger, same per-frame budget, same identity test.
+    /// </summary>
+    public interface IExplosionPrismPayload
+    {
+        void OnPrismReached(ExplosionImpactor blast, PrismImpactor prism);
+    }
+
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
@@ -38,6 +51,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool shielding;
 
         AOEExplosion explosion;
+
+        /// <summary>The explosion driving this impactor — effects use it for impact vectors and impulse.</summary>
+        public AOEExplosion Explosion => explosion;
 
         public override Domains OwnDomain => explosion.Domain;
 
@@ -125,11 +141,35 @@ namespace CosmicShore.Gameplay
         // one detonation paying a re-entering pilot twice.
         private HashSet<int> _vesselsHit;
 
+        // Blast -> prism EFFECT dispatch for a blast that does not touch mass itself (see
+        // SweepPrismEffects). _prismEffectsSeen is the once-per-blast ledger keyed by prism
+        // instance id; _prismEffectsPending holds what the per-frame budget deferred, each entry
+        // stamped with the prism's TimeCreated so a prism that died and came back out of the pool
+        // as somebody else's mass in the meantime is skipped rather than dusted.
+        HashSet<int> _prismEffectsSeen;
+        Queue<(Prism prism, float laidAt)> _prismEffectsPending;
+        static readonly List<Prism> s_prismEffectHits = new(256);
+        static bool s_warnedPrismEffectsNoIndex;
+
+        /// <summary>Prism effect dispatches one blast may spend per frame; the remainder is
+        /// deferred and drained like <c>_batchPending</c>. Same budget the Burst damage pass uses
+        /// (PrismSpatialIndex.MAX_NEW_HITS_PER_FRAME) — both spawn debris per prism.</summary>
+        const int MaxPrismEffectsPerFrame = 48;
+
+        /// <summary>Distinct prisms this blast's prism-effect sweep has reached so far (queued for
+        /// its effects). Telemetry: the bloom's dust reports it beside what it did to them.</summary>
+        public int PrismEffectsReached => _prismEffectsSeen?.Count ?? 0;
+
+        /// <summary>Of those, how many had at least one effect actually run on them. Reached but
+        /// not dispatched means every slot was empty or failed to load.</summary>
+        public int PrismEffectsDispatched { get; private set; }
+
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
         public bool HasPendingBatchWork =>
-            (_batchPending != null && _batchPending.Count > 0) || (_virtualHeartsPending != null && _virtualHeartsPending.Count > 0);
+            (_batchPending != null && _batchPending.Count > 0) || (_virtualHeartsPending != null && _virtualHeartsPending.Count > 0)
+            || (_prismEffectsPending != null && _prismEffectsPending.Count > 0);
 
         // ── round 11a (Docs/SWARM_FAUNA.md §19): the hearts of creatures that are only DATA ──
         // A virtual-population member's BODY is a PrismSpatialIndex virtual entry, so the Burst prism pass meets it
@@ -151,16 +191,23 @@ namespace CosmicShore.Gameplay
 
         // A/B switch owned by the benchmark overlay; must not survive into a normal session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetForceLegacy() => ForceLegacyPhysics = false;
+        static void ResetForceLegacy()
+        {
+            ForceLegacyPhysics = false;
+            s_warnedPrismEffectsNoIndex = false;
+        }
 
         // --- ProfilerMarkers ---
         private static readonly ProfilerMarker s_onTriggerEnter = new("AOE.OnTriggerEnter");
         private static readonly ProfilerMarker s_onTriggerSkipped = new("AOE.OnTriggerEnter.Skipped");
         private static readonly ProfilerMarker s_processBatch = new("AOE.ProcessBatchFrame");
 
+        IExplosionPrismPayload[] _prismPayloads;
+
         void Awake()
         {
             explosion ??= GetComponent<AOEExplosion>();
+            _prismPayloads = GetComponents<IExplosionPrismPayload>();
             if (_trailBlockLayer < 0)
                 _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
         }
@@ -174,6 +221,9 @@ namespace CosmicShore.Gameplay
         {
             _virtualHeartsSeen?.Clear();
             _virtualHeartsPending?.Clear();
+            _prismEffectsSeen?.Clear();
+            _prismEffectsPending?.Clear();
+            PrismEffectsDispatched = 0;
             if (ForceLegacyPhysics) return;
 
             // A blast that does not touch mass never starts the prism pass at all. ONE gate here
@@ -277,6 +327,7 @@ namespace CosmicShore.Gameplay
                 // still able to act on crystals and creatures.
                 SweepCrystals(center, radius);
                 SweepLifeformHearts(center, radius);
+                SweepPrismEffects(center, radius);
 
                 // The blast's own volume, this frame. A sphere needs no direction, which is why
                 // LitVolume.Sphere takes none.
@@ -444,6 +495,7 @@ namespace CosmicShore.Gameplay
             {
                 if (!HasPendingBatchWork) return false;
                 DrainVirtualHearts(force: false);
+                DrainPrismEffects();
                 if (_batchPending == null || _batchPending.Count == 0) return HasPendingBatchWork;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) { _batchPending.Clear(); return HasPendingBatchWork; }
@@ -498,6 +550,10 @@ namespace CosmicShore.Gameplay
                     new BlastTally(BatchHitCount, VesselHitCount));
 
             _useBatchProcessing = false;
+            // Same rule for deferred prism effects: a blast ending normally has already drained
+            // them (ExplodeAsync waits on HasPendingBatchWork); one cut short by turn end must not
+            // keep editing mass after the turn is over.
+            _prismEffectsPending?.Clear();
             // Keep HashSet/Queue allocated for reuse - cleared on next BeginBatchProcessing.
             // Any hits still pending here are abandoned deliberately: EndBatchProcessing
             // runs on cancellation (turn end) and on the destroy paths, where further
@@ -858,6 +914,108 @@ namespace CosmicShore.Gameplay
                 if (!crystal || crystal.EmbeddedIn is { IsDying: true }) continue;
                 if (!_heartsHit.Add(crystal.GetInstanceID())) continue;   // the collider sweep must not run them twice
                 ApplyLifeformEffects(effects, crystal);
+            }
+        }
+
+        /// <summary>
+        /// Blast → PRISM EFFECTS, for a blast that does not touch mass itself
+        /// (<see cref="AOEExplosion.AffectsPrisms"/> OFF). Such a blast never starts the Burst
+        /// prism pass and its trigger declines every prism (see <see cref="AcceptImpactee"/>), so
+        /// without this the container's <c>explosionPrismEffects</c> — and any
+        /// <see cref="IExplosionPrismPayload"/> component on the blast — could never run, which is
+        /// exactly how the Butterfly's omni-crystal bloom shipped: a 900-unit blast that changed
+        /// nothing. With the generic damage/shield pass off, those payloads ARE the blast's whole
+        /// effect on mass, and each prism gets them once.
+        ///
+        /// A blast that DOES affect prisms is deliberately not swept: its mass is already decided
+        /// by the batch pass, and dispatching effects on top would be a second outcome per prism.
+        ///
+        /// Broadphase is <see cref="PrismSpatialIndex.QuerySphere"/> (live prisms only, centre
+        /// test) over this frame's sphere, so outcomes ride the wavefront. At most
+        /// <see cref="MaxPrismEffectsPerFrame"/> dispatch per frame; the rest wait in
+        /// <c>_prismEffectsPending</c> and drain after the visual, like budget-deferred damage —
+        /// a prism's fate is decided by whether the blast contained it, not by how long the VFX
+        /// ran. Spherical blasts only: the conic and cylindrical frames do not call it, and no
+        /// shipped cone or plate authors prism effects.
+        /// </summary>
+        void SweepPrismEffects(Vector3 centre, float radius)
+        {
+            if (radius <= 0f || !HasPrismPayload) return;
+            if (explosion == null || explosion.AffectsPrisms) return;
+
+            var registry = PrismSpatialIndex.Instance;
+            if (registry == null || !registry.IsAvailable)
+            {
+                if (!s_warnedPrismEffectsNoIndex)
+                {
+                    s_warnedPrismEffectsNoIndex = true;
+                    CosmicShore.Utility.CSDebug.LogWarning(
+                        $"[ExplosionImpactor] '{name}' authors prism effects but the PrismSpatialIndex " +
+                        "is unavailable, so its sweep cannot reach a single prism. Reported once.", this);
+                }
+                return;
+            }
+
+            _prismEffectsSeen ??= new HashSet<int>(256);
+            _prismEffectsPending ??= new Queue<(Prism, float)>(256);
+
+            registry.QuerySphere(centre, radius, s_prismEffectHits);
+            for (int i = 0; i < s_prismEffectHits.Count; i++)
+            {
+                var prism = s_prismEffectHits[i];
+                if (!prism || prism.destroyed || prism.prismProperties == null) continue;
+                if (!_prismEffectsSeen.Add(prism.GetInstanceID())) continue;
+                _prismEffectsPending.Enqueue((prism, prism.prismProperties.TimeCreated));
+            }
+            s_prismEffectHits.Clear();
+
+            DrainPrismEffects();
+        }
+
+        /// <summary>Does this blast carry anything to do to a prism it reaches — container
+        /// effects or an <see cref="IExplosionPrismPayload"/> component?</summary>
+        bool HasPrismPayload =>
+            (explosionImpactorDataContainer && DoesEffectExist(explosionImpactorDataContainer.explosionPrismEffects))
+            || _prismPayloads is { Length: > 0 };
+
+        /// <summary>Dispatch up to <see cref="MaxPrismEffectsPerFrame"/> deferred prisms to the
+        /// container's prism effects and every <see cref="IExplosionPrismPayload"/>.</summary>
+        void DrainPrismEffects()
+        {
+            if (_prismEffectsPending == null || _prismEffectsPending.Count == 0) return;
+            if (!HasPrismPayload) { _prismEffectsPending.Clear(); return; }
+            var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionPrismEffects : null;
+            int effectCount = DoesEffectExist(effects) ? effects.Length : 0;
+
+            int budget = MaxPrismEffectsPerFrame;
+            while (budget > 0 && _prismEffectsPending.Count > 0)
+            {
+                var (prism, laidAt) = _prismEffectsPending.Dequeue();
+                // Identity, not liveness: a pooled prism that died and was re-issued since it was
+                // queued is ALIVE, but it is no longer the mass this blast contained.
+                if (!prism || prism.destroyed || prism.prismProperties == null
+                    || prism.prismProperties.TimeCreated != laidAt) continue;
+                if (!prism.TryGetComponent(out PrismImpactor prismImpactor)) continue;
+
+                budget--;
+                bool ran = false;
+                for (int e = 0; e < effectCount; e++)
+                {
+                    if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                            nameof(ExplosionImpactorDataContainerSO.explosionPrismEffects), e))
+                        continue;
+                    effects[e].Execute(this, prismImpactor);
+                    ran = true;
+                }
+                if (_prismPayloads != null)
+                {
+                    for (int k = 0; k < _prismPayloads.Length; k++)
+                    {
+                        _prismPayloads[k].OnPrismReached(this, prismImpactor);
+                        ran = true;
+                    }
+                }
+                if (ran) PrismEffectsDispatched++;
             }
         }
 

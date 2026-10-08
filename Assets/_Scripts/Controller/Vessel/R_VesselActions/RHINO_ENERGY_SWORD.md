@@ -251,24 +251,25 @@ not an oscillator (the old driver's tick-decay loop is gone).
   keeps reading the same meter through `ShieldSkimmerScaleDriver.OnScaleChanged(current, base,
   max)`.
 
-## Crystal burst (all three dimensions + explosion)
+## Crystal burst (all three dimensions, no explosion)
 
 When the sword collects an elemental crystal, `RhinoSwordCrystalBurstEffectSO` (the sword
-container's only crystal effect) reads the energy at that instant and:
+container's only crystal effect) calls `IRhinoSwordState.TriggerCrystalBurst()`, which bursts
+the blade in **all three dimensions** to `authoredSilhouette × Lerp(1, crystalBurstFactorAtFullEnergy, energy)`
+(default factor 4), holds `crystalBurstHoldSeconds`, eases back — and **drains ALL energy**,
+so the blade settles back to its base length. A burst only ever GROWS: the length target is
+floored at the blade's current length (a Space-lengthened blade at low energy must not
+contract) and capped at the debuff-aware `MaxScale` (so the Sparrow shrink debuff still
+bites during a burst) unless the blade is already longer.
 
-1. Spawns an `AOEExplosion` **at the crystal**, `MaxScale = Lerp(minExplosionScale,
-   maxExplosionScale, energy)` (60 → 400; the wired `AOESlowExplosion` also slows victims).
-2. Calls `IRhinoSwordState.TriggerCrystalBurst()`, which bursts the blade in **all three
-   dimensions** to `authoredSilhouette × Lerp(1, crystalBurstFactorAtFullEnergy, energy)`
-   (default factor 4), holds `crystalBurstHoldSeconds`, eases back — and **drains ALL energy**,
-   so the blade settles back to its base length. A burst only ever GROWS: the length target is
-   floored at the blade's current length (a Space-lengthened blade at low energy must not
-   contract) and capped at the debuff-aware `MaxScale` (so the Sparrow shrink debuff still
-   bites during a burst) unless the blade is already longer.
+It spawns **no explosion** (removed 2026-10-08 by design call: the sword capsule overlaps the
+hull, so every elemental crystal the Rhino flies through — every ejected petal, every dropped
+heart — reaches this effect, and the `AOESlowExplosion` it used to spawn detonated on each
+pickup). The Rhino's omni-crystal vessel blast (`RhinoVesselExplosionByCrystalEffect`) is a
+separate effect and is unchanged.
 
-At full energy: max-size burst + max explosion + whole-blade crackle + max camera shake. At zero
-energy: a small 60-unit pop and no burst. Banked kills literally convert into the boom. During
-the burst the HUD meter reports the energy-based resting length (i.e. it honestly drops to empty
+At full energy: max-size burst + whole-blade crackle + max camera shake. At zero energy: no
+burst. During the burst the HUD meter reports the energy-based resting length (i.e. it honestly drops to empty
 at the drain), not the transient ballooned size. Living lifeforms' **embedded** heart crystals
 never trigger the burst — `SkimmerImpactor` gates its crystal effects on collectable crystals
 (`IsEmbedded`/`IsExploding`), mirroring `ElementalCrystalImpactor`'s own guards.
@@ -411,7 +412,7 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | Tuning (scale mapping, energize, burst, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
 | Prism effect (damage, energize-gated super-shield pop, energy bank, the cut plane) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
 | The slice (death visual) | `Utility/Effects/PrismSlice.cs` (batch/budget/retire) · `Utility/PrismSliceGeometry.cs` (the stamps) · `_Graphics/Materials/Graphs/PrismSlice.hlsl` + `PrismSlice.shader` · `_Graphics/Materials/PrismSliceMaterial.mat` · `Resources/PrismSliceConfig.asset` · `Vessel/Prism.cs` (`Slice`) · `Prisms/PrismFactory.cs` (`SpawnExplosion` routes it) |
-| Crystal effect (explosion + burst kick) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSwordCrystalBurstEffectSO.cs` → `_SO_Assets/Effects/Skimmer Crystal Effects/RhinoSwordCrystalBurstEffect.asset` |
+| Crystal effect (burst kick) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSwordCrystalBurstEffectSO.cs` → `_SO_Assets/Effects/Skimmer Crystal Effects/RhinoSwordCrystalBurstEffect.asset` |
 | Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
 | Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
 | Capsule crackle surface mode | `Controller/Vessel/ForcefieldCrackleController.cs` (`CrackleSurface`) |
@@ -470,8 +471,8 @@ On `RhinoBladeCrackleMaterial.mat`: arc density/sharpness, ring thickness (fract
 ripple speed, core/glow/rim colors — live-tunable in the inspector, edit or play mode
 (`ForcefieldCrackleController` is `[ExecuteAlways]`).
 
-On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosionScale` 400 ·
-`aoePrefabs` = AOESlowExplosion.
+`RhinoSwordCrystalBurstEffect.asset` has no knobs — the burst is tuned on
+`ShieldSkimmerScaleConfig.asset` above.
 
 ## In-editor verification
 
@@ -501,8 +502,8 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
    energize while still touching — the prism must pop the instant ignition lands, no re-approach
    needed.
 8. **Crystal:** with partial vs full energy, sword-collect an elemental crystal — blade bursts
-   in all three dimensions, whole-blade crackle + explosion at the crystal, both bigger at
-   higher energy; energy drops to 0 and the blade eases back to base length.
+   in all three dimensions with whole-blade crackle, bigger at higher energy, and **no explosion
+   at the crystal**; energy drops to 0 and the blade eases back to base length.
 9. **Tracers:** two streaks ride the blade tips through swipes, tinted with the live blade
    colour (teal → cyan → white-hot when energized).
 9b. **The slice:** cut trail prisms with a flat sweep, then a vertical chop, then by holding the

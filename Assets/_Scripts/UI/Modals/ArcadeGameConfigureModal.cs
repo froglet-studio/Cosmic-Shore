@@ -247,6 +247,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
+                arcadeConfigSyncManager.OnAllyVesselCycleRequested += HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
 
@@ -285,6 +286,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
+                arcadeConfigSyncManager.OnAllyVesselCycleRequested -= HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
             }
@@ -594,6 +596,7 @@ namespace CosmicShore.UI
 
             config.AIDomains.Clear();
             config.AIDomains.AddRange(placements);
+            config.AIVessels.Clear();   // ally hulls are picked per session, not remembered
 
             // Seat count first (it bounds the domain count), then the domain count against the
             // new bound - the same order a live placement takes through AddAiToDomain.
@@ -825,7 +828,10 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // The pick goes with its seat, so the bots after it keep theirs.
+            config.SyncAIVesselSlots();
             config.AIDomains.RemoveAt(aiOrdinal);
+            config.AIVessels.RemoveAt(aiOrdinal);
             HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
             BroadcastRosterToClients();
         }
@@ -968,9 +974,15 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || arcadeConfigSyncManager == null) return;
 
+            config.SyncAIVesselSlots();
             var placed = new int[config.AIDomains.Count];
-            for (int i = 0; i < placed.Length; i++) placed[i] = (int)config.AIDomains[i];
-            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed);
+            var vessels = new int[config.AIDomains.Count];
+            for (int i = 0; i < placed.Length; i++)
+            {
+                placed[i] = (int)config.AIDomains[i];
+                vessels[i] = (int)config.AIVessels[i];
+            }
+            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed, vessels);
         }
 
         /// <summary>
@@ -979,7 +991,8 @@ namespace CosmicShore.UI
         /// placed bots on their exact tiles (no ✕ here: kicking is the host's), the balanced
         /// remainder recomputed over the same replicated player data the host used.
         /// </summary>
-        void HandleRosterChangedOnClient(int playerCount, int domainCount, int[] placedAiDomains)
+        void HandleRosterChangedOnClient(int playerCount, int domainCount, int[] placedAiDomains,
+                                         int[] placedAiVessels)
         {
             // Same two-instance gate as HandleConfigOpenedOnClient.
             if (!UsesLaunchPanels) return;
@@ -992,6 +1005,12 @@ namespace CosmicShore.UI
             if (placedAiDomains != null)
                 foreach (var d in placedAiDomains)
                     config.AIDomains.Add((Domains)d);
+
+            config.AIVessels.Clear();
+            if (placedAiVessels != null)
+                foreach (var v in placedAiVessels)
+                    config.AIVessels.Add((VesselClassType)v);
+            config.SyncAIVesselSlots();
 
             RefreshTileVisibility();
             RefreshRoster();
@@ -1428,6 +1447,7 @@ namespace CosmicShore.UI
             // ReconcileAiPlacements (below, and on every roster redraw) and then stay put: a
             // visible, kickable seat rather than an auto seat that re-balanced on every redraw.
             config.AIDomains.Clear();
+            config.AIVessels.Clear();
             _addAiArmed = false;
             // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
             // extra seat is one more pilot competing for the same crystals. The party's humans
@@ -2197,6 +2217,19 @@ namespace CosmicShore.UI
             if (config != null)
                 foreach (var placed in config.AIDomains)
                     signature.Append('#').Append(placed);
+
+            // What the hull icons say: each AI's pick, which domains are humans' (ally vs
+            // opponent), and the local pilot's own domain (which allies this pilot may pick for).
+            var humanDomains = new HashSet<Domains>();
+            foreach (var h in humans) humanDomains.Add(h.NetDomain.Value);
+            var localPilot = LocalOwnedPlayerQuiet();
+            var localDomain = localPilot ? localPilot.NetDomain.Value : Domains.Blue;
+            if (config != null)
+                foreach (var v in config.AIVessels)
+                    signature.Append('v').Append((int)v);
+            foreach (var d in activeDomains)
+                if (humanDomains.Contains(d)) signature.Append('h').Append(d);
+            signature.Append('L').Append(localDomain);
             string sig = signature.ToString();
             if (sig == _aiChipSignature && _aiChips.Count == Mathf.Max(0, aiCount)) return;
             _aiChipSignature = sig;
@@ -2245,9 +2278,139 @@ namespace CosmicShore.UI
                 int ordinal = i;
                 seat.SetKickable(placedChip && !IsClientMode && CanKickAi,
                                  () => HandleKickAIRequested(ordinal));
+
+                // The hull this seat will fly: an opponent's pinned hull, or an ally's pick - and
+                // an ally on the local pilot's own team is tappable to step it.
+                DrawAiSeatHull(seat, ordinal, domain, placedChip, humanDomains, localDomain);
                 _aiChips.Add(seat);
             }
         }
+
+        #region Ally hull picker
+
+        /// <summary>
+        /// Whether this card lets teammates pick their ally AI's hulls: an arena card (several
+        /// hulls to choose from). Every other card pins its hull, so there is nothing to pick.
+        /// </summary>
+        bool AllyHullPickerAvailable =>
+            _selectedGame && _selectedGame.ArenaRules && _selectedGame.DistinctHullCount > 1 &&
+            !_weeklyChallengeLocked;
+
+        /// <summary>The card's pinned opponent hull (Regatta: the Squirrel), Random when none.</summary>
+        VesselClassType OpponentHull =>
+            _selectedGame && _selectedGame.OpponentAIVessel ? _selectedGame.OpponentAIVessel.Class : VesselClassType.Random;
+
+        /// <summary>The card's own SO_Vessel for <paramref name="hull"/> (for its icon), or null.</summary>
+        SO_Vessel CardVessel(VesselClassType hull)
+        {
+            if (_selectedGame && _selectedGame.OpponentAIVessel && _selectedGame.OpponentAIVessel.Class == hull)
+                return _selectedGame.OpponentAIVessel;
+            return _selectedGame && _selectedGame.Vessels != null
+                ? _selectedGame.Vessels.FirstOrDefault(v => v && v.Class == hull)
+                : null;
+        }
+
+        /// <summary>
+        /// Draw one AI chip's hull. Opponent seat (no human on its domain, card pins a hull):
+        /// that hull's icon, not tappable. Ally seat: the picked hull's icon (the random avatar
+        /// while nobody has picked), tappable when it is on the LOCAL pilot's own team.
+        /// </summary>
+        void DrawAiSeatHull(DomainAvatarChip seat, int ordinal, Domains domain, bool placed,
+                            ICollection<Domains> humanDomains, Domains localDomain)
+        {
+            if (AIHullSeating.IsOpponentSeat(OpponentHull, domain, humanDomains))
+            {
+                var opponent = CardVessel(OpponentHull);
+                seat.SetHull(opponent ? opponent.IconActive : null, null);
+                return;
+            }
+
+            if (!AllyHullPickerAvailable || config == null) return;
+
+            var picked = CardVessel(config.AIVesselAt(ordinal));
+            bool mine = placed && domain == localDomain && humanDomains.Contains(domain);
+            seat.SetHull(picked ? picked.IconActive : null,
+                         mine ? () => HandleAllyHullChipClicked(ordinal) : null);
+        }
+
+        /// <summary>A tap on one of the local pilot's ally chips: ask the host to step its hull.
+        /// The host decides on every peer, itself included, so there is one rule.</summary>
+        void HandleAllyHullChipClicked(int ordinal)
+        {
+            if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
+            {
+                arcadeConfigSyncManager.RequestAllyVesselCycle(ordinal, +1);
+                return;
+            }
+
+            // Offline / no lobby object: this machine IS the authority.
+            var self = LocalOwnedPlayerQuiet();
+            ApplyAllyVesselCycle(self, ordinal, +1);
+        }
+
+        /// <summary>HOST: a pilot asked to step ally AI <paramref name="ordinal"/>'s hull.</summary>
+        void HandleAllyVesselCycleRequested(ulong clientId, int ordinal, int direction)
+        {
+            if (IsClientMode || !UsesLaunchPanels || gameData == null) return;
+
+            Player requester = null;
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p && !p.NetIsAI.Value && !p.IsInitializedAsAI && p.OwnerClientId == clientId)
+                {
+                    requester = p;
+                    break;
+                }
+
+            ApplyAllyVesselCycle(requester, ordinal, direction);
+        }
+
+        /// <summary>
+        /// HOST: step ally AI <paramref name="ordinal"/>'s hull for <paramref name="requester"/>.
+        /// Refused unless the seat is on the requester's own team - a pilot picks for their
+        /// allies, never for another team's AI. Under arena seating the step skips hulls another
+        /// pilot has claimed and hulls another ally already flies.
+        /// </summary>
+        void ApplyAllyVesselCycle(Player requester, int ordinal, int direction)
+        {
+            if (IsClientMode || config == null || !AllyHullPickerAvailable) return;
+            if (ordinal < 0 || ordinal >= config.AIDomains.Count) return;
+
+            var seatDomain = config.AIDomains[ordinal];
+            if (!requester || requester.NetDomain.Value != seatDomain)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeLaunch] Ally hull pick refused - AI {ordinal} ({seatDomain}) is not on " +
+                    $"{(requester ? requester.NetName.Value.ToString() : "an unknown pilot")}'s team.");
+                return;
+            }
+
+            config.SyncAIVesselSlots();
+
+            var taken = new HashSet<VesselClassType>();
+            if (ArenaHullsExclusive)
+            {
+                foreach (var ip in gameData.Players)
+                    if (ip is Player p && p && p.IsSpawned && AIHullSeating.IsConcrete(p.ArenaHullClaim))
+                        taken.Add(p.ArenaHullClaim);
+                for (int i = 0; i < config.AIVessels.Count; i++)
+                    if (i != ordinal && AIHullSeating.IsConcrete(config.AIVessels[i]))
+                        taken.Add(config.AIVessels[i]);
+            }
+
+            var roster = _availableShips.Where(v => v).Select(v => v.Class).Distinct().ToList();
+            if (!AIHullSeating.TryCycle(roster, config.AIVessels[ordinal], direction, taken, out var next))
+                return;
+
+            config.AIVessels[ordinal] = next;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] Ally AI {ordinal} ({seatDomain}) will fly {next}.");
+
+            _aiChipSignature = null;   // the icon changed even though the seat did not
+            RefreshRoster();
+            BroadcastRosterToClients();
+        }
+
+        #endregion
 
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
         {
@@ -2268,6 +2431,10 @@ namespace CosmicShore.UI
             var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Jade);
             if (tile == null || tile.AvatarStripTransform == null) return;
             chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
+
+            // A human moving team changes which AI chips are their allies (and which are
+            // opponents), so the AI strip redraws. Signature-gated: a no-op when nothing moved.
+            RefreshRoster();
         }
 
         void DespawnAllChips()
@@ -2780,6 +2947,9 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // An ordinary launch: drop anything a quit-to-menu left armed or running, or the old
+            // attempt would tick (and finish) against this match.
+            service?.AbandonAttempt();
             gameData.IsWeeklyChallenge = false;
         }
 
@@ -2804,6 +2974,11 @@ namespace CosmicShore.UI
             // path that never reached the lobby, not a seat the host can see.
             ReconcileAiPlacements();
             gameData.SetRequestedAIDomains(config.AIDomains);
+
+            // The hulls teammates picked for their ally AI, entry i for bot i. The spawner reads
+            // them for ally seats only (AIHullSeating) and re-validates each one.
+            config.SyncAIVesselSlots();
+            gameData.SetRequestedAIVessels(AllyHullPickerAvailable ? config.AIVessels : null);
 
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;

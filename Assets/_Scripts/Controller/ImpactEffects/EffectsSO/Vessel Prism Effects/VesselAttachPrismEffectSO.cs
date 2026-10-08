@@ -8,9 +8,10 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "VesselAttachPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselAttachPrismEffectSO")]
     public class VesselAttachPrismEffectSO : VesselPrismEffectSO
     {
-        [Tooltip("Arm the vessel's guns on attach. On for the Urchin, whose ride exists to " +
-                 "carry it into firing range of enemy mass.")]
-        [SerializeField] bool armGunsOnAttach = true;
+        // No "arm the guns on attach" flag. One existed (armGunsOnAttach) and wrote
+        // VesselStatus.GunsActive, which no gun, executor or AI decision reads, so it restored
+        // nothing; it was dropped with its claim (URCHIN_BACKLOG U6). The Urchin fires from a
+        // ride because its spike executor fires whenever its trigger is held, attached or not.
 
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
@@ -34,13 +35,6 @@ namespace CosmicShore.Gameplay
             // unattachable, while logging an error for what is a perfectly ordinary contact.
             vesselStatus.IsAttached = true;
             vesselStatus.AttachedPrism = trailBlock;
-
-            // Riding arms the guns. The Urchin fires its spike volleys FROM the trail it is
-            // riding - that is the whole loop, ride to reach enemy mass, then convert it - so
-            // an attach that leaves the guns cold makes the ride a movement option with no
-            // payoff. Lost in the vessel-layer port; restored here rather than in the
-            // transformer so it lands on whatever attaches, not just the Urchin.
-            if (armGunsOnAttach) vesselStatus.GunsActive = true;
         }
     }
 }

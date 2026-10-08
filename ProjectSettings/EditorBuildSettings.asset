@@ -90,6 +90,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity
     guid: 5c4a19b94fe0e6e8cf6276e50013e091
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity
+    guid: d812410bca4cfa283c84f0302b92fd28
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRegatta.unity
     guid: 49396577723d994f703e783dce685bff
   - enabled: 1
@@ -98,6 +101,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity
     guid: 654b78c48ae68265c22ff31443204daf
+  - enabled: 1
+    path: Assets/_Scenes/Singleplayer Scenes/MinigameGrizzlyCharge.unity
+    guid: 9c6c183efabe4e30af0befd2d114d054
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity
     guid: b333e163445729830970f182e1e64fc0

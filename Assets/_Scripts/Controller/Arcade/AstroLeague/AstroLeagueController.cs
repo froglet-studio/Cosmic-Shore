@@ -1129,7 +1129,9 @@ namespace CosmicShore.Gameplay
             {
                 // Restore to known constants, not captured values - the ball's hitstop can
                 // interleave with this window and a stale capture would re-apply its timescale.
-                Time.timeScale = 1f;
+                // A pause opened during the window owns timeScale (0): restoring 1 here un-froze the
+                // whole match behind the open pause menu - AI, ball, clock - in a solo game.
+                Time.timeScale = CosmicShore.Core.PauseSystem.Paused ? 0f : 1f;
                 Time.fixedDeltaTime = baseFixedDelta;
             }
         }
