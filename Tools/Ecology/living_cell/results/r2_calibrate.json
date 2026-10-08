@@ -1,0 +1,560 @@
+{
+ "cfg": "CAL2",
+ "fitted": {
+  "grazer.F_half": 15.625,
+  "locust.F_half": 62.5,
+  "pack.a_attack": 0.0006,
+  "lurker.a_attack": 0.0384,
+  "grazer.hop": 0.024,
+  "locust.hop": 0.0015,
+  "pack.hop": 0.002
+ },
+ "err_start": 0.9739,
+ "err_end": 0.2849,
+ "gap_end": {
+  "grazer": {
+   "micro_end": 190.7,
+   "macro_end": 276.0,
+   "rel": 0.448
+  },
+  "locust": {
+   "micro_end": 171.0,
+   "macro_end": 154.7,
+   "rel": 0.096
+  },
+  "pack": {
+   "micro_end": 38.3,
+   "macro_end": 0.7,
+   "rel": 0.983
+  },
+  "thief": {
+   "micro_end": 5.3,
+   "macro_end": 21.7,
+   "rel": 3.063
+  },
+  "lurker": {
+   "micro_end": 23.7,
+   "macro_end": 34.7,
+   "rel": 0.465
+  }
+ },
+ "log": [
+  {
+   "step": 0,
+   "err": 0.9739,
+   "dials": {
+    "grazer.F_half": 7.8125,
+    "locust.F_half": 500.0,
+    "pack.a_attack": 0.0006,
+    "lurker.a_attack": 0.0384,
+    "grazer.hop": 0.012,
+    "locust.hop": 0.012,
+    "pack.hop": 0.008
+   }
+  },
+  {
+   "step": 1,
+   "dial": "grazer.F_half",
+   "factor": 0.25,
+   "err": 0.9884
+  },
+  {
+   "step": 2,
+   "dial": "grazer.F_half",
+   "factor": 0.5,
+   "err": 0.9656
+  },
+  {
+   "step": 3,
+   "dial": "grazer.F_half",
+   "factor": 2.0,
+   "err": 0.9739
+  },
+  {
+   "step": 4,
+   "dial": "grazer.F_half",
+   "factor": 4.0,
+   "err": 0.9537
+  },
+  {
+   "step": 5,
+   "dial": "locust.F_half",
+   "factor": 0.25,
+   "err": 0.806
+  },
+  {
+   "step": 6,
+   "dial": "locust.F_half",
+   "factor": 0.5,
+   "err": 0.5169
+  },
+  {
+   "step": 7,
+   "dial": "locust.F_half",
+   "factor": 2.0,
+   "err": 0.806
+  },
+  {
+   "step": 8,
+   "dial": "locust.F_half",
+   "factor": 4.0,
+   "err": 0.8802
+  },
+  {
+   "step": 9,
+   "dial": "pack.a_attack",
+   "factor": 0.25,
+   "err": 0.5145
+  },
+  {
+   "step": 10,
+   "dial": "pack.a_attack",
+   "factor": 0.5,
+   "err": 0.4745
+  },
+  {
+   "step": 11,
+   "dial": "pack.a_attack",
+   "factor": 2.0,
+   "err": 0.5145
+  },
+  {
+   "step": 12,
+   "dial": "pack.a_attack",
+   "factor": 4.0,
+   "err": 0.5073
+  },
+  {
+   "step": 13,
+   "dial": "lurker.a_attack",
+   "factor": 0.25,
+   "err": 0.7432
+  },
+  {
+   "step": 14,
+   "dial": "lurker.a_attack",
+   "factor": 0.5,
+   "err": 0.6114
+  },
+  {
+   "step": 15,
+   "dial": "lurker.a_attack",
+   "factor": 2.0,
+   "err": 0.5892
+  },
+  {
+   "step": 16,
+   "dial": "lurker.a_attack",
+   "factor": 4.0,
+   "err": 0.4611
+  },
+  {
+   "step": 17,
+   "dial": "grazer.hop",
+   "factor": 0.25,
+   "err": 0.6506
+  },
+  {
+   "step": 18,
+   "dial": "grazer.hop",
+   "factor": 0.5,
+   "err": 0.4817
+  },
+  {
+   "step": 19,
+   "dial": "grazer.hop",
+   "factor": 2.0,
+   "err": 0.4311
+  },
+  {
+   "step": 20,
+   "dial": "grazer.hop",
+   "factor": 4.0,
+   "err": 0.674
+  },
+  {
+   "step": 21,
+   "dial": "locust.hop",
+   "factor": 0.25,
+   "err": 0.3804
+  },
+  {
+   "step": 22,
+   "dial": "locust.hop",
+   "factor": 0.5,
+   "err": 0.4067
+  },
+  {
+   "step": 23,
+   "dial": "locust.hop",
+   "factor": 2.0,
+   "err": 0.4229
+  },
+  {
+   "step": 24,
+   "dial": "locust.hop",
+   "factor": 4.0,
+   "err": 0.4311
+  },
+  {
+   "step": 25,
+   "dial": "pack.hop",
+   "factor": 0.25,
+   "err": 0.3771
+  },
+  {
+   "step": 26,
+   "dial": "pack.hop",
+   "factor": 0.5,
+   "err": 0.3895
+  },
+  {
+   "step": 27,
+   "dial": "pack.hop",
+   "factor": 2.0,
+   "err": 0.4007
+  },
+  {
+   "step": 28,
+   "dial": "pack.hop",
+   "factor": 4.0,
+   "err": 0.3804
+  },
+  {
+   "step": 29,
+   "dial": "grazer.F_half",
+   "factor": 0.25,
+   "err": 0.5059
+  },
+  {
+   "step": 30,
+   "dial": "grazer.F_half",
+   "factor": 0.5,
+   "err": 0.502
+  },
+  {
+   "step": 31,
+   "dial": "grazer.F_half",
+   "factor": 2.0,
+   "err": 0.4699
+  },
+  {
+   "step": 32,
+   "dial": "grazer.F_half",
+   "factor": 4.0,
+   "err": 0.6593
+  },
+  {
+   "step": 33,
+   "dial": "locust.F_half",
+   "factor": 0.25,
+   "err": 0.4983
+  },
+  {
+   "step": 34,
+   "dial": "locust.F_half",
+   "factor": 0.5,
+   "err": 0.4129
+  },
+  {
+   "step": 35,
+   "dial": "locust.F_half",
+   "factor": 2.0,
+   "err": 0.6014
+  },
+  {
+   "step": 36,
+   "dial": "locust.F_half",
+   "factor": 4.0,
+   "err": 0.6961
+  },
+  {
+   "step": 37,
+   "dial": "pack.a_attack",
+   "factor": 0.25,
+   "err": 0.3771
+  },
+  {
+   "step": 38,
+   "dial": "pack.a_attack",
+   "factor": 0.5,
+   "err": 0.3771
+  },
+  {
+   "step": 39,
+   "dial": "pack.a_attack",
+   "factor": 2.0,
+   "err": 0.3748
+  },
+  {
+   "step": 40,
+   "dial": "pack.a_attack",
+   "factor": 4.0,
+   "err": 0.4426
+  },
+  {
+   "step": 41,
+   "dial": "lurker.a_attack",
+   "factor": 0.25,
+   "err": 0.3284
+  },
+  {
+   "step": 42,
+   "dial": "lurker.a_attack",
+   "factor": 0.5,
+   "err": 0.3454
+  },
+  {
+   "step": 43,
+   "dial": "lurker.a_attack",
+   "factor": 2.0,
+   "err": 0.3861
+  },
+  {
+   "step": 44,
+   "dial": "lurker.a_attack",
+   "factor": 4.0,
+   "err": 0.3748
+  },
+  {
+   "step": 45,
+   "dial": "grazer.hop",
+   "factor": 0.25,
+   "err": 0.5014
+  },
+  {
+   "step": 46,
+   "dial": "grazer.hop",
+   "factor": 0.5,
+   "err": 0.3712
+  },
+  {
+   "step": 47,
+   "dial": "grazer.hop",
+   "factor": 2.0,
+   "err": 0.4252
+  },
+  {
+   "step": 48,
+   "dial": "grazer.hop",
+   "factor": 4.0,
+   "err": 0.6999
+  },
+  {
+   "step": 49,
+   "dial": "locust.hop",
+   "factor": 0.25,
+   "err": 0.3258
+  },
+  {
+   "step": 50,
+   "dial": "locust.hop",
+   "factor": 0.5,
+   "err": 0.3065
+  },
+  {
+   "step": 51,
+   "dial": "locust.hop",
+   "factor": 2.0,
+   "err": 0.3258
+  },
+  {
+   "step": 52,
+   "dial": "locust.hop",
+   "factor": 4.0,
+   "err": 0.3006
+  },
+  {
+   "step": 53,
+   "dial": "pack.hop",
+   "factor": 0.25,
+   "err": 0.3293
+  },
+  {
+   "step": 54,
+   "dial": "pack.hop",
+   "factor": 0.5,
+   "err": 0.3095
+  },
+  {
+   "step": 55,
+   "dial": "pack.hop",
+   "factor": 2.0,
+   "err": 0.3132
+  },
+  {
+   "step": 56,
+   "dial": "pack.hop",
+   "factor": 4.0,
+   "err": 0.3584
+  },
+  {
+   "step": 57,
+   "dial": "grazer.F_half",
+   "factor": 0.25,
+   "err": 0.4243
+  },
+  {
+   "step": 58,
+   "dial": "grazer.F_half",
+   "factor": 0.5,
+   "err": 0.4205
+  },
+  {
+   "step": 59,
+   "dial": "grazer.F_half",
+   "factor": 2.0,
+   "err": 0.4407
+  },
+  {
+   "step": 60,
+   "dial": "grazer.F_half",
+   "factor": 4.0,
+   "err": 0.702
+  },
+  {
+   "step": 61,
+   "dial": "locust.F_half",
+   "factor": 0.25,
+   "err": 0.4565
+  },
+  {
+   "step": 62,
+   "dial": "locust.F_half",
+   "factor": 0.5,
+   "err": 0.4
+  },
+  {
+   "step": 63,
+   "dial": "locust.F_half",
+   "factor": 2.0,
+   "err": 0.4617
+  },
+  {
+   "step": 64,
+   "dial": "locust.F_half",
+   "factor": 4.0,
+   "err": 0.744
+  },
+  {
+   "step": 65,
+   "dial": "pack.a_attack",
+   "factor": 0.25,
+   "err": 0.3496
+  },
+  {
+   "step": 66,
+   "dial": "pack.a_attack",
+   "factor": 0.5,
+   "err": 0.3243
+  },
+  {
+   "step": 67,
+   "dial": "pack.a_attack",
+   "factor": 2.0,
+   "err": 0.3349
+  },
+  {
+   "step": 68,
+   "dial": "pack.a_attack",
+   "factor": 4.0,
+   "err": 0.2849
+  },
+  {
+   "step": 69,
+   "dial": "lurker.a_attack",
+   "factor": 0.25,
+   "err": 0.4801
+  },
+  {
+   "step": 70,
+   "dial": "lurker.a_attack",
+   "factor": 0.5,
+   "err": 0.332
+  },
+  {
+   "step": 71,
+   "dial": "lurker.a_attack",
+   "factor": 2.0,
+   "err": 0.3595
+  },
+  {
+   "step": 72,
+   "dial": "lurker.a_attack",
+   "factor": 4.0,
+   "err": 0.3432
+  },
+  {
+   "step": 73,
+   "dial": "grazer.hop",
+   "factor": 0.25,
+   "err": 0.4081
+  },
+  {
+   "step": 74,
+   "dial": "grazer.hop",
+   "factor": 0.5,
+   "err": 0.3636
+  },
+  {
+   "step": 75,
+   "dial": "grazer.hop",
+   "factor": 2.0,
+   "err": 0.4309
+  },
+  {
+   "step": 76,
+   "dial": "grazer.hop",
+   "factor": 4.0,
+   "err": 0.6507
+  },
+  {
+   "step": 77,
+   "dial": "locust.hop",
+   "factor": 0.25,
+   "err": 0.3062
+  },
+  {
+   "step": 78,
+   "dial": "locust.hop",
+   "factor": 0.5,
+   "err": 0.3028
+  },
+  {
+   "step": 79,
+   "dial": "locust.hop",
+   "factor": 2.0,
+   "err": 0.3661
+  },
+  {
+   "step": 80,
+   "dial": "locust.hop",
+   "factor": 4.0,
+   "err": 0.3213
+  },
+  {
+   "step": 81,
+   "dial": "pack.hop",
+   "factor": 0.25,
+   "err": 0.3423
+  },
+  {
+   "step": 82,
+   "dial": "pack.hop",
+   "factor": 0.5,
+   "err": 0.3417
+  },
+  {
+   "step": 83,
+   "dial": "pack.hop",
+   "factor": 2.0,
+   "err": 0.3039
+  },
+  {
+   "step": 84,
+   "dial": "pack.hop",
+   "factor": 4.0,
+   "err": 0.3173
+  }
+ ]
+}

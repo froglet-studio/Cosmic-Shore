@@ -179,3 +179,12 @@ M13b = {
     "m_h40_sw_e25": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0, "pack.eff": 0.25}),
     "m_h40_sw_e35_m06": dict(CAL2_BASE, **H, pack_metab=0.06, **{"pack.switch_ref": 20.0, "pack.eff": 0.35}),
 }
+
+# M13 (all-micro design runs, results in this file's history / DISCOVERIES): with a 40-s handling time packs stop
+# eating the prey out; Holling III switching (commit only with >= 5 prey within 300 u) leaves sparse prey a refuge;
+# a pack that keeps 35% of a kill and burns 0.06/s grows slowly and is food-limited (24 -> ~60 in 32 min with
+# grazers 130-260, never at a cap). Without switching the prey crashes once (minute 24-28) in one seed.
+PACK2 = dict(pack_metab=0.06, **{"pack.handle_micro": 40.0, "pack.switch_ref": 20.0, "pack.eff": 0.35, "pack.search_nb": True})
+# (search_nb: the first refit could not keep far packs alive at ANY attack rate - 65 kills in 10 min at 100x -
+# because a far pack only saw prey in its own 200-u region; a hunting pack's 300-u sense spans its neighbours.)
+CAL2 = dict(B12, **PACK2)        # the model the macro rates are refitted to

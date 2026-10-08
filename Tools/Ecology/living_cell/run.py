@@ -239,7 +239,7 @@ def _consist(a):
                 births={k: g.births for k, g in c.guilds.items()}, starved={k: g.starved for k, g in c.guilds.items()})
 
 
-def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None):
+def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None, tag="consistency"):
     """The same cell (no pilots, no structures) run all-MACRO (every region a cohort) and all-MICRO (every
     region expanded into individuals). What the one-cohort-per-region simplification costs is the gap."""
     cfg = cfg or {}
@@ -258,7 +258,7 @@ def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None):
     out["gap"]["flora"] = dict(macro_end=round(float(fm[:, -1].mean())), micro_end=round(float(fi[:, -1].mean())),
                                rel_gap_mean=round(float(np.mean(np.abs(fm.mean(0) - fi.mean(0)) / np.maximum(fi.mean(0), 1))), 3))
     print(json.dumps(out["gap"], indent=1))
-    save("consistency.json", out)
+    save(f"{tag}.json", out)
     return out
 
 
@@ -277,7 +277,8 @@ if __name__ == "__main__":
         iterate({k: dict(FINAL, **v) for k, v in LOD.items()}, minutes=15.0, seeds=(1, 2), tag="lod")
     elif what == "consistency":
         import importlib
-        consistency(cfg=getattr(importlib.import_module("living_cell.rounds"), sys.argv[2]) if len(sys.argv) > 2 else None)
+        consistency(cfg=getattr(importlib.import_module("living_cell.rounds"), sys.argv[2]) if len(sys.argv) > 2 else None,
+                    minutes=float(sys.argv[3]) if len(sys.argv) > 3 else 6.0, tag=sys.argv[4] if len(sys.argv) > 4 else "consistency")
     elif what == "iterate":
         import importlib
         mod = importlib.import_module("living_cell.rounds")

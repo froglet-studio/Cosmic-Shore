@@ -1,0 +1,2375 @@
+{
+ "runs": [
+  {
+   "seed": 1,
+   "mode": "macro",
+   "rows": [
+    {
+     "t": 0,
+     "census": {
+      "grazer": 400,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 20
+     },
+     "flora": 6000,
+     "N": 60000
+    },
+    {
+     "t": 30,
+     "census": {
+      "grazer": 501,
+      "locust": 329,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 21
+     },
+     "flora": 4296,
+     "N": 59969
+    },
+    {
+     "t": 60,
+     "census": {
+      "grazer": 576,
+      "locust": 284,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 21
+     },
+     "flora": 3112,
+     "N": 60200
+    },
+    {
+     "t": 90,
+     "census": {
+      "grazer": 652,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 27
+     },
+     "flora": 2536,
+     "N": 60615
+    },
+    {
+     "t": 120,
+     "census": {
+      "grazer": 661,
+      "locust": 169,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 32
+     },
+     "flora": 2408,
+     "N": 61306
+    },
+    {
+     "t": 150,
+     "census": {
+      "grazer": 662,
+      "locust": 93,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 35
+     },
+     "flora": 2432,
+     "N": 61987
+    },
+    {
+     "t": 180,
+     "census": {
+      "grazer": 594,
+      "locust": 55,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 38
+     },
+     "flora": 2744,
+     "N": 62725
+    },
+    {
+     "t": 210,
+     "census": {
+      "grazer": 527,
+      "locust": 20,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 45
+     },
+     "flora": 3032,
+     "N": 63314
+    },
+    {
+     "t": 240,
+     "census": {
+      "grazer": 453,
+      "locust": 6,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 52
+     },
+     "flora": 3368,
+     "N": 63857
+    },
+    {
+     "t": 270,
+     "census": {
+      "grazer": 391,
+      "locust": 0,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 54
+     },
+     "flora": 3896,
+     "N": 64122
+    },
+    {
+     "t": 300,
+     "census": {
+      "grazer": 346,
+      "locust": 0,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 49
+     },
+     "flora": 4472,
+     "N": 64185
+    },
+    {
+     "t": 330,
+     "census": {
+      "grazer": 320,
+      "locust": 0,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 51
+     },
+     "flora": 5104,
+     "N": 64131
+    },
+    {
+     "t": 360,
+     "census": {
+      "grazer": 297,
+      "locust": 0,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 54
+     },
+     "flora": 5520,
+     "N": 64054
+    },
+    {
+     "t": 390,
+     "census": {
+      "grazer": 288,
+      "locust": 0,
+      "pack": 24,
+      "thief": 44,
+      "lurker": 42
+     },
+     "flora": 6144,
+     "N": 63717
+    },
+    {
+     "t": 420,
+     "census": {
+      "grazer": 291,
+      "locust": 0,
+      "pack": 24,
+      "thief": 44,
+      "lurker": 32
+     },
+     "flora": 6584,
+     "N": 63395
+    },
+    {
+     "t": 450,
+     "census": {
+      "grazer": 301,
+      "locust": 0,
+      "pack": 24,
+      "thief": 44,
+      "lurker": 26
+     },
+     "flora": 7048,
+     "N": 63065
+    },
+    {
+     "t": 480,
+     "census": {
+      "grazer": 316,
+      "locust": 0,
+      "pack": 24,
+      "thief": 42,
+      "lurker": 26
+     },
+     "flora": 7352,
+     "N": 62729
+    },
+    {
+     "t": 510,
+     "census": {
+      "grazer": 335,
+      "locust": 0,
+      "pack": 24,
+      "thief": 37,
+      "lurker": 25
+     },
+     "flora": 7720,
+     "N": 62392
+    },
+    {
+     "t": 540,
+     "census": {
+      "grazer": 320,
+      "locust": 0,
+      "pack": 24,
+      "thief": 29,
+      "lurker": 28
+     },
+     "flora": 7928,
+     "N": 62208
+    },
+    {
+     "t": 570,
+     "census": {
+      "grazer": 329,
+      "locust": 0,
+      "pack": 24,
+      "thief": 27,
+      "lurker": 26
+     },
+     "flora": 8072,
+     "N": 61981
+    },
+    {
+     "t": 600,
+     "census": {
+      "grazer": 310,
+      "locust": 0,
+      "pack": 24,
+      "thief": 25,
+      "lurker": 27
+     },
+     "flora": 8528,
+     "N": 61668
+    },
+    {
+     "t": 630,
+     "census": {
+      "grazer": 307,
+      "locust": 0,
+      "pack": 24,
+      "thief": 22,
+      "lurker": 31
+     },
+     "flora": 8896,
+     "N": 61385
+    },
+    {
+     "t": 660,
+     "census": {
+      "grazer": 290,
+      "locust": 0,
+      "pack": 24,
+      "thief": 21,
+      "lurker": 35
+     },
+     "flora": 9192,
+     "N": 61240
+    },
+    {
+     "t": 690,
+     "census": {
+      "grazer": 290,
+      "locust": 0,
+      "pack": 21,
+      "thief": 19,
+      "lurker": 28
+     },
+     "flora": 9768,
+     "N": 60815
+    },
+    {
+     "t": 720,
+     "census": {
+      "grazer": 312,
+      "locust": 0,
+      "pack": 2,
+      "thief": 19,
+      "lurker": 27
+     },
+     "flora": 10216,
+     "N": 60342
+    },
+    {
+     "t": 750,
+     "census": {
+      "grazer": 343,
+      "locust": 0,
+      "pack": 2,
+      "thief": 18,
+      "lurker": 27
+     },
+     "flora": 10248,
+     "N": 60143
+    },
+    {
+     "t": 780,
+     "census": {
+      "grazer": 337,
+      "locust": 0,
+      "pack": 1,
+      "thief": 18,
+      "lurker": 29
+     },
+     "flora": 10576,
+     "N": 59762
+    },
+    {
+     "t": 810,
+     "census": {
+      "grazer": 349,
+      "locust": 0,
+      "pack": 1,
+      "thief": 16,
+      "lurker": 29
+     },
+     "flora": 10680,
+     "N": 59549
+    },
+    {
+     "t": 840,
+     "census": {
+      "grazer": 356,
+      "locust": 0,
+      "pack": 1,
+      "thief": 15,
+      "lurker": 32
+     },
+     "flora": 10688,
+     "N": 59370
+    },
+    {
+     "t": 870,
+     "census": {
+      "grazer": 355,
+      "locust": 0,
+      "pack": 0,
+      "thief": 15,
+      "lurker": 40
+     },
+     "flora": 10896,
+     "N": 59098
+    }
+   ],
+   "audit": 4.3436011765152216e-07,
+   "cost_ms": 1.24,
+   "prey_kills": {
+    "grazer": 0,
+    "locust": 0,
+    "pack": 5,
+    "thief": 0,
+    "lurker": 598
+   },
+   "births": {
+    "grazer": 2084,
+    "locust": 158,
+    "pack": 0,
+    "thief": 0,
+    "lurker": 191
+   },
+   "starved": {
+    "grazer": 1572,
+    "locust": 373,
+    "pack": 24,
+    "thief": 29,
+    "lurker": 170
+   }
+  },
+  {
+   "seed": 1,
+   "mode": "micro",
+   "rows": [
+    {
+     "t": 0,
+     "census": {
+      "grazer": 400,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 20
+     },
+     "flora": 6000,
+     "N": 60004
+    },
+    {
+     "t": 30,
+     "census": {
+      "grazer": 571,
+      "locust": 387,
+      "pack": 24,
+      "thief": 53,
+      "lurker": 66
+     },
+     "flora": 1488,
+     "N": 60491
+    },
+    {
+     "t": 60,
+     "census": {
+      "grazer": 553,
+      "locust": 302,
+      "pack": 24,
+      "thief": 53,
+      "lurker": 77
+     },
+     "flora": 1464,
+     "N": 61470
+    },
+    {
+     "t": 90,
+     "census": {
+      "grazer": 547,
+      "locust": 273,
+      "pack": 24,
+      "thief": 53,
+      "lurker": 76
+     },
+     "flora": 1912,
+     "N": 62106
+    },
+    {
+     "t": 120,
+     "census": {
+      "grazer": 462,
+      "locust": 204,
+      "pack": 24,
+      "thief": 53,
+      "lurker": 83
+     },
+     "flora": 2152,
+     "N": 62888
+    },
+    {
+     "t": 150,
+     "census": {
+      "grazer": 420,
+      "locust": 196,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 85
+     },
+     "flora": 2400,
+     "N": 63443
+    },
+    {
+     "t": 180,
+     "census": {
+      "grazer": 387,
+      "locust": 157,
+      "pack": 24,
+      "thief": 42,
+      "lurker": 86
+     },
+     "flora": 2752,
+     "N": 63888
+    },
+    {
+     "t": 210,
+     "census": {
+      "grazer": 355,
+      "locust": 157,
+      "pack": 24,
+      "thief": 41,
+      "lurker": 79
+     },
+     "flora": 2984,
+     "N": 64288
+    },
+    {
+     "t": 240,
+     "census": {
+      "grazer": 306,
+      "locust": 144,
+      "pack": 24,
+      "thief": 41,
+      "lurker": 76
+     },
+     "flora": 3320,
+     "N": 64459
+    },
+    {
+     "t": 270,
+     "census": {
+      "grazer": 299,
+      "locust": 150,
+      "pack": 24,
+      "thief": 40,
+      "lurker": 71
+     },
+     "flora": 3584,
+     "N": 64687
+    },
+    {
+     "t": 300,
+     "census": {
+      "grazer": 283,
+      "locust": 127,
+      "pack": 24,
+      "thief": 40,
+      "lurker": 54
+     },
+     "flora": 3968,
+     "N": 64801
+    },
+    {
+     "t": 330,
+     "census": {
+      "grazer": 262,
+      "locust": 115,
+      "pack": 24,
+      "thief": 40,
+      "lurker": 50
+     },
+     "flora": 4232,
+     "N": 64890
+    },
+    {
+     "t": 360,
+     "census": {
+      "grazer": 245,
+      "locust": 127,
+      "pack": 24,
+      "thief": 39,
+      "lurker": 50
+     },
+     "flora": 4488,
+     "N": 64829
+    },
+    {
+     "t": 390,
+     "census": {
+      "grazer": 232,
+      "locust": 136,
+      "pack": 25,
+      "thief": 38,
+      "lurker": 51
+     },
+     "flora": 4688,
+     "N": 64787
+    },
+    {
+     "t": 420,
+     "census": {
+      "grazer": 226,
+      "locust": 132,
+      "pack": 27,
+      "thief": 37,
+      "lurker": 47
+     },
+     "flora": 4992,
+     "N": 64686
+    },
+    {
+     "t": 450,
+     "census": {
+      "grazer": 202,
+      "locust": 137,
+      "pack": 29,
+      "thief": 37,
+      "lurker": 48
+     },
+     "flora": 5136,
+     "N": 64808
+    },
+    {
+     "t": 480,
+     "census": {
+      "grazer": 186,
+      "locust": 127,
+      "pack": 29,
+      "thief": 11,
+      "lurker": 42
+     },
+     "flora": 5504,
+     "N": 64687
+    },
+    {
+     "t": 510,
+     "census": {
+      "grazer": 169,
+      "locust": 145,
+      "pack": 32,
+      "thief": 11,
+      "lurker": 38
+     },
+     "flora": 5640,
+     "N": 64595
+    },
+    {
+     "t": 540,
+     "census": {
+      "grazer": 162,
+      "locust": 157,
+      "pack": 33,
+      "thief": 11,
+      "lurker": 40
+     },
+     "flora": 5664,
+     "N": 64462
+    },
+    {
+     "t": 570,
+     "census": {
+      "grazer": 175,
+      "locust": 200,
+      "pack": 33,
+      "thief": 11,
+      "lurker": 33
+     },
+     "flora": 5504,
+     "N": 64469
+    },
+    {
+     "t": 600,
+     "census": {
+      "grazer": 191,
+      "locust": 173,
+      "pack": 34,
+      "thief": 11,
+      "lurker": 32
+     },
+     "flora": 5624,
+     "N": 64479
+    },
+    {
+     "t": 630,
+     "census": {
+      "grazer": 188,
+      "locust": 179,
+      "pack": 34,
+      "thief": 11,
+      "lurker": 25
+     },
+     "flora": 5768,
+     "N": 64463
+    },
+    {
+     "t": 660,
+     "census": {
+      "grazer": 190,
+      "locust": 195,
+      "pack": 34,
+      "thief": 11,
+      "lurker": 17
+     },
+     "flora": 5800,
+     "N": 64388
+    },
+    {
+     "t": 690,
+     "census": {
+      "grazer": 185,
+      "locust": 195,
+      "pack": 35,
+      "thief": 6,
+      "lurker": 15
+     },
+     "flora": 6008,
+     "N": 64062
+    },
+    {
+     "t": 720,
+     "census": {
+      "grazer": 203,
+      "locust": 202,
+      "pack": 36,
+      "thief": 5,
+      "lurker": 17
+     },
+     "flora": 5744,
+     "N": 63994
+    },
+    {
+     "t": 750,
+     "census": {
+      "grazer": 218,
+      "locust": 192,
+      "pack": 36,
+      "thief": 5,
+      "lurker": 19
+     },
+     "flora": 5736,
+     "N": 64076
+    },
+    {
+     "t": 780,
+     "census": {
+      "grazer": 216,
+      "locust": 182,
+      "pack": 36,
+      "thief": 5,
+      "lurker": 17
+     },
+     "flora": 5720,
+     "N": 64205
+    },
+    {
+     "t": 810,
+     "census": {
+      "grazer": 219,
+      "locust": 183,
+      "pack": 36,
+      "thief": 5,
+      "lurker": 20
+     },
+     "flora": 5856,
+     "N": 64061
+    },
+    {
+     "t": 840,
+     "census": {
+      "grazer": 220,
+      "locust": 187,
+      "pack": 36,
+      "thief": 5,
+      "lurker": 21
+     },
+     "flora": 5760,
+     "N": 64025
+    },
+    {
+     "t": 870,
+     "census": {
+      "grazer": 220,
+      "locust": 176,
+      "pack": 37,
+      "thief": 5,
+      "lurker": 22
+     },
+     "flora": 5616,
+     "N": 64108
+    }
+   ],
+   "audit": 5.2241375669837e-09,
+   "cost_ms": 5.98,
+   "prey_kills": {
+    "grazer": 0,
+    "locust": 0,
+    "pack": 575,
+    "thief": 0,
+    "lurker": 856
+   },
+   "births": {
+    "grazer": 1141,
+    "locust": 1373,
+    "pack": 13,
+    "thief": 11,
+    "lurker": 226
+   },
+   "starved": {
+    "grazer": 382,
+    "locust": 990,
+    "pack": 0,
+    "thief": 45,
+    "lurker": 227
+   }
+  },
+  {
+   "seed": 2,
+   "mode": "macro",
+   "rows": [
+    {
+     "t": 0,
+     "census": {
+      "grazer": 400,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 20
+     },
+     "flora": 6000,
+     "N": 60000
+    },
+    {
+     "t": 30,
+     "census": {
+      "grazer": 491,
+      "locust": 318,
+      "pack": 24,
+      "thief": 50,
+      "lurker": 26
+     },
+     "flora": 4336,
+     "N": 59929
+    },
+    {
+     "t": 60,
+     "census": {
+      "grazer": 582,
+      "locust": 295,
+      "pack": 24,
+      "thief": 50,
+      "lurker": 32
+     },
+     "flora": 2984,
+     "N": 60241
+    },
+    {
+     "t": 90,
+     "census": {
+      "grazer": 640,
+      "locust": 251,
+      "pack": 24,
+      "thief": 49,
+      "lurker": 34
+     },
+     "flora": 2056,
+     "N": 60809
+    },
+    {
+     "t": 120,
+     "census": {
+      "grazer": 653,
+      "locust": 171,
+      "pack": 24,
+      "thief": 49,
+      "lurker": 46
+     },
+     "flora": 2064,
+     "N": 61244
+    },
+    {
+     "t": 150,
+     "census": {
+      "grazer": 621,
+      "locust": 95,
+      "pack": 24,
+      "thief": 48,
+      "lurker": 56
+     },
+     "flora": 2240,
+     "N": 61951
+    },
+    {
+     "t": 180,
+     "census": {
+      "grazer": 554,
+      "locust": 46,
+      "pack": 24,
+      "thief": 48,
+      "lurker": 65
+     },
+     "flora": 2464,
+     "N": 62772
+    },
+    {
+     "t": 210,
+     "census": {
+      "grazer": 495,
+      "locust": 19,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 70
+     },
+     "flora": 2616,
+     "N": 63523
+    },
+    {
+     "t": 240,
+     "census": {
+      "grazer": 418,
+      "locust": 9,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 71
+     },
+     "flora": 3208,
+     "N": 64014
+    },
+    {
+     "t": 270,
+     "census": {
+      "grazer": 355,
+      "locust": 1,
+      "pack": 24,
+      "thief": 44,
+      "lurker": 75
+     },
+     "flora": 3496,
+     "N": 64530
+    },
+    {
+     "t": 300,
+     "census": {
+      "grazer": 314,
+      "locust": 1,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 72
+     },
+     "flora": 4096,
+     "N": 64791
+    },
+    {
+     "t": 330,
+     "census": {
+      "grazer": 259,
+      "locust": 1,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 61
+     },
+     "flora": 4768,
+     "N": 64897
+    },
+    {
+     "t": 360,
+     "census": {
+      "grazer": 225,
+      "locust": 0,
+      "pack": 24,
+      "thief": 41,
+      "lurker": 61
+     },
+     "flora": 5408,
+     "N": 64757
+    },
+    {
+     "t": 390,
+     "census": {
+      "grazer": 201,
+      "locust": 0,
+      "pack": 24,
+      "thief": 41,
+      "lurker": 58
+     },
+     "flora": 5784,
+     "N": 64733
+    },
+    {
+     "t": 420,
+     "census": {
+      "grazer": 195,
+      "locust": 0,
+      "pack": 24,
+      "thief": 41,
+      "lurker": 52
+     },
+     "flora": 6712,
+     "N": 64205
+    },
+    {
+     "t": 450,
+     "census": {
+      "grazer": 182,
+      "locust": 0,
+      "pack": 24,
+      "thief": 39,
+      "lurker": 46
+     },
+     "flora": 7432,
+     "N": 63769
+    },
+    {
+     "t": 480,
+     "census": {
+      "grazer": 184,
+      "locust": 0,
+      "pack": 24,
+      "thief": 36,
+      "lurker": 40
+     },
+     "flora": 8200,
+     "N": 63193
+    },
+    {
+     "t": 510,
+     "census": {
+      "grazer": 201,
+      "locust": 0,
+      "pack": 24,
+      "thief": 35,
+      "lurker": 37
+     },
+     "flora": 8592,
+     "N": 62669
+    },
+    {
+     "t": 540,
+     "census": {
+      "grazer": 200,
+      "locust": 0,
+      "pack": 24,
+      "thief": 34,
+      "lurker": 30
+     },
+     "flora": 9168,
+     "N": 62091
+    },
+    {
+     "t": 570,
+     "census": {
+      "grazer": 214,
+      "locust": 0,
+      "pack": 24,
+      "thief": 32,
+      "lurker": 28
+     },
+     "flora": 9816,
+     "N": 61361
+    },
+    {
+     "t": 600,
+     "census": {
+      "grazer": 236,
+      "locust": 0,
+      "pack": 24,
+      "thief": 32,
+      "lurker": 26
+     },
+     "flora": 10296,
+     "N": 60673
+    },
+    {
+     "t": 630,
+     "census": {
+      "grazer": 258,
+      "locust": 0,
+      "pack": 24,
+      "thief": 29,
+      "lurker": 26
+     },
+     "flora": 10672,
+     "N": 59952
+    },
+    {
+     "t": 660,
+     "census": {
+      "grazer": 284,
+      "locust": 0,
+      "pack": 20,
+      "thief": 28,
+      "lurker": 31
+     },
+     "flora": 11184,
+     "N": 59097
+    },
+    {
+     "t": 690,
+     "census": {
+      "grazer": 321,
+      "locust": 0,
+      "pack": 14,
+      "thief": 27,
+      "lurker": 36
+     },
+     "flora": 11400,
+     "N": 58423
+    },
+    {
+     "t": 720,
+     "census": {
+      "grazer": 347,
+      "locust": 0,
+      "pack": 3,
+      "thief": 29,
+      "lurker": 42
+     },
+     "flora": 11816,
+     "N": 57785
+    },
+    {
+     "t": 750,
+     "census": {
+      "grazer": 384,
+      "locust": 0,
+      "pack": 3,
+      "thief": 30,
+      "lurker": 40
+     },
+     "flora": 12056,
+     "N": 57243
+    },
+    {
+     "t": 780,
+     "census": {
+      "grazer": 407,
+      "locust": 0,
+      "pack": 3,
+      "thief": 32,
+      "lurker": 34
+     },
+     "flora": 12144,
+     "N": 56884
+    },
+    {
+     "t": 810,
+     "census": {
+      "grazer": 413,
+      "locust": 0,
+      "pack": 1,
+      "thief": 35,
+      "lurker": 42
+     },
+     "flora": 12000,
+     "N": 56619
+    },
+    {
+     "t": 840,
+     "census": {
+      "grazer": 415,
+      "locust": 0,
+      "pack": 0,
+      "thief": 36,
+      "lurker": 52
+     },
+     "flora": 11928,
+     "N": 56432
+    },
+    {
+     "t": 870,
+     "census": {
+      "grazer": 423,
+      "locust": 0,
+      "pack": 0,
+      "thief": 38,
+      "lurker": 51
+     },
+     "flora": 11992,
+     "N": 56172
+    }
+   ],
+   "audit": 3.7676363717764616e-07,
+   "cost_ms": 1.14,
+   "prey_kills": {
+    "grazer": 0,
+    "locust": 0,
+    "pack": 6,
+    "thief": 0,
+    "lurker": 832
+   },
+   "births": {
+    "grazer": 2090,
+    "locust": 145,
+    "pack": 0,
+    "thief": 30,
+    "lurker": 241
+   },
+   "starved": {
+    "grazer": 1284,
+    "locust": 327,
+    "pack": 24,
+    "thief": 36,
+    "lurker": 207
+   }
+  },
+  {
+   "seed": 2,
+   "mode": "micro",
+   "rows": [
+    {
+     "t": 0,
+     "census": {
+      "grazer": 400,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 20
+     },
+     "flora": 6000,
+     "N": 60004
+    },
+    {
+     "t": 30,
+     "census": {
+      "grazer": 622,
+      "locust": 384,
+      "pack": 24,
+      "thief": 52,
+      "lurker": 44
+     },
+     "flora": 1184,
+     "N": 60536
+    },
+    {
+     "t": 60,
+     "census": {
+      "grazer": 616,
+      "locust": 300,
+      "pack": 24,
+      "thief": 53,
+      "lurker": 53
+     },
+     "flora": 1416,
+     "N": 61385
+    },
+    {
+     "t": 90,
+     "census": {
+      "grazer": 625,
+      "locust": 281,
+      "pack": 24,
+      "thief": 55,
+      "lurker": 51
+     },
+     "flora": 1688,
+     "N": 62055
+    },
+    {
+     "t": 120,
+     "census": {
+      "grazer": 562,
+      "locust": 205,
+      "pack": 24,
+      "thief": 56,
+      "lurker": 49
+     },
+     "flora": 1688,
+     "N": 62832
+    },
+    {
+     "t": 150,
+     "census": {
+      "grazer": 534,
+      "locust": 176,
+      "pack": 24,
+      "thief": 51,
+      "lurker": 49
+     },
+     "flora": 2032,
+     "N": 63420
+    },
+    {
+     "t": 180,
+     "census": {
+      "grazer": 507,
+      "locust": 148,
+      "pack": 24,
+      "thief": 50,
+      "lurker": 50
+     },
+     "flora": 2240,
+     "N": 63931
+    },
+    {
+     "t": 210,
+     "census": {
+      "grazer": 452,
+      "locust": 130,
+      "pack": 24,
+      "thief": 48,
+      "lurker": 56
+     },
+     "flora": 2448,
+     "N": 64393
+    },
+    {
+     "t": 240,
+     "census": {
+      "grazer": 405,
+      "locust": 111,
+      "pack": 24,
+      "thief": 48,
+      "lurker": 51
+     },
+     "flora": 2896,
+     "N": 64581
+    },
+    {
+     "t": 270,
+     "census": {
+      "grazer": 373,
+      "locust": 131,
+      "pack": 24,
+      "thief": 47,
+      "lurker": 51
+     },
+     "flora": 3128,
+     "N": 64650
+    },
+    {
+     "t": 300,
+     "census": {
+      "grazer": 334,
+      "locust": 129,
+      "pack": 24,
+      "thief": 47,
+      "lurker": 59
+     },
+     "flora": 3416,
+     "N": 64689
+    },
+    {
+     "t": 330,
+     "census": {
+      "grazer": 306,
+      "locust": 137,
+      "pack": 24,
+      "thief": 47,
+      "lurker": 51
+     },
+     "flora": 3496,
+     "N": 64876
+    },
+    {
+     "t": 360,
+     "census": {
+      "grazer": 273,
+      "locust": 134,
+      "pack": 24,
+      "thief": 48,
+      "lurker": 52
+     },
+     "flora": 3880,
+     "N": 65053
+    },
+    {
+     "t": 390,
+     "census": {
+      "grazer": 253,
+      "locust": 127,
+      "pack": 24,
+      "thief": 48,
+      "lurker": 45
+     },
+     "flora": 4168,
+     "N": 65102
+    },
+    {
+     "t": 420,
+     "census": {
+      "grazer": 245,
+      "locust": 138,
+      "pack": 24,
+      "thief": 47,
+      "lurker": 38
+     },
+     "flora": 4272,
+     "N": 65194
+    },
+    {
+     "t": 450,
+     "census": {
+      "grazer": 236,
+      "locust": 136,
+      "pack": 25,
+      "thief": 46,
+      "lurker": 32
+     },
+     "flora": 4512,
+     "N": 65182
+    },
+    {
+     "t": 480,
+     "census": {
+      "grazer": 237,
+      "locust": 152,
+      "pack": 27,
+      "thief": 15,
+      "lurker": 30
+     },
+     "flora": 4672,
+     "N": 65022
+    },
+    {
+     "t": 510,
+     "census": {
+      "grazer": 227,
+      "locust": 153,
+      "pack": 29,
+      "thief": 16,
+      "lurker": 26
+     },
+     "flora": 4704,
+     "N": 65046
+    },
+    {
+     "t": 540,
+     "census": {
+      "grazer": 226,
+      "locust": 156,
+      "pack": 31,
+      "thief": 16,
+      "lurker": 24
+     },
+     "flora": 4880,
+     "N": 64797
+    },
+    {
+     "t": 570,
+     "census": {
+      "grazer": 244,
+      "locust": 149,
+      "pack": 32,
+      "thief": 15,
+      "lurker": 23
+     },
+     "flora": 4984,
+     "N": 64686
+    },
+    {
+     "t": 600,
+     "census": {
+      "grazer": 231,
+      "locust": 165,
+      "pack": 33,
+      "thief": 15,
+      "lurker": 37
+     },
+     "flora": 4728,
+     "N": 64598
+    },
+    {
+     "t": 630,
+     "census": {
+      "grazer": 216,
+      "locust": 153,
+      "pack": 36,
+      "thief": 15,
+      "lurker": 32
+     },
+     "flora": 4896,
+     "N": 64821
+    },
+    {
+     "t": 660,
+     "census": {
+      "grazer": 200,
+      "locust": 150,
+      "pack": 37,
+      "thief": 15,
+      "lurker": 22
+     },
+     "flora": 5152,
+     "N": 64744
+    },
+    {
+     "t": 690,
+     "census": {
+      "grazer": 198,
+      "locust": 172,
+      "pack": 37,
+      "thief": 10,
+      "lurker": 23
+     },
+     "flora": 5400,
+     "N": 64584
+    },
+    {
+     "t": 720,
+     "census": {
+      "grazer": 169,
+      "locust": 169,
+      "pack": 39,
+      "thief": 10,
+      "lurker": 25
+     },
+     "flora": 5560,
+     "N": 64500
+    },
+    {
+     "t": 750,
+     "census": {
+      "grazer": 172,
+      "locust": 175,
+      "pack": 40,
+      "thief": 9,
+      "lurker": 22
+     },
+     "flora": 5784,
+     "N": 64337
+    },
+    {
+     "t": 780,
+     "census": {
+      "grazer": 175,
+      "locust": 153,
+      "pack": 41,
+      "thief": 9,
+      "lurker": 20
+     },
+     "flora": 5976,
+     "N": 64169
+    },
+    {
+     "t": 810,
+     "census": {
+      "grazer": 187,
+      "locust": 168,
+      "pack": 41,
+      "thief": 9,
+      "lurker": 21
+     },
+     "flora": 5984,
+     "N": 64027
+    },
+    {
+     "t": 840,
+     "census": {
+      "grazer": 197,
+      "locust": 154,
+      "pack": 41,
+      "thief": 9,
+      "lurker": 20
+     },
+     "flora": 5888,
+     "N": 64005
+    },
+    {
+     "t": 870,
+     "census": {
+      "grazer": 208,
+      "locust": 155,
+      "pack": 42,
+      "thief": 9,
+      "lurker": 25
+     },
+     "flora": 5616,
+     "N": 63809
+    }
+   ],
+   "audit": -1.6443664208054543e-09,
+   "cost_ms": 5.4,
+   "prey_kills": {
+    "grazer": 0,
+    "locust": 0,
+    "pack": 630,
+    "thief": 0,
+    "lurker": 723
+   },
+   "births": {
+    "grazer": 1181,
+    "locust": 1261,
+    "pack": 19,
+    "thief": 15,
+    "lurker": 215
+   },
+   "starved": {
+    "grazer": 485,
+    "locust": 922,
+    "pack": 0,
+    "thief": 49,
+    "lurker": 192
+   }
+  },
+  {
+   "seed": 3,
+   "mode": "macro",
+   "rows": [
+    {
+     "t": 0,
+     "census": {
+      "grazer": 400,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 20
+     },
+     "flora": 6000,
+     "N": 60000
+    },
+    {
+     "t": 30,
+     "census": {
+      "grazer": 498,
+      "locust": 311,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 23
+     },
+     "flora": 4128,
+     "N": 60212
+    },
+    {
+     "t": 60,
+     "census": {
+      "grazer": 590,
+      "locust": 268,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 27
+     },
+     "flora": 3256,
+     "N": 60418
+    },
+    {
+     "t": 90,
+     "census": {
+      "grazer": 621,
+      "locust": 219,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 32
+     },
+     "flora": 2616,
+     "N": 60870
+    },
+    {
+     "t": 120,
+     "census": {
+      "grazer": 647,
+      "locust": 153,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 35
+     },
+     "flora": 2552,
+     "N": 61446
+    },
+    {
+     "t": 150,
+     "census": {
+      "grazer": 633,
+      "locust": 90,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 36
+     },
+     "flora": 2776,
+     "N": 62062
+    },
+    {
+     "t": 180,
+     "census": {
+      "grazer": 579,
+      "locust": 45,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 41
+     },
+     "flora": 3080,
+     "N": 62783
+    },
+    {
+     "t": 210,
+     "census": {
+      "grazer": 518,
+      "locust": 13,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 40
+     },
+     "flora": 3296,
+     "N": 63459
+    },
+    {
+     "t": 240,
+     "census": {
+      "grazer": 455,
+      "locust": 4,
+      "pack": 24,
+      "thief": 46,
+      "lurker": 37
+     },
+     "flora": 3896,
+     "N": 63652
+    },
+    {
+     "t": 270,
+     "census": {
+      "grazer": 425,
+      "locust": 4,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 42
+     },
+     "flora": 4408,
+     "N": 63695
+    },
+    {
+     "t": 300,
+     "census": {
+      "grazer": 400,
+      "locust": 1,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 38
+     },
+     "flora": 4952,
+     "N": 63649
+    },
+    {
+     "t": 330,
+     "census": {
+      "grazer": 369,
+      "locust": 0,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 31
+     },
+     "flora": 5488,
+     "N": 63572
+    },
+    {
+     "t": 360,
+     "census": {
+      "grazer": 371,
+      "locust": 0,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 27
+     },
+     "flora": 5952,
+     "N": 63368
+    },
+    {
+     "t": 390,
+     "census": {
+      "grazer": 345,
+      "locust": 0,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 26
+     },
+     "flora": 6464,
+     "N": 63157
+    },
+    {
+     "t": 420,
+     "census": {
+      "grazer": 331,
+      "locust": 0,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 28
+     },
+     "flora": 6944,
+     "N": 62932
+    },
+    {
+     "t": 450,
+     "census": {
+      "grazer": 321,
+      "locust": 0,
+      "pack": 24,
+      "thief": 42,
+      "lurker": 27
+     },
+     "flora": 7488,
+     "N": 62572
+    },
+    {
+     "t": 480,
+     "census": {
+      "grazer": 299,
+      "locust": 0,
+      "pack": 24,
+      "thief": 38,
+      "lurker": 26
+     },
+     "flora": 7840,
+     "N": 62343
+    },
+    {
+     "t": 510,
+     "census": {
+      "grazer": 297,
+      "locust": 0,
+      "pack": 24,
+      "thief": 34,
+      "lurker": 26
+     },
+     "flora": 8256,
+     "N": 61959
+    },
+    {
+     "t": 540,
+     "census": {
+      "grazer": 314,
+      "locust": 0,
+      "pack": 24,
+      "thief": 32,
+      "lurker": 24
+     },
+     "flora": 8440,
+     "N": 61709
+    },
+    {
+     "t": 570,
+     "census": {
+      "grazer": 329,
+      "locust": 0,
+      "pack": 24,
+      "thief": 29,
+      "lurker": 18
+     },
+     "flora": 8544,
+     "N": 61450
+    },
+    {
+     "t": 600,
+     "census": {
+      "grazer": 347,
+      "locust": 0,
+      "pack": 24,
+      "thief": 25,
+      "lurker": 20
+     },
+     "flora": 8776,
+     "N": 61137
+    },
+    {
+     "t": 630,
+     "census": {
+      "grazer": 365,
+      "locust": 0,
+      "pack": 24,
+      "thief": 21,
+      "lurker": 18
+     },
+     "flora": 8944,
+     "N": 60849
+    },
+    {
+     "t": 660,
+     "census": {
+      "grazer": 376,
+      "locust": 0,
+      "pack": 19,
+      "thief": 18,
+      "lurker": 25
+     },
+     "flora": 8944,
+     "N": 60630
+    },
+    {
+     "t": 690,
+     "census": {
+      "grazer": 396,
+      "locust": 0,
+      "pack": 8,
+      "thief": 15,
+      "lurker": 28
+     },
+     "flora": 8704,
+     "N": 60538
+    },
+    {
+     "t": 720,
+     "census": {
+      "grazer": 419,
+      "locust": 0,
+      "pack": 2,
+      "thief": 13,
+      "lurker": 30
+     },
+     "flora": 8792,
+     "N": 60507
+    },
+    {
+     "t": 750,
+     "census": {
+      "grazer": 394,
+      "locust": 0,
+      "pack": 1,
+      "thief": 13,
+      "lurker": 37
+     },
+     "flora": 8664,
+     "N": 60668
+    },
+    {
+     "t": 780,
+     "census": {
+      "grazer": 381,
+      "locust": 0,
+      "pack": 0,
+      "thief": 13,
+      "lurker": 40
+     },
+     "flora": 8760,
+     "N": 60673
+    },
+    {
+     "t": 810,
+     "census": {
+      "grazer": 362,
+      "locust": 0,
+      "pack": 0,
+      "thief": 12,
+      "lurker": 43
+     },
+     "flora": 9088,
+     "N": 60554
+    },
+    {
+     "t": 840,
+     "census": {
+      "grazer": 365,
+      "locust": 0,
+      "pack": 0,
+      "thief": 11,
+      "lurker": 45
+     },
+     "flora": 9376,
+     "N": 60509
+    },
+    {
+     "t": 870,
+     "census": {
+      "grazer": 362,
+      "locust": 0,
+      "pack": 0,
+      "thief": 11,
+      "lurker": 42
+     },
+     "flora": 9488,
+     "N": 60429
+    }
+   ],
+   "audit": 4.3766340240836143e-07,
+   "cost_ms": 1.24,
+   "prey_kills": {
+    "grazer": 0,
+    "locust": 0,
+    "pack": 6,
+    "thief": 0,
+    "lurker": 575
+   },
+   "births": {
+    "grazer": 2191,
+    "locust": 147,
+    "pack": 0,
+    "thief": 2,
+    "lurker": 172
+   },
+   "starved": {
+    "grazer": 1716,
+    "locust": 337,
+    "pack": 24,
+    "thief": 34,
+    "lurker": 154
+   }
+  },
+  {
+   "seed": 3,
+   "mode": "micro",
+   "rows": [
+    {
+     "t": 0,
+     "census": {
+      "grazer": 400,
+      "locust": 250,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 20
+     },
+     "flora": 6000,
+     "N": 60004
+    },
+    {
+     "t": 30,
+     "census": {
+      "grazer": 602,
+      "locust": 407,
+      "pack": 24,
+      "thief": 49,
+      "lurker": 47
+     },
+     "flora": 1512,
+     "N": 60464
+    },
+    {
+     "t": 60,
+     "census": {
+      "grazer": 604,
+      "locust": 314,
+      "pack": 24,
+      "thief": 50,
+      "lurker": 50
+     },
+     "flora": 1808,
+     "N": 61164
+    },
+    {
+     "t": 90,
+     "census": {
+      "grazer": 600,
+      "locust": 297,
+      "pack": 24,
+      "thief": 50,
+      "lurker": 47
+     },
+     "flora": 2312,
+     "N": 61679
+    },
+    {
+     "t": 120,
+     "census": {
+      "grazer": 524,
+      "locust": 219,
+      "pack": 24,
+      "thief": 50,
+      "lurker": 51
+     },
+     "flora": 2608,
+     "N": 62325
+    },
+    {
+     "t": 150,
+     "census": {
+      "grazer": 491,
+      "locust": 200,
+      "pack": 24,
+      "thief": 45,
+      "lurker": 55
+     },
+     "flora": 3128,
+     "N": 62684
+    },
+    {
+     "t": 180,
+     "census": {
+      "grazer": 459,
+      "locust": 155,
+      "pack": 24,
+      "thief": 43,
+      "lurker": 57
+     },
+     "flora": 3376,
+     "N": 63187
+    },
+    {
+     "t": 210,
+     "census": {
+      "grazer": 405,
+      "locust": 129,
+      "pack": 24,
+      "thief": 42,
+      "lurker": 51
+     },
+     "flora": 3720,
+     "N": 63513
+    },
+    {
+     "t": 240,
+     "census": {
+      "grazer": 342,
+      "locust": 119,
+      "pack": 24,
+      "thief": 42,
+      "lurker": 60
+     },
+     "flora": 4056,
+     "N": 63586
+    },
+    {
+     "t": 270,
+     "census": {
+      "grazer": 321,
+      "locust": 123,
+      "pack": 24,
+      "thief": 42,
+      "lurker": 60
+     },
+     "flora": 4480,
+     "N": 63546
+    },
+    {
+     "t": 300,
+     "census": {
+      "grazer": 303,
+      "locust": 124,
+      "pack": 24,
+      "thief": 41,
+      "lurker": 58
+     },
+     "flora": 4952,
+     "N": 63440
+    },
+    {
+     "t": 330,
+     "census": {
+      "grazer": 276,
+      "locust": 135,
+      "pack": 24,
+      "thief": 40,
+      "lurker": 57
+     },
+     "flora": 5408,
+     "N": 63276
+    },
+    {
+     "t": 360,
+     "census": {
+      "grazer": 261,
+      "locust": 153,
+      "pack": 24,
+      "thief": 40,
+      "lurker": 60
+     },
+     "flora": 5680,
+     "N": 63360
+    },
+    {
+     "t": 390,
+     "census": {
+      "grazer": 226,
+      "locust": 140,
+      "pack": 24,
+      "thief": 40,
+      "lurker": 57
+     },
+     "flora": 6088,
+     "N": 63355
+    },
+    {
+     "t": 420,
+     "census": {
+      "grazer": 212,
+      "locust": 146,
+      "pack": 24,
+      "thief": 39,
+      "lurker": 45
+     },
+     "flora": 6400,
+     "N": 63342
+    },
+    {
+     "t": 450,
+     "census": {
+      "grazer": 199,
+      "locust": 151,
+      "pack": 24,
+      "thief": 39,
+      "lurker": 41
+     },
+     "flora": 6752,
+     "N": 63299
+    },
+    {
+     "t": 480,
+     "census": {
+      "grazer": 200,
+      "locust": 146,
+      "pack": 25,
+      "thief": 8,
+      "lurker": 36
+     },
+     "flora": 7176,
+     "N": 63071
+    },
+    {
+     "t": 510,
+     "census": {
+      "grazer": 186,
+      "locust": 155,
+      "pack": 25,
+      "thief": 7,
+      "lurker": 32
+     },
+     "flora": 7472,
+     "N": 62723
+    },
+    {
+     "t": 540,
+     "census": {
+      "grazer": 192,
+      "locust": 153,
+      "pack": 28,
+      "thief": 7,
+      "lurker": 33
+     },
+     "flora": 7496,
+     "N": 62623
+    },
+    {
+     "t": 570,
+     "census": {
+      "grazer": 215,
+      "locust": 169,
+      "pack": 28,
+      "thief": 7,
+      "lurker": 31
+     },
+     "flora": 7136,
+     "N": 62514
+    },
+    {
+     "t": 600,
+     "census": {
+      "grazer": 217,
+      "locust": 158,
+      "pack": 28,
+      "thief": 7,
+      "lurker": 43
+     },
+     "flora": 7112,
+     "N": 62390
+    },
+    {
+     "t": 630,
+     "census": {
+      "grazer": 195,
+      "locust": 171,
+      "pack": 29,
+      "thief": 7,
+      "lurker": 44
+     },
+     "flora": 7392,
+     "N": 62390
+    },
+    {
+     "t": 660,
+     "census": {
+      "grazer": 190,
+      "locust": 142,
+      "pack": 30,
+      "thief": 7,
+      "lurker": 38
+     },
+     "flora": 7640,
+     "N": 62401
+    },
+    {
+     "t": 690,
+     "census": {
+      "grazer": 192,
+      "locust": 163,
+      "pack": 31,
+      "thief": 2,
+      "lurker": 32
+     },
+     "flora": 7720,
+     "N": 62345
+    },
+    {
+     "t": 720,
+     "census": {
+      "grazer": 193,
+      "locust": 168,
+      "pack": 33,
+      "thief": 2,
+      "lurker": 30
+     },
+     "flora": 7952,
+     "N": 62223
+    },
+    {
+     "t": 750,
+     "census": {
+      "grazer": 176,
+      "locust": 176,
+      "pack": 33,
+      "thief": 2,
+      "lurker": 26
+     },
+     "flora": 7888,
+     "N": 62190
+    },
+    {
+     "t": 780,
+     "census": {
+      "grazer": 180,
+      "locust": 187,
+      "pack": 34,
+      "thief": 2,
+      "lurker": 24
+     },
+     "flora": 7904,
+     "N": 62221
+    },
+    {
+     "t": 810,
+     "census": {
+      "grazer": 154,
+      "locust": 177,
+      "pack": 35,
+      "thief": 2,
+      "lurker": 26
+     },
+     "flora": 8200,
+     "N": 62211
+    },
+    {
+     "t": 840,
+     "census": {
+      "grazer": 145,
+      "locust": 165,
+      "pack": 36,
+      "thief": 2,
+      "lurker": 26
+     },
+     "flora": 8384,
+     "N": 62062
+    },
+    {
+     "t": 870,
+     "census": {
+      "grazer": 144,
+      "locust": 182,
+      "pack": 36,
+      "thief": 2,
+      "lurker": 24
+     },
+     "flora": 8472,
+     "N": 61995
+    }
+   ],
+   "audit": 1.599255483597517e-08,
+   "cost_ms": 5.02,
+   "prey_kills": {
+    "grazer": 0,
+    "locust": 0,
+    "pack": 534,
+    "thief": 0,
+    "lurker": 733
+   },
+   "births": {
+    "grazer": 1109,
+    "locust": 1304,
+    "pack": 13,
+    "thief": 6,
+    "lurker": 214
+   },
+   "starved": {
+    "grazer": 493,
+    "locust": 987,
+    "pack": 0,
+    "thief": 42,
+    "lurker": 216
+   }
+  }
+ ],
+ "gap": {
+  "grazer": {
+   "macro_end": 380.0,
+   "micro_end": 190.7,
+   "rel_gap_end": 0.993,
+   "rel_gap_mean": 0.421
+  },
+  "locust": {
+   "macro_end": 0.0,
+   "micro_end": 171.0,
+   "rel_gap_end": 1.0,
+   "rel_gap_mean": 0.821
+  },
+  "pack": {
+   "macro_end": 0.0,
+   "micro_end": 38.3,
+   "rel_gap_end": 1.0,
+   "rel_gap_mean": 0.271
+  },
+  "thief": {
+   "macro_end": 21.3,
+   "micro_end": 5.3,
+   "rel_gap_end": 3.0,
+   "rel_gap_mean": 1.065
+  },
+  "lurker": {
+   "macro_end": 44.3,
+   "micro_end": 23.7,
+   "rel_gap_end": 0.873,
+   "rel_gap_mean": 0.316
+  },
+  "flora": {
+   "macro_end": 10792,
+   "micro_end": 6568,
+   "rel_gap_mean": 0.412
+  }
+ }
+}

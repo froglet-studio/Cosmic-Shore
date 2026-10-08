@@ -631,6 +631,7 @@ class Pack(Guild):
     hunt_below = 0.6; catch_r = 10.0; prey_sense = 300.0
     hunt_prey_below = 0.0
     handle_micro = 0.0
+    search_nb = False
     hunger_gate = True     # a pack stalks a PILOT only while hungry and with no prey in range (iteration 1)
     switch_ref = 0.0       # >0: Holling III. Macro: rate x Np/(Np+switch_ref). Micro: a hunter commits to a chase
                            # only with >= switch_ref/4 prey inside prey_sense (round 2; 0 = off, the R8 cell)
@@ -762,28 +763,33 @@ class Pack(Guild):
             hp = self.hunt_prey_below if self.hunt_prey_below > 0 else self.hunt_below
             if m > hp * self.e_max:
                 continue
-            prey = [g for g in guilds.values() if g.name in self.prey_names and g.cnt[r] > 0 and not g.hot[r]]
-            Np = sum(int(g.cnt[r]) for g in prey)
+            # round 2: a hunting pack searches its prey_sense (~300 u), i.e. its region AND the six around it
+            # (search_nb); round 1 only saw its own 200-u region and almost never met prey (macro kills ~0)
+            regs = [r] + (list(w.rnb[r]) if self.search_nb else [])
+            prey = [(g, q) for q in regs for g in guilds.values()
+                    if g.name in self.prey_names and g.cnt[q] > 0 and not g.hot[q]]
+            Np = sum(int(g.cnt[q]) for g, q in prey)
             if Np == 0:
                 continue
             rate = self.a_attack * Np * c / (1.0 + self.a_attack * self.h_handle * Np)
             if self.switch_ref > 0:
                 # Holling III (round 2): attack efficiency falls when prey is scarce - the hunter switches to
-                # searching / resting instead of grinding the last prey of a region to zero (a prey refuge)
-                rate *= Np / (Np + self.switch_ref)
+                # searching / resting instead of grinding the last prey of a region to zero (a prey refuge).
+                # The micro rule counts prey in a prey_sense sphere; the searched regions hold vol/sphere of that.
+                rate *= Np / (Np + self.switch_ref * len(regs) * w.L ** 3 / (4.0 / 3.0 * math.pi * self.prey_sense ** 3))
             kills = min(Np, w.rng.poisson(rate * dt))
             for _ in range(kills):
-                cw = np.array([g.cnt[r] for g in prey], float)
-                g = prey[w.rng.choice(len(prey), p=cw / cw.sum())]
-                if g.cnt[r] == 0:
-                    continue
-                gm = g.S[r] / g.cnt[r]; gm2 = g.S2[r] / g.cnt[r]
-                g.cnt[r] -= 1; g.S[r] -= gm; g.S2[r] -= gm2
-                if g.cnt[r] == 0:
-                    gm += g.S[r]; g.S[r] = 0.0; g.S2[r] = 0.0
+                cw = np.array([g.cnt[q] for g, q in prey], float)
+                if cw.sum() <= 0:
+                    break
+                g, q = prey[w.rng.choice(len(prey), p=cw / cw.sum())]
+                gm = g.S[q] / g.cnt[q]; gm2 = g.S2[q] / g.cnt[q]
+                g.cnt[q] -= 1; g.S[q] -= gm; g.S2[q] -= gm2
+                if g.cnt[q] == 0:
+                    gm += g.S[q]; g.S[q] = 0.0; g.S2[q] = 0.0
                 g.killed += 1; w.crystals += 1
                 v = g.body + max(gm, 0.0)
-                v = self.carcass(v, w.rcen_all[r] + w.rng.uniform(-0.5, 0.5, 3) * w.L)
+                v = self.carcass(v, w.rcen_all[q] + w.rng.uniform(-0.5, 0.5, 3) * w.L)
                 gg = v / self.cnt[r]
                 self.S2[r] += 2 * gg * self.S[r] + self.cnt[r] * gg * gg; self.S[r] += v
                 self.prey_kills += 1; self.macro_kills = getattr(self, "macro_kills", 0) + 1
@@ -975,6 +981,7 @@ class Lurker(Guild):
     predator = True; prey_names = ("grazer", "locust")
     a_attack, h_handle = 1.5e-4, 20.0
     switch_ref = 0.0
+    search_nb = False        # an ambusher eats only what walks into ITS region
     creep_r = 350.0          # creep toward a pilot's line only at ambush range (B used 600 in a 450-u grove; iter 3)
 
     def extra_init(self):
