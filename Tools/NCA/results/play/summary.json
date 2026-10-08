@@ -1,0 +1,303 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 12.66,
+   "space": 70.6,
+   "charge": 62.11,
+   "time": 77.31
+  },
+  "space": {
+   "mass": 66.06,
+   "space": 10.94,
+   "charge": 52.34,
+   "time": 71.92
+  },
+  "charge": {
+   "mass": 56.14,
+   "space": 57.63,
+   "charge": 10.25,
+   "time": 74.35
+  },
+  "time": {
+   "mass": 78.61,
+   "space": 70.79,
+   "charge": 74.02,
+   "time": 14.38
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 280,
+   "target_n": 192,
+   "elements": [
+    24,
+    199,
+    30,
+    27
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    143,
+    137,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 280,
+   "target_n": 88,
+   "elements": [
+    83,
+    7,
+    170,
+    20
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    151,
+    129,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 1
+  },
+  "charge": {
+   "n": 253,
+   "target_n": 179,
+   "elements": [
+    208,
+    1,
+    15,
+    29
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    119,
+    134,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 4
+  },
+  "time": {
+   "n": 280,
+   "target_n": 76,
+   "elements": [
+    11,
+    13,
+    76,
+    180
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    122,
+    27,
+    131
+   ],
+   "deaths": 0,
+   "mutants": 2
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 2.83,
+   "space": 21.61,
+   "charge": 13.54,
+   "time": 24.88
+  },
+  "space": {
+   "mass": 22.46,
+   "space": 3.63,
+   "charge": 13.05,
+   "time": 25.35
+  },
+  "charge": {
+   "mass": 9.81,
+   "space": 14.76,
+   "charge": 3.39,
+   "time": 18.3
+  },
+  "time": {
+   "mass": 22.28,
+   "space": 23.25,
+   "charge": 17.51,
+   "time": 3.76
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 37.01,
+    "space": 53.13,
+    "charge": 40.48,
+    "time": 51.68
+   },
+   "majority": "time",
+   "census": {
+    "n": 280,
+    "target_n": 88,
+    "elements": [
+     71,
+     67,
+     50,
+     92
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Time",
+    "domains": [
+     156,
+     124,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 2
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 62.05,
+    "space": 18.04,
+    "charge": 43.68,
+    "time": 62.98
+   },
+   "majority": "space",
+   "census": {
+    "n": 280,
+    "target_n": 179,
+    "elements": [
+     100,
+     7,
+     133,
+     40
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Space",
+    "domains": [
+     125,
+     155,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 1
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 55.28,
+    "space": 51.62,
+    "charge": 17.82,
+    "time": 52.02
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 76,
+    "elements": [
+     146,
+     2,
+     42,
+     90
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Charge",
+    "domains": [
+     149,
+     131,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 5
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 69.63,
+    "space": 27.15,
+    "charge": 65.75,
+    "time": 64.81
+   },
+   "majority": "space",
+   "census": {
+    "n": 280,
+    "target_n": 192,
+    "elements": [
+     44,
+     15,
+     178,
+     43
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     81,
+     71,
+     128
+    ],
+    "deaths": 0,
+    "mutants": 3
+   }
+  }
+ },
+ "meta": {
+  "device": "cpu",
+  "step": 1500,
+  "tag": "play",
+  "note": "play-hardened G2 fine-tune (p2_01500.pt)"
+ },
+ "rule": "rule.pt",
+ "tests_passed": 4
+}

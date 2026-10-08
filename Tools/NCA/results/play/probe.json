@@ -1,0 +1,438 @@
+{
+ "probe": {
+  "mass": {
+   "before": 13.76,
+   "n_before": 280,
+   "killed": 58,
+   "cut": 14.53,
+   "recovered": 12.99,
+   "n_after": 280,
+   "heal": 2.0
+  },
+  "space": {
+   "before": 11.45,
+   "n_before": 280,
+   "killed": 55,
+   "cut": 15.31,
+   "recovered": 14.32,
+   "n_after": 280,
+   "heal": 0.256
+  },
+  "charge": {
+   "before": 18.06,
+   "n_before": 267,
+   "killed": 104,
+   "cut": 16.28,
+   "recovered": 13.01,
+   "n_after": 280,
+   "heal": null
+  },
+  "time": {
+   "before": 15.74,
+   "n_before": 280,
+   "killed": 36,
+   "cut": 16.29,
+   "recovered": 14.63,
+   "n_after": 280,
+   "heal": 3.018
+  }
+ },
+ "multi": {
+  "rows": [
+   {
+    "mass": {
+     "before": 13.76,
+     "n_before": 280,
+     "killed": 58,
+     "cut": 14.53,
+     "recovered": 12.99,
+     "n_after": 280,
+     "heal": 2.0
+    },
+    "space": {
+     "before": 11.45,
+     "n_before": 280,
+     "killed": 55,
+     "cut": 15.31,
+     "recovered": 14.32,
+     "n_after": 280,
+     "heal": 0.256
+    },
+    "charge": {
+     "before": 18.06,
+     "n_before": 267,
+     "killed": 104,
+     "cut": 16.28,
+     "recovered": 13.01,
+     "n_after": 280,
+     "heal": null
+    },
+    "time": {
+     "before": 15.74,
+     "n_before": 280,
+     "killed": 36,
+     "cut": 16.29,
+     "recovered": 14.63,
+     "n_after": 280,
+     "heal": 3.018
+    }
+   },
+   {
+    "mass": {
+     "before": 8.63,
+     "n_before": 280,
+     "killed": 36,
+     "cut": 13.65,
+     "recovered": 11.71,
+     "n_after": 280,
+     "heal": 0.386
+    },
+    "space": {
+     "before": 11.16,
+     "n_before": 280,
+     "killed": 115,
+     "cut": 19.54,
+     "recovered": 15.05,
+     "n_after": 280,
+     "heal": 0.536
+    },
+    "charge": {
+     "before": 7.88,
+     "n_before": 280,
+     "killed": 66,
+     "cut": 14.12,
+     "recovered": 8.75,
+     "n_after": 280,
+     "heal": 0.861
+    },
+    "time": {
+     "before": 15.35,
+     "n_before": 280,
+     "killed": 35,
+     "cut": 16.47,
+     "recovered": 15.88,
+     "n_after": 280,
+     "heal": 0.527
+    }
+   },
+   {
+    "mass": {
+     "before": 16.45,
+     "n_before": 280,
+     "killed": 84,
+     "cut": 23.51,
+     "recovered": 20.29,
+     "n_after": 280,
+     "heal": 0.456
+    },
+    "space": {
+     "before": 12.7,
+     "n_before": 280,
+     "killed": 51,
+     "cut": 18.7,
+     "recovered": 17.73,
+     "n_after": 280,
+     "heal": 0.162
+    },
+    "charge": {
+     "before": 16.55,
+     "n_before": 280,
+     "killed": 60,
+     "cut": 18.56,
+     "recovered": 14.93,
+     "n_after": 280,
+     "heal": 1.806
+    },
+    "time": {
+     "before": 18.46,
+     "n_before": 280,
+     "killed": 44,
+     "cut": 19.85,
+     "recovered": 18.33,
+     "n_after": 280,
+     "heal": 1.094
+    }
+   }
+  ],
+  "heal_mean": 1.009,
+  "n_heal": 11,
+  "excess_mean": 0.95
+ },
+ "predator": {
+  "mass": {
+   "before": 14.48,
+   "n_before": 280,
+   "kills": 4,
+   "gap": 4.87,
+   "crowd": 29.3,
+   "worst": 15.73,
+   "pass_steps": 55,
+   "after60": 14.16,
+   "after": 15.24,
+   "n_after": 280,
+   "heal": 0.392
+  },
+  "space": {
+   "before": 10.68,
+   "n_before": 280,
+   "kills": 1,
+   "gap": 4.96,
+   "crowd": 22.3,
+   "worst": 11.89,
+   "pass_steps": 48,
+   "after60": 10.6,
+   "after": 10.82,
+   "n_after": 280,
+   "heal": 0.884
+  },
+  "charge": {
+   "before": 11.22,
+   "n_before": 280,
+   "kills": 6,
+   "gap": 4.07,
+   "crowd": 22.1,
+   "worst": 11.55,
+   "pass_steps": 48,
+   "after60": 10.73,
+   "after": 10.58,
+   "n_after": 280,
+   "heal": 2.939
+  },
+  "time": {
+   "before": 16.83,
+   "n_before": 280,
+   "kills": 2,
+   "gap": 7.56,
+   "crowd": 6.9,
+   "worst": 18.57,
+   "pass_steps": 56,
+   "after60": 16.16,
+   "after": 16.22,
+   "n_after": 280,
+   "heal": 1.351
+  }
+ },
+ "predator_seeds": [
+  {
+   "mass": {
+    "before": 14.48,
+    "n_before": 280,
+    "kills": 4,
+    "gap": 4.87,
+    "crowd": 29.3,
+    "worst": 15.73,
+    "pass_steps": 55,
+    "after60": 14.16,
+    "after": 15.24,
+    "n_after": 280,
+    "heal": 0.392
+   },
+   "space": {
+    "before": 10.68,
+    "n_before": 280,
+    "kills": 1,
+    "gap": 4.96,
+    "crowd": 22.3,
+    "worst": 11.89,
+    "pass_steps": 48,
+    "after60": 10.6,
+    "after": 10.82,
+    "n_after": 280,
+    "heal": 0.884
+   },
+   "charge": {
+    "before": 11.22,
+    "n_before": 280,
+    "kills": 6,
+    "gap": 4.07,
+    "crowd": 22.1,
+    "worst": 11.55,
+    "pass_steps": 48,
+    "after60": 10.73,
+    "after": 10.58,
+    "n_after": 280,
+    "heal": 2.939
+   },
+   "time": {
+    "before": 16.83,
+    "n_before": 280,
+    "kills": 2,
+    "gap": 7.56,
+    "crowd": 6.9,
+    "worst": 18.57,
+    "pass_steps": 56,
+    "after60": 16.16,
+    "after": 16.22,
+    "n_after": 280,
+    "heal": 1.351
+   }
+  },
+  {
+   "mass": {
+    "before": 11.31,
+    "n_before": 280,
+    "kills": 2,
+    "gap": 4.65,
+    "crowd": 27.5,
+    "worst": 13.51,
+    "pass_steps": 53,
+    "after60": 11.91,
+    "after": 12.13,
+    "n_after": 280,
+    "heal": 0.627
+   },
+   "space": {
+    "before": 38.3,
+    "n_before": 236,
+    "kills": 4,
+    "gap": 4.49,
+    "crowd": 14.7,
+    "worst": 41.49,
+    "pass_steps": 48,
+    "after60": 40.03,
+    "after": 39.69,
+    "n_after": 280,
+    "heal": 0.564
+   },
+   "charge": {
+    "before": 18.37,
+    "n_before": 272,
+    "kills": 5,
+    "gap": 4.68,
+    "crowd": 23.2,
+    "worst": 18.43,
+    "pass_steps": 48,
+    "after60": 15.63,
+    "after": 15.26,
+    "n_after": 280,
+    "heal": 52.833
+   },
+   "time": {
+    "before": 15.14,
+    "n_before": 280,
+    "kills": 2,
+    "gap": 5.7,
+    "crowd": 13.9,
+    "worst": 17.28,
+    "pass_steps": 56,
+    "after60": 15.99,
+    "after": 14.96,
+    "n_after": 280,
+    "heal": 1.084
+   }
+  },
+  {
+   "mass": {
+    "before": 9.63,
+    "n_before": 280,
+    "kills": 1,
+    "gap": 5.05,
+    "crowd": 21.6,
+    "worst": 10.91,
+    "pass_steps": 53,
+    "after60": 8.72,
+    "after": 9.04,
+    "n_after": 280,
+    "heal": 1.461
+   },
+   "space": {
+    "before": 16.42,
+    "n_before": 280,
+    "kills": 8,
+    "gap": 4.38,
+    "crowd": 28.2,
+    "worst": 18.17,
+    "pass_steps": 46,
+    "after60": 18.38,
+    "after": 18.93,
+    "n_after": 280,
+    "heal": -0.434
+   },
+   "charge": {
+    "before": 16.51,
+    "n_before": 280,
+    "kills": 3,
+    "gap": 4.23,
+    "crowd": 23.5,
+    "worst": 16.53,
+    "pass_steps": 48,
+    "after60": 15.59,
+    "after": 16.03,
+    "n_after": 280,
+    "heal": 25.0
+   },
+   "time": {
+    "before": 14.78,
+    "n_before": 280,
+    "kills": 5,
+    "gap": 4.66,
+    "crowd": 13.0,
+    "worst": 17.92,
+    "pass_steps": 57,
+    "after60": 15.11,
+    "after": 14.68,
+    "n_after": 280,
+    "heal": 1.032
+   }
+  }
+ ],
+ "drift": {
+  "mass": [
+   [
+    13.76,
+    14.29
+   ],
+   [
+    8.63,
+    9.03
+   ],
+   [
+    16.45,
+    16.62
+   ]
+  ],
+  "space": [
+   [
+    16.66,
+    16.04
+   ],
+   [
+    14.43,
+    14.12
+   ],
+   [
+    10.5,
+    10.69
+   ]
+  ],
+  "charge": [
+   [
+    9.98,
+    9.88
+   ],
+   [
+    12.32,
+    11.88
+   ],
+   [
+    16.78,
+    16.82
+   ]
+  ],
+  "time": [
+   [
+    18.19,
+    18.68
+   ],
+   [
+    8.59,
+    8.51
+   ],
+   [
+    11.32,
+    11.4
+   ]
+  ],
+  "drift_mean": 0.03
+ }
+}
