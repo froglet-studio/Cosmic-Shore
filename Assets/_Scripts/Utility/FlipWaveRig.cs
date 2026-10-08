@@ -35,6 +35,11 @@ namespace CosmicShore.Utility
 
         static readonly Dictionary<Mesh, Shape> ShapeByMesh = new();
 
+        // Enter Play Mode keeps statics across sessions (domain reload is off), so a model re-exported mid-session
+        // must be measured afresh rather than served from the last session's cache.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetCache() => ShapeByMesh.Clear();
+
         readonly Shape shape;
         readonly Transform[] bones;
         readonly Vector3[] restPositions;
