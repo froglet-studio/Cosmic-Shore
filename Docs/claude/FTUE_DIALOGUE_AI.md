@@ -74,6 +74,8 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
 
+**Start at `Docs/AI_SYSTEM/README.md`** (2026-10-08): the `ai-system` branch's roster of every AI, its layers, the branch workflow and the diagnosis playbook. The table below is the short version.
+
 **Where the AI work lives now (2026-10-07) - read these before touching an AI:**
 
 | AI | Code | Read first |
