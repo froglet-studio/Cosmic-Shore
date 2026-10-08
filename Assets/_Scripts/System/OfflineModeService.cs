@@ -159,30 +159,15 @@ namespace CosmicShore.Core
             if (nm.TryGetComponent<UnityTransport>(out var transport))
                 transport.SetConnectionData("127.0.0.1", LOCAL_HOST_PORT, "0.0.0.0");
 
-            // 6. Set the flag BEFORE StartHost so every callback that fires during host
-            //    bring-up (connection approval, Player.OnNetworkSpawn) already sees an
-            //    offline session. Reverted on failure.
-            _gameData.IsOfflineSession = true;
-
+            // 6. The flag goes up before StartHost and comes down again on failure - see
+            //    TryStartOfflineHost.
             CSDebug.LogVerbose(CSLogChannel.Boot, "[OfflineModeService] Starting offline local host (127.0.0.1) ...");
-            bool started;
-            try
-            {
-                NetworkSceneObjectGuard.Sweep("before offline StartHost");
-                started = nm.StartHost();
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogError($"[OfflineModeService] StartHost threw: {e.Message}");
-                started = false;
-            }
-
-            if (!started)
-            {
-                _gameData.IsOfflineSession = false;
-                CSDebug.LogError("[OfflineModeService] StartHost failed - offline session unavailable.");
+            if (!TryStartOfflineHost(_gameData, () =>
+                {
+                    NetworkSceneObjectGuard.Sweep("before offline StartHost");
+                    return nm.StartHost();
+                }))
                 return false;
-            }
 
             // 7. Wait for the host to report listening (near-instant on loopback; bounded
             //    defensively).
@@ -206,7 +191,7 @@ namespace CosmicShore.Core
                 try { NetworkManager.Singleton?.Shutdown(); }
                 catch (Exception e) { CSDebug.LogWarning($"[OfflineModeService] Shutdown after failed start threw: {e.Message}"); }
 
-                _gameData.IsOfflineSession = false;
+                EndOfflineSession(_gameData);
                 return false;
             }
 
@@ -220,6 +205,42 @@ namespace CosmicShore.Core
             else NetSessionRecorder.MarkOfflineFallback(NetSessionRecorder.DeviceOnlineProvider());
             return true;
         }
+
+        /// <summary>
+        /// Raises <see cref="GameDataSO.IsOfflineSession"/>, starts the host, and lowers the flag
+        /// again if the host refuses or throws (offline cases 2 and 7,
+        /// HARDENING_PLAN_STEAM_LAUNCH.md §4.1). Up BEFORE the start, so every callback host
+        /// bring-up fires (connection approval, Player.OnNetworkSpawn) already sees an offline
+        /// session; down again on failure, because a flag left up with no host stands the party
+        /// layer down for a session that is not offline.
+        /// </summary>
+        internal static bool TryStartOfflineHost(GameDataSO gameData, Func<bool> startHost)
+        {
+            gameData.IsOfflineSession = true;
+            bool started;
+            try
+            {
+                started = startHost();
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[OfflineModeService] StartHost threw: {e.Message}");
+                started = false;
+            }
+
+            if (started) return true;
+
+            EndOfflineSession(gameData);
+            CSDebug.LogError("[OfflineModeService] StartHost failed - offline session unavailable.");
+            return false;
+        }
+
+        /// <summary>
+        /// Lowers <see cref="GameDataSO.IsOfflineSession"/>. This file is the flag's single writer
+        /// (GameDataSO says so); ReconnectService ends a session through here, after the loopback
+        /// host is down.
+        /// </summary>
+        internal static void EndOfflineSession(GameDataSO gameData) => gameData.IsOfflineSession = false;
 
         /// <summary>
         /// Loads the data layer from local snapshots when the cloud never signed in. Runs the

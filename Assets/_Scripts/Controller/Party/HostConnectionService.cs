@@ -573,6 +573,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
+            // OFFLINE session: the party layer stays stood down for the whole session
+            // (OfflineModeService reset it on the way in). A sign-in that lands late - auth can
+            // succeed while Relay keeps failing - must not re-join the presence lobby and restart
+            // its UGS traffic under a player who was told they are offline. Coming back online is
+            // ReconnectService's re-boot, which clears the flag first.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, "[HostConnectionService] Offline session active - not joining the presence lobby.");
+                return;
+            }
             if (IsInPresenceLobby || _joining || _presenceRejoinInFlight) return;
             _joining = true;
             // The front-door init supersedes any pending background rejoin.
@@ -1221,6 +1231,15 @@ namespace CosmicShore.Gameplay
                 // caller reached IsHostingParty == true while we were waiting.
                 if (IsHostingParty) return;
 
+                // The entry check above is a snapshot. OfflineModeService sets the flag only after
+                // a party-layer reset and a profile load that can take seconds, so a call that
+                // passed the entry check can still be queued here - or inside the shutdown below -
+                // when the offline host comes up. Re-decided here (no await between this and the
+                // shutdown, so the shutdown can never land on a live loopback host) and again after
+                // the shutdown (so no Relay session is built on top of one). A late online success
+                // must never tear down a live offline host (HARDENING_PLAN_STEAM_LAUNCH.md §4.2).
+                if (OfflineSessionBegan("while session creation waited for its turn")) return;
+
                 if (_stateMachine.CurrentState != PartyState.HostingParty)
                     _stateMachine.TryTransition(PartyState.HostingParty);
 
@@ -1228,6 +1247,14 @@ namespace CosmicShore.Gameplay
                 // .AsMainThread() guarantees the continuation (and the SOAP raise
                 // further down) runs on Unity's main thread.
                 await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token).AsMainThread();
+
+                if (OfflineSessionBegan("while the NetworkManager shut down"))
+                {
+                    // Undo this call's own HostingParty: the offline reset already took the machine
+                    // to Disconnected, and that is where an offline session's party layer stays.
+                    _stateMachine.TryTransition(PartyState.Disconnected);
+                    return;
+                }
 
                 // CreateAsync starts the host inside the UGS SDK, and Netcode's first act as a
                 // server is to adopt every un-spawned NetworkObject in the loaded scenes as an
@@ -1261,6 +1288,18 @@ namespace CosmicShore.Gameplay
             {
                 _sessionCreationMutex.Release();
             }
+        }
+
+        /// <summary>
+        /// True when this session went OFFLINE after a party-session creation passed its entry
+        /// check - the creation must stand down. See <see cref="EnsurePartySessionAsync"/>.
+        /// </summary>
+        bool OfflineSessionBegan(string when)
+        {
+            if (_gameData == null || !_gameData.IsOfflineSession) return false;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[HostConnectionService] Offline session began {when} - standing party session creation down.");
+            return true;
         }
 
         /// <summary>

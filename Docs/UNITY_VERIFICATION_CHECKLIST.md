@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Offline mode: the seven cases tested, B26–B28 fixed (Block 4) (`Ys-bleeding-edge`, 2026-10-08)
+
+**What landed:**
+- **`OfflineSessionTests`:** HARDENING_PLAN §4.1's seven offline cases plus the §4.2 invariant. To
+  test them in place, each decision got a seam, with no behaviour change:
+  - `AuthenticationSceneController.PlanBootNetwork`
+  - `OfflineModeService.TryStartOfflineHost` / `EndOfflineSession`
+  - `NetworkMonitor.Poll`, plus an injectable reachability probe
+  - `ReconnectService`'s optional party-reset and scene-load seams
+- **Fixes:**
+  - **B26:** `EnsurePartySessionAsync` re-checks the offline flag under its mutex and after its
+    shutdown.
+  - **B27:** a late sign-in no longer re-joins the presence lobby of an offline session.
+  - **B28:** the boot gate's in-attempt retry is bounded by the attempt timeout.
+  - `ReconnectService` no longer writes the flag itself; `OfflineModeService` is its single writer
+    again.
+
+**Proven without the editor:**
+- **The Prisma edit-mode harness:** `OfflineSessionTests` 15/15, and every multiplayer and party
+  suite green.
+- **Negative control:** without the two `HostConnectionService` fixes, exactly the B26 and B27
+  tests fail (13/15).
+- **The run's other failures are not this change's:**
+  - RaceRankToastDriverTests (4) fails identically on `40a10b62`, before this session's work.
+  - SceneTransitionManager (3), AppManagerBootstrap (1) and SparrowCombatTier (2) are the
+    harness's known port-semantics and non-multiplayer cases.
+- **`unity_refcompile`:** the player config has 0 project errors and 0 unverified. The editor config compiled `OfflineSessionTests.cs` against Unity's NUnit and Editor references with no error in it. Its 4 errors are the known artifacts, all in untouched files.
+- **Not run:** `/verify-unity`.
+
+**Needs the editor (and Block 4's real gate, a Windows IL2CPP player):**
+1. **Boot with the NIC disabled.** Expect no Relay attempts, the "No internet connection…" notice,
+   then the menu offline.
+2. **Boot with UGS blocked at the firewall but the NIC up.** Expect three attempts, then the
+   "Could not reach the servers…" notice. The notice arrives within five attempt timeouts (B28).
+3. **Toggle offline from the menu lamp.** Expect no notice and no attempts.
+4. **Play offline, then re-enable the network.** Expect the session to stay offline: no presence
+   lobby join in the console, even if sign-in completes (B27).
+5. **Press Reconnect.** Expect the Authentication scene, then online.
+
 ### 🔴 Session record: who this peer is, and what happened (Block 1's remainder) (`Ys-bleeding-edge`, 2026-10-08)
 
 **What landed:**
@@ -153,11 +192,15 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   compiled into the runtime compilation.
 - **Textual gates:** green.
 - **Not run:** `/verify-unity` (cloud container, no Editor).
-- **The cause of runs 3–4.** Both followed the same harness leak: an Enter, typed into the
-  console on a menu that had just loaded, opened the arcade card the screen had selected for
-  gamepad navigation. The driver now sets the console text through the control port and clicks
-  the overlay's own Run button, and the failure has not recurred. Its exact mechanism (an invite
-  expiring on the send, and a stale session in the guest's pre-flight) was not established.
+- **Runs 3, 4 and 8: open, cause unknown.** T4-lobby failed the same way each time. After T7, the
+  new host's first invite was cleared by its own expiry check on the next refresh tick
+  (`RemoveExpired - 1 expired` right after `AddOrRefresh`), and the guest's pre-flight then read
+  the host's old session. Runs 2 and 6 passed the same step.
+  - **Not the clock.** The game clock is paced (60 ticks per wall second, measured).
+  - **Not the key leak.** A leaked Enter, now fixed in the driver, was present in run 3 but not in
+    run 8.
+  - **Not reproduced in isolation.** A 3-instance instrumented repro (host drop mid-match, then
+    invite) did not reproduce it: expiry at `now + 60`, as written. Still under investigation.
 
 **Needs the editor:**
 1. Press **F7** in a dev build and type `party`. Expect `party role=host state=InParty … members=1/4

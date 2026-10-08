@@ -33,6 +33,9 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B23 | The arcade card lobby does not follow the host: a flying guest is never pulled in, a guest who missed it once never gets it, a host who changes card cannot move the party, and guests draw phantom AI | Root-caused & fixed | 🟡 |
 | B24 | A rate-limited (HTTP 429) session create/join matched NEITHER retry filter, so the retry budget never ran: the guest bounced to its own solo menu and the host fell back to an OFFLINE session, which then correctly hid the online-only party panel | Root-caused & fixed 2026-10-06 from the first MPPM run | 🟡 |
 | B25 | Nothing enforced the four-player party size: two simultaneous Joins on a 3/4 party seated a fifth | Fixed 2026-10-08 (one size, 4, enforced by the session's own seats); passed on Prisma 2026-10-08 | 🟡 |
+| B26 | A late online success could still build a Relay session over a live OFFLINE host: the §4.2 invariant was checked only at entry | Fixed 2026-10-08 (re-checked under the mutex and after the shutdown); L1 test + negative control | 🟡 |
+| B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
+| B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1909,4 +1912,65 @@ deleted with the split; the one size is pinned by `HostConnectionDataSOTests.Max
 `HasOpenSlots_CountsEachPlayerOnce` and `JoinTargetValidatorTests.Spectate_FullParty_IsPartyFull`.
 
 **Passed on Prisma (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T2b: two players pressed Join on a 3/4 party, the presses < 1 ms apart. Both passed the pre-flight; the session's 4 seats refused one (`Session is full.`), which `UgsRequestPolicy` classified `Full`; it bounced with "That party is full." and came back as a solo host at 1/4. The host ended at members 4/4, conns 4. **Found by the run:** that loser also logged a red `[HostConnectionService] JoinPartyDirect error`. The Phases 0–1 checklist promised a warning, so the three join catch sites now share `LogJoinFailure`, which keeps the error for real faults only. Prisma, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+
+---
+
+## B26 — A late online success could still build a Relay session over a live OFFLINE host 🟡 (found by reading + fixed 2026-10-08; L1-tested)
+
+**Shape.** `HostConnectionService.EnsurePartySessionAsync` stands down while `IsOfflineSession`
+is up, which is how it honours HARDENING_PLAN §4.2: a late online success must never tear down a
+live offline host. But it checked the flag once, at entry. `OfflineModeService` raises the flag
+only after a party-layer reset and a profile load that can take seconds. So a call that had passed
+the entry check could still be queued on the session-creation mutex, or inside its NetworkManager
+shutdown, when the offline host came up, and would then go on to `CreateAsync` over it. The callers
+that can be in flight at that moment:
+- the boot gate's retry;
+- a late sign-in's init;
+- the invite controller's recovery.
+
+**Fix.** The flag is re-checked at two points:
+- **Under the mutex,** with no await between that check and the shutdown, so the shutdown can never
+  land on a live loopback host.
+- **After the shutdown,** so no session is built over one. That path returns the state machine to
+  `Disconnected`, where the offline reset left it.
+
+**Evidence.**
+- `OfflineSessionTests.ALateOnlineSuccess_NeverBuildsASessionOnTopOfALiveOfflineHost` raises the
+  flag while the call's shutdown is pending, then completes the shutdown. It passes with the fix,
+  and fails without it (`CreateAsync` is called).
+- Found by a code read during Block 4's mapping (2026-10-08). It has never been seen in a play
+  session.
+
+---
+
+## B27 — A late sign-in re-joined the presence lobby of an OFFLINE session 🟡 (found by reading + fixed 2026-10-08; L1-tested)
+
+**Shape.** Auth can succeed after the boot gate has fallen back to offline, while Relay keeps
+failing. `HandleSignedInEvent` → `EnsureInitializedAsync` had no offline guard. It even checked the
+flag a few lines later, to skip the presence rejoin, but it still re-joined the presence lobby and
+moved the party state to `InPresenceLobby`. That undid step 1 of `OfflineModeService` and restarted
+UGS traffic under a player who had been told they were offline.
+
+**Fix.** `EnsureInitializedAsync` stands down while the flag is up. Coming back online is
+`ReconnectService`'s re-boot, which lowers the flag first.
+
+**Evidence.** `OfflineSessionTests.Case5_OfflineSession_ALateSignIn_DoesNotRejoinThePresenceLobby`
+passes with the fix and fails without it.
+
+---
+
+## B28 — The boot gate's in-attempt retry was unbounded 🟡 (found by reading + fixed 2026-10-08)
+
+**Shape.** `AuthenticationSceneController.LoadMainMenuNetworkedAsync` gives each Relay attempt a
+timeout, then on failure awaits `HostConnectionService.EnsurePartySessionAsync()` with no timeout
+and no token. When UGS is reachable but not answering, a hung create held the gate as long as it
+liked. "Three attempts, then offline" was therefore a minimum, not a maximum.
+
+**Fix.** The retry is bounded by the same per-attempt timeout (`AttachExternalCancellation`).
+Abandoning the wait is safe: the call keeps running, and B26's re-checks stop it from touching an
+offline host.
+
+**Evidence.** Compile only (`unity_refcompile`). This path needs a hanging UGS, which no harness
+here can produce. QA: boot with UGS blocked at the firewall but the NIC up. The offline notice
+must arrive within five attempt timeouts: three Relay waits plus two bounded retries, 75 s at the 15 s floor.
 

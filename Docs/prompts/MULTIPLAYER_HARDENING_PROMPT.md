@@ -275,11 +275,13 @@ reaches this layer:
   - One command plays **14 scenarios** and writes `results.json`.
   - The game clock is paced to the wall, and no key event is ever sent to the game.
 
-**Run 6: 14/14 passed.**
+**Run 6: 14/14 passed.** Runs 7–8, on the Block 4 tree: T4-lobby failed in run 8 on an open, intermittent defect (see Defect 5 below). Everything else passed.
 - **T1 accept.**
-- **T5 single-flight.** A double-tapped Join started one direct join, and the controller ignored
-  the second. For a double-tapped Accept, the second tap finds the invite already consumed, so the
-  controller's own Accept guard is **not** exercised.
+- **T5 single-flight.** A double-tapped Join starts ONE direct join. The second press is stopped
+  either by the controller's `_transitioning` guard (run 6) or by the transition fade, which blocks
+  raycasts once the first join starts (run 7), depending on which lands first. For a double-tapped
+  Accept, the second press finds the invite already consumed, so the controller's own Accept guard
+  is **not** exercised.
 - **T2b (B25).** The two presses were 0.3 ms apart. Both passed the pre-flight; the session's
   4 seats refused one, which got "That party is full."
 - **kick / leave.**
@@ -314,6 +316,16 @@ error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay �
    refresh tick. A guest who accepts inside that gap is refused by the pre-flight's
    `SessionChanged` check. This was seen once, after a host drop. The pre-flight cannot tell a
    stale invite from stale presence without a timestamp.
+5. **Open, intermittent, and unexplained.** After T7 (host killed mid-match), the bounced member's
+   first outgoing invite is sometimes cleared by its own expiry check on the very next refresh
+   tick (runs 3, 4 and 8 of 8). The guest then cannot accept, and the pre-flight sees the stale
+   session (4).
+   - Ruled out: the game clock (paced, measured at 60 ticks/s) and the harness key leak (gone by
+     run 8).
+   - An instrumented 3-instance repro of the same sequence passed.
+   - If this is game code, a player whose host just dropped sends an invite that vanishes.
+   - Next step: catch it on an instrumented full run (`[DIAG-INVITE]` lines on `now` /
+     `expiresAt`).
 
 **Harness faults found and fixed along the way:**
 - Ready was pressed through the controller before the HUD showed the button.
@@ -329,6 +341,26 @@ reading `HostConnectionService`:
   carries on to build a Relay session over a live offline host. That breaks the §4.2 invariant.
 - **A late sign-in re-joins the presence lobby.** `EnsureInitializedAsync` has no offline guard,
   so a sign-in that lands late re-joins the presence lobby of an offline session.
+
+### Block 4 status (2026-10-08)
+
+**The seven cases are L1 tests now:** `OfflineSessionTests`, 15/15 in the headless edit-mode
+harness. Each case is pinned where its decision is made; the table is in `Docs/OFFLINE_MODE.md` §9.
+
+**Three defects fixed with them:**
+- **B26.** The §4.2 invariant had been checked only at entry. A creation queued on the mutex, or
+  inside its shutdown, carried on over a live offline host.
+- **B27.** A late sign-in re-joined the presence lobby of an offline session.
+- **B28.** The boot gate's in-attempt retry was unbounded.
+
+The flag also has one writer again: `ReconnectService` wrote it directly. The negative control
+removes B26's and B27's fixes, and exactly their two tests fail.
+
+**Still open, and the owner's:**
+- **The gate itself:** `QA-NET-OFFLINE-MODE` on a Windows IL2CPP player.
+- **The progression decision:** offline unlocks do not persist.
+- **The mid-session disconnect notice usually has no Reconnect button.** `DisconnectNotice` reads
+  `CanReconnect` once, while the host is still listening, so it reads false.
 
 ## The original asks, for the record
 

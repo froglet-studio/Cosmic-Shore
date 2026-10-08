@@ -83,16 +83,17 @@ session itself. Fix that figure and its legend when you next touch the diagram.
   ready gate, a leaver takes their score out, Scoreboard exit unwired, arcade lobby doesn't follow
   the host. All 🟡.
 
-**Not started:** Blocks 2, 5, 6, and the `HostConnectionService` decomposition. **Block 4** (offline,
-the seven §4.1 cases = Block 3's T8) is in progress: see the brief's Block 3 status for the two
-gaps already confirmed in `HostConnectionService`.
+- **Block 4's code half (2026-10-08).** The seven offline cases are L1 tests (`OfflineSessionTests`,
+  15/15), and B26–B28 are fixed with negative controls. Its real gate, a Windows IL2CPP player
+  pass, is the owner's.
+
+**Not started:** Blocks 2, 5, 6, and the `HostConnectionService` decomposition.
 
 ## What to do next
 
-0. **Block 4 — the seven offline cases as L1 tests** (Block 3's T8), plus the two
-   `HostConnectionService` gaps the brief's Block 3 status names. Then re-run
-   `prisma_party_scenarios` after anything touching the party layer: it takes ~15 minutes and
-   is the only multi-player check that runs without the owner.
+0. **Block 5 — push instead of poll** is next in the brief's order (Block 4's code half is done).
+   Re-run `prisma_party_scenarios` after anything touching the party layer: it takes ~15 minutes
+   and is the only multi-player check that runs without the owner.
 1. *(Done 2026-10-08 by a different route - kept for the record.)* **Block 3 — the in-process
    multi-NetworkManager harness.** This is the highest-value thing you
    can do without the owner at a keyboard, and it converts the whole 🟡 pile into CI tests.

@@ -151,8 +151,15 @@ class Session:
         b = wait_party(B, host_at(4), "the host to count 4", 180)
         wait_party(D, seated_in(b), "D to be seated", 180)
         log = D.log_since(mark)
-        starts, ignored = count(log, "Starting direct-join"), count(log, "Already transitioning")
-        return starts == 1 and ignored >= 1, {"direct_joins_started": starts, "duplicates_ignored": ignored, "host": b}
+        starts = count(log, "Starting direct-join")
+        ran = count(log, f"[DiagnosticsHUD] party join {B.name} ")
+        # The invariant is ONE join reaching UGS. Which layer stops the second press is timing: the
+        # controller's _transitioning guard if it lands first, or the transition fade (which covers
+        # the screen and blocks raycasts the moment the first join starts) if it lands after.
+        stopped_by = ("controller (_transitioning)" if count(log, "Already transitioning")
+                      else "transition overlay (the second press never ran)" if ran == 1 else "unknown")
+        return starts == 1 and stopped_by != "unknown", {
+            "direct_joins_started": starts, "presses_that_ran": ran, "second_tap_stopped_by": stopped_by, "host": b}
 
     # ── launch ────────────────────────────────────────────────────────────────
     def launch_match(self):
