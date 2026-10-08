@@ -38,6 +38,6 @@ MonoBehaviour:
   lensSteps: 128
   spawnStrength: 10
   spawnHorizonRadius: 0
-  spawnDistanceHorizons: 12
+  spawnPosition: {x: 0, y: 0, z: 0}
   spawnVelocity: {x: 0, y: 0, z: 0}
   spawnSpinAxis: {x: 0, y: 0, z: 1}

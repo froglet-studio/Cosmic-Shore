@@ -102,33 +102,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where, and how fast, a hole spawned "in front of the camera" goes: <paramref name="distance"/>
-        /// along the camera's view, with <paramref name="cameraFrameVelocity"/> (x right, y up,
-        /// z forward) turned into world space. The Black Hole tool and the console share it.
+        /// Spawn a hole exactly as the config's Spawn section says — strength, size, position,
+        /// velocity, spin, all world space — what the Black Hole tool's Spawn button and
+        /// <c>blackhole spawn</c> with no strength do. Null when the spawn is refused (see
+        /// <see cref="Spawn"/>).
         /// </summary>
-        public static void SpawnPoseAhead(Vector3 cameraPosition, Quaternion cameraRotation, float distance,
-            Vector3 cameraFrameVelocity, out Vector3 position, out Vector3 velocity)
+        public static BlackHole SpawnFromConfig()
         {
-            position = cameraPosition + cameraRotation * Vector3.forward * Mathf.Max(0f, distance);
-            velocity = cameraRotation * cameraFrameVelocity;
-        }
-
-        /// <summary>
-        /// Spawn a hole from the config's Spawn section (strength, size, distance, velocity, spin) in
-        /// front of <paramref name="camera"/> — what the Black Hole tool's Spawn button does. Null when
-        /// there is no camera or the spawn is refused (see <see cref="Spawn"/>).
-        /// </summary>
-        public static BlackHole SpawnFromConfig(Camera camera)
-        {
-            if (camera == null) return null;
             var config = Config;
-            float strength = config.SpawnStrength;
-            float size = config.SpawnHorizonRadius;
-            float rs = config.HorizonRadius(strength, size);
-            var t = camera.transform;
-            SpawnPoseAhead(t.position, t.rotation, rs * config.SpawnDistanceHorizons, config.SpawnVelocity,
-                out var position, out var velocity);
-            return Spawn(position, strength, velocity, config.SpawnSpinAxis, size);
+            return Spawn(config.SpawnPosition, config.SpawnStrength, config.SpawnVelocity, config.SpawnSpinAxis,
+                config.SpawnHorizonRadius);
         }
 
         /// <summary>Begin a hole's despawn (eased warp release, then destroy). False if no such id.</summary>

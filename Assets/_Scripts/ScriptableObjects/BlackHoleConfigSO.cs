@@ -186,22 +186,22 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 200f)]
         [SerializeField] float spawnHorizonRadius = 0f;
 
-        [Tooltip("How far ahead of the camera the tool spawns a hole, in horizon radii — so a bigger hole " +
-                 "lands proportionally farther away and its shadow fills the same share of the view.")]
-        [Range(2f, 100f)]
-        [SerializeField] float spawnDistanceHorizons = 12f;
+        [Tooltip("WHERE the tool's Spawn button (and `blackhole spawn` with no strength) puts a hole: " +
+                 "its centre, world space.")]
+        [SerializeField] Vector3 spawnPosition = Vector3.zero;
 
-        [Tooltip("Velocity a spawned hole travels at, u/s, in the CAMERA's frame at the moment it spawns " +
-                 "(x right, y up, z forward). Zero parks it where it spawned.")]
+        [Tooltip("Velocity a spawned hole travels at, u/s, world space. Zero parks it at the spawn " +
+                 "position; a moving hole is what sets the mass it passes ORBITING (it pulls, it does " +
+                 "not tow).")]
         [SerializeField] Vector3 spawnVelocity = Vector3.zero;
 
-        [Tooltip("Spin axis of a spawned hole, world space: frame dragging sweeps mass into orbits in the " +
-                 "plane perpendicular to it.")]
+        [Tooltip("Spin axis of a spawned hole, world space: the frame dragging winds infalling mass " +
+                 "around it, in the plane perpendicular to it.")]
         [SerializeField] Vector3 spawnSpinAxis = Vector3.forward;
 
         public float SpawnStrength => Mathf.Max(0f, spawnStrength);
         public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
-        public float SpawnDistanceHorizons => Mathf.Max(2f, spawnDistanceHorizons);
+        public Vector3 SpawnPosition => spawnPosition;
         public Vector3 SpawnVelocity => spawnVelocity;
         public Vector3 SpawnSpinAxis => spawnSpinAxis.sqrMagnitude > 1e-6f ? spawnSpinAxis.normalized : Vector3.forward;
 

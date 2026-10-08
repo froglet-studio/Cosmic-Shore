@@ -17,8 +17,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The values live in the config ASSET, not in the tool.</b> The Spawn rows edit
     /// <c>BlackHoleConfig</c>'s Spawn section — strength (the pull), size (the event-horizon
-    /// radius; 0 derives it from the strength), how far ahead of the camera, velocity in the
-    /// camera's frame, spin axis — and <b>Spawn in front of camera</b> spawns from exactly those
+    /// radius; 0 derives it from the strength), world position, velocity, spin axis — and
+    /// <b>Spawn</b> spawns from exactly those
     /// (<see cref="BlackHoleRegistry.SpawnFromConfig"/>), so what is on the asset is what you get,
     /// from the tool or from <c>blackhole spawn</c> with no strength. <b>Config</b> opens every
     /// other field of the asset — physics, budgets, vessels, warp, lens — drawn from the SO's own
@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
                 _caption.text =
                     $"size {(size > 0f ? "set" : "from strength")}: horizon r_s {rs:F1} u · shadow ≈ {2.6f * rs:F0} u · " +
                     $"lens {config.LensRadiusMultiplier * rs:F0} u\n" +
-                    $"spawns {rs * config.SpawnDistanceHorizons:F0} u ahead · pull GM {config.GM(strength):N0} · " +
+                    $"spawns at {Fmt(config.SpawnPosition)}{FromCamera(config.SpawnPosition)} · pull GM {config.GM(strength):N0} · " +
                     $"influence {config.InfluenceRadius(strength, rs):F0} u";
 
             var holes = BlackHoleRegistry.Holes;
@@ -155,19 +155,21 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── actions ──
-        void SpawnInFront()
+        static string Fmt(Vector3 v) => $"({v.x:0.#}, {v.y:0.#}, {v.z:0.#})";
+
+        /// <summary>" · N u from the camera", or nothing without a main camera.</summary>
+        static string FromCamera(Vector3 p)
         {
             var cam = Camera.main;
-            if (cam == null)
-            {
-                _statusText = "no main camera to spawn in front of";
-                Refresh();
-                return;
-            }
-            var hole = BlackHoleRegistry.SpawnFromConfig(cam);
+            return cam != null ? $" · {Vector3.Distance(cam.transform.position, p):F0} u from the camera" : "";
+        }
+
+        // ── actions ──
+        void Spawn()
+        {
+            var hole = BlackHoleRegistry.SpawnFromConfig();
             _statusText = hole != null
-                ? $"spawned #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, {Vector3.Distance(cam.transform.position, hole.transform.position):F0} u ahead"
+                ? $"spawned #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}"
                 : $"spawn refused — {BlackHoleRegistry.Count}/{Config.MaxBlackHoles} live, or the config is not sane";
             Refresh();
         }
@@ -289,7 +291,7 @@ namespace CosmicShore.Gameplay
             _caption = Label(_panel, "", new Vector2(Pad, y), PanelWidth - 2 * Pad, 34, 12, Dim);
             y -= 38f;
 
-            Button(_panel, "Spawn in front of camera", new Vector2(Pad, y), 200, SpawnBg, SpawnInFront);
+            Button(_panel, "Spawn", new Vector2(Pad, y), 200, SpawnBg, Spawn);
             Button(_panel, "Despawn all", new Vector2(Pad + 206, y), 110, DangerBg, DespawnAll);
 #if UNITY_EDITOR
             Button(_panel, "Save asset", new Vector2(Pad + 322, y), 118, ButtonBg, SaveAsset);

@@ -11,7 +11,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Black Hole tool (Docs/BLACK_HOLE.md §6.1): it reaches every field of the config ASSET as
-    /// Unity itself serializes it, spawns ahead of the camera from the asset's Spawn section, writes
+    /// Unity itself serializes it, spawns at the asset's spawn position from its Spawn section, writes
     /// inside each field's own bounds, and builds and closes its panel. The same model is also run
     /// offline by Tools/Build/black_hole_tool_harness.
     /// </summary>
@@ -43,15 +43,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Tool_SpawnPoseIsAheadOfTheCameraWithVelocityInItsFrame()
+        public void Tool_SpawnRowsArePositionVelocityAndSpinInWorldSpace()
         {
-            // A camera at (1,2,3) looking along +x: forward is +x, so "ahead" is +x and a
-            // camera-frame forward velocity is a world +x velocity.
-            BlackHoleRegistry.SpawnPoseAhead(new Vector3(1f, 2f, 3f), Quaternion.Euler(0f, 90f, 0f), 10f,
-                new Vector3(0f, 0f, 5f), out var position, out var velocity);
-            Assert.That(Vector3.Distance(position, new Vector3(11f, 2f, 3f)), Is.LessThan(1e-4f), $"spawned at {position}");
-            Assert.That(Vector3.Distance(velocity, new Vector3(5f, 0f, 0f)), Is.LessThan(1e-4f), $"velocity {velocity}");
-            Assert.IsNull(BlackHoleRegistry.SpawnFromConfig(null), "a spawn with no camera must be refused, not placed at the origin.");
+            // The Spawn button places the hole at the config's spawn POSITION — no camera involved — so
+            // the spawn rows are exactly strength, size, position, velocity, spin, and the three vectors
+            // are drawn as vector rows the tool writes straight through to the asset.
+            CollectionAssert.AreEqual(
+                new[] { "spawnStrength", "spawnHorizonRadius", "spawnPosition", "spawnVelocity", "spawnSpinAxis" },
+                BlackHoleToolModel.SpawnFieldNames);
+            var fields = BlackHoleToolModel.EditableFields(typeof(BlackHoleConfigSO));
+            var config = ScriptableObject.CreateInstance<BlackHoleConfigSO>();
+            try
+            {
+                var position = fields.First(f => f.Name == "spawnPosition");
+                Assert.AreEqual(BlackHoleToolFieldKind.Vector3, position.Kind);
+                position.SetVector(config, new Vector3(120f, -40f, 300f));
+                Assert.AreEqual(new Vector3(120f, -40f, 300f), config.SpawnPosition, "the spawn position row does not reach the config.");
+                fields.First(f => f.Name == "spawnVelocity").SetVector(config, new Vector3(0f, 0f, -60f));
+                Assert.AreEqual(new Vector3(0f, 0f, -60f), config.SpawnVelocity, "spawn velocity is world space, stored as typed.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(config);
+            }
         }
 
         [Test]

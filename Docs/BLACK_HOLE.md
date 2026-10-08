@@ -25,7 +25,7 @@
 | The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
-| The Black Hole tool — spawn in front of the camera, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
+| The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
 | The test scene | `Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity`, `BlackHoleTestHarness`, the mouse camera `MouseOrbitCamera` (`_Scripts/Controller/Camera/`, + `MouseOrbitCameraConfigSO` → `Resources/MouseOrbitCameraConfig.asset`, §7.1), `BlackHoleTestConfigSO` → `Resources/BlackHoleTestConfig.asset`, FrogletTools ▸ Scene Setup ▸ **Setup Black Hole Test Scene** |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
@@ -366,7 +366,7 @@ From any scene (the HUD and the console auto-spawn; editor and development build
 ```
 blackhole tool [on|off]                          open / close the Black Hole tool (§6.1); no word = toggle
 blackhole config                                 open the tool on its config view
-blackhole spawn                                  spawn from the config's Spawn section, ahead of the camera
+blackhole spawn                                  spawn from the config's Spawn section, at its spawn position
 blackhole spawn <strength> [x y z] [vx vy vz]   spawn at (x,y,z) — default 300 u ahead of the camera
 blackhole here <strength>                        spawn at the camera
 blackhole size <id> <r_s>                        resize a live hole (event-horizon radius; 0 = from strength)
@@ -389,12 +389,12 @@ what is on the asset is what spawns — from the tool, or from `blackhole spawn`
 
 - **SPAWN** rows edit the asset's Spawn section: **Spawn Strength** (the pull: `GM = strength ×
   gmPerStrength`), **Spawn Horizon Radius** (the SIZE — the event-horizon radius in world units;
-  0 derives it from the strength), **Spawn Distance Horizons** (how far ahead of the camera, in horizon
-  radii, so a bigger hole lands proportionally farther away), **Spawn Velocity** (u/s in the camera's
-  frame at the moment of spawning: x right, y up, z forward) and **Spawn Spin Axis** (world). A caption
-  shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the distance, GM and the
-  influence radius.
-- **Spawn in front of camera** spawns from exactly those values (`BlackHoleRegistry.SpawnFromConfig`).
+  0 derives it from the strength), **Spawn Position** (WHERE the hole goes — its centre, world space),
+  **Spawn Velocity** (u/s, world space; zero parks it) and **Spawn Spin Axis** (world). A caption
+  shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the position and how far it is
+  from the camera, GM and the influence radius.
+- **Spawn** spawns from exactly those values at the spawn position (`BlackHoleRegistry.SpawnFromConfig`)
+  — no camera involved, and no preset buttons: to put a hole somewhere else, change the position.
   **Despawn all**; **Save asset** (Editor) writes the asset to disk.
 - **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
   and **Despawn**.

@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// <code>
     ///   blackhole tool [on|off]                          open / close the Black Hole tool (no word = toggle)
     ///   blackhole config                                 open the tool on its config view
-    ///   blackhole spawn                                  spawn from the config's Spawn section, ahead of the camera
+    ///   blackhole spawn                                  spawn from the config's Spawn section, at its spawn position
     ///   blackhole spawn &lt;strength&gt; [x y z] [vx vy vz]   spawn at (x,y,z) — default: ahead of the camera
     ///   blackhole here &lt;strength&gt;                        spawn at the main camera's position
     ///   blackhole size &lt;id&gt; &lt;r_s&gt;                        resize a hole (event-horizon radius; 0 = from strength)
@@ -131,8 +131,8 @@ namespace CosmicShore.Gameplay
                 {
                     if (args.Length == 1)
                     {
-                        var hole0 = BlackHoleRegistry.SpawnFromConfig(Camera.main);
-                        return hole0 == null ? "spawn refused (no main camera, budget full, or config not sane)" : "spawned " + Describe(hole0);
+                        var hole0 = BlackHoleRegistry.SpawnFromConfig();
+                        return hole0 == null ? "spawn refused (budget full, or config not sane)" : "spawned " + Describe(hole0);
                     }
                     if (!TryFloat(args[1], out float strength) || strength < 0f)
                         return Usage;

@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
         /// section). Every other serialized field is in the config view.
         /// </summary>
         public static readonly string[] SpawnFieldNames =
-            { "spawnStrength", "spawnHorizonRadius", "spawnDistanceHorizons", "spawnVelocity", "spawnSpinAxis" };
+            { "spawnStrength", "spawnHorizonRadius", "spawnPosition", "spawnVelocity", "spawnSpinAxis" };
 
         /// <summary>
         /// Every field of <paramref name="type"/> Unity serializes (public, or <c>[SerializeField]</c>,
