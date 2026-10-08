@@ -1173,11 +1173,13 @@ colours mean something when they do appear.
 **Two wearers sit outside the toybox**, and both say something about the SWITCH rather than about
 the pilot. The Scarab's placed switch is the first: the domain colour names the domain the switch
 *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is decides who it pays).
-The Butterfly's **fold gate** is the second, one notch further out: there the colour names **who
-may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). A gate
-declines a pilot who is not already in its domain and can never put anyone into one, so it is a
-gate on use rather than a grant. Nothing in either case changes a pilot's domain, so the two
-readings never share a screen; both are listed in the test's allow-list with their reason. Do not
+The Butterfly's **fold gate** was the second, one notch further out: there the colour named **who
+may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). **The gates
+became wormholes on 2026-10-08** (`BUTTERFLY_FOLD.md` § "The gates became wormholes") and are no
+longer switch RINGS — a mouth is a sphere whose rim wears the domain's hue, outside this vocabulary
+and off the test's allow-list — but the reading is unchanged: the colour says who may use it, a mouth
+declines a pilot who is not already in its domain, and it can never put anyone into one. Nothing in
+either case changes a pilot's domain, so the two readings never share a screen. Do not
 add a toybox wearer without settling which reading wins. It draws in the **live** per-domain prism material —
 the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
 injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the

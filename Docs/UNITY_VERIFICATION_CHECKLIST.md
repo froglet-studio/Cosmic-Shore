@@ -227,7 +227,9 @@ against bleeding-edge's sky; repo C# gates green.
    off, `HyperSeaSkybox.mat` → `StaticHyperSeaSkybox.mat`, membrane level 3 (642 capsules), fold-gate
    cap 0.5, and its first-run AA is now 4x MSAA.
 2. `PlatformRenderApplier` swaps the skybox on every scene load; `GraphicsSettingsApplier` turns
-   HDR off; `CapsuleMembrane` draws the capped prefix; `FoldGatePortalView` caps the window.
+   HDR off; `CapsuleMembrane` draws the capped prefix; `FoldGatePortalView` caps the window
+   *(retired 2026-10-08 — the same cap now reaches the wormhole mouths' exact views through
+   `WormholeView`; the fold gates became wormholes, `BUTTERFLY_FOLD.md`)*.
 3. **All platforms:** the fold-gate window renders only its on-screen footprint (shader remap
    `_FoldGatePortalUV`) and no longer reallocates its target every frame.
 4. Editor: `UrpAssetPlayModeRestore` restores the URP asset's HDR / render scale / MSAA / upscaler
@@ -4698,6 +4700,20 @@ own branches (it used to jump around the membrane by straight-line distance).
 Starvation: fins / arms before the core body, the heart collectable only once the wither reaches
 the core. Joust: heart taken at the strike, body unravels from the heart outward. If either reads
 wrong on a creature whose prefab nests its spindles oddly, report the prefab.
+
+---
+
+## 🟢 Butterfly fold gates → wormholes; domain-hued rims (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — VERIFIED IN EDITOR
+
+`BUTTERFLY_FOLD.md` § "The gates became wormholes", `Docs/WORMHOLES.md`. `FoldGate`,
+`FoldGateGeometry`, `FoldGatePortalView` and `FoldGatePortal.shader/.mat` are deleted; every fold now
+leaves a domain-locked `WormholeMouth` pair. The first playtest showed the pair SEALED against its own
+pilot (rings, no view); fixed in `cf99303f2` (fail-open sealing, the pair knows its owner) and
+playtested by the owner on 2026-10-08: "the butterfly is great". Still worth a look when convenient —
+a RIVAL domain's view (sealed bubble in the Butterfly's colour, flies straight through) and each
+domain's rim hue (`_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat` if it reads faint or hot).
+
+---
 
 ## 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
 

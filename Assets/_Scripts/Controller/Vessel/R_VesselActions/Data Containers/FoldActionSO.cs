@@ -66,43 +66,44 @@ namespace CosmicShore.Gameplay
                  "reach everywhere it is always worth something.")]
         [SerializeField, Min(1f)] float upgradeRangeMultiplier = 2f;
 
-        [Header("Gates")]
-        [Tooltip("Mouth radius of each fold gate, world units. It is drawn at exactly this - the " +
-                 "ring IS the trigger volume - so it is simultaneously how big the portal looks " +
-                 "and how precisely you have to fly it.")]
+        [Header("Wormholes (the pair every fold leaves)")]
+        [Tooltip("Radius of each of the fold's two wormhole mouths, world units - the sphere is " +
+                 "drawn at exactly this and it IS the volume a pilot flies into, so it is " +
+                 "simultaneously how big the mouth looks and how precisely you have to fly it.")]
         [SerializeField, Min(1f)] float gateRadius = 55f;
 
-        [Tooltip("Shortest fold that is worth leaving gates for. A tap-and-release puts both ends " +
-                 "in the same place, which is a portal to where you already are - so below this " +
-                 "NO pair is laid and the previous pair is left standing. One rule covers the " +
-                 "degenerate fold and the case where a peer's replicated pose has not landed yet.")]
+        [Tooltip("Shortest fold that is worth leaving a wormhole for. A tap-and-release puts both " +
+                 "ends in the same place, which is a passage to where you already are - so below " +
+                 "this NO pair is laid and the previous pair is left standing. One rule covers the " +
+                 "degenerate fold and the case where a peer's replicated pose has not landed yet. " +
+                 "Never less than 2.5 mouth radii whatever is authored: two mouths must not touch.")]
         [SerializeField, Min(1f)] float minGateSeparation = 300f;
 
-        [Tooltip("Minimum depth of a gate's 'standing in the mouth' zone, world units (the zone is " +
-                 "at least one mouth radius deep either way). A pilot is only taken by a gate " +
-                 "they have been clear of, so this is how far past the far plane an arriving " +
-                 "pilot must fly before that gate can take them back. It used to also be how far " +
-                 "past the plane a transit DEPOSITED the pilot; a transit now carries the pilot " +
-                 "through exactly (see FoldGateGeometry.Through), so there is no push any more.")]
-        [SerializeField, Min(0f)] float gateExitClearance = 40f;
-
-        [Tooltip("Furthest the camera may be from a gate for the gate to show the far side " +
-                 "through its ring, world units. Past this the ring is a plain ring. The window " +
-                 "is a second render of the world, so this is also the range over which that " +
-                 "cost is paid.")]
+        [Tooltip("Furthest the camera may be from a mouth for it to show the EXACT view through it " +
+                 "(the player's camera carried through the pair), world units. Beyond this, plus the " +
+                 "fade band, the mouth shows its partner's all-directions panorama instead. The exact " +
+                 "view is a second render of the world, so this is also the range that cost is paid " +
+                 "over.")]
         [SerializeField, Min(0f)] float portalWindowRange = 2500f;
 
-        [Tooltip("Seconds the window takes to fade the far side in when a gate comes into range " +
-                 "(continuity of existence: a picture may not pop into a ring any more than the " +
-                 "ring may pop into the world).")]
-        [SerializeField, Min(0.01f)] float portalWindowFadeSeconds = 0.3f;
+        [Tooltip("Distance past the exact range over which the exact view crossfades into the " +
+                 "panorama, so a mouth never pops between the two.")]
+        [SerializeField, Min(1f)] float portalWindowFadeBand = 600f;
 
-        [Tooltip("Resolution of the far-side render as a fraction of the gameplay camera's. The " +
-                 "window can fill the screen as a pilot flies into it, so it is not tiny; it is a " +
-                 "second render of the world, so it is not full either.")]
+        [Tooltip("Resolution of the exact view as a fraction of the gameplay camera's. A mouth can " +
+                 "fill the screen as a pilot flies into it, so it is not tiny; it is a second render " +
+                 "of the world, so it is not full either. The device tier's ceiling still applies.")]
         [SerializeField, Range(0.25f, 1f)] float portalWindowRenderScale = 0.75f;
 
-        [Tooltip("Seconds a gate takes to bloom in, and to wither away when the next fold " +
+        [Tooltip("Texels per side of each of the six panorama faces a mouth's camera captures.")]
+        [SerializeField, Range(64, 1024)] int panoramaFaceSize = 256;
+
+        [Tooltip("Surface material for the mouths (CosmicShore/Wormhole). The rim is tinted to the " +
+                 "placer's DOMAIN at build; everything else is tuned on the material. Empty = the " +
+                 "mouths carry pilots but draw nothing (and say so once).")]
+        [SerializeField] Material wormholeMaterial;
+
+        [Tooltip("Seconds a mouth takes to bloom in, and to wither away when the next fold " +
                  "replaces it. Continuity of existence: a portal may not pop into or out of the " +
                  "world any more than a prism may.")]
         [SerializeField, Min(0.01f)] float gateBloomSeconds = 0.45f;
@@ -135,12 +136,13 @@ namespace CosmicShore.Gameplay
         public float ArriveSeconds => arriveSeconds;
 
         public float GateRadius => gateRadius;
-        public float MinGateSeparation => minGateSeparation;
-        public float GateExitClearance => gateExitClearance;
+        public float MinGateSeparation => Mathf.Max(minGateSeparation, gateRadius * 2.5f);
         public float GateBloomSeconds => gateBloomSeconds;
         public float GateSettleSeconds => gateSettleSeconds;
         public float PortalWindowRange => portalWindowRange;
-        public float PortalWindowFadeSeconds => portalWindowFadeSeconds;
+        public float PortalWindowFadeBand => portalWindowFadeBand;
+        public int PanoramaFaceSize => panoramaFaceSize;
+        public Material WormholeMaterial => wormholeMaterial;
         public float PortalWindowRenderScale => portalWindowRenderScale;
 
         /// <summary>

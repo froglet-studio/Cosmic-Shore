@@ -800,6 +800,29 @@ Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arc
 `Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
 is now a different mode, and the doc's measured ladder is the first thing to go stale.
 
+### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
+
+Some placed objects look different to different pilots: the Butterfly's fold wormhole shows a
+view through only to its own domain, and to a rival it is a sealed, domain-coloured outline
+(`WormholeView`, `BUTTERFLY_FOLD.md` § "The gates became wormholes"). The first cut decided
+"rival" whenever the VIEWER's domain could not be resolved (no follow target, a camera rig that
+is not a `CustomCameraController`) and compared against a domain CAPTURED at placement — so the
+pilot's own pair rendered sealed, and the first playtest reported "the Butterfly made no
+wormholes; the switches lost their portal view". Two rules fell out:
+
+- **Restrict on positive evidence only.** Hide/seal/deny for a resolved viewer who is provably
+  not entitled; an unresolvable viewer gets the full presentation. Gameplay access (who is
+  CARRIED) is a separate, per-vessel check and is the one that must be strict.
+- **Give the object its OWNER, not a snapshot of the owner's state.** `WormholeMouth.Settings.Owner`
+  is the placer's `IVesselStatus`: the owner is always carried and always sees through, and the
+  lock reads the owner's LIVE domain, so a pilot who changes domain keeps a working object.
+
+And one playtest rule: **when a replacement's degraded state looks like the thing it replaced**
+(a sealed sphere reads head-on as a ring), a report of "nothing changed" is ambiguous between
+"new code misbehaving" and "old code still running". Give the replacement a distinguishable
+GameObject name (`FoldWormhole::<pilot>::A`, the old gates were `FoldGate::…`) and tell the
+tester to check the Hierarchy — one look separates the two.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - **Run the out-of-editor gates FIRST, and name what each one covers.** In particular
