@@ -549,3 +549,38 @@ takes on trust. The thief's identity still never comes from a name.
 (MPPM, 1 host + 1 client: steal ~20 of the host's trail prisms with the client's Urchin and
 confirm the host's `PrismsRemaining` / `VolumeRemaining` fall by the same count/volume the client
 gains; then steal with the host and confirm the client's tallies move exactly once, not twice).
+
+## B20 — a client's combat hit was scored twice (the host's replay of the round was credited too)
+
+**Symptom.** In Dog Fight (and every mode that prices a Sparrow round or an Urchin spike), one
+bullet a client lands on a host can score +2 instead of +1, and a rocket's centre-punch +60
+instead of +30. A client can also score a hit its own screen showed missing.
+
+**Root cause.** `StatsManager.CombatHitLanded` assumed a client's round "does not exist on the
+server at all", because projectiles are not networked. The round is not, but the PRESS is:
+`R_VesselActionHandler` sends it owner → `SendButtonPressed_ServerRpc` →
+`SendButtonPressed_ClientRpc` → `PerformShipControllerActions` on every peer, the host included.
+`FireGunActionExecutor` / `FullAutoActionExecutor` have no ownership check, so the host spawns its
+own copy of the client's round. When that copy connects, the reporter (`VesselCombatHitByProjectile`
+/ `…ByExplosion`) raises with the client's name, and the server branch credits
+`TryGetRoundStats(client)` directly. The client's own copy connects too and arrives through
+`Player.ReportCombatHit_ServerRpc`, which credits the same `RoundStats` again. Nothing deduplicates
+the two: `VesselCombatHitLatch` is per machine, and the RPC calls `CombatHitScoring.Credit`
+without touching the server's latch. The client-side name check only ever filtered the reverse
+case (a client replaying the host's or an AI's round). The skimmer reporter and the Dolphin/Scarab
+crystal blasts already gated on the shooter's owner (`requireOwningMachine`), so they were never
+affected. Neither were the host's own shots or the AI's.
+
+**Fix.** One rule, the one the petal drain already follows (`Docs/ELEMENTAL_ECONOMY.md §7`):
+**a hit is decided on the machine that owns the shooter.** All three reporters return before the
+latch unless `ElementalTransfer.IsDecidedHere(shooter)`, which is true offline or on the owner of
+the shooter's hull (the client for its own shots, the server for the host and every AI). The
+server branch of `CombatHitLanded` also returns unless `OwnsAttacker(hit.ShooterName)`, the same
+second line B17 uses for environment kills. AI and offline scoring are unchanged: the server owns
+every AI, and an unspawned hull is always decided here.
+
+**Verification.** Compiled against the Unity reference assemblies (player + editor configs). The
+predicate is covered by `ElementalTransferRouteTests.AHitIsDecidedOnlyOnTheShootersOwner` and by
+harness T10, which is negative-controlled. Engine verification is pending (MPPM, 1 host + 1
+client, Dog Fight): the client lands single bullets on a stationary host, and each one is +1 on
+both machines' domain panels, never +2. `DOGFIGHT.md` verification step 9.

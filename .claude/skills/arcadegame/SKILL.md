@@ -139,6 +139,40 @@ ladder means pruning that list by hand - Unity keeps an unresolvable reference s
 list is one of the few places a retired intensity can still be pointed at. When a ladder's length
 changes, diff the list's entry count against the mode's intensity count.
 
+### 3a. Designing a race COURSE offline (waypoint tracks)
+
+Worked example: Skim Race I4 "Relativity", `Tools/Build/author_skimrace_relativity_track.py`
+(`SKIMRACE.md` §5a). It went through three review rounds; each one is a trap below.
+
+- **Validate on the LAID track, not the curve you designed.** The runtime re-splines your waypoints
+  (uniform Catmull-Rom, a prism every 12 u), and that measures TIGHTER than the analytic curve: 190 u
+  laid against 214 u designed, at a lobe joint. Port the layout rule into the generator (`lay()`)
+  and run every clearance/turn-radius assert on its output.
+- **Symmetric = repetitive.** An S6-symmetric knot (six identical lobes) was rejected for
+  "repetition of curvature". Reward variety as a LADDER (sort the lobes' turn radii and reaches and
+  pull them onto target rungs). An std/ptp reward is satisfied by one outlier: four of six lobes sat
+  on the same radius while it scored well.
+- **"Through the centre" must not mean ONE point.** Six passes within 64 u of the centre read as a
+  pile. Offset each pass 130-185 u and tilt it, so the chords cross the cage at different places,
+  and assert a minimum centre miss.
+- **Measure turning in the PILOT's frame** (ribbon up = floor; yaw = curvature · (up × forward)).
+  Every lobe of a petal knot turns the same way, and a world-space reference cannot show it. A
+  counter-turn (a pass bowing the other way) fixes it; assert a minimum counter-turn run.
+- **A marker block means "a crystal appears here".** On a dense spline, mark only the waypoints at
+  crystal anchors (`SpawnableWaypointTrack.markedWaypoints`). Lay the waypoints with a knot AT every
+  anchor, so each anchor is a waypoint. Fewer markers also cut the AI's track strikes by half.
+- **Lengthening a pass shrinks its neighbouring lobes' room to turn**, which tightens their joints.
+  Grow those lobes' reach by the same amount.
+- **Random search over free 3D directions almost never yields a collision-free knot.** Deform a
+  known-good arrangement (a tensegrity strut set) with a cross-entropy search over offsets, tilts
+  and shape parameters instead. Each candidate costs ~0.2 s in numpy.
+- **The AI simulator re-implements the layout** (`skimrace_sim_harness/Sim.cs`): any field you add
+  to the track (ribbon normals, crystals per lap, markers) must be exported by `run.sh` and honoured
+  there, or the AI trains on a track the game does not lay.
+- **YAML patch regexes: never `(?s)` with `.*`.** A DOTALL `.*\n` in a list-removal regex eats to the
+  end of the document on the SECOND run (the first run has nothing to remove). Use `[^\n]*`, and
+  run the generator twice: write, then `--check`.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

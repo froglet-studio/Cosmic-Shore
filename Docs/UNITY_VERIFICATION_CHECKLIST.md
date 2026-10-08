@@ -5257,3 +5257,45 @@ What changed (authored by `Tools/Build/author_mass_crystal_look.py --check`, plu
    blue-white); free Mass reads mostly DARK with lime confined to face edges and silhouettes. The
    omni crystal's falling triangles look exactly as before. Tune in
    `Tools/Build/author_mass_crystal_look.py` (`RIM_POWER`, `INACTIVE_COLORS`), then re-run it.
+
+---
+
+## 🔴 Skim Race intensity 4 is "Relativity" — five distinct lobes, a snaking pass, markers at crystals only (`cece/funny-hamilton-kniun4`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Assets/_Scripts/Controller/Arcade/SKIMRACE.md` §5a. I4's track was replaced by a generated knot
+(`Tools/Build/author_skimrace_relativity_track.py`): five chords crossing the nucleus cage 130-185 u
+from the centre, five lobes each with its own reach (701-1,069 u) and apex turn (215-405 u), pass 4
+bowing 110 u against the lap's turn (right, left, right), ribbon normals that roll onto each lobe's
+plane through the passes, 26 crystals/lap × 2 = 52, and the wide marker blocks ONLY at the 26
+crystal anchors. (Two earlier versions on this branch were reworked in review: a symmetric six-lobe
+knot — repetitive curvature, piled-up centre — then markers on every waypoint and one-way turning.)
+Runtime: `SpawnableWaypointTrack.waypointUps` (per-waypoint ribbon normal), `crystalsPerLap` (the
+turn monitor's per-lap count) and `markedWaypoints` (which waypoints get a marker block); I1–I3
+author none of them and are unchanged. No `unity` CLI in the authoring session, so `/verify-unity`
+did NOT run. Verified out of editor: `SpawnableWaypointTrack.cs` compiled by the card-art harness
+(Roslyn, Unity shim; all 29 cards still match), the generator's geometry asserts on the prisms as
+`Spawn` lays them, `--check` drift gate with negative controls, `SkimRaceRelativityTrackTests`
+compiled against stubs, and the Skim Race AI simulator flying the new course.
+`CrystalCollisionTurnMonitor.cs` was NOT compiled (one-line call to the new public method).
+
+1. **Compile + import.** Open the project; no console errors. Open `MinigameSkimRace`, select
+   `SpawnableTrack`: the inspector shows *Waypoint Ups* (4th entry 182 vectors), *Crystals Per Lap*
+   (0, 0, 0, 26) and *Marked Waypoints* (three empty entries, the 4th with 26 indices). Set
+   *Preview Intensity Level* to 3: the red gizmo is a five-lobed knot. Run
+   `SkimRaceRelativityTrackTests`.
+2. **Play I4 solo (Squirrel, 1 player + AI).** Expect: spawn just behind a lobe apex, the ribbon
+   horizontal under/over the grid, the first crystal just past the apex; the HUD target reads **52**
+   (not 364 — that would mean `crystalsPerLap` was not read).
+3. **Markers.** Wide marker blocks appear only where a crystal spawns (26 a lap), never as a run of
+   wide blocks along the ribbon. A crystal always appears within ~35 u of a marker.
+4. **The snake.** Pass 4 (the fourth trip through the nucleus): after lobe 3's right-hand turn the
+   ribbon bows LEFT round a neighbouring chord, then right into lobe 4. The pass's crystal sits on
+   the bow's apex.
+5. **The weave.** Inside the cage the five chords cross at five different places (≥ 139 u apart,
+   none nearer the centre than 130 u); with 2+ racers, check you can SEE a rival cut across.
+6. **I1–I3 unchanged.** One race each: same tracks, same markers on every waypoint, targets 24 / 30 / 56.
+7. **Mode preview.** Arcade ▸ Skim Race card, intensity 4 preview shows the knot with 26 markers
+   (it reads the re-baked `SkimRaceWaypointTrack.prefab`).
+8. **Feel.** Does each lobe feel like its own corner, does the snake break the one-way rhythm, is
+   the core readable? Is 52 crystals the right length (~82 s for a perfect race)? Levers: the
+   `PASSES` / `LOBES` / `SNAKE` tables in the generator, then re-run it.

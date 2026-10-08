@@ -18,7 +18,7 @@ MonoBehaviour:
   reachSpeed: 900
   reachRange: 1800
   upgradeRangeMultiplier: 2
-  gateRadius: 55
+  gateRadius: 33
   minGateSeparation: 300
   gateBloomSeconds: 0.45
   gateSettleSeconds: 0.75

@@ -42,6 +42,8 @@ import math
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - committed_scene (the clone's stand-down)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -843,16 +845,14 @@ emit(PREVIEW_LIB, plib)
 # The donor already IS the court arena this mode wants - Scarab AI templates, the nucleus-as-court
 # cell, the spawn ring, the crystal manager - so the clone swaps the mode identity (controller,
 # turn monitor, rule, settings), the cell config (for the ladder) and the crystal economy.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity")
-
-for donor_key, new_guid, label in (
+IDENTITY_SWAPS = (
     ("ScarabScrambleController", G_SCRIPT["TollwayController"], "controller"),
     ("ScarabScrambleGoalTurnMonitor", G_SCRIPT["TollwayTollTurnMonitor"], "turn monitor"),
     ("ScarabScrambleScoringRule", G_ASSET["TollwayScoringRule"], "scoring rule"),
     ("ScarabScrambleSettings", G_ASSET["TollwaySettings"], "settings"),
-):
-    scene, n = re.subn(EXISTING[donor_key], new_guid, scene)
-    assert n == 1, f"{label} guid appeared {n} times in the donor scene (expected exactly 1)"
+)
+SCRIPT_LINES = tuple(f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT[k]}, type: 3}}\n"
+                     for k in ("TollwayController", "TollwayTollTurnMonitor"))
 
 # THE CELL becomes INTENSITY-WISE. The donor is a single-config cell (choice option 0 = Random
 # over a one-entry list, i.e. always that one); Tollway authors four and selects by intensity.
@@ -866,9 +866,6 @@ NEW_CELL_BLOCK = ("  CellConfigs:\n"
                   + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'TollwayCellConfig{i}']}, type: 2}}\n"
                             for i in range(1, len(ANCHOR_SPECIES) + 1))
                   + "  cellTypeChoiceOptions: 1\n")
-assert OLD_CELL_BLOCK in scene, "donor cell-config block not found"
-scene = scene.replace(OLD_CELL_BLOCK, NEW_CELL_BLOCK, 1)
-
 # THE CRYSTAL ECONOMY - the one gameplay dial this mode moves on the donor. Scramble runs
 # PlayerCountPlusExtra +2; Tollway runs IntensityScaled, because here the crystal count IS the
 # intensity axis: crystals become balls and balls are the traffic that pays tolls.
@@ -882,9 +879,29 @@ NEW_CRYSTALS = ("  crystalCountMode: 2\n"
                 "  crystalCountByIntensity:\n"
                 + "".join(f"  - CrystalsPerPlayer: {_num(p)}\n    ExtraCrystals: {e}\n"
                           for p, e in CRYSTALS_BY_INTENSITY))
-assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
-scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
 
+
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity")
+    for donor_key, new_guid, label in IDENTITY_SWAPS:
+        scene, n = re.subn(EXISTING[donor_key], new_guid, scene)
+        assert n == 1, f"{label} guid appeared {n} times in the donor scene (expected exactly 1)"
+    assert OLD_CELL_BLOCK in scene, "donor cell-config block not found"
+    scene = scene.replace(OLD_CELL_BLOCK, NEW_CELL_BLOCK, 1)
+    assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
+    scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+    return scene
+
+
+# The clone is a one-shot: once MinigameTollway.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, and a re-clone would revert them to Scarab Scramble's.
+# The committed scene is adopted, the blocks this script authors (controller and monitor scripts,
+# cell ladder, crystal economy) must still be in it, and the donor asserts STAND DOWN when Scarab
+# Scramble moves on (CLAUDE.md "spent one-shot"). The rule / settings / donor-guid checks in the
+# validation section below run on whichever scene this returns. See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity", clone_scene,
+    authored_blocks=SCRIPT_LINES + (NEW_CELL_BLOCK, NEW_CRYSTALS))
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity.meta",
      scene_meta(G_ASSET["MinigameTollway.unity"]))
@@ -945,7 +962,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 all_new = list(G_SCRIPT.values()) + list(G_ASSET.values())
 if len(set(all_new)) != len(all_new):
