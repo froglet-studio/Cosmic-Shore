@@ -40,6 +40,22 @@ back to the generic capture — which is, by construction, exactly what the pilo
 The same playtest note named the target look: *faces come off and mate with the vessel model*, like
 the omni → octahedra morph. So the second cut moved from rigid prisms to faces.
 
+**The second cut ran, and was too slow to see.** Playtest: *"it lagged so much the effect was over by
+the time the frame caught up."* Every face point was projected onto the hull ON THE MAIN THREAD,
+during the pickup, 8 faces a frame through the peel — measured afterwards on the real meshes at
+**80 ms warm / 222 ms cold even in .NET** (more in the Editor's Mono), plus a per-pickup hull bake,
+surface grid and ~3k native `Transform` calls a frame. The third cut (this one) moves all of it:
+
+| Stage | Before | Now (warm .NET, real meshes) |
+|---|---|---|
+| face cut + hull layout | main thread, every pickup | **worker thread, once per (hull mesh, crystal mesh)**, ~100 ms, started at vessel spawn |
+| per pickup | bake + layout + 60 faces × 51 points projected | **2 ms**: start poses, 60×60 assignment, clone a prototype mesh |
+| per frame | 3,060 `TransformPoint` + 16.7k vertices + `RecalculateBounds` | **0.25 ms**: one matrix read per bone, managed maths, 10.4k vertices |
+
+Lesson: **an effect that does its expensive work in the window it animates in is invisible
+however correct it is** — the expense eats the window. Anything that depends only on assets
+(here: two meshes) is a cache, built before it is needed.
+
 ## 1. What flies: panels and filler
 
 `CrystalHullFusionGeometry.BuildPanels`: a solid is a connected piece of the mesh (welded by
@@ -69,51 +85,65 @@ pentagon**, radial alignment ≥ 0.9994.
 A flat three-triangle pentagon cannot lie on the Squirrel: its corners sat a **median 0.31 patch
 radii off the skin**, and snapping corners to hull vertices left 36% unsnapped (the hull is coarse
 low-poly in its flat areas). So the drawn face is **rebuilt as a subdivided fan**
-(`FusionTemplate`, 4 levels: 51 points and 80 triangles per pentagon). Every point is laid in the
+(`FusionTemplate`, 3 levels: 31 points and 45 triangles per pentagon). Every point is laid in the
 patch's tangent plane at the patch's size, keeping the face's twist from the crystal, then
 **projected onto the closest point of the hull's own triangles** (`HullSurface` — triangles binned
 by their bounding boxes, so a big low-poly triangle is found from every cell it spans), wearing the
 hull's interpolated normal there.
 
-Shipped code on the real meshes, three approach directions: **3,060 of 3,060 points projected**,
-median 0.15 patch radii from laid to surface. The subdivided face keeps the charge discharge: each
+Shipped code on the real meshes: **1,860 of 1,860 points projected** (3,060/3,060 at the earlier 4
+levels), median 0.15 patch radii from laid to surface. The surface query grows its search one ring
+of cells at a time and stops as soon as nothing outside can be closer. The subdivided face keeps the charge discharge: each
 sub-triangle carries the baker's channel contract with only the outline's segments marked as bolt
 edges.
 
-## 4. The faces ride the bones
+## 4. The faces ride the bones — and the layout is built once, off the main thread
 
 The Squirrel hull is skinned and puppeteered. The hull is baked at collection; each point is pinned
 to the bone that dominates the hull vertex nearest it, against a snapshot of the bones at the bake,
 and follows that bone live. A face on a wing stays on the wing while it flaps. Needs the hull mesh
 CPU-readable: this branch sets `isReadable: 1` on `SquirrelVessel_CosmicShoresTest1.fbx`.
 
-The projection is spread over the peel (8 faces a frame) so the pickup frame pays only for the
-bake, the patch layout and the assignment.
+Where the faces land depends only on the two meshes, so it is a `HullLayout` built **once per
+(hull mesh, crystal mesh)**: patches farthest-point spread from the hull's top, and on each patch
+ONE landed grid (face 0's pentagon, scaled), every point projected and pinned to its bone. Point `k`
+of a patch is where point `k` of ANY face lands — the charge crystal's 60 faces are one pentagon cut
+by one template, and the build refuses (named) a crystal whose faces differ. A pickup only matches
+faces to patches.
+
+It is built on a **worker thread** (`Task.Run`) from plain arrays the main thread captured — the
+hull bake, the bone matrices at the bake, the crystal's vertex channels — and touches no
+`UnityEngine.Object`. The main thread never awaits it; it polls a volatile `Ready`, so none of the
+UniTask main-thread hazards in `Docs/THREADING.md` apply. `VesselAnimation.Initialize` calls
+`CrystalHullFusion.Prewarm`, so the layout is building from the moment a listed vessel spawns. A
+pickup that beats it plays the generic capture (verbose line on the `CrystalMorph` channel).
 
 ## 5. Hook and retirement
 
 `ElementalCrystalImpactor.RunCapture` → `TryFuseOntoHull`: if the config lists
-`(vesselStatus.VesselType, crystal element)`, `CrystalHullFusion.Begin` builds the shells, lays the
-fusion out, hides the crystal's renderers and draws frame 0 the same frame. The crystal stays alive,
+`(vesselStatus.VesselType, crystal element)` and the pair's layout is ready, `CrystalHullFusion.Begin`
+clones the prototype mesh, matches faces to patches, hides the crystal's renderers and draws frame 0
+the same frame. The crystal stays alive,
 hidden, until the **mate**, when it moves to the contact, plays its pickup sound via
 `Crystal.Explode(SuppressHusk = true)` and leaves the cell. Scoring and the element level land at
 contact, before any of this. The fusion is pure photons.
 
 Every refusal falls back to the generic capture and **warns once per reason**: no hull renderer, an
-empty bake, a crystal with no readable model.
+empty bake, a crystal with no readable model, a layout the worker could not build. A layout still
+building is not a fault: that pickup plays the generic capture with a verbose line.
 
 ## 6. Why CPU and not the omni morph's shader stamp
 
 - the target **moves** (a skinned hull at flight speed, bone by bone) — a target stamped into a UV
   channel would be stale the frame after it was written;
 - the charge shader already spends TEXCOORD1–3 on its discharge;
-- it is a **one-shot per pickup** (~1.2 s, ~16.7k vertices a frame), not a standing per-prism cost.
+- it is a **one-shot per pickup** (~1.2 s, ~10.4k vertices a frame), not a standing per-prism cost.
 
 ## 7. Files
 
 | File | Role |
 |---|---|
-| `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: shells, layout, deferred projection, per-frame pose, material |
+| `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: prewarm + worker layout cache, per-pickup match, per-frame pose, material |
 | `Utility/CrystalHullFusionGeometry.cs` | pure: panels, template, contact, patches, assignment, wrap, hull surface |
 | `ScriptableObjects/CrystalHullFusionConfigSO.cs` | per-(vessel, element) entries + beat timing |
 | `Resources/CrystalHullFusionConfig.asset` | the opt-in: Squirrel × Charge |
@@ -121,7 +151,9 @@ empty bake, a crystal with no readable model.
 | `Utility/CrystalEdgeArcMeshBaker.cs` | `TryGetReadable` (the drawn charge mesh is unreadable) |
 | `Environment/FlowField/Crystal.cs` | `TryGetDomainCrystalColors` |
 | `_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx.meta` | `isReadable: 1` |
-| `Tests/Editor/CrystalHullFusionGeometryTests.cs` | panels, template, surface, patches, assignment, wrap — also RUNS headless |
+| `Tests/Editor/CrystalHullFusionGeometryTests.cs` | panels, template, surface, layout, patches, assignment, wrap — also RUNS headless |
+| `Controller/Animation/VesselAnimation.cs` | `Initialize` → `CrystalHullFusion.Prewarm` |
+| `Environment/FlowField/CrystalEdgeArcs.cs` | `PlateCorners` (so a prefab reader asks for the same twin) |
 | `Tests/Editor/CrystalHullFusionConfigTests.cs` | beats, slow motion, shipped opt-in |
 | `Tools/Build/crystal_morph_harness/` | now also builds and runs the geometry suite (stub extended) |
 
@@ -144,18 +176,29 @@ empty bake, a crystal with no readable model.
 
 ## 9. Cost
 
-Pickup frame: one `BakeMesh` (~13k vertices), a 60-patch spread over ≤4096 candidates, a 60×60
-Hungarian, the hull-surface grid (~13.6k triangles binned) and one mesh build. Peel frames: 8 faces
-× 51 points projected per frame. Then ~1 s of 16.7k vertex writes a frame. Not profiled in the
-editor.
+Measured with the shipped geometry on the real meshes (warm .NET; the Editor's Mono is slower, so
+read the ratios):
+
+- **Vessel spawn (main thread, once per pair):** one `BakeMesh`, the bone weights read, arrays
+  copied — a few ms.
+- **Worker (once per pair):** face cut ~50 ms + hull layout ~50 ms.
+- **Pickup (main thread):** ~2 ms — 10.4k start positions, 60×60 Hungarian, a prototype clone.
+- **Frame (main thread):** ~0.25 ms of maths + one 10.4k-vertex upload, for ~1.2 s.
+
+`ProfilerMarker`s: `CrystalHullFusion.Prewarm`, `.Begin`, `.Frame`. If a pickup still hitches,
+those three name the culprit.
+
+A fast "nearest vertices, then their triangles" query was tried for the projection and rejected:
+it missed 6–11% of points and landed the rest up to 0.95 patch radii off on the Squirrel's coarse
+areas. Once the layout is cached and off-thread, exactness costs nothing anyone waits for.
 
 ## 10. Verification status
 
 - **Compiles** against real Unity 6000.0 references, player and editor configs
   (`Tools/Build/unity_refcompile`; the first cut's run was negative-controlled with a planted
   missing member).
-- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 40/40 (21 upstream + 19
-  fusion). Three planted defects each fail it: every template edge marked a bolt, the facing filter
+- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 42/42 (21 upstream + 21
+  fusion, incl. the layout builder). Three planted defects each fail it: every template edge marked a bolt, the facing filter
   removed, face normals inverted.
 - **Shipped geometry on the real meshes** (scratch driver over the FBX exports): numbers in §1–§3.
 - `AssignMinCost` matches brute force on 300 random matrices.
@@ -163,7 +206,8 @@ editor.
 
 ### In-editor verification
 
-1. Squirrel, skim a **charge** crystal. Expect: the crystal's prisms fold into their outer
+1. Squirrel, skim a **charge** crystal. The frame must NOT hitch; turn on the Profiler and look
+   for `CrystalHullFusion.Begin` / `.Frame` if it does. Expect: the crystal's prisms fold into their outer
    pentagons, which lift off and fly to the hull, come down onto it and lie ON it — bent over its
    curves, on top, underside and wings — crackling round their outlines, then sink in. ~1.2 s.
    Domain colour, not lime. Pickup SFX as they land. No husk spray.
@@ -186,7 +230,13 @@ editor.
   contact), so faces sit on the pre-glide surface — a few percent of a Squirrel vertex's travel.
 - **The face's crackle pattern changes on the peel's first frame** — the subdivided outline's
   segments carry their own seeds, not the crystal's — and frame 0 is otherwise the crystal exactly.
-- **One fusion per pickup, no pooling**: a burst of pickups is a burst of 16.7k-vertex meshes.
+- **One fusion per pickup, no pooling**: a burst of pickups is a burst of 10.4k-vertex meshes.
+- **The layout is read off the hull as it was when the vessel SPAWNED** (its element shapes at
+  spawn levels). A hull whose charge shape has grown since sits a few percent off the cached skin.
+- **Prewarm runs only from `VesselAnimation.Initialize`.** Overrides that do not call the base
+  (`ButterflyAnimation`, `ScarabAnimation`, `UrchinAnimation`, `RiptideAnimation`,
+  `SparrowAnimationController` — unchecked) would build on their first pickup instead; irrelevant
+  until one of them gets an entry.
 - **Two opt-in mechanisms for crystal retirements now exist** (§3.5 row from the 2026-10-08
   reorient): the omni morph uses a per-vessel container slot
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by

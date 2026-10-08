@@ -75,10 +75,12 @@ sink in, ending in the pilot's domain colour. Record + tuning table:
 Squirrel FBX (bone weights). **The first push of this never ran** — the drawn charge mesh is
 unreadable, the fusion refused it and fell back to the old capture (§0 of the doc). The `unity`
 CLI was not available, so `/verify-unity` did not run; compiled headless against real Unity
-references (player + editor) and the geometry suite runs headless (40/40).
+references (player + editor) and the geometry suite runs headless (42/42). **The second push was
+too slow to see** (all the projection on the main thread during the pickup); the layout is now
+built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms (doc §0, §9).
 
 **Verify in editor.**
-1. Squirrel, skim a charge crystal: faces peel off → fly → come down onto top, underside and wings
+1. Squirrel, skim a charge crystal — **no hitch** (Profiler: `CrystalHullFusion.Begin`/`.Frame`): faces peel off → fly → come down onto top, underside and wings
    → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
 2. If it looks like the old capture, check the console for a `[CrystalHullFusion]` warning first.
 3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).

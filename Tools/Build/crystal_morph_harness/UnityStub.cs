@@ -217,6 +217,14 @@ namespace UnityEngine
                                m[2, 0] * p.x + m[2, 1] * p.y + m[2, 2] * p.z + m[2, 3]);
         }
 
+        public Vector3 MultiplyVector(Vector3 v)
+        {
+            var m = M;
+            return new Vector3(m[0, 0] * v.x + m[0, 1] * v.y + m[0, 2] * v.z,
+                               m[1, 0] * v.x + m[1, 1] * v.y + m[1, 2] * v.z,
+                               m[2, 0] * v.x + m[2, 1] * v.y + m[2, 2] * v.z);
+        }
+
         public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b)
         {
             var r = new float[4, 4];

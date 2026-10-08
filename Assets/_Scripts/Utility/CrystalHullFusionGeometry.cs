@@ -520,6 +520,186 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Everything the layout build needs, captured on the MAIN thread as plain arrays and
+        /// matrices so <see cref="BuildHullLayout"/> can run on a worker: nothing in it is a
+        /// <c>UnityEngine.Object</c>.
+        /// </summary>
+        public sealed class HullLayoutInput
+        {
+            /// <summary>The hull baked in hull space (renderer position and rotation removed, scale kept).</summary>
+            public Vector3[] HullVertices;
+            public Vector3[] HullNormals;
+            public int[] HullTriangles;
+            /// <summary>Per hull vertex, the bone that carries it; null pins everything to the fallback.</summary>
+            public int[] DominantBones;
+            /// <summary>Index used for "no bone": the renderer's root bone or the renderer itself.</summary>
+            public int FallbackBone;
+            /// <summary>Hull space → world, at the bake.</summary>
+            public Matrix4x4 HullToWorld;
+            /// <summary>World → each bone's space, at the bake (FallbackBone included).</summary>
+            public Matrix4x4[] BoneWorldToLocal;
+
+            public PanelSet Panels;
+            public FusionTemplate Template;
+            public float TileFill;
+            public float SurfaceLift;
+        }
+
+        /// <summary>
+        /// Where every face of one crystal lands on one hull, pinned to the hull's bones - built ONCE
+        /// per (hull mesh, crystal mesh) and reused by every pickup, because none of it depends on
+        /// the pickup: the patches, their shape on the skin and the bones that carry them are a
+        /// property of the two meshes. A pickup only chooses which face takes which patch.
+        ///
+        /// Point <c>k</c> of a patch is where point <c>k</c> of ANY face lands: every face of the
+        /// charge crystal is the same pentagon, cut by the same template, so one landed grid per
+        /// patch serves all 60 faces.
+        /// </summary>
+        public sealed class HullLayout
+        {
+            public Vector3 HullCentre;
+            public Vector3 InvExtents;
+            public float HullMeanRadius;
+            public float PatchRadius;
+            public int PatchCount;
+            public int PointsPerPatch;
+
+            /// <summary>Per patch: unit direction from the hull centre, in normalised hull space.</summary>
+            public Vector3[] PatchDirection;
+            public int[] PatchBone;
+            public Vector3[] PatchPositionLocal;
+            public Vector3[] PatchNormalLocal;
+
+            /// <summary>Per patch × point (<c>patch * PointsPerPatch + k</c>).</summary>
+            public int[] PointBone;
+            public Vector3[] PointLocal;
+            public Vector3[] PointNormalLocal;
+
+            public int Projected;
+            public int Unprojected;
+        }
+
+        /// <summary>
+        /// Builds the <see cref="HullLayout"/>. Pure - safe on a worker thread. Returns null with a
+        /// named reason when the crystal's faces are not all the same shape (one landed grid could
+        /// not serve them all) or the hull is empty.
+        /// </summary>
+        public static HullLayout BuildHullLayout(HullLayoutInput input, out string failure)
+        {
+            failure = null;
+            var panels = input.Panels;
+            var template = input.Template;
+            var hv = input.HullVertices;
+            var hn = input.HullNormals;
+            if (panels == null || template == null || panels.PanelCount == 0) { failure = "the crystal has no faces"; return null; }
+            if (hv == null || hv.Length == 0 || input.HullTriangles == null) { failure = "the hull bake is empty"; return null; }
+
+            int perPatch = template.PointCount[0];
+            for (int p = 1; p < panels.PanelCount; p++)
+                if (template.PointCount[p] != perPatch || panels.CornerCount[p] != panels.CornerCount[0])
+                {
+                    failure = $"its faces are not one shape (face 0 has {panels.CornerCount[0]} corners, face {p} has " +
+                              $"{panels.CornerCount[p]}), so one landed grid per patch cannot serve them all";
+                    return null;
+                }
+
+            Vector3 min = hv[0], max = hv[0];
+            for (int v = 1; v < hv.Length; v++) { min = Vector3.Min(min, hv[v]); max = Vector3.Max(max, hv[v]); }
+            Vector3 centre = (min + max) * 0.5f, extents = (max - min) * 0.5f;
+            Vector3 inv = InverseExtents(extents);
+
+            int count = panels.PanelCount;
+            int stride = Mathf.Max(1, Mathf.CeilToInt(hv.Length / 4096f));
+            int seed = SelectHullSpot(hv, hn, centre, extents, Vector3.up, Mathf.Cos(30f * Mathf.Deg2Rad), stride);
+            if (seed < 0) { failure = "the hull has no outward-facing surface"; return null; }
+            var spots = FarthestPointSpots(hv, hn, centre, seed, count, stride, out float spacing);
+
+            float meanRadius = (extents.x + extents.y + extents.z) / 3f;
+            float patchRadius = 0.5f * spacing * input.TileFill;
+            if (patchRadius <= 1e-5f) patchRadius = meanRadius * 0.1f;
+            float lift = input.SurfaceLift * patchRadius;
+            var surface = new HullSurface(hv, hn, input.HullTriangles, patchRadius * 0.35f);
+
+            // The canonical landed face: face 0's own grid, scaled to the patch.
+            var grid = new Vector2[perPatch];
+            float scale = patchRadius / Mathf.Max(1e-6f, panels.PanelRadius[0]);
+            for (int k = 0; k < perPatch; k++) grid[k] = template.Points[template.PointStart[0] + k] * scale;
+
+            var layout = new HullLayout
+            {
+                HullCentre = centre,
+                InvExtents = inv,
+                HullMeanRadius = meanRadius,
+                PatchRadius = patchRadius,
+                PatchCount = count,
+                PointsPerPatch = perPatch,
+                PatchDirection = new Vector3[count],
+                PatchBone = new int[count],
+                PatchPositionLocal = new Vector3[count],
+                PatchNormalLocal = new Vector3[count],
+                PointBone = new int[count * perPatch],
+                PointLocal = new Vector3[count * perPatch],
+                PointNormalLocal = new Vector3[count * perPatch],
+            };
+
+            int BoneFor(int vertex)
+            {
+                var dominant = input.DominantBones;
+                if (dominant == null || vertex < 0 || vertex >= dominant.Length) return input.FallbackBone;
+                int b = dominant[vertex];
+                return b >= 0 && b < input.BoneWorldToLocal.Length && b != input.FallbackBone ? b : input.FallbackBone;
+            }
+
+            void Pin(int bone, Vector3 hullPoint, Vector3 hullNormal, out Vector3 local, out Vector3 localNormal)
+            {
+                Matrix4x4 toBone = input.BoneWorldToLocal[bone];
+                local = toBone.MultiplyPoint3x4(input.HullToWorld.MultiplyPoint3x4(hullPoint));
+                localNormal = toBone.MultiplyVector(input.HullToWorld.MultiplyVector(hullNormal)).normalized;
+            }
+
+            for (int k = 0; k < count; k++)
+            {
+                int spot = spots[k];
+                Vector3 position = hv[spot];
+                Vector3 normal = hn != null && spot < hn.Length && hn[spot].sqrMagnitude > 1e-10f
+                    ? hn[spot].normalized : (position - centre).normalized;
+
+                Vector3 q = Vector3.Scale(position - centre, inv);
+                layout.PatchDirection[k] = q.sqrMagnitude > 1e-12f ? q.normalized : Vector3.up;
+                layout.PatchBone[k] = BoneFor(spot);
+                Pin(layout.PatchBone[k], position, normal, out layout.PatchPositionLocal[k], out layout.PatchNormalLocal[k]);
+
+                // The face's corner 0 points along the hull's own forward where it can, so faces
+                // land with a consistent twist across the hull.
+                Vector3 u = Vector3.forward - Vector3.Dot(Vector3.forward, normal) * normal;
+                if (u.sqrMagnitude < 1e-4f) u = Vector3.right - Vector3.Dot(Vector3.right, normal) * normal;
+                u = u.normalized;
+                Vector3 w = Vector3.Cross(normal, u);
+
+                for (int j = 0; j < perPatch; j++)
+                {
+                    Vector3 laid = position + u * grid[j].x + w * grid[j].y;
+                    int at = k * perPatch + j;
+                    int bone;
+                    if (surface.TryProject(laid, normal, 1.5f * patchRadius, out var sp, out var sn, out int nearest))
+                    {
+                        layout.Projected++;
+                        bone = BoneFor(nearest);
+                        Pin(bone, sp + sn * lift, sn, out layout.PointLocal[at], out layout.PointNormalLocal[at]);
+                    }
+                    else
+                    {
+                        layout.Unprojected++;
+                        bone = layout.PatchBone[k];
+                        Pin(bone, laid + normal * lift, normal, out layout.PointLocal[at], out layout.PointNormalLocal[at]);
+                    }
+                    layout.PointBone[at] = bone;
+                }
+            }
+            return layout;
+        }
+
+        /// <summary>
         /// A hull's skin, queryable for "the closest point on the surface to here". Triangles are
         /// binned into a uniform grid by their bounding boxes, so a big low-poly triangle is found
         /// from every cell it spans - on a coarse patch the nearest VERTEX can be far from the
@@ -546,6 +726,7 @@ namespace CosmicShore.Utility
                 int faces = triangles.Length / 3;
                 _faceNormals = new Vector3[faces];
                 _stamp = new int[faces];
+
                 for (int f = 0; f < faces; f++)
                 {
                     Vector3 a = vertices[triangles[3 * f]], b = vertices[triangles[3 * f + 1]], c = vertices[triangles[3 * f + 2]];
@@ -581,39 +762,54 @@ namespace CosmicShore.Utility
                 nearestVertex = -1;
                 _query++;
 
-                int reach = Mathf.CeilToInt(maxDistance / _cell);
                 var centre = Cell(point);
+                int maxReach = Mathf.Max(1, Mathf.CeilToInt(maxDistance / _cell));
                 float bestSq = maxDistance * maxDistance;
                 bool found = false;
 
-                for (int x = -reach; x <= reach; x++)
-                for (int y = -reach; y <= reach; y++)
-                for (int z = -reach; z <= reach; z++)
+                // Grow the searched block one ring of cells at a time. A triangle not binned into any
+                // cell of a block of reach r lies at least r cells from the point, so once the best
+                // hit is within that, nothing outside can beat it - measured on the Squirrel, almost
+                // every point stops after the first ring. Searching the whole reach up front cost
+                // 80 ms for one charge crystal's points (warm .NET, so more in the Editor), and the
+                // fusion paid it while the pilot watched.
+                for (int reach = 1; reach <= maxReach; reach++)
                 {
-                    if (!_grid.TryGetValue(new Vector3Int(centre.x + x, centre.y + y, centre.z + z), out var list)) continue;
-                    foreach (int f in list)
+                    for (int x = -reach; x <= reach; x++)
+                    for (int y = -reach; y <= reach; y++)
+                    for (int z = -reach; z <= reach; z++)
                     {
-                        if (_stamp[f] == _query) continue;
-                        _stamp[f] = _query;
-                        if (Vector3.Dot(_faceNormals[f], facing) < 0.2f) continue;
+                        // Only the new shell of cells; the inside was searched by the smaller reach.
+                        if (reach > 1 && Mathf.Abs(x) < reach && Mathf.Abs(y) < reach && Mathf.Abs(z) < reach) continue;
+                        if (!_grid.TryGetValue(new Vector3Int(centre.x + x, centre.y + y, centre.z + z), out var list)) continue;
+                        foreach (int f in list)
+                        {
+                            if (_stamp[f] == _query) continue;
+                            _stamp[f] = _query;
+                            if (Vector3.Dot(_faceNormals[f], facing) < 0.2f) continue;
 
-                        int i0 = _triangles[3 * f], i1 = _triangles[3 * f + 1], i2 = _triangles[3 * f + 2];
-                        Vector3 q = ClosestPointOnTriangle(point, _vertices[i0], _vertices[i1], _vertices[i2], out Vector3 bc);
-                        float d = (q - point).sqrMagnitude;
-                        if (d >= bestSq) continue;
+                            int i0 = _triangles[3 * f], i1 = _triangles[3 * f + 1], i2 = _triangles[3 * f + 2];
+                            Vector3 q = ClosestPointOnTriangle(point, _vertices[i0], _vertices[i1], _vertices[i2], out Vector3 bc);
+                            float d = (q - point).sqrMagnitude;
+                            if (d >= bestSq) continue;
 
-                        bestSq = d;
-                        found = true;
-                        surfacePoint = q;
-                        Vector3 n = _normals != null
-                            ? _normals[i0] * bc.x + _normals[i1] * bc.y + _normals[i2] * bc.z
-                            : _faceNormals[f];
-                        surfaceNormal = n.sqrMagnitude > 1e-12f ? n.normalized : _faceNormals[f];
-                        nearestVertex = bc.x >= bc.y && bc.x >= bc.z ? i0 : bc.y >= bc.z ? i1 : i2;
+                            bestSq = d;
+                            found = true;
+                            surfacePoint = q;
+                            Vector3 n = _normals != null
+                                ? _normals[i0] * bc.x + _normals[i1] * bc.y + _normals[i2] * bc.z
+                                : _faceNormals[f];
+                            surfaceNormal = n.sqrMagnitude > 1e-12f ? n.normalized : _faceNormals[f];
+                            nearestVertex = bc.x >= bc.y && bc.x >= bc.z ? i0 : bc.y >= bc.z ? i1 : i2;
+                        }
                     }
+
+                    float covered = reach * _cell;
+                    if (found && bestSq <= covered * covered) break;
                 }
                 return found;
             }
+
         }
 
         /// <summary>Closest point on triangle (a, b, c) to <paramref name="p"/>, with its barycentric

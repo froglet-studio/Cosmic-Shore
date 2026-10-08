@@ -238,6 +238,76 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Layout_EveryPatchLandsItsWholeFaceOnTheSkin()
+        {
+            var template = Template(3, out var set);
+            var skin = FlatSkinArrays(out var verts, out var normals, out var tris);
+            var input = new CrystalHullFusionGeometry.HullLayoutInput
+            {
+                HullVertices = verts,
+                HullNormals = normals,
+                HullTriangles = tris,
+                DominantBones = null,
+                FallbackBone = 0,
+                HullToWorld = Matrix4x4.identity,
+                BoneWorldToLocal = new[] { Matrix4x4.identity },
+                Panels = set,
+                Template = template,
+                TileFill = 1f,
+                SurfaceLift = 0.05f,
+            };
+
+            var layout = CrystalHullFusionGeometry.BuildHullLayout(input, out string failure);
+            Assert.IsNotNull(layout, failure);
+            Assert.AreEqual(set.PanelCount, layout.PatchCount, "one patch per face");
+            Assert.AreEqual(template.PointCount[0], layout.PointsPerPatch);
+
+            float lift = 0.05f * layout.PatchRadius;
+            for (int i = 0; i < layout.PointLocal.Length; i++)
+            {
+                Vector3 p = layout.PointLocal[i];
+                bool onSkin = Mathf.Abs(p.z - lift) < 1e-4f && p.x >= -1e-4f && p.x <= 10.0001f && p.y >= -1e-4f && p.y <= 10.0001f;
+                Assert.IsTrue(onSkin || layout.Unprojected > 0, $"point {i} at {p} is not on the skin");
+                Assert.Greater(Vector3.Dot(layout.PointNormalLocal[i], Vector3.forward), 0.999f);
+            }
+            Assert.AreEqual(layout.PatchCount * layout.PointsPerPatch, layout.Projected + layout.Unprojected);
+        }
+
+        [Test]
+        public void Layout_RefusesFacesOfDifferentShapes()
+        {
+            var (verts, normals, tris) = Ring(2);
+            var set = CrystalHullFusionGeometry.BuildPanels(verts, new[] { tris });
+            var template = CrystalHullFusionGeometry.BuildTemplate(set, verts, normals, null, null, null, new[] { tris }, 2, 2.2f);
+            template.PointCount[1] += 1; // a face whose grid differs from face 0's
+            FlatSkinArrays(out var hv, out var hn, out var ht);
+            var layout = CrystalHullFusionGeometry.BuildHullLayout(new CrystalHullFusionGeometry.HullLayoutInput
+            {
+                HullVertices = hv, HullNormals = hn, HullTriangles = ht, FallbackBone = 0,
+                HullToWorld = Matrix4x4.identity, BoneWorldToLocal = new[] { Matrix4x4.identity },
+                Panels = set, Template = template, TileFill = 1f,
+            }, out string failure);
+            Assert.IsNull(layout);
+            StringAssert.Contains("not one shape", failure);
+        }
+
+        static CrystalHullFusionGeometry.HullSurface FlatSkinArrays(out Vector3[] verts, out Vector3[] normals, out int[] tris)
+        {
+            var v = new List<Vector3>(); var nrm = new List<Vector3>(); var t = new List<int>();
+            for (int y = 0; y <= 10; y++) for (int x = 0; x <= 10; x++) { v.Add(new Vector3(x, y, 0f)); nrm.Add(Vector3.forward); }
+            for (int y = 0; y < 10; y++)
+                for (int x = 0; x < 10; x++)
+                {
+                    int i = y * 11 + x;
+                    t.AddRange(new[] { i, i + 1, i + 11, i + 1, i + 12, i + 11 });
+                }
+            verts = v.ToArray();
+            normals = nrm.ToArray();
+            tris = t.ToArray();
+            return new CrystalHullFusionGeometry.HullSurface(verts, normals, tris, 0.5f);
+        }
+
+        [Test]
         public void ClosestPoint_OnTriangle_ClampsToEdgesAndCorners()
         {
             Vector3 a = Vector3.zero, b = Vector3.right, c = Vector3.up;
