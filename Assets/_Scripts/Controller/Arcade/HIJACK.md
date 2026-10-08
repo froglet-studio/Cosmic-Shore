@@ -290,7 +290,14 @@ by CAPABILITY on the vessel's own bindings (`TryGetBoundAction<UrchinSpikeAction
 `<UrchinSlipActionSO>`) rather than by a named trigger, and gates a tap on the spike ability's own
 `AmmoIndex` / `AmmoCost` - the two numbers the executor's `CanPay` checks - on top of this mode's
 `aiMinSpikeAmmo` floor, so a re-bound or retuned Urchin cannot leave the raider pressing a trigger
-that no-ops. The cadence and floor are still this controller's authored fields. The driver's rail
+that no-ops. The cadence and floor are still this controller's authored fields. Since #986 the
+driver's own ride logic (Skein, Regatta) spikes only CONVERTIBLE hostile mass -
+`UrchinAutopilotDriver.IsConvertible` skips super-shielded prisms, which `PrismTeamManager.Steal`
+always refuses, so a volley there would only spend the meter. Hijack does not route through that
+gate: it calls `TrySpike` directly after its own hostile test (`IsHostileUnderfoot`, read from the
+replicated yard table), and the yard's rails and burrs are never super-shielded (a Mass-5 shield
+is an ordinary shield, which a steal drops rather than flips), so the rule changes nothing here
+today. If the yard ever authors super-shielded mass, add `IsConvertible` to that test. The driver's rail
 CHOICE (ride / reverse / leave) is not used here: this yard's rails are 20 degree arcs chosen by
 `ChooseRail`, and the RIDE state already rides each one to its end. Its Track Projector is not
 used here either, deliberately: the yard is under 1,850 u across, and a projected track's 360 u/s
