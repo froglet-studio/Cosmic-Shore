@@ -79,7 +79,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Stakes Switch")]
         [Tooltip("The live cell. Its Config.PetalBurnRule picks debuffMagnitude (Shipped) or " +
-                 "tunedDebuffMagnitude (Tuned). Unassigned, or no LIVE cell, plays Shipped.")]
+                 "tunedDebuffMagnitude (Tuned). Unassigned, or no LIVE cell, plays Tuned.")]
         [SerializeField] private CellRuntimeDataSO cellData;
 
         static readonly Element[] AllElements =
@@ -136,10 +136,10 @@ namespace CosmicShore.Gameplay
             // contact's weight scales it (burn rules: a drain is a quarter of a bite).
             // Read through the LIVE cell, never CellRuntimeDataSO.Config alone: that field survives a scene load and
             // is only cleared when a Cell enables, so after the Swarm cell was picked a scene with no Cell would
-            // otherwise keep playing its Tuned burn. No live cell = Shipped.
+            // otherwise keep playing the last cell's burn. No live cell = Tuned, the game-wide default.
             var liveCell = cellData ? cellData.Cell : null;
             var liveConfig = liveCell ? liveCell.Config : null;
-            var rule = liveConfig ? liveConfig.PetalBurnRule : PetalBurnRule.Shipped;
+            var rule = liveConfig ? liveConfig.PetalBurnRule : PetalBurnRule.Tuned;
             float magnitude = PetalBurnRules.Magnitude(rule, debuffMagnitude, tunedDebuffMagnitude) * weight;
 
             // Classed DangerPrism either way, which is what a narrow ward can be held against: the
