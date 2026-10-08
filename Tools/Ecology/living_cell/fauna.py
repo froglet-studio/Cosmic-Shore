@@ -630,6 +630,7 @@ class Pack(Guild):
     a_attack, h_handle = 6.0e-4, 40.0
     hunt_below = 0.6; catch_r = 10.0; prey_sense = 300.0
     hunt_prey_below = 0.0
+    handle_micro = 0.0
     hunger_gate = True     # a pack stalks a PILOT only while hungry and with no prey in range (iteration 1)
     switch_ref = 0.0       # >0: Holling III. Macro: rate x Np/(Np+switch_ref). Micro: a hunter commits to a chase
                            # only with >= switch_ref/4 prey inside prey_sense (round 2; 0 = off, the R8 cell)
@@ -639,9 +640,10 @@ class Pack(Guild):
         self.stamina = np.full(C, 3.0); self.cool = np.zeros(C); self.closure = np.zeros(C)
         self.weave = self.w.rng.uniform(0, 6.28, C); self.strikes = 0; self.prey_kills = 0
         self.heading = np.zeros((C, 3)); self.mode = np.zeros(C, np.int8); self.stalking = np.zeros(C, bool)
+        self.handle = np.zeros(C)
 
     def on_spawn(self, idx, from_macro=False):
-        self.stamina[idx] = 3.0; self.cool[idx] = 0.0
+        self.stamina[idx] = 3.0; self.cool[idx] = 0.0; self.handle[idx] = 0.0
 
     eff = 1.0      # round 2: the share of a kill the pack eats; the rest stays as a CARCASS (skeleton prism)
 
@@ -670,6 +672,11 @@ class Pack(Guild):
         # breed); pilots are still stalked only below hunt_below. Default = hunt_below (the R8 cell).
         hp = self.hunt_prey_below if self.hunt_prey_below > 0 else self.hunt_below
         hungry_prey = self.st[idx] < hp * self.e_max
+        # round 2: HANDLING TIME in micro (the macro level's h_handle): a pack that just killed stays on the
+        # carcass, eating, for handle_micro s - neither hunting nor stalking. 0 = off (the R8 cell).
+        self.handle[idx] = np.maximum(0.0, self.handle[idx] - dt)
+        eating = self.handle[idx] > 0
+        hungry = hungry & ~eating; hungry_prey = hungry_prey & ~eating
         preyP, preyRef = [], []
         for g in w.guild_list:
             if g.name in self.prey_names:
@@ -693,6 +700,7 @@ class Pack(Guild):
                 if g.alive[i]:
                     v = g.kill_agent(i, by="predator", to=self)
                     self.st[idx[kk]] += self.carcass(v, preyP[j[kk]]); self.prey_kills += 1
+                    self.handle[idx[kk]] = self.handle_micro
         # --- pilots: the encirclement (B's pack, unchanged rule) for hunters not chasing prey
         dp, k = w.dist_to_pilots(P)
         if len(w.pilots):
@@ -738,6 +746,7 @@ class Pack(Guild):
             near = d < 250
             cen = np.where(near.any(1)[:, None], (near[:, :, None] * P[None]).sum(1) / np.maximum(near.sum(1, keepdims=True), 1), P)
             des[roam] = unit(cen[roam] - P[roam] + w.rng.normal(0, 40, (roam.sum(), 3))) * 40.0
+        des[eating] = 0.0                       # on the carcass
         des += flock_terms(P, V, 30.0, 30.0, 30.0)[3] * 60
         self.cool[idx] = np.maximum(0, self.cool[idx] - dt)
         V = steer(V, des, 260.0, dt)

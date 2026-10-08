@@ -159,3 +159,23 @@ R12 = {
     "r12_eff05_rec05": dict(B12, flora_recruit=0.5, **{"pack.eff": 0.5}),
     "r12_eff05_rec2": dict(B12, flora_recruit=2.0, **{"pack.eff": 0.5}),
 }
+
+# R12 result: COLLAPSE in every seed (prey extinct by minute 3, packs 24 -> 110 then starve out). Lifting the
+# prey-hunting threshold switched on MACRO predation, which had been silently OFF: far packs sat at a mean
+# stomach of ~55 (just above the 54 hunt gate) and almost never hunted (diag: 5 of 1331 kills were macro).
+# The calibration's "pack.a_attack is inert" finding was this. The fitted a_attack was never exercised -> refit.
+CAL2_BASE = dict(B12, **{"pack.eff": 0.5})
+# micro design of the pack rules (all-micro, no pilots): handling time = the macro h_handle (40 s)
+H = {"pack.handle_micro": 40.0}
+M13 = {
+    "m_h40": dict(CAL2_BASE, **H),
+    "m_h40_sw": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0}),
+    "m_h40_e35": dict(CAL2_BASE, **H, **{"pack.eff": 0.35}),
+    "m_h40_sw_e35": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0, "pack.eff": 0.35}),
+}
+M13b = {
+    "m_h40_e35": M13["m_h40_e35"],
+    "m_h40_sw_e35": M13["m_h40_sw_e35"],
+    "m_h40_sw_e25": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0, "pack.eff": 0.25}),
+    "m_h40_sw_e35_m06": dict(CAL2_BASE, **H, pack_metab=0.06, **{"pack.switch_ref": 20.0, "pack.eff": 0.35}),
+}
