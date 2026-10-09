@@ -243,6 +243,10 @@ namespace CosmicShore.Launcher
         /// <summary>The session folder the current local run's players share (the stand-in for UGS Lobby + Relay).</summary>
         public string? LocalNetDir { get; private set; }
 
+        /// <summary>The relay server a RELAY run started beside its players, and the URL they use; null otherwise.</summary>
+        Process? _localRelay;
+        public string? LocalRelayUrl { get; private set; }
+
         /// <summary>
         /// NET > PLAYERS: N game windows on this machine (a party is 4, so 2-4), each its own player
         /// (profile player1..N, so each has its own save and name), networking on, tiled 2x2. They
@@ -250,7 +254,8 @@ namespace CosmicShore.Launcher
         /// party or match and the others join it from the game's own menus. Each has a control port
         /// the NET page drives (stats, network simulator, session faults) and may start on a
         /// simulated line (<paramref name="sims"/>, docs/MULTIPLAYER.md §6.2). Only player 1 plays
-        /// sound. Each writes a session report under sessions/.
+        /// sound. Each writes a session report under sessions/. <paramref name="transport"/> "relay"
+        /// starts Froglet's relay server first and sends every player's sessions through it (§6.7).
         /// </summary>
         public void LaunchLocalPlayers(int players, string? scene, string size, IReadOnlyList<string>? sims = null, string? transport = null) => Start("Local multiplayer", async ct =>
         {
@@ -265,6 +270,20 @@ namespace CosmicShore.Launcher
             // A fresh session folder per run: no session a previous run left behind shows up as joinable.
             LocalNetDir = Path.Combine(Path.GetTempPath(), "prisma-multiplayer", DateTime.Now.ToString("yyyyMMdd-HHmmss"), "sessions");
             Directory.CreateDirectory(LocalNetDir);
+            bool relay = transport == "relay";
+            if (relay)
+            {
+                Step("Starting Froglet's relay server", 1);
+                LocalRelayUrl = await StartLocalRelay(exe, ct);
+                if (LocalRelayUrl == null)
+                {
+                    StopLocalPlayers(); // and the relay, if it is up but never printed its address
+                    Log.Add(LogKind.Error, "The relay server did not start (see its [relay] lines above).");
+                    return false;
+                }
+                Log.Add(LogKind.Info, $"Every player goes through the relay at {LocalRelayUrl}: hosts allocate, joiners join by code.");
+                transport = "udp";
+            }
             var wh = size.Split('x');
             int w = wh.Length == 2 && int.TryParse(wh[0], out var pw) ? pw : 960, h = wh.Length == 2 && int.TryParse(wh[1], out var ph) ? ph : 540;
             for (int i = 1; i <= players; i++)
@@ -278,6 +297,8 @@ namespace CosmicShore.Launcher
                 var psi = PlayerStart(exe, args, audio: audio && i == 1, network: true, profile: "player" + i);
                 psi.Environment["COSMIC_SHORE_NET_DIR"] = LocalNetDir;
                 if (!string.IsNullOrWhiteSpace(transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = transport;
+                if (relay) psi.Environment["COSMIC_SHORE_RELAY"] = LocalRelayUrl!;
+                else psi.Environment.Remove("COSMIC_SHORE_RELAY");
                 var sim = sims != null && i - 1 < sims.Count ? sims[i - 1] : "";
                 if (!string.IsNullOrWhiteSpace(sim)) psi.Environment["COSMIC_SHORE_NET_SIM"] = sim;
                 var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
@@ -312,7 +333,33 @@ namespace CosmicShore.Launcher
                 foreach (var (_, p, _) in _locals)
                     try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
                 _locals.Clear();
+                try { if (_localRelay is { HasExited: false }) _localRelay.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                _localRelay = null;
+                LocalRelayUrl = null;
             }
+        }
+
+        /// <summary>Starts <c>CosmicShore --relay-server</c> and returns the URL it prints, or null when it does not come up.</summary>
+        async Task<string?> StartLocalRelay(string exe, CancellationToken ct)
+        {
+            const string marker = "COSMIC_SHORE_RELAY=";
+            var url = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var p = new Process { StartInfo = PlayerStart(exe, new[] { "--relay-server", "0", "0" }, audio: false, network: true, profile: null), EnableRaisingEvents = true };
+            p.OutputDataReceived += (_, e) =>
+            {
+                if (e.Data == null) return;
+                Log.Add(LogKind.Output, e.Data);
+                int at = e.Data.IndexOf(marker, StringComparison.Ordinal);
+                if (at >= 0) url.TrySetResult(e.Data[(at + marker.Length)..].TrimEnd(')', ' '));
+            };
+            p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            p.Exited += (_, _) => { url.TrySetResult(null); Log.Add(LogKind.Info, "The relay server closed."); };
+            p.Start();
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+            lock (_locals) _localRelay = p;
+            var done = await Task.WhenAny(url.Task, Task.Delay(TimeSpan.FromSeconds(30), ct));
+            return done == url.Task ? url.Task.Result : null;
         }
 
         /// <summary>How the launcher starts any game process: the workspace's project, its .NET, and the run's choices.</summary>

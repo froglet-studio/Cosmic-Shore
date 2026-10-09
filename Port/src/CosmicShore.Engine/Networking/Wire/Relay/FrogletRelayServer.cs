@@ -364,7 +364,7 @@ namespace CosmicShore.Engine.Networking
                         body = new JsonObject { ["data"] = new JsonObject { ["regions"] = new JsonArray(new JsonObject { ["id"] = "froglet-local", ["description"] = "Froglet relay" }) } };
                         break;
                     case "/health":
-                        body = new JsonObject { ["ok"] = true, ["allocations"] = AllocationCount, ["forwarded"] = Forwarded };
+                        body = new JsonObject { ["ok"] = true, ["allocations"] = AllocationCount, ["forwarded"] = Forwarded, ["refused"] = Refused };
                         break;
                     default:
                         status = 404;

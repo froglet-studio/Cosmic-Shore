@@ -137,17 +137,17 @@ Relay cost nothing extra for a Steam game. Re-check
 
 ---
 
-## 5. What exists today (2026-10-08)
+## 5. What exists today (2026-10-09)
 
 | Piece | Where | Status |
 |---|---|---|
 | Netcode model (approval, scene sync, spawns, variables, RPCs, ownership, parenting, transforms, named messages, scene loads) | `Wire/NetDriver.cs` | Works. LAN parties and five-process harness runs pass |
-| Transport seam | `Wire/INetTransport.cs` | Landed. TCP (`NetSocket`) and, from Step 5, UDP (`UdpTransport`); tests also use an in-memory loopback |
-| Session service stand-in | `Wire/DirectoryMultiplayerService.cs` | One JSON file per session in `COSMIC_SHORE_NET_DIR` |
-| Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | T1-T7 pass. Patches the engine in a throwaway worktree (Step 0 removes that need) |
+| Transports | `Wire/INetTransport.cs` | Froglet's UDP (`UdpTransport`, the default, §6.6) directly or through a relay (§6.7); TCP (`NetSocket`); an in-memory loopback for tests |
+| Relay | `Wire/Relay/` | Unity Relay's protocol client and Froglet's own relay server (§6.7). UGS's relay servers wait for sign-in (P7) |
+| Session service | `Wire/DirectoryMultiplayerService.cs` | One JSON file per session in `COSMIC_SHORE_NET_DIR` (the stand-in for UGS Lobby until P8); records an address and port, or a relay join code |
+| Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | 14/14 directly, on simulated 4G, and through the relay. No engine patches since Step 0 |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
-| Launcher | One game at a time, with the Online toggle and the Profile field | No multi-player panel |
-| Network simulator, stats, profiler, fault injection | | Missing |
+| Test tools | §6 | Network simulator, stats and capture, session faults, the Launcher's NET page, MCP `net_*` tools |
 
 ## 6. The tools, mapped to Unity's
 
@@ -160,6 +160,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | *(none)* | **Session-service faults**: lobby full, rate limited, relay allocation fails, service down. `COSMIC_SHORE_NET_FAULT` or `do netfault` | 3 |
 | *(none)* | **Scenario harness as a tool**: `run.sh` without patches; MCP `net_scenario` | 0, 4 |
 | *(none, Unity's transport is fixed)* | **Our reliable-UDP transport** with reliable and unreliable channels | 5 |
+| Relay (UGS Relay through Unity Transport) | **`RelayLink`** under our UDP transport, speaking Unity Relay's protocol; **Froglet's relay server** (`--relay-server`) speaking it too. `COSMIC_SHORE_RELAY`, NET page RELAY, `net_players relay=local`, `PRISMA_RELAY=1` | 6 |
 
 ### 6.1 Step 0: engine features that replace the harness's throwaway patches
 
@@ -349,11 +350,106 @@ up in `do net` as resends, and as `unreliable out/in` counts.
 | The same, with the unreliable channel and every player on `4g` (`COSMIC_SHORE_NET_SIM=4g`) | **13/14**. T4-lobby failed on a game defect, not the transport: the invitee's Accept pre-flight refused a fresh invite because the new host's `partySession` advertisement lagged its invite (B29; the fix is in the game code). Five game processes on a 4-core container are CPU-bound, so RTTs there (300-900 ms) include several frame waits on top of the simulated line |
 
 **Next for the transport.**
-- **The relay (gate G2).** Our fragments ride inside UGS Relay's `RELAY` messages, with the Relay
-  protocol's `BIND`/`PING` around them. Or they ride Steam Datagram Relay.
+- ~~The relay~~: done in Step 6 (§6.7). Our packets ride inside Relay `RELAY` messages, through UGS
+  Relay or Froglet's own relay server. Steam Datagram Relay stays an option for the PC build.
 - **Congestion control** past the fixed window: needed only on internet paths, measured first.
 - **Delta-compressed `NetworkVariable` writes:** the first measurement (§6.4) shows they dominate
   traffic.
+
+### 6.7 Step 6: the relay (Unity Relay's protocol, and Froglet's own relay server)
+
+**Why.** A listen server needs the host to accept connections, and a home router does not let
+strangers in. A relay is a server everyone can reach: each player sends only to it, and it forwards
+between players that joined the same allocation. Nobody opens a port. UGS Relay is one. **Froglet's
+relay server speaks the same protocol and the same REST shape**, so one client serves both: test
+against ours on any machine, play over UGS, or run ours on a server if the bill ever asks for it
+(§4.2).
+
+**The pieces** (all under `src/CosmicShore.Engine/Networking/Wire/`):
+
+| Piece | File | Job |
+|---|---|---|
+| `IDatagramLink` | `DatagramLink.cs` | Where `UdpTransport`'s datagrams go. `DirectLink` is a socket (as before Step 6); `RelayLink` goes through a relay. The transport's reliability, acks and channels are unchanged above it |
+| `RelayProtocol` | `Relay/RelayProtocol.cs` | The codec, written from Unity's public protocol page (§8). No Unity code |
+| `RelayLink` | `Relay/RelayLink.cs` | The client: bind, connect, keep alive, re-bind, close |
+| `RelayAllocationClient` | `Relay/RelayAllocations.cs` | The Relay Allocations REST API: `POST /v1/allocate`, `/v1/joincode`, `/v1/join` |
+| `FrogletRelayServer` | `Relay/FrogletRelayServer.cs` | Our relay: the UDP protocol plus the same REST endpoints |
+| `RelaySessions`, `RelayTransportFactory` | `Relay/RelayTransportFactory.cs` | Hands an allocation to the driver's next Listen/Connect |
+
+**Wire facts** (verified against the protocol page; the endianness differs per field, and a test
+pins each one):
+
+| Message | Layout | Size |
+|---|---|---|
+| Header | `DA 72` signature, version `00`, type | 4 |
+| BIND (0) | header, accept mode `0`, nonce **u16 little-endian**, length `255`, the allocation's 255-byte connection data, HMAC-SHA256 (key = the allocation's key) over everything before it | 295 |
+| BIND_RECEIVED (1) | header | 4 |
+| PING (2) | header, own allocation id (16), ping number u16 | 22 |
+| CONNECT_REQUEST (3) | header, own allocation id, length `255`, the host's connection data | 276 |
+| ACCEPTED (6) / DISCONNECT (9) | header, from id, to id | 36 |
+| RELAY (10) | header, from id, to id, length **u16 big-endian**, content (at most 1,400) | 38 + content |
+| CLOSE (11) | header, own allocation id | 20 |
+| ERROR (12) | header, own allocation id, code (0 invalid version, 1 not connected, 2 client/player mismatch, 3 allocation not found, 4 unauthorized, 5 self-connect, 6 timeout) | 21 |
+
+Our transport's packets are at most 1,200 bytes (§6.6), so each fits one RELAY message.
+
+**A session through the relay:**
+1. **Host.** `CreateSessionAsync` with `UseRelay` allocates (`maxConnections` = party size - 1),
+   gets a join code, hands the allocation to `RelaySessions.HostWith`, then `StartHost`. The
+   driver's Listen opens `UdpTransport` over a `RelayLink`. The join code goes into the session
+   record (`relayJoinCode`), in place of an address and port.
+2. **Joiner.** `JoinSessionByIdAsync` reads the record, joins by code (`/v1/join` returns the
+   joiner's allocation plus the host's connection data) and connects to the address `relay`.
+3. **Link.** BIND every 200 ms until BIND_RECEIVED. A joiner then sends CONNECT_REQUEST every
+   200 ms until ACCEPTED, which names the host's allocation. From then on our transport's own
+   handshake and data run inside RELAY messages.
+4. **Alive.** PING every second (the relay drops a client after 10 s of silence). An ERROR saying
+   client/player mismatch or timeout re-binds with the next nonce; allocation not found,
+   unauthorized, invalid version or self-connect fails the connection with the error's name.
+5. **Close.** CLOSE three times when the transport is disposed.
+
+**Froglet's relay server** enforces what UGS does: a BIND needs a valid HMAC, and a BIND from a
+new address needs a higher nonce; RELAY is forwarded only between allocations linked by an
+ACCEPTED connect, and only from the address the sender bound from (otherwise ERROR not connected
+or client/player mismatch); a host takes at most `maxConnections` clients; a binding silent for
+10 s gets ERROR timeout. Join codes use UGS's alphabet (`6789BCDFGHJKLMNPQRTW`, 6 characters,
+case-insensitive). `/health` reports allocations, forwarded and refused counts.
+
+**How to use it:**
+
+| Where | Switch |
+|---|---|
+| Any player | `COSMIC_SHORE_RELAY=<allocations URL>` (a relay server's HTTP address). Unset or `off` = direct. `ugs` waits for Step P7 (sign-in) |
+| Run our relay | `CosmicShore --relay-server [UDP] [HTTP] [HOST]`: 0 = any free port; HOST is the name players reach it by (default `127.0.0.1`). It prints `COSMIC_SHORE_RELAY=...` for the players |
+| Launcher NET page | Connection = **RELAY** starts our relay beside the players |
+| MCP | `net_players relay=local` (or a relay URL); `net_scenario relay=true` |
+| Party harness | `PRISMA_RELAY=1 bash Tools/Build/prisma_party_scenarios/run.sh` |
+
+**Running ours on a server** (only if wanted; UGS Relay is the plan): run
+`CosmicShore --relay-server 7780 7781 relay.example.com`, open UDP 7780 and TCP 7781, and set
+`COSMIC_SHORE_RELAY=http://relay.example.com:7781` on the players. **Before that faces the public
+internet it needs two things it does not have**: the allocations endpoint has no authentication
+(anyone who reaches it can allocate), and it is plain HTTP, so allocation keys cross the network
+in the clear. Put it behind TLS and a token check first. Testing on a LAN or one machine needs
+neither.
+
+**Measured** (2026-10-09):
+
+| Check | Result |
+|---|---|
+| Codec | BIND layout and HMAC match a reference computed outside .NET (Python `hmac`); RELAY's big-endian length; every message size; the documented UGS allocation JSON parses |
+| Server enforcement | A BIND signed with the wrong key is ignored; PING is echoed; a RELAY to an allocation the sender never connected to gets ERROR not connected |
+| REST | Join code format, the same code twice for one allocation, case-insensitive join, 404 for an unknown code |
+| Transport | Host plus 3 clients through the relay; a 300 KB frame under 15% datagram loss through the relay; a join code whose host never bound fails the connect |
+| Contract | The 7 transport contract checks pass over `relay` and `sim-relay` (56/56 with the other transports) |
+| Engine suite | CosmicShore.Tests 1,891/1,891 |
+| MCP route | Through the MCP server over stdio: `net_players relay=nonsense` is refused before anything starts; `relay=local` started the relay and two headless players with its URL; they partied up through it (host 2/4, both names on both rosters); `net_players status` read `relay ... · 3 allocation(s) · 833 forwarded · 0 refused`, RTT 30 ms and 25.6 ms (direct on the same machine: 27.7 ms); `stop` left no relay process |
+| Five-player party harness, every pilot through the relay (`PRISMA_RELAY=1`) | **14/14** (T1, T5-accept, T2b, kick, leave, T2, T5-join, launch, T4, T3, T6, net, T7, T4-lobby). The relay ended the run with 22 allocations (every solo party and every host after a party change allocates), 21,227 datagrams forwarded, 0 refused, 22 of 22 binds accepted; no pilot logged a relay error or a re-bind. T7 (host killed): the survivors saw the dead host through the 10 s silence timeout, as on a direct connection |
+
+**Not proven yet.** Nothing here has talked to UGS's own relay servers: that needs a signed-in
+player's token (P7) and the owner's go-ahead, because it creates players in the live project
+(`Docs/MULTIPLAYER_START_HERE.md` §5.3). Only the plain `udp` endpoint is used; DTLS (`dtls`) and
+WebSocket (`ws`/`wss`) endpoints are not.
 
 ## 7. Status
 
@@ -366,7 +462,8 @@ up in `do net` as resends, and as `unreliable out/in` counts.
 | 3 | Session-service faults | Done 2026-10-08 | `NetFaultsTests` 10/10. Two real players: `netfault full` refused the guest's join with the game's "That party is full." and bounced it to its menu (host stayed 1/4; the next join seated it); `ratelimit=3` raised 3 and the party survived |
 | 4 | Launcher NET page, MCP `net_*` tools | Done 2026-10-08 | `MultiplayerRunTests` 7/7, Launcher tests 21/21; NET page screenshotted under xvfb (empty and with four player rows); the MCP server over stdio started 2 headless players (one on `4g` from launch), and `net_sim`, `net_fault`, `net_stats`, `net_players status`, `net_logs` and `stop` worked against them |
 | 5 | UDP transport, unreliable channel for opted-in transforms | Done 2026-10-08 | `UdpTransportTests` 6/6, `UnreliableChannelTests` 8/8, `UnreliableDeltasPrefabTests` 3/3; contract checks over `udp` and `sim-udp`; network suites stable over 5 repeats; CosmicShore.Tests 1862/1862; the five-player party harness **14/14 on UDP** |
-| G2 | UGS backend (Auth, Lobby, Relay protocol) | After gate G2 | |
+| 6 | Relay: Unity Relay's protocol under our UDP transport, Froglet's relay server, session integration, tool switches | Done 2026-10-09 | `RelayTests` 10/10; contract checks over `relay` and `sim-relay`; `MultiplayerRunTests` 16/16; Launcher tests 21/21; CosmicShore.Tests 1,891/1,891; two players partied up through `net_players relay=local`; the five-player party harness through the relay: 14/14 (§6.7) |
+| G2 | UGS backend (Auth P7, Lobby P8) | Next | Relay allocations are already the UGS REST shape; P7 adds the sign-in token |
 
 ## 8. Sources
 

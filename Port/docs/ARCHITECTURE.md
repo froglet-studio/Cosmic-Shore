@@ -234,14 +234,19 @@ on the main thread; peer 0 is the server; a failed connect reports `Disconnected
 taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) was the first implementation, and stays
 the engine's in-process default for tests; Froglet's UDP transport (`UdpTransport`: reliable-ordered
 fragments with selective acks and RTT-timed resends, plus an unreliable channel) is what every
-networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). An internet relay is the next one (C6,
-after gate G2). `NetTransportContractTests` runs
-the same checks against every implementation (TCP and the in-memory loopback the tests use), and
-`NetDriverTransportTests` drives the driver's handshake over both.
+networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). Below it,
+an `IDatagramLink` decides where its datagrams go: straight to the peer (`DirectLink`), or through a
+relay speaking Unity Relay's protocol (`RelayLink`), which is how players behind home routers reach
+each other. Froglet's own relay server (`FrogletRelayServer`, `CosmicShore --relay-server`) speaks
+the same protocol and REST shape as UGS Relay (`MULTIPLAYER.md` §6.7). `NetTransportContractTests`
+runs the same checks against every implementation (TCP, UDP, UDP through the relay, the in-memory
+loopback the tests use, and each behind the network simulator), and `NetDriverTransportTests`
+drives the driver's handshake.
 
-**`DirectoryMultiplayerService`** stands in for the UGS Lobby + Relay. It keeps one JSON file per
+**`DirectoryMultiplayerService`** stands in for the UGS Lobby. It keeps one JSON file per
 session in a shared folder: roster, per-player properties (the game's invite channel), heartbeat,
-host endpoint.
+and the host's endpoint, or its relay join code when `COSMIC_SHORE_RELAY` names a relay (the host
+allocates before it starts listening; a joiner joins by code).
 
 **Services** are local stand-ins:
 - Authentication: an anonymous id persisted per install.

@@ -21,7 +21,9 @@ namespace Prisma
     /// has its own profile (save folder), control port, log, and optionally its own simulated line
     /// and session faults. The Launcher's MULTIPLAYER panel and the MCP <c>net_*</c> tools both drive it.
     ///
-    /// A party is four, so four is the most a run starts.
+    /// A party is four, so four is the most a run starts. With <see cref="Options.Relay"/> every host
+    /// allocates and every joiner joins by code through a relay server (§6.7), the path a game over the
+    /// internet takes; "local" starts Froglet's relay server beside the players.
     /// </summary>
     public sealed class MultiplayerRun : IDisposable
     {
@@ -56,6 +58,12 @@ namespace Prisma
             public List<string> ExtraArgs = new();
             /// <summary>The transport every player uses: "udp" (Froglet's, the player's default) or "tcp"; null = the default.</summary>
             public string? Transport;
+            /// <summary>
+            /// How the players reach each other: null, "" or "off" = directly (the host's port); "local" =
+            /// through Froglet's relay server, started beside them; an http(s) URL = through the relay
+            /// server at that URL (one started elsewhere with <c>CosmicShore --relay-server</c>).
+            /// </summary>
+            public string? Relay;
             /// <summary>Extra environment for every player (e.g. COSMIC_SHORE_LOG_CHANNELS).</summary>
             public Dictionary<string, string> Environment = new();
         }
@@ -78,6 +86,11 @@ namespace Prisma
         public string NetDir { get; private set; } = "";
         public string WorkDir { get; private set; } = "";
         public DateTime Started { get; private set; }
+        /// <summary>The relay every player goes through (COSMIC_SHORE_RELAY), or null for direct connections.</summary>
+        public string? RelayUrl { get; private set; }
+        /// <summary>The relay server this run started ("local"), or null.</summary>
+        public Process? RelayProcess { get; private set; }
+        public string RelayLogPath { get; private set; } = "";
 
         public static string DefaultProfile(int index) => "Pilot" + (char)('A' + index);
 
@@ -86,6 +99,7 @@ namespace Prisma
         {
             if (o.Players < 1 || o.Players > MaxPlayers) throw new ArgumentException($"players must be 1-{MaxPlayers} (a party is {MaxPlayers})");
             if (string.IsNullOrEmpty(o.PlayerPath) || !File.Exists(o.PlayerPath)) throw new FileNotFoundException("the player is not built", o.PlayerPath);
+            string relay = RelayMode(o.Relay);
             var run = new MultiplayerRun { Started = DateTime.Now };
             string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
             run.WorkDir = o.WorkDir ?? Path.Combine(Path.GetTempPath(), "prisma-multiplayer", stamp);
@@ -100,9 +114,68 @@ namespace Prisma
                 profiles.Add(profile);
             }
             Directory.CreateDirectory(run.NetDir);
+            if (relay == "local") run.StartRelayServer(o);
+            else if (relay.Length > 0) run.RelayUrl = relay;
             for (int i = 0; i < o.Players; i++)
                 run._players.Add(run.Launch(o, i, profiles[i], i < o.PerPlayer.Count ? o.PerPlayer[i] : null));
             return run;
+        }
+
+        /// <summary>"" (direct), "local", or the relay URL; anything else is refused before a process starts.</summary>
+        public static string RelayMode(string? relay)
+        {
+            var r = relay?.Trim() ?? "";
+            if (r.Length == 0 || r.Equals("off", StringComparison.OrdinalIgnoreCase)) return "";
+            if (r.Equals("local", StringComparison.OrdinalIgnoreCase)) return "local";
+            if (Uri.TryCreate(r, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps)) return r;
+            throw new ArgumentException($"relay must be off, local or a relay server's http(s) URL, not '{r}'");
+        }
+
+        /// <summary>Starts Froglet's relay server as one more process and waits for the URL it prints.</summary>
+        void StartRelayServer(Options o)
+        {
+            RelayLogPath = Path.Combine(WorkDir, "relay.log");
+            var psi = PlayerProcess(o, new[] { "--relay-server", "0", "0" });
+            var log = new StreamWriter(new FileStream(RelayLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) { AutoFlush = true };
+            var url = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            const string marker = "COSMIC_SHORE_RELAY=";
+            var proc = Process.Start(psi) ?? throw new InvalidOperationException("could not start the relay server");
+            proc.OutputDataReceived += (_, e) =>
+            {
+                if (e.Data == null) return;
+                lock (log) log.WriteLine(e.Data);
+                int at = e.Data.IndexOf(marker, StringComparison.Ordinal);
+                if (at >= 0) url.TrySetResult(e.Data[(at + marker.Length)..].TrimEnd(')', ' '));
+            };
+            proc.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (log) log.WriteLine(e.Data); };
+            proc.EnableRaisingEvents = true;
+            proc.Exited += (_, _) => { url.TrySetResult(""); lock (log) log.Dispose(); };
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+            RelayProcess = proc;
+            if (!url.Task.Wait(TimeSpan.FromSeconds(30)) || url.Task.Result.Length == 0)
+            {
+                try { proc.Kill(entireProcessTree: true); } catch { }
+                throw new InvalidOperationException("the relay server did not start; see " + RelayLogPath);
+            }
+            RelayUrl = url.Task.Result;
+        }
+
+        /// <summary>The player (an executable, or CosmicShore.dll under dotnet) with these arguments, run in the work folder.</summary>
+        ProcessStartInfo PlayerProcess(Options o, IEnumerable<string> args)
+        {
+            bool dll = o.PlayerPath!.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
+            var psi = new ProcessStartInfo(dll ? "dotnet" : o.PlayerPath)
+            {
+                WorkingDirectory = WorkDir,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+            };
+            if (dll) psi.ArgumentList.Add(o.PlayerPath);
+            foreach (var a in args) psi.ArgumentList.Add(a);
+            return psi;
         }
 
         Player Launch(Options o, int index, string profile, PlayerOptions? po)
@@ -120,21 +193,13 @@ namespace Prisma
             if (!string.IsNullOrWhiteSpace(o.Scene)) { args.Add("--scene"); args.Add(o.Scene); }
             args.AddRange(o.ExtraArgs);
 
-            bool dll = o.PlayerPath!.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
-            var psi = new ProcessStartInfo(dll ? "dotnet" : o.PlayerPath)
-            {
-                WorkingDirectory = WorkDir,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-            };
-            if (dll) psi.ArgumentList.Add(o.PlayerPath);
-            foreach (var a in args) psi.ArgumentList.Add(a);
+            var psi = PlayerProcess(o, args);
             foreach (var kv in o.Environment) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROFILE"] = profile;
             psi.Environment["COSMIC_SHORE_NET_DIR"] = NetDir;
             if (!string.IsNullOrWhiteSpace(o.Transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = o.Transport;
+            if (RelayUrl != null) psi.Environment["COSMIC_SHORE_RELAY"] = RelayUrl;
+            else psi.Environment.Remove("COSMIC_SHORE_RELAY"); // direct, whatever the launching shell set
             psi.Environment.Remove("COSMIC_SHORE_NET"); // networking on
             if (!o.Audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
             if (!string.IsNullOrWhiteSpace(o.ProjectRoot)) psi.Environment["COSMIC_SHORE_PROJECT"] = o.ProjectRoot;
@@ -215,6 +280,7 @@ namespace Prisma
         public async Task<string> Status()
         {
             var sb = new StringBuilder($"session folder {NetDir}\n");
+            if (RelayUrl != null) sb.AppendLine("relay " + await RelayLine());
             foreach (var p in _players)
             {
                 var st = await Command(p, "state");
@@ -224,6 +290,18 @@ namespace Prisma
                 sb.AppendLine($"{p.Index + 1} {p.Profile}: {st["scene"]} · frame {st["frame"]}{(line.Length > 0 ? " · " + line : "")}");
             }
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>The relay's URL and, when it answers <c>/health</c> (Froglet's server does), its allocations and traffic.</summary>
+        async Task<string> RelayLine()
+        {
+            string where = RelayUrl + (RelayProcess != null ? (RelayProcess.HasExited ? " (local, EXITED)" : " (local)") : "");
+            try
+            {
+                var h = JsonNode.Parse(await s_http.GetStringAsync(RelayUrl!.TrimEnd('/') + "/health"));
+                return $"{where} · {h?["allocations"]} allocation(s) · {h?["forwarded"]} forwarded · {h?["refused"]} refused";
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException) { return where + " · not answering /health"; }
         }
 
         public static string LogTail(Player p, int lines)
@@ -243,12 +321,19 @@ namespace Prisma
                 if (p.Process == null) continue;
                 if (!p.Process.WaitForExit(10000)) try { p.Process.Kill(entireProcessTree: true); } catch { }
             }
+            StopRelay();
+        }
+
+        void StopRelay()
+        {
+            if (RelayProcess is { HasExited: false } r) try { r.Kill(entireProcessTree: true); } catch { }
         }
 
         public void Dispose()
         {
             foreach (var p in _players)
                 if (p.Running) try { p.Process!.Kill(entireProcessTree: true); } catch { }
+            StopRelay();
         }
 
         static int FreePort()

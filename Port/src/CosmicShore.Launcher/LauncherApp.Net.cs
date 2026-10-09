@@ -19,6 +19,8 @@ namespace CosmicShore.Launcher
     {
         static readonly string[] NetLines = { "", "lan", "broadband", "dsl", "4g", "3g", "poor" };
         static readonly string[] NetFaultChoices = { "", "full", "ratelimit=3", "relayfail", "slow=2000", "down" };
+        /// <summary>The Connection switch: what each segment shows, and the setting it stores (MpTransport).</summary>
+        static readonly string[] NetConnections = { "UDP", "RELAY", "TCP" }, NetConnectionKeys = { "udp", "relay", "tcp" };
 
         readonly ConcurrentDictionary<int, string> _netLive = new();
         readonly Dictionary<int, string> _netLine = new(), _netFault = new();
@@ -58,10 +60,13 @@ namespace CosmicShore.Launcher
             ImGui.SetCursorScreenPos(a + new Vector2(16, 78));
             Segmented("netplayers", new[] { "2", "3", "4" }, Math.Clamp(_s.MpPlayers - 2, 0, 2), i => { _s.MpPlayers = i + 2; _dirty = true; }, Neon.Magenta);
             ImGui.SetCursorScreenPos(a + new Vector2(200, 60));
-            Label("Transport");
+            Label("Connection");
             ImGui.SetCursorScreenPos(a + new Vector2(200, 78));
-            Segmented("nettransport", new[] { "UDP", "TCP" }, _s.MpTransport == "tcp" ? 1 : 0, i => { _s.MpTransport = i == 1 ? "tcp" : "udp"; _dirty = true; }, Neon.Cyan);
-            Neon.Tooltip("UDP: Froglet's transport (selective acks, RTT-timed resends, an unreliable channel). TCP: the first transport. Every player uses the same.");
+            Segmented("nettransport", NetConnections, Math.Max(0, Array.IndexOf(NetConnectionKeys, _s.MpTransport)), i => { _s.MpTransport = NetConnectionKeys[i]; _dirty = true; }, Neon.Cyan);
+            Neon.Tooltip("UDP: Froglet's transport, players connect directly (selective acks, RTT-timed resends, an unreliable channel).\n" +
+                         "RELAY: the same transport through Froglet's relay server, started beside the players: each host allocates and each\n" +
+                         "joiner joins by code, the way a game over the internet does (Unity Relay's protocol, docs/MULTIPLAYER.md §6.7).\n" +
+                         "TCP: the first transport. Every player uses the same.");
 
             ImGui.SetCursorScreenPos(a + new Vector2(16, 124));
             Label("Start in");

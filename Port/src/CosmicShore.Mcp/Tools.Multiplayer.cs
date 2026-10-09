@@ -43,6 +43,7 @@ namespace CosmicShore.Mcp
                     ["size"] = P("string", "window size per player WxH (default 960x540)"),
                     ["scene"] = P("string", "start every player in this scene"),
                     ["transport"] = P("string", "'udp' (Froglet's transport, the default) or 'tcp'; every player uses the same"),
+                    ["relay"] = P("string", "'off' (default: players connect directly), 'local' (start Froglet's relay server beside them: every host allocates and every joiner joins by code, as over the internet), or a relay server's http(s) URL"),
                     ["build"] = P("boolean", "compile the player first (default true)"),
                 }),
             Tool("net_input", "Run a --do action on one player or all of them (the same verbs as game_input: 'click X,Y', 'type TEXT', 'party' ..., 'net', 'netsim 4g', 'netfault full').",
@@ -58,7 +59,12 @@ namespace CosmicShore.Mcp
             Tool("net_logs", "Recent console output of one player.",
                 new JsonObject { ["player"] = P("string", "1-4 or a profile name"), ["lines"] = P("integer", "default 120"), ["grep"] = P("string", "only lines containing this") }, "player"),
             Tool("net_scenario", "Run the party layer's scenario harness (Tools/Build/prisma_party_scenarios/run.sh): five players race through invite, accept, join races, kick/leave, launch, ready gate, leaver-to-AI, spectator, host kill. ~10-15 minutes. Reports each scenario's pass/fail.",
-                new JsonObject { ["keep"] = P("boolean", "keep the worktree, logs and results.json (default false)") }),
+                new JsonObject
+                {
+                    ["keep"] = P("boolean", "keep the worktree, logs and results.json (default false)"),
+                    ["relay"] = P("boolean", "every pilot through Froglet's relay server instead of direct connections (default false)"),
+                    ["sim"] = P("string", "a network simulator spec for every pilot, e.g. '4g' (default none)"),
+                }),
         };
 
         async Task<string?> CallMultiplayer(string name, JsonObject a)
@@ -99,6 +105,8 @@ namespace CosmicShore.Mcp
                     if (!File.Exists(script)) return "the scenario harness is not in this checkout: " + script;
                     var env = new Dictionary<string, string>();
                     if (Bool(a, "keep", false)) env["KEEP"] = "1";
+                    if (Bool(a, "relay", false)) env["PRISMA_RELAY"] = "1";
+                    if (Str(a, "sim").Length > 0) env["COSMIC_SHORE_NET_SIM"] = Str(a, "sim");
                     var r = await Run("bash", new[] { script }, _repo, TimeSpan.FromMinutes(40), env);
                     var lines = r.Output.Split('\n');
                     return $"exit {r.ExitCode} ({(r.ExitCode == 0 ? "every scenario passed" : "FAILED")})\n" + string.Join('\n', lines.TakeLast(60));
@@ -131,6 +139,7 @@ namespace CosmicShore.Mcp
                 Headless = headless,
                 Scene = Str(a, "scene"),
                 Transport = Str(a, "transport"),
+                Relay = Str(a, "relay"),
                 ProjectRoot = _repo,
                 PlayerPath = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", "CosmicShore.dll"),
             };
@@ -144,7 +153,7 @@ namespace CosmicShore.Mcp
             if (!headless && OperatingSystem.IsLinux() && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")))
                 return report + "No display: start windowed players from a desktop, or pass headless=true (the default).";
             try { _mp = MultiplayerRun.Start(o); }
-            catch (Exception e) when (e is ArgumentException or FileNotFoundException) { return report + "Not started: " + e.Message; }
+            catch (Exception e) when (e is ArgumentException or FileNotFoundException or InvalidOperationException) { return report + "Not started: " + e.Message; }
 
             // Wait until every control port answers (a first boot compiles nothing, but loads for a while).
             var deadline = DateTime.UtcNow.AddMinutes(5);

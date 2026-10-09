@@ -5,7 +5,7 @@ using Prisma;
 
 namespace CosmicShore.Tests
 {
-    /// <summary><see cref="MultiplayerRun"/>'s rules: a party is four, each player its own profile, and the stats line it shows.</summary>
+    /// <summary><see cref="MultiplayerRun"/>'s rules: a party is four, each player its own profile, the relay choice, and the stats line it shows.</summary>
     public class MultiplayerRunTests
     {
         static string FakePlayer()
@@ -52,6 +52,28 @@ namespace CosmicShore.Tests
             Assert.Equal("server · in 5.7 KB/s out 4.4 KB/s · rtt client 1 27.7 ms, client 2 - · sim off", MultiplayerRun.NetLine(output));
             Assert.Equal("", MultiplayerRun.NetLine("[input] unknown action 'net'"));
             Assert.EndsWith("rtt - (no peers) · sim off", MultiplayerRun.NetLine("{\"role\":\"server\",\"peers\":[],\"simulator\":\"off\"}"));
+        }
+
+        [Theory]
+        [InlineData(null, "")]
+        [InlineData("", "")]
+        [InlineData(" off ", "")]
+        [InlineData("LOCAL", "local")]
+        [InlineData("http://203.0.113.7:7780", "http://203.0.113.7:7780")]
+        [InlineData("https://relay.example.com/", "https://relay.example.com/")]
+        public void RelayMode_IsDirectLocalOrAUrl(string relay, string mode) => Assert.Equal(mode, MultiplayerRun.RelayMode(relay));
+
+        [Theory]
+        [InlineData("ugs")]
+        [InlineData("127.0.0.1:7780")]
+        [InlineData("ftp://relay.example.com")]
+        public void AnUnknownRelay_IsRefusedBeforeAnythingStarts(string relay)
+        {
+            var o = new MultiplayerRun.Options { Players = 2, PlayerPath = FakePlayer(), Relay = relay, WorkDir = Path.Combine(Path.GetTempPath(), $"mprun-{Guid.NewGuid():N}") };
+            using var _ = new Cleanup(o.WorkDir);
+            var e = Assert.Throws<ArgumentException>(() => MultiplayerRun.Start(o));
+            Assert.Contains("relay", e.Message);
+            Assert.False(Directory.Exists(Path.Combine(o.WorkDir, "sessions")), "a refused run must start nothing");
         }
 
         sealed class Cleanup : IDisposable
