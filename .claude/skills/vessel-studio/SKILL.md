@@ -327,6 +327,9 @@ the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` 
   in-panel confirm, never `confirm()` (the viewer returns false).
 
 **The artifact**
+- **Edit the Stoat's SOURCE (`StoatFlightStudio.html`), never its hub copy.** An edit made only to
+  `VesselStudio/stoat.html` is lost the next time the copy is regenerated (2026-10-09: the dipole-sling archive
+  landed in the copy alone and had to be ported back). `copy_stoat.py --check` before every build.
 - **A page can only use the VIEWER's connectors, and only message that viewer's own sessions.**
   - Each viewer sets their own session (`data/users/<id>/sync`).
   - The publisher's session in `build.json` is a default for the publisher alone.
