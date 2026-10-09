@@ -61,7 +61,9 @@ namespace CosmicShore.Gameplay
         /// point reflection of its entry just outside the white horizon (<c>BlackHolePairMath.ExitPosition</c>),
         /// keeping its heading — which points outward there, the way it went in — through
         /// <c>VesselTransformer.SetPose</c>, so its trail and camera are carried across the jump
-        /// (TeleportContinuity) and a gate watcher sees a teleport, not a fast frame. Its drawn
+        /// (TeleportContinuity) and a gate watcher sees a teleport, not a fast frame. A let-go pair's white
+        /// hole is falling toward its partner, so the vessel also takes that mouth's velocity until the pair
+        /// meets (<see cref="BlackHoleRegistry.TryGetMouthMotion"/>). Its drawn
         /// spaghettification relaxes as it leaves (§11). A smooth well (the crystal style) carries pilots
         /// through its mouths instead.
         /// </summary>
@@ -78,6 +80,10 @@ namespace CosmicShore.Gameplay
                 var white = exitHole.transform.position;
                 var exit = BlackHolePairMath.ExitPosition(p, centre, white, exitHole.HorizonRadius, white - centre);
                 transformer.SetPose(new Pose(exit, vessel.transform.rotation));
+                // A closing pair's white hole is moving: the vessel leaves in its frame, or a mouth closing
+                // faster than the hull flies runs it straight back down.
+                if (BlackHoleRegistry.TryGetMouthMotion(exitHole, out var mouthVelocity, out var secondsLeft))
+                    transformer.ModifyVelocity(mouthVelocity, secondsLeft);
                 VesselTransitsTotal++;
                 CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[BlackHole] {vessel.name} carried through #{hole.Id} → #{exitHole.Id}");
                 return true;

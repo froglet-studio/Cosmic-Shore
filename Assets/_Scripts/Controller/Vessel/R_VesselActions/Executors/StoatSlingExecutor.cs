@@ -135,12 +135,10 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the orbit
 
-        float OrbitSpeed()
-        {
-            var transformer = _status.VesselTransformer;
-            float cruise = transformer ? transformer.CruiseSpeed : 0f;
-            return Mathf.Max(_status.Speed, cruise * config.MinOrbitCruise, 1f);
-        }
+        /// <summary>The speed the hull is actually flying: the turn rate ω = v / r and the hole's strength both
+        /// come from it, so the circle drawn is the one flown (a floored speed would turn a slow hull on a
+        /// smaller circle than the radius and leave the radial correction fighting it).</summary>
+        float OrbitSpeed() => Mathf.Max(_status.Speed, 1f);
 
         float RadiusFor(float hold01)
         {

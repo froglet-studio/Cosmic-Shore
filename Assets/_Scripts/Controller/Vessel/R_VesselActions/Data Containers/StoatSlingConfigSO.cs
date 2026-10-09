@@ -50,9 +50,6 @@ namespace CosmicShore.ScriptableObjects
                  "Floored at 3, where the Paczyński–Wiita law stops allowing a stable circular orbit.")]
         [SerializeField, Range(3f, 20f)] float orbitHorizons = 6f;
 
-        [Tooltip("The orbit runs at least this fraction of cruise — a sling from a standstill launches at it.")]
-        [SerializeField, Range(0.1f, 2f)] float minOrbitCruise = 1f;
-
         [Tooltip("How fast the orbit radius (and the hole's size) follows a changing squeeze, per second.")]
         [SerializeField, Range(0.1f, 20f)] float radiusFollowRate = 3f;
 
@@ -115,7 +112,6 @@ namespace CosmicShore.ScriptableObjects
         public float OrbitRadiusTight => Mathf.Clamp(orbitRadiusTight, 1f, OrbitRadiusWide);
         public ElementalFloat OrbitReach => orbitReach;
         public float OrbitHorizons => Mathf.Clamp(orbitHorizons, 3f, 20f);
-        public float MinOrbitCruise => Mathf.Clamp(minOrbitCruise, 0.1f, 2f);
         public float RadiusFollowRate => Mathf.Clamp(radiusFollowRate, 0.1f, 20f);
         public float RadialCorrectionRate => Mathf.Clamp(radialCorrectionRate, 0.1f, 20f);
         public float SlingBoostMin => Mathf.Clamp(slingBoostMin, 0f, 3f);

@@ -205,6 +205,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// How a let-go pair's <paramref name="hole"/> is moving: each hole falls toward the midpoint at the
+        /// pair's closing speed, so a vessel carried out of the white hole takes that velocity with it for the
+        /// <paramref name="secondsLeft"/> until the pair meets — otherwise a white hole closing faster than the
+        /// hull flies runs it back down (Docs/BLACK_HOLE.md §11). False for a held, still or unpaired hole.
+        /// </summary>
+        public static bool TryGetMouthMotion(BlackHole hole, out Vector3 velocity, out float secondsLeft)
+        {
+            velocity = Vector3.zero;
+            secondsLeft = 0f;
+            if (hole == null) return false;
+            for (int i = 0; i < _pairs.Count; i++)
+            {
+                var pair = _pairs[i];
+                if (pair.Black != hole && pair.White != hole) continue;
+                if (pair.Held || pair.DriftSpeed <= 0f || !pair.IsAlive) return false;
+                secondsLeft = BlackHolePairMath.SecondsLeft(pair.HalfGap0, pair.Black.HorizonRadius, pair.DriftSpeed,
+                    pair.CloseRamp, pair.CloseAge);
+                if (!(secondsLeft > 0f) || float.IsInfinity(secondsLeft)) return false;
+                velocity = (pair.White == hole ? -pair.Axis : pair.Axis) * pair.DriftSpeed;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Let a held pair go: from now the two holes fall together and annihilate where their horizons
         /// touch (the Stoat's trigger release — its pilot slingshots out of the orbit).
         /// </summary>

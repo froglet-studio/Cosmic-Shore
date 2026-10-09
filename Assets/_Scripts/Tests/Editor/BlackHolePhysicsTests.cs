@@ -325,6 +325,9 @@ namespace CosmicShore.Tests
             Assert.IsTrue(BlackHolePairMath.HaveMet(BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, meet + 0.01f), rs));
             Assert.AreEqual(s0, BlackHolePairMath.ClosingHalfGap(s0, 0f, ramp, 10f), 1e-5f, "nothing closes a pair with no speed");
             Assert.IsTrue(float.IsPositiveInfinity(BlackHolePairMath.SecondsToMeet(s0, rs, 0f, ramp)));
+            Assert.AreEqual(meet, BlackHolePairMath.SecondsLeft(s0, rs, speed, ramp, 0f), 1e-5f, "a carried vessel rides the mouth until they meet");
+            Assert.AreEqual(meet - 1f, BlackHolePairMath.SecondsLeft(s0, rs, speed, ramp, 1f), 1e-5f);
+            Assert.AreEqual(0f, BlackHolePairMath.SecondsLeft(s0, rs, speed, ramp, meet + 1f), "nothing left once they have met");
             BlackHolePairMath.Positions(new Vector3(10f, 0f, 0f), Vector3.right * 3f, 50f, out var black, out var white);
             Assert.AreEqual(new Vector3(-40f, 0f, 0f), black, "the black hole sits −axis from the midpoint");
             Assert.AreEqual(new Vector3(60f, 0f, 0f), white, "the white hole sits +axis from the midpoint");

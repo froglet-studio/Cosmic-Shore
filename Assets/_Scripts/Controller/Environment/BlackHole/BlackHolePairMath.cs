@@ -60,6 +60,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Seconds a let-go pair has left before its horizons touch, <paramref name="closeAge"/> seconds after
+        /// the let-go: how long a vessel carried out of its moving white hole rides the mouth's motion
+        /// (<c>BlackHoleVesselPull.TryCarryThrough</c>). Zero once they have met, infinite when nothing closes them.
+        /// </summary>
+        public static float SecondsLeft(float halfGap0, float horizonRadius, float closeSpeed, float rampSeconds, float closeAge)
+            => Mathf.Max(0f, SecondsToMeet(halfGap0, horizonRadius, closeSpeed, rampSeconds) - Mathf.Max(0f, closeAge));
+
+        /// <summary>
         /// The two holes' positions: the black hole <paramref name="halfGap"/> along −axis from the
         /// midpoint, the white hole the same along +axis.
         /// </summary>

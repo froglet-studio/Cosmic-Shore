@@ -53,7 +53,9 @@ its owner's pull IS the orbit, and a vessel may not move an opposing vessel
 out:** a vessel — this one after its slingshot, an opponent or an AI by its own flying — whose centre
 crosses a paired black hole's horizon is carried to the point reflection just outside the white
 horizon, heading kept (outward there), through `VesselTransformer.SetPose` (trail and camera
-carried, a gate watcher sees a teleport) — `BlackHoleVesselPull.TryCarryThrough`. Prisms the same
+carried, a gate watcher sees a teleport) — `BlackHoleVesselPull.TryCarryThrough` — and, once the pair
+is let go, keeps the closing white hole's velocity until the pair meets, so the mouth cannot run it back
+down. Prisms the same
 way (`BlackHoleGravityField`). The Stoat's drawn hull **spaghettifies** near a horizon — stretched
 along its length falling in, and the same stretch relaxing as it leaves the white hole (tides are
 even under time reversal): `BlackHoleWarp.VesselLogStretch` × `BlackHoleConfig.vesselTideScale`
@@ -66,8 +68,10 @@ stretched (their hull transform is no single component's to scale).
 the turn needs at its fixed squeeze (`StoatSlingMath.AutopilotHoldSeconds`: angle × r / v), then
 releases — both edges through the replicated path. Never assume an AI can use a human's input.
 
-**From a standstill:** the orbit runs at least `minOrbitCruise` × cruise, so stop (X), squeeze, and
-the Stoat launches into the circle.
+**The orbit runs at the speed being flown** (ω = v/r from `VesselStatus.Speed`, and the hole's
+strength from the same v), so the circle drawn is the circle flown; throttle up mid-orbit and the
+hole strengthens to keep it. From a standstill (X), a press ends the stance and the orbit starts as
+the throttle brings the hull up to speed.
 
 **Networking.** Press and release replicate, so every peer lays its own copy of the pair at the
 replicated pose; the squeeze does not, so a remote copy keeps its press-time size. The holes are the
@@ -87,7 +91,6 @@ before the release edge), `aheadHorizons` (4) ahead, `halfGapHorizons` (Space, 6
 | `orbitRadiusWide` / `orbitRadiusTight` | 150 / 40 u | the orbit at a touch / buried |
 | `orbitReach` | **ElementalFloat, Space, ×1 → ×1.4, floor 1** | multiplies both radii — Space is reach; read live, never cached |
 | `orbitHorizons` | **6** | orbit radius ÷ horizon radius (the playtest's 6), floored at 3 |
-| `minOrbitCruise` | 1 | the orbit runs at least cruise |
 | `radiusFollowRate` / `radialCorrectionRate` | 3 / 5 per s | how fast the radius follows the squeeze / how hard the hull is held on it |
 | `slingBoostMin` / `Max` / `Seconds` | 0.25 / 0.9 × speed, 1.5 s | the slingshot |
 | `driftSpeed` | **40 u/s** | how fast the let-go pair closes (playtest); `BlackHoleConfig.pairCloseRampSeconds` (0.6 s) is its run-up |

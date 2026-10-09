@@ -743,13 +743,18 @@ consumes. The prism's own notify (index + queued render matrix) moves it, the mo
 player or AI, by its own flying — whose centre crosses a paired black hole's horizon is put at the
 same point-reflected exit, heading kept (outward there), through `VesselTransformer.SetPose`, so its
 trail and camera are carried across the jump and a gate watcher counts a teleport
-(`VesselTransitsTotal`). Its drawn hull spaghettifies on the way in and relaxes the same way on the way
+(`VesselTransitsTotal`). A let-go pair's white hole is moving (falling toward its partner at the
+closing speed), so the vessel also leaves in the mouth's frame: it takes that velocity through
+`ModifyVelocity` until the pair meets (`BlackHoleRegistry.TryGetMouthMotion`,
+`BlackHolePairMath.SecondsLeft`). Without it, a hull that came out between the holes slower than they
+close was run straight back down by its own white hole — the studio's portal probe showed exactly that.
+Its drawn hull spaghettifies on the way in and relaxes the same way on the way
 out (`BlackHoleWarp.VesselLogStretch`, the prisms' tide × `vesselTideScale`; drawn on the Stoat by
 `StoatAnimation`, other hulls not yet).
 
 **Proof.** `BlackHolePhysicsTests`: a white hole repels with the black hole's magnitude and turns its
 frame the other way (the source's sign in GM and frame drag), a white hole never captures and pushes a body at its horizon past its influence sphere, a let-go
-pair only closes and meets where its horizons touch (`SecondsToMeet`), the exit is the point reflection with the entry
+pair only closes and meets where its horizons touch (`SecondsToMeet`, and `SecondsLeft` after it), the exit is the point reflection with the entry
 velocity outward. `verify_black_hole_lens.py` property 9: 2,000 captured rays report a unit, finite,
 inward crossing direction. `render_black_hole_lens.py --white` renders the core offline.
 

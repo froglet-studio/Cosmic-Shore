@@ -26,7 +26,6 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 1
   orbitHorizons: 6
-  minOrbitCruise: 1
   radiusFollowRate: 3
   radialCorrectionRate: 5
   slingBoostMin: 0.25

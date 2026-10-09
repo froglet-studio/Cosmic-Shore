@@ -12,7 +12,27 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
-## Stoat Flight Studio (round 3)
+## Stoat Flight Studio (round 4)
+
+**Round 4 — your decisions applied.** Pair **A** (the drift pair) is the pick, wearing this branch's
+look again (horizon holes traced with the converging lens; the white hole's crossing core glows
+white-hot; tides even under time reversal). It now flies the **orbit sling** (`StoatSlingExecutor`,
+`StoatSlingMath`): **press** LT/RT and the attractor appears beside you at the orbit radius, the
+repulsor mirrored on the other side at the same size and distance; **hold** and you circle the
+attractor (squeeze harder → a tighter circle, 150 u at a touch to 40 u buried, horizon = radius ÷ 6,
+strength set so the circle at your speed is the free orbit); **let go** and you leave on the tangent
+with a boost (0.25–0.9 × speed over 1.5 s) while the two holes fall together (40 u/s after a 0.6 s
+ramp) and annihilate when their horizons touch. A pair held for 12 s lets go on its own. **The
+portal:** anything that crosses the black hole's horizon (prisms, the Stoat, any vessel) comes out of
+the white hole at the point reflection, stretched going in and relaxing coming out — and it leaves in
+the closing white hole's frame, so the mouth cannot run it back down. **B** stays for comparison. A
+**run** is one race: every ring, every lap, against the clock.
+
+**Found by it (round 4).** A hull carried out of a CLOSING pair between the two holes, flying slower
+than they close, was overtaken by its own white hole (the probe showed the distance to the white hole
+falling from 23 u to 16 u after the exit). Fixed in the game too: `BlackHoleRegistry.TryGetMouthMotion`.
+
+## Round 3 notes (pair A's numbers here are superseded by round 4)
 
 **What it is.** The plated Stoat (`StoatHullForm`, body-only `StoatLopeMath` lope) flown round a
 Slingshot-style course, read through the game's own dual-stick mix (`InputController`: yaw/pitch are
