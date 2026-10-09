@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
@@ -81,6 +82,9 @@ namespace CosmicShore.Gameplay
             if (_activeAssembler)
                 _activeAssembler.Depth = so.BondingDepth;
 
+            if (_activeAssembler is SerpentWallAssembler wall)
+                wall.Configure(SnapshotWallShape(so, status));
+
             OnSeedStarted?.Invoke(ActiveSeedBlock);
             return true;
         }
@@ -157,12 +161,54 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The wall's shape, fixed at placement from THIS vessel's elemental state (MASS is the
+        /// Serpent's wall element: R_VesselActions/SERPENT_SEED_WALL.md). Read here, on the
+        /// per-vessel executor, because the SO is shared by every Serpent.
+        /// </summary>
+        static SerpentWallAssembler.Snapshot SnapshotWallShape(SeedWallActionSO so, IVesselStatus status)
+        {
+            float mass = ElementalScaling.Multiplier(
+                status, Element.Mass,
+                atFull: so.MassSizeMultiplierAtFull,
+                minMul: so.MinMassSizeMultiplier);
+
+            // Outcome-affecting unlocks resolve through the REPLICATED unlock bit, never a raw
+            // local level read, so every peer builds the same kind of wall.
+            var abilities = status.ElementalAbilityHandler;
+            bool lockdown = abilities && abilities.IsUpgradeActive(Element.Mass);
+
+            return new SerpentWallAssembler.Snapshot
+            {
+                Config = so,
+                Owner = status,
+                Domain = status.Domain,
+                PlayerName = status.PlayerName,
+                ShortSide = so.BrickShortSide * mass,
+                Depth = so.BrickDepth * mass,
+                MassMultiplier = mass,
+                Lockdown = lockdown,
+            };
+        }
+
         Assembler EnsureAssembler(Prism block, SeedWallActionSO.AssemblerKind kind)
         {
             if (!block) return null;
 
-            var existing = block.GetComponent<Assembler>();
-            if (existing) return existing;
+            if (kind != SeedWallActionSO.AssemblerKind.SerpentLattice)
+            {
+                var existing = block.GetComponent<Assembler>();
+                if (existing) return existing;
+            }
+
+            if (kind == SeedWallActionSO.AssemblerKind.SerpentLattice)
+            {
+                // A pooled prism can carry a dissolved wall from a previous life; Configure
+                // re-arms it, and keeps the shape of one that is still live.
+                return block.TryGetComponent(out SerpentWallAssembler wall)
+                    ? wall
+                    : block.gameObject.AddComponent<SerpentWallAssembler>();
+            }
 
             return kind switch
             {

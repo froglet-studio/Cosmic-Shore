@@ -22,7 +22,7 @@ been filled.
 |---|---|---|---|
 | **Rhino** | Charge | no ability, no scaling, no L5 | design + one `ElementalFloat` + (optionally) one `IsUpgradeActive` gate |
 | **Rhino** | Space | no ability, no scaling, no L5 | as above |
-| **Serpent** | Mass | no ability, no scaling, no L5 | as above |
+| ~~**Serpent**~~ | ~~Mass~~ | **FILLED 2026-10-09:** Seed Wall + Lockdown (`R_VesselActions/SERPENT_SEED_WALL.md`) | |
 
 This report opened at **five** such rows. The Serpent's **Charge** and **Space** were two of them
 and were filled upstream, by the scope + rifle branch, while this one was in review — see "What
@@ -41,6 +41,7 @@ hole, because the next reader cannot tell it from a designed one.
 | Rhino | Mass | Trail Slabs | `massMaxSizeMultiplier` ×1 → ×1.5, floored ×0.25 (`GrowTrailAction.asset`) | — |
 | Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`) | — |
 | Serpent | Charge | Sniper Shot | `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`, read through `ElementalScaling.Multiplier` in the executor | **Pierce** |
+| Serpent | Mass | Seed Wall | `massSizeMultiplierAtFull` 2 on `SeedWallAction.asset`: brick size AND lattice spacing, snapshotted at placement (`SeedAssemblerActionExecutor.SnapshotWallShape`) | **Lockdown** |
 | Serpent | Space | Scope | `zoomDepthAtFullSpace` 2 on `SniperScopeAction.asset`, same channel | **Deep Focus** |
 | Serpent | Time | Solid Fuel Pellets | `timeDurationMultiplier` ×1 → ×1.6, floored ×0.25 (`ConsumeBoostAction.asset`) — burn DURATION per pellet | — |
 

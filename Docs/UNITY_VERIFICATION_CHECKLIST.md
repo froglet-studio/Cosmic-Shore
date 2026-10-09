@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Mass: Seed Wall + Lockdown (`claude/serpent-mass-seed-wall`, 2026-10-09)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md`): the stance and cloak
+seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 1.5 x
+short so shielded octahedra touch long vertex to short vertex), Mass-scaled and snapshotted at
+placement. Omni crystals beam to every live seed (`SerpentWallShieldByCrystalEffectSO`) and ripple a
+shield through each wall; a Mass-5 wall twists 15 degrees and seals its opened holes with danger
+panels. Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
+
+**Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
+result.
+
+**Verify in editor:** the seven steps in SERPENT_SEED_WALL.md § "Editor checks".
+
+**First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, claim every
+0.15 s, recruit radius 40, pull 20 / 6 u/s, ripple 0.08 s per ring, twist 15 degrees over 0.4 s,
+panel thickness 0.15.
+
+---
+
 ### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
 **What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
