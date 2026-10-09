@@ -71,9 +71,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference yankEvent;
 
         [Header("Materials (optional - runtime fallbacks when empty)")]
-        [Tooltip("Ball material. Its colour is driven per frame through a MaterialPropertyBlock (_BaseColor / _Color).")]
+        [Tooltip("Ball material: ThresherBallMaterial (ThresherBallFresnelShader). Its body and rim colours are driven " +
+                 "per frame through a MaterialPropertyBlock (_DarkColor / _BrightColor).")]
         [SerializeField] Material ballMaterial;
-        [Tooltip("Chain, gauge ring and skid-trail material. Must honour vertex colour (Sprites/Default does).")]
+        [Tooltip("Chain and skid-trail material. Must honour vertex colour (Sprites/Default does).")]
         [SerializeField] Material lineMaterial;
 
         [Inject] GameDataSO _gameData;
@@ -119,7 +120,7 @@ namespace CosmicShore.Gameplay
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
         /// <summary>The ball is at smash speed: red (or lit), destroys anything, explodes.</summary>
         public bool IsHot => _solver != null && ThresherChainSolver.IsSmash(_solver.BallSpeed, _settings);
-        /// <summary>Ball speed as a fraction of smash speed — the gauge ring's fill.</summary>
+        /// <summary>Ball speed as a fraction of smash speed — the HUD heat gauge, and the ball's brightening.</summary>
         public float Gauge01 => _settings.SmashSpeed > 0f ? Mathf.Clamp01(BallSpeed / _settings.SmashSpeed) : 0f;
         /// <summary>How far the chain is let out, 0 (reeled in) to 1 (let out to its current reach).</summary>
         public float ChainOut01 => _solver == null || _settings.MaxLength <= _settings.RestLength ? 0f
@@ -242,14 +243,17 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// One chain step. Called by <see cref="ThresherVesselTransformer"/> from inside its move
         /// step; returns the ship's velocity after the rope (towing) or the orbit (pivot).
+        /// <paramref name="pivotSteer"/> is the pilot's stick as a world direction (magnitude 0..1)
+        /// that tilts a planted orbit at the low <c>pivotSteer</c> rate; ignored while towing.
         /// </summary>
-        public Vector3 StepChain(Vector3 shipPosition, Vector3 shipVelocity, float shipCruise, float dt)
+        public Vector3 StepChain(Vector3 shipPosition, Vector3 shipVelocity, float shipCruise, float dt,
+                                 Vector3 pivotSteer = default)
         {
             if (_solver == null) RebuildSolver();
             ApplyElementScaling();
             EnsureSeeded(shipPosition, shipVelocity);
 
-            var result = _solver.Step(shipPosition, shipVelocity, _payOut, shipCruise, dt);
+            var result = _solver.Step(shipPosition, shipVelocity, _payOut, shipCruise, dt, pivotSteer);
             _lastStepFrame = Time.frameCount;
             _lastShipPosition = shipPosition;
             _lastShipVelocity = result.ShipVelocity;
@@ -556,7 +560,7 @@ namespace CosmicShore.Gameplay
         /// The local pilot's camera, two jobs (<c>THRESHER.md</c> § Camera):
         /// <list type="bullet">
         /// <item><b>Keep the ball in frame.</b> The chase distance is pulled back as far as the
-        /// ball's gauge ring needs (<see cref="ThresherCameraFraming.RequiredDistance"/>), FAST, and
+        /// rendered ball needs (<see cref="ThresherCameraFraming.RequiredDistance"/>), FAST, and
         /// eased back toward the prefab's own distance SLOWLY — never nearer than it.</item>
         /// <item><b>Spectate a fast spin.</b> Once a planted orbit circles faster than
         /// <c>spectateSpinRate</c>, the camera blends to a still vantage over the orbit and watches
@@ -589,7 +593,7 @@ namespace CosmicShore.Gameplay
             if (!followed || (followed != ship && !followed.IsChildOf(ship))) { ReleaseCamera(); return; }
 
             float dt = Time.unscaledDeltaTime;
-            float ringRadius = _settings.BallRadius * config.BallVisualScale * config.GaugeRadiusScale;
+            float ballRadius = _settings.BallRadius * config.BallVisualScale;
             float halfFovV = 0.5f * _cam.Camera.fieldOfView * Mathf.Deg2Rad;
             float halfFovH = Mathf.Atan(Mathf.Tan(halfFovV) * Mathf.Max(0.1f, _cam.Camera.aspect));
 
@@ -597,7 +601,7 @@ namespace CosmicShore.Gameplay
             float neutral = Mathf.Abs(_cam.NeutralOffsetZ);
             if (neutral <= 0f) neutral = _camDistance;
             Vector3 ballLocal = ship.InverseTransformDirection(_solver.BallPosition - ship.position);
-            float need = ThresherCameraFraming.RequiredDistance(ballLocal, ringRadius, _cam.GetFollowOffset().y,
+            float need = ThresherCameraFraming.RequiredDistance(ballLocal, ballRadius, _cam.GetFollowOffset().y,
                 halfFovV, halfFovH, config.CameraFramingMargin, config.CameraMinAhead);
             float target = Mathf.Clamp(need, neutral, Mathf.Max(neutral, config.CameraMaxDistance));
             _camDistance = ThresherCameraFraming.Ease(_camDistance, target,
@@ -614,7 +618,8 @@ namespace CosmicShore.Gameplay
 
             if (!_spectating) return;
             Vector3 pivot = _solver.Pivot;
-            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ringRadius,
+            FollowOrbitPlane(ship.position, pivot, dt);
+            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ballRadius,
                 config.CameraZoomOutRate, config.CameraZoomInRate, dt);
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
             _cam.Spectate = new CustomCameraController.SpectateView
@@ -647,6 +652,25 @@ namespace CosmicShore.Gameplay
             _spectateUp = up.normalized;
             _spectateRadius = _solver.Length;
             _spectating = true;
+        }
+
+        /// <summary>The pilot can tilt a planted orbit (<c>pivotSteer</c>), so the vantage leans
+        /// after the orbit's plane — slowly (<c>spectatePlaneFollowRate</c>), so a steady tilt reads
+        /// as the orbit turning in front of a still camera, never as the camera swinging. The axis
+        /// stays on the camera's side of the plane; outward and up are re-laid into it.</summary>
+        void FollowOrbitPlane(Vector3 shipPosition, Vector3 pivot, float dt)
+        {
+            Vector3 now = Vector3.Cross(shipPosition - pivot, _lastShipVelocity);
+            if (now.sqrMagnitude < 1e-6f) return;
+            now.Normalize();
+            if (Vector3.Dot(now, _spectateNormal) < 0f) now = -now;
+            float t = 1f - Mathf.Exp(-config.SpectatePlaneFollowRate * dt);
+            _spectateNormal = Vector3.Slerp(_spectateNormal, now, t).normalized;
+
+            Vector3 outward = Vector3.ProjectOnPlane(_spectateOutward, _spectateNormal);
+            if (outward.sqrMagnitude > 1e-6f) _spectateOutward = outward.normalized;
+            Vector3 up = Vector3.ProjectOnPlane(_spectateUp, _spectateNormal);
+            if (up.sqrMagnitude > 1e-6f) _spectateUp = up.normalized;
         }
 
         void EndSpectate()
@@ -723,6 +747,41 @@ namespace CosmicShore.Gameplay
             return DomainColor(domain) * Mathf.Lerp(0.45f, 1f, g);
         }
 
+        /// <summary>
+        /// The fresnel ball's two colours (<c>ThresherBallFresnelShader</c>): the ball's HUE
+        /// (<see cref="BallColor"/>) normalised by its max channel, so brightness is set by the
+        /// ball's state and never by how bright the palette happened to author the hue. Cool, the
+        /// body rises from under the bloom threshold toward the 0.5 clamp as the ball nears smash
+        /// speed and the rim from a soft edge toward 1.0; hot, the body sits ON the clamp (the whole
+        /// ball blooms) and the rim whitens with heat. Nothing exceeds 1.0: tonemapping is None,
+        /// so a channel over 1 clips and shifts the hue (Docs/PALETTE.md §2.2).
+        /// </summary>
+        void BallShade(out Color body, out Color rim)
+        {
+            Color hue = BallColor(out _);
+            float g = Gauge01;
+            if (IsHot)
+            {
+                float heat = ThresherChainSolver.Heat01(_solver.BallSpeed, _settings);
+                body = WithMaxChannel(hue, config.BallBodyHot);
+                rim = Color.Lerp(WithMaxChannel(hue, config.BallRimHot),
+                                 new Color(config.BallRimHot, config.BallRimHot, config.BallRimHot, 1f),
+                                 heat * config.BallHotRimWhiten);
+                return;
+            }
+            float k = g * g;
+            body = WithMaxChannel(hue, Mathf.Lerp(config.BallBodyCool, config.BallBodyNearSmash, k));
+            rim = WithMaxChannel(hue, Mathf.Lerp(config.BallRimCool, config.BallRimHot, k));
+        }
+
+        static Color WithMaxChannel(Color c, float max)
+        {
+            float m = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            return m > 1e-4f
+                ? new Color(c.r / m * max, c.g / m * max, c.b / m * max, 1f)
+                : new Color(max, max, max, 1f);
+        }
+
         // ------------------------------------------------------------------ visuals
 
         // All runtime-built and cosmetic; explicitly a prototype look, replaced wholesale when art
@@ -731,7 +790,6 @@ namespace CosmicShore.Gameplay
         Transform _ball;
         MeshRenderer[] _ballRenderers;
         LineRenderer _chain;
-        LineRenderer _gauge;
         TrailRenderer _skid;
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
@@ -742,7 +800,8 @@ namespace CosmicShore.Gameplay
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-        const int GaugeSegments = 48;
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
 
         void EnsureVisuals()
         {
@@ -766,7 +825,6 @@ namespace CosmicShore.Gameplay
             _ballRenderers = parts.ToArray();
 
             _chain = MakeLine("Chain", lineMat, false);
-            _gauge = MakeLine("Gauge", lineMat, true);
 
             var skidGo = new GameObject("SkidTrail");
             skidGo.transform.SetParent(_ball, false);
@@ -870,7 +928,11 @@ namespace CosmicShore.Gameplay
             }
 
             Color ballColor = BallColor(out float emission);
+            BallShade(out Color body, out Color rim);
             _mpb.Clear();
+            _mpb.SetColor(DarkColorId, body);
+            _mpb.SetColor(BrightColorId, rim);
+            // The runtime fallback material (no ball material assigned) is URP/Unlit.
             _mpb.SetColor(BaseColorId, ballColor);
             _mpb.SetColor(ColorId, ballColor);
             _mpb.SetColor(EmissionColorId, ballColor * emission);
@@ -892,9 +954,6 @@ namespace CosmicShore.Gameplay
             if (_chain.positionCount != _links.Count) _chain.positionCount = _links.Count;
             _chain.SetPositions(_links.Points);
 
-            // Gauge ring: fills toward smash speed, billboarded to the camera.
-            DrawGauge(ballPos, r * config.GaugeRadiusScale, ballColor);
-
             // Skid trail while planting.
             if (_skid)
             {
@@ -906,29 +965,6 @@ namespace CosmicShore.Gameplay
             }
 
             DrawCombo(ballPos, r, dt, ballColor);
-        }
-
-        void DrawGauge(Vector3 centre, float radius, Color ballColor)
-        {
-            float fill = Gauge01;
-            int count = Mathf.Max(2, Mathf.RoundToInt(GaugeSegments * fill) + 1);
-            _gauge.loop = fill >= 0.999f;
-            _gauge.positionCount = count;
-            var cam = Camera.main;
-            Vector3 right = cam ? cam.transform.right : Vector3.right;
-            Vector3 up = cam ? cam.transform.up : Vector3.up;
-            for (int i = 0; i < count; i++)
-            {
-                // Clockwise from twelve o'clock, sweeping `fill` of a full turn.
-                float a = Mathf.PI * 0.5f - (i / (float)(count - 1)) * fill * Mathf.PI * 2f;
-                _gauge.SetPosition(i, centre + (right * Mathf.Cos(a) + up * Mathf.Sin(a)) * radius);
-            }
-            float w = _settings.BallRadius * 0.12f;
-            _gauge.startWidth = _gauge.endWidth = w;
-            Color c = ballColor;
-            c.a = Mathf.Lerp(0.5f, 1f, fill);
-            _gauge.startColor = _gauge.endColor = c;
-            _gauge.enabled = fill > 0.02f;
         }
 
         void DrawCombo(Vector3 ballPos, float r, float dt, Color ballColor)

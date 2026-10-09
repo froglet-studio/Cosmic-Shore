@@ -19,6 +19,8 @@ namespace CosmicShore.Gameplay
         public float SmashSpeed, WhiteHotSpeed, PloughKeep, PloughKeepHot, CrushKeep, BounceRestitution;
         // Lock
         public float SkidRate, SkidSeconds, LockKeep, LockSpinRate, LockMaxSpeed, Yank;
+        /// <summary>Max rate (rad/s) at which full stick tilts a planted orbit's plane.</summary>
+        public float PivotSteerRate;
         // Reference
         public float CruiseSpeed;
     }
@@ -104,6 +106,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] float lockMax = 2.2f;
         [Tooltip("On unlock the ball gets this fraction of the ship's velocity.")]
         [SerializeField] float yank = 0.5f;
+        [Tooltip("While planted, full stick tilts the orbit's plane at this rate (degrees/s) - a quarter " +
+                 "of the hull's free-flight 120 deg/s, so the spin stays the ship's and the stick only " +
+                 "leans it. 0 = sticks ignored while planted. A rate, so not scaled.")]
+        [SerializeField] float pivotSteer = 30f;
 
         /// <summary>Sandbox → game length/speed factor.</summary>
         public float Scale => sandboxCruise > 0f ? gameCruise / sandboxCruise : 1f;
@@ -138,6 +144,7 @@ namespace CosmicShore.Gameplay
                 LockSpinRate = lockSpin * k,
                 LockMaxSpeed = lockMax * gameCruise,
                 Yank = Mathf.Max(0f, yank),
+                PivotSteerRate = Mathf.Max(0f, pivotSteer) * Mathf.Deg2Rad,
                 CruiseSpeed = gameCruise,
             };
         }
@@ -273,15 +280,19 @@ namespace CosmicShore.Gameplay
         /// its say. <paramref name="payOut"/> is the right trigger: held lets chain out, released
         /// reels it in. <paramref name="shipCruise"/> is the ship's current throttle target — the
         /// tug's floor is a fraction of it, so the floor follows the pilot's own throttle.
+        /// <paramref name="pivotSteer"/> is the stick as a world direction (magnitude 0..1, the way
+        /// the nose would move); while planted it tilts the orbit (see <see cref="SteerPivot"/>), and
+        /// it is ignored while towing, where the sticks fly the hull directly.
         /// </summary>
         public ThresherStepResult Step(Vector3 shipPosition, Vector3 shipVelocity, bool payOut,
-                                    float shipCruise, float dt)
+                                    float shipCruise, float dt, Vector3 pivotSteer = default)
         {
             var result = new ThresherStepResult { ShipVelocity = shipVelocity, BallFrom = BallPosition };
             if (dt <= 0f) return result;
 
             if (Mode == ThresherMode.Pivot)
             {
+                SteerPivot(shipPosition, pivotSteer, dt);
                 result.ShipVelocity = StepPivot(shipPosition, shipVelocity, payOut, dt);
                 result.BallFrom = BallPosition;
                 return result;
@@ -475,6 +486,30 @@ namespace CosmicShore.Gameplay
             Vector3 t2 = velocity - n2 * Vector3.Dot(velocity, n2);
             if (t2.sqrMagnitude > 1e-6f) _lockDirection = t2.normalized;
             return velocity;
+        }
+
+        /// <summary>
+        /// Low-sensitivity control while planted: lean the orbit. The ship's heading can only turn
+        /// about the chain (anything else would lengthen or shorten a taut chain), so the stick's
+        /// component across the orbit plane — along <c>n × t</c>, the plane's normal at the ship —
+        /// rotates the heading about the chain by at most <see cref="ThresherChainSettings.PivotSteerRate"/>
+        /// × dt. Speed, radius and spin are untouched: it tilts the plane the ship spins in and
+        /// nothing else. The in-plane part of the stick (speed up / slow down) is ignored.
+        /// </summary>
+        public void SteerPivot(Vector3 shipPosition, Vector3 steer, float dt)
+        {
+            if (Mode != ThresherMode.Pivot || Settings.PivotSteerRate <= 0f || dt <= 0f) return;
+            if (steer.sqrMagnitude < 1e-6f) return;
+            Vector3 r = shipPosition - Pivot;
+            if (r.sqrMagnitude < 1e-8f) return;
+            Vector3 n = r.normalized;
+            Vector3 t = _lockDirection - n * Vector3.Dot(_lockDirection, n);
+            if (t.sqrMagnitude < 1e-8f) return;
+            t.Normalize();
+            Vector3 b = Vector3.Cross(n, t);
+            float across = Mathf.Clamp(Vector3.Dot(Vector3.ClampMagnitude(steer, 1f), b), -1f, 1f);
+            float angle = across * Settings.PivotSteerRate * dt;
+            _lockDirection = t * Mathf.Cos(angle) + b * Mathf.Sin(angle);
         }
 
         static Vector3 AnyPerpendicular(Vector3 n, Vector3 hint)

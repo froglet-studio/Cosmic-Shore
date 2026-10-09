@@ -47,6 +47,7 @@ namespace UnityEngine
         public static float Tan(float v) => (float)Math.Tan(v);
         public static float Atan(float v) => (float)Math.Atan(v);
         public static float Acos(float v) => (float)Math.Acos(v);
+        public static float Sign(float f) => f >= 0f ? 1f : -1f;
         public static float SmoothStep(float a, float b, float t) { t = Clamp01(t); t = t * t * (3f - 2f * t); return a + (b - a) * t; }
         public static int RoundToInt(float v) => (int)Math.Round(v);
         public static float MoveTowards(float a, float b, float d) => Abs(b - a) <= d ? b : a + (b > a ? d : -d);

@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast the camera eases back IN once the ball no longer needs the room (1/s, " +
                  "exponential). Slow, so a reel-in does not yank the view.")]
         [SerializeField, Min(0f)] float cameraZoomInRate = 0.7f;
-        [Tooltip("Framing margin: 1 = the ball's gauge ring just touches the frame edge; 1.15 keeps it " +
+        [Tooltip("Framing margin: 1 = the rendered ball just touches the frame edge; 1.15 keeps it " +
                  "about 13% inside.")]
         [SerializeField, Min(1f)] float cameraFramingMargin = 1.15f;
         [Tooltip("The ball is kept at least this far in FRONT of the camera (world units), so a ball " +
@@ -115,6 +115,24 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 80f)] float spectateTiltDegrees = 25f;
         [Tooltip("Seconds to ease into the vantage and back out to the chase camera.")]
         [SerializeField, Min(0f)] float spectateBlendSeconds = 0.6f;
+        [Tooltip("How fast the vantage leans after the orbit's plane when the pilot tilts a planted orbit " +
+                 "(1/s, exponential). Slow, so the orbit turns in front of a still camera.")]
+        [SerializeField, Min(0f)] float spectatePlaneFollowRate = 1.5f;
+
+        [Header("Ball shading (ThresherBallFresnelShader: dull body, bright fresnel rim)")]
+        [Tooltip("Body brightness (max channel) of a slow ball. Under the bloom threshold (0.2).")]
+        [SerializeField, Range(0f, 1f)] float ballBodyCool = 0.16f;
+        [Tooltip("Body brightness (max channel) just under smash speed.")]
+        [SerializeField, Range(0f, 1f)] float ballBodyNearSmash = 0.4f;
+        [Tooltip("Body brightness (max channel) at smash speed: ON the 0.5 bloom clamp, so the whole ball blooms.")]
+        [SerializeField, Range(0f, 1f)] float ballBodyHot = 0.5f;
+        [Tooltip("Rim brightness (max channel) of a slow ball.")]
+        [SerializeField, Range(0f, 1f)] float ballRimCool = 0.6f;
+        [Tooltip("Rim brightness (max channel) at and above smash speed. At most 1: tonemapping is None, so " +
+                 "a channel above 1 clips and shifts the hue.")]
+        [SerializeField, Range(0f, 1f)] float ballRimHot = 1f;
+        [Tooltip("How far a white-hot ball's rim whitens (0 = pure hue, 1 = white).")]
+        [SerializeField, Range(0f, 1f)] float ballHotRimWhiten = 0.35f;
 
         [Header("Look")]
         [Tooltip("Rendered ball radius as a multiple of the physics radius.")]
@@ -123,8 +141,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(2, 32)] int chainLinks = 12;
         [Tooltip("Drawn chain width as a fraction of the ball's physics radius.")]
         [SerializeField, Min(0f)] float chainWidthFraction = 0.18f;
-        [Tooltip("Gauge ring radius as a multiple of the rendered ball radius.")]
-        [SerializeField, Min(1f)] float gaugeRadiusScale = 1.45f;
         [Tooltip("The chain's own colour (iron).")]
         [SerializeField] Color chainColor = new Color(0.22f, 0.2f, 0.2f);
         [Tooltip("Fallback ball colour when the palette cannot be read (e.g. no theme loaded).")]
@@ -169,10 +185,16 @@ namespace CosmicShore.Gameplay
         public float SpectateReleaseFraction => spectateReleaseFraction;
         public float SpectateTiltDegrees => spectateTiltDegrees;
         public float SpectateBlendSeconds => spectateBlendSeconds;
+        public float SpectatePlaneFollowRate => spectatePlaneFollowRate;
+        public float BallBodyCool => ballBodyCool;
+        public float BallBodyNearSmash => ballBodyNearSmash;
+        public float BallBodyHot => ballBodyHot;
+        public float BallRimCool => ballRimCool;
+        public float BallRimHot => ballRimHot;
+        public float BallHotRimWhiten => ballHotRimWhiten;
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
         public float ChainWidthFraction => chainWidthFraction;
-        public float GaugeRadiusScale => gaugeRadiusScale;
         public Color ChainColor => chainColor;
         public Color FallbackDomainColor => fallbackDomainColor;
         public Color FallbackDangerColor => fallbackDangerColor;

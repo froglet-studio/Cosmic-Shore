@@ -100,10 +100,16 @@ MonoBehaviour:
   spectateReleaseFraction: 0.75
   spectateTiltDegrees: 25
   spectateBlendSeconds: 0.6
+  spectatePlaneFollowRate: 1.5
+  ballBodyCool: 0.16
+  ballBodyNearSmash: 0.4
+  ballBodyHot: 0.5
+  ballRimCool: 0.6
+  ballRimHot: 1
+  ballHotRimWhiten: 0.35
   ballVisualScale: 1.25
   chainLinks: 12
   chainWidthFraction: 0.18
-  gaugeRadiusScale: 1.45
   chainColor: {r: 0.22, g: 0.2, b: 0.2, a: 1}
   fallbackDomainColor: {r: 0.3, g: 0.9, b: 0.85, a: 1}
   fallbackDangerColor: {r: 1, g: 0.05, b: 0.05, a: 1}

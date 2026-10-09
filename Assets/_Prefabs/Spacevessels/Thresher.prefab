@@ -1079,7 +1079,7 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  ballMaterial: {fileID: 0}
+  ballMaterial: {fileID: 2100000, guid: 92d94825f0264e4eb25f79f37523b4e7, type: 2}
   lineMaterial: {fileID: 0}
 --- !u!1 &7850473780452578400
 GameObject:

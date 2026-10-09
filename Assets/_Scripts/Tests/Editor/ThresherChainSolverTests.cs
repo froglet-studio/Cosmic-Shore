@@ -377,6 +377,112 @@ namespace CosmicShore.Tests
             Assert.AreEqual(2.2f * s.CruiseSpeed, s.LockMaxSpeed, 1e-4f);
         }
 
+        // ------------------------------------------------------------ steering while planted
+
+        /// <summary>Plant a ball abeam (orbit in the XZ plane, normal ±Y) and let the skid finish.</summary>
+        static (ThresherChainSolver solver, Vector3 pos, Vector3 vel) Planted(ThresherChainSettings s)
+        {
+            var solver = new ThresherChainSolver(s);
+            Vector3 pos = Vector3.zero, vel = Vector3.forward * s.CruiseSpeed;
+            solver.Reset(pos, Vector3.forward, vel);
+            solver.BallPosition = new Vector3(-s.RestLength, 0f, 0f);
+            solver.BallVelocity = Vector3.zero;
+            solver.Plant();
+            for (int i = 0; i < 60 && solver.Mode != ThresherMode.Pivot; i++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "setup: the skid must end in a pivot");
+            return (solver, pos, vel);
+        }
+
+        /// <summary>The orbit plane's normal at the ship — where a HULL-relative stick pulled
+        /// "across the orbit" points (the transformer maps the sticks through the hull, which
+        /// faces the tangent).</summary>
+        static Vector3 AcrossOrbit(Vector3 pos, Vector3 vel, Vector3 pivot)
+            => Vector3.Cross((pos - pivot).normalized, vel.normalized).normalized;
+
+        static float AngleDeg(Vector3 a, Vector3 b) =>
+            Mathf.Acos(Mathf.Clamp(Vector3.Dot(a.normalized, b.normalized), -1f, 1f)) / Mathf.Deg2Rad;
+
+        [TestCase(1f)]
+        [TestCase(0.5f)]
+        [TestCase(-1f)]
+        public void PivotSteer_TurnsTheHeadingAboutTheChainAtTheLowRate(float stick)
+        {
+            var s = Defaults();
+            var (a, pos, vel) = Planted(s);
+            var (b, _, _) = Planted(s);
+            Vector3 across = AcrossOrbit(pos, vel, a.Pivot);
+
+            Vector3 plain = a.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+            Vector3 steered = b.Step(pos, vel, false, s.CruiseSpeed, Dt, across * stick).ShipVelocity;
+
+            float expected = Mathf.Abs(stick) * s.PivotSteerRate * Dt / Mathf.Deg2Rad;
+            Assert.AreEqual(expected, AngleDeg(plain, steered), 0.05f * expected + 1e-3f,
+                "one frame of stick turns the heading by stick x pivotSteer x dt");
+            Assert.AreEqual(plain.magnitude, steered.magnitude, 1e-3f, "steering costs no orbit speed");
+            Assert.Greater(Vector3.Dot(steered - plain, across) * Mathf.Sign(stick), 0f, "it turns the way the stick points");
+            Assert.Less(s.PivotSteerRate / Mathf.Deg2Rad, 45f, "pivotSteer ships well under free flight's 120 deg/s");
+        }
+
+        [Test]
+        public void PivotSteer_HeldStickLeavesTheOrbitPlane_OnTheChain_AtTheSameSpin()
+        {
+            var s = Defaults();
+            var (plain, p0, v0) = Planted(s);
+            var (steered, p1, v1) = Planted(s);
+            Vector3 planeNormal = AcrossOrbit(p0, v0, plain.Pivot);
+            float plainOff = 0f, steeredOff = 0f, worstRadius = 0f;
+            for (int i = 0; i < 60; i++)
+            {
+                v0 = plain.Step(p0, v0, false, s.CruiseSpeed, Dt).ShipVelocity;
+                p0 += v0 * Dt;
+                v1 = steered.Step(p1, v1, false, s.CruiseSpeed, Dt, AcrossOrbit(p1, v1, steered.Pivot)).ShipVelocity;
+                p1 += v1 * Dt;
+                plainOff = Mathf.Max(plainOff, Mathf.Abs(Vector3.Dot(p0 - plain.Pivot, planeNormal)));
+                steeredOff = Mathf.Max(steeredOff, Mathf.Abs(Vector3.Dot(p1 - steered.Pivot, planeNormal)));
+                worstRadius = Mathf.Max(worstRadius, Mathf.Abs((p1 - steered.Pivot).magnitude - steered.Length));
+            }
+            Assert.Less(plainOff, 0.05f, "control: no stick, the orbit stays in its plane");
+            Assert.Greater(steeredOff, 0.1f * s.RestLength, "a held stick steers the orbit off its plane");
+            Assert.Less(worstRadius, 0.05f, "the ship stays on the chain while steering");
+            Assert.AreEqual(plain.LockSpeed, steered.LockSpeed, 1e-3f, "steering adds or spends no spin");
+        }
+
+        [Test]
+        public void PivotSteer_InPlaneStickDoesNothing()
+        {
+            var s = Defaults();
+            var (a, pos, vel) = Planted(s);
+            var (b, _, _) = Planted(s);
+            // Along the heading and along the chain: both IN the orbit plane.
+            Vector3 inPlane = (vel.normalized + (pos - a.Pivot).normalized).normalized;
+            Vector3 plain = a.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+            Vector3 steered = b.Step(pos, vel, false, s.CruiseSpeed, Dt, inPlane).ShipVelocity;
+            Assert.Less(AngleDeg(plain, steered), 1e-3f);
+        }
+
+        [Test]
+        public void PivotSteer_IsIgnoredWhileTowing()
+        {
+            var s = Defaults();
+            var a = new ThresherChainSolver(s);
+            var b = new ThresherChainSolver(s);
+            a.Reset(Vector3.zero, Vector3.forward, Vector3.forward * s.CruiseSpeed);
+            b.Reset(Vector3.zero, Vector3.forward, Vector3.forward * s.CruiseSpeed);
+            Vector3 pa = Vector3.zero, va = Vector3.forward * s.CruiseSpeed, pb = pa, vb = va;
+            for (int i = 0; i < 90; i++)
+            {
+                va = a.Step(pa, va, true, s.CruiseSpeed, Dt).ShipVelocity;
+                vb = b.Step(pb, vb, true, s.CruiseSpeed, Dt, Vector3.up).ShipVelocity;
+                pa += va * Dt; pb += vb * Dt;
+            }
+            Assert.AreEqual(0f, (va - vb).magnitude, 0f, "towing: the sticks fly the hull, never the solver");
+            Assert.AreEqual(0f, (a.BallPosition - b.BallPosition).magnitude, 0f);
+        }
+
         // ------------------------------------------------------------ camera framing
 
         // The Thresher camera asset's follow offset (0, 8, -55) and a 60 deg vertical FOV at 16:9.
@@ -420,7 +526,7 @@ namespace CosmicShore.Tests
         public void Framing_AReeledInBallBarelyZoomsTheCamera()
         {
             var s = Defaults();
-            float r = s.BallRadius * 1.25f * 1.45f;   // rendered ball x gauge ring, at the shipped look
+            float r = s.BallRadius * 1.25f;   // the rendered ball, at the shipped ballVisualScale
             for (int deg = 0; deg < 360; deg += 15)
             {
                 float a = deg * Mathf.Deg2Rad;

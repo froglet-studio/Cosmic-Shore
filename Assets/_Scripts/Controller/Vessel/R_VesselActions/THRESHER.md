@@ -17,7 +17,7 @@ in the sandbox's units and scaled to this game by one factor (§4), so the two r
 | Sticks | — | — | Normal flight, exactly a Squirrel's (vector flight model, 120°/s pitch/yaw). Turn one way and snap back to whip; pitch and yaw snaps both work. |
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
 | **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain flickers **lime** (the palette's CTA colour) while releasing now would reach smash speed (READY). |
-| **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. |
+| **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 30 °/s (a quarter of free flight), never the spin. |
 | **LT release** | | | Fly off along the orbit's tangent; the ball is yanked after you (`yank`). |
 
 The bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
@@ -84,6 +84,12 @@ off. `element_ability_table.py Thresher` reads 4/4 / 4/4 / 4/4 with only the Thr
 - **Lock**: `Plant()` skids the ball (`skid`) for `skidSeconds`, then it is a pivot; the ship orbits
   at `max(|v| × lockKeep, minShip × cruise)` (no stall even planting straight at the ball), spinning
   up by `lockSpin` to `lockMax × cruise`. `Release()` yanks the ball at `yank ×` the ship's velocity.
+- **Steering while planted** (`SteerPivot`): the stick, mapped through the hull as the way the nose
+  would move, turns the ship's heading about the CHAIN — the only turn a taut chain allows — by at
+  most `pivotSteer` (30 °/s) × dt; its in-plane part is ignored. Held, it bends the orbit off its
+  plane the way turning bends a path on a globe (the ship steers over the sphere round the ball).
+  Speed, radius and spin are untouched, and it is ignored while towing, where the sticks fly the
+  hull directly.
 - **Bounce** reflects only the inward velocity component and puts the ball at the contact point.
 
 Scale `k = gameCruise / sandboxCruise = 70 / 380 = 0.1842` on every speed and length; rates and
@@ -103,6 +109,7 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 | `ballR` / `maxBall` | 17 / 2600 | 3.13 u / 478.9 u/s | swept radius (× ∛Mass); speed cap |
 | `skid` / `skidSeconds` / `lockKeep` | 7 / 0.3 s / 1 | same | plant brake, duration, speed kept |
 | `lockSpin` / `lockMax` / `yank` | 220 /s² / 2.2 / 0.5 | 40.5 u/s² / 154 u/s / 0.5 | spin-up (× Time), cap (× Time), unlock yank |
+| `pivotSteer` | 30 °/s | 30 °/s | full-stick steering while planted (a rate, unscaled; 0 = sticks ignored) |
 
 Measured feel (`Tools/Build/thresher_chain_harness`, 60 Hz, rest levels; peak ball speed × smash):
 steady turns reeled in 15/30/60/90/120 °/s → 0.62/0.74/0.94/1.09/1.21, let out → 0.54/0.52/0.38/0.38/0.38
@@ -121,9 +128,18 @@ Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2
   `HapticController.PlaySkim(lerp(0.45, 1, heat))`. **Combo**: one world counter `x2, x3…` per whip.
 - **Audio** (all **shipped EMPTY**, LOCKED FMOD convention): `smashEvent`, `crushEvent`,
   `bounceEvent`, `sliceEvent`, `plantEvent`, `yankEvent` on `ThresherExecutor`.
-- **Look** (runtime-built prototype art): a studded ball that rolls, coloured as in §2; the drawn
-  chain IS the gameplay chain, iron-grey, flickering lime at READY; a gauge ring round the ball
-  filling toward smash speed in the ball's colour; a skid trail while planting.
+- **Look**: a studded ball that rolls (runtime-built: a sphere and six cube studs) on
+  **`ThresherBallMaterial` / `ThresherBallFresnelShader`** — the game's own fresnel convention, a
+  dull body under a bright rim, `lerp(_DarkColor, _BrightColor, (1 − N·V)^1.5)`. Power 1.5, not the
+  crystals' 4, because the ball is a few units across and often 100+ u away: area-weighted the rim
+  is 23% of the disc (a crystal's is 6.7%, a hairline that would be sub-pixel here). The flat studs
+  flare edge-on and go dull face-on, which is what makes the roll readable. Colours (`ThresherConfigSO`
+  § Ball shading) are the §2 hue normalised by its max channel: a slow ball's body sits under the
+  bloom threshold (0.16) and brightens toward 0.4 as it nears smash; a hot ball's body sits ON the
+  0.5 bloom clamp (the whole ball blooms) and its rim whitens with heat; nothing exceeds 1.0
+  (tonemapping is None, `Docs/PALETTE.md` §2.2). Compiled with DXC (both passes, ± instancing). The
+  drawn chain IS the gameplay chain, iron-grey, flickering lime at READY; a skid trail while
+  planting. **No dial on the ball** — the heat gauge lives only on the HUD's Charge card.
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
   `VesselHUDPrefab`): the four-icon row Wrecking Ball · Heavy Iron · Winch · Plant
   (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
@@ -138,14 +154,14 @@ Local pilot only (`IsLocalPilot`: never a remote replica, never the autopilot); 
 the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO` § Camera.
 
 - **Zoom to keep the ball in frame.** Every frame `ThresherCameraFraming.RequiredDistance` solves
-  (by bisection) the smallest chase distance at which the ball's gauge ring sits inside the view
+  (by bisection) the smallest chase distance at which the rendered ball sits inside the view
   shrunk by `cameraFramingMargin` 1.15 and at least `cameraMinAhead` 6 u in front of the lens, for
   the camera as `CustomCameraController` actually poses it (behind and above, LOOKING AT the hull —
   a level-camera closed form zoomed out on every pitch turn). The distance is clamped to [the
   prefab's own 55 u, `cameraMaxDistance` 450 u] and eased **out at `cameraZoomOutRate` 12/s** (90%
   in ~0.2 s) and **back in at `cameraZoomInRate` 0.7/s** (half-way in ~1 s), then written through
-  `SetCameraDistance`. Needed distances (harness): reeled in 41/30/13/57 u behind/abeam/ahead/
-  overhead — i.e. none; let out 164/163/15/294; at full Space 235/242/15/433.
+  `SetCameraDistance`. Needed distances (harness): reeled in 38/28/12/54 u behind/abeam/ahead/
+  overhead — i.e. none; let out 161/161/15/290; at full Space 232/240/15/430.
 - **Spectate a fast spin.** Once a planted orbit circles at `spectateSpinRate` **1.8 rad/s
   (~100 °/s)** or faster, the camera detaches: `CustomCameraController.Spectate` (a new, default-null
   seam) blends over `spectateBlendSeconds` 0.6 s to a still vantage on the orbit's axis, tilted
@@ -155,7 +171,9 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   spin. It re-attaches (blending back out) on releasing LT or when the spin falls under
   `spectateReleaseFraction` 0.75 of the threshold. At the shipped dials planting reeled in at cruise
   is already 3.2 rad/s (spectates at once); a fully let-out orbit at its cap is 1.1 rad/s (ridden),
-  1.9 at full Time (spectates).
+  1.9 at full Time (spectates). While detached the vantage LEANS after the orbit's plane at
+  `spectatePlaneFollowRate` 1.5/s, so steering a planted orbit turns it in front of a still camera
+  instead of leaving it to drift out of an obsolete view.
 - **The camera seam** (`CustomCameraController.Spectate` / `SpectateBlendSeconds` /
   `SpectateView`): applied as a BLEND over the settled follow pose, before shake and the portal
   carry; the follow pose is kept separately while blended so the chase smoothing never chases the
@@ -199,7 +217,8 @@ frame of drift. Untested in MPPM.
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
 | `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
 | `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null, §5a) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 37 tests (solver + camera framing); offline runner + feel table |
+| `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 43 tests (solver, planted steering, camera framing); offline runner + feel table |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -213,8 +232,8 @@ prefab, `DriftAudioController`, jets and tails.
   (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.
 - The chase camera can sit well back (up to ~240 u at full Space) whenever the chain is out and the
   ball trails behind; the ball then sits low in the frame, between the lens and the hull.
-- The spectate vantage is frozen at the moment of detaching; tilting the orbit plane (a future
-  verb) would need it re-fitted.
+- Planted steering is hull-relative, so in the spectate view (looking down the orbit's axis) the
+  stick still means "the way the nose would go", not "toward the top of the screen".
 - READY underestimates during fast snaps (it projects the current spin through a full reel and
   ignores the snap crack).
 
@@ -230,7 +249,8 @@ prefab, `DriftAudioController`, jets and tails.
 4. **Chain**: fly so the taut chain sweeps through rival prisms — they are sliced; your own are not;
    shielded rival prisms are skipped.
 5. **Plant**: hold LT — skid (trail), orbit, spin-up; RT up winds in. Release: fly off on the tangent,
-   ball yanked after you. Planting straight at the ball still orbits.
+   ball yanked after you. Planting straight at the ball still orbits. While planted, the sticks
+   gently steer the orbit (a quarter of normal turn rate) without changing its speed.
 6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge — hot ball lit, blasts spare
    your trail, bounces off it; Mass — a hot ball keeps its speed through a row; Space — chain cuts
    slack and pops shields; Time — releasing a slow orbit still throws a red ball.
@@ -242,6 +262,9 @@ prefab, `DriftAudioController`, jets and tails.
    Plant reeled in — the camera lifts off to a still vantage over the orbit and you watch the ship
    spin; release LT and it eases back behind the hull. Fly another vessel afterwards: its camera is
    at its own distance and attached.
+10. **Ball look**: the ball is a dark body with a bright rim in your domain colour (no ring round
+    it); its studs flash as it rolls; it brightens toward smash speed, turns red and blooms when
+    hot, lit-blue with Charge L5.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
@@ -252,7 +275,6 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 - **Art and sound**: real ball/chain art and icons; the six FMOD events.
 - **Hull**: its own model, skimmer and jets (still the Squirrel's).
 - **Virtual (swarm) prisms** are not swept by the ball or chain.
-- **Sticks while planted** are ignored; tilting the orbit plane is the obvious next verb.
 - **AI**: no AI abilities are authored (both triggers are holds).
 - **Random spawns**: `VesselSpawner.SpawnShip(Random)` can now hand out the Thresher.
 - **Gibbon id clash**: the Gibbon branch claims `VesselClassType = 13` (the Butterfly's); it needs 15.

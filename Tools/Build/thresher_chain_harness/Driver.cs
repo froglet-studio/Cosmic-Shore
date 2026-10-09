@@ -63,7 +63,7 @@ public static class Driver
 
         Console.WriteLine("\ncamera (offset 0,8,-55; 60 deg vFOV 16:9; margin 1.15) — chase distance needed, ball at length L");
         Console.WriteLine("  where        rest    max    max x1.5 (Space)");
-        float vh = 30f * Mathf.Deg2Rad, hh = Mathf.Atan(Mathf.Tan(vh) * 16f / 9f), rr = s.BallRadius * 1.25f * 1.45f;
+        float vh = 30f * Mathf.Deg2Rad, hh = Mathf.Atan(Mathf.Tan(vh) * 16f / 9f), rr = s.BallRadius * 1.25f;
         foreach (var (label, dir) in new[] { ("behind", Vector3.back), ("abeam", Vector3.right), ("ahead", Vector3.forward), ("overhead", Vector3.up) })
         {
             float D(float l) => ThresherCameraFraming.RequiredDistance(dir * l, rr, 8f, vh, hh, 1.15f, 6f);
