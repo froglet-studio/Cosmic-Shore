@@ -26,13 +26,16 @@ namespace CosmicShore.Launcher
         /// <summary>Accent themes: the game's own look, its four domain colours, and a quiet grey.</summary>
         public static readonly string[] Themes = { "COSMIC", "JADE", "RUBY", "GOLD", "ICE", "MONO" };
 
+        /// <remarks>JADE, RUBY and GOLD lead with the game's own domain colour: <c>SO_ColorSet.GetDomainSignalColor</c> on
+        /// <c>OriginalColorSetSO.asset</c>, the same values the Vessel Studio uses (<c>.claude/skills/vessel-studio/domain_colors.py
+        /// --check</c> holds all three in step).</remarks>
         public static void ApplyTheme(int theme)
         {
             (Cyan, Magenta, Violet, Space0, Space1) = theme switch
             {
-                1 => (V(0.25f, 1.00f, 0.70f), V(0.10f, 0.75f, 0.55f), V(0.20f, 0.55f, 0.65f), V(0.005f, 0.030f, 0.030f), V(0.020f, 0.090f, 0.080f)),
-                2 => (V(1.00f, 0.42f, 0.52f), V(0.95f, 0.15f, 0.35f), V(0.65f, 0.15f, 0.45f), V(0.035f, 0.008f, 0.020f), V(0.120f, 0.020f, 0.060f)),
-                3 => (V(1.00f, 0.82f, 0.30f), V(1.00f, 0.52f, 0.15f), V(0.85f, 0.40f, 0.25f), V(0.030f, 0.020f, 0.008f), V(0.110f, 0.070f, 0.020f)),
+                1 => (V(0.073f, 1.000f, 0.948f), V(0.10f, 0.75f, 0.55f), V(0.20f, 0.55f, 0.65f), V(0.005f, 0.030f, 0.030f), V(0.020f, 0.090f, 0.080f)),
+                2 => (V(1.000f, 0.000f, 0.976f), V(0.95f, 0.15f, 0.35f), V(0.65f, 0.15f, 0.45f), V(0.035f, 0.008f, 0.020f), V(0.120f, 0.020f, 0.060f)),
+                3 => (V(1.000f, 0.657f, 0.000f), V(1.00f, 0.52f, 0.15f), V(0.85f, 0.40f, 0.25f), V(0.030f, 0.020f, 0.008f), V(0.110f, 0.070f, 0.020f)),
                 4 => (V(0.70f, 0.90f, 1.00f), V(0.35f, 0.55f, 1.00f), V(0.45f, 0.50f, 0.95f), V(0.010f, 0.020f, 0.045f), V(0.030f, 0.070f, 0.150f)),
                 5 => (V(0.92f, 0.94f, 0.98f), V(0.62f, 0.66f, 0.74f), V(0.45f, 0.48f, 0.56f), V(0.015f, 0.016f, 0.020f), V(0.060f, 0.064f, 0.075f)),
                 _ => (V(0.20f, 0.92f, 1.00f), V(1.00f, 0.22f, 0.86f), V(0.55f, 0.36f, 1.00f), V(0.012f, 0.010f, 0.045f), V(0.045f, 0.030f, 0.140f)),

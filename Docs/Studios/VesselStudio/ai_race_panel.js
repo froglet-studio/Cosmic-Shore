@@ -14,7 +14,7 @@
  *     levelNote: 'What Easy / Medium / Hard mean here, and where the numbers come from.',
  *     onChange: (key, value, state) => { ... },                              // after every user change
  *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D23); state.rivalStyles
- *     players: { host: element, max: 4, domains: [{ key: 'jade', name: 'Jade', color: '#37e3a0' }, ...] },
+ *     players: { host: element, max: 4, domains: VesselStudioDomains.list } (studio-domains.js; the default) },
  *                           // optional (D25): a Players list in the studio's Game Config tab, + / - to add or remove
  *                           // a player, each opening with Is AI, Domain, Difficulty, Play style, View and Camera.
  *                           // It replaces the Your hull / seat rows; state.players, state.view; onChange('players' | 'view')
@@ -50,7 +50,9 @@
   var CAMERAS = ['Chase', 'Follow', 'Free'];
   var SPEEDS = [1, 2, 4];
   var SEAT_LEVELS = ['Off'].concat(LEVELS);
-  var DEFAULT_SEATS = [{ name: 'Ruby', color: '#ff4f7b' }, { name: 'Gold', color: '#ffc247' }, { name: 'Blue', color: '#6aa8ff' }];
+  // the game's domain colours (studio-domains.js, generated from OriginalColorSetSO.asset); the fallback is the same table
+  var GAME_DOMAINS = window.VesselStudioDomains ? window.VesselStudioDomains.list : [{ key: 'jade', name: 'Jade', color: '#13fff2' }, { key: 'ruby', name: 'Ruby', color: '#ff00f9' }, { key: 'gold', name: 'Gold', color: '#ffa700' }, { key: 'blue', name: 'Blue', color: '#6680ff' }];
+  var DEFAULT_SEATS = GAME_DOMAINS.slice(1).map(function (d) { return { name: d.name, color: d.color }; });
   var CAMERA_TIPS = {
     Chase: 'Close behind the watched hull, rolling with it.',
     Follow: 'Wider and level with the world; press C to pick which pilot to follow.',
@@ -161,7 +163,7 @@
     }, { into: sceneRoot, tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
     // ---- D25: the Players list (Game Config). Player 1 is your hull; every other player is an AI rival ----
     var PL = cfg.players && cfg.players.host ? cfg.players : null;
-    var domains = PL && PL.domains && PL.domains.length ? PL.domains : DEFAULT_SEATS.map(function (x) { return { key: x.name.toLowerCase(), name: x.name, color: x.color }; });
+    var domains = PL && PL.domains && PL.domains.length ? PL.domains : GAME_DOMAINS.map(function (x) { return { key: x.key, name: x.name, color: x.color }; });
     var maxPlayers = PL ? Math.max(1, Math.min(8, PL.max || 4)) : 0, openCards = { 0: true };
     function domainOf(key) { for (var i = 0; i < domains.length; i++) if (domains[i].key === key) return domains[i]; return domains[0]; }
     function cleanPlayers(arr) {
