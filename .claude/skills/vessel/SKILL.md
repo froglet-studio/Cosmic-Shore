@@ -14,6 +14,12 @@ permanently-latched init race, a gauge bound to a meter that never raises events
 drift within the branch itself. This skill exists so that never happens again. Follow it
 exactly.
 
+> **See it before you change it: the Vessel Studio.** If the task changes how a vessel FLIES or FEELS, its AI, its
+> difficulty, its play styles or its cameras, recommend the Vessel Studio first
+> (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) and load **`/vessel-studio`**. The team decides those questions
+> by playing and watching there, then ports the settled numbers here once (its D13). A vessel with no studio yet
+> gets one by `/vessel-studio` §2. This skill stays the contract for the Unity side.
+
 ## 1. The contract (what every vessel is)
 
 > **Four abilities, each mapped to one of the four elements, each with a level-5 upgrade, each

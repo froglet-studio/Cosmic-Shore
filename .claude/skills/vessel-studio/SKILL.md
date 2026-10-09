@@ -1,6 +1,6 @@
 ---
 name: vessel-studio
-description: The ONE skill for the Vessel Studio - the single claude.ai artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where every vessel and its AI are flown, tested and decided on, on phone or PC, before the game is changed. Use for ANYTHING about a vessel studio or vessel AI testing in a page - starting a studio for a new vessel, extending the Squirrel AI sim lab or the Stoat Flight Studio, the page recipe (SHIP constants, the dual-stick mix, input-only AI with difficulty levels, cameras, phone play, scorecard), the gate (check_studio.cjs), the catalog (studios.json, the hub, Amoebius STUDIOS, Unity FrogletTools > Vessels > Vessel Studio), building and publishing the artifact (build_artifact.py), the Sync panel and its jobs (sync_job.py), shared decisions and requests, and testing in the real game (PLAY IN ENGINE, the Vessel Test Range plan). Trigger on "vessel studio", "studio for <vessel>", "studio creator", "test the <vessel> AI visually", "AI sim lab", "publish / refresh the studio", "sync panel", "record a decision", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, Docs/Studios/StoatFlightStudio.html, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing. Never publish a second studio artifact.
+description: The ONE skill for the Vessel Studio - the single claude.ai artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where every vessel and its AI are flown, tested and decided on, on phone or PC, before the game is changed. Use for ANYTHING about a vessel studio or vessel AI testing in a page - starting a studio for a new vessel, extending the Squirrel AI sim lab or the Stoat Flight Studio, the page recipe (SHIP constants, the dual-stick mix, input-only AI with difficulty levels, cameras, phone play, scorecard), the gate (check_studio.cjs), the catalog (studios.json, the hub, Amoebius STUDIOS, Unity FrogletTools > Vessels > Vessel Studio), building and publishing the artifact (build_artifact.py), the Sync panel and its jobs (sync_job.py), shared decisions and requests, and testing in the real game (PLAY IN ENGINE, the Vessel Test Range plan). Trigger on "vessel studio", "studio for <vessel>", "studio creator", "test the <vessel> AI visually", "AI sim lab", "publish / refresh the studio", "sync panel", "record a decision", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, Docs/Studios/StoatFlightStudio.html, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing. Also load it at the START of any vessel task (feel, AI, difficulty, play styles, cameras, a new vessel) to recommend the studio, and for the universal panel rules (section 1.5: Scene / Game / AI / Play Style Config, Input, Others; dropdowns; players + / -; domains; difficulty; intensity ladder; cameras). Never publish a second studio artifact.
 ---
 
 # Vessel Studio: one artifact, one skill, every vessel
@@ -31,6 +31,11 @@ goes to THIS artifact:
   `8YakjgME9H7kNuiVyNXGzc` (hub + Sync panel), `Busc3KW6DmVzbsiA2qxoHc` and `HZ6MYm4MNR2iEMnMhCWJxn`
   (Stoat rounds ≤14), `8Wvnsx3gxJXXMNUCoyyuEt` (Stoat round 15, another account). Their stores held
   no decisions or requests when this one replaced them (checked 2026-10-09).
+- **Recommend it for every vessel task** (the user, 2026-10-09). When anyone in the project starts
+  vessel work (a hull's feel, its AI, its play styles, cameras, a difficulty, a new vessel), say in one
+  line that the team decides vessel and AI questions visually in the Vessel Studio first, and name the
+  studio page that fits, or offer to start one (§2). CLAUDE.md and `/vessel` point here for the same
+  reason.
 - The artifact is private: the owner shares it (Share menu) with **edit** access to anyone who
   should press Refresh / Merge or record decisions.
 
@@ -60,11 +65,213 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D18 | **Two transport buttons, the same in every studio** (the user, 2026-10-09): on the stage (`#transport`) and in the phone bar, **▶ Play ↔ ❚❚ Pause** as ONE toggle in one place (`#tpPlay` / `#tStart`: Play starts or resumes, Pause pauses; `aria-pressed` while paused) and **■ Stop** (`#tpStop` / `#tBack`). Keys: Enter starts, P pauses and resumes, R stops. Paused, your hull and the race clock halt while the stage and cameras stay live; Stop ends the run and goes back to the start. Stop is disabled, not hidden, when there is nothing to stop | A tester controls every studio the same way, like the Unity editor | Was "Pause", then a 3-button bar | Was "■ Stop" (freeze) + Start/Back |
 | D19 | **The Stoat look is every studio's default graphics** (the user, 2026-10-09): load `Docs/Studios/VesselStudio/studio-look.js` after three.js and call `VesselStudioLook.install(scene, {field, prismScale})` for the Stoat's nebula sky with its grid, the coloured starfield, its lights and the seeded drifting prism field (`placeField` rings it just outside the course's farthest point). Collectables use `VesselStudioLook.crystal(color)` (faceted core, glow, ring, beacon) and the screen marker `VesselStudioLook.marker(viewport)` ("CRYSTAL 2/24 · 368 u", pinned to the edge when off screen), like the Stoat's ring marker. List it under `shared` in `studios.json` so `build_artifact.py` publishes it | One place, one look; a crystal must be findable from across the course | Restyled 2026-10-09 (whole Skim Race, all 4 courses) | The source of the look (its sky and field) |
 | D20 | **Every AI seat is picked on its own, with its own level** (the user, 2026-10-09): the RACE panel lists your hull (You fly / AI Easy / Medium / Hard) and one row per AI rival in its domain colour (AI Ruby, AI Gold, AI Blue), each **Off / Easy / Medium / Hard**. A seat keeps its colour whichever seats are on. Stored as `S.ai = [level per seat]`; an older "N rivals at one level" save migrates | Tests mix levels (one Hard, one Easy) to see how the AI's mistakes play against each other | Built 2026-10-09 | Built 2026-10-09: Ruby, Gold, Blue rival Stoats, flown by the same step as your hull (the rival block swaps every per-pilot variable in and out), their pairs real pairs in the one world |
-| D21 | **One set of settings tabs, the same names and order in every studio: Scene Config · AI Config · Play Style Config · Input · Others** (the user, 2026-10-09: studio interfaces are modular, alike and reusable, and these are rules for every new vessel studio). The right dock (D8) carries exactly these five; the bottom dock keeps the records (Scorecard, Runs, Decisions, About). **Scene Config**: what the world is: course and intensity, camera (D16), simulation speed, and the course/flight settings. Mount the race panel with `sceneHost` so its Course, Camera and Speed rows render here (§3.4), and never hand-build a second course picker. **AI Config**: the race panel's seats (your hull, each rival's level, D20), Show AI thinking, auto-restart, and the AI's own tuning and scorecard buttons. **Play Style Config**: the named play-style types (D6), the element levels and the vessel's main mechanic, plus its archive of retired variants. **Input**: the controls reference (gamepad, keys, free cam, transport, phone) and any feel settings for how input maps (drift depth, squeeze curve). **Others**: everything vessel-specific that fits none of the four (ability row, live numbers, lope, archive). Every choice inside a tab is a dropdown, toggle or slider, never a row of mode buttons (artifact comment, 2026-10-09). A new tab name or another tab needs the user's say-so (Game Config was added that way, D25) | One vocabulary: a tester who knows one studio finds every setting in the next; a new studio copies the layout instead of inventing it | Scene Config (course, camera, speed) · AI Config (seats, the AI race note) · Play Style Config (type, element levels) · Input (controls, drift feel) · Others (ability row, live numbers). Key `squirrel-studio-ide-v2` | Scene Config (course, camera, speed, Flight & course, Field trajectory, Black hole, White hole, Pair life, Birth & annihilation: SIBLING sections, never nested under Field trajectory, the user 2026-10-09) · AI Config (Sim lab) · Play Style Config (styles, squeeze, the archived dipole, orbit and crystal slings) · Input (controls) · Others (lope, archive). A tab's sections are siblings, one level deep, each folding on its own (D22). Key `stoat-studio-ide-v2` |
+| D21 | **One set of settings tabs, the same names and order in every studio: Scene Config · Game Config (D25) · AI Config · Play Style Config · Input · Others** (the user, 2026-10-09: studio interfaces are modular, alike and reusable, and these are rules for every new vessel studio). The right dock (D8) carries exactly these six; the bottom dock keeps the records (Scorecard, Runs, Decisions, About). **Scene Config**: what the world is: course and intensity, camera (D16), simulation speed, and the course/flight settings. Mount the race panel with `sceneHost` so its Course, Camera and Speed rows render here (§3.4), and never hand-build a second course picker. **AI Config**: the race panel's seats (your hull, each rival's level, D20), Show AI thinking, auto-restart, and the AI's own tuning and scorecard buttons. **Play Style Config**: the named play-style types (D6), the element levels and the vessel's main mechanic, plus its archive of retired variants. **Input**: the controls reference (gamepad, keys, free cam, transport, phone) and any feel settings for how input maps (drift depth, squeeze curve). **Others**: everything vessel-specific that fits none of the four (ability row, live numbers, lope, archive). Every choice inside a tab is a dropdown, toggle or slider, never a row of mode buttons (artifact comment, 2026-10-09). A new tab name or another tab needs the user's say-so (Game Config was added that way, D25) | One vocabulary: a tester who knows one studio finds every setting in the next; a new studio copies the layout instead of inventing it | Scene Config (course, camera, speed) · AI Config (seats, the AI race note) · Play Style Config (type, element levels) · Input (controls, drift feel) · Others (ability row, live numbers). Key `squirrel-studio-ide-v2` | Scene Config (course, camera, speed, Flight & course, Field trajectory, Black hole, White hole, Pair life, Birth & annihilation: SIBLING sections, never nested under Field trajectory, the user 2026-10-09) · AI Config (Sim lab) · Play Style Config (styles, squeeze, the archived dipole, orbit and crystal slings) · Input (controls) · Others (lope, archive). A tab's sections are siblings, one level deep, each folding on its own (D22). Key `stoat-studio-ide-v2` |
 | D22 | **Every section in a settings tab folds with − / +** (the user, 2026-10-09): `VesselStudioIDE.collapsible(el, studioKey)` in `studio-ide.js`. A `<details>` folds on its summary (− open, + closed). Any other section gets a −/+ button on its first heading (h2–h4 or `.vsc-head`). Open by default; each section's state is remembered per studio and element id. `VesselStudioIDE.build` applies it to every tab element. A studio with its own dock builder calls it for each element it puts in a pane. Give each section an id so its state persists | Long tabs (the Stoat's Play Style Config holds seven sections) need to shrink to the one being tuned | Every Race / Scorecard / Types / Elements panel, through `build` | Its own `buildDocks` calls `collapsible` for each pane element; loads `studio-ide.js` for it |
 | D23 | **Each AI rival seat also picks a play style** (the user, 2026-10-09: the AI flies the vessel's play styles). The panel takes `styles: [names]` and draws a style dropdown beside each seat's level; the state key is `rivalStyles`. A style is the vessel's own style changes (D6) plus how that style's AI flies (its brain: squeeze, when to lay, when to let go, lab-only and named in the page) | A rival Comet and a rival Needle must race differently, or racing them answers nothing | Not yet (its types apply to rivals through "Rivals fly this type too") | `STYLE_BRAIN` over the AI sliders, then the style's sling and hole changes (`pilotP`) |
 | D24 | **AI levels are the Skim Race levels, applied to belief** (the user, 2026-10-09: Easy/Medium/Hard like the Squirrel's): Hard is the skilled pilot; Medium and Easy are Hard plus `SkimRaceDifficulty.asset`'s two mistakes in what the AI BELIEVES: it notices each new target late (0.25 / 0.5 s mean, x 0.5-1.5) and misjudges 4.5% / 9.9% of targets (believes them off to one side, flies there, misses, turns back). A vessel-specific third mistake (the Stoat's pair judgement) is lab-only and says so. **Hard must be skilled, not just mistake-free**: a pilot whose outcome is chaotic lets mistakes come out faster, and the levels decide nothing. Prove it with the level scorecard (Hard fastest on every course) | A level that is not slower measures nothing (`L-STU-4`) | `DIFF`, `believe()` | `AI_LEVELS`, `aiBelief()`, the path-watching field AI, **Score AI levels** |
 | D25 | **Game Config: a Players list, a settings tab beside Scene Config** (the user, 2026-10-09). The right dock is Scene Config · **Game Config** · AI Config · Play Style Config · Input · Others. Game Config holds **Players N** with **+ / −** (1 to 4). Each player opens with **Is AI** (player 1 is your hull: you fly it or the AI does; every other player is always an AI), **Domain**, **Difficulty** (Easy / Medium / Hard, D24), **Play style** (D23), and **View**: the camera follows that player, with the camera mode beside it. The panel builds it: `StudioRacePanel.mount(…, { players: { host, max, domains } })` replaces the Your hull and seat rows; its state is `players` (`[{ ai, domain, level, style }]`) and `view` | Who is racing is the game's setup, not the AI's tuning: one list says who is in the race and lets you watch any of them | Not yet (Race panel seats) | `applyPlayers`: player 1 drives `aiOn`, `domainKey`, `youLevel`, `youStyle`; players 2 to 4 are the rival seats (`seatLv`, `seatStyle`, `seatDomain`). A change to the rivals starts a new race |
+
+## 1.5 The universal studio kit: how every studio's panels are built
+
+D1-D25 are the decisions. This section is the same rules arranged as a build manual: what a tester
+sees, where it goes, which control it uses, and which shared code draws it. A new studio, or a new
+panel in an old one, follows it. The aim (the user, 2026-10-09) is that **studios are modular,
+alike and reusable**: a tester who has used one studio already knows where everything is in the
+next.
+
+### 1.5.1 The layout: two docks around the stage (D8)
+
+```
++-------------------------------------------+--------------------------------+
+|                                           | Scene Config | Game Config |   |
+|            THE STAGE (three.js)           | AI Config | Play Style Config  |  <- right dock: SETTINGS
+|  transport: > Play/|| Pause  [] Stop     | Input | Others                 |
+|  crystal marker, AI thinking lines        |  sections fold - / + (D22)     |
++-------------------------------------------+--------------------------------+
+| Runs | Scorecard | Decisions | About                                       |  <- bottom dock: RECORDS
++----------------------------------------------------------------------------+
+```
+
+- **Built by the shared `studio-ide.js`**:
+  `VesselStudioIDE.build({ key, host, stage, right: [[tabKey, title, [elements]]...], bottom: [...] })`.
+  The Stoat has its own `buildDocks` (the original); it calls `VesselStudioIDE.collapsible` for each
+  section, so it behaves the same.
+- **Right dock = settings, in this order** (D21, D25):
+  Scene Config · Game Config · AI Config · Play Style Config · Input · Others.
+  Bottom dock = records: Runs · Scorecard · Decisions · About.
+  Renaming a tab, or adding another, needs the user's say-so.
+- **Any tab pops out** (⧉) into a floating window that you drag, resize and dock back (⇲). Splitters
+  resize the docks. All of it is remembered under the layout key `<vessel>-studio-ide-vN`. Bump `N`
+  when tab keys change, so a saved layout cannot point at a tab that no longer exists.
+- **Below 900 px** the docks stack under the stage and the page scrolls. On a phone, touch play takes
+  the whole screen (D9).
+
+### 1.5.2 How a panel is made
+
+1. **A panel is a section with an id**: a `<details class="card" id="grp-...">` with a `<summary>`, or a
+   section whose first child is an h2-h4. The id is what keeps its fold state and its tab placement.
+2. **Put it in exactly one tab** by listing its id in that tab's element list. Never place the same
+   control in two tabs; a second copy drifts from the first.
+3. **Sections in a tab are siblings, one level deep** (the user, 2026-10-09). Never nest one section
+   inside another; the Stoat's Black hole and White hole sit BESIDE Field trajectory, not inside it.
+   Order them from the most-used to the least.
+4. **Every section folds** with − / + (D22). It is open by default, and its state is remembered per
+   studio and section id.
+5. **Every setting explains itself** (D10): a tooltip, with a live preview where a number changes the
+   feel. It names its source asset, or says "lab-only" (D1).
+6. **A shared control is never hand-built.** If more than one studio needs it, it goes in a shared
+   script under `Docs/Studios/VesselStudio/` (listed under `shared` in `studios.json`):
+   - `ai_race_panel.js`: course, camera, speed, players, seats, levels, styles, thinking, auto-restart;
+   - `studio-ide.js`: docks, tabs, pop-outs, folds;
+   - `studio-look.js`: sky, prism field, crystals, marker.
+
+   Then every studio gets the change.
+7. **Every panel and popup closes** with ×, a press outside it, and Escape (D15).
+
+### 1.5.3 The control rules (dropdowns, not button rows)
+
+| A choice of... | Use | Never |
+|---|---|---|
+| One of several named options (course, camera, speed, level, domain, style) | a **dropdown** `<select class="arp-seg">`. A level colours its select (`data-lv`) | a row of mode buttons (artifact comment, 2026-10-09) |
+| On / off | a **checkbox** with a sentence label ("Show AI thinking") | a two-button toggle |
+| A number | a **slider** with its value, its unit and its source in the tooltip | a bare text box |
+| How many (players) | **+ / −** buttons beside the count, disabled at the limits | a number dropdown |
+| A one-shot action (Score all styles, Restart) | a **button** | a checkbox |
+| Play / pause / stop | the **transport** (D18): one ▶/❚❚ toggle and ■ Stop, on the stage and the phone bar | per-panel start buttons |
+
+- **Not supported yet? Show it disabled, with the reason once** (`supports: { rivals: 'why' }`).
+  Never hide it: a hidden control reads as "this studio cannot", and a disabled one with a reason
+  reads as "not yet".
+- **One column wide.** Labels go on the left (86 px), controls on the right, and nothing scrolls
+  sideways at 400 px (the gate checks this).
+- **Served JavaScript is ASCII only.** Write `−`, never `−`, in a `.js` file (§7).
+
+### 1.5.4 Scene Config: what the world is
+
+| Row | Values | Rule |
+|---|---|---|
+| **Course / intensity** | the mode's **4-step intensity ladder**, `I1`-`I4` (D7) | Generated from the game's data, never retyped (Skim Race: `skimrace_track_fingerprint.py --emit-track`). Each course is `{ v, label, note }`, with the note saying what it is ("tilted spline, 3 laps"). A new arcade-mode studio passes ITS mode's ladder, from its four `CellConfigDataSO`s (`/arcadegame`) |
+| **Camera** | Chase · Follow · Free (D16) | See 1.5.9 |
+| **Speed** | 1× · 2× · 4× | Simulation speed. The physics step stays the same; more steps run per frame |
+| then the world's own sections | sliders | Flight & course, the field, the holes, and so on: siblings, foldable |
+
+Mount the race panel with `sceneHost: <element in Scene Config>`, so Course, Camera and Speed render
+here while the rest of the panel stays in Game Config or AI Config. It is one panel, one state.
+
+### 1.5.5 Game Config: who is in the race (players, add / remove, domain, difficulty, view)
+
+The Players list (D25), drawn by the panel when you pass `players: { host, max, domains }`:
+
+- **Players N with − / +**, from 1 to `max` (4; the panel allows up to 8).
+  - **+** adds an AI player in the first **unused domain**, at **Hard**, with the next play style;
+    its card opens.
+  - **−** removes the LAST player. Player 1 cannot be removed.
+- **Each player is a foldable card** whose summary reads "Player 2 · AI Medium · Ruby · Comet ·
+  viewed". Inside:
+  - **Is AI**: player 1 is your hull, and you choose who flies it (you, or the AI). Every other
+    player is always an AI (one human per studio).
+  - **Domain**: the game's four (`Domains.cs`: Jade 1 · Ruby 2 · Blue 3 · Gold 4), each in its colour.
+    A player keeps its colour whichever players are in.
+  - **Difficulty**: Easy · Medium · Hard (1.5.7). It is disabled while you fly the hull, and says why.
+  - **Play style**: one of the vessel's named styles (D23). Shown only when the studio passes `styles`.
+  - **View**: ◉ Viewing / ○ View plus a camera dropdown. The camera follows that player.
+- **State**: `players = [{ ai, domain, level, style }]`, `view = index`, reported through
+  `onChange('players' | 'view')`. The panel keeps the older keys (`you`, `rivals`, `rivalStyles`) in
+  step, so a page that reads them keeps working.
+- **A change to who is racing starts a new race.** A change to the view or camera does not.
+- **Domain colours**: pass the page's own domain table to `players.domains`. The two studios differ
+  slightly today (Squirrel jade `#35e0b0`, ruby `#ff4f7b`, gold `#ffc247`, blue `#6aa8ff`; Stoat jade
+  `#37e3a0`, ruby `#ff4d6d`, blue `#4da3ff`, gold `#ffc93c`). **Open:** one shared domain table in
+  `studio-look.js`.
+- **Without Game Config** (the Squirrel today) the panel draws the older rows in AI Config instead:
+  - **Your hull**: You fly / AI Easy / AI Medium / AI Hard;
+  - **one row per AI rival seat** (Ruby, Gold, Blue), each Off / Easy / Medium / Hard (D20).
+
+  Move a studio to `players` when you next touch its race panel.
+
+### 1.5.6 AI Config: how the AI thinks
+
+- **Show AI thinking** (checkbox): a line from each AI hull to the point it is steering for, drawn
+  where the decision is made (inside `aiInput`). The colours are fixed:
+  - green: flying for the target;
+  - amber: has not noticed it yet;
+  - red: misjudged it;
+  - violet: working the vessel's mechanic (the Stoat's pair).
+- **Restart each race on its own** (checkbox), for watching many races in a row.
+- **The level note** (`levelNote`): one paragraph saying what Easy, Medium and Hard mean in THIS
+  studio, and where the numbers come from (the game's asset, or "lab-only").
+- **The AI's own tuning**: sliders, marked lab-only, and the scorecard buttons ("Score AI levels",
+  "Score all styles"), whose results go to the bottom dock's Scorecard.
+
+### 1.5.7 The AI difficulty levels (D4, D24)
+
+| Level | What changes | Numbers (Skim Race, `SkimRaceDifficulty.asset`) |
+|---|---|---|
+| **Hard** | Nothing: the skilled pilot | no notice delay, no misjudgements |
+| **Medium** | Hard plus mistakes in what it BELIEVES | notices each new target 0.25 s late (mean, × 0.5-1.5); misjudges 4.5% of targets |
+| **Easy** | the same mistakes, more of them | 0.5 s late; 9.9% misjudged |
+| **Off** | (a seat only) the seat is empty | - |
+
+- **The AI is input-only.** A level changes only what the AI believes. It never changes its stick or
+  the hull's state. A misjudged target is flown to where it was believed, so the miss costs what it
+  costs in the game.
+- **Hard must be skilled, not just mistake-free.** Prove it with the level scorecard: Hard is fastest
+  on every course. Otherwise the levels decide nothing.
+- **A vessel-specific mistake** (the Stoat's pair judgement) is lab-only, and the level note says so.
+
+### 1.5.8 Play Style Config (D6, D23)
+
+- **Play styles are named types over the four element levels** (Charge · Mass · Space · Time), never
+  raw sliders. Examples: the Stoat's Comet (Time), Anchor (Space), Maelstrom (Mass), Flare (Charge)
+  and Needle; the Squirrel's six types.
+- **Under the named types**, the element level sliders, then the vessel's main mechanic.
+- **An AI player flies a style too**: the style's own changes, plus how that style's AI flies it (its
+  brain: `STYLE_BRAIN` in the Stoat, lab-only and named).
+- **Retired variants go to an Archive section** (Others or Play Style Config), never deleted, so an
+  old decision can be replayed. Example: the Stoat's dipole, orbit and crystal slings.
+
+### 1.5.9 Cameras (D16)
+
+| Camera | What it does |
+|---|---|
+| **Chase** | Close behind the viewed hull, rolling with it. Smooth the OFFSET, never the position (it lags at boost otherwise) |
+| **Follow** | Wider and world-up. It follows the player picked with View (Game Config), or cycles pilots with C |
+| **Free** | Detached from the hull. It flies (drag to look, I J K L / U O, Shift for fast, phone sticks) or orbits the viewed hull (drag, wheel to zoom) |
+
+C, or the gamepad, cycles the cameras. Hide the viewed hull's own skimmer sphere in Chase.
+**Open:** offer both Free modes (fly and orbit) in both studios.
+
+### 1.5.10 Input, Others, and the rest of the frame
+
+- **Input**: a controls card covering the gamepad (the game's dual-stick mix, §3.2), the keys, the free
+  camera, the transport and the phone. It also holds the feel settings for how input maps (drift
+  depth, squeeze curve). Phone play uses two thumb sticks plus LT/RT drag handles, all into the SAME
+  input object (D9).
+- **Others**: anything vessel-specific that fits none of the other tabs: the ability row, live
+  numbers, lope, the archive.
+- **Look** (D19): `VesselStudioLook.install(scene, {...})`. It gives the Stoat sky, the prism field,
+  `crystal(color)` and the edge `marker`.
+- **Records**: Runs (every race, its seed and settings), Scorecard (D5: one column per question,
+  beside the game's own numbers), Decisions (the shared log in the artifact's `decisions`), About
+  (what is modelled and what is not).
+- **State**:
+  - each studio saves its settings in `localStorage`, under one versioned key
+    (`cs.studio.squirrel.v2`, `stoat-studio-v9`);
+  - `panel.set(key, value, true)` syncs a code-side change silently;
+  - the test hook `window.__<vessel>Studio` drives it all headless (D14).
+
+### 1.5.11 Checklist: a new studio's panels
+
+- [ ] The six right-dock tabs in order. Every section has an id, sits in one tab, is a sibling, and
+      folds.
+- [ ] The race panel is mounted with `courses` (the mode's I1-I4), `sceneHost`, `players` (with the
+      four domains), `styles`, `supports` (a reason for anything not built) and `levelNote`.
+- [ ] Every choice is a dropdown, toggle, slider or + / −; no button rows.
+- [ ] Easy / Medium / Hard come from the game's difficulty asset (or say lab-only); the level
+      scorecard shows Hard fastest.
+- [ ] The three cameras, View per player, the transport, phone play.
+- [ ] `check_studio.cjs` passes (§3.3), the screenshots have been read, and the page is published into
+      the ONE artifact (§4).
 
 ## 2. A new studio, in order
 
@@ -82,9 +289,9 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 2. **`python3 Tools/Build/element_ability_table.py <Vessel>`** (the `/vessel` skill), so numbers start
    from the shipped asset (D1).
 3. **Copy a template, never a blank page** (§3): `squirrel.html` for a shipped vessel with AI; the
-   Stoat page's structure for a design studio. Walk D1–D21 against the copy. Put every setting under
-   one of the five universal tabs (D21: Scene Config, AI Config, Play Style Config, Input, Others), and
-   mount the race panel (D17) with `sceneHost`.
+   Stoat page's structure for a design studio. Walk D1–D25 and §1.5.11 against the copy. Put every setting under
+   one of the six universal tabs (D21, D25: Scene Config, Game Config, AI Config, Play Style Config, Input,
+   Others), and mount the race panel (D17) with `sceneHost` and `players`. Build the panels by §1.5.
 4. **Gate** (§3.3), then READ the screenshots.
 5. **Catalog** (§3.5). Amoebius and Unity need no code.
 6. **Publish into the one artifact** (§4) and record the first decision (§5): what the studio is for.

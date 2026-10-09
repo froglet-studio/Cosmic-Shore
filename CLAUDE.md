@@ -49,6 +49,16 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
+## Vessel work starts in the Vessel Studio (recommend it, every time)
+
+Before changing how any vessel flies, its AI, its difficulty levels, its play styles or its cameras, **recommend the
+Vessel Studio** to the person in one line: the ONE claude.ai artifact
+(https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where the team flies, watches and decides vessels and their AI on
+phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
+built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Others; dropdown rules; the
+Players list with + / -, domain, difficulty, play style and view; the Easy / Medium / Hard levels; the I1-I4
+intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second studio artifact.
+
 ## Testing
 
 ### Test Infrastructure
