@@ -65,9 +65,14 @@ namespace Prisma.Bisect
         public List<BisectStep> Steps { get; init; } = new();
         public IEnumerable<BisectStep> Skipped => Steps.Where(s => s.Verdict == "skip");
 
+        // git quotes the bad term in its verdict lines in newer releases (2.55 on CI's runners:
+        // "is the first 'bad' commit", "# first 'bad' commit: [...]", "The first 'bad' commit could
+        // be any of"); older ones (2.47) print it bare. Accept both, or a newer git reads as "no
+        // culprit found".
         static readonly Regex Judged = new(@"^# (good|bad|skip): \[([0-9a-f]{7,64})\] ?(.*)$");
-        static readonly Regex First = new(@"^# first bad commit: \[([0-9a-f]{7,64})\] ?(.*)$");
-        static readonly Regex FirstInRun = new(@"^([0-9a-f]{40,64}) is the first bad commit");
+        static readonly Regex First = new(@"^# first '?bad'? commit: \[([0-9a-f]{7,64})\] ?(.*)$");
+        static readonly Regex FirstInRun = new(@"^([0-9a-f]{40,64}) is the first '?bad'? commit");
+        static readonly Regex CouldBeAnyOf = new(@"^The first '?bad'? commit could be any of");
 
         /// <summary>
         /// The log records the endpoints as comments before <c>git bisect start</c>; every judged
@@ -96,7 +101,7 @@ namespace Prisma.Bisect
                     var m = FirstInRun.Match(l);
                     if (m.Success) first = m.Groups[1].Value;
                 }
-            int any = lines.FindIndex(l => l.StartsWith("The first bad commit could be any of", StringComparison.Ordinal));
+            int any = lines.FindIndex(l => CouldBeAnyOf.IsMatch(l));
             if (any >= 0)
                 candidates.AddRange(lines.Skip(any + 1).TakeWhile(l => Regex.IsMatch(l, "^[0-9a-f]{40,64}$")));
             return new BisectOutcome { FirstBad = first, FirstBadSubject = firstSubject ?? "", Candidates = candidates, Steps = steps };
