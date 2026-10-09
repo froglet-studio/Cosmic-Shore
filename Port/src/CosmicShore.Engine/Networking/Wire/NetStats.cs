@@ -288,6 +288,7 @@ namespace CosmicShore.Engine.Networking
             if (!string.IsNullOrWhiteSpace(profile)) sb.Append(" · ").Append(profile.Trim());
             if (!NetDriver.IsActive) return sb.ToString();
             sb.Append(NetDriver.IsServer ? " · HOST" : " · CLIENT");
+            sb.Append(NetRelay.TitleTag);
             double rtt = -1;
             foreach (var p in s_peers.Values) if (p.RttMs > rtt) rtt = p.RttMs;
             if (rtt >= 0) sb.Append($" · rtt {rtt:0} ms");

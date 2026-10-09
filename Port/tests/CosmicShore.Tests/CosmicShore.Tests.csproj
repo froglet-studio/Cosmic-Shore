@@ -35,6 +35,10 @@
     <ProjectReference Include="../../src/CosmicShore.Build/CosmicShore.Build.csproj" />
     <!-- Package-API shims (EntitiesShimTests exercises the Entities component store). -->
     <ProjectReference Include="../../src/CosmicShore.Compat/CosmicShore.Compat.csproj" />
+    <!-- Unity Relay + UGS (docs/RELAY.md): protocol, link, session cache, region pick. -->
+    <ProjectReference Include="../../src/CosmicShore.Online/CosmicShore.Online.csproj" />
+    <!-- RelayLiveTests (env-gated) launches two relay-probe processes; built alongside, not referenced. -->
+    <ProjectReference Include="../CosmicShore.RelayProbe/CosmicShore.RelayProbe.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

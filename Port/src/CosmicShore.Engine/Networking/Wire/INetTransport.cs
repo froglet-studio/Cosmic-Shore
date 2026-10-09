@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CosmicShore.Engine.Networking
 {
@@ -79,8 +80,35 @@ namespace CosmicShore.Engine.Networking
                 case "udp": NetDriver.TransportFactory = new UdpTransportFactory(); return "udp";
                 case "tcp": NetDriver.TransportFactory = new TcpTransportFactory(); return "tcp";
                 default:
-                    Console.WriteLine($"[net] unknown transport '{name}' (tcp, udp): using {Default}");
+                    Func<INetTransportFactory> make;
+                    lock (s_registered)
+                        if (!s_registered.TryGetValue(n, out make)) make = null;
+                    if (make != null) { NetDriver.TransportFactory = make(); return n; }
+                    Console.WriteLine($"[net] unknown transport '{name}' ({string.Join(", ", Names)}): using {Default}");
                     return Select(Default);
+            }
+        }
+
+        static readonly Dictionary<string, Func<INetTransportFactory>> s_registered = new();
+
+        /// <summary>
+        /// Adds a transport <see cref="Select"/> can name, from an assembly the engine does not reference
+        /// (CosmicShore.Online registers "relay": docs/RELAY.md). Registering a name again replaces it.
+        /// </summary>
+        internal static void Register(string name, Func<INetTransportFactory> make)
+        {
+            if (string.IsNullOrWhiteSpace(name) || make == null) throw new ArgumentException("a transport needs a name and a factory");
+            lock (s_registered) s_registered[name.Trim().ToLowerInvariant()] = make;
+        }
+
+        /// <summary>Every name <see cref="Select"/> accepts.</summary>
+        public static IReadOnlyList<string> Names
+        {
+            get
+            {
+                var list = new List<string> { "udp", "tcp" };
+                lock (s_registered) list.AddRange(s_registered.Keys);
+                return list;
             }
         }
     }

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Prisma online services: Unity Relay (an internet relay for player-to-player sessions) and the
+       UGS REST client it needs (anonymous sign-in, Relay allocations, QoS region discovery).
+       Kept out of CosmicShore.Engine so the engine takes no package dependency: DTLS (Relay's
+       encrypted mode) needs BouncyCastle. Only the player references this; the launcher's UPDATE
+       (which builds the Launcher and Shared only) never needs it. See docs/RELAY.md. -->
+  <PropertyGroup>
+    <RootNamespace>CosmicShore.Online</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- DTLS 1.2 with a pre-shared key, Relay's encrypted mode. MIT license (THIRD_PARTY_NOTICES.md). -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CosmicShore.Tests" />
+  </ItemGroup>
+</Project>

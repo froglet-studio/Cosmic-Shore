@@ -17,6 +17,8 @@ namespace CosmicShore.Player
     ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
     ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G] [--recycle-mb MB]
     ///
+    ///   CosmicShore [--relay | --relay-host | --relay-join CODE] [--relay-region R] [--relay-udp]   (Unity Relay, docs/RELAY.md)
+    ///
     /// --verbose opens every CSDebug log channel (a development build's bring-up traces).
     /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
     ///
@@ -129,6 +131,19 @@ namespace CosmicShore.Player
                     case "--view-model" when i + 1 < args.Length: ModelViewer.Path = args[++i]; break;
                     case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
+                    // Unity Relay (docs/RELAY.md). --relay sends party/session play through Relay; --relay-host and
+                    // --relay-join CODE also host / join directly once the menu is up. Each sets the variable it names.
+                    case "--relay": Environment.SetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT", "relay"); break;
+                    case "--relay-host":
+                        Environment.SetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT", "relay");
+                        CosmicShore.Online.RelayCommands.ArmAutoStart("host");
+                        break;
+                    case "--relay-join" when i + 1 < args.Length:
+                        Environment.SetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT", "relay");
+                        CosmicShore.Online.RelayCommands.ArmAutoStart("join", args[++i]);
+                        break;
+                    case "--relay-region" when i + 1 < args.Length: Environment.SetEnvironmentVariable("COSMIC_SHORE_RELAY_REGION", args[++i]); break;
+                    case "--relay-udp": Environment.SetEnvironmentVariable("COSMIC_SHORE_RELAY_DTLS", "0"); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
                     case "--render-scale" when i + 1 < args.Length:

@@ -16,8 +16,10 @@ namespace CosmicShore.Engine.Networking
     /// files in a directory every player on the machine - or on the LAN, given a shared folder -
     /// can see. A session carries what the real one does: id and join code, host, capacity, the
     /// indexed session properties queries filter on, and a roster whose per-player properties the
-    /// game uses as its invite channel. A Relay-networked session also records the host's
-    /// transport endpoint, which is what a join connects the NetworkManager to.
+    /// game uses as its invite channel. A Relay-networked session also records how to reach the host:
+    /// its direct UDP endpoint, or - when a real relay backend is installed (<see cref="NetRelay"/>,
+    /// the "relay" transport, docs/RELAY.md) - the Unity Relay join code the host's slot answers to.
+    /// A join connects the NetworkManager to whichever the record holds.
     ///
     /// Liveness mirrors lobby heartbeats: every live session handle stamps its player every few
     /// seconds; a player unseen for <see cref="PlayerTimeout"/> is dropped from the roster and a
@@ -63,6 +65,8 @@ namespace CosmicShore.Engine.Networking
             public bool IsPrivate { get; set; }
             public string RelayAddress { get; set; }
             public int RelayPort { get; set; }
+            /// <summary>The Unity Relay join code when the host went through Relay (then there is no direct endpoint).</summary>
+            public string RelayJoinCode { get; set; }
             public Dictionary<string, PropRecord> Properties { get; set; } = new();
             public List<PlayerRecord> Players { get; set; } = new();
         }
@@ -130,7 +134,7 @@ namespace CosmicShore.Engine.Networking
 
         // ── IMultiplayerService ─────────────────────────────────────
 
-        public Task<ISession> CreateSessionAsync(SessionOptions options)
+        public async Task<ISession> CreateSessionAsync(SessionOptions options)
         {
             var nm = NetworkManager.Singleton;
             var rec = new SessionRecord
@@ -150,16 +154,35 @@ namespace CosmicShore.Engine.Networking
 
             if (options?.UseRelay == true && nm != null)
             {
+                // With a relay backend the host's slot is reserved first, so the listen below goes through it.
+                if (!nm.IsListening && NetRelay.Backend is { } relay)
+                {
+                    int joiners = options.MaxPlayers > 1 ? options.MaxPlayers - 1 : 15;
+                    try { rec.RelayJoinCode = await relay.PrepareHostAsync(joiners, options.RelayRegion); }
+                    catch (Exception e)
+                    {
+                        // Offline, or UGS refused: the local stand-in still works on this machine and the LAN.
+                        Debug.LogWarning($"[Multiplayer] Relay unavailable ({e.Message}); hosting this session on the local network instead.");
+                    }
+                }
                 // The SDK's network handler brings the NetworkManager up as host before the create completes.
                 if (!nm.IsListening) nm.StartHost();
-                int port = NetDriver.ListenPort;
-                if (port > 0) { rec.RelayAddress = AdvertisedAddress(); rec.RelayPort = port; }
+                if (rec.RelayJoinCode != null)
+                {
+                    if (NetDriver.IsServer) Console.WriteLine($"[relay] session {rec.Code} is hosted through Unity Relay - join code {rec.RelayJoinCode}");
+                    else rec.RelayJoinCode = null; // the listen failed: nobody could join through the code
+                }
+                else
+                {
+                    int port = NetDriver.ListenPort;
+                    if (port > 0) { rec.RelayAddress = AdvertisedAddress(); rec.RelayPort = port; }
+                }
             }
             Locked(() => { Store(rec); return 0; });
-            return Task.FromResult<ISession>(new DirectorySession(this, rec, options?.UseRelay == true));
+            return new DirectorySession(this, rec, options?.UseRelay == true);
         }
 
-        public Task<ISession> JoinSessionByIdAsync(string sessionId, JoinSessionOptions options = null)
+        public async Task<ISession> JoinSessionByIdAsync(string sessionId, JoinSessionOptions options = null)
         {
             var rec = Locked(() =>
             {
@@ -179,19 +202,50 @@ namespace CosmicShore.Engine.Networking
                 Store(r);
                 return r;
             });
-            bool networked = rec.RelayPort > 0;
+            bool viaRelay = !string.IsNullOrEmpty(rec.RelayJoinCode);
+            bool networked = rec.RelayPort > 0 || viaRelay;
             if (networked && NetworkManager.Singleton is { } nm)
             {
                 if (nm.IsListening)
                     Debug.LogWarning("[Multiplayer] Joining a networked session while the NetworkManager is still running; shut it down first.");
                 else
                 {
-                    var t = nm.Transport;
-                    if (t != null) t.SetConnectionData(rec.RelayAddress, (ushort)rec.RelayPort);
+                    if (viaRelay)
+                    {
+                        try
+                        {
+                            if (NetRelay.Backend is not { } relay)
+                                throw new InvalidOperationException("this session is hosted through Unity Relay; start with --relay (COSMIC_SHORE_NET_TRANSPORT=relay) to join it");
+                            await relay.PrepareJoinAsync(rec.RelayJoinCode);
+                        }
+                        catch (Exception e)
+                        {
+                            Leave(rec.Id, SelfId);
+                            throw new SessionException(SessionError.Unknown, $"Could not join through Relay: {e.Message}");
+                        }
+                    }
+                    else
+                    {
+                        var t = nm.Transport;
+                        if (t != null) t.SetConnectionData(rec.RelayAddress, (ushort)rec.RelayPort);
+                    }
                     nm.StartClient();
                 }
             }
-            return Task.FromResult<ISession>(new DirectorySession(this, rec, networked));
+            return new DirectorySession(this, rec, networked);
+        }
+
+        /// <summary>Takes <paramref name="playerId"/> back off a session's roster (a join that could not connect).</summary>
+        void Leave(string sessionId, string playerId)
+        {
+            Locked(() =>
+            {
+                var r = Load(sessionId);
+                if (r == null) return 0;
+                r.Players.RemoveAll(p => p.Id == playerId);
+                Store(r);
+                return 0;
+            });
         }
 
         public Task<QuerySessionsResults> QuerySessionsAsync(QuerySessionsOptions options)

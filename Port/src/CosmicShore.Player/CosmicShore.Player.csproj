@@ -22,6 +22,8 @@
     <ProjectReference Include="../CosmicShore.Live/CosmicShore.Live.csproj" />
     <ProjectReference Include="../CosmicShore.Content/CosmicShore.Content.csproj" />
     <ProjectReference Include="../CosmicShore.Render/CosmicShore.Render.csproj" />
+    <!-- Unity Relay + UGS sign-in, the "relay" transport (docs/RELAY.md). -->
+    <ProjectReference Include="../CosmicShore.Online/CosmicShore.Online.csproj" />
   </ItemGroup>
 
   <ItemGroup>
