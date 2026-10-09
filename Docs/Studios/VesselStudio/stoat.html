@@ -229,7 +229,6 @@
   .panebar { display: flex; justify-content: flex-end; gap: 6px; margin: -4px -2px -2px; }
   .panebar button, .fwin .fbar button { font: inherit; font-size: 0.75rem; color: var(--dim); background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; cursor: pointer; }
   .panebar button:hover, .fwin .fbar button:hover { color: var(--fg); border-color: var(--accent); }
-  .pane > details.card > summary { display: none; }
   .pane > .card, .fwin .pane > .card { border: 0; padding: 0; background: transparent; }
   .pane > .card + .card { border-top: 1px solid var(--line); padding-top: 8px; border-radius: 0; }
   .pane .lower-sec h2 { display: none; }
@@ -455,6 +454,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="ai_race_panel.js"></script>
+<script src="studio-ide.js"></script>
 <script>
 (function () {
   'use strict';
@@ -4231,7 +4231,7 @@
         bar.innerHTML = '<button type="button" title="Open this tab in its own window">⧉ Pop out</button>';
         bar.firstChild.addEventListener('click', () => openWindow(key));
         pane.appendChild(bar);
-        for (const id of ids) { const el = els[id]; if (!el) continue; if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }
+        for (const id of ids) { const el = els[id]; if (!el) continue; if (window.VesselStudioIDE) VesselStudioIDE.collapsible(el, 'stoat-studio'); else if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }   // every section folds with - / + (D22)
         btn.addEventListener('click', () => { if (TAB[key].win) { raiseWindow(key); return; } selectTab(key); });
         tabs.appendChild(btn); panes.appendChild(pane);
         TAB[key] = { dock: d, title, btn, pane, panes, win: null };
