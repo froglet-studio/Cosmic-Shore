@@ -202,6 +202,12 @@ applies to new abilities, new resources on the meter list, and anything that add
     nobody — `Docs/ElementalAbilitySystem/BACKLOG.md`. A pickup "with no vessel" is now a one-time
     `[CrystalMorph] [HullFusion]` warning, which is how this was found after four rounds of reading
     the prefabs had not found it.
+    **A skimmer that is SWITCHED OFF is no skimmer either.** The Butterfly's only skimmer was its
+    Dust-mode capsule, which `ButterflyDustField` disables in Mass mode — the spawn mode — so it
+    collected no elemental crystal at all while every audit read clean (the slot was assigned). A hull
+    whose skimmer is mode-gated needs an always-on crystal catcher: an initialised far-field sphere
+    with an EMPTY container (`ButterflyCrystalSkimmer`, `BUTTERFLY.md §3.1a`). Collection is the
+    crystal's side, so the catcher needs no effect, and empty lists make it inert to prisms and pilots.
 11b. **A skinned renderer's TRANSFORM is not its bind space — never size or aim anything off it.**
     `lossyScale`, `InverseTransformPoint` and `position` on a `SkinnedMeshRenderer` describe a node
     the bones may not agree with: the Sparrow model carries a node moved 185 units, the Manta family
