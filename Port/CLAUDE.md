@@ -4,7 +4,7 @@ The repository's root `CLAUDE.md` is about the Unity game. **This file is about 
 Amoebius, Froglet's own engine that runs the same game with no Unity. Both apply when you
 edit `Assets/_Scripts`, because the engine compiles those files live.
 
-**Name.** The engine is **Amoebius** (renamed from Amoebius on 2026-10-09). The code still carries the old
+**Name.** The engine is **Amoebius** (renamed from Prisma on 2026-10-09). The code still carries the old
 name, on purpose: the `Prisma.exe` binary and `Prisma-Windows.zip`, `Library/Prisma`, the `PRISMA_*`
 environment variables, the `prisma_*` MCP tools, the `/prisma` skill, the `prisma-*` workflows, class names
 (`PrismaBoard`, `PrismaTracks`), `PRISMA001`, the `#prisma` page hash and code comments. Renaming those

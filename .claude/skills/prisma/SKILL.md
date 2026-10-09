@@ -1,9 +1,9 @@
 ---
 name: prisma
-description: Work on Amoebius (formerly Amoebius; the Cosmic Shore .NET port under Port/) - build it, run the real game, see it, drive it and inspect it live through the engine's MCP tools or control port. Use for anything under Port/, for "run the game in our engine", "take a screenshot of the port", "why does the port show X", or to check an Assets/_Scripts change in the engine without Unity.
+description: Work on Amoebius (formerly Prisma; the Cosmic Shore .NET port under Port/) - build it, run the real game, see it, drive it and inspect it live through the engine's MCP tools or control port. Use for anything under Port/, for "run the game in our engine", "take a screenshot of the port", "why does the port show X", or to check an Assets/_Scripts change in the engine without Unity.
 ---
 
-# Amoebius (formerly Amoebius)
+# Amoebius (formerly Prisma)
 
 **Read `Port/CLAUDE.md` first.** It holds the map, the loop and the pitfalls; this skill is the
 checklist.
