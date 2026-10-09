@@ -13,6 +13,7 @@
  *                                                                            // studio yet (the string says why)
  *     levelNote: 'What Easy / Medium / Hard mean here, and where the numbers come from.',
  *     onChange: (key, value, state) => { ... },                              // after every user change
+ *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D23); state.rivalStyles
  *     sceneHost: element,   // optional: Course, Camera and Speed go here, the studio's Scene Config tab (D21);
  *                           // without it they stay in the panel
  *   });
@@ -26,6 +27,7 @@
  *                with its own level, /vessel-studio D20; 'Off' = the seat is empty)
  *   camera       'Chase' | 'Follow' | 'Free'            (the three studio cameras, D16)
  *   speed        1 | 2 | 4                              (simulation speed)
+ *   rivalStyles  one name of cfg.styles per seat (only when cfg.styles is given)
  *   thinking     boolean                                (draw each AI's target: believed vs real)
  *   autoRestart  boolean                                (start the next race on its own)
  *
@@ -56,6 +58,7 @@
     '.arp-row{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;align-items:center}',
     '.arp-row>span{font-size:12px;color:var(--muted,var(--dim,#8e95bf))}',
     '.arp-seats{display:grid;gap:8px}',
+    '.arp-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:6px;min-width:0}',
     '.arp-seg{width:100%;min-width:0;background:var(--panel-2,#181c30);color:var(--fg,#e9ecff);border:1px solid var(--line,#262b47);border-radius:6px;padding:5px 6px;font:inherit;font-size:12px;cursor:pointer}',
     '.arp-seg option{background:var(--panel-2,#181c30);color:var(--fg,#e9ecff)}',
     '.arp-seg[data-lv="Easy"]{color:var(--easy,#4be38f)}',
@@ -98,6 +101,9 @@
       thinking: v.thinking != null ? !!v.thinking : true,
       autoRestart: !!v.autoRestart
     };
+    var styles = Array.isArray(cfg.styles) && cfg.styles.length ? cfg.styles.slice() : null;
+    function seatStyles(arr) { return seats.map(function (_, k) { var x = arr && arr[k]; return styles.indexOf(x) >= 0 ? x : styles[0]; }); }
+    if (styles) state.rivalStyles = seatStyles(v.rivalStyles);
     if (sup.rivals !== true) state.rivals = seats.map(function () { return 'Off'; });
 
     var root = el('div', 'arp'); root.setAttribute('data-arp', '');
@@ -120,7 +126,8 @@
         var val = values[box.selectedIndex];
         if (opts.onPick) opts.onPick(val); else set(key, val);
       });
-      row.appendChild(name); row.appendChild(box);
+      row.appendChild(name);
+      if (opts.extra) { var two = el('div', 'arp-pair'); two.appendChild(box); two.appendChild(opts.extra); row.appendChild(two); } else row.appendChild(box);
       if (opts.disabled && opts.showOff !== false) row.appendChild(el('span', 'arp-off', opts.disabled));
       (opts.into || root).appendChild(row); groups[key] = box;
       if (opts.color) name.style.color = opts.color;
@@ -143,7 +150,15 @@
     var rivalsOff = sup.rivals === true ? null : why(sup.rivals);
     var seatBox = el('div', 'arp-seats'); seatBox.setAttribute('aria-label', 'AI rivals, each with its own level'); root.appendChild(seatBox);
     seats.forEach(function (seat, k) {
-      seg('seat' + k, 'AI ' + seat.name, SEAT_LEVELS, String, {
+      var extra = null;
+      if (styles) {   // D23: the seat's play style, beside its level
+        extra = el('select', 'arp-seg'); extra.setAttribute('aria-label', 'AI ' + seat.name + ' play style');
+        styles.forEach(function (n) { var o = el('option', null, n); o.value = n; extra.appendChild(o); });
+        if (rivalsOff) { extra.disabled = true; extra.title = rivalsOff; }
+        extra.addEventListener('change', function () { var arr = state.rivalStyles.slice(); arr[k] = extra.value; set('rivalStyles', arr); });
+        groups['style' + k] = extra;
+      }
+      seg('seat' + k, 'AI ' + seat.name, SEAT_LEVELS, String, { extra: extra,
         into: seatBox, color: seat.color, level: function (val) { return val === 'Off' ? null : val; },
         disabled: rivalsOff, showOff: k === seats.length - 1,   // the reason once, under the last seat
         onPick: function (val) { var arr = state.rivals.slice(); arr[k] = val; set('rivals', arr); }
@@ -165,24 +180,26 @@
         if (lv) box.setAttribute('data-lv', lv); else if (String(val) === 'Off') box.setAttribute('data-lv', 'Off'); else box.removeAttribute('data-lv');
       }
       ['course', 'you', 'camera', 'speed'].forEach(function (k) { if (groups[k]) press(groups[k], state[k]); });
-      seats.forEach(function (_, k) { press(groups['seat' + k], state.rivals[k]); });
+      seats.forEach(function (_, k) { press(groups['seat' + k], state.rivals[k]); if (styles) groups['style' + k].value = state.rivalStyles[k]; });
       groups.thinking.checked = !!state.thinking; groups.autoRestart.checked = !!state.autoRestart;
     }
     function set(key, val, silent) {
       if (!(key in state)) return;
       if (key === 'course') { var c = null; for (var i = 0; i < courses.length; i++) if (String(courses[i].v) === String(val)) c = courses[i].v; if (c == null) return; val = c; }
       if (key === 'rivals') { if (!Array.isArray(val) || sup.rivals !== true) return; val = seatLevels(val); }
+      if (key === 'rivalStyles') { if (!styles || !Array.isArray(val)) return; val = seatStyles(val); }
       if (key === 'speed') { val = +val; if (SPEEDS.indexOf(val) < 0) return; }
       if (key === 'you' && ['You'].concat(LEVELS).indexOf(val) < 0) return;
       if (key === 'camera' && CAMERAS.indexOf(val) < 0) return;
       if (key === 'thinking' || key === 'autoRestart') val = !!val;
-      var changed = key === 'rivals' ? state.rivals.join() !== val.join() : state[key] !== val;
+      var arrKey = key === 'rivals' || key === 'rivalStyles';
+      var changed = arrKey ? state[key].join() !== val.join() : state[key] !== val;
       state[key] = val; sync();
-      if (changed && !silent && typeof cfg.onChange === 'function') { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); cfg.onChange(key, key === 'rivals' ? val.slice() : val, c); }
+      if (changed && !silent && typeof cfg.onChange === 'function') { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); if (styles) c.rivalStyles = state.rivalStyles.slice(); cfg.onChange(key, arrKey ? val.slice() : val, c); }
     }
     sync();
     return {
-      get state() { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); return c; },
+      get state() { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); if (styles) c.rivalStyles = state.rivalStyles.slice(); return c; },
       set: set,
       refresh: sync,
       element: root

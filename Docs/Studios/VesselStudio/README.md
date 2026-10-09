@@ -12,7 +12,7 @@ browser, in a phone browser, from Amoebius's **STUDIOS** page on Windows, and fr
 | `studio-ide.js` | **The Vessel Studio editor layout** (`/vessel-studio` D8): the game view in the middle, every panel a tab in the right or bottom dock, pop-out windows, splitters, no page scroll. Listed under `shared` in `studios.json`. |
 | `ai_race_panel.js` | The **universal AI race config panel** (`StudioRacePanel.mount`): Course · Your hull (You / AI Easy / Medium / Hard) · one row per AI rival seat with its own level (Off / Easy / Medium / Hard, D20) · Camera (Chase / Follow / Free) · Speed · Show AI thinking · Auto-restart. The Squirrel and the Stoat both mount it, and every arcade-game studio after them does too (`/vessel-studio` D17, §3.4). Listed under `shared` in `studios.json`. |
 | `sync.js` | The **Sync panel** (Refresh, console, merge then delete, shared decisions; a Claude session does the git work as jobs). Not referenced by the pages in the repo: `.claude/skills/vessel-studio/build_artifact.py` and Refresh inject it at publish time. User doc: `SYNC_PANEL.md`. Live in the one artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa |
-| `stoat.html` | The **Stoat Flight Studio** (round 15: the field trajectory; round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
+| `stoat.html` | The **Stoat Flight Studio** (AI levels and rivals, 2026-10-09: Easy / Medium / Hard as the Skim Race levels, up to three rival Stoats each with its own level and play style, the **Score AI levels** scorecard; round 15: the field trajectory; round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
 
 ## Rules for every studio page
 
@@ -70,3 +70,24 @@ costs it, and it recovers from a missed crystal in ~2 s where the game's pilot l
 
 STUDIOS ▸ **OPEN IN AMOEBIUS** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
 the game itself. Step-by-step checks: `../PRISMA_TEST_STEPS.md`.
+
+### Stoat AI levels, measured 2026-10-09 (field trajectory, Balanced, 2 laps; median of seeds 11/23/37/51/67, seconds)
+
+Hard is one deterministic run, so it has no spread. Medium and Easy are Hard plus the Skim Race mistakes
+(`AI_LEVELS`: late notice, misjudged ring) and the lab-only pair judgement.
+
+| Course | Easy | Medium | Hard | Medium vs Hard | Easy vs Hard |
+|---|---|---|---|---|---|
+| I1 | 82 | 77 | 56 | +38% | +46% |
+| I2 | 89 | 79 | 59 | +34% | +51% |
+| I3 | 79 | 68 | 52 | +31% | +52% |
+| I4 | 70 (1 DNF of 5) | 62 | 49 | +27% | +43% |
+
+- Before the path-watching field AI (`aiWarp`), Hard held the pair for a set time and came out at 70–89 s.
+  Medium and Easy were faster than Hard on two of the four courses, because the outcome was chaotic.
+- Holding the poles while they warp the path made Hard 49–59 s, warped 79–95% of the race.
+- The game's own gaps (`SKIM_RACE_AI.md` §10) are Medium 14–19% and Easy 23–54% slower than Hard. The Stoat's
+  Medium gap is wider than the game's: a missed ring costs a turn-back at warp speed. The Easy gap is in the
+  game's range.
+- In the page: AI Config ▸ **Score AI levels** (3 seeds, any play style).
+

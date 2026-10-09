@@ -116,7 +116,6 @@
   details.card > summary::-webkit-details-marker { display: none; }
   details.card > summary::after { content: "+"; color: var(--dim); }
   details.card[open] > summary::after { content: "–"; }
-  details.card.nested { margin: 8px 0 0; padding: 8px 10px; background: var(--panel-2, rgba(255,255,255,0.03)); }
   details.card > summary small { font-family: var(--font-body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); font-size: 0.78rem; }
   .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .stylebtn { text-align: left; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; font-family: var(--font-body); display: flex; flex-direction: column; gap: 2px; }
@@ -358,6 +357,8 @@
         </div>
         </div>
         <pre class="aistats" id="aiStats">Not flying yet.</pre>
+        <div class="btns"><button class="pick primary" type="button" id="levelBtn">Score AI levels</button><label style="margin:0">as <select id="levelStyle" aria-label="Play style the level scorecard flies"></select></label><span class="hint" id="levelNoteTxt" style="margin:0">Easy · Medium · Hard on courses I1–I4, 3 seeds each, alone, no drawing</span></div>
+        <div id="levelOut"></div>
         <div class="rows"></div>
         <div class="btns"><button class="pick primary" type="button" id="batchBtn">Score all five styles</button><button class="pick" type="button" id="scoreShow">Show scorecard</button><span class="hint" id="batchNote" style="margin:0">no drawing, a few seconds</span></div>
         <div id="batchOut"></div>
@@ -491,7 +492,7 @@
     styleComet: 0.5, styleNeedle: 0.5, styleAnchor: 0.5, styleMaelstrom: 0.5, styleFlare: 0.5,
     styleStep: 0.15, styleDrift: 0.04, needleStep: 0.1, needleCone: 20,
     // the AI pilot (sim lab)
-    aiQ: 0.6, aiCone: 12, aiGiveUp: 3.5, aiMinRing: 200, aiTurn: 70, aiSling: 1, aiTau: 0.3, aiNoise: 0,
+    aiQ: 0.6, aiCone: 12, aiGiveUp: 3.5, aiMinRing: 200, aiTurn: 70, aiSling: 1, aiTau: 0.3, aiNoise: 0, aiWarp: 1, aiWarpQ: 1, aiNear: 60, aiLimeWait: 0.5,
     // birth & annihilation (the dipole pair)
     bornS: 0.9, whInS: 1.1, whInFrom: 700, dieS: 0.7, whOutSpeed: 450, whOutFade: 1.6, shellBend: 6,
     gwAmp: 12, gwSpeed: 120, gwPeriod: 0.35, gwRingdown: 1.0, gwPrism: 0.6, gwShake: 1, gwGlow: 1,
@@ -513,6 +514,10 @@
     ['ai', 'aiTurn', '…or if the turn to it is sharper than (°)', 10, 180, 5],
     ['ai', 'aiTau', 'AI steering response (s)', 0.05, 1, 0.01],
     ['ai', 'aiNoise', 'AI sloppiness (0 = perfect, 1 = rookie)', 0, 1, 0.05],
+    ['ai', 'aiWarp', 'Field AI watches its path (1) or holds for a set time (0)', 0, 1, 1],
+    ['ai', 'aiWarpQ', 'Field AI squeeze (measured best: 1)', 0.05, 1, 0.05],
+    ['ai', 'aiNear', 'Field AI lets go this close to the ring (u)', 0, 300, 5],
+    ['ai', 'aiLimeWait', 'Field AI lets go once the path has not warped for (s)', 0.1, 3, 0.05],
     ['style', 'styleComet', 'Comet · velocity', 0, 1, 0.01],
     ['style', 'styleNeedle', 'Needle · precision', 0, 1, 0.01],
     ['style', 'styleAnchor', 'Anchor · control', 0, 1, 0.01],
@@ -699,7 +704,8 @@
   let invertY = !!saved.invertY;
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40) }); }
+  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
+    rivals: typeof seatLv !== 'undefined' ? { lv: seatLv, st: seatStyle } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel }); }
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
@@ -940,10 +946,13 @@
     const r = Math.max(0, ramp), rd = 0.5 * v * r;
     return gap <= rd && r > 0 ? Math.sqrt(2 * gap * r / v) : r + (gap - rd) / v;
   }
+  // Who is flying right now: 0 = your hull, 1-3 = an AI rival (the rival block swaps every per-pilot variable in and
+  // out, so the one flight law flies every Stoat). A pair remembers who laid it; `owned` = laid by whoever is flying.
+  let curPilot = 0, curRival = null;
   class Pair {
     constructor(st, mid, axis, up, S, owned, opts) {
       opts = opts || {};
-      this.style = st; this.mid = mid.clone(); this.axis = axis.clone().normalize(); this.up = up.clone().normalize(); this.S = S; this.owned = owned;
+      this.style = st; this.mid = mid.clone(); this.axis = axis.clone().normalize(); this.up = up.clone().normalize(); this.S = S; this.owned = owned; this.pilot = curPilot;
       this.rs = opts.rs != null ? opts.rs : Math.max(MIN_HORIZON, S * HORIZON_PER_STRENGTH);
       this.h0 = opts.h0 != null ? opts.h0 : this.rs * P.halfGapHorizons;
       this.held = !!opts.held; this.closeT = 0; this.autoLetGo = opts.autoLetGo || 0;
@@ -1162,7 +1171,7 @@
 
   // ================= flight =================
   let speed = 0, stance = false;
-  const vg = new V3(), vf = new V3();     // A's gravitational velocity channel, B's felt channel
+  let vg = new V3(), vf = new V3();     // per pilot (swapped for rivals). A's gravitational velocity channel, B's felt channel
   const fwd = new V3(), right = new V3(), up = new V3(), aA = new V3(), aB = new V3(), p0 = new V3(), dq = new THREE.Quaternion();
   const X = new V3(1, 0, 0), Y = new V3(0, 1, 0), Zn = new V3(0, 0, 1);
   function basis() { fwd.set(0, 0, -1).applyQuaternion(hull.quaternion); right.set(1, 0, 0).applyQuaternion(hull.quaternion); up.set(0, 1, 0).applyQuaternion(hull.quaternion); }
@@ -1182,6 +1191,7 @@
   // ---- race ----
   let stopped = false, blockFlash = 0, styleFlash = 0, styleFlashText = '', styleFlashCol = '#ffffff', outsClock = 0;
   function styleBump(key, amt, why) {
+    if (curPilot) return;   // live styles are your hull's: a rival flies the style its seat was given
     BP[key] = Math.min(1, Math.max(0, BP[key] + amt)); recomputeP();
     const st = STYLE_BY_KEY[key]; styleFlash = 1.6; styleFlashCol = st.col;
     styleFlashText = '+ ' + st.name.toUpperCase() + ' · ' + why + ' · ' + BP[key].toFixed(2);
@@ -1222,16 +1232,21 @@
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
     speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.end = 'none'; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
-    myPair = null; snapCam = true; ai.phase = 'cruise'; if (!batching) showOverlay(); showStopBtn();
+    myPair = null; snapCam = true; ai.phase = 'cruise'; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.fHold = 0; ai.wait = 0;
+    resetRivals();
+    if (!batching) showOverlay(); showStopBtn();
   }
   function startRace() {
     if (stopped) { setStopped(false); return; }
     if (mode !== 'fly' || race === 'running') return;
     if (race === 'finished') spawn();
-    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); raceStats = newStats(); ai.phase = 'cruise'; hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
+    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); raceStats = newStats(); ai.phase = 'cruise'; ai.tracking = -1; youFinishT = null;
+    for (const rv of rivals) { rv.raceStats = newStats(); rv.finishT = null; }
+    hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
   }
-  const runStyles = new Set();
+  let runStyles = new Set();   // per pilot
   function finishRace() {
+    youFinishT = raceT;
     race = 'finished'; stopped = false; showStopBtn();
     if (batching) return;
     const used = Array.from(runStyles).sort().join('+') || (style === 'A' && slingMode === 'field' ? 'F' : style);   // a run that swapped pairs mid-race is its own row
@@ -1314,7 +1329,7 @@
         const t = s0 / (s0 - s1); tv.copy(p0).lerp(hull.position, t);
         const err = tv.distanceTo(g.p);
         if (raceStats) { if (err <= g.mouth) { raceStats.errSum += err; raceStats.errN++; } else if (err <= 4 * g.mouth) raceStats.misses++; }
-        if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) finishRace(); }
+        if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) { if (curRival) { if (curRival.finishT == null) curRival.finishT = raceT - dt; } else finishRace(); } }
       }
     }
     // Through the pair. A (BlackHoleVesselPull.TryCarryThrough): cross the black hole's horizon and come out of the
@@ -1339,15 +1354,15 @@
           if (left > 0 && isFinite(left)) boosts.push({ dir: pr.axis.clone().negate(), amp: 1.5 * P.closeSpeed, t: 0, dur: left });
         }
       } else delta = tv3.subVectors(w.other, w.p);
-      hull.position.add(delta); cam.position.add(delta); camLook.add(delta); portalFlash = 1;
+      hull.position.add(delta); if (!curPilot) { cam.position.add(delta); camLook.add(delta); portalFlash = 1; }
       break;
     }
     collectCrystals();
     dropTrail(dt);
     applyLope(dt, speed / Math.max(1, P.cruise));
   }
-  let throttleNow = 0.5, gateFlash = 0; const velNow = new V3();
-  const boosts = [];
+  let throttleNow = 0.5, gateFlash = 0; let velNow = new V3();
+  let boosts = [];   // per pilot
   let slingOrbit = null, slingFlash = 0, lastOrbit = null;
   const circGM = (v, r, rs) => { const gap = Math.max(r - rs, 1e-3); return v * v * gap * gap / Math.max(r, 1e-3); };   // StoatSlingMath.CircularOrbitGM
   const orbitRadius = (h) => { const t = Math.pow(clamp01(h), Math.max(0.01, P.holdExponent)); const w = Math.max(1, P.orbitWide); return w + (Math.min(Math.max(1, P.orbitTight), w) - w) * t; };
@@ -1511,7 +1526,7 @@
     const off = tv.subVectors(hull.position, pr.att), dist = Math.max(off.length(), 1e-3);
     const exit = tv2.copy(pr.rep).addScaledVector(off, -Math.max(dist, P.whExitGap * pr.rsR) / dist);
     const delta = tv3.subVectors(exit, hull.position);
-    hull.position.add(delta); cam.position.add(delta); camLook.add(delta); portalFlash = 1;
+    hull.position.add(delta); if (!curPilot) { cam.position.add(delta); camLook.add(delta); portalFlash = 1; }
     gravSpeed = pr.gFar || 0;
     if (slingDipole && slingDipole.pair === pr) releaseDipole(true);
   }
@@ -1568,10 +1583,11 @@
   const FT_MAX = 1600, FT_HASH = 4096;
   const ftHead = new Int32Array(FT_HASH), ftStamp = new Int32Array(FT_HASH), ftNext = new Int32Array(FT_MAX); let ftGen = 0;
   const ftA = new V3(), ftF = new V3(), ftT = new V3(), ftAx = new V3(), ftDq = new THREE.Quaternion();
-  const ftRates = { pitch: 0, yaw: 0, roll: 0 };
+  let ftRates = { pitch: 0, yaw: 0, roll: 0 };
   let fieldSling = null, ftMul = 1;
   // one live prediction (the sim's) and its result
-  const ftLive = { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0, jumps: new Int32Array(8), nj: 0, thru: false };
+  function newFtLive() { return { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0, jumps: new Int32Array(8), nj: 0, thru: false }; }
+  let ftLive = newFtLive();   // per pilot
   function fieldAccel(Pv, f, p, out) {
     out.set(0, 0, 0);
     const GMu = Pv.bhGmPerStrength;
@@ -1869,7 +1885,8 @@
   }
 
   // ---- the sling ----
-  const holds = { L: { on: false, t: 0, peak: 0, live: 0 }, R: { on: false, t: 0, peak: 0, live: 0 } };
+  function newHolds() { return { L: { on: false, t: 0, peak: 0, live: 0 }, R: { on: false, t: 0, peak: 0, live: 0 } }; }
+  let holds = newHolds();   // per pilot
   const strengthOf = (h) => { const t = Math.pow(clamp01(h), Math.max(0.01, P.holdExponent)); const lo = Math.min(P.minStrength, P.maxStrength); return lo + (Math.max(lo, P.maxStrength) - lo) * t; };
   function trackHold(side, raw, analog, dt) {
     const h = holds[side];
@@ -1932,7 +1949,17 @@
     if (e.code === 'Space') stance = !stance && race === 'running';
     if (e.code === 'KeyR') spawn();
     if (e.code === 'KeyP') setStopped(!stopped);
+    if (e.code === 'KeyC') nextCamera();
   });
+  // C (/vessel-studio D16): Chase, then Follow on each pilot in turn (you, then every rival), then Free, then Chase.
+  function nextCamera() {
+    if (mode !== 'fly') return;
+    const order = ['Chase', 'Follow', 'Free'], cur = CAM_BACK[camMode] || 'Chase';
+    if (cur === 'Follow' && watchIdx < rivals.length) { watchIdx++; snapCam = true; return; }
+    watchIdx = 0;
+    const next = order[(order.indexOf(cur) + 1) % 3];
+    if (racePanelRef) racePanelRef.set('camera', next); else { camMode = CAM_OF[next]; snapCam = true; }
+  }
   window.addEventListener('keyup', (e) => { keys.delete(e.code); });
   const playPause = () => { if (race === 'running' && !stopped) setStopped(true); else startRace(); };   // startRace resumes a paused run
   $('tpPlay').addEventListener('click', playPause);
@@ -2081,15 +2108,32 @@
   // costs on the shared x axes; roll keeps the hull upright. Sling: lay the pair on the side of the turn, hold, release
   // when the nose is on the next ring (a clean release), or give up when the hole never catches.
   let aiOn = false, simSpeed = 1, aiRepeat = true, camMode = 'chase', batching = false, aiRestartT = 0;
-  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null, fHold: 0, aimPt: new THREE.Vector3(), aimSet: false };
+  // The AI's state. level = Easy | Medium | Hard (AI_LEVELS); tracking .. off = its BELIEF about the next ring (aiBelief)
+  function newAi(seed, level) {
+    return { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: seed || 1, prevOff: null, fHold: 0, aimPt: new THREE.Vector3(), aimSet: false,
+      wHeld: -1, wDry: 0, wNear: 60, wWait: 0.5,
+      level: level || 'Hard', tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new THREE.Vector3(), unnoticed: false, mistakes: 0, think: 'ring' };
+  }
+  let ai = newAi(1);   // per pilot
   // Show AI thinking (the universal race panel): a line from the hull to the point the AI is steering for.
   let aiThinking = true;
   const aiThinkLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffb454, transparent: true, opacity: 0.85 }));
   aiThinkLine.frustumCulled = false; aiThinkLine.visible = false; scene.add(aiThinkLine);
+  // amber: has not noticed the new ring yet (flies straight on) · red: misjudged the ring (flying for where it believes it
+  // is) · violet: working the pair · green: flying for the ring it sees. A rival's line runs from its own hull.
+  const THINK_COL = { unnoticed: 0xffb454, misjudged: 0xff5c6c, pair: 0xc48bff, ring: 0x7dffb0 };
+  function thinkLine(line, from, a) {
+    const g = line.geometry.attributes.position; g.setXYZ(0, from.x, from.y, from.z); g.setXYZ(1, a.aimPt.x, a.aimPt.y, a.aimPt.z); g.needsUpdate = true;
+    line.material.color.setHex(THINK_COL[a.think] || THINK_COL.ring);
+  }
   function updateAiThinking() {
-    const show = aiThinking && aiOn && race === 'running' && ai.aimSet; aiThinkLine.visible = show; if (!show) return;
-    const a = aiThinkLine.geometry.attributes.position; a.setXYZ(0, hull.position.x, hull.position.y, hull.position.z); a.setXYZ(1, ai.aimPt.x, ai.aimPt.y, ai.aimPt.z); a.needsUpdate = true;
-    aiThinkLine.material.color.setHex(ai.phase === 'hold' || ai.phase === 'bank' ? 0xc48bff : 0xffb454);   // violet: working the pair; amber: flying for the ring
+    const show = aiThinking && aiOn && race === 'running' && ai.aimSet; aiThinkLine.visible = show;
+    if (show) thinkLine(aiThinkLine, hull.position, ai);
+    for (const s of seatState) {
+      if (!s.line) continue;
+      const on = aiThinking && race === 'running' && mode === 'fly' && rivals.includes(s) && s.ai.aimSet; s.line.visible = on;
+      if (on) thinkLine(s.line, s.pos, s.ai);
+    }
   }
   function aiRand() { let t = (ai.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   let raceStats = null;
@@ -2099,13 +2143,17 @@
   function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
   function aiInput(dt) {
     const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
-    if (mode === 'fly' && race === 'ready' && !batching) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
-    if (mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
+    if (!curPilot && mode === 'fly' && race === 'ready' && !batching) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
+    if (!curPilot && mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
     if (race !== 'running' || stopped) { lastInput = inp; trackHold('L', 0, true, dt); trackHold('R', 0, true, dt); return inp; }
     basis();
     const g = gates[threaded % 8], g2 = gates[(threaded + 1) % 8];
-    const d = hull.position.distanceTo(g.p);
-    const tgt = tv3.copy(g.p).addScaledVector(g.n, -Math.min(70, d * 0.35));
+    // What the AI BELIEVES about the ring (its level's mistakes, aiBelief): null = it has not noticed the new ring yet,
+    // so it flies straight on and lays nothing. The flight below only ever sees the belief (/vessel-studio D4).
+    const bel = aiBelief(g), blind = !bel;
+    const gp = blind ? aiBlind.copy(hull.position).addScaledVector(fwd, 200) : bel;
+    const d = hull.position.distanceTo(gp);
+    const tgt = blind ? tv3.copy(gp) : tv3.copy(gp).addScaledVector(g.n, -Math.min(70, d * 0.35));
     ai.aimPt.copy(tgt); ai.aimSet = true;
     const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     const rate = Math.max(0.2, P.pitchYaw * (style === 'A' && slingMode === 'field' ? P.ftTurnScale : 1) * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
@@ -2132,16 +2180,46 @@
     if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
     let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
     inp.R.y = Math.max(-1, Math.min(1, (b + r) / 2)); inp.L.y = Math.max(-1, Math.min(1, (b - r) / 2));
-    if (style === 'A' && slingMode === 'field') {   // the field: squeeze the dipole open for a while, let go, fly for the ring
+    if (style === 'A' && slingMode === 'field' && P.aiWarp >= 0.5) {   // the field, flown by watching the path
+      // The skill: keep the poles open while they WARP the path (lime: the flight runs ftBoost x faster) and the ring is
+      // still ahead, let go as the ring comes close so the bend does not throw you past its mouth, and lay the next pair
+      // as soon as the last one has let go. Sloppiness (aiNoise) lays late, squeezes off the mark and lets go off the mark.
+      const n = clamp01(P.aiNoise), standing = fieldStanding();
+      let trig = 0;
+      if (standing && ai.wHeld >= 0) {
+        ai.wHeld += dt; ai.wDry = ftLive.lime ? 0 : (ai.wDry || 0) + dt;
+        const letGo = blind || d < ai.wNear || (ai.wHeld > 0.8 && ai.wDry > ai.wWait);
+        if (letGo) ai.wHeld = -1; else trig = ai.q;
+      } else if (!standing) {
+        ai.wHeld = -1;
+        if (!blind && P.aiSling > 0.5 && d > P.aiNear * 1.5) {
+          if (ai.wait <= 0) ai.wait = 0.001 + n * aiRand() * 1.2;   // a rookie lays a beat late
+          ai.wait -= dt;
+          if (ai.wait <= 0) {
+            ai.wait = 0; ai.side = Math.abs(phi) < Math.PI / 2 ? 'R' : 'L';
+            ai.q = Math.max(0.05, Math.min(1, P.aiWarpQ - n * aiRand() * 0.7));   // a rookie squeezes short of full
+            ai.wNear = Math.max(0, P.aiNear * (1 + n * (aiRand() - 0.5) * 1.6)); ai.wWait = Math.max(0.05, P.aiLimeWait * (1 + n * (aiRand() - 0.5) * 2));
+            ai.wHeld = 0; ai.wDry = 0; trig = ai.q;
+          }
+        }
+      }
+      inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
+      trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+      ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : trig > 0 ? 'pair' : 'ring';
+      lastInput = inp;
+      return inp;
+    }
+    if (style === 'A' && slingMode === 'field') {   // the field, the round-15 timed way: squeeze the dipole open for a while, let go, fly for the ring
       let trig = 0;
       if (ai.fHold > 0) { ai.fHold -= dt; trig = ai.q; }
-      else if (P.aiSling > 0.5 && !(myPair && myPair.alive) && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
+      else if (!blind && P.aiSling > 0.5 && !(myPair && myPair.alive) && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
         const n = clamp01(P.aiNoise);
         ai.side = Math.abs(phi) < Math.PI / 2 ? 'R' : 'L';
         ai.q = Math.max(0.05, Math.min(1, P.aiQ + n * (aiRand() - 0.5) * 0.9)); ai.fHold = Math.max(0.3, P.aiGiveUp * (1 - 0.5 * n * aiRand())); trig = ai.q;
       }
       inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
       trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+      ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : trig > 0 ? 'pair' : 'ring';
       lastInput = inp;
       return inp;
     }
@@ -2149,7 +2227,7 @@
     ai.t += dt;
     const useSling = P.aiSling > 0.5 && style === 'A' && slingMode === 'dipole';
     if (ai.phase === 'cruise') {
-      if (useSling && !(myPair && myPair.alive) && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
+      if (useSling && !blind && !(myPair && myPair.alive) && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
         // a rookie (aiNoise) squeezes off the mark, lets go off the mark and lays a beat late; a perfect pilot does none of it
         const n = clamp01(P.aiNoise);
         if (ai.wait <= 0) ai.wait = 0.001 + n * aiRand() * 1.2;
@@ -2167,7 +2245,7 @@
     if (ai.phase === 'cruise') {
       // (cruise: steer for the ring — above)
     } else if (ai.phase === 'hold') {
-      const off = Math.acos(Math.max(-1, Math.min(1, tv.subVectors(g.p, hull.position).normalize().dot(fwd)))) * 180 / Math.PI;
+      const off = Math.acos(Math.max(-1, Math.min(1, tv.subVectors(gp, hull.position).normalize().dot(fwd)))) * 180 / Math.PI;
       const lost = !(myPair && myPair.alive && slingDipole);
       // let go as the nose stops closing on the ring (the best heading this lap round), not only inside a fixed cone —
       // at a tight circle's swing rate a narrow cone is a frame or two wide and a miss costs a whole lap round
@@ -2179,8 +2257,170 @@
     const trig = ai.phase === 'hold' ? Math.max(0.06, ai.q) : 0;
     inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
     trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+    ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : ai.phase === 'hold' || ai.phase === 'bank' ? 'pair' : 'ring';
     lastInput = inp;
     return inp;
+  }
+  // ================= AI levels: the Skim Race handicap, flown by the Stoat =================
+  // The game's SkimRaceDifficulty.asset (the Squirrel studio's DIFF): Hard is the skilled pilot; Medium and Easy are the
+  // same pilot plus two mistakes in what it BELIEVES (SkimRaceHandicap), never in its stick:
+  //   reaction  after threading a ring it notices the next one this many seconds late (x 0.5-1.5, seeded); until then
+  //             it flies straight on and lays no pair
+  //   mistake   the chance it misjudges a ring: it believes the mouth sits two ring-widths off to one side, flies for
+  //             THAT point, misses, and has to turn back once it is past it (a ring threads from either side)
+  //   judge     its judgement of the pair (lab-only, the studio's aiNoise): how far off the squeeze and the let-go
+  //             are. The game ships no Stoat AI, so this third number is the studio's, not an asset's.
+  const AI_LEVELS = {
+    Hard: { reaction: 0, mistake: 0, judge: 0 },
+    Medium: { reaction: 0.25, mistake: 0.045, judge: 0.4 },
+    Easy: { reaction: 0.5, mistake: 0.099, judge: 0.8 },
+  };
+  const aiBel = new V3(), aiBlind = new V3(), aiTo = new V3(), aiU = new V3(), aiW = new V3();
+  function aiBelief(g) {
+    const lv = AI_LEVELS[ai.level] || AI_LEVELS.Hard;
+    if (ai.tracking !== threaded) {
+      ai.tracking = threaded;
+      ai.noticeAt = threaded > 0 && lv.reaction > 0 ? simT + lv.reaction * (0.5 + aiRand()) : 0;   // the start ring is seen on the grid
+      ai.misjudged = lv.mistake > 0 && aiRand() < lv.mistake;
+      if (ai.misjudged) {
+        ai.mistakes++;
+        aiU.set(1, 0, 0); if (Math.abs(g.n.x) > 0.9) aiU.set(0, 1, 0);
+        aiU.crossVectors(g.n, aiU).normalize(); aiW.crossVectors(g.n, aiU).normalize();
+        const a = aiRand() * Math.PI * 2;
+        ai.off.copy(aiU).multiplyScalar(Math.cos(a)).addScaledVector(aiW, Math.sin(a)).multiplyScalar(2 * g.mouth + 6);
+        ai.until = simT + 6;
+      }
+    }
+    ai.unnoticed = simT < ai.noticeAt;
+    if (ai.unnoticed) return null;
+    if (ai.misjudged) {
+      aiBel.copy(g.p).add(ai.off); aiTo.subVectors(aiBel, hull.position);
+      if (simT > ai.until || aiTo.length() < 12 || aiTo.dot(fwd) < 0) ai.misjudged = false;   // past the point it believed in: now it sees the ring
+      else return aiBel;
+    }
+    return aiBel.copy(g.p);
+  }
+  // How each play style's AI flies the pair (lab-only, this studio's): over the AI sliders, before the style's own
+  // changes to the sling and holes (STYLES). Balanced is the sliders as they are.
+  const STYLE_BRAIN = {
+    Balanced: {},
+    // velocity: slings every straight, deep, and holds the warp right up to the ring
+    Comet: { aiQ: 0.8, aiMinRing: 150, aiTurn: 80, aiGiveUp: 3, aiWarpQ: 1, aiNear: 40, aiLimeWait: 0.8 },
+    // precision: lighter squeezes, lets go early so it threads the middle of the mouth
+    Needle: { aiQ: 0.45, aiCone: 6, aiTurn: 55, aiMinRing: 260, aiWarpQ: 0.7, aiNear: 90, aiLimeWait: 0.5 },
+    // control: lays early for the turns, light, and lets go the moment the path stops warping
+    Anchor: { aiQ: 0.4, aiGiveUp: 5, aiTurn: 45, aiMinRing: 240, aiWarpQ: 0.6, aiNear: 110, aiLimeWait: 0.3 },
+    // gravity: few, huge pairs, held long
+    Maelstrom: { aiQ: 0.95, aiMinRing: 280, aiTurn: 75, aiWarpQ: 1, aiNear: 70, aiLimeWait: 1 },
+    // surge: full squeezes, often, held to the last moment
+    Flare: { aiQ: 1, aiMinRing: 120, aiGiveUp: 2.5, aiTurn: 90, aiWarpQ: 1, aiNear: 25, aiLimeWait: 1.2 },
+  };
+  const STYLE_NAMES = Object.keys(STYLE_BRAIN);
+  function pilotP(styleName, level) {   // what one rival flies with: the sliders, its style's brain, its level's judgement
+    const b = Object.assign({}, BP, STYLE_BRAIN[styleName] || {}, { aiNoise: (AI_LEVELS[level] || AI_LEVELS.Hard).judge, aiSling: 1 });
+    const w = {}; for (const st of STYLES) w[st.key] = st.name === styleName ? 1 : 0.5;
+    return blendInto({}, b, w);
+  }
+
+  // ================= AI rivals (/vessel-studio D20, D23) =================
+  // Up to three more Stoats, each its own seat (Ruby, Gold, Blue) with its own level and play style. They fly the SAME
+  // step as your hull: the rival block parks your hull's variables, loads a rival's, runs aiInput + stepFly, parks it
+  // and loads yours back. Their pairs are real pairs in the one world: you can be carried through a rival's black hole.
+  const SEATS = [{ name: 'Ruby', color: 0xff4f7b, css: '#ff4f7b' }, { name: 'Gold', color: 0xffc247, css: '#ffc247' }, { name: 'Blue', color: 0x6aa8ff, css: '#6aa8ff' }];
+  const savedRivals = saved.rivals || {};
+  let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Hard', 'Medium', 'Easy'];
+  let seatStyle = Array.isArray(savedRivals.st) ? savedRivals.st.slice(0, 3) : ['Comet', 'Needle', 'Anchor'];
+  let youLevel = AI_LEVELS[saved.youLevel] ? saved.youLevel : 'Hard';
+  ai.level = youLevel;
+  let youFinishT = null, rivals = [], watchIdx = 0;
+  function newPilotState(id) {
+    return { id, pos: new V3(), quat: new THREE.Quaternion(), speed: 0, stance: false, threaded: 0, slings: 0, throttleNow: 0.5,
+      slingOrbit: null, lastOrbit: null, slingDipole: null, lastDipole: null, gravSpeed: 0, flow: 0, dipoleFlying: false,
+      fieldSling: null, ftMul: 1, ftThrottleTarget: 0, myPair: null, raceStats: null, lastInput: null,
+      vg: new V3(), vf: new V3(), velNow: new V3(), boosts: [], holds: newHolds(), ftRates: { pitch: 0, yaw: 0, roll: 0 }, ftLive: newFtLive(),
+      ai: newAi(1), runStyles: new Set(), P: null, finishT: null, mesh: null, line: null, seat: null, level: 'Hard', styleName: 'Balanced' };
+  }
+  const youSlot = newPilotState(0);   // your hull's variables, parked while a rival flies
+  const seatState = SEATS.map((_, k) => newPilotState(k + 1));
+  function parkCtx(s) {
+    s.pos.copy(hull.position); s.quat.copy(hull.quaternion);
+    s.speed = speed; s.stance = stance; s.threaded = threaded; s.slings = slings; s.throttleNow = throttleNow;
+    s.slingOrbit = slingOrbit; s.lastOrbit = lastOrbit; s.slingDipole = slingDipole; s.lastDipole = lastDipole; s.gravSpeed = gravSpeed; s.flow = flow; s.dipoleFlying = dipoleFlying;
+    s.fieldSling = fieldSling; s.ftMul = ftMul; s.ftThrottleTarget = ftThrottleTarget; s.myPair = myPair; s.raceStats = raceStats; s.lastInput = lastInput;
+    s.vg = vg; s.vf = vf; s.velNow = velNow; s.boosts = boosts; s.holds = holds; s.ftRates = ftRates; s.ftLive = ftLive; s.ai = ai; s.runStyles = runStyles;
+  }
+  function loadCtx(s) {
+    hull.position.copy(s.pos); hull.quaternion.copy(s.quat);
+    speed = s.speed; stance = s.stance; threaded = s.threaded; slings = s.slings; throttleNow = s.throttleNow;
+    slingOrbit = s.slingOrbit; lastOrbit = s.lastOrbit; slingDipole = s.slingDipole; lastDipole = s.lastDipole; gravSpeed = s.gravSpeed; flow = s.flow; dipoleFlying = s.dipoleFlying;
+    fieldSling = s.fieldSling; ftMul = s.ftMul; ftThrottleTarget = s.ftThrottleTarget; myPair = s.myPair; raceStats = s.raceStats; lastInput = s.lastInput;
+    vg = s.vg; vf = s.vf; velNow = s.velNow; boosts = s.boosts; holds = s.holds; ftRates = s.ftRates; ftLive = s.ftLive; ai = s.ai; runStyles = s.runStyles;
+    curPilot = s.id; curRival = s.id ? s : null;
+    for (const pr of pairs) pr.owned = pr.pilot === s.id;
+  }
+  // Run fn as if rival r were the one flying (its variables and its P), then put your hull back exactly as it was.
+  const pKeep = {};
+  function asPilot(r, fn) {
+    const hudKeep = [gateFlash, portalFlash, slingFlash, blockFlash, styleFlash, styleFlashText, styleFlashCol, raceT];
+    Object.assign(pKeep, P); parkCtx(youSlot); loadCtx(r); Object.assign(P, r.P);
+    try { return fn(); } finally {
+      parkCtx(r); Object.assign(P, pKeep); loadCtx(youSlot);
+      [gateFlash, portalFlash, slingFlash, blockFlash, styleFlash, styleFlashText, styleFlashCol, raceT] = hudKeep;
+    }
+  }
+  function rivalMesh(seat) {
+    const root = new THREE.Object3D();
+    const m = makeStoat({ segments: 5, sides: 4, length: 2.5, r0: 0.28, r1: 0.16, head: 0.28, tail: 1.3, legs: 0.16 });
+    const mat = new THREE.MeshStandardMaterial({ color: seat.color, emissive: seat.color, emissiveIntensity: 0.6, roughness: 0.4, flatShading: true });
+    m.traverse((o) => { if (o.isMesh && o.material === domainMat) o.material = mat; });
+    const g = new THREE.Group(); g.rotation.y = Math.PI; g.scale.setScalar(1.6); g.add(m); root.add(g);
+    const beacon = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), new THREE.MeshBasicMaterial({ color: seat.color })); beacon.position.y = 2.6; root.add(beacon);
+    root.visible = false; scene.add(root); return root;
+  }
+  function rivalLine(seat) {
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3()]), new THREE.LineBasicMaterial({ color: seat.color, transparent: true, opacity: 0.85 }));
+    l.frustumCulled = false; l.visible = false; scene.add(l); return l;
+  }
+  // Rebuild the field of rivals on the grid: called by spawn (a new race), never mid-race.
+  function resetRivals() {
+    for (const pr of pairs) if (pr.pilot) pr.alive = false;   // rivals' pairs go with the old race
+    rivals = [];
+    if (batching || mode !== 'fly') { for (const s of seatState) if (s.mesh) s.mesh.visible = false; return; }
+    const g = gates[0];
+    const side = new V3().crossVectors(g.n, Y); if (side.lengthSq() < 1e-4) side.set(1, 0, 0); side.normalize();
+    SEATS.forEach((seat, k) => {
+      const s = seatState[k], lv = seatLv[k];
+      if (!s.mesh) { s.mesh = rivalMesh(seat); s.line = rivalLine(seat); }
+      if (!AI_LEVELS[lv]) { s.mesh.visible = false; s.line.visible = false; return; }
+      const fresh = newPilotState(k + 1);
+      Object.assign(s, { speed: 0, stance: false, threaded: 0, slings: 0, throttleNow: 0.5, slingOrbit: null, lastOrbit: null, slingDipole: null, lastDipole: null,
+        gravSpeed: 0, flow: 0, dipoleFlying: false, fieldSling: null, ftMul: 1, ftThrottleTarget: 0, myPair: null, raceStats: newStats(), lastInput: null,
+        vg: fresh.vg, vf: fresh.vf, velNow: fresh.velNow, boosts: fresh.boosts, holds: fresh.holds, ftRates: fresh.ftRates, ftLive: fresh.ftLive, runStyles: fresh.runStyles,
+        ai: newAi(seed * 97 + 13 * (k + 1), lv), finishT: null, seat, level: lv, styleName: STYLE_BRAIN[seatStyle[k]] ? seatStyle[k] : 'Balanced' });
+      s.P = pilotP(s.styleName, lv);
+      // the grid: your hull on the line 170 u out; the rivals beside and behind it
+      const lat = [42, -42, 0][k], back = [20, 20, 55][k];
+      s.pos.copy(g.p).addScaledVector(g.n, -170 - back).addScaledVector(side, lat);
+      s.quat.setFromRotationMatrix(new THREE.Matrix4().lookAt(s.pos, tv.copy(s.pos).add(g.n), Y));
+      s.mesh.visible = true;
+      rivals.push(s);
+    });
+    if (watchIdx > rivals.length) watchIdx = 0;
+  }
+  function stepRivals(dt) {
+    if (batching || mode !== 'fly' || !rivals.length || race !== 'running' || stopped) return;
+    for (const r of rivals) asPilot(r, () => stepFly(dt, aiInput(dt)));
+  }
+  function syncRivalMeshes() {
+    for (const s of seatState) if (s.mesh) { s.mesh.visible = mode === 'fly' && rivals.includes(s); s.mesh.position.copy(s.pos); s.mesh.quaternion.copy(s.quat); }
+  }
+  // Standings: finished first (by time), then rings threaded, then the distance to the next ring.
+  function standings() {
+    const rows = [{ name: 'You', css: '#e8ecff', level: aiOn ? youLevel : 'You', style: '', threaded, pos: hull.position, finishT: youFinishT }];
+    for (const r of rivals) rows.push({ name: r.seat.name, css: r.seat.css, level: r.level, style: r.styleName, threaded: r.threaded, pos: r.pos, finishT: r.finishT, mistakes: r.ai.mistakes });
+    for (const row of rows) row.togo = row.pos.distanceTo(gates[row.threaded % 8].p);
+    rows.sort((a, b) => (a.finishT != null) !== (b.finishT != null) ? (a.finishT != null ? -1 : 1) : a.finishT != null ? a.finishT - b.finishT : b.threaded - a.threaded || a.togo - b.togo);
+    return rows;
   }
   // The five tests. Every preset (and a no-sling baseline) flies the same course, flat out, without drawing:
   //  · a SKILLED pilot at several squeezes (its best run is kept) — race time, average and top speed, momentum, how
@@ -2200,8 +2440,9 @@
   function runBatch(qs, opts) {
     opts = opts || {};
     qs = qs || [0.3, 0.6, 1];
-    const saveBP = Object.assign({}, BP), saveLive = liveStyles, saveMode = mode, saveKind = courseKind, saveSling = slingMode, saveStyle = style, rows = [];
+    const saveBP = Object.assign({}, BP), saveLive = liveStyles, saveMode = mode, saveKind = courseKind, saveSling = slingMode, saveStyle = style, saveLevel = ai.level, rows = [];
     batching = true; liveStyles = false; if (mode !== 'fly') setMode('fly');
+    ai.level = 'Hard';   // the style scorecard measures the pair, not the ring mistakes: its rookie is aiNoise alone
     slingMode = opts.slingMode || 'dipole'; style = 'A';
     const onCourse = (k) => { if (courseKind !== k) { courseKind = k; buildCourse(); } };
     const seeds = opts.seeds || [11, 23, 37];
@@ -2218,11 +2459,56 @@
       if (!pr.noSling) for (const sd of seeds) { BP.aiQ = 0.5; BP.aiNoise = 0.8; recomputeP(); ai.seed = sd; row.rookie.push(raceOnce()); }
       rows.push(row);
     }
-    Object.assign(BP, saveBP); liveStyles = saveLive; recomputeP(); refreshAllOuts(); batching = false;
+    Object.assign(BP, saveBP); liveStyles = saveLive; recomputeP(); refreshAllOuts(); batching = false; ai.level = saveLevel;
     slingMode = saveSling; style = saveStyle;
     onCourse(saveKind);
     if (saveMode !== 'fly') setMode(saveMode); spawn();
     return rows;
+  }
+  // The AI-level scorecard (/vessel-studio D5): like the Squirrel's, every course of the ladder at Easy, Medium and Hard,
+  // a few seeds each, alone, flat out, without drawing. Your sliders and your sling mode; each level brings only its
+  // mistakes (AI_LEVELS). A cell: the median time of the runs that finished, how many did not (DNF), and the rings it
+  // misjudged per race. The levels must come out in order (Hard fastest) on every course, or the levels decide nothing.
+  function runLevelScorecard(seeds, style) {
+    seeds = seeds || [11, 23, 37];
+    const keep = { BP: Object.assign({}, BP), live: liveStyles, intensity, level: ai.level, mode };
+    batching = true; liveStyles = false; if (mode !== 'fly') setMode('fly');
+    const rows = [];
+    try {
+      for (const I of [1, 2, 3, 4]) {
+        intensity = I; buildCourse();
+        const row = { I };
+        for (const lv of ['Easy', 'Medium', 'Hard']) {
+          row[lv] = [];
+          for (const sd of seeds) {
+            Object.assign(BP, keep.BP, STYLE_BRAIN[style] || {}, { aiNoise: AI_LEVELS[lv].judge, aiSling: 1 }); recomputeP();
+            ai.level = lv; ai.seed = sd * 131 + I;
+            const res = raceOnce(); res.mistakes = ai.mistakes; row[lv].push(res);
+          }
+        }
+        rows.push(row);
+      }
+    } finally {
+      Object.assign(BP, keep.BP); liveStyles = keep.live; recomputeP(); refreshAllOuts(); ai.level = keep.level; batching = false;
+      intensity = keep.intensity; buildCourse(); if (keep.mode !== 'fly') setMode(keep.mode); spawn();
+    }
+    return rows;
+  }
+  function levelCell(list) {
+    const f = list.filter((r) => r.finished).map((r) => r.time).sort((a, b) => a - b), dnf = list.length - f.length;
+    const med = f.length ? f[Math.floor((f.length - 1) / 2)] : NaN, mis = list.reduce((a, r) => a + r.mistakes, 0) / Math.max(1, list.length);
+    return { med, dnf, mis };
+  }
+  function levelTable(rows) {
+    let h = '<table class="runs batch"><thead><tr><th>Course</th><th>Easy</th><th>Medium</th><th>Hard</th><th>in order?</th></tr></thead><tbody>';
+    for (const row of rows) {
+      const c = { Easy: levelCell(row.Easy), Medium: levelCell(row.Medium), Hard: levelCell(row.Hard) };
+      const ok = c.Hard.med <= c.Medium.med && c.Medium.med <= c.Easy.med;
+      h += '<tr><td>I' + row.I + '</td>';
+      for (const lv of ['Easy', 'Medium', 'Hard']) { const x = c[lv]; h += '<td>' + (isNaN(x.med) ? '—' : fmtTime(x.med)) + (x.dnf ? ' <small>(' + x.dnf + ' DNF)</small>' : '') + ' <small>' + x.mis.toFixed(1) + ' misjudged</small></td>'; }
+      h += '<td>' + (ok ? 'yes' : '<b>no</b>') + '</td></tr>';
+    }
+    return h + '</tbody></table>';
   }
   // Each column is the best a SKILLED pilot gets when going for that one thing (over the squeezes tried), except the
   // rookie's, which is the average of its seeds. A column owned by a style names it.
@@ -2331,7 +2617,12 @@
   const CMP = { A: new V3(640, 40, 0), B: new V3(-640, 40, 0) };
   const camA = new THREE.PerspectiveCamera(68, 0.8, 0.5, 9000), camB = new THREE.PerspectiveCamera(68, 0.8, 0.5, 9000);
   let camGrip = 0, lastGripR = 0; const lastGripAtt = new V3();
+  // The camera watches your hull, or the rival C picked (watchIdx): it runs as that pilot, so every camera works on it.
   function updateCamera(dt) {
+    const r = mode === 'fly' && watchIdx > 0 ? rivals[watchIdx - 1] : null;
+    if (r) asPilot(r, () => cameraStep(dt)); else cameraStep(dt);
+  }
+  function cameraStep(dt) {
     if (mode === 'fly') {
       basis();
       const want = camMode === 'follow' ? tv.set(0, 22, 62).applyQuaternion(hull.quaternion).add(hull.position) : tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
@@ -2624,6 +2915,23 @@
     c.font = font(11, 500); c.fillStyle = dim;
     c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
+    // the race with rivals: standings under the title, and each rival's name over its hull
+    if (rivals.length) {
+      let y = pad + 62 * sc; c.textAlign = 'left';
+      if (watchIdx > 0 && rivals[watchIdx - 1]) { c.font = font(11, 700); c.fillStyle = rivals[watchIdx - 1].seat.css; c.fillText('CAMERA ON ' + rivals[watchIdx - 1].seat.name.toUpperCase() + '  ·  C for the next', padL, y); y += 16 * sc; }
+      standings().forEach((row, i) => {
+        c.font = font(11, 700); c.fillStyle = row.css;
+        const who = row.level === 'You' ? '' : ' · ' + row.level + (row.style ? ' ' + row.style : '');
+        const prog = row.finishT != null ? fmtTime(row.finishT) : 'ring ' + Math.min(row.threaded, 8 * laps) + '/' + 8 * laps;
+        c.fillText((i + 1) + '  ' + row.name + who + '  ·  ' + prog + (row.mistakes ? '  ·  ' + row.mistakes + ' misjudged' : ''), padL, y); y += 15 * sc;
+      });
+      c.textAlign = 'center'; c.font = font(11, 700);
+      for (const r of rivals) {
+        tv.copy(r.pos).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -2) continue;
+        tv.copy(r.pos).project(cam);
+        c.fillStyle = r.seat.css; c.fillText(r.seat.name + ' · ' + r.level, (tv.x * 0.5 + 0.5) * cw, (-tv.y * 0.5 + 0.5) * ch - 18 * sc);
+      }
+    }
     if (swapFlash > 0) { c.globalAlpha = Math.min(1, swapFlash); c.textAlign = 'center'; c.font = font(22, 700); c.fillStyle = style === 'A' ? colA : colB; c.fillText('NOW FLYING PAIR ' + style, cw / 2, ch * 0.3); c.globalAlpha = 1; }
     if (slingDipole && stopped) {
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA;
@@ -3964,23 +4272,26 @@
   $('simSpeed').addEventListener('change', (e) => { simSpeed = parseFloat(e.target.value) || 1; });
   // ---- the universal AI race config panel (VesselStudio/ai_race_panel.js, /vessel-studio D17) ----
   // It drives the controls above (kept, hidden) so every existing path stays the one way in.
-  // AI levels are LAB-ONLY here: the game ships no Stoat AI difficulty. Hard = the skilled pilot, Easy = the
-  // scorecard's rookie (sloppiness 0.8), Medium in between.
-  const STOAT_LEVEL_NOISE = { Hard: 0, Medium: 0.4, Easy: 0.8 };
+  // AI levels (AI_LEVELS): the Skim Race handicap (late notice, misjudged ring) plus the pair judgement (aiNoise).
+  // Each rival seat has its own level and play style (D20, D23).
   const CAM_OF = { Chase: 'chase', Follow: 'follow', Free: 'free' }, CAM_BACK = { chase: 'Chase', follow: 'Follow', free: 'Free' };
-  const levelOfNoise = (n) => n >= 0.6 ? 'Easy' : n >= 0.2 ? 'Medium' : 'Hard';
   const fire = (id, prop, v) => { const e = $(id); e[prop] = v; e.dispatchEvent(new Event('change')); };
   var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
     sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
     courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
-    value: { course: intensity, you: aiOn ? levelOfNoise(BP.aiNoise) : 'You', rivals: [], camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat },
-    supports: { rivals: 'Single-pilot studio: the Stoat races the clock (Slingshot), so there are no AI rivals yet.', thinking: true, autoRestart: true },
-    levelNote: 'AI levels are lab-only here (the game ships no Stoat AI difficulty): Hard = the skilled pilot, Medium = sloppiness 0.4, Easy = the scorecard\'s rookie (0.8). Show AI thinking: amber = flying for the ring, violet = working the pair.',
+    seats: SEATS.map((st) => ({ name: st.name, color: st.css })),
+    styles: STYLE_NAMES,   // each rival seat flies one of the play styles (D23)
+    value: { course: intensity, you: aiOn ? youLevel : 'You', rivals: seatLv, rivalStyles: seatStyle, camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat },
+    supports: { rivals: true, thinking: true, autoRestart: true },
+    levelNote: 'Easy, Medium and Hard are the Skim Race levels (SkimRaceDifficulty.asset) flown by the Stoat: Hard is the skilled pilot; Medium notices each new ring 0.25 s late on average and misjudges 4.5% of rings, Easy 0.5 s and 9.9%. A misjudged ring is believed two ring-widths off to one side: the AI flies there, misses, and turns back. Lab-only on top: the pair judgement (squeeze and let-go sloppiness 0 / 0.4 / 0.8), since the game ships no Stoat AI. Each rival flies its seat\'s play style. Show AI thinking: green = flying for the ring, amber = not noticed yet, red = misjudged, violet = working the pair. C picks which pilot the camera follows.',
     onChange: (key, v) => {
       if (key === 'course') fire('intensity', 'value', String(v));
       else if (key === 'you') {
-        if (v !== 'You') { BP.aiNoise = STOAT_LEVEL_NOISE[v]; recomputeP(); refreshAllOuts(); persist(); }
+        if (v !== 'You') { youLevel = v; ai.level = v; BP.aiNoise = AI_LEVELS[v].judge; recomputeP(); refreshAllOuts(); persist(); }
         fire('aiOn', 'checked', v !== 'You');
+      } else if (key === 'rivals' || key === 'rivalStyles') {   // a new field of rivals is a new race
+        if (key === 'rivals') seatLv = v.slice(); else seatStyle = v.slice();
+        persist(); if (mode === 'fly') spawn();
       } else if (key === 'camera') fire('camMode', 'value', CAM_OF[v]);
       else if (key === 'speed') fire('simSpeed', 'value', String(v));
       else if (key === 'thinking') aiThinking = v;
@@ -3988,6 +4299,16 @@
     },
   }) : null;
   if (racePanelRef) $('intensitySeg').hidden = true;   // the panel's Course dropdown is the one course picker in Scene Config (D21)
+  for (const n of STYLE_NAMES) { const o = document.createElement('option'); o.value = n; o.textContent = n; $('levelStyle').appendChild(o); }
+  $('levelBtn').addEventListener('click', () => {
+    $('levelNoteTxt').textContent = 'racing…'; $('levelOut').innerHTML = '';
+    setTimeout(() => {
+      const t0 = performance.now(), st = $('levelStyle').value, rows = runLevelScorecard(null, st); lastLevels = rows;
+      $('levelOut').innerHTML = '<p class="src"><b>AI levels</b> · flying as ' + st + ' · median of 3 seeds · ' + (slingMode === 'field' ? 'field trajectory' : slingMode + ' sling') + '</p>' + levelTable(rows);
+      $('levelNoteTxt').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score');
+    }, 30);
+  });
+  let lastLevels = null;
   $('batchBtn').addEventListener('click', () => {
     $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
     setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
@@ -4172,7 +4493,7 @@
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     collectWells();
-    if (mode === 'fly') { if (!stopped) stepFly(dt, inp); else watchStep(dt); } else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
+    if (mode === 'fly') { if (!stopped) stepFly(dt, inp); else watchStep(dt); stepRivals(dt); } else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
     if (withBodies) stepBodies(dt);
   }
   let manualClock = false;   // a recorder steps the world itself, frame by frame (window.__stoatStudio.tick)
@@ -4191,7 +4512,7 @@
     } else simStep(dt, pollInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
-    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
+    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -4203,26 +4524,24 @@
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
     // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F']], ['ai', 'AI Config', ['grp-ai']],
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
       ['others', 'Others', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
-  const NESTED_IN = { F: ['grp-BH', 'grp-WH', 'grp-pair', 'grp-life'] };   // the user, 2026-10-09: black hole, white hole, pair life, birth & annihilation live inside Field trajectory
   const TAB = {};   // key -> { dock, title, btn, pane, win }
   let winZ = 60;
   function buildDocks() {
     const keys = document.querySelector('section[aria-labelledby="keysH"]'), log = document.querySelector('section.card.log');
     keys.id = 'keysSec'; log.id = 'logSec'; keys.classList.add('lower-sec');
     const sw = document.createElement('div'); sw.id = 'scoreWrap'; sw.className = 'card';
-    sw.innerHTML = '<p class="src" id="scoreEmpty">No scorecard yet: press <b>Score all five styles</b> in the Sim lab tab.</p>';
+    sw.innerHTML = '<p class="src" id="scoreEmpty">No scorecard yet: press <b>Score AI levels</b> or <b>Score all five styles</b> in the AI Config tab.</p>';
+    sw.appendChild($('levelOut'));
     sw.appendChild($('batchOut'));
     const rail = document.querySelector('aside.rail'), main = document.querySelector('.stage .main'), lower = document.querySelector('.lower');
     const docks = { R: rail, B: document.createElement('div') };
     const els = { scoreWrap: sw };   // take every piece first: the rail is emptied below and some pieces live in it
     for (const d of ['R', 'B']) for (const [, , ids] of DOCK_TABS[d]) for (const id of ids) if (!els[id]) els[id] = $(id);
-    // The pair's own physics are subdivisions of the Field trajectory (Scene Config): each folds on its own (D22)
-    for (const id of NESTED_IN.F) { const el = $(id), host = els['grp-F']; if (!el || !host) continue; el.classList.add('nested'); if (window.VesselStudioIDE) VesselStudioIDE.collapsible(el, 'stoat-studio'); host.appendChild(el); }
     docks.B.className = 'dock'; docks.B.id = 'dockB'; docks.B.setAttribute('aria-label', 'Records');
     rail.classList.add('dock'); rail.id = 'dockR';
     for (const d of ['R', 'B']) {
@@ -4309,7 +4628,8 @@
   buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
+    get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, STYLE_BRAIN, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera, get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
   Object.assign(window.__stoatStudio, {
     SHIPPED, SPEC,
