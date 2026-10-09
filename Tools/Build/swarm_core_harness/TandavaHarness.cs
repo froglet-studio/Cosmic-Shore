@@ -50,7 +50,7 @@ static class TandavaArena
     };
 }
 
-static class TandavaHarness
+static partial class TandavaHarness
 {
     static int _fail;
 
@@ -106,6 +106,7 @@ static class TandavaHarness
         "dancer_1", "dancer_2", "dancer_3",
         "antlion_1", "antlion_1_feed", "antlion_1_gape", "antlion_1_snap", "antlion_2", "antlion_2_feed", "antlion_2_gape", "antlion_2_snap",
         "antlion_3", "antlion_3_feed", "antlion_3_gape", "antlion_3_snap",
+        "severed", "severed_feed",   // §3.11: the piece a cut parts from the body (form 4 of tandava_plans, no rung of the ladder)
     };
     /// <summary>Each form's own lunge poses, (the charge, the strike) - tandava_plans.lunges_of.</summary>
     static readonly (string charge, string strike)?[] Lunges = { null, ("_rear", "_strike"), null, ("_gape", "_snap") };
@@ -406,6 +407,12 @@ static class TandavaHarness
         // the halo, placed when the drum starts
         public Vector3[] Post;
         public int GuardedSamples, HaloSamples;
+        // §3.11: the creature's severed pieces (at most one alive), and the sever log
+        public readonly List<Piece> Pieces = new();
+        public bool Severing = Environment.GetEnvironmentVariable("TANDAVA_NOSEVER") != "1";
+        public int Severs, Rejoins, Successions, PiecesLost, PieceMembersHome;
+        public readonly List<(float t, string what)> SeverLog = new();
+        public (int was, int moved, int left, float stomach) LastSever;
     }
 
     static Sim MakeSim(Bake b, int[] picks, int seed)
@@ -429,6 +436,7 @@ static class TandavaHarness
             Stomach0 = c.Stomach[0], Stomach1 = c.Stomach[1], Stomach2 = c.Stomach[2], Stomach3 = c.Stomach[3],
             StomachFill = fill, SinceBite = s.SinceBite, EatenTotal = s.Eaten,
             Starving = s.SinceFed >= StarvationSeconds && fill < ForageBelow,
+            Severed = s.Pieces.Sum(p => Active(p.C)),
         };
     }
 
@@ -485,8 +493,13 @@ static class TandavaHarness
             if (v >= 0) { c.Kill(v); s.Lost++; s.Sheds++; }
         }
         // the pilots act (move, kill)
+        int lostBefore = s.Lost;
         pilots?.Invoke(s);
         foreach (var p in s.Pilots) p.At += p.Vel * dt;
+        // §3.11: a cut this tick may have parted the body - the glue looks before the wound buds shut (the core steps last)
+        if (s.Severing && s.Lost > lostBefore) TrySever(s);
+        TickPieces(s);
+        c = s.C;   // a succession hands the director a new body
         // what the director is told: every plant it can eat (outside the nucleus), every pilot
         s.Food.Clear();
         foreach (var p in s.Plants)
@@ -592,6 +605,7 @@ static class TandavaHarness
     public static int Run(SwarmPlanData[] basePlans, string dir)
     {
         var b = Load(dir);
+        if (Environment.GetEnvironmentVariable("TANDAVA_ONLY") == "sever") { SeverTests(b); Console.WriteLine(_fail == 0 ? "\ntandava sever: OK" : $"\ntandava sever: {_fail} FAILED"); return _fail; }
         Console.WriteLine($"tandava: {b.Plans.Length} plans at density {Density}: " +
                           string.Join(" / ", Variants.Select(v => string.Join(",", v.Select(k => b.Plans[b.Ix[k]].N)))) +
                           $" members; stomach {StomachCapacity:F0}; a meal {MealVolume:F0}");
@@ -613,8 +627,10 @@ static class TandavaHarness
                 mouths &= b.Mouth.ContainsKey(key);
             }
             foreach (var key in Variants[2]) rings &= b.Ring.ContainsKey(key);
-            Check(b.Plans.Length == 51, "51 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
-                                        "three coils for each serpent, and two lunge poses each for the Many-Headed Serpent and the Antlion");
+            Check(b.Plans.Length == 53, "53 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
+                                        "three coils for each serpent, two lunge poses each for the Many-Headed Serpent and the Antlion, " +
+                                        "and the Severed's travel and strike poses (§3.11)");
+            twins &= Mix(b.Plans[b.Ix["severed"]]).SequenceEqual(Mix(b.Plans[b.Ix["severed_feed"]]));
             Check(twins, "every pose carries exactly its travel plan's element counts (a pose commit is a re-sort, never a molt)");
             Check(mouths && rings, "every eating plan bakes its mouth, every dance plan its halo");
             bool grows = true;
@@ -1155,6 +1171,7 @@ static class TandavaHarness
                 Check(swing >= 0.5f * MathF.Abs(struck - charged), $"{key}: the live strike swings {swing:F0} u (at least half the plans' {MathF.Abs(struck - charged):F0})");
             }
 
+        SeverTests(b);
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }

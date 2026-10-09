@@ -71,6 +71,8 @@ MonoBehaviour:
   - {fileID: 4900000, guid: cfe8addce06f49bf8056db5f142c3abb, type: 3}
   - {fileID: 4900000, guid: 10908e19e7fcd9ed9ffe6effaa93df3c, type: 3}
   - {fileID: 4900000, guid: c3ff6a514f76aa347a78e0ebc863b6cb, type: 3}
+  - {fileID: 4900000, guid: ade3fdf83001a5044fd4727d7eb641d3, type: 3}
+  - {fileID: 4900000, guid: 737e339c167e0f95d0e089c1726e894e, type: 3}
   ScriptedPlanPeriods:
   - 6
   - 40
@@ -123,6 +125,8 @@ MonoBehaviour:
   - 40
   - 12
   - 12
+  - 6
+  - 40
   ScriptedPlanWellClip:
   - 1
   - 1
@@ -175,6 +179,8 @@ MonoBehaviour:
   - 1
   - 5
   - 5
+  - 1
+  - 1
   TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
   UnitScale: 2
   TickHz: 10

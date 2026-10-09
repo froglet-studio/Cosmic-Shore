@@ -23,6 +23,13 @@
 // A form, once taken, is REMEMBERED: the director never steps a form back. A cut limb regrows from the stomach (the sort
 // core's funded laying at the wound), which is why denying food matters, and why a broken meal matters most.
 // It never kills and never feeds: starvation is the swarm's own metabolism, and growth is paid for out of what it ate.
+//
+// SEVERING (§3.11): a cut clean through the body parts it in two, and the smaller piece crawls off as THE SEVERED - a
+// second creature with a director of its own (this class, run on a one-form list whose form is
+// TandavaFormRole.Severed). The two are ONE animal in two bodies: the shatter counts both, a piece that has regrown swims
+// home and REJOINS the body it was cut from, and if the body is cut away to nothing while a piece lives, the piece
+// SUCCEEDS it - it takes the body's form and regrows into it. So a cut is not free: sever a fed creature and both halves
+// regrow out of its stomach (the hydra); only a starved one stays cut.
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -60,6 +67,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The halo is lit and the drum is running.</summary>
         Dance = 3,
         Over = 4,
+        /// <summary>The Severed only: regrown and fed, it swims home to rejoin the body it was cut from.</summary>
+        Rejoin = 5,
     }
 
     /// <summary>How threatened the swarm feels. Explicit values: replicated as an int.</summary>
@@ -108,6 +117,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Its jaws snapped shut at the end of a lunge. A: the form, B: how far its jaws were from the pilot
         /// (world, rounded).</summary>
         Snapped = 8,
+        /// <summary>A cut parted the body: a piece crawled off as the Severed. A: members in the piece, B: the form it was
+        /// cut from.</summary>
+        Severed = 9,
+        /// <summary>A severed piece swam home and rejoined the body. A: members it brought back.</summary>
+        Rejoined = 10,
+        /// <summary>The body was cut away to nothing while a piece lived: the piece took the body's form. A: the form,
+        /// B: the piece's members.</summary>
+        Succession = 11,
+        /// <summary>The Severed only: regrown and fed, it turns for home. A: its members.</summary>
+        HomeBound = 12,
     }
 
     public struct TandavaEvent
@@ -125,6 +144,10 @@ namespace CosmicShore.Gameplay
         Dance = 1,
         /// <summary>The last form: it eats, and its bank is the FEAST that completes the cycle.</summary>
         Final = 2,
+        /// <summary>A severed piece (§3.11): it eats and hunts like an eater, but its "next form" is HOME - once its body is
+        /// full and its bank eaten it swims back and rejoins the body it was cut from. It is never shattered: a piece is
+        /// whittled away, or starves.</summary>
+        Severed = 3,
     }
 
     /// <summary>One form the swarm takes, in order. Counts are GAME members (plan units x density); lengths are world.</summary>
@@ -287,6 +310,31 @@ namespace CosmicShore.Gameplay
         /// far inside the roam radius.</summary>
         public float DanceReach = 250f;
 
+        // ── severing (§3.11)
+        /// <summary>Two live members closer than this are one piece of the body (world). The members of a whole body sit
+        /// about 4-5 u apart and a whole body's loosest knot of more than a dozen members sits within 13 u of the rest
+        /// (harness T20, every pose but the dance and the lunges); a cut that leaves a gap wider than this has parted it.</summary>
+        public float SeverLink = 13f;
+        /// <summary>A piece must hold at least this share of its form's full body, and at least this many members, to crawl
+        /// off as the Severed (a smaller knot is just loose flesh: it stays, and the body buds over the wound).</summary>
+        public float SeverMinShare = 0.12f;
+        public int SeverMinMembers = 45;
+        /// <summary>A piece holding more than this share of the form is not a piece - it is the body, cut in half; the
+        /// body keeps it (tandava_plans.SEVER_MAX_SHARE sizes the Severed's plan to hold this much of the biggest form).</summary>
+        public float SeverMaxShare = 0.4f;
+        /// <summary>After a sever the body cannot part again for this long (one piece at a time - the glue also allows at
+        /// most one Severed alive).</summary>
+        public float SeverCooldownSeconds = 8f;
+        /// <summary>A Severed turns for home once it has regrown this share of its full body...</summary>
+        public float RejoinFill = 0.75f;
+        /// <summary>...and banked this much stomach volume (a meal of its own: it hunts and eats before it goes home)...</summary>
+        public float RejoinBank = 1000f;
+        /// <summary>...or, whatever it has managed, once it has been apart this long: the pilots' window to finish it is
+        /// a clock they can see (the HUD counts it down).</summary>
+        public float RejoinAfterSeconds = 40f;
+        /// <summary>A homebound piece rejoins the body when their centres are this close (world).</summary>
+        public float RejoinReach = 90f;
+
         // ── the match
         /// <summary>The cycle must complete within this many seconds of the go, or the pilots have held it off. 0 = no clock -
         /// the shipped hunt: it ends when the creature is broken or its cycle is complete, never on a timer.</summary>
@@ -315,6 +363,9 @@ namespace CosmicShore.Gameplay
         public float EatenTotal;
         /// <summary>True while its own unfed clock has run out (SwarmFauna.IsStarving).</summary>
         public bool Starving;
+        /// <summary>Live members of the creature's OTHER bodies - its severed piece (for the body), or the body (for a piece;
+        /// unused). The shatter counts the whole animal: a body cut small while its piece lives is not broken.</summary>
+        public int Severed;
         public float Stomach(int e) => e switch { 0 => Stomach0, 1 => Stomach1, 2 => Stomach2, _ => Stomach3 };
     }
 
@@ -398,12 +449,67 @@ namespace CosmicShore.Gameplay
             if (f.Role == TandavaFormRole.Dance)
                 return Phase == TandavaPhase.Dance && S.DrumSeconds > 0f ? Math.Clamp(DanceTime / S.DrumSeconds, 0f, 1f) : 0f;
             float fill = f.PlanCount > 0 ? s.Alive / (f.FillToEvolve * f.PlanCount) : 1f;
+            if (f.Role == TandavaFormRole.Severed) fill = f.PlanCount > 0 ? s.Alive / (S.RejoinFill * f.PlanCount) : 1f;
             float bank = f.Bank > 0f ? (s.Stomach0 + s.Stomach1 + s.Stomach2 + s.Stomach3) / f.Bank : 1f;
             return Math.Clamp(MathF.Min(fill, bank), 0f, 1f);
         }
 
         /// <summary>The body against its form's full body, 0..1+.</summary>
         public float BodyFraction(in TandavaSwarmState s) => Form.PlanCount > 0 ? s.Alive / (float)Form.PlanCount : 1f;
+
+        // ───────────────────────────────────────────────────────────────  severing (§3.11)
+
+        /// <summary>The Severed only: where the body it was cut from is (world) - its way home. Set by the glue every tick.</summary>
+        public Vector3 Home;
+        /// <summary>The Severed only: it is home-bound (regrown and fed, or out of time).</summary>
+        public bool HomeBound => Phase == TandavaPhase.Rejoin;
+        /// <summary>The Severed only: seconds until it turns for home whatever it has managed (0 once it has).</summary>
+        public float RejoinRemaining => Form.Role == TandavaFormRole.Severed && Phase != TandavaPhase.Rejoin
+            ? MathF.Max(0f, S.RejoinAfterSeconds - Clock) : 0f;
+        float _severReadyAt;
+
+        /// <summary>May the body part now? Never in the dance or the rise (the figure is one sculpture; its attendant packs
+        /// already stand apart), never mid-lunge (the heads and jaws are thrown out on stretched necks for that second and
+        /// would read as pieces - harness T20), never while a piece lives (s.Severed), never within the cooldown of the last sever, and
+        /// never for a piece itself.</summary>
+        public bool MaySever(in TandavaSwarmState s) =>
+            Outcome == TandavaOutcome.Running && Form.Role is TandavaFormRole.Eater or TandavaFormRole.Final
+            && Phase is TandavaPhase.Roam or TandavaPhase.Feed && !Lunging && !Snapping && s.Severed <= 0 && Clock >= _severReadyAt;
+
+        /// <summary>The smallest and largest piece (members) the current form may part with (<see cref="TandavaSever.FindPiece"/>).</summary>
+        public int SeverMinMembers => Math.Max(S.SeverMinMembers, (int)MathF.Ceiling(S.SeverMinShare * Form.PlanCount));
+        public int SeverMaxMembers => (int)MathF.Floor(S.SeverMaxShare * Form.PlanCount);
+
+        /// <summary>The glue parted the body: <paramref name="members"/> crawled off as the Severed. A meal it was cut at is
+        /// broken, and it bolts - being cut in two is the worst wound there is.</summary>
+        public void OnSevered(int members)
+        {
+            _severReadyAt = Clock + S.SeverCooldownSeconds;
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.Severed, A = members, B = FormIx });
+            if (Feeding) EndMeal(TandavaMealEnd.Broken);
+            if (Lunging) EndLunge();
+            _fleeUntil = Clock + S.FleeMinSeconds;
+            Threat = MathF.Max(Threat, S.FleeEnter);
+            SetMood(TandavaMood.Fleeing);
+        }
+
+        /// <summary>The glue grafted a homebound piece back on: <paramref name="members"/> came home.</summary>
+        public void OnRejoined(int members) =>
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.Rejoined, A = members, B = FormIx });
+
+        /// <summary>The body was cut away to nothing and the glue handed its piece the body: the director now runs THAT
+        /// swarm, in the same form (a form is remembered - the piece regrows into it). It wakes fleeing.</summary>
+        public void OnSuccession(int members)
+        {
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.Succession, A = FormIx, B = members });
+            if (Feeding) EndMeal(TandavaMealEnd.Broken);
+            Phase = TandavaPhase.Roam; _phaseSince = Clock; TargetFood = -1;
+            _armed = false;   // re-armed once the heir has regrown past the arm fraction
+            _lostPrev = -1;
+            _fleeUntil = Clock + S.FleeMinSeconds;
+            Threat = MathF.Max(Threat, S.FleeEnter);
+            SetMood(TandavaMood.Fleeing);
+        }
 
         public bool HaloIsOut(int k) => k >= 0 && k < 32 && (HaloOutMask & (1 << k)) != 0;
 
@@ -431,14 +537,24 @@ namespace CosmicShore.Gameplay
             dt = MathF.Max(0f, dt);
             Clock += dt;
 
-            // ── the outcome first
-            if (s.Alive <= 0) { End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Wiped); return; }
-            var form = Form;
-            if (!_armed && s.Alive >= S.ArmFraction * form.PlanCount) _armed = true;
-            if (_armed && s.Alive < S.ShatterFraction * form.PlanCount)
+            // ── the outcome first. The shatter counts the WHOLE animal - the body and its severed piece - and a body cut
+            // away to nothing while its piece lives is not dead: the glue hands the piece the body (OnSuccession)
+            if (s.Alive <= 0)
             {
-                End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Shattered);
+                if (s.Severed > 0 && Form.Role != TandavaFormRole.Severed) return;   // awaiting the succession
+                End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Wiped);
                 return;
+            }
+            var form = Form;
+            int whole = s.Alive + (form.Role == TandavaFormRole.Severed ? 0 : s.Severed);
+            if (form.Role != TandavaFormRole.Severed)
+            {
+                if (!_armed && whole >= S.ArmFraction * form.PlanCount) _armed = true;
+                if (_armed && whole < S.ShatterFraction * form.PlanCount)
+                {
+                    End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Shattered);
+                    return;
+                }
             }
             if (S.MatchSeconds > 0f && Clock >= S.MatchSeconds) { End(TandavaOutcome.HeldOff); return; }
 
@@ -446,6 +562,16 @@ namespace CosmicShore.Gameplay
 
             switch (Phase)
             {
+                case TandavaPhase.Rejoin:
+                    Goal = Home;
+                    break;
+                case TandavaPhase.Roam when form.Role == TandavaFormRole.Severed && Clock >= S.RejoinAfterSeconds:
+                    Advance(s);
+                    break;
+                case TandavaPhase.Feed when form.Role == TandavaFormRole.Severed && Clock >= S.RejoinAfterSeconds:
+                    EndMeal(TandavaMealEnd.Fed);
+                    Advance(s);
+                    break;
                 case TandavaPhase.Roam:
                     if (Progress(s) >= 1f) { Advance(s); if (Outcome != TandavaOutcome.Running) return; }
                     if (Phase == TandavaPhase.Roam) Roam(s, food, pilots);
@@ -479,6 +605,14 @@ namespace CosmicShore.Gameplay
         /// <summary>A banked form moves on: an eater to the next form (into the dance: the rise), the final form completes.</summary>
         void Advance(in TandavaSwarmState s)
         {
+            if (Form.Role == TandavaFormRole.Severed)
+            {
+                // regrown and fed: home. It swims back at a wary pace and lets the glue graft it on when it arrives
+                Phase = TandavaPhase.Rejoin; _phaseSince = Clock; TargetFood = -1; Goal = Home;
+                if (Lunging) EndLunge();
+                Events.Add(new TandavaEvent { Kind = TandavaEventKind.HomeBound, A = s.Alive });
+                return;
+            }
             if (Form.Role == TandavaFormRole.Final) { End(TandavaOutcome.Completed); return; }
             int next = FormIx + 1;
             if (next >= Forms.Count) { End(TandavaOutcome.Completed); return; }
@@ -615,6 +749,9 @@ namespace CosmicShore.Gameplay
                     return;
                 case TandavaPhase.Over:
                     cruise = 1f; turn = 1f; holdLaying = false;
+                    return;
+                case TandavaPhase.Rejoin:
+                    cruise = s.CruiseWary; turn = s.TurnWary; holdLaying = false;
                     return;
             }
             holdLaying = false;

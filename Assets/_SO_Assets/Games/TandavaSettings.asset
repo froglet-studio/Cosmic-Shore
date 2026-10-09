@@ -279,6 +279,15 @@ MonoBehaviour:
     HaloCount: 12
     HaloToBreak: 9
     DanceReach: 250
+    SeverLink: 13
+    SeverMinShare: 0.12
+    SeverMinMembers: 45
+    SeverMaxShare: 0.4
+    SeverCooldownSeconds: 8
+    RejoinFill: 0.75
+    RejoinBank: 1000
+    RejoinAfterSeconds: 40
+    RejoinReach: 90
     MatchSeconds: 0
   FoodPerPrism: 72.866
   FoodCheckSeconds: 0.5

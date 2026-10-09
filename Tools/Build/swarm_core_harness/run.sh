@@ -35,10 +35,11 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 # could not see it). So compile the five cores against netstandard2.1 first and fail the way Unity would.
 NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/netstandard.dll | head -1)
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
-TANDAVA="$ROOT/Assets/_Scripts/Controller/Arcade/Tandava/TandavaDirectorCore.cs"   # pure C#: the director
+TD="$ROOT/Assets/_Scripts/Controller/Arcade/Tandava"
+TANDAVA=("$TD/TandavaDirectorCore.cs" "$TD/TandavaSever.cs")   # pure C#: the director, the sever
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" \
-  "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$TANDAVA" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
+  "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "${TANDAVA[@]}" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 # Round 11a-2 (§19.4): the body pose the game Burst-compiles (SwarmPoseJob) must stay Burst-compilable - textual gate,
 # with the round-11a System.Numerics pose as its negative control.
 python3 "$HERE/check_burst_pose.py" "$SW/SwarmPrismSync.cs" "$HERE/TickJobHarness.cs" || exit 1
@@ -61,9 +62,9 @@ ECO=(); for f in "$ROOT"/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ec
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
-  "${ECO[@]}" "$TANDAVA" \
+  "${ECO[@]}" "${TANDAVA[@]}" \
   "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" \
-  "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs" "$HERE/EmotionExport.cs" "$HERE/TandavaHarness.cs"
+  "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs" "$HERE/EmotionExport.cs" "$HERE/TandavaHarness.cs" "$HERE/TandavaSeverHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"

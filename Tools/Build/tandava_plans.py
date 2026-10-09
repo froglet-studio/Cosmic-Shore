@@ -388,6 +388,42 @@ def great_serpent(v, pose="travel"):
     return units + hood, None
 
 
+# ───────────────────────────────────────────────────────────────── the Severed
+
+# SEVERING (TANDAVA.md §3.11): a cut that parts the body in two sends the smaller piece off as its own creature - the
+# hydra's rule, and the NCA lizard's (cut in two, it healed into two lizards; the 3D hybrid rule grew a split lizard
+# back as conjoined twins). Whatever form it was cut from, the piece grows a serpent's head and becomes THE SEVERED:
+# a short, fast serpent that hunts the pilots on its own, feeds to regrow, and swims back to rejoin the body it was cut
+# from. One plan for every form, sized so the biggest piece a sever may take (SEVER_MAX_SHARE of the biggest body)
+# fits it whole; a smaller piece wears it thin and fills in as it eats.
+SEVERED = dict(nb=21, nt=6, nh=8, ring_r=1.9, wave=(26.0, 0.35, 3.4), shimmer=4, span=200.0)
+
+
+def severed(pose="travel"):
+    """THE SEVERED: the Great Serpent's anatomy, shorter (21 body stations, a 6-ring rattle, an 8-plate hood). It has no
+    coils - it eats, and lunges, in its strike pose, the hood out round its jaws as danger guards."""
+    p = SEVERED
+    settle = FEED_SETTLE if pose != "travel" else 1.0
+    wv = (p["wave"][0], p["wave"][1], p["wave"][2], settle)
+    shimmer = set(range(2, p["nb"], p["shimmer"]))
+    length = (p["nb"] + p["nt"] - 1) * SPACING
+    frame = _wave_frame(length, wv)
+    units, length = _serpent_body(p["nb"], p["nt"], p["ring_r"], SERPENT_TAIL_R, shimmer, frame)
+    hood_r = max(4.3, SPACING * p["nh"] / math.radians(p["span"]))
+    hood = []
+    for q in range(p["nh"]):
+        ang = math.radians(90.0 - p["span"] / 2 + p["span"] * (q + 0.5) / p["nh"])
+
+        def at(f, ang=ang):
+            c, fwd, side = _spine_frame(1.3, length, f, wv)
+            return add(c, add(mul(side, hood_r * math.cos(ang)), [0.0, hood_r * math.sin(ang), 0.0]))
+        hood.append(_unit_at(CHARGE, 0, 2, at, lambda f: _spine_frame(1.3, length, f, wv)[1]))
+    if pose == "feed":
+        mouth = [3.0, 0.0, 0.0]
+        return units + _guard_ring(hood, mouth, [1.0, 0.0, 0.0], hood_r + 6.5, 1), mouth
+    return units + hood, None
+
+
 # ───────────────────────────────────────────────────────────────── form 2: the Many-Headed Serpent
 
 MANY_HEADED = {
@@ -876,7 +912,8 @@ def antlion(v, pose="travel"):
 
 # ───────────────────────────────────────────────────────────────── the catalogue
 
-FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Antlion"]
+FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Antlion", "the Severed"]
+LADDER = 4                 # forms 0-3 are the ladder; form 4 (the Severed) is no rung of it
 
 
 def _variants():
@@ -891,6 +928,7 @@ def _variants():
         out.append((f"dancer_{v}", 2, "Lord of the Dance", lambda pose, v=v: dancer(v, pose), False))
     for v in (1, 2, 3):
         out.append((f"antlion_{v}", 3, "Antlion", lambda pose, v=v: antlion(v, pose), True))
+    out.append(("severed", 4, "the Severed", lambda pose: severed(pose), True))   # appended: every ladder index stays put
     return out
 
 
@@ -1082,20 +1120,30 @@ def validate(plans):
             if "mouth" not in p:
                 errors.append(f"{kind}: a feed twin bakes no mouth")
     forms = sorted({p["form"] for p in plans.values()})
-    if forms != [0, 1, 2, 3]:
-        errors.append(f"the plans make forms {forms}, not the four")
-    for form in range(4):
+    if forms != [0, 1, 2, 3, 4]:
+        errors.append(f"the plans make forms {forms}, not the four and the Severed")
+    for form in range(LADDER):
         if sum(1 for p in plans.values() if p["form"] == form and split_key(p["kind"])[1] == "travel") != 3:
             errors.append(f"form {form} does not have three variants")
     # every form is at least as big as EVERY variant of the one before it (a match draws the variants independently):
     # a commit then only ever GROWS the body - eggs, paid from the bank - and never leaves a surplus crowding the new
     # shape's wells into a blob
-    for form in range(1, 4):
+    for form in range(1, LADDER):
         prev = max(p["n"] for p in plans.values() if p["form"] == form - 1)
         least = min(p["n"] for p in plans.values() if p["form"] == form)
         if least < prev:
             errors.append(f"form {form}'s smallest variant ({least} units) is smaller than form {form - 1}'s biggest ({prev})")
+    # the Severed fits the biggest piece a sever may take whole (TandavaDirectorSettings.SeverMaxShare of the biggest body)
+    sev = plans.get("severed")
+    biggest = max(p["n"] for p in plans.values() if p["form"] < LADDER)
+    if sev is None or sev["n"] < SEVER_MAX_SHARE * biggest:
+        errors.append(f"the Severed ({sev['n'] if sev else 0} units) cannot hold {SEVER_MAX_SHARE} of the biggest body ({biggest})")
+    if sev is not None and sev["n"] > 0.75 * min(p["n"] for p in plans.values() if p["form"] == 0 and split_key(p["kind"])[1] == "travel"):
+        errors.append("the Severed is not clearly smaller than the smallest Great Serpent - it should read as a piece, not a twin")
     return errors
+
+
+SEVER_MAX_SHARE = 0.4      # TandavaDirectorSettings.SeverMaxShare: the biggest share of a form a severed piece may be
 
 
 def dumps(plan):
