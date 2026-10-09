@@ -195,7 +195,7 @@
   /* ===== editor layout: the window is the workspace — stage in the middle, tabbed docks right and below, mini windows
      that float over everything. Nothing scrolls the page; a long pane scrolls inside itself. ===== */
   body.ide { height: 100vh; height: 100dvh; overflow: hidden; margin: 0; }
-  body.ide .wrap { max-width: none; height: 100%; padding-block: 6px; padding-inline: 8px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; }
+  body.ide .wrap { box-sizing: border-box; max-width: none; height: 100%; padding-block: 6px; padding-inline: 8px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; }
   body.ide header { flex-wrap: nowrap; align-items: center; gap: 14px; min-width: 0; }
   body.ide header h1 { font-size: 1.05rem; white-space: nowrap; }
   body.ide header .round { white-space: nowrap; }
@@ -233,7 +233,9 @@
     body.ide { height: auto; overflow: auto; }
     body.ide .wrap { height: auto; display: flex; }
     body.ide header { flex-wrap: wrap; }
-    body.ide header .platchip { margin: 0; }
+    body.ide header .platchip { margin: 0; flex-wrap: wrap; white-space: normal; max-width: 100%; }
+    body.ide header .round { white-space: normal; }
+    body.ide header > * { min-width: 0; max-width: 100%; }
     body.ide .stage { grid-template-columns: minmax(0, 1fr); height: auto; }
     body.ide .main { grid-template-rows: auto auto auto; }
     body.ide .viewport { height: 58vh; }
@@ -245,9 +247,9 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 14 · course ladder · editor layout</span>
+    <span class="round">Round 15 · field trajectory</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">web</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
-    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you fly at 3×. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -306,6 +308,7 @@
       <div class="logHead"><h2 id="logH">Decisions</h2><span id="logStatus" class="hint" style="margin:0">Connecting…</span></div>
       <div class="quick">
         <button class="pick" type="button" data-quick="A">The dipole sling feels right</button>
+        <button class="pick" type="button" data-quick="F">The field trajectory feels right</button>
         <button class="pick" type="button" data-quick="run">Log my last race</button>
       </div>
       <form id="logForm" autocomplete="off">
@@ -325,8 +328,12 @@
 
     <aside class="rail" aria-label="Studio controls">
       <div class="card" id="mainCard">
-        <h3>The dipole sling</h3>
-        <p class="src" style="margin-top:4px">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
+        <h3 id="mainH">The dipole sling</h3>
+        <div class="seg" role="group" aria-label="Sling mode" id="slingSegMain">
+          <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
+          <button type="button" data-sling="field" aria-pressed="false">Field trajectory (round 15)</button>
+        </div>
+        <p class="src" style="margin-top:4px" id="mainP">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
         <p class="src" id="portalSrc"></p>
       </div>
@@ -362,6 +369,12 @@
       <details class="card" id="grp-D" open><summary>Dipole sling <small>round 6</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
+      <details class="card" id="grp-F" open><summary>Field trajectory <small>round 15 · lab-only</small></summary><div class="rows"></div>
+        <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i> (0 = pure gravity: an unbound pass never loops; higher = the engine keeps your speed, so the field turns you without speeding you up, and orbits close). <b>Press</b> lays the pair <i>ahead</i>, the black hole on the trigger's side; the squeeze (read until you let go) is its strength; it <i>stands</i> that long whatever the trigger does, then closes and annihilates. A new press replaces it. <b>The line</b> is your path on your current inputs, from just ahead of the nose, run with the flight's own step: <span style="color:#7fd7ff">cyan</span> while open, <b style="color:#9dff2e">lime</b> when it comes back within <i>hits its own trail</i> of itself at least <i>shortest loop</i> further on — the engine then runs at <i>loop boost</i> × while it stays lime. Strength, horizon, push, force ceiling and fastest bend come from the <b>Dipole</b> tab; its catch, settle, grip, hold and release rows do nothing here.</p>
+        <div class="btns"><button class="pick primary" type="button" id="ftScanBtn">Scan headings</button><button class="pick" type="button" id="ftBatchBtn">Score the field</button><span class="hint" id="ftNote" style="margin:0">no drawing</span></div>
+        <div id="ftScanOut"></div>
+        <p class="src"><b>Not modelled.</b> The game has no field mode: this is a lab proposal and every row above is lab-only. The path holds your current inputs constant (a pilot keeps steering). It stops at the black hole's horizon, while the flight carries you through the portal. Near the horizon a whirl is chaotic: a path that grazes it can flip between loop and hole from one frame to the next, and the flown path can leave the drawn one there. Prisms and other vessels do not bend it, and "its own trail" is the path's own earlier points (plus, if ticked, your laid trail), not colliders.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="F">Reset</button></div></details>
       <details class="card" id="grp-BH"><summary>Black hole <small>physics &amp; look</small></summary><div class="rows"></div>
         <p class="src">How hard it pulls and how big it is per unit of strength, what it does to prisms (pull, speed, spaghettification), and how it looks: the shadow, the bent sky around it, the photon ring. Most rows are <code>BlackHoleConfig</code> fields in the game.</p>
         <div class="btns"><button class="pick" type="button" data-reset="BH">Reset</button></div></details>
@@ -409,6 +422,7 @@
         <p class="src">Kept for reference, not in play: round 4's orbit sling, and the crystal wormhole from <code>cece/charming-cerf-alf1j1</code> with the side-by-side compare. In the game the crystal style is still one switch away (<code>BlackHoleConfig.crystalPairs</code>), off by default.</p>
         <div class="seg" role="group" aria-label="Sling" id="slingSeg">
           <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
+          <button type="button" data-sling="field" aria-pressed="false">Field trajectory</button>
           <button type="button" data-sling="orbit" aria-pressed="false">Orbit (round 4)</button>
         </div>
         <div class="styles" role="group" aria-label="Pair style">
@@ -447,6 +461,10 @@
     // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
     dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
     dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
+    // the field trajectory (round 15 — LAB-ONLY: the game has no such mode and no such fields). The pair's strength,
+    // horizon, push, force ceiling and fastest bend are the Dipole sling's rows; these are the mode's own.
+    ftAhead: 250, ftSide: 45, ftStand: 10, ftGrip: 0.5, ftLength: 600, ftNose: 8, ftStep: 3, ftMargin: 8, ftMinLoop: 60,
+    ftBoost: 3, ftRise: 20, ftFade: 0.6, ftSteer: 1, ftBoostInPath: 0, ftHole: 0, ftTrail: 0,
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
     minStrength: 2, maxStrength: 12, aheadHorizons: 4, halfGapHorizons: 6,
     feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
@@ -513,6 +531,22 @@
     ['D', 'dpKickSweep', 'Full kick only after going round (°, 0 = always)', 0, 360, 5],
     ['D', 'dpAccelCap', 'Force ceiling (u/s²)', 50, 6000, 10],
     ['D', 'dpTurnCap', 'Fastest bend (rad/s)', 0.5, 20, 0.1],
+    ['F', 'ftAhead', 'Laid ahead (u)', 30, 600, 5],
+    ['F', 'ftSide', 'Laid to the side (u)', 0, 200, 1],
+    ['F', 'ftStand', 'The pair stands for (s)', 1, 30, 0.5],
+    ['F', 'ftGrip', 'Engine holds speed in the field (/s, 0 = pure gravity)', 0, 10, 0.1],
+    ['F', 'ftLength', 'Trajectory length (u)', 100, 1500, 10],
+    ['F', 'ftNose', 'Starts ahead of the nose (u)', 0, 40, 1],
+    ['F', 'ftStep', 'Trajectory step (u)', 1, 10, 0.5],
+    ['F', 'ftMargin', 'Hits its own trail within (u)', 1, 30, 0.5],
+    ['F', 'ftMinLoop', 'Shortest loop that counts (u)', 10, 300, 5],
+    ['F', 'ftBoost', 'Loop boost (× engine speed)', 1, 6, 0.1],
+    ['F', 'ftRise', 'Boost arrives (/s)', 1, 60, 1],
+    ['F', 'ftFade', 'Boost fades once the loop opens (s)', 0.05, 5, 0.05],
+    ['F', 'ftSteer', 'Steering held in the path (share)', 0, 1, 0.05],
+    ['F', 'ftBoostInPath', 'Path flown at the boosted speed (0/1)', 0, 1, 1],
+    ['F', 'ftHole', 'A path that ends in the black hole counts (0/1)', 0, 1, 1],
+    ['F', 'ftTrail', 'Hitting the trail already laid counts (0/1)', 0, 1, 1],
     ['BH', 'bhGmPerStrength', 'Pull per strength (GM)', 2000, 60000, 500],
     ['BH', 'bhHorizonPerStrength', 'Horizon per strength (u)', 0.2, 6, 0.1],
     ['BH', 'bhInfluenceFloor', 'Pull felt down to (u/s²)', 0.05, 5, 0.05],
@@ -637,7 +671,7 @@
   recomputeP();
   let liveStyles = !!saved.liveStyles;
   let style = 'A';   // the crystal pair (B) is archived: chosen from the Archive card only, never remembered
-  let slingMode = saved.slingMode === 'orbit' ? 'orbit' : 'dipole';   // pair A's sling: round 5's dipole, or round 4's orbit
+  let slingMode = saved.slingMode === 'orbit' ? 'orbit' : saved.slingMode === 'field' ? 'field' : 'dipole';   // pair A's sling: the dipole, round 15's field trajectory, or round 4's orbit
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
   let invertY = !!saved.invertY;
@@ -766,12 +800,13 @@
   scene.add(fieldMesh, trailMesh);
   const dum = new THREE.Object3D(), tq = new THREE.Quaternion(), tv = new V3(), tv2 = new V3(), tv3 = new V3(), ZAX = new V3(0, 0, 1);
   {
-    const c = new THREE.Color();
+    // seeded (round 15): the scorecard's "prisms pulled per sling" reads these homes, and Math.random made it differ per load
+    const c = new THREE.Color(), rnd = mulberry32(20261009);
     for (let i = 0; i < NF; i++) {
-      const a = Math.random() * Math.PI * 2, r = 330 + Math.random() * 600, y = (Math.random() - 0.5) * 520;
+      const a = rnd() * Math.PI * 2, r = 330 + rnd() * 600, y = (rnd() - 0.5) * 520;
       const j = i * 3; bp[j] = bh[j] = Math.cos(a) * r; bp[j + 1] = bh[j + 1] = y; bp[j + 2] = bh[j + 2] = Math.sin(a) * r;
-      tq.setFromEuler(new THREE.Euler(Math.random() * 6.28, Math.random() * 6.28, Math.random() * 6.28)); tq.toArray(bq, i * 4);
-      c.setHSL(0.6 + Math.random() * 0.12, 0.65, 0.35 + Math.random() * 0.2); fieldMesh.setColorAt(i, c);
+      tq.setFromEuler(new THREE.Euler(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28)); tq.toArray(bq, i * 4);
+      c.setHSL(0.6 + rnd() * 0.12, 0.65, 0.35 + rnd() * 0.2); fieldMesh.setColorAt(i, c);
       act[i] = 1;
     }
     for (let k = 0; k < NT; k++) { dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); dum.updateMatrix(); trailMesh.setMatrixAt(k, dum.matrix); }
@@ -916,7 +951,7 @@
         if (this.dieT >= P.dieS) this.alive = false;
         return;
       }
-      if (this.held && (this.t >= P.holdCap || (this.autoLetGo && this.t >= this.autoLetGo))) this.held = false;
+      if (this.held && ((!this.field && this.t >= P.holdCap) || (this.autoLetGo && this.t >= this.autoLetGo))) this.held = false;
       if (this.held) { this.mid.addVectors(this.att, this.rep).multiplyScalar(0.5); this.vRep.set(0, 0, 0); return; }
       if (this.closeT === 0 && !this.letGo) {
         this.letGo = true;
@@ -1141,7 +1176,7 @@
   function setStopped(on) {
     if (mode !== 'fly' || (race !== 'running' && !stopped)) return;
     stopped = !!on;
-    if (stopped) { speed = 0; gravSpeed = 0; flow = 0; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
+    if (stopped) { speed = 0; gravSpeed = 0; flow = 0; ftMul = 1; ftLive.n = 0; ftLive.lime = false; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
     else boosts.length = 0;
     showStopBtn(); showOverlay();
   }
@@ -1159,7 +1194,7 @@
   function spawn() {
     const g = gates[0]; hull.position.copy(g.p).addScaledVector(g.n, -170);
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
-    speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
+    speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.end = 'none'; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
     myPair = null; snapCam = true; ai.phase = 'cruise'; if (!batching) showOverlay();
   }
@@ -1173,7 +1208,7 @@
   function finishRace() {
     race = 'finished'; stopped = false; showStopBtn();
     if (batching) return;
-    const used = Array.from(runStyles).sort().join('+') || style;   // a run that swapped pairs mid-race is its own row
+    const used = Array.from(runStyles).sort().join('+') || (style === 'A' && slingMode === 'field' ? 'F' : style);   // a run that swapped pairs mid-race is its own row
     lastRun = { time: raceT, slings, style: used, intensity, seed, laps, courseKind, at: Date.now() };
     runs.push(lastRun); persist(); renderRuns(); showOverlay();
   }
@@ -1200,6 +1235,10 @@
     throttleNow = XDiff;
     const target = race === 'ready' ? 0 : stance ? 0 : XDiff * P.cruise;
     speed += (target - speed) * (1 - Math.exp(-(stance ? 6 : 2.2) * dt));
+    // the field trajectory: the steering you are holding is part of the prediction (ftSteer of it)
+    ftRates.pitch = race !== 'ready' ? -YSum * P.pitchYaw * rad : 0; ftRates.yaw = race !== 'ready' ? -XSum * P.pitchYaw * rad : 0; ftRates.roll = race !== 'ready' ? YDiff * P.roll * rad : 0;
+    ftThrottleTarget = target;
+    stepFieldBoost(dt);
 
     // An owned drift pair (A) pulls nobody: its pilot's pull IS the orbit. B keeps charming-cerf's felt pull on its owner.
     aB.set(0, 0, 0); let anyB = false;
@@ -1227,10 +1266,10 @@
     if (dipoleFlying) {
       // the dipole moved the hull itself, in small steps (stepDipoleForce); add only the other channels
       tv2.copy(vg).add(vf); hull.position.addScaledVector(tv2, dt);
-      basis(); velNow.copy(fwd).multiplyScalar(speed + gravSpeed + flow).add(tv2);
+      basis(); velNow.copy(fwd).multiplyScalar(speed * ftMul + gravSpeed + flow).add(tv2);
       if (raceStats && race === 'running') { const v = velNow.length(); raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; raceStats.flowTop = Math.max(raceStats.flowTop, flow); raceStats.gravTop = Math.max(raceStats.gravTop, gravSpeed); }
     } else {
-      tv2.copy(fwd).multiplyScalar(speed + gravSpeed + flow).add(vg).add(vf);
+      tv2.copy(fwd).multiplyScalar(speed * ftMul + gravSpeed + flow).add(vg).add(vf);
       hull.position.addScaledVector(tv2, dt);
       velNow.copy(tv2);
       if (raceStats && race === 'running') { const v = velNow.length(); raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; raceStats.flowTop = Math.max(raceStats.flowTop, flow); raceStats.gravTop = Math.max(raceStats.gravTop, gravSpeed); }
@@ -1416,6 +1455,7 @@
   // force turns over faster than a frame, and a frame-sized step there hands out speed no slingshot earned.
   function stepDipoleForce(dt) {
     dipoleFlying = false;
+    if (style === 'A' && slingMode === 'field') { stepFieldFlight(dt); return; }
     if (slingDipole) { if (!slingDipole.pair.alive) slingDipole = null; else if (!slingDipole.pair.held) releaseDipole(true); else holdDipole(dt); }
     if (!slingDipole || race === 'ready' || stance) {
       gravSpeed *= Math.exp(-dt / Math.max(0.05, P.dpAssistFade));
@@ -1485,6 +1525,227 @@
       }
     }
   }
+  // ================= the field trajectory (round 15) =================
+  // No catch radius and no hold circle: the pair is only a field equation — the black hole's pull (Paczyński–Wiita,
+  // GM/(r − r_s)²) and the white hole's push (softened over whPushSoften × its horizon), capped at the force ceiling.
+  // The field bends the nose (perpendicular part, capped at the fastest bend) and changes the speed along it (the
+  // gravity channel, which the engine pulls back toward cruise at ftGrip /s). The path ahead is the SAME step run forward
+  // from just in front of the nose, on this frame's inputs: the throttle, the steering you hold (× ftSteer), the boost.
+  // It runs ftLength u, or until it comes back within ftMargin of itself at least ftMinLoop u further on — the loop
+  // that would cross your own trail. A path cut short that way is LIME and the engine runs at ftBoost × while it is.
+  const FT_MAX = 1600, FT_HASH = 4096;
+  const ftHead = new Int32Array(FT_HASH), ftStamp = new Int32Array(FT_HASH), ftNext = new Int32Array(FT_MAX); let ftGen = 0;
+  const ftA = new V3(), ftF = new V3(), ftT = new V3(), ftAx = new V3(), ftDq = new THREE.Quaternion();
+  const ftRates = { pitch: 0, yaw: 0, roll: 0 };
+  let fieldSling = null, ftMul = 1;
+  // one live prediction (the sim's) and its result
+  const ftLive = { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0 };
+  function fieldAccel(Pv, f, p, out) {
+    out.set(0, 0, 0);
+    const GMu = Pv.bhGmPerStrength;
+    ftT.subVectors(f.att, p); const r = ftT.length() + 1e-6, x = Math.max(r - f.rs, 0.05 * f.rs);
+    out.addScaledVector(ftT, f.S * GMu / (x * x) / r);
+    ftT.subVectors(f.rep, p); const e2 = Math.max(1e-3, (Pv.whPushSoften * f.rsR) ** 2), q = ftT.lengthSq() + e2;
+    out.addScaledVector(ftT, -f.SR * GMu / (q * Math.sqrt(q)));
+    return out.clampLength(0, Pv.dpAccelCap);
+  }
+  // One step of flight in the field. st = { p, q, g }: position, orientation, gravity speed; vEng = engine (+ momentum).
+  // The flight and the prediction both call this, so the line shows the flight's own law.
+  function fieldSubstep(Pv, f, st, vEng, h) {
+    ftF.set(0, 0, -1).applyQuaternion(st.q);
+    if (f) {
+      fieldAccel(Pv, f, st.p, ftA);
+      const v = Math.max(vEng + st.g, 5), along = ftA.dot(ftF);
+      st.g = Math.max(-Math.max(0, vEng - 8), Math.min(4 * Pv.cruise, st.g + along * h)) * Math.exp(-Math.max(0, Pv.ftGrip) * h);
+      ftT.copy(ftA).addScaledVector(ftF, -along); const am = ftT.length();
+      if (am > 1e-4) {
+        ftAx.crossVectors(ftF, ftT).normalize();
+        st.q.premultiply(ftDq.setFromAxisAngle(ftAx, Math.min(am / v, Pv.dpTurnCap) * h)).normalize();
+        ftF.set(0, 0, -1).applyQuaternion(st.q);
+      }
+    } else st.g *= Math.exp(-h / Math.max(0.05, Pv.dpAssistFade));
+    st.p.addScaledVector(ftF, Math.max(0, vEng + st.g) * h);
+  }
+  // The path ahead. Pure: reads only its arguments (the tooltips and the heading scan call it on their own worlds).
+  //   f      the standing pair (att, rep, S, rs, SR, rsR) or null
+  //   p0, q0 the hull now; kin = { v, vT, mul, flow, g }: the engine speed and where the held throttle is taking it
+  //          (eased at the flight's 2.2 /s), the boost multiplier, the momentum (fading at dpFlowFade), the gravity speed
+  //   rates  the held steering (rad/s, body axes)
+  //   out    { pts, n, end: 'open' | 'self' | 'hole' | 'trail', lime, loop, hitJ, len }; trail: optional [x,y,z,…] already laid
+  const ftSt = { p: new V3(), q: new THREE.Quaternion(), g: 0 };
+  function fieldPath(Pv, f, p0, q0, kin, rates, out, trail, trailN) {
+    const st = ftSt; st.p.copy(p0); st.q.copy(q0); st.g = kin.g || 0;
+    let ve = kin.v, fl = kin.flow || 0; const vT = kin.vT != null ? kin.vT : kin.v, mul = kin.mul || 1, flowK = 1 / Math.max(0.05, Pv.dpFlowFade);
+    const ds = Math.max(0.5, Pv.ftStep), cap = Math.min(FT_MAX - 1, Math.ceil(Pv.ftLength / ds)), m = Math.max(0.1, Pv.ftMargin), m2 = m * m;
+    const skip = Math.max(2, Math.ceil(Pv.ftMinLoop / ds)), cell = m, pts = out.pts;
+    const key = (x, y, z) => ((Math.floor(x / cell) * 73856093) ^ (Math.floor(y / cell) * 19349663) ^ (Math.floor(z / cell) * 83492791)) & (FT_HASH - 1);
+    ftGen = (ftGen + 1) | 0; if (ftGen === 0) { ftStamp.fill(0); ftGen = 1; }
+    let n = 1, end = 'open', hitJ = -1;
+    const kx = Math.max(-1, Math.min(1, Pv.ftSteer));
+    // One stretch of ds u of flight: a single step where the field is gentle, more where it bends hard or the horizon is near.
+    const stepBy = (dsx) => {
+      const vEng = ve * mul + fl, v = Math.max(5, vEng + st.g), tStep = dsx / v;
+      let k = 1;
+      if (f) {
+        fieldAccel(Pv, f, st.p, ftA); const am = ftA.length(), r = st.p.distanceTo(f.att);
+        k = Math.max(1, Math.ceil(Math.min(am / v, Pv.dpTurnCap) * tStep / 0.02), Math.ceil(dsx / Math.max(0.1, 0.2 * (r - f.rs))));
+        k = Math.min(k, 96);
+        if (Pv.ftExact) k = Math.max(k, Math.ceil(tStep / 0.004));   // the flight's own 4 ms step (the parity probe)
+      }
+      const h = tStep / k;
+      for (let i = 0; i < k; i++) {
+        if (kx) {
+          st.q.multiply(ftDq.setFromAxisAngle(X, rates.pitch * kx * h)); st.q.multiply(ftDq.setFromAxisAngle(Y, rates.yaw * kx * h)); st.q.multiply(ftDq.setFromAxisAngle(Zn, rates.roll * kx * h));
+        }
+        fieldSubstep(Pv, f, st, ve * mul + fl, h);
+        ve += (vT - ve) * (1 - Math.exp(-2.2 * h)); fl *= Math.exp(-h * flowK);
+        if (f && st.p.distanceTo(f.att) <= f.rs) return true;   // checked every substep: a small horizon fits between two points
+      }
+      return false;
+    };
+    // The hull flies from where it IS; the line is drawn (and tested) from ftNose u ahead of it, so the start does not
+    // shift the path — a path started 8 u further on is a different path near a hole.
+    for (let pre = 0, nose = Math.max(0, Pv.ftNose); pre < nose - 1e-6; ) { const d = Math.min(ds, nose - pre); pre += d; if (stepBy(d)) break; }
+    pts[0] = st.p.x; pts[1] = st.p.y; pts[2] = st.p.z;
+    for (; n <= cap; n++) {
+      const inHole = stepBy(ds);
+      const j3 = n * 3; pts[j3] = st.p.x; pts[j3 + 1] = st.p.y; pts[j3 + 2] = st.p.z;
+      if (inHole) { end = 'hole'; n++; break; }
+      // the points at least ftMinLoop behind this one are the trail you would have laid by now
+      const old = n - skip;
+      if (old >= 0) {
+        const o3 = old * 3, hk = key(pts[o3], pts[o3 + 1], pts[o3 + 2]);
+        if (ftStamp[hk] !== ftGen) { ftStamp[hk] = ftGen; ftHead[hk] = -1; }
+        ftNext[old] = ftHead[hk]; ftHead[hk] = old;
+      }
+      const cx = Math.floor(st.p.x / cell), cy = Math.floor(st.p.y / cell), cz = Math.floor(st.p.z / cell);
+      for (let a = -1; a <= 1 && hitJ < 0; a++) for (let b = -1; b <= 1 && hitJ < 0; b++) for (let c = -1; c <= 1 && hitJ < 0; c++) {
+        const hk = (((cx + a) * 73856093) ^ ((cy + b) * 19349663) ^ ((cz + c) * 83492791)) & (FT_HASH - 1);
+        if (ftStamp[hk] !== ftGen) continue;
+        for (let q = ftHead[hk]; q >= 0; q = ftNext[q]) {
+          const q3 = q * 3, dx = pts[q3] - st.p.x, dy = pts[q3 + 1] - st.p.y, dz = pts[q3 + 2] - st.p.z;
+          if (dx * dx + dy * dy + dz * dz <= m2) { hitJ = q; break; }
+        }
+      }
+      if (hitJ >= 0) { end = 'self'; n++; break; }
+      if (trail && trailN) {
+        let hit = false;
+        for (let t = 0; t < trailN && !hit; t++) { const t3 = t * 3, dx = trail[t3] - st.p.x, dy = trail[t3 + 1] - st.p.y, dz = trail[t3 + 2] - st.p.z; hit = dx * dx + dy * dy + dz * dz <= m2; }
+        if (hit) { end = 'trail'; n++; break; }
+      }
+    }
+    out.n = Math.min(n, cap + 1); out.end = end; out.hitJ = hitJ;
+    out.len = (out.n - 1) * ds; out.loop = hitJ >= 0 ? (out.n - 1 - hitJ) * ds : 0;
+    out.lime = end === 'self' || (end === 'hole' && Pv.ftHole >= 0.5) || end === 'trail';
+    return out;
+  }
+  // The pair stands as laid: the press lays it (the squeeze, read live until you let go, sets its strength); it stands
+  // ftStand s whatever the trigger does, then falls together and annihilates like any let-go pair. A new press lets the
+  // standing one go and lays another.
+  function fieldStanding() { const fs = fieldSling; return fs && fs.pair.alive && fs.pair.held && !fs.pair.dying ? fs.pair : null; }
+  function layField(side) {
+    if (mode !== 'fly' || race === 'ready') return;
+    for (const pr of pairs) if (pr.owned && pr.alive && !(fieldSling && pr === fieldSling.pair)) pr.alive = false;   // at most the standing pair and the one it replaces
+    if (fieldSling && fieldSling.pair.alive) fieldSling.pair.held = false;
+    basis();
+    const sideV = right.clone().multiplyScalar(side === 'L' ? -1 : 1);
+    const att = hull.position.clone().addScaledVector(fwd, P.ftAhead).addScaledVector(sideV, P.ftSide);
+    const rep = hull.position.clone().addScaledVector(fwd, P.ftAhead).addScaledVector(sideV, -P.ftSide);
+    const pr = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), tv.subVectors(rep, att).lengthSq() > 1e-6 ? tv : right, up, 0, true,
+      { rs: 0.02, held: true, autoLetGo: Math.max(0.5, P.ftStand), dipole: { att, rep, rsR: 0.02, SR: 0 } });
+    pr.field = true; pairs.push(pr); myPair = pr; runStyles.add('F');
+    spawnWave('in', rep);
+    fieldSling = { side, pair: pr, q: holds[side].live, on: true };
+    if (raceStats && race === 'running') raceStats.slings++;
+    slings++;
+    if (stance) stance = false;
+  }
+  function fieldHold(dt) {
+    const fs = fieldSling; if (!fs) return;
+    if (!fs.pair.alive) { fieldSling = null; return; }
+    if (fs.on) fs.q += (holds[fs.side].live - fs.q) * (1 - Math.exp(-12 * dt));
+    const pr = fs.pair; if (!pr.held || pr.dying) return;
+    const bB = smooth(0, 1, pr.t / Math.max(0.01, P.bornS)), bW = smooth(0.55, 1, pr.t / Math.max(0.01, P.whInS));
+    pr.rs = Math.max(0.02, dipoleRs(fs.q) * bB); pr.S = dipoleS(fs.q) * bB;
+    pr.rsR = Math.max(0.02, dipoleRs(fs.q) * P.whSizeX * bW); pr.SR = dipoleS(fs.q) * P.dpWhite * bW;
+  }
+  const ftFly = { p: null, q: null, g: 0 };
+  function stepFieldFlight(dt) {
+    fieldHold(dt);
+    const f = fieldStanding();
+    if (!f || race === 'ready' || stance) {
+      gravSpeed *= Math.exp(-dt / Math.max(0.05, P.dpAssistFade));
+      if (race === 'ready' || stance) gravSpeed = 0;
+      return;
+    }
+    dipoleFlying = true;
+    const n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n;
+    ftFly.p = hull.position; ftFly.q = hull.quaternion; ftFly.g = gravSpeed;
+    for (let i = 0; i < n; i++) {
+      fieldSubstep(P, f, ftFly, speed * ftMul + flow, h);
+      if (portal.A && hull.position.distanceTo(f.att) <= f.rs) { gravSpeed = ftFly.g; dipoleCarry(f); ftFly.g = gravSpeed; break; }
+    }
+    gravSpeed = ftFly.g;
+  }
+  // Every frame of flight: predict, colour, boost. The boost arrives at ftRise /s and fades over ftFade s once the loop opens.
+  function stepFieldBoost(dt) {
+    const on = style === 'A' && slingMode === 'field' && race === 'running' && !stopped && !stance;
+    if (!on) { ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.end = 'none'; return; }
+    const f = fieldStanding();
+    let trail = null, tn = 0;
+    if (P.ftTrail >= 0.5) { trail = ftTrailBuf; for (let k = 0; k < NT; k++) if (tAge[k] > 0.5) { const j = (NF + k) * 3; trail[tn * 3] = bp[j]; trail[tn * 3 + 1] = bp[j + 1]; trail[tn * 3 + 2] = bp[j + 2]; tn++; } }
+    ftKin.v = speed; ftKin.vT = ftThrottleTarget; ftKin.mul = P.ftBoostInPath >= 0.5 ? ftMul : 1; ftKin.flow = flow; ftKin.g = gravSpeed;
+    const was = ftLive.lime;
+    fieldPath(P, f, hull.position, hull.quaternion, ftKin, ftRates, ftLive, trail, tn);
+    if (ftLive.lime) ftMul += (Math.max(1, P.ftBoost) - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
+    else ftMul = 1 + (ftMul - 1) * Math.exp(-dt / Math.max(0.01, P.ftFade));
+    if (raceStats) { if (ftLive.lime) { raceStats.limeT += dt; if (!was) raceStats.limeOn++; } raceStats.mulTop = Math.max(raceStats.mulTop, ftMul); }
+  }
+  const ftTrailBuf = new Float32Array(NT * 3), ftKin = { v: 0, vT: 0, mul: 1, flow: 0, g: 0 };
+  let ftThrottleTarget = 0;
+  // The line is drawn on the HUD, after the lens: a prediction is not light, so the black hole must not bend (or double)
+  // it. From just ahead of the nose: cyan while open (fading with distance), amber into the black hole, LIME when it
+  // closes on itself — the loop itself brightest, a ring where it meets its own trail.
+  const ftScr = new V3();
+  function drawFieldPath(c, cw, ch, sc) {
+    if (mode !== 'fly' || ftLive.n < 2) return;
+    const n = ftLive.n, pts = ftLive.pts, lime = ftLive.lime, hole = ftLive.end === 'hole';
+    const rgb = lime ? '157,255,46' : hole ? '255,179,71' : '127,215,255';
+    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    let px = 0, py = 0, have = false;
+    for (let i = 0; i < n; i++) {
+      ftScr.set(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]).applyMatrix4(cam.matrixWorldInverse);
+      if (ftScr.z > -cam.near - 0.5) { have = false; continue; }
+      ftScr.applyMatrix4(cam.projectionMatrix);
+      const x = (ftScr.x * 0.5 + 0.5) * cw, y = (-ftScr.y * 0.5 + 0.5) * ch;
+      if (have) {
+        const inLoop = ftLive.hitJ >= 0 && i > ftLive.hitJ, a = lime ? (inLoop ? 0.95 : 0.6) : Math.max(0.15, 0.85 - 0.7 * i / n);
+        c.strokeStyle = 'rgba(' + rgb + ',' + a.toFixed(3) + ')'; c.lineWidth = (lime && inLoop ? 3 : 2) * sc;
+        c.beginPath(); c.moveTo(px, py); c.lineTo(x, y); c.stroke();
+      }
+      px = x; py = y; have = true;
+    }
+    if (ftLive.end !== 'open' && have) { c.strokeStyle = 'rgba(' + rgb + ',0.95)'; c.lineWidth = 2 * sc; c.beginPath(); c.arc(px, py, 7 * sc, 0, TAU); c.stroke(); }
+    c.restore();
+  }
+  // The heading scan: the Stoat D u from the black hole, flying straight at cruise, aimed at every heading within ±span°
+  // of it in the plane of the pair. Which headings close a loop? Pure: lays its own pair, touches nothing live.
+  // Controls that must stay at 0: no pair at all, and the white hole alone (black hole massless).
+  function fieldScan(opts) {
+    opts = opts || {};
+    const Pv = opts.Pv || P, D = opts.D || 300, q = opts.q != null ? opts.q : 1, span = opts.span || 60, stepDeg = opts.step || 1;
+    const tp = Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent)), S = Pv.dpSMin + (Math.max(Pv.dpSMin, Pv.dpSMax) - Pv.dpSMin) * tp, rs = Pv.dpRsMin + (Math.max(Pv.dpRsMin, Pv.dpRsMax) - Pv.dpRsMin) * tp;
+    const f = opts.none ? null : { att: new V3(0, 0, 0), rep: new V3(-2 * Pv.ftSide, 0, 0), S: opts.noBlack ? 0 : S, rs, SR: S * Pv.dpWhite, rsR: rs * Pv.whSizeX };
+    const p0 = new V3(0, 0, D), q0 = new THREE.Quaternion(), out = { pts: new Float32Array(FT_MAX * 3) }, rates = { pitch: 0, yaw: 0, roll: 0 };
+    let lime = 0, total = 0, lo = null, hi = null, loops = 0;
+    for (let a = -span; a <= span + 1e-9; a += stepDeg) {
+      q0.setFromAxisAngle(Y, a * Math.PI / 180);   // 0 = dead at the black hole (−z)
+      fieldPath(Pv, f, p0, q0, { v: Pv.cruise, vT: Pv.cruise }, rates, out);
+      total++;
+      if (out.lime) { lime++; if (lo == null) lo = a; hi = a; if (out.end === 'self') loops++; }
+    }
+    return { D, q, S: +S.toFixed(2), share: lime / total, lime, loops, total, lo, hi };
+  }
   const axisLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3(0, 0, 1)]),
     new THREE.LineDashedMaterial({ color: 0xd9ccff, dashSize: 6, gapSize: 5, transparent: true, opacity: 0.7, depthTest: false }));
   axisLine.renderOrder = 6; axisLine.visible = false; axisLine.frustumCulled = false; scene.add(axisLine);
@@ -1531,17 +1792,18 @@
     const h = holds[side];
     const pressed = raw > 0.05;
     if (pressed && !h.on) {
-      h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'dipole' ? P.dpKeySqueeze : 0;
-      if (style === 'A') { if (slingMode === 'dipole') layDipole(side); else layOrbit(side); }   // A: the press lays the pair
+      h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : 0;
+      if (style === 'A') { if (slingMode === 'dipole') layDipole(side); else if (slingMode === 'field') layField(side); else layOrbit(side); }   // A: the press lays the pair
     }
     if (h.on) {
       h.t += dt;
-      h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'dipole' ? P.dpKeySqueeze : clamp01(h.t / P.holdRamp);
+      h.live = analog ? clamp01(raw) : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : clamp01(h.t / P.holdRamp);
       h.peak = Math.max(h.peak, h.live);                // the boost (A) and the crystal size (B) use the DEEPEST squeeze
     }
     if (!pressed && h.on) {
       h.on = false;
       if (slingDipole && slingDipole.side === side) releaseDipole();
+      else if (fieldSling && fieldSling.side === side && fieldSling.on) fieldSling.on = false;   // the squeeze freezes; the pair keeps standing
       else if (slingOrbit && slingOrbit.side === side) slingshot(true);
       else if (style === 'B') sling(side, h.peak);
       h.live = 0;
@@ -1739,10 +2001,10 @@
   // costs on the shared x axes; roll keeps the hull upright. Sling: lay the pair on the side of the turn, hold, release
   // when the nose is on the next ring (a clean release), or give up when the hole never catches.
   let aiOn = false, simSpeed = 1, aiRepeat = true, camMode = 'chase', batching = false, aiRestartT = 0;
-  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null };
+  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null, fHold: 0 };
   function aiRand() { let t = (ai.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   let raceStats = null;
-  function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0 }; }
+  function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0, limeT: 0, limeOn: 0, mulTop: 1 }; }
   const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
   const qInv = new THREE.Quaternion(), aiLoc = new V3(), aiOff = new V3(), aiAim = new V3();
   function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
@@ -1780,6 +2042,19 @@
     if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
     let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
     inp.R.y = Math.max(-1, Math.min(1, (b + r) / 2)); inp.L.y = Math.max(-1, Math.min(1, (b - r) / 2));
+    if (style === 'A' && slingMode === 'field') {   // the field: nothing to hold — lay the pair and fly for the ring
+      let trig = 0;
+      if (ai.fHold > 0) { ai.fHold -= dt; trig = ai.q; }
+      else if (P.aiSling > 0.5 && !fieldStanding() && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
+        const n = clamp01(P.aiNoise);
+        ai.side = Math.abs(phi) < Math.PI / 2 ? 'R' : 'L';
+        ai.q = Math.max(0.05, Math.min(1, P.aiQ + n * (aiRand() - 0.5) * 0.9)); ai.fHold = 0.35 + n * aiRand() * 0.5; trig = ai.q;
+      }
+      inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
+      trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+      lastInput = inp;
+      return inp;
+    }
     // ---- the sling ----
     ai.t += dt;
     const useSling = P.aiSling > 0.5 && style === 'A' && slingMode === 'dipole';
@@ -1828,16 +2103,20 @@
     while (race === 'running' && t < 400) { simStep(h, aiInput(h), false); t += h; }
     const s = raceStats;
     return { finished: race === 'finished', time: raceT, top: s.top, gravTop: s.gravTop, prisms: s.released ? s.prisms / s.released : NaN, avg: s.dist / Math.max(1e-3, raceT), flowTop: s.flowTop, slings: s.slings, catches: s.catches, clean: s.clean,
-      err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, sweepDeg: s.sweepSum * 180 / Math.PI, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin };
+      err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, sweepDeg: s.sweepSum * 180 / Math.PI, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin,
+      lime: raceT > 0 ? s.limeT / raceT : 0, loopsPerMin: raceT > 0 ? s.limeOn * 60 / raceT : 0, mulTop: s.mulTop };
   }
   function batchPresets() { return [{ name: 'No sling', w: {}, noSling: true }, { name: 'Balanced', w: {} }].concat(STYLES.map((st) => ({ name: st.name, w: { [st.key]: 1 } }))); }
   function runBatch(qs, opts) {
     opts = opts || {};
-    const saveBP = Object.assign({}, BP), saveLive = liveStyles, saveMode = mode, saveKind = courseKind, rows = [];
+    qs = qs || [0.3, 0.6, 1];
+    const saveBP = Object.assign({}, BP), saveLive = liveStyles, saveMode = mode, saveKind = courseKind, saveSling = slingMode, saveStyle = style, rows = [];
     batching = true; liveStyles = false; if (mode !== 'fly') setMode('fly');
+    slingMode = opts.slingMode || 'dipole'; style = 'A';
     const onCourse = (k) => { if (courseKind !== k) { courseKind = k; buildCourse(); } };
     const seeds = opts.seeds || [11, 23, 37];
     for (const pr of (opts.presets || batchPresets())) {
+      Object.assign(BP, saveBP, pr.over || {}); slingMode = pr.sling || opts.slingMode || 'dipole';
       for (const st of STYLES) BP[st.key] = pr.w[st.key] != null ? pr.w[st.key] : 0.5;
       BP.aiSling = pr.noSling ? 0 : 1;
       const row = { preset: pr.name, circuit: [], hairpin: [], rookie: [] };
@@ -1850,6 +2129,7 @@
       rows.push(row);
     }
     Object.assign(BP, saveBP); liveStyles = saveLive; recomputeP(); refreshAllOuts(); batching = false;
+    slingMode = saveSling; style = saveStyle;
     onCourse(saveKind);
     if (saveMode !== 'fly') setMode(saveMode); spawn();
     return rows;
@@ -1871,6 +2151,44 @@
     { key: 'flow', label: 'momentum', win: 'max', get: (w) => bestOf(w.circuit, (r) => r.flowTop), fmt: (b) => b.v.toFixed(0) + ' u/s' },
     { key: 'rtime', label: 'rookie 2 laps', win: 'min', get: (w) => { const f = fin(w.rookie); return f.length ? { v: f.reduce((a, r) => a + r.time, 0) / f.length, dnf: w.rookie.length - f.length } : null; }, fmt: (b) => fmtTime(b.v) + (b.dnf ? ' (' + b.dnf + ' DNF)' : '') },
   ];
+  // The field-trajectory scorecard (round 15): the field against the dipole and against no sling, plus the questions the
+  // mode puts to the designer — what steering alone earns, and what the two path options do. Same races, same AI.
+  function fieldPresets() {
+    return [
+      { name: 'No sling', w: {}, noSling: true },
+      { name: 'Dipole · Balanced', w: {} },
+      { name: 'Field · steering only', w: {}, noSling: true, sling: 'field' },
+      { name: 'Field · steering only, not in path', w: {}, noSling: true, sling: 'field', over: { ftSteer: 0 } },
+      { name: 'Field · pairs', w: {}, sling: 'field' },
+      { name: 'Field · pairs, steering not in path', w: {}, sling: 'field', over: { ftSteer: 0 } },
+      { name: 'Field · pairs, path at the boosted speed', w: {}, sling: 'field', over: { ftBoostInPath: 1 } },
+    ];
+  }
+  function runFieldBatch(qs) { lastFieldQs = qs || [0.5, 1]; return runBatch(lastFieldQs, { presets: fieldPresets() }); }
+  let lastFieldQs = null;
+  const mean = (list, f) => list.length ? { v: list.reduce((a, r) => a + f(r), 0) / list.length } : null;
+  const FIELD_COLS = [
+    { key: 'time', label: 'circuit 2 laps', win: 'min', get: (w) => bestOf(fin(w.circuit), (r) => r.time, true), fmt: (b) => fmtTime(b.v) },
+    { key: 'hair', label: 'hairpins 2 laps', win: 'min', get: (w) => bestOf(fin(w.hairpin), (r) => r.time, true), fmt: (b) => fmtTime(b.v) },
+    { key: 'avg', label: 'avg speed, circuit', win: 'max', get: (w) => bestOf(fin(w.circuit), (r) => r.avg), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'top', label: 'top speed', win: 'max', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.top), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'lime', label: 'time lime (boosted)', win: 'max', get: (w) => mean(w.circuit.concat(w.hairpin), (r) => r.lime), fmt: (b) => Math.round(100 * b.v) + '%' },
+    { key: 'loops', label: 'loops closed / min', win: 'max', get: (w) => mean(w.circuit.concat(w.hairpin), (r) => r.loopsPerMin), fmt: (b) => b.v.toFixed(1) },
+    { key: 'ring', label: 'ring error, hairpins', win: 'min', get: (w) => bestOf(fin(w.hairpin), (r) => r.err, true), fmt: (b) => b.v.toFixed(1) + ' u' },
+    { key: 'rtime', label: 'rookie 2 laps', win: 'min', get: (w) => { const f = fin(w.rookie); return f.length ? { v: f.reduce((a, r) => a + r.time, 0) / f.length, dnf: w.rookie.length - f.length } : null; }, fmt: (b) => fmtTime(b.v) + (b.dnf ? ' (' + b.dnf + ' DNF)' : '') },
+  ];
+  function fieldSummary(rows) { const out = {}; for (const r of rows) { out[r.preset] = {}; for (const c of FIELD_COLS) { const g = c.get(r); out[r.preset][c.key] = g ? +g.v.toFixed(3) : null; } } return out; }
+  function fieldTable(rows) {
+    let h = '<table class="runs batch"><thead><tr><th>Field trajectory</th>' + FIELD_COLS.map((c) => '<th>' + c.label + '</th>').join('') + '</tr></thead><tbody>';
+    const best = {}; for (const c of FIELD_COLS) { let bv = NaN; for (const r of rows) { if (r.preset === 'No sling') continue; const g = c.get(r); if (g && (isNaN(bv) || (c.win === 'min' ? g.v < bv : g.v > bv))) { bv = g.v; best[c.key] = r.preset; } } }
+    for (const r of rows) {
+      const lime = r.preset.startsWith('Field');
+      h += '<tr><td style="color:' + (lime ? '#9dff2e' : 'var(--fg)') + '">' + r.preset + '</td>';
+      for (const c of FIELD_COLS) { const g = c.get(r); h += '<td' + (best[c.key] === r.preset ? ' class="win"' : '') + '>' + (g ? c.fmt(g) : '—') + '</td>'; }
+      h += '</tr>';
+    }
+    return h + '</tbody></table><p class="src">Same seed and intensity as the Course tab, both courses, two laps flat out. Skilled AI at squeezes ' + (lastFieldQs || []).join(', ') + ' (each time column keeps its best; lime and loops are the average over those races); rookie = sloppiness 0.8, three seeds. In the field the AI only lays a pair on the side of the turn and flies for the ring — it never hunts for a loop, so its lime share is what the course gives a pilot who is not trying. "Steering only" lays no pair: any lime there is the steering circle alone. "Not in path" is the negative control — no pair and no steering in the prediction must give 0%.</p>';
+  }
   function batchWinners(rows) {
     const out = {};
     for (const c of BATCH_COLS) {
@@ -2209,10 +2527,11 @@
       else { const a = Math.atan2(py - ch / 2, px - cw / 2); c.save(); c.translate(px, py); c.rotate(a); c.beginPath(); c.moveTo(12 * sc, 0); c.lineTo(-6 * sc, -8 * sc); c.lineTo(-6 * sc, 8 * sc); c.closePath(); c.fill(); c.restore(); }
       c.font = font(12, 700); c.fillText('RING ' + (threaded % 8 + 1) + ' · ' + d + ' u', px, py + (on ? 28 : 24) * sc);
     }
+    drawFieldPath(c, cw, ch, sc);
     wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
     // top-left: the pair being flown
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
-    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'DIPOLE SLING' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
+    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'DIPOLE SLING' : slingMode === 'field' ? 'FIELD TRAJECTORY (round 15)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
     c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
@@ -2229,6 +2548,14 @@
     } else if (slingFlash > 0 && lastDipole) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + (lastDipole.captured ? Math.round(lastDipole.sweep * 180 / Math.PI) + '° round' : 'bent ' + Math.round(lastDipole.turned * 180 / Math.PI) + '°') + ' · boost +' + Math.round(lastDipole.kick) + ' u/s', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     else if (slingOrbit) { c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA; c.fillText('ORBIT  r ' + Math.round(slingOrbit.r) + ' u  ·  ' + Math.round(slingOrbit.angle * 180 / Math.PI) + '°  ·  let go to slingshot', cw / 2, tY + pad + 14 * sc); }
     else if (slingFlash > 0 && lastOrbit) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + Math.round(lastOrbit.angle * 180 / Math.PI) + '° round r ' + Math.round(lastOrbit.r) + ' u', cw / 2, ch * 0.3); c.globalAlpha = 1; }
+    if (style === 'A' && slingMode === 'field' && race === 'running' && !stopped) {
+      const f = fieldStanding(), lim = ftLive.lime, lime = '#9dff2e';
+      const endTxt = ftLive.end === 'self' ? 'LOOP CLOSED · a ' + Math.round(ftLive.loop) + ' u loop' : ftLive.end === 'trail' ? 'ONTO YOUR TRAIL' : ftLive.end === 'hole' ? (lim ? 'INTO THE BLACK HOLE' : 'into the black hole (does not count)') : 'path open · ' + Math.round(ftLive.len) + ' u';
+      c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = lim ? lime : f ? colA : dim;
+      c.fillText((ftMul > 1.05 ? '× ' + ftMul.toFixed(1) + '  ·  ' : '') + endTxt, cw / 2, tY + pad + 14 * sc);
+      c.font = font(11, 500); c.fillStyle = dim;
+      c.fillText(f ? 'strength ' + f.S.toFixed(1) + '  ·  black hole ' + Math.round(hull.position.distanceTo(f.att)) + ' u  ·  stands ' + Math.max(0, P.ftStand - f.t).toFixed(1) + ' s more' : (myPair && myPair.alive && myPair.field ? 'the pair is closing' : 'no pair: press LT or RT to lay one ahead'), cw / 2, tY + pad + 30 * sc);
+    }
     if (stopped) {
       c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, tY + pad + 50 * sc);
       c.font = font(11, 500); c.fillStyle = ink; c.fillText('Press LT or RT to lay a pair ahead and watch its whole life: hold it, let go, watch it close, annihilate and send its wave past you. ▶ Resume (or P) to fly on.', cw / 2, tY + pad + 66 * sc);
@@ -2250,7 +2577,7 @@
     }
     if (styleFlash > 0) { c.globalAlpha = Math.min(1, styleFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = styleFlashCol; c.fillText(styleFlashText, cw / 2, ch * 0.62); c.globalAlpha = 1; }
     if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
-    if (myPair && myPair.alive && myPair.dipole && !slingDipole && !(slingFlash > 0)) {
+    if (myPair && myPair.alive && myPair.dipole && !myPair.field && !slingDipole && !(slingFlash > 0)) {
       const pr = myPair; c.textAlign = 'center'; c.font = font(12, 600); c.fillStyle = dim;
       c.fillText(pr.dying ? 'annihilating — the mass leaves as a gravitational wave' : 'the pair is closing', cw / 2, tY + pad + 14 * sc);
     }
@@ -2262,12 +2589,12 @@
     c.font = font(20, 700); c.fillStyle = gateFlash > 0 ? amber : ink; c.fillText(fmtTime(raceT), cw - padR, pad + 36 * sc);
     c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' sling' : ' slings'), cw - padR, pad + 51 * sc);
     // bottom-left: speed, throttle, pull channel
-    const dip = style === 'A' && slingMode === 'dipole', v = velNow.length(), pull = dip ? gravSpeed : (style === 'A' ? vg : vf).length();
+    const dip = style === 'A' && slingMode !== 'orbit', v = velNow.length(), pull = dip ? gravSpeed : (style === 'A' ? vg : vf).length();
     c.textAlign = 'left'; c.font = font(30, 700); c.fillStyle = ink; c.fillText(Math.round(v), pad, ch - pad - 26 * sc);
     c.font = font(11, 500); c.fillStyle = dim; c.fillText('u/s   throttle ' + Math.round(throttleNow * 100) + '%   cruise ' + P.cruise, pad + 52 * sc, ch - pad - 28 * sc);
     const bw = 180 * sc, by = ch - pad - 14 * sc;
     c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(pad, by, bw, 5 * sc);
-    c.fillStyle = ink; c.fillRect(pad, by, bw * Math.min(1, speed / (P.cruise * 2.5)), 5 * sc);
+    c.fillStyle = ftMul > 1.05 ? '#9dff2e' : ink; c.fillRect(pad, by, bw * Math.min(1, speed * ftMul / (P.cruise * 2.5)), 5 * sc);
     c.fillStyle = style === 'A' ? colA : colB; c.fillRect(pad, by + 7 * sc, bw * Math.min(1, Math.max(0, pull) / (P.cruise * 2.5)), 5 * sc);
     c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(pad + bw * 0.4, by - 3 * sc, 1.5, 17 * sc);
     c.font = font(10, 500); c.fillStyle = dim; c.fillText('engine / ' + (dip ? 'gravity ' + (pull >= 0 ? '+' : '') : style === 'A' ? 'slingshot ' : 'pull ') + Math.round(pull) + ' u/s' + (dip && flow > 0.5 ? ' · momentum +' + Math.round(flow) : ''), pad + bw + 8 * sc, by + 10 * sc);
@@ -2282,7 +2609,7 @@
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = h.on ? ink : dim; c.fillText(side === 'L' ? 'LT' : 'RT', x, y + 5 * sc);
       if (h.on) {
         c.font = font(11, 600); c.fillStyle = ink;
-        if (style === 'A' && slingMode === 'dipole') c.fillText('S ' + dipoleS(h.live).toFixed(1), x, y - r - 8 * sc);
+        if (style === 'A' && slingMode !== 'orbit') c.fillText('S ' + dipoleS(h.live).toFixed(1), x, y - r - 8 * sc);
         else if (style === 'A') c.fillText('orbit ' + Math.round(orbitRadius(h.live)) + ' u', x, y - r - 8 * sc);
         else { const S = strengthOf(h.peak); c.fillText('S ' + S.toFixed(1) + ' · ' + Math.max(MIN_HORIZON, S * 2).toFixed(0) + ' u', x, y - r - 8 * sc); }
       }
@@ -2348,7 +2675,9 @@
     if (race === 'ready') {
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
-        (style === 'A' && slingMode === 'dipole'
+        (style === 'A' && slingMode === 'field'
+          ? '<p><b>The field trajectory.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole appears ahead on that side and its white hole on the other; <b>how deep</b> you squeeze is its strength, and it stands for ' + P.ftStand + ' s on its own. Nothing catches you: the line from your nose is the path your inputs fly through its field. Point at the black hole and look for a heading whose path <b style="color:#9dff2e">loops back onto itself</b>: the line turns lime and you fly at ' + P.ftBoost + '×.</p>'
+          : style === 'A' && slingMode === 'dipole'
           ? '<p><b>The dipole sling.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a small black hole appears ahead on that side, its white hole ahead on the other. <b>How deep</b> you squeeze is its strength; the solid circle is where it would hold you, the faint one how far out it can catch you. Fly past it: once it catches you, you stay in its grip and go round for as long as you <b>hold</b>. <b>Let go</b> and you slingshot out on the tangent with a boost; the pair falls together and annihilates.</p>'
           : style === 'A'
           ? '<p>Pair <b style="color:#b9a4ff">A</b>: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the attractor appears on that side; <b>hold</b> and you orbit it (squeeze harder, tighter circle); <b>let go</b> to slingshot out along your nose.</p>'
@@ -2359,7 +2688,7 @@
         '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button></div>';
       $('startBtn').addEventListener('click', startRace);
     } else {
-      const best = bestFor(style);
+      const best = bestFor(style === 'A' && slingMode === 'field' ? 'F' : style);
       box.innerHTML = '<h2>Finished · ' + fmtTime(lastRun.time) + '</h2>' +
         '<p>' + lastRun.slings + ' slings with pair <b>' + lastRun.style + '</b>' + (best != null ? ' · best with ' + style + ': ' + fmtTime(best) : '') + '. Keep flying, swap with <kbd>Y</kbd>, or go again.</p>' +
         '<div class="btns"><button class="pick primary" type="button" id="againBtn">Fly again</button><button class="pick" type="button" id="logRunBtn">Log this run</button></div>';
@@ -3016,6 +3345,64 @@
     },
   };
   // ---------- what counts as a clean release ----------
+  // ---------- the field trajectory (round 15), top down: a fan of headings at the pair, each one's path ----------
+  // The Stoat sits D u from the black hole (the white hole beyond it, on the left) and every path is the studio's own
+  // fieldPath at cruise: lime = it closes on itself, amber = into the black hole, faint cyan = open.
+  SCENES.field = {
+    make(Pv, cfg) {
+      const D = cfg.D || Pv.ftAhead, q = cfg.q != null ? cfg.q : 0.5, tp = Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent));
+      const S = Pv.dpSMin + (Math.max(Pv.dpSMin, Pv.dpSMax) - Pv.dpSMin) * tp, rs = Pv.dpRsMin + (Math.max(Pv.dpRsMin, Pv.dpRsMax) - Pv.dpRsMin) * tp;
+      const f = cfg.none ? null : { att: new V3(0, 0, 0), rep: new V3(-2 * Pv.ftSide, 0, 0), S, rs, SR: S * Pv.dpWhite, rsR: rs * Pv.whSizeX };
+      const mul = cfg.boosted && Pv.ftBoostInPath >= 0.5 ? Math.max(1, Pv.ftBoost) : 1;
+      const rates = { pitch: 0, yaw: (cfg.yaw || 0) * Pv.pitchYaw * Math.PI / 180, roll: 0 }, Pq = Object.assign({}, Pv, { ftTrail: 0 });
+      const paths = [], span = cfg.span || 30, stp = cfg.step || 2.5, q0 = new THREE.Quaternion(), out = { pts: new Float32Array(FT_MAX * 3) };
+      let lime = 0;
+      for (let a = -span; a <= span + 1e-9; a += stp) {
+        q0.setFromAxisAngle(Y, a * Math.PI / 180);
+        fieldPath(Pq, f, new V3(0, 0, D), q0, { v: Pv.cruise, vT: Pv.cruise, mul }, rates, out);
+        const xs = []; for (let i = 0; i < out.n; i++) xs.push(out.pts[i * 3], out.pts[i * 3 + 2]);
+        paths.push({ xs, lime: out.lime, end: out.end }); if (out.lime) lime++;
+      }
+      return { paths, lime, total: paths.length, D, S, rs, f, mul };
+    },
+    bounds: (st) => ({ x0: -st.D * 0.75, x1: st.D * 0.75, y0: -st.D * 0.55, y1: st.D * 1.08 }),
+    period: () => 4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 41);
+      const V = view || makeView(SCENES.field.bounds(st), W, H, 10), X = (x) => V.X(x), Yc = (z) => V.Y(-z);
+      for (const p of st.paths) {
+        c.strokeStyle = p.lime ? 'rgba(157,255,46,0.95)' : p.end === 'hole' ? 'rgba(255,179,71,0.55)' : 'rgba(127,215,255,0.22)';
+        c.lineWidth = p.lime ? 1.6 : 1; c.beginPath();
+        for (let i = 0; i < p.xs.length; i += 2) { const x = X(p.xs[i]), y = Yc(p.xs[i + 1]); if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+        c.stroke();
+      }
+      if (st.f) { drawWhiteHole(c, X(st.f.rep.x), Yc(0), Math.max(3, st.rs * V.s), Pv); drawBlackHole(c, X(0), Yc(0), Math.max(3, st.rs * V.s * 2.6), Pv); }
+      ship(c, X(0), Yc(st.D), 0, 1, '#ffd27a', 6);
+      txt(c, st.lime + ' of ' + st.total + ' headings close a loop' + (st.mul > 1 ? ' (flown at ×' + st.mul.toFixed(1) + ')' : ''), 6, 13, st.lime ? '#9dff2e' : '#e8ecff', 10);
+      txt(c, 'from ' + Math.round(st.D) + ' u · strength ' + st.S.toFixed(1), 6, H - 6, '#9aa6d6', 9.5);
+    },
+  };
+  // ---------- the loop boost over time: a loop that closes for 1 s, then opens ----------
+  SCENES.ftBoost = {
+    make: () => ({}), period: () => 4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 43);
+      const x0 = 26, x1 = W - 10, y0 = H - 20, y1 = 22, T = 3.5, top = Math.max(1.5, Pv.ftBoost), sx = (t) => x0 + (x1 - x0) * t / T, sy = (m) => y0 + (y1 - y0) * (m - 1) / (top - 1 + 1e-6);
+      c.fillStyle = 'rgba(157,255,46,0.12)'; c.fillRect(sx(0.5), y1, sx(1.5) - sx(0.5), y0 - y1);
+      c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+      let m = 1, cur = 1; c.strokeStyle = '#9dff2e'; c.lineWidth = 2; c.beginPath();
+      for (let t = 0; t <= T; t += 1 / 120) {
+        const lime = t >= 0.5 && t < 1.5;
+        if (lime) m += (Math.max(1, Pv.ftBoost) - m) * (1 - Math.exp(-Math.max(0.1, Pv.ftRise) / 120)); else m = 1 + (m - 1) * Math.exp(-1 / 120 / Math.max(0.01, Pv.ftFade));
+        if (t <= tt) cur = m;
+        const X = sx(t), Yv = sy(m); if (t) c.lineTo(X, Yv); else c.moveTo(X, Yv);
+      }
+      c.stroke();
+      c.fillStyle = '#ffb347'; c.beginPath(); c.arc(sx(Math.min(T, tt)), sy(cur), 3.5, 0, TAU); c.fill();
+      txt(c, 'engine × ' + cur.toFixed(2) + ' · the shaded second is lime', x0 + 4, y1 - 6, '#e8ecff', 10);
+      txt(c, 'seconds →', x1, y0 + 14, '#9aa6d6', 9.5, 'right');
+    },
+  };
   SCENES.cone = {
     make: () => ({}), period: () => 5.4,
     draw(c, W, H, tt, st, view, Pv, cfg) {
@@ -3039,6 +3426,22 @@
 
   // ---------- what each number means, in plain words ----------
   const TIPS = {
+    ftAhead: { scene: 'field', cfg: {}, d: 'How far ahead of the nose the pair is laid. The preview starts the Stoat that far from the black hole and fans its headings: the further out, the more path is spent getting there before a loop can close.', lo: 'Laid close: loops close sooner.', hi: 'Laid far: fewer headings reach a loop within the path.' },
+    ftSide: { scene: 'field', cfg: {}, d: 'How far to the side the black hole sits (the white hole the same distance the other way, so they are twice this apart). The white hole pushes paths out of the loops on its side.', lo: 'The white hole close in: its push shapes every loop.', hi: 'The white hole out of the way.' },
+    ftStand: { scene: 'field', cfg: {}, d: 'How long the pair stands after you lay it, whatever the trigger does. Then it falls together and annihilates; a new press replaces it sooner. (The preview is one instant, so it does not change.)', lo: 'A short window to find a loop.', hi: 'The pair stays up for a long hunt.' },
+    ftGrip: { scene: 'field', cfg: { D: 300 }, d: 'How firmly the engine pulls the gravity speed back toward cruise. 0 is pure gravity: you speed up falling in and slow climbing out, so a pass from far away is unbound and loops only when it whirls at the edge of capture. Higher, the field turns you without speeding you up, so it bends harder — orbits close, and at the top the strong squeezes swallow everything.', lo: 'Closer to pure gravity.', hi: 'The engine holds your speed: the field only turns you.', at: [0.05, 0.3] },
+    ftLength: { scene: 'field', cfg: { D: 300 }, d: 'How far ahead the path is run. A loop has to close inside it, so this is also the curvature threshold: a circle closes when its circumference is shorter than this.', lo: 'Only tight loops count.', hi: 'Wide loops count too — and so does steering in a wide circle.' },
+    ftNose: { scene: 'field', cfg: { D: 300 }, d: 'How far in front of the nose the line starts. The path is flown from the hull itself; this only hides the first stretch so the line reads as coming off the nose.', lo: 'The line starts at the nose.', hi: 'The line starts further out.' },
+    ftStep: { scene: 'field', cfg: { D: 300 }, d: 'The distance between two points of the path. The field is integrated more finely inside a step where it bends hard; this sets how finely a loop closing on itself is tested.', lo: 'Fine: more points, slower.', hi: 'Coarse: cheaper, a loop can slip between points.' },
+    ftMargin: { scene: 'field', cfg: { D: 300 }, d: 'How close the path has to come back to itself to count as hitting its own trail. Paths in 3D rarely cross exactly; this is the trail\'s thickness.', lo: 'A near miss does not count.', hi: 'Coming anywhere near counts.' },
+    ftMinLoop: { scene: 'field', cfg: { D: 300 }, d: 'The shortest loop that counts: a point only tests against path at least this far behind it, so a tight curl right at the horizon (or the line touching its own neighbours) is not a loop.', lo: 'Tight whirls count.', hi: 'Only wide orbits count.' },
+    ftBoost: { scene: 'ftBoost', cfg: {}, d: 'The engine speed while the path is lime (× your engine speed).', lo: 'A gentler boost.', hi: 'A bigger boost.' },
+    ftRise: { scene: 'ftBoost', cfg: {}, d: 'How fast the boost arrives once the path turns lime (/s). 20 is effectively instant.', lo: 'The boost swells in.', hi: 'The boost is instant.' },
+    ftFade: { scene: 'ftBoost', cfg: {}, d: 'How long the boost takes to fade once the loop opens. Flown at the boosted speed, a loop often opens the moment you boost (faster = less bent); this is what carries you through that flicker.', lo: 'Drops off at once.', hi: 'Hangs on after the loop opens.' },
+    ftSteer: { scene: 'field', cfg: { none: true, yaw: 0.8 }, d: 'How much of the steering you are holding goes into the path. At 1 (the request as written) holding a turn draws its circle — and a circle shorter than the path length is a closed loop, so steering alone boosts. The preview has no pair and the stick held at 80% yaw.', lo: 'Little of the steering is in the path.', hi: 'The held turn is in the path: a steering circle closes.', at: [0.2, 1] },
+    ftBoostInPath: { scene: 'field', cfg: { D: 300, boosted: true }, d: 'Whether the path is flown at the boosted speed (1) or at the engine speed (0). At 1 the boost straightens the very path that earned it (faster = less bent), so loops open as you boost. The preview flies the fan at the boost.', lo: 'Path at engine speed: the loop that earned the boost stays.', hi: 'Path at the boosted speed: the boost can open its own loop.' },
+    ftHole: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'Whether a path that ends in the black hole counts as cut short (lime). Off, it is amber and does not boost; on, pointing straight at a heavy hole is a boost. The preview is a full squeeze.', lo: 'Into the hole does not count.', hi: 'Into the hole counts.', at: [0, 1] },
+    ftTrail: { scene: 'field', cfg: { D: 300 }, d: 'Whether the path running into trail you have ALREADY laid counts as well (prisms older than ½ s). The preview has no trail, so it does not change.', lo: 'Only the path\'s own loop counts.', hi: 'Your real trail counts too.', at: [0, 1] },
     aiSling: { scene: 'sling', d: 'Whether the AI pilot uses the dipole sling at all. 0 flies the course on steering and throttle alone — the baseline every style is measured against.', lo: 'No slings.', hi: 'Slings whenever it can.' },
     aiQ: { scene: 'sling', cfg: { qFromValue: true, key: 'aiQ' }, d: 'How deep the AI squeezes the trigger when it lays a pair: the black hole\'s strength. The batch race tries several and keeps each style\'s best.', lo: 'Light holes: fewer catches.', hi: 'Heavy holes: caught from far, wide circles.' },
     aiCone: { scene: 'cone', over: {}, d: 'The AI lets go once its nose is within this many degrees of the next ring — its release precision. Tight cones mean clean, Needle-earning releases but longer holds.', lo: 'Waits for a near-perfect exit.', hi: 'Lets go early and rough.' },
@@ -3369,7 +3772,12 @@
   function setStyle(s) {
     style = s;
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
-    $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode === 'dipole');
+    $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit');
+    const fieldOn = s === 'A' && slingMode === 'field';
+    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling';
+    $('mainP').innerHTML = fieldOn
+      ? 'Press lays the pair ahead; it stands on its own. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you through it — when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you fly at 3×. Settings: the <b>Field</b> tab.'
+      : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
     if (s === 'B' || slingMode === 'orbit') $('archive').open = true;
     $('portal').checked = !!portal[s];
     $('portalSrc').textContent = s === 'A'
@@ -3380,7 +3788,9 @@
   }
   document.querySelectorAll('.stylebtn').forEach((b) => b.addEventListener('click', () => setStyle(b.dataset.s)));
   function setSlingMode(m) {
-    slingMode = m === 'orbit' ? 'orbit' : 'dipole';
+    slingMode = m === 'orbit' ? 'orbit' : m === 'field' ? 'field' : 'dipole';
+    if (fieldSling && fieldSling.pair.alive) fieldSling.pair.held = false;
+    fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false;
     document.querySelectorAll('[data-sling]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.sling === slingMode ? 'true' : 'false'));
     if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false);
     setStyle(style);
@@ -3429,6 +3839,26 @@
     $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
     setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
   });
+  // ---- the field: the heading scan and the field scorecard ----
+  function fieldScanAll() {
+    const rows = [];
+    for (const q of [0.25, 0.5, 1]) for (const D of [150, 300, 500]) rows.push(fieldScan({ q, D }));
+    const ctl = { none: fieldScan({ D: 300, none: true }), noBlack: fieldScan({ D: 300, noBlack: true }), far: fieldScan({ D: 1.2 * P.ftLength + 200 }) };
+    return { rows, ctl };
+  }
+  function fieldScanTable(r) {
+    const pct = (x) => Math.round(100 * x.share) + '%' + (x.lime ? ' <small>(' + x.lo + '°…' + x.hi + '°)</small>' : '');
+    let h = '<table class="runs batch"><thead><tr><th>Squeeze (strength)</th><th>from 150 u</th><th>from 300 u</th><th>from 500 u</th></tr></thead><tbody>';
+    for (const q of [0.25, 0.5, 1]) { const rs = r.rows.filter((x) => x.q === q); h += '<tr><td>' + q + ' (S ' + rs[0].S + ')</td>' + rs.map((x) => '<td' + (x.lime ? ' class="win" style="color:#9dff2e"' : '') + '>' + pct(x) + '</td>').join('') + '</tr>'; }
+    h += '</tbody></table><p class="src">The share of headings within ±60° of the black hole (1° apart, in the plane of the pair, straight flight at cruise, no steering) whose path closes — lime — and the band they fall in (0° = dead at it; positive headings turn toward the white hole). <b>Controls, all must be 0%</b>: no pair ' + pct(r.ctl.none) + ' · the white hole alone ' + pct(r.ctl.noBlack) + ' · the pair beyond the path\'s reach (' + r.ctl.far.D + ' u) ' + pct(r.ctl.far) + '.</p>';
+    return h;
+  }
+  $('ftScanBtn').addEventListener('click', () => { const t0 = performance.now(); const r = fieldScanAll(); $('ftScanOut').innerHTML = fieldScanTable(r); $('ftNote').textContent = 'scanned in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; });
+  $('ftBatchBtn').addEventListener('click', () => {
+    $('ftNote').textContent = 'racing…';
+    setTimeout(() => { const t0 = performance.now(); const rows = runFieldBatch(); lastFieldBatch = rows; $('batchOut').innerHTML = fieldTable(rows); $('ftNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
+  });
+  let lastFieldBatch = null;
   $('intensity').value = String(intensity); $('courseKind').value = courseKind; $('courseKind').addEventListener('change', (e) => { courseKind = e.target.value; buildCourse(); spawn(); persist(); renderRuns(); markIntensity(); }); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
   $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); markIntensity(); });
   function markIntensity() {
@@ -3449,8 +3879,8 @@
     const key = courseKey({ courseKind, seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
     const tb = $('runs').tBodies[0];
     if (!here.length) { tb.innerHTML = '<tr><td class="empty" colspan="2">No finished runs on this course yet (seed ' + seed + ', intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ').</td></tr>'; return; }
-    const row = (s) => { const rs = here.filter((r) => r.style === s); const name = s === 'A' ? 'Black + white hole' : 'Crystal (archived)'; if (!rs.length) return '<tr><td>' + name + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>' + name + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
-    tb.innerHTML = row('A') + (here.some((r) => r.style.indexOf('B') >= 0) ? row('B') : '');
+    const row = (s) => { const rs = here.filter((r) => r.style === s); const name = s === 'A' ? 'Black + white hole' : s === 'F' ? 'Field trajectory' : 'Crystal (archived)'; if (!rs.length) return '<tr><td>' + name + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>' + name + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
+    tb.innerHTML = row('A') + (here.some((r) => r.style === 'F') ? row('F') : '') + (here.some((r) => r.style.indexOf('B') >= 0) ? row('B') : '');
   }
 
   // ================= the decision log (shared db when the viewer serves it, else this browser) =================
@@ -3465,12 +3895,13 @@
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'closeSpeed', 'closeRamp'];
+  const F_KEYS = SPEC.filter((r) => r[0] === 'F').map((r) => r[1]);
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
   function currentChoice(topic) {
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
-      case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (slingMode === 'dipole' ? D_KEYS : A_KEYS) : B_KEYS));
+      case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : slingMode === 'field' ? ', the field trajectory' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (slingMode === 'dipole' ? D_KEYS : slingMode === 'field' ? D_KEYS.concat(F_KEYS) : A_KEYS) : B_KEYS));
       case 'Play styles': return 'Play styles: ' + STYLES.map((st) => st.name + ' ' + BP[st.key].toFixed(2)).join(', ') + (liveStyles ? ' (live)' : '') + changedText(['styleStep', 'styleDrift', 'needleStep', 'needleCone']);
       case 'Birth & annihilation': return 'Birth & annihilation' + typeName('life') + changedText(LIFE_KEYS);
       case 'Black hole': return 'Black hole' + typeName('BH') + changedText(BH_KEYS);
@@ -3504,6 +3935,8 @@
   });
   function quick(kind) {
     if (kind === 'run') { if (!lastRun) { toast('Finish a race first: all the rings, every lap.'); return; } record({ topic: 'Race result', choice: currentChoice('Race result'), note: '', style: lastRun.style }); return; }
+    if (kind === 'F' && slingMode !== 'field') { toast('Switch to the field trajectory first (Sling tab).'); return; }
+    if (kind === 'A' && slingMode === 'field') { toast('Switch to the dipole sling first (Sling tab).'); return; }
     const best = bestFor(kind);
     record({ topic: 'Sling feel', choice: currentChoice('Sling feel') + ' — feels right', note: (best != null ? 'Best run with it on this course: ' + fmtTime(best) + '. ' : '') + $('logNote').value.trim(), style: kind });
     $('logNote').value = '';
@@ -3614,7 +4047,7 @@
   const ide = Object.assign({ R: 'sling', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
-    R: [['sling', 'Sling', ['mainCard', 'grp-sling', 'grp-A', 'grp-B']], ['dipole', 'Dipole', ['grp-D']], ['ai', 'Sim lab', ['grp-ai']], ['styles', 'Styles', ['grp-style']],
+    R: [['sling', 'Sling', ['mainCard', 'grp-sling', 'grp-A', 'grp-B']], ['dipole', 'Dipole', ['grp-D']], ['field', 'Field', ['grp-F']], ['ai', 'Sim lab', ['grp-ai']], ['styles', 'Styles', ['grp-style']],
       ['bh', 'Black hole', ['grp-BH']], ['wh', 'White hole', ['grp-WH']], ['life', 'Life', ['grp-pair', 'grp-life']], ['course', 'Course', ['grp-flight']], ['lope', 'Lope', ['grp-lope']], ['archive', 'Archive', ['archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['controls', 'Controls', ['keysSec']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
@@ -3717,6 +4150,17 @@
   applyPlatform(true);
   requestAnimationFrame(frame);
   window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
+  Object.assign(window.__stoatStudio, {
+    SHIPPED, SPEC,
+    reset(sd) { if (sd != null) seed = sd; ai.seed = 1; buildCourse(); spawn(); },
+    state() { return { t: simT, race, raceT, threaded, speed, ftMul, gravSpeed, flow, slingMode, style, pos: hull.position.toArray(), path: { n: ftLive.n, end: ftLive.end, lime: ftLive.lime, loop: ftLive.loop, len: ftLive.len } }; },
+    score() { return { fieldScan: fieldScanAll(), field: lastFieldBatch ? fieldSummary(lastFieldBatch) : null, styles: lastBatch ? batchSummary(lastBatch) : null }; },
+    get slingMode() { return slingMode; },
+    fieldScan, fieldScanAll, fieldPath, runFieldBatch, fieldTable, fieldSummary, fieldStanding, layField,
+    get ftLive() { return ftLive; }, get ftMul() { return ftMul; }, get ftRates() { return ftRates; },
+  });
+  window.__lab = window.__stoatStudio;
 })();
 </script>
 

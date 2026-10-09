@@ -8,7 +8,7 @@ named after it, and when the asset changes the page must follow (or say on scree
 | Studio | Live page (decision log on) | Repo copy |
 |---|---|---|
 | **Vessel Studio** (hub: Squirrel Studio v1 + Stoat) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `VesselStudio/` |
-| Stoat Flight Studio | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc | `StoatFlightStudio.html` |
+| Stoat Flight Studio (round 15) | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc (round 14; round 15 not yet published there) | `StoatFlightStudio.html` |
 
 **Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
 
@@ -16,6 +16,111 @@ named after it, and when the asset changes the page must follow (or say on scree
 
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
+
+## Stoat Flight Studio (round 15 — the field trajectory)
+
+**Sling tab ▸ Field trajectory** (settings in the new **Field** tab). A second way to fly the pair, beside the dipole sling.
+Everything in it is **lab-only**: the game has no such mode, and every `ft*` row is a proposal, not a shipped number.
+
+- **No catch radius and no hold circle**, and neither of their circles is drawn. The pair is only a field equation: the
+  black hole's pull GM/(r − r<sub>s</sub>)² (Paczyński–Wiita, as on the prisms) and the white hole's softened push, capped
+  at the Dipole tab's force ceiling and fastest bend. It bends the nose and speeds you up or slows you along it; the
+  engine pulls that gravity speed back toward cruise at `ftGrip` /s.
+- **Press** lays the pair `ftAhead` ahead, the black hole on the trigger's side. The squeeze, read until you let go,
+  sets its strength (the Dipole tab's curve). It stands `ftStand` s whatever the trigger does, then closes and
+  annihilates. A new press replaces it.
+- **The line** is your path on your current inputs (throttle, the steering you hold × `ftSteer`), run with the flight's
+  own step from the hull and drawn from `ftNose` ahead of the nose, for `ftLength` u. It is drawn on the HUD after the
+  lens, so the black hole does not bend or double it. Colours: cyan while open, amber into the black hole, and
+  **lime** when it comes back within `ftMargin` of itself at least `ftMinLoop` u further on. While it is lime the engine
+  runs at `ftBoost` × (3), arriving at `ftRise` /s and fading over `ftFade` s once the loop opens.
+- **Scan headings** (Field tab): the share of headings within ±60° of the black hole whose path closes, by squeeze and
+  distance, with three controls that must read 0%. **Score the field** races the field against the dipole and against
+  no sling, and opens the scorecard window.
+
+**Defaults the lab chose** (each one a row, each one measured below, each one open to the designer):
+
+| Row | Default | Why |
+|---|---|---|
+| `ftBoostInPath` | 0: the path is flown at the engine speed | At 1 (the literal reading) the boost straightens the loop that earned it within about 2 frames. Lime then flickers: 3.8% of the race lime against 14%, with the most loop onsets per minute (37.8). |
+| `ftHole` | 0: a path into the black hole is amber | At 1, pointing straight at a heavy hole is a boost: 46 of 121 headings from 300 u at a full squeeze, against 12 that actually loop. |
+| `ftGrip` | 0.5 /s | At 2 (the dipole's grip) a full squeeze swallows every heading from 300 u (0 loops). At 0 (pure gravity) a pass from far away loops only at the edge of capture. At 0.5 every squeeze has a looping band. |
+| `ftSteer` | 1: the held steering is in the path | As written. See **Decision needed**. |
+
+**Heading scan** (final defaults; share of 121 headings that loop, and their band, 0° = dead at the black hole):
+
+| Squeeze (strength) | from 150 u | from 300 u | from 500 u |
+|---|---|---|---|
+| 0.25 (S 1.94) | 2% (−5°…−3°) | 2% (−2°…4°) | 0% |
+| 0.5 (S 4.57) | 20% (−15°…39°) | 10% (−7°…19°) | 4% (−3°…5°) |
+| 1 (S 12) | 18% (−34°…51°) | 10% (−17°…26°) | 1% (−4°) |
+
+Controls: no pair 0%, the white hole alone 0%, the pair beyond the path's reach (920 u) 0%. So the request holds: from
+outside the field you can point at the black hole and find headings whose path closes. The band is narrow from far
+away (a few degrees at 500 u) and wide close in.
+
+**Field scorecard** (Score the field; skilled AI at squeezes 0.5 and 1, rookie = sloppiness 0.8 on three seeds, course
+seed 7, intensity 2; 17.1 s headless). The AI only lays a pair on the side of the turn and flies for the ring; it never
+hunts a loop.
+
+| | circuit 2 laps | hairpins 2 laps | avg speed | top | time lime | loops / min | rookie |
+|---|---|---|---|---|---|---|---|
+| No sling | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
+| Dipole · Balanced | 1:44.3 | 1:50.7 | 81 | 160 | 0% | 0 | 1:38.4 |
+| Field · steering only (no pair) | 1:48.2 | 1:06.8 | 64 | 155 | 8% | 11.6 | — |
+| Field · steering only, not in path (control) | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
+| **Field · pairs** | **1:30.0** | **1:02.1** | 79 | 306 | 14% | 20.4 | **1:38.2** |
+| Field · pairs, steering not in path | 1:50.6 | 1:20.1 | 68 | 333 | 4% | 6.6 | 1:54.6 |
+| Field · pairs, path at the boosted speed | 1:43.9 | 1:11.4 | 68 | 292 | 4% | 37.8 | 1:50.1 |
+
+The control row equals No sling to the millisecond, as it must: no pair and no steering in the path, so nothing can
+close.
+
+**Decision needed (designer).**
+
+1. **Steering alone boosts.** With the held steering in the path (`ftSteer` 1, as asked), holding a full turn draws its
+   own circle, about 180 u round at cruise. That is shorter than the 600 u path, so the line is lime and you fly at 3×.
+   Measured: a held full yaw for 5 s was lime 100% of the time at 179 u/s with `ftSteer` 1 or 0.5, and 0% at 60 u/s with
+   `ftSteer` 0. The "steering only" row above beats the dipole on the hairpins without ever laying a pair. Options:
+   take steering out of the path (`ftSteer` 0; the field rows then lose most of their lime: 4% against 14%), shorten
+   the path so only tight loops close (`ftLength`; at cruise a full-stick circle closes below about 180 u), or keep it
+   as a skill.
+2. **Does a path into the black hole count?** (`ftHole`; numbers in the table above.)
+3. **Is the path flown at the boosted speed?** (`ftBoostInPath`; the literal reading flickers, numbers above.)
+
+**Checked** (headless Chromium, SwiftShader):
+
+- **Decision log not read this round.** The published artifact belongs to an organization outside this login, so
+  `ArtifactData` was refused. Any decisions logged there since round 14 are not applied here.
+- `verify_lab.cjs` PASS on `StoatFlightStudio.html` and on the hub copy `VesselStudio/stoat.html`. Its `--self-test` passes all
+  six planted defects, including the new reload check (L-GEN-4).
+- The page is now on the labmaker contract: `window.__lab` (= `__stoatStudio`) exposes `SHIPPED`, `SPEC`, `reset`,
+  `state`, `score`, and a no-argument `runBatch` (L-STU-14).
+- Both round-14 layout faults are fixed: the 12 px clip at 1600 × 900 and the header's 103 px sideways scroll on an
+  iPhone 13 (L-STU-13).
+- **The five-style dipole scorecard is unchanged** apart from one column: every number is byte-identical to round 14
+  except "prisms pulled per sling" (see Found).
+- **Prediction against flight.** Lay a pair, set the hull on the nearest looping heading, then fly it with no input and
+  measure each flown point's distance to the predicted path, over 9 grip × squeeze cases. In 4 cases the distance is
+  1.7–3.1 u; in the other 5 it is 11–78 u. The worst case traced (strength 4.6, grip 2) whirled 4.5 u from a 3.1 u
+  horizon, where the orbit is chaotic. Running the prediction on the flight's own fixed 4 ms step diverges by the same
+  amounts (2.1–82 u), so the divergence is the orbit, not the integrator. Three bugs were found and fixed while getting
+  there:
+  - the path ignored the engine still spooling up;
+  - it was started 8 u ahead instead of drawn from 8 u ahead;
+  - it checked the horizon only every 3 u, so a 3 u horizon slipped between two points.
+- All 16 Field-tab sliders have an illustrated tooltip, and none of the 32 previews is blank. There are no console
+  errors.
+
+**Found.**
+
+- **The prisms column was never reproducible across page loads**: the prism field was placed with `Math.random`. It is
+  now seeded (`mulberry32(20261009)`), so the column moves slightly from round 14 (Balanced 984 → 987) and then stays
+  fixed. Every other scorecard column was already deterministic.
+- **The studio's white hole lens bends the wrong way for the game.** The lens shader applies the black hole's
+  converging bend to the white hole too ("the SAME bending"). The game's `BlackHoleLens.hlsl` now runs the white hole as
+  the negated trace, which diverges. So the studio draws a doubled image round the white hole that the game would not.
+  Not changed here.
 
 ## Vessel Studio in Prisma (2026-10-09, after round 14)
 

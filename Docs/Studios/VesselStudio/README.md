@@ -8,7 +8,7 @@ browser, in a phone browser, from Prisma's **STUDIOS** page on Windows, and from
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
 | `squirrel.html` | **Squirrel Studio v1** (2026-10-09). The racer on its shipped numbers; six play-style types over its four element levels. |
-| `stoat.html` | The **Stoat Flight Studio** (round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Prisma as `stoat.html#prisma`, it reads "Running on Prisma". |
+| `stoat.html` | The **Stoat Flight Studio** (round 15: the field trajectory; round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Prisma as `stoat.html#prisma`, it reads "Running on Prisma". |
 
 ## Rules for every studio page
 
