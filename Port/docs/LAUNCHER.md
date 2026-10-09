@@ -58,13 +58,33 @@ The first start shows a one-minute tour of every page; **?** replays it.
 
 ## STUDIOS - the Vessel Studio
 
-Pick a vessel and its studio opens in the browser: fly it on gamepad, keys or a phone's thumbs, switch its
-play-style types and element levels, and read what each number does. The pages are plain HTML in
+Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
+and element levels, and read what each number does. The pages are plain HTML in
 `Docs/Studios/VesselStudio/` (no build step), so the same files open here, in any desktop browser, and on a
-phone through **WEB LINK** (the published copy on claude.ai).
+phone through **WEB LINK** (the published copy on claude.ai). Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
+
+Each card has these buttons:
+
+- **OPEN IN PRISMA**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
+  - It has no tabs or address bar.
+  - It uses a window profile under Prisma's data folder (`studio-window`), so the studio's layout and pop-out
+    windows are remembered.
+  - The page is opened with `#prisma`, so it reads "Running on Prisma".
+  - With neither browser installed it falls back to the default browser.
+  - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenStudioWindow`.
+- **BROWSER**: the same page in the default browser.
+- **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
+  - Prisma builds and starts the game as PLAY does.
+  - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
+  - The player waits for the main menu, opens that arcade card and presses its Start
+    (`Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, through the same path as the `arcade` input verb).
+  - The pilot presses Ready. First-run prompts on a new profile still come first.
+  - `engineNote` says what the engine run is when it differs from the studio's design (the Stoat's game sling
+    is still round 4's).
 
 - **The list comes from data:** `Docs/Studios/VesselStudio/studios.json` (`id`, `name`, `file`, `kind`,
-  `summary`, `docs`, plus `web` and `hub`). A branch without it shows why, and how to switch. Adding a studio
+  `summary`, `docs`, optional `engineMode` and `engineNote`, plus `web` and `hub`). A test checks every
+  `engineMode` is a `GameModes` member. A branch without it shows why, and how to switch. Adding a studio
   is a page plus a catalog entry; no launcher change. Read by `StudioCatalog` (tested in
   `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
 - **AGENT** starts a Prisma Agent chat on that studio, in plan mode, pointed at the plan and the studio's rules.

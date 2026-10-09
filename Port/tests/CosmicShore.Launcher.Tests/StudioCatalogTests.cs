@@ -77,6 +77,45 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void Parse_ReadsTheEngineModeAndPlayInEngineAddsArcade()
+        {
+            var c = StudioCatalog.Parse(@"{ ""studios"": [
+                { ""id"": ""stoat"", ""name"": ""Stoat"", ""file"": ""stoat.html"", ""engineMode"": ""Slingshot"", ""engineNote"": ""the game's own Stoat"" },
+                { ""id"": ""squirrel"", ""name"": ""Squirrel"", ""file"": ""squirrel.html"" } ] }");
+            Assert.Equal("Slingshot", c.Studios[0].EngineMode);
+            Assert.Equal("the game's own Stoat", c.Studios[0].EngineNote);
+            Assert.Equal(new[] { "--arcade", "Slingshot" }, StudioCatalog.EngineArgs(c.Studios[0]));
+            Assert.Null(c.Studios[1].EngineMode);
+            Assert.Empty(StudioCatalog.EngineArgs(c.Studios[1]));
+        }
+
+        [Fact]
+        public void AppWindowArgs_OpenThePageAsAnAppThatKnowsItIsInPrisma()
+        {
+            string page = Path.Combine(Path.GetTempPath(), "VesselStudio", "stoat.html"), profile = Path.Combine(Path.GetTempPath(), "studio-window");
+            var args = StudioCatalog.AppWindowArgs(page, profile);
+            var app = args.Single(a => a.StartsWith("--app="));
+            Assert.StartsWith("--app=file:///", app);
+            Assert.EndsWith("stoat.html#prisma", app);
+            Assert.Contains("--user-data-dir=" + profile, args);
+        }
+
+        [Fact]
+        public void TheShippedCatalogsEngineModesAreGameModes()
+        {
+            // PLAY IN ENGINE passes --arcade MODE, which the player parses as a GameModes member: a typo would open no card
+            var d = new DirectoryInfo(Directory.GetCurrentDirectory());
+            while (d != null && !Directory.Exists(Path.Combine(d.FullName, StudioCatalog.RelativeDir))) d = d.Parent;
+            if (d == null) return;
+            var enumFile = Path.Combine(d.FullName, "Assets", "_Scripts", "Data", "Enums", "GameModes.cs");
+            if (!File.Exists(enumFile)) return;
+            string src = File.ReadAllText(enumFile);
+            foreach (var s in StudioCatalog.Load(d.FullName).Studios)
+                if (s.EngineMode != null)
+                    Assert.True(System.Text.RegularExpressions.Regex.IsMatch(src, @"\b" + s.EngineMode + @"\s*="), s.Id + ": " + s.EngineMode + " is not a GameModes member");
+        }
+
+        [Fact]
         public void AgentPrompt_PointsAtThePlanAndTheStudio()
         {
             var s = StudioCatalog.Parse(Good).Studios[0];

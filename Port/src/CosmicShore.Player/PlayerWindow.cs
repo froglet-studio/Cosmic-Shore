@@ -174,6 +174,7 @@ namespace CosmicShore.Player
             _inputBridge.BeforeTick();
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
+            ArcadeAutoStart.Tick(_frameIndex);
             if (GalleryFrame > 0 && _frameIndex == GalleryFrame) ShaderGallery.Build(GalleryLegend);
             if (ModelViewer.Path != null)
             {

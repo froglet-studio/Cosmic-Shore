@@ -9,7 +9,7 @@ namespace CosmicShore.Player
     /// CosmicShore — the port's player. Boots build scene 0 (Bootstrap) and lets the real
     /// game take it from there.
     ///
-    ///   CosmicShore [--scene NAME] [--size WxH] [--screenshot out.png] [--frames N]
+    ///   CosmicShore [--scene NAME] [--arcade MODE] [--size WxH] [--screenshot out.png] [--frames N]
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
     ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
     ///   CosmicShore [--headless] --replay FILE --parity-out DIR     (parity harness, see ParityRun)
@@ -74,6 +74,7 @@ namespace CosmicShore.Player
                 switch (args[i])
                 {
                     case "--scene" when i + 1 < args.Length: scene = args[++i]; break;
+                    case "--arcade" when i + 1 < args.Length: ArcadeAutoStart.Mode = args[++i]; break;
                     case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--headless": headless = true; break;
@@ -244,6 +245,7 @@ namespace CosmicShore.Player
             {
                 frameNow = f;
                 script.BeforeTick(f);
+                ArcadeAutoStart.Tick(f);
                 control?.BeforeTick(f);
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);

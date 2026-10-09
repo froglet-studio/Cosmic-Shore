@@ -138,6 +138,12 @@ namespace CosmicShore.Launcher
 
         public void Update() => Start("Update workspace", async ct => await SyncStep(ct));
 
+        /// <summary>Extra player arguments for the next PLAY only (STUDIOS' PLAY IN ENGINE: <c>--arcade MODE</c>); cleared when it launches.</summary>
+        IReadOnlyList<string>? _oneShotArgs;
+
+        /// <summary>PLAY, with <paramref name="extraArgs"/> added to this one launch.</summary>
+        public void Play(IReadOnlyList<string> extraArgs) { _oneShotArgs = extraArgs; Play(); }
+
         public void Play() => Start("Start game", async ct =>
         {
             if (!await EnsureTools(ct)) return false;
@@ -384,6 +390,7 @@ namespace CosmicShore.Launcher
                 CreateNoWindow = true,
             };
             foreach (var a in PlayerArgs()) psi.ArgumentList.Add(a);
+            _oneShotArgs = null;
             foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
@@ -435,6 +442,7 @@ namespace CosmicShore.Launcher
 
             if (_s.VerboseLogs) a.Add("--verbose");
             foreach (var x in SplitArgs(_s.ExtraArgs)) a.Add(x);
+            if (_oneShotArgs != null) a.AddRange(_oneShotArgs);
             return a;
         }
 
