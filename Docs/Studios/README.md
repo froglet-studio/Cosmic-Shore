@@ -9,6 +9,8 @@ named after it, and when the asset changes the page must follow (or say on scree
 |---|---|---|
 | Stoat Flight Studio | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc | `StoatFlightStudio.html` |
 
+**The plan for one Vessel Studio** (pick a vessel, its studio opens; Squirrel and Stoat first; phone first, in Prisma): `VESSEL_STUDIO_PLAN.md`.
+
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
