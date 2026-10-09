@@ -284,12 +284,19 @@ namespace CosmicShore.Tests
         [Test]
         public void BreakingATieAtTheTop_AnnouncesTheNewLeader()
         {
+            // Breaking a tie is passing (BreakingThatTie_IsPassingThem), and a pass that takes
+            // the lead posts both situations (TakingTheLead_PostsBothSituations) - so the new
+            // leader comes with its overtake, leader first.
             Poll(("A", 2), ("B", 2));
             Poll(("A", 2), ("B", 3));
-            AssertPosted("NewRaceLeader(B)");
+            AssertPosted("NewRaceLeader(B)", "Overtake(B,A)");
         }
 
         // ---- overtakes -------------------------------------------------------------------
+        // The overtake cases below run behind a runaway leader L, so the pass they test is
+        // NOT for the lead. A pass that takes the lead also posts NewRaceLeader - that is
+        // TakingTheLead_PostsBothSituations, pinned on its own - and a two-player race makes
+        // every pass a pass for the lead, which is how these four cases once read as failing.
 
         [Test]
         public void TheFirstPoll_HasNoHistoryAndAnnouncesNoOvertake()
@@ -301,9 +308,9 @@ namespace CosmicShore.Tests
         [Test]
         public void PassingSomeone_IsAnnounced()
         {
-            Poll(("A", 3), ("B", 2));
+            Poll(("L", 9), ("A", 3), ("B", 2));
             _posts.Clear();
-            Poll(("A", 3), ("B", 4));
+            Poll(("L", 9), ("A", 3), ("B", 4));
             AssertPosted("Overtake(B,A)");
         }
 
@@ -319,10 +326,10 @@ namespace CosmicShore.Tests
         [Test]
         public void BreakingThatTie_IsPassingThem()
         {
-            Poll(("A", 3), ("B", 1));
-            Poll(("A", 3), ("B", 3));
+            Poll(("L", 9), ("A", 3), ("B", 1));
+            Poll(("L", 9), ("A", 3), ("B", 3));
             _posts.Clear();
-            Poll(("A", 3), ("B", 4));
+            Poll(("L", 9), ("A", 3), ("B", 4));
             AssertPosted("Overtake(B,A)");
         }
 
@@ -332,9 +339,9 @@ namespace CosmicShore.Tests
             // Ordered by the overtaken player's NEW rank, so the nearest rival is announced
             // first - which is REVERSE chronological (C passed B before it passed A).
             // Pinned as the shipped behaviour, not endorsed: changing it is a feel call.
-            Poll(("A", 3), ("B", 2), ("C", 1));
+            Poll(("L", 9), ("A", 3), ("B", 2), ("C", 1));
             _posts.Clear();
-            Poll(("A", 3), ("B", 2), ("C", 4));
+            Poll(("L", 9), ("A", 3), ("B", 2), ("C", 4));
             AssertPosted("Overtake(C,A)", "Overtake(C,B)");
         }
 
