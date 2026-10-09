@@ -1,5 +1,10 @@
 # Slingshot (`GameModes.Slingshot = 64`)
 
+> **Flown on the field dipole since 2026-10-09.** The Stoat's triggers now hold its round-15
+> sink–source pair (`R_VesselActions/STOAT_DIPOLE.md`), not the orbit sling §1 and §4 describe; its AI
+> is `StoatDipoleExecutor.Autopilot`. The course, the target and the rule are unchanged. The Stoat's
+> time race on the same circuit is **Warpline** (`WARPLINE.md`).
+
 The **Stoat-only circuit race**. A closed loop of eight switch rings is cut through the barren race
 cell; every pilot flies **two laps** of it in order, and the first **DOMAIN** whose **LEAD RUNNER**
 threads the last ring of the last lap wins (golf: finish time).

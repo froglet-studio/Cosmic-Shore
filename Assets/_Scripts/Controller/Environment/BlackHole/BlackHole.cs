@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -152,6 +153,51 @@ namespace CosmicShore.Gameplay
         /// to the same point inside the throat's horizon and goes on from there.
         /// </summary>
         public BlackHole Throat { get; internal set; }
+
+        /// <summary>
+        /// The owner's domain colour this hole is drawn toward (BlackHoleLens <c>_BHTint</c>): a sink's
+        /// shadow takes it in place of black, a white hole's core glows in it. <see cref="DomainTintAmount"/>
+        /// 0 (the default) is the untinted look; the Stoat's dipole sets its owner's DARK colour on the sink
+        /// and LIGHT colour on the source (<c>R_VesselActions/STOAT_DIPOLE.md</c>).
+        /// </summary>
+        public Color DomainTint { get; set; } = Color.black;
+
+        /// <summary>How far toward <see cref="DomainTint"/>, 0..1.</summary>
+        public float DomainTintAmount
+        {
+            get => _domainTintAmount;
+            set => _domainTintAmount = Mathf.Clamp01(value);
+        }
+        float _domainTintAmount;
+
+        /// <summary>What a SINK does with a prism that crosses its horizon (<see cref="BlackHoleGravityField"/>).</summary>
+        public enum PrismCaptureRule
+        {
+            /// <summary>The black hole's own rule: a paired sink carries it through, a lone one consumes it.</summary>
+            Default = 0,
+            /// <summary>Gone at the horizon: destroyed, scored to <see cref="CaptureOwnerName"/>, no debris and no
+            /// sound (it fell behind the shadow). The Stoat's dipole below its Space upgrade.</summary>
+            Vanish = 1,
+            /// <summary>Carried through the throat AND recoloured to <see cref="CaptureDomain"/>, a steal by
+            /// <see cref="CaptureOwnerName"/>. The Stoat's dipole with its Space upgrade.</summary>
+            Steal = 2,
+        }
+
+        /// <summary>Set by the hole's owner every frame it changes; <see cref="PrismCaptureRule.Default"/> otherwise.</summary>
+        public PrismCaptureRule PrismCapture { get; set; }
+
+        /// <summary>The domain a <see cref="PrismCaptureRule.Steal"/> hands a captured prism to.</summary>
+        public Domains CaptureDomain { get; set; }
+
+        /// <summary>The player a capture is scored to (a steal's thief, a vanish's destroyer).</summary>
+        public string CaptureOwnerName { get; set; }
+
+        /// <summary>
+        /// A share (0..1) of every element a vessel holds that this SINK strips when the vessel passes
+        /// through it, left as crystals around the sink on the side the vessel went in
+        /// (<see cref="BlackHoleCrystalStrip"/>). 0 strips nothing. The hole's owner is never stripped.
+        /// </summary>
+        public float CrystalStripShare { get; set; }
 
         /// <summary>
         /// Radius of the wormhole mouth seated at this hole's centre (world units; 0 = none). The

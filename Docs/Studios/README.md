@@ -173,10 +173,11 @@ The AI holds one trigger, so it flies the diagonal placement. It never uses both
 - **The prisms column was never reproducible across page loads**: the prism field was placed with `Math.random`. It is
   now seeded (`mulberry32(20261009)`), so the column moves slightly from round 14 (Balanced 984 → 987) and then stays
   fixed. Every other scorecard column was already deterministic.
-- **The studio's white hole lens bends the wrong way for the game.** The lens shader applies the black hole's
-  converging bend to the white hole too ("the SAME bending"). The game's `BlackHoleLens.hlsl` now runs the white hole as
-  the negated trace, which diverges. So the studio draws a doubled image round the white hole that the game would not.
-  Not changed here.
+- **The studio's white hole lens matches the game's** (corrected 2026-10-09 — an earlier version of this note said
+  it bent the wrong way, which was a misreading). Both apply the black hole's converging bend to a HORIZON white hole:
+  the game's `BlackHoleLens` traces every horizon hole with polarity +1, the converging trace "kept over the merge's
+  diverging source", and only a smooth well (the crystal style) is traced differently. So the doubled image round the
+  white hole is the game's too.
 - **Coming out of the wormhole is sensitive** (above). Exiting inside the white hole's push core turns small entry
   differences into large heading changes. A wider exit gap (`whExitGap`, now 1.05 horizons inside a push softened over
   2 horizons) would calm it. That is a pair-wide setting, so it is not changed here.

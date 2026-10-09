@@ -143,10 +143,11 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "SlingshotS
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameSlingshot") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Slingshot
-  Description: Stoats only. You cruise slow - the speed is in the fall. Squeeze LT or RT
-    and let go to throw a wormhole pair across yourself, attractor on that side, repulsor
-    on the other; the harder the squeeze, the bigger the pull. Every sling drags you off
-    your line, so lay it where the pull will put you through the next ring. Two laps.
+  Description: Stoats only. You cruise slow and turn wide - your poles do the steering.
+    Squeeze LT and RT to hold a black hole and a white hole open ahead of you - the
+    difference pulls them apart sideways, the sum lengthways - and the field bends your
+    path round the corner. Dive into the black hole and you come out of the white one.
+    Eight rings, two laps.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('Slingshot')}, type: 3}}
@@ -336,14 +337,16 @@ _ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileI
                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _stoat)
 if not _ai or _ai.group(1) != "1":
     errors.append("Stoat.prefab's AIPilot is not enabled - an AI Stoat cannot race")
-_sling = read_or_empty("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset")
-m = re.search(r"^  aiSlingMinTurnDegrees: ([0-9.]+)$", _sling, re.M)
+# Since round 15 the triggers are the FIELD DIPOLE (R_VesselActions/STOAT_DIPOLE.md); the round-4
+# orbit sling is unbound, so its autopilot never presses. The AI that races is the dipole's.
+_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset")
+m = re.search(r"^  autopilotHold01: ([0-9.]+)$", _cfg, re.M)
 if not m or float(m.group(1)) <= 0:
-    errors.append("StoatSlingConfig.aiSlingMinTurnDegrees is 0 or missing - an AI Stoat never slings, "
-                  "so it races at cruise")
-_exec = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs")
+    errors.append("StoatDipoleConfig.autopilotHold01 is 0 or missing - an AI Stoat lays no pair, "
+                  "so it races at cruise on its x0.4 turn")
+_exec = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatDipoleExecutor.cs")
 if "PerformShipControllerActionsReplicated" not in _exec:
-    errors.append("StoatSlingExecutor's autopilot sling does not go through the replicated press path")
+    errors.append("StoatDipoleExecutor's autopilot does not go through the replicated press path")
 
 # The toybox must offer the hull this mode is built for, and the card's hull must be a class asset.
 _roster = read_or_empty("Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs")
