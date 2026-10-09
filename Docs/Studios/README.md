@@ -8,7 +8,7 @@ named after it, and when the asset changes the page must follow (or say on scree
 | Studio | Live page (decision log on) | Repo copy |
 |---|---|---|
 | **Vessel Studio** (hub: Squirrel Studio v1 + Stoat) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `VesselStudio/` |
-| Stoat Flight Studio (round 15) | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc (round 14; round 15 not yet published there) | `StoatFlightStudio.html` |
+| Stoat Flight Studio (round 15) | https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt (new artifact, its own decision log; rounds 1–14 and their log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) | `StoatFlightStudio.html` |
 
 **Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
 
@@ -18,6 +18,9 @@ named after it, and when the asset changes the page must follow (or say on scree
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
 ## Stoat Flight Studio (round 15 — the field trajectory)
+
+Live: https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt (a new artifact, published 2026-10-09; the round-14 artifact is outside this login's organization, so this
+one starts its own decision log).
 
 **Sling tab ▸ Field trajectory** (settings in the new **Field** tab). A second way to fly the pair, beside the dipole sling.
 Everything in it is **lab-only**: the game has no such mode, and every `ft*` row is a proposal, not a shipped number.
@@ -31,9 +34,14 @@ Everything in it is **lab-only**: the game has no such mode, and every `ft*` row
   annihilates. A new press replaces it.
 - **The line** is your path on your current inputs (throttle, the steering you hold × `ftSteer`), run with the flight's
   own step from the hull and drawn from `ftNose` ahead of the nose, for `ftLength` u. It is drawn on the HUD after the
-  lens, so the black hole does not bend or double it. Colours: cyan while open, amber into the black hole, and
-  **lime** when it comes back within `ftMargin` of itself at least `ftMinLoop` u further on. While it is lime the engine
-  runs at `ftBoost` × (3), arriving at `ftRise` /s and fading over `ftFade` s once the loop opens.
+  lens, so the black hole does not bend or double it. Colours: cyan while open, and **lime** in two cases:
+  - it comes back within `ftMargin` of itself at least `ftMinLoop` u further on;
+  - it goes **through the wormhole**: heading into the black hole, the path follows you out of the white hole the way
+    the flight carries you (Portal tick on). It is point-reflected, keeps the gravity speed it had before the dive, and
+    is drawn with a ring where you go in and a double ring where you come out.
+
+  While the line is lime the engine runs at `ftBoost` × (3). The boost arrives at `ftRise` /s and fades over `ftFade` s
+  once the line stops being lime.
 - **Scan headings** (Field tab): the share of headings within ±60° of the black hole whose path closes, by squeeze and
   distance, with three controls that must read 0%. **Score the field** races the field against the dipole and against
   no sling, and opens the scorecard window.
@@ -43,38 +51,41 @@ Everything in it is **lab-only**: the game has no such mode, and every `ft*` row
 | Row | Default | Why |
 |---|---|---|
 | `ftBoostInPath` | 0: the path is flown at the engine speed | At 1 (the literal reading) the boost straightens the loop that earned it within about 2 frames. Lime then flickers: 3.8% of the race lime against 14%, with the most loop onsets per minute (37.8). |
-| `ftHole` | 0: a path into the black hole is amber | At 1, pointing straight at a heavy hole is a boost: 46 of 121 headings from 300 u at a full squeeze, against 12 that actually loop. |
+| `ftHole` | 1: a pass through the wormhole is lime | **Your decision applied** (2026-10-09): "heading into an attractor should launch you out the repulsor … boost you through it very quickly with a lime path". Flown straight at the black hole from 140–210 u, the line is lime for the whole approach, and you are through in 0.68 s (full squeeze) to 1.18 s (light squeeze) at a top speed of 242–355 u/s. You come out just outside the white hole's horizon. |
 | `ftGrip` | 0.5 /s | At 2 (the dipole's grip) a full squeeze swallows every heading from 300 u (0 loops). At 0 (pure gravity) a pass from far away loops only at the edge of capture. At 0.5 every squeeze has a looping band. |
 | `ftSteer` | 1: the held steering is in the path | As written. See **Decision needed**. |
 
-**Heading scan** (final defaults; share of 121 headings that loop, and their band, 0° = dead at the black hole):
+**Heading scan** (final defaults: the share of 121 headings that are lime, the band they fall in, and how many of them
+loop or go through the wormhole; 0° = dead at the black hole):
 
 | Squeeze (strength) | from 150 u | from 300 u | from 500 u |
 |---|---|---|---|
-| 0.25 (S 1.94) | 2% (−5°…−3°) | 2% (−2°…4°) | 0% |
-| 0.5 (S 4.57) | 20% (−15°…39°) | 10% (−7°…19°) | 4% (−3°…5°) |
-| 1 (S 12) | 18% (−34°…51°) | 10% (−17°…26°) | 1% (−4°) |
+| 0.25 (S 1.94) | 8% (−5°…4°; 3 loop, 7 through) | 5% (−2°…4°; 3, 3) | 2% (0°…1°; 0, 2) |
+| 0.5 (S 4.57) | 31% (−15°…39°; 25, 13) | 17% (−7°…20°; 12, 8) | 8% (−3°…12°; 6, 5) |
+| 1 (S 12) | 74% (−38°…51°; 33, 68) | 38% (−19°…26°; 22, 34) | 17% (−4°…15°; 5, 19) |
 
-Controls: no pair 0%, the white hole alone 0%, the pair beyond the path's reach (920 u) 0%. So the request holds: from
-outside the field you can point at the black hole and find headings whose path closes. The band is narrow from far
-away (a few degrees at 500 u) and wide close in.
+A path can go through and then loop, so loop + through can exceed the lime count. Controls: no pair 0%, the white hole
+alone 0%, the pair beyond the path's reach (920 u) 0%. So the request holds:
+- aim into the black hole and you are launched out of the white hole on a lime line;
+- aim past it from outside the field and some headings close a loop. The band is a few degrees wide from 500 u and wide
+  close in.
 
 **Field scorecard** (Score the field; skilled AI at squeezes 0.5 and 1, rookie = sloppiness 0.8 on three seeds, course
-seed 7, intensity 2; 17.1 s headless). The AI only lays a pair on the side of the turn and flies for the ring; it never
-hunts a loop.
+seed 7, intensity 2; 19.3 s headless). The AI only lays a pair on the side of the turn and flies for the ring. It never
+hunts for a loop or aims for the black hole.
 
-| | circuit 2 laps | hairpins 2 laps | avg speed | top | time lime | loops / min | rookie |
+| | circuit 2 laps | hairpins 2 laps | avg speed | top | time lime | lime onsets / min | rookie |
 |---|---|---|---|---|---|---|---|
 | No sling | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
 | Dipole · Balanced | 1:44.3 | 1:50.7 | 81 | 160 | 0% | 0 | 1:38.4 |
 | Field · steering only (no pair) | 1:48.2 | 1:06.8 | 64 | 155 | 8% | 11.6 | — |
 | Field · steering only, not in path (control) | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
-| **Field · pairs** | **1:30.0** | **1:02.1** | 79 | 306 | 14% | 20.4 | **1:38.2** |
-| Field · pairs, steering not in path | 1:50.6 | 1:20.1 | 68 | 333 | 4% | 6.6 | 1:54.6 |
-| Field · pairs, path at the boosted speed | 1:43.9 | 1:11.4 | 68 | 292 | 4% | 37.8 | 1:50.1 |
+| **Field · pairs** | **1:28.3** | **1:02.1** | 80 | 303 | 18% | 18.7 | **1:37.8** |
+| Field · pairs, steering not in path | 1:39.8 | 1:19.8 | 71 | 347 | 6% | 3.3 | 1:55.7 |
+| Field · pairs, path at the boosted speed | 1:41.6 | 1:11.4 | 68 | 321 | 4% | 39.0 | 1:49.4 |
 
 The control row equals No sling to the millisecond, as it must: no pair and no steering in the path, so nothing can
-close.
+turn lime.
 
 **Decision needed (designer).**
 
@@ -85,8 +96,9 @@ close.
    take steering out of the path (`ftSteer` 0; the field rows then lose most of their lime: 4% against 14%), shorten
    the path so only tight loops close (`ftLength`; at cruise a full-stick circle closes below about 180 u), or keep it
    as a skill.
-2. **Does a path into the black hole count?** (`ftHole`; numbers in the table above.)
-3. **Is the path flown at the boosted speed?** (`ftBoostInPath`; the literal reading flickers, numbers above.)
+2. **Is the path flown at the boosted speed?** (`ftBoostInPath`; the literal reading flickers, numbers above.)
+
+The wormhole question (`ftHole`) is decided: through the wormhole is lime.
 
 **Checked** (headless Chromium, SwiftShader):
 
@@ -102,13 +114,17 @@ close.
   except "prisms pulled per sling" (see Found).
 - **Prediction against flight.** Lay a pair, set the hull on the nearest looping heading, then fly it with no input and
   measure each flown point's distance to the predicted path, over 9 grip × squeeze cases. In 4 cases the distance is
-  1.7–3.1 u; in the other 5 it is 11–78 u. The worst case traced (strength 4.6, grip 2) whirled 4.5 u from a 3.1 u
+  1.7–3.1 u; in the other 5 it is 11–78 u (measured before the wormhole pass was added; those paths never crossed a
+  horizon). The worst case traced (strength 4.6, grip 2) whirled 4.5 u from a 3.1 u
   horizon, where the orbit is chaotic. Running the prediction on the flight's own fixed 4 ms step diverges by the same
   amounts (2.1–82 u), so the divergence is the orbit, not the integrator. Three bugs were found and fixed while getting
   there:
   - the path ignored the engine still spooling up;
   - it was started 8 u ahead instead of drawn from 8 u ahead;
   - it checked the horizon only every 3 u, so a 3 u horizon slipped between two points.
+- **Through the wormhole.** For 3 squeezes, aim at the black hole and fly with no input. The line is lime 100% of the
+  approach, the flight jumps to the white hole within 0.68–1.18 s, and it comes out 2.2–6.3 u from the white hole's
+  centre, against horizons of 2.1–6 u. The drawn line jumps there too.
 - All 16 Field-tab sliders have an illustrated tooltip, and none of the 32 previews is blank. There are no console
   errors.
 

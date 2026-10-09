@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<!-- Stoat Flight Studio, as a page of the Vessel Studio (Docs/Studios/VesselStudio/). Source of truth: Docs/Studios/StoatFlightStudio.html; re-copy it here when it changes. Generated from the published artifact (https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc);
+<!-- Stoat Flight Studio, as a page of the Vessel Studio (Docs/Studios/VesselStudio/). Source of truth: Docs/Studios/StoatFlightStudio.html; re-copy it here when it changes. Published as https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt (round 15; rounds 1–14: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc);
      open this file directly in Chrome when the artifact viewer does not pass the gamepad through.
      Opened as a file, the decision log is kept in this browser: use "Copy log". See Docs/Studios/README.md. -->
 <style>body{margin:0}</style>
@@ -371,10 +371,10 @@
         <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
       <details class="card" id="grp-F" open><summary>Field trajectory <small>round 15 · lab-only</small></summary><div class="rows"></div>
-        <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i> (0 = pure gravity: an unbound pass never loops; higher = the engine keeps your speed, so the field turns you without speeding you up, and orbits close). <b>Press</b> lays the pair <i>ahead</i>, the black hole on the trigger's side; the squeeze (read until you let go) is its strength; it <i>stands</i> that long whatever the trigger does, then closes and annihilates. A new press replaces it. <b>The line</b> is your path on your current inputs, from just ahead of the nose, run with the flight's own step: <span style="color:#7fd7ff">cyan</span> while open, <b style="color:#9dff2e">lime</b> when it comes back within <i>hits its own trail</i> of itself at least <i>shortest loop</i> further on — the engine then runs at <i>loop boost</i> × while it stays lime. Strength, horizon, push, force ceiling and fastest bend come from the <b>Dipole</b> tab; its catch, settle, grip, hold and release rows do nothing here.</p>
+        <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i> (0 = pure gravity: an unbound pass never loops; higher = the engine keeps your speed, so the field turns you without speeding you up, and orbits close). <b>Press</b> lays the pair <i>ahead</i>, the black hole on the trigger's side; the squeeze (read until you let go) is its strength; it <i>stands</i> that long whatever the trigger does, then closes and annihilates. A new press replaces it. <b>The line</b> is your path on your current inputs, from just ahead of the nose, run with the flight's own step: <span style="color:#7fd7ff">cyan</span> while open, <b style="color:#9dff2e">lime</b> when it comes back within <i>hits its own trail</i> of itself at least <i>shortest loop</i> further on, or when it goes <b>through the wormhole</b> — into the black hole and out of the white hole, as the flight carries you (Portal tick) — and the engine then runs at <i>loop boost</i> × while it stays lime. Strength, horizon, push, force ceiling and fastest bend come from the <b>Dipole</b> tab; its catch, settle, grip, hold and release rows do nothing here.</p>
         <div class="btns"><button class="pick primary" type="button" id="ftScanBtn">Scan headings</button><button class="pick" type="button" id="ftBatchBtn">Score the field</button><span class="hint" id="ftNote" style="margin:0">no drawing</span></div>
         <div id="ftScanOut"></div>
-        <p class="src"><b>Not modelled.</b> The game has no field mode: this is a lab proposal and every row above is lab-only. The path holds your current inputs constant (a pilot keeps steering). It stops at the black hole's horizon, while the flight carries you through the portal. Near the horizon a whirl is chaotic: a path that grazes it can flip between loop and hole from one frame to the next, and the flown path can leave the drawn one there. Prisms and other vessels do not bend it, and "its own trail" is the path's own earlier points (plus, if ticked, your laid trail), not colliders.</p>
+        <p class="src"><b>Not modelled.</b> The game has no field mode: this is a lab proposal and every row above is lab-only. The path holds your current inputs constant (a pilot keeps steering). It follows you through the wormhole only with the Portal tick on (as the flight does). Near the horizon a whirl is chaotic: a path that grazes it can flip between loop and hole from one frame to the next, and the flown path can leave the drawn one there. Prisms and other vessels do not bend it, and "its own trail" is the path's own earlier points (plus, if ticked, your laid trail), not colliders.</p>
         <div class="btns"><button class="pick" type="button" data-reset="F">Reset</button></div></details>
       <details class="card" id="grp-BH"><summary>Black hole <small>physics &amp; look</small></summary><div class="rows"></div>
         <p class="src">How hard it pulls and how big it is per unit of strength, what it does to prisms (pull, speed, spaghettification), and how it looks: the shadow, the bent sky around it, the photon ring. Most rows are <code>BlackHoleConfig</code> fields in the game.</p>
@@ -465,7 +465,7 @@
     // the field trajectory (round 15 — LAB-ONLY: the game has no such mode and no such fields). The pair's strength,
     // horizon, push, force ceiling and fastest bend are the Dipole sling's rows; these are the mode's own.
     ftAhead: 250, ftSide: 45, ftStand: 10, ftGrip: 0.5, ftLength: 600, ftNose: 8, ftStep: 3, ftMargin: 8, ftMinLoop: 60,
-    ftBoost: 3, ftRise: 20, ftFade: 0.6, ftSteer: 1, ftBoostInPath: 0, ftHole: 0, ftTrail: 0,
+    ftBoost: 3, ftRise: 20, ftFade: 0.6, ftSteer: 1, ftBoostInPath: 0, ftHole: 1, ftTrail: 0,
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
     minStrength: 2, maxStrength: 12, aheadHorizons: 4, halfGapHorizons: 6,
     feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
@@ -546,7 +546,7 @@
     ['F', 'ftFade', 'Boost fades once the loop opens (s)', 0.05, 5, 0.05],
     ['F', 'ftSteer', 'Steering held in the path (share)', 0, 1, 0.05],
     ['F', 'ftBoostInPath', 'Path flown at the boosted speed (0/1)', 0, 1, 1],
-    ['F', 'ftHole', 'A path that ends in the black hole counts (0/1)', 0, 1, 1],
+    ['F', 'ftHole', 'A path through the wormhole counts (0/1)', 0, 1, 1],
     ['F', 'ftTrail', 'Hitting the trail already laid counts (0/1)', 0, 1, 1],
     ['BH', 'bhGmPerStrength', 'Pull per strength (GM)', 2000, 60000, 500],
     ['BH', 'bhHorizonPerStrength', 'Horizon per strength (u)', 0.2, 6, 0.1],
@@ -1540,7 +1540,7 @@
   const ftRates = { pitch: 0, yaw: 0, roll: 0 };
   let fieldSling = null, ftMul = 1;
   // one live prediction (the sim's) and its result
-  const ftLive = { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0 };
+  const ftLive = { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0, jumps: new Int32Array(8), nj: 0, thru: false };
   function fieldAccel(Pv, f, p, out) {
     out.set(0, 0, 0);
     const GMu = Pv.bhGmPerStrength;
@@ -1572,7 +1572,10 @@
   //   p0, q0 the hull now; kin = { v, vT, mul, flow, g }: the engine speed and where the held throttle is taking it
   //          (eased at the flight's 2.2 /s), the boost multiplier, the momentum (fading at dpFlowFade), the gravity speed
   //   rates  the held steering (rad/s, body axes)
-  //   out    { pts, n, end: 'open' | 'self' | 'hole' | 'trail', lime, loop, hitJ, len }; trail: optional [x,y,z,…] already laid
+  //          kin.portal: the black hole carries you through (the Portal tick): the path goes in, comes out of the white
+  //          hole point-reflected with the gravity speed it had before the dive (dipoleCarry's rule) and flies on
+  //   out    { pts, n, end: 'open' | 'self' | 'hole' | 'trail', lime, loop, hitJ, len, jumps, nj, thru }; jumps[k] is the
+  //          first point after a pass through the wormhole (the line is not joined across it); trail: optional [x,y,z,…]
   const ftSt = { p: new V3(), q: new THREE.Quaternion(), g: 0 };
   function fieldPath(Pv, f, p0, q0, kin, rates, out, trail, trailN) {
     const st = ftSt; st.p.copy(p0); st.q.copy(q0); st.g = kin.g || 0;
@@ -1581,8 +1584,9 @@
     const skip = Math.max(2, Math.ceil(Pv.ftMinLoop / ds)), cell = m, pts = out.pts;
     const key = (x, y, z) => ((Math.floor(x / cell) * 73856093) ^ (Math.floor(y / cell) * 19349663) ^ (Math.floor(z / cell) * 83492791)) & (FT_HASH - 1);
     ftGen = (ftGen + 1) | 0; if (ftGen === 0) { ftStamp.fill(0); ftGen = 1; }
-    let n = 1, end = 'open', hitJ = -1;
-    const kx = Math.max(-1, Math.min(1, Pv.ftSteer));
+    let n = 1, end = 'open', hitJ = -1, nj = 0, ins = 0, gFar = st.g;
+    if (!out.jumps) out.jumps = new Int32Array(8);
+    const kx = Math.max(-1, Math.min(1, Pv.ftSteer)), portalOn = kin.portal !== false;
     // One stretch of ds u of flight: a single step where the field is gentle, more where it bends hard or the horizon is near.
     const stepBy = (dsx) => {
       const vEng = ve * mul + fl, v = Math.max(5, vEng + st.g), tStep = dsx / v;
@@ -1600,7 +1604,11 @@
         }
         fieldSubstep(Pv, f, st, ve * mul + fl, h);
         ve += (vT - ve) * (1 - Math.exp(-2.2 * h)); fl *= Math.exp(-h * flowK);
-        if (f && st.p.distanceTo(f.att) <= f.rs) return true;   // checked every substep: a small horizon fits between two points
+        if (f) {
+          const r = st.p.distanceTo(f.att);
+          if (r > 4 * f.rs) gFar = st.g;                       // the speed you had before any dive (what the portal gives back)
+          if (r <= f.rs) return true;                          // checked every substep: a small horizon fits between two points
+        }
       }
       return false;
     };
@@ -1610,14 +1618,19 @@
     pts[0] = st.p.x; pts[1] = st.p.y; pts[2] = st.p.z;
     for (; n <= cap; n++) {
       const inHole = stepBy(ds);
-      const j3 = n * 3; pts[j3] = st.p.x; pts[j3 + 1] = st.p.y; pts[j3 + 2] = st.p.z;
-      if (inHole) { end = 'hole'; n++; break; }
+      let j3 = n * 3; pts[j3] = st.p.x; pts[j3 + 1] = st.p.y; pts[j3 + 2] = st.p.z;
+      if (inHole) {
+        if (!portalOn || nj >= out.jumps.length || n >= cap) { end = 'hole'; n++; break; }
+        // through the wormhole: out of the white hole at the point reflection, just outside its horizon, heading kept
+        const off = ftT.subVectors(st.p, f.att), dist = Math.max(off.length(), 1e-3);
+        st.p.copy(f.rep).addScaledVector(off, -Math.max(dist, Pv.whExitGap * f.rsR) / dist); st.g = gFar;
+        n++; j3 = n * 3; pts[j3] = st.p.x; pts[j3 + 1] = st.p.y; pts[j3 + 2] = st.p.z; out.jumps[nj++] = n;
+      }
       // the points at least ftMinLoop behind this one are the trail you would have laid by now
-      const old = n - skip;
-      if (old >= 0) {
-        const o3 = old * 3, hk = key(pts[o3], pts[o3 + 1], pts[o3 + 2]);
+      for (; ins <= n - skip; ins++) {
+        const o3 = ins * 3, hk = key(pts[o3], pts[o3 + 1], pts[o3 + 2]);
         if (ftStamp[hk] !== ftGen) { ftStamp[hk] = ftGen; ftHead[hk] = -1; }
-        ftNext[old] = ftHead[hk]; ftHead[hk] = old;
+        ftNext[ins] = ftHead[hk]; ftHead[hk] = ins;
       }
       const cx = Math.floor(st.p.x / cell), cy = Math.floor(st.p.y / cell), cz = Math.floor(st.p.z / cell);
       for (let a = -1; a <= 1 && hitJ < 0; a++) for (let b = -1; b <= 1 && hitJ < 0; b++) for (let c = -1; c <= 1 && hitJ < 0; c++) {
@@ -1637,7 +1650,8 @@
     }
     out.n = Math.min(n, cap + 1); out.end = end; out.hitJ = hitJ;
     out.len = (out.n - 1) * ds; out.loop = hitJ >= 0 ? (out.n - 1 - hitJ) * ds : 0;
-    out.lime = end === 'self' || (end === 'hole' && Pv.ftHole >= 0.5) || end === 'trail';
+    out.nj = nj; out.thru = nj > 0;
+    out.lime = end === 'self' || end === 'trail' || (Pv.ftHole >= 0.5 && (nj > 0 || end === 'hole'));
     return out;
   }
   // The pair stands as laid: the press lays it (the squeeze, read live until you let go, sets its strength); it stands
@@ -1684,6 +1698,7 @@
     ftFly.p = hull.position; ftFly.q = hull.quaternion; ftFly.g = gravSpeed;
     for (let i = 0; i < n; i++) {
       fieldSubstep(P, f, ftFly, speed * ftMul + flow, h);
+      if (hull.position.distanceTo(f.att) > 4 * f.rs) f.gFar = ftFly.g;
       if (portal.A && hull.position.distanceTo(f.att) <= f.rs) { gravSpeed = ftFly.g; dipoleCarry(f); ftFly.g = gravSpeed; break; }
     }
     gravSpeed = ftFly.g;
@@ -1691,18 +1706,18 @@
   // Every frame of flight: predict, colour, boost. The boost arrives at ftRise /s and fades over ftFade s once the loop opens.
   function stepFieldBoost(dt) {
     const on = style === 'A' && slingMode === 'field' && race === 'running' && !stopped && !stance;
-    if (!on) { ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.end = 'none'; return; }
+    if (!on) { ftMul = 1; ftLive.n = 0; ftLive.nj = 0; ftLive.thru = false; ftLive.lime = false; ftLive.end = 'none'; return; }
     const f = fieldStanding();
     let trail = null, tn = 0;
     if (P.ftTrail >= 0.5) { trail = ftTrailBuf; for (let k = 0; k < NT; k++) if (tAge[k] > 0.5) { const j = (NF + k) * 3; trail[tn * 3] = bp[j]; trail[tn * 3 + 1] = bp[j + 1]; trail[tn * 3 + 2] = bp[j + 2]; tn++; } }
-    ftKin.v = speed; ftKin.vT = ftThrottleTarget; ftKin.mul = P.ftBoostInPath >= 0.5 ? ftMul : 1; ftKin.flow = flow; ftKin.g = gravSpeed;
+    ftKin.v = speed; ftKin.vT = ftThrottleTarget; ftKin.mul = P.ftBoostInPath >= 0.5 ? ftMul : 1; ftKin.flow = flow; ftKin.g = gravSpeed; ftKin.portal = !!portal.A;
     const was = ftLive.lime;
     fieldPath(P, f, hull.position, hull.quaternion, ftKin, ftRates, ftLive, trail, tn);
     if (ftLive.lime) ftMul += (Math.max(1, P.ftBoost) - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
     else ftMul = 1 + (ftMul - 1) * Math.exp(-dt / Math.max(0.01, P.ftFade));
     if (raceStats) { if (ftLive.lime) { raceStats.limeT += dt; if (!was) raceStats.limeOn++; } raceStats.mulTop = Math.max(raceStats.mulTop, ftMul); }
   }
-  const ftTrailBuf = new Float32Array(NT * 3), ftKin = { v: 0, vT: 0, mul: 1, flow: 0, g: 0 };
+  const ftTrailBuf = new Float32Array(NT * 3), ftKin = { v: 0, vT: 0, mul: 1, flow: 0, g: 0, portal: true };
   let ftThrottleTarget = 0;
   // The line is drawn on the HUD, after the lens: a prediction is not light, so the black hole must not bend (or double)
   // it. From just ahead of the nose: cyan while open (fading with distance), amber into the black hole, LIME when it
@@ -1713,12 +1728,19 @@
     const n = ftLive.n, pts = ftLive.pts, lime = ftLive.lime, hole = ftLive.end === 'hole';
     const rgb = lime ? '157,255,46' : hole ? '255,179,71' : '127,215,255';
     c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
-    let px = 0, py = 0, have = false;
+    let px = 0, py = 0, have = false, jk = 0;
     for (let i = 0; i < n; i++) {
+      const jump = jk < ftLive.nj && ftLive.jumps[jk] === i; if (jump) jk++;
       ftScr.set(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]).applyMatrix4(cam.matrixWorldInverse);
       if (ftScr.z > -cam.near - 0.5) { have = false; continue; }
       ftScr.applyMatrix4(cam.projectionMatrix);
       const x = (ftScr.x * 0.5 + 0.5) * cw, y = (-ftScr.y * 0.5 + 0.5) * ch;
+      if (jump) {   // through the wormhole: no line across it — a ring where you go in, a ring where you come out
+        c.strokeStyle = 'rgba(' + rgb + ',0.95)'; c.lineWidth = 2 * sc;
+        if (have) { c.beginPath(); c.arc(px, py, 6 * sc, 0, TAU); c.stroke(); }
+        c.beginPath(); c.arc(x, y, 6 * sc, 0, TAU); c.stroke(); c.beginPath(); c.arc(x, y, 10 * sc, 0, TAU); c.stroke();
+        px = x; py = y; have = true; continue;
+      }
       if (have) {
         const inLoop = ftLive.hitJ >= 0 && i > ftLive.hitJ, a = lime ? (inLoop ? 0.95 : 0.6) : Math.max(0.15, 0.85 - 0.7 * i / n);
         c.strokeStyle = 'rgba(' + rgb + ',' + a.toFixed(3) + ')'; c.lineWidth = (lime && inLoop ? 3 : 2) * sc;
@@ -1736,16 +1758,16 @@
     opts = opts || {};
     const Pv = opts.Pv || P, D = opts.D || 300, q = opts.q != null ? opts.q : 1, span = opts.span || 60, stepDeg = opts.step || 1;
     const tp = Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent)), S = Pv.dpSMin + (Math.max(Pv.dpSMin, Pv.dpSMax) - Pv.dpSMin) * tp, rs = Pv.dpRsMin + (Math.max(Pv.dpRsMin, Pv.dpRsMax) - Pv.dpRsMin) * tp;
-    const f = opts.none ? null : { att: new V3(0, 0, 0), rep: new V3(-2 * Pv.ftSide, 0, 0), S: opts.noBlack ? 0 : S, rs, SR: S * Pv.dpWhite, rsR: rs * Pv.whSizeX };
+    const f = opts.none ? null : { att: new V3(0, 0, 0), rep: new V3(-2 * Pv.ftSide, 0, 0), S: opts.noBlack ? 0 : S, rs: opts.noBlack ? 0 : rs, SR: S * Pv.dpWhite, rsR: rs * Pv.whSizeX };
     const p0 = new V3(0, 0, D), q0 = new THREE.Quaternion(), out = { pts: new Float32Array(FT_MAX * 3) }, rates = { pitch: 0, yaw: 0, roll: 0 };
-    let lime = 0, total = 0, lo = null, hi = null, loops = 0;
+    let lime = 0, total = 0, lo = null, hi = null, loops = 0, thru = 0;
     for (let a = -span; a <= span + 1e-9; a += stepDeg) {
       q0.setFromAxisAngle(Y, a * Math.PI / 180);   // 0 = dead at the black hole (−z)
-      fieldPath(Pv, f, p0, q0, { v: Pv.cruise, vT: Pv.cruise }, rates, out);
+      fieldPath(Pv, f, p0, q0, { v: Pv.cruise, vT: Pv.cruise, portal: opts.portal !== false }, rates, out);
       total++;
-      if (out.lime) { lime++; if (lo == null) lo = a; hi = a; if (out.end === 'self') loops++; }
+      if (out.lime) { lime++; if (lo == null) lo = a; hi = a; if (out.end === 'self') loops++; if (out.thru) thru++; }
     }
-    return { D, q, S: +S.toFixed(2), share: lime / total, lime, loops, total, lo, hi };
+    return { D, q, S: +S.toFixed(2), share: lime / total, lime, loops, thru, total, lo, hi };
   }
   const axisLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3(0, 0, 1)]),
     new THREE.LineDashedMaterial({ color: 0xd9ccff, dashSize: 6, gapSize: 5, transparent: true, opacity: 0.7, depthTest: false }));
@@ -2174,7 +2196,7 @@
     { key: 'avg', label: 'avg speed, circuit', win: 'max', get: (w) => bestOf(fin(w.circuit), (r) => r.avg), fmt: (b) => b.v.toFixed(0) + ' u/s' },
     { key: 'top', label: 'top speed', win: 'max', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.top), fmt: (b) => b.v.toFixed(0) + ' u/s' },
     { key: 'lime', label: 'time lime (boosted)', win: 'max', get: (w) => mean(w.circuit.concat(w.hairpin), (r) => r.lime), fmt: (b) => Math.round(100 * b.v) + '%' },
-    { key: 'loops', label: 'loops closed / min', win: 'max', get: (w) => mean(w.circuit.concat(w.hairpin), (r) => r.loopsPerMin), fmt: (b) => b.v.toFixed(1) },
+    { key: 'loops', label: 'lime onsets / min', win: 'max', get: (w) => mean(w.circuit.concat(w.hairpin), (r) => r.loopsPerMin), fmt: (b) => b.v.toFixed(1) },
     { key: 'ring', label: 'ring error, hairpins', win: 'min', get: (w) => bestOf(fin(w.hairpin), (r) => r.err, true), fmt: (b) => b.v.toFixed(1) + ' u' },
     { key: 'rtime', label: 'rookie 2 laps', win: 'min', get: (w) => { const f = fin(w.rookie); return f.length ? { v: f.reduce((a, r) => a + r.time, 0) / f.length, dnf: w.rookie.length - f.length } : null; }, fmt: (b) => fmtTime(b.v) + (b.dnf ? ' (' + b.dnf + ' DNF)' : '') },
   ];
@@ -2551,7 +2573,8 @@
     else if (slingFlash > 0 && lastOrbit) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + Math.round(lastOrbit.angle * 180 / Math.PI) + '° round r ' + Math.round(lastOrbit.r) + ' u', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     if (style === 'A' && slingMode === 'field' && race === 'running' && !stopped) {
       const f = fieldStanding(), lim = ftLive.lime, lime = '#9dff2e';
-      const endTxt = ftLive.end === 'self' ? 'LOOP CLOSED · a ' + Math.round(ftLive.loop) + ' u loop' : ftLive.end === 'trail' ? 'ONTO YOUR TRAIL' : ftLive.end === 'hole' ? (lim ? 'INTO THE BLACK HOLE' : 'into the black hole (does not count)') : 'path open · ' + Math.round(ftLive.len) + ' u';
+      const endTxt = (ftLive.thru ? (lim ? 'THROUGH THE WORMHOLE' : 'through the wormhole (does not count)') + (ftLive.end === 'open' ? '' : '  ·  ') : '') +
+        (ftLive.end === 'self' ? 'LOOP CLOSED · a ' + Math.round(ftLive.loop) + ' u loop' : ftLive.end === 'trail' ? 'ONTO YOUR TRAIL' : ftLive.end === 'hole' ? (lim ? 'INTO THE BLACK HOLE' : 'into the black hole (does not count)') : ftLive.thru ? '' : 'path open · ' + Math.round(ftLive.len) + ' u');
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = lim ? lime : f ? colA : dim;
       c.fillText((ftMul > 1.05 ? '× ' + ftMul.toFixed(1) + '  ·  ' : '') + endTxt, cw / 2, tY + pad + 14 * sc);
       c.font = font(11, 500); c.fillStyle = dim;
@@ -2677,7 +2700,7 @@
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
         (style === 'A' && slingMode === 'field'
-          ? '<p><b>The field trajectory.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole appears ahead on that side and its white hole on the other; <b>how deep</b> you squeeze is its strength, and it stands for ' + P.ftStand + ' s on its own. Nothing catches you: the line from your nose is the path your inputs fly through its field. Point at the black hole and look for a heading whose path <b style="color:#9dff2e">loops back onto itself</b>: the line turns lime and you fly at ' + P.ftBoost + '×.</p>'
+          ? '<p><b>The field trajectory.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole appears ahead on that side and its white hole on the other; <b>how deep</b> you squeeze is its strength, and it stands for ' + P.ftStand + ' s on its own. Nothing catches you: the line from your nose is the path your inputs fly through its field. Point at the black hole: aim into it and the line runs <b style="color:#9dff2e">through the wormhole</b> and out of the white hole; aim past it for a heading whose path <b style="color:#9dff2e">loops back onto itself</b>. Either way the line turns lime and you fly at ' + P.ftBoost + '×.</p>'
           : style === 'A' && slingMode === 'dipole'
           ? '<p><b>The dipole sling.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a small black hole appears ahead on that side, its white hole ahead on the other. <b>How deep</b> you squeeze is its strength; the solid circle is where it would hold you, the faint one how far out it can catch you. Fly past it: once it catches you, you stay in its grip and go round for as long as you <b>hold</b>. <b>Let go</b> and you slingshot out on the tangent with a boost; the pair falls together and annihilates.</p>'
           : style === 'A'
@@ -3348,7 +3371,8 @@
   // ---------- what counts as a clean release ----------
   // ---------- the field trajectory (round 15), top down: a fan of headings at the pair, each one's path ----------
   // The Stoat sits D u from the black hole (the white hole beyond it, on the left) and every path is the studio's own
-  // fieldPath at cruise: lime = it closes on itself, amber = into the black hole, faint cyan = open.
+  // fieldPath at cruise: lime = it closes on itself or goes through the wormhole (in at the black hole, out of the white
+  // hole), amber = into the black hole without counting, faint cyan = open.
   SCENES.field = {
     make(Pv, cfg) {
       const D = cfg.D || Pv.ftAhead, q = cfg.q != null ? cfg.q : 0.5, tp = Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent));
@@ -3360,9 +3384,9 @@
       let lime = 0;
       for (let a = -span; a <= span + 1e-9; a += stp) {
         q0.setFromAxisAngle(Y, a * Math.PI / 180);
-        fieldPath(Pq, f, new V3(0, 0, D), q0, { v: Pv.cruise, vT: Pv.cruise, mul }, rates, out);
+        fieldPath(Pq, f, new V3(0, 0, D), q0, { v: Pv.cruise, vT: Pv.cruise, mul, portal: true }, rates, out);
         const xs = []; for (let i = 0; i < out.n; i++) xs.push(out.pts[i * 3], out.pts[i * 3 + 2]);
-        paths.push({ xs, lime: out.lime, end: out.end }); if (out.lime) lime++;
+        paths.push({ xs, lime: out.lime, end: out.end, jumps: Array.from(out.jumps.subarray(0, out.nj)) }); if (out.lime) lime++;
       }
       return { paths, lime, total: paths.length, D, S, rs, f, mul };
     },
@@ -3374,12 +3398,12 @@
       for (const p of st.paths) {
         c.strokeStyle = p.lime ? 'rgba(157,255,46,0.95)' : p.end === 'hole' ? 'rgba(255,179,71,0.55)' : 'rgba(127,215,255,0.22)';
         c.lineWidth = p.lime ? 1.6 : 1; c.beginPath();
-        for (let i = 0; i < p.xs.length; i += 2) { const x = X(p.xs[i]), y = Yc(p.xs[i + 1]); if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+        for (let i = 0; i < p.xs.length; i += 2) { const x = X(p.xs[i]), y = Yc(p.xs[i + 1]); if (i && p.jumps.indexOf(i / 2) < 0) c.lineTo(x, y); else c.moveTo(x, y); }
         c.stroke();
       }
       if (st.f) { drawWhiteHole(c, X(st.f.rep.x), Yc(0), Math.max(3, st.rs * V.s), Pv); drawBlackHole(c, X(0), Yc(0), Math.max(3, st.rs * V.s * 2.6), Pv); }
       ship(c, X(0), Yc(st.D), 0, 1, '#ffd27a', 6);
-      txt(c, st.lime + ' of ' + st.total + ' headings close a loop' + (st.mul > 1 ? ' (flown at ×' + st.mul.toFixed(1) + ')' : ''), 6, 13, st.lime ? '#9dff2e' : '#e8ecff', 10);
+      txt(c, st.lime + ' of ' + st.total + ' headings are lime' + (st.mul > 1 ? ' (flown at ×' + st.mul.toFixed(1) + ')' : ''), 6, 13, st.lime ? '#9dff2e' : '#e8ecff', 10);
       txt(c, 'from ' + Math.round(st.D) + ' u · strength ' + st.S.toFixed(1), 6, H - 6, '#9aa6d6', 9.5);
     },
   };
@@ -3441,7 +3465,7 @@
     ftFade: { scene: 'ftBoost', cfg: {}, d: 'How long the boost takes to fade once the loop opens. Flown at the boosted speed, a loop often opens the moment you boost (faster = less bent); this is what carries you through that flicker.', lo: 'Drops off at once.', hi: 'Hangs on after the loop opens.' },
     ftSteer: { scene: 'field', cfg: { none: true, yaw: 0.8 }, d: 'How much of the steering you are holding goes into the path. At 1 (the request as written) holding a turn draws its circle — and a circle shorter than the path length is a closed loop, so steering alone boosts. The preview has no pair and the stick held at 80% yaw.', lo: 'Little of the steering is in the path.', hi: 'The held turn is in the path: a steering circle closes.', at: [0.2, 1] },
     ftBoostInPath: { scene: 'field', cfg: { D: 300, boosted: true }, d: 'Whether the path is flown at the boosted speed (1) or at the engine speed (0). At 1 the boost straightens the very path that earned it (faster = less bent), so loops open as you boost. The preview flies the fan at the boost.', lo: 'Path at engine speed: the loop that earned the boost stays.', hi: 'Path at the boosted speed: the boost can open its own loop.' },
-    ftHole: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'Whether a path that ends in the black hole counts as cut short (lime). Off, it is amber and does not boost; on, pointing straight at a heavy hole is a boost. The preview is a full squeeze.', lo: 'Into the hole does not count.', hi: 'Into the hole counts.', at: [0, 1] },
+    ftHole: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'Whether a path through the wormhole is lime. Heading into the black hole carries you out of the white hole (with the Portal tick on, as the flight does), and the path follows you through. On, that pass boosts you so you go through it fast; off, the pass is drawn cyan and only a loop boosts. The preview is a full squeeze.', lo: 'The wormhole pass does not boost.', hi: 'The wormhole pass boosts.', at: [0, 1] },
     ftTrail: { scene: 'field', cfg: { D: 300 }, d: 'Whether the path running into trail you have ALREADY laid counts as well (prisms older than ½ s). The preview has no trail, so it does not change.', lo: 'Only the path\'s own loop counts.', hi: 'Your real trail counts too.', at: [0, 1] },
     aiSling: { scene: 'sling', d: 'Whether the AI pilot uses the dipole sling at all. 0 flies the course on steering and throttle alone — the baseline every style is measured against.', lo: 'No slings.', hi: 'Slings whenever it can.' },
     aiQ: { scene: 'sling', cfg: { qFromValue: true, key: 'aiQ' }, d: 'How deep the AI squeezes the trigger when it lays a pair: the black hole\'s strength. The batch race tries several and keeps each style\'s best.', lo: 'Light holes: fewer catches.', hi: 'Heavy holes: caught from far, wide circles.' },
@@ -3777,7 +3801,7 @@
     const fieldOn = s === 'A' && slingMode === 'field';
     $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling';
     $('mainP').innerHTML = fieldOn
-      ? 'Press lays the pair ahead; it stands on its own. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you through it — when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you fly at 3×. Settings: the <b>Field</b> tab.'
+      ? 'Press lays the pair ahead; it stands on its own. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you through it — when it <b style="color:#9dff2e">loops back onto itself</b> or runs <b style="color:#9dff2e">through the wormhole</b> it turns lime and you fly at 3×. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
     if (s === 'B' || slingMode === 'orbit') $('archive').open = true;
     $('portal').checked = !!portal[s];
@@ -3848,10 +3872,10 @@
     return { rows, ctl };
   }
   function fieldScanTable(r) {
-    const pct = (x) => Math.round(100 * x.share) + '%' + (x.lime ? ' <small>(' + x.lo + '°…' + x.hi + '°)</small>' : '');
+    const pct = (x) => Math.round(100 * x.share) + '%' + (x.lime ? ' <small>(' + x.lo + '°…' + x.hi + '°; ' + x.loops + ' loop, ' + x.thru + ' through)</small>' : '');
     let h = '<table class="runs batch"><thead><tr><th>Squeeze (strength)</th><th>from 150 u</th><th>from 300 u</th><th>from 500 u</th></tr></thead><tbody>';
     for (const q of [0.25, 0.5, 1]) { const rs = r.rows.filter((x) => x.q === q); h += '<tr><td>' + q + ' (S ' + rs[0].S + ')</td>' + rs.map((x) => '<td' + (x.lime ? ' class="win" style="color:#9dff2e"' : '') + '>' + pct(x) + '</td>').join('') + '</tr>'; }
-    h += '</tbody></table><p class="src">The share of headings within ±60° of the black hole (1° apart, in the plane of the pair, straight flight at cruise, no steering) whose path closes — lime — and the band they fall in (0° = dead at it; positive headings turn toward the white hole). <b>Controls, all must be 0%</b>: no pair ' + pct(r.ctl.none) + ' · the white hole alone ' + pct(r.ctl.noBlack) + ' · the pair beyond the path\'s reach (' + r.ctl.far.D + ' u) ' + pct(r.ctl.far) + '.</p>';
+    h += '</tbody></table><p class="src">The share of headings within ±60° of the black hole (1° apart, in the plane of the pair, straight flight at cruise, no steering) whose path is lime — it closes on itself, or goes through the wormhole — and the band they fall in (0° = dead at it; positive headings turn toward the white hole). <b>Controls, all must be 0%</b>: no pair ' + pct(r.ctl.none) + ' · the white hole alone ' + pct(r.ctl.noBlack) + ' · the pair beyond the path\'s reach (' + r.ctl.far.D + ' u) ' + pct(r.ctl.far) + '.</p>';
     return h;
   }
   $('ftScanBtn').addEventListener('click', () => { const t0 = performance.now(); const r = fieldScanAll(); $('ftScanOut').innerHTML = fieldScanTable(r); $('ftNote').textContent = 'scanned in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; });
