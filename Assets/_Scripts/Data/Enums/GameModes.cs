@@ -306,8 +306,14 @@ namespace CosmicShore.Data
         // the attractor. See _Scripts/Controller/Arcade/SLINGSHOT.md.
         Slingshot = 64,
 
+        // Warpline (65): the Stoat's TIME race - Slingshot's shape (a lapped gate circuit on the
+        // shared HeadlongCircuit solver, the Stoat's cut) with five long legs a lap, flown on the
+        // round-15 field dipole: lay the poles so the pathfinder's line is warped and the hull
+        // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
+        Warpline = 65,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 60) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 61) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

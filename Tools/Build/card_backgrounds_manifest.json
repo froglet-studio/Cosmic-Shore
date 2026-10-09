@@ -237,6 +237,14 @@
    "track": null,
    "triangles": 301700
   },
+  "Warpline": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12216
+  },
   "Waystation": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -267,5 +275,5 @@
   768,
   510
  ],
- "source_hash": "e2b20032cb0d53a496444bd6be0b22e4e3c70e33ad524015e5390def113890d7"
+ "source_hash": "9478c078c2af56747fbdb5efd307515aecbf0adf2d4e3143766ecef75dfbedb8"
 }
