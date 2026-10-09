@@ -1658,7 +1658,8 @@
   // overrides the guess for this browser (e.g. to preview the phone layout on a PC).
   const PLAT_KEY = 'stoat-studio-layout';
   function detectPlatform() {
-    const host = window.__studioHost || {};
+    // A host may also say it by the page's hash: Prisma's STUDIOS page opens stoat.html#prisma (a file page cannot be handed a variable).
+    const host = window.__studioHost || (/^#prisma\b/.test(location.hash) ? { shell: 'prisma' } : {});
     const ua = navigator.userAgent || '', mq = (q) => { try { return window.matchMedia(q).matches; } catch (e) { return false; } };
     const uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile === true) || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(ua)
       || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS reports itself as a Mac
@@ -1671,7 +1672,7 @@
   function applyPlatform(first) {
     layout = layoutPref === 'pc' || layoutPref === 'phone' ? layoutPref : PLATFORM.device;
     document.body.classList.toggle('dev-pc', layout === 'pc'); document.body.classList.toggle('dev-phone', layout === 'phone');
-    $('platName').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'phone' : 'PC') + ' (' + PLATFORM.why + ')' + (layout !== PLATFORM.device ? ' — showing the ' + layout + ' layout' : '');
+    $('platName').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell === 'prisma' ? 'Prisma' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'phone' : 'PC') + ' (' + PLATFORM.why + ')' + (layout !== PLATFORM.device ? ' — showing the ' + layout + ' layout' : '');
     $('platLayout').value = layoutPref;
     $('playBtn').textContent = '📱 Fly with touch';
     if (layout === 'phone' && first) setPlayMode(true);          // a phone opens straight into the touch layout

@@ -17,6 +17,18 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Vessel Studio in Prisma (2026-10-09, after round 14)
+
+- **Merged:** `vessel-studio` came into this branch: the hub, Squirrel Studio v1, Prisma's STUDIOS page and
+  Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio**.
+- **Round 14 in the hub:** the hub's Stoat is now round 14 (`VesselStudio/stoat.html`).
+- **OPEN IN PRISMA:** the studio as its own app window, reading "Running on Prisma".
+- **PLAY IN ENGINE:** the game's own Stoat in Slingshot, one click from the studio.
+- **Engine gaps filled:** Prisma could not compile this branch's game code before. The black-hole API gaps
+  are now in the engine, and all three Prisma test suites pass.
+
+Test steps: `PRISMA_TEST_STEPS.md`.
+
 ## Stoat Flight Studio (round 14 — the course ladder and the editor layout)
 
 **Four intensities that grade the turning** (Course tab; one-click buttons 1–4, each with a description):

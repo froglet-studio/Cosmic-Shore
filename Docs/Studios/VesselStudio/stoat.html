@@ -67,12 +67,28 @@
   .tturn { position: absolute; inset: 0; display: none; place-items: center; text-align: center; color: #e8ecff; font: 600 16px/1.4 var(--font-display); background: rgba(5,8,23,0.86); z-index: 6; padding: 24px; }
   @media (orientation: portrait) { body.play .tturn { display: grid; } }
   body.play .stagebtn { display: none; }
-  .playbtn { position: absolute; right: 12px; top: 12px; z-index: 3; }
+  .stagebtn.playbtn { right: 12px; top: 12px; left: auto; bottom: auto; }
   body.play .playbtn { display: none; }
+  /* the device decides the interface: a PC flies with a gamepad or keyboard (no touch layout offered), a phone gets the touch layout */
+  body.dev-pc .playbtn, body.dev-pc .phone-only { display: none !important; }
+  body.dev-phone .pc-only { display: none !important; }
+  .platchip { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 0; font-size: 0.82rem; color: var(--dim); }
+  .platchip b { color: var(--fg); }
+  .platchip select { font: inherit; }
+  .tturn .tbtn { margin-top: 14px; }
+  .intensity { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 8px 0 4px; }
+  .intensity button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--fg); font: inherit; cursor: pointer; min-width: 0; }
+  .intensity button b { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent); }
+  .intensity button span { font-size: 0.72rem; line-height: 1.15; text-align: center; }
+  .intensity button small { font-size: 0.66rem; color: var(--dim); }
+  .intensity button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  body.play .overlay .box { max-width: min(430px, 58%); max-height: calc(100% - 120px); margin-top: 40px; font-size: 0.8rem; padding: 10px 12px; gap: 4px; }
+  body.play .overlay .box h2 { font-size: 0.95rem; }
+  body.dev-phone:not(.play) .overlay:not([hidden]) ~ .playbtn { display: none; }
   #stage { width: 100%; max-width: 100%; display: block; aspect-ratio: 16 / 10; background: #050817; border: 1px solid var(--line); border-radius: 8px; outline: none; }
   #stage:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
   #hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
-  .stagebtn { position: absolute; left: 12px; bottom: 64px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+  .stagebtn { position: absolute; left: 12px; bottom: 96px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
   .stagebtn[aria-pressed="true"] { background: #7fd7ff; }
   .stagebtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
@@ -113,6 +129,14 @@
   .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .row output.changed { color: var(--accent); }
   .row output.styled { color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .aistats { margin: 6px 0; padding: 6px 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 var(--font-display); white-space: pre-wrap; color: var(--fg); font-variant-numeric: tabular-nums; }
+  table.batch { width: 100%; font-size: 0.78rem; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  table.batch th, table.batch td { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  table.batch th:first-child, table.batch td:first-child { text-align: left; }
+  table.batch td.win { color: var(--accent); font-weight: 700; }
+  #batchOut { overflow-x: auto; }
+  #batchOut .batch th, #batchOut .batch td { white-space: nowrap; font-size: 0.78rem; padding: 3px 6px; }
+  #batchOut .batch th { vertical-align: bottom; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
   .presets .pick { padding: 4px 9px; font-size: 0.8rem; }
   .presets .pick[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
@@ -167,14 +191,64 @@
   .toast { color: var(--good); font-size: 0.85rem; }
   .empty { color: var(--dim); font-size: 0.88rem; }
   [hidden] { display: none !important; }
+
+  /* ===== editor layout: the window is the workspace — stage in the middle, tabbed docks right and below, mini windows
+     that float over everything. Nothing scrolls the page; a long pane scrolls inside itself. ===== */
+  body.ide { height: 100vh; height: 100dvh; overflow: hidden; margin: 0; }
+  body.ide .wrap { max-width: none; height: 100%; padding-block: 6px; padding-inline: 8px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; }
+  body.ide header { flex-wrap: nowrap; align-items: center; gap: 14px; min-width: 0; }
+  body.ide header h1 { font-size: 1.05rem; white-space: nowrap; }
+  body.ide header .round { white-space: nowrap; }
+  body.ide header .platchip { margin: 0 0 0 auto; flex-wrap: nowrap; white-space: nowrap; }
+  body.ide .stage { height: 100%; min-height: 0; grid-template-columns: minmax(0, 1fr) 6px var(--railW, 400px); gap: 0; align-items: stretch; }
+  body.ide .main { display: grid; grid-template-rows: minmax(0, 1fr) 6px var(--dockH, 240px); gap: 0; min-height: 0; height: 100%; }
+  body.ide .viewport { min-height: 0; height: 100%; }
+  body.ide #stage { height: 100%; aspect-ratio: auto; }
+  .split { background: transparent; position: relative; z-index: 2; touch-action: none; }
+  .split::after { content: ""; position: absolute; background: var(--line); border-radius: 2px; }
+  .split.v { cursor: col-resize; } .split.v::after { left: 2px; width: 2px; top: 30%; bottom: 30%; }
+  .split.h { cursor: row-resize; } .split.h::after { top: 2px; height: 2px; left: 40%; right: 40%; }
+  .split:hover::after, .split.drag::after { background: var(--accent); }
+  .dock { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .dock .tabs { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px 4px 0; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+  .dock .tabs button { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--dim); background: transparent; border: 1px solid transparent; border-bottom: 0; border-radius: 6px 6px 0 0; padding: 5px 9px; cursor: pointer; white-space: nowrap; }
+  .dock .tabs button:hover { color: var(--fg); }
+  .dock .tabs button[aria-selected="true"] { color: var(--accent); background: var(--panel); border-color: var(--line); margin-bottom: -1px; }
+  .dock .tabs button.floating { font-style: italic; }
+  .dock .tabs button.floating::after { content: " ⧉"; }
+  .pane { min-height: 0; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .pane[hidden] { display: none !important; }
+  .panebar { display: flex; justify-content: flex-end; gap: 6px; margin: -4px -2px -2px; }
+  .panebar button, .fwin .fbar button { font: inherit; font-size: 0.75rem; color: var(--dim); background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; cursor: pointer; }
+  .panebar button:hover, .fwin .fbar button:hover { color: var(--fg); border-color: var(--accent); }
+  .pane > details.card > summary { display: none; }
+  .pane > .card, .fwin .pane > .card { border: 0; padding: 0; background: transparent; }
+  .pane > .card + .card { border-top: 1px solid var(--line); padding-top: 8px; border-radius: 0; }
+  .pane .lower-sec h2 { display: none; }
+  .fwin { position: fixed; z-index: 60; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 260px; min-height: 140px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); background: var(--panel); border: 1px solid var(--accent); border-radius: 9px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); resize: both; overflow: hidden; }
+  .fwin .fbar { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--panel-2); border-bottom: 1px solid var(--line); cursor: move; user-select: none; touch-action: none; }
+  .fwin .fbar b { font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); flex: 1; }
+  .fwin .pane { padding: 10px; }
+  @media (max-width: 900px) {
+    body.ide { height: auto; overflow: auto; }
+    body.ide .wrap { height: auto; display: flex; }
+    body.ide header { flex-wrap: wrap; }
+    body.ide header .platchip { margin: 0; }
+    body.ide .stage { grid-template-columns: minmax(0, 1fr); height: auto; }
+    body.ide .main { grid-template-rows: auto auto auto; }
+    body.ide .viewport { height: 58vh; }
+    body.ide .split { display: none; }
+    body.ide .dock { max-height: 70vh; }
+  }
 </style>
 
 <div class="wrap">
   <header>
-    <a href="index.html" style="display:inline-block;margin-bottom:6px;font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none">&larr; Vessel Studio</a>
+    <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 11 · play on a phone</span>
-    <p><b>On a phone:</b> tap <b>📱 Play on phone</b> on the stage and hold it sideways — thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go). Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <span class="round">Round 14 · course ladder · editor layout</span>
+    <p class="platchip" id="platChip"><span>Running on <b id="platName">web</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -184,19 +258,31 @@
       <canvas id="hud" aria-hidden="true"></canvas>
       <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
       <button type="button" id="stopBtn" class="stagebtn" hidden aria-pressed="false">■ Stop</button>
-      <button type="button" id="playBtn" class="stagebtn playbtn">📱 Play on phone</button>
+      <button type="button" id="playBtn" class="stagebtn playbtn">📱 Fly with touch</button>
       <div id="touchUI" aria-label="Touch controls">
         <div class="tzone l" id="tzL"><div class="tstick idle" id="tsL"><div class="tknob"></div></div></div>
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
         <div class="tbar"><button type="button" class="tbtn" id="tStart">Start</button><button type="button" class="tbtn ghost" id="tStop">Stop</button><button type="button" class="tbtn ghost" id="tBack">Back</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
-        <div class="tturn">Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small></div>
+        <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
   <div class="lower">
     <section class="card" aria-labelledby="keysH">
       <h2 id="keysH">Controls</h2>
+      <div class="phone-only">
+        <p class="hint" style="margin-top:4px">Touch, in the touch layout (<b>📱 Fly with touch</b> on the stage). It feeds the same dual-stick mix and analog triggers as a gamepad.</p>
+        <div class="tablewrap"><table class="keys"><thead><tr><th>Touch</th><th>Does</th></tr></thead><tbody>
+          <tr><td>Both thumbs left / right</td><td>Yaw</td></tr>
+          <tr><td>Both thumbs up / down</td><td>Pitch</td></tr>
+          <tr><td>Thumbs opposite, up / down</td><td>Roll</td></tr>
+          <tr><td>Thumbs apart / together</td><td>Throttle</td></tr>
+          <tr><td><b>LT</b> / <b>RT</b> handle: drag down, hold, lift</td><td>Lay the pair on that side (how far down = strength), stay in its grip, slingshot out</td></tr>
+          <tr><td>Start · Stop · Back · ✕ (top bar)</td><td>Start or go again · stop and watch · back to the start line · back to the settings</td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="pc-only">
       <p class="hint" style="margin-top:4px">The gamepad goes through the game's own dual-stick mix (<code>InputController</code>): yaw and pitch are the SUM of both sticks, roll and throttle their DIFFERENCE, eased so one stick alone gives 29%. At rest the throttle sits at half cruise.</p>
       <div class="tablewrap"><table class="keys">
         <thead><tr><th>Gamepad</th><th>Keyboard</th><th>Does</th></tr></thead>
@@ -209,12 +295,12 @@
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
-          <tr><td><b>Phone</b> (📱 Play on phone)</td><td>—</td><td>Two thumb sticks at the bottom (each appears where your thumb lands; same mix as the gamepad), LT / RT handles at the top: drag down to squeeze, lift to let go. Start / Stop / Back / ✕ along the top.</td></tr>
           <tr><td>The <b>■ Stop</b> button on the stage</td><td><kbd>P</kbd></td><td>Stop: the Stoat halts and the clock pauses while the world carries on; press again to resume</td></tr>
           <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
       </table></div>
       <p class="hint">Compare view: drag to orbit, wheel to zoom; on a gamepad the right stick orbits and the left stick zooms. If your controller isn't detected here, this viewer may be blocking gamepads: open <code>Docs/Studios/StoatFlightStudio.html</code> from the repo directly in Chrome (the log is then kept on that machine; use Copy log).</p>
+      </div>
     </section>
 
     <section class="card log" aria-labelledby="logH">
@@ -246,6 +332,18 @@
         <p class="src" id="portalSrc"></p>
       </div>
 
+      <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
+        <label class="check"><input type="checkbox" id="aiOn"> <span><b>AI flies the Stoat</b> — races, then starts again; change any setting and watch the next lap</span></label>
+        <div class="rowsel">
+          <label>Camera <select id="camMode"><option value="chase">Chase</option><option value="follow">Follow (wide)</option><option value="free">Free (drag, wheel)</option></select></label>
+          <label>Speed <select id="simSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+        </div>
+        <pre class="aistats" id="aiStats">Not flying yet.</pre>
+        <div class="rows"></div>
+        <div class="btns"><button class="pick primary" type="button" id="batchBtn">Score all five styles</button><button class="pick" type="button" id="scoreShow">Show scorecard</button><span class="hint" id="batchNote" style="margin:0">no drawing, a few seconds</span></div>
+        <div id="batchOut"></div>
+        <p class="src">The scorecard races a no-sling baseline, Balanced and each style at 1 on both courses, two laps flat out: a <b>skilled</b> AI at squeezes 0.3–1 (each column keeps the best it reached going for that one thing) and a <b>rookie</b> (sloppiness 0.8, three seeds). Each style owns one column: Comet the average speed, Flare the top speed, Needle the ring error in the hairpins, Anchor the rookie's catch rate, Maelstrom the prisms each sling pulls. The AI uses your current settings, so a slider you move changes its next race.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="ai">Reset</button></div></details>
       <details class="card" id="grp-style" open><summary>Play styles <small>five ways to fly the sling</small></summary>
         <div class="presets" role="group" aria-label="Play-style presets" id="stylePresets"></div>
         <div class="rows"></div>
@@ -283,10 +381,19 @@
       <details class="card" id="grp-B" hidden><summary>Crystal pair (archived) <small>charming-cerf</small></summary><div class="rows"></div>
         <p class="src">Laid on release, sized by the deepest squeeze. Felt pull k·cruise²·R<sub>t</sub>·r/(r²+R<sub>t</sub>²)<sup>1.5</sup>; lens α = A·u·e<sup>−u²/2</sup>, u = b/w, shipped w = the throat (lens width 1). Life is sling-tuned as <code>BlackHoleConfig</code> ships it for the Stoat (0.6 s + 0.05 s + 3.35 s = the drift pair's 4 s); their crystal cell ships 6 s to form, 9 s to annihilate.</p>
         <div class="btns"><button class="pick" type="button" data-reset="B">Reset</button><button class="pick" type="button" id="theirLife">Their cell's 6 s / 9 s</button></div></details>
-      <details class="card" id="grp-flight"><summary>Flight & course</summary><div class="rows"></div>
+      <details class="card" id="grp-flight"><summary>Flight & course</summary>
+        <div class="intensity" role="group" aria-label="Course intensity" id="intensitySeg">
+          <button type="button" data-i="1"><b>1</b><span>Plain circle</span><small>48 u rings</small></button>
+          <button type="button" data-i="2"><b>2</b><span>Tilted rings</span><small>40 u rings</small></button>
+          <button type="button" data-i="3"><b>3</b><span>Climbs &amp; sharp tilts</span><small>32 u rings</small></button>
+          <button type="button" data-i="4"><b>4</b><span>Side-on &amp; dives</span><small>26 u rings</small></button>
+        </div>
+        <p class="src" id="intensityNote"></p>
+        <div class="rows"></div>
         <div class="rowsel">
-          <label>Intensity <select id="intensity"><option value="1">1 · 48 u mouths</option><option value="2" selected>2 · 40 u</option><option value="3">3 · 32 u</option><option value="4">4 · 26 u</option></select></label>
+          <label hidden>Intensity <select id="intensity"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></label>
           <label>Laps <select id="laps"><option value="1">1</option><option value="2" selected>2</option></select></label>
+          <label>Course <select id="courseKind"><option value="circuit">Circuit</option><option value="hairpin">Hairpins</option></select></label>
           <label><input type="checkbox" id="invertY"> Invert Y</label>
         </div>
         <div class="rowsel">
@@ -294,7 +401,7 @@
           <button class="pick" type="button" id="newCourse">New course</button>
           <label>Domain <select id="domain"><option value="jade">Jade</option><option value="ruby">Ruby</option><option value="blue">Blue</option><option value="gold">Gold</option></select></label>
         </div>
-        <p class="src">A stand-in course on the shipped numbers: 8 rings on a 600 u circle, the mouth per intensity. Not the shipped HeadlongCircuit solver.</p>
+        <p class="src">Stand-in courses on the shipped numbers, the mouth per intensity. <b>Circuit</b>: 8 rings on a circle, harder with each intensity (above). <b>Hairpins</b>: 8 rings that alternate direction, 120–190 u apart, then a long straight home (rewards tight turns). Not the shipped HeadlongCircuit solver.</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
       <details class="card" id="grp-lope"><summary>Lope <small>StoatLopeMath</small></summary><div class="rows"></div>
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
@@ -340,7 +447,7 @@
     closeSpeed: 40, closeRamp: 0.6, holdCap: 12, vesselTide: 0.08, releaseDamping: 1.5,
     // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
     dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
-    dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2,
+    dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
     minStrength: 2, maxStrength: 12, aheadHorizons: 4, halfGapHorizons: 6,
     feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
@@ -350,6 +457,8 @@
     // play styles (weights 0..1, 0.5 = the base tuning) and how a race moves them
     styleComet: 0.5, styleNeedle: 0.5, styleAnchor: 0.5, styleMaelstrom: 0.5, styleFlare: 0.5,
     styleStep: 0.15, styleDrift: 0.04, needleStep: 0.1, needleCone: 20,
+    // the AI pilot (sim lab)
+    aiQ: 0.6, aiCone: 12, aiGiveUp: 3.5, aiMinRing: 200, aiTurn: 70, aiSling: 1, aiTau: 0.3, aiNoise: 0,
     // birth & annihilation (the dipole pair)
     bornS: 0.9, whInS: 1.1, whInFrom: 700, dieS: 0.7, whOutSpeed: 450, whOutFade: 1.6, shellBend: 6,
     gwAmp: 12, gwSpeed: 120, gwPeriod: 0.35, gwRingdown: 1.0, gwPrism: 0.6, gwShake: 1, gwGlow: 1,
@@ -363,6 +472,14 @@
   let GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2;   // refreshed from the Black hole group every frame
   const MIN_HORIZON = 1.5;
   const SPEC = [
+    ['ai', 'aiSling', 'AI uses the sling (0 = no, 1 = yes)', 0, 1, 1],
+    ['ai', 'aiQ', 'AI squeeze', 0.05, 1, 0.05],
+    ['ai', 'aiCone', 'AI releases when nose within (°)', 2, 60, 1],
+    ['ai', 'aiGiveUp', 'AI gives up if not caught after (s)', 0.5, 10, 0.1],
+    ['ai', 'aiMinRing', 'AI slings if the ring is further than (u)', 0, 600, 10],
+    ['ai', 'aiTurn', '…or if the turn to it is sharper than (°)', 10, 180, 5],
+    ['ai', 'aiTau', 'AI steering response (s)', 0.05, 1, 0.01],
+    ['ai', 'aiNoise', 'AI sloppiness (0 = perfect, 1 = rookie)', 0, 1, 0.05],
     ['style', 'styleComet', 'Comet · velocity', 0, 1, 0.01],
     ['style', 'styleNeedle', 'Needle · precision', 0, 1, 0.01],
     ['style', 'styleAnchor', 'Anchor · control', 0, 1, 0.01],
@@ -386,11 +503,15 @@
     ['D', 'dpGrip', 'Engine holds speed in grip (/s)', 0, 10, 0.1],
     ['D', 'dpMaxTurn', 'Longest hold (° round)', 45, 1080, 15],
     ['D', 'dpBoostMin', 'Release boost, a touch (× speed)', 0, 3, 0.05],
-    ['D', 'dpBoostMax', 'Release boost, buried (× speed)', 0, 3, 0.05],
+    ['D', 'dpBoostMax', 'Release boost, buried (× speed)', 0, 5, 0.05],
     ['D', 'dpBoostSeconds', 'Boost fade (s)', 0.1, 5, 0.1],
     ['WH', 'dpWhite', 'Push (× the black hole\'s pull)', 0, 2, 0.05],
     ['D', 'dpKeySqueeze', 'Keyboard squeeze', 0.05, 1, 0.05],
     ['D', 'dpAssistFade', 'Gravity speed fades (s)', 0.2, 10, 0.1],
+    ['D', 'dpCarry', 'Release kept as momentum (share)', 0, 1, 0.05],
+    ['D', 'dpFlowFade', 'Momentum fades (s)', 0.5, 20, 0.1],
+    ['D', 'dpFlowCap', 'Most momentum (× cruise)', 0, 5, 0.05],
+    ['D', 'dpKickSweep', 'Full kick only after going round (°, 0 = always)', 0, 360, 5],
     ['D', 'dpAccelCap', 'Force ceiling (u/s²)', 50, 6000, 10],
     ['D', 'dpTurnCap', 'Fastest bend (rad/s)', 0.5, 20, 0.1],
     ['BH', 'bhGmPerStrength', 'Pull per strength (GM)', 2000, 60000, 500],
@@ -473,20 +594,24 @@
   // the holes and their birth & annihilation are touched — never the Stoat's own flight.
   const STYLES = [
     { key: 'styleComet', name: 'Comet', what: 'velocity', el: 'Time', col: '#9e6bf0', d: {
-      dpBoostMax: 0.6, dpBoostMin: 0.3, dpBoostSeconds: 0.6, dpAssistFade: 2.5, dpGrip: -1.2, dpAhead: 60, dpSettle: 1.5,
-      dpMaxTurn: -90, closeSpeed: 20, bornS: -0.3, whInS: -0.35, dpCatchDeg: -10 } },
+      dpBoostMax: 0.1, dpBoostMin: 0.05, dpBoostSeconds: 0.6, dpAhead: 60, dpSettle: 1.5, dpMaxTurn: -90,
+      closeSpeed: 20, bornS: -0.3, whInS: -0.35, dpCatchDeg: -10, dpCarry: 0.45, dpFlowCap: 1.5, dpFlowFade: 6,
+      dpTurnCap: -4, dpSMax: -3 } },
     { key: 'styleNeedle', name: 'Needle', what: 'precision', el: 'skill', col: '#e8ecff', d: {
-      holdExponent: 0.6, dpCatchDeg: 15, dpRsMax: -1.5, dpRsMin: -0.4, dpSettle: 3, dpGrip: 2, dpMaxTurn: 360, dpCaptureX: -0.2,
-      dpTurnCap: 4, bornS: -0.3, dpBoostSeconds: -0.4, gwShake: -0.3 } },
+      holdExponent: 0.6, dpCatchDeg: 15, dpRsMax: -1.5, dpRsMin: -0.4, dpSettle: 8, dpGrip: 2, dpMaxTurn: 360,
+      bornS: -0.3, dpBoostSeconds: -0.4, gwShake: -0.3, dpCarry: -0.35, dpFlowCap: -1, dpBoostMax: -0.4,
+      dpBoostMin: -0.15 } },
     { key: 'styleAnchor', name: 'Anchor', what: 'control', el: 'Space', col: '#3d99f2', d: {
-      dpCaptureX: 0.6, dpCatchDeg: -15, dpSettle: -0.8, dpGrip: 2.5, dpRsMax: -2, dpRsMin: -0.3, dpSide: -10, closeSpeed: -15,
-      holdCap: 6, dpMaxTurn: 180, gwShake: -0.6, shellBend: -3, dpWhite: -0.2, dpAccelCap: -1500 } },
+      dpCaptureX: 1, dpCatchDeg: -30, dpSettle: -0.8, dpGrip: 2.5, dpRsMax: -2, dpRsMin: -0.3, dpSide: -10,
+      closeSpeed: -15, holdCap: 6, dpMaxTurn: 180, gwShake: -0.6, shellBend: -3, dpWhite: -0.2, dpAccelCap: -1500,
+      dpSMin: 1.5 } },
     { key: 'styleMaelstrom', name: 'Maelstrom', what: 'gravity', el: 'Mass', col: '#ed4561', d: {
-      dpSMax: 6, dpSMin: 1, dpRsMax: 3, dpRsMin: 0.8, bhInfluenceFloor: -0.3, bhTideGain: 1.2, bhTideMax: 3, dpWhite: 0.4,
-      bhLensStrength: 0.6, bhRingGlow: 0.4, gwPrism: 0.4, dpTurnCap: -2, dpSide: 15 } },
+      dpSMax: 6, dpSMin: 1, dpRsMax: 3, dpRsMin: 0.8, bhInfluenceFloor: -0.3, bhTideGain: 1.2, bhTideMax: 3,
+      dpWhite: 0.4, bhLensStrength: 0.6, bhRingGlow: 0.4, gwPrism: 0.4, dpTurnCap: -2, dpSide: 15, dpGrip: -1.8,
+      dpCatchDeg: 20 } },
     { key: 'styleFlare', name: 'Flare', what: 'surge', el: 'Charge', col: '#fabf2e', d: {
-      dpBoostMax: 0.9, dpBoostSeconds: -0.5, dpBoostMin: 0.4, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
-      whCoreBrightness: 3, bornS: -0.4, dieS: -0.3, closeSpeed: 40, whOutSpeed: 250 } },
+      dpBoostMax: 3.1, dpBoostSeconds: -0.7, dpBoostMin: 1.2, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
+      whCoreBrightness: 3, bornS: -0.4, dieS: -0.3, closeSpeed: 40, whOutSpeed: 250, dpCarry: -0.3 } },
   ];
   const STYLE_BY_KEY = {}; for (const st of STYLES) STYLE_BY_KEY[st.key] = st;
   const RANGE = {}; for (const r of SPEC) RANGE[r[1]] = [r[3], r[4]];
@@ -517,9 +642,9 @@
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
   let invertY = !!saved.invertY;
-  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade';
+  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, runs: runs.slice(-40) }); }
+  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40) }); }
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
@@ -655,6 +780,12 @@
 
   // ================= the course =================
   const MOUTHS = [48, 40, 32, 26];
+  const CIRCUIT_LADDER = [   // per intensity: circle radius, how far rings wander, how high they climb, and how far they turn off the line
+    { name: 'Plain circle', d: 'A flat 600 u circle, every ring square to the line. The only turn is the circle itself; the sling is optional.', r: 600, jitA: 0, jitR: 0, y: 0, yaw: 0, pitch: 0 },
+    { name: 'Tilted rings', d: 'Rings wander a little and tilt about 40° off the line, so each asks for a turn — the sling starts to pay.', r: 560, jitA: 0.12, jitR: 70, y: 45, yaw: 40, pitch: 0 },
+    { name: 'Climbs & sharp tilts', d: 'A tighter, rolling circle; rings tilt about 65° and every third one is pitched, so you climb and dive through them.', r: 470, jitA: 0.22, jitR: 110, y: 130, yaw: 65, pitch: 30 },
+    { name: 'Side-on & dive rings', d: 'Rings turned nearly side-on and dive rings facing up or down: turn hard in the black hole\'s grip or go round again.', r: 400, jitA: 0.3, jitR: 140, y: 190, yaw: 82, pitch: 65 },
+  ];
   let gates = [];
   const courseGroup = new THREE.Group(); scene.add(courseGroup);
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -690,15 +821,38 @@
   function buildCourse() {
     while (courseGroup.children.length) { const c = courseGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
     const rng = mulberry32(seed * 7919 + intensity), I = intensity - 1, mouth = MOUTHS[I];
-    const jitA = [0.10, 0.2, 0.3, 0.38][I], jitR = [50, 100, 150, 190][I], yAmp = [20, 80, 140, 190][I];
-    const pts = [];
-    for (let k = 0; k < 8; k++) {
-      const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * jitA : 0), r = 600 + (k ? (rng() - 0.5) * 2 * jitR : 0), y = k ? (rng() - 0.5) * 2 * yAmp : 0;
-      pts.push(new V3(Math.cos(ang) * r, y, Math.sin(ang) * r));
+    const pts = [], norms = [];
+    if (courseKind === 'hairpin') {
+      // Hairpins: a slalom of U-turns — each ring faces the opposite way to the last, a short hop to the side — then
+      // a long straight home. Speed alone overshoots every one of them; a tight sling turn does not.
+      const gap = [190, 160, 140, 120][I], lift = [0, 15, 30, 45][I];
+      for (let k = 0; k < 8; k++) { pts.push(new V3((k - 3.5) * gap, (k % 2 ? 1 : -1) * lift + (rng() - 0.5) * lift, 0)); norms.push(new V3(0, 0, k % 2 ? -1 : 1)); }
+    } else {
+      // The intensity ladder. 1: a plain circle, every ring square to the line — the only turn is the circle's own.
+      // 2: the rings tilt off the line, so each asks for a turn the engine alone makes slowly. 3: a tighter circle that
+      // climbs and drops, rings tilted further and some pitched. 4: rings turned nearly side-on and dive rings that face
+      // up or down — the black hole does the turning, or you go round again. Ring 0 always faces down the start line.
+      const L = CIRCUIT_LADDER[I];
+      for (let k = 0; k < 8; k++) {
+        const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * L.jitA : 0), r = L.r + (k ? (rng() - 0.5) * 2 * L.jitR : 0), y = k ? (rng() - 0.5) * 2 * L.y : 0;
+        pts.push(new V3(Math.cos(ang) * r, y, Math.sin(ang) * r));
+      }
+      const c0 = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+      for (let k = 0; k < 8; k++) {
+        const n = c0.getTangent(k / 8).normalize();
+        if (k > 0) {
+          const yaw = (k % 2 ? 1 : -1) * L.yaw * (0.75 + 0.25 * rng()) * Math.PI / 180;
+          n.applyAxisAngle(Y, yaw);
+          if (L.pitch && k % 3 === 2) n.applyAxisAngle(new V3().crossVectors(n, Y).normalize(), (rng() < 0.5 ? 1 : -1) * L.pitch * (0.8 + 0.2 * rng()) * Math.PI / 180);
+          n.normalize();
+        }
+        norms.push(n);
+      }
     }
-    const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+    const linePts = courseKind === 'hairpin' ? pts.flatMap((p, k) => [p.clone().addScaledVector(norms[k], -50), p, p.clone().addScaledVector(norms[k], 50)]) : pts;
+    const curve = new THREE.CatmullRomCurve3(linePts, true, 'centripetal');
     gates = pts.map((p, k) => {
-      const n = curve.getTangent(k / 8).normalize();
+      const n = norms[k];
       const ring = new THREE.Mesh(new THREE.TorusGeometry(mouth, 1.1, 8, 72), new THREE.MeshBasicMaterial({ color: 0x7fd7ff, transparent: true, opacity: 0.85 }));
       ring.position.copy(p); ring.quaternion.setFromUnitVectors(ZAX, n); courseGroup.add(ring);
       const disc = new THREE.Mesh(new THREE.CircleGeometry(mouth, 48), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }));
@@ -988,7 +1142,7 @@
   function setStopped(on) {
     if (mode !== 'fly' || (race !== 'running' && !stopped)) return;
     stopped = !!on;
-    if (stopped) { speed = 0; gravSpeed = 0; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
+    if (stopped) { speed = 0; gravSpeed = 0; flow = 0; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
     else boosts.length = 0;
     showStopBtn(); showOverlay();
   }
@@ -1006,21 +1160,22 @@
   function spawn() {
     const g = gates[0]; hull.position.copy(g.p).addScaledVector(g.n, -170);
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
-    speed = 0; gravSpeed = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
+    speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
-    myPair = null; snapCam = true; showOverlay();
+    myPair = null; snapCam = true; ai.phase = 'cruise'; if (!batching) showOverlay();
   }
   function startRace() {
     if (stopped) { setStopped(false); return; }
     if (mode !== 'fly' || race === 'running') return;
     if (race === 'finished') spawn();
-    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
+    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); raceStats = newStats(); ai.phase = 'cruise'; hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
   }
   const runStyles = new Set();
   function finishRace() {
     race = 'finished'; stopped = false; showStopBtn();
+    if (batching) return;
     const used = Array.from(runStyles).sort().join('+') || style;   // a run that swapped pairs mid-race is its own row
-    lastRun = { time: raceT, slings, style: used, intensity, seed, laps, at: Date.now() };
+    lastRun = { time: raceT, slings, style: used, intensity, seed, laps, courseKind, at: Date.now() };
     runs.push(lastRun); persist(); renderRuns(); showOverlay();
   }
 
@@ -1051,7 +1206,8 @@
     aB.set(0, 0, 0); let anyB = false;
     for (const w of W) { if (!w.pr.owned || w.style !== 'B') continue; anyB = true; vesselAccel(w, hull.position, aB); }
     if (anyB && aB.lengthSq() > 1e-4) { vf.addScaledVector(aB, dt); vf.clampLength(0, P.feltCap * P.cruise); } else vf.multiplyScalar(Math.exp(-P.releaseDamping * dt));
-    if (race === 'ready' || stance) { vf.set(0, 0, 0); boosts.length = 0; }
+    if (race === 'ready' || stance) { vf.set(0, 0, 0); boosts.length = 0; flow = 0; }
+    flow *= Math.exp(-dt / Math.max(0.05, P.dpFlowFade));
     // The slingshot: VesselTransformer.ModifyVelocity's shape — 1.5× the amount at first, fading over the duration.
     vg.set(0, 0, 0);
     for (let i = boosts.length - 1; i >= 0; i--) {
@@ -1072,19 +1228,24 @@
     if (dipoleFlying) {
       // the dipole moved the hull itself, in small steps (stepDipoleForce); add only the other channels
       tv2.copy(vg).add(vf); hull.position.addScaledVector(tv2, dt);
-      basis(); velNow.copy(fwd).multiplyScalar(speed + gravSpeed).add(tv2);
+      basis(); velNow.copy(fwd).multiplyScalar(speed + gravSpeed + flow).add(tv2);
+      if (raceStats && race === 'running') { const v = velNow.length(); raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; raceStats.flowTop = Math.max(raceStats.flowTop, flow); raceStats.gravTop = Math.max(raceStats.gravTop, gravSpeed); }
     } else {
-      tv2.copy(fwd).multiplyScalar(speed + gravSpeed).add(vg).add(vf);
+      tv2.copy(fwd).multiplyScalar(speed + gravSpeed + flow).add(vg).add(vf);
       hull.position.addScaledVector(tv2, dt);
       velNow.copy(tv2);
+      if (raceStats && race === 'running') { const v = velNow.length(); raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; raceStats.flowTop = Math.max(raceStats.flowTop, flow); raceStats.gravTop = Math.max(raceStats.gravTop, gravSpeed); }
     }
 
     if (race === 'running') {
       raceT += dt;
+      if (raceStats && threaded % 8 !== 0 && threaded > 0) raceStats.turnT += dt;   // the hairpins: from ring 1 to ring 8, the straight home left out
       const g = gates[threaded % 8], s0 = tv.subVectors(p0, g.p).dot(g.n), s1 = tv3.subVectors(hull.position, g.p).dot(g.n);
       if (s0 * s1 <= 0 && s0 !== s1) {
         const t = s0 / (s0 - s1); tv.copy(p0).lerp(hull.position, t);
-        if (tv.distanceTo(g.p) <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) finishRace(); }
+        const err = tv.distanceTo(g.p);
+        if (raceStats) { if (err <= g.mouth) { raceStats.errSum += err; raceStats.errN++; } else if (err <= 4 * g.mouth) raceStats.misses++; }
+        if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) finishRace(); }
       }
     }
     // Through the pair. A (BlackHoleVesselPull.TryCarryThrough): cross the black hole's horizon and come out of the
@@ -1172,7 +1333,7 @@
   // round you go: once the black hole is heavy enough to catch you where you pass, you stay in its grip — on the circle
   // where its pull exactly holds your speed — for as long as you hold, up to a full turn. Let go and it lets go of you:
   // you leave on the tangent, at that angle, with the boost the squeeze earned. Then the pair falls together.
-  let slingDipole = null, lastDipole = null, gravSpeed = 0;
+  let slingDipole = null, lastDipole = null, gravSpeed = 0, flow = 0;   // flow: momentum kept from earlier releases
   const squeezeT = (q) => Math.pow(clamp01(q), Math.max(0.01, P.holdExponent));
   const dipoleS = (q) => P.dpSMin + (Math.max(P.dpSMin, P.dpSMax) - P.dpSMin) * squeezeT(q);
   const dipoleRs = (q) => P.dpRsMin + (Math.max(P.dpRsMin, P.dpRsMax) - P.dpRsMin) * squeezeT(q);
@@ -1192,6 +1353,7 @@
       { rs: 0.02, held: true, dipole: { att, rep, rsR: 0.02, SR: 0 } });   // born from a point
     pairs.push(myPair);
     spawnWave('in', rep);
+    if (raceStats && race === 'running') raceStats.slings++;
     slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, reach: 0, t: 0, gain0: gravSpeed };
     slings++; runStyles.add('A');
     if (stance) stance = false;
@@ -1207,13 +1369,13 @@
     pr.rs = Math.max(0.02, dipoleRs(sd.q) * bB); pr.S = dipoleS(sd.q) * bB;
     pr.rsR = Math.max(0.02, dipoleRs(sd.q) * P.whSizeX * bW); pr.SR = dipoleS(sd.q) * P.dpWhite * bW;
     // The circle is the one at the ENGINE's speed — the speed its grip holds you at — not the fall-in speed of the moment.
-    sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed, 10), pr.rs);
+    sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed + flow, 10), pr.rs);
     sd.reach = P.dpCaptureX * sd.rc;
     // It catches you as you PASS it — within reach and off to your side rather than still dead ahead — or as soon as you
     // are inside its circle (a heavy hole bends your nose onto itself, so it would never get off to your side).
     if (!sd.captured && !stopped) {
       basis(); tv.subVectors(pr.att, hull.position); const d = tv.length();
-      if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); }
+      if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); if (raceStats) { raceStats.catches++; raceStats.reachSum += d; raceStats.rcSum += sd.rc; raceStats.rcMin = Math.min(raceStats.rcMin, sd.rc); } }
     }
   }
   function releaseDipole(auto) {
@@ -1224,10 +1386,27 @@
     if (!auto && !stopped && sd.captured && race === 'running' && gates.length) {
       tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
       const off = Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI;
-      if (off <= P.needleCone) { if (liveStyles) styleBump('styleNeedle', P.needleStep, 'clean release'); else { styleFlash = 1.6; styleFlashCol = '#e8ecff'; styleFlashText = 'CLEAN RELEASE (tick Live to let it raise Needle)'; } }
+      if (off <= P.needleCone) { if (raceStats) raceStats.clean++; if (liveStyles) styleBump('styleNeedle', P.needleStep, 'clean release'); else { styleFlash = 1.6; styleFlashCol = '#e8ecff'; styleFlashText = 'CLEAN RELEASE (tick Live to let it raise Needle)'; } }
     }
-    const kick = Math.max(speed, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
-    if (kick > 0) boosts.push({ dir: fwd.clone(), amp: kick, t: 0, dur: P.dpBoostSeconds });
+    // The kick scales with the speed you are carrying, and part of it STAYS as momentum (flow) — so a chain of slings
+    // stacks, up to the cap, and fades only slowly. The rest is the classic punch that fades over the boost time.
+    // dpKickSweep > 0: the kick is earned by going round — none if it never caught you, the full kick only after that
+    // many degrees (0 = the round-6 rule: every release kicks, even a tap the moment it catches you).
+    const earned = P.dpKickSweep > 0 ? (sd.captured ? Math.min(1, sd.sweep * 180 / Math.PI / P.dpKickSweep) : 0) : 1;
+    const kick = earned * Math.max(speed + flow, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
+    const keep = clamp01(P.dpCarry) * kick;
+    flow = Math.max(flow, Math.min(P.dpFlowCap * P.cruise, flow + keep));
+    if (kick - keep > 0) boosts.push({ dir: fwd.clone(), amp: kick - keep, t: 0, dur: P.dpBoostSeconds });
+    if (raceStats && sd.captured && race === 'running') raceStats.sweepSum += sd.sweep;
+    if (raceStats && race === 'running') {   // the world it bent: field prisms inside the black hole's reach at the release
+      const pr = sd.pair, inf = Math.min(P.bhMaxInfluence, Math.sqrt(pr.S * GM_PER_STRENGTH / Math.max(1e-3, P.bhInfluenceFloor))), i2 = inf * inf;
+      let n = 0; for (let i = 0; i < NF; i++) { const j = i * 3, dx = bh[j] - pr.att.x, dy = bh[j + 1] - pr.att.y, dz = bh[j + 2] - pr.att.z; if (dx * dx + dy * dy + dz * dz <= i2) n++; }
+      raceStats.prisms += n; raceStats.released++;
+    }
+    if (raceStats && sd.captured && race === 'running' && gates.length) {   // how close to the next ring the nose was at the release
+      tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
+      raceStats.relSum += Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI; raceStats.relN++;
+    }
     lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
     slingFlash = 1.6; slingDipole = null;
   }
@@ -1248,9 +1427,9 @@
     dipoleFlying = true;
     const n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n;
     for (let i = 0; i < n; i++) {
-      dipoleSubstep(pr, h); basis(); hull.position.addScaledVector(fwd, (speed + gravSpeed) * h);
+      dipoleSubstep(pr, h); basis(); hull.position.addScaledVector(fwd, (speed + gravSpeed + flow) * h);
       tv.subVectors(hull.position, pr.att); const rA = tv.length();
-      if (sd.captured) { sd.sweep += rPrev.angleTo(tv); rPrev.copy(tv); }
+      if (sd.captured) { sd.sweep += rPrev.angleTo(tv); rPrev.copy(tv); if (raceStats && race === 'running') raceStats.gripT += h; }
       if (rA > 2 * Math.max(sd.rc, pr.rs)) pr.gFar = gravSpeed;     // the speed you had before any dive into the black hole
       if (rA <= pr.rs && portal.A) { dipoleCarry(pr); break; }
     }
@@ -1277,7 +1456,7 @@
     aD.addScaledVector(tv, -pr.SR * GM_PER_STRENGTH / (q * Math.sqrt(q)));
     aD.clampLength(0, P.dpAccelCap);
     basis();
-    const v = Math.max(speed + gravSpeed, 5), along = aD.dot(fwd);
+    const v = Math.max(speed + gravSpeed + flow, 5), along = aD.dot(fwd);
     gravSpeed = Math.max(-Math.max(0, speed - 8), Math.min(4 * P.cruise, gravSpeed + along * dt));
     if (sd.captured) gravSpeed *= Math.exp(-P.dpGrip * dt);   // in its grip the engine holds your speed
     aPerp.copy(aD).addScaledVector(fwd, -along);
@@ -1463,17 +1642,53 @@
     playMode = !!on; document.body.classList.toggle('play', playMode);
     if (playMode) {
       if (mode !== 'fly') setMode('fly');
-      const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;   // real fullscreen where the browser allows it; the fixed layout covers the rest
-      if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } }
-      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
+      requestFull();   // real fullscreen where the browser allows it; the fixed layout covers the rest
     } else {
       const ex = document.exitFullscreen || document.webkitExitFullscreen;
       if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } }
       touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0;
     }
-    lastW = lastH = 0; resize(); hideTip(true);
+    lastW = lastH = 0; resize(); hideTip(true); showOverlay();
   }
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && playMode && !document.webkitFullscreenElement) { /* left real fullscreen: keep the fixed layout */ } lastW = lastH = 0; resize(); });
+  // ================= platform =================
+  // Two questions: which HOST runs the studio (shell) and on what DEVICE. Today the shell is always 'web'; a native
+  // host — the Prisma light studio — sets window.__studioHost = { shell: 'prisma', device: 'pc' | 'phone' } before this
+  // page's script runs, and the same switch below shapes the interface. The device decides the controls: a PC flies
+  // with a gamepad or keyboard, a phone (or tablet) with the touch sticks and trigger handles. The Layout select
+  // overrides the guess for this browser (e.g. to preview the phone layout on a PC).
+  const PLAT_KEY = 'stoat-studio-layout';
+  function detectPlatform() {
+    // A host may also say it by the page's hash: Prisma's STUDIOS page opens stoat.html#prisma (a file page cannot be handed a variable).
+    const host = window.__studioHost || (/^#prisma\b/.test(location.hash) ? { shell: 'prisma' } : {});
+    const ua = navigator.userAgent || '', mq = (q) => { try { return window.matchMedia(q).matches; } catch (e) { return false; } };
+    const uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile === true) || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(ua)
+      || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS reports itself as a Mac
+    const touchOnly = mq('(pointer: coarse)') && !mq('(any-pointer: fine)');   // a touchscreen laptop still has a fine pointer: a PC
+    const device = host.device === 'pc' || host.device === 'phone' ? host.device : uaMobile || touchOnly ? 'phone' : 'pc';
+    return { shell: host.shell || 'web', device, why: host.device ? 'host' : uaMobile ? 'mobile browser' : touchOnly ? 'touch-only screen' : 'mouse / trackpad' };
+  }
+  const PLATFORM = detectPlatform();
+  let layoutPref = lsGet(PLAT_KEY, 'auto'), layout = 'pc';
+  function applyPlatform(first) {
+    layout = layoutPref === 'pc' || layoutPref === 'phone' ? layoutPref : PLATFORM.device;
+    document.body.classList.toggle('dev-pc', layout === 'pc'); document.body.classList.toggle('dev-phone', layout === 'phone');
+    $('platName').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell === 'prisma' ? 'Prisma' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'phone' : 'PC') + ' (' + PLATFORM.why + ')' + (layout !== PLATFORM.device ? ' — showing the ' + layout + ' layout' : '');
+    $('platLayout').value = layoutPref;
+    $('playBtn').textContent = '📱 Fly with touch';
+    if (layout === 'phone' && first) setPlayMode(true);          // a phone opens straight into the touch layout
+    if (layout === 'pc' && playMode) setPlayMode(false);
+    showOverlay();
+  }
+  $('platLayout').addEventListener('change', (e) => { layoutPref = e.target.value; lsSet(PLAT_KEY, layoutPref); applyPlatform(false); if (layout === 'phone' && !playMode) setPlayMode(true); });
+  // Real fullscreen needs a user gesture, so a phone that opened in the touch layout asks on its first touch.
+  $('touchUI').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement && !document.webkitFullscreenElement) requestFull(); }, { capture: true });
+  function requestFull() {
+    const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;
+    if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } }
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
+  }
+  $('tPage').addEventListener('click', () => setPlayMode(false));
   $('playBtn').addEventListener('click', () => setPlayMode(true));
   $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', () => { if (race === 'running' && !stopped) return; startRace(); });
@@ -1516,8 +1731,191 @@
     lastInput = inp;
     return inp;
   }
-  let lastInput = null;
+  let lastInput = null, lastBatch = null;
   function swapStyle() { setStyle(style === 'A' ? 'B' : 'A'); swapFlash = 1.6; }
+
+  // ================= the AI pilot (the sim lab) =================
+  // It flies through the same dual-stick mix and analog triggers a player does — no shortcuts. Steering: a pursuit
+  // point a little before the next ring along its normal, so it threads rings square; full throttle bar what yaw
+  // costs on the shared x axes; roll keeps the hull upright. Sling: lay the pair on the side of the turn, hold, release
+  // when the nose is on the next ring (a clean release), or give up when the hole never catches.
+  let aiOn = false, simSpeed = 1, aiRepeat = true, camMode = 'chase', batching = false, aiRestartT = 0;
+  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null };
+  function aiRand() { let t = (ai.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+  let raceStats = null;
+  function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0 }; }
+  const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
+  const qInv = new THREE.Quaternion(), aiLoc = new V3(), aiOff = new V3(), aiAim = new V3();
+  function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
+  function aiInput(dt) {
+    const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
+    if (mode === 'fly' && race === 'ready' && !batching) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
+    if (mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
+    if (race !== 'running' || stopped) { lastInput = inp; trackHold('L', 0, true, dt); trackHold('R', 0, true, dt); return inp; }
+    basis();
+    const g = gates[threaded % 8], g2 = gates[(threaded + 1) % 8];
+    const d = hull.position.distanceTo(g.p);
+    const tgt = tv3.copy(g.p).addScaledVector(g.n, -Math.min(70, d * 0.35));
+    const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
+    const rate = Math.max(0.2, P.pitchYaw * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
+    const sd = slingDipole, gripped = !!(sd && sd.captured);
+    let yawCmd = Math.max(-1, Math.min(1, yawErr / (rate * tau))), pitchCmd = Math.max(-1, Math.min(1, pitchErr / (rate * tau)));
+    // The turn still to make, in 3D, and where it lies around the nose: phi = 0 is straight out the right wing, ±π the left.
+    const turnDeg = Math.acos(Math.max(-1, Math.min(1, -loc.z / Math.max(1e-6, loc.length())))) * 180 / Math.PI;
+    const phi = Math.atan2(loc.y, loc.x), bankErr = Math.abs(phi) < Math.PI / 2 ? phi : phi - Math.sign(phi) * Math.PI;
+    // Bank-to-sling: the pair is always laid out along the wings, so a skilled pilot first ROLLS until the turn it needs
+    // lies off one wing (a climb becomes a turn to the side), then lays the pair and flies straight into the catch —
+    // steering away before the hole has you only flies you out of its reach. In the grip the hole turns you; let it.
+    if (ai.phase === 'bank' || gripped) { yawCmd = 0; pitchCmd = 0; }
+    else if (ai.phase === 'hold' && sd && sd.rc > 0 && P.aiNoise < 0.5) {   // (a rookie keeps steering for the ring: its classic miss)
+      // laid, not caught yet: aim to pass the black hole ON its circle — straight past it at a fast hull's tiny circle
+      // never comes within reach, and turning for the ring flies you out of it
+      const att = sd.pair.att; aiOff.subVectors(hull.position, att); aiOff.addScaledVector(fwd, -aiOff.dot(fwd));
+      if (aiOff.lengthSq() < 1e-6) aiOff.copy(right);
+      aiAim.copy(att).addScaledVector(aiOff.normalize(), sd.rc * 0.9);
+      const la = localOf(aiAim), ye = Math.atan2(la.x, -la.z), pe = Math.atan2(la.y, Math.hypot(la.x, la.z));
+      yawCmd = la.z < 0 ? Math.max(-1, Math.min(1, ye / (rate * tau))) : 0; pitchCmd = la.z < 0 ? Math.max(-1, Math.min(1, pe / (rate * tau))) : 0;
+    }
+    const rollCmd = ai.phase === 'bank' ? Math.max(-1, Math.min(1, 2.2 * bankErr)) : ai.phase === 'hold' ? 0 : Math.max(-1, Math.min(1, -1.2 * right.dot(Y)));
+    const sx = easeInv(yawCmd);                                   // the sum of the x axes; their difference is throttle
+    if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
+    let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
+    inp.R.y = Math.max(-1, Math.min(1, (b + r) / 2)); inp.L.y = Math.max(-1, Math.min(1, (b - r) / 2));
+    // ---- the sling ----
+    ai.t += dt;
+    const useSling = P.aiSling > 0.5 && style === 'A' && slingMode === 'dipole';
+    if (ai.phase === 'cruise') {
+      if (useSling && !(myPair && myPair.alive) && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
+        // a rookie (aiNoise) squeezes off the mark, lets go off the mark and lays a beat late; a perfect pilot does none of it
+        const n = clamp01(P.aiNoise);
+        if (ai.wait <= 0) ai.wait = 0.001 + n * aiRand() * 1.2;
+        ai.wait -= dt;
+        if (ai.wait <= 0) { ai.phase = turnDeg > 12 ? 'bank' : 'lay'; ai.t = 0; ai.wait = 0; }
+      }
+    }
+    if (ai.phase === 'bank' && (Math.abs(bankErr) < 0.2 || ai.t > 1.2)) ai.phase = 'lay';
+    if (ai.phase === 'lay') {
+      const n = clamp01(P.aiNoise);
+      const side = turnDeg > 12 ? (Math.abs(phi) < Math.PI / 2 ? 'R' : 'L') : (Math.atan2(localOf(g2.p).x, -localOf(g2.p).z) >= 0 ? 'R' : 'L');
+      ai.side = side; ai.q = Math.max(0.05, Math.min(1, P.aiQ + n * (aiRand() - 0.5) * 0.9)); ai.cone = P.aiCone + n * aiRand() * 45;
+      ai.phase = 'hold'; ai.t = 0;
+    }
+    if (ai.phase === 'cruise') {
+      // (cruise: steer for the ring — above)
+    } else if (ai.phase === 'hold') {
+      const off = Math.acos(Math.max(-1, Math.min(1, tv.subVectors(g.p, hull.position).normalize().dot(fwd)))) * 180 / Math.PI;
+      const lost = !(myPair && myPair.alive && slingDipole);
+      // let go as the nose stops closing on the ring (the best heading this lap round), not only inside a fixed cone —
+      // at a tight circle's swing rate a narrow cone is a frame or two wide and a miss costs a whole lap round
+      const turned = gripped && ai.prevOff != null && off > ai.prevOff && ai.prevOff <= Math.max(ai.cone, 30);
+      ai.prevOff = gripped ? off : null;
+      if (lost && ai.t > 0.2) ai.phase = 'cruise';
+      else if ((gripped && (off <= ai.cone || turned) && (!(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
+    }
+    const trig = ai.phase === 'hold' ? Math.max(0.06, ai.q) : 0;
+    inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
+    trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+    lastInput = inp;
+    return inp;
+  }
+  // The five tests. Every preset (and a no-sling baseline) flies the same course, flat out, without drawing:
+  //  · a SKILLED pilot at several squeezes (its best run is kept) — race time, average and top speed, momentum, how
+  //    close to the next ring its nose was at each release, and the tightest circle it was held on;
+  //  · a ROOKIE (aiNoise 0.8, a few seeds) — the share of its slings that were caught, and its race time.
+  // Each column names the style that should win it.
+  function raceOnce() {
+    spawn(); startRace(); hideOverlay();
+    let t = 0; const h = 1 / 60;
+    while (race === 'running' && t < 400) { simStep(h, aiInput(h), false); t += h; }
+    const s = raceStats;
+    return { finished: race === 'finished', time: raceT, top: s.top, gravTop: s.gravTop, prisms: s.released ? s.prisms / s.released : NaN, avg: s.dist / Math.max(1e-3, raceT), flowTop: s.flowTop, slings: s.slings, catches: s.catches, clean: s.clean,
+      err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, sweepDeg: s.sweepSum * 180 / Math.PI, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin };
+  }
+  function batchPresets() { return [{ name: 'No sling', w: {}, noSling: true }, { name: 'Balanced', w: {} }].concat(STYLES.map((st) => ({ name: st.name, w: { [st.key]: 1 } }))); }
+  function runBatch(qs, opts) {
+    opts = opts || {};
+    const saveBP = Object.assign({}, BP), saveLive = liveStyles, saveMode = mode, saveKind = courseKind, rows = [];
+    batching = true; liveStyles = false; if (mode !== 'fly') setMode('fly');
+    const onCourse = (k) => { if (courseKind !== k) { courseKind = k; buildCourse(); } };
+    const seeds = opts.seeds || [11, 23, 37];
+    for (const pr of (opts.presets || batchPresets())) {
+      for (const st of STYLES) BP[st.key] = pr.w[st.key] != null ? pr.w[st.key] : 0.5;
+      BP.aiSling = pr.noSling ? 0 : 1;
+      const row = { preset: pr.name, circuit: [], hairpin: [], rookie: [] };
+      for (const kind of ['circuit', 'hairpin']) {
+        onCourse(kind);
+        for (const q of (pr.noSling ? [0] : qs)) { BP.aiQ = q; BP.aiNoise = 0; recomputeP(); ai.seed = 1; row[kind].push(Object.assign({ q }, raceOnce())); }
+      }
+      onCourse('circuit');
+      if (!pr.noSling) for (const sd of seeds) { BP.aiQ = 0.5; BP.aiNoise = 0.8; recomputeP(); ai.seed = sd; row.rookie.push(raceOnce()); }
+      rows.push(row);
+    }
+    Object.assign(BP, saveBP); liveStyles = saveLive; recomputeP(); refreshAllOuts(); batching = false;
+    onCourse(saveKind);
+    if (saveMode !== 'fly') setMode(saveMode); spawn();
+    return rows;
+  }
+  // Each column is the best a SKILLED pilot gets when going for that one thing (over the squeezes tried), except the
+  // rookie's, which is the average of its seeds. A column owned by a style names it.
+  const fin = (list) => list.filter((r) => r.finished);
+  const bestOf = (list, f, lo) => { let b = null; for (const r of list) { const v = f(r); if (isNaN(v) || !isFinite(v)) continue; if (!b || (lo ? v < b.v : v > b.v)) b = { v, r }; } return b; };
+  const BATCH_COLS = [
+    { key: 'avg', label: 'avg speed, circuit', win: 'max', for: 'Comet', get: (w) => bestOf(fin(w.circuit), (r) => r.avg), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'top', label: 'top speed', win: 'max', for: 'Flare', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.top), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'ring', label: 'ring error, hairpins', win: 'min', for: 'Needle', get: (w) => bestOf(fin(w.hairpin), (r) => r.err, true), fmt: (b) => b.v.toFixed(1) + ' u' },
+    { key: 'rookie', label: 'rookie slings caught', win: 'max', for: 'Anchor', get: (w) => { let s = 0, c = 0; for (const r of w.rookie) { s += r.slings; c += r.catches; } return s ? { v: c / s } : null; }, fmt: (b) => Math.round(100 * b.v) + '%' },
+    { key: 'prisms', label: 'prisms pulled per sling', win: 'max', for: 'Maelstrom', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.prisms), fmt: (b) => b.v.toFixed(0) },
+    { key: 'grav', label: 'gravity speed', win: 'max', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.gravTop), fmt: (b) => '+' + b.v.toFixed(0) + ' u/s' },
+    { key: 'reach', label: 'caught from', win: 'max', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.reach), fmt: (b) => b.v.toFixed(0) + ' u' },
+    { key: 'time', label: 'circuit 2 laps', win: 'min', get: (w) => bestOf(fin(w.circuit), (r) => r.time, true), fmt: (b) => fmtTime(b.v) + ' <small>q ' + b.r.q.toFixed(1) + '</small>' },
+    { key: 'hair', label: 'hairpins 2 laps', win: 'min', get: (w) => bestOf(fin(w.hairpin), (r) => r.time, true), fmt: (b) => fmtTime(b.v) + ' <small>q ' + b.r.q.toFixed(1) + '</small>' },
+    { key: 'flow', label: 'momentum', win: 'max', get: (w) => bestOf(w.circuit, (r) => r.flowTop), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'rtime', label: 'rookie 2 laps', win: 'min', get: (w) => { const f = fin(w.rookie); return f.length ? { v: f.reduce((a, r) => a + r.time, 0) / f.length, dnf: w.rookie.length - f.length } : null; }, fmt: (b) => fmtTime(b.v) + (b.dnf ? ' (' + b.dnf + ' DNF)' : '') },
+  ];
+  function batchWinners(rows) {
+    const out = {};
+    for (const c of BATCH_COLS) {
+      let bv = NaN, bn = null;
+      for (const r of rows) { if (r.preset === 'No sling') continue; const g = c.get(r); if (!g) continue; if (isNaN(bv) || (c.win === 'min' ? g.v < bv : g.v > bv)) { bv = g.v; bn = r.preset; } }
+      out[c.key] = bn;
+    }
+    return out;
+  }
+  function batchTable(rows) {
+    const win = batchWinners(rows);
+    const col = (name) => { const c = (STYLE_BY_KEY['style' + name] || {}).col; return !c || c === '#e8ecff' ? 'var(--fg)' : c; };   // Needle's white reads on the dark stage only
+    let h = '<table class="runs batch"><thead><tr><th>Style</th>';
+    for (const c of BATCH_COLS) h += '<th>' + c.label + (c.for ? '<br><span style="color:' + col(c.for) + ';font-weight:400">' + c.for + '\'s</span>' : '') + '</th>';
+    h += '</tr></thead><tbody>';
+    for (const r of rows) {
+      h += '<tr><td style="color:' + col(r.preset) + '">' + r.preset + '</td>';
+      for (const c of BATCH_COLS) { const g = c.get(r); h += '<td' + (win[c.key] === r.preset ? ' class="win" style="color:' + col(r.preset) + '"' : '') + '>' + (g ? c.fmt(g) : '—') + '</td>'; }
+      h += '</tr>';
+    }
+    h += '</tbody></table>';
+    const owned = BATCH_COLS.filter((c) => c.for).map((c) => '<span style="color:' + col(c.for) + '">' + c.for + '</span> ' + (win[c.key] === c.for ? 'wins' : 'loses (' + (win[c.key] || '—') + ' wins)') + ' ' + c.label);
+    return h + '<p class="src">Same seed and intensity as the Flight card. Skilled pilot: squeezes ' + (lastBatchQs || []).join(', ') + ' on both courses; each column keeps its best. Rookie: squeeze 0.5 ± 0.36, late lays, sloppy releases, 3 seeds on the circuit. ' + owned.join(' · ') + '.</p>';
+  }
+  function batchSummary(rows) {   // plain numbers, for scripts
+    const out = {};
+    for (const r of rows) { out[r.preset] = {}; for (const c of BATCH_COLS) { const g = c.get(r); out[r.preset][c.key] = g ? +g.v.toFixed(3) : null; } }
+    return out;
+  }
+  let lastBatchQs = null;
+  let statsClock = 0;
+  function aiStatsText() {
+    const s = raceStats; if (!s) return 'Not flying yet.';
+    const avg = raceT > 0 ? s.dist / raceT : 0;
+    return 'Race ' + fmtTime(raceT) + ' · rings ' + threaded + '/' + 8 * laps + ' · now ' + velNow.length().toFixed(0) + ' u/s · top ' + s.top.toFixed(0) + ' · avg ' + avg.toFixed(0) + ' u/s\n' +
+      'slings ' + s.slings + ' · caught ' + s.catches + ' · clean releases ' + s.clean + ' · ring error ' + (s.errN ? (s.errSum / s.errN).toFixed(1) : '—') + ' u · missed ' + s.misses + (lastRun ? '\nlast finished: ' + fmtTime(lastRun.time) : '');
+  }
+  // the free camera: drag to orbit the Stoat, wheel to zoom
+  const freeCam = { yaw: 2.6, pitch: 0.35, dist: 90 };
+  let freeDrag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (mode !== 'fly' || camMode !== 'free' || playMode) return; freeDrag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointermove', (e) => { if (!freeDrag) return; freeCam.yaw -= (e.clientX - freeDrag.x) * 0.008; freeCam.pitch = Math.max(-1.3, Math.min(1.3, freeCam.pitch + (e.clientY - freeDrag.y) * 0.006)); freeDrag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { freeDrag = null; });
+  canvas.addEventListener('wheel', (e) => { if (mode !== 'fly' || camMode !== 'free') return; e.preventDefault(); freeCam.dist = Math.max(25, Math.min(900, freeCam.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
 
   // ================= camera =================
   const camLook = new V3(); let snapCam = true;
@@ -1530,12 +1928,16 @@
   function updateCamera(dt) {
     if (mode === 'fly') {
       basis();
-      const want = tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
-      const look = tv2.copy(hull.position).addScaledVector(fwd, 40).addScaledVector(up, 3);
+      const want = camMode === 'follow' ? tv.set(0, 22, 62).applyQuaternion(hull.quaternion).add(hull.position) : tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
+      const look = tv2.copy(hull.position).addScaledVector(fwd, camMode === 'follow' ? 60 : 40).addScaledVector(up, 3);
+      if (camMode === 'free') {   // orbit the Stoat: drag to turn, wheel to zoom
+        want.set(Math.sin(freeCam.yaw) * Math.cos(freeCam.pitch), Math.sin(freeCam.pitch), Math.cos(freeCam.yaw) * Math.cos(freeCam.pitch)).multiplyScalar(freeCam.dist).add(hull.position);
+        look.copy(hull.position);
+      }
       // In the black hole's grip it sits square off your side, out of a chase camera's view: swing out and up on the
       // far side of the circle and look between you and it, so the hole you are going round stays on screen.
       const sd = slingDipole;
-      camGrip += ((sd && sd.captured ? 1 : 0) - camGrip) * (1 - Math.exp(-3 * dt));
+      camGrip += ((sd && sd.captured && camMode !== 'free' ? 1 : 0) - camGrip) * (1 - Math.exp(-3 * dt));
       if (camGrip > 0.001 && (sd || lastGripAtt)) {
         if (sd) { lastGripAtt.copy(sd.pair.att); lastGripR = sd.rc; }
         const out = tv3.subVectors(hull.position, lastGripAtt); const d = Math.max(out.length(), 1e-3); out.divideScalar(d);
@@ -1544,9 +1946,10 @@
         const gl = new V3().copy(hull.position).lerp(lastGripAtt, 0.45).addScaledVector(fwd, 0.25 * R);
         want.lerp(gw, camGrip); look.lerp(gl, camGrip);
       }
-      const k = snapCam ? 1 : 1 - Math.exp(-7 * dt);
+      const k = snapCam ? 1 : 1 - Math.exp(-(camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) * dt);
       cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
-      cam.up.copy(up); cam.lookAt(camLook);
+      if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
+      cam.lookAt(camLook);
     } else {
       if (orbit.auto) orbit.yaw += dt * 0.12;
       for (const [k, c] of [['A', camA], ['B', camB]]) {
@@ -1841,6 +2244,11 @@
         c.textAlign = 'left'; c.font = font(9.5, 600); c.fillStyle = st.col; c.fillText(st.name, x0, y);
       });
     }
+    if (aiOn && mode === 'fly') {   // the sim lab: say who is flying, and as what
+      const lead = STYLES.filter((st) => P[st.key] > 0.6).map((st) => st.name), noisy = P.aiNoise > 0.05;
+      c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = lead.length === 1 ? STYLE_BY_KEY['style' + lead[0]].col : ink;
+      c.fillText('AI PILOT' + (noisy ? ' (ROOKIE)' : '') + ' · ' + (lead.length ? lead.join(' + ').toUpperCase() : 'BALANCED') + (courseKind === 'hairpin' ? ' · HAIRPINS' : ''), cw / 2, ch - pad - 4 * sc);
+    }
     if (styleFlash > 0) { c.globalAlpha = Math.min(1, styleFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = styleFlashCol; c.fillText(styleFlashText, cw / 2, ch * 0.62); c.globalAlpha = 1; }
     if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
     if (myPair && myPair.alive && myPair.dipole && !slingDipole && !(slingFlash > 0)) {
@@ -1863,7 +2271,7 @@
     c.fillStyle = ink; c.fillRect(pad, by, bw * Math.min(1, speed / (P.cruise * 2.5)), 5 * sc);
     c.fillStyle = style === 'A' ? colA : colB; c.fillRect(pad, by + 7 * sc, bw * Math.min(1, Math.max(0, pull) / (P.cruise * 2.5)), 5 * sc);
     c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(pad + bw * 0.4, by - 3 * sc, 1.5, 17 * sc);
-    c.font = font(10, 500); c.fillStyle = dim; c.fillText('engine / ' + (dip ? 'gravity ' + (pull >= 0 ? '+' : '') : style === 'A' ? 'slingshot ' : 'pull ') + Math.round(pull) + ' u/s', pad + bw + 8 * sc, by + 10 * sc);
+    c.font = font(10, 500); c.fillStyle = dim; c.fillText('engine / ' + (dip ? 'gravity ' + (pull >= 0 ? '+' : '') : style === 'A' ? 'slingshot ' : 'pull ') + Math.round(pull) + ' u/s' + (dip && flow > 0.5 ? ' · momentum +' + Math.round(flow) : ''), pad + bw + 8 * sc, by + 10 * sc);
     // bottom-right: the two triggers
     const trig = (side, x) => {
       const h = holds[side], r = 22 * sc, y = ch - pad - r - 6 * sc;
@@ -1882,7 +2290,7 @@
     };
     if (!playMode) { trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc); }
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
-    c.fillText(playMode && touch.used ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
+    c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
     swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); styleFlash = Math.max(0, styleFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
@@ -1925,8 +2333,19 @@
   function showOverlay() {
     const box = $('overlayBox');
     if (mode === 'fly' && stopped) { hideOverlay(); return; }
-    if (mode !== 'fly' || race === 'running') { hideOverlay(); return; }
+    if (mode !== 'fly' || race === 'running' || aiOn) { hideOverlay(); return; }
     $('overlay').hidden = false;
+    if (layout === 'phone' && !playMode) {   // the phone's page view: flying happens in the touch layout
+      box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2><p>Fly in the touch layout: hold the phone sideways, thumbs on the two sticks, index fingers on the LT / RT handles. The settings are below the stage.</p>' +
+        '<div class="btns"><button class="pick primary" type="button" id="flyTouchBtn">📱 Fly with touch</button></div>';
+      $('flyTouchBtn').addEventListener('click', () => setPlayMode(true));
+      return;
+    }
+    if (race === 'ready' && layout === 'phone') {   // in the touch layout: short, and Start lives in the top bar
+      box.innerHTML = '<h2>Slingshot · intensity ' + intensity + ' · ' + laps + (laps > 1 ? ' laps' : ' lap') + '</h2>' +
+        '<p>Thread the 8 rings in order (amber is next). <b>Thumbs</b>: the sticks. <b>Index fingers</b>: drag <b>LT</b> / <b>RT</b> down to lay a pair (deeper = stronger), hold to go round, lift to slingshot out.</p><p>Tap <b>Start</b> up top.</p>';
+      return;
+    }
     if (race === 'ready') {
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
@@ -1935,7 +2354,9 @@
           : style === 'A'
           ? '<p>Pair <b style="color:#b9a4ff">A</b>: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the attractor appears on that side; <b>hold</b> and you orbit it (squeeze harder, tighter circle); <b>let go</b> to slingshot out along your nose.</p>'
           : '<p>Pair <b style="color:#6fe3d0">B</b>: squeeze <kbd>LT</kbd> or <kbd>RT</kbd> and let go to lay the crystal pair across your nose, the attractor on that side.</p>') +
-        '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine() +
+        (layout === 'phone'
+          ? ''
+          : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
         '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button></div>';
       $('startBtn').addEventListener('click', startRace);
     } else {
@@ -2008,12 +2429,12 @@
       const rs = Pv.dpRsMin + (Math.max(Pv.dpRsMin, Pv.dpRsMax) - Pv.dpRsMin) * tp(q0), rsR = rs * Pv.whSizeX;
       const GM = S * Pv.bhGmPerStrength, GMr = GM * Pv.dpWhite, speed = Pv.cruise;
       const holdR = (v) => { const k = GM / Math.max(1, v * v), b = 2 * rs + k; return 0.5 * (b + Math.sqrt(Math.max(0, b * b - 4 * rs * rs))); };
-      let x = 0, y = 0, hx = 0, hy = 1, g = 0, gFar = 0;
+      let x = 0, y = 0, hx = 0, hy = 1, g = 0, gFar = 0, fl = 0;
       let pressed = false, released = false, cap = false, sweep = 0, bent = 0, rc = 0, reach = 0, prevA = 0, dove = false, alive = false;
       let bx = 0, by = 0, wx = 0, wy = 0, mx = 0, my = 0, ax0 = 0, ay0 = 0, h0 = 0, closeT = 0, boostT = -1, kick = 0, bdx = 0, bdy = 0, relX = 0, relY = 0, gone = false;
       const frames = []; let nextRec = 0;
       const release = (t) => {
-        released = true; kick = speed * (Pv.dpBoostMin + (Pv.dpBoostMax - Pv.dpBoostMin) * tp(q0)); boostT = t; bdx = hx; bdy = hy; relX = x; relY = y;
+        released = true; kick = speed * (Pv.dpBoostMin + (Pv.dpBoostMax - Pv.dpBoostMin) * tp(q0)); fl = Math.min(Pv.dpFlowCap * Pv.cruise, clamp01(Pv.dpCarry) * kick); kick -= fl; boostT = t; bdx = hx; bdy = hy; relX = x; relY = y;
         mx = (bx + wx) / 2; my = (by + wy) / 2; ax0 = wx - bx; ay0 = wy - by; h0 = Math.hypot(ax0, ay0) / 2; ax0 /= 2 * h0 || 1; ay0 /= 2 * h0 || 1; closeT = 0;
       };
       for (let t = 0; t < T; t += dt) {
@@ -2053,7 +2474,8 @@
         } else g *= Math.exp(-dt / Math.max(0.05, Pv.dpAssistFade));
         let vb = 0;
         if (boostT >= 0 && t - boostT < Pv.dpBoostSeconds) vb = (kick / 1.5) * (Math.cos(Math.PI * (t - boostT) / Pv.dpBoostSeconds) / 2 + 1);
-        x += (hx * (speed + g) + bdx * vb) * dt; y += (hy * (speed + g) + bdy * vb) * dt;
+        fl *= Math.exp(-dt / Math.max(0.05, Pv.dpFlowFade));
+        x += (hx * (speed + g) + bdx * (vb + fl)) * dt; y += (hy * (speed + g) + bdy * (vb + fl)) * dt;
         if (held && cap) { const a = Math.atan2(y - by, x - bx); let da = a - prevA; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU; sweep += Math.abs(da); prevA = a; }
         if (held) {
           const dB = Math.hypot(x - bx, y - by);
@@ -2597,26 +3019,35 @@
   // ---------- what counts as a clean release ----------
   SCENES.cone = {
     make: () => ({}), period: () => 5.4,
-    draw(c, W, H, tt, st, view, Pv) {
+    draw(c, W, H, tt, st, view, Pv, cfg) {
       previewBg(c, W, H, 59);
-      const cx = W / 2, cy = H - 22, L = H - 50, ringA = -Math.PI / 2 - 0.25, cone = Pv.needleCone * Math.PI / 180;
+      const coneDeg = cfg && cfg.key === 'aiCone' ? Pv.aiCone : Pv.needleCone;
+      const cx = W / 2, cy = H - 22, L = H - 50, ringA = -Math.PI / 2 - 0.25, cone = coneDeg * Math.PI / 180;
       c.fillStyle = 'rgba(232,236,255,0.10)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, L, ringA - cone, ringA + cone); c.closePath(); c.fill();
       const rx = cx + Math.cos(ringA) * L, ry = cy + Math.sin(ringA) * L;
       c.strokeStyle = '#ffb347'; c.lineWidth = 2; c.beginPath(); c.ellipse(rx, ry, 10, 6, 0, 0, TAU); c.stroke(); txt(c, 'next ring', rx + 14, ry + 4, '#ffb347', 9.5);
       const tries = [-50, -32, -18, -8, 0, 10, 22, 38, 55], k = Math.min(tries.length, Math.floor(tt / 0.55) + 1);
       let clean = 0;
       for (let i = 0; i < k; i++) {
-        const a = ringA + tries[i] * Math.PI / 180, ok = Math.abs(tries[i]) <= Pv.needleCone; if (ok) clean++;
+        const a = ringA + tries[i] * Math.PI / 180, ok = Math.abs(tries[i]) <= coneDeg; if (ok) clean++;
         c.strokeStyle = ok ? '#7dffb0' : 'rgba(154,166,214,0.6)'; c.lineWidth = ok ? 2.2 : 1.4;
         c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * L * 0.8, cy + Math.sin(a) * L * 0.8); c.stroke();
       }
       ship(c, cx, cy, 0, 1, '#ffd27a', 6);
-      txt(c, clean + ' of ' + k + ' releases count as clean (±' + Math.round(Pv.needleCone) + '°)', 6, 13, '#e8ecff', 10);
+      txt(c, clean + ' of ' + k + ' releases inside ±' + Math.round(coneDeg) + '°', 6, 13, '#e8ecff', 10);
     },
   };
 
   // ---------- what each number means, in plain words ----------
   const TIPS = {
+    aiSling: { scene: 'sling', d: 'Whether the AI pilot uses the dipole sling at all. 0 flies the course on steering and throttle alone — the baseline every style is measured against.', lo: 'No slings.', hi: 'Slings whenever it can.' },
+    aiQ: { scene: 'sling', cfg: { qFromValue: true, key: 'aiQ' }, d: 'How deep the AI squeezes the trigger when it lays a pair: the black hole\'s strength. The batch race tries several and keeps each style\'s best.', lo: 'Light holes: fewer catches.', hi: 'Heavy holes: caught from far, wide circles.' },
+    aiCone: { scene: 'cone', over: {}, d: 'The AI lets go once its nose is within this many degrees of the next ring — its release precision. Tight cones mean clean, Needle-earning releases but longer holds.', lo: 'Waits for a near-perfect exit.', hi: 'Lets go early and rough.' },
+    aiGiveUp: { scene: 'sling', cfg: { q: 0.3, hold: 6 }, d: 'If the hole has not caught the AI after this many seconds, it lets go anyway (and still gets the release boost).', lo: 'Abandons a miss quickly.', hi: 'Hangs on hoping to be caught.' },
+    aiMinRing: { scene: 'sling', d: 'The AI lays a pair on a straight when the next ring is at least this far away, so a sling never throws it past a ring it is about to thread.', lo: 'Slings right up to the ring.', hi: 'Slings only on long straights.' },
+    aiTurn: { scene: 'sling', d: 'The AI also lays a pair when the turn to the next ring is sharper than this, however close the ring is — the sling as a turning tool, which is what a hairpin needs.', lo: 'Slings on gentle bends too.', hi: 'Slings only on hairpins.' },
+    aiNoise: { scene: 'sling', d: 'How sloppy the AI is. A rookie squeezes too lightly or too hard, lays the pair at the wrong moment and lets go late or early. Use it to see which settings forgive mistakes.', lo: 'A perfect pilot.', hi: 'A rookie.' },
+    aiTau: { scene: 'turn', cfg: { mode: 'yaw' }, d: 'How hard the AI steers: the time it aims to close its heading error in. Smaller is snappier, but can overshoot.', lo: 'Snappy steering.', hi: 'Lazy, smooth steering.' },
     styleComet: { scene: 'sling', cfg: { q: 0.7, release: 180 }, at: [0.1, 0.9], d: 'Comet — velocity. For players who never want to slow down: the sling keeps more of the speed gravity gives you, catches and lets go quicker, the release boost lasts longer and the pair is laid further ahead. Fed by Time crystals (Time = rate and mobility). Watch the dot spacing after the release: wider = faster.', lo: 'Steadier and slower: the sling soaks up speed.', hi: 'Keeps its speed and launches longer.' },
     styleNeedle: { scene: 'sling', cfg: { q: 0.5 }, at: [0.1, 0.9], d: 'Needle — precision. For players who want exact control: finer control at light squeezes, it catches you only once the hole is beside you, smaller crisper holes, a firm snap onto the circle and more turns allowed so you choose your exit angle. Earned by skill, not crystals: each clean release raises it.', lo: 'Looser, blunter control.', hi: 'Crisper and more exact.' },
     styleAnchor: { scene: 'sling', cfg: { q: 0.35, over: { dpSide: 70 } }, at: [0.1, 0.9], d: 'Anchor — control. For players who want it forgiving: it catches you from further away, settles you gently and holds your speed steady, it is hard to dive into by accident, the pair lingers and the screen effects are calmer. Fed by Space crystals (Space = reach and presence). The preview passes wide, to show the reach.', lo: 'Less forgiving: pass close or miss.', hi: 'Forgiving: it reaches out and holds you.' },
@@ -2657,6 +3088,10 @@
     dpBoostMax: { scene: 'sling', cfg: { q: 1, release: 180 }, d: 'The boost you get on release after a FULL squeeze, as a multiple of your speed. Watch the spacing of the dots after the release: wider = faster.', lo: 'A buried sling throws you out more gently.', hi: 'A buried sling launches you harder.' },
     dpBoostSeconds: { scene: 'sling', cfg: { q: 0.7, release: 180 }, d: 'How long the release boost lasts. It starts at its strongest and fades out over this time.', lo: 'A shorter punch.', hi: 'A longer, rolling push.' },
     dpKeySqueeze: { scene: 'sling', cfg: { qFromValue: true }, d: 'Keyboard only: how deep a squeeze a key gives (a key cannot be half pressed). The preview uses this squeeze.', lo: 'Keys give a lighter, weaker black hole.', hi: 'Keys give a stronger black hole.' },
+    dpCarry: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How much of the release kick you KEEP as momentum instead of a punch that fades. Kept momentum stacks over a chain of slings — this is how a skilled pilot climbs past cruise and stays there.', lo: 'All punch: fast for a moment, then back to cruise.', hi: 'All momentum: a smaller jump that lasts.' },
+    dpFlowFade: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How long kept momentum takes to fade (to about a third). Sling again before it is gone and the next kick builds on it.', lo: 'Momentum bleeds off quickly.', hi: 'Momentum lingers — chains stack high.' },
+    dpFlowCap: { scene: 'sling', cfg: { q: 1, release: 180, T: 9 }, d: 'The most momentum you can carry, as a multiple of cruise speed. It is the ceiling a perfect chain of slings climbs to.', lo: 'A low ceiling.', hi: 'A high ceiling: 60 cruise + 1.5 × 60 = 150 u/s of lasting speed.' },
+    dpKickSweep: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'Whether the release kick has to be EARNED by going round the hole. At 0 every release kicks, so a skilled pilot can tap — caught and let go at once — for a free boost. Above 0, the kick grows with how far round you went and is full only after this many degrees; a release before it catches you gives none.', lo: 'Every release kicks (a tap works).', hi: 'Only a long swing round pays.' },
     dpAssistFade: { scene: 'sling', cfg: { q: 0.35, hold: 2.6 }, d: 'Speed that gravity gave you while you were NOT caught (a fast bend past the hole) fades away over about this long after you let go.', lo: 'The gravity speed is gone sooner.', hi: 'You carry the gravity speed for longer.' },
     dpAccelCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A safety ceiling on how hard the pair can pull or push you, so a pass right at the horizon cannot fling you absurdly. Mostly reached only very close in — the preview passes close.', lo: 'Close passes are softened: less violent, less turning.', hi: 'Close passes get more of the full, violent pull.' },
     dpTurnCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A ceiling on how fast gravity may swing your nose round, in radians per second (6.3 = a whole turn every second). The preview passes close.', lo: 'Your nose swings round more slowly: you skid wider.', hi: 'Your nose can whip round faster.' },
@@ -2845,7 +3280,7 @@
     recomputeP(); refreshAllOuts();
     const course = i >= 0 ? GROUP_TYPES[grp].types[i].course : grp === 'flight' ? { intensity: 2, laps: 2 } : null;
     if (course && (course.intensity !== intensity || course.laps !== laps)) {
-      intensity = course.intensity; laps = course.laps; $('intensity').value = String(intensity); $('laps').value = String(laps);
+      intensity = course.intensity; laps = course.laps; $('intensity').value = String(intensity); $('laps').value = String(laps); markIntensity();
       buildCourse(); spawn(); renderRuns();
     }
     persist(); markTypes();
@@ -2988,17 +3423,31 @@
     $('liveStyles').checked = liveStyles;
     $('liveStyles').addEventListener('change', (e) => { liveStyles = e.target.checked; persist(); });
   }
-  $('intensity').value = String(intensity); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
-  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); });
+  $('aiOn').addEventListener('change', (e) => { aiOn = e.target.checked; aiRestartT = 0; if (aiOn) { if (mode !== 'fly') setMode('fly'); if (race !== 'running') { spawn(); startRace(); } } else { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); } showOverlay(); });
+  $('camMode').addEventListener('change', (e) => { camMode = e.target.value; snapCam = true; });
+  $('simSpeed').addEventListener('change', (e) => { simSpeed = parseFloat(e.target.value) || 1; });
+  $('batchBtn').addEventListener('click', () => {
+    $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
+    setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
+  });
+  $('intensity').value = String(intensity); $('courseKind').value = courseKind; $('courseKind').addEventListener('change', (e) => { courseKind = e.target.value; buildCourse(); spawn(); persist(); renderRuns(); markIntensity(); }); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
+  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); markIntensity(); });
+  function markIntensity() {
+    for (const b of document.querySelectorAll('#intensitySeg button')) b.setAttribute('aria-pressed', String(+b.dataset.i === intensity));
+    const L = CIRCUIT_LADDER[intensity - 1];
+    $('intensityNote').textContent = courseKind === 'hairpin' ? 'Hairpins: the hop between rings shrinks with intensity (190 → 120 u) and the rings climb and drop more.' : 'Intensity ' + intensity + ' · ' + L.name + ': ' + L.d;
+  }
+  for (const b of document.querySelectorAll('#intensitySeg button')) b.addEventListener('click', () => { const e = $('intensity'); e.value = b.dataset.i; e.dispatchEvent(new Event('change')); });
+  markIntensity();
   $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); markTypes(); });
   $('invertY').addEventListener('change', (e) => { invertY = e.target.checked; persist(); });
   $('newCourse').addEventListener('click', () => { seed = 1 + Math.floor(Math.random() * 9999); buildCourse(); spawn(); persist(); renderRuns(); });
   $('domain').addEventListener('change', (e) => { domainKey = e.target.value; const c = DOMAIN[domainKey]; domainMat.color.setHex(c); domainMat.emissive.setHex(c); trailMat.color.setHex(c); trailMat.emissive.setHex(c); persist(); });
 
-  function courseKey(r) { return r.seed + '/' + r.intensity + '/' + r.laps; }
-  function bestFor(s) { const key = courseKey({ seed, intensity, laps }); const t = runs.filter((r) => r.style === s && courseKey(r) === key).map((r) => r.time); return t.length ? Math.min.apply(null, t) : null; }
+  function courseKey(r) { return (r.courseKind || 'circuit') + '/' + r.seed + '/' + r.intensity + '/' + r.laps; }
+  function bestFor(s) { const key = courseKey({ courseKind, seed, intensity, laps }); const t = runs.filter((r) => r.style === s && courseKey(r) === key).map((r) => r.time); return t.length ? Math.min.apply(null, t) : null; }
   function renderRuns() {
-    const key = courseKey({ seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
+    const key = courseKey({ courseKind, seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
     const tb = $('runs').tBodies[0];
     if (!here.length) { tb.innerHTML = '<tr><td class="empty" colspan="2">No finished runs on this course yet (seed ' + seed + ', intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ').</td></tr>'; return; }
     const row = (s) => { const rs = here.filter((r) => r.style === s); const name = s === 'A' ? 'Black + white hole' : 'Crystal (archived)'; if (!rs.length) return '<tr><td>' + name + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>' + name + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
@@ -3009,14 +3458,14 @@
   let db = null, me = '', remote = null;
   const LOCAL_LOG = 'stoat-studio-log';
   let localLog = lsGet(LOCAL_LOG, []);
-  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) o[k] = BP[k]; return { liveStyles, style, slingMode, portalA: portal.A, portalB: portal.B, intensity, laps, seed, changed: o }; }
+  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) o[k] = BP[k]; return { liveStyles, style, slingMode, portalA: portal.A, portalB: portal.B, courseKind, intensity, laps, seed, changed: o }; }
   function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + BP[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
   const SLING_KEYS = ['holdExponent', 'holdRamp'];
   const A_KEYS = ['orbitWide', 'orbitTight', 'orbitHorizons', 'boostMin', 'boostMax', 'boostSeconds', 'closeSpeed', 'closeRamp', 'holdCap', 'followRate', 'radialRate', 'vesselTide'];
   const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
-  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'closeSpeed', 'closeRamp'];
+  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'closeSpeed', 'closeRamp'];
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
   function currentChoice(topic) {
@@ -3029,7 +3478,7 @@
       case 'White hole': return 'White hole' + typeName('WH') + changedText(WH_KEYS);
       case 'Portal': return 'Pair ' + style + ': carry the Stoat through = ' + (portal[style] ? 'yes' : 'no');
       case 'Lope & body': return 'Plated body, body-only lope' + typeName('lope') + changedText(['lopeAmp', 'lopeRate', 'lopeArch', 'lopeSquash']);
-      case 'Course': return 'Intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
+      case 'Course': return (courseKind === 'hairpin' ? 'Hairpins, i' : 'Circuit, i') + 'ntensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
       case 'Controls': return 'Game dual-stick mix' + typeName('flight') + (invertY ? ', Y inverted' : '') + changedText(['cruise', 'pitchYaw', 'roll']);
       case 'Race result': return lastRun ? 'Pair ' + lastRun.style + ': ' + fmtTime(lastRun.time) + ', ' + lastRun.slings + ' slings (intensity ' + lastRun.intensity + ', seed ' + lastRun.seed + ')' : 'No finished race yet';
       default: return '';
@@ -3119,7 +3568,8 @@
   // ================= sizing + loop =================
   let lastW = 0, lastH = 0;
   function resize() {
-    const w = canvas.clientWidth || 960, h = playMode ? (canvas.clientHeight || Math.round(w * 10 / 16)) : Math.round(w * 10 / 16);
+    const fill = playMode || (document.body.classList.contains('ide') && window.innerWidth > 900);   // the editor layout: the stage fills its cell
+    const w = canvas.clientWidth || 960, h = fill ? (canvas.clientHeight || Math.round(w * 10 / 16)) : Math.round(w * 10 / 16);
     if (w === lastW && h === lastH) return; lastW = w; lastH = h;
     renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
   }
@@ -3127,23 +3577,147 @@
 
   buildRail(); buildTypes(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
   let last = performance.now();
-  function frame(now) {
-    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
-    resize();
+  // One step of the world: everything but drawing. The frame runs it once (or several times when the sim lab runs
+  // fast); the sim lab's batch runs it thousands of times without drawing at all.
+  function simStep(dt, inp, withBodies) {
     GM_PER_STRENGTH = P.bhGmPerStrength; HORIZON_PER_STRENGTH = P.bhHorizonPerStrength;
-    const inp = pollInput(dt);
     simT += dt; waves = waves.filter(waveAlive); stepStyles(dt); spinCrystals(dt);
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     collectWells();
     if (mode === 'fly') { if (!stopped) stepFly(dt, inp); else watchStep(dt); } else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
-    stepBodies(dt); writeBodies();
-    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
-    renderAll(); drawHud(dt);
+    if (withBodies) stepBodies(dt);
+  }
+  let manualClock = false;   // a recorder steps the world itself, frame by frame (window.__stoatStudio.tick)
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (manualClock) { requestAnimationFrame(frame); return; }
+    advance(dt, now);
     requestAnimationFrame(frame);
   }
+  let manualNow = 0;
+  function advance(dt, now) {
+    resize();
+    if (aiOn && mode === 'fly') {
+      const n = Math.max(1, Math.round(simSpeed)), h = dt * simSpeed / n;
+      for (let i = 0; i < n; i++) simStep(h, aiInput(h), i === n - 1);
+    } else simStep(dt, pollInput(dt), true);
+    statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
+    writeBodies();
+    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
+    renderAll(); drawHud(dt);
+  }
+  // ================= the editor layout: tabbed docks and mini windows =================
+  // Like an engine editor: the stage fills the middle, every settings group is a tab in the right dock, the records sit
+  // in tabs under the stage, and any tab pops out (⧉) into a floating mini window you can drag, resize and dock back.
+  // The scorecard opens as its own window. Splitters resize the docks. All of it is remembered in this browser.
+  const IDE_KEY = 'stoat-studio-ide';
+  const ide = Object.assign({ R: 'sling', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
+  const saveIde = () => lsSet(IDE_KEY, ide);
+  const DOCK_TABS = {
+    R: [['sling', 'Sling', ['mainCard', 'grp-sling', 'grp-A', 'grp-B']], ['dipole', 'Dipole', ['grp-D']], ['ai', 'Sim lab', ['grp-ai']], ['styles', 'Styles', ['grp-style']],
+      ['bh', 'Black hole', ['grp-BH']], ['wh', 'White hole', ['grp-WH']], ['life', 'Life', ['grp-pair', 'grp-life']], ['course', 'Course', ['grp-flight']], ['lope', 'Lope', ['grp-lope']], ['archive', 'Archive', ['archive']]],
+    B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['controls', 'Controls', ['keysSec']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
+  };
+  const TAB = {};   // key -> { dock, title, btn, pane, win }
+  let winZ = 60;
+  function buildDocks() {
+    const keys = document.querySelector('section[aria-labelledby="keysH"]'), log = document.querySelector('section.card.log');
+    keys.id = 'keysSec'; log.id = 'logSec'; keys.classList.add('lower-sec');
+    const sw = document.createElement('div'); sw.id = 'scoreWrap'; sw.className = 'card';
+    sw.innerHTML = '<p class="src" id="scoreEmpty">No scorecard yet: press <b>Score all five styles</b> in the Sim lab tab.</p>';
+    sw.appendChild($('batchOut'));
+    const rail = document.querySelector('aside.rail'), main = document.querySelector('.stage .main'), lower = document.querySelector('.lower');
+    const docks = { R: rail, B: document.createElement('div') };
+    const els = { scoreWrap: sw };   // take every piece first: the rail is emptied below and some pieces live in it
+    for (const d of ['R', 'B']) for (const [, , ids] of DOCK_TABS[d]) for (const id of ids) if (!els[id]) els[id] = $(id);
+    docks.B.className = 'dock'; docks.B.id = 'dockB'; docks.B.setAttribute('aria-label', 'Records');
+    rail.classList.add('dock'); rail.id = 'dockR';
+    for (const d of ['R', 'B']) {
+      const box = docks[d], tabs = document.createElement('div'), panes = document.createElement('div');
+      tabs.className = 'tabs'; tabs.setAttribute('role', 'tablist'); panes.className = 'panes'; panes.style.minHeight = '0'; panes.style.display = 'grid';
+      for (const [key, title, ids] of DOCK_TABS[d]) {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = title; btn.setAttribute('role', 'tab'); btn.dataset.tab = key;
+        const pane = document.createElement('div'); pane.className = 'pane'; pane.id = 'pane-' + key; pane.setAttribute('role', 'tabpanel');
+        const bar = document.createElement('div'); bar.className = 'panebar';
+        bar.innerHTML = '<button type="button" title="Open this tab in its own window">⧉ Pop out</button>';
+        bar.firstChild.addEventListener('click', () => openWindow(key));
+        pane.appendChild(bar);
+        for (const id of ids) { const el = els[id]; if (!el) continue; if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }
+        btn.addEventListener('click', () => { if (TAB[key].win) { raiseWindow(key); return; } selectTab(key); });
+        tabs.appendChild(btn); panes.appendChild(pane);
+        TAB[key] = { dock: d, title, btn, pane, panes, win: null };
+      }
+      box.textContent = ''; box.appendChild(tabs); box.appendChild(panes);
+    }
+    // splitters, and the bottom dock under the stage
+    const sv = document.createElement('div'); sv.className = 'split v'; sv.setAttribute('aria-hidden', 'true');
+    const sh = document.createElement('div'); sh.className = 'split h'; sh.setAttribute('aria-hidden', 'true');
+    rail.parentNode.insertBefore(sv, rail);
+    const vp = $('viewport'); main.textContent = ''; main.appendChild(vp); main.appendChild(sh); main.appendChild(docks.B);
+    if (lower) lower.remove();
+    bindSplit(sv, 'railW', (x, r) => r.right - x, 280, 720);
+    bindSplit(sh, 'dockH', (y, r) => r.bottom - y, 110, 620);
+    document.body.classList.add('ide'); applyIdeSizes();
+    selectTab(ide.R); selectTab(ide.B);
+    for (const k in ide.wins) if (ide.wins[k] && ide.wins[k].open && TAB[k]) openWindow(k);
+    $('scoreShow').addEventListener('click', () => openWindow('score'));
+  }
+  function applyIdeSizes() { document.body.style.setProperty('--railW', ide.railW + 'px'); document.body.style.setProperty('--dockH', ide.dockH + 'px'); lastW = lastH = 0; }
+  function bindSplit(el, key, measure, lo, hi) {
+    el.addEventListener('pointerdown', (e) => {
+      const host = key === 'railW' ? el.parentNode : el.parentNode; el.classList.add('drag'); try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
+      const move = (ev) => { const r = host.getBoundingClientRect(); ide[key] = Math.round(Math.max(lo, Math.min(hi, measure(key === 'railW' ? ev.clientX : ev.clientY, r)))); applyIdeSizes(); };
+      const up = () => { el.classList.remove('drag'); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); saveIde(); };
+      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); e.preventDefault();
+    });
+  }
+  function selectTab(key) {
+    const t = TAB[key]; if (!t) return;
+    if (t.win) { raiseWindow(key); return; }
+    for (const k in TAB) { const o = TAB[k]; if (o.dock !== t.dock || o.win) continue; const on = k === key; o.btn.setAttribute('aria-selected', String(on)); o.pane.hidden = !on; }
+    ide[t.dock] = key; saveIde(); hideTip(true);
+  }
+  function firstDocked(dock, not) { for (const k in TAB) if (TAB[k].dock === dock && !TAB[k].win && k !== not) return k; return null; }
+  function openWindow(key) {
+    const t = TAB[key]; if (!t) return;
+    if (t.win) { raiseWindow(key); return; }
+    const g = ide.wins[key] || {}, vw = window.innerWidth, vh = window.innerHeight;
+    const w = Math.min(g.w || (key === 'score' ? 1240 : 420), vw - 16), h = Math.min(g.h || (key === 'score' ? 420 : 520), vh - 16);
+    const win = document.createElement('div'); win.className = 'fwin'; win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', t.title);
+    win.style.width = w + 'px'; win.style.height = h + 'px';
+    win.style.left = Math.max(8, Math.min(vw - w - 8, g.x != null ? g.x : (vw - w) / 2)) + 'px'; win.style.top = Math.max(8, Math.min(vh - 60, g.y != null ? g.y : 70)) + 'px';
+    win.innerHTML = '<div class="fbar"><b></b><button type="button" data-a="dock" title="Put it back in its tab">⇲ Dock</button><button type="button" data-a="close" title="Close (back to its tab)">✕</button></div>';
+    win.querySelector('b').textContent = t.title;
+    t.pane.querySelector('.panebar').hidden = true; t.pane.hidden = false; win.appendChild(t.pane);
+    document.body.appendChild(win); t.win = win; t.btn.classList.add('floating'); t.btn.setAttribute('aria-selected', 'false');
+    win.querySelector('[data-a="dock"]').addEventListener('click', () => dockWindow(key, true));
+    win.querySelector('[data-a="close"]').addEventListener('click', () => dockWindow(key, false));
+    win.addEventListener('pointerdown', () => raiseWindow(key));
+    const bar = win.querySelector('.fbar');
+    bar.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      const ox = e.clientX - win.offsetLeft, oy = e.clientY - win.offsetTop; try { bar.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
+      const move = (ev) => { win.style.left = Math.max(0, Math.min(window.innerWidth - 80, ev.clientX - ox)) + 'px'; win.style.top = Math.max(0, Math.min(window.innerHeight - 40, ev.clientY - oy)) + 'px'; };
+      const up = () => { bar.removeEventListener('pointermove', move); bar.removeEventListener('pointerup', up); remember(key); };
+      bar.addEventListener('pointermove', move); bar.addEventListener('pointerup', up); e.preventDefault();
+    });
+    if (window.ResizeObserver) new ResizeObserver(() => remember(key)).observe(win);
+    if (ide[t.dock] === key) { const k = firstDocked(t.dock, key); if (k) selectTab(k); }
+    raiseWindow(key); remember(key);
+  }
+  function remember(key) { const w = TAB[key].win; if (!w) return; ide.wins[key] = { x: w.offsetLeft, y: w.offsetTop, w: w.offsetWidth, h: w.offsetHeight, open: true }; saveIde(); }
+  function raiseWindow(key) { const w = TAB[key].win; if (w) w.style.zIndex = String(++winZ); }
+  function dockWindow(key, select) {
+    const t = TAB[key]; if (!t.win) return;
+    t.pane.querySelector('.panebar').hidden = false; t.panes.appendChild(t.pane); t.win.remove(); t.win = null; t.btn.classList.remove('floating');
+    if (ide.wins[key]) ide.wins[key].open = false; saveIde();
+    if (select || ide[t.dock] === key) selectTab(key); else t.pane.hidden = true;
+  }
+  buildDocks();
+  applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 

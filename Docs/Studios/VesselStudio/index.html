@@ -107,9 +107,9 @@
       <a class="bay" href="stoat.html" style="--accent: var(--stoat)">
         <canvas id="pvStoat" width="640" height="300" aria-hidden="true"></canvas>
         <div style="display:grid;gap:8px">
-          <div class="name"><b>Stoat</b><span class="chip" style="color:var(--stoat)">design studio · round 11</span></div>
-          <p>The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, five types per setting group, a decision log.</p>
-          <div class="spec"><span>Sling</span><b>strength 0.5–12 by squeeze</b><span>Styles</span><b>Comet · Needle · Anchor · Maelstrom · Flare</b><span>Status</span><b>design not yet in the game</b></div>
+          <div class="name"><b>Stoat</b><span class="chip" style="color:var(--stoat)">design studio · round 14</span></div>
+          <p>The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, and an AI sim lab that races every style and scores it. Editor layout with tabs and pop-out windows; touch sticks on a phone.</p>
+          <div class="spec"><span>Sling</span><b>strength 0.5–12 by squeeze</b><span>Styles</span><b>Comet · Needle · Anchor · Maelstrom · Flare</b><span>Sim lab</span><b>AI pilot · scorecard · cameras</b><span>Status</span><b>round-4 sling in the game (Slingshot)</b></div>
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
@@ -207,7 +207,7 @@
   // ---- the studio agent ----
   const SPEC = {
     Squirrel: 'Squirrel (racer). Flight: speed = throttle x 60 u/s x boost (boost 1-5x, decays 0.3/s); pitch/yaw 120 deg/s, roll 130 deg/s. Drift on LT (analog): turn x1 -> x1.8, grip -> 0.25 (course lags nose). RT: Boost Ring = ring of 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s x Mass (1 -> 0.5, floor 0.35). Elements 0-10, L5 unlock at 5: Charge = Crystal Joust (overtake steals petals x1 -> x2.5; L5 Shepherd nourishes own lifeforms); Mass = Boost Ring cooldown (L5 Twin Rings); Space = Steal reach, skimmer 15 -> 30 (L5 Iron Grip steals shielded prisms keeping the shield); Time = Skimming energy +0.1/prism x1 -> x2 (L5 Live Wire: danger prisms x10). Studio types: Shipped, Thief, Speedster, Skimmer, Brawler, Maxed.',
-    Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases).',
+    Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Part of each release kick is kept as lasting momentum (share 0.4, fades over 5 s, up to 1.5 x cruise), so a chain of slings stacks. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases).',
   };
   let sample = null, db = null, user = null, me = '';
   (async function connect() {
