@@ -514,6 +514,7 @@ Tell the user what ran, one line per job.
 |---|---|---|
 | A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; Amoebius STUDIOS ▸ OPEN IN AMOEBIUS |
 | B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius STUDIOS (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
+| A2. **Third Eye** (Unity) | The game itself, watched from a second camera while you play: the studio's Chase / Follow / Free cameras and its AI-thinking colours on the game's own AI | `FrogletTools > AI > Third Eye`; `/vessel-ai` §4 |
 | C. Vessel Test Range | The real mode scenes with AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look | Unity + Amoebius; **plan only**: `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` |
 
 C is shared infrastructure: one dev-only harness for every vessel, installed into the real mode
