@@ -177,7 +177,7 @@
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
         </div>
-        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><button class="btn" id="stopBtn" type="button">Pause</button></div>
+        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><button class="btn" id="stopBtn" type="button" hidden aria-pressed="false" title="Stop: your hull and the race clock halt, the stage and cameras stay live (P)">■ Stop</button></div>
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Skim Race, intensity 1</h2>
@@ -186,7 +186,7 @@
               <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
               <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
               <span>Free cam</span><span>drag to look · I J K L move · U O down/up</span>
-              <span></span><span>Enter start · R reset · P pause · C next camera</span>
+              <span></span><span>Enter start · R reset · P stop / resume · C next camera</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
           </div>
@@ -196,7 +196,7 @@
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
           <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
-          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">Pause</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">■ Stop</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
@@ -730,7 +730,7 @@
     $('courseInfo').textContent = 'I' + S.course + ' · ' + COURSE_INFO[S.course] + ' · ' + W.track.target + ' crystals';
   }
   function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
-  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Stopped' : 'Resumed'); }
   function finishRace() {
     race = 'finished';
     const order = W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.crystals - a.crystals);
@@ -849,7 +849,9 @@
     const rows = [['speed', (P.speed * P.slow).toFixed(1) + ' u/s'], ['boost', P.boost.toFixed(2) + '×'], ['drift', Math.round(P.lastDrift * 100) + '%'], ['slip', (Math.acos(clamp(P.course.dot(fwd), -1, 1)) * 180 / Math.PI).toFixed(1) + '°'], ['crystals', P.crystals + ' / ' + W.track.target], ['skims', String(P.skims)], ['hull resets', String(P.resets)], ['stolen', String(P.stolen)], ['rings', String(P.rings)], ['mistakes', P.spec.ai ? String(P.mistakes) : '—'], ['AI state', P.spec.ai ? P.aiState : 'player'], ['skimmer', (P.m.skimR * 2).toFixed(0) + ' u']];
     const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
-    $('stopBtn').textContent = paused ? 'Resume' : 'Pause'; $('tStop').textContent = paused ? 'Resume' : 'Pause';
+    // the universal studio Stop (/vessel-studio D18): same label, key and place in every studio
+    $('stopBtn').hidden = race !== 'running'; $('stopBtn').textContent = paused ? '▶ Resume' : '■ Stop'; $('stopBtn').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tStop').textContent = paused ? '▶ Resume' : '■ Stop';
     $('tStart').hidden = race === 'running' && !paused; $('tStart').textContent = paused ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
     while (W.events.length) say(W.events.shift());
   }

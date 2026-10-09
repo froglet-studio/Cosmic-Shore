@@ -265,7 +265,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <div class="tbar"><button type="button" class="tbtn" id="tStart">Start</button><button type="button" class="tbtn ghost" id="tStop">Stop</button><button type="button" class="tbtn ghost" id="tBack">Back</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
+        <div class="tbar"><button type="button" class="tbtn" id="tStart">Start</button><button type="button" class="tbtn ghost" id="tStop">■ Stop</button><button type="button" class="tbtn ghost" id="tBack">Back</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
@@ -2022,7 +2022,7 @@
     if (!playMode) return;
     $('tStart').textContent = stopped ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
     $('tStart').hidden = race === 'running' && !stopped;
-    $('tStop').hidden = !(race === 'running' || stopped); $('tStop').textContent = stopped ? 'Resume' : 'Stop';
+    $('tStop').hidden = !(race === 'running' || stopped); $('tStop').textContent = stopped ? '▶ Resume' : '■ Stop';   // the universal studio Stop (/vessel-studio D18)
     if (stopped) $('tStart').hidden = true;
   }
   function pollInput(dt) {
