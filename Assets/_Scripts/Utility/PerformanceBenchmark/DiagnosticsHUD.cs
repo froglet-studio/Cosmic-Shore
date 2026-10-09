@@ -241,6 +241,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RegisterCommand(ABComparison.CommandName, HandleABCommand);
             RegisterCommand(ProfilerCapture.CommandName, HandleProfCommand);
             RegisterCommand(CellStateReport.CommandName, CellStateReport.Handle);
+            RegisterCommand(BurstProbe.CommandName, BurstProbe.Handle);
         }
 
         void OnDestroy()
@@ -253,6 +254,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(ABComparison.CommandName);
             UnregisterCommand(ProfilerCapture.CommandName);
             UnregisterCommand(CellStateReport.CommandName);
+            UnregisterCommand(BurstProbe.CommandName);
             _abStopRequested = true;
 #if UNITY_EDITOR
             _profStopRequested = true;
@@ -597,6 +599,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 framesRequested = options.frames,
                 profilerWasRecording = _profWasRecording,
                 deepProfiling = ProfilerFrameReader.DeepProfiling,
+                environment = RunEnvironment.Capture(),
             };
 
             // 1) Record: wait for N NEW frames, so the capture describes now rather than whatever

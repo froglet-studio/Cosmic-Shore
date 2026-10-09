@@ -490,6 +490,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The press row. Its own conditional method so the bound/unbound lookup and the
         /// string are compiled out of release builds and skipped for every pilot but the local one.</summary>
+        // The message is formatted INSIDE, after DiagnosticsWanted(): a [Conditional] method's
+        // arguments are still evaluated in the editor and in development builds, and presses arrive
+        // every few frames on every vessel (AI and autopilot included), so a `$"{ie}: ..."` built at
+        // the call site allocated a string per press only to be thrown away (CLAUDE.md, logging rule).
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void ReportPressOutcome(InputEvents ie, string outcome)
+        {
+            if (!DiagnosticsWanted()) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", "press", $"{ie}: {outcome}");
+        }
+
         [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
         void ReportPress(InputEvents ie)
         {
@@ -709,11 +720,11 @@ namespace CosmicShore.Gameplay
         {
             if (vesselStatus.AutoPilotEnabled)
             {
-                ReportDiagnostic("press", $"{ie}: ignored (autopilot)");
+                ReportPressOutcome(ie, "ignored (autopilot)");
                 return;
             }
-            if (_suppressedInputs.Contains(ie)) { ReportDiagnostic("press", $"{ie}: suppressed"); return; }
-            if (IsInputMuted(ie)) { ReportDiagnostic("press", $"{ie}: muted"); return; }
+            if (_suppressedInputs.Contains(ie)) { ReportPressOutcome(ie, "suppressed"); return; }
+            if (IsInputMuted(ie)) { ReportPressOutcome(ie, "muted"); return; }
             // Unbound presses (IdleAction, the straight-line gestures) arrive every few frames,
             // so they get their own row rather than overwriting the ability that was pressed.
             ReportPress(ie);

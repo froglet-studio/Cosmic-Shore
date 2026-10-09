@@ -197,6 +197,24 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static bool IsEditorOnly(string name) =>
             name == "EditorLoop" || (name != null && name.StartsWith("EditorOnly", StringComparison.Ordinal));
 
+        /// <summary>
+        /// The scripting-invoke sample a C# job runs inside when it executes as MANAGED code
+        /// (<c>UnityEngine.CoreModule.dll!::ExecuteJobFunction.Invoke() [Invoke]</c>). A Burst-compiled
+        /// job never has one: its sample is the job name with " (Burst)" appended.
+        /// </summary>
+        public const string ManagedJobInvoke = "ExecuteJobFunction.Invoke";
+
+        /// <summary>
+        /// Managed job time per frame above which the report warns. A job written without
+        /// <c>[BurstCompile]</c> always runs managed and is usually small; a <c>[BurstCompile]</c> job runs
+        /// managed only while Burst has not compiled it yet (the Editor compiles in the background
+        /// after every script change) or could not compile it, and then costs many times its real time.
+        /// </summary>
+        public const float ManagedJobWarnMs = 0.1f;
+
+        public static bool IsManagedJobInvoke(string name) =>
+            name != null && name.IndexOf(ManagedJobInvoke, StringComparison.Ordinal) >= 0;
+
         // ── accumulation ────────────────────────────────────────────────────
 
         /// <summary>
@@ -402,6 +420,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public List<ThreadItem> top = new();
         }
 
+        /// <summary>One place on the main thread where a C# job ran as managed code.</summary>
+        [Serializable]
+        public class ManagedJobRow
+        {
+            /// <summary>The sample the job ran under: the job's own name when the main thread helped
+            /// run it inside a wait, or the calling marker when the job was <c>Run()</c> in place.</summary>
+            public string caller;
+            public string path;
+            public float avgMs, maxMs, presentPct;
+        }
+
         [Serializable]
         public class FrameStats
         {
@@ -429,6 +458,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public List<FrameRow> spikeFrameTree = new();
             public int threadSampleStride = ThreadSampleStride, threadSampledFrames;
             public List<ThreadRow> threads = new();
+            /// <summary>The conditions of a live capture (null for one exported from the Profiler window,
+            /// which cannot know them): Code Optimization, Burst and its job compiler, an attached debugger.</summary>
+            public RunEnvironment environment;
+            /// <summary>Main-thread ms/frame spent running C# jobs as managed code, and where.</summary>
+            public float managedJobMs;
+            public List<ManagedJobRow> managedJobs = new();
             public List<string> notes = new();
         }
 
@@ -502,10 +537,62 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 BuildThreads(threads, report.threads);
             }
 
+            BuildManagedJobs(acc, frames, report);
+
             if (report.deepProfiling)
                 report.notes.Add("Deep Profile was ON: every script call is instrumented and times are several times too large. Turn it off and capture again.");
             report.notes.Add("Times include the Profiler's own recording overhead - use this report to RANK rows, and diag/ab for the numbers to quote.");
             report.notes.Add("Averages are per captured frame, including frames a row did not appear in (presentPct says how often it did).");
+        }
+
+        /// <summary>
+        /// Every main-thread place a C# job ran as managed code, over the WHOLE capture (a root filter
+        /// does not hide it: it says whether the capture is trustworthy at all). Measured 2026-10-07: a
+        /// Skim Race capture taken just after a branch switch had three <c>[BurstCompile]</c> jobs running
+        /// managed, and the shell-contact query read 1.32 ms a frame against 0.08 ms in every earlier
+        /// capture of the same code. Nothing else in the report showed why.
+        /// </summary>
+        static void BuildManagedJobs(Accumulator acc, int frames, Report report)
+        {
+            var all = new List<Accumulator.Node>();
+            foreach (var r in acc.Roots) Descendants(r, all);
+
+            double sum = 0;
+            foreach (var n in all)
+            {
+                if (!IsManagedJobInvoke(n.name)) continue;
+                sum += n.sumTotal;
+                report.managedJobs.Add(new ManagedJobRow
+                {
+                    caller = n.parent != null ? n.parent.name : "",
+                    path = n.path,
+                    avgMs = (float)(n.sumTotal / frames),
+                    maxMs = n.maxTotal,
+                    presentPct = 100f * n.present / frames,
+                });
+            }
+            report.managedJobs.Sort((a, b) =>
+            {
+                int c = b.avgMs.CompareTo(a.avgMs);
+                return c != 0 ? c : string.CompareOrdinal(a.path, b.path);
+            });
+            report.managedJobMs = (float)(sum / frames);
+
+            if (report.managedJobMs >= ManagedJobWarnMs)
+            {
+                var callers = new List<string>();
+                foreach (var m in report.managedJobs)
+                    if (!callers.Contains(m.caller)) callers.Add(m.caller);
+                report.notes.Add(
+                    $"C# jobs ran as MANAGED code for {F(report.managedJobMs)} ms a frame on the main thread " +
+                    $"(under {string.Join(", ", callers)}). A [BurstCompile] job only does that while Burst has " +
+                    "not compiled it yet - the Editor compiles in the background after every script change or " +
+                    "branch switch - or when Burst cannot compile it. Those rows, and the frame time, are several " +
+                    "times too large. Capture again a minute later; if this note is still here, Burst is failing: " +
+                    "run the 'burst' console command - it prints Burst's own refusal from Editor.log (the " +
+                    "jobs it disabled and the externs it could not link). Seen 2026-10-07 for 15 hours on end: " +
+                    "two jobs called MathF.Sqrt/Sin/..., which Burst cannot link, and that disabled every job.");
+            }
         }
 
         static FrameStats Stats(IReadOnlyList<float> values)
@@ -778,6 +865,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
             if (!r.completed) sb.Append(" [INCOMPLETE]");
             if (r.deepProfiling) sb.Append(" [DEEP PROFILE ON - times inflated]");
+            if (r.managedJobMs >= ManagedJobWarnMs)
+                sb.Append($" [JOBS RAN WITHOUT BURST {F(r.managedJobMs)} ms/f - still compiling, or failing: see the note]");
             if (!string.IsNullOrEmpty(savedPath)) sb.Append($" - saved {savedPath}");
             return sb.ToString();
         }
@@ -799,6 +888,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (r.framesPickedBy == PlayerLoopName)
                 sb.AppendLine($"PlayerLoop ms:  avg {F(pl.avgMs)}  p50 {F(pl.p50Ms)}  p99 {F(pl.p99Ms)}  min {F(pl.minMs)}  max {F(pl.maxMs)}");
             sb.AppendLine($"typical frame {r.typicalFrame} ({F(r.typicalFrameMs)} ms) - spike frame {r.spikeFrame} ({F(r.spikeFrameMs)} ms) - picked by {r.framesPickedBy}");
+            if (r.environment != null) sb.AppendLine("environment " + r.environment.Describe());
             foreach (string note in r.notes) sb.AppendLine("note: " + note);
 
             sb.AppendLine();
@@ -818,6 +908,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sb.Append($"  {t.group}/{t.name}: busy {F(t.avgBusyMs)} ms, waiting {F(t.avgWaitMs)} ms ({F(t.busyPct, "F0")}% busy) -");
                 foreach (var it in t.top) sb.Append($" {it.name} {F(it.avgMs)};");
                 sb.AppendLine();
+            }
+
+            if (r.managedJobs.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"== C# JOBS THAT RAN AS MANAGED CODE ({F(r.managedJobMs)} ms/frame on the main thread) ==");
+                foreach (var m in r.managedJobs)
+                    sb.AppendLine($"  {F(m.avgMs),8}  {m.caller}  (max {F(m.maxMs)}, present {F(m.presentPct, "F0")}%)  <-  {m.path}");
             }
 
             AppendTree(sb, "== MERGED TREE (avg ms/frame: total | self | alloc KB | calls | present%) ==", r.tree);

@@ -67,10 +67,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             "LOD.Sweep",
             "LOD.Drain",
             "PrismDebris.RefreshConvergence",
+            // The shell-contact tier's Burst query (every frame). About 0.08 ms when Burst-compiled; it
+            // read 1.3 ms in a capture taken while Burst was still compiling after a branch switch, so
+            // this row is also the diag's tell for a run whose Burst jobs had not compiled yet.
+            "ShellContact.Query",
 
-            // Skim Race AI (every AI seat, every frame).
+            // Skim Race AI (every AI seat, every frame), and the two planners inside Decide that cost
+            // the most: the 20 Hz track planner (bursts) and the laid-mass guard.
             "SkimRace.Pilot.Decide",
             "SkimRace.Pilot.FillObstacles",
+            "SkimRace.Driver.TrackMpc",
+            "SkimRace.Driver.GuardMass",
         };
 
         /// <summary>The <c>diag</c> argument prefix that adds markers: <c>m=Name1,Name2</c>.</summary>

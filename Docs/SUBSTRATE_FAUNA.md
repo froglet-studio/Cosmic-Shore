@@ -380,6 +380,12 @@ Both holds are asserted.
   kernels fail them on exactly that rule), and `Tools/Build/swarm_core_harness/check_kernel_math.py` checks the
   shim's two branches agree and that the Unity branch never calls `MathF`. Still not proved: that nothing ELSE in
   the kernels trips Burst — the Burst Inspector is that proof.
+- **Also found on `ai-system` (2026-10-08), same root cause, fixed there with `(float)System.Math`
+  helpers (this branch kept `KernelMath`):** every Assembly-CSharp job is built into ONE Burst library, so this
+  failed link disabled Burst for ALL of them (`Burst is disabled for ... due to a failure to resolve one or more
+  extern methods`): the prism, AOE, LOD and cell-volume jobs ran managed too, from 10-05 until the fix. The
+  Burst Inspector compiled each job cleanly on its own and showed nothing. **Run `burst` in the console** to
+  check it in Unity: it prints Burst's refusal from Editor.log, if there is one.
 - **Burst's floats are not bit-matched.** Burst's math intrinsics may round differently from .NET's. The bit-match is
   .NET-to-.NET. Behaviour under Burst is expected to match to float rounding, not bits.
 - **The safety system was not run.** The job's `[NativeDisableParallelForRestriction]` writes (slot `Live[q]`, not

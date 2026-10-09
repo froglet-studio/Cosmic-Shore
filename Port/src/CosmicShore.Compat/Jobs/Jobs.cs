@@ -60,3 +60,17 @@ namespace Unity.Jobs
         }
     }
 }
+
+namespace Unity.Jobs.LowLevel.Unsafe
+{
+    /// <summary>
+    /// The job system's switches. The port runs every job as managed code at Schedule, so the job
+    /// compiler (Burst for jobs) is never on - matching <see cref="Unity.Burst.BurstCompiler.IsEnabled"/>.
+    /// Read by the game's diagnostics (RunEnvironment, BurstProbe); setting them changes nothing here.
+    /// </summary>
+    public static class JobsUtility
+    {
+        public static bool JobCompilerEnabled { get => false; set { } }
+        public static bool JobDebuggerEnabled { get; set; }
+    }
+}

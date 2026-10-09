@@ -71,6 +71,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public SkimRaceHandicap Handicap { get; set; }
 
+        /// <summary>
+        /// Shared by every seat so that at most one track-planner re-plan lands in a frame
+        /// (<see cref="SkimRaceAIConfigSO.TrackMpcStaggerSeats"/>). Null = no staggering: each seat
+        /// re-plans on its own clock, as a lone seat always does.
+        /// </summary>
+        public SkimRaceReplanGate ReplanGate { get; set; }
+
         Mode _mode = Mode.Idle;
         float _recoveryUntil;
         int _recoveries;
@@ -786,6 +793,11 @@ namespace CosmicShore.Gameplay
         float _nextTrack;
         float _trackYaw, _trackPitch;
         bool _trackValid;
+        bool _trackWaited;
+        /// <summary>Track-planner re-plans since <see cref="Reset"/>, and how many were held one frame
+        /// for another seat's (<see cref="ReplanGate"/>).</summary>
+        public int TrackReplans { get; private set; }
+        public int TrackWaits { get; private set; }
 
         /// <summary>
         /// Mean squared distance of a rolled-out path from the racing line (each predicted position
@@ -867,10 +879,11 @@ namespace CosmicShore.Gameplay
         void TrackMpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, bool lineMode, float now,
             ref float yaw, ref float pitch, float throttle)
         {
-            if (now >= _nextTrack)
+            if (now >= _nextTrack && !WaitForAnotherSeat())
             {
                 // Timed only when it re-plans (TrackMpcHz), so the Profiler shows the frames it lands on.
                 using var replanScope = s_TrackMpcMarker.Auto();
+                TrackReplans++;
                 _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
                 course.Project(o.Position, ref _trackHint, out _, out _);
                 float best = TrackCost(o, course, yaw, pitch, throttle, aim, lineMode) * (1f - _cfg.TrackMpcNominalBias);
@@ -887,6 +900,24 @@ namespace CosmicShore.Gameplay
             if (_trackValid) { yaw = _trackYaw; pitch = _trackPitch; }
         }
         int _trackHint = -1;
+
+        /// <summary>
+        /// True when another seat has this frame's re-plan and this seat has not already waited. It then
+        /// keeps its previous plan for one frame (<see cref="SkimRaceReplanGate"/>). It waits at most
+        /// once: next frame it re-plans whether or not that frame is free.
+        /// </summary>
+        bool WaitForAnotherSeat()
+        {
+            if (!_cfg.TrackMpcStaggerSeats || ReplanGate == null) return false;
+            if (ReplanGate.TryClaim() || _trackWaited)
+            {
+                _trackWaited = false;
+                return false;
+            }
+            _trackWaited = true;
+            TrackWaits++;
+            return true;
+        }
 
         /// <summary>
         /// The laid-mass guard. Returns true when the commanded stick was replaced because its
@@ -1241,6 +1272,7 @@ namespace CosmicShore.Gameplay
             _pickupHoldUntil = -1f;
             _nextMpc = 0f; _mpcValid = false; MpcOverrides = 0;
             _nextTrack = 0f; _trackValid = false; _trackHint = -1;
+            _trackWaited = false; TrackReplans = 0; TrackWaits = 0;
             _lookDist = 100f;
             _trackerHint = -1;
             _nextLevel = 0f; _levelValid = false; _levelHint = -1; LevelOverrides = 0;

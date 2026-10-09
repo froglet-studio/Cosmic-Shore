@@ -65,6 +65,55 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The game's Burst jobs compile again: no `MathF` externs in Burst code; `burst` reads Burst's refusal from the log (`perf/performance-optimization`, 2026-10-08)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0k): `SubstrateKernel` (SubstrateAgentJob) and `SwarmBodyPose.PoseMatrix`
+(SwarmPoseJob) call one-line `(float)System.Math` helpers instead of `MathF.Sqrt/Sin/Cos/Acos/Exp/Pow`. Those are
+InternalCalls Burst cannot link, and because every Assembly-CSharp job shares one Burst library, they ran every game
+job as managed code. `check_burst_substrate.py` and `check_burst_pose.py` fail on any other `MathF` member. The
+harness's `ReferenceStep.cs` uses the same primitives. `burst` appends Burst's refusal from the editor log
+(`BurstProbe.LogReasons`: jobs disabled, reason, unresolved InternalCalls, since the last domain reload). The prof
+managed-job note points at it.
+
+**Verified without the editor:** both gates fail on the 10-07 sources, naming exactly the six functions Editor.log
+named, and pass now. The substrate harness passes in full, with group K 100% bit-identical over 206,100 agent-steps.
+The swarm core, swarm and substrate glue type-checks, the ecology-LOD and showcase-cell harnesses pass.
+`BurstProbeTests` 4/4 on .NET, plus a mutation the reload test catches. Run against the user's 10-08 Editor.log,
+`burst` names the five disabled jobs and the six externs. unity_refcompile: player and player-dev OK; editor config
+has no errors in changed files (the 4 known old ones elsewhere). The Froglet Engine live compile builds, and its
+tests pass 1596/1596 and 352/352. Gates pass. /verify-unity was not available: not compiled in the Editor.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `BurstProbeTests` (4) and `ProfilerCaptureTests` pass.
+2. Skim Race, Play mode, F7 console: `burst` ends `Run() BURST, Schedule() BURST | log: no Burst refusal since the
+   last domain reload ...`.
+3. `diag`: `ShellContact.Query` ~0.1 ms (0.39 before). `prof`: no managed-job note; the workers' `ShellContactQueryJob`
+   rows read `(Burst)`.
+4. Menu_Main freestyle, Cell Selector > **Swarm** (`Docs/SWARM_FAUNA.md` §5), then a cell with substrate fauna
+   (the demo cell's pack, `Docs/SUBSTRATE_FAUNA.md` §7.7): swarm bodies are posed nose-first, the pack still rings
+   and strikes, and the Console has no new job errors. These two jobs never ran as Burst before, so this is their
+   first run under Burst.
+
+### 🟡 `burst` console command; `prof` records the run environment (`perf/performance-optimization`, 2026-10-08)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0j): `BurstProbe` (DiagnosticsHUD `burst`) prints Burst's
+switches, an attached debugger and the Code Optimization, then runs a `[BurstCompile(CompileSynchronously =
+true)]` probe job via `Run()` and `Schedule()` and reports `BURST` / `MANAGED` from how it actually ran (a
+`[BurstDiscard]` marker). `RunEnvironment` gains `jobCompilerEnabled` and `debuggerAttached`. Live `prof`
+reports carry `environment`. The Froglet Engine compat gains `JobsUtility`.
+
+**Verified without the editor:** `ProfilerCaptureTests` 42/42 on .NET; unity_refcompile player, player-dev
+and editor configs, no errors in the changed files; the Froglet Engine live compile builds; gates pass.
+/verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `ProfilerCaptureTests` pass.
+2. In Play mode, F7 console: `burst` prints one line ending in `probe job in Assembly-CSharp: Run() …,
+   Schedule() …`. On a healthy editor both say `BURST`.
+3. `prof`: the JSON has an `environment` block and the .txt an `environment` line.
+
+**Partly confirmed 2026-10-08:** step 2's line printed in Debug and in Release (both `MANAGED`, which led to the
+fix in the entry above). `BURST` on a healthy editor is still owed.
 ### 🔴 The Stoat's round-15 field dipole + pathfinder, and Warpline (`GameModes.Warpline = 65`) (`cece/magical-carson-9bdq8z`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md`, `Arcade/WARPLINE.md`. `/verify-unity` was NOT available in the session
@@ -504,6 +553,50 @@ edit-mode tests executed headlessly against those assemblies: `UgsRequestPolicyT
 
 ---
 
+### 🟡 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0i): `SkimRaceReplanGate` (new), shared by every
+`SkimRacePilot`, lets one AI seat's track-planner re-plan claim a frame. A seat whose frame is taken flies
+its previous plan one frame longer, never two. `SkimRaceAIConfigSO.TrackMpcStaggerSeats` (on; written into
+all four policy assets by `author_skimrace_ai_config.py`) switches it. Only the I2 policy flies the track
+planner.
+
+**Verified without the editor:** the four new `SkimRaceAITests` pass on .NET against the Unity shim
+(three mutations each fail one); simulator A/B over 400 races per arm shows no detectable change to
+racing, and on Mono AI frame cost p90/p99 falls ~38%; the Froglet Engine's live compile builds; the
+policy generator's `--check` passes. /verify-unity was not available.
+
+**Confirmed in the editor 2026-10-07 (evening):** step 1 (all `SkimRaceAITests` green) and step 3
+(`TrackMpc` p95 10.55 -> 5.28 ms in 83% of frames, `Decide` p95 11.13 -> 7.13, spike frame 1 re-plan;
+`Docs/SKIM_RACE_AI.md` §8.0j). Step 2 (racing feel) not yet reported.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `SkimRaceAITests` pass (four new ones).
+2. Skim Race I2 with 2 AI races as before: no new orbits, strikes or stalls.
+3. `diag S_SkimRace_I2 15`: `SkimRace.Driver.TrackMpc` is present in roughly TWICE the share of frames
+   it was (~70% instead of ~35%) at about HALF its p95, and `SkimRace.Pilot.Decide` p95 drops from
+   ~11 ms. A `prof` spike frame should never show `TrackMpc` with 2 calls.
+
+### 🔴 `prof` flags jobs that ran without Burst; `diag` records Code Optimization (`perf/performance-optimization`, 2026-10-07)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0h): `ProfilerCapture` reports main-thread time spent in
+`ExecuteJobFunction.Invoke` (a C# job running as managed code) as `managedJobMs` / `managedJobs`, a
+note, a console-line flag above 0.1 ms a frame, and a section in the .txt; `RunEnvironment` gains
+`codeOptimization` (`CompilationPipeline.codeOptimization` in the Editor, "Player" in a build);
+`diag` times `ShellContact.Query` by default.
+
+**Verified without the editor:** `ProfilerCaptureTests` 42/42 on .NET with `UNITY_EDITOR` defined,
+including two new tests; two mutations of the detector each fail them. The Froglet Engine's live
+compile (`DEVELOPMENT_BUILD`) builds. The `UNITY_EDITOR` branch of `RunEnvironment.Capture` (the
+`UnityEditor.Compilation` call) is compiled only by the editor. /verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `ProfilerCaptureTests` pass.
+2. Right after a script change, enter Play mode at once and run `prof`: the console line carries
+   `[JOBS RAN WITHOUT BURST ...]` and the JSON lists `ShellContactQueryJob` / `LOD.Sweep`. A minute later,
+   another `prof` does not.
+3. `diag`: the .txt's environment line reads `code Debug` or `code Release`, matching the bug icon.
+
 ### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
 
 **What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`
@@ -536,7 +629,7 @@ hold the detailed steps; this entry is the gate they all share:
       protocol 9): intended.
 - [ ] The Bug Hunt playtest list in `Docs/BUG_HUNT_HANDOFF_2026-09.md` §0.
 
-### 🔴 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
+### 🟡 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0f): `MathfNoAlloc` replaces the 7 three-value
 `Mathf.Min/Max` calls (new gate `check_mathf_params_alloc.py`); the planner's inner loops in floats
@@ -548,6 +641,11 @@ child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateMan
 **Verified without the editor:** simulator race output byte-identical on .NET and Mono;
 `SkimRaceCourseQueryTests` (5) pass on both; the Froglet Engine's live compile of runtime
 `Assets/_Scripts` builds with 0 errors and its suites pass (1569 + 352); offline gates pass.
+
+**Confirmed in the editor 2026-10-07** (`perf/performance-optimization` `df25d942f`,
+`Docs/SKIM_RACE_AI.md` §8.0h): step 1 - all five tests green (Code Optimization mode not recorded);
+step 5 - `Decide` allocates nothing, `.Query` / `.Pack` appear, Skim Race I2 went 35 -> 55 fps.
+Steps 2-4 not yet reported.
 
 **Verify in editor:**
 1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass - in BOTH
@@ -562,6 +660,30 @@ child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateMan
 4. Leave a race for the menu and start another: beams still appear (the pool survives scenes).
 5. F7 > `diag S_SkimRace_I2 15` and `prof S_SkimRace_I2`: `SkimRace.Pilot.Decide` shows ~0 GC.Alloc
    (was 840 a frame), and `SkimRace.Pilot.FillObstacles.Query` / `.Pack` appear under the pilot.
+
+### 🔴 Skim Race AI retuned across frame rates (`claude/confident-pascal-w76l2o`, 2026-10-06)
+
+**What landed.** The I1, I2 and I4 AI tuning files and the general policy were retuned with the races spread
+over 16/28/50 ms frames (62/36/20 fps) and the game's 0.04 s contact step (`skimrace-v5-i1`, `skimrace-v3-i2`,
+`skimrace-v2-i4`, `skimrace-v3-general`), because the previous files were tuned at one frame rate and raced
+4-21% slower at the others (`Docs/SKIM_RACE_AI.md` §14). Simulator, 2 AI on Hard, 20 races per cell at 120 / 62 /
+36 / 20 / 12 fps: level at 36-62 fps, better at 120 and 12 fps, I3 and I4 better at every frame rate (§14.5).
+The simulator gained `dts=` (races spread over frame times) and `ph.PhysicsStep` (contacts on the fixed step).
+The planner stagger this branch first shipped (a fixed grid with lane phase) was retired at the merge with
+`perf/performance-optimization` in favour of its `SkimRaceReplanGate` (the entry above), which also holds at
+25 fps and below; the retuned policies were re-raced under the gate (§14.5). Out of editor: real-Unity-reference
+compile 0 errors in project code; gates green.
+
+**Verify in editor**
+- [ ] Compiles; the Skim Race tests pass (`SkimRaceAITests` including the four gate tests,
+      `SkimRaceHandicapTests`, `SkimRaceTrackFingerprintTests`, `SkimRaceTeamAssignmentTests`, `SkimRaceCourseQueryTests`).
+- [ ] **Code Optimization = Release** (the bug icon, bottom right) for any timing; note which one it was.
+- [ ] Race the AI on Hard at I1, I2, I3 and I4 (you alone + 2 AI on separate teams), a few races each; the
+      recorder writes `BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl` with each race's `frameMs`. Report the AI
+      winner times WITH the frame time - a time without its frame rate cannot be compared with the simulator tables.
+- [ ] Nothing visibly odd in how the AI flies at I1 (the retune moved 23 numbers; the simulator saw no new
+      failure mode, 40/40 at 120 fps).
+- [ ] Optional, the real user test: you + a friend vs a 2-AI team on Hard (Add AI twice on one tile).
 
 ### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
 

@@ -135,6 +135,7 @@ against `window.__stoatStudio`. Its hooks:
 | 2026-10-09 | `Ys-bleeding-edge` (247 commits) and `bleeding-edge` (7) merged; this handoff |
 | 2026-10-09 | `/vessel-studio` skill and the Sync panel (Refresh, merge then delete, shared decisions; a Claude session does the git work as jobs) |
 | 2026-10-09 | `cece/magical-carson-9bdq8z` merged: Stoat studio round 15 (the field trajectory), its Unity port (`R_VesselActions/STOAT_DIPOLE.md`: field dipole on Space, pathfinder on Time) and the **Warpline** mode (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`). Their lab lessons are `L-STU-20`…`24` (renumbered from 15–19, which this branch had already used) |
+| 2026-10-09 | `ai-system` merged: the Skim Race AI retunes across frame rates (I1/I2/I4, general `skimrace-v3`), staggered planner re-plans, Burst diagnostics (`burst` console command), the `Docs/AI_SYSTEM/` docs. Its own fix for the Burst `MathF` failure was dropped for this branch's `KernelMath` fix (same root cause) |
 
 Commit messages carry the detail: `git log --oneline origin/bleeding-edge..HEAD`.
 

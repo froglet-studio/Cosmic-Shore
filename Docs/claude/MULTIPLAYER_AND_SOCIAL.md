@@ -394,6 +394,9 @@ shared conventions are in `Docs/README.md`). Route by task:
 | Log / triage a bug | `Docs/PartySystem/BUGS.md` (B2/B3/B5/B7) · `Docs/PresenceSystem/BUGS.md` (B1/B4/B6) |
 | Pick up refactor work | `Docs/PartySystem/REFACTOR.md` · `Docs/PresenceSystem/REFACTOR.md` |
 | Read what was already tried (session history) | `Docs/PartySystem/MPPM_SESSION_LOG.md` |
+| Make or change ANY UGS call (lobby, session, relay, friends) | `Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md` (the 2026-10-06 review of invite/join, request discipline and disconnect resilience; Phases 0-1 landed 2026-10-07). Every UGS call goes through `UgsRequestPolicy.ExecuteAsync` - ONE failure classifier, request counters (`UgsRequestTelemetry`), no second retry filter (`UgsRequestPolicyTests`, `JoinTargetValidatorTests`). The PENDING acceptance handshake is deleted (`REFACTOR.md` D1); a join target is validated before the local host is torn down; transport timeouts nest inside the party join wait |
+| Bump or read the multiplayer package versions | `Packages/manifest.json` (NGO 2.13.3, Sessions 2.3.3, Transport 2.7.4, MPPM 2.0.2, Friends 1.3.0; `com.unity.multiplayer.widgets` removed). Any wire-format change bumps `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` (§ Multiplayer / Netcode) |
+| The Skim Race card's AI difficulty row (host-only, replicated) | `LobbySnapshot.AIDifficulty`, `AIDifficultyRules`, `Docs/SKIM_RACE_AI.md` §10; the AI seats themselves: § Player Count & AI Backfill Pipeline below and `Docs/SKIM_RACE_AI.md` §13 |
 
 **Locked design (do not relitigate):** EAGER per-user Relay — every player
 hosts their own Relay-backed party session on entering `Menu_Main`. **Do not

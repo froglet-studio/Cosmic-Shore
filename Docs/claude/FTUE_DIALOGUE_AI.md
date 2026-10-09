@@ -74,6 +74,27 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
 
+**Start at `Docs/AI_SYSTEM/README.md`** (2026-10-08): the `ai-system` branch's roster of every AI, its layers, the branch workflow and the diagnosis playbook. The table below is the short version.
+
+**Where the AI work lives now (2026-10-07) - read these before touching an AI:**
+
+| AI | Code | Read first |
+|---|---|---|
+| The platform autopilot every hull flies by default | `AIPilot`, `AIGunner`, `PursuitReachability`, `AIObjectiveScoring` | `AI_ORBIT_BREAK.md` (below), `AI_BOOST.md` (per-hull boost policies: `AIPilot.boostPolicy`, one `AIBoostPolicySO` per boost mechanic, each listing the modes where it stands down) |
+| **The Skim Race pilot** (the Squirrel in Skim Race, and Regatta's rings) | `Controller/AI/SkimRace/`: `SkimRacePilot` (lifecycle, sensing, actuation), `SkimRaceDriver` (the decision core, pure C#), `SkimRaceObjective` (`CrystalTrackObjective` / `RegattaRingObjective` - the only mode-aware part), `SkimRaceTeamPlan` (AI teammates split the crystals), `SkimRaceHandicap` (Easy / Medium mistakes), `SkimRaceReplanGate` (one planner re-plan per frame) | `Docs/SKIM_RACE_AI.md` - §3 architecture, §10 the host's difficulty row, §11 map fingerprints and `skimrace_retune.py`, §12 per-frame cost and Profiler markers, §13 team play, §14 frame rate (policies are tuned across 62/36/20 fps with the game's 0.04 s contact step) and the editor-mode cost; §8.0f-i the editor measurements |
+| The Urchin autopilot (Hijack) | `Controller/AI/Urchin/`: `UrchinAutopilotDriver`, `UrchinRailAssessment`, `UrchinAutopilotConfigSO` | the class headers (no separate doc yet) |
+
+Rules every AI shares: **input-only** - an AI reads what a pilot can see and writes only the vessel's
+input channels (`Tools/Build/check_ai_no_state_writes.py` gates it); no 3-argument `Mathf.Min/Max` in
+per-frame code (`MathfNoAlloc`; `check_mathf_params_alloc.py`); a per-frame cost gets a `ProfilerMarker`
+(`SkimRace.Pilot.*`, `SkimRace.Driver.*`). The Skim Race pilot has an **offline simulator**
+(`Tools/Build/skimrace_sim_harness/run.sh`: it compiles the shipped driver; `SKIMRACE_RUNTIME=mono` predicts
+the editor's cost), an in-editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`), and a recorder
+that saves every hand-played editor race with its frame time (`BenchmarkResults/SkimRaceAI/manual_*.jsonl`).
+The host picks the AI difficulty on the Skim Race card (`AIDifficulty`, `AIDifficultyRules`, replicated in
+`LobbySnapshot.AIDifficulty`); AI seats are placed per `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
+(fewest pilots first) and the host moves them with **Add AI** (`Docs/SKIM_RACE_AI.md` §13 lists every 4-seat shape).
+
 **A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
 than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn
 rate `ω` cannot fly tighter than `R = v/ω`, so pure pursuit can never reach a target inside either

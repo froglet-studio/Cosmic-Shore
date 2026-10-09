@@ -511,6 +511,238 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0k Why the game's Burst jobs ran managed: two jobs called `MathF` (2026-10-08)
+
+**Release baseline, with the jobs still managed** (editor, Release code optimization, I2, 2 AI seats, 987
+frames, vsync on): 65.8 fps; frame avg 15.2 ms, p50 15.0, p95 19.9, p99 22.9; CPU busy 13.1 ms, GPU 3.7 ms.
+`SkimRace.Pilot.Decide` avg 2.35 / p95 4.83 ms for both seats; `TrackMpc` avg 1.45 / p95 3.64 ms (52% of
+frames, so the stagger holds); `ShellContact.Query` 0.39 ms. `prof` still flags 0.32 ms a frame of managed
+jobs on the main thread: `ShellContactQueryJob` 0.23, `PrismRender.TransformFlush` 0.06, `LOD.Sweep` 0.03.
+Package jobs run as Burst after the cache clean.
+
+**The cause, from `Editor.log`.** Burst wrote it there, while the Burst Inspector compiled the same jobs
+cleanly and showed nothing:
+
+1. `` Unable to find internal function `System.MathF::Sqrt` ``, then the same for `Acos`, `Pow`, `Exp`,
+   `Sin` and `Cos`.
+2. `` Burst is disabled for `...JobStruct`1[[CosmicShore.Gameplay.CellVolumeSumJob ...` due to a failure to
+   resolve one or more `extern` methods called by this entry-point ``. The same line follows for
+   `LodClassifyJob`, `ShellContactQueryJob`, `FindDensestRegionJob` and `WriteLocalToWorldJob`.
+
+In Unity's Mono, `MathF.Sqrt/Sin/Cos/Acos/Exp/Pow` are InternalCalls: externs with no IL body. Burst's JIT
+resolves an extern through the engine, and the engine does not have these. Two jobs that landed on
+`bleeding-edge` on 10-05 call them: `SubstrateAgentJob` (`SubstrateKernel.StepAgent`, all six) and `SwarmPoseJob`
+(`SwarmBodyPose.PoseMatrix`, `Sqrt`). Their text gates recommended `MathF`. Burst builds every Assembly-CSharp
+job into ONE library (the log's compile report: 15 entry points), and one unlinkable extern makes the whole
+library unusable. So Skim Race's shell-contact, render and LOD jobs ran managed although they call no `MathF`,
+and so did the `burst` probe. That is why it held in Debug and Release, with Synchronous Compilation, and
+across a cache clean. The two jobs reached this branch with the 10-06 `Ys-bleeding-edge` merge, which is
+when the managed jobs began (§8.0j).
+
+**Fix (this branch).** Both kernels call one-line `(float)System.Math` helpers, which Burst lowers to
+intrinsics; `MathF.Min/Max/Abs` are plain IL and stay. Both gates now fail on any other `MathF` member in
+the Burst-reached file or class, and on the 10-07 sources they name exactly the functions `Editor.log` named.
+The pose is bit-identical (`Sqrt`). The substrate kernel differs from `MathF` in the last bit, so its
+reference step uses the same primitives and group K is again 100% bit-identical. Every substrate, swarm,
+ecology-LOD and showcase-cell harness passes (`Docs/SUBSTRATE_FAUNA.md` §7.6, `Docs/SWARM_FAUNA.md` §19.4).
+`burst` now also prints Burst's own refusal from the log, counting only lines since the last domain reload.
+
+**Expected in Skim Race:** about 0.3 ms of main thread back (`ShellContact.Query` to ~0.1 ms), and the shell
+query's worker time. It will be more in ecology modes, which run the substrate, swarm and cell-volume jobs.
+**Not yet measured in Unity.**
+
+### 8.0j The stagger in the editor, and the game's Burst jobs running as managed code (2026-10-07, evening)
+
+`diag` + `prof`, I2 with 2 AI, same machine, on `e8fc01dcd`; all `SkimRaceAITests` green in the editor.
+The race was twice as heavy as §8.0h's (11,102 prism entities vs 5,717), and `diag` now records the Code
+Optimization: **Debug**. So the whole-frame numbers (25.3 ms, 40 fps) do not compare with §8.0h's 18.0 ms.
+Per-seat costs that grow with laid mass grew with it: `FillObstacles` 0.95 -> 2.21 ms, `GuardMass` 0.14 -> 0.57.
+
+**The stagger did what §8.0i predicted:**
+
+| | §8.0h (before) | Now |
+|---|---|---|
+| `SkimRace.Driver.TrackMpc` p95 / max | 10.55 / 23.67 ms | **5.28 / 13.01 ms** |
+| `TrackMpc` present in | 35% of frames | 83% |
+| `SkimRace.Pilot.Decide` p95 / max | 11.13 / 24.05 ms | **7.13 / 13.36 ms** |
+| `prof` spike frame | `TrackMpc` 2 calls, 8.1 ms | 1 call, 4.1 ms |
+
+One re-plan still costs ~4.1 ms per seat, as before.
+
+**Found: none of the game's own Burst jobs are Burst-compiled in this editor, and they have not been since
+the `Ys-bleeding-edge` merge.** The new `prof` check fired (1.71 ms a frame of managed job code on the main
+thread). The worker threads say the same: on 10-06 they ran `ShellContactQueryJob (Burst)` at 0.013 ms.
+In both 10-07 captures, taken 15 hours apart and 3 minutes after a `diag`, so not a compile still in
+flight, they ran plain `ShellContactQueryJob` at 0.6-0.97 ms per worker. Next to it, `CellVolumeSumJob` and
+`FindDensestRegionJob` run managed too. Unity's own package jobs (`FrustumCullingJob (Burst)`,
+`UpdateOldEntitiesGraphicsChunksJob (Burst)`) still compile. On the main thread it costs ~1.9 ms a frame
+here: `ShellContact.Query` 1.53 ms against 0.08, plus `LOD.Sweep` and `PrismRender.TransformFlush`. It
+reaches every mode that runs those jobs, ecology above all.
+
+Ruled out from the repository: Burst is the same version (1.8.29) and Burst is enabled
+(`RunEnvironment.burstEnabled`). The flags the jobs read are constants. No assembly attribute or Burst
+setting changed. Burst compiles each job separately, so one job failing (for example the new
+`SubstrateAgentJob`, whose gate is textual) would not take the shell-contact query with it.
+What does take every job in one assembly is something assembly-wide, and only the editor's own Burst
+messages (Console, `Editor.log`) can say what. **Owed:** those messages.
+
+**Narrowed (same evening).** The Burst Inspector's Assembly view compiles every one of the eight jobs
+without an error: `ShellContactQueryJob`, plus the seven added since the last good capture
+(`SubstrateAgentJob`, `SwarmPoseJob`, `UpdatePositionsJob`, `WriteLocalToWorldJob`, `SetLookJob`,
+`ResolveHandlesJob`, `InitCreatedJob`). No game code changes Burst's runtime switches (`JobCompilerEnabled`,
+`BurstCompiler.Options`). So the jobs CAN be Burst-compiled and are not being compiled in Play mode. Two
+candidates are left, and one test separates them:
+- Play started before the background compile of the game's jobs finished. It recompiles after every script
+  change or branch switch, while the package jobs' cache stays valid, which matches what was seen.
+- The editor's Debug code optimization, or an attached managed debugger, kept them managed.
+
+Test: Jobs > Burst > Synchronous Compilation on, then `prof` in Debug. If the flag is still there, `prof`
+again in Release.
+
+**Tested (2026-10-08, 01:36-01:39): four `prof`s with Synchronous Compilation on, no Burst message in the
+Console.** In all four the game's jobs still ran managed (`managedJobMs` 1.33-1.87; workers ran
+`ShellContactQueryJob`, `CellVolumeSumJob`, `FindDensestRegionJob` without "(Burst)") while package jobs
+were Burst. So it is not a compile still in flight either. The `prof` JSON could not say which captures were
+Debug and which Release, so `prof` now records the run environment (Code Optimization, Burst, the job
+compiler, an attached debugger). Burst 1.8.29's source was read for what turns it off for one assembly. Its
+per-assembly editor list (`ProjectSettings/Burst_DisableAssembliesForEditorCompilation.json`) is not in the
+repository. No game or package code sets `JobsUtility.JobCompilerEnabled` or
+`BurstCompiler.Options.EnableBurstCompilation`. Its managed-debugger hooks switch on with
+`ManagedDebugger.isEnabled`, which is Debug code optimization.
+**Next:** the `burst` console command in Skim Race. Its probe job, compiled synchronously in Assembly-CSharp,
+reports `BURST` or `MANAGED` from how it actually ran, beside every switch above. If the local project has the
+per-assembly disable file (it would be untracked), that is the answer.
+
+**`burst` result (2026-10-08):** `enabled=True compilation=True synchronous=True jobCompiler=True
+jobsDebugger=True debuggerAttached=False code=Debug | probe job in Assembly-CSharp: Run() MANAGED, Schedule()
+MANAGED`. The local `ProjectSettings` has no `Burst_DisableAssembliesForEditorCompilation.json`. So every
+switch is on and no debugger is attached, yet even a job compiled synchronously in Assembly-CSharp runs
+managed, while package jobs run Burst. The one non-default state left is `code=Debug`: Burst 1.8 starts its
+managed-debugger hooks (`BurstCompiler.InitialiseDebuggerHooks`, gated on `ManagedDebugger.isEnabled`) exactly
+then. That fits every observation: user-assembly jobs debuggable, so managed; package jobs Burst; no error.
+The 10-06 capture that ran Burst predates the Code Optimization record, so its mode is unknown.
+**Next:** `burst` in Release. If it is still MANAGED, close the editor, delete `Library/BurstCache`, reopen, and
+run `burst` again. If it is still MANAGED after that, read `Editor.log`.
+
+**Release (2026-10-08): the jobs DO compile as Burst, and then fail.** In Release the boot arena (Growing
+Garland) stops at "Building arena 42%" (`ArenaLoadProgress` counts prisms laid and grown). The Console fills
+(~674 entries) with two errors. One is `NullReferenceException ... thrown from a job compiled with Burst, which
+has limited exception support`. The other is `InvalidOperationException: The ComponentLookup<CosmicShore.ECS.
+PrismShieldMorphDirectionOverride> has been declared as [WriteOnly] in the job, but you are reading from it`.
+So Debug code optimization was what kept user jobs managed: Release runs them as Burst. And the source cannot
+produce the second error. No job in the project holds a `ComponentLookup` of that component (it is written
+only from the main thread, `PrismRenderService.SetShieldMorph*`), and no job field is `[WriteOnly]` except
+`ResolveHandlesJob.Entities`, a NativeArray. The jobs that run while prisms are laid (`InitCreatedJob`,
+`SetLookJob`, `WriteLocalToWorldJob`, `ResolveHandlesJob`) read and write only `MaterialMeshInfo`,
+`LocalToWorld`, `RenderBounds` and the Bright/Dark/Spread overrides. The lookup cache (`_lookups`) resets
+with the world. Running Burst code that does not match the current source is what a stale or corrupt Burst
+cache produces: old job layouts, wrong safety names, null pointers.
+**Next:** clean `Library/BurstCache` with the editor closed, then Release. If it still fails, read the stack
+traces in `Editor.log`. Until then, Debug keeps the game running, with the jobs managed.
+
+**After cleaning `Library/BurstCache` (2026-10-08):** in Release the boot arena loads and the errors are gone,
+so the 42% hang was stale compiled code from the old cache. `burst` now reads `... code=Release | probe job in
+Assembly-CSharp: Run() MANAGED, Schedule() MANAGED`. With no cache, nothing compiled fresh reaches the game's
+jobs either. Burst's live (JIT) compiler is not producing new code for them, although the Inspector, which
+compiles one method on demand, does. The next `prof` separates the two remaining readings. Package jobs
+(`FrustumCullingJob`, the Entities Graphics jobs) also had to recompile after the clean. If they still show
+"(Burst)", only Assembly-CSharp is refused. If they have gone managed too, the editor's background Burst
+compiler is failing for everything (antivirus, permissions, the project path), and `Editor.log`, with
+Jobs > Burst > Show Timings on, will say so.
+
+### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
+
+The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
+process (`SkimRacePilot` shares it across every AI seat), lets ONE track-planner re-plan claim a frame. A
+seat that finds its frame taken flies its previous plan one frame longer and re-plans in the next. It
+never waits twice: next frame it re-plans whether or not that frame is free. Each seat keeps its own
+`TrackMpcHz` clock, so the re-plan rate and the average cost do not change. `TrackMpcStaggerSeats`
+(on by default, in every policy asset) turns it off. Only the I2 policy flies the track planner today.
+
+**Why seats shared frames.** Each seat schedules its next re-plan as `now + 1/Hz`. Once two seats re-plan
+in the same frame, they compute the same next time and stay together. In the simulator, 86-89% of
+re-plan frames had both seats; the editor's `prof` saw about half.
+
+**Cost** (simulator on Mono in double precision, the editor's mode; I2, 2 seats, 18 ms frames ±30%,
+6 races per arm; AI thinking per frame, both seats together):
+
+| | Stagger off | Stagger on |
+|---|---|---|
+| Frames with 2 re-plans | 89% of re-plan frames | 0% |
+| p90 / p99 | 11.0 / 15.0 ms | **6.8 / 9.6 ms** |
+| Median | 0.8 ms | 4.2 ms (the same work, spread over more frames) |
+| Average per seat | 1.89 ms | 1.87 ms |
+| One re-plan | 4.7 ms | 4.7 ms (the editor measured ~4 ms) |
+
+**Racing** (.NET, the shipped I2 policy, 2 seats, same seeds in each arm): no detectable change.
+
+| Frames | Races per arm | Seat time, on - off (paired) | Seats <= 80 s, on / off | Unfinished races, on / off |
+|---|---|---|---|---|
+| 18 ms ±30% (the editor at 55 fps) | 280 | +0.59 s (SE 0.56, t 1.05) | 49.5% / 47.9% | 3 / 2 |
+| 26 ms ±50% (the tuning setting) | 120 | +0.70 s (SE 0.65, t 1.08) | 57.1% / 59.2% | 0 / 1 |
+
+Mann-Whitney on all seat times: z +0.42 and +0.87. The pooled estimate is +0.6 s per ~80 s seat (SE 0.4),
+inside the noise. A seat waited on 4% of its re-plans at 18 ms frames and 9% at 26 ms.
+The unfinished races are the policy's known orbit-and-recover (a slow seat circling a crystal it cannot
+turn into, §6.10). One was traced in full: the seat orbited for 16 s after the other seat had finished, when no
+stagger was active. Both arms have them.
+
+With `TrackMpcStaggerSeats` off, the new code races byte-identically to the previous commit (I2, 12 seeds).
+The I1 policy, which does not fly the track planner, is identical with it on (6 seeds).
+
+Off-editor proof: `SkimRaceAITests` gains four tests (the gate; two seats due together, the second
+waiting one frame; no seat waiting twice; no gate, no change). Three mutations of the wait rule, each
+failing a test. The simulator's eval prints the planner's re-plans, the frames shared and the waits.
+
+### 8.0h The perf branch in the editor: 35 -> 55 fps, and what is left (2026-10-07)
+
+`diag S_SkimRace_I2 15` and one `prof` in a hand-played I2 race with 2 AI seats, same machine and
+settings as §8.0f, on `perf/performance-optimization` `df25d942f` (`Ys-bleeding-edge` plus §8.0e-g).
+All five `SkimRaceCourseQueryTests` pass in the editor (§8.0g's fix, first seen green here).
+
+| What | 10-06 (§8.0f) | 10-07 |
+|---|---|---|
+| Frame avg / p95 / p99 | 28.3 / 39.4 / 43.4 ms (35 fps) | **18.0 / 26.9 / 33.3 ms (55 fps)** |
+| PlayerLoop | 25.3 ms | 15.2 ms |
+| `SkimRace.Pilot.Decide` (2 seats) avg / p50 / p95 / max | 7.20 / 2.5 / 16.1 / 18.5 ms | **3.35** / 0.5 / 11.1 / 24.1 ms |
+| `SkimRace.Pilot.FillObstacles` | 2.12 ms | 0.95 ms |
+| Garbage | 78 KB/frame | 27 KB/frame; `Decide` allocates nothing |
+| Prism entities in the race | 8362 | 5717 |
+| GPU | 6.7 ms | 3.6 ms |
+
+**Not all of the 10 ms is this work.** The two races differ (32% fewer prisms, half the GPU time), and
+systems this work never touched fell too (`Fauna.BodySync` 0.94 -> 0.27 ms, `LightFauna.Tick.PrismScan`
+0.71 -> 0.06). The like-for-like number is the AI's own markers: Decide + FillObstacles 9.3 -> 4.3 ms
+a frame, and FillObstacles scales with the prisms in range, so part of its drop is the smaller race.
+
+**The `prof` was taken while Burst was still compiling.** Three `[BurstCompile]` jobs ran as managed
+code (`ExecuteJobFunction.Invoke` under them; a Burst job's sample is "`<name> (Burst)`"):
+`ShellContact.Query` 1.32 ms a frame against 0.08 ms in all three 10-06 captures of the same,
+unchanged code, `LOD.Sweep` 0.36 vs 0.08, `PrismRender.TransformFlush` 0.15. The Editor compiles
+Burst in the background after a script change or branch switch and runs the managed version until it
+is done. The `diag` ran 43 s earlier and did not time those jobs, so it may carry some of this too.
+`prof` now reports any managed job time and warns above 0.1 ms a frame; `diag` times
+`ShellContact.Query` (its tell) and records the Editor's Code Optimization mode, which neither
+capture could say.
+
+**What is left in the AI: the track planner's bursts.** `SkimRace.Driver.TrackMpc` is 2.89 ms of the
+3.35 ms Decide. It re-plans at 20 Hz with 26 rollouts of 16 steps each, about 4 ms per seat per
+re-plan on editor Mono, and it lands in 35% of frames. Both seats
+re-plan in the same frame about half the time (prof: 1.5 calls per frame it appears in). The 47 ms
+spike frame had both, 8.1 ms, beside a managed `LOD.Sweep` (2.7 ms) and 11 boid coroutines (5.2 ms).
+`GuardMass` is 0.14 ms (p95 0.9). Every remaining lever changes timing, so each needs a decision and
+the simulator's 20-seed benchmark:
+
+1. **Stagger the seats.** Offset each seat's re-plan phase so no two share a frame. The average stays
+   the same and the per-frame peak halves. Each seat still re-plans at 20 Hz; only the moment it does so moves.
+   **Done, §8.0i.**
+2. **Spread one re-plan over the frames between.** The 26 rollouts go across about 3 frames, so the peak drops ~3x and
+   the plan acted on is 1-2 frames older.
+3. **Burst the rollouts.** A job over the 26 candidates, off the main thread. It is the largest win
+   (likely an order of magnitude on this cost; not measured), and also a project: the course goes into native arrays. Burst floats
+   differ from Mono's, so the races are not byte-identical; the benchmark has to show the policy is
+   no worse.
+
 ### 8.0g The editor computes floats in double precision - and caught the float rewrite (2026-10-06)
 
 The first editor run of `SkimRaceCourseQueryTests` failed three of five
@@ -1161,7 +1393,8 @@ that changes flying is the user's decision):
   is the version that pays.
 - *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a
   frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks. The user
-chose to decide on these after reading the real numbers in the Unity Profiler.
+chose to decide on these after reading the real numbers in the Unity Profiler. **Stagger: chosen and applied
+2026-10-07 (§8.0i)** - no measurable change to racing, p90/p99 AI frame cost down ~38%.
 
 ## 13. Team races (teammates share their crystals)
 
@@ -1277,6 +1510,241 @@ further apart. A respawned crystal's "move away from where it last was" rule is 
 it for a lone AI). Human teammates are not modelled at all. A hand-played editor race records itself
 (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`, §1), and that record is how a human pair's time
 gets compared.
+
+## 14. Frame rate: the AI is tuned for one frame rate (2026-10-06)
+
+**Why this section exists.** The user reported the AI racing poorly at Easy, Medium and Hard alike while
+testing. Nothing in that day's bleeding-edge merge changes how the Squirrel flies on desktop (§14.3), so
+the AI was measured at the frame rates people actually play at.
+
+### 14.1 Two things in the GAME depend on frame rate
+
+- **Contacts run on the fixed step.** `ProjectSettings/TimeManager.asset` sets Fixed Timestep 0.04 s and
+  physics simulates in FixedUpdate, so skim, hull, laid-mass and crystal triggers are tested 25 times a
+  second, at the positions the last frame left. Above 25 fps some frames test nothing; below it every frame
+  tests once. The simulator now models this as `ph.PhysicsStep=0.04`. The default, 0, tests every frame:
+  the model the shipped policies were tuned under, and still line-for-line identical (I1 and I2, 6 races).
+- **The trail is laid at most once per frame.** `VesselPrismController.SpawnLoopAsync` lays a pair, then
+  awaits `wavelength / speed`. The await resumes on a frame, so a slow frame leaves one pair per frame and
+  the trail is SPARSER at low frame rates and evenly dense at high ones. The simulator lays its rails the
+  same way (all the pairs a frame owes, at the frame's position).
+
+The policies were tuned at 28 ms ±50% frames (about 36 fps). That means a sparser trail than a desktop at
+60-144 fps lays, and longer steps between contact tests.
+
+### 14.2 Measured: slower at every frame rate but the one it was tuned at
+
+Simulator with the game's contact step (`ph.PhysicsStep=0.04`), each track's shipped policy, 2 AI, frames
+±50%, 12 races per cell. The figure is each AI's median finish in seconds, then (races that finished
+within the cut / 12) and hull hits per AI per race.
+
+| I1 | 145 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| Hard | 77.0 (12) h30 | 70.7 (12) h29 | **67.9** (12) h25 | 66.6 (12) h23 | 77.0 (12) h25 |
+| Medium | 84.0 (9) h32 | 84.8 (11) h32 | 83.0 (12) h32 | 81.5 (11) h32 | 85.0 (12) h28 |
+| Easy | 104.3 (9) h46 | 102.2 (11) h44 | 100.7 (11) h35 | 93.7 (11) h36 | 102.5 (9) h34 |
+
+| I2 | 145 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| Hard | 84.6 (12) h15 | 82.6 (12) h12 | **75.8** (12) h8 | 78.6 (12) h7 | 91.4 (11) h15 |
+| Medium | 111.5 (9) h18 | 101.3 (11) h17 | 100.2 (10) h13 | 100.2 (12) h12 | 102.6 (10) h18 |
+| Easy | 126.7 (4) h23 | 120.8 (7) h20 | 130.3 (5) h17 | 119.5 (8) h14 | 119.6 (9) h19 |
+
+- Hard is 4-13% slower at 60-145 fps than at the 36 fps it was tuned at, and 13-21% slower at 12 fps. The
+  hull hits that grow at high frame rates are mostly the AI's OWN rails (I1: 4.8 per race at 145 fps vs 2.7
+  at 36), the pickup ring (6.1 vs 4.8) and other seats' rails: the denser trail of §14.1.
+- At low frame rates the hull moves in large steps (38 u per frame at 127 ms and 300 u/s), so pass points
+  are overshot. §8.0c measured the same thing in the editor at 8 fps.
+- Easy at I2 often runs past the simulator's cut (limit + 60 s). That makes it slow, not stuck; the game
+  has no cut.
+- The every-frame contact model (`PhysicsStep=0`) gives the same picture, with more hull hits at high frame
+  rates because it tests contacts more often than the game does.
+- I2's pickup hold (`PickupClearDistance` 1.569 u, under one frame of travel at any speed) is effectively
+  "hold for exactly one frame", which is a frame-rate-dependent rule. Lengthening it to 8.4 or 14 u was
+  not a consistent gain across 145/62/36 fps at 12 races per cell, so it is not the main lever.
+
+### 14.3 What the 2026-10-06 bleeding-edge merge changed for the AI
+
+Nothing in how the Squirrel races on desktop:
+
+- The "skim-tick rate limit" is the skim SOUND (`ProximityBoostAudioController.minTickInterval`).
+- `DecayBoost` now raises its event only on change; the boost value itself is the same.
+- The race trail cap (`RaceTrailCap`) attaches only on the MobileLow tier.
+- The new Squirrel AI boost policy lists Skim Race (33) in `disabledInModes`, and `AIPilot` is off under
+  `SkimRacePilot` anyway.
+
+One change touches testing: commit `c13425ba5` ("drift changes") also changed `ProjectSettings/QualitySettings.asset`.
+The editor's current level went from 2 (Medium) to 4 (Very High, which carries vSync on and 4x MSAA), and the
+per-platform default levels were cleared. §8.0c's 8 fps hand-played editor races were observed at Very High
+with vSync. `GraphicsSettingsApplier` applies the player's saved preset at runtime, so builds are governed by
+the settings menu; the editor's starting point is not.
+
+### 14.4 What the AI costs the editor (2026-10-06)
+
+The user's report was that the GAME runs slow while testing Skim Race with AI. The simulator's .NET build
+is optimized; the Unity editor runs the same C# on Mono with its Code Optimization usually at **Debug**,
+which is much slower. As a stand-in, the simulator was compiled WITHOUT optimization (`csc -optimize-`) and
+each track raced with 2 AI, 28 ms frames ±50%, the game's contact step, 10 races (seedbase 50000). Per AI
+per frame, and both AIs together in one frame:
+
+| Track | Optimized: per AI | Both AIs, typical / worst 10% / worst 1% | Unoptimized: per AI | Both AIs, typical / worst 10% / worst 1% | Biggest part (unoptimized) |
+|---|---|---|---|---|---|
+| I1 | 0.05 ms | 0.02 / 0.26 / 0.72 ms | 0.11 ms | 0.06 / 0.72 / 1.32 ms | laid-mass guard 0.10 ms |
+| I2 | 0.41 ms | 0.34 / 1.88 / 2.74 ms | **2.30 ms** | 1.32 / **10.74** / **14.79** ms | planner 1.92 ms per decision (0.78 per AI per re-plan optimized, ~4.5 unoptimized) |
+| I3 | 0.15 ms | 0.16 / 0.85 / 1.65 ms | 1.04 ms | 1.23 / 5.46 / 9.27 ms | laid-mass guard 0.56 ms |
+| I4 | 0.09 ms | 0.06 / 0.48 / 1.40 ms | 0.56 ms | 0.40 / 2.72 / 8.74 ms | laid-mass guard 0.45 ms |
+
+So at Debug optimization, two AI on I2 cost the editor **about 11 ms in one frame of every ten** (both
+re-plan on the same frames, 20 times a second), and I3's mass guard about 5 ms. A 60 fps frame is 16.7 ms.
+In a Release/IL2CPP build the same work is 2-3 ms at worst. The Unity Profiler reading (the checklist's
+Profiler-timers entry) is the real number; the stand-in says where it will land.
+
+**The planner stagger - two branches, one mechanism kept.** Both AI re-planned on the same frames because both
+started at race time 0 and each scheduled its next re-plan as "now + 1/TrackMpcHz". This branch first fixed it
+with a FIXED grid of 1/TrackMpcHz (50 ms), odd lanes offset by half a period, so two AI re-plan on different
+frames whenever a frame is shorter than half a period. `perf/performance-optimization` fixed the same thing the
+same day with `SkimRaceReplanGate` (§8.0i): one re-plan claims a frame, a seat that finds its frame taken flies
+its previous plan ONE more frame. At the merge (2026-10-07) the gate was kept and the grid retired, because the
+gate also holds at 25 fps and below, where every seat wants to re-plan every frame and a grid separates nothing.
+The grid's measurements stay below as the independent confirmation of the problem. (A first version offset only
+the start and kept "now + period": the first frame that happened to carry both re-plans locked the two in
+step for the rest of the race, and nothing changed - a probe of the private schedule found it.) Measured, I2,
+shipped policy, 2 AI, unoptimized build, both AIs' thinking per frame:
+
+| Frames | Before: typical / worst 10% / worst 1% | Grid: typical / worst 10% / worst 1% |
+|---|---|---|
+| 16 ms (62 fps) | 0.7 / **10.1** / 14.0 ms | 4.2 / **6.1** / 8.5 ms |
+| 28 ms ± 50% (36 fps) | 1.3 / 10.7 / 14.8 ms | 5.4 / 10.2 / 24.5 ms |
+
+At 60 fps the worst frames carry one planner instead of two. At 36 fps with ±50% jitter many frames are
+longer than 25 ms and span both grid points, so the worst 10% is unchanged (the worst 1% is GC noise in the
+unoptimized build; the maxima were 40-50 ms in every variant). At 25 fps and below each AI re-plans every
+frame whatever the phase: only a cheaper planner (the candidate grid is 5x5 sticks + nominal = 26 rollouts of
+22 steps) or a one-planner-per-frame budget would help there, and neither was done. The total CPU is the
+same; it is spread over more frames (the typical frame rose), which is the point for frame pacing. Race
+times under the SHIPPED tuning, 24 races: at 16 ms frames the seat median went 82.6 → 79.5 s (one race
+past the cut), at 28 ms 75.8 → 77.6 s - the grid also changes even lanes' schedule from a drifting ~56 ms
+to an exact 50 ms, and the shipped numbers were fitted to the old one. The retune (§14.5) is done with the
+grid in place.
+
+**The zero-code lever for the editor:** the bug icon at the bottom right of the editor - Code Optimization
+**Release** instead of Debug. The table in this section is the Debug-to-Release ratio: about 5x on the
+planner. A player build is IL2CPP and does not have the choice.
+
+**The combined code, measured the editor's way** (2026-10-07, after the merge with `perf/performance-optimization`:
+its float inner loops, no-alloc Mathf and gate, this branch's retuned policies; `SKIMRACE_RUNTIME=mono`, Mono
+6.8 in double precision - the mode that predicts the editor, §8.0g; 2 AI, 28 ms frames ±50%, the 0.04 s contact
+step, 10 races, seedbase 50000):
+
+| Track | Per AI per frame | Both AIs in one frame: typical / worst 10% / worst 1% |
+|---|---|---|
+| I1 | 0.16 ms | 0.09 / 1.05 / 1.99 ms |
+| I2 | 2.24 ms | 5.0 / **6.7** / 9.1 ms (23,242 re-plans in 23,242 frames: no frame carried two) |
+| I3 | 1.13 ms | 1.3 / 5.7 / 10.4 ms |
+| I4 | 0.67 ms | 0.5 / 4.6 / 10.0 ms |
+
+Against the unoptimized-.NET stand-in above (I2 both AIs 10.7 ms in the worst 10%), the editor-mode worst 10%
+on I2 is 6.7 ms: the gate's half, with the float loops' ~1.4x on top. The I3/I4 tails are the laid-mass guard in
+dense traffic, untouched by either branch.
+
+### 14.5 Retuning across frame rates
+
+The user's call (2026-10-06): retune each policy against SEVERAL frame rates at once. The simulator's
+`dts=0.016,0.028,0.05` spreads a tune's or an eval's races over those frame times, round-robin by seed, so a
+policy is scored at 62, 36 and 20 fps at once at no extra cost; `skimrace_retune.py` now tunes and judges
+under `ph.PhysicsStep=0.04 dts=0.016,0.028,0.05` (its `PHYSICS`), with the planner grid of §14.4 in place.
+The frame rates to weight are the ones players see; the recorder's `frameMs` per race
+(`BenchmarkResults/SkimRaceAI/manual_*.jsonl`) and the Game view's Stats overlay give them.
+
+Each retune started from the shipped policy (`only=stated`: the same numbers re-fitted, no control switched
+on or off), 16 search steps of 24 candidates on 4 races each, and was kept only if it beat the general policy
+on 20 fresh races (the script's own rule). Then shipped and new were raced head to head at FIVE frame rates
+on 20 fresh races each (seedbase 77000; the 120 fps column was not in the tuning set). Figures: each AI's
+median finish in seconds (races finished within the cut, of 20).
+
+**I1** (`skimrace-v4-i1` → `skimrace-v5-i1`, 23 numbers re-fitted, 4 minutes):
+
+| I1, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v4 | 66.0 (20) | 66.0 (20) | 64.2 (20) | 64.6 (20) | 73.7 (20) |
+| new v5 | 64.3 (19) | 65.1 (20) | 65.4 (20) | 63.5 (20) | **66.8** (20) |
+
+The 120 fps cell's one unfinished race was checked on 40 more races at 120 fps (seedbase 123000): new 40/40,
+median 73.9 s, 0.05 recoveries per race; shipped 39/40, 75.7 s, 0.55 recoveries per race. So v5 is level at
+36-62 fps and better at both ends, and more robust at 120 fps. Kept.
+
+**I2** (`skimrace-v2-i2` → `skimrace-v3-i2`, 22 minutes; on the script's own fresh races the new tuning's winner
+median was 70.8 s against the general policy's 101.5 s):
+
+| I2, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v2 | 82.1 (20) | 79.9 (20) | 78.6 (20) | 78.0 (20) | 88.0 (19) |
+| new v3 | 80.6 (20) | 79.3 (20) | 78.3 (19) | 79.3 (20) | **84.3** (20) |
+
+A small, consistent gain at both ends and level in the middle (99 of 100 races finished either way). The
+shipped I2 was already the least frame-rate-sensitive of the four; its 12 fps tail is what moved. Kept.
+
+**I4** (`skimrace-v1-i4` → `skimrace-v2-i4`, 15 minutes; on the script's own fresh races 142.3 s against the
+general policy's 159.8 s):
+
+| I4, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v1 | 164.3 (20) | 150.2 (20) | 149.3 (20) | 145.6 (20) | 145.8 (20) |
+| new v2 | **150.8** (20) | 149.1 (20) | 146.0 (20) | 144.1 (20) | 144.1 (20) |
+
+Better at every frame rate, most at 120 fps (−13.5 s), every race finished. Kept.
+
+**A failure mode the retune did not touch.** In 1 of 100 I2 races (shipped and new alike) one AI gets stuck at
+20-22 of 30 crystals with 7 recoveries and never finishes within the cut, while its teammate finishes
+normally. It is a recovery-loop case, not a tuning number, and it is the same 1% before and after.
+
+**Easy and Medium on the new policies** (the handicap asset is unchanged: §10's reaction times and mistake
+chances). 21 races per cell spread over 16/28/50 ms frames, seat medians: I1 Hard about 65 s, **Medium 73.9 s,
+Easy 88.9 s**; I2 Hard about 79 s, **Medium 94.9 s, Easy 121.5 s**. The ladder §10 set (I1 75/86 s, I2 92/112 s
+at 28 ms frames) holds within a few seconds; Easy at I2 runs past the simulator's cut in a third of its races
+(the cut is the benchmark limit plus 60 s; the game has none), as it did before.
+
+**The general policy** (`skimrace-v2-general` → `skimrace-v3-general`; `run.sh tuneall 1,2,3,4 4 16 sigma=0.15
+final=20 only=stated` under the same conditions, 36 numbers re-fitted, about 2.5 hours; its own fresh-seed
+check finished 20/20 on every track, winner medians I1 57.6, I2 97.1, I3 175.0, I4 148.8 s). It is what
+intensity 3 flies, so the head to head is on I3:
+
+| I3, Hard (general policy) | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v2-general | 188.5 (20) | 185.3 (20) | 184.5 (20) | 185.0 (20) | 193.6 (20) |
+| new v3-general | 184.6 (20) | 183.4 (20) | 182.1 (20) | 181.0 (20) | **185.7** (20) |
+
+Better at every frame rate, every race finished. Kept.
+
+**Re-raced under the gate** (the retune above ran with this branch's grid stagger; the merge replaced it with
+the perf branch's gate, which only the I2 policy's planner feels). New v3-i2, 20 fresh races per cell:
+
+| I2, Hard, new v3 | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| under the grid (tuned) | 80.6 (20) | 79.3 (20) | 78.3 (19) | 79.3 (20) | 84.3 (20) |
+| under the gate (shipped) | **79.1** (20) | **77.1** (20) | **76.3** (20) | 79.0 (20) | 89.1 (20) |
+
+Faster at 36-120 fps, level at 20, slower at 12 fps - at 12 fps every seat wants to re-plan every frame, so the
+gate makes each re-plan every other frame (about 160 ms apart) and the planner reacts later. Every race finished.
+A refinement nobody has measured: let the gate stand down when the frame is longer than half the re-plan period.
+
+### 14.6 Where this leaves the AI (2026-10-07)
+
+- Every shipped policy is now tuned across 62 / 36 / 20 fps with the game's contact step, and checked at 120
+  and 12 fps as well. Against the previous files, on the same fresh races: level at 36-62 fps, better at 120 fps
+  and at 12 fps on every track, and I4 better everywhere. Nothing got slower beyond noise; no new failure mode
+  (the one-in-a-hundred stranded I2 seat predates this).
+- The planner gate (§8.0i, kept at the merge over this branch's grid) halves the editor's worst AI frame at any
+  frame rate; with the perf branch's float loops and no-alloc Mathf the whole AI on I2 costs the editor about
+  2.2 ms per AI per frame in its own Mono mode (§14.4's last table), 0.4 ms in a Release/IL2CPP build. Release
+  code optimization in the editor remains the single biggest lever a tester has.
+- The next measurement that matters is the one only the editor can give: a hand-played race's `frameMs` next
+  to its AI finish time (the recorder writes both). `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the 2026-10-06
+  entry, lists the steps.
+- To redo any of this after a map or code change: `python3 Tools/Build/skimrace_retune.py <I>` (per intensity),
+  and for the general policy the `tuneall` line above, transcribed into `author_skimrace_ai_config.py`.
+- The session that produced §10–§14 (asks, decisions by date, every commit, the verification record, open
+  items) is written up in `Docs/SKIM_RACE_AI_SESSION_LOG.md`.
 
 **Open row (2026-10-07, found merging Regatta's ring objective; not acted on).** Team-plan MEMBERSHIP
 is still the pilot's while its only READER is the crystal objective: `SkimRacePilot` calls
