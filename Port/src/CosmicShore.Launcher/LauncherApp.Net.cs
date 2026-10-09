@@ -20,7 +20,7 @@ namespace CosmicShore.Launcher
         static readonly string[] NetLines = { "", "lan", "broadband", "dsl", "4g", "3g", "poor" };
         static readonly string[] NetFaultChoices = { "", "full", "ratelimit=3", "relayfail", "slow=2000", "down" };
         /// <summary>The Connection switch: what each segment shows, and the setting it stores (MpTransport).</summary>
-        static readonly string[] NetConnections = { "UDP", "RELAY", "TCP" }, NetConnectionKeys = { "udp", "relay", "tcp" };
+        static readonly string[] NetConnections = { "UDP", "RELAY", "UGS RELAY", "TCP" }, NetConnectionKeys = { "udp", "relay", "ugs", "tcp" };
 
         readonly ConcurrentDictionary<int, string> _netLive = new();
         readonly Dictionary<int, string> _netLine = new(), _netFault = new();
@@ -59,30 +59,32 @@ namespace CosmicShore.Launcher
             Label("Players");
             ImGui.SetCursorScreenPos(a + new Vector2(16, 78));
             Segmented("netplayers", new[] { "2", "3", "4" }, Math.Clamp(_s.MpPlayers - 2, 0, 2), i => { _s.MpPlayers = i + 2; _dirty = true; }, Neon.Magenta);
-            ImGui.SetCursorScreenPos(a + new Vector2(200, 60));
+            ImGui.SetCursorScreenPos(a + new Vector2(16, 124));
             Label("Connection");
-            ImGui.SetCursorScreenPos(a + new Vector2(200, 78));
+            ImGui.SetCursorScreenPos(a + new Vector2(16, 142));
             Segmented("nettransport", NetConnections, Math.Max(0, Array.IndexOf(NetConnectionKeys, _s.MpTransport)), i => { _s.MpTransport = NetConnectionKeys[i]; _dirty = true; }, Neon.Cyan);
             Neon.Tooltip("UDP: Froglet's transport, players connect directly (selective acks, RTT-timed resends, an unreliable channel).\n" +
                          "RELAY: the same transport through Froglet's relay server, started beside the players: each host allocates and each\n" +
                          "joiner joins by code, the way a game over the internet does (Unity Relay's protocol, docs/MULTIPLAYER.md §6.7).\n" +
+                         "UGS RELAY: through UGS Relay itself; each player signs in to the game's LIVE UGS project as its profile\n" +
+                         "(player1..4, the same UGS players every run). The lobby is still this PC's session folder (§6.8).\n" +
                          "TCP: the first transport. Every player uses the same.");
 
-            ImGui.SetCursorScreenPos(a + new Vector2(16, 124));
+            ImGui.SetCursorScreenPos(a + new Vector2(16, 188));
             Label("Start in");
-            ImGui.SetCursorScreenPos(a + new Vector2(16, 142));
+            ImGui.SetCursorScreenPos(a + new Vector2(16, 206));
             ImGui.PushItemWidth(b.X - a.X - 32);
             var choices = new[] { "" }.Concat(_jobs.Scenes).ToArray();
             Combo("##netscene", choices, _s.MpScene, v => _s.MpScene = v, v => v.Length == 0 ? "Bootstrap (log in, then the menu)" : v);
             ImGui.PopItemWidth();
 
-            ImGui.SetCursorScreenPos(a + new Vector2(16, 188));
+            ImGui.SetCursorScreenPos(a + new Vector2(16, 252));
             Label("Each player's line (network simulator)");
             while (_s.MpSims.Count < Prisma.MultiplayerRun.MaxPlayers) _s.MpSims.Add("");
             for (int i = 0; i < _s.MpPlayers; i++)
             {
-                dl.AddText(Neon.Strong, 14, a + new Vector2(16, 216 + i * 38), Neon.U(Neon.Ink), $"P{i + 1}");
-                ImGui.SetCursorScreenPos(a + new Vector2(56, 210 + i * 38));
+                dl.AddText(Neon.Strong, 14, a + new Vector2(16, 280 + i * 38), Neon.U(Neon.Ink), $"P{i + 1}");
+                ImGui.SetCursorScreenPos(a + new Vector2(56, 274 + i * 38));
                 ImGui.PushItemWidth(b.X - a.X - 72);
                 int k = i;
                 Combo($"##netsim{i}", NetLines, _s.MpSims[i], v => _s.MpSims[k] = v, v => v.Length == 0 ? "clean line" : v);
@@ -90,7 +92,7 @@ namespace CosmicShore.Launcher
             }
 
             int live = _jobs.LocalPlayersRunning;
-            float y = 210 + _s.MpPlayers * 38 + 14;
+            float y = 274 + _s.MpPlayers * 38 + 14;
             ImGui.SetCursorScreenPos(a + new Vector2(16, y));
             float bw = b.X - a.X - 32;
             if (live > 0)
@@ -117,8 +119,8 @@ namespace CosmicShore.Launcher
             for (int i = 0; i < help.Length; i++)
                 dl.AddText(Neon.Small, 12, a + new Vector2(16, y + 64 + i * 17), Neon.U(Neon.Dim), help[i]);
 
-            ImGui.SetCursorScreenPos(a + new Vector2(16, y + 64 + help.Length * 17 + 14));
-            if (Neon.Button("netugscheck", "UGS RELAY CHECK", new Vector2(bw, 34), Neon.Cyan, Neon.Small, 14, enabled: !_jobs.Busy))
+            ImGui.SetCursorScreenPos(a + new Vector2(16, y + 64 + help.Length * 17 + 6));
+            if (Neon.Button("netugscheck", "UGS RELAY CHECK", new Vector2(bw, 28), Neon.Cyan, Neon.Small, 13, enabled: !_jobs.Busy))
                 _jobs.RunUgsRelayCheck();
             Neon.Tooltip("Proves UGS Relay works from Prisma: signs in two players in the game's LIVE UGS project (the same two\n" +
                          "every time), allocates, joins by code, connects through UGS Relay and times frames both ways.\n" +

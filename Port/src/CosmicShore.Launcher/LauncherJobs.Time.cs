@@ -255,7 +255,8 @@ namespace CosmicShore.Launcher
         /// the NET page drives (stats, network simulator, session faults) and may start on a
         /// simulated line (<paramref name="sims"/>, docs/MULTIPLAYER.md §6.2). Only player 1 plays
         /// sound. Each writes a session report under sessions/. <paramref name="transport"/> "relay"
-        /// starts Froglet's relay server first and sends every player's sessions through it (§6.7).
+        /// starts Froglet's relay server first and sends every player's sessions through it (§6.7);
+        /// "ugs" sends them through UGS Relay, each player signed in to the live project as its profile (§6.8).
         /// </summary>
         public void LaunchLocalPlayers(int players, string? scene, string size, IReadOnlyList<string>? sims = null, string? transport = null) => Start("Local multiplayer", async ct =>
         {
@@ -270,7 +271,12 @@ namespace CosmicShore.Launcher
             // A fresh session folder per run: no session a previous run left behind shows up as joinable.
             LocalNetDir = Path.Combine(Path.GetTempPath(), "prisma-multiplayer", DateTime.Now.ToString("yyyyMMdd-HHmmss"), "sessions");
             Directory.CreateDirectory(LocalNetDir);
-            bool relay = transport == "relay";
+            bool relay = transport == "relay", ugs = transport == "ugs";
+            if (ugs)
+            {
+                Log.Add(LogKind.Info, "Every player goes through UGS Relay, signed in to the game's live UGS project as its profile.");
+                transport = "udp";
+            }
             if (relay)
             {
                 Step("Starting Froglet's relay server", 1);
@@ -298,6 +304,7 @@ namespace CosmicShore.Launcher
                 psi.Environment["COSMIC_SHORE_NET_DIR"] = LocalNetDir;
                 if (!string.IsNullOrWhiteSpace(transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = transport;
                 if (relay) psi.Environment["COSMIC_SHORE_RELAY"] = LocalRelayUrl!;
+                else if (ugs) psi.Environment["COSMIC_SHORE_RELAY"] = "ugs";
                 else psi.Environment.Remove("COSMIC_SHORE_RELAY");
                 var sim = sims != null && i - 1 < sims.Count ? sims[i - 1] : "";
                 if (!string.IsNullOrWhiteSpace(sim)) psi.Environment["COSMIC_SHORE_NET_SIM"] = sim;
