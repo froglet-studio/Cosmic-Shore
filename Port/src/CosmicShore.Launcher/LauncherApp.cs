@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time, Studios }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time, Net, Studios }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1, string? ClonePathArg = null);
 
@@ -171,6 +171,7 @@ namespace CosmicShore.Launcher
                 _toolsScanned = true;
                 _jobs.RefreshLocalState();
                 if (!_args.Offline) _jobs.LoadBranches();
+                ReportBoardLoad();
                 IngestSessions(notify: true); // runs that ended while Prisma was closed are news too
                 RunDoctor();
                 // Only LOOK for a newer launcher; installing it is the user's call (UPDATE).
@@ -266,6 +267,7 @@ namespace CosmicShore.Launcher
             _imgui.Render();
 
             SaveProjectIfDirty(dt);
+            PollBoard(dt);
             _saveTimer += dt;
             if (_dirty && _saveTimer > 0.75) { _s.Save(); _dirty = false; _saveTimer = 0; }
 
@@ -308,6 +310,7 @@ namespace CosmicShore.Launcher
                 case Page.Editor: DrawEditor(contentA, contentB); break;
                 case Page.Time: DrawTime(contentA, contentB); break;
                 case Page.Studios: DrawStudios(contentA, contentB); break;
+                case Page.Net: DrawNet(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -413,6 +416,7 @@ namespace CosmicShore.Launcher
                 (Page.Editor, "EDITOR", IconCube),
                 (Page.Studios, "STUDIOS", IconStudio),
                 (Page.Time, "TIME", IconClock),
+                (Page.Net, "NET", IconNet),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Options, "SETTINGS", Neon.IconGear),

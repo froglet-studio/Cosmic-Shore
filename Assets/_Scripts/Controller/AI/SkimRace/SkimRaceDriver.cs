@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -34,6 +36,18 @@ namespace CosmicShore.Gameplay
     {
         public enum Mode { Idle = 0, Racing = 1, Recovering = 2 }
 
+        // The thinking's cost, by part, in the Unity Profiler under SkimRace.Pilot.Decide (and tallied by
+        // the offline simulator under the same names). Each wraps a whole step - at most once per
+        // decision, and TrackMpc / Planner only on the decisions that re-plan - so the markers cost nothing
+        // that shows; the parts a policy switches off never appear.
+        static readonly ProfilerMarker s_PlanPassMarker = new("SkimRace.Driver.PlanPass");
+        static readonly ProfilerMarker s_GuardsMarker = new("SkimRace.Driver.Guards");
+        static readonly ProfilerMarker s_PlannerMarker = new("SkimRace.Driver.Planner");
+        static readonly ProfilerMarker s_TrackMpcMarker = new("SkimRace.Driver.TrackMpc");
+        static readonly ProfilerMarker s_LevelApproachMarker = new("SkimRace.Driver.LevelApproach");
+        static readonly ProfilerMarker s_MpcMarker = new("SkimRace.Driver.Mpc");
+        static readonly ProfilerMarker s_GuardMassMarker = new("SkimRace.Driver.GuardMass");
+
         public struct Diagnostics
         {
             public Mode Mode;
@@ -48,6 +62,14 @@ namespace CosmicShore.Gameplay
         }
 
         readonly SkimRaceAIConfigSO _cfg;
+
+        /// <summary>
+        /// The lobby difficulty's deliberate mistakes, or null for none (Hard). When set, every
+        /// decision is made on <see cref="SkimRaceHandicap.View"/> of the observation - what the pilot
+        /// BELIEVES - while progress is still judged against the real crystal. Null leaves the driver
+        /// exactly the unhandicapped pilot.
+        /// </summary>
+        public SkimRaceHandicap Handicap { get; set; }
 
         Mode _mode = Mode.Idle;
         float _recoveryUntil;
@@ -349,7 +371,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 axis = Vector3.Cross(fwd, desired);
                 if (axis.sqrMagnitude < 1e-8f) axis = up;
-                float lead = Mathf.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
+                float lead = MathfNoAlloc.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
                 cmdTarget = Quaternion.AngleAxis(lead, axis.normalized) * fwd;
             }
             cmdErr = Vector3.Angle(cmdFwd, cmdTarget);
@@ -361,7 +383,7 @@ namespace CosmicShore.Gameplay
                 axis.Normalize();
                 float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
                 float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-                float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+                float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
                 yaw = stick * u / m;
                 pitch = stick * r / m;
             }
@@ -378,7 +400,7 @@ namespace CosmicShore.Gameplay
             axis.Normalize();
             float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
             float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-            float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+            float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
             yaw = stick * u / m;
             pitch = stick * r / m;
         }
@@ -607,14 +629,26 @@ namespace CosmicShore.Gameplay
                 if (o.HasTarget && (pos - o.TargetPosition).sqrMagnitude <= capture * capture) break;
 
                 Vector3 right = rot * (Vector3.right * w), fwd = rot * (Vector3.forward * l);
-                for (int i = 0; i < Obstacles.Count; i++)
+                if (_obCount > 0)
                 {
-                    var ob = Obstacles[i];
-                    float reach = ob.Half.magnitude + w + l + _cfg.MassGuardMargin;
-                    if ((ob.Center - pos).sqrMagnitude > reach * reach) continue;
-                    float c = Mathf.Min(ob.Distance(pos), Mathf.Min(ob.Distance(pos + right), ob.Distance(pos - right)));
-                    c = Mathf.Min(c, Mathf.Min(ob.Distance(pos + fwd), ob.Distance(pos - fwd)));
-                    if (c < minC) minC = c;
+                    // Only the cells round this step can hold a box within its reach (see
+                    // BuildObstacleGrid). A cell pair that hashes to one bucket is walked twice, which
+                    // costs a repeat test and never changes the minimum. A step the grid cannot place
+                    // exactly - non-finite, or too far out for its cell index - scans every box.
+                    float fx = pos.x * _gridInv, fy = pos.y * _gridInv, fz = pos.z * _gridInv;
+                    if (_gridExhaustive || !(Mathf.Abs(fx) <= GridSpan && Mathf.Abs(fy) <= GridSpan && Mathf.Abs(fz) <= GridSpan))
+                    {
+                        for (int i = 0; i < _obCount; i++) minC = BoxClearance(i, pos, right, fwd, minC);
+                    }
+                    else
+                    {
+                        int cx = Mathf.FloorToInt(fx), cy = Mathf.FloorToInt(fy), cz = Mathf.FloorToInt(fz);
+                        for (int gx = cx - 1; gx <= cx + 1; gx++)
+                        for (int gy = cy - 1; gy <= cy + 1; gy++)
+                        for (int gz = cz - 1; gz <= cz + 1; gz++)
+                            for (int i = _gridHead[GridBucket(gx, gy, gz)]; i >= 0; i = _gridNext[i])
+                                minC = BoxClearance(i, pos, right, fwd, minC);
+                    }
                 }
                 if (_guardCourse != null)
                 {
@@ -835,6 +869,8 @@ namespace CosmicShore.Gameplay
         {
             if (now >= _nextTrack)
             {
+                // Timed only when it re-plans (TrackMpcHz), so the Profiler shows the frames it lands on.
+                using var replanScope = s_TrackMpcMarker.Auto();
                 _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
                 course.Project(o.Position, ref _trackHint, out _, out _);
                 float best = TrackCost(o, course, yaw, pitch, throttle, aim, lineMode) * (1f - _cfg.TrackMpcNominalBias);
@@ -858,6 +894,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool GuardMass(in SkimRaceObservation o, Vector3 aim, ref float yaw, ref float pitch, float throttle)
         {
+            BuildObstacleGrid();
             float margin = _cfg.MassGuardMargin;
             float nominal = RolloutClearance(o, yaw, pitch, throttle, aim, margin, out Vector3 nominalEnd);
             LastGuardNominal = nominal;
@@ -880,6 +917,139 @@ namespace CosmicShore.Gameplay
             pitch = bestPitch;
             _massVetoes++;
             return true;
+        }
+
+        // ── Laid-mass broadphase ─────────────────────────────────────────────
+        // One guard decision runs up to 26 rollouts of ~13-23 steps, and every step used to test
+        // EVERY obstacle the pilot gathered (~120-280 in a 3-AI race). Measured in the offline sim
+        // (3 AI seats, optimized .NET), 99.5% of those tests failed the reach check, and they were
+        // most of the decide cost at I1: 0.085 of 0.114 ms per seat per frame, paid by every AI
+        // seat on every frame. (At I4 the guard's other half, the track shells, cost more; that is
+        // SkimRaceCourse.ShellClearance's to answer.)
+        //
+        // So each decision snapshots the obstacles ONCE - inverse rotation and reach precomputed
+        // with the very expressions the loop used - into a small hash grid whose cell is at least
+        // the largest reach. A step then walks only its own cell and the 26 round it. That is a
+        // superset of every box that can pass the reach test, the exact test still runs on each,
+        // and a minimum does not depend on visit order, so the guard returns bit-identical answers.
+        //
+        // Exactness has two edges, and both drop to the exhaustive scan the grid replaced rather
+        // than approximate. A NaN centre or step passes no reach test and is measured at 0 clearance
+        // (Mathf.Max(NaN, 0) is 0), so it vetoes from ANY cell; and past GridSpan cells from the
+        // origin the float cell index loses the precision the one-cell neighbourhood relies on
+        // (65536 cells is at least 32k units; a course is a few thousand).
+        const float GridSpan = 65536f;
+        Vector3[] _obCenter = new Vector3[0];
+        SkimRaceObstacle.LocalFrame[] _obFrame = new SkimRaceObstacle.LocalFrame[0];
+        Vector3[] _obHalf = new Vector3[0];
+        float[] _obReach = new float[0];
+        int[] _gridNext = new int[0];
+        int[] _gridHead = new int[0];
+        int _obCount, _gridMask;
+        float _gridInv;
+        bool _gridExhaustive;
+
+        void BuildObstacleGrid()
+        {
+            int n = Obstacles.Count;
+            _obCount = n;
+            if (n == 0) return;
+
+            if (_obCenter.Length < n)
+            {
+                int cap = Mathf.NextPowerOfTwo(n);
+                _obCenter = new Vector3[cap];
+                _obFrame = new SkimRaceObstacle.LocalFrame[cap];
+                _obHalf = new Vector3[cap];
+                _obReach = new float[cap];
+                _gridNext = new int[cap];
+            }
+
+            float w = _cfg.HullHalfWidth, l = _cfg.HullHalfLength;
+            float maxReach = 0f;
+            bool exhaustive = false;
+            for (int i = 0; i < n; i++)
+            {
+                var ob = Obstacles[i];
+                _obCenter[i] = ob.Center;
+                _obFrame[i] = new SkimRaceObstacle.LocalFrame(Quaternion.Inverse(ob.Rotation));
+                _obHalf[i] = ob.Half;
+                // Same expression, same order, as the per-step test it replaces.
+                float reach = ob.Half.magnitude + w + l + _cfg.MassGuardMargin;
+                _obReach[i] = reach;
+                if (!(reach <= float.MaxValue)) exhaustive = true; // NaN or infinite
+                else if (reach > maxReach) maxReach = reach;
+            }
+
+            // A box within reach of a point is within maxReach of it on every axis, so with the
+            // cell 5% wider than maxReach the two are never more than one cell apart, with room to
+            // spare for the rounding in the cell index (inside GridSpan).
+            float cell = maxReach * 1.05f + 0.5f;
+            _gridInv = 1f / cell;
+
+            int buckets = Mathf.Max(16, Mathf.NextPowerOfTwo(n * 2));
+            if (_gridHead.Length < buckets) _gridHead = new int[buckets];
+            _gridMask = buckets - 1;
+            for (int b = 0; b < buckets; b++) _gridHead[b] = -1;
+
+            for (int i = 0; i < n && !exhaustive; i++)
+            {
+                Vector3 c = _obCenter[i];
+                float fx = c.x * _gridInv, fy = c.y * _gridInv, fz = c.z * _gridInv;
+                if (!(Mathf.Abs(fx) <= GridSpan && Mathf.Abs(fy) <= GridSpan && Mathf.Abs(fz) <= GridSpan))
+                {
+                    exhaustive = true;
+                    break;
+                }
+                int bucket = GridBucket(Mathf.FloorToInt(fx), Mathf.FloorToInt(fy), Mathf.FloorToInt(fz));
+                _gridNext[i] = _gridHead[bucket];
+                _gridHead[bucket] = i;
+            }
+            _gridExhaustive = exhaustive;
+        }
+
+        /// <summary>
+        /// The guard's per-box test, the same arithmetic as ever: the reach cull, then the nearest of the hull centre,
+        /// wingtips, nose and tail to box <paramref name="i"/>. Returns the smaller of that and
+        /// <paramref name="minC"/>. The grid walk and the exhaustive scan both call this, so the two
+        /// paths cannot disagree about a box.
+        /// </summary>
+        float BoxClearance(int i, Vector3 pos, Vector3 right, Vector3 fwd, float minC)
+        {
+            // In floats, for the editor's Mono JIT (see SkimRaceObstacle.LocalFrame), rounding - an explicit
+            // (float) - every value the Vector3 form rounded: (oc - pos) and its sqrMagnitude for the reach
+            // cull, then for each of pos, pos +- right, pos +- fwd the point itself and its offset from the
+            // centre. The editor's Mono keeps float locals in double registers once it optimizes.
+            Vector3 oc = _obCenter[i];
+            float ox = (float)(oc.x - pos.x), oy = (float)(oc.y - pos.y), oz = (float)(oc.z - pos.z);
+            float o2 = (float)(ox * ox + oy * oy + oz * oz);
+            float reach = _obReach[i];
+            if (o2 > reach * reach) return minC;
+            ref readonly SkimRaceObstacle.LocalFrame f = ref _obFrame[i];
+            Vector3 half = _obHalf[i];
+            float rpx = (float)(pos.x + right.x), rpy = (float)(pos.y + right.y), rpz = (float)(pos.z + right.z); // pos + right
+            float rmx = (float)(pos.x - right.x), rmy = (float)(pos.y - right.y), rmz = (float)(pos.z - right.z); // pos - right
+            float fpx = (float)(pos.x + fwd.x), fpy = (float)(pos.y + fwd.y), fpz = (float)(pos.z + fwd.z);       // pos + fwd
+            float fmx = (float)(pos.x - fwd.x), fmy = (float)(pos.y - fwd.y), fmz = (float)(pos.z - fwd.z);       // pos - fwd
+            float c0 = BoxPoint(f, half, oc, pos.x, pos.y, pos.z);
+            float c1 = BoxPoint(f, half, oc, rpx, rpy, rpz);
+            float c2 = BoxPoint(f, half, oc, rmx, rmy, rmz);
+            float c3 = BoxPoint(f, half, oc, fpx, fpy, fpz);
+            float c4 = BoxPoint(f, half, oc, fmx, fmy, fmz);
+            float c = Mathf.Min(c0, Mathf.Min(c1, c2));
+            c = Mathf.Min(c, Mathf.Min(c3, c4));
+            return c < minC ? c : minC;
+        }
+
+        int GridBucket(int x, int y, int z) =>
+            (int)(((uint)x * 73856093u) ^ ((uint)y * 19349663u) ^ ((uint)z * 83492791u)) & _gridMask;
+
+        /// <summary>Distance from one hull point (already stored, as <c>pos + right</c> was) to one box; its
+        /// offset from the centre is stored before it is rotated, as <c>p - center</c> was.</summary>
+        static float BoxPoint(in SkimRaceObstacle.LocalFrame f, Vector3 half, Vector3 oc, float px, float py, float pz)
+        {
+            float dx = (float)(px - oc.x), dy = (float)(py - oc.y), dz = (float)(pz - oc.z);
+            return f.Distance(dx, dy, dz, half);
         }
 
         SkimRacePlanner _planner;
@@ -1058,6 +1228,7 @@ namespace CosmicShore.Gameplay
             ViaPoints = 0;
             Obstacles.Clear();
             _ringReadyAt = 0f;
+            Handicap?.Reset();
             _ringHoldUntil = 0f;
             _nextPlan = 0f;
             _plan = default;
@@ -1080,13 +1251,16 @@ namespace CosmicShore.Gameplay
         /// One decision. <paramref name="course"/> may be null (track not laid yet): the pilot
         /// then flies straight at the crystal. <paramref name="now"/> is race time in seconds.
         /// </summary>
-        public SkimRaceAction Decide(in SkimRaceObservation o, SkimRaceCourse course, float now, float dt)
+        public SkimRaceAction Decide(in SkimRaceObservation observed, SkimRaceCourse course, float now, float dt)
         {
             if (_mode == Mode.Idle) _mode = Mode.Racing;
             dt = Mathf.Max(dt, 1e-4f);
-            _speed = o.Speed;
+            _speed = observed.Speed;
 
-            UpdateProgress(o, now, dt);
+            // Progress (and so recovery) is judged against the REAL crystal; everything below decides on
+            // what the pilot believes, which differs only for a handicapped (Easy / Medium) pilot.
+            UpdateProgress(observed, now, dt);
+            var o = Handicap != null ? Handicap.View(observed, course) : observed;
 
             // ── 1. Aim point ────────────────────────────────────────────────
             bool haveCourse = course != null && o.HasCourse;
@@ -1103,7 +1277,8 @@ namespace CosmicShore.Gameplay
             float directDistance = _cfg.CrystalDirectDistance * approach;
 
             if (haveCourse && o.HasTarget)
-                PlanPass(o, course);
+                using (s_PlanPassMarker.Auto())
+                    PlanPass(o, course);
 
             bool behind = haveCourse && o.HasTarget && o.TargetAheadOnCourse > o.CourseLength * 0.5f;
             bool inFront = o.HasTarget && o.TargetAlignment > 0.35f;
@@ -1167,10 +1342,13 @@ namespace CosmicShore.Gameplay
 
             // ── 1b. Slab guard: never let the hull approach the ribbon plane inside its edge ─
             bool guarded = false;
-            if (haveCourse && _cfg.SlabGuardSeconds > 0f)
-                guarded = GuardSlab(o, course, ref aim);
-            if (haveCourse && _cfg.HullGuardSeconds > 0f && GuardHull(o, course, ref aim))
-                guarded = true;
+            using (s_GuardsMarker.Auto())
+            {
+                if (haveCourse && _cfg.SlabGuardSeconds > 0f)
+                    guarded = GuardSlab(o, course, ref aim);
+                if (haveCourse && _cfg.HullGuardSeconds > 0f && GuardHull(o, course, ref aim))
+                    guarded = true;
+            }
 
             Vector3 toAim = aim - o.Position;
             Vector3 desired = toAim.sqrMagnitude > 1e-4f ? toAim.normalized : o.Forward;
@@ -1236,7 +1414,8 @@ namespace CosmicShore.Gameplay
                     _nextPlan = now + 1f / Mathf.Max(1f, _cfg.PlannerHz);
                     _planner ??= new SkimRacePlanner(_cfg);
                     course.Project(o.Position, ref _planHint, out _, out _);
-                    _plan = _planner.Plan(o, course, passPoint, _planHint, yaw, pitch, throttle);
+                    using (s_PlannerMarker.Auto())
+                        _plan = _planner.Plan(o, course, passPoint, _planHint, yaw, pitch, throttle);
                 }
                 yaw = _plan.Yaw;
                 pitch = _plan.Pitch;
@@ -1261,17 +1440,24 @@ namespace CosmicShore.Gameplay
                 TrackMpc(o, course, aim, linePursuit, now, ref yaw, ref pitch, throttle);
             if (_cfg.UseLevelApproach && haveCourse && course.HasShells && o.HasTarget && _mode != Mode.Recovering
                 && !behind && passDist <= Mathf.Max(o.Speed, 60f) * _cfg.LevelApproachSeconds)
-                LevelApproach(o, course, passPoint, now, throttle, ref yaw, ref pitch);
+            {
+                using (s_LevelApproachMarker.Auto())
+                    LevelApproach(o, course, passPoint, now, throttle, ref yaw, ref pitch);
+            }
             else _levelValid = false;
 
             if (_cfg.UseMpc && o.HasTarget)
             {
                 if (_rollCourse == null && _cfg.RolloutFollowsLine && haveCourse) { _rollCourse = course; _rollHint = -1; }
                 if (haveCourse) course.Project(o.Position, ref _rollHint, out _, out _);
-                Mpc(o, haveCourse ? course : null, aim, now, ref yaw, ref pitch, ref throttle);
+                using (s_MpcMarker.Auto())
+                    Mpc(o, haveCourse ? course : null, aim, now, ref yaw, ref pitch, ref throttle);
             }
-            else if (_cfg.MassGuardSeconds > 0f && (Obstacles.Count > 0 || trackGuard) && GuardMass(o, aim, ref yaw, ref pitch, throttle))
-                guarded = true;
+            else if (_cfg.MassGuardSeconds > 0f && (Obstacles.Count > 0 || trackGuard))
+            {
+                using (s_GuardMassMarker.Auto())
+                    if (GuardMass(o, aim, ref yaw, ref pitch, throttle)) guarded = true;
+            }
 
             // ── Pickup hold: fly straight through the pickup ring's hollow centre ──
             // A pickup lays 8 prisms on radius 8.2, centred 8 u ahead along the hull's heading

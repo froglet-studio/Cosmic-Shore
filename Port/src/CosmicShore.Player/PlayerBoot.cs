@@ -68,9 +68,24 @@ namespace CosmicShore.Player
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
             // Sessions (lobby + relay) through a directory every local/LAN player shares.
+            // The transport every player of a session shares: COSMIC_SHORE_NET_TRANSPORT=udp (default) | tcp.
+            // Every transport then runs behind the network simulator (off unless COSMIC_SHORE_NET_SIM or `do netsim`).
             if (CosmicShore.Engine.Networking.NetDriver.Enabled)
+            {
+                var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
+                Console.WriteLine($"[net] transport: {transport}");
+                // Sessions through a relay (docs/MULTIPLAYER.md §6.7-6.8): COSMIC_SHORE_RELAY=<allocations URL> (Froglet's
+                // relay server, `--relay-server`) or ugs (UGS Relay, signed in as this profile); unset keeps direct connections.
+                if (UgsSetup.InstallRelay(root) is { } relayLine) Console.WriteLine(relayLine);
+                CosmicShore.Engine.Networking.NetSimulator.Install();
+            }
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled)
+            {
                 CosmicShore.Engine.Networking.MultiplayerService.Instance =
                     new CosmicShore.Engine.Networking.DirectoryMultiplayerService(CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory);
+                // Session-service faults (off unless COSMIC_SHORE_NET_FAULT or `do netfault`): docs/MULTIPLAYER.md §6.3.
+                CosmicShore.Engine.Networking.NetFaults.Install();
+            }
             // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
             // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
             // (development) build compiles LogVerbose in.

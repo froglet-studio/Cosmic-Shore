@@ -2,9 +2,24 @@
 
 > Moved verbatim from the root `CLAUDE.md`, which indexes every topic file. Paths in this file are relative to the repository root.
 
+> **Doing multiplayer work? Read `Docs/MULTIPLAYER_START_HERE.md` first:** the owner's goals and
+> rules, current state, the hand-test list and the ordered next steps, for Unity and Amoebius alike.
+
 ### Multiplayer / Netcode
 
-The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.13.3; the pinned versions live in `Packages/manifest.json`) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+
+**Bump the protocol version with every change to what goes over the wire (rule, 2026-10-05).** Two
+builds that disagree about a replicated payload's layout - a `NetworkVariable` struct such as
+`ArcadeConfigSyncManager.LobbySnapshot`, the order or count of a behaviour's `NetworkVariable`s, an RPC
+signature - cannot play together, and with `EnsureNetworkVariableLengthSafety` off (the
+`NetworkManager` prefab's setting) a mismatch does not fail where it happens: the joiner reads the
+host's bytes out of step and the join dies later, silently - a party invite that "just does not get you
+into the lobby". So whoever changes a payload also raises `NetworkConfig.ProtocolVersion` in
+`Assets/_Prefabs/CORE/NetworkManager.prefab` (no scene overrides it; nothing sets it at runtime). Netcode
+then refuses a mismatched build at the connection request, and the HOST's console names it -
+`NetworkConfig mismatch`. History: **9** (2026-10-05) - `LobbySnapshot.AIDifficulty`, the lobby's AI
+difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
@@ -36,7 +51,7 @@ ClientPlayerVesselInitializer (NetworkBehaviour)
 └── Used by all ServerPlayerVesselInitializer variants
 
 PlayerSpawner / VesselSpawner (single-player, non-networked path)
-└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter, VolumeTestPlayerSpawnerAdapter
+└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter
 ```
 
 **Player (`NetworkBehaviour`) NetworkVariables:**

@@ -47,6 +47,8 @@ namespace CosmicShore.Core
         readonly ApplicationStateMachine _appStateMachine;
         readonly SceneTransitionManager _sceneTransition;
         readonly OfflineModeService _offlineMode;
+        readonly Func<UniTask> _resetPartyLayer;
+        readonly Func<string, UniTask> _loadScene;
 
         /// <summary>
         /// Raised when a reconnect attempt starts and again when it resolves (true = in
@@ -64,7 +66,9 @@ namespace CosmicShore.Core
             INetworkTransitionService networkTransition,
             ApplicationStateMachine appStateMachine,
             SceneTransitionManager sceneTransition,
-            OfflineModeService offlineMode)
+            OfflineModeService offlineMode,
+            Func<UniTask> resetPartyLayer = null,
+            Func<string, UniTask> loadScene = null)
         {
             _gameData = gameData;
             _sceneNames = sceneNames;
@@ -73,7 +77,23 @@ namespace CosmicShore.Core
             _appStateMachine = appStateMachine;
             _sceneTransition = sceneTransition;
             _offlineMode = offlineMode;
+            // The two steps that reach outside this class. Defaulted to the real party layer and the
+            // real scene load; a test passes its own to observe the re-boot's order (offline case 6,
+            // HARDENING_PLAN_STEAM_LAUNCH.md §4.1) with no HostConnectionService and no scene.
+            _resetPartyLayer = resetPartyLayer ?? ResetLivePartyLayerAsync;
+            _loadScene = loadScene ?? LoadSceneAsync;
         }
+
+        static UniTask ResetLivePartyLayerAsync()
+        {
+            var hcs = HostConnectionService.Instance;
+            return hcs != null ? hcs.ResetPartyLayerAsync() : UniTask.CompletedTask;
+        }
+
+        UniTask LoadSceneAsync(string scene) =>
+            _sceneTransition != null
+                ? _sceneTransition.LoadSceneAsync(scene)
+                : UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(scene).ToUniTask();
 
         /// <summary>
         /// True when a reconnect is worth offering: this session is offline (or has no live
@@ -154,20 +174,16 @@ namespace CosmicShore.Core
                 //    it, so a re-join while still a member is refused ("player is already a
                 //    member of the lobby") and HCS never finishes initialising. Order matters -
                 //    the leave calls need a live transport to reach UGS, so they go first.
-                var hcs = HostConnectionService.Instance;
-                if (hcs != null)
+                try
                 {
-                    try
-                    {
-                        await hcs.ResetPartyLayerAsync().AttachExternalCancellation(ct);
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch (Exception e)
-                    {
-                        // Fail-soft: a stale membership costs us the online attempt, not the
-                        // switch. The boot chain still runs and still falls back to offline.
-                        CSDebug.LogWarning($"[ReconnectService] Party teardown failed: {e.Message} - continuing.");
-                    }
+                    await _resetPartyLayer().AttachExternalCancellation(ct);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception e)
+                {
+                    // Fail-soft: a stale membership costs us the online attempt, not the
+                    // switch. The boot chain still runs and still falls back to offline.
+                    CSDebug.LogWarning($"[ReconnectService] Party teardown failed: {e.Message} - continuing.");
                 }
 
                 // 2. Tear down whatever host is running - the offline loopback host, or a
@@ -182,7 +198,7 @@ namespace CosmicShore.Core
                 //    the host still going down. This clears what the session IS, never the
                 //    player's recorded PREFERENCE - the auth scene reads that next and will
                 //    put us straight back offline when it is set.
-                _gameData.IsOfflineSession = false;
+                OfflineModeService.EndOfflineSession(_gameData);
 
                 // 4. Re-arm auth. Without clearing the success latch a successful sign-in
                 //    would not re-raise OnSignedIn, and nothing downstream would start.
@@ -195,10 +211,7 @@ namespace CosmicShore.Core
                 string authScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 CSDebug.LogVerbose(CSLogChannel.Boot, $"[ReconnectService] Loading {authScene} to re-run the boot chain.");
 
-                if (_sceneTransition != null)
-                    await _sceneTransition.LoadSceneAsync(authScene);
-                else
-                    await UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(authScene).ToUniTask();
+                await _loadScene(authScene);
 
                 return true;
             }

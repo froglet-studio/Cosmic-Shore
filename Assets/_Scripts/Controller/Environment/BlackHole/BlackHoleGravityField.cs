@@ -363,9 +363,24 @@ namespace CosmicShore.Gameplay
                         //    it went in with — outward there (BlackHolePairMath.ExitPosition).
                         // The job left the velocity on the component; only the position changes, through the
                         // mover's own notify (index + queued render matrix, flushed this frame).
+                        // An owner's rule first (the Stoat's dipole, R_VesselActions/STOAT_DIPOLE.md): below its
+                        // Space upgrade the prism is simply gone at the horizon — it fell behind the shadow, so
+                        // there is no debris to draw and nothing comes out of the source.
+                        if (hole != null && hole.PrismCapture == BlackHole.PrismCaptureRule.Vanish)
+                        {
+                            RemoveAt(i, clearComponent: true);
+                            p.Vanish(hole.CaptureOwnerName);
+                            CapturedTotal++;
+                            CapturedThisSecond++;
+                            break;
+                        }
                         var throat = hole != null ? hole.Throat : null;
                         if (throat != null && !throat.IsDespawning)
                         {
+                            // ...with it, the prism comes out of the source in the thief's domain. Every peer runs
+                            // this on its own copy of the pair, as every peer runs a skimmer's steal.
+                            if (hole.PrismCapture == BlackHole.PrismCaptureRule.Steal && !string.IsNullOrEmpty(hole.CaptureOwnerName))
+                                p.Steal(hole.CaptureOwnerName, hole.CaptureDomain, superSteal: true);
                             p.transform.position = hole.IsSmooth
                                 ? p.transform.position + (throat.transform.position - hole.transform.position)
                                 : BlackHolePairMath.ExitPosition(_points[i], hole.transform.position,

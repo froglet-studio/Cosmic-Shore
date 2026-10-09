@@ -40,6 +40,7 @@ namespace CosmicShore.Gameplay
         static readonly int LensId = Shader.PropertyToID("_BHLens");
         static readonly int WhiteId = Shader.PropertyToID("_BHWhite");
         static readonly int CoreId = Shader.PropertyToID("_BHCore");
+        static readonly int TintId = Shader.PropertyToID("_BHTint");
         static readonly int ThroatId = Shader.PropertyToID("_BHThroat");
         static readonly int SmoothId = Shader.PropertyToID("_BHSmooth");
 
@@ -303,6 +304,9 @@ namespace CosmicShore.Gameplay
             // A white hole's horizon emits (§11): a white-hot core over its disc. A smooth well has no horizon.
             _block.SetFloat(WhiteId, _hole.IsSource && !smooth ? 1f : 0f);
             _block.SetVector(CoreId, new Vector4(config.WhiteCoreBrightness, config.WhiteCoreSkyMix, 0f, 0f));
+            // An owned hole's domain tint (BlackHole.DomainTint): the shadow's dark, the core's light. 0 = untinted.
+            var tint = _hole.DomainTint;
+            _block.SetVector(TintId, new Vector4(tint.r, tint.g, tint.b, smooth ? 0f : _hole.DomainTintAmount));
             _renderer.SetPropertyBlock(_block);
         }
 

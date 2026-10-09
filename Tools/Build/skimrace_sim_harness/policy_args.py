@@ -12,4 +12,4 @@ spec = importlib.util.spec_from_file_location("author", os.path.join(HERE, "..",
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 ov = mod.POLICIES[sys.argv[1]]
-print(" ".join(f"{k}={int(v) if isinstance(v, bool) else v}" for k, v in ov.items() if k != "PolicyVersion"))
+print(" ".join(f"{k}={int(v) if isinstance(v, bool) else v}" for k, v in ov.items() if k not in ("PolicyVersion", "TrackFingerprint")))

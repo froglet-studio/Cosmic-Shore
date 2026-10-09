@@ -11,6 +11,10 @@ Android**, iOS later; Squirrel and Stoat first.
 
 ---
 
+**Starting or publishing a studio:** the **`/vessel-studio`** skill holds the decisions the Squirrel and Stoat
+studios settled (D1-D15), the build order, the artifact build and publish, and the **Sync panel** for two people
+on one studio (`VesselStudio/SYNC_PANEL.md`). Page recipe: `/studio-creator` (branch `vessel-studio`).
+
 ## 1. What exists (2026-10-09, branch `vessel-studio`)
 
 | Piece | Where | State |

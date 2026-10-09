@@ -15,6 +15,11 @@ source under `Assets/_Scripts/`.
 - `CosmicShore-Multiplayer-LinkedIn-Slides.pdf` — a LinkedIn-ready **slide deck / carousel** (4:5,
   16 slides) built from the Part I narrative: one idea per slide, with diagrams and the bug stories.
 
+
+**Launch programme:** `HARDENING_PLAN_STEAM_LAUNCH.md` (what to do, in order, with gates)
+and `../prompts/MULTIPLAYER_HARDENING_PROMPT.md` (the same thing, executable).
+**Root-cause analysis:** `REVIEW_INVITE_AND_RESILIENCE.md`. **Live queue:** `ROADMAP.md`.
+
 ## Regenerate
 
 Requirements: Node 18+, Python 3.9+ with [WeasyPrint](https://weasyprint.org/).

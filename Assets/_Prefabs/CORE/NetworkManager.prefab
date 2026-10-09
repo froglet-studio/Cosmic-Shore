@@ -48,7 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkManagerExpanded: 0
   NetworkConfig:
-    ProtocolVersion: 8
+    ProtocolVersion: 9
     NetworkTransport: {fileID: 6731789929349827546}
     PlayerPrefab: {fileID: 2151207714166088056, guid: 0a8653be5d331c5449d3130cef596493,
       type: 3}
@@ -97,8 +97,8 @@ MonoBehaviour:
   m_MaxPayloadSize: 262144
   m_HeartbeatTimeoutMS: 500
   m_ConnectTimeoutMS: 1000
-  m_MaxConnectAttempts: 60
-  m_DisconnectTimeoutMS: 30000
+  m_MaxConnectAttempts: 10
+  m_DisconnectTimeoutMS: 10000
   ConnectionData:
     Address: 127.0.0.1
     Port: 7777

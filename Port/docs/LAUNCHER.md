@@ -35,7 +35,8 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
 | **STUDIOS** | The Vessel Studio: one card per vessel studio (Squirrel, Stoat), each opening its page from the workspace in the browser, an **AGENT** chat on it, and its docs. **WEB LINK** is the same studio published on claude.ai, which a phone opens. Catalog: `Docs/Studios/VesselStudio/studios.json` (below). |
-| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
+| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
+| **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Amoebius's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
@@ -93,7 +94,7 @@ Each card has these buttons:
 - **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
   instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
 
-## TIME - benchmarks and local multiplayer
+## TIME - benchmarks
 
 **BENCHMARK** times the game on this machine. Tick scenes and replays (REPLAY rows are the parity
 harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
@@ -113,10 +114,24 @@ faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` an
 from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
 benchmark unattended and closes Amoebius when it is saved.
 
-**MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
-`player2` ...) with networking on and sound only in the first. They share one session folder, so
-a party or match hosted in one window shows up in the others: host in one, join from the rest.
-Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+## NET - multiplayer on this PC
+
+Amoebius's counterpart of Unity's Multiplayer Play Mode, Network Simulator and Runtime Network Stats
+Monitor (`docs/MULTIPLAYER.md` §6).
+
+**PLAYERS** opens 2, 3 or 4 game windows (a party is four), tiled two by two, each in its own save
+slot (`player1`, `player2` ...) with networking on and sound only in the first. They share one
+fresh session folder per run, so a party or match hosted in one window shows up in the others:
+host in one, join from the rest (the friends list, or the DiagnosticsHUD's `party invite <name>` /
+`party join <name>`). **TRANSPORT** picks what carries their traffic: UDP (Froglet's own transport,
+the default) or TCP (the first one); every player uses the same. Each player can start on a
+simulated line (clean, lan, broadband, dsl, 4g, 3g, poor). Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+
+**LIVE** shows, once a second, each player's scene, role (server or client), traffic in and out and
+RTT to each peer, read from its control port. Per player, while it runs: change its line, **PULL
+CABLE** (after 10 s every peer drops it, as a real timeout does; **PLUG IN** ends it), arm a session
+fault (full, ratelimit=3, relayfail, slow=2000, down) and **CAPTURE 10 S** (600 frames of per-frame
+traffic and RTT to a JSON file the console names). The windows' titles carry the same line.
 
 ## TRACKS - Amoebius's memory of every run
 
@@ -154,6 +169,12 @@ the problem has stayed away for three runs through its scene, the card gets a gr
 and a notification offers MARK DONE (moving it stays your call). If the problem comes back, the
 card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
 fix is in progress.
+
+The board is `board.json` beside the tracks. A suggestion an agent makes while Amoebius is open shows up
+within a second and survives Amoebius's next save (saves merge with the file instead of overwriting it).
+If the file cannot be read, Amoebius keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
+starts an empty board; the copy is never overwritten.
+How it works, how to test it on Windows, and the scheduler that builds on it: [`PRISMA_BOARD_SCHEDULER.md`](PRISMA_BOARD_SCHEDULER.md).
 
 ## BUILD
 

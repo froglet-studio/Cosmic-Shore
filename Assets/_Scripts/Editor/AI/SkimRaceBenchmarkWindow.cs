@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Editor.Froglet;
 using CosmicShore.Gameplay;
 using UnityEditor;
@@ -26,6 +27,7 @@ namespace CosmicShore.Editor.AI
         int _players = 2;
         float _limit = 0f;   // 0 = the intensity's default (SkimRaceRaceRecorder.DefaultLimitSeconds)
         float _timeout = 150f;
+        AIDifficulty _difficulty = AIDifficulty.Hard;
 
         [MenuItem("FrogletTools/AI/Skim Race AI Benchmark")]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
@@ -41,11 +43,12 @@ namespace CosmicShore.Editor.AI
             if (_limit <= 0f)
                 EditorGUILayout.LabelField(" ", $"default for I{_intensity}: {SkimRaceRaceRecorder.DefaultLimitSeconds(_intensity):F0} s");
             _timeout = EditorGUILayout.FloatField("Per-race timeout (s)", _timeout);
+            _difficulty = (AIDifficulty)EditorGUILayout.EnumPopup("AI difficulty", _difficulty);
 
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
                 if (GUILayout.Button("Run benchmark (enters Play mode)"))
-                    StartFromEditor(_races, _intensity, _players, _limit, _timeout);
+                    StartFromEditor(_races, _intensity, _players, _limit, _timeout, difficulty: _difficulty);
             }
 
             var r = SkimRaceBenchmarkRunner.Active;
@@ -56,7 +59,7 @@ namespace CosmicShore.Editor.AI
 
         /// <summary>Entry point also used from the CLI (<c>unity command eval</c>).</summary>
         public static void StartFromEditor(int races, int intensity, int players, float limit, float timeout,
-            bool promptToSave = true, int qualityLevel = -1)
+            bool promptToSave = true, int qualityLevel = -1, AIDifficulty difficulty = AIDifficulty.Hard)
         {
             var settings = new SkimRaceBenchmarkRunner.Settings
             {
@@ -67,6 +70,7 @@ namespace CosmicShore.Editor.AI
                 TimeoutSeconds = timeout,
                 Commit = GitHead(),
                 QualityLevel = qualityLevel,
+                Difficulty = difficulty,
             };
             SessionState.SetString(PendingKey, JsonUtility.ToJson(settings));
             if (!EditorApplication.isPlaying)

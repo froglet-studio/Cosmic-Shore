@@ -10,8 +10,8 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// TIME: the game timed by the engine itself. BENCHMARK runs chosen scenes for a fixed number of
     /// frames, each run in its own game process that closes itself when done, and tabulates the
-    /// session reports (frame time percentiles, load, simulation and GPU time, GC). MULTIPLAYER
-    /// starts several game windows on this machine that join each other like players on a LAN.
+    /// session reports (frame time percentiles, load, simulation and GPU time, GC). Several players
+    /// on this machine moved to the NET page (LauncherApp.Net.cs).
     /// </summary>
     public sealed partial class LauncherApp
     {
@@ -33,17 +33,13 @@ namespace CosmicShore.Launcher
 
         void DrawTime(Vector2 a, Vector2 b)
         {
-            PageHeader(a, "TIME", "The game timed by Amoebius: benchmark runs that close themselves, and several players on one machine");
+            PageHeader(a, "TIME", "The game timed by Amoebius: benchmark runs that close themselves (several players on one machine: the NET page)");
             var dl = ImGui.GetWindowDrawList();
             float top = a.Y + 76, leftW = Math.Min(430, (b.X - a.X) * 0.42f);
             var la = new Vector2(a.X, top);
-            var lb = new Vector2(a.X + leftW, top + 500);
+            var lb = new Vector2(a.X + leftW, Math.Max(top + 500, b.Y));
             Card(dl, la, lb);
             DrawBenchSetup(dl, la, lb);
-            var ma = new Vector2(a.X, lb.Y + 14);
-            var mb = new Vector2(a.X + leftW, Math.Max(ma.Y + 210, b.Y));
-            Card(dl, ma, mb);
-            DrawMultiplayer(dl, ma, mb);
             var ra = new Vector2(lb.X + 14, top);
             Card(dl, ra, b);
             DrawBenchResults(dl, ra, b);
@@ -135,33 +131,6 @@ namespace CosmicShore.Launcher
         }
 
         bool BenchMatches(string scene) => _benchFilter.Length == 0 || scene.Contains(_benchFilter, StringComparison.OrdinalIgnoreCase);
-
-        void DrawMultiplayer(ImDrawListPtr dl, Vector2 a, Vector2 b)
-        {
-            dl.AddText(Neon.Strong, 15, a + new Vector2(16, 12), Neon.U(Neon.Ink), "MULTIPLAYER");
-            dl.AddText(Neon.Small, 12, a + new Vector2(16, 34), Neon.U(Neon.Dim), "Game windows on this PC that play together over the local network.");
-            ImGui.SetCursorScreenPos(a + new Vector2(16, 60));
-            Label("Players");
-            ImGui.SetCursorScreenPos(a + new Vector2(16, 78));
-            Segmented("mpplayers", new[] { "2", "3", "4" }, Math.Clamp(_s.MpPlayers - 2, 0, 2), i => { _s.MpPlayers = i + 2; _dirty = true; }, Neon.Magenta);
-            ImGui.SameLine(0, 12);
-            ImGui.PushItemWidth(b.X - ImGui.GetCursorScreenPos().X - 16);
-            var choices = new[] { "" }.Concat(_jobs.Scenes).ToArray();
-            Combo("##mpscene", choices, _s.MpScene, v => _s.MpScene = v, v => v.Length == 0 ? "start at Bootstrap (log in, menu)" : v);
-            ImGui.PopItemWidth();
-
-            int live = _jobs.LocalPlayersRunning;
-            ImGui.SetCursorScreenPos(a + new Vector2(16, 128));
-            float bw = b.X - a.X - 32;
-            if (live > 0)
-            {
-                if (Neon.Button("mpstop", $"CLOSE {live} PLAYER{(live == 1 ? "" : "S")}", new Vector2(bw, 48), Neon.Red, Neon.Title, 22)) _jobs.StopLocalPlayers();
-            }
-            else if (Neon.Button("mpgo", $"START {_s.MpPlayers} PLAYERS", new Vector2(bw, 48), Neon.Magenta, Neon.Title, 22, enabled: !_jobs.Busy))
-                _jobs.LaunchLocalPlayers(_s.MpPlayers, _s.MpScene, _s.MpSize);
-            dl.AddText(Neon.Small, 12, a + new Vector2(16, 184), Neon.U(Neon.Dim),
-                "Each window is its own player (profile player1, player2 ...). Host in one, join from the others.");
-        }
 
         void DrawBenchResults(ImDrawListPtr dl, Vector2 a, Vector2 b)
         {

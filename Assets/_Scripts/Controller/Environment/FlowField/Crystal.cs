@@ -729,6 +729,13 @@ namespace CosmicShore.Gameplay
 
         public void ActivateCrystal()
         {
+            // Teardown-order guard (PLAYBOOK §4): LightFauna.WitherCoroutine can still reach
+            // ReleaseHeart → here after the cell is already destroyed (or the scene is
+            // unloading). Unity-null checks, not ?. — DetachHeartToCell already does this for
+            // the early re-home; ActivateCrystal must match or it NREs on .transform.
+            // Skip the whole activation when the scene is gone (crystal goes with it).
+            if (!gameObject.scene.isLoaded) return;
+
             // The pair on screen RIGHT NOW is where the heart → pickup cross-fade departs from,
             // and it has to be read before anything below disturbs it: clearing EmbeddedIn
             // changes what the state resolves to, and each material lerp drops the block on its
@@ -736,7 +743,8 @@ namespace CosmicShore.Gameplay
             bool hadTint = TryGetDisplayedTint(out var fromBright, out var fromDull);
 
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
-            transform.parent = cellData.Cell.transform;
+            if (cellData && cellData.Cell)
+                transform.parent = cellData.Cell.transform;
             var dropCol = gameObject.GetComponent<SphereCollider>();
             if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
             dropCol.enabled = true;

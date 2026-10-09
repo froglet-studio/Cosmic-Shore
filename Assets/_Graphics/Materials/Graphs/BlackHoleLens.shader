@@ -45,6 +45,7 @@ Shader "CosmicShore/BlackHoleLens"
         _BHSmooth ("Smooth well lens strength A, signed by polarity outside (0 = the black hole's ray trace)", Float) = 0
         _BHWhite ("1 = a WHITE hole: its horizon disc emits a white-hot core", Float) = 0
         _BHCore ("White core (brightness HDR, sky mix, 0, 0)", Vector) = (4, 0.8, 0, 0)
+        _BHTint ("Owner's domain tint: rgb = the domain's DARK colour on a sink's shadow, its LIGHT colour on a white core; a = how far (0 = the untinted look)", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -85,6 +86,7 @@ Shader "CosmicShore/BlackHoleLens"
                 float _BHSmooth;
                 float _BHWhite;
                 float4 _BHCore;
+                float4 _BHTint;
             CBUFFER_END
 
             // The scene as the camera drew it up to the lens — opaques, skybox and transparents —
@@ -234,7 +236,10 @@ Shader "CosmicShore/BlackHoleLens"
                     // the emitted sky showing through toward its rim (b → b_c = 2.598 r_s).
                     float t = saturate(b / 2.598);
                     float glow = (1.0 - t) * (1.0 - t);
-                    background = BlackHoleSkyColour(bent) * _BHCore.y + _BHCore.x * glow;
+                    // An owned pair wears its owner's domain (the Stoat's dipole): the core's white glow is
+                    // pulled toward the domain's LIGHT colour by _BHTint.a (0 = the white-hot look).
+                    float3 coreTint = lerp(float3(1.0, 1.0, 1.0), _BHTint.rgb, saturate(_BHTint.a));
+                    background = BlackHoleSkyColour(bent) * _BHCore.y + _BHCore.x * glow * coreTint;
                 }
                 else if (escaped > 0.5)
                 {
@@ -262,6 +267,11 @@ Shader "CosmicShore/BlackHoleLens"
                         scene = lerp(sky, BlackHoleSceneColour(uv), onScreen * behind);
                     }
                     background = scene;
+                }
+                else
+                {
+                    // The shadow: black, or an owned sink's domain DARK colour by _BHTint.a.
+                    background = _BHTint.rgb * saturate(_BHTint.a);
                 }
 
                 // The bent scene, the shadow's black (a sink only), or a white hole's core.

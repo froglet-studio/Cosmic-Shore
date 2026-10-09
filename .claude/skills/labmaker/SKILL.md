@@ -149,7 +149,8 @@ as an iPhone 13, and fails on:
 - a missing `__lab` hook, or a hook that throws when called with no arguments;
 - a `SPEC` key absent from `SHIPPED`, or a shipped value outside its slider range;
 - a manual clock that does not advance;
-- a non-deterministic `runBatch`;
+- a non-deterministic `runBatch`, within one page or across two page loads (a load-time `Math.random` that reaches the
+  batch is invisible to two calls in one page; L-GEN-4);
 - a blank 2D stage.
 
 It writes `desktop.png` and `phone.png`. **Read the screenshots**: the gate cannot see an overlap.
@@ -260,6 +261,8 @@ Each has an entry in `LEARNINGS.md` with the evidence.
 - **A threat the pilots never meet scores 0.** Give it a local reason to be where pilots go (L-ECO-7).
 - **Hot-path sorting in a grid query** (`Array.from().sort()`) cost 13 of 18 ms. Use
   generation-stamped marks (L-ECO-8).
+- **A prediction is not light.** A path, an aim line or a ghost drawn in the 3D scene goes through the lens pass and
+  gets bent and doubled round a black hole. Draw it on the HUD after the lens (L-STU-20).
 - **A design hole looks like a skilled AI.** The best play was a 0° "tap sling" because the kick
   ignored how far round the hull went. When the AI's best play looks like a cheat, it is a design
   question for the human, not an AI bug (L-STU-3).

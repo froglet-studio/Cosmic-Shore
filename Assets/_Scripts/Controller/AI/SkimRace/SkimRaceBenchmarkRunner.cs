@@ -43,6 +43,8 @@ namespace CosmicShore.Gameplay
             public bool TraceFrames = true;
             [Tooltip("Graphics quality level for the run (-1 = leave the player's setting). The same setting a player picks; it changes frame rate, never gameplay.")]
             public int QualityLevel = -1;
+            [Tooltip("The lobby AI difficulty the AI seats fly. Hard (the default) is the unhandicapped pilot every earlier benchmark measured; Easy and Medium add the difficulty's deliberate mistakes (Docs/SKIM_RACE_AI.md section 10).")]
+            public AIDifficulty Difficulty = AIDifficulty.Hard;
         }
 
         public static SkimRaceBenchmarkRunner Active { get; private set; }
@@ -218,6 +220,9 @@ namespace CosmicShore.Gameplay
             if (_gameData.SelectedIntensity != null) _gameData.SelectedIntensity.Value = Mathf.Clamp(_s.Intensity, 1, 4);
             _gameData.ConfigurePlayerCounts(Mathf.Max(1, _s.TotalPlayers), 1);
             _gameData.RequestedDomainCount = Mathf.Clamp(_s.TotalPlayers, 1, 3);
+            // Set explicitly: GameDataSO carries the last lobby's pick (Medium by default), and a
+            // benchmark must fly the difficulty it says it measured.
+            _gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(_s.Difficulty);
         }
 
         static GameDataSO FindGameData()

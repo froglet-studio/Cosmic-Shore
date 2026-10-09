@@ -8,7 +8,8 @@ browser, in a phone browser, from Amoebius's **STUDIOS** page on Windows, and fr
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
 | `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
-| `stoat.html` | The **Stoat Flight Studio** (round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
+| `sync.js` | The **Sync panel** (Refresh, console, merge then delete, shared decisions; a Claude session does the git work as jobs). Not referenced by the pages in the repo: `.claude/skills/vessel-studio/build_artifact.py` and Refresh inject it at publish time. User doc: `SYNC_PANEL.md`. Live with it: https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc |
+| `stoat.html` | The **Stoat Flight Studio** (round 15: the field trajectory; round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
 
 ## Rules for every studio page
 

@@ -822,3 +822,19 @@ config can hold the mouth material (shown by name, edited on the asset). Tests: 
 **Fly both before choosing:** the web studio (`Docs/Studios/StoatFlightStudio.html`, live copy with
 the shared decision log at https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) flies the Stoat on a
 gamepad through the game's own stick mix with either style, and compares them split-screen.
+
+## 14. Owner rules on a hole (2026-10-09, the Stoat's field dipole)
+
+A hole can carry its OWNER's rules on top of the physics, set every frame by whoever spawned it
+(today only `StoatDipoleExecutor`, `_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md`):
+
+| `BlackHole` member | Read by | Effect |
+|---|---|---|
+| `PrismCapture` = `Vanish` | `BlackHoleGravityField.ApplyVerdicts` | a captured prism is destroyed AT the horizon (`Prism.Vanish`: the ordinary destroyed event, scored to `CaptureOwnerName`, no debris, no SFX — it fell behind the shadow) |
+| `PrismCapture` = `Steal` | the same | a paired sink carries the prism through AND recolours it (`Prism.Steal(CaptureOwnerName, CaptureDomain, superSteal)`) |
+| `CrystalStripShare` | `BlackHoleCrystalStrip.Levy`, from `TeleportContinuity` | a rival vessel carried through the sink sheds that share of every element as crystals on the sink's side (the wormhole toll's shape: `AccrueElementalLoss`, conserving; the owner and teammates never pay) |
+| `DomainTint` / `DomainTintAmount` | `BlackHoleLens` → `_BHTint` | a sink's shadow is drawn toward the colour, a white hole's core glows in it |
+
+`Default` keeps everything above exactly as §3 and §11 describe. The dipole's pair is NOT a registry
+`Pair` (its executor places both holes every frame and joins them as each other's `Throat`), so
+`TickPairs` never closes it.

@@ -17,8 +17,8 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 14",
-      "summary": "The slinger: squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, and an AI sim lab that races and scores every style.",
+      "kind": "design studio - round 15",
+      "summary": "The slinger: squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races and scores every style, and (round 15) the field trajectory: the trigger pulls a black-white hole dipole apart, and a predicted path boosts you 3x down it whenever the poles warp it.",
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"

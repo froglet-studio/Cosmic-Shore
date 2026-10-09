@@ -35,7 +35,7 @@ ASSETS = os.path.join(ROOT, 'Assets')
 SCENE_FOR_MODE = {
     2:  'MinigameRampage',
     30: 'ArcadeGameMultiplayer2v2CoOpVsAI',
-    32: 'MinigameWildlifeBlitzMultuplayerCoOp',
+    32: 'MinigameWildlifeBlitzMultuplayerCoOp',  # retired; scene + controller deleted BH-5.7 (no preview exists for 32)
     33: 'MinigameSkimRace',
     34: 'MinigameJoust_Gameplay',
     35: 'MinigameScurryMultiplayer_Gameplay',
@@ -67,6 +67,7 @@ SCENE_FOR_MODE = {
     62: 'MinigameGrizzlyCharge',
     63: 'MinigameGrizzlyTime',
     64: 'MinigameSlingshot',
+    65: 'MinigameWarpline',
 }
 
 

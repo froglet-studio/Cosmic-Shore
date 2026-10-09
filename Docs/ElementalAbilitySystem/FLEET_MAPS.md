@@ -65,7 +65,7 @@ day after the channel it referred to had been deleted.
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
-| **Stoat** | 2/4 | 2/4 | 1/4 | *(added 2026-10-08 — PROTOTYPE: Space = Slingshot on the triggers, Time = Hold Still on X; Charge and Mass are open design slots with proposals in the map; no L5 upgrades; only the half-gap is element-scaled. `R_VesselActions/STOAT.md` §6)* |
+| **Stoat** | 2/4 | 2/4 | 1/4 | *(re-cut 2026-10-09 — the round-15 FIELD DIPOLE: Space = Field Dipole on the triggers (pole size ×1→×2, L5 **Theft**: swallowed prisms are stolen, not destroyed), Time = Pathfinder, passive (warp boost ×2→×4, no L5 yet); Charge and Mass are open with proposals in §2 ▸ Stoat and `R_VesselActions/STOAT_DIPOLE.md` §6)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -538,6 +538,22 @@ mode ball launched by a cavitation cone and a braking wall on the A button — S
 Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
 with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
 the record; do not re-litigate from a superseded pass.**
+
+### Stoat — the field dipole + pathfinder (round 15) — SPACE + TIME APPROVED (2026-10-09)
+
+Approved and shipped: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **L5 Theft**
+(swallowed prisms are stolen into the owner's domain; below it they vanish), **Time = Pathfinder**
+(passive; Time scales the warp boost ×2 → ×4). Open, proposals only (full tables and reasons in
+`_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §6):
+
+| Slot | Recommended proposal | Alternatives |
+|---|---|---|
+| Mass ability | **Accretion** — what the sink swallows grows the pair until it annihilates; Mass scales the growth per unit volume | Ballast on X (heavy = bends less, falls faster); trail prism size |
+| Charge ability | **Annihilation blast** — letting go detonates the pair where the poles meet, radius = the separation at release; Charge scales it | Throat shear (the sink→source line cuts prisms) |
+| Omni crystal | **Overclock** — 6 s of full boost, warped or not | Lodestone (loose crystals fall into the sink and come out toward you); the Sparrow's 8 s debuff ward |
+| Time L5 | **Slipstream** — every hole warps your path (rivals' pairs, environmental holes) | Foresight (rivals' predicted paths drawn) |
+| Charge L5 | **Pair production** (with the blast) — destroyed prisms return in your domain | — |
+| Mass L5 | **Event horizon** (with Accretion) — an accreted pair swallows shielded prisms and strips a grazing rival | — |
 
 ## 3. Implementation notes for approved rows
 

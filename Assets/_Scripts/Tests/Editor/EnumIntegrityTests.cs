@@ -160,8 +160,9 @@ namespace CosmicShore.Tests
             // and 62 at the 2026-10-02 merge, after WreckingBall took 54: the sixth.
             // 61 -> 59 on 2026-10-08: MultiplayerFreestyle (28) and OnlineDuelForTheCell (29)
             // retired; both IDs stay reserved. 59 -> 60 the same day: Slingshot (64), the Stoat's.
+            // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(60, values.Length,
+            Assert.AreEqual(61, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -200,6 +201,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.GrizzlyCharge, 62)]
         [TestCase(GameModes.GrizzlyTime, 63)]
         [TestCase(GameModes.Slingshot, 64)]
+        [TestCase(GameModes.Warpline, 65)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

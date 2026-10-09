@@ -15,44 +15,52 @@ MonoBehaviour:
   vesselClass: 14
   entries:
   - Element: 3
-    AbilityLabel: Slingshot
-    AbilityDescription: 'Squeeze a trigger and let go: a attractor-repulsor wormhole pair is laid
-      across the hull on its own horizontal, the ATTRACTOR on the side you pressed
-      (left trigger = attractor on the left, white on the right; the right trigger mirrors
-      it). The hull falls toward the attractor and is shoved off the white one - that
-      asymmetric push IS the slingshot. The squeeze''s depth is the pair''s size (a tap
-      is a nudge, a buried trigger is the ~90 degree swing); the pair drifts apart,
-      stops, falls back and annihilates on its own, and anything the attractor
-      swallows comes out of the repulsor the point-reflected way (Docs/BLACK_HOLE.md
-      11). Works while idle. Space is reach: the half-gap between the holes is the
-      Space-scaled number (StoatSlingConfigSO.halfGapHorizons, 4 -> 8 horizon radii at
-      level 10, floored at 1.5, read live). PROTOTYPE - no level-5 upgrade designed.'
+    AbilityLabel: Field Dipole
+    AbilityDescription: 'Squeeze a trigger and a sink-source pair (a black hole and
+      a white hole, joined as a wormhole) is laid 250 u ahead, the poles together,
+      in the frame you had then. The triggers'' DIFFERENCE pulls the poles apart
+      sideways - the sink on the deeper trigger''s side - and their SUM pulls them
+      apart lengthways, the sink always the nearer: one trigger alone gives a slight
+      diagonal, both buried put the sink dead ahead and the source 120 u beyond it.
+      Ease off and the poles come back together; let go of both and they meet and
+      annihilate, so there is only ever one pair. The poles'' strength and size are
+      fixed - only the separation (the dipole moment) follows the triggers. The field
+      bends your flight and anything that crosses the sink''s horizon goes through
+      it: you come out of the source; a rival vessel comes out stripped of its
+      crystals, left on the sink''s side; a creature is swallowed (killed); a prism
+      vanishes. Space is size: both poles'' horizon and pull scale x1 -> x2 at level
+      10 (StoatDipoleConfigSO.poleSize, read live). R_VesselActions/STOAT_DIPOLE.md.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: ''
-    UpgradeDescription: 'OPEN DESIGN SLOT - the prototype ships the ability without an
-      upgrade. Left empty so the ability row reports it LOCKED rather than green.'
+    UpgradeLabel: Theft
+    UpgradeDescription: 'Prisms the sink swallows are STOLEN instead of destroyed:
+      they come out of the source in your domain (Prism.Steal, a super-steal - a
+      shield is no answer to a horizon). Gated on IsUpgradeActive(Space), replicated,
+      so every peer''s copy of the pair steals the same prisms.'
   - Element: 4
-    AbilityLabel: Hold Still
-    AbilityDescription: 'The Sparrow''s stop, verbatim (ToggleTranslationModeActionSO,
-      Sparrow mode): press to stop translating and stop laying prisms, press again to
-      move. The Stoat slings from a standstill, so the stop is the set-up for the
-      slingshot - stop, lay the pair, get thrown. On Time (rate / mobility) as a
-      prototype placement, pending design sign-off. No element scaling.'
-    Input: 6
+    AbilityLabel: Pathfinder
+    AbilityDescription: 'Passive. The path your hull will fly on the inputs you hold
+      right now, run 600 u ahead through your dipole''s field and drawn as dots from
+      the nose (blue-grey). When your poles WARP that path at all - it bends 3 degrees
+      or more, or it goes through the wormhole - it turns lime and you fly down it
+      faster: a warp of the hull''s own flight clock, so the path stays the path and
+      only arrives sooner. Time is rate: the boost is x2 at rest, x3 at level 5, x4 at
+      level 10 (StoatDipoleConfigSO.boost, read live). The base turn rates are x0.4
+      (pitch / yaw 48, roll 52), so the hull leans on its poles to turn.
+      X still holds the hull still (the Sparrow''s stop), outside the four abilities.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: ''
-    UpgradeDescription: 'OPEN DESIGN SLOT - not authored.'
+    UpgradeDescription: 'OPEN DESIGN SLOT - proposals in Docs/ElementalAbilitySystem/FLEET_MAPS.md
+      (Stoat), not implemented.'
   - Element: 1
     AbilityLabel: (open design slot)
-    AbilityDescription: 'NOT AUTHORED. A natural home, once the vessel has been flown,
-      is the slung hole''s STRENGTH (minStrength / maxStrength) - threat / energy is the
-      fleet''s Charge convention. Recorded as a proposal, not implemented, pending
-      sign-off.'
+    AbilityDescription: 'NOT AUTHORED. Proposals in Docs/ElementalAbilitySystem/FLEET_MAPS.md
+      (Stoat) and R_VesselActions/STOAT_DIPOLE.md, pending sign-off.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -61,10 +69,8 @@ MonoBehaviour:
     UpgradeDescription: ''
   - Element: 2
     AbilityLabel: (open design slot)
-    AbilityDescription: 'NOT AUTHORED. Mass is size / volume, and the slung hole''s size
-      already follows its strength; a Mass channel would have to own something the
-      squeeze does not (the pair''s lifetime, or how much the repulsor emits). Pending
-      sign-off.'
+    AbilityDescription: 'NOT AUTHORED. Proposals in Docs/ElementalAbilitySystem/FLEET_MAPS.md
+      (Stoat) and R_VesselActions/STOAT_DIPOLE.md, pending sign-off.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

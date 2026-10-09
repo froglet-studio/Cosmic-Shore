@@ -12,6 +12,17 @@ namespace CosmicShore.UI
 {
     public class ThumbCursor : MonoBehaviour
     {
+        static int ActiveTouchCount()
+        {
+            var touch = Touchscreen.current;
+            if (touch == null) return 0;
+            int n = 0;
+            var touches = touch.touches;
+            for (int i = 0; i < touches.Count; i++)
+                if (touches[i].isInProgress) n++;
+            return n;
+        }
+
         [SerializeField] bool LeftThumb;
         [SerializeField] Vector2 offset;
         [SerializeField] Sprite InactiveImage;
@@ -77,7 +88,7 @@ namespace CosmicShore.UI
             // if (initialized && !Player.LocalPlayer.Vessel.VesselStatus.AutoPilotEnabled)
             // TEMP
             {
-                if (UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches.Count == 0)
+                if (ActiveTouchCount() == 0)
                 {
                     transform.position = LeftThumb ? Vector2.Lerp(transform.position, inputStatus.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, inputStatus.RightJoystickHome, .2f);
                     image.sprite = InactiveImage;

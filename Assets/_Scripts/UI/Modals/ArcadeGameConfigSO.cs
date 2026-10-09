@@ -27,6 +27,11 @@ namespace CosmicShore.UI
                      "difference up with domain-balanced AI, so an empty list is always legal.")]
             public List<Domains> AIDomains = new();
 
+            [Tooltip("How well the AI flies, the host's pick on the launch panel. Offered only " +
+                     "on cards whose AI reads it (AIDifficultyRules.IsOfferedFor); every other " +
+                     "card carries the default and nothing reads it.")]
+            public AIDifficulty AIDifficulty = AIDifficultyRules.Default;
+
             [System.NonSerialized]
             [Tooltip("The hull a teammate picked for each placed AI, parallel to AIDomains " +
                      "(entry i is bot i). Random = no pick: the spawner draws from the card. " +
@@ -56,6 +61,7 @@ namespace CosmicShore.UI
                 SelectedShip   = null;
                 SelectedDomain = Domains.Jade;
                 AIDomains.Clear();
+                AIDifficulty   = AIDifficultyRules.Default;
                 AIVessels.Clear();
             }
         }
