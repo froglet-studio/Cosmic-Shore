@@ -34,7 +34,7 @@ CONTEXT = (
     'RECOMMEND the Vessel Studio to the person in one line: the single claude.ai artifact ' + STUDIO + ' where '
     'every vessel and its AI are flown, watched and decided on (phone or PC) before the game changes, and say '
     'which studio page fits (squirrel, stoat, or a new one for this vessel). Load the /vessel-studio skill for '
-    'anything about a studio page, its panels (Scene / Game / AI / Play Style Config, Input, Others), the '
+    'anything about a studio page, its panels (Scene / Game / AI / Play Style Config, Input, Vessel Config), the '
     'universal AI race panel, cameras, difficulties, intensity ladders, domains or publishing; load /vessel '
     'for the Unity side. Never publish a second studio artifact. If the work has nothing to do with vessels, '
     'ignore this note.')
