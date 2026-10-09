@@ -12,6 +12,55 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 7 — hole settings and illustrated tooltips)
+
+**New setting groups** on the side panel. Each is wired into what the studio flies and draws, so moving a
+slider changes the stage as well as the previews.
+
+- **Black hole** — physics: pull per strength (`gmPerStrength`), horizon per strength, the prisms' reach
+  (`influenceAccelerationFloor`, `maxInfluenceRadius`), the prisms' pull ceiling and top speed, how
+  released prisms settle (`releaseDamping`) and drift home, prism spaghettification (gain and limit), and
+  the hull's (`vesselTideScale`). Look: shadow size (× horizon, physical 2.6), lens bend (× Einstein),
+  lens reach (`lensRadiusMultiplier`), where the lens starts fading (`lensFadeStart`), and the photon
+  ring's glow and width.
+- **White hole** — its size and push relative to the black hole, how widely its push is spread, where
+  things come out of it (× its horizon), and its look: core brightness (`whiteCoreBrightness`), sky seen
+  through the core (`whiteCoreSkyMix`), core size and lens bend.
+- **Pair life** — closing speed, closing run-up and the longest hold (moved out of the archived orbit
+  group, since the dipole sling uses them).
+- The dipole sling gains its two safety ceilings: force (u/s²) and fastest bend (rad/s).
+
+Names in brackets are the game's `BlackHoleConfig` fields. The rest are the studio's own constants made
+adjustable. Their shipped values are the numbers the studio used before, so nothing changes until a slider
+moves; the sling probe gives the same results as round 6.
+
+**Tooltips.** Every one of the 79 sliders has an ⓘ. Hover the row, focus the slider, or tap the ⓘ (which
+pins it; Esc closes it) to open a card with:
+
+- a plain-language description;
+- what lowering and raising it does;
+- two looping previews of the same moment re-run with only that number changed, at **30%** and **70%** of
+  the slider's range;
+- the range, the shipped value and the current value.
+
+The previews are small 2D re-enactments built from the studio's own formulas:
+
+| Preview | What it shows |
+|---|---|
+| sling pass | top-down: press, catch, the grip, release, the pair closing |
+| hole view | per-pixel lens: shadow, Einstein ring, photon ring, white core |
+| prisms | pulled, spaghettified, through the pair, then released |
+| hull stretch | the hull stretching past a hole |
+| pair life | the closing gap graph, and the hold cap |
+| graphs | the squeeze curve and the key ramp |
+| flight | turning circle, roll, speed |
+| lope | the bounding body, side view |
+| archived | the orbit sling; the crystal pair's life, felt pull, lens and layout |
+
+Where a number only matters in an extreme case (the force ceiling, the reach limit, the ring), the card
+says how its preview is staged so the difference is visible. Checked offline: every slider has a card,
+none of the 158 previews is blank, there are no console errors, and the card fits a 420 px screen.
+
 ## Stoat Flight Studio (round 6 — strength and hold)
 
 **The page.** The dipole sling is the only thing on show. Round 4's orbit sling and charming-cerf's crystal

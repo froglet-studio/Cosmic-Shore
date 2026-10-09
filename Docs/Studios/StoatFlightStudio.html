@@ -83,6 +83,17 @@
   .row input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: var(--accent); }
   .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .row output.changed { color: var(--accent); }
+  .tipbtn { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--dim); font: 700 11px/16px var(--font-display); cursor: help; padding: 0; }
+  .tipbtn:hover, .tipbtn:focus-visible, .tipbtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); outline: none; }
+  #tip { box-sizing: border-box; position: fixed; z-index: 60; width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 16px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45); padding: 12px 14px; color: var(--fg); }
+  #tip h4 { margin: 0 0 4px; font-family: var(--font-display); font-size: 0.98rem; letter-spacing: 0.04em; text-wrap: balance; }
+  #tip .what { margin: 0 0 9px; font-size: 0.87rem; line-height: 1.45; }
+  #tip .figs { display: flex; gap: 10px; flex-wrap: wrap; }
+  #tip figure { margin: 0; flex: 1 1 220px; min-width: 0; }
+  #tip canvas { width: 100%; aspect-ratio: 16 / 10; display: block; border-radius: 6px; border: 1px solid var(--line); background: #070b1e; }
+  #tip figcaption { font-size: 0.79rem; color: var(--dim); margin-top: 4px; line-height: 1.38; }
+  #tip figcaption b { color: var(--fg); }
+  #tip .foot { font-size: 0.76rem; color: var(--dim); margin: 7px 0 0; font-variant-numeric: tabular-nums; }
   .rowsel { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 6px; font-size: 0.85rem; color: var(--dim); }
   select, input[type=text], textarea { font-family: var(--font-body); font-size: 0.9rem; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
   textarea { resize: vertical; }
@@ -168,7 +179,7 @@
       <form id="logForm" autocomplete="off">
         <label>Topic
           <select id="logTopic">
-            <option>Wormhole style</option><option>Sling feel</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
+            <option>Wormhole style</option><option>Sling feel</option><option>Black hole</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
           </select></label>
         <label>Decision <input type="text" id="logChoice" maxlength="400" required></label>
         <label class="full">Why (optional) <textarea id="logNote" rows="2" maxlength="1500"></textarea></label>
@@ -199,6 +210,15 @@
       <details class="card" id="grp-D" open><summary>Dipole sling <small>round 6</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
+      <details class="card" id="grp-BH"><summary>Black hole <small>physics &amp; look</small></summary><div class="rows"></div>
+        <p class="src">How hard it pulls and how big it is per unit of strength, what it does to prisms (pull, speed, spaghettification), and how it looks: the shadow, the bent sky around it, the photon ring. Most rows are <code>BlackHoleConfig</code> fields in the game.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="BH">Reset</button></div></details>
+      <details class="card" id="grp-WH"><summary>White hole <small>physics &amp; look</small></summary><div class="rows"></div>
+        <p class="src">The black hole's partner: its size and push relative to the black hole, where things come out of it, and its look — the white-hot core and its bent sky.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="WH">Reset</button></div></details>
+      <details class="card" id="grp-pair"><summary>Pair life <small>after you let go</small></summary><div class="rows"></div>
+        <p class="src">Once released, the two holes fall toward each other and annihilate when their horizons touch.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="pair">Reset</button></div></details>
       <details class="card" id="grp-A" hidden><summary>Orbit sling (round 4) <small>this branch</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b> lays the attractor beside you at the orbit radius, the repulsor mirrored. <b>Hold</b> and you circle the attractor: squeeze harder, tighter circle. Its horizon is radius ÷ 6 and its pull is exactly the one that makes that a circular orbit at your speed: GM = v²(r − r<sub>s</sub>)²/r. <b>Let go</b> and you slingshot out along the tangent; the pair falls together and annihilates.</p>
         <div class="btns"><button class="pick" type="button" data-reset="A">Reset to shipped</button></div></details>
@@ -266,12 +286,18 @@
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
     minStrength: 2, maxStrength: 12, aheadHorizons: 4, halfGapHorizons: 6,
     feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
+    // the black hole (BlackHoleConfig where the game has the field; the studio's own otherwise)
+    bhGmPerStrength: 20000, bhHorizonPerStrength: 2, bhInfluenceFloor: 0.6, bhMaxInfluence: 900, bhPrismAccelCap: 4000, bhPrismMaxSpeed: 450, bhPrismReturn: 0.5,
+    bhTideGain: 1, bhTideMax: 5, bhShadow: 2.6, bhLensStrength: 1, bhLensReach: 30, bhLensFade: 0.55, bhRingGlow: 0.55, bhRingWidth: 0.06,
+    // the white hole
+    whSizeX: 1, whPushSoften: 2, whExitGap: 1.05, whCoreBrightness: 4, whCoreSkyMix: 0.8, whCoreSize: 2.6, whLensStrength: 1,
     // the Stoat's flight (prefab: throttle scaler 60, pitch/yaw 120, roll 130)
     cruise: 60, pitchYaw: 120, roll: 130,
     // StoatLopeMath.Defaults
     lopeAmp: 1.6, lopeRate: 0.66, lopeArch: 0.45, lopeSquash: 0.2,
   };
-  const GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2, MIN_HORIZON = 1.5;
+  let GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2;   // refreshed from the Black hole group every frame
+  const MIN_HORIZON = 1.5;
   const SPEC = [
     ['sling', 'holdExponent', 'Squeeze curve', 0.5, 4, 0.05],
     ['sling', 'holdRamp', 'Key hold = full (s)', 0.1, 5, 0.05],
@@ -289,21 +315,46 @@
     ['D', 'dpBoostMin', 'Release boost, a touch (× speed)', 0, 3, 0.05],
     ['D', 'dpBoostMax', 'Release boost, buried (× speed)', 0, 3, 0.05],
     ['D', 'dpBoostSeconds', 'Boost fade (s)', 0.1, 5, 0.1],
-    ['D', 'dpWhite', 'White hole push (× pull)', 0, 2, 0.05],
+    ['WH', 'dpWhite', 'Push (× the black hole\'s pull)', 0, 2, 0.05],
     ['D', 'dpKeySqueeze', 'Keyboard squeeze', 0.05, 1, 0.05],
     ['D', 'dpAssistFade', 'Gravity speed fades (s)', 0.2, 10, 0.1],
+    ['D', 'dpAccelCap', 'Force ceiling (u/s²)', 50, 6000, 10],
+    ['D', 'dpTurnCap', 'Fastest bend (rad/s)', 0.5, 20, 0.1],
+    ['BH', 'bhGmPerStrength', 'Pull per strength (GM)', 2000, 60000, 500],
+    ['BH', 'bhHorizonPerStrength', 'Horizon per strength (u)', 0.2, 6, 0.1],
+    ['BH', 'bhInfluenceFloor', 'Pull felt down to (u/s²)', 0.05, 5, 0.05],
+    ['BH', 'bhMaxInfluence', 'Pull reach limit (u)', 50, 2000, 10],
+    ['BH', 'bhPrismAccelCap', 'Prism pull ceiling (u/s²)', 200, 12000, 100],
+    ['BH', 'bhPrismMaxSpeed', 'Prism top speed (u/s)', 50, 1500, 10],
+    ['BH', 'releaseDamping', 'Prisms settle after (/s)', 0.1, 8, 0.1],
+    ['BH', 'bhPrismReturn', 'Prisms drift home (/s)', 0, 3, 0.05],
+    ['BH', 'bhTideGain', 'Prism spaghettify gain', 0, 5, 0.05],
+    ['BH', 'bhTideMax', 'Prism stretch limit (×)', 0, 15, 0.1],
+    ['BH', 'bhShadow', 'Shadow size (× horizon)', 1, 4, 0.05],
+    ['BH', 'bhLensStrength', 'Lens bend (× Einstein)', 0, 4, 0.05],
+    ['BH', 'bhLensReach', 'Lens reach (× horizon)', 5, 80, 1],
+    ['BH', 'bhLensFade', 'Lens fade starts (× reach)', 0, 0.95, 0.01],
+    ['BH', 'bhRingGlow', 'Photon ring glow', 0, 3, 0.05],
+    ['BH', 'bhRingWidth', 'Photon ring width', 0.01, 0.4, 0.01],
+    ['WH', 'whSizeX', 'Size (× the black hole)', 0.2, 3, 0.05],
+    ['WH', 'whPushSoften', 'Push softening (× horizon)', 0.5, 8, 0.1],
+    ['WH', 'whExitGap', 'Things come out at (× horizon)', 1, 3, 0.01],
+    ['WH', 'whCoreBrightness', 'Core brightness', 0, 12, 0.1],
+    ['WH', 'whCoreSkyMix', 'Sky seen through the core', 0, 1, 0.01],
+    ['WH', 'whCoreSize', 'Core size (× horizon)', 1, 4, 0.05],
+    ['WH', 'whLensStrength', 'Lens bend (× Einstein)', 0, 4, 0.05],
     ['A', 'orbitWide', 'Orbit at a touch (u)', 40, 400, 5],
     ['A', 'orbitTight', 'Orbit buried (u)', 10, 200, 1],
     ['A', 'orbitHorizons', 'Orbit ÷ horizon', 3, 20, 0.5],
     ['A', 'boostMin', 'Boost, light (× speed)', 0, 3, 0.05],
     ['A', 'boostMax', 'Boost, deep (× speed)', 0, 3, 0.05],
     ['A', 'boostSeconds', 'Boost fade (s)', 0.1, 5, 0.1],
-    ['A', 'closeSpeed', 'Pair closes at (u/s)', 0, 200, 1],
-    ['A', 'closeRamp', 'Close run-up (s)', 0, 5, 0.05],
-    ['A', 'holdCap', 'Longest hold (s)', 0.5, 30, 0.5],
+    ['pair', 'closeSpeed', 'Pair closes at (u/s)', 0, 200, 1],
+    ['pair', 'closeRamp', 'Close run-up (s)', 0, 5, 0.05],
+    ['pair', 'holdCap', 'Longest hold (s)', 0.5, 30, 0.5],
     ['A', 'followRate', 'Radius follows (/s)', 0.1, 20, 0.1],
     ['A', 'radialRate', 'Held on radius (/s)', 0.1, 20, 0.1],
-    ['A', 'vesselTide', 'Hull spaghettify', 0, 1, 0.01],
+    ['BH', 'vesselTide', 'Hull spaghettify', 0, 1, 0.01],
     ['B', 'minStrength', 'Light squeeze strength', 0.5, 6, 0.1],
     ['B', 'maxStrength', 'Full squeeze strength', 4, 24, 0.5],
     ['B', 'aheadHorizons', 'Laid ahead (throats)', 0, 8, 0.1],
@@ -330,7 +381,7 @@
   ];
 
   // ================= per-viewer state (convenience only) =================
-  const LS_KEY = 'stoat-studio-v6';
+  const LS_KEY = 'stoat-studio-v7';
   function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked: fine */ } }
   const saved = lsGet(LS_KEY, {});
@@ -586,13 +637,13 @@
     for (const pr of pairs) {
       const GM = pr.S * GM_PER_STRENGTH;
       if (pr.style === 'A') {
-        const inf = Math.min(900, Math.sqrt(GM / 0.6));
+        const inf = Math.min(P.bhMaxInfluence, Math.sqrt(GM / Math.max(1e-3, P.bhInfluenceFloor)));
         W.push({ pr, style: 'A', role: 'att', sign: 1, p: pr.att, rs: pr.rs, GM, amp: 1, inf2: inf * inf });
-        const GMr = (pr.dipole ? pr.SR : pr.S) * GM_PER_STRENGTH, infR = Math.min(900, Math.sqrt(GMr / 0.6));
+        const GMr = (pr.dipole ? pr.SR : pr.S) * GM_PER_STRENGTH, infR = Math.min(P.bhMaxInfluence, Math.sqrt(GMr / Math.max(1e-3, P.bhInfluenceFloor)));
         W.push({ pr, style: 'A', role: 'rep', sign: -1, p: pr.rep, rs: pr.dipole ? pr.rsR : pr.rs, GM: GMr, amp: 1, inf2: infR * infR });
       } else {
         for (const role of ['att', 'rep']) {
-          const amp = role === 'att' ? pr.ampA : pr.ampR, inf = Math.min(900, Math.sqrt(GM * Math.max(amp, 0) / 0.6));
+          const amp = role === 'att' ? pr.ampA : pr.ampR, inf = Math.min(P.bhMaxInfluence, Math.sqrt(GM * Math.max(amp, 0) / Math.max(1e-3, P.bhInfluenceFloor)));
           W.push({ pr, style: 'B', role, sign: role === 'att' ? 1 : -1, p: role === 'att' ? pr.att : pr.rep, other: role === 'att' ? pr.rep : pr.att, rs: pr.rs, GM, amp, inf2: inf * inf });
         }
       }
@@ -626,20 +677,20 @@
       }
       let vx = bv[j], vy = bv[j + 1], vz = bv[j + 2];
       if (inf) {
-        const am = Math.hypot(ax, ay, az); if (am > 4000) { const s = 4000 / am; ax *= s; ay *= s; az *= s; }
+        const am = Math.hypot(ax, ay, az); if (am > P.bhPrismAccelCap) { const s = P.bhPrismAccelCap / am; ax *= s; ay *= s; az *= s; }
         vx += ax * dt; vy += ay * dt; vz += az * dt;
       } else if (act[i]) {                        // released: settle, and drift back home
         const d = Math.exp(-P.releaseDamping * dt); vx *= d; vy *= d; vz *= d;
-        vx += (bh[j] - px) * 0.5 * dt; vy += (bh[j + 1] - py) * 0.5 * dt; vz += (bh[j + 2] - pz) * 0.5 * dt;
+        vx += (bh[j] - px) * P.bhPrismReturn * dt; vy += (bh[j + 1] - py) * P.bhPrismReturn * dt; vz += (bh[j + 2] - pz) * P.bhPrismReturn * dt;
       }
-      const vm = Math.hypot(vx, vy, vz); if (vm > 450) { const s = 450 / vm; vx *= s; vy *= s; vz *= s; }
+      const vm = Math.hypot(vx, vy, vz); if (vm > P.bhPrismMaxSpeed) { const s = P.bhPrismMaxSpeed / vm; vx *= s; vy *= s; vz *= s; }
       px += vx * dt; py += vy * dt; pz += vz * dt;
       bp[j] = px; bp[j + 1] = py; bp[j + 2] = pz; bv[j] = vx; bv[j + 1] = vy; bv[j + 2] = vz;
       const disp = Math.abs(px - bh[j]) + Math.abs(py - bh[j + 1]) + Math.abs(pz - bh[j + 2]);
       if (inf || moved || disp > 0.05 || vm > 0.05) {
         act[i] = 2;
         if (!inf && disp < 0.3 && vm < 0.3) { bp[j] = bh[j]; bp[j + 1] = bh[j + 1]; bp[j + 2] = bh[j + 2]; bv[j] = bv[j + 1] = bv[j + 2] = 0; act[i] = 1; }
-        bodyStretch[i] = inf ? Math.min(5, Math.hypot(ax, ay, az) / 50) : 0;
+        bodyStretch[i] = inf ? Math.min(P.bhTideMax, Math.hypot(ax, ay, az) * P.bhTideGain / 50) : 0;
       }
     }
   }
@@ -811,7 +862,7 @@
       let delta;
       if (w.style === 'A') {
         const off = tv.subVectors(hull.position, w.p), dist = Math.max(off.length(), 1e-3);
-        const exit = tv2.copy(w.pr.rep).addScaledVector(off, -Math.max(dist, 1.05 * (w.pr.dipole ? w.pr.rsR : w.pr.rs)) / dist);
+        const exit = tv2.copy(w.pr.rep).addScaledVector(off, -Math.max(dist, P.whExitGap * (w.pr.dipole ? w.pr.rsR : w.pr.rs)) / dist);
         delta = tv3.subVectors(exit, hull.position);
         // A let-go pair's white hole is falling toward its partner: leave in its frame
         // (BlackHoleRegistry.TryGetMouthMotion), or a mouth closing faster than you fly runs you back down.
@@ -902,7 +953,7 @@
     const rep = hull.position.clone().addScaledVector(fwd, P.dpAhead).addScaledVector(sideV, -P.dpSide);
     const q = holds[side].live, rs = dipoleRs(q), S = dipoleS(q);
     myPair = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), tv.subVectors(rep, att), up, S, true,
-      { rs, held: true, dipole: { att, rep, rsR: rs, SR: S * P.dpWhite } });
+      { rs, held: true, dipole: { att, rep, rsR: rs * P.whSizeX, SR: S * P.dpWhite } });
     pairs.push(myPair);
     slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, reach: 0, t: 0, gain0: gravSpeed };
     slings++; runStyles.add('A');
@@ -913,7 +964,7 @@
     const sd = slingDipole, pr = sd.pair;
     sd.t += dt;
     sd.q += (holds[sd.side].live - sd.q) * (1 - Math.exp(-12 * dt));
-    pr.rs = pr.rsR = dipoleRs(sd.q); pr.S = dipoleS(sd.q); pr.SR = pr.S * P.dpWhite;
+    pr.rs = dipoleRs(sd.q); pr.rsR = pr.rs * P.whSizeX; pr.S = dipoleS(sd.q); pr.SR = pr.S * P.dpWhite;
     // The circle is the one at the ENGINE's speed — the speed its grip holds you at — not the fall-in speed of the moment.
     sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed, 10), pr.rs);
     sd.reach = P.dpCaptureX * sd.rc;
@@ -962,7 +1013,7 @@
   // are one throat). Diving through ends the hold: the pair lets you go on the far side.
   function dipoleCarry(pr) {
     const off = tv.subVectors(hull.position, pr.att), dist = Math.max(off.length(), 1e-3);
-    const exit = tv2.copy(pr.rep).addScaledVector(off, -Math.max(dist, 1.05 * pr.rsR) / dist);
+    const exit = tv2.copy(pr.rep).addScaledVector(off, -Math.max(dist, P.whExitGap * pr.rsR) / dist);
     const delta = tv3.subVectors(exit, hull.position);
     hull.position.add(delta); cam.position.add(delta); camLook.add(delta); portalFlash = 1;
     gravSpeed = pr.gFar || 0;
@@ -975,7 +1026,7 @@
     const p = hull.position;
     tv.subVectors(pr.att, p); let r = tv.length() + 1e-6, x = Math.max(r - pr.rs, 0.05 * pr.rs);
     aD.addScaledVector(tv, pr.S * GM_PER_STRENGTH / (x * x) / r);
-    tv.subVectors(pr.rep, p); const e2 = 4 * pr.rsR * pr.rsR, q = tv.lengthSq() + e2;
+    tv.subVectors(pr.rep, p); const e2 = Math.max(1e-3, (P.whPushSoften * pr.rsR) ** 2), q = tv.lengthSq() + e2;
     aD.addScaledVector(tv, -pr.SR * GM_PER_STRENGTH / (q * Math.sqrt(q)));
     aD.clampLength(0, P.dpAccelCap);
     basis();
@@ -1224,12 +1275,13 @@
   }
   const vec4s = () => [0, 1, 2, 3].map(() => new THREE.Vector4());
   const lensMat = new THREE.ShaderMaterial({
-    uniforms: { tScene: { value: null }, tDepth: { value: null }, tThruA: { value: null }, tThruB: { value: null }, aspect: { value: 1.6 }, camNear: { value: 0.5 }, camFar: { value: 9000 }, soft: { value: 0.65 },
+    uniforms: { tScene: { value: null }, tDepth: { value: null }, tThruA: { value: null }, tThruB: { value: null }, aspect: { value: 1.6 }, camNear: { value: 0.5 }, camFar: { value: 9000 }, soft: { value: 0.65 }, kShadow: { value: 2.6 }, kCore: { value: 2.6 }, ringGlow: { value: 0.55 }, ringWidth: { value: 0.06 }, lensFade: { value: 0.55 }, coreBright: { value: 4 }, coreMix: { value: 0.8 },
       wC: { value: vec4s() }, wP: { value: vec4s() }, wM: { value: vec4s() } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: [
       'uniform sampler2D tScene; uniform sampler2D tDepth; uniform sampler2D tThruA; uniform sampler2D tThruB;',
       'uniform float aspect; uniform float camNear; uniform float camFar; uniform float soft;',
+      'uniform float kShadow; uniform float kCore; uniform float ringGlow; uniform float ringWidth; uniform float lensFade; uniform float coreBright; uniform float coreMix;',
       'uniform vec4 wC[4]; uniform vec4 wP[4]; uniform vec4 wM[4];',
       'varying vec2 vUv;',
       'float linDepth(float d){ float z = d * 2.0 - 1.0; return (2.0 * camNear * camFar) / (camFar + camNear - z * (camFar - camNear)); }',
@@ -1243,16 +1295,16 @@
       '    vec2 d = p - wC[i].xy; float th = max(length(d), 1e-6); vec2 dir = d / th;',
       '    float type = wP[i].x; float rc = max(wP[i].y, 1e-6);',
       '    if (type < 2.5) {',
-      '      float fade = 1.0 - smoothstep(0.55 * wM[i].x, wM[i].x, th);',
+      '      float fade = 1.0 - smoothstep(lensFade * wM[i].x, wM[i].x, th);',
       '      if (type < 1.5) {',                                       // A attractor: Schwarzschild shadow + Einstein lens
-      '        float sh = 2.6 * rc;',
+      '        float sh = kShadow * rc;',
       '        if (th < sh) shadow = 1.0;',
       '        disp -= dir * (wP[i].w / max(th, sh)) * fade;',
-      '        glow += vec3(1.0, 0.8, 0.55) * 0.55 * exp(-pow((th - sh * 1.03) / (0.06 * sh), 2.0));',
+      '        glow += vec3(1.0, 0.8, 0.55) * ringGlow * exp(-pow((th - sh * 1.03) / (ringWidth * sh), 2.0));',
       '      } else {',                                                // A repulsor (this branch): the SAME bending; rays through the horizon draw the white-hot core
-      '        float sh = 2.6 * rc;',
+      '        float sh = kCore * rc;',
       '        disp -= dir * (wP[i].w / max(th, sh)) * fade;',
-      '        if (th < sh) { float t = th / sh; core = 1.0; coreGlow = max(coreGlow, 4.0 * (1.0 - t) * (1.0 - t)); }',
+      '        if (th < sh) { float t = th / sh; core = 1.0; coreGlow = max(coreGlow, coreBright * (1.0 - t) * (1.0 - t)); }',
       '      }',
       '    } else {',                                                  // B: the graded lens, signed, summed over wells
       '      float u = th / rc; float a = wP[i].z * rc * u * exp(-0.5 * u * u);',
@@ -1273,7 +1325,7 @@
       '    vec3 through = wM[i].z < 1.5 ? texture2D(tThruA, suv).rgb : texture2D(tThruB, suv).rgb;',
       '    col = mix(col, through, (1.0 - x) * wP[i].w);',
       '  }',
-      '  if (core > 0.5) col = col * 0.8 + vec3(1.0, 0.97, 0.9) * coreGlow;',
+      '  if (core > 0.5) col = col * coreMix + vec3(1.0, 0.97, 0.9) * coreGlow;',
       '  col += glow;',
       '  if (shadow > 0.5) col = vec3(0.0);',
       '  gl_FragColor = vec4(col, 1.0);',
@@ -1300,8 +1352,8 @@
       U.wC.value[i].set(sx, sy, vz, 1);
       if (w.style === 'A') {
         const thE = f * Math.tan(Math.min(1.2, Math.sqrt(2 * w.rs / D)));
-        U.wP.value[i].set(w.sign > 0 ? 1 : 2, ang(w.rs), 0, thE * thE);
-        U.wM.value[i].set(f * Math.tan(Math.min(1.45, Math.atan(30 * w.rs / D))), 0, 0, 2.6 * w.rs);
+        U.wP.value[i].set(w.sign > 0 ? 1 : 2, ang(w.rs), 0, thE * thE * Math.max(0, w.sign > 0 ? P.bhLensStrength : P.whLensStrength));
+        U.wM.value[i].set(f * Math.tan(Math.min(1.45, Math.atan(P.bhLensReach * w.rs / D))), 0, 0, 2.6 * w.rs);
       } else {
         const amp = Math.max(0, w.amp);
         // w = the throat as shipped; the studio's width dial asks whether B should read from racing distance
@@ -1312,6 +1364,8 @@
       }
     }
     U.aspect.value = cam.aspect; U.camNear.value = cam.near; U.camFar.value = cam.far; U.soft.value = P.softEdge;
+    U.kShadow.value = P.bhShadow; U.kCore.value = P.whCoreSize; U.ringGlow.value = P.bhRingGlow; U.ringWidth.value = Math.max(0.005, P.bhRingWidth);
+    U.lensFade.value = Math.min(0.99, P.bhLensFade); U.coreBright.value = P.whCoreBrightness; U.coreMix.value = P.whCoreSkyMix;
   }
   function renderView(cam, wells, vx, vw, vh) {
     setLensUniforms(cam, wells);
@@ -1498,6 +1552,712 @@
   function hideOverlay() { $('overlay').hidden = true; }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 
+  // ================= illustrated tooltips =================
+  // Every slider has an ⓘ. Hover (or focus, or tap) opens a card: what the number does in plain words, and two small
+  // looping previews of the same moment re-run with ONLY that number changed — at 30% and at 70% of the slider's range.
+  // Each preview is a little 2D re-enactment built from the same formulas the studio flies.
+  const TAU = Math.PI * 2;
+  const fmtNum = (v, step) => v.toFixed(step >= 1 ? 0 : step >= 0.1 ? 1 : 2);
+  const PREV_BG = '#070b1e';
+  function previewBg(c, W, H, seed) {
+    c.fillStyle = PREV_BG; c.fillRect(0, 0, W, H);
+    let a = seed || 7; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    c.fillStyle = 'rgba(200,215,255,0.55)';
+    for (let i = 0; i < 70; i++) { const s = rnd() < 0.15 ? 1.4 : 0.8; c.fillRect(rnd() * W, rnd() * H, s, s); }
+  }
+  function txt(c, s, x, y, col, size, align, weight) {
+    c.font = (weight || 600) + ' ' + (size || 11) + 'px "Chakra Petch", "Segoe UI", sans-serif';
+    c.fillStyle = col || '#e8ecff'; c.textAlign = align || 'left'; c.fillText(s, x, y);
+  }
+  // world → canvas, y up, one scale for both previews of a card so they compare honestly
+  function makeView(b, W, H, pad) {
+    const w = Math.max(1e-3, b.x1 - b.x0), h = Math.max(1e-3, b.y1 - b.y0), s = Math.min((W - 2 * pad) / w, (H - 2 * pad) / h);
+    const ox = (W - w * s) / 2 - b.x0 * s, oy = (H + h * s) / 2 + b.y0 * s;
+    return { s, X: (x) => ox + x * s, Y: (y) => oy - y * s };
+  }
+  const bUnion = (a, b) => ({ x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), y0: Math.min(a.y0, b.y0), y1: Math.max(a.y1, b.y1) });
+  function drawBlackHole(c, x, y, rPx, Pv) {
+    const sh = Math.max(2, rPx * Pv.bhShadow / 2.6 * 1.0);
+    const g = c.createRadialGradient(x, y, sh * 0.95, x, y, sh * 1.6);
+    g.addColorStop(0, 'rgba(255,200,140,0.75)'); g.addColorStop(1, 'rgba(255,200,140,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, sh * 1.6, 0, TAU); c.fill();
+    c.fillStyle = '#000'; c.beginPath(); c.arc(x, y, sh, 0, TAU); c.fill();
+  }
+  function drawWhiteHole(c, x, y, rPx, Pv) {
+    const r = Math.max(2, rPx * Pv.whCoreSize / 2.6);
+    const g = c.createRadialGradient(x, y, 0, x, y, r * 2.2);
+    g.addColorStop(0, 'rgba(255,250,235,1)'); g.addColorStop(0.45, 'rgba(255,240,210,0.75)'); g.addColorStop(1, 'rgba(255,240,210,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 2.2, 0, TAU); c.fill();
+  }
+  function ship(c, x, y, hx, hy, col, size) {
+    const s = size || 6, px = -hy, py = hx;
+    c.fillStyle = col || '#ffb347'; c.beginPath();
+    c.moveTo(x + hx * s * 1.4, y - hy * s * 1.4);
+    c.lineTo(x - hx * s * 0.8 + px * s * 0.7, y + hy * s * 0.8 - py * s * 0.7);
+    c.lineTo(x - hx * s * 0.8 - px * s * 0.7, y + hy * s * 0.8 + py * s * 0.7);
+    c.closePath(); c.fill();
+  }
+  function dashedCircle(c, x, y, r, col, dash, width) { c.save(); c.strokeStyle = col; c.lineWidth = width || 1.2; c.setLineDash(dash || []); c.beginPath(); c.arc(x, y, Math.max(0.5, r), 0, TAU); c.stroke(); c.restore(); }
+
+  const SCENES = {};
+  // ---------- the dipole sling, top down: press, (maybe) caught, round, release, the pair closes ----------
+  SCENES.sling = {
+    make(Pv, cfg) {
+      const dt = 1 / 240, T = cfg.T || 8, pressT = 0.35;
+      const q0 = cfg.qFromValue ? Pv[cfg.key] : cfg.q != null ? cfg.q : 0.7;
+      const tp = (q) => Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent));
+      const S = Pv.dpSMin + (Math.max(Pv.dpSMin, Pv.dpSMax) - Pv.dpSMin) * tp(q0);
+      const rs = Pv.dpRsMin + (Math.max(Pv.dpRsMin, Pv.dpRsMax) - Pv.dpRsMin) * tp(q0), rsR = rs * Pv.whSizeX;
+      const GM = S * Pv.bhGmPerStrength, GMr = GM * Pv.dpWhite, speed = Pv.cruise;
+      const holdR = (v) => { const k = GM / Math.max(1, v * v), b = 2 * rs + k; return 0.5 * (b + Math.sqrt(Math.max(0, b * b - 4 * rs * rs))); };
+      let x = 0, y = 0, hx = 0, hy = 1, g = 0, gFar = 0;
+      let pressed = false, released = false, cap = false, sweep = 0, bent = 0, rc = 0, reach = 0, prevA = 0, dove = false, alive = false;
+      let bx = 0, by = 0, wx = 0, wy = 0, mx = 0, my = 0, ax0 = 0, ay0 = 0, h0 = 0, closeT = 0, boostT = -1, kick = 0, bdx = 0, bdy = 0, relX = 0, relY = 0, gone = false;
+      const frames = []; let nextRec = 0;
+      const release = (t) => {
+        released = true; kick = speed * (Pv.dpBoostMin + (Pv.dpBoostMax - Pv.dpBoostMin) * tp(q0)); boostT = t; bdx = hx; bdy = hy; relX = x; relY = y;
+        mx = (bx + wx) / 2; my = (by + wy) / 2; ax0 = wx - bx; ay0 = wy - by; h0 = Math.hypot(ax0, ay0) / 2; ax0 /= 2 * h0 || 1; ay0 /= 2 * h0 || 1; closeT = 0;
+      };
+      for (let t = 0; t < T; t += dt) {
+        if (!pressed && t >= pressT) {
+          pressed = true; alive = true;
+          const rx = hy, ry = -hx;   // right of the heading (y up)
+          bx = x + hx * Pv.dpAhead + rx * Pv.dpSide; by = y + hy * Pv.dpAhead + ry * Pv.dpSide;
+          wx = x + hx * Pv.dpAhead - rx * Pv.dpSide; wy = y + hy * Pv.dpAhead - ry * Pv.dpSide;
+        }
+        const held = pressed && !released;
+        if (held) {
+          rc = holdR(Math.max(speed, 10)); reach = Pv.dpCaptureX * rc;
+          if (!cap) {
+            const dx = bx - x, dy = by - y, d = Math.hypot(dx, dy);
+            if (d <= reach && (d <= rc || (dx * hx + dy * hy) <= d * Math.cos(Pv.dpCatchDeg * Math.PI / 180))) { cap = true; prevA = Math.atan2(y - by, x - bx); }
+          }
+          let ax = 0, ay = 0;
+          { const dx = bx - x, dy = by - y, r = Math.hypot(dx, dy) + 1e-6, xx = Math.max(r - rs, 0.05 * rs), a = GM / (xx * xx) / r; ax += dx * a; ay += dy * a; }
+          { const dx = wx - x, dy = wy - y, e2 = Math.max(1e-3, (Pv.whPushSoften * rsR) ** 2), q = dx * dx + dy * dy + e2, a = -GMr / (q * Math.sqrt(q)); ax += dx * a; ay += dy * a; }
+          const am0 = Math.hypot(ax, ay); if (am0 > Pv.dpAccelCap) { ax *= Pv.dpAccelCap / am0; ay *= Pv.dpAccelCap / am0; }
+          const v = Math.max(speed + g, 5), along = ax * hx + ay * hy;
+          g = Math.max(-Math.max(0, speed - 8), Math.min(4 * Pv.cruise, g + along * dt));
+          if (cap) g *= Math.exp(-Pv.dpGrip * dt);
+          const px = ax - hx * along, py = ay - hy * along, am = Math.hypot(px, py);
+          if (am > 1e-4) {
+            const ang = Math.min(am / v, Pv.dpTurnCap) * dt * Math.sign(hx * py - hy * px), cs = Math.cos(ang), sn = Math.sin(ang);
+            const nx = hx * cs - hy * sn, ny = hx * sn + hy * cs; hx = nx; hy = ny; bent += Math.abs(ang);
+          }
+          if (cap) {
+            const k = 1 - Math.exp(-Pv.dpSettle * dt), dx = x - bx, dy = y - by, d = Math.hypot(dx, dy);
+            if (d > 1e-3) {
+              const ux = dx / d, uy = dy / d; x += ux * (rc - d) * k; y += uy * (rc - d) * k;
+              const rad = hx * ux + hy * uy; let tx = hx - ux * rad, ty = hy - uy * rad; const tl = Math.hypot(tx, ty);
+              if (tl > 1e-6) { tx /= tl; ty /= tl; let nx = hx + (tx - hx) * k, ny = hy + (ty - hy) * k; const nl = Math.hypot(nx, ny); hx = nx / nl; hy = ny / nl; }
+            }
+          }
+        } else g *= Math.exp(-dt / Math.max(0.05, Pv.dpAssistFade));
+        let vb = 0;
+        if (boostT >= 0 && t - boostT < Pv.dpBoostSeconds) vb = (kick / 1.5) * (Math.cos(Math.PI * (t - boostT) / Pv.dpBoostSeconds) / 2 + 1);
+        x += (hx * (speed + g) + bdx * vb) * dt; y += (hy * (speed + g) + bdy * vb) * dt;
+        if (held && cap) { const a = Math.atan2(y - by, x - bx); let da = a - prevA; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU; sweep += Math.abs(da); prevA = a; }
+        if (held) {
+          const dB = Math.hypot(x - bx, y - by);
+          if (dB > 2 * Math.max(rc, rs)) gFar = g;
+          if (dB <= rs) {   // through the wormhole: out of the white hole, mirrored, with the speed from before the dive
+            const ox = x - bx, oy = y - by, d = Math.max(Math.hypot(ox, oy), 1e-3), e = Math.max(d, Pv.whExitGap * rsR) / d;
+            x = wx - ox * e; y = wy - oy * e; g = gFar; dove = true; release(t);
+          } else {
+            const deg = sweep * 180 / Math.PI;
+            if ((cfg.release && deg >= cfg.release) || deg >= Pv.dpMaxTurn || t >= pressT + (cfg.hold || 4.5) || t - pressT >= Pv.holdCap) release(t);
+          }
+        }
+        if (released && alive) {
+          closeT += dt;
+          const hh = closingHalfGap(h0, Pv.closeSpeed, Pv.closeRamp, closeT);
+          if (hh <= (rs + rsR) / 2) { alive = false; gone = true; } else { bx = mx - ax0 * hh; by = my - ay0 * hh; wx = mx + ax0 * hh; wy = my + ay0 * hh; }
+        }
+        if (t >= nextRec) {
+          nextRec += 1 / 30;
+          frames.push({ t, x, y, hx, hy, bx, by, wx, wy, pressed, released, alive, cap, rc, reach, sweep, bent, spd: speed + g + vb, dove, relX, relY, kick });
+        }
+      }
+      return { frames, rs, rsR, S, q: q0 };
+    },
+    bounds(st) {
+      let b = { x0: 0, x1: 0, y0: 0, y1: 0 };
+      for (const f of st.frames) {
+        b = bUnion(b, { x0: f.x, x1: f.x, y0: f.y, y1: f.y });
+        if (f.pressed && f.alive) b = bUnion(b, { x0: Math.min(f.bx, f.wx), x1: Math.max(f.bx, f.wx), y0: Math.min(f.by, f.wy), y1: Math.max(f.by, f.wy) });
+      }
+      return b;
+    },
+    period: (st) => st.frames.length / 30 + 1,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 3);
+      const fr = st.frames, i = Math.min(fr.length - 1, Math.floor(tt * 30)), f = fr[i], s = view.s;
+      if (f.pressed && f.alive) {
+        c.save(); c.strokeStyle = 'rgba(217,204,255,0.35)'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(view.X(f.bx), view.Y(f.by)); c.lineTo(view.X(f.wx), view.Y(f.wy)); c.stroke(); c.restore();
+        if (!f.released) {
+          dashedCircle(c, view.X(f.bx), view.Y(f.by), f.reach * s, 'rgba(138,127,192,0.45)', [2, 4]);
+          dashedCircle(c, view.X(f.bx), view.Y(f.by), f.rc * s, f.cap ? 'rgba(185,164,255,0.95)' : 'rgba(185,164,255,0.55)', f.cap ? [] : [5, 4], f.cap ? 1.8 : 1.2);
+        }
+        drawWhiteHole(c, view.X(f.wx), view.Y(f.wy), Math.max(2.5, st.rsR * s * 2.6), Pv);
+        drawBlackHole(c, view.X(f.bx), view.Y(f.by), Math.max(2.5, st.rs * s * 2.6), Pv);
+      }
+      c.strokeStyle = 'rgba(255,179,71,0.6)'; c.lineWidth = 1.4; c.beginPath();
+      for (let k = 0; k <= i; k++) { const p = fr[k]; if (k && Math.hypot(p.x - fr[k - 1].x, p.y - fr[k - 1].y) > 40) c.moveTo(view.X(p.x), view.Y(p.y)); else if (k) c.lineTo(view.X(p.x), view.Y(p.y)); else c.moveTo(view.X(p.x), view.Y(p.y)); }
+      c.stroke();
+      c.fillStyle = 'rgba(255,214,150,0.9)';
+      for (let k = 0; k <= i; k += 8) c.fillRect(view.X(fr[k].x) - 1, view.Y(fr[k].y) - 1, 2, 2);   // a dot every ¼ s: wider spacing = faster
+      if (f.released) { c.fillStyle = '#ffb347'; c.beginPath(); c.arc(view.X(f.relX), view.Y(f.relY), 3, 0, TAU); c.fill(); }
+      ship(c, view.X(f.x), view.Y(f.y), f.hx, f.hy, '#ffd27a', 5);
+      const deg = Math.round(f.sweep * 180 / Math.PI), bent = Math.round(f.bent * 180 / Math.PI);
+      const phase = !f.pressed ? 'flying' : f.dove ? 'dived through → out of the white hole' : !f.released ? (f.cap ? 'IN ITS GRIP · ' + deg + '° round' : 'squeeze ' + st.q.toFixed(2) + ' · S ' + st.S.toFixed(1) + ' · bent ' + bent + '°') : 'released · ' + (deg ? deg + '° round' : 'bent ' + bent + '°') + ' · boost +' + Math.round(f.kick);
+      txt(c, phase, 6, 13, f.cap && !f.released ? '#cbbcff' : '#e8ecff', 10.5);
+      txt(c, Math.round(f.spd) + ' u/s', W - 6, H - 6, '#ffd27a', 10.5, 'right');
+      if (f.pressed && !f.released) txt(c, 'circle ' + Math.round(f.rc) + ' u', W - 6, 13, '#b9a4ff', 10, 'right');
+    },
+  };
+
+  // ---------- the hole as the camera sees it: bent sky, shadow, ring, the white core ----------
+  const LOW_W = 150, LOW_H = 94;
+  function skyAt(u, v) {
+    const n = 0.5 + 0.5 * Math.sin(u * 0.045 + v * 0.021) * Math.cos(v * 0.037 - u * 0.012);
+    let r = 14 + 26 * n, g = 18 + 22 * n, b = 46 + 48 * n;
+    const gu = Math.abs(((u / 18) % 1 + 1) % 1 - 0.5), gv = Math.abs(((v / 18) % 1 + 1) % 1 - 0.5);
+    const line = Math.max(0, 1 - Math.min(gu, gv) * 14);
+    r += 40 * line; g += 70 * line; b += 120 * line;
+    const iu = Math.floor(u / 2.5), iv = Math.floor(v / 2.5); let h = (iu * 374761393 + iv * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; h = (h ^ (h >>> 16)) >>> 0;
+    if (h / 4294967296 > 0.982) { r = g = b = 255; }
+    return [r, g, b];
+  }
+  SCENES.hole = {
+    make(Pv, cfg) {
+      const cv = document.createElement('canvas'); cv.width = LOW_W; cv.height = LOW_H;
+      return { cv, ctx: cv.getContext('2d'), img: cv.getContext('2d').createImageData(LOW_W, LOW_H) };
+    },
+    period: () => 6,
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      const fpx = 0.87 * LOW_H, wells = [];
+      const rcB = cfg.rc != null ? cfg.rc : cfg.fromStrength ? Math.max(1.5, 3 * Pv.bhHorizonPerStrength) * 0.66 : 4;
+      if (cfg.kind === 'bh') wells.push({ x: LOW_W / 2, y: LOW_H / 2, rc: rcB, white: false });
+      else if (cfg.kind === 'wh') wells.push({ x: LOW_W / 2, y: LOW_H / 2, rc: rcB, white: true });
+      else { wells.push({ x: LOW_W * 0.3, y: LOW_H / 2, rc: rcB, white: false }); wells.push({ x: LOW_W * 0.72, y: LOW_H / 2, rc: rcB * Pv.whSizeX, white: true }); }
+      const scroll = tt * 9, d = st.img.data;
+      for (let py = 0; py < LOW_H; py++) for (let px = 0; px < LOW_W; px++) {
+        let sx = px, sy = py, shadow = false, core = 0, ring = 0;
+        for (const w of wells) {
+          const dx = px - w.x, dy = py - w.y, th = Math.max(Math.hypot(dx, dy), 1e-3), ux = dx / th, uy = dy / th;
+          const E = Math.pow(7.8 * w.rc, 2) * Math.max(0, w.white ? Pv.whLensStrength : Pv.bhLensStrength);   // Einstein ring ≈ 3 shadows out, as at racing distance
+          const reach = Pv.bhLensReach * w.rc, fade = 1 - smooth(Math.min(0.99, Pv.bhLensFade) * reach, reach, th);
+          const sh = (w.white ? Pv.whCoreSize : Pv.bhShadow) * w.rc;
+          sx -= ux * (E / Math.max(th, sh)) * fade; sy -= uy * (E / Math.max(th, sh)) * fade;
+          if (!w.white) { if (th < sh) shadow = true; ring += Pv.bhRingGlow * Math.exp(-Math.pow((th - sh * 1.03) / (Math.max(0.005, Pv.bhRingWidth) * sh), 2)); }
+          else if (th < sh) { const t = th / sh; core = Math.max(core, Pv.whCoreBrightness * (1 - t) * (1 - t)); }
+        }
+        let [r, g, b] = skyAt(sx + scroll, sy);
+        if (core > 0) { r = r * Pv.whCoreSkyMix + 255 * core; g = g * Pv.whCoreSkyMix + 247 * core; b = b * Pv.whCoreSkyMix + 230 * core; }
+        r += 255 * ring; g += 204 * ring; b += 140 * ring;
+        if (shadow) r = g = b = 0;
+        const o = (py * LOW_W + px) * 4; d[o] = Math.min(255, r); d[o + 1] = Math.min(255, g); d[o + 2] = Math.min(255, b); d[o + 3] = 255;
+      }
+      st.ctx.putImageData(st.img, 0, 0);
+      c.imageSmoothingEnabled = true; c.drawImage(st.cv, 0, 0, W, H);
+      if (cfg.kind === 'pair') { txt(c, 'black hole', W * 0.3, H - 6, '#cbbcff', 10, 'center'); txt(c, 'white hole', W * 0.72, H - 6, '#fff1c9', 10, 'center'); }
+    },
+  };
+
+  // ---------- prisms under the pair: pulled, stretched, through, then released ----------
+  SCENES.prisms = {
+    make(Pv, cfg) {
+      const S = cfg.S || 6, Wd = cfg.world || 240, Hd = Wd * 0.62, N = 170, dt = 1 / 60, T = 7.5, on = 4.2;
+      const rs = Math.max(1.5, S * Pv.bhHorizonPerStrength), rsR = rs * Pv.whSizeX, GM = S * Pv.bhGmPerStrength, GMr = GM * Pv.dpWhite;
+      const floor = Math.max(1e-3, cfg.floor != null ? cfg.floor : Pv.bhInfluenceFloor);
+      const inf = Math.min(Pv.bhMaxInfluence, Math.sqrt(GM / floor)), infR = Math.min(Pv.bhMaxInfluence, Math.sqrt(GMr / floor));
+      const gap = cfg.gap || Wd * 0.42, B = [-gap, 0], Wp = [gap, 0], M = [0, 0];
+      let a = 11; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const P0 = new Float32Array(N * 2), Pp = new Float32Array(N * 2), V = new Float32Array(N * 2);
+      for (let k = 0; k < N; k++) { P0[2 * k] = Pp[2 * k] = (rnd() * 2 - 1) * Wd; P0[2 * k + 1] = Pp[2 * k + 1] = (rnd() * 2 - 1) * Hd; }
+      const frames = []; let rec = 0;
+      for (let t = 0; t < T; t += dt) {
+        const alive = t < on, F = rec <= t ? new Float32Array(N * 4) : null;
+        for (let k = 0; k < N; k++) {
+          let px = Pp[2 * k], py = Pp[2 * k + 1], vx = V[2 * k], vy = V[2 * k + 1], ax = 0, ay = 0, felt = false;
+          if (alive) {
+            for (const [wx, wy, r0, gm, reach, sign] of [[B[0], B[1], rs, GM, inf, 1], [Wp[0], Wp[1], rsR, GMr, infR, -1]]) {
+              const dx = wx - px, dy = wy - py, r = Math.hypot(dx, dy) + 1e-6;
+              if (r > reach) continue;
+              felt = true;
+              if (sign > 0 && r < r0) { px = 2 * M[0] - px; py = 2 * M[1] - py; vx = -vx; vy = -vy; break; }
+              if (sign < 0 && r < r0) { const s = r0 / r; px = wx - dx * s; py = wy - dy * s; }
+              const x = Math.max(r - r0, 0.25 * r0), ac = sign * gm / (x * x) / r; ax += dx * ac; ay += dy * ac;
+            }
+          }
+          const am = Math.hypot(ax, ay); if (am > Pv.bhPrismAccelCap) { ax *= Pv.bhPrismAccelCap / am; ay *= Pv.bhPrismAccelCap / am; }
+          if (felt) { vx += ax * dt; vy += ay * dt; }
+          else { const d = Math.exp(-Pv.releaseDamping * dt); vx *= d; vy *= d; vx += (P0[2 * k] - px) * Pv.bhPrismReturn * dt; vy += (P0[2 * k + 1] - py) * Pv.bhPrismReturn * dt; }
+          const vm = Math.hypot(vx, vy); if (vm > Pv.bhPrismMaxSpeed) { vx *= Pv.bhPrismMaxSpeed / vm; vy *= Pv.bhPrismMaxSpeed / vm; }
+          px += vx * dt; py += vy * dt; Pp[2 * k] = px; Pp[2 * k + 1] = py; V[2 * k] = vx; V[2 * k + 1] = vy;
+          if (F) { const st = felt ? Math.min(Pv.bhTideMax, Math.hypot(ax, ay) * Pv.bhTideGain / 50) : 0; F[4 * k] = px; F[4 * k + 1] = py; F[4 * k + 2] = Math.atan2(vy, vx); F[4 * k + 3] = vm > 3 ? st : -1; }
+        }
+        if (rec <= t) { frames.push({ F, alive, t }); rec += 1 / 30; }
+      }
+      return { frames, N, B, Wp, rs, rsR, inf, infR, Wd, Hd };
+    },
+    bounds: (st) => ({ x0: -st.Wd, x1: st.Wd, y0: -st.Hd, y1: st.Hd }),
+    period: (st) => st.frames.length / 30 + 0.4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 5);
+      const f = st.frames[Math.min(st.frames.length - 1, Math.floor(tt * 30))], s = view.s;
+      if (f.alive) {
+        dashedCircle(c, view.X(st.B[0]), view.Y(st.B[1]), st.inf * s, 'rgba(185,164,255,0.45)', [3, 4]);
+        dashedCircle(c, view.X(st.Wp[0]), view.Y(st.Wp[1]), st.infR * s, 'rgba(255,241,201,0.3)', [3, 4]);
+        drawWhiteHole(c, view.X(st.Wp[0]), view.Y(st.Wp[1]), Math.max(2.5, st.rsR * s * 2.6), Pv);
+        drawBlackHole(c, view.X(st.B[0]), view.Y(st.B[1]), Math.max(2.5, st.rs * s * 2.6), Pv);
+      }
+      c.strokeStyle = '#5ff0d0'; c.lineWidth = 1.3;
+      for (let k = 0; k < st.N; k++) {
+        const x = view.X(f.F[4 * k]), y = view.Y(f.F[4 * k + 1]), an = f.F[4 * k + 2], stv = f.F[4 * k + 3];
+        const L = 2.2 * (1 + Math.max(0, stv)), dx = Math.cos(an) * L, dy = -Math.sin(an) * L;
+        if (stv < 0) { c.fillStyle = 'rgba(95,240,208,0.55)'; c.fillRect(x - 1, y - 1, 2, 2); continue; }
+        c.globalAlpha = 1 / Math.sqrt(1 + Math.max(0, stv)) * 0.6 + 0.4; c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x + dx, y + dy); c.stroke(); c.globalAlpha = 1;
+      }
+      txt(c, f.alive ? 'pair on: prisms pulled in, out of the white hole' : 'pair gone: prisms settle and drift home', 6, 13, '#e8ecff', 10);
+    },
+  };
+
+  // ---------- the Stoat's own body through the pair: stretched in, relaxing out ----------
+  function logStretch(Pv, GM, r, rs) {
+    r = Math.max(r, rs, 1e-3); if (r > 6 * rs) return 0;
+    const eps = GM * 0.81 / (r * r * r); if (eps <= 0 || Pv.vesselTide <= 0) return 0;
+    const cc = Math.log(12), x = Math.min(eps * Pv.vesselTide / cc, 1e4); return cc * x / Math.sqrt(Math.sqrt(1 + x * x * x * x));
+  }
+  SCENES.tideHull = {
+    make(Pv, cfg) {
+      const rs = 6, rsR = rs * Pv.whSizeX, GM = 8 * Pv.bhGmPerStrength, B = [-45, 0], Wp = [55, 0], v = 40, frames = []; let peak = 1;
+      let x = -150, y = cfg.miss || 1.5, through = false;
+      for (let t = 0; t < 7.5; t += 1 / 30) {
+        x += v / 30;
+        if (!through && Math.hypot(x - B[0], y - B[1]) <= rs) { const ox = x - B[0], oy = y - B[1], d = Math.max(Math.hypot(ox, oy), 1e-3), e = Math.max(d, Pv.whExitGap * rsR) / d; x = Wp[0] - ox * e; y = Wp[1] - oy * e; through = true; x = Wp[0] + Math.abs(ox * e); }
+        const L = through ? 0 : logStretch(Pv, GM, Math.hypot(x - B[0], y - B[1]), rs);
+        const Lw = through ? logStretch(Pv, GM, Math.hypot(x - Wp[0], y - Wp[1]), rsR) : 0;
+        const stv = Math.exp(Math.max(L, Lw)); peak = Math.max(peak, stv);
+        frames.push({ x, y, st: stv, through, peak });
+      }
+      return { frames, B, Wp, rs, rsR, miss: cfg.miss || 0 };
+    },
+    bounds: () => ({ x0: -150, x1: 160, y0: -45, y1: 45 }),
+    period: (st) => st.frames.length / 30 + 0.5,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 9);
+      const f = st.frames[Math.min(st.frames.length - 1, Math.floor(tt * 30))], s = view.s;
+      dashedCircle(c, view.X(st.Wp[0]), view.Y(st.Wp[1]), Pv.whExitGap * st.rsR * s, 'rgba(255,241,201,0.55)', [3, 3]);
+      drawWhiteHole(c, view.X(st.Wp[0]), view.Y(st.Wp[1]), st.rsR * s * 2.6, Pv);
+      drawBlackHole(c, view.X(st.B[0]), view.Y(st.B[1]), st.rs * s * 2.6, Pv);
+      const L = 9 * f.st, G = 3.2 / Math.sqrt(f.st);
+      c.fillStyle = '#ffb347'; c.strokeStyle = '#1a1410'; c.lineWidth = 1.5; c.beginPath(); c.ellipse(view.X(f.x), view.Y(f.y), L, Math.max(1.2, G), 0, 0, TAU); c.fill(); c.stroke();
+      txt(c, 'body stretch ×' + f.st.toFixed(2) + '  (most ×' + f.peak.toFixed(1) + ')', 6, 13, '#e8ecff', 10.5);
+      txt(c, f.through ? 'out of the white hole: relaxing' : st.miss ? 'passing ' + st.miss + ' u from the black hole' : 'falling in: stretching', W - 6, H - 6, '#9aa6d6', 10, 'right');
+    },
+  };
+
+  // ---------- after you let go: the two holes close and annihilate; or the hold cap ----------
+  SCENES.life = {
+    make(Pv, cfg) {
+      const h0 = 80, rs = 6, held = 0.6;
+      const tMeet = held + secondsToMeet(h0, rs, Pv.closeSpeed, Pv.closeRamp);
+      return { h0, rs, held, tMeet: isFinite(tMeet) ? tMeet : 1e9 };
+    },
+    bounds: () => ({ x0: -95, x1: 95, y0: -40, y1: 40 }),
+    period: (st, cfg, Pv) => cfg.mode === 'hold' ? 6.5 : Math.min(9, (isFinite(st.tMeet) && st.tMeet < 1e8 ? st.tMeet : 8) + 1.4),
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 13);
+      if (cfg.mode === 'hold') {
+        const speedUp = 6, T = tt * speedUp, cap = Pv.holdCap, x0 = 14, x1 = W - 14, y = H - 26, sx = (v) => x0 + (x1 - x0) * Math.min(1, v / 30);
+        c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(x0, y, x1 - x0, 6);
+        c.fillStyle = '#b9a4ff'; c.fillRect(x0, y, sx(Math.min(T, cap)) - x0, 6);
+        c.fillStyle = '#ffb347'; c.fillRect(sx(cap) - 1, y - 6, 2, 18);
+        txt(c, '0 s', x0, y + 18, '#9aa6d6', 9.5); txt(c, '30 s', x1, y + 18, '#9aa6d6', 9.5, 'right'); txt(c, 'cap ' + cap.toFixed(1) + ' s', sx(cap), y - 9, '#ffb347', 9.5, 'center');
+        const heldNow = T < cap, cx = W / 2, cy = H * 0.42, r = 26;
+        drawBlackHole(c, cx, cy, 6, Pv);
+        const ang = T * 1.6; ship(c, cx + Math.cos(ang) * r, cy - Math.sin(ang) * r, heldNow ? -Math.sin(ang) : -Math.sin(Math.min(T, cap) * 1.6), heldNow ? -Math.cos(ang) : -Math.cos(Math.min(T, cap) * 1.6), '#ffd27a', 5);
+        txt(c, heldNow ? 'trigger held · ' + T.toFixed(1) + ' s (shown ×6)' : 'held too long: it lets you go on its own', 6, 13, heldNow ? '#e8ecff' : '#ffb347', 10);
+        return;
+      }
+      const t = tt, h = t < st.held ? st.h0 : closingHalfGap(st.h0, Pv.closeSpeed, Pv.closeRamp, t - st.held), met = t >= st.tMeet;
+      const cy = view.Y(8);
+      if (!met) {
+        drawBlackHole(c, view.X(-h), cy, st.rs * view.s * 2.6, Pv);
+        drawWhiteHole(c, view.X(h), cy, st.rs * view.s * 2.6, Pv);
+      } else {
+        const k = t - st.tMeet; if (k < 0.7) { c.strokeStyle = 'rgba(255,240,210,' + (1 - k / 0.7) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(view.X(0), cy, 4 + 70 * k, 0, TAU); c.stroke(); }
+      }
+      // the gap over time, drawn as it happens
+      const gx0 = 12, gx1 = W - 12, gy0 = H - 8, gy1 = H - 34, Tm = Math.max(3, Math.min(8, st.tMeet + 0.3));
+      c.strokeStyle = 'rgba(255,255,255,0.15)'; c.beginPath(); c.moveTo(gx0, gy0); c.lineTo(gx1, gy0); c.stroke();
+      c.strokeStyle = '#b9a4ff'; c.lineWidth = 1.5; c.beginPath();
+      for (let u = 0; u <= Math.min(t, Tm); u += 0.05) { const hh = u < st.held ? st.h0 : closingHalfGap(st.h0, Pv.closeSpeed, Pv.closeRamp, u - st.held); const X = gx0 + (gx1 - gx0) * u / Tm, Y = gy0 + (gy1 - gy0) * Math.max(0, hh) / st.h0; if (u === 0) c.moveTo(X, Y); else c.lineTo(X, Y); }
+      c.stroke();
+      txt(c, t < st.held ? 'held' : met ? 'met: annihilated at ' + (st.tMeet - st.held).toFixed(1) + ' s' : 'let go: closing', 6, 13, met ? '#ffb347' : '#e8ecff', 10.5);
+      txt(c, 'gap', gx0, gy1 - 3, '#9aa6d6', 9);
+    },
+  };
+
+  // ---------- graphs: the squeeze curve, the key ramp ----------
+  SCENES.curve = {
+    make: () => ({}), period: () => 4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 17);
+      const x0 = 30, x1 = W - 70, y0 = H - 22, y1 = 18, tp = (q) => Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent));
+      const Smax = Math.max(Pv.dpSMin, Pv.dpSMax), Sof = (q) => Pv.dpSMin + (Smax - Pv.dpSMin) * tp(q);
+      c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+      c.strokeStyle = '#b9a4ff'; c.lineWidth = 2; c.beginPath();
+      for (let k = 0; k <= 40; k++) { const q = k / 40, X = x0 + (x1 - x0) * q, Y = y0 + (y1 - y0) * (Sof(q) - Pv.dpSMin) / Math.max(1e-3, Smax - Pv.dpSMin); if (k) c.lineTo(X, Y); else c.moveTo(X, Y); }
+      c.stroke();
+      const q = 0.5 - 0.5 * Math.cos(tt / 4 * TAU), S = Sof(q), X = x0 + (x1 - x0) * q, Y = y0 + (y1 - y0) * (S - Pv.dpSMin) / Math.max(1e-3, Smax - Pv.dpSMin);
+      c.fillStyle = '#ffb347'; c.beginPath(); c.arc(X, Y, 3.5, 0, TAU); c.fill();
+      txt(c, 'trigger →', x1, y0 + 14, '#9aa6d6', 9.5, 'right'); txt(c, 'strength', x0 + 4, y1 - 4, '#9aa6d6', 9.5);
+      txt(c, 'half squeeze → S ' + Sof(0.5).toFixed(1), x0 + 6, y1 + 12, '#e8ecff', 10);
+      const r = 4 + 16 * (S - Pv.dpSMin) / Math.max(1e-3, Smax - Pv.dpSMin);
+      drawBlackHole(c, W - 34, H / 2, r * 0.8, Pv);
+      txt(c, 'S ' + S.toFixed(1), W - 34, H - 8, '#cbbcff', 10, 'center');
+    },
+  };
+  SCENES.keyRamp = {
+    make: () => ({}), period: () => 5.5,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 19);
+      const x0 = 26, x1 = W - 12, y0 = H - 22, y1 = 20, T = 5, sx = (t) => x0 + (x1 - x0) * t / T, sy = (q) => y0 + (y1 - y0) * q;
+      c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+      c.strokeStyle = '#b9a4ff'; c.lineWidth = 2; c.beginPath(); c.moveTo(sx(0), sy(0)); c.lineTo(sx(Math.min(T, Pv.holdRamp)), sy(Math.min(1, T / Pv.holdRamp))); if (Pv.holdRamp < T) c.lineTo(sx(T), sy(1)); c.stroke();
+      const t = Math.min(T, tt), q = Math.min(1, t / Math.max(0.01, Pv.holdRamp));
+      c.fillStyle = '#ffb347'; c.beginPath(); c.arc(sx(t), sy(q), 3.5, 0, TAU); c.fill();
+      txt(c, 'key held ' + t.toFixed(1) + ' s → squeeze ' + q.toFixed(2), x0 + 6, y1 + 2, '#e8ecff', 10);
+      txt(c, 'seconds →', x1, y0 + 14, '#9aa6d6', 9.5, 'right');
+    },
+  };
+
+  // ---------- flight: turning, rolling, speed ----------
+  SCENES.turn = {
+    make: () => ({}), period: (st, cfg) => cfg.mode === 'speed' ? 4 : 5,
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 23);
+      if (cfg.mode === 'roll') {
+        const a = tt * Pv.roll * Math.PI / 180, cx = W / 2, cy = H / 2 + 4;
+        c.save(); c.translate(cx, cy); c.rotate(a);
+        c.fillStyle = '#c98a4b'; c.beginPath(); c.ellipse(0, 0, 13, 9, 0, 0, TAU); c.fill();
+        c.fillStyle = '#f1e6cf'; c.beginPath(); c.ellipse(0, 4, 8, 4, 0, 0, TAU); c.fill();
+        c.fillStyle = '#8a5520'; c.fillRect(-30, -2, 60, 4); c.fillRect(-2, -20, 4, 9);
+        c.restore();
+        txt(c, 'rear view · a full roll in ' + (360 / Math.max(1, Pv.roll)).toFixed(1) + ' s', 6, 13, '#e8ecff', 10.5);
+        return;
+      }
+      if (cfg.mode === 'speed') {
+        const v = Pv.cruise, span = 320, px = W / span, x = ((tt * v) % span), y = H / 2;
+        for (let k = 0; k <= Math.floor(tt * 2); k++) { const xx = (k * 0.5 * v) % span; if (k * 0.5 * v > tt * v - span) { c.fillStyle = 'rgba(255,214,150,0.8)'; c.fillRect(xx * px - 1, y - 1, 2, 2); } }
+        ship(c, x * px, y, 1, 0, '#ffd27a', 6);
+        c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(8, H - 16, 100 * px, 2); txt(c, '100 u', 8, H - 20, '#9aa6d6', 9.5);
+        txt(c, v.toFixed(0) + ' u/s · a dot every ½ s', 6, 13, '#e8ecff', 10.5);
+        return;
+      }
+      const w = Pv.pitchYaw * Math.PI / 180, v = Pv.cruise, R = v / Math.max(1e-3, w), sc = Math.min(W, H) * 0.36 / Math.max(R, 60), cx = W / 2, cy = H / 2 + 6;
+      const ang = tt * w; c.strokeStyle = 'rgba(255,179,71,0.35)'; c.setLineDash([3, 4]); c.beginPath(); c.arc(cx, cy, R * sc, 0, TAU); c.stroke(); c.setLineDash([]);
+      ship(c, cx + Math.cos(ang) * R * sc, cy - Math.sin(ang) * R * sc, -Math.sin(ang), Math.cos(ang), '#ffd27a', 6);
+      txt(c, 'full stick at cruise: a ' + Math.round(R * 2) + ' u circle, ' + (360 / Math.max(1, Pv.pitchYaw)).toFixed(1) + ' s round', 6, 13, '#e8ecff', 10);
+    },
+  };
+
+  // ---------- the lope, side view ----------
+  SCENES.lope = {
+    make: () => ({}), period: () => 4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 29);
+      const ph = Math.PI * Math.max(0, Pv.lopeRate) * tt, sn = Math.sin(ph), s2 = sn * sn, arch = clamp01(Pv.lopeArch);
+      const lift = Math.max(0, Pv.lopeAmp) * s2, pitch = -arch * 0.45 * Math.sin(2 * ph), spine = arch * (s2 - 0.5) * 2, legsK = 1 - s2;
+      const stretch = 1 + (0.18 + 0.35 * clamp01(Pv.lopeSquash)) * (s2 - 0.5) * arch * 2, k = 22, gy = H - 18;
+      c.strokeStyle = 'rgba(127,215,255,0.35)'; c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+      for (let x = (-(tt * 60) % 24 + 24) % 24; x < W; x += 24) { c.fillStyle = 'rgba(127,215,255,0.35)'; c.fillRect(x, gy + 2, 8, 1.5); }
+      c.save(); c.translate(W / 2, gy - 26 - lift * k); c.rotate(-pitch); c.scale(stretch, 1 / Math.sqrt(stretch));
+      const n = 6;
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1), x = -46 + 92 * t, y = -0.22 * spine * Math.sin(Math.PI * t) * k;
+        if (i === 1 || i === 4) { c.strokeStyle = '#6b4322'; c.lineWidth = 3; const la = (i === 1 ? 1 : -1) * 0.9 * legsK; c.beginPath(); c.moveTo(x, y + 6); c.lineTo(x + Math.sin(la) * 16, y + 6 + Math.cos(la) * 16); c.stroke(); }
+        c.fillStyle = i === n - 1 ? '#d29a5c' : '#c98a4b'; c.beginPath(); c.ellipse(x, y, i === n - 1 ? 12 : 10, i === n - 1 ? 9 : 8, 0, 0, TAU); c.fill();
+      }
+      c.strokeStyle = '#1a1410'; c.lineWidth = 4; c.beginPath(); c.moveTo(-50, 0); c.quadraticCurveTo(-66, -4 - 6 * legsK, -78, 2); c.stroke();
+      c.restore();
+      txt(c, 'lift ' + lift.toFixed(2) + ' u · stretch ×' + stretch.toFixed(2), 6, 13, '#e8ecff', 10.5);
+    },
+  };
+
+  // ---------- archived: round 4's orbit sling ----------
+  SCENES.orbit = {
+    make(Pv, cfg) {
+      const tp = (q) => Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent));
+      const rad = (q) => { const w = Math.max(1, Pv.orbitWide); return w + (Math.min(Math.max(1, Pv.orbitTight), w) - w) * tp(q); };
+      const v = 60, dt = 1 / 120, frames = []; let q = cfg.q != null ? cfg.q : 0.5, r = rad(q), ang = 0, d = r * (cfg.startOff || 1), x = d, y = 0, hx = 0, hy = 1, out = false, kick = 0, bt = 0, rec = 0;
+      for (let t = 0; t < 6; t += dt) {
+        if (cfg.qChange != null && t > 1.5) q = cfg.qChange;
+        if (!out) {
+          r += (rad(q) - r) * (1 - Math.exp(-Pv.followRate * dt));
+          d += (r - d) * (1 - Math.exp(-Pv.radialRate * dt));
+          ang += v / Math.max(1, d) * dt; x = Math.cos(ang) * d; y = Math.sin(ang) * d; hx = -Math.sin(ang); hy = Math.cos(ang);
+          if (t > (cfg.release || 3.2)) { out = true; kick = v * (Pv.boostMin + (Pv.boostMax - Pv.boostMin) * clamp01(q)); bt = t; }
+        } else {
+          const u = t - bt, vb = u < Pv.boostSeconds ? (kick / 1.5) * (Math.cos(Math.PI * u / Pv.boostSeconds) / 2 + 1) : 0;
+          x += hx * (v + vb) * dt; y += hy * (v + vb) * dt;
+        }
+        if (t >= rec) { rec += 1 / 30; frames.push({ x, y, hx, hy, r, out, rs: r / Math.max(3, Pv.orbitHorizons), kick }); }
+      }
+      return { frames };
+    },
+    bounds(st) { let b = { x0: -60, x1: 60, y0: -60, y1: 60 }; for (const f of st.frames) b = bUnion(b, { x0: Math.min(f.x, -f.r), x1: Math.max(f.x, f.r), y0: Math.min(f.y, -f.r), y1: Math.max(f.y, f.r) }); return b; },
+    period: (st) => st.frames.length / 30 + 0.6,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 31);
+      const fr = st.frames, i = Math.min(fr.length - 1, Math.floor(tt * 30)), f = fr[i];
+      if (!f.out) dashedCircle(c, view.X(0), view.Y(0), f.r * view.s, 'rgba(185,164,255,0.6)', [4, 4]);
+      drawBlackHole(c, view.X(0), view.Y(0), Math.max(2.5, f.rs * view.s * 2.6), Pv);
+      c.strokeStyle = 'rgba(255,179,71,0.6)'; c.lineWidth = 1.4; c.beginPath();
+      for (let k = 0; k <= i; k++) { const p = fr[k]; if (k) c.lineTo(view.X(p.x), view.Y(p.y)); else c.moveTo(view.X(p.x), view.Y(p.y)); }
+      c.stroke();
+      c.fillStyle = 'rgba(255,214,150,0.9)'; for (let k = 0; k <= i; k += 8) c.fillRect(view.X(fr[k].x) - 1, view.Y(fr[k].y) - 1, 2, 2);
+      ship(c, view.X(f.x), view.Y(f.y), f.hx, f.hy, '#ffd27a', 5);
+      txt(c, f.out ? 'slung out · boost +' + Math.round(f.kick) : 'orbit r ' + Math.round(f.r) + ' u', 6, 13, '#e8ecff', 10.5);
+    },
+  };
+
+  // ---------- archived: charming-cerf's crystal pair ----------
+  SCENES.crystal = {
+    make: () => ({}),
+    period: (st, cfg, Pv) => Pv.formS + Pv.standS + Pv.annihilateS + 0.8,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 37);
+      const life = Pv.formS + Pv.standS + Pv.annihilateS, t = Math.min(tt, life);
+      const p = t < Pv.formS ? 1 - t / Pv.formS : t < Pv.formS + Pv.standS ? 0 : (t - Pv.formS - Pv.standS) / Math.max(1e-3, Pv.annihilateS);
+      const q = 1 - clamp01(p), env = q * Math.sqrt(q), beat = Pv.beatDepth * Math.sin(2 * Math.PI * Pv.beatCycles * p * p);
+      const sep = Math.pow(q, 0.75), ang = 2 * Math.PI * Pv.spiralTurns * p * p, h = 60 * sep, cx = W / 2, cy = H / 2 - 6;
+      const ax = Math.cos(ang) * h, ay = Math.sin(ang) * h;
+      for (const [x, y, a, col] of [[-ax, -ay, env * (1 + beat), '111,227,208'], [ax, ay, env * (1 - beat), '216,255,246']]) {
+        const r = 4 + 14 * Math.max(0, a); const g = c.createRadialGradient(cx + x, cy + y, 0, cx + x, cy + y, r * 1.8);
+        g.addColorStop(0, 'rgba(' + col + ',0.95)'); g.addColorStop(1, 'rgba(' + col + ',0)'); c.fillStyle = g; c.beginPath(); c.arc(cx + x, cy + y, r * 1.8, 0, TAU); c.fill();
+      }
+      const x0 = 10, x1 = W - 10, y = H - 14, sx = (v) => x0 + (x1 - x0) * v / life;
+      c.fillStyle = 'rgba(111,227,208,0.5)'; c.fillRect(x0, y, sx(Pv.formS) - x0, 5);
+      c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillRect(sx(Pv.formS), y, Math.max(1, sx(Pv.formS + Pv.standS) - sx(Pv.formS)), 5);
+      c.fillStyle = 'rgba(255,179,71,0.6)'; c.fillRect(sx(Pv.formS + Pv.standS), y, x1 - sx(Pv.formS + Pv.standS), 5);
+      c.fillStyle = '#fff'; c.fillRect(sx(t) - 1, y - 4, 2, 13);
+      txt(c, t < Pv.formS ? 'forming' : t < Pv.formS + Pv.standS ? 'standing' : t < life ? 'spiralling in' : 'gone', 6, 13, '#e8ecff', 10.5);
+      txt(c, 'life ' + life.toFixed(1) + ' s', W - 6, 13, '#9aa6d6', 10, 'right');
+    },
+  };
+  SCENES.felt = {
+    make(Pv, cfg) {
+      const c0 = Math.max(20, Pv.cruise), Rt = 12, frames = []; let r = (cfg.start || 6) * Rt, v = 0;
+      const acc = (r) => { const reach = Pv.feltReach * Rt; if (r > reach) return 0; const taper = 1 - smooth(0.8 * reach, reach, r), s = r * r + Rt * Rt; return Pv.feltK * c0 * c0 * Rt * taper * r / (s * Math.sqrt(s)); };
+      for (let t = 0; t < 6; t += 1 / 120) { v = Math.min(Pv.feltCap * c0, v + acc(r) / 120); r = Math.max(0, r - v / 120); if (Math.round(t * 120) % 4 === 0) frames.push({ r, v }); if (r <= 0.3 * Rt) break; }
+      return { frames, Rt, c0, acc };
+    },
+    period: (st) => st.frames.length / 30 + 0.8,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 41);
+      const x0 = 14, x1 = W - 10, y0 = H - 20, y1 = 24, maxR = 20 * st.Rt, sx = (r) => x0 + (x1 - x0) * r / maxR;
+      let mx = 0; for (let k = 1; k <= 60; k++) mx = Math.max(mx, st.acc(maxR * k / 60));
+      c.strokeStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+      c.strokeStyle = '#6fe3d0'; c.lineWidth = 1.8; c.beginPath();
+      for (let k = 0; k <= 80; k++) { const r = maxR * k / 80, Y = y0 + (y1 - y0) * st.acc(r) / Math.max(1e-6, mx); if (k) c.lineTo(sx(r), Y); else c.moveTo(sx(r), Y); }
+      c.stroke();
+      c.strokeStyle = 'rgba(255,179,71,0.7)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(sx(Pv.feltReach * st.Rt), y1); c.lineTo(sx(Pv.feltReach * st.Rt), y0); c.stroke(); c.setLineDash([]);
+      const f = st.frames[Math.min(st.frames.length - 1, Math.floor(tt * 30))];
+      ship(c, sx(f.r), y0 - 8, -1, 0, '#ffd27a', 5);
+      txt(c, 'pull speed ' + Math.round(f.v) + ' u/s (ceiling ' + Math.round(Pv.feltCap * st.c0) + ')', 6, 13, '#e8ecff', 10);
+      txt(c, 'reach', sx(Pv.feltReach * st.Rt), y1 - 4, '#ffb347', 9.5, 'center'); txt(c, '← mouth', x0, y0 + 14, '#9aa6d6', 9.5);
+    },
+  };
+  SCENES.lensB = {
+    make: SCENES.hole.make, period: () => 6,
+    draw(c, W, H, tt, st, view, Pv) {
+      const rc = 9, w = rc * Math.max(0.05, Pv.lensWidth), cx = LOW_W / 2, cy = LOW_H / 2, scroll = tt * 9, d = st.img.data, A = Math.min(0.95, Pv.lensA), soft = Pv.softEdge;
+      for (let py = 0; py < LOW_H; py++) for (let px = 0; px < LOW_W; px++) {
+        const dx = px - cx, dy = py - cy, th = Math.max(Math.hypot(dx, dy), 1e-3), u = th / w, a = A * w * u * Math.exp(-0.5 * u * u);
+        const sx = px - dx / th * a, sy = py - dy / th * a;
+        let [r, g, b] = skyAt(sx + scroll, sy);
+        const bb = Math.hypot(sx - cx, sy - cy) / rc;
+        if (bb < 1) { let x = clamp01((bb - (1 - soft)) / Math.max(soft, 1e-3)); x = x * x * (3 - 2 * x); x = x * x * (3 - 2 * x); const [r2, g2, b2] = skyAt(sx * 1.3 + 400 - scroll, sy * 1.3 + 90); r = r + (r2 * 1.4 + 30 - r) * (1 - x); g = g + (g2 * 0.9 + 20 - g) * (1 - x); b = b + (b2 * 0.6 - b) * (1 - x); }
+        const o = (py * LOW_W + px) * 4; d[o] = Math.min(255, r); d[o + 1] = Math.min(255, g); d[o + 2] = Math.min(255, b); d[o + 3] = 255;
+      }
+      st.ctx.putImageData(st.img, 0, 0); c.imageSmoothingEnabled = true; c.drawImage(st.cv, 0, 0, W, H);
+      txt(c, 'a mouth: the far side seen through it', 6, 13, '#e8ecff', 10);
+    },
+  };
+  SCENES.layB = {
+    make: () => ({}), period: () => 3,
+    bounds: () => ({ x0: -150, x1: 150, y0: -20, y1: 230 }),
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 43);
+      const qv = cfg.q != null ? cfg.q : 0.7, t = Math.pow(clamp01(qv), Math.max(0.01, Pv.holdExponent)), lo = Math.min(Pv.minStrength, Pv.maxStrength);
+      const S = lo + (Math.max(lo, Pv.maxStrength) - lo) * t, rs = Math.max(1.5, S * Pv.bhHorizonPerStrength), mid = rs * Pv.aheadHorizons, hh = rs * Pv.halfGapHorizons;
+      ship(c, view.X(0), view.Y(0), 0, 1, '#ffd27a', 6);
+      c.strokeStyle = 'rgba(255,255,255,0.2)'; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(view.X(0), view.Y(0)); c.lineTo(view.X(0), view.Y(mid)); c.stroke(); c.setLineDash([]);
+      const pulse = 1 + 0.06 * Math.sin(tt * TAU / 1.5);
+      for (const [x, col] of [[-hh, '111,227,208'], [hh, '216,255,246']]) { c.strokeStyle = 'rgb(' + col + ')'; c.lineWidth = 2; c.beginPath(); c.arc(view.X(x), view.Y(mid), Math.max(2, rs * view.s * pulse), 0, TAU); c.stroke(); }
+      txt(c, 'S ' + S.toFixed(1) + ' · throat ' + rs.toFixed(0) + ' u · ' + Math.round(mid) + ' u ahead · ' + Math.round(2 * hh) + ' u apart', 6, 13, '#e8ecff', 10);
+    },
+  };
+
+  // ---------- what each number means, in plain words ----------
+  const TIPS = {
+    holdExponent: { scene: 'curve', d: 'How the trigger\'s travel turns into strength. At 1 strength grows evenly as you press. Above 1 the first part of the pull is gentle and most of the strength comes near the bottom — fine control at light squeezes. Below 1 it jumps up early.', lo: 'Strength comes earlier in the trigger\'s travel.', hi: 'Strength comes later: a longer gentle start, most of it near a full squeeze.' },
+    holdRamp: { scene: 'keyRamp', d: 'Keyboard only, for the archived slings: a key has no depth, so holding it ramps the squeeze from nothing to full over this many seconds. (The dipole sling uses "Keyboard squeeze" instead, because there hold time must not change the strength.)', lo: 'A key reaches full squeeze sooner.', hi: 'You hold a key longer to reach full squeeze.' },
+    dpAhead: { scene: 'sling', d: 'How far in front of you the black hole and white hole appear when you press the trigger.', lo: 'The pair appears closer ahead: less time to adjust before you reach it.', hi: 'The pair appears further ahead: more time to line up.' },
+    dpSide: { scene: 'sling', d: 'How far to the side of your flight line the black hole appears (the white hole the same distance to the other side). Flying straight, this is about how close you pass it.', lo: 'A tighter pass: easier to be caught, easier to dive straight in.', hi: 'A wider pass: it needs a stronger squeeze to catch you.' },
+    dpSMin: { scene: 'sling', cfg: { q: 0.08 }, d: 'The black hole\'s strength (its mass — how hard it pulls) at the lightest squeeze. The preview squeezes lightly.', lo: 'A light touch pulls less.', hi: 'A light touch pulls harder, and can catch you.' },
+    dpSMax: { scene: 'sling', cfg: { q: 1 }, d: 'The black hole\'s strength at a full squeeze. A stronger hole holds you on a wider circle and can catch you from further away. The preview squeezes fully.', lo: 'A full squeeze is weaker: a tighter circle, caught only close in.', hi: 'A full squeeze is stronger: caught from further out, on a wider circle.' },
+    dpRsMin: { scene: 'sling', cfg: { q: 0.08 }, d: 'The black hole\'s size (its horizon radius) at the lightest squeeze. Size is what you see and what you can fall into — not how hard it pulls.', lo: 'Smaller at a light touch.', hi: 'Bigger at a light touch: easier to see, easier to fall into.' },
+    dpRsMax: { scene: 'sling', cfg: { q: 1 }, d: 'The black hole\'s size at a full squeeze. Keep it modest: the strength is the mass, not the size.', lo: 'Smaller when buried: more mass than sphere.', hi: 'Bigger when buried: dramatic, and easier to fall into.' },
+    dpCaptureX: { scene: 'sling', cfg: { q: 0.5 }, d: 'How far out the black hole can catch you, as a multiple of its hold circle (the solid ring). The faint ring is this reach: pass inside it and you are caught.', lo: 'It must be passed closer to catch you.', hi: 'It catches you from further away.' },
+    dpCatchDeg: { scene: 'sling', cfg: { q: 0.7 }, d: 'It only catches you once it is off to your side by at least this angle, so it grabs you AS you pass it rather than while it is still straight ahead.', lo: 'It grabs you earlier, while still more ahead of you.', hi: 'It waits until it is more beside you.' },
+    dpSettle: { scene: 'sling', cfg: { q: 0.7 }, d: 'Once caught, how quickly you are eased onto the hold circle and your nose onto the direction round it.', lo: 'A softer capture: you drift onto the circle.', hi: 'A firmer snap onto the circle.' },
+    dpGrip: { scene: 'sling', cfg: { q: 0.7 }, d: 'In the black hole\'s grip your engine holds its own speed: the extra speed from falling in is bled away at this rate, which is what keeps you going round instead of being flung out.', lo: 'The fall-in speed lingers: a wobblier first swing.', hi: 'Your speed is steadied sooner: a calmer circle.' },
+    dpMaxTurn: { scene: 'sling', cfg: { q: 0.5, hold: 30, T: 15 }, d: 'The longest hold, in degrees round the black hole. Reach it and it lets you go on its own, with the boost. The preview keeps the trigger held.', lo: 'It lets you go sooner.', hi: 'You can go further round before it lets go.' },
+    dpBoostMin: { scene: 'sling', cfg: { q: 0.4, release: 180 }, d: 'The boost you get on release after a LIGHT squeeze, as a multiple of your speed (a medium squeeze mixes the light and full values). The preview squeezes lightly and releases half way round.', lo: 'A light sling throws you out more gently.', hi: 'A light sling throws you out harder.' },
+    dpBoostMax: { scene: 'sling', cfg: { q: 1, release: 180 }, d: 'The boost you get on release after a FULL squeeze, as a multiple of your speed. Watch the spacing of the dots after the release: wider = faster.', lo: 'A buried sling throws you out more gently.', hi: 'A buried sling launches you harder.' },
+    dpBoostSeconds: { scene: 'sling', cfg: { q: 0.7, release: 180 }, d: 'How long the release boost lasts. It starts at its strongest and fades out over this time.', lo: 'A shorter punch.', hi: 'A longer, rolling push.' },
+    dpKeySqueeze: { scene: 'sling', cfg: { qFromValue: true }, d: 'Keyboard only: how deep a squeeze a key gives (a key cannot be half pressed). The preview uses this squeeze.', lo: 'Keys give a lighter, weaker black hole.', hi: 'Keys give a stronger black hole.' },
+    dpAssistFade: { scene: 'sling', cfg: { q: 0.35, hold: 2.6 }, d: 'Speed that gravity gave you while you were NOT caught (a fast bend past the hole) fades away over about this long after you let go.', lo: 'The gravity speed is gone sooner.', hi: 'You carry the gravity speed for longer.' },
+    dpAccelCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A safety ceiling on how hard the pair can pull or push you, so a pass right at the horizon cannot fling you absurdly. Mostly reached only very close in — the preview passes close.', lo: 'Close passes are softened: less violent, less turning.', hi: 'Close passes get more of the full, violent pull.' },
+    dpTurnCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A ceiling on how fast gravity may swing your nose round, in radians per second (6.3 = a whole turn every second). The preview passes close.', lo: 'Your nose swings round more slowly: you skid wider.', hi: 'Your nose can whip round faster.' },
+    dpWhite: { scene: 'sling', cfg: { q: 0.7 }, d: 'How hard the white hole pushes, as a fraction of the black hole\'s pull. It sits on the far side and nudges you away from itself.', lo: 'The white hole pushes you less.', hi: 'The white hole shoves you more as you swing.' },
+    whSizeX: { scene: 'hole', cfg: { kind: 'pair' }, d: 'The white hole\'s size compared with the black hole\'s (1 = the same).', lo: 'A smaller white hole next to its black hole.', hi: 'A bigger white hole next to its black hole.' },
+    whPushSoften: { scene: 'sling', cfg: { q: 0.7, over: { dpWhite: 1.5 } }, d: 'Spreads the white hole\'s push over a wider area (in horizons), so it bends your path gently instead of kicking hard near its edge. The preview turns the push up so you can see it.', lo: 'A sharper shove close to the white hole.', hi: 'A broader, gentler push.' },
+    whExitGap: { scene: 'tideHull', d: 'Where something that falls into the black hole comes out: this many white-hole horizons from its centre, on the mirrored side (the dashed ring).', lo: 'You come out closer to its edge.', hi: 'You come out further clear of it.' },
+    whCoreBrightness: { scene: 'hole', cfg: { kind: 'wh' }, d: 'How bright the white hole\'s glowing core is.', lo: 'A dimmer core.', hi: 'A brighter, more blinding core.' },
+    whCoreSkyMix: { scene: 'hole', cfg: { kind: 'wh' }, d: 'How much of the bent sky still shows through the white core (0 = only glow, 1 = the sky plus the glow on top).', lo: 'More solid glow, less sky through it.', hi: 'More of the stars show through the glow.' },
+    whCoreSize: { scene: 'hole', cfg: { kind: 'wh' }, d: 'The glowing core\'s radius, in horizons (2.6 matches the black hole\'s shadow).', lo: 'A smaller hot core.', hi: 'A bigger glowing disc.' },
+    whLensStrength: { scene: 'hole', cfg: { kind: 'wh' }, d: 'How strongly the white hole bends the sky around it (× the physical Einstein bending).', lo: 'The sky bends less round it.', hi: 'The sky bends more: a stronger ring.' },
+    bhGmPerStrength: { scene: 'sling', cfg: { q: 0.5 }, d: 'How much pull one unit of strength buys (the game\'s gmPerStrength). Raising it makes every squeeze pull harder — the whole range shifts stronger.', lo: 'Every squeeze pulls less: smaller circles, fewer catches.', hi: 'Every squeeze pulls more: wider circles, easier catches.' },
+    bhHorizonPerStrength: { scene: 'hole', cfg: { kind: 'bh', fromStrength: true }, d: 'How big a hole is per unit of strength. It sizes the prisms\' holes and the archived styles; the dipole sling sets its sizes with its own two horizon rows.', lo: 'Smaller holes for their strength.', hi: 'Bigger holes for their strength.' },
+    bhInfluenceFloor: { scene: 'prisms', cfg: { S: 6, world: 420, gap: 90 }, d: 'Prisms only feel a hole where its pull is at least this strong; beyond that distance they ignore it (the dashed ring). Lower = the hole reaches further, and costs more.', lo: 'A wider reach: prisms further away are pulled.', hi: 'A shorter reach: only nearer prisms move.' },
+    bhMaxInfluence: { scene: 'prisms', cfg: { S: 12, floor: 0.05, world: 1600, gap: 200 }, d: 'A hard limit on that reach, in units — it only matters for very strong holes. The preview uses a very strong one.', lo: 'The reach is capped closer in.', hi: 'The reach is allowed further out.' },
+    bhPrismAccelCap: { scene: 'prisms', cfg: { S: 4, world: 140, gap: 55 }, d: 'The hardest a prism can be pulled. It stops prisms right at the horizon from jumping in one frame. The preview is zoomed in close to a strong hole.', lo: 'Prisms near the edge are pulled more gently.', hi: 'Prisms near the edge are yanked harder.' },
+    bhPrismMaxSpeed: { scene: 'prisms', cfg: { S: 5, world: 220, gap: 80 }, d: 'The top speed of a prism being pulled.', lo: 'Prisms stream in more slowly.', hi: 'Prisms rush in faster.' },
+    releaseDamping: { scene: 'prisms', cfg: { S: 6, world: 240, gap: 90 }, d: 'When the pair is gone, how fast the pulled prisms lose their speed (watch the end of the loop).', lo: 'Prisms keep flying longer after the pair is gone.', hi: 'Prisms stop sooner.' },
+    bhPrismReturn: { scene: 'prisms', cfg: { S: 6, world: 240, gap: 90 }, d: 'When the pair is gone, how fast released prisms drift back to where they were.', lo: 'They stay scattered longer.', hi: 'They hurry home.' },
+    bhTideGain: { scene: 'prisms', cfg: { S: 3, world: 150, gap: 60 }, d: 'How much prisms stretch (spaghettify) under the pull: long and thin near the hole.', lo: 'Prisms stretch less.', hi: 'Prisms stretch into longer threads.' },
+    bhTideMax: { scene: 'prisms', cfg: { S: 3, world: 150, gap: 60 }, d: 'The longest a prism may stretch, as a multiple of its length.', lo: 'Stretching is capped shorter.', hi: 'Longer threads allowed.' },
+    vesselTide: { scene: 'tideHull', cfg: { miss: 28 }, d: 'How much the Stoat\'s own body stretches near a horizon — longer and thinner falling in, relaxing as it comes out of the white hole. Right at a horizon any setting reaches the ×12 limit, so the preview passes 28 u wide — inside the 6-horizon reach where hulls stretch at all — where the setting shows.', lo: 'The body stretches less.', hi: 'The body stretches more.' },
+    bhShadow: { scene: 'hole', cfg: { kind: 'bh' }, d: 'The black disc\'s radius, in horizons. 2.6 is the real physics value (light closer than this falls in).', lo: 'A smaller black disc.', hi: 'A bigger black disc.' },
+    bhLensStrength: { scene: 'hole', cfg: { kind: 'bh' }, d: 'How strongly the black hole bends the sky behind it (× the physical Einstein bending).', lo: 'The sky bends less.', hi: 'The sky bends more: a bigger, wilder ring.' },
+    bhLensReach: { scene: 'hole', cfg: { kind: 'bh', rc: 2.2 }, d: 'How far out, in horizons, the bending is drawn before it stops. The preview uses a small hole so the edge is visible.', lo: 'The bending stops closer to the hole.', hi: 'The bending spreads further across the sky.' },
+    bhLensFade: { scene: 'hole', cfg: { kind: 'bh', rc: 3, over: { bhLensReach: 22 } }, d: 'Where the bending starts fading out on its way to that reach, as a fraction of it.', lo: 'A longer, softer fade.', hi: 'Full bending until a sharper edge.' },
+    bhRingGlow: { scene: 'hole', cfg: { kind: 'bh', rc: 6, over: { bhRingWidth: 0.16 } }, d: 'The brightness of the thin bright ring just outside the shadow (the photon ring). The preview draws a bigger hole with a wider ring so the glow is easy to see.', lo: 'A fainter ring.', hi: 'A brighter golden ring.' },
+    bhRingWidth: { scene: 'hole', cfg: { kind: 'bh', rc: 6, over: { bhRingGlow: 1.2 } }, d: 'How thick that ring is.', lo: 'A thinner ring.', hi: 'A broader halo.' },
+    closeSpeed: { scene: 'life', d: 'After you let go, how fast the two holes fall toward each other before annihilating.', lo: 'They drift together more slowly: the pair lingers.', hi: 'They slam together and vanish sooner.' },
+    closeRamp: { scene: 'life', d: 'How long the holes take to build up to that closing speed after you let go.', lo: 'They set off at full speed sooner.', hi: 'They ease into it more slowly.' },
+    holdCap: { scene: 'life', cfg: { mode: 'hold' }, d: 'The longest you can hold the pair at all, in seconds. After this it lets you go by itself, even mid-turn.', lo: 'A shorter leash.', hi: 'A longer hold allowed.' },
+    cruise: { scene: 'turn', cfg: { mode: 'speed' }, d: 'The Stoat\'s speed at full throttle.', lo: 'Slower.', hi: 'Faster.' },
+    pitchYaw: { scene: 'turn', cfg: { mode: 'yaw' }, d: 'How fast the nose turns with full stick, in degrees per second. With your speed it sets your tightest turn.', lo: 'Wider, lazier turns.', hi: 'Tighter, snappier turns.' },
+    roll: { scene: 'turn', cfg: { mode: 'roll' }, d: 'How fast the Stoat rolls, in degrees per second.', lo: 'A slower roll.', hi: 'A faster roll.' },
+    lopeAmp: { scene: 'lope', d: 'How high the body bounds (in units) — the Stoat\'s weasel-like lope.', lo: 'Lower bounds.', hi: 'Higher bounds.' },
+    lopeRate: { scene: 'lope', d: 'How many bounds a second.', lo: 'Slower bounds.', hi: 'Quicker, scampering bounds.' },
+    lopeArch: { scene: 'lope', d: 'How much the back arches and flattens with each bound.', lo: 'A stiffer, straighter back.', hi: 'A stronger arch-and-stretch, like a running stoat.' },
+    lopeSquash: { scene: 'lope', d: 'How much the body stretches long and bunches short through each bound.', lo: 'Less stretch and bunch.', hi: 'More stretch and bunch.' },
+    orbitWide: { scene: 'orbit', cfg: { q: 0.05 }, d: 'Archived orbit sling: the orbit radius at the lightest squeeze.', lo: 'A light touch circles closer.', hi: 'A light touch circles wider.' },
+    orbitTight: { scene: 'orbit', cfg: { q: 1 }, d: 'Archived orbit sling: the orbit radius at a full squeeze.', lo: 'A buried squeeze circles tighter.', hi: 'A buried squeeze circles wider.' },
+    orbitHorizons: { scene: 'orbit', cfg: { q: 0.5 }, d: 'Archived orbit sling: the orbit radius divided by the hole\'s horizon — how big the hole looks against its orbit.', lo: 'A bigger hole relative to your circle.', hi: 'A smaller hole far inside your circle.' },
+    boostMin: { scene: 'orbit', cfg: { q: 0.05, release: 2.6 }, d: 'Archived orbit sling: the release boost after a light squeeze (× speed).', lo: 'A gentler exit from a light sling.', hi: 'A stronger exit from a light sling.' },
+    boostMax: { scene: 'orbit', cfg: { q: 1, release: 2.6 }, d: 'Archived orbit sling: the release boost after a full squeeze (× speed).', lo: 'A gentler exit from a buried sling.', hi: 'A buried sling launches you harder.' },
+    boostSeconds: { scene: 'orbit', cfg: { q: 0.6, release: 2.6 }, d: 'Archived orbit sling: how long the release boost lasts.', lo: 'A shorter punch.', hi: 'A longer push.' },
+    followRate: { scene: 'orbit', cfg: { q: 0.15, qChange: 0.95 }, d: 'Archived orbit sling: how fast the circle follows a change of squeeze. The preview squeezes harder half way.', lo: 'The circle changes more slowly.', hi: 'The circle snaps to the new squeeze faster.' },
+    radialRate: { scene: 'orbit', cfg: { q: 0.5, startOff: 1.7 }, d: 'Archived orbit sling: how firmly you are pulled onto the circle when you are off it. The preview starts you outside it.', lo: 'You spiral onto the circle more slowly.', hi: 'You are put on the circle sooner.' },
+    minStrength: { scene: 'layB', cfg: { q: 0 }, d: 'Archived crystal pair: its strength (and so its size) at the lightest squeeze.', lo: 'A smaller, weaker pair from a light touch.', hi: 'A bigger pair from a light touch.' },
+    maxStrength: { scene: 'layB', cfg: { q: 1 }, d: 'Archived crystal pair: its strength at a full squeeze.', lo: 'Smaller when buried.', hi: 'Bigger when buried.' },
+    aheadHorizons: { scene: 'layB', d: 'Archived crystal pair: how far ahead it is laid, in throats.', lo: 'Laid closer in front of you.', hi: 'Laid further ahead.' },
+    halfGapHorizons: { scene: 'layB', d: 'Archived crystal pair: how far apart its two mouths are, in throats (half the gap).', lo: 'Mouths closer together.', hi: 'Mouths further apart.' },
+    feltK: { scene: 'felt', d: 'Archived crystal pair: the strength of its felt pull on the pilot.', lo: 'A fainter current.', hi: 'A stronger current dragging you in.' },
+    feltCap: { scene: 'felt', d: 'Archived crystal pair: the fastest the pull can carry you, × cruise.', lo: 'The current tops out slower.', hi: 'The current can carry you faster.' },
+    feltReach: { scene: 'felt', cfg: { start: 10 }, d: 'Archived crystal pair: how far out (in throats) the pull is felt (the dashed line).', lo: 'Felt only closer to the mouth.', hi: 'Felt from further out.' },
+    lensA: { scene: 'lensB', d: 'Archived crystal pair: how strongly its mouths bend the sky.', lo: 'Less bent.', hi: 'More bent.' },
+    lensWidth: { scene: 'lensB', d: 'Archived crystal pair: how wide the bent zone is, × the throat.', lo: 'Bending hugs the mouth.', hi: 'Bending spreads wider.' },
+    softEdge: { scene: 'lensB', d: 'Archived crystal pair: how softly the view through the mouth blends into the sky around it.', lo: 'A harder-edged window.', hi: 'A softer, dissolving edge.' },
+    formS: { scene: 'crystal', d: 'Archived crystal pair: seconds to form (the mouths spread apart).', lo: 'Opens faster.', hi: 'Opens more slowly.' },
+    standS: { scene: 'crystal', d: 'Archived crystal pair: seconds it stands fully open.', lo: 'A shorter pause fully open.', hi: 'Stands open longer.' },
+    annihilateS: { scene: 'crystal', d: 'Archived crystal pair: seconds to spiral together and annihilate.', lo: 'A quicker collapse.', hi: 'A longer spiral in.' },
+    spiralTurns: { scene: 'crystal', d: 'Archived crystal pair: how many times the mouths circle each other while closing.', lo: 'Closes more directly.', hi: 'Whirls round more as it closes.' },
+    beatDepth: { scene: 'crystal', d: 'Archived crystal pair: how much the two mouths pulse against each other (one swells as the other shrinks).', lo: 'A steadier pair.', hi: 'A stronger pulsing beat.' },
+    beatCycles: { scene: 'crystal', d: 'Archived crystal pair: how many pulses happen during the collapse.', lo: 'A slower beat.', hi: 'A faster flutter.' },
+  };
+
+  // ---------- the card ----------
+  const tipEl = document.createElement('div'); tipEl.id = 'tip'; tipEl.setAttribute('role', 'tooltip'); tipEl.hidden = true; document.body.appendChild(tipEl);
+  let tipState = null, tipHide = 0, tipShowT = 0, tipRaf = 0;
+  const SPEC_BY_KEY = {}; for (const r of SPEC) SPEC_BY_KEY[r[1]] = r;
+  function tipValues(key) { const [, , , lo, hi, step] = SPEC_BY_KEY[key]; const snap = (v) => Math.round(v / step) * step; return [snap(lo + 0.3 * (hi - lo)), snap(lo + 0.7 * (hi - lo))]; }
+  function showTip(key, anchor, pinned) {
+    clearTimeout(tipHide);
+    const tip = TIPS[key], spec = SPEC_BY_KEY[key]; if (!tip || !spec) return;
+    if (tipState && tipState.key === key) { tipState.pinned = tipState.pinned || !!pinned; return; }
+    const [, , label, lo, hi, step] = spec, [vLo, vHi] = tipValues(key), scene = SCENES[tip.scene], cfg = Object.assign({ key }, tip.cfg || {});
+    const mk = (v) => Object.assign({}, P, cfg.over || {}, { [key]: v });
+    const Plo = mk(vLo), Phi = mk(vHi), sLo = scene.make(Plo, cfg), sHi = scene.make(Phi, cfg);
+    tipEl.innerHTML = '<h4></h4><p class="what"></p><div class="figs"><figure><canvas></canvas><figcaption></figcaption></figure><figure><canvas></canvas><figcaption></figcaption></figure></div><p class="foot"></p>';
+    tipEl.querySelector('h4').textContent = label;
+    tipEl.querySelector('.what').textContent = tip.d;
+    const caps = tipEl.querySelectorAll('figcaption');
+    caps[0].innerHTML = '<b>Lower</b> · 30% of the range: <b>' + fmtNum(vLo, step) + '</b><br>'; caps[0].appendChild(document.createTextNode(tip.lo));
+    caps[1].innerHTML = '<b>Higher</b> · 70% of the range: <b>' + fmtNum(vHi, step) + '</b><br>'; caps[1].appendChild(document.createTextNode(tip.hi));
+    tipEl.querySelector('.foot').textContent = 'Range ' + fmtNum(lo, step) + ' – ' + fmtNum(hi, step) + ' · shipped ' + fmtNum(SHIPPED[key], step) + ' · now ' + fmtNum(P[key], step) + (pinned ? ' · pinned (Esc or ⓘ to close)' : '');
+    const cvs = tipEl.querySelectorAll('canvas');
+    let view = null;
+    if (scene.bounds) { const b = bUnion(scene.bounds(sLo, cfg), scene.bounds(sHi, cfg)); view = { b }; }
+    tipState = { key, anchor, pinned: !!pinned, scene, cfg, parts: [{ c: cvs[0], st: sLo, Pv: Plo }, { c: cvs[1], st: sHi, Pv: Phi }], view, t0: performance.now() };
+    tipEl.hidden = false; placeTip(anchor);
+    document.querySelectorAll('.tipbtn[aria-expanded="true"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+    const btn = anchor.querySelector('.tipbtn'); if (btn) btn.setAttribute('aria-expanded', 'true');
+    cancelAnimationFrame(tipRaf); tipRaf = requestAnimationFrame(tipFrame);
+  }
+  function placeTip(anchor) {
+    const r = anchor.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+    let left, top;
+    if (r.left - tw - 14 >= 8) { left = r.left - tw - 14; top = Math.min(Math.max(8, r.top + r.height / 2 - th / 2), vh - th - 8); }
+    else { left = Math.min(Math.max(8, r.right - tw), vw - tw - 8); top = r.bottom + 6 + th > vh - 8 ? Math.max(8, r.top - th - 6) : r.bottom + 6; }
+    tipEl.style.left = left + 'px'; tipEl.style.top = top + 'px';
+  }
+  function hideTip(force) {
+    if (!tipState || (tipState.pinned && !force)) return;
+    tipEl.hidden = true; cancelAnimationFrame(tipRaf);
+    document.querySelectorAll('.tipbtn[aria-expanded="true"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+    tipState = null;
+  }
+  function tipFrame(now) {
+    const ts = tipState; if (!ts || tipEl.hidden) return;
+    const t = ts.forceT != null ? ts.forceT : Math.max(0, (now - ts.t0) / 1000);   // a frame's timestamp can precede the moment the card opened
+    for (const part of ts.parts) {
+      const cv = part.c, dpr = Math.min(window.devicePixelRatio || 1, 2), W = cv.clientWidth, H = cv.clientHeight;
+      if (!W || !H) continue;
+      if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const per = ts.scene.period(part.st, ts.cfg, part.Pv) || 5;
+      const view = ts.view ? makeView(ts.view.b, W, H, 12) : null;
+      try { ts.scene.draw(c, W, H, t % per, part.st, view, part.Pv, ts.cfg); } catch (e) { c.setTransform(1, 0, 0, 1, 0, 0); if (!ts.err) { ts.err = true; console.error('tooltip preview failed', ts.key, e && e.message); } }
+    }
+    tipRaf = requestAnimationFrame(tipFrame);
+  }
+  function attachTip(row, key, label) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'tipbtn'; btn.textContent = 'i'; btn.setAttribute('aria-label', 'What does ' + label + ' do?'); btn.setAttribute('aria-expanded', 'false');
+    row.insertBefore(btn, row.querySelector('input'));
+    row.addEventListener('mouseenter', () => { clearTimeout(tipHide); clearTimeout(tipShowT); tipShowT = setTimeout(() => showTip(key, row, false), 220); });
+    row.addEventListener('mouseleave', () => { clearTimeout(tipShowT); tipHide = setTimeout(() => hideTip(false), 160); });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); if (tipState && tipState.key === key && tipState.pinned) hideTip(true); else { hideTip(true); showTip(key, row, true); } });
+    row.querySelector('input').addEventListener('focus', () => showTip(key, row, false));
+    row.querySelector('input').addEventListener('blur', () => hideTip(false));
+  }
+  tipEl.addEventListener('mouseenter', () => clearTimeout(tipHide));
+  tipEl.addEventListener('mouseleave', () => { tipHide = setTimeout(() => hideTip(false), 160); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip(true); });
+  document.addEventListener('pointerdown', (e) => { if (tipState && tipState.pinned && !tipEl.contains(e.target) && !e.target.closest('.tipbtn')) hideTip(true); });
+  window.addEventListener('scroll', () => { if (tipState) placeTip(tipState.anchor); }, { passive: true });
+  window.__stoatTips = { TIPS, SCENES, showTip: (k) => { const row = document.getElementById('p-' + k) && document.getElementById('p-' + k).closest('.row'); if (row) showTip(k, row, true); }, hideTip: () => hideTip(true), at: (sec) => { if (tipState) tipState.forceT = sec; } };
+
+
   // ================= rail =================
   const outputs = {};
   function buildRail() {
@@ -1507,6 +2267,7 @@
       const id = 'p-' + key;
       row.innerHTML = '<label for="' + id + '">' + label + '</label><input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '"><output></output>';
       host.appendChild(row);
+      attachTip(row, key, label);
       const inp = row.querySelector('input'), out = row.querySelector('output');
       inp.value = P[key]; outputs[key] = { inp, out, step };
       inp.addEventListener('input', () => { P[key] = parseFloat(inp.value); refreshOut(key); persist(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
@@ -1586,12 +2347,16 @@
   function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + P[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
   const SLING_KEYS = ['holdExponent', 'holdRamp'];
   const A_KEYS = ['orbitWide', 'orbitTight', 'orbitHorizons', 'boostMin', 'boostMax', 'boostSeconds', 'closeSpeed', 'closeRamp', 'holdCap', 'followRate', 'radialRate', 'vesselTide'];
+  const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
+  const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'closeSpeed', 'closeRamp'];
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function currentChoice(topic) {
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
       case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (slingMode === 'dipole' ? D_KEYS : A_KEYS) : B_KEYS));
+      case 'Black hole': return 'Black hole' + changedText(BH_KEYS);
+      case 'White hole': return 'White hole' + changedText(WH_KEYS);
       case 'Portal': return 'Pair ' + style + ': carry the Stoat through = ' + (portal[style] ? 'yes' : 'no');
       case 'Lope & body': return 'Plated body, body-only lope' + changedText(['lopeAmp', 'lopeRate', 'lopeArch', 'lopeSquash']);
       case 'Course': return 'Intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
@@ -1695,6 +2460,7 @@
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
     resize();
+    GM_PER_STRENGTH = P.bhGmPerStrength; HORIZON_PER_STRENGTH = P.bhHorizonPerStrength;
     const inp = pollInput(dt);
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
