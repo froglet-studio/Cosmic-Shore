@@ -19,7 +19,7 @@ import argparse, json, os, shutil, subprocess, sys, tempfile
 
 DIR = 'Docs/Studios/VesselStudio'
 GUARDED = {'bleeding-edge', 'main', 'master', 'Ys-bleeding-edge'}
-WATCH = ['cece/magical-carson-9bdq8z', 'claude/peaceful-rubin-hhw49n', 'vessel-studio', 'Ys-bleeding-edge', 'bleeding-edge']
+WATCH = ['cece/magical-carson-9bdq8z', 'vessel-studio', 'Ys-bleeding-edge', 'bleeding-edge']
 
 
 def git(*a, cwd=None, check=True):
@@ -137,7 +137,7 @@ def self_test():
     if not merge('x', 'y', False).get('refused'): bad.append('merge without --yes was not refused')
     if not delete('main', True).get('refused'): bad.append('delete of a guarded branch was not refused')
     if not delete('x', False).get('refused'): bad.append('delete without --yes was not refused')
-    if not delete('claude/peaceful-rubin-hhw49n', True, keep={'claude/peaceful-rubin-hhw49n'}).get('refused'): bad.append('delete of the session branch was not refused')
+    if not delete('claude/some-session', True, keep={'claude/some-session'}).get('refused'): bad.append('delete of the session branch was not refused')
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))
     return bad
 

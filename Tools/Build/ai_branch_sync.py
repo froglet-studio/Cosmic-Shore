@@ -4,7 +4,7 @@
 A READER (report only): it fetches and reads git, it never merges, commits or writes a file.
 Workflow it serves: Docs/AI_SYSTEM/BRANCH_WORKFLOW.md (sections 2-4).
 
-For each source branch (bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n) it prints
+For each source branch (bleeding-edge, perf/performance-optimization) it prints
   - how many commits it has that HEAD lacks;
   - the AI commits among them: a commit is AI work when it touches an AI path (AI_PATHS), adds or
     removes a line naming an AI hook (AI_CODE_PATTERN, which catches AI living in mode controllers and
@@ -27,7 +27,7 @@ import time
 
 REMOTE = "origin"
 HOME = "Ys-bleeding-edge"
-SOURCES = ["bleeding-edge", "perf/performance-optimization", "claude/peaceful-rubin-hhw49n"]
+SOURCES = ["bleeding-edge", "perf/performance-optimization"]
 PERF = "perf/performance-optimization"
 ROSTER = "Docs/AI_SYSTEM/ARCHITECTURE.md"
 

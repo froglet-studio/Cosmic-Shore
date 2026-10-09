@@ -12,8 +12,8 @@
 (() => {
   if (window.__vsSync) return; window.__vsSync = true;
   const REPO_URL = 'https://github.com/froglet-studio/Cosmic-Shore', CCR = 'Claude Code Remote';
-  const TOOLS_REF = 'claude/peaceful-rubin-hhw49n';   // the branch that carries the /vessel-studio skill and its scripts
-  const WATCH = ['cece/magical-carson-9bdq8z', 'claude/peaceful-rubin-hhw49n', 'vessel-studio', 'Ys-bleeding-edge', 'bleeding-edge'];
+  const TOOLS_REF = 'Ys-bleeding-edge';   // the branch that carries the /vessel-studio skill and its scripts
+  const WATCH = ['cece/magical-carson-9bdq8z', 'vessel-studio', 'Ys-bleeding-edge', 'bleeding-edge'];
   const GUARDED = ['bleeding-edge', 'main', 'master', 'Ys-bleeding-edge'];
   const LS = 'vsSync.';
   const ls = { get(k, d) { try { const v = localStorage.getItem(LS + k); return v == null ? d : v; } catch { return d; } },

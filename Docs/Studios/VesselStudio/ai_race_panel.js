@@ -6,7 +6,8 @@
  *
  *   const panel = StudioRacePanel.mount(hostElement, {
  *     courses: [{ v: 1, label: 'I1', note: 'flat octagon, 3 laps' }, ...],   // the 4-step intensity ladder (D7)
- *     value: { course: 1, you: 'You', rivals: 2, rivalLevel: 'Hard', camera: 'Chase', speed: 1,
+ *     seats: [{ name: 'Ruby', color: '#ff4f7b' }, ...],                     // the AI rival seats (up to 3)
+ *     value: { course: 1, you: 'You', rivals: ['Hard', 'Hard', 'Off'], camera: 'Chase', speed: 1,
  *              thinking: true, autoRestart: false },                          // the page's saved state
  *     supports: { rivals: true, thinking: true, autoRestart: true },        // false or a string = not in this
  *                                                                            // studio yet (the string says why)
@@ -19,8 +20,8 @@
  * Keys and values are fixed for every studio:
  *   course       one of courses[].v
  *   you          'You' | 'Easy' | 'Medium' | 'Hard'    (who flies your hull: you, or the AI at a level)
- *   rivals       0 | 1 | 2 | 3                          (AI rivals in the race)
- *   rivalLevel   'Easy' | 'Medium' | 'Hard'
+ *   rivals       one level per seat: 'Off' | 'Easy' | 'Medium' | 'Hard'   (each AI rival is its own seat
+ *                with its own level, /vessel-studio D20; 'Off' = the seat is empty)
  *   camera       'Chase' | 'Follow' | 'Free'            (the three studio cameras, D16)
  *   speed        1 | 2 | 4                              (simulation speed)
  *   thinking     boolean                                (draw each AI's target: believed vs real)
@@ -37,7 +38,8 @@
   var LEVELS = ['Easy', 'Medium', 'Hard'];
   var CAMERAS = ['Chase', 'Follow', 'Free'];
   var SPEEDS = [1, 2, 4];
-  var RIVALS = [0, 1, 2, 3];
+  var SEAT_LEVELS = ['Off'].concat(LEVELS);
+  var DEFAULT_SEATS = [{ name: 'Ruby', color: '#ff4f7b' }, { name: 'Gold', color: '#ffc247' }, { name: 'Blue', color: '#6aa8ff' }];
   var CAMERA_TIPS = {
     Chase: 'Close behind the watched hull, rolling with it.',
     Follow: 'Wider and level with the world; press C to pick which pilot to follow.',
@@ -48,6 +50,7 @@
     '.arp{display:grid;gap:8px;min-width:0}',
     '.arp-row{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;align-items:center}',
     '.arp-row>span{font-size:12px;color:var(--muted,var(--dim,#8e95bf))}',
+    '.arp-seats{display:grid;gap:8px}',
     '.arp-seg{display:flex;border:1px solid var(--line,#262b47);border-radius:6px;overflow:hidden;min-width:0}',
     '.arp-seg button{flex:1;border:0;background:transparent;color:inherit;padding:5px 4px;font:inherit;font-size:12px;min-width:0;cursor:pointer}',
     '.arp-seg button[aria-pressed="true"]{background:var(--panel-2,#181c30);color:var(--accent,var(--jade,#35e0b0));font-weight:600}',
@@ -76,18 +79,21 @@
     injectCss();
     var courses = (cfg.courses && cfg.courses.length) ? cfg.courses : [{ v: 1, label: 'I1' }, { v: 2, label: 'I2' }, { v: 3, label: 'I3' }, { v: 4, label: 'I4' }];
     var sup = Object.assign({ rivals: true, thinking: true, autoRestart: true }, cfg.supports || {});
+    var seats = (cfg.seats && cfg.seats.length ? cfg.seats : DEFAULT_SEATS).slice(0, 3);
     var v = cfg.value || {};
+    function seatLevels(arr) {
+      return seats.map(function (_, k) { var x = arr && arr[k]; return SEAT_LEVELS.indexOf(x) >= 0 ? x : 'Off'; });
+    }
     var state = {
       course: v.course != null ? v.course : courses[0].v,
       you: ['You'].concat(LEVELS).indexOf(v.you) >= 0 ? v.you : 'You',
-      rivals: RIVALS.indexOf(+v.rivals) >= 0 ? +v.rivals : (sup.rivals === true ? 2 : 0),
-      rivalLevel: LEVELS.indexOf(v.rivalLevel) >= 0 ? v.rivalLevel : 'Hard',
+      rivals: Array.isArray(v.rivals) ? seatLevels(v.rivals) : seats.map(function (_, k) { return k < 2 ? 'Hard' : 'Off'; }),
       camera: CAMERAS.indexOf(v.camera) >= 0 ? v.camera : 'Chase',
       speed: SPEEDS.indexOf(+v.speed) >= 0 ? +v.speed : 1,
       thinking: v.thinking != null ? !!v.thinking : true,
       autoRestart: !!v.autoRestart
     };
-    if (sup.rivals !== true) state.rivals = 0;
+    if (sup.rivals !== true) state.rivals = seats.map(function () { return 'Off'; });
 
     var root = el('div', 'arp'); root.setAttribute('data-arp', '');
     var groups = {};
@@ -100,12 +106,13 @@
         if (opts.level) { var lv = opts.level(val); if (lv) b.setAttribute('data-lv', lv); }
         if (opts.tip) b.title = opts.tip(val);
         if (opts.disabled) { b.disabled = true; b.title = opts.disabled; }
-        b.addEventListener('click', function () { set(key, val); });
+        b.addEventListener('click', function () { if (opts.onPick) opts.onPick(val); else set(key, val); });
         box.appendChild(b);
       });
       row.appendChild(name); row.appendChild(box);
-      if (opts.disabled) row.appendChild(el('span', 'arp-off', opts.disabled));
-      root.appendChild(row); groups[key] = box;
+      if (opts.disabled && opts.showOff !== false) row.appendChild(el('span', 'arp-off', opts.disabled));
+      (opts.into || root).appendChild(row); groups[key] = box;
+      if (opts.color) name.style.color = opts.color;
     }
     function check(key, label, support) {
       var lab = el('label', 'arp-check'), inp = document.createElement('input'), txt = el('span', null, label);
@@ -121,9 +128,16 @@
     }, { tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
     seg('you', 'Your hull', ['You'].concat(LEVELS), function (val) { return val === 'You' ? 'You fly' : 'AI ' + val; },
       { level: function (val) { return val === 'You' ? null : val; } });
+    // one row per AI rival seat, each with its own level (D20)
     var rivalsOff = sup.rivals === true ? null : why(sup.rivals);
-    seg('rivals', 'AI rivals', RIVALS, String, { disabled: rivalsOff });
-    seg('rivalLevel', 'Rival level', LEVELS, String, { level: function (val) { return val; }, disabled: rivalsOff ? 'Needs AI rivals.' : null });
+    var seatBox = el('div', 'arp-seats'); seatBox.setAttribute('aria-label', 'AI rivals, each with its own level'); root.appendChild(seatBox);
+    seats.forEach(function (seat, k) {
+      seg('seat' + k, 'AI ' + seat.name, SEAT_LEVELS, String, {
+        into: seatBox, color: seat.color, level: function (val) { return val === 'Off' ? null : val; },
+        disabled: rivalsOff, showOff: k === seats.length - 1,   // the reason once, under the last seat
+        onPick: function (val) { var arr = state.rivals.slice(); arr[k] = val; set('rivals', arr); }
+      });
+    });
     seg('camera', 'Camera', CAMERAS, String, { tip: function (val) { return CAMERA_TIPS[val]; } });
     seg('speed', 'Speed', SPEEDS, function (val) { return val + '\u00d7'; });
     check('thinking', 'Show AI thinking', sup.thinking);
@@ -133,35 +147,31 @@
     host.textContent = ''; host.appendChild(root);
 
     function sync() {
-      ['course', 'you', 'rivals', 'rivalLevel', 'camera', 'speed'].forEach(function (k) {
-        var box = groups[k]; if (!box) return;
-        for (var i = 0; i < box.children.length; i++) {
-          var b = box.children[i]; b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === String(state[k])));
-        }
-      });
+      function press(box, val) { for (var i = 0; i < box.children.length; i++) { var b = box.children[i]; b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === String(val))); } }
+      ['course', 'you', 'camera', 'speed'].forEach(function (k) { if (groups[k]) press(groups[k], state[k]); });
+      seats.forEach(function (_, k) { press(groups['seat' + k], state.rivals[k]); });
       groups.thinking.checked = !!state.thinking; groups.autoRestart.checked = !!state.autoRestart;
     }
     function set(key, val, silent) {
       if (!(key in state)) return;
       if (key === 'course') { var c = null; for (var i = 0; i < courses.length; i++) if (String(courses[i].v) === String(val)) c = courses[i].v; if (c == null) return; val = c; }
-      if (key === 'rivals') { val = +val; if (RIVALS.indexOf(val) < 0 || (sup.rivals !== true && val !== 0)) return; }
+      if (key === 'rivals') { if (!Array.isArray(val) || sup.rivals !== true) return; val = seatLevels(val); }
       if (key === 'speed') { val = +val; if (SPEEDS.indexOf(val) < 0) return; }
       if (key === 'you' && ['You'].concat(LEVELS).indexOf(val) < 0) return;
-      if (key === 'rivalLevel' && LEVELS.indexOf(val) < 0) return;
       if (key === 'camera' && CAMERAS.indexOf(val) < 0) return;
       if (key === 'thinking' || key === 'autoRestart') val = !!val;
-      var changed = state[key] !== val;
+      var changed = key === 'rivals' ? state.rivals.join() !== val.join() : state[key] !== val;
       state[key] = val; sync();
-      if (changed && !silent && typeof cfg.onChange === 'function') cfg.onChange(key, val, Object.assign({}, state));
+      if (changed && !silent && typeof cfg.onChange === 'function') { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); cfg.onChange(key, key === 'rivals' ? val.slice() : val, c); }
     }
     sync();
     return {
-      get state() { return Object.assign({}, state); },
+      get state() { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); return c; },
       set: set,
       refresh: sync,
       element: root
     };
   }
 
-  window.StudioRacePanel = { mount: mount, LEVELS: LEVELS.slice(), CAMERAS: CAMERAS.slice(), SPEEDS: SPEEDS.slice(), RIVALS: RIVALS.slice() };
+  window.StudioRacePanel = { mount: mount, LEVELS: LEVELS.slice(), SEAT_LEVELS: SEAT_LEVELS.slice(), CAMERAS: CAMERAS.slice(), SPEEDS: SPEEDS.slice() };
 })();

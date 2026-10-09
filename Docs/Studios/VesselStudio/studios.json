@@ -1,5 +1,5 @@
 {
-  "comment": "The Vessel Studio catalog. Amoebius's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is.",
+  "comment": "The Vessel Studio catalog. Amoebius's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them.",
   "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
   "hub": "index.html",
   "studios": [
@@ -23,5 +23,10 @@
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
     }
+  ],
+  "shared": [
+    "studio-look.js",
+    "studio-ide.js",
+    "ai_race_panel.js"
   ]
 }

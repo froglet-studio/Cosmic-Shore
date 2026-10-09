@@ -1,7 +1,7 @@
 # Amoebius session prompt — the Stoat and both wormhole pair styles
 
 Paste everything below the line into a new Claude Code session started at the repository root, with
-the branch based on `claude/peaceful-rubin-hhw49n`.
+the branch based on `Ys-bleeding-edge`.
 
 ---
 
@@ -9,11 +9,11 @@ the branch based on `claude/peaceful-rubin-hhw49n`.
 `Port/`): a tester, or you through MCP, can fly the Stoat on a gamepad, create, inspect and swap the
 two pair styles live, and see them drawn faithfully enough to choose between them.
 
-**Branch and scope.** Work on a new branch from `claude/peaceful-rubin-hhw49n`, which is where the
+**Branch and scope.** Work on a new branch from `Ys-bleeding-edge`, which is where the
 Stoat (`VesselClassType.Stoat = 14`), its Slingshot race (`GameModes.Slingshot = 64`) and both pair
 styles live. This is an ENGINE session: follow `Port/CLAUDE.md` § "The one rule" and "Who works where".
 Edit `Port/` only, never `Assets/`. When the game itself is wrong (not an engine gap), do not fix it:
-list it for a Unity PR on `claude/peaceful-rubin-hhw49n`, with file:line and how you saw it.
+list it for a Unity PR on `Ys-bleeding-edge`, with file:line and how you saw it.
 
 **Read first, in this order:** `/prisma` (`.claude/skills/prisma/SKILL.md`), `Port/CLAUDE.md`,
 `Port/docs/ARCHITECTURE.md` §7 (rendering) and §13 (known gaps), `Port/docs/milestones.json` (the C2a
