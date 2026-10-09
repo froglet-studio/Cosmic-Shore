@@ -41,6 +41,10 @@
   (`_Scripts/Utility/PerformanceBenchmark/BENCHMARK_TOOL.md`). `diag` records the editor's Code Optimization
   mode: **measure in Release** (the bug icon, bottom right); Debug runs all C# about 5x slower and a number taken
   there says nothing about a build.
+- **The same markers with no Unity (Prisma):** `python3 Port/tools/prisma_markers_run.py --mode <Mode>` boots the
+  game headless in Prisma, drives the menu to a match and writes every marker's ms, calls and **KB per frame**
+  (`--compare A B` diffs two runs; `Port/docs/ARCHITECTURE.md` §11.3b). Trust its **allocations** and
+  run-to-run deltas; its milliseconds are .NET's, without Burst, so a timing win still needs a Unity Release `diag`.
 - **Every per-frame cost gets a `ProfilerMarker` named `System.Part`** (`SkimRace.Pilot.Decide`,
   `SkimRace.Driver.TrackMpc`, `RaceTrailCap.Hold`, ...) so `prof` and `diag` can name it; the AI's are listed
   in `Docs/SKIM_RACE_AI.md` §12.
