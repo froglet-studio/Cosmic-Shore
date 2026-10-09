@@ -31,7 +31,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Physics | Triggers and queries over spheres, oriented boxes and capsules; a contact pass for dynamic spheres (the Astro League ball) fires `OnCollision*`. **No general solver** and no physics library: the census needs none | ARCHITECTURE §13.1 (census, C3) |
 | Animation | Animator, blend trees, FBX takes; **Animation Rigging is data only** | |
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |
-| Networking | Netcode model over TCP; LAN parties work. **No internet relay, no real UGS** | PROGRESS §Known gaps 1 |
+| Networking | Netcode model over TCP or Froglet's own UDP transport (reliable stream plus an unreliable channel); LAN parties work; built-in test tools: network simulator, stats, session faults, the Launcher's NET page, MCP `net_*` (2026-10-08). **No internet relay, no real UGS** | `MULTIPLAYER.md`; PROGRESS §Known gaps 1 |
 | Performance | Heavy Bloomrush: collect 22-26 ms (was ~150 ms). Not yet at Unity's level on the GTX 1060 floor | PROGRESS §2 |
 | Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS .ipa via GitHub CI (unsigned, Sideloadly) | |
 | Tooling | Launcher (play, phone builds, Project Settings, Claude, tracks, board, milestones), `cs-asset` (scene/prefab writes, `serialization-audit`), `cs-build`, MCP server, session reports with CPU/GC per phase, `engine_smoke` | `docs/LAUNCHER.md` |
@@ -50,8 +50,9 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
    visible gap.
 4. **The remaining 62 shaders.** Each one is a visible difference waiting to be noticed.
 5. **Contact physics,** limited to what the 17 Rigidbody scripts use. No general-purpose solver.
-6. **Online play over the internet.** We need a backend decision (see External factors), and
-   the netcode also lacks delta compression and unreliable channels.
+6. **Online play over the internet.** We need a backend decision (see External factors). The
+   UDP transport and its unreliable channel landed 2026-10-08 (`MULTIPLAYER.md` §6.6); the
+   netcode still lacks delta compression (NetworkVariable writes dominate measured traffic).
 7. **Parity CI.** Every bleeding-edge push should compile the port against the new `Assets/`
    and smoke-run every mode headless on a Linux runner. Today a Unity-side change that breaks
    the port is found by hand.

@@ -68,8 +68,14 @@ namespace CosmicShore.Player
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
             // Sessions (lobby + relay) through a directory every local/LAN player shares.
-            // Every transport runs behind the network simulator (off unless COSMIC_SHORE_NET_SIM or `do netsim`).
-            if (CosmicShore.Engine.Networking.NetDriver.Enabled) CosmicShore.Engine.Networking.NetSimulator.Install();
+            // The transport every player of a session shares: COSMIC_SHORE_NET_TRANSPORT=udp (default) | tcp.
+            // Every transport then runs behind the network simulator (off unless COSMIC_SHORE_NET_SIM or `do netsim`).
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled)
+            {
+                var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
+                Console.WriteLine($"[net] transport: {transport}");
+                CosmicShore.Engine.Networking.NetSimulator.Install();
+            }
             if (CosmicShore.Engine.Networking.NetDriver.Enabled)
             {
                 CosmicShore.Engine.Networking.MultiplayerService.Instance =

@@ -47,6 +47,8 @@ namespace CosmicShore.Engine.Networking
             ConnectRequest = 1, ConnectAccept, ConnectReject, SceneReady, Spawn, Despawn, SyncComplete,
             NetVar, Rpc, Ownership, Parent, Transform, Named, SceneLoad, SceneLoadDone, SceneLoadEventCompleted,
             ClientConnected, ClientDisconnected, TimePing, TimePong,
+            // A pose with the network time it was taken at, for transforms on the unreliable channel.
+            TransformStamped,
         }
 
         static NetDriver() => NetStats.KindName = b => ((Msg)b).ToString();
@@ -204,12 +206,17 @@ namespace CosmicShore.Engine.Networking
 
         static byte[] End() { s_w.Flush(); return s_ms.ToArray(); }
 
-        static void SendRaw(int peer, byte[] bytes)
+        static void SendRaw(int peer, byte[] bytes) => SendRaw(peer, bytes, NetChannel.Reliable);
+
+        static void SendRaw(int peer, byte[] bytes, NetChannel channel)
         {
             if (s_sock == null) return;
-            NetStats.Sent(StatsPeer(peer), bytes);
-            s_sock.Send(peer, bytes);
+            NetStats.Sent(StatsPeer(peer), bytes, channel);
+            s_sock.Send(peer, bytes, -1, channel);
         }
+
+        /// <summary>The channel the message being handled arrived on.</summary>
+        static NetChannel s_rxChannel;
 
         /// <summary>The id the stats file a transport peer under: its client id, the server, or a unique pending id.</summary>
         static ulong StatsPeer(int peer)
@@ -233,7 +240,8 @@ namespace CosmicShore.Engine.Networking
 
         static void Handle(NetEvent e)
         {
-            if (e.Kind == NetEventKind.Data) NetStats.Received(StatsPeer(e.Peer), e.Payload);
+            if (e.Kind == NetEventKind.Data) NetStats.Received(StatsPeer(e.Peer), e.Payload, e.Channel);
+            s_rxChannel = e.Channel;
             if (s_server) HandleServer(e);
             else HandleClient(e);
         }
@@ -263,6 +271,7 @@ namespace CosmicShore.Engine.Networking
                 case Msg.NetVar: ReceiveVariable(r, c.Id); break;
                 case Msg.Rpc: NetRpc.Receive(r, c.Id); break;
                 case Msg.Transform: ReceiveTransform(r, c.Id); break;
+                case Msg.TransformStamped: ReceiveTransformStamped(r, c.Id); break;
                 case Msg.Named: ReceiveNamed(r, c.Id); break;
                 case Msg.SceneLoadDone: ServerSceneLoadDone(c.Id, r.ReadInt32()); break;
                 case Msg.TimePing:
@@ -464,6 +473,7 @@ namespace CosmicShore.Engine.Networking
                 }
                 case Msg.Parent: ClientParent(r); break;
                 case Msg.Transform: ReceiveTransform(r, NetworkManager.ServerClientId); break;
+                case Msg.TransformStamped: ReceiveTransformStamped(r, NetworkManager.ServerClientId); break;
                 case Msg.Named: ReceiveNamed(r, NetworkManager.ServerClientId); break;
                 case Msg.SceneLoad: ClientSceneLoad(r.ReadString(), (LoadSceneMode)r.ReadByte(), r.ReadInt32()); break;
                 case Msg.SceneLoadEventCompleted: ClientSceneEventCompleted(r); break;
@@ -982,6 +992,11 @@ namespace CosmicShore.Engine.Networking
                 var nt = s_transforms[i];
                 if (nt == null || !nt) { s_transforms.RemoveAt(i); continue; }
                 if (!nt.IsSpawned || !IsTransformAuthority(nt)) continue;
+                if (nt.UseUnreliableDeltas)
+                {
+                    SendStamped(nt);
+                    continue;
+                }
                 if (!nt.PortTakeOutgoing(out var p, out var q, out var s, out bool teleport)) continue;
                 var w = Begin(Msg.Transform);
                 w.Write(nt.NetworkObjectId);
@@ -998,6 +1013,62 @@ namespace CosmicShore.Engine.Networking
                 }
                 else SendRaw(0, bytes);
             }
+        }
+
+        /// <summary>
+        /// A transform that opted into UseUnreliableDeltas: each pose goes unreliably with the network time
+        /// it was taken at; a teleport, and the settled pose a quarter second after the last move, go reliably.
+        /// </summary>
+        static void SendStamped(NetworkTransform nt)
+        {
+            double now = Now;
+            NetChannel channel;
+            if (nt.PortTakeOutgoing(out var p, out var q, out var s, out bool teleport))
+                channel = teleport ? NetChannel.Reliable : NetChannel.Unreliable;
+            else if (nt.PortNeedsKeyframe(now, out p, out q, out s)) { teleport = false; channel = NetChannel.Reliable; }
+            else return;
+            var bytes = StampedMessage(nt.NetworkObjectId, NetObjects.BehaviourIndex(nt), ServerNow(), teleport, p, q, s);
+            if (s_server)
+            {
+                foreach (var c in s_byId.Values)
+                    if (c.Synced && (nt.IsServerAuthoritative() || c.Id != nt.OwnerClientId)) SendRaw(c.Peer, bytes, channel);
+            }
+            else SendRaw(0, bytes, channel);
+            nt.PortMarkSent(now, channel == NetChannel.Unreliable);
+        }
+
+        static byte[] StampedMessage(ulong id, ushort idx, double stamp, bool teleport, Vector3 p, Quaternion q, Vector3 s)
+        {
+            var w = Begin(Msg.TransformStamped);
+            w.Write(id); w.Write(idx); w.Write(stamp); w.Write(teleport);
+            w.Write(p.x); w.Write(p.y); w.Write(p.z);
+            w.Write(q.x); w.Write(q.y); w.Write(q.z); w.Write(q.w);
+            w.Write(s.x); w.Write(s.y); w.Write(s.z);
+            return End();
+        }
+
+        static void ReceiveTransformStamped(BinaryReader r, ulong sender)
+        {
+            ulong id = r.ReadUInt64();
+            ushort idx = r.ReadUInt16();
+            double stamp = r.ReadDouble();
+            bool teleport = r.ReadBoolean();
+            var p = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+            var q = new Quaternion(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+            var s = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+            if (NetObjects.Behaviour(id, idx) is not NetworkTransform nt) return;
+            var channel = s_rxChannel;
+            if (s_server)
+            {
+                if (nt.IsServerAuthoritative() || nt.OwnerClientId != sender) return;
+                if (!nt.PortAcceptStamp(stamp, teleport)) return;
+                nt.PortPushState(Now, p, q, s, teleport);
+                // Relayed on the channel it came on, with the owner's stamp, so every receiver orders it the same way.
+                var bytes = StampedMessage(id, idx, stamp, teleport, p, q, s);
+                foreach (var c in s_byId.Values)
+                    if (c.Id != sender && c.Synced) SendRaw(c.Peer, bytes, channel);
+            }
+            else if (!IsTransformAuthority(nt) && nt.PortAcceptStamp(stamp, teleport)) nt.PortPushState(Now, p, q, s, teleport);
         }
 
         static void ReceiveTransform(BinaryReader r, ulong sender)

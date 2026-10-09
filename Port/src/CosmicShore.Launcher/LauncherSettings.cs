@@ -100,6 +100,8 @@ namespace CosmicShore.Launcher
         public string MpSize { get; set; } = "960x540";
         /// <summary>The network simulator preset each local player starts on (NET page), "" = a clean line.</summary>
         public List<string> MpSims { get; set; } = new() { "", "", "", "" };
+        /// <summary>The transport the local players share: "udp" (Froglet's) or "tcp" (NET page).</summary>
+        public string MpTransport { get; set; } = "udp";
 
         // Toolchain
         public string DotnetPath { get; set; } = "";

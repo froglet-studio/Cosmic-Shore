@@ -42,6 +42,7 @@ namespace CosmicShore.Mcp
                     ["faults"] = P("string", "comma-separated session faults armed at launch per player, e.g. ',full,,' "),
                     ["size"] = P("string", "window size per player WxH (default 960x540)"),
                     ["scene"] = P("string", "start every player in this scene"),
+                    ["transport"] = P("string", "'udp' (Froglet's transport, the default) or 'tcp'; every player uses the same"),
                     ["build"] = P("boolean", "compile the player first (default true)"),
                 }),
             Tool("net_input", "Run a --do action on one player or all of them (the same verbs as game_input: 'click X,Y', 'type TEXT', 'party' ..., 'net', 'netsim 4g', 'netfault full').",
@@ -129,6 +130,7 @@ namespace CosmicShore.Mcp
                 Players = n,
                 Headless = headless,
                 Scene = Str(a, "scene"),
+                Transport = Str(a, "transport"),
                 ProjectRoot = _repo,
                 PlayerPath = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", "CosmicShore.dll"),
             };

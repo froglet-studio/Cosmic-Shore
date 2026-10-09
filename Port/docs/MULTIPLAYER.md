@@ -60,7 +60,7 @@ For that shape:
 |---|---|---|
 | Topology | **Listen server (one player hosts)** through a **relay** | Same as the Unity build. No dedicated-server fleet to pay for. The relay gets through NAT, so nobody opens ports. Four players stay well inside one home connection's upload |
 | Authority | Server-authoritative state, owner-authoritative vessel transforms | What the game's code already assumes (NGO model). Unchanged |
-| Transport | **Our own reliable UDP** (Step 5) with two channels: *reliable-ordered* (RPCs, spawns, variables, scenes) and *unreliable-latest* (transforms) | TCP stalls every message behind one lost packet (head-of-line blocking). On a 1% loss line that means visible vessel hitches. Transforms only ever need the newest value |
+| Transport | **Our own UDP** (`UdpTransport`, Step 5): one reliable-ordered stream (RPCs, spawns, variables, scenes, and the transforms NGO also sends reliably) plus an unreliable channel for the transforms whose prefab opts in with `UseUnreliableDeltas`, as NGO does | A lost TCP segment stalls everything behind it until TCP's resend timer fires, and that timer has a floor of 200 ms on Linux and 300 ms on Windows. Our resend timer follows the measured RTT with a 30 ms floor, so a loss costs about one round trip. Vessel transforms stay reliable because the game authors them so (`UseUnreliableDeltas: 0`): parity with the Unity build comes first |
 | Tick | 30 Hz send, interpolated on receivers (unchanged) | `NetworkConfig.TickRate`; NetDriver already interpolates `NetworkTransform` |
 | Bandwidth | Delta-compressed transforms, quantised (later) | Lists as gap 6 in `ROADMAP.md`. Only needed if a profile shows it (§6.4 measures it) |
 | Host leaves | Remaining players return to their menus (B10) | Host migration is not planned: a four-player match is short, and the party survives |
@@ -142,7 +142,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | Piece | Where | Status |
 |---|---|---|
 | Netcode model (approval, scene sync, spawns, variables, RPCs, ownership, parenting, transforms, named messages, scene loads) | `Wire/NetDriver.cs` | Works. LAN parties and five-process harness runs pass |
-| Transport seam | `Wire/INetTransport.cs` | Landed. TCP (`NetSocket`) is the only real implementation; tests use an in-memory loopback |
+| Transport seam | `Wire/INetTransport.cs` | Landed. TCP (`NetSocket`) and, from Step 5, UDP (`UdpTransport`); tests also use an in-memory loopback |
 | Session service stand-in | `Wire/DirectoryMultiplayerService.cs` | One JSON file per session in `COSMIC_SHORE_NET_DIR` |
 | Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | T1-T7 pass. Patches the engine in a throwaway worktree (Step 0 removes that need) |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
@@ -278,15 +278,82 @@ COSMIC_SHORE_PROFILE=PilotB COSMIC_SHORE_NET_SIM=4g dotnet $P --control-port 478
 curl -s -X POST -d '{"cmd":"do","arg":"net"}' http://127.0.0.1:47801/
 ```
 
-### 6.6 Step 5: our reliable-UDP transport
+### 6.6 Step 5: our UDP transport
 
-One UDP socket per process. Packets carry a sequence number and an ack field. The
-**reliable-ordered** channel resends on a timeout derived from the measured RTT and delivers in
-order. The **unreliable-latest** channel drops anything older than what it has. Frames bigger than
-a packet are fragmented. A connect handshake with a token prevents spoofed connects. The same
-`NetTransportContractTests` that hold TCP to the contract hold it too. Then NetDriver moves
-transforms to the unreliable channel, which changes `INetTransport.Send` (it gains a channel
-argument, and TCP treats both channels as reliable).
+`UdpTransport` (`Wire/UdpTransport.cs`) is Froglet's own transport. It keeps the `INetTransport`
+contract (reliable, ordered, whole frames), so `NetDriver` runs on it unchanged, and the same
+`NetTransportContractTests` hold it, TCP and the loopback to that contract. **It is the default for
+every networked player since 2026-10-08**; TCP is one switch away: `COSMIC_SHORE_NET_TRANSPORT=tcp`,
+`net_players transport=tcp`, or TCP on the NET page. Every player of a session must use the same
+transport.
+
+**Wire** (little-endian; every packet starts with a type byte):
+
+| Packet | Layout | When |
+|---|---|---|
+| ConnectRequest | `[1][magic "CSNP" u32][version u8][nonce u64]` | Client to server, every 100 ms until accepted or the connect timeout |
+| ConnectAccept | `[2][nonce u64][token u64]` | Server to client; repeated if a request repeats |
+| Data | `[3][token u64][ackNext u32][ackBits u64]`, then fragments `[seq u32][flags u8][len u16][bytes]` | Everything else. flags: 1 = last fragment of a frame, 2 = an unreliable frame |
+| Disconnect | `[4][token u64]` | Either way, sent three times |
+
+**How it works:**
+
+- **Fragments.** A frame is split into fragments of at most 1,150 bytes, so a packet stays under
+  1,200 bytes, inside any internet path's MTU. Each fragment takes one u32 sequence number per
+  direction (no wraparound in practice: 4 TB per connection).
+- **Acks.** The receiver delivers fragments in order and acks in every packet it sends: "everything
+  below ackNext arrived", plus a 64-bit mask of what arrived after it.
+- **Resends.** The sender resends a fragment when its timeout passes: smoothed RTT + 4 × variance,
+  between 30 ms and 2 s, doubling per resend up to 8×. Only first sends are timed (Karn's rule).
+- **Window.** At most 512 fragments are in flight. The kernel buffers are 4 MB, so a scene snapshot
+  burst fits.
+- **Tokens.** Each connection has a random token, so a packet from another address or an old
+  connection is ignored.
+- **Liveness.** An idle connection sends an ack every 250 ms. Ten seconds without a packet drops
+  the peer, Unity Transport's own default.
+- **Closing.** A Disconnect is sent only after the frames queued before it are acked (or after
+  2 s), so a kick's reason arrives first. `Dispose` behaves like closing a TCP socket: queued frames
+  still go out.
+- **Threading.** One background thread owns the socket and all peer state. The main thread only
+  queues frames and reads events.
+
+**The unreliable channel.** `INetTransport.Send(peer, payload, length, NetChannel)`:
+- **TCP** sends an unreliable frame reliably (the interface's default).
+- **UDP** sends it once, inside a single packet. It is never resent and never held behind a
+  reliable resend. A frame too big for one packet goes reliably instead.
+- **The simulator** really loses unreliable frames (`loss=`), and delays them on their own queue.
+
+`NetDriver` uses the channel only for a `NetworkTransform` whose prefab sets `UseUnreliableDeltas`.
+Unity's Netcode has the same option; in this project the four fauna prefabs set it (MassShark,
+MassBrittlestar, QuadFish, TadPole) and no vessel does. Such a transform sends
+`TransformStamped` messages that carry the network time the pose was taken at:
+- receivers drop any pose older than the newest one they have applied;
+- a teleport always goes reliably;
+- a quarter second after the last move, the settled pose is sent once more, reliably, so a lost
+  final datagram cannot leave the object stuck.
+
+**What this buys.** A lost packet on our reliable stream costs about one round trip, where TCP's
+resend timer waits at least 200 ms. The unreliable fauna poses never wait for anything. Loss shows
+up in `do net` as resends, and as `unreliable out/in` counts.
+
+**Measured** (2026-10-08):
+
+| Check | Result |
+|---|---|
+| Contract checks over UDP, alone and behind a bad simulated line | Pass |
+| Loss | Under 10% and 30% real datagram loss in both directions, 300 frames (one of 200 KB, ~175 fragments) arrive whole and in order |
+| Liveness | A silent peer times out on both ends; an idle connection survives on keepalives |
+| Spoofing | A forged packet from another address is ignored |
+| Close | `Dispose` flushes 50 queued frames under 20% loss before the goodbye |
+| Five-player party harness on UDP (`COSMIC_SHORE_NET_TRANSPORT=udp`) | **14/14** (T1, T5-accept, T2b, kick, leave, T2, T5-join, launch, T4, T3, T6, net, T7, T4-lobby). In T7 (host killed) the survivors detected the dead host through the 10 s silence timeout, as on Unity Transport |
+| The same, with the unreliable channel and every player on `4g` (`COSMIC_SHORE_NET_SIM=4g`) | **13/14**. T4-lobby failed on a game defect, not the transport: the invitee's Accept pre-flight refused a fresh invite because the new host's `partySession` advertisement lagged its invite (B29; the fix is in the game code). Five game processes on a 4-core container are CPU-bound, so RTTs there (300-900 ms) include several frame waits on top of the simulated line |
+
+**Next for the transport.**
+- **The relay (gate G2).** Our fragments ride inside UGS Relay's `RELAY` messages, with the Relay
+  protocol's `BIND`/`PING` around them. Or they ride Steam Datagram Relay.
+- **Congestion control** past the fixed window: needed only on internet paths, measured first.
+- **Delta-compressed `NetworkVariable` writes:** the first measurement (§6.4) shows they dominate
+  traffic.
 
 ## 7. Status
 
@@ -298,7 +365,7 @@ argument, and TCP treats both channels as reliable).
 | 2 | Stats, `do net`, capture, window-title monitor | Done 2026-10-08 | `NetStatsTests` 8/8. Two real players: traffic, kinds and RPC names on both; localhost RTT 27.7 ms (min 18); `netsim latency=100` on the guest read 238 ms on both ends (28 + 200) |
 | 3 | Session-service faults | Done 2026-10-08 | `NetFaultsTests` 10/10. Two real players: `netfault full` refused the guest's join with the game's "That party is full." and bounced it to its menu (host stayed 1/4; the next join seated it); `ratelimit=3` raised 3 and the party survived |
 | 4 | Launcher NET page, MCP `net_*` tools | Done 2026-10-08 | `MultiplayerRunTests` 7/7, Launcher tests 21/21; NET page screenshotted under xvfb (empty and with four player rows); the MCP server over stdio started 2 headless players (one on `4g` from launch), and `net_sim`, `net_fault`, `net_stats`, `net_players status`, `net_logs` and `stop` worked against them |
-| 5 | Reliable-UDP transport, unreliable transforms | Planned | |
+| 5 | UDP transport, unreliable channel for opted-in transforms | Done 2026-10-08 | `UdpTransportTests` 6/6, `UnreliableChannelTests` 8/8, `UnreliableDeltasPrefabTests` 3/3; contract checks over `udp` and `sim-udp`; network suites stable over 5 repeats; CosmicShore.Tests 1862/1862; the five-player party harness **14/14 on UDP** |
 | G2 | UGS backend (Auth, Lobby, Relay protocol) | After gate G2 | |
 
 ## 8. Sources

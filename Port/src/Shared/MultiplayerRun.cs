@@ -54,6 +54,8 @@ namespace Prisma
             public string? WorkDir;
             public List<PlayerOptions> PerPlayer = new();
             public List<string> ExtraArgs = new();
+            /// <summary>The transport every player uses: "udp" (Froglet's, the player's default) or "tcp"; null = the default.</summary>
+            public string? Transport;
             /// <summary>Extra environment for every player (e.g. COSMIC_SHORE_LOG_CHANNELS).</summary>
             public Dictionary<string, string> Environment = new();
         }
@@ -132,6 +134,7 @@ namespace Prisma
             foreach (var kv in o.Environment) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROFILE"] = profile;
             psi.Environment["COSMIC_SHORE_NET_DIR"] = NetDir;
+            if (!string.IsNullOrWhiteSpace(o.Transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = o.Transport;
             psi.Environment.Remove("COSMIC_SHORE_NET"); // networking on
             if (!o.Audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
             if (!string.IsNullOrWhiteSpace(o.ProjectRoot)) psi.Environment["COSMIC_SHORE_PROJECT"] = o.ProjectRoot;

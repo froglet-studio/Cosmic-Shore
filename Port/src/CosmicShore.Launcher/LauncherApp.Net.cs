@@ -57,6 +57,11 @@ namespace CosmicShore.Launcher
             Label("Players");
             ImGui.SetCursorScreenPos(a + new Vector2(16, 78));
             Segmented("netplayers", new[] { "2", "3", "4" }, Math.Clamp(_s.MpPlayers - 2, 0, 2), i => { _s.MpPlayers = i + 2; _dirty = true; }, Neon.Magenta);
+            ImGui.SetCursorScreenPos(a + new Vector2(200, 60));
+            Label("Transport");
+            ImGui.SetCursorScreenPos(a + new Vector2(200, 78));
+            Segmented("nettransport", new[] { "UDP", "TCP" }, _s.MpTransport == "tcp" ? 1 : 0, i => { _s.MpTransport = i == 1 ? "tcp" : "udp"; _dirty = true; }, Neon.Cyan);
+            Neon.Tooltip("UDP: Froglet's transport (selective acks, RTT-timed resends, an unreliable channel). TCP: the first transport. Every player uses the same.");
 
             ImGui.SetCursorScreenPos(a + new Vector2(16, 124));
             Label("Start in");
@@ -95,7 +100,7 @@ namespace CosmicShore.Launcher
             {
                 _netLine.Clear(); _netFault.Clear(); _netCableOut.Clear();
                 for (int i = 0; i < _s.MpPlayers; i++) _netLine[i + 1] = _s.MpSims[i];
-                _jobs.LaunchLocalPlayers(_s.MpPlayers, _s.MpScene, _s.MpSize, _s.MpSims.Take(_s.MpPlayers).ToList());
+                _jobs.LaunchLocalPlayers(_s.MpPlayers, _s.MpScene, _s.MpSize, _s.MpSims.Take(_s.MpPlayers).ToList(), _s.MpTransport);
             }
             var help = new[]
             {

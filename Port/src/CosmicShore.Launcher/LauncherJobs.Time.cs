@@ -252,7 +252,7 @@ namespace CosmicShore.Launcher
         /// simulated line (<paramref name="sims"/>, docs/MULTIPLAYER.md §6.2). Only player 1 plays
         /// sound. Each writes a session report under sessions/.
         /// </summary>
-        public void LaunchLocalPlayers(int players, string? scene, string size, IReadOnlyList<string>? sims = null) => Start("Local multiplayer", async ct =>
+        public void LaunchLocalPlayers(int players, string? scene, string size, IReadOnlyList<string>? sims = null, string? transport = null) => Start("Local multiplayer", async ct =>
         {
             players = Math.Clamp(players, 2, Prisma.MultiplayerRun.MaxPlayers);
             if (!await EnsureTools(ct)) return false;
@@ -277,6 +277,7 @@ namespace CosmicShore.Launcher
                 args.Add("--session-report"); args.Add(report);
                 var psi = PlayerStart(exe, args, audio: audio && i == 1, network: true, profile: "player" + i);
                 psi.Environment["COSMIC_SHORE_NET_DIR"] = LocalNetDir;
+                if (!string.IsNullOrWhiteSpace(transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = transport;
                 var sim = sims != null && i - 1 < sims.Count ? sims[i - 1] : "";
                 if (!string.IsNullOrWhiteSpace(sim)) psi.Environment["COSMIC_SHORE_NET_SIM"] = sim;
                 var p = new Process { StartInfo = psi, EnableRaisingEvents = true };

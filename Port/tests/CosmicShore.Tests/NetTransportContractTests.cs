@@ -7,12 +7,12 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The <see cref="INetTransport"/> contract, checked against every implementation: TCP (the
-    /// shipping one), the in-memory loopback, and both behind the network simulator. A new transport (the internet relay of C6) joins
+    /// shipping one), Froglet's UDP transport, the in-memory loopback, and each behind the network simulator. A new transport (the internet relay of C6) joins
     /// <see cref="Transports"/> and must pass the same checks.
     /// </summary>
     public class NetTransportContractTests
     {
-        public static TheoryData<string> Transports => new() { "tcp", "loopback", "sim-tcp", "sim-loopback" };
+        public static TheoryData<string> Transports => new() { "tcp", "loopback", "udp", "sim-tcp", "sim-loopback", "sim-udp" };
 
         /// <summary>A bad line: the simulator must keep the contract (whole, ordered, reliable) under it.</summary>
         static readonly NetSimSettings BadLine = new() { LatencyMs = 5, JitterMs = 10, LossPercent = 20, BandwidthKbps = 200000 };
@@ -21,6 +21,8 @@ namespace CosmicShore.Tests
         {
             "tcp" => new TcpTransportFactory(),
             "loopback" => new LoopbackTransportFactory(),
+            "udp" => new UdpTransportFactory(),
+            "sim-udp" => new SimulatedTransportFactory(new UdpTransportFactory(), () => BadLine),
             "sim-tcp" => new SimulatedTransportFactory(new TcpTransportFactory(), () => BadLine),
             "sim-loopback" => new SimulatedTransportFactory(new LoopbackTransportFactory(), () => BadLine),
             _ => throw new ArgumentException(name),

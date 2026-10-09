@@ -167,6 +167,18 @@ namespace CosmicShore.Tests
             finally { NetSimulator.Settings = saved; }
         }
 
+        [Theory]
+        [InlineData("", "udp")]
+        [InlineData(null, "udp")]
+        [InlineData("UDP", "udp")]
+        [InlineData("tcp", "tcp")]
+        [InlineData("carrier-pigeon", "udp")]
+        public void TransportSelection_DefaultsToUdp(string asked, string used)
+        {
+            Assert.Equal(used, NetTransports.Select(asked));
+            Assert.Equal(used == "udp" ? typeof(UdpTransportFactory) : typeof(TcpTransportFactory), NetDriver.TransportFactory.GetType());
+        }
+
         [Fact]
         public void Client_WhoseConnectFails_StopsAndReportsTheReason()
         {

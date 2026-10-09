@@ -65,9 +65,14 @@ namespace CosmicShore.Engine.Networking
 
         // ── Counting (called by NetDriver) ──────────────────────────
 
-        internal static void Sent(ulong peer, byte[] payload)
+        /// <summary>Frames sent / received on the unreliable channel (they are in every other count too).</summary>
+        public static long UnreliableOut { get; private set; }
+        public static long UnreliableIn { get; private set; }
+
+        internal static void Sent(ulong peer, byte[] payload, NetChannel channel = NetChannel.Reliable)
         {
             if (payload == null || payload.Length == 0) return;
+            if (channel == NetChannel.Unreliable) UnreliableOut++;
             int n = payload.Length;
             BytesOut += n; MsgsOut++;
             s_kindMsgsOut[payload[0]]++; s_kindBytesOut[payload[0]] += n;
@@ -75,9 +80,10 @@ namespace CosmicShore.Engine.Networking
             if (payload[0] == NetDriver.RpcKindByte) CountRpc(s_rpcOut, payload);
         }
 
-        internal static void Received(ulong peer, byte[] payload)
+        internal static void Received(ulong peer, byte[] payload, NetChannel channel = NetChannel.Reliable)
         {
             if (payload == null || payload.Length == 0) return;
+            if (channel == NetChannel.Unreliable) UnreliableIn++;
             int n = payload.Length;
             BytesIn += n; MsgsIn++;
             s_kindMsgsIn[payload[0]]++; s_kindBytesIn[payload[0]] += n;
@@ -213,6 +219,7 @@ namespace CosmicShore.Engine.Networking
             Array.Clear(s_kindMsgsIn); Array.Clear(s_kindBytesIn); Array.Clear(s_kindMsgsOut); Array.Clear(s_kindBytesOut);
             s_rpcIn.Clear(); s_rpcOut.Clear(); s_peers.Clear();
             BytesIn = BytesOut = MsgsIn = MsgsOut = 0;
+            UnreliableIn = UnreliableOut = 0;
             BytesInPerSecond = BytesOutPerSecond = PeakBytesInPerSecond = PeakBytesOutPerSecond = 0;
             s_windowStart = -1;
         }
@@ -233,6 +240,7 @@ namespace CosmicShore.Engine.Networking
             {
                 role = NetDriver.IsServer ? "server" : NetDriver.IsClientOnly ? "client" : "off",
                 bytesIn = BytesIn, bytesOut = BytesOut, msgsIn = MsgsIn, msgsOut = MsgsOut,
+                unreliableIn = UnreliableIn, unreliableOut = UnreliableOut,
                 bytesInPerSecond = Math.Round(BytesInPerSecond), bytesOutPerSecond = Math.Round(BytesOutPerSecond),
                 peakBytesInPerSecond = Math.Round(PeakBytesInPerSecond), peakBytesOutPerSecond = Math.Round(PeakBytesOutPerSecond),
                 simulator = NetSimulator.Settings.ToString(),
@@ -266,7 +274,7 @@ namespace CosmicShore.Engine.Networking
             var kinds = Enumerable.Range(0, 256).Where(i => s_kindMsgsIn[i] + s_kindMsgsOut[i] > 0)
                 .OrderByDescending(i => s_kindBytesIn[i] + s_kindBytesOut[i])
                 .Select(i => $"{KindName((byte)i)} {s_kindMsgsOut[i]}/{s_kindMsgsIn[i]}");
-            sb.AppendLine("[net] kinds out/in: " + string.Join(", ", kinds));
+            sb.AppendLine("[net] kinds out/in: " + string.Join(", ", kinds) + (UnreliableIn + UnreliableOut > 0 ? $" · unreliable {UnreliableOut}/{UnreliableIn}" : ""));
             var rpcs = s_rpcOut.Select(kv => (kv.Key, kv.Value.Calls, dir: "out")).Concat(s_rpcIn.Select(kv => (kv.Key, kv.Value.Calls, dir: "in")))
                 .OrderByDescending(x => x.Calls).Take(topRpcs).Select(x => $"{x.Key} {x.dir} {x.Calls}");
             sb.Append("[net] top rpcs: " + string.Join(", ", rpcs));

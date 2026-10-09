@@ -85,8 +85,9 @@ Monitor (`docs/MULTIPLAYER.md` §6).
 slot (`player1`, `player2` ...) with networking on and sound only in the first. They share one
 fresh session folder per run, so a party or match hosted in one window shows up in the others:
 host in one, join from the rest (the friends list, or the DiagnosticsHUD's `party invite <name>` /
-`party join <name>`). Each player can start on a simulated line (clean, lan, broadband, dsl, 4g, 3g,
-poor). Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+`party join <name>`). **TRANSPORT** picks what carries their traffic: UDP (Froglet's own transport,
+the default) or TCP (the first one); every player uses the same. Each player can start on a
+simulated line (clean, lan, broadband, dsl, 4g, 3g, poor). Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
 
 **LIVE** shows, once a second, each player's scene, role (server or client), traffic in and out and
 RTT to each peer, read from its control port. Per player, while it runs: change its line, **PULL

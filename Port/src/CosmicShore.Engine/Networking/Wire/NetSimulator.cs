@@ -170,13 +170,17 @@ namespace CosmicShore.Engine.Networking
         {
             public readonly double Due;
             public readonly byte[] Data;   // null = a deferred Disconnect
-            public Held(double due, byte[] data) { Due = due; Data = data; }
+            public readonly NetChannel Channel;
+            public Held(double due, byte[] data, NetChannel channel = NetChannel.Reliable) { Due = due; Data = data; Channel = channel; }
         }
 
         sealed class PeerOut
         {
             public readonly Queue<Held> Queue = new();
-            public double LastDue, NextFree;
+            /// <summary>Unreliable frames: their own line, so a reliable resend spike never holds them back.</summary>
+            public readonly Queue<Held> Unreliable = new();
+            public double LastDue, NextFree, LastUnreliableDue;
+            public int Count => Queue.Count + Unreliable.Count;
         }
 
         readonly INetTransport _inner;
@@ -188,6 +192,10 @@ namespace CosmicShore.Engine.Networking
         readonly System.Threading.Thread _pump;
         volatile bool _disposed;
         readonly Queue<(double due, NetEvent e)> _in = new();
+        readonly Queue<(double due, NetEvent e)> _inUnreliable = new();
+        double _lastInUnreliableDue;
+        /// <summary>Unreliable frames the simulated line lost, both directions.</summary>
+        public long UnreliableDropped;
         readonly HashSet<int> _peers = new();
         double _lastInDue;
         double _downSince = -1;
@@ -222,7 +230,11 @@ namespace CosmicShore.Engine.Networking
                     double now = _nowMs();
                     PumpOut(now, _settings());
                     double next = double.MaxValue;
-                    foreach (var po in _out.Values) if (po.Queue.Count > 0) next = Math.Min(next, po.Queue.Peek().Due);
+                    foreach (var po in _out.Values)
+                    {
+                        if (po.Queue.Count > 0) next = Math.Min(next, po.Queue.Peek().Due);
+                        if (po.Unreliable.Count > 0) next = Math.Min(next, po.Unreliable.Peek().Due);
+                    }
                     // Wake at the next due frame; a Send pulses when it queues an earlier one. Cap the wait
                     // so a settings change (the cable coming back up) is seen within 50 ms.
                     int wait = next == double.MaxValue ? 50 : (int)Math.Clamp(Math.Ceiling(next - now), 1, 50);
@@ -235,7 +247,7 @@ namespace CosmicShore.Engine.Networking
         public int ListenPort => _inner.ListenPort;
         public int PeerCount => _inner.PeerCount;
 
-        bool Holding => _in.Count > 0 || _out.Count > 0;   // read under _lock for _out
+        bool Holding => _in.Count > 0 || _inUnreliable.Count > 0 || _out.Count > 0;   // read under _lock for _out
 
         double Delay(NetSimSettings s)
         {
@@ -246,25 +258,48 @@ namespace CosmicShore.Engine.Networking
             return d;
         }
 
-        public void Send(int peer, byte[] payload, int length = -1)
+        public void Send(int peer, byte[] payload, int length = -1) => Send(peer, payload, length, NetChannel.Reliable);
+
+        public void Send(int peer, byte[] payload, int length, NetChannel channel)
         {
             if (_cut) return;
             if (length < 0) length = payload.Length;
             var s = _settings();
             lock (_lock)
             {
-                if (!s.IsActive && !Holding) { _inner.Send(peer, payload, length); return; }
-                Enqueue(peer, payload, length, s);
+                if (!s.IsActive && !Holding) { _inner.Send(peer, payload, length, channel); return; }
+                Enqueue(peer, payload, length, s, channel);
                 System.Threading.Monitor.Pulse(_lock);
             }
         }
 
-        void Enqueue(int peer, byte[] payload, int length, NetSimSettings s)
+        /// <summary>A lost unreliable frame is gone; it is never resent.</summary>
+        bool Lost(NetSimSettings s) => s.LossPercent > 0 && _rng.NextDouble() * 100.0 < s.LossPercent;
+
+        double UnreliableDelay(NetSimSettings s) => s.LatencyMs + (s.JitterMs > 0 ? _rng.NextDouble() * s.JitterMs : 0);
+
+        void Enqueue(int peer, byte[] payload, int length, NetSimSettings s, NetChannel channel = NetChannel.Reliable)
         {
             double now = _nowMs();
+            if (channel == NetChannel.Unreliable && Lost(s)) { UnreliableDropped++; return; }
             var copy = new byte[length];
             Buffer.BlockCopy(payload, 0, copy, 0, length);
             if (!_out.TryGetValue(peer, out var po)) _out[peer] = po = new PeerOut();
+            if (channel == NetChannel.Unreliable)
+            {
+                double udue = now + UnreliableDelay(s);
+                if (s.BandwidthKbps > 0)
+                {
+                    po.NextFree = Math.Max(now, po.NextFree) + length * 8.0 / s.BandwidthKbps;
+                    udue = Math.Max(udue, po.NextFree);
+                }
+                // Its own queue keeps release order simple; jitter could reorder datagrams, which is allowed.
+                udue = Math.Max(udue, po.LastUnreliableDue);
+                po.LastUnreliableDue = udue;
+                po.Unreliable.Enqueue(new Held(udue, copy, NetChannel.Unreliable));
+                PumpOut(now, s);
+                return;
+            }
             double due = now + Delay(s);
             if (s.BandwidthKbps > 0)
             {
@@ -306,19 +341,30 @@ namespace CosmicShore.Engine.Networking
                 CheckCable(now, s);
                 PumpOut(now, s);
             }
-            if (!s.IsActive && _in.Count == 0) return Track(_inner.Poll(out e), e);
-            // Read everything the inner transport has into the held queue, delayed and in order.
+            if (!s.IsActive && _in.Count == 0 && _inUnreliable.Count == 0) return Track(_inner.Poll(out e), e);
+            // Read everything the inner transport has into the held queues, delayed and in order.
             while (_inner.Poll(out var ie))
             {
                 if (_cut && ie.Kind == NetEventKind.Data) continue;
+                if (ie.Kind == NetEventKind.Data && ie.Channel == NetChannel.Unreliable)
+                {
+                    if (Lost(s)) { UnreliableDropped++; continue; }
+                    double udue = Math.Max(now + UnreliableDelay(s), _lastInUnreliableDue);
+                    _lastInUnreliableDue = udue;
+                    _inUnreliable.Enqueue((udue, ie));
+                    continue;
+                }
                 double due = _cut ? now : Math.Max(now + (ie.Kind == NetEventKind.Data ? Delay(s) : s.LatencyMs), _lastInDue);
                 _lastInDue = due;
                 _in.Enqueue((due, ie));
             }
-            if (_in.Count > 0 && (!s.Down || _cut) && _in.Peek().due <= now)
+            if (!s.Down || _cut)
             {
-                e = _in.Dequeue().e;
-                return Track(true, e);
+                // The earlier of the two lines' heads, if it is due.
+                bool r = _in.Count > 0 && _in.Peek().due <= now;
+                bool u = _inUnreliable.Count > 0 && _inUnreliable.Peek().due <= now && !_cut;
+                if (r && (!u || _in.Peek().due <= _inUnreliable.Peek().due)) { e = _in.Dequeue().e; return Track(true, e); }
+                if (u) { e = _inUnreliable.Dequeue().e; return true; }
             }
             e = default;
             return false;
@@ -359,7 +405,9 @@ namespace CosmicShore.Engine.Networking
                     if (h.Data == null) _inner.Disconnect(kv.Key);
                     else _inner.Send(kv.Key, h.Data);
                 }
-                if (q.Count == 0) (empty ??= new List<int>()).Add(kv.Key);
+                var uq = kv.Value.Unreliable;
+                while (uq.Count > 0 && uq.Peek().Due <= now) _inner.Send(kv.Key, uq.Dequeue().Data, -1, NetChannel.Unreliable);
+                if (kv.Value.Count == 0) (empty ??= new List<int>()).Add(kv.Key);
             }
             if (empty != null) foreach (int p in empty) _out.Remove(p);
         }
