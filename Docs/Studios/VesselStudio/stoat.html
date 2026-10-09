@@ -267,14 +267,14 @@
       <canvas id="stage" tabindex="0" width="1280" height="800" aria-label="3D flight stage: the Stoat, the Slingshot course rings, prisms, and any wormhole pair you sling"></canvas>
       <canvas id="hud" aria-hidden="true"></canvas>
       <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
-      <div class="transport" id="transport" role="toolbar" aria-label="Play controls"><button type="button" id="tpPlay" title="Play (Enter)">▶ Play</button><button type="button" id="tpPause" aria-pressed="false" title="Pause / resume (P): the Stoat and the race clock halt, the world and cameras stay live">❚❚ Pause</button><button type="button" id="tpStop" title="Stop (R): end the run, back to the start line">■ Stop</button></div>
+      <div class="transport" id="transport" role="toolbar" aria-label="Play controls"><button type="button" id="tpPlay" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, the Stoat and the race clock halt, the world and cameras stay live">▶ Play</button><button type="button" id="tpStop" title="Stop (R): end the run, back to the start line">■ Stop</button></div>
       <button type="button" id="playBtn" class="stagebtn playbtn">📱 Fly with touch</button>
       <div id="touchUI" aria-label="Touch controls">
         <div class="tzone l" id="tzL"><div class="tstick idle" id="tsL"><div class="tknob"></div></div></div>
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tStop">❚❚ Pause</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
+        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
@@ -1206,8 +1206,8 @@
     const t = $('transport'); if (!t) return;
     t.hidden = mode !== 'fly';
     const playing = race === 'running';
-    $('tpPlay').disabled = playing; $('tpPlay').classList.toggle('on', playing && !stopped);
-    $('tpPause').disabled = !playing; $('tpPause').textContent = stopped ? '▶ Resume' : '❚❚ Pause'; $('tpPause').setAttribute('aria-pressed', stopped ? 'true' : 'false');
+    const live = playing && !stopped;   // one toggle: Play starts or resumes, Pause pauses
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', stopped ? 'true' : 'false');
     $('tpStop').disabled = race === 'ready' && !stopped;
   }
   let race = 'ready', raceT = 0, threaded = 0, slings = 0, lastRun = null, swapFlash = 0, portalFlash = 0;
@@ -1928,8 +1928,8 @@
     if (e.code === 'KeyP') setStopped(!stopped);
   });
   window.addEventListener('keyup', (e) => { keys.delete(e.code); });
-  $('tpPlay').addEventListener('click', () => startRace());
-  $('tpPause').addEventListener('click', () => setStopped(!stopped));
+  const playPause = () => { if (race === 'running' && !stopped) setStopped(true); else startRace(); };   // startRace resumes a paused run
+  $('tpPlay').addEventListener('click', playPause);
   $('tpStop').addEventListener('click', () => spawn());
   window.addEventListener('blur', () => keys.clear());
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
@@ -2030,15 +2030,11 @@
   $('tPage').addEventListener('click', () => setPlayMode(false));
   $('playBtn').addEventListener('click', () => setPlayMode(true));
   $('tExit').addEventListener('click', () => setPlayMode(false));
-  $('tStart').addEventListener('click', () => { if (race === 'running' && !stopped) return; startRace(); });
-  $('tStop').addEventListener('click', () => setStopped(!stopped));
+  $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => spawn());
   function syncTouchBar() {
     if (!playMode) return;
-    $('tStart').textContent = '▶ Play';
-    $('tStart').hidden = race === 'running' && !stopped;
-    $('tStop').hidden = !(race === 'running' || stopped); $('tStop').textContent = stopped ? '▶ Resume' : '❚❚ Pause';   // the studio transport (/vessel-studio D18)
-    if (stopped) $('tStart').hidden = true;
+    $('tStart').textContent = race === 'running' && !stopped ? '❚❚ Pause' : '▶ Play';   // the studio transport (/vessel-studio D18)
   }
   function pollInput(dt) {
     syncTouchBar();

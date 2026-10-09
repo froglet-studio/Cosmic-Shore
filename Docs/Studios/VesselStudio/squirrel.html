@@ -182,7 +182,7 @@
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
         </div>
-        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" title="Play (Enter)">▶ Play</button><button class="btn" id="tpPause" type="button" aria-pressed="false" title="Pause / resume (P): every pilot and the race clock halt, the stage and cameras stay live">❚❚ Pause</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the start">■ Stop</button></span></div>
+        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, every pilot and the race clock halt, the stage and cameras stay live">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Skim Race, intensity 1</h2>
@@ -201,7 +201,7 @@
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
           <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
-          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tStop" type="button">❚❚ Pause</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
@@ -707,9 +707,10 @@
   }
   document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
   $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
-  $('tStart').addEventListener('click', () => { if (paused) togglePause(); else startRace(); }); $('tStop').addEventListener('click', () => togglePause());
+  const playPause = () => { if (race === 'running') togglePause(); else startRace(); };   // one toggle: Play starts or resumes, Pause pauses
+  $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => newRace()); $('tCam').addEventListener('click', () => cycleCamera());
-  $('tpPlay').addEventListener('click', () => { if (race !== 'running') startRace(); }); $('tpPause').addEventListener('click', () => togglePause()); $('tpStop').addEventListener('click', () => newRace()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', () => newRace()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
   function humanInput(dt) {
     camTouch = S.cam === 'Free' && S.you !== 'You';   // with an AI on your hull, the phone's sticks fly the free camera
     if (playMode && touch.used) return camTouch ? { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 } : { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
@@ -855,11 +856,10 @@
     const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
     // the universal studio Stop (/vessel-studio D18): same label, key and place in every studio
-    $('tpPlay').disabled = race === 'running'; $('tpPlay').classList.toggle('on', race === 'running' && !paused);
-    $('tpPause').disabled = race !== 'running'; $('tpPause').textContent = paused ? '▶ Resume' : '❚❚ Pause'; $('tpPause').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    const live = race === 'running' && !paused;
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
     $('tpStop').disabled = race === 'ready';
-    $('tStop').textContent = paused ? '▶ Resume' : '❚❚ Pause';
-    $('tStart').hidden = race === 'running' && !paused; $('tStart').textContent = paused ? '▶ Resume' : '▶ Play';
+    $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
     while (W.events.length) say(W.events.shift());
   }
 
