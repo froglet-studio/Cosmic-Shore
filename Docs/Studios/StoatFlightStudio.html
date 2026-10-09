@@ -69,6 +69,16 @@
   body.play .stagebtn { display: none; }
   .stagebtn.playbtn { right: 12px; top: 12px; left: auto; bottom: auto; }
   body.play .playbtn { display: none; }
+  /* the device decides the interface: a PC flies with a gamepad or keyboard (no touch layout offered), a phone gets the touch layout */
+  body.dev-pc .playbtn, body.dev-pc .phone-only { display: none !important; }
+  body.dev-phone .pc-only { display: none !important; }
+  .platchip { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 0; font-size: 0.82rem; color: var(--dim); }
+  .platchip b { color: var(--fg); }
+  .platchip select { font: inherit; }
+  .tturn .tbtn { margin-top: 14px; }
+  body.play .overlay .box { max-width: min(430px, 58%); max-height: calc(100% - 120px); margin-top: 40px; font-size: 0.8rem; padding: 10px 12px; gap: 4px; }
+  body.play .overlay .box h2 { font-size: 0.95rem; }
+  body.dev-phone:not(.play) .overlay:not([hidden]) ~ .playbtn { display: none; }
   #stage { width: 100%; max-width: 100%; display: block; aspect-ratio: 16 / 10; background: #050817; border: 1px solid var(--line); border-radius: 8px; outline: none; }
   #stage:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
   #hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
@@ -180,8 +190,9 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 11 · play on a phone</span>
-    <p><b>On a phone:</b> tap <b>📱 Play on phone</b> on the stage and hold it sideways — thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go). Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <span class="round">Round 13 · fits your device</span>
+    <p class="platchip" id="platChip"><span>Running on <b id="platName">web</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
+    <p><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -191,19 +202,31 @@
       <canvas id="hud" aria-hidden="true"></canvas>
       <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
       <button type="button" id="stopBtn" class="stagebtn" hidden aria-pressed="false">■ Stop</button>
-      <button type="button" id="playBtn" class="stagebtn playbtn">📱 Play on phone</button>
+      <button type="button" id="playBtn" class="stagebtn playbtn">📱 Fly with touch</button>
       <div id="touchUI" aria-label="Touch controls">
         <div class="tzone l" id="tzL"><div class="tstick idle" id="tsL"><div class="tknob"></div></div></div>
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
         <div class="tbar"><button type="button" class="tbtn" id="tStart">Start</button><button type="button" class="tbtn ghost" id="tStop">Stop</button><button type="button" class="tbtn ghost" id="tBack">Back</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
-        <div class="tturn">Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small></div>
+        <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
   <div class="lower">
     <section class="card" aria-labelledby="keysH">
       <h2 id="keysH">Controls</h2>
+      <div class="phone-only">
+        <p class="hint" style="margin-top:4px">Touch, in the touch layout (<b>📱 Fly with touch</b> on the stage). It feeds the same dual-stick mix and analog triggers as a gamepad.</p>
+        <div class="tablewrap"><table class="keys"><thead><tr><th>Touch</th><th>Does</th></tr></thead><tbody>
+          <tr><td>Both thumbs left / right</td><td>Yaw</td></tr>
+          <tr><td>Both thumbs up / down</td><td>Pitch</td></tr>
+          <tr><td>Thumbs opposite, up / down</td><td>Roll</td></tr>
+          <tr><td>Thumbs apart / together</td><td>Throttle</td></tr>
+          <tr><td><b>LT</b> / <b>RT</b> handle: drag down, hold, lift</td><td>Lay the pair on that side (how far down = strength), stay in its grip, slingshot out</td></tr>
+          <tr><td>Start · Stop · Back · ✕ (top bar)</td><td>Start or go again · stop and watch · back to the start line · back to the settings</td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="pc-only">
       <p class="hint" style="margin-top:4px">The gamepad goes through the game's own dual-stick mix (<code>InputController</code>): yaw and pitch are the SUM of both sticks, roll and throttle their DIFFERENCE, eased so one stick alone gives 29%. At rest the throttle sits at half cruise.</p>
       <div class="tablewrap"><table class="keys">
         <thead><tr><th>Gamepad</th><th>Keyboard</th><th>Does</th></tr></thead>
@@ -216,12 +239,12 @@
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
-          <tr><td><b>Phone</b> (📱 Play on phone)</td><td>—</td><td>Two thumb sticks at the bottom (each appears where your thumb lands; same mix as the gamepad), LT / RT handles at the top: drag down to squeeze, lift to let go. Start / Stop / Back / ✕ along the top.</td></tr>
           <tr><td>The <b>■ Stop</b> button on the stage</td><td><kbd>P</kbd></td><td>Stop: the Stoat halts and the clock pauses while the world carries on; press again to resume</td></tr>
           <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
       </table></div>
       <p class="hint">Compare view: drag to orbit, wheel to zoom; on a gamepad the right stick orbits and the left stick zooms. If your controller isn't detected here, this viewer may be blocking gamepads: open <code>Docs/Studios/StoatFlightStudio.html</code> from the repo directly in Chrome (the log is then kept on that machine; use Copy log).</p>
+      </div>
     </section>
 
     <section class="card log" aria-labelledby="logH">
@@ -1534,17 +1557,52 @@
     playMode = !!on; document.body.classList.toggle('play', playMode);
     if (playMode) {
       if (mode !== 'fly') setMode('fly');
-      const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;   // real fullscreen where the browser allows it; the fixed layout covers the rest
-      if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } }
-      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
+      requestFull();   // real fullscreen where the browser allows it; the fixed layout covers the rest
     } else {
       const ex = document.exitFullscreen || document.webkitExitFullscreen;
       if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } }
       touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0;
     }
-    lastW = lastH = 0; resize(); hideTip(true);
+    lastW = lastH = 0; resize(); hideTip(true); showOverlay();
   }
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && playMode && !document.webkitFullscreenElement) { /* left real fullscreen: keep the fixed layout */ } lastW = lastH = 0; resize(); });
+  // ================= platform =================
+  // Two questions: which HOST runs the studio (shell) and on what DEVICE. Today the shell is always 'web'; a native
+  // host — the Prisma light studio — sets window.__studioHost = { shell: 'prisma', device: 'pc' | 'phone' } before this
+  // page's script runs, and the same switch below shapes the interface. The device decides the controls: a PC flies
+  // with a gamepad or keyboard, a phone (or tablet) with the touch sticks and trigger handles. The Layout select
+  // overrides the guess for this browser (e.g. to preview the phone layout on a PC).
+  const PLAT_KEY = 'stoat-studio-layout';
+  function detectPlatform() {
+    const host = window.__studioHost || {};
+    const ua = navigator.userAgent || '', mq = (q) => { try { return window.matchMedia(q).matches; } catch (e) { return false; } };
+    const uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile === true) || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(ua)
+      || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS reports itself as a Mac
+    const touchOnly = mq('(pointer: coarse)') && !mq('(any-pointer: fine)');   // a touchscreen laptop still has a fine pointer: a PC
+    const device = host.device === 'pc' || host.device === 'phone' ? host.device : uaMobile || touchOnly ? 'phone' : 'pc';
+    return { shell: host.shell || 'web', device, why: host.device ? 'host' : uaMobile ? 'mobile browser' : touchOnly ? 'touch-only screen' : 'mouse / trackpad' };
+  }
+  const PLATFORM = detectPlatform();
+  let layoutPref = lsGet(PLAT_KEY, 'auto'), layout = 'pc';
+  function applyPlatform(first) {
+    layout = layoutPref === 'pc' || layoutPref === 'phone' ? layoutPref : PLATFORM.device;
+    document.body.classList.toggle('dev-pc', layout === 'pc'); document.body.classList.toggle('dev-phone', layout === 'phone');
+    $('platName').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'phone' : 'PC') + ' (' + PLATFORM.why + ')' + (layout !== PLATFORM.device ? ' — showing the ' + layout + ' layout' : '');
+    $('platLayout').value = layoutPref;
+    $('playBtn').textContent = '📱 Fly with touch';
+    if (layout === 'phone' && first) setPlayMode(true);          // a phone opens straight into the touch layout
+    if (layout === 'pc' && playMode) setPlayMode(false);
+    showOverlay();
+  }
+  $('platLayout').addEventListener('change', (e) => { layoutPref = e.target.value; lsSet(PLAT_KEY, layoutPref); applyPlatform(false); if (layout === 'phone' && !playMode) setPlayMode(true); });
+  // Real fullscreen needs a user gesture, so a phone that opened in the touch layout asks on its first touch.
+  $('touchUI').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement && !document.webkitFullscreenElement) requestFull(); }, { capture: true });
+  function requestFull() {
+    const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;
+    if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } }
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
+  }
+  $('tPage').addEventListener('click', () => setPlayMode(false));
   $('playBtn').addEventListener('click', () => setPlayMode(true));
   $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', () => { if (race === 'running' && !stopped) return; startRace(); });
@@ -2121,7 +2179,7 @@
     };
     if (!playMode) { trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc); }
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
-    c.fillText(playMode && touch.used ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
+    c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
     swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); styleFlash = Math.max(0, styleFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
@@ -2166,6 +2224,17 @@
     if (mode === 'fly' && stopped) { hideOverlay(); return; }
     if (mode !== 'fly' || race === 'running' || aiOn) { hideOverlay(); return; }
     $('overlay').hidden = false;
+    if (layout === 'phone' && !playMode) {   // the phone's page view: flying happens in the touch layout
+      box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2><p>Fly in the touch layout: hold the phone sideways, thumbs on the two sticks, index fingers on the LT / RT handles. The settings are below the stage.</p>' +
+        '<div class="btns"><button class="pick primary" type="button" id="flyTouchBtn">📱 Fly with touch</button></div>';
+      $('flyTouchBtn').addEventListener('click', () => setPlayMode(true));
+      return;
+    }
+    if (race === 'ready' && layout === 'phone') {   // in the touch layout: short, and Start lives in the top bar
+      box.innerHTML = '<h2>Slingshot · intensity ' + intensity + ' · ' + laps + (laps > 1 ? ' laps' : ' lap') + '</h2>' +
+        '<p>Thread the 8 rings in order (amber is next). <b>Thumbs</b>: the sticks. <b>Index fingers</b>: drag <b>LT</b> / <b>RT</b> down to lay a pair (deeper = stronger), hold to go round, lift to slingshot out.</p><p>Tap <b>Start</b> up top.</p>';
+      return;
+    }
     if (race === 'ready') {
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
@@ -2174,7 +2243,9 @@
           : style === 'A'
           ? '<p>Pair <b style="color:#b9a4ff">A</b>: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the attractor appears on that side; <b>hold</b> and you orbit it (squeeze harder, tighter circle); <b>let go</b> to slingshot out along your nose.</p>'
           : '<p>Pair <b style="color:#6fe3d0">B</b>: squeeze <kbd>LT</kbd> or <kbd>RT</kbd> and let go to lay the crystal pair across your nose, the attractor on that side.</p>') +
-        '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine() +
+        (layout === 'phone'
+          ? ''
+          : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
         '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button></div>';
       $('startBtn').addEventListener('click', startRace);
     } else {
@@ -3417,8 +3488,9 @@
     updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
+  applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 

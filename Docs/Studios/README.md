@@ -14,6 +14,50 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 13 — fits your device)
+
+The page detects where it is running and shapes its interface to match. Previously a PC saw only a
+"Play on phone" button.
+
+**Two questions, answered once at load** (`detectPlatform`, `__stoatStudio.PLATFORM`):
+
+- **Shell: which host runs the studio.** Today it is always `web`. A native host, the coming Prisma light
+  studio for every vessel, sets `window.__studioHost = { shell: 'prisma', device: 'pc' | 'phone' }` before
+  the page's script runs. The same switch then applies, and the page never sniffs inside a native host.
+- **Device: PC or phone.** The page treats the device as a phone when either is true:
+  - the browser says it is mobile (`userAgentData.mobile`, a mobile user agent, or iPadOS posing as a Mac);
+  - the screen is touch-only (`pointer: coarse` with no fine pointer).
+
+  A touchscreen laptop still has a fine pointer, so it counts as a PC. Tablets get the phone layout.
+
+**What changes with the device:**
+
+| | PC (web) | Phone or tablet (web) |
+|---|---|---|
+| Stage | gamepad or keyboard; no touch button | opens straight into the touch layout (sticks + LT/RT handles); real fullscreen is requested on the first touch, since browsers need a gesture |
+| Start card | full instructions + gamepad status | compact, with Start in the top bar; from the settings view, a "📱 Fly with touch" card |
+| Controls card | gamepad / keyboard table | touch table |
+| Header | "On this PC …" | "On this phone …" |
+| HUD input label | gamepad / keyboard | touch |
+
+**Two ways back from the touch layout.**
+
+- **✕** in the top bar returns to the settings.
+- In portrait, the "turn sideways" prompt now has **Settings instead**, so a phone held upright is never
+  stuck.
+
+**Override.** The header reads, for example, "Running on **Web · PC (mouse / trackpad)**", with a
+**Layout** select: Auto (detected), PC, or Phone. It is remembered in this browser, so you can preview the
+phone layout on a PC.
+
+**Checked (headless Chromium):**
+
+- Desktop 1500 × 900 → PC: no touch UI, no phone button, PC text.
+- Emulated iPhone 13 (landscape and portrait) and Pixel 7 → phone: touch layout open on load, compact card.
+- Portrait shows "Settings instead", which leads back to the page with the Fly card.
+- Overriding the layout to Phone on a PC and back to Auto restores the PC layout.
+- No console errors; the scorecard numbers are unchanged.
+
 ## Stoat Flight Studio (round 12 — the sim lab: an AI flies, you watch)
 
 The full write-up is `STOAT_SIM_LAB_PLAN.md`: results, the game-mode proposal, studio vs Prisma, and the AI
