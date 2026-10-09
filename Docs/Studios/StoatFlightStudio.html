@@ -76,6 +76,12 @@
   .platchip b { color: var(--fg); }
   .platchip select { font: inherit; }
   .tturn .tbtn { margin-top: 14px; }
+  .intensity { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 8px 0 4px; }
+  .intensity button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--fg); font: inherit; cursor: pointer; min-width: 0; }
+  .intensity button b { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent); }
+  .intensity button span { font-size: 0.72rem; line-height: 1.15; text-align: center; }
+  .intensity button small { font-size: 0.66rem; color: var(--dim); }
+  .intensity button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   body.play .overlay .box { max-width: min(430px, 58%); max-height: calc(100% - 120px); margin-top: 40px; font-size: 0.8rem; padding: 10px 12px; gap: 4px; }
   body.play .overlay .box h2 { font-size: 0.95rem; }
   body.dev-phone:not(.play) .overlay:not([hidden]) ~ .playbtn { display: none; }
@@ -185,14 +191,63 @@
   .toast { color: var(--good); font-size: 0.85rem; }
   .empty { color: var(--dim); font-size: 0.88rem; }
   [hidden] { display: none !important; }
+
+  /* ===== editor layout: the window is the workspace — stage in the middle, tabbed docks right and below, mini windows
+     that float over everything. Nothing scrolls the page; a long pane scrolls inside itself. ===== */
+  body.ide { height: 100vh; height: 100dvh; overflow: hidden; margin: 0; }
+  body.ide .wrap { max-width: none; height: 100%; padding-block: 6px; padding-inline: 8px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; }
+  body.ide header { flex-wrap: nowrap; align-items: center; gap: 14px; min-width: 0; }
+  body.ide header h1 { font-size: 1.05rem; white-space: nowrap; }
+  body.ide header .round { white-space: nowrap; }
+  body.ide header .platchip { margin: 0 0 0 auto; flex-wrap: nowrap; white-space: nowrap; }
+  body.ide .stage { height: 100%; min-height: 0; grid-template-columns: minmax(0, 1fr) 6px var(--railW, 400px); gap: 0; align-items: stretch; }
+  body.ide .main { display: grid; grid-template-rows: minmax(0, 1fr) 6px var(--dockH, 240px); gap: 0; min-height: 0; height: 100%; }
+  body.ide .viewport { min-height: 0; height: 100%; }
+  body.ide #stage { height: 100%; aspect-ratio: auto; }
+  .split { background: transparent; position: relative; z-index: 2; touch-action: none; }
+  .split::after { content: ""; position: absolute; background: var(--line); border-radius: 2px; }
+  .split.v { cursor: col-resize; } .split.v::after { left: 2px; width: 2px; top: 30%; bottom: 30%; }
+  .split.h { cursor: row-resize; } .split.h::after { top: 2px; height: 2px; left: 40%; right: 40%; }
+  .split:hover::after, .split.drag::after { background: var(--accent); }
+  .dock { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .dock .tabs { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px 4px 0; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+  .dock .tabs button { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--dim); background: transparent; border: 1px solid transparent; border-bottom: 0; border-radius: 6px 6px 0 0; padding: 5px 9px; cursor: pointer; white-space: nowrap; }
+  .dock .tabs button:hover { color: var(--fg); }
+  .dock .tabs button[aria-selected="true"] { color: var(--accent); background: var(--panel); border-color: var(--line); margin-bottom: -1px; }
+  .dock .tabs button.floating { font-style: italic; }
+  .dock .tabs button.floating::after { content: " ⧉"; }
+  .pane { min-height: 0; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .pane[hidden] { display: none !important; }
+  .panebar { display: flex; justify-content: flex-end; gap: 6px; margin: -4px -2px -2px; }
+  .panebar button, .fwin .fbar button { font: inherit; font-size: 0.75rem; color: var(--dim); background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; cursor: pointer; }
+  .panebar button:hover, .fwin .fbar button:hover { color: var(--fg); border-color: var(--accent); }
+  .pane > details.card > summary { display: none; }
+  .pane > .card, .fwin .pane > .card { border: 0; padding: 0; background: transparent; }
+  .pane > .card + .card { border-top: 1px solid var(--line); padding-top: 8px; border-radius: 0; }
+  .pane .lower-sec h2 { display: none; }
+  .fwin { position: fixed; z-index: 60; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 260px; min-height: 140px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); background: var(--panel); border: 1px solid var(--accent); border-radius: 9px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); resize: both; overflow: hidden; }
+  .fwin .fbar { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--panel-2); border-bottom: 1px solid var(--line); cursor: move; user-select: none; touch-action: none; }
+  .fwin .fbar b { font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); flex: 1; }
+  .fwin .pane { padding: 10px; }
+  @media (max-width: 900px) {
+    body.ide { height: auto; overflow: auto; }
+    body.ide .wrap { height: auto; display: flex; }
+    body.ide header { flex-wrap: wrap; }
+    body.ide header .platchip { margin: 0; }
+    body.ide .stage { grid-template-columns: minmax(0, 1fr); height: auto; }
+    body.ide .main { grid-template-rows: auto auto auto; }
+    body.ide .viewport { height: 58vh; }
+    body.ide .split { display: none; }
+    body.ide .dock { max-height: 70vh; }
+  }
 </style>
 
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 13 · fits your device</span>
+    <span class="round">Round 14 · course ladder · editor layout</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">web</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
-    <p><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -284,7 +339,7 @@
         </div>
         <pre class="aistats" id="aiStats">Not flying yet.</pre>
         <div class="rows"></div>
-        <div class="btns"><button class="pick primary" type="button" id="batchBtn">Score all five styles</button><span class="hint" id="batchNote" style="margin:0">no drawing, a few seconds</span></div>
+        <div class="btns"><button class="pick primary" type="button" id="batchBtn">Score all five styles</button><button class="pick" type="button" id="scoreShow">Show scorecard</button><span class="hint" id="batchNote" style="margin:0">no drawing, a few seconds</span></div>
         <div id="batchOut"></div>
         <p class="src">The scorecard races a no-sling baseline, Balanced and each style at 1 on both courses, two laps flat out: a <b>skilled</b> AI at squeezes 0.3–1 (each column keeps the best it reached going for that one thing) and a <b>rookie</b> (sloppiness 0.8, three seeds). Each style owns one column: Comet the average speed, Flare the top speed, Needle the ring error in the hairpins, Anchor the rookie's catch rate, Maelstrom the prisms each sling pulls. The AI uses your current settings, so a slider you move changes its next race.</p>
         <div class="btns"><button class="pick" type="button" data-reset="ai">Reset</button></div></details>
@@ -325,9 +380,17 @@
       <details class="card" id="grp-B" hidden><summary>Crystal pair (archived) <small>charming-cerf</small></summary><div class="rows"></div>
         <p class="src">Laid on release, sized by the deepest squeeze. Felt pull k·cruise²·R<sub>t</sub>·r/(r²+R<sub>t</sub>²)<sup>1.5</sup>; lens α = A·u·e<sup>−u²/2</sup>, u = b/w, shipped w = the throat (lens width 1). Life is sling-tuned as <code>BlackHoleConfig</code> ships it for the Stoat (0.6 s + 0.05 s + 3.35 s = the drift pair's 4 s); their crystal cell ships 6 s to form, 9 s to annihilate.</p>
         <div class="btns"><button class="pick" type="button" data-reset="B">Reset</button><button class="pick" type="button" id="theirLife">Their cell's 6 s / 9 s</button></div></details>
-      <details class="card" id="grp-flight"><summary>Flight & course</summary><div class="rows"></div>
+      <details class="card" id="grp-flight"><summary>Flight & course</summary>
+        <div class="intensity" role="group" aria-label="Course intensity" id="intensitySeg">
+          <button type="button" data-i="1"><b>1</b><span>Plain circle</span><small>48 u rings</small></button>
+          <button type="button" data-i="2"><b>2</b><span>Tilted rings</span><small>40 u rings</small></button>
+          <button type="button" data-i="3"><b>3</b><span>Climbs &amp; sharp tilts</span><small>32 u rings</small></button>
+          <button type="button" data-i="4"><b>4</b><span>Side-on &amp; dives</span><small>26 u rings</small></button>
+        </div>
+        <p class="src" id="intensityNote"></p>
+        <div class="rows"></div>
         <div class="rowsel">
-          <label>Intensity <select id="intensity"><option value="1">1 · 48 u mouths</option><option value="2" selected>2 · 40 u</option><option value="3">3 · 32 u</option><option value="4">4 · 26 u</option></select></label>
+          <label hidden>Intensity <select id="intensity"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></label>
           <label>Laps <select id="laps"><option value="1">1</option><option value="2" selected>2</option></select></label>
           <label>Course <select id="courseKind"><option value="circuit">Circuit</option><option value="hairpin">Hairpins</option></select></label>
           <label><input type="checkbox" id="invertY"> Invert Y</label>
@@ -337,7 +400,7 @@
           <button class="pick" type="button" id="newCourse">New course</button>
           <label>Domain <select id="domain"><option value="jade">Jade</option><option value="ruby">Ruby</option><option value="blue">Blue</option><option value="gold">Gold</option></select></label>
         </div>
-        <p class="src">Stand-in courses on the shipped numbers, the mouth per intensity. <b>Circuit</b>: 8 rings on a 600 u circle (rewards speed). <b>Hairpins</b>: 8 rings that alternate direction, 120–190 u apart, then a long straight home (rewards tight turns). Not the shipped HeadlongCircuit solver.</p>
+        <p class="src">Stand-in courses on the shipped numbers, the mouth per intensity. <b>Circuit</b>: 8 rings on a circle, harder with each intensity (above). <b>Hairpins</b>: 8 rings that alternate direction, 120–190 u apart, then a long straight home (rewards tight turns). Not the shipped HeadlongCircuit solver.</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
       <details class="card" id="grp-lope"><summary>Lope <small>StoatLopeMath</small></summary><div class="rows"></div>
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
@@ -439,7 +502,7 @@
     ['D', 'dpGrip', 'Engine holds speed in grip (/s)', 0, 10, 0.1],
     ['D', 'dpMaxTurn', 'Longest hold (° round)', 45, 1080, 15],
     ['D', 'dpBoostMin', 'Release boost, a touch (× speed)', 0, 3, 0.05],
-    ['D', 'dpBoostMax', 'Release boost, buried (× speed)', 0, 3, 0.05],
+    ['D', 'dpBoostMax', 'Release boost, buried (× speed)', 0, 5, 0.05],
     ['D', 'dpBoostSeconds', 'Boost fade (s)', 0.1, 5, 0.1],
     ['WH', 'dpWhite', 'Push (× the black hole\'s pull)', 0, 2, 0.05],
     ['D', 'dpKeySqueeze', 'Keyboard squeeze', 0.05, 1, 0.05],
@@ -546,7 +609,7 @@
       dpWhite: 0.4, bhLensStrength: 0.6, bhRingGlow: 0.4, gwPrism: 0.4, dpTurnCap: -2, dpSide: 15, dpGrip: -1.8,
       dpCatchDeg: 20 } },
     { key: 'styleFlare', name: 'Flare', what: 'surge', el: 'Charge', col: '#fabf2e', d: {
-      dpBoostMax: 2.1, dpBoostSeconds: -0.7, dpBoostMin: 0.9, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
+      dpBoostMax: 3.1, dpBoostSeconds: -0.7, dpBoostMin: 1.2, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
       whCoreBrightness: 3, bornS: -0.4, dieS: -0.3, closeSpeed: 40, whOutSpeed: 250, dpCarry: -0.3 } },
   ];
   const STYLE_BY_KEY = {}; for (const st of STYLES) STYLE_BY_KEY[st.key] = st;
@@ -716,6 +779,12 @@
 
   // ================= the course =================
   const MOUTHS = [48, 40, 32, 26];
+  const CIRCUIT_LADDER = [   // per intensity: circle radius, how far rings wander, how high they climb, and how far they turn off the line
+    { name: 'Plain circle', d: 'A flat 600 u circle, every ring square to the line. The only turn is the circle itself; the sling is optional.', r: 600, jitA: 0, jitR: 0, y: 0, yaw: 0, pitch: 0 },
+    { name: 'Tilted rings', d: 'Rings wander a little and tilt about 40° off the line, so each asks for a turn — the sling starts to pay.', r: 560, jitA: 0.12, jitR: 70, y: 45, yaw: 40, pitch: 0 },
+    { name: 'Climbs & sharp tilts', d: 'A tighter, rolling circle; rings tilt about 65° and every third one is pitched, so you climb and dive through them.', r: 470, jitA: 0.22, jitR: 110, y: 130, yaw: 65, pitch: 30 },
+    { name: 'Side-on & dive rings', d: 'Rings turned nearly side-on and dive rings facing up or down: turn hard in the black hole\'s grip or go round again.', r: 400, jitA: 0.3, jitR: 140, y: 190, yaw: 82, pitch: 65 },
+  ];
   let gates = [];
   const courseGroup = new THREE.Group(); scene.add(courseGroup);
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -751,7 +820,6 @@
   function buildCourse() {
     while (courseGroup.children.length) { const c = courseGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
     const rng = mulberry32(seed * 7919 + intensity), I = intensity - 1, mouth = MOUTHS[I];
-    const jitA = [0.10, 0.2, 0.3, 0.38][I], jitR = [50, 100, 150, 190][I], yAmp = [20, 80, 140, 190][I];
     const pts = [], norms = [];
     if (courseKind === 'hairpin') {
       // Hairpins: a slalom of U-turns — each ring faces the opposite way to the last, a short hop to the side — then
@@ -759,15 +827,31 @@
       const gap = [190, 160, 140, 120][I], lift = [0, 15, 30, 45][I];
       for (let k = 0; k < 8; k++) { pts.push(new V3((k - 3.5) * gap, (k % 2 ? 1 : -1) * lift + (rng() - 0.5) * lift, 0)); norms.push(new V3(0, 0, k % 2 ? -1 : 1)); }
     } else {
+      // The intensity ladder. 1: a plain circle, every ring square to the line — the only turn is the circle's own.
+      // 2: the rings tilt off the line, so each asks for a turn the engine alone makes slowly. 3: a tighter circle that
+      // climbs and drops, rings tilted further and some pitched. 4: rings turned nearly side-on and dive rings that face
+      // up or down — the black hole does the turning, or you go round again. Ring 0 always faces down the start line.
+      const L = CIRCUIT_LADDER[I];
       for (let k = 0; k < 8; k++) {
-        const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * jitA : 0), r = 600 + (k ? (rng() - 0.5) * 2 * jitR : 0), y = k ? (rng() - 0.5) * 2 * yAmp : 0;
+        const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * L.jitA : 0), r = L.r + (k ? (rng() - 0.5) * 2 * L.jitR : 0), y = k ? (rng() - 0.5) * 2 * L.y : 0;
         pts.push(new V3(Math.cos(ang) * r, y, Math.sin(ang) * r));
+      }
+      const c0 = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+      for (let k = 0; k < 8; k++) {
+        const n = c0.getTangent(k / 8).normalize();
+        if (k > 0) {
+          const yaw = (k % 2 ? 1 : -1) * L.yaw * (0.75 + 0.25 * rng()) * Math.PI / 180;
+          n.applyAxisAngle(Y, yaw);
+          if (L.pitch && k % 3 === 2) n.applyAxisAngle(new V3().crossVectors(n, Y).normalize(), (rng() < 0.5 ? 1 : -1) * L.pitch * (0.8 + 0.2 * rng()) * Math.PI / 180);
+          n.normalize();
+        }
+        norms.push(n);
       }
     }
     const linePts = courseKind === 'hairpin' ? pts.flatMap((p, k) => [p.clone().addScaledVector(norms[k], -50), p, p.clone().addScaledVector(norms[k], 50)]) : pts;
     const curve = new THREE.CatmullRomCurve3(linePts, true, 'centripetal');
     gates = pts.map((p, k) => {
-      const n = courseKind === 'hairpin' ? norms[k] : curve.getTangent(k / 8).normalize();
+      const n = norms[k];
       const ring = new THREE.Mesh(new THREE.TorusGeometry(mouth, 1.1, 8, 72), new THREE.MeshBasicMaterial({ color: 0x7fd7ff, transparent: true, opacity: 0.85 }));
       ring.position.copy(p); ring.quaternion.setFromUnitVectors(ZAX, n); courseGroup.add(ring);
       const disc = new THREE.Mesh(new THREE.CircleGeometry(mouth, 48), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }));
@@ -1654,12 +1738,12 @@
   // costs on the shared x axes; roll keeps the hull upright. Sling: lay the pair on the side of the turn, hold, release
   // when the nose is on the next ring (a clean release), or give up when the hole never catches.
   let aiOn = false, simSpeed = 1, aiRepeat = true, camMode = 'chase', batching = false, aiRestartT = 0;
-  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1 };
+  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null };
   function aiRand() { let t = (ai.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   let raceStats = null;
   function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0 }; }
   const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
-  const qInv = new THREE.Quaternion(), aiLoc = new V3();
+  const qInv = new THREE.Quaternion(), aiLoc = new V3(), aiOff = new V3(), aiAim = new V3();
   function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
   function aiInput(dt) {
     const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
@@ -1674,8 +1758,23 @@
     const rate = Math.max(0.2, P.pitchYaw * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
     const sd = slingDipole, gripped = !!(sd && sd.captured);
     let yawCmd = Math.max(-1, Math.min(1, yawErr / (rate * tau))), pitchCmd = Math.max(-1, Math.min(1, pitchErr / (rate * tau)));
-    if (gripped) { yawCmd = 0; pitchCmd = 0; }                    // in the grip the hole turns you; let it
-    const rollCmd = Math.max(-1, Math.min(1, -1.2 * right.dot(Y)));
+    // The turn still to make, in 3D, and where it lies around the nose: phi = 0 is straight out the right wing, ±π the left.
+    const turnDeg = Math.acos(Math.max(-1, Math.min(1, -loc.z / Math.max(1e-6, loc.length())))) * 180 / Math.PI;
+    const phi = Math.atan2(loc.y, loc.x), bankErr = Math.abs(phi) < Math.PI / 2 ? phi : phi - Math.sign(phi) * Math.PI;
+    // Bank-to-sling: the pair is always laid out along the wings, so a skilled pilot first ROLLS until the turn it needs
+    // lies off one wing (a climb becomes a turn to the side), then lays the pair and flies straight into the catch —
+    // steering away before the hole has you only flies you out of its reach. In the grip the hole turns you; let it.
+    if (ai.phase === 'bank' || gripped) { yawCmd = 0; pitchCmd = 0; }
+    else if (ai.phase === 'hold' && sd && sd.rc > 0 && P.aiNoise < 0.5) {   // (a rookie keeps steering for the ring: its classic miss)
+      // laid, not caught yet: aim to pass the black hole ON its circle — straight past it at a fast hull's tiny circle
+      // never comes within reach, and turning for the ring flies you out of it
+      const att = sd.pair.att; aiOff.subVectors(hull.position, att); aiOff.addScaledVector(fwd, -aiOff.dot(fwd));
+      if (aiOff.lengthSq() < 1e-6) aiOff.copy(right);
+      aiAim.copy(att).addScaledVector(aiOff.normalize(), sd.rc * 0.9);
+      const la = localOf(aiAim), ye = Math.atan2(la.x, -la.z), pe = Math.atan2(la.y, Math.hypot(la.x, la.z));
+      yawCmd = la.z < 0 ? Math.max(-1, Math.min(1, ye / (rate * tau))) : 0; pitchCmd = la.z < 0 ? Math.max(-1, Math.min(1, pe / (rate * tau))) : 0;
+    }
+    const rollCmd = ai.phase === 'bank' ? Math.max(-1, Math.min(1, 2.2 * bankErr)) : ai.phase === 'hold' ? 0 : Math.max(-1, Math.min(1, -1.2 * right.dot(Y)));
     const sx = easeInv(yawCmd);                                   // the sum of the x axes; their difference is throttle
     if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
     let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
@@ -1684,22 +1783,32 @@
     ai.t += dt;
     const useSling = P.aiSling > 0.5 && style === 'A' && slingMode === 'dipole';
     if (ai.phase === 'cruise') {
-      if (useSling && !(myPair && myPair.alive) && (d > P.aiMinRing || Math.abs(yawErr) * 180 / Math.PI > P.aiTurn)) {
-        const turnTo = Math.abs(yawErr) > 0.08 ? yawErr : Math.atan2(localOf(g2.p).x, -localOf(g2.p).z);
+      if (useSling && !(myPair && myPair.alive) && (d > P.aiMinRing || turnDeg > P.aiTurn)) {
         // a rookie (aiNoise) squeezes off the mark, lets go off the mark and lays a beat late; a perfect pilot does none of it
         const n = clamp01(P.aiNoise);
         if (ai.wait <= 0) ai.wait = 0.001 + n * aiRand() * 1.2;
         ai.wait -= dt;
-        if (ai.wait <= 0) {
-          ai.side = turnTo >= 0 ? 'R' : 'L'; ai.q = Math.max(0.05, Math.min(1, P.aiQ + n * (aiRand() - 0.5) * 0.9)); ai.cone = P.aiCone + n * aiRand() * 45;
-          ai.phase = 'hold'; ai.t = 0; ai.wait = 0;
-        }
+        if (ai.wait <= 0) { ai.phase = turnDeg > 12 ? 'bank' : 'lay'; ai.t = 0; ai.wait = 0; }
       }
+    }
+    if (ai.phase === 'bank' && (Math.abs(bankErr) < 0.2 || ai.t > 1.2)) ai.phase = 'lay';
+    if (ai.phase === 'lay') {
+      const n = clamp01(P.aiNoise);
+      const side = turnDeg > 12 ? (Math.abs(phi) < Math.PI / 2 ? 'R' : 'L') : (Math.atan2(localOf(g2.p).x, -localOf(g2.p).z) >= 0 ? 'R' : 'L');
+      ai.side = side; ai.q = Math.max(0.05, Math.min(1, P.aiQ + n * (aiRand() - 0.5) * 0.9)); ai.cone = P.aiCone + n * aiRand() * 45;
+      ai.phase = 'hold'; ai.t = 0;
+    }
+    if (ai.phase === 'cruise') {
+      // (cruise: steer for the ring — above)
     } else if (ai.phase === 'hold') {
       const off = Math.acos(Math.max(-1, Math.min(1, tv.subVectors(g.p, hull.position).normalize().dot(fwd)))) * 180 / Math.PI;
       const lost = !(myPair && myPair.alive && slingDipole);
+      // let go as the nose stops closing on the ring (the best heading this lap round), not only inside a fixed cone —
+      // at a tight circle's swing rate a narrow cone is a frame or two wide and a miss costs a whole lap round
+      const turned = gripped && ai.prevOff != null && off > ai.prevOff && ai.prevOff <= Math.max(ai.cone, 30);
+      ai.prevOff = gripped ? off : null;
       if (lost && ai.t > 0.2) ai.phase = 'cruise';
-      else if ((gripped && off <= ai.cone && (!(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
+      else if ((gripped && (off <= ai.cone || turned) && (!(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
     }
     const trig = ai.phase === 'hold' ? Math.max(0.06, ai.q) : 0;
     inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
@@ -1718,7 +1827,7 @@
     while (race === 'running' && t < 400) { simStep(h, aiInput(h), false); t += h; }
     const s = raceStats;
     return { finished: race === 'finished', time: raceT, top: s.top, gravTop: s.gravTop, prisms: s.released ? s.prisms / s.released : NaN, avg: s.dist / Math.max(1e-3, raceT), flowTop: s.flowTop, slings: s.slings, catches: s.catches, clean: s.clean,
-      err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin };
+      err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, sweepDeg: s.sweepSum * 180 / Math.PI, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin };
   }
   function batchPresets() { return [{ name: 'No sling', w: {}, noSling: true }, { name: 'Balanced', w: {} }].concat(STYLES.map((st) => ({ name: st.name, w: { [st.key]: 1 } }))); }
   function runBatch(qs, opts) {
@@ -3169,7 +3278,7 @@
     recomputeP(); refreshAllOuts();
     const course = i >= 0 ? GROUP_TYPES[grp].types[i].course : grp === 'flight' ? { intensity: 2, laps: 2 } : null;
     if (course && (course.intensity !== intensity || course.laps !== laps)) {
-      intensity = course.intensity; laps = course.laps; $('intensity').value = String(intensity); $('laps').value = String(laps);
+      intensity = course.intensity; laps = course.laps; $('intensity').value = String(intensity); $('laps').value = String(laps); markIntensity();
       buildCourse(); spawn(); renderRuns();
     }
     persist(); markTypes();
@@ -3317,10 +3426,17 @@
   $('simSpeed').addEventListener('change', (e) => { simSpeed = parseFloat(e.target.value) || 1; });
   $('batchBtn').addEventListener('click', () => {
     $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
-    setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; }, 30);
+    setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
   });
-  $('intensity').value = String(intensity); $('courseKind').value = courseKind; $('courseKind').addEventListener('change', (e) => { courseKind = e.target.value; buildCourse(); spawn(); persist(); renderRuns(); }); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
-  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); });
+  $('intensity').value = String(intensity); $('courseKind').value = courseKind; $('courseKind').addEventListener('change', (e) => { courseKind = e.target.value; buildCourse(); spawn(); persist(); renderRuns(); markIntensity(); }); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
+  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); markIntensity(); });
+  function markIntensity() {
+    for (const b of document.querySelectorAll('#intensitySeg button')) b.setAttribute('aria-pressed', String(+b.dataset.i === intensity));
+    const L = CIRCUIT_LADDER[intensity - 1];
+    $('intensityNote').textContent = courseKind === 'hairpin' ? 'Hairpins: the hop between rings shrinks with intensity (190 → 120 u) and the rings climb and drop more.' : 'Intensity ' + intensity + ' · ' + L.name + ': ' + L.d;
+  }
+  for (const b of document.querySelectorAll('#intensitySeg button')) b.addEventListener('click', () => { const e = $('intensity'); e.value = b.dataset.i; e.dispatchEvent(new Event('change')); });
+  markIntensity();
   $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); markTypes(); });
   $('invertY').addEventListener('change', (e) => { invertY = e.target.checked; persist(); });
   $('newCourse').addEventListener('click', () => { seed = 1 + Math.floor(Math.random() * 9999); buildCourse(); spawn(); persist(); renderRuns(); });
@@ -3450,7 +3566,8 @@
   // ================= sizing + loop =================
   let lastW = 0, lastH = 0;
   function resize() {
-    const w = canvas.clientWidth || 960, h = playMode ? (canvas.clientHeight || Math.round(w * 10 / 16)) : Math.round(w * 10 / 16);
+    const fill = playMode || (document.body.classList.contains('ide') && window.innerWidth > 900);   // the editor layout: the stage fills its cell
+    const w = canvas.clientWidth || 960, h = fill ? (canvas.clientHeight || Math.round(w * 10 / 16)) : Math.round(w * 10 / 16);
     if (w === lastW && h === lastH) return; lastW = w; lastH = h;
     renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
   }
@@ -3488,9 +3605,117 @@
     updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
+  // ================= the editor layout: tabbed docks and mini windows =================
+  // Like an engine editor: the stage fills the middle, every settings group is a tab in the right dock, the records sit
+  // in tabs under the stage, and any tab pops out (⧉) into a floating mini window you can drag, resize and dock back.
+  // The scorecard opens as its own window. Splitters resize the docks. All of it is remembered in this browser.
+  const IDE_KEY = 'stoat-studio-ide';
+  const ide = Object.assign({ R: 'sling', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
+  const saveIde = () => lsSet(IDE_KEY, ide);
+  const DOCK_TABS = {
+    R: [['sling', 'Sling', ['mainCard', 'grp-sling', 'grp-A', 'grp-B']], ['dipole', 'Dipole', ['grp-D']], ['ai', 'Sim lab', ['grp-ai']], ['styles', 'Styles', ['grp-style']],
+      ['bh', 'Black hole', ['grp-BH']], ['wh', 'White hole', ['grp-WH']], ['life', 'Life', ['grp-pair', 'grp-life']], ['course', 'Course', ['grp-flight']], ['lope', 'Lope', ['grp-lope']], ['archive', 'Archive', ['archive']]],
+    B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['controls', 'Controls', ['keysSec']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
+  };
+  const TAB = {};   // key -> { dock, title, btn, pane, win }
+  let winZ = 60;
+  function buildDocks() {
+    const keys = document.querySelector('section[aria-labelledby="keysH"]'), log = document.querySelector('section.card.log');
+    keys.id = 'keysSec'; log.id = 'logSec'; keys.classList.add('lower-sec');
+    const sw = document.createElement('div'); sw.id = 'scoreWrap'; sw.className = 'card';
+    sw.innerHTML = '<p class="src" id="scoreEmpty">No scorecard yet: press <b>Score all five styles</b> in the Sim lab tab.</p>';
+    sw.appendChild($('batchOut'));
+    const rail = document.querySelector('aside.rail'), main = document.querySelector('.stage .main'), lower = document.querySelector('.lower');
+    const docks = { R: rail, B: document.createElement('div') };
+    const els = { scoreWrap: sw };   // take every piece first: the rail is emptied below and some pieces live in it
+    for (const d of ['R', 'B']) for (const [, , ids] of DOCK_TABS[d]) for (const id of ids) if (!els[id]) els[id] = $(id);
+    docks.B.className = 'dock'; docks.B.id = 'dockB'; docks.B.setAttribute('aria-label', 'Records');
+    rail.classList.add('dock'); rail.id = 'dockR';
+    for (const d of ['R', 'B']) {
+      const box = docks[d], tabs = document.createElement('div'), panes = document.createElement('div');
+      tabs.className = 'tabs'; tabs.setAttribute('role', 'tablist'); panes.className = 'panes'; panes.style.minHeight = '0'; panes.style.display = 'grid';
+      for (const [key, title, ids] of DOCK_TABS[d]) {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = title; btn.setAttribute('role', 'tab'); btn.dataset.tab = key;
+        const pane = document.createElement('div'); pane.className = 'pane'; pane.id = 'pane-' + key; pane.setAttribute('role', 'tabpanel');
+        const bar = document.createElement('div'); bar.className = 'panebar';
+        bar.innerHTML = '<button type="button" title="Open this tab in its own window">⧉ Pop out</button>';
+        bar.firstChild.addEventListener('click', () => openWindow(key));
+        pane.appendChild(bar);
+        for (const id of ids) { const el = els[id]; if (!el) continue; if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }
+        btn.addEventListener('click', () => { if (TAB[key].win) { raiseWindow(key); return; } selectTab(key); });
+        tabs.appendChild(btn); panes.appendChild(pane);
+        TAB[key] = { dock: d, title, btn, pane, panes, win: null };
+      }
+      box.textContent = ''; box.appendChild(tabs); box.appendChild(panes);
+    }
+    // splitters, and the bottom dock under the stage
+    const sv = document.createElement('div'); sv.className = 'split v'; sv.setAttribute('aria-hidden', 'true');
+    const sh = document.createElement('div'); sh.className = 'split h'; sh.setAttribute('aria-hidden', 'true');
+    rail.parentNode.insertBefore(sv, rail);
+    const vp = $('viewport'); main.textContent = ''; main.appendChild(vp); main.appendChild(sh); main.appendChild(docks.B);
+    if (lower) lower.remove();
+    bindSplit(sv, 'railW', (x, r) => r.right - x, 280, 720);
+    bindSplit(sh, 'dockH', (y, r) => r.bottom - y, 110, 620);
+    document.body.classList.add('ide'); applyIdeSizes();
+    selectTab(ide.R); selectTab(ide.B);
+    for (const k in ide.wins) if (ide.wins[k] && ide.wins[k].open && TAB[k]) openWindow(k);
+    $('scoreShow').addEventListener('click', () => openWindow('score'));
+  }
+  function applyIdeSizes() { document.body.style.setProperty('--railW', ide.railW + 'px'); document.body.style.setProperty('--dockH', ide.dockH + 'px'); lastW = lastH = 0; }
+  function bindSplit(el, key, measure, lo, hi) {
+    el.addEventListener('pointerdown', (e) => {
+      const host = key === 'railW' ? el.parentNode : el.parentNode; el.classList.add('drag'); try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
+      const move = (ev) => { const r = host.getBoundingClientRect(); ide[key] = Math.round(Math.max(lo, Math.min(hi, measure(key === 'railW' ? ev.clientX : ev.clientY, r)))); applyIdeSizes(); };
+      const up = () => { el.classList.remove('drag'); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); saveIde(); };
+      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); e.preventDefault();
+    });
+  }
+  function selectTab(key) {
+    const t = TAB[key]; if (!t) return;
+    if (t.win) { raiseWindow(key); return; }
+    for (const k in TAB) { const o = TAB[k]; if (o.dock !== t.dock || o.win) continue; const on = k === key; o.btn.setAttribute('aria-selected', String(on)); o.pane.hidden = !on; }
+    ide[t.dock] = key; saveIde(); hideTip(true);
+  }
+  function firstDocked(dock, not) { for (const k in TAB) if (TAB[k].dock === dock && !TAB[k].win && k !== not) return k; return null; }
+  function openWindow(key) {
+    const t = TAB[key]; if (!t) return;
+    if (t.win) { raiseWindow(key); return; }
+    const g = ide.wins[key] || {}, vw = window.innerWidth, vh = window.innerHeight;
+    const w = Math.min(g.w || (key === 'score' ? 1240 : 420), vw - 16), h = Math.min(g.h || (key === 'score' ? 420 : 520), vh - 16);
+    const win = document.createElement('div'); win.className = 'fwin'; win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', t.title);
+    win.style.width = w + 'px'; win.style.height = h + 'px';
+    win.style.left = Math.max(8, Math.min(vw - w - 8, g.x != null ? g.x : (vw - w) / 2)) + 'px'; win.style.top = Math.max(8, Math.min(vh - 60, g.y != null ? g.y : 70)) + 'px';
+    win.innerHTML = '<div class="fbar"><b></b><button type="button" data-a="dock" title="Put it back in its tab">⇲ Dock</button><button type="button" data-a="close" title="Close (back to its tab)">✕</button></div>';
+    win.querySelector('b').textContent = t.title;
+    t.pane.querySelector('.panebar').hidden = true; t.pane.hidden = false; win.appendChild(t.pane);
+    document.body.appendChild(win); t.win = win; t.btn.classList.add('floating'); t.btn.setAttribute('aria-selected', 'false');
+    win.querySelector('[data-a="dock"]').addEventListener('click', () => dockWindow(key, true));
+    win.querySelector('[data-a="close"]').addEventListener('click', () => dockWindow(key, false));
+    win.addEventListener('pointerdown', () => raiseWindow(key));
+    const bar = win.querySelector('.fbar');
+    bar.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      const ox = e.clientX - win.offsetLeft, oy = e.clientY - win.offsetTop; try { bar.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
+      const move = (ev) => { win.style.left = Math.max(0, Math.min(window.innerWidth - 80, ev.clientX - ox)) + 'px'; win.style.top = Math.max(0, Math.min(window.innerHeight - 40, ev.clientY - oy)) + 'px'; };
+      const up = () => { bar.removeEventListener('pointermove', move); bar.removeEventListener('pointerup', up); remember(key); };
+      bar.addEventListener('pointermove', move); bar.addEventListener('pointerup', up); e.preventDefault();
+    });
+    if (window.ResizeObserver) new ResizeObserver(() => remember(key)).observe(win);
+    if (ide[t.dock] === key) { const k = firstDocked(t.dock, key); if (k) selectTab(k); }
+    raiseWindow(key); remember(key);
+  }
+  function remember(key) { const w = TAB[key].win; if (!w) return; ide.wins[key] = { x: w.offsetLeft, y: w.offsetTop, w: w.offsetWidth, h: w.offsetHeight, open: true }; saveIde(); }
+  function raiseWindow(key) { const w = TAB[key].win; if (w) w.style.zIndex = String(++winZ); }
+  function dockWindow(key, select) {
+    const t = TAB[key]; if (!t.win) return;
+    t.pane.querySelector('.panebar').hidden = false; t.panes.appendChild(t.pane); t.win.remove(); t.win = null; t.btn.classList.remove('floating');
+    if (ide.wins[key]) ide.wins[key].open = false; saveIde();
+    if (select || ide[t.dock] === key) selectTab(key); else t.pane.hidden = true;
+  }
+  buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 

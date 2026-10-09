@@ -1,6 +1,6 @@
 # Stoat sim lab — what the AI measured, and the plan from here
 
-Status: **studio round 12** (2026-10-09). Nothing here is in `Assets/` yet; the game still runs the orbit
+Status: **studio round 14** (2026-10-09; the AI and the course ladder were reworked in round 14: §2, "The intensity ladder and the round-14 AI"). Nothing here is in `Assets/` yet; the game still runs the orbit
 sling. Companion docs: `STOAT_PLAY_STYLES.md` (the five styles) and `README.md` (the studio rounds).
 
 ## 1. The sim lab
@@ -13,20 +13,31 @@ The studio's **Sim lab** card lets an AI fly the Stoat while you change settings
 - **How it steers.** It pursues a point just before the next ring, along the ring's normal, so it threads
   each ring square. It uses full throttle, less whatever yaw costs on the shared x axes, and rolls to stay
   level.
-- **When it slings.** It lays a pair on a long straight (`aiMinRing`) or before a sharp turn (`aiTurn`).
-  It lays the pair on the side of the turn and holds the trigger at `aiQ`. It releases when it is caught
-  and its nose is within `aiCone` of the next ring. It gives up after `aiGiveUp` seconds if the hole never
-  catches it.
-- **The rookie.** `aiNoise` makes the AI sloppy: it squeezes off the mark (±0.45 at 1), lays the pair up to
-  1.2 s late, and lets go up to 45° off.
+- **When it slings.** It lays a pair on a long straight (`aiMinRing`) or before a turn sharper than
+  `aiTurn`, measured in 3D, and holds the trigger at `aiQ`.
+- **Bank to sling (round 14).** The pair is always laid along the wings, so for a turn the AI first **rolls**
+  until the turn lies off one wing. A climb or a dive becomes a turn to the side. Then it lays the pair on
+  that side.
+- **Into the catch.** Until the hole has it, the AI steers to pass the black hole **on its hold circle**.
+  Steering for the ring would fly it out of reach, and at Comet's speed the circle is so small that flying
+  straight past misses it.
+- **The release.** It lets go when its nose is within `aiCone` of the next ring, or the moment the nose
+  stops closing on it, whichever comes first. At a tight circle's swing rate a narrow cone is only a frame
+  or two wide, and missing it costs a whole lap round. It gives up after `aiGiveUp` seconds if the hole
+  never catches it.
+- **The rookie.** `aiNoise` makes the AI sloppy:
+  - it squeezes off the mark (±0.45 at 1);
+  - it lays the pair up to 1.2 s late;
+  - it lets go up to 45° off;
+  - from 0.5 up, it keeps steering for the ring before the catch, the classic miss.
 - **Cameras.**
   - Chase.
   - Follow: wide and level, like the menu's lava-lamp rig.
   - Free: drag to orbit the Stoat, wheel to zoom.
 - **Speed and repeat.** The sim runs at 1×, 2× or 4×. The AI restarts each race on its own.
 - **Score all five styles.** This runs ~80 races headless in a few seconds and fills the scorecard below.
-- **Courses.** The Flight card now has two:
-  - **Circuit**: 8 rings on a 600 u circle; it rewards speed.
+- **Courses.** The Course tab has two kinds:
+  - **Circuit**: 8 rings on a four-level ladder (§2, "The intensity ladder and the round-14 AI").
   - **Hairpins**: 8 rings that alternate direction 120–190 u apart, then a long straight home; it rewards
     tight, accurate turns.
 
@@ -90,7 +101,7 @@ more time than its kick gives back. Before the kick is made earned, the swing it
 **Decision needed (designer):** keep the tap (fast and skill-light), or make the swing earn the kick and
 retune it to pay. Every number in this doc is with the tap allowed (`dpKickSweep` 0).
 
-### The scorecard (seed 7, intensity 2, 2 laps, each style at 1 and the rest at 0.5)
+### The scorecard (round 12 AI; seed 7, intensity 2, 2 laps, each style at 1 and the rest at 0.5)
 
 Bold marks the style that owns the column.
 
@@ -111,6 +122,54 @@ Bold marks the style that owns the column.
 - **Anchor**: never drops a sling, but has no speed edge.
 - **Maelstrom**: bends twice the world, at middling speed.
 - **Flare**: the highest peaks, which fade.
+
+### The intensity ladder and the round-14 AI
+
+The circuit's four intensities now grade the **turning**, not only the ring size:
+
+| Intensity | Course | Rings |
+|---|---|---|
+| 1 · Plain circle | flat 600 u circle, every ring square to the line | 48 u |
+| 2 · Tilted rings | wanders a little; rings tilt ~40° off the line | 40 u |
+| 3 · Climbs & sharp tilts | tighter rolling circle; rings tilt ~65°, every third pitched ~30° | 32 u |
+| 4 · Side-on & dives | rings nearly side-on (~82°), dive rings pitched ~65° | 26 u |
+
+Measured on seed 7, 2 laps, best of squeezes 0.5–1. "Grip turn" is the total degrees the black hole swung
+the Stoat round over the race.
+
+| | No sling | Balanced | Balanced grip turn | Needle | Comet |
+|---|---|---|---|---|---|
+| 1 | 2:07.5 | 1:34.7 | 766° | 1:53.7 | **0:34.3** |
+| 2 | 2:06.6 | 1:34.4 | 1,382° | 2:00.0 | **0:45.9** |
+| 3 | 1:59.8 | 1:58.1 | 2,420° | 2:01.9 | **1:18.4** |
+| 4 | 1:50.9 | 1:50.5 | 2,209° | 2:18.5 | 1:20.5, but 3 of 4 runs DNF |
+
+Every sling was caught at every level for Balanced and Needle.
+
+- **The ladder works.** The harder the course, the more of the turning the black hole does: Balanced's grip
+  turn rises from 766° to about 2,300°.
+- **Speed and a hard course do not mix.** Comet dominates the plain circle, but at intensity 4 it fails to
+  finish three runs in four: it overshoots side-on rings at 200 u/s and keeps going round for them.
+- **Steering alone stays competitive at 3–4.** At cruise speed the Stoat steers so tightly (radius ~30 u)
+  that the no-sling AI matches Balanced there. The sling's turning pays when you are carrying momentum,
+  which is the design tension.
+
+**The round-14 scorecard** (intensity 2): each style still wins its own column.
+
+| | avg speed | top speed | ring error, hairpins | rookie caught | prisms per sling |
+|---|---|---|---|---|---|
+| Balanced | 84 | 160 | 1.2 u | 87% | 995 |
+| Comet | **191** | 413 | 10.4 u | 39% | 675 |
+| Needle | 64 | 103 | **0.6 u** | 72% | 1,002 |
+| Anchor | 81 | 157 | 1.1 u | **100%** | 992 |
+| Maelstrom | 86 | 193 | 0.9 u | 96% | **1,832** |
+| Flare | 142 | **536** | 1.6 u | 80% | 944 |
+
+To keep Flare's peak above Comet's once Comet catches reliably, Flare's buried boost rose from +2.1 to +3.1
+(the slider now goes to 5).
+
+**At intensity 4, Anchor's rookie edge disappears.** A rookie Maelstrom is caught as often as a rookie Anchor
+(93% vs 91%), because the bigger holes forgive the hard geometry too.
 
 ### How fast can a very skilled player go?
 

@@ -51,7 +51,7 @@ one thing it was built for. The momentum rows are new in round 12.
 | **Settles onto the circle (/s)** | +1.5 | +8 | −0.8 | | |
 | **Engine holds speed in grip (/s)** | | +2 | +2.5 | −1.8 | |
 | **Longest hold (°)** | −90 | +360 | +180 | | |
-| **Release boost, touch / buried (× speed)** | +0.05 / +0.1 | −0.15 / −0.4 | | | +0.9 / +2.1 |
+| **Release boost, touch / buried (× speed)** | +0.05 / +0.1 | −0.15 / −0.4 | | | +1.2 / +3.1 |
 | **Boost fade (s)** | +0.6 | −0.4 | | | −0.7 |
 | **Release kept as momentum (share)** | +0.45 | −0.35 | | | −0.3 |
 | **Momentum fades (s)** | +6 | | | | |
@@ -80,9 +80,9 @@ In words:
   release.
 - **Anchor** catches from twice as far and almost as soon as the hole is off the nose, and it holds you longer.
 - **Maelstrom** lays the heaviest holes, with the widest pull on the prisms.
-- **Flare** spends everything on the punch: up to 3 × speed at a full squeeze, gone in under a second.
+- **Flare** spends everything on the punch: up to 4 × speed at a full squeeze, gone in under a second (raised from 3 × in round 14, once the smarter AI let Comet catch reliably).
 
-### Measured in the studio (round 12 scorecard)
+### Measured in the studio (round 12 scorecard; the round-14 AI's scorecard is in `STOAT_SIM_LAB_PLAN.md` §2)
 
 Each preset at 1 and the rest at 0.5, on seed 7, intensity 2, 2 laps. A skilled AI flew squeezes 0.3–1 on
 both courses; a rookie AI (sloppiness 0.8) flew three seeds. Each column is the best the skilled AI reached

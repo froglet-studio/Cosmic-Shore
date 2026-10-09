@@ -14,6 +14,52 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 14 — the course ladder and the editor layout)
+
+**Four intensities that grade the turning** (Course tab; one-click buttons 1–4, each with a description):
+
+1. **Plain circle**: flat, every ring square to the line.
+2. **Tilted rings**: about 40° off the line.
+3. **Climbs & sharp tilts**: a tighter rolling circle; rings at about 65°, every third one pitched.
+4. **Side-on & dives**: rings nearly side-on, plus dive rings.
+
+Measured with the AI, the black hole's share of the turning rises with the level: Balanced's total grip turn
+goes from 766° to about 2,300° per race. Comet wins the plain circle by a minute, then fails to finish three
+runs in four at intensity 4. The table is in `STOAT_SIM_LAB_PLAN.md` §2.
+
+**A smarter AI**, so the hard levels are flown the way a skilled pilot would:
+
+- it banks until the turn lies off one wing, then lays the pair on that side, so climbs and dives use the
+  hole too;
+- it aims to pass the black hole on its hold circle until caught;
+- it lets go the moment its nose stops closing on the ring.
+
+A rookie (sloppiness 0.5 and up) still steers for the ring before the catch, its classic miss. Flare's
+buried boost rose to +3.1 so its peak stays above Comet's, and the slider now reaches 5.
+
+**Editor layout.** The page is one window, like an engine editor; nothing scrolls the page:
+
+- the stage fills the middle;
+- the **right dock** has a tab per settings group: Sling, Dipole, Sim lab, Styles, Black hole, White hole,
+  Life, Course, Lope, Archive;
+- the **bottom dock** holds Runs, Scorecard, Controls, Decisions and About;
+- every tab has **⧉ Pop out**, which opens it in a floating mini window you can drag, resize, **⇲ Dock**
+  back, or close;
+- **the scorecard opens as its own window** when a scoring run finishes (**Show scorecard** reopens it);
+- the splitters between the stage and the docks resize them.
+
+Tabs, sizes and open windows are remembered in this browser. Below 900 px wide, the docks stack under the
+stage.
+
+**Checked (headless Chromium, 1600 × 900):**
+
+- the stage fills its cell with no page scroll;
+- the scorecard window opens after a run;
+- a tab pops out, drags and stays after a reload;
+- both splitters resize;
+- on an emulated iPhone 13 the touch layout and the settings view still work;
+- no console errors.
+
 ## Stoat Flight Studio (round 13 — fits your device)
 
 The page detects where it is running and shapes its interface to match. Previously a PC saw only a
