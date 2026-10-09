@@ -181,10 +181,25 @@ with evidence, never an edit to this branch.**
   assets carry it and what their authored values are *today*, because that measurement is
   destroyed the moment anybody rewrites those assets.
 
+## D9. Labs, audited against what they claim to read
+
+If `/ship` §3.55's detect step hits, run §3.55 in full and then add three checks:
+
+- **The SHIPPED block against the assets.** Every constant in a lab's `SHIPPED` block names
+  its source (`/labmaker` §2.1). Re-read each named asset field and compare. A mismatch is
+  either a lab that has gone stale (fix the page, or make it say on screen that it differs) or
+  a lab number that leaked into the game without being labelled a proposal. Both are §2
+  findings. Tabulate them. Do not eyeball.
+- **Every number the lab's write-up quotes, re-run.** Use the lab's own headless batch through
+  its `window.__lab` / `window.__<name>Studio` hooks, or the research rig's result files.
+  Never re-quote the commit message (`/labmaker` L-NCA-5).
+- **The verifier's own negative control.** `node .claude/skills/labmaker/verify_lab.cjs --self-test`.
+  If the branch extended the verifier, its new check needs a planted defect that it names.
+
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once). The PR body carries D5's matrix and D2's sweep
+something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
 "D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
 go in the report as rows, with where each one lives; a row that turned into a diff hunk on
