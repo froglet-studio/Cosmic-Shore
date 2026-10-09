@@ -46,6 +46,9 @@
   #stage { width: 100%; max-width: 100%; display: block; aspect-ratio: 16 / 10; background: #050817; border: 1px solid var(--line); border-radius: 8px; outline: none; }
   #stage:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
   #hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
+  .stagebtn { position: absolute; left: 12px; bottom: 64px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+  .stagebtn[aria-pressed="true"] { background: #7fd7ff; }
+  .stagebtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
   .overlay .box { pointer-events: auto; max-width: min(520px, 92%); max-height: calc(100% - 16px); overflow-y: auto; background: rgba(8, 12, 34, 0.86); color: #e8ecff; border: 1px solid #35448a; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; backdrop-filter: blur(3px); }
   .overlay .box h2 { color: #ffb347; }
@@ -138,8 +141,8 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 6 · strength &amp; hold</span>
-    <p>Round 6 follows your notes. The black hole no longer moves: <b>press</b> a trigger and a small black hole appears ahead on that side, its white hole on the other. <b>How deep</b> you squeeze is its strength — mostly mass, a little size. <b>How long</b> you hold is how far round you go: if it is heavy enough to catch you where you pass, you stay in its grip, up to a full turn. <b>Let go</b> at the angle you want and you slingshot out on the tangent with a boost. A run is one race; the log is saved with the studio, so I can read it back.</p>
+    <span class="round">Round 8 · birth &amp; annihilation</span>
+    <p>Round 8. A pair now has a life you can watch: the <b>black hole grows from a point</b> as its mass arrives, while the <b>white hole's light converges from far away</b> onto its spot. When the two meet they <b>annihilate</b>: the black hole sinks back to a point and the pair's mass leaves as a <b>gravitational wave</b>. The wave rolls outward, stretching space one way and squeezing it the other, so prisms pulse and your view breathes as it passes. <b>One pair at a time</b>: no new one until this one has vanished. <b>■ Stop</b> (or <kbd>P</kbd>) halts the Stoat and the clock. While stopped, LT/RT lays a pair ahead so you can watch its whole life head-on. Every setting has an ⓘ with before/after previews.</p>
   </header>
 
   <div class="stage">
@@ -148,6 +151,7 @@
       <canvas id="stage" tabindex="0" width="1280" height="800" aria-label="3D flight stage: the Stoat, the Slingshot course rings, prisms, and any wormhole pair you sling"></canvas>
       <canvas id="hud" aria-hidden="true"></canvas>
       <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
+      <button type="button" id="stopBtn" class="stagebtn" hidden aria-pressed="false">■ Stop</button>
     </div>
   <div class="lower">
     <section class="card" aria-labelledby="keysH">
@@ -160,10 +164,11 @@
           <tr><td>Both sticks up / down</td><td><kbd>W</kbd> <kbd>S</kbd></td><td>Pitch (up = nose up; Invert Y flips it)</td></tr>
           <tr><td>Sticks opposite, up / down</td><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Roll</td></tr>
           <tr><td>Sticks spread apart / together</td><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Throttle</td></tr>
-          <tr><td><b>LT</b>: press, hold, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Press: a black hole ahead-LEFT, its white hole ahead-right. Squeeze depth = strength (a key gives the keyboard squeeze on the rail). Hold = stay in its grip and go round. Let go = slingshot out.</td></tr>
+          <tr><td><b>LT</b>: press, hold, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Press: a black hole ahead-LEFT, its white hole ahead-right. Squeeze depth = strength (a key gives the keyboard squeeze on the rail). Hold = stay in its grip and go round. Let go = slingshot out. One pair at a time: no new one until this one has vanished.</td></tr>
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
-          <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance); a sling breaks it</td></tr>
-          <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again</td></tr>
+          <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
+          <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
+          <tr><td>The <b>■ Stop</b> button on the stage</td><td><kbd>P</kbd></td><td>Stop: the Stoat halts and the clock pauses while the world carries on; press again to resume</td></tr>
           <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
       </table></div>
@@ -179,7 +184,7 @@
       <form id="logForm" autocomplete="off">
         <label>Topic
           <select id="logTopic">
-            <option>Wormhole style</option><option>Sling feel</option><option>Black hole</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
+            <option>Wormhole style</option><option>Sling feel</option><option>Black hole</option><option>Birth &amp; annihilation</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
           </select></label>
         <label>Decision <input type="text" id="logChoice" maxlength="400" required></label>
         <label class="full">Why (optional) <textarea id="logNote" rows="2" maxlength="1500"></textarea></label>
@@ -219,6 +224,9 @@
       <details class="card" id="grp-pair"><summary>Pair life <small>after you let go</small></summary><div class="rows"></div>
         <p class="src">Once released, the two holes fall toward each other and annihilate when their horizons touch.</p>
         <div class="btns"><button class="pick" type="button" data-reset="pair">Reset</button></div></details>
+      <details class="card" id="grp-life"><summary>Birth &amp; annihilation <small>how a pair comes and goes</small></summary><div class="rows"></div>
+        <p class="src"><b>Birth.</b> A horizon's radius is proportional to the mass inside it (r<sub>s</sub> = 2GM/c²), so the black hole grows from a point as its mass arrives — its pull, shadow and lens with it. A white hole is a black hole run backwards, so it arrives the way it will leave, reversed: a light shell converging from far away onto its spot, its core lighting as the shell lands. <b>Annihilation.</b> When the two meet, the pair's mass leaves as a <b>gravitational wave</b>: a burst moving outward (at light speed in reality; slowed here so you can watch it), weaker with distance. It does not push things outward like a ripple in a pond — it <i>stretches space one way and squeezes it the other</i>, alternately, so prisms pulse and the view stretches as it passes you. A head-on meeting radiates most sideways to the line the holes closed along and nothing along it, and it ends in a fading <i>ringdown</i>. As its mass leaves, the black hole sinks back to a point; the white hole's light leaves as an outgoing shell. Real waves are far too faint to see; these are scaled up.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="life">Reset</button></div></details>
       <details class="card" id="grp-A" hidden><summary>Orbit sling (round 4) <small>this branch</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b> lays the attractor beside you at the orbit radius, the repulsor mirrored. <b>Hold</b> and you circle the attractor: squeeze harder, tighter circle. Its horizon is radius ÷ 6 and its pull is exactly the one that makes that a circular orbit at your speed: GM = v²(r − r<sub>s</sub>)²/r. <b>Let go</b> and you slingshot out along the tangent; the pair falls together and annihilates.</p>
         <div class="btns"><button class="pick" type="button" data-reset="A">Reset to shipped</button></div></details>
@@ -289,6 +297,9 @@
     // the black hole (BlackHoleConfig where the game has the field; the studio's own otherwise)
     bhGmPerStrength: 20000, bhHorizonPerStrength: 2, bhInfluenceFloor: 0.6, bhMaxInfluence: 900, bhPrismAccelCap: 4000, bhPrismMaxSpeed: 450, bhPrismReturn: 0.5,
     bhTideGain: 1, bhTideMax: 5, bhShadow: 2.6, bhLensStrength: 1, bhLensReach: 30, bhLensFade: 0.55, bhRingGlow: 0.55, bhRingWidth: 0.06,
+    // birth & annihilation (the dipole pair)
+    bornS: 0.9, whInS: 1.1, whInFrom: 700, dieS: 0.7, whOutSpeed: 450, whOutFade: 1.6, shellBend: 6,
+    gwAmp: 12, gwSpeed: 120, gwPeriod: 0.35, gwRingdown: 1.0, gwPrism: 0.6, gwShake: 1, gwGlow: 1,
     // the white hole
     whSizeX: 1, whPushSoften: 2, whExitGap: 1.05, whCoreBrightness: 4, whCoreSkyMix: 0.8, whCoreSize: 2.6, whLensStrength: 1,
     // the Stoat's flight (prefab: throttle scaler 60, pitch/yaw 120, roll 130)
@@ -351,6 +362,20 @@
     ['A', 'boostSeconds', 'Boost fade (s)', 0.1, 5, 0.1],
     ['pair', 'closeSpeed', 'Pair closes at (u/s)', 0, 200, 1],
     ['pair', 'closeRamp', 'Close run-up (s)', 0, 5, 0.05],
+    ['life', 'bornS', 'Black hole grows from a point (s)', 0.05, 4, 0.05],
+    ['life', 'whInS', 'White hole arrives from far away (s)', 0.05, 4, 0.05],
+    ['life', 'whInFrom', 'Its light shell starts this far out (u)', 100, 3000, 10],
+    ['life', 'dieS', 'Black hole sinks back to a point (s)', 0.05, 4, 0.05],
+    ['life', 'whOutSpeed', 'White hole\'s light leaves at (u/s)', 50, 2000, 10],
+    ['life', 'whOutFade', 'That light fades over (s)', 0.1, 6, 0.1],
+    ['life', 'shellBend', 'Light shells bend the sky by (u)', 0, 30, 0.5],
+    ['life', 'gwAmp', 'Gravity wave strength (u)', 0, 40, 0.5],
+    ['life', 'gwSpeed', 'Gravity wave speed (u/s)', 50, 2000, 10],
+    ['life', 'gwPeriod', 'Ripple period (s)', 0.05, 1.5, 0.01],
+    ['life', 'gwRingdown', 'Ringdown fades over (s)', 0.05, 3, 0.05],
+    ['life', 'gwPrism', 'Prisms stretch & squeeze in it', 0, 2, 0.05],
+    ['life', 'gwShake', 'Space stretches as it passes you', 0, 4, 0.05],
+    ['life', 'gwGlow', 'Show the wave\'s crests (visual aid)', 0, 3, 0.05],
     ['pair', 'holdCap', 'Longest hold (s)', 0.5, 30, 0.5],
     ['A', 'followRate', 'Radius follows (/s)', 0.1, 20, 0.1],
     ['A', 'radialRate', 'Held on radius (/s)', 0.1, 20, 0.1],
@@ -381,7 +406,7 @@
   ];
 
   // ================= per-viewer state (convenience only) =================
-  const LS_KEY = 'stoat-studio-v7';
+  const LS_KEY = 'stoat-studio-v8';
   function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked: fine */ } }
   const saved = lsGet(LS_KEY, {});
@@ -587,11 +612,26 @@
       if (this.dipole) { this.att.copy(opts.dipole.att); this.rep.copy(opts.dipole.rep); this.rsR = opts.dipole.rsR; this.SR = opts.dipole.SR; this.vRep = new V3(); }
       this.update(0);
     }
-    meetRs() { return this.dipole ? 0.5 * (this.rs + this.rsR) : this.rs; }   // the half gap at which the horizons touch
+    meetRs() { return this.dipole ? 0.5 * (this.rs + this.rsR) : this.rs; }
+    startDying() {
+      this.dying = true; this.dieT = 0; this.rs0 = this.rs; this.S0 = this.S; this.rsR0 = this.rsR; this.SR0 = this.SR;
+      const mid = new V3().addVectors(this.att, this.rep).multiplyScalar(0.5), axis = new V3().subVectors(this.rep, this.att);
+      if (axis.lengthSq() < 1e-6) axis.copy(this.axis);
+      spawnWave('gw', mid, axis.normalize(), Math.min(2, Math.max(0.3, this.S0 / 6)));
+      spawnWave('out', this.rep.clone());
+    }   // the half gap at which the horizons touch
     // The dipole pair: while held, the sling moves the black hole (stepDipole) and the white hole stays where it was laid.
     // Let go, both fall toward the midpoint they had at that moment, by the drift pair's closing law, and annihilate.
     updateDipole(dt) {
       if (!this.frozen) this.t += dt;
+      if (this.dying) {   // annihilation: the black hole sinks to a point as the mass leaves; the white hole dims as its light leaves
+        this.dieT += dt;
+        const e = smooth(0, 1, this.dieT / Math.max(0.01, P.dieS));
+        this.rs = Math.max(0.02, this.rs0 * (1 - e)); this.S = this.S0 * (1 - e);
+        this.rsR = Math.max(0.02, this.rsR0 * (1 - e)); this.SR = this.SR0 * (1 - e);
+        if (this.dieT >= P.dieS) this.alive = false;
+        return;
+      }
       if (this.held && (this.t >= P.holdCap || (this.autoLetGo && this.t >= this.autoLetGo))) this.held = false;
       if (this.held) { this.mid.addVectors(this.att, this.rep).multiplyScalar(0.5); this.vRep.set(0, 0, 0); return; }
       if (this.closeT === 0 && !this.letGo) {
@@ -601,7 +641,7 @@
       }
       if (!this.frozen) this.closeT += dt;
       const h = closingHalfGap(this.h0, P.closeSpeed, P.closeRamp, this.closeT);
-      if (h <= this.meetRs() || (P.closeSpeed <= 0 && this.closeT > 10)) { this.alive = false; return; }
+      if (h <= this.meetRs() || (P.closeSpeed <= 0 && this.closeT > 10)) { this.startDying(); return; }
       const prev = tv.copy(this.rep);
       this.att.copy(this.mid).addScaledVector(this.axis, -h); this.rep.copy(this.mid).addScaledVector(this.axis, h);
       if (dt > 0) this.vRep.subVectors(this.rep, prev).divideScalar(dt);
@@ -650,8 +690,35 @@
     }
   }
 
+  // ================= waves in space-time: light shells and the gravitational wave =================
+  // 'in'  — the white hole's light converging from far away onto its spot (its birth, the departure reversed)
+  // 'out' — the white hole's light leaving to infinity (its death)
+  // 'gw'  — the burst the pair's mass leaves as: a front moving out at gwSpeed, a ringdown behind it, weaker as 1/r,
+  //         strongest sideways to the line the holes met along (sin² of the angle) and silent along it.
+  let simT = 0, waves = [];
+  const GW_R0 = 60;   // inside this the 1/r falloff is held flat
+  function spawnWave(type, c, axis, mass) { waves.push({ type, c: c.clone(), axis: axis ? axis.clone() : null, mass: mass || 1, t0: simT }); }
+  function waveAlive(w) {
+    const u = simT - w.t0;
+    if (w.type === 'in') return u < P.whInS;
+    if (w.type === 'out') return u < 6 * P.whOutFade && P.whOutSpeed * u < 6000;
+    return u < 4000 / Math.max(1, P.gwSpeed) + 8 * P.gwRingdown;
+  }
+  // The dimensionless strain at a point (±1 near the source), the shape of the burst everywhere it reaches.
+  function gwStrainAt(x, y, z, w) {
+    const dx = x - w.c.x, dy = y - w.c.y, dz = z - w.c.z, r = Math.hypot(dx, dy, dz) + 1e-6;
+    const u = simT - w.t0 - r / Math.max(1, P.gwSpeed), tau = Math.max(0.01, P.gwRingdown);
+    if (u <= 0 || u > 8 * tau) return 0;
+    const ca = w.axis ? (dx * w.axis.x + dy * w.axis.y + dz * w.axis.z) / r : 0;
+    return w.mass * Math.exp(-u / tau) * Math.sin(TAU_W * u / Math.max(0.02, P.gwPeriod)) * Math.min(1, GW_R0 / r) * (1 - ca * ca);
+  }
+  const TAU_W = Math.PI * 2;
+  const gwH = new Float32Array(2400 + 380);
+
   // ================= prism bodies under the wells =================
+  let gwOn = false;
   function stepBodies(dt) {
+    gwOn = P.gwPrism > 0 && waves.some((w) => w.type === 'gw');
     for (let i = 0; i < NB; i++) {
       if (i >= NF && tAge[i - NF] < 0) continue;
       const j = i * 3;
@@ -686,6 +753,11 @@
       const vm = Math.hypot(vx, vy, vz); if (vm > P.bhPrismMaxSpeed) { const s = P.bhPrismMaxSpeed / vm; vx *= s; vy *= s; vz *= s; }
       px += vx * dt; py += vy * dt; pz += vz * dt;
       bp[j] = px; bp[j + 1] = py; bp[j + 2] = pz; bv[j] = vx; bv[j + 1] = vy; bv[j + 2] = vz;
+      if (gwOn || gwH[i] !== 0) {
+        let h = 0; if (gwOn) for (const w of waves) if (w.type === 'gw') h += gwStrainAt(px, py, pz, w);
+        if (Math.abs(h) < 0.002) h = 0;
+        if (h !== 0 || gwH[i] !== 0) { gwH[i] = h; if (!act[i]) act[i] = 1; }
+      }
       const disp = Math.abs(px - bh[j]) + Math.abs(py - bh[j + 1]) + Math.abs(pz - bh[j + 2]);
       if (inf || moved || disp > 0.05 || vm > 0.05) {
         act[i] = 2;
@@ -706,7 +778,8 @@
       const j = i * 3; dum.position.set(bp[j], bp[j + 1], bp[j + 2]);
       const vm = Math.hypot(bv[j], bv[j + 1], bv[j + 2]);
       if (vm > 3) { tv.set(bv[j] / vm, bv[j + 1] / vm, bv[j + 2] / vm); dum.quaternion.setFromUnitVectors(ZAX, tv); } else dum.quaternion.fromArray(bq, i * 4);
-      const st = 1 + bodyStretch[i]; dum.scale.set(sc / Math.sqrt(st), sc / Math.sqrt(st), sc * st);
+      const st = 1 + bodyStretch[i], gh = Math.max(-0.8, Math.min(0.8, P.gwPrism * gwH[i]));   // the wave stretches one way, squeezes the other
+      dum.scale.set(sc / Math.sqrt(st) * (1 + gh), sc / Math.sqrt(st) * (1 - gh), sc * st);
       dum.updateMatrix();
       if (trail) { trailMesh.setMatrixAt(k, dum.matrix); td = true; } else { fieldMesh.setMatrixAt(k, dum.matrix); fd = true; }
       if (act[i] === 1) act[i] = 0;
@@ -766,22 +839,42 @@
   }
 
   // ---- race ----
+  let stopped = false, blockFlash = 0;
+  // Stop: the Stoat halts where it is and the race clock pauses; the world keeps going (watch a pair live out its life).
+  function setStopped(on) {
+    if (mode !== 'fly' || (race !== 'running' && !stopped)) return;
+    stopped = !!on;
+    if (stopped) { speed = 0; gravSpeed = 0; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
+    else boosts.length = 0;
+    showStopBtn(); showOverlay();
+  }
+  function watchStep(dt) {
+    if (!slingDipole) return;
+    if (!slingDipole.pair.alive) slingDipole = null; else if (!slingDipole.pair.held) releaseDipole(true); else holdDipole(dt);
+    boosts.length = 0;   // a released pair's boost is not spent on a Stoat standing still
+  }
+  function showStopBtn() {
+    const b = $('stopBtn'); if (!b) return;
+    b.hidden = !(mode === 'fly' && (race === 'running' || stopped));
+    b.textContent = stopped ? '▶ Resume' : '■ Stop'; b.setAttribute('aria-pressed', stopped ? 'true' : 'false');
+  }
   let race = 'ready', raceT = 0, threaded = 0, slings = 0, lastRun = null, swapFlash = 0, portalFlash = 0;
   function spawn() {
     const g = gates[0]; hull.position.copy(g.p).addScaledVector(g.n, -170);
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
-    speed = 0; gravSpeed = 0; vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
+    speed = 0; gravSpeed = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
     myPair = null; snapCam = true; showOverlay();
   }
   function startRace() {
+    if (stopped) { setStopped(false); return; }
     if (mode !== 'fly' || race === 'running') return;
     if (race === 'finished') spawn();
-    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); hideOverlay(); canvas.focus({ preventScroll: true });
+    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
   }
   const runStyles = new Set();
   function finishRace() {
-    race = 'finished';
+    race = 'finished'; stopped = false; showStopBtn();
     const used = Array.from(runStyles).sort().join('+') || style;   // a run that swapped pairs mid-race is its own row
     lastRun = { time: raceT, slings, style: used, intensity, seed, laps, at: Date.now() };
     runs.push(lastRun); persist(); renderRuns(); showOverlay();
@@ -885,9 +978,8 @@
   const orbitRadius = (h) => { const t = Math.pow(clamp01(h), Math.max(0.01, P.holdExponent)); const w = Math.max(1, P.orbitWide); return w + (Math.min(Math.max(1, P.orbitTight), w) - w) * t; };
   // Press: lay the pair — the attractor perpendicular to the nose on the trigger's side at the radius the squeeze asks for.
   function layOrbit(side) {
-    if (mode !== 'fly' || race === 'ready') return;
-    if (slingOrbit) slingshot(true);                          // a press mid-orbit slings out of the old one
-    if (myPair && myPair.alive) myPair.alive = false;   // one pair per Stoat
+    if (mode !== 'fly' || race === 'ready' || stopped) return;
+    if (myPair && myPair.alive) { blockFlash = 1.6; return; }   // one pair at a time
     basis();
     const v = Math.max(speed, 1), r = orbitRadius(holds[side].live), rs = r / Math.max(3, P.orbitHorizons);
     const toAtt = right.clone().multiplyScalar(side === 'L' ? -1 : 1);
@@ -945,16 +1037,16 @@
   const aD = new V3(), aPerp = new V3(), turnAxis = new V3(), rPrev = new V3();
   function layDipole(side) {
     if (mode !== 'fly' || race === 'ready') return;
-    if (slingDipole) releaseDipole();
-    if (myPair && myPair.alive) myPair.alive = false;   // one pair per Stoat
+    if (myPair && myPair.alive) { blockFlash = 1.6; return; }   // one pair at a time: none until this one has vanished
     basis();
     const sideV = right.clone().multiplyScalar(side === 'L' ? -1 : 1);
     const att = hull.position.clone().addScaledVector(fwd, P.dpAhead).addScaledVector(sideV, P.dpSide);
     const rep = hull.position.clone().addScaledVector(fwd, P.dpAhead).addScaledVector(sideV, -P.dpSide);
-    const q = holds[side].live, rs = dipoleRs(q), S = dipoleS(q);
-    myPair = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), tv.subVectors(rep, att), up, S, true,
-      { rs, held: true, dipole: { att, rep, rsR: rs * P.whSizeX, SR: S * P.dpWhite } });
+    const q = holds[side].live;
+    myPair = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), tv.subVectors(rep, att), up, 0, true,
+      { rs: 0.02, held: true, dipole: { att, rep, rsR: 0.02, SR: 0 } });   // born from a point
     pairs.push(myPair);
+    spawnWave('in', rep);
     slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, reach: 0, t: 0, gain0: gravSpeed };
     slings++; runStyles.add('A');
     if (stance) stance = false;
@@ -964,13 +1056,17 @@
     const sd = slingDipole, pr = sd.pair;
     sd.t += dt;
     sd.q += (holds[sd.side].live - sd.q) * (1 - Math.exp(-12 * dt));
-    pr.rs = dipoleRs(sd.q); pr.rsR = pr.rs * P.whSizeX; pr.S = dipoleS(sd.q); pr.SR = pr.S * P.dpWhite;
+    // Birth: the black hole's mass arrives from nothing and its horizon grows with it (r_s ∝ M); the white hole lights as
+    // its incoming shell lands.
+    const bB = smooth(0, 1, pr.t / Math.max(0.01, P.bornS)), bW = smooth(0.55, 1, pr.t / Math.max(0.01, P.whInS));
+    pr.rs = Math.max(0.02, dipoleRs(sd.q) * bB); pr.S = dipoleS(sd.q) * bB;
+    pr.rsR = Math.max(0.02, dipoleRs(sd.q) * P.whSizeX * bW); pr.SR = dipoleS(sd.q) * P.dpWhite * bW;
     // The circle is the one at the ENGINE's speed — the speed its grip holds you at — not the fall-in speed of the moment.
     sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed, 10), pr.rs);
     sd.reach = P.dpCaptureX * sd.rc;
     // It catches you as you PASS it — within reach and off to your side rather than still dead ahead — or as soon as you
     // are inside its circle (a heavy hole bends your nose onto itself, so it would never get off to your side).
-    if (!sd.captured) {
+    if (!sd.captured && !stopped) {
       basis(); tv.subVectors(pr.att, hull.position); const d = tv.length();
       if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); }
     }
@@ -1071,7 +1167,7 @@
     let pr = null; for (const q of pairs) if (q.owned && q.dipole && q.alive) pr = q;
     axisLine.visible = !!pr && mode === 'fly';
     const sd = slingDipole;
-    holdLoop.visible = reachLoop.visible = !!sd && mode === 'fly';
+    holdLoop.visible = reachLoop.visible = !!sd && mode === 'fly' && !stopped;
     if (sd) {
       basis(); tv.subVectors(hull.position, sd.pair.att); tv2.crossVectors(tv, fwd);
       if (tv2.lengthSq() < 1e-6) tv2.copy(up); tv2.normalize();
@@ -1130,9 +1226,9 @@
     return { S, rs, mid, axis, up: up.clone() };
   }
   function sling(side, hold01) {
-    if (mode !== 'fly' || race === 'ready') return;
+    if (mode !== 'fly' || race === 'ready' || stopped) return;
+    if (myPair && myPair.alive) { blockFlash = 1.6; return; }   // one pair at a time
     const g = slingGeometry(side, hold01);
-    if (myPair && myPair.alive) myPair.alive = false;              // one pair per Stoat: the new sling annihilates the old
     myPair = new Pair(style, g.mid, g.axis, g.up, g.S, true); pairs.push(myPair);
     slings++; runStyles.add(style);
     if (stance) stance = false;                                    // a sling is a launch: it ends the hold-still stance
@@ -1153,7 +1249,7 @@
   let kbThrottle = 1, armed = false, padSeen = false, padBlocked = false, padName = '';
   const prevBtn = [];
   function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
-  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyJ', 'KeyL', 'KeyT', 'KeyR', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown']);
+  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyJ', 'KeyL', 'KeyT', 'KeyR', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown']);
   window.addEventListener('keydown', (e) => {
     if (isFormTarget(e.target) || !armed) return;
     if (GAME_KEYS.has(e.code)) e.preventDefault();
@@ -1162,8 +1258,10 @@
     if (e.code === 'Enter') startRace();
     if (e.code === 'Space') stance = !stance && race === 'running';
     if (e.code === 'KeyR') spawn();
+    if (e.code === 'KeyP') setStopped(!stopped);
   });
   window.addEventListener('keyup', (e) => { keys.delete(e.code); });
+  $('stopBtn').addEventListener('click', () => setStopped(!stopped));
   window.addEventListener('blur', () => keys.clear());
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
   canvas.addEventListener('focus', () => { armed = true; });
@@ -1275,20 +1373,40 @@
   }
   const vec4s = () => [0, 1, 2, 3].map(() => new THREE.Vector4());
   const lensMat = new THREE.ShaderMaterial({
-    uniforms: { tScene: { value: null }, tDepth: { value: null }, tThruA: { value: null }, tThruB: { value: null }, aspect: { value: 1.6 }, camNear: { value: 0.5 }, camFar: { value: 9000 }, soft: { value: 0.65 }, kShadow: { value: 2.6 }, kCore: { value: 2.6 }, ringGlow: { value: 0.55 }, ringWidth: { value: 0.06 }, lensFade: { value: 0.55 }, coreBright: { value: 4 }, coreMix: { value: 0.8 },
+    uniforms: { tScene: { value: null }, tDepth: { value: null }, tThruA: { value: null }, tThruB: { value: null }, aspect: { value: 1.6 }, camNear: { value: 0.5 }, camFar: { value: 9000 }, soft: { value: 0.65 }, wvC: { value: vec4s() }, wvP: { value: vec4s() }, wvQ: { value: vec4s() }, wvAx: { value: [0, 1, 2, 3].map(() => new THREE.Vector2()) }, gwCam: { value: 0 }, shellWash: { value: 0 }, gwGlow: { value: 1 }, kShadow: { value: 2.6 }, kCore: { value: 2.6 }, ringGlow: { value: 0.55 }, ringWidth: { value: 0.06 }, lensFade: { value: 0.55 }, coreBright: { value: 4 }, coreMix: { value: 0.8 },
       wC: { value: vec4s() }, wP: { value: vec4s() }, wM: { value: vec4s() } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: [
       'uniform sampler2D tScene; uniform sampler2D tDepth; uniform sampler2D tThruA; uniform sampler2D tThruB;',
       'uniform float aspect; uniform float camNear; uniform float camFar; uniform float soft;',
+      'uniform vec4 wvC[4]; uniform vec4 wvP[4]; uniform vec4 wvQ[4]; uniform vec2 wvAx[4]; uniform float gwCam; uniform float shellWash; uniform float gwGlow;',
       'uniform float kShadow; uniform float kCore; uniform float ringGlow; uniform float ringWidth; uniform float lensFade; uniform float coreBright; uniform float coreMix;',
       'uniform vec4 wC[4]; uniform vec4 wP[4]; uniform vec4 wM[4];',
       'varying vec2 vUv;',
       'float linDepth(float d){ float z = d * 2.0 - 1.0; return (2.0 * camNear * camFar) / (camFar + camNear - z * (camFar - camNear)); }',
       'void main(){',
       '  vec2 p = (vUv - 0.5) * vec2(aspect, 1.0);',
+      '  p += gwCam * vec2(p.x, -p.y);',                                // a passing gravitational wave stretches the whole view one way, squeezes it the other
       '  float sceneZ = linDepth(texture2D(tDepth, vUv).x);',
-      '  vec2 disp = vec2(0.0); float shadow = 0.0; float core = 0.0; float coreGlow = 0.0; vec3 glow = vec3(0.0);',
+      '  vec2 disp = vec2(0.0); float shadow = 0.0; float core = 0.0; float coreGlow = 0.0; vec3 glow = vec3(0.0); float squeeze = 0.0;',
+      '  for (int i = 0; i < 4; i++) {',                                 // waves: light shells (type 1) and the gravitational wave (type 2)
+      '    if (wvC[i].w < 0.5) continue;',
+      '    vec2 d = p - wvC[i].xy; float th = max(length(d), 1e-5); vec2 dir = d / th;',
+      '    if (wvC[i].z < 1.5) {',
+      '      float x = (th - wvP[i].x) / max(wvP[i].z, 1e-5); float g = exp(-x * x);',
+      '      disp += dir * wvP[i].y * x * g;',
+      '      glow += vec3(1.0, 0.96, 0.86) * wvP[i].w * g;',
+      '    } else {',
+      '      float r = th / max(wvP[i].x, 1e-6); float u = wvP[i].w - r / max(wvQ[i].x, 1.0);',
+      '      if (u > 0.0 && u < 8.0 * wvQ[i].z) {',
+      '        float ca = dot(dir, wvAx[i]); float s2 = wvQ[i].w > 0.5 ? 1.0 - ca * ca : 1.0;',   // silent along the meeting line, loudest across it
+      '        float h = exp(-u / wvQ[i].z) * sin(6.2831853 * u / max(wvQ[i].y, 0.02)) * min(1.0, 60.0 / max(r, 1.0));',
+      '        disp += dir * wvP[i].z * h * s2;',
+      '        glow += vec3(0.45, 0.6, 1.0) * 0.32 * gwGlow * max(0.0, h) * s2;',   // a visual aid: crests (stretched) a little brighter
+      '        squeeze += 0.14 * gwGlow * max(0.0, -h) * s2;',                     // troughs (squeezed) a little darker
+      '      }',
+      '    }',
+      '  }',
       '  for (int i = 0; i < 4; i++) {',
       '    if (wC[i].w < 0.5) continue;',
       '    if (sceneZ < wC[i].z - wM[i].w) continue;',            // a foreground object is not bent
@@ -1326,7 +1444,7 @@
       '    col = mix(col, through, (1.0 - x) * wP[i].w);',
       '  }',
       '  if (core > 0.5) col = col * coreMix + vec3(1.0, 0.97, 0.9) * coreGlow;',
-      '  col += glow;',
+      '  col = col * (1.0 - min(0.6, squeeze)) + glow + vec3(1.0, 0.96, 0.86) * shellWash;',
       '  if (shadow > 0.5) col = vec3(0.0);',
       '  gl_FragColor = vec4(col, 1.0);',
       '}'].join('\n'),
@@ -1336,6 +1454,42 @@
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), lensMat));
 
   const thruJobs = [];
+  // Each wave as the camera sees it: its centre on screen, how many screen units one world unit is at that depth, and
+  // the shell's radius or the burst's age. The sin² pattern needs the meeting axis on screen.
+  function setWaveUniforms(cam, f) {
+    const U = lensMat.uniforms;
+    for (let i = 0; i < 4; i++) U.wvC.value[i].set(0, 0, 0, 0);
+    let slot = 0, hc = 0, wash = 0;
+    for (let n = waves.length - 1; n >= 0 && slot < 4; n--) {
+      const w = waves[n], u = simT - w.t0;
+      if (w.type === 'gw') hc += gwStrainAt(cam.position.x, cam.position.y, cam.position.z, w);
+      else {   // a light shell sweeping across the camera: a wash of its light as it passes you
+        const R = w.type === 'in' ? P.whInFrom * Math.max(0, 1 - u / Math.max(0.01, P.whInS)) : P.whOutSpeed * u;
+        const env = w.type === 'in' ? smooth(0, 1, u / Math.max(0.01, P.whInS)) * (1 - smooth(0.85, 1, u / Math.max(0.01, P.whInS))) : Math.exp(-u / Math.max(0.05, P.whOutFade));
+        const x = (R - cam.position.distanceTo(w.c)) / 45; wash += 0.22 * env * Math.exp(-x * x) * Math.min(1, P.shellBend / 6);
+      }
+      tv.copy(w.c).applyMatrix4(cam.matrixWorldInverse); const vz = -tv.z;
+      if (vz <= cam.near + 1) continue;
+      tv.copy(w.c).project(cam);
+      const k = f / vz, sx = tv.x * 0.5 * cam.aspect, sy = tv.y * 0.5, i = slot++;
+      if (w.type === 'gw') {
+        let ax = 0, ay = 0, has = 0;
+        if (w.axis) { tv2.copy(w.c).addScaledVector(w.axis, 50).project(cam); ax = (tv2.x - tv.x) * cam.aspect; ay = tv2.y - tv.y; const l = Math.hypot(ax, ay); if (l > 1e-4) { ax /= l; ay /= l; has = 1; } }
+        U.wvC.value[i].set(sx, sy, 2, 1);
+        U.wvP.value[i].set(k, ax, P.gwAmp * w.mass * k, u);
+        U.wvQ.value[i].set(Math.max(1, P.gwSpeed), Math.max(0.02, P.gwPeriod), Math.max(0.01, P.gwRingdown), has);
+        U.wvQ.value[i].y = Math.max(0.02, P.gwPeriod);
+        U.wvAx.value[i].set(ax, ay);
+      } else {
+        const R = w.type === 'in' ? P.whInFrom * Math.max(0, 1 - u / Math.max(0.01, P.whInS)) : P.whOutSpeed * u;
+        const env = w.type === 'in' ? smooth(0, 1, u / Math.max(0.01, P.whInS)) * (1 - smooth(0.85, 1, u / Math.max(0.01, P.whInS))) : Math.exp(-u / Math.max(0.05, P.whOutFade));
+        U.wvC.value[i].set(sx, sy, 1, 1);
+        U.wvP.value[i].set(R * k, P.shellBend * env * k, 28 * k, 0.35 * env);
+      }
+    }
+    U.gwCam.value = 0.05 * P.gwShake * P.gwAmp / 12 * hc;
+    U.shellWash.value = Math.min(0.3, wash * 0.6); U.gwGlow.value = P.gwGlow;
+  }
   function setLensUniforms(cam, wells) {
     const U = lensMat.uniforms, f = 0.5 / Math.tan(cam.fov * Math.PI / 360);
     for (let i = 0; i < 4; i++) U.wC.value[i].set(0, 0, 0, 0);
@@ -1363,6 +1517,7 @@
         U.wM.value[i].set(0, ang(w.rs), tex, w.rs);
       }
     }
+    setWaveUniforms(cam, f);
     U.aspect.value = cam.aspect; U.camNear.value = cam.near; U.camFar.value = cam.far; U.soft.value = P.softEdge;
     U.kShadow.value = P.bhShadow; U.kCore.value = P.whCoreSize; U.ringGlow.value = P.bhRingGlow; U.ringWidth.value = Math.max(0.005, P.bhRingWidth);
     U.lensFade.value = Math.min(0.99, P.bhLensFade); U.coreBright.value = P.whCoreBrightness; U.coreMix.value = P.whCoreSkyMix;
@@ -1441,7 +1596,10 @@
     c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', pad, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), pad, pad + 41 * sc);
     if (swapFlash > 0) { c.globalAlpha = Math.min(1, swapFlash); c.textAlign = 'center'; c.font = font(22, 700); c.fillStyle = style === 'A' ? colA : colB; c.fillText('NOW FLYING PAIR ' + style, cw / 2, ch * 0.3); c.globalAlpha = 1; }
-    if (slingDipole) {
+    if (slingDipole && stopped) {
+      c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA;
+      c.fillText('WATCHING · strength ' + slingDipole.pair.S.toFixed(1) + ' · horizon ' + slingDipole.pair.rs.toFixed(1) + ' u · let go to release it', cw / 2, pad + 14 * sc);
+    } else if (slingDipole) {
       const sd = slingDipole, pr = sd.pair, dA = Math.round(hull.position.distanceTo(pr.att));
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA;
       c.fillText('STRENGTH ' + pr.S.toFixed(1) + '  ·  holds you at ' + Math.round(sd.rc) + ' u  ·  black hole ' + dA + ' u' + (sd.captured ? '  ·  IN ITS GRIP ' + Math.round(sd.sweep * 180 / Math.PI) + '° round' : '  ·  bent ' + Math.round(sd.turned * 180 / Math.PI) + '°'), cw / 2, pad + 14 * sc);
@@ -1450,6 +1608,15 @@
     } else if (slingFlash > 0 && lastDipole) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + (lastDipole.captured ? Math.round(lastDipole.sweep * 180 / Math.PI) + '° round' : 'bent ' + Math.round(lastDipole.turned * 180 / Math.PI) + '°') + ' · boost +' + Math.round(lastDipole.kick) + ' u/s', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     else if (slingOrbit) { c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA; c.fillText('ORBIT  r ' + Math.round(slingOrbit.r) + ' u  ·  ' + Math.round(slingOrbit.angle * 180 / Math.PI) + '°  ·  let go to slingshot', cw / 2, pad + 14 * sc); }
     else if (slingFlash > 0 && lastOrbit) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + Math.round(lastOrbit.angle * 180 / Math.PI) + '° round r ' + Math.round(lastOrbit.r) + ' u', cw / 2, ch * 0.3); c.globalAlpha = 1; }
+    if (stopped) {
+      c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, pad + 50 * sc);
+      c.font = font(11, 500); c.fillStyle = ink; c.fillText('Press LT or RT to lay a pair ahead and watch its whole life: hold it, let go, watch it close, annihilate and send its wave past you. ▶ Resume (or P) to fly on.', cw / 2, pad + 66 * sc);
+    }
+    if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
+    if (myPair && myPair.alive && myPair.dipole && !slingDipole && !(slingFlash > 0)) {
+      const pr = myPair; c.textAlign = 'center'; c.font = font(12, 600); c.fillStyle = dim;
+      c.fillText(pr.dying ? 'annihilating — the mass leaves as a gravitational wave' : 'the pair is closing', cw / 2, pad + 14 * sc);
+    }
     if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText('THROUGH THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
     // top-right: the race
     c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
@@ -1486,7 +1653,7 @@
     trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc);
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
     c.fillText(lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
-    swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
+    swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
   // The sling lays its pair wide (half gap 4 horizons), so most of a throw happens off-screen.
@@ -1527,6 +1694,7 @@
   }
   function showOverlay() {
     const box = $('overlayBox');
+    if (mode === 'fly' && stopped) { hideOverlay(); return; }
     if (mode !== 'fly' || race === 'running') { hideOverlay(); return; }
     $('overlay').hidden = false;
     if (race === 'ready') {
@@ -2102,8 +2270,87 @@
     },
   };
 
+  // ---------- a pair's whole life, top down on a grid of space: born, held, closing, annihilated ----------
+  SCENES.birth = {
+    make(Pv) {
+      const h0 = 70, rs = 8, tH = Math.max(Pv.bornS, Pv.whInS) + 0.6;
+      let meet = secondsToMeet(h0, rs, Pv.closeSpeed, Pv.closeRamp); if (!isFinite(meet)) meet = 3;
+      const tMeet = tH + meet;
+      return { h0, rs, tH, tMeet, tEnd: tMeet + Math.max(Pv.dieS, 0.2) + Math.min(5, 260 / Math.max(1, Pv.gwSpeed) + 4 * Pv.gwRingdown) + 0.6 };
+    },
+    bounds: () => ({ x0: -230, x1: 230, y0: -140, y1: 140 }),
+    period: (st) => st.tEnd,
+    draw(c, W, H, t, st, view, Pv) {
+      previewBg(c, W, H, 47);
+      const s = view.s, dying = t >= st.tMeet, tD = t - st.tMeet;
+      const hNow = t < st.tH ? st.h0 : Math.max(st.rs, closingHalfGap(st.h0, Pv.closeSpeed, Pv.closeRamp, t - st.tH));
+      const bB = smooth(0, 1, t / Math.max(0.01, Pv.bornS)), bW = smooth(0.55, 1, t / Math.max(0.01, Pv.whInS));
+      const e = dying ? smooth(0, 1, tD / Math.max(0.01, Pv.dieS)) : 0;
+      const rsB = st.rs * bB * (1 - e), rsW = st.rs * Pv.whSizeX * bW * (1 - e);
+      const strain = (x, y) => {   // the burst, as in the studio: front at gwSpeed, ringdown behind, 1/r, sin² from the meeting line
+        if (!dying) return 0;
+        const r = Math.hypot(x, y) + 1e-6, u = tD - r / Math.max(1, Pv.gwSpeed), tau = Math.max(0.01, Pv.gwRingdown);
+        if (u <= 0 || u > 8 * tau) return 0;
+        const ca = x / r; return Math.exp(-u / tau) * Math.sin(TAU * u / Math.max(0.02, Pv.gwPeriod)) * Math.min(1, 60 / r) * (1 - ca * ca);
+      };
+      const shells = [];
+      if (t < Pv.whInS) { const u = t / Math.max(0.01, Pv.whInS); shells.push({ x: hNow, R: Pv.whInFrom * (1 - u), env: smooth(0, 1, u) * (1 - smooth(0.85, 1, u)) }); }
+      if (dying) shells.push({ x: hNow, R: Pv.whOutSpeed * tD, env: Math.exp(-tD / Math.max(0.05, Pv.whOutFade)) });
+      const warp = (x, y) => {
+        let dx = 0, dy = 0; const r = Math.hypot(x, y) + 1e-6, g = Pv.gwAmp * strain(x, y);
+        dx += x / r * g; dy += y / r * g;
+        for (const sh of shells) { const ex = x - sh.x, rr = Math.hypot(ex, y) + 1e-6, q = (rr - sh.R) / 28, b = Pv.shellBend * sh.env * q * Math.exp(-q * q); dx += ex / rr * b; dy += y / rr * b; }
+        return [x + dx * 2.2, y + dy * 2.2];   // ×2.2 so a small preview shows it
+      };
+      // you, at the bottom: the view stretches one way and squeezes the other as the wave passes you
+      const hc = strain(0, -120), k = 0.2 * Pv.gwShake * Pv.gwAmp / 12 * hc;
+      c.save(); c.translate(W / 2, H / 2); c.scale(1 + k, 1 - k); c.translate(-W / 2, -H / 2);
+      if (dying && Pv.gwGlow > 0) {   // the visual-aid tint, as on the stage
+        const front = Pv.gwSpeed * tD;
+        for (let rr = Math.max(4, front - 8 * Pv.gwRingdown * Pv.gwSpeed); rr <= front; rr += 4) {
+          const u = tD - rr / Math.max(1, Pv.gwSpeed), h = Math.exp(-u / Math.max(0.01, Pv.gwRingdown)) * Math.sin(TAU * u / Math.max(0.02, Pv.gwPeriod)) * Math.min(1, 60 / rr);
+          if (Math.abs(h) < 0.03) continue;
+          c.strokeStyle = h > 0 ? 'rgba(130,160,255,' + Math.min(0.5, 0.3 * Pv.gwGlow * h).toFixed(3) + ')' : 'rgba(0,0,0,' + Math.min(0.5, 0.25 * Pv.gwGlow * -h).toFixed(3) + ')';
+          c.lineWidth = 4 * view.s; c.beginPath(); c.ellipse(view.X(0), view.Y(0), rr * view.s, rr * view.s, 0, 0, TAU); c.stroke();
+        }
+      }
+      c.strokeStyle = 'rgba(127,160,255,0.28)'; c.lineWidth = 1;
+      for (let gx = -220; gx <= 220; gx += 20) { c.beginPath(); for (let gy = -140; gy <= 140; gy += 7) { const [x, y] = warp(gx, gy); if (gy === -140) c.moveTo(view.X(x), view.Y(y)); else c.lineTo(view.X(x), view.Y(y)); } c.stroke(); }
+      for (let gy = -140; gy <= 140; gy += 20) { c.beginPath(); for (let gx = -220; gx <= 220; gx += 7) { const [x, y] = warp(gx, gy); if (gx === -220) c.moveTo(view.X(x), view.Y(y)); else c.lineTo(view.X(x), view.Y(y)); } c.stroke(); }
+      c.fillStyle = 'rgba(95,240,208,0.85)';
+      for (let gx = -200; gx <= 200; gx += 40) for (let gy = -120; gy <= 120; gy += 40) {
+        if (Math.abs(gx) < 30 && Math.abs(gy) < 30) continue;
+        const [x, y] = warp(gx, gy), gh = Math.max(-0.8, Math.min(0.8, Pv.gwPrism * strain(gx, gy) * 1.5));
+        c.fillRect(view.X(x) - 3.5 * (1 + gh), view.Y(y) - 1.2 * (1 - gh), 7 * (1 + gh), 2.4 * (1 - gh));
+      }
+      for (const sh of shells) if (sh.R > 0.5 && sh.env > 0.02) { c.strokeStyle = 'rgba(255,244,220,' + (0.75 * sh.env).toFixed(3) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(view.X(sh.x), view.Y(0), sh.R * s, 0, TAU); c.stroke(); }
+      if (rsW > 0.05) drawWhiteHole(c, view.X(hNow), view.Y(0), Math.max(1.5, rsW * s * 2.6), Pv);
+      if (rsB > 0.05) drawBlackHole(c, view.X(-hNow), view.Y(0), Math.max(1.5, rsB * s * 2.6), Pv);
+      c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(view.X(0), view.Y(-120), 3, 0, TAU); c.fill();
+      c.restore();
+      const phase = t < Math.max(Pv.bornS, Pv.whInS) ? 'birth: black hole grows · white hole arrives' : t < st.tH ? 'held' : !dying ? 'let go: closing' : tD < Pv.dieS ? 'annihilation: black hole sinks' : 'the gravitational wave spreads';
+      txt(c, phase, 6, 13, '#e8ecff', 10);
+      txt(c, 'you', view.X(0) + 6, view.Y(-120) + 4, '#ffd27a', 9.5);
+      txt(c, t.toFixed(1) + ' s', W - 6, H - 6, '#9aa6d6', 10, 'right');
+    },
+  };
+
   // ---------- what each number means, in plain words ----------
   const TIPS = {
+    bornS: { scene: 'birth', d: 'How long the black hole takes to grow from a point to full size. Its mass arrives over this time and its horizon grows with it (a horizon\'s radius is proportional to the mass inside it), so its pull grows too.', lo: 'It pops into being.', hi: 'A slow swelling from a point.' },
+    whInS: { scene: 'birth', d: 'How long the white hole takes to arrive. A white hole is a black hole run backwards, so it comes in the way it will leave, reversed: a light shell converging from far away onto its spot. Its core lights up as the shell lands.', lo: 'It snaps in quickly.', hi: 'A slow, visible convergence.' },
+    whInFrom: { scene: 'birth', d: 'How far out that incoming light shell starts. Far enough, and it seems to come from infinity — from beyond what you can see.', lo: 'The shell starts nearer.', hi: 'It starts from further beyond the view.' },
+    dieS: { scene: 'birth', d: 'When the pair meets, how long the black hole takes to sink back to a point — its mass leaving as the gravitational wave.', lo: 'It blinks out.', hi: 'A slower shrink to nothing.' },
+    whOutSpeed: { scene: 'birth', d: 'When the pair meets, the white hole\'s light leaves as an outgoing shell — its arrival in reverse. This is how fast that shell spreads.', lo: 'A slower-spreading shell.', hi: 'It flashes outward.' },
+    whOutFade: { scene: 'birth', d: 'How long the white hole\'s outgoing light shell stays visible as it spreads.', lo: 'It fades sooner.', hi: 'It lingers as it spreads.' },
+    shellBend: { scene: 'birth', d: 'How strongly those light shells, arriving and leaving, bend the sky as they pass: a ring of rippling sky.', lo: 'A fainter ring.', hi: 'A stronger rippling ring.' },
+    gwAmp: { scene: 'birth', d: 'The strength of the gravitational wave the annihilation sends out. Real ones are far too faint to see; this scales it up so you can.', lo: 'A gentler ripple.', hi: 'A more violent shudder through space.' },
+    gwSpeed: { scene: 'birth', d: 'How fast the gravitational wave spreads. In reality it moves at the speed of light; here it is slowed down so you can watch it travel.', lo: 'A slower ripple crawling outward.', hi: 'It races past sooner.' },
+    gwPeriod: { scene: 'birth', d: 'The time between ripples — the wave\'s pitch.', lo: 'Tighter, faster ripples.', hi: 'Longer, slower swells.' },
+    gwRingdown: { scene: 'birth', d: 'How long the ripples go on before dying away: the ringdown, like a bell after it is struck.', lo: 'Fewer ripples: a sharper pulse.', hi: 'A longer train of ripples.' },
+    gwPrism: { scene: 'birth', d: 'How much the wave stretches and squeezes the prisms it passes through — longer one way, thinner the other, alternately. A gravitational wave stretches space itself; it does not push things along.', lo: 'Prisms react less.', hi: 'Prisms pulse more.' },
+    gwGlow: { scene: 'birth', d: 'A visual aid, not physics: a gravitational wave is not light, so on its own you would only see it through what it bends. This tints its crests (space stretched) a little brighter and its troughs (squeezed) a little darker, so the spreading rings read even over empty space. 0 = only the true bending.', lo: 'Fainter rings.', hi: 'Bolder rings.' },
+    gwShake: { scene: 'birth', d: 'How much your own view stretches and squeezes as the wave passes you (the dot marked "you" in the preview; in flight, the whole screen).', lo: 'A fainter wobble.', hi: 'Your whole view breathes more.' },
     holdExponent: { scene: 'curve', d: 'How the trigger\'s travel turns into strength. At 1 strength grows evenly as you press. Above 1 the first part of the pull is gentle and most of the strength comes near the bottom — fine control at light squeezes. Below 1 it jumps up early.', lo: 'Strength comes earlier in the trigger\'s travel.', hi: 'Strength comes later: a longer gentle start, most of it near a full squeeze.' },
     holdRamp: { scene: 'keyRamp', d: 'Keyboard only, for the archived slings: a key has no depth, so holding it ramps the squeeze from nothing to full over this many seconds. (The dipole sling uses "Keyboard squeeze" instead, because there hold time must not change the strength.)', lo: 'A key reaches full squeeze sooner.', hi: 'You hold a key longer to reach full squeeze.' },
     dpAhead: { scene: 'sling', d: 'How far in front of you the black hole and white hole appear when you press the trigger.', lo: 'The pair appears closer ahead: less time to adjust before you reach it.', hi: 'The pair appears further ahead: more time to line up.' },
@@ -2349,12 +2596,14 @@
   const A_KEYS = ['orbitWide', 'orbitTight', 'orbitHorizons', 'boostMin', 'boostMax', 'boostSeconds', 'closeSpeed', 'closeRamp', 'holdCap', 'followRate', 'radialRate', 'vesselTide'];
   const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
+  const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'closeSpeed', 'closeRamp'];
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function currentChoice(topic) {
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
       case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (slingMode === 'dipole' ? D_KEYS : A_KEYS) : B_KEYS));
+      case 'Birth & annihilation': return 'Birth & annihilation' + changedText(LIFE_KEYS);
       case 'Black hole': return 'Black hole' + changedText(BH_KEYS);
       case 'White hole': return 'White hole' + changedText(WH_KEYS);
       case 'Portal': return 'Pair ' + style + ': carry the Stoat through = ' + (portal[style] ? 'yes' : 'no');
@@ -2462,17 +2711,18 @@
     resize();
     GM_PER_STRENGTH = P.bhGmPerStrength; HORIZON_PER_STRENGTH = P.bhHorizonPerStrength;
     const inp = pollInput(dt);
+    simT += dt; waves = waves.filter(waveAlive);
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     collectWells();
-    if (mode === 'fly') stepFly(dt, inp); else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
+    if (mode === 'fly') { if (!stopped) stepFly(dt, inp); else watchStep(dt); } else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
     stepBodies(dt); writeBodies();
     updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__stoatStudio = { get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 

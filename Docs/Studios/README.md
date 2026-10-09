@@ -12,6 +12,42 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 8 — birth, annihilation, one pair, Stop)
+
+**A pair's life** (the dipole pair; the **Birth & annihilation** group, 14 settings, each with a tooltip):
+
+- **Birth.** A horizon's radius is proportional to the mass inside it, so the black hole's mass ramps from
+  zero over 0.9 s and its horizon, pull, shadow and lens grow with it from a point. A white hole is a black
+  hole run backwards, so it arrives the way it will leave, reversed. A light shell converges onto its spot
+  from 700 u out over 1.1 s, bending the sky as it passes and washing the view with light where it crosses
+  the camera, and its core lights as the shell lands.
+- **Annihilation.** When the closing holes' horizons touch, the black hole sinks back to a point over 0.7 s
+  and the white hole's light leaves as an outgoing shell. The pair's mass leaves as a **gravitational wave**:
+  - a front moving out at 120 u/s, slowed from light speed so it can be watched;
+  - a ringdown behind it (period 0.35 s, decay 1 s), weakening as 1/r;
+  - strongest sideways to the line the holes closed along and silent along it (sin², as for a head-on
+    collision);
+  - it is transverse strain, not a pond ripple: the sky is bent, prisms stretch one way and squeeze the
+    other, and the whole view stretches and squeezes as the wave passes the camera;
+  - the crests and troughs are tinted brighter and darker as a labelled visual aid, which can be set to 0.
+
+**One pair at a time.** A press while a pair exists — held, closing or annihilating — is refused, with an
+on-screen notice, in every sling.
+
+**Stop.** The ■ Stop button on the stage (or P) halts the Stoat and pauses the race clock while the world
+carries on; ▶ Resume continues. While stopped, LT/RT lays a pair ahead to watch its whole life head-on. In
+flight the annihilation usually happens behind you, so this is how to see it.
+
+**Checked offline:**
+
+- In a scripted run, a pair's horizon grows from 0.03 to 3.1 u over 0.7 s, and the white hole lights only
+  once its shell lands.
+- Presses while a pair is held, closing or dying never make a second pair.
+- When the pair meets, its horizon sinks from 3.6 to 0.02 u and both the wave and the outgoing shell appear.
+- The Stoat does not move while stopped.
+- The sling's grip turns at the same rate as in round 6.
+- All 93 tooltip cards render, there are no console errors, and the card fits a 420 px screen.
+
 ## Stoat Flight Studio (round 7 — hole settings and illustrated tooltips)
 
 **New setting groups** on the side panel. Each is wired into what the studio flies and draws, so moving a
