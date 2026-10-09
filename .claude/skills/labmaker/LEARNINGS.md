@@ -189,6 +189,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `stepFly` (`inField`, `warp`, `kdt`); `stepFieldFlight(kdt, dt)`; README round 15 "Checked".
 - Promoted: no
 
+### L-STU-19 — A prediction past a teleport is only as good as the exit's sensitivity; measure where the flight leaves the line
+- Lab: Stoat Flight Studio, round 15 (dipole field) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
+- Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
+- Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
