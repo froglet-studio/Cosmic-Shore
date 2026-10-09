@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -84,6 +85,14 @@ namespace CosmicShore.Gameplay
         HeldOff = 11,
         /// <summary>It turned on a pilot: a lunge, its guard plates out.</summary>
         Lunge = 12,
+        /// <summary>A cut parted the body: A = the members that crawled off as the Severed.</summary>
+        Severed = 13,
+        /// <summary>The Severed grafted back on: A = the members that came home.</summary>
+        Rejoined = 14,
+        /// <summary>The body was cut away to nothing and the Severed took its form: A = the form.</summary>
+        Succession = 15,
+        /// <summary>A wound taught it something (§3.12): A = the <see cref="TandavaWound"/> - each has its own line.</summary>
+        Learned = 16,
     }
 
     /// <summary>
@@ -110,6 +119,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("In order: the Great Serpent, the Many-Headed Serpent, the Lord of the Dance (the ascension), the Antlion. " +
                  "Exactly four; each draws one of its variants per match.")]
         public List<TandavaFormSpec> Forms = new();
+
+        [Header("Severing (TANDAVA.md §3.11)")]
+        [Tooltip("The piece a clean cut parts from the body: its own small form (one variant - the Severed travel plan and " +
+                 "its feed twin), run by its own director. Its bank is the director's RejoinBank; FillToEvolve is unused " +
+                 "(the director's RejoinFill decides when it turns home).")]
+        public TandavaFormSpec SeveredForm;
+        [Tooltip("The cell's spawn-profile entry for the Tandava swarm (its FaunaPrefab is the Tandava swarm): the Severed " +
+                 "hatches from it, so it counts as the same creature in the cell's population and the seeder never hatches " +
+                 "a fresh one while either body lives.")]
+        public FaunaConfigurationSO SwarmSpawn;
 
         [Header("The director")]
         [Tooltip("Every dial the director runs on - threat and mood, the speed and turn levers, where to eat, feeding, the " +
@@ -185,6 +204,16 @@ namespace CosmicShore.Gameplay
         [TextArea] public string DanceBrokenLine = "The dance is broken. The reef keeps its turn.";
         [TextArea] public string HeldOffLine = "Time. You held it off - the cycle is unfinished.";
         [TextArea] public string LungeLine = "It turns on you - its guards are out round its jaws. Hurt it and it runs.";
+        [Tooltip("{0} = the members that crawled off.")]
+        [TextArea] public string SeveredLine = "You cut it in two. The severed half crawls off to feed - stop it getting home.";
+        [Tooltip("{0} = the members that came home.")]
+        [TextArea] public string RejoinedLine = "The severed half found its way home. It is whole again.";
+        [TextArea] public string SuccessionLine = "You cut the body away - but the severed half lives, and it remembers the shape.";
+        [Header("Narration - what its wounds taught it (§3.12), said once each")]
+        [TextArea] public string LearnedFeedingLine = "It remembers being struck at the table. It eats far from you now, and bolts sooner.";
+        [TextArea] public string LearnedLungingLine = "It remembers what its lunges cost. It will not turn on you so readily.";
+        [TextArea] public string LearnedChasedLine = "It remembers being run down. It feels you coming from farther away.";
+        [TextArea] public string LearnedSeveredLine = "It remembers being cut in two. Its severed halves hurry home.";
 
         [Header("HUD words (the goal rows, top left)")]
         public string RoamingLabel = "Roaming";
@@ -199,6 +228,10 @@ namespace CosmicShore.Gameplay
         public string DrumLabel = "Drum";
         public string TimeLabel = "Time left";
         public string BodyFormat = "Body {0}%";
+        public string SeveredLabel = "The Severed";
+        [Tooltip("The Severed row's text while it is out feeding: {0} = the time until it turns for home.")]
+        public string SeveredOutFormat = "home in {0}";
+        public string SeveredHomeLabel = "crawling home - cut it off";
 
         [Header("Clients follow the server's swarm")]
         [Tooltip("Every peer runs its own swarm (fauna are client-local); a client nudges its body toward the server's when " +
@@ -233,6 +266,17 @@ namespace CosmicShore.Gameplay
                 TandavaLine.DanceBroken => DanceBrokenLine,
                 TandavaLine.HeldOff => HeldOffLine,
                 TandavaLine.Lunge => LungeLine,
+                TandavaLine.Severed => SeveredLine,
+                TandavaLine.Rejoined => RejoinedLine,
+                TandavaLine.Succession => SuccessionLine,
+                TandavaLine.Learned => (TandavaWound)a switch
+                {
+                    TandavaWound.Feeding => LearnedFeedingLine,
+                    TandavaWound.Lunging => LearnedLungingLine,
+                    TandavaWound.Chased => LearnedChasedLine,
+                    TandavaWound.Severed => LearnedSeveredLine,
+                    _ => "",
+                },
                 _ => "",
             };
             if (line == TandavaLine.Form) return (text ?? "").Replace("{0}", name ?? "");

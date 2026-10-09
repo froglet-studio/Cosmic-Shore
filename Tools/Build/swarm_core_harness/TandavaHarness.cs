@@ -413,14 +413,18 @@ static partial class TandavaHarness
         public int Severs, Rejoins, Successions, PiecesLost, PieceMembersHome;
         public readonly List<(float t, string what)> SeverLog = new();
         public (int was, int moved, int left, float stomach) LastSever;
+        // §3.12: what its wounds taught it, when
+        public readonly List<(float t, TandavaWound wound)> Learned = new();
     }
 
-    static Sim MakeSim(Bake b, int[] picks, int seed)
+    static Sim MakeSim(Bake b, int[] picks, int seed, Action<TandavaDirectorSettings> tweak = null)
     {
         var s = new Sim { B = b, Rng = new Random(seed) };
         s.Forms = BuildForms(b, picks);
         s.C = MakeCore(b, s.Forms[0].PlanIndex, TandavaArena.Hatch, seed, fed: false);
-        s.D = new TandavaDirectorCore(s.Forms, DirectorSettings(), seed);
+        var ds = DirectorSettings();
+        tweak?.Invoke(ds);
+        s.D = new TandavaDirectorCore(s.Forms, ds, seed);
         s.Plants = LayPlants(seed);
         s.LastForm = 0;
         return s;
@@ -512,6 +516,7 @@ static partial class TandavaHarness
         foreach (var e in d.Events)
         {
             if (e.Kind == TandavaEventKind.FormCommitted) s.Commits.Add((s.Now, e.B));
+            if (e.Kind == TandavaEventKind.Learned) s.Learned.Add((s.Now, (TandavaWound)e.A));
             if (e.Kind == TandavaEventKind.FeedBegan)
             {
                 s.Meals++; s.MealStart = s.Now; s.MealEatenAtStart = s.Eaten;
@@ -605,6 +610,7 @@ static partial class TandavaHarness
     public static int Run(SwarmPlanData[] basePlans, string dir)
     {
         var b = Load(dir);
+        if (Environment.GetEnvironmentVariable("TANDAVA_ONLY") == "wound") { WoundTests(b); Console.WriteLine(_fail == 0 ? "\ntandava wound: OK" : $"\ntandava wound: {_fail} FAILED"); return _fail; }
         if (Environment.GetEnvironmentVariable("TANDAVA_ONLY") == "sever") { SeverTests(b); Console.WriteLine(_fail == 0 ? "\ntandava sever: OK" : $"\ntandava sever: {_fail} FAILED"); return _fail; }
         Console.WriteLine($"tandava: {b.Plans.Length} plans at density {Density}: " +
                           string.Join(" / ", Variants.Select(v => string.Join(",", v.Select(k => b.Plans[b.Ix[k]].N)))) +
@@ -916,25 +922,52 @@ static partial class TandavaHarness
             Check(Active(s.C) >= 0.9f * full, $"away from the table it regrew to 90% in {s.Now - t0:F1} s - the same form, remembered");
         }
 
-        // ── T11: denial - break every meal and it starves to pieces (there is no clock to run out)
+        // ── T11: denial - break every meal and it starves to pieces (there is no clock to run out). §3.12: the SAME denial
+        // only works on a creature that cannot learn. Scarred at the table, it bolts sooner and eats far from the pilots, so
+        // the policy that broke it once no longer does; pilots who also run it down when it bolts still win.
         Console.WriteLine("T11 denial");
+        foreach (var (learns, chase) in new[] { (false, false), (true, false), (true, true) })
         {
-            var s = MakeSim(b, new[] { 0, 1, 2, 0 }, 53);
-            float strikeAt = -1f; int killedThisMeal = 0;
+            var s = MakeSim(b, new[] { 0, 1, 2, 0 }, 53, ds => { if (!learns) ds.ScarRef = 0f; });
+            float strikeAt = -1f, chaseUntil = -1f; int killedThisMeal = 0;
             RunFor(s, RunCap, x =>
             {
-                if (!x.D.Feeding || x.Now < 25f) { strikeAt = -1f; killedThisMeal = 0; return; }   // they spawn across the cell
+                if (chase && x.Now < chaseUntil && !x.D.Feeding)
+                {
+                    // it bolted: the pilots stay on it, cutting what they can reach of its tail
+                    int n = Cut(x.C, 3, x.C.BX, i => x.C.EffectiveElement(i) == 0);
+                    x.Lost += n;
+                    return;
+                }
+                if (!x.D.Feeding || x.Now < 25f)
+                {
+                    if (strikeAt >= 0f && killedThisMeal > 0) chaseUntil = x.Now + 6f;   // a meal they struck just ended
+                    strikeAt = -1f; killedThisMeal = 0; return;
+                }
                 if (strikeAt < 0f) strikeAt = x.Now + 3f;   // the pilots arrive three seconds into every meal
                 if (x.Now < strikeAt) return;
                 int target = (int)(0.21f * x.D.Form.PlanCount);
                 if (killedThisMeal >= target) return;
-                int n = Cut(x.C, Math.Min(12, target - killedThisMeal), x.C.BX, i => x.C.EffectiveElement(i) == 0);
-                killedThisMeal += n; x.Lost += n;
+                int k = Cut(x.C, Math.Min(12, target - killedThisMeal), x.C.BX, i => x.C.EffectiveElement(i) == 0);
+                killedThisMeal += k; x.Lost += k;
             });
             var d = s.D;
-            Console.WriteLine($"    {d.Outcome} at {d.Clock:F0} s as the {d.Form.Name}: {s.Meals} meals, {s.MealsBroken} broken; {Timeline(s)}");
-            Check(PilotsWon(d.Outcome), $"every meal broken, the pilots win ({d.Outcome})");
-            Check(d.FormIx <= 1, $"it never reached the dance ({d.Form.Name})");
+            var learned = s.Learned.Select(l => $"{l.wound} at {l.t:F0} s").ToList();
+            string who = !learns ? "a creature that cannot learn" : chase ? "it learns; the pilots also run it down" : "it learns";
+            Console.WriteLine($"    {who}: {d.Outcome} at {d.Clock:F0} s as the {d.Form.Name}: {s.Meals} meals, {s.MealsBroken} broken; " +
+                              $"{Timeline(s)}; learned: {(learned.Count > 0 ? string.Join(", ", learned) : "nothing")}");
+            if (!learns)
+            {
+                Check(PilotsWon(d.Outcome), $"every meal broken, the pilots win ({d.Outcome})");
+                Check(d.FormIx <= 1, $"it never reached the dance ({d.Form.Name})");
+            }
+            else if (!chase)
+            {
+                Check(learned.Any(l => l.StartsWith("Feeding")), "struck at every meal, it learned the table");
+                Check(!PilotsWon(d.Outcome) || d.Clock > 1.5f * 145f,
+                      $"the same denial no longer breaks it (or takes far longer): {d.Outcome} at {d.Clock:F0} s, the {d.Form.Name}");
+            }
+            else Check(PilotsWon(d.Outcome), $"struck at the table AND run down when it bolts, it still falls ({d.Outcome} at {d.Clock:F0} s)");
         }
 
         // ── T12: the dance - it rises in place; break the halo and the dance is broken; let the drum end and it is the Antlion
@@ -1172,6 +1205,7 @@ static partial class TandavaHarness
             }
 
         SeverTests(b);
+        WoundTests(b);
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }

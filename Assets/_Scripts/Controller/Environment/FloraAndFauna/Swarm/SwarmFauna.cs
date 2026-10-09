@@ -94,6 +94,9 @@ namespace CosmicShore.Gameplay
         bool _foraging = true;
         readonly Dictionary<Flora, float> _rested = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
+        static readonly List<SwarmGraft> s_seedGrafts = new();
+        static readonly List<int> s_seedSlots = new();
+        static readonly float[] s_seedStomach = new float[4];
         // round 8: proxies materialised because a weapon or predator reached a member (§16.2), budgeted cell-wide
         static int s_hitFrame = -1, s_hitsThisFrame;
         float _alpha;                    // this frame's display alpha - where every member is DRAWN right now
@@ -266,6 +269,119 @@ namespace CosmicShore.Gameplay
             return added;
         }
 
+        // ─────────────────────────────────────────────── Tandava's severing (TANDAVA.md §3.11)
+        //
+        // A cut clean through the body parts it, and the piece crawls off as a second swarm. Its members MOVE: they leave
+        // this swarm (released - nothing dies, no skeleton, no death count, no replacement laid) and arrive in the other
+        // (grafted - nothing is born, they do not bloom in), at the same place in the same cell. The mode decides when;
+        // these are the seams it moves them through.
+
+        /// <summary>Every slot's published position (world, the tick's end - where the core has it) and whether it holds a
+        /// live member, into <paramref name="pos"/> / <paramref name="alive"/> (cleared first). Returns the slot count.
+        /// A member whose death or release is still in flight reads dead. O(slots).</summary>
+        public int CopyLiveMembers(List<SVector3> pos, List<bool> alive)
+        {
+            pos.Clear(); alive.Clear();
+            if (_job == null) return 0;
+            var inst = _job.Instances;
+            for (int i = 0; i < _cap; i++)
+            {
+                pos.Add(inst[i].CurPos);
+                alive.Add(inst[i].Alive && !_gone[i]);
+            }
+            return _cap;
+        }
+
+        /// <summary>The <paramref name="count"/> live members nearest <paramref name="world"/> (their slots, nearest first)
+        /// into <paramref name="into"/> (cleared first) - how a peer finds the piece the server cut from ITS body, since
+        /// every peer runs its own. O(slots log slots).</summary>
+        public int NearestMembers(Vector3 world, int count, List<int> into)
+        {
+            into.Clear();
+            if (_job == null || count <= 0) return 0;
+            var inst = _job.Instances;
+            var at = Sim(world);
+            for (int i = 0; i < _cap; i++) if (inst[i].Alive && !_gone[i]) into.Add(i);
+            into.Sort((a, b) => SVector3.DistanceSquared(inst[a].CurPos, at).CompareTo(SVector3.DistanceSquared(inst[b].CurPos, at)));
+            if (into.Count > count) into.RemoveRange(count, into.Count - count);
+            return into.Count;
+        }
+
+        /// <summary>The members in <paramref name="slots"/> leave this swarm for another: each live one is appended to
+        /// <paramref name="into"/> as a graft in the core's frame (sim units, cell-centred - the same frame for every swarm
+        /// of the cell), its proxy retires quietly, its index entry and body entity go, and the core drops it next tick
+        /// without counting a death. Returns how many left. Main thread.</summary>
+        public int ReleaseMembers(IReadOnlyList<int> slots, List<SwarmGraft> into)
+        {
+            if (_job == null) return 0;
+            var inst = _job.Instances;
+            var c = Sim(_centre);
+            float inv = 1f / config.UnitScale;
+            int n = 0;
+            for (int q = 0; q < slots.Count; q++)
+            {
+                int i = slots[q];
+                if (i < 0 || i >= _cap || !inst[i].Alive || _gone[i]) continue;
+                ref var s = ref inst[i];
+                into?.Add(new SwarmGraft
+                {
+                    Pos = (s.CurPos - c) * inv, Vel = (s.CurPos - s.PrevPos) * inv / Mathf.Max(1, _job.Steps),
+                    Facing = s.CurFace, Element = s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom,
+                });
+                _job.QueueRelease(i);
+                var m = _proxy[i];
+                if (m)
+                {
+                    m.Retire();
+                    _proxy[i] = null;
+                    _proxySlots.Remove(i);
+                }
+                _starving[i] = false;
+                Vacate(i);
+                n++;
+            }
+            return n;
+        }
+
+        /// <summary>Every live member leaves (<see cref="ReleaseMembers"/>), then the anchor goes: the swarm DISSOLVES into
+        /// another (a severed piece grafting back on) without a single death. Main thread.</summary>
+        public int Dissolve(List<SwarmGraft> into)
+        {
+            int n = 0;
+            if (_job != null)
+            {
+                var all = new List<int>(_job.AliveCount);
+                for (int i = 0; i < _cap; i++) if (_job.Instances[i].Alive && !_gone[i]) all.Add(i);
+                n = ReleaseMembers(all, into);
+            }
+            if (!DespawnOrDestroy()) Destroy(gameObject);
+            return n;
+        }
+
+        /// <summary>A grown member arrives from another swarm of this cell (a graft from <see cref="ReleaseMembers"/>); it
+        /// joins in the next tick, if the core has a free slot. A sort core only.</summary>
+        public void Graft(in SwarmGraft g) => _job?.QueueGraft(g.Pos, g.Vel, g.Facing, g.Element);
+
+        /// <summary>Keep only <paramref name="keep"/> of every element in the stomach from the next tick (a severed piece
+        /// took the rest).</summary>
+        public void ScaleStomach(float keep) => _job?.QueueStomachScale(keep);
+
+        /// <summary>Bank volume into the stomach, one amount per element (a rejoining piece's own stomach, and members the
+        /// body had no room for, as the eggs they were). Paid in next tick; what would overfill the stomach is scaled away
+        /// evenly (a full stomach holds no more - the feed's cap).</summary>
+        public void BankAll(float[] volumes)
+        {
+            if (_job == null || volumes == null) return;
+            float room = StomachCapacity, want = 0f;
+            for (int e = 0; e < 4; e++) { room -= _job.Stomach[e]; want += Mathf.Max(0f, volumes[e]); }
+            if (room <= 0f || want <= 0f) return;
+            float k = Mathf.Min(1f, room / want);
+            for (int e = 0; e < 4; e++) _job.QueueDeposit(e, Mathf.Max(0f, volumes[e]) * k);
+        }
+
+        /// <summary>The volume one egg of <paramref name="element"/> costs (what a member is worth in the stomach).</summary>
+        public float EggVolume(int element) => config ? SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(element)) : 0f;
+
         /// <summary>Banked eaten volume of one research element (0 Charge .. 3 Time).</summary>
         public float StomachVolume(int element) => _job != null && element >= 0 && element < 4 ? _job.Stomach[element] : 0f;
         /// <summary>The stomach's fill, 0..1.</summary>
@@ -381,10 +497,30 @@ namespace CosmicShore.Gameplay
             int seedForm = 0;
             if (scripted && _director != null && _director.TryGetSeedForm(this, out int named) && named >= 0 && named < _plans.Length)
                 seedForm = named;
-            _core.Seed(scripted ? seedForm : SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers * Density, anchor, Sim(tangent.normalized));
+            // Tandava's severing: a piece cut from another swarm hatches as THOSE members, grown, where they were - not as
+            // a fresh brood (ISwarmSeedGraft)
+            s_seedGrafts.Clear();
+            System.Array.Clear(s_seedStomach, 0, 4);
+            bool grafted = scripted && _core is SwarmSortCore && _director is ISwarmSeedGraft grafter
+                           && grafter.TryGetSeedGraft(this, s_seedGrafts, s_seedStomach) && s_seedGrafts.Count > 0;
+            _core.Seed(scripted ? seedForm : SwarmFaunaConfigSO.ToIndex(_startElement), grafted ? 0 : config.SeedMembers * Density,
+                       anchor, Sim(tangent.normalized));
             _core.SwimTarget = anchor;
+            s_seedSlots.Clear();
+            if (grafted)
+            {
+                var sort = (SwarmSortCore)_core;
+                for (int q = 0; q < s_seedGrafts.Count; q++)
+                {
+                    var g = s_seedGrafts[q];
+                    int slot = sort.Graft(g.Pos, g.Vel, g.Facing, g.Element);
+                    if (slot >= 0) s_seedSlots.Add(slot);
+                }
+                for (int e = 0; e < 4; e++) _core.Stomach[e] = s_seedStomach[e];
+            }
 
             _job = new SwarmTickJob(_core, BuildTickSettings(), config.TickHz) { SwimTarget = anchor };
+            for (int q = 0; q < s_seedSlots.Count; q++) _job.MarkGrown(s_seedSlots[q]);
             _job.Prime();
             _inline = !config.SimulateOffMainThread || Application.platform == RuntimePlatform.WebGLPlayer;
 
@@ -958,11 +1094,18 @@ namespace CosmicShore.Gameplay
             _proxy[i] = null;
             _proxySlots.Remove(i);
             _starving[i] = false;
+            Vacate(i);   // the proxy's own death visuals take over this frame
+        }
+
+        /// <summary>Slot <paramref name="i"/>'s member is gone from this swarm as of this frame (died, or moved to another
+        /// swarm): masked until the core catches up, its drawn heart hidden, and - round 11a - its index entry released
+        /// (its skeleton, its eater or its new swarm holds the mass now) and its render entity hidden in this frame's
+        /// visibility flush.</summary>
+        void Vacate(int i)
+        {
             if (!_gone[i]) { _gone[i] = true; _goneSlots.Add(i); }
-            if (_gpu) _render.HideSlot(_job, i);   // the proxy's own death visuals take over this frame
+            if (_gpu) _render.HideSlot(_job, i);
             else _job.Instances[i].Flags = 0u;
-            // round 11a: the member leaves the index (its skeleton or its eater holds the mass now) and its render
-            // entity hides in this frame's visibility flush - the proxy's own death visuals are what is drawn
             if (_entries != null && _index != null) _entries.Release(i, this);
             if (_realBody != null) _realBody[i] = false;
             if (_unified && _entities.HideNow(i)) PrismRenderService.QueueVisible(_handles[i], false);

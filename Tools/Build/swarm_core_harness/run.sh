@@ -64,7 +64,7 @@ ECO=(); for f in "$ROOT"/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ec
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
   "${ECO[@]}" "${TANDAVA[@]}" \
   "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" \
-  "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs" "$HERE/EmotionExport.cs" "$HERE/TandavaHarness.cs" "$HERE/TandavaSeverHarness.cs"
+  "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs" "$HERE/EmotionExport.cs" "$HERE/TandavaHarness.cs" "$HERE/TandavaSeverHarness.cs" "$HERE/TandavaWoundHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"

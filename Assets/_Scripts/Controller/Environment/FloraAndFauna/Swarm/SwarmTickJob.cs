@@ -98,6 +98,13 @@ namespace CosmicShore.Gameplay
 
     public enum SwarmJobState { Idle = 0, Running = 1, Done = 2 }
 
+    /// <summary>A member arriving from another swarm (<see cref="SwarmTickJob.QueueGraft"/>), in the core's sim frame.</summary>
+    public struct SwarmGraft
+    {
+        public Vector3 Pos, Vel, Facing;
+        public int Element;
+    }
+
     /// <summary>
     /// One swarm's tick: apply the queued inputs, step the core, build the frame (Docs/SWARM_FAUNA.md §14).
     /// Pure C#: compiled and run by Tools/Build/swarm_core_harness (test R7).
@@ -120,6 +127,14 @@ namespace CosmicShore.Gameplay
         public int Steps = 1;
         readonly int[] _kills, _killsRun;
         int _killCount;
+        // Tandava's severing (TANDAVA.md §3.11): members leaving this core for another (released - nothing dies) and
+        // members arriving from another (grafted - nothing is born). A sort core only; any other core treats a release
+        // as a kill and ignores a graft.
+        readonly int[] _releases, _releasesRun;
+        int _releaseCount;
+        readonly List<SwarmGraft> _grafts = new(), _graftsRun = new();
+        readonly bool[] _grown;   // per slot: the member arriving here is grown - it does not bloom in
+        float _stomachKeep = 1f;  // the share of the stomach a sever leaves this swarm (the rest left with the piece)
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
         readonly object _inLock = new();
         int _requestPlan = -1;
@@ -240,12 +255,15 @@ namespace CosmicShore.Gameplay
         }
 
         float _toWorldSpeed;
+        /// <summary>How long ago (ticks) a grafted member is said to have been born: past any bloom or proxy grace.</summary>
+        const float GrownAgeTicks = 10000f;
         static readonly WaitCallback s_run = RunOnWorker;
 
         public SwarmTickJob(ISwarmCore core, SwarmTickSettings settings, float tickHz)
         {
             Core = core; S = settings; _cap = core.Cap;
             _kills = new int[_cap]; _killsRun = new int[_cap];
+            _releases = new int[_cap]; _releasesRun = new int[_cap]; _grown = new bool[_cap];
             Instances = new SwarmInstance[_cap]; _bInst = new SwarmInstance[_cap];
             HeartIdx = new uint[2 * _cap]; _bHeart = new uint[2 * _cap];
             Engaged = new int[_cap]; _bEngaged = new int[_cap];
@@ -272,6 +290,41 @@ namespace CosmicShore.Gameplay
                 for (int q = 0; q < _killCount; q++) if (_kills[q] == i) return;
                 if (_killCount < _kills.Length) _kills[_killCount++] = i;
             }
+        }
+
+        /// <summary>Tandava's severing: member <paramref name="i"/> leaves this core for another swarm (main thread, any time;
+        /// the same thread rule as <see cref="QueueKill"/>, and the caller masks the slot the same way). Nothing dies: the
+        /// core counts no death and lays nothing to replace it (<see cref="SwarmSortCore.Release"/>).</summary>
+        public void QueueRelease(int i)
+        {
+            if (i < 0 || i >= _cap) return;
+            lock (_inLock)
+            {
+                for (int q = 0; q < _releaseCount; q++) if (_releases[q] == i) return;
+                if (_releaseCount < _releases.Length) _releases[_releaseCount++] = i;
+            }
+        }
+
+        /// <summary>Tandava's severing: a grown member arrives from another swarm at <paramref name="simPos"/> (sim units,
+        /// cell-centred - the core's own frame) and joins this core in the next tick that starts (<see cref="SwarmSortCore.Graft"/>).
+        /// It does not bloom in: it was alive a moment ago in the other swarm. Main thread, any time.</summary>
+        public void QueueGraft(Vector3 simPos, Vector3 simVel, Vector3 facing, int element)
+        {
+            lock (_inLock) _grafts.Add(new SwarmGraft { Pos = simPos, Vel = simVel, Facing = facing, Element = element });
+        }
+
+        /// <summary>Tandava's severing: the next tick keeps only <paramref name="keep"/> of every element in the stomach (the
+        /// rest crawled off in the severed piece). Main thread, any time; several scales multiply.</summary>
+        public void QueueStomachScale(float keep)
+        {
+            lock (_inLock) _stomachKeep *= Math.Clamp(keep, 0f, 1f);
+        }
+
+        /// <summary>Main thread, before <see cref="Prime"/> only: slot <paramref name="i"/> was grafted in grown (a severed
+        /// swarm's seed), so its first frame shows it whole instead of blooming it in.</summary>
+        public void MarkGrown(int i)
+        {
+            if (i >= 0 && i < _cap) _grown[i] = true;
         }
 
         /// <summary>Bank eaten volume (main thread, any time); paid into the core's stomach next tick.
@@ -374,8 +427,9 @@ namespace CosmicShore.Gameplay
         void Run()
         {
             // inputs first, on the thread that owns the core now
-            int kills, plan;
+            int kills, plan, releases;
             bool pose;
+            float keep;
             lock (_inLock)
             {
                 kills = _killCount;
@@ -384,6 +438,11 @@ namespace CosmicShore.Gameplay
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
                 plan = _requestPlan; _requestPlan = -1;
                 pose = _requestPose; _requestPose = false;
+                releases = _releaseCount;
+                Array.Copy(_releases, _releasesRun, releases);
+                _releaseCount = 0;
+                _graftsRun.Clear(); _graftsRun.AddRange(_grafts); _grafts.Clear();
+                keep = _stomachKeep; _stomachKeep = 1f;
             }
             if (Core is IScriptedSwarmCore scripted)
             {
@@ -395,6 +454,20 @@ namespace CosmicShore.Gameplay
                 }
             }
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
+            var sort = Core as SwarmSortCore;
+            for (int q = 0; q < releases; q++)
+            {
+                if (sort != null) sort.Release(_releasesRun[q]);
+                else Core.Kill(_releasesRun[q]);
+            }
+            if (sort != null)
+                for (int q = 0; q < _graftsRun.Count; q++)
+                {
+                    var g = _graftsRun[q];
+                    int slot = sort.Graft(g.Pos, g.Vel, g.Facing, g.Element);
+                    if (slot >= 0) _grown[slot] = true;
+                }
+            if (keep < 1f) for (int e = 0; e < 4; e++) Core.Stomach[e] *= keep;
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
             Core.SwimTarget = SwimTarget;
             _bEvents.Clear();
@@ -449,7 +522,13 @@ namespace CosmicShore.Gameplay
                 alive++;
                 var cur = c.Pos[i]; var face = c.Facing[i];
                 bool newborn = !_lastAlive[i];
-                if (newborn) { _lastPos[i] = cur; _lastFace[i] = face; _lastMolt[i] = 0f; _born[i] = tickNow; _strike[i] = 0; }
+                if (newborn)
+                {
+                    _lastPos[i] = cur; _lastFace[i] = face; _lastMolt[i] = 0f; _strike[i] = 0;
+                    // a member grafted in from another swarm (Tandava's severing) arrives grown: born long ago, no bloom
+                    _born[i] = _grown[i] ? tickNow - GrownAgeTicks : tickNow;
+                }
+                _grown[i] = false;
 
                 int eff = c.EffectiveElement(i);
                 var h = S.DefaultHalf[eff];

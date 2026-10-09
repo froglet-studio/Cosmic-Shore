@@ -302,6 +302,20 @@ def build_forms():
 
 
 FORM_ROWS = build_forms()
+
+
+def build_severed():
+    """The Severed (TANDAVA.md §3.11): the piece a clean cut parts from the body - one small form, one variant (its travel
+    plan and its strike twin, no coils, no lunge), as TandavaSeverHarness.SeveredForm runs it. Its bank is the director's
+    RejoinBank and its meal half a form's; FillToEvolve is unused (RejoinFill decides)."""
+    key, _, name, _, _ = next(v for v in tandava_plans.VARIANTS if v[0] == "severed")
+    p = PLANS[key]
+    return dict(name=name, role=3, fill=FILL_TO_EVOLVE, meal=0.5 * MEAL_VOLUME,
+                line="", variant=dict(name=name, plan=PLAN_KEYS.index(key), feed=PLAN_KEYS.index(key + "_feed"),
+                                      mouth=wv(p["mouth"]), feed_mouth=wv(PLANS[key + "_feed"]["mouth"]), n=p["n"] * DENSITY))
+
+
+SEVERED_ROW = build_severed()
 _ring = next(PLANS[k]["ring"] for k in PLAN_KEYS if "ring" in PLANS[k])
 HALO_RADIUS, GUARD_POST_RADIUS = _ring["radius"] * WORLD, _ring["guardOrbit"] * WORLD
 HALO_OFFSET = max(math.sqrt(sum(x * x for x in v["halo"])) for v in FORM_ROWS[2]["variants"])
@@ -589,6 +603,16 @@ for f in FORM_ROWS:
                        + f"      LungeMouth: {v3(*v['lunge_mouth'])}\n"
                        f"      Mouth: {v3(*v['mouth'])}\n      FeedMouth: {v3(*v['feed_mouth'])}\n      HaloCentre: {v3(*v['halo'])}\n")
 
+_sv = SEVERED_ROW["variant"]
+severed_yaml = (f"  SeveredForm:\n    DisplayName: {yaml_str(SEVERED_ROW['name'])}\n    Role: {SEVERED_ROW['role']}\n"
+                f"    FillToEvolve: {num(SEVERED_ROW['fill'])}\n    BankShare: 0\n    MealVolume: {num(SEVERED_ROW['meal'])}\n"
+                f"    Line: \n    Variants:\n"
+                f"    - DisplayName: {yaml_str(_sv['name'])}\n      PlanIndex: {_sv['plan']}\n      FeedPlanIndex: {_sv['feed']}\n"
+                "      CoilPlanIndices: []\n      CoilMouths: []\n      CoilRoamRadius: 0\n"
+                "      LungePlanIndex: -1\n      SnapPlanIndex: -1\n      LungeMouth: {x: 0, y: 0, z: 0}\n"
+                f"      Mouth: {v3(*_sv['mouth'])}\n      FeedMouth: {v3(*_sv['feed_mouth'])}\n      HaloCentre: {{x: 0, y: 0, z: 0}}\n"
+                f"  SwarmSpawn: {{fileID: 11400000, guid: {G_ASSET['SwarmSpecies']}, type: 2}}\n")
+
 director_yaml = "  Director:\n" + "".join(
     f"    {name}: {num(round(DIRECTOR_AUTHORED.get(name, value), 3)) if kind == 'float' else int(DIRECTOR_AUTHORED.get(name, value))}\n"
     for name, value, kind in DIRECTOR)
@@ -597,7 +621,7 @@ SETTINGS_REL = "Assets/_SO_Assets/Games/TandavaSettings.asset"
 g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              so(G_SCRIPT["TandavaSettingsSO"], "TandavaSettings") +
              f"  SwarmConfig: {{fileID: 11400000, guid: {G_ASSET['TandavaSwarmFaunaConfig']}, type: 2}}\n"
-             f"  HatchPoint: {v3(*HATCH)}\n  HatchHeading: {v3(1)}\n  Forms:\n" + forms_yaml + director_yaml +
+             f"  HatchPoint: {v3(*HATCH)}\n  HatchHeading: {v3(1)}\n  Forms:\n" + forms_yaml + severed_yaml + director_yaml +
              f"  FoodPerPrism: {num(round(MASS_LEAF, 3))}\n  FoodCheckSeconds: 0.5\n"
              f"  HaloRadius: {num(round(HALO_RADIUS, 2))}\n  HaloMouthRadius: {num(HALO_MOUTH)}\n"
              f"  GuardPostRadius: {num(round(GUARD_POST_RADIUS, 2))}\n  GuardRadius: {num(GUARD_RADIUS)}\n"
@@ -619,12 +643,22 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              "  DanceBrokenLine: The dance is broken. The reef keeps its turn.\n"
              f"  HeldOffLine: {yaml_str('Time. You held it off - the cycle is unfinished.')}\n"
              f"  LungeLine: {yaml_str('It turns on you - its guards are out round its jaws. Hurt it and it runs.')}\n"
+             f"  SeveredLine: {yaml_str('You cut it in two. The severed half crawls off to feed - stop it getting home.')}\n"
+             "  RejoinedLine: The severed half found its way home. It is whole again.\n"
+             f"  SuccessionLine: {yaml_str('You cut the body away - but the severed half lives, and it remembers the shape.')}\n"
+             f"  LearnedFeedingLine: {yaml_str('It remembers being struck at the table. It eats far from you now, and bolts sooner.')}\n"
+             f"  LearnedLungingLine: {yaml_str('It remembers what its lunges cost. It will not turn on you so readily.')}\n"
+             f"  LearnedChasedLine: {yaml_str('It remembers being run down. It feels you coming from farther away.')}\n"
+             f"  LearnedSeveredLine: {yaml_str('It remembers being cut in two. Its severed halves hurry home.')}\n"
              "  RoamingLabel: Roaming\n  WaryLabel: Wary\n  FleeingLabel: Fleeing\n"
              f"  LungingLabel: {yaml_str('Lunging - mind its guards')}\n"
              f"  FeedingLabel: {yaml_str('Feeding - strike the body')}\n  RisingLabel: Rising\n"
              f"  DancingLabel: {yaml_str('Dancing - break the halo')}\n  FeastLabel: the last feast\n"
              "  HaloLabel: Halo rings broken\n  DrumLabel: Drum\n  TimeLabel: Time left\n"
              f"  BodyFormat: {yaml_str('Body {0}%')}\n"
+             "  SeveredLabel: The Severed\n"
+             f"  SeveredOutFormat: {yaml_str('home in {0}')}\n"
+             f"  SeveredHomeLabel: {yaml_str('crawling home - cut it off')}\n"
              "  NudgeThreshold: 25\n  NudgeFraction: 0.2\n  MaxNudge: 8\n  AiFlankBack: 70\n")
 
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/TandavaScoringRule.asset", G_ASSET["TandavaScoringRule"],
@@ -680,7 +714,11 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_AS
              lib.toast(144, "{0}", domain_names=0) +
              lib.toast(145, "{0}", domain_names=0) +
              lib.toast(146, "{0}", domain_names=0) +
-             lib.toast(147, "{0}", domain_names=0))
+             lib.toast(147, "{0}", domain_names=0) +
+             lib.toast(148, "{0}", domain_names=0) +
+             lib.toast(149, "{0}", domain_names=0) +
+             lib.toast(150, "{0}", domain_names=0) +
+             lib.toast(151, "{0}", domain_names=0))
 g.register_toast_config(G_ASSET["GameToastConfigTandava"])
 
 
@@ -995,7 +1033,8 @@ if not re.search(rf"\bTandava = {MODE_ID},", g.read("Assets/_Scripts/Data/Enums/
 toasts_src = g.read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
 for name, sid in (("TandavaMatchStart", 137), ("TandavaFormTaken", 138), ("TandavaCompleted", 139), ("TandavaBroken", 140),
                   ("TandavaFeeding", 141), ("TandavaDenyHint", 142), ("TandavaMealBroken", 143), ("TandavaRising", 144),
-                  ("TandavaHaloLit", 145), ("TandavaHaloBroken", 146), ("TandavaLunge", 147)):
+                  ("TandavaHaloLit", 145), ("TandavaHaloBroken", 146), ("TandavaLunge", 147), ("TandavaSevered", 148),
+                  ("TandavaRejoined", 149), ("TandavaSuccession", 150), ("TandavaLearned", 151)):
     if not re.search(rf"\b{name} = {sid},", toasts_src):
         errors.append(f"GameToastSituation.{name} is not {sid}")
 if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSignal.cs")):

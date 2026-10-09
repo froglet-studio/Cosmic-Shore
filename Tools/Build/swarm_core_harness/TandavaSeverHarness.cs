@@ -59,9 +59,10 @@ static partial class TandavaHarness
         foreach (int i in _piece) { pcore.Graft(c.Pos[i], c.Vel[i], c.Facing[i], c.EffectiveElement(i)); c.Release(i); }
         float share = n / (float)Math.Max(1, aliveBefore);
         for (int e = 0; e < 4; e++) { float take = c.Stomach[e] * share; pcore.Stomach[e] = take; c.Stomach[e] -= take; }
-        var pd = new TandavaDirectorCore(new[] { SeveredForm(s.B) }, DirectorSettings(), 104729 + s.Severs);
-        s.Pieces.Add(new Piece { C = pcore, D = pd, Born = s.Now });
         s.D.OnSevered(n);
+        var pd = new TandavaDirectorCore(new[] { SeveredForm(s.B) }, DirectorSettings(), 104729 + s.Severs);
+        pd.RememberFrom(s.D);   // §3.12: the piece knows what the body knows
+        s.Pieces.Add(new Piece { C = pcore, D = pd, Born = s.Now });
         s.Severs++;
         s.LastSever = (aliveBefore, n, Active(c), StomachTotal(c) + StomachTotal(pcore));
         s.SeverLog.Add((s.Now, $"severed {n} of {aliveBefore} as the {s.D.Form.Name}"));

@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// the replicated plan, levers and goal and is nudged toward the server's anchor, so every peer hunts the same animal
     /// in the same place. It is also the top-left goal stack's <see cref="IGoalSource"/> on every peer. Scoring is the server's.
     /// </summary>
-    public class TandavaController : MultiplayerDomainGamesController, ISwarmDirector, IGoalSource
+    public partial class TandavaController : MultiplayerDomainGamesController, ISwarmDirector, IGoalSource
     {
         [Header("Tandava")]
         [Tooltip("Drag TandavaSettings.asset - the forms and their variants, the director's dials, the halo, the gold " +
@@ -117,6 +117,7 @@ namespace CosmicShore.Gameplay
             _form.OnValueChanged += OnFormChanged;
             _phase.OnValueChanged += OnPhaseChanged;
             _outcome.OnValueChanged += OnOutcomeChanged;
+            _pieceLive.OnValueChanged += OnPieceLiveChanged;
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
 
             if (IsServer) DrawVariants();
@@ -131,6 +132,7 @@ namespace CosmicShore.Gameplay
             _form.OnValueChanged -= OnFormChanged;
             _phase.OnValueChanged -= OnPhaseChanged;
             _outcome.OnValueChanged -= OnOutcomeChanged;
+            _pieceLive.OnValueChanged -= OnPieceLiveChanged;
             gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
             if (_haloRoot) Destroy(_haloRoot);
             _halo = null;
@@ -302,6 +304,8 @@ namespace CosmicShore.Gameplay
             ds.HaloToBreak = toBreak;
             ds.ShatterFraction = breakPercent / 100f;
             ds.Centre = S(Origin);
+            _ds = ds;
+            _lostSeen = swarm.MembersLost;
             _core = new TandavaDirectorCore(forms, ds, System.Environment.TickCount);
         }
 
@@ -326,8 +330,10 @@ namespace CosmicShore.Gameplay
                 Stomach2 = swarm.StomachVolume(2), Stomach3 = swarm.StomachVolume(3),
                 StomachFill = swarm.StomachFraction, SinceBite = swarm.SecondsSinceBite,
                 EatenTotal = swarm.EatenTotal, Starving = swarm.IsStarving,
+                Severed = _severed ? _severed.MemberCount : 0,
             };
             _core.Tick(dt, state, _food, _pilots);
+            CheckSever(swarm, state);   // before the wound buds shut (TandavaController.Severing.cs)
             DrainEvents(swarm);
 
             if (_core.InDance && now >= _nextGuardCheck)
@@ -416,6 +422,18 @@ namespace CosmicShore.Gameplay
                             Narrate(GameToastSituation.TandavaHaloBroken, e.B == 1 ? TandavaLine.FirstHalo : TandavaLine.LastHalo,
                                     e.B, _core.S.HaloToBreak);
                         break;
+                    case TandavaEventKind.Severed:
+                        Narrate(GameToastSituation.TandavaSevered, TandavaLine.Severed, e.A);
+                        break;
+                    case TandavaEventKind.Rejoined:
+                        Narrate(GameToastSituation.TandavaRejoined, TandavaLine.Rejoined, e.A);
+                        break;
+                    case TandavaEventKind.Succession:
+                        Narrate(GameToastSituation.TandavaSuccession, TandavaLine.Succession, e.A);
+                        break;
+                    case TandavaEventKind.Learned:
+                        Narrate(GameToastSituation.TandavaLearned, TandavaLine.Learned, e.A);
+                        break;
                     case TandavaEventKind.Ended:
                         var outcome = (TandavaOutcome)e.B;
                         _endedForm = _core.FormIx;
@@ -451,6 +469,13 @@ namespace CosmicShore.Gameplay
 
         bool ISwarmDirector.TryGetSeed(SwarmFauna swarm, out Vector3 position, out Vector3 heading)
         {
+            if (IsSevered(swarm))
+            {
+                // the Severed hatches where its members were, heading away from the body it left
+                position = _seedAt;
+                heading = _seedHeading;
+                return true;
+            }
             _swarm = swarm;
             position = Origin + settings.HatchPoint;
             heading = settings.HatchHeading.sqrMagnitude > 1e-6f ? settings.HatchHeading.normalized : Vector3.right;
@@ -461,13 +486,14 @@ namespace CosmicShore.Gameplay
         {
             // it hatches WHOLE as the variant of the first form this match drew (a client that has not heard the draw
             // yet hatches as the first variant, and re-sorts into the drawn one on its first published tick)
+            if (IsSevered(swarm)) { form = SeveredPlan; return form >= 0; }
             form = settings && settings.Forms.Count > 0 ? Variant(0).PlanIndex : 0;
             return settings;
         }
 
         bool ISwarmDirector.TryGetGoal(SwarmFauna swarm, out Vector3 goal)
         {
-            goal = CurrentGoal();
+            goal = IsSevered(swarm) ? PieceGoal(swarm) : CurrentGoal();
             return true;
         }
 
@@ -483,6 +509,8 @@ namespace CosmicShore.Gameplay
 
         void ISwarmDirector.OnTickPublished(SwarmFauna swarm)
         {
+            if (IsSevered(swarm)) { OnSeveredTick(swarm); return; }
+            if (_swarm && swarm != _swarm) return;   // a body the Severed succeeded, on its way out
             _swarm = swarm;
             if (IsServer)
             {
@@ -627,6 +655,10 @@ namespace CosmicShore.Gameplay
             else
                 goals.Add(GoalEntry.Progress(null, name, _progress.Value, $"{Mathf.RoundToInt(100f * _progress.Value)}%"));
             goals.Add(GoalEntry.Progress(null, MoodLabel(phase), body, bodyText));
+            if (_pieceLive.Value)
+                goals.Add(GoalEntry.Text(null, settings.SeveredLabel, _pieceHome.Value < 0f
+                    ? settings.SeveredHomeLabel
+                    : settings.SeveredOutFormat.Replace("{0}", Clock(_pieceHome.Value))));
             if (_timeLeft.Value >= 0f) goals.Add(GoalEntry.Text(null, settings.TimeLabel, Clock(_timeLeft.Value)));
             return true;
         }

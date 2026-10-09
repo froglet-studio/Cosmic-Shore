@@ -127,6 +127,24 @@ namespace CosmicShore.Gameplay
         Succession = 11,
         /// <summary>The Severed only: regrown and fed, it turns for home. A: its members.</summary>
         HomeBound = 12,
+        /// <summary>A wound has taught it something (its memory of that wound crossed <see cref="TandavaDirectorSettings.LearnedAt"/>).
+        /// A: the <see cref="TandavaWound"/>.</summary>
+        Learned = 13,
+    }
+
+    /// <summary>WOUND MEMORY (TANDAVA.md §3.12): how the creature has been hurt - what it was doing when it lost members -
+    /// which it remembers for the rest of the match (a succession included) and adapts to, so the same kill does not work
+    /// twice.</summary>
+    public enum TandavaWound
+    {
+        /// <summary>Struck while it ate: it bolts from the table sooner, and picks plants farther from the pilots.</summary>
+        Feeding = 0,
+        /// <summary>Punished while it lunged: it lunges only when nearly whole, and less often.</summary>
+        Lunging = 1,
+        /// <summary>Run down while it roamed: it senses pilots from farther, and runs sooner.</summary>
+        Chased = 2,
+        /// <summary>Cut in two: every later piece turns for home sooner.</summary>
+        Severed = 3,
     }
 
     public struct TandavaEvent
@@ -335,6 +353,28 @@ namespace CosmicShore.Gameplay
         /// <summary>A homebound piece rejoins the body when their centres are this close (world).</summary>
         public float RejoinReach = 90f;
 
+        // ── wound memory (§3.12)
+        /// <summary>How much of its form's body, lost one way, makes that wound's memory 63% of its full weight (memory =
+        /// 1 - exp(-lost share / this)); severs are remembered by count (LearnRejoin). 0 = it never learns.</summary>
+        public float ScarRef = 0.15f;
+        /// <summary>The memory at which it has LEARNED a wound (the narrator says so, once per wound).</summary>
+        public float LearnedAt = 0.5f;
+        /// <summary>Struck at the table: the share a meal may cost before it bolts falls by this much at full memory...</summary>
+        public float LearnMealBreak = 0.6f;
+        /// <summary>...and how far a pilot spoils a plant (SafeRadius) grows by this much; its fear of them is never less
+        /// than its wary fear, scaled by the memory.</summary>
+        public float LearnSafeRadius = 1.5f;
+        /// <summary>Punished in a lunge: the body it must have to lunge rises by this share of its form at full memory...</summary>
+        public float LearnLungeBody = 0.25f;
+        /// <summary>...and its lunge cooldown grows by this much.</summary>
+        public float LearnLungeCooldown = 2f;
+        /// <summary>Run down: how far it senses pilots grows by this much at full memory, and the threat it runs at falls by
+        /// LearnFlee (a hurt creature runs; a scarred one runs sooner).</summary>
+        public float LearnSense = 0.4f;
+        public float LearnFlee = 0.35f;
+        /// <summary>Cut in two: each sever after the first multiplies the next piece's time apart by this.</summary>
+        public float LearnRejoin = 0.6f;
+
         // ── the match
         /// <summary>The cycle must complete within this many seconds of the go, or the pilots have held it off. 0 = no clock -
         /// the shipped hunt: it ends when the creature is broken or its cycle is complete, never on a timer.</summary>
@@ -425,7 +465,10 @@ namespace CosmicShore.Gameplay
         readonly Random _rng;
         readonly Dictionary<int, float> _restUntil = new();
         float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt, _snapUntil = -1f;
-        int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1;
+        int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1, _learnedMask;
+        /// <summary>The wounds it remembers, by <see cref="TandavaWound"/>: the share of a form's body lost each way (severs:
+        /// a count).</summary>
+        readonly float[] _scars = new float[4];
         bool _armed, _haveWander;
         Vector3 _wander;
 
@@ -465,8 +508,54 @@ namespace CosmicShore.Gameplay
         public bool HomeBound => Phase == TandavaPhase.Rejoin;
         /// <summary>The Severed only: seconds until it turns for home whatever it has managed (0 once it has).</summary>
         public float RejoinRemaining => Form.Role == TandavaFormRole.Severed && Phase != TandavaPhase.Rejoin
-            ? MathF.Max(0f, S.RejoinAfterSeconds - Clock) : 0f;
+            ? MathF.Max(0f, RejoinAfterNow - Clock) : 0f;
         float _severReadyAt;
+
+        /// <summary>How well it remembers a wound, 0..1 (§3.12).</summary>
+        public float Memory(TandavaWound w)
+        {
+            if (S.ScarRef <= 0f) return 0f;
+            float scar = _scars[(int)w];
+            // a sever is remembered from the second: the first piece had no lesson to come home by
+            return w == TandavaWound.Severed ? (scar <= 1f ? 0f : 1f - MathF.Pow(S.LearnRejoin, scar - 1f))
+                                             : 1f - MathF.Exp(-scar / S.ScarRef);
+        }
+
+        /// <summary>The raw scar (a share of a form's body; severs: a count).</summary>
+        public float Scar(TandavaWound w) => _scars[(int)w];
+
+        /// <summary>A piece remembers what its body remembers (the glue calls it as the Severed is born), and a body that
+        /// takes a piece's place keeps its own memory - the director is the creature's mind.</summary>
+        public void RememberFrom(TandavaDirectorCore other)
+        {
+            for (int k = 0; k < 4; k++) _scars[k] = MathF.Max(_scars[k], other._scars[k]);
+            _learnedMask |= other._learnedMask;
+        }
+
+        void Wound(TandavaWound w, float amount)
+        {
+            if (amount <= 0f) return;
+            _scars[(int)w] += amount;
+            int bit = 1 << (int)w;
+            // a sever is learned at the second (the first piece had nothing to learn from); every other wound at LearnedAt
+            bool learned = w == TandavaWound.Severed ? _scars[(int)w] >= 2f && S.ScarRef > 0f : Memory(w) >= S.LearnedAt;
+            if ((_learnedMask & bit) == 0 && learned && Form.Role != TandavaFormRole.Severed)
+            {
+                _learnedMask |= bit;
+                Events.Add(new TandavaEvent { Kind = TandavaEventKind.Learned, A = (int)w, B = FormIx });
+            }
+        }
+
+        // the settings as its memory bends them
+        float MealBreakShare => S.MealBreakFraction * (1f - S.LearnMealBreak * Memory(TandavaWound.Feeding));
+        float SafeRadiusNow => S.SafeRadius * (1f + S.LearnSafeRadius * Memory(TandavaWound.Feeding));
+        float LungeBodyNow => MathF.Min(0.98f, S.LungeBodyMin + S.LearnLungeBody * Memory(TandavaWound.Lunging));
+        float LungeCooldownNow => S.LungeCooldownSeconds * (1f + S.LearnLungeCooldown * Memory(TandavaWound.Lunging));
+        public float SenseRadiusNow => S.SenseRadius * (1f + S.LearnSense * Memory(TandavaWound.Chased));
+        public float FleeEnterNow => S.FleeEnter * (1f - S.LearnFlee * Memory(TandavaWound.Chased));
+        /// <summary>A piece's time apart: shorter for every sever it remembers past the first.</summary>
+        public float RejoinAfterNow => S.RejoinAfterSeconds * (_scars[(int)TandavaWound.Severed] <= 1f ? 1f
+            : MathF.Pow(S.LearnRejoin, _scars[(int)TandavaWound.Severed] - 1f));
 
         /// <summary>May the body part now? Never in the dance or the rise (the figure is one sculpture; its attendant packs
         /// already stand apart), never mid-lunge (the heads and jaws are thrown out on stretched necks for that second and
@@ -486,6 +575,7 @@ namespace CosmicShore.Gameplay
         {
             _severReadyAt = Clock + S.SeverCooldownSeconds;
             Events.Add(new TandavaEvent { Kind = TandavaEventKind.Severed, A = members, B = FormIx });
+            Wound(TandavaWound.Severed, 1f);
             if (Feeding) EndMeal(TandavaMealEnd.Broken);
             if (Lunging) EndLunge();
             _fleeUntil = Clock + S.FleeMinSeconds;
@@ -565,10 +655,10 @@ namespace CosmicShore.Gameplay
                 case TandavaPhase.Rejoin:
                     Goal = Home;
                     break;
-                case TandavaPhase.Roam when form.Role == TandavaFormRole.Severed && Clock >= S.RejoinAfterSeconds:
+                case TandavaPhase.Roam when form.Role == TandavaFormRole.Severed && Clock >= RejoinAfterNow:
                     Advance(s);
                     break;
-                case TandavaPhase.Feed when form.Role == TandavaFormRole.Severed && Clock >= S.RejoinAfterSeconds:
+                case TandavaPhase.Feed when form.Role == TandavaFormRole.Severed && Clock >= RejoinAfterNow:
                     EndMeal(TandavaMealEnd.Fed);
                     Advance(s);
                     break;
@@ -647,8 +737,9 @@ namespace CosmicShore.Gameplay
                 for (int k = 0; k < pilots.Count; k++)
                 {
                     var rel = pilots[k].Position - s.Anchor; float d = rel.Length();
-                    if (d >= S.SenseRadius) continue;
-                    float near = 1f - d / MathF.Max(1f, S.SenseRadius);
+                    float sense = SenseRadiusNow;
+                    if (d >= sense) continue;
+                    float near = 1f - d / MathF.Max(1f, sense);
                     float closing = d > 1e-3f ? -Vector3.Dot(pilots[k].Velocity, rel / d) : 0f;
                     float charge = Math.Clamp(closing / MathF.Max(1f, S.ApproachSpeed), 0f, 1f);
                     float w = Math.Clamp(near * (0.55f + 0.45f * charge), 0f, 1f);
@@ -656,6 +747,14 @@ namespace CosmicShore.Gameplay
                 }
             int lost = _lostPrev < 0 ? 0 : Math.Max(0, s.Lost - _lostPrev);
             _lostPrev = s.Lost;
+            // §3.12: what it was doing when it was hurt is what it remembers (hunger's own sheds teach it nothing)
+            if (lost > 0 && !s.Starving && Form.PlanCount > 0)
+            {
+                float share = lost / (float)Form.PlanCount;
+                if (Feeding) Wound(TandavaWound.Feeding, share);
+                else if (Lunging || Snapping) Wound(TandavaWound.Lunging, share);
+                else if (Phase == TandavaPhase.Roam) Wound(TandavaWound.Chased, share);
+            }
             if (dt > 0f)
             {
                 float a = 1f - MathF.Exp(-dt / 0.5f);
@@ -677,22 +776,24 @@ namespace CosmicShore.Gameplay
             bool roaming = Phase == TandavaPhase.Roam;
             bool hurt = s.Alive < S.LungeBodyMin * Form.PlanCount;
             bool canBolt = roaming && hurt;
+            float flee = FleeEnterNow;
+            bool lungeHurt = s.Alive < LungeBodyNow * Form.PlanCount;   // a scarred lunger wants more of itself first
             float nearest = NearestPilot(s, pilots, out _);
-            bool canLunge = roaming && !hurt && Clock >= _lungeReadyAt && nearest <= S.LungeRadius;
+            bool canLunge = roaming && !lungeHurt && Clock >= _lungeReadyAt && nearest <= S.LungeRadius;
             if (Clock < _fleeUntil) mood = TandavaMood.Fleeing;
             else if (Mood == TandavaMood.Lunging)
             {
-                if (!roaming || hurt || Clock >= _lungeUntil || nearest > 1.5f * S.LungeRadius) { EndLunge(); mood = Threat >= S.WaryExit ? TandavaMood.Wary : TandavaMood.Calm; }
+                if (!roaming || lungeHurt || Clock >= _lungeUntil || nearest > 1.5f * S.LungeRadius) { EndLunge(); mood = Threat >= S.WaryExit ? TandavaMood.Wary : TandavaMood.Calm; }
             }
             else if (canLunge && Threat >= S.LungeEnter) { mood = TandavaMood.Lunging; _lungeUntil = Clock + S.LungeSeconds; }
             else switch (Mood)
             {
                 case TandavaMood.Calm:
-                    if (canBolt && Threat >= S.FleeEnter) mood = TandavaMood.Fleeing;
+                    if (canBolt && Threat >= flee) mood = TandavaMood.Fleeing;
                     else if (Threat >= S.WaryEnter) mood = TandavaMood.Wary;
                     break;
                 case TandavaMood.Wary:
-                    if (canBolt && Threat >= S.FleeEnter) mood = TandavaMood.Fleeing;
+                    if (canBolt && Threat >= flee) mood = TandavaMood.Fleeing;
                     else if (Threat < S.WaryExit) mood = TandavaMood.Calm;
                     break;
                 default:
@@ -703,7 +804,7 @@ namespace CosmicShore.Gameplay
             SetMood(mood);
         }
 
-        void EndLunge() { _lungeUntil = -1f; _lungeReadyAt = Clock + S.LungeCooldownSeconds; }
+        void EndLunge() { _lungeUntil = -1f; _lungeReadyAt = Clock + LungeCooldownNow; }
 
         /// <summary>The distance to the nearest pilot (infinity with none), and its index.</summary>
         static float NearestPilot(in TandavaSwarmState s, IReadOnlyList<TandavaPilot> pilots, out int ix)
@@ -823,6 +924,9 @@ namespace CosmicShore.Gameplay
         {
             if (food == null) return -1;
             float fear = Mood == TandavaMood.Wary ? S.FearWary : S.FearCalm;
+            float tableMemory = Memory(TandavaWound.Feeding);
+            fear = MathF.Max(fear, S.FearWary * tableMemory);   // §3.12: struck at the table, it is wary of every table
+            float safeRadius = SafeRadiusNow;
             int best = -1; float bestScore = 0f;
             for (int k = 0; k < food.Count; k++)
             {
@@ -835,7 +939,7 @@ namespace CosmicShore.Gameplay
                     for (int q = 0; q < pilots.Count; q++)
                     {
                         float dp = Vector3.Distance(pilots[q].Position, f.Position);
-                        safety *= 1f - fear * MathF.Exp(-dp / MathF.Max(1f, S.SafeRadius));
+                        safety *= 1f - fear * MathF.Exp(-dp / MathF.Max(1f, safeRadius));
                     }
                 float score = MathF.Sqrt(f.Volume) * safety / (d + S.DistanceBias);
                 if (f.Id == TargetFood) score *= S.StickBonus;
@@ -926,7 +1030,7 @@ namespace CosmicShore.Gameplay
             EatenHere = s.EatenTotal - _eatenAtMeal;
             float sat = Clock - _feedSince;
             int lostHere = s.Lost - _lostAtMeal;
-            if (lostHere >= S.MealBreakFraction * Form.PlanCount)
+            if (lostHere >= MealBreakShare * Form.PlanCount)
             {
                 EndMeal(TandavaMealEnd.Broken);
                 _fleeUntil = Clock + S.FleeMinSeconds;   // hurt at the table: it bolts

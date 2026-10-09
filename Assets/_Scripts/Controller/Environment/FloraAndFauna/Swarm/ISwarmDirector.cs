@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -29,5 +30,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>A form change committed in the core (a scripted form list's indices; the elemental plans otherwise).</summary>
         void OnFormCommitted(SwarmFauna swarm, int fromForm, int toForm);
+    }
+
+    /// <summary>
+    /// A director that can hatch a swarm as members MOVED from another (Tandava's severing, TANDAVA.md §3.11): the piece a
+    /// cut parted from the body crawls off as its own swarm. Asked once, in <see cref="SwarmFauna"/>'s seed, before the
+    /// first member exists (a sort core only). True with grafts = the swarm hatches as exactly those members, grown, where
+    /// they were, with that stomach; false = it hatches as a fresh brood, as every other swarm does.
+    /// Moving is not spawning: <see cref="ISwarmDirector"/>'s rule holds - the members were alive a moment ago in the
+    /// other swarm, which released them without a death.
+    /// </summary>
+    public interface ISwarmSeedGraft
+    {
+        bool TryGetSeedGraft(SwarmFauna swarm, List<SwarmGraft> grafts, float[] stomach);
     }
 }

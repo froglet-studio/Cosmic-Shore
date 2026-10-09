@@ -224,6 +224,27 @@ MonoBehaviour:
       Mouth: {x: 93.412, y: -0.329, z: -0.312}
       FeedMouth: {x: 81.975, y: 0.029, z: -0.303}
       HaloCentre: {x: 0, y: 0, z: 0}
+  SeveredForm:
+    DisplayName: the Severed
+    Role: 3
+    FillToEvolve: 0.9
+    BankShare: 0
+    MealVolume: 2000
+    Line: 
+    Variants:
+    - DisplayName: the Severed
+      PlanIndex: 51
+      FeedPlanIndex: 52
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 91.407, y: -0.767, z: 0.012}
+      FeedMouth: {x: 90.455, y: 0, z: 0.012}
+      HaloCentre: {x: 0, y: 0, z: 0}
+  SwarmSpawn: {fileID: 11400000, guid: f40529e9fe9ddcc6a5eb6f47e4a6c396, type: 2}
   Director:
     RoamRadius: 616
     SenseRadius: 450
@@ -288,6 +309,15 @@ MonoBehaviour:
     RejoinBank: 1000
     RejoinAfterSeconds: 40
     RejoinReach: 90
+    ScarRef: 0.15
+    LearnedAt: 0.5
+    LearnMealBreak: 0.6
+    LearnSafeRadius: 1.5
+    LearnLungeBody: 0.25
+    LearnLungeCooldown: 2
+    LearnSense: 0.4
+    LearnFlee: 0.35
+    LearnRejoin: 0.6
     MatchSeconds: 0
   FoodPerPrism: 72.866
   FoodCheckSeconds: 0.5
@@ -329,6 +359,13 @@ MonoBehaviour:
   DanceBrokenLine: The dance is broken. The reef keeps its turn.
   HeldOffLine: Time. You held it off - the cycle is unfinished.
   LungeLine: It turns on you - its guards are out round its jaws. Hurt it and it runs.
+  SeveredLine: You cut it in two. The severed half crawls off to feed - stop it getting home.
+  RejoinedLine: The severed half found its way home. It is whole again.
+  SuccessionLine: 'You cut the body away - but the severed half lives, and it remembers the shape.'
+  LearnedFeedingLine: 'It remembers being struck at the table. It eats far from you now, and bolts sooner.'
+  LearnedLungingLine: It remembers what its lunges cost. It will not turn on you so readily.
+  LearnedChasedLine: It remembers being run down. It feels you coming from farther away.
+  LearnedSeveredLine: It remembers being cut in two. Its severed halves hurry home.
   RoamingLabel: Roaming
   WaryLabel: Wary
   FleeingLabel: Fleeing
@@ -341,6 +378,9 @@ MonoBehaviour:
   DrumLabel: Drum
   TimeLabel: Time left
   BodyFormat: 'Body {0}%'
+  SeveredLabel: The Severed
+  SeveredOutFormat: 'home in {0}'
+  SeveredHomeLabel: crawling home - cut it off
   NudgeThreshold: 25
   NudgeFraction: 0.2
   MaxNudge: 8
