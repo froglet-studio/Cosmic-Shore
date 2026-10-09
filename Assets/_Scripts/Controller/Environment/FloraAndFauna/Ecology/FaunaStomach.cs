@@ -45,6 +45,20 @@ namespace CosmicShore.Gameplay
             return _level;
         }
 
+        /// <summary>
+        /// Starts PART full at time <paramref name="now"/>: an offspring's provisioning (Docs/EVOLUTION.md §2, the
+        /// Fecundity locus). <paramref name="fraction"/> is clamped to [0, 1]; 1 is <see cref="Fill"/> exactly.
+        /// Returns the volume the stomach now holds.
+        /// </summary>
+        public float FillFraction(float now, float fraction)
+        {
+            if (float.IsNaN(fraction)) fraction = 1f;
+            if (fraction > 1f) fraction = 1f;
+            if (fraction < 0f) fraction = 0f;
+            _level = Capacity * fraction; _at = now;
+            return _level;
+        }
+
         public float Level(float now) => Math.Max(0f, _level - Metabolism * Math.Max(0f, now - _at));
 
         /// <summary>True once metabolism has burned the stomach to zero (never, with Metabolism 0).</summary>
