@@ -269,21 +269,26 @@ class Session:
         # the arcade card lobby after the other three pressed Start.
         C, A, D, E = self.C, self.A, self.D, self.E
         for g in (A, D, E):
-            sent = C.log_mark()
+            sent, gsent = C.log_mark(), g.log_mark()
             console(C, f"party invite {g.name}")
             try:
                 wait_party(g, lambda s: s.get("invite") == C.name, f"{g}'s invite")
                 console(g, "party accept")
                 wait_party(g, lambda s: s.get("role") == "client", f"{g} seated")
             except TimeoutError as e:
-                # Seen in 3 of 10 full runs, never in an instrumented repro: right after a host drop,
-                # the bounced member's first invite is cleared by its own expiry check on the next
-                # refresh tick. Still a FAIL - named, so nobody re-diagnoses it from scratch.
-                log = C.log_since(sent)
-                if count(log, "RemoveExpired - 1 expired") and count(log, "(reason: timeout)"):
+                # Defect 5 (2026-10-09 diagnosis): the INVITEE's Accept pre-flight refused a fresh
+                # invite because the new host's partySession advertisement lagged the invite (B29,
+                # the Accept case). The host's "RemoveExpired - 1 expired" that used to name this
+                # failure is a symptom: an invite nobody accepted outlives its 60 s lifetime during
+                # the 240 s wait. Read the invitee's log first.
+                if count(g.log_since(gsent), "Join pre-flight refused (SessionChanged)"):
                     raise TimeoutError(
-                        "KNOWN-OPEN: the new host's invite expired on send after the host drop "
-                        "(MULTIPLAYER_HARDENING_PROMPT.md, Block 3 status, defect 5). " + str(e)) from None
+                        f"B29 (Accept): {g}'s pre-flight refused a fresh invite on {C}'s stale partySession "
+                        "advertisement (Docs/PartySystem/BUGS.md B29). " + str(e)) from None
+                if count(C.log_since(sent), "(reason: timeout)"):
+                    raise TimeoutError(
+                        f"{C}'s invite to {g} expired unaccepted - a symptom; read {g}'s log for why "
+                        "the Accept did not seat it. " + str(e)) from None
                 raise
         wait_party(C, host_at(4), "the new host to count 4")
         mark = C.log_mark()
