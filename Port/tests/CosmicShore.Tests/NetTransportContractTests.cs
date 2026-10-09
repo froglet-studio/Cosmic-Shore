@@ -12,7 +12,7 @@ namespace CosmicShore.Tests
     /// </summary>
     public class NetTransportContractTests
     {
-        public static TheoryData<string> Transports => new() { "tcp", "loopback", "udp", "sim-tcp", "sim-loopback", "sim-udp" };
+        public static TheoryData<string> Transports => new() { "tcp", "loopback", "udp", "relay", "sim-tcp", "sim-loopback", "sim-udp", "sim-relay" };
 
         /// <summary>A bad line: the simulator must keep the contract (whole, ordered, reliable) under it.</summary>
         static readonly NetSimSettings BadLine = new() { LatencyMs = 5, JitterMs = 10, LossPercent = 20, BandwidthKbps = 200000 };
@@ -23,6 +23,8 @@ namespace CosmicShore.Tests
             "loopback" => new LoopbackTransportFactory(),
             "udp" => new UdpTransportFactory(),
             "sim-udp" => new SimulatedTransportFactory(new UdpTransportFactory(), () => BadLine),
+            "relay" => new RelayTestFactory(),
+            "sim-relay" => new SimulatedTransportFactory(new RelayTestFactory(), () => BadLine),
             "sim-tcp" => new SimulatedTransportFactory(new TcpTransportFactory(), () => BadLine),
             "sim-loopback" => new SimulatedTransportFactory(new LoopbackTransportFactory(), () => BadLine),
             _ => throw new ArgumentException(name),

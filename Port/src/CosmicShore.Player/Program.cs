@@ -127,6 +127,15 @@ namespace CosmicShore.Player
                         break;
                     }
                     case "--view-model" when i + 1 < args.Length: ModelViewer.Path = args[++i]; break;
+                    case "--relay-server":
+                    {
+                        // --relay-server [UDP_PORT] [HTTP_PORT] [ADVERTISED_HOST]: run Froglet's relay and nothing else.
+                        int udp = 0, http = 0;
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int u)) { udp = u; i++; }
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int h)) { http = h; i++; }
+                        string host = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : "127.0.0.1";
+                        return RelayServerMain(udp, http, host);
+                    }
                     case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
@@ -236,6 +245,28 @@ namespace CosmicShore.Player
                 return 2;
             }
             finally { ParityRun.End(); }
+        }
+
+        /// <summary>
+        /// Froglet's relay as a process (docs/MULTIPLAYER.md §6.7): the Relay Allocations REST shape on HTTP_PORT
+        /// and Unity Relay's message protocol on UDP_PORT. Players use it with COSMIC_SHORE_RELAY=&lt;the URL it prints&gt;.
+        /// Runs until killed or until its standard input closes.
+        /// </summary>
+        static int RelayServerMain(int udpPort, int httpPort, string advertisedHost)
+        {
+            using var relay = CosmicShore.Engine.Networking.FrogletRelayServer.Start(udpPort, httpPort, advertisedHost);
+            Console.WriteLine($"[relay] listening: udp {relay.UdpPort}, allocations {relay.BaseUrl} (COSMIC_SHORE_RELAY={relay.BaseUrl})");
+            var quit = new System.Threading.ManualResetEventSlim();
+            Console.CancelKeyPress += (_, e) => { e.Cancel = true; quit.Set(); };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => quit.Set();
+            long lastForwarded = -1;
+            while (!quit.Wait(30000))
+            {
+                if (relay.Forwarded == lastForwarded) continue;
+                lastForwarded = relay.Forwarded;
+                Console.WriteLine($"[relay] {relay.AllocationCount} allocation(s), {relay.Forwarded} forwarded, {relay.Refused} refused, binds {relay.BindsAccepted} ok / {relay.BindsRejected} rejected");
+            }
+            return 0;
         }
 
         static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null)

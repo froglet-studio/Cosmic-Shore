@@ -74,6 +74,18 @@ namespace CosmicShore.Player
             {
                 var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
                 Console.WriteLine($"[net] transport: {transport}");
+                // Sessions through a relay (docs/MULTIPLAYER.md §6.7): COSMIC_SHORE_RELAY=<allocations URL> (Froglet's relay
+                // server, `--relay-server`); unset keeps direct connections.
+                if (Environment.GetEnvironmentVariable("COSMIC_SHORE_RELAY") is { Length: > 0 } relayUrl && relayUrl != "off")
+                {
+                    if (relayUrl == "ugs")
+                        Console.WriteLine("[relay] COSMIC_SHORE_RELAY=ugs needs UGS sign-in, which is step P7 (docs/MULTIPLAYER.md); using direct connections");
+                    else
+                    {
+                        CosmicShore.Engine.Networking.RelaySessions.Install(new CosmicShore.Engine.Networking.RelayAllocationClient(relayUrl));
+                        Console.WriteLine($"[relay] sessions go through the relay at {relayUrl}");
+                    }
+                }
                 CosmicShore.Engine.Networking.NetSimulator.Install();
             }
             if (CosmicShore.Engine.Networking.NetDriver.Enabled)
