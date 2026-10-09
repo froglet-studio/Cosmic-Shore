@@ -43,6 +43,32 @@
   .main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   @media (max-width: 960px) { .stage { grid-template-columns: minmax(0, 1fr); } }
   .viewport { position: relative; min-width: 0; }
+  /* phone play: the stage fills the screen, touch controls over it */
+  body.play { overflow: hidden; }
+  body.play .viewport { position: fixed; inset: 0; z-index: 40; background: #050817; }
+  body.play #stage { width: 100vw; height: 100vh; height: 100dvh; aspect-ratio: auto; border: 0; border-radius: 0; }
+  body.play #hud { border-radius: 0; }
+  #touchUI { position: absolute; inset: 0; z-index: 4; display: none; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  body.play #touchUI { display: block; }
+  .tzone { position: absolute; bottom: 0; top: 34%; touch-action: none; }
+  .tzone.l { left: 0; width: 50%; } .tzone.r { right: 0; width: 50%; }
+  .tstick { position: absolute; width: 124px; height: 124px; margin: -62px 0 0 -62px; border-radius: 50%; border: 2px solid rgba(232,236,255,0.35); background: rgba(232,236,255,0.06); pointer-events: none; }
+  .tknob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: rgba(232,236,255,0.45); box-shadow: 0 0 12px rgba(0,0,0,0.4); }
+  .tstick.idle { opacity: 0.45; }
+  .ttrig { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); width: 86px; height: 46%; touch-action: none; }
+  .ttrig.l { left: calc(10px + env(safe-area-inset-left, 0px)); } .ttrig.r { right: calc(10px + env(safe-area-inset-right, 0px)); }
+  .ttrack { position: absolute; left: 50%; top: 0; bottom: 0; width: 14px; margin-left: -7px; border-radius: 7px; background: rgba(232,236,255,0.10); border: 1px solid rgba(232,236,255,0.25); overflow: hidden; }
+  .tfill { position: absolute; left: 0; right: 0; top: 0; height: 0; background: linear-gradient(#b9a4ff, #7a5cff); }
+  .thandle { position: absolute; left: 50%; top: 0; width: 76px; height: 44px; margin-left: -38px; border-radius: 12px; background: rgba(185,164,255,0.28); border: 2px solid #b9a4ff; color: #fff; font: 700 15px/40px var(--font-display); text-align: center; pointer-events: none; }
+  .ttrig.on .thandle { background: rgba(185,164,255,0.6); }
+  .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
+  .tbtn { font: 700 13px/1 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 8px; padding: 9px 12px; touch-action: manipulation; }
+  .tbtn.ghost { background: rgba(232,236,255,0.18); color: #e8ecff; }
+  .tturn { position: absolute; inset: 0; display: none; place-items: center; text-align: center; color: #e8ecff; font: 600 16px/1.4 var(--font-display); background: rgba(5,8,23,0.86); z-index: 6; padding: 24px; }
+  @media (orientation: portrait) { body.play .tturn { display: grid; } }
+  body.play .stagebtn { display: none; }
+  .playbtn { position: absolute; right: 12px; top: 12px; z-index: 3; }
+  body.play .playbtn { display: none; }
   #stage { width: 100%; max-width: 100%; display: block; aspect-ratio: 16 / 10; background: #050817; border: 1px solid var(--line); border-radius: 8px; outline: none; }
   #stage:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
   #hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
@@ -146,8 +172,8 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 10 · five types everywhere</span>
-    <p>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <span class="round">Round 11 · play on a phone</span>
+    <p><b>On a phone:</b> tap <b>📱 Play on phone</b> on the stage and hold it sideways — thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go). Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -157,6 +183,15 @@
       <canvas id="hud" aria-hidden="true"></canvas>
       <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
       <button type="button" id="stopBtn" class="stagebtn" hidden aria-pressed="false">■ Stop</button>
+      <button type="button" id="playBtn" class="stagebtn playbtn">📱 Play on phone</button>
+      <div id="touchUI" aria-label="Touch controls">
+        <div class="tzone l" id="tzL"><div class="tstick idle" id="tsL"><div class="tknob"></div></div></div>
+        <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
+        <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
+        <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
+        <div class="tbar"><button type="button" class="tbtn" id="tStart">Start</button><button type="button" class="tbtn ghost" id="tStop">Stop</button><button type="button" class="tbtn ghost" id="tBack">Back</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
+        <div class="tturn">Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small></div>
+      </div>
     </div>
   <div class="lower">
     <section class="card" aria-labelledby="keysH">
@@ -173,6 +208,7 @@
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
+          <tr><td><b>Phone</b> (📱 Play on phone)</td><td>—</td><td>Two thumb sticks at the bottom (each appears where your thumb lands; same mix as the gamepad), LT / RT handles at the top: drag down to squeeze, lift to let go. Start / Stop / Back / ✕ along the top.</td></tr>
           <tr><td>The <b>■ Stop</b> button on the stage</td><td><kbd>P</kbd></td><td>Stop: the Stoat halts and the clock pauses while the world carries on; press again to resume</td></tr>
           <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
@@ -1389,8 +1425,74 @@
     return null;
   }
   function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
+  // ---- phone play: two floating thumb sticks and two drag-down trigger handles, read as a gamepad ----
+  let playMode = false;
+  const touch = { used: false, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 };
+  const STICK_R = 56, TRIG_TRAVEL = () => Math.max(80, $('ttL').clientHeight - 44);
+  function bindStick(zoneId, stickId, side) {
+    const zone = $(zoneId), el = $(stickId), knob = el.firstElementChild; let id = null, ox = 0, oy = 0;
+    const home = () => { el.classList.add('idle'); el.style.left = side === 'L' ? '22%' : '78%'; el.style.top = '72%'; knob.style.transform = ''; touch[side].x = touch[side].y = 0; };
+    home();
+    zone.addEventListener('pointerdown', (e) => {
+      if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* synthetic or lost pointer */ } touch.used = true;
+      const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top;
+      el.classList.remove('idle'); el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault();
+    });
+    zone.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== id) return;
+      const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy);
+      if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; }
+      knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      touch[side].x = dx / STICK_R; touch[side].y = -dy / STICK_R;   // up = +y, as the game reads a stick
+      e.preventDefault();
+    });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); };
+    zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  }
+  function bindTrigger(trigId, side) {
+    const el = $(trigId), handle = el.querySelector('.thandle'), fill = el.querySelector('.tfill'), key = side === 'L' ? 'lt' : 'rt'; let id = null, y0 = 0;
+    const show = (v) => { const t = TRIG_TRAVEL(); handle.style.transform = 'translateY(' + (v * t) + 'px)'; fill.style.height = (v * 100) + '%'; };
+    el.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { el.setPointerCapture(id); } catch (err) { /* synthetic or lost pointer */ } y0 = e.clientY; touch.used = true; touch[key] = 0.06; el.classList.add('on'); show(0.06); e.preventDefault(); });
+    el.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const v = Math.max(0.06, Math.min(1, (e.clientY - y0) / TRIG_TRAVEL())); touch[key] = v; show(v); e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; touch[key] = 0; el.classList.remove('on'); show(0); };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  }
+  bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R'); bindTrigger('ttL', 'L'); bindTrigger('ttR', 'R');
+  function setPlayMode(on) {
+    playMode = !!on; document.body.classList.toggle('play', playMode);
+    if (playMode) {
+      if (mode !== 'fly') setMode('fly');
+      const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;   // real fullscreen where the browser allows it; the fixed layout covers the rest
+      if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } }
+      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
+    } else {
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } }
+      touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0;
+    }
+    lastW = lastH = 0; resize(); hideTip(true);
+  }
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && playMode && !document.webkitFullscreenElement) { /* left real fullscreen: keep the fixed layout */ } lastW = lastH = 0; resize(); });
+  $('playBtn').addEventListener('click', () => setPlayMode(true));
+  $('tExit').addEventListener('click', () => setPlayMode(false));
+  $('tStart').addEventListener('click', () => { if (race === 'running' && !stopped) return; startRace(); });
+  $('tStop').addEventListener('click', () => setStopped(!stopped));
+  $('tBack').addEventListener('click', () => spawn());
+  function syncTouchBar() {
+    if (!playMode) return;
+    $('tStart').textContent = stopped ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
+    $('tStart').hidden = race === 'running' && !stopped;
+    $('tStop').hidden = !(race === 'running' || stopped); $('tStop').textContent = stopped ? 'Resume' : 'Stop';
+    if (stopped) $('tStart').hidden = true;
+  }
   function pollInput(dt) {
-    const g = readPad();
+    syncTouchBar();
+    const g = playMode && touch.used ? null : readPad();
+    if (!g && playMode && touch.used) {   // the touch layout drives the same dual-stick mix and analog triggers as a gamepad
+      const inp = { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
+      if (mode === 'fly') { trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt); }
+      lastInput = inp; return inp;
+    }
     const inp = { pad: !!g, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: !!g, kYaw: 0, kPitch: 0, kRoll: 0 };
     if (g) {
       inp.L = stick(g.axes[0], -g.axes[1]); inp.R = stick(g.axes[2], -g.axes[3]);   // Unity: up = +y
@@ -1687,6 +1789,8 @@
       c.fillText('Strength ' + P.maxStrength.toFixed(1) + ' (a full squeeze), same orbit both sides · drag to orbit, wheel to zoom', pad, ch - pad);
       return;
     }
+    // phone play: keep the HUD clear of the trigger columns and the button bar
+    const padL = playMode ? 112 : pad, padR = playMode ? 112 : pad, tY = playMode ? 46 : 0;
     // reticle
     c.strokeStyle = 'rgba(232,236,255,0.55)'; c.lineWidth = 1.5;
     c.beginPath(); c.arc(cw / 2, ch / 2, 9 * sc, 0, Math.PI * 2); c.moveTo(cw / 2 - 18 * sc, ch / 2); c.lineTo(cw / 2 - 12 * sc, ch / 2); c.moveTo(cw / 2 + 12 * sc, ch / 2); c.lineTo(cw / 2 + 18 * sc, ch / 2); c.stroke();
@@ -1705,29 +1809,29 @@
     wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
     // top-left: the pair being flown
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
-    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'DIPOLE SLING' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', pad, pad + 12 * sc);
+    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'DIPOLE SLING' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
-    c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', pad, pad + 27 * sc);
-    c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), pad, pad + 41 * sc);
+    c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
+    c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
     if (swapFlash > 0) { c.globalAlpha = Math.min(1, swapFlash); c.textAlign = 'center'; c.font = font(22, 700); c.fillStyle = style === 'A' ? colA : colB; c.fillText('NOW FLYING PAIR ' + style, cw / 2, ch * 0.3); c.globalAlpha = 1; }
     if (slingDipole && stopped) {
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA;
-      c.fillText('WATCHING · strength ' + slingDipole.pair.S.toFixed(1) + ' · horizon ' + slingDipole.pair.rs.toFixed(1) + ' u · let go to release it', cw / 2, pad + 14 * sc);
+      c.fillText('WATCHING · strength ' + slingDipole.pair.S.toFixed(1) + ' · horizon ' + slingDipole.pair.rs.toFixed(1) + ' u · let go to release it', cw / 2, tY + pad + 14 * sc);
     } else if (slingDipole) {
       const sd = slingDipole, pr = sd.pair, dA = Math.round(hull.position.distanceTo(pr.att));
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA;
-      c.fillText('STRENGTH ' + pr.S.toFixed(1) + '  ·  holds you at ' + Math.round(sd.rc) + ' u  ·  black hole ' + dA + ' u' + (sd.captured ? '  ·  IN ITS GRIP ' + Math.round(sd.sweep * 180 / Math.PI) + '° round' : '  ·  bent ' + Math.round(sd.turned * 180 / Math.PI) + '°'), cw / 2, pad + 14 * sc);
+      c.fillText('STRENGTH ' + pr.S.toFixed(1) + '  ·  holds you at ' + Math.round(sd.rc) + ' u  ·  black hole ' + dA + ' u' + (sd.captured ? '  ·  IN ITS GRIP ' + Math.round(sd.sweep * 180 / Math.PI) + '° round' : '  ·  bent ' + Math.round(sd.turned * 180 / Math.PI) + '°'), cw / 2, tY + pad + 14 * sc);
       c.font = font(11, 500); c.fillStyle = dim;
-      c.fillText(sd.captured ? 'let go to slingshot out on the tangent' : dA <= sd.reach ? '' : 'too light to catch you from here: squeeze deeper, or fly closer', cw / 2, pad + 30 * sc);
+      c.fillText(sd.captured ? 'let go to slingshot out on the tangent' : dA <= sd.reach ? '' : 'too light to catch you from here: squeeze deeper, or fly closer', cw / 2, tY + pad + 30 * sc);
     } else if (slingFlash > 0 && lastDipole) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + (lastDipole.captured ? Math.round(lastDipole.sweep * 180 / Math.PI) + '° round' : 'bent ' + Math.round(lastDipole.turned * 180 / Math.PI) + '°') + ' · boost +' + Math.round(lastDipole.kick) + ' u/s', cw / 2, ch * 0.3); c.globalAlpha = 1; }
-    else if (slingOrbit) { c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA; c.fillText('ORBIT  r ' + Math.round(slingOrbit.r) + ' u  ·  ' + Math.round(slingOrbit.angle * 180 / Math.PI) + '°  ·  let go to slingshot', cw / 2, pad + 14 * sc); }
+    else if (slingOrbit) { c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA; c.fillText('ORBIT  r ' + Math.round(slingOrbit.r) + ' u  ·  ' + Math.round(slingOrbit.angle * 180 / Math.PI) + '°  ·  let go to slingshot', cw / 2, tY + pad + 14 * sc); }
     else if (slingFlash > 0 && lastOrbit) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + Math.round(lastOrbit.angle * 180 / Math.PI) + '° round r ' + Math.round(lastOrbit.r) + ' u', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     if (stopped) {
-      c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, pad + 50 * sc);
-      c.font = font(11, 500); c.fillStyle = ink; c.fillText('Press LT or RT to lay a pair ahead and watch its whole life: hold it, let go, watch it close, annihilate and send its wave past you. ▶ Resume (or P) to fly on.', cw / 2, pad + 66 * sc);
+      c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, tY + pad + 50 * sc);
+      c.font = font(11, 500); c.fillStyle = ink; c.fillText('Press LT or RT to lay a pair ahead and watch its whole life: hold it, let go, watch it close, annihilate and send its wave past you. ▶ Resume (or P) to fly on.', cw / 2, tY + pad + 66 * sc);
     }
     if (liveStyles || STYLES.some((st) => Math.abs(BP[st.key] - 0.5) > 1e-3)) {
-      const x0 = pad, y0 = pad + 56 * sc, bw = 70 * sc;
+      const x0 = padL, y0 = pad + 56 * sc, bw = 70 * sc;
       STYLES.forEach((st, n) => {
         const y = y0 + n * 13 * sc, w = BP[st.key];
         c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(x0 + 54 * sc, y - 6 * sc, bw, 5 * sc);
@@ -1740,15 +1844,15 @@
     if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
     if (myPair && myPair.alive && myPair.dipole && !slingDipole && !(slingFlash > 0)) {
       const pr = myPair; c.textAlign = 'center'; c.font = font(12, 600); c.fillStyle = dim;
-      c.fillText(pr.dying ? 'annihilating — the mass leaves as a gravitational wave' : 'the pair is closing', cw / 2, pad + 14 * sc);
+      c.fillText(pr.dying ? 'annihilating — the mass leaves as a gravitational wave' : 'the pair is closing', cw / 2, tY + pad + 14 * sc);
     }
     if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText('THROUGH THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
     // top-right: the race
     c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
     const lap = Math.min(laps, Math.floor(threaded / 8) + 1);
-    c.fillText('LAP ' + lap + '/' + laps + '   RINGS ' + threaded + '/' + 8 * laps, cw - pad, pad + 12 * sc);
-    c.font = font(20, 700); c.fillStyle = gateFlash > 0 ? amber : ink; c.fillText(fmtTime(raceT), cw - pad, pad + 36 * sc);
-    c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' sling' : ' slings'), cw - pad, pad + 51 * sc);
+    c.fillText('LAP ' + lap + '/' + laps + '   RINGS ' + threaded + '/' + 8 * laps, cw - padR, pad + 12 * sc);
+    c.font = font(20, 700); c.fillStyle = gateFlash > 0 ? amber : ink; c.fillText(fmtTime(raceT), cw - padR, pad + 36 * sc);
+    c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' sling' : ' slings'), cw - padR, pad + 51 * sc);
     // bottom-left: speed, throttle, pull channel
     const dip = style === 'A' && slingMode === 'dipole', v = velNow.length(), pull = dip ? gravSpeed : (style === 'A' ? vg : vf).length();
     c.textAlign = 'left'; c.font = font(30, 700); c.fillStyle = ink; c.fillText(Math.round(v), pad, ch - pad - 26 * sc);
@@ -1775,9 +1879,9 @@
         else { const S = strengthOf(h.peak); c.fillText('S ' + S.toFixed(1) + ' · ' + Math.max(MIN_HORIZON, S * 2).toFixed(0) + ' u', x, y - r - 8 * sc); }
       }
     };
-    trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc);
+    if (!playMode) { trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc); }
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
-    c.fillText(lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
+    c.fillText(playMode && touch.used ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
     swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); styleFlash = Math.max(0, styleFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
@@ -3014,7 +3118,7 @@
   // ================= sizing + loop =================
   let lastW = 0, lastH = 0;
   function resize() {
-    const w = canvas.clientWidth || 960, h = Math.round(w * 10 / 16);
+    const w = canvas.clientWidth || 960, h = playMode ? (canvas.clientHeight || Math.round(w * 10 / 16)) : Math.round(w * 10 / 16);
     if (w === lastW && h === lastH) return; lastW = w; lastH = h;
     renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
   }
@@ -3038,7 +3142,7 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__stoatStudio = { GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 

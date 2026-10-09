@@ -12,6 +12,35 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 11 — play on a phone)
+
+**📱 Play on phone** (top-right of the stage) makes the stage fill the screen. Hold the phone sideways; a
+"turn sideways" prompt covers portrait. Where the browser allows it, real fullscreen is requested. Otherwise
+the page itself covers the screen.
+
+- **Two thumb sticks** at the bottom, left and right. Each appears where the thumb lands in its half of the
+  screen and feeds the same dual-stick mix as a gamepad:
+  - both sticks the same way: yaw and pitch;
+  - opposite up/down: roll;
+  - spread apart or together: throttle.
+- **Two trigger handles** at the top corners, for the index fingers. Dragging a handle down sets the
+  squeeze; the full travel is a full pull. Lifting the finger releases it. This is the same analog signal
+  as LT/RT, so strength, hold time and release behave exactly as on a gamepad.
+- **Buttons** along the top: Start (Resume / Again), Stop, Back to the start line, and ✕ to leave.
+
+In play mode the HUD keeps clear of the trigger columns and the button bar, and the HUD's own LT/RT rings
+are hidden.
+
+**Checked on an emulated 844 × 390 touch phone:**
+
+- the stage fills the screen;
+- the sticks read ±0.71 / +0.54 for a spread-and-push;
+- a 60% pull on the RT handle laid a pair on the right at that squeeze, and lifting the finger released it;
+- portrait shows the prompt, ✕ restores the page, and there are no console errors.
+
+**Inside the claude.ai viewer,** phones may refuse real fullscreen; the page still fills the frame. For the
+cleanest phone test, open `StoatFlightStudio.html` directly in the phone's browser.
+
 ## Stoat Flight Studio (round 10 — five types per group)
 
 Each setting group has five one-click **types** above its sliders, plus **Shipped**. A type sets the
