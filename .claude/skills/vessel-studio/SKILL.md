@@ -56,7 +56,7 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D14 | **A test hook and a gate**: `window.__<vessel>Studio` (and `__lab` when the page meets the lab contract); `check_studio.cjs` (+ `verify_lab.cjs`) with negative controls | A later session, a recorder and the gate drive the page the same way | `__squirrelStudio` | `__stoatStudio` = `__lab` |
 | D15 | **Every panel and popup closes**: ×, a press outside it, and Escape | A panel that cannot be dismissed blocks the stage (the user, 2026-10-09) | — | Sync panel, merge popup |
 | D16 | **Three cameras in every studio: Chase · Follow · Free** (the user, 2026-10-09). **Chase**: close behind the watched hull, rolls with it. **Follow**: wider and world-up; in a race it can pick any pilot (yours, then each AI). **Free**: detached from the hull; it either flies (drag to look, I J K L / U O, Shift fast, phone sticks) or orbits the watched hull (drag to turn, wheel to zoom). C, or the pad, cycles them | One camera vocabulary across studios, so watching an AI reads the same everywhere. The chase offset is smoothed, not the position (§7) | Chase / Follow (any pilot) / Free fly | Chase / Follow (wide) / Free orbit. **Open:** offer both Free modes (fly and orbit) in both studios |
-| D17 | **The RACE panel is the standard AI-test config** for every vessel AI (the user, 2026-10-09): Course (the 4-intensity ladder, D7) · Your hull (You fly / AI Easy / Medium / Hard) · AI rivals 0–3 · Rival level (Easy / Medium / Hard) · Camera (D16) · Speed 1× / 2× / 4× · Show AI thinking · Restart each race on its own. The **Scorecard** sits beside it (D5) | Any AI is tested the same way: the same knobs, the same order, comparable runs | `squirrel.html` Race panel (the reference) | AI pilot + sim lab controls; move to this panel shape at its next round |
+| D17 | **One universal AI race config panel** in every studio that tests an AI, and every arcade-game studio after them (the user, 2026-10-09): `VesselStudio/ai_race_panel.js` (`StudioRacePanel.mount`, §3.4). Course (the 4-intensity ladder, D7) · Your hull (You fly / AI Easy / Medium / Hard) · AI rivals 0–3 · Rival level · Camera (D16) · Speed 1× / 2× / 4× · Show AI thinking · Restart each race on its own. The **Scorecard** sits beside it (D5). Never hand-build these controls in a page | Any AI is tested the same way: the same knobs, the same order, comparable runs, one implementation | Mounted in the Race panel; drives the race directly | Mounted in the Sim lab card; drives the existing controls (kept hidden). Rivals disabled with the reason (single-pilot, races the clock); levels are lab-only sloppiness 0 / 0.4 / 0.8 |
 | D18 | **One Stop, the same in every studio** (the user, 2026-10-09): a `#stopBtn` on the stage plus `#tStop` in the phone bar, labelled **■ Stop** / **▶ Resume** (`aria-pressed`), key **P**, shown only while a race runs. It halts your hull and the race clock; the stage keeps drawing and the cameras stay live so you can look around | A tester must be able to freeze a moment the same way in any studio | Was "Pause" (2026-10-09: now ■ Stop) | ■ Stop (the original) |
 
 ## 2. A new studio, in order
@@ -77,7 +77,7 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 3. **Copy a template, never a blank page** (§3): `squirrel.html` for a shipped vessel with AI; the
    Stoat page's structure for a design studio. Walk D1–D15 against the copy.
 4. **Gate** (§3.3), then READ the screenshots.
-5. **Catalog** (§3.4). Amoebius and Unity need no code.
+5. **Catalog** (§3.5). Amoebius and Unity need no code.
 6. **Publish into the one artifact** (§4) and record the first decision (§5): what the studio is for.
 7. **Rounds**: `/labmaker` §4 (one round = one commit + one write-up). Add traps to §7.
 
@@ -137,7 +137,53 @@ It fails, by name, on:
 
 A page on the `__lab` contract also runs `/labmaker`'s `verify_lab.cjs`.
 
-### 3.4 Catalog (one list feeds everything)
+### 3.4 The universal AI race config panel (`ai_race_panel.js`, D17)
+
+Every studio that flies an AI mounts this panel. Never rebuild these controls by hand: a new key belongs
+in the module, so every studio gets it.
+
+```html
+<script src="ai_race_panel.js"></script>   <!-- from a page in VesselStudio/; a source one folder up uses VesselStudio/ai_race_panel.js -->
+<div id="racePanel"></div>                    <!-- inside the page's own race / sim-lab card -->
+```
+```js
+const racePanel = StudioRacePanel.mount($('racePanel'), {
+  courses: [{ v: 1, label: 'I1', note: 'what the course is' }, ...],   // the mode's 4-step intensity ladder
+  value: { course, you, rivals, rivalLevel, camera, speed, thinking, autoRestart },   // the page's saved state
+  supports: { rivals: true | 'why not yet', thinking: true | 'why not', autoRestart: true },
+  levelNote: 'What Easy / Medium / Hard mean in this studio, and where the numbers come from.',
+  onChange: (key, value, state) => { /* apply it to the page's own sim; save */ },
+});
+racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) keep the panel in sync silently
+```
+
+- **Fixed vocabulary** (the module validates it): `course` = a `courses[].v`; `you` = `'You' | 'Easy' |
+  'Medium' | 'Hard'`; `rivals` 0–3; `rivalLevel` Easy/Medium/Hard; `camera` Chase/Follow/Free (D16);
+  `speed` 1/2/4; `thinking` and `autoRestart` booleans.
+- **Map, don't rename.** A page with its own state names maps them in `onChange`. The Squirrel maps
+  `rivalLevel` to `S.diff` and `camera` to `S.cam`.
+- **A page with older controls** keeps them hidden and has `onChange` set their value and dispatch
+  `change`. The Stoat does this, so its existing listeners stay the single way in.
+- **Not supported yet? Say so, don't hide it.**
+  - Pass a reason string in `supports`. The row stays visible, disabled, with the reason under it.
+  - Example: the Stoat races the clock alone, so its rivals row says "Single-pilot studio".
+  - The day the studio gains rivals, flip it to `true`.
+- **Difficulty must say what it is.** `levelNote` names the source: the game's asset (the Squirrel's
+  `SkimRaceDifficulty.asset`), or "lab-only" when the game ships no difficulty for that vessel (the
+  Stoat: sloppiness 0 / 0.4 / 0.8). The AI stays input-only: a level changes what it believes or how
+  sloppily it presses, never the hull's state (D4).
+- **Show AI thinking.** Draw a line from each AI hull to the point it is steering for, coloured by its
+  state:
+  - Squirrel: amber = not noticed, red = misjudged;
+  - Stoat: amber = flying for the ring, violet = working the pair.
+
+  Record the aim point inside `aiInput`, where the decision is made.
+- **An arcade-game studio** (a new mode) passes its own intensity ladder as `courses`, and its own
+  difficulty asset in `levelNote`. Everything else is the same panel.
+- **Shipping**: `build_artifact.py` copies every `<script src="x.js">` a page loads into the build, and
+  `--check` fails a page that loads a script the build lacks or one with non-ASCII bytes.
+
+### 3.5 Catalog (one list feeds everything)
 
 1. `Docs/Studios/VesselStudio/studios.json`: `id`, `name`, `file`, `kind`, `summary`, `docs`, plus
    `engineMode` (a `GameModes` name with an arcade card) and `engineNote` once the game has the mode.
@@ -153,7 +199,7 @@ A page on the `__lab` contract also runs `/labmaker`'s `verify_lab.cjs`.
 
 ```sh
 python3 .claude/skills/vessel-studio/build_artifact.py --self-test
-python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/claude/peaceful-rubin-hhw49n --out <scratchpad>/vs \
+python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/<branch with the newest studio work: Ys-bleeding-edge or peaceful-rubin> --out <scratchpad>/vs \
         --session <your session id>          # --artifact defaults to the one artifact
 ```
 
@@ -173,8 +219,11 @@ Omit `capabilities` to keep them. If they must ever be restated, the full set is
                           "tools": ["send_message", "create_session", "list_environments"] } ] } }
 ```
 
-Then `ArtifactData list` of `decisions`, `jobs` and `requests`. Re-copy `StoatFlightStudio.html` into
-`VesselStudio/stoat.html` (keeping the back link) before a build whenever the Stoat changed.
+Then `ArtifactData list` of `decisions`, `jobs` and `requests`. Whenever the Stoat changed, regenerate
+its hub copy before a build:
+- `python3 .claude/skills/vessel-studio/copy_stoat.py` writes it (back link, header, and
+  `VesselStudio/x.js` → `x.js`);
+- `--check` exits 1 when the copy is stale.
 
 **Why a session and not a GitHub connector:**
 - A page can only call the viewer's claude.ai connectors.

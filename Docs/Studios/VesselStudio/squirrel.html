@@ -206,14 +206,7 @@
     <aside>
       <div class="panel lab">
         <h3>Race <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
-        <div class="field"><span>Course</span><div class="seg" id="segCourse" role="group" aria-label="Skim Race intensity"></div></div>
-        <div class="field"><span>Your hull</span><div class="seg diff" id="segYou" role="group" aria-label="Who flies your hull"></div></div>
-        <div class="field"><span>AI rivals</span><div class="seg" id="segRivals" role="group" aria-label="Number of AI rivals"></div></div>
-        <div class="field"><span>Rival level</span><div class="seg diff" id="segDiff" role="group" aria-label="Rival difficulty"></div></div>
-        <div class="field"><span>Camera</span><div class="seg" id="segCam" role="group" aria-label="Camera"></div></div>
-        <div class="field"><span>Speed</span><div class="seg" id="segSpeed" role="group" aria-label="Simulation speed"></div></div>
-        <label class="check"><input type="checkbox" id="thinking"> Show AI thinking</label>
-        <label class="check"><input type="checkbox" id="autoRestart"> Restart each race on its own</label>
+        <div id="racePanel"></div>
         <p class="note">Easy and Medium are the Hard pilot plus the game's deliberate mistakes (<code>SkimRaceDifficulty.asset</code>): Easy notices a new crystal 0.5 s late on average and misjudges 9.9% of crystals; Medium 0.25 s and 4.5%.</p>
       </div>
 
@@ -276,6 +269,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="ai_race_panel.js"></script>
 <script>
 (function () {
   'use strict';
@@ -755,22 +749,20 @@
 
   // ================= rail =================
   const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
-  const SEGS = {
-    segCourse: { key: 'course', vals: [1, 2, 3, 4], label: (v) => 'I' + v, rebuild: true },
-    segYou: { key: 'you', vals: ['You', 'Easy', 'Medium', 'Hard'], label: (v) => v === 'You' ? 'You fly' : 'AI ' + v, rebuild: true },
-    segRivals: { key: 'rivals', vals: [0, 1, 2, 3], label: (v) => String(v), rebuild: true },
-    segDiff: { key: 'diff', vals: ['Easy', 'Medium', 'Hard'], label: (v) => v, rebuild: true },
-    segCam: { key: 'cam', vals: ['Chase', 'Follow', 'Free'], label: (v) => v },
-    segSpeed: { key: 'speed', vals: [1, 2, 4], label: (v) => v + '×' },
-  };
-  for (const [id, d] of Object.entries(SEGS)) for (const v of d.vals) {
-    const b = elx('button', null, d.label(v)); b.type = 'button'; b.dataset.v = String(v);
-    b.addEventListener('click', () => { S[d.key] = v; if (d.key === 'cam' && v === 'Free') free.pos.copy(cam.position); save(); syncSegs(); if (d.rebuild) newRace(); });
-    $(id).appendChild(b);
-  }
-  function syncSegs() { for (const [id, d] of Object.entries(SEGS)) for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.v === String(S[d.key]))); }
-  $('thinking').checked = S.thinking; $('thinking').addEventListener('change', (e) => { S.thinking = e.target.checked; save(); });
-  $('autoRestart').checked = S.autoRestart; $('autoRestart').addEventListener('change', (e) => { S.autoRestart = e.target.checked; save(); });
+  // The universal AI race config panel (ai_race_panel.js, /vessel-studio D17): every studio mounts the same one.
+  const raceKey = { course: 'course', you: 'you', rivals: 'rivals', rivalLevel: 'diff', camera: 'cam', speed: 'speed', thinking: 'thinking', autoRestart: 'autoRestart' };
+  const REBUILD = { course: 1, you: 1, rivals: 1, rivalLevel: 1 };
+  const racePanel = StudioRacePanel.mount($('racePanel'), {
+    courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: COURSE_INFO[v] })),
+    value: { course: S.course, you: S.you, rivals: S.rivals, rivalLevel: S.diff, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
+    supports: { rivals: true, thinking: true, autoRestart: true },
+    onChange: (key, v) => {
+      S[raceKey[key]] = v;
+      if (key === 'camera' && v === 'Free') free.pos.copy(cam.position);
+      save(); if (REBUILD[key]) newRace();
+    },
+  });
+  function syncSegs() { for (const [k, s] of Object.entries(raceKey)) racePanel.set(k, S[s], true); }
   $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
   const typeBtns = [];
   for (const t of TYPES) { const b = elx('button', 'type', t.name); b.type = 'button'; b.addEventListener('click', () => { S.type = t.name; Object.assign(S.lv, t.lv); syncRail(); save(); applyLevels(); }); $('types').appendChild(b); typeBtns.push({ b, t }); }

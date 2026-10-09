@@ -16,10 +16,11 @@ so a studio branch merges without touching the panel. Then publish:
   Artifact(file_path=<out>/index.html, files={each other file: <out>/<file>}, url=<the artifact>)
   with the capabilities listed in SKILL.md section 4 on the first publish.
 """
-import argparse, json, os, subprocess, sys, tempfile
+import argparse, json, os, re, subprocess, sys, tempfile
 
 DIR = 'Docs/Studios/VesselStudio'
 TAG = '<script src="sync.js"></script>'
+LOCAL_SCRIPT = re.compile(r'<script src="([A-Za-z0-9_.-]+\.js)"></script>')   # shared studio scripts beside the pages (ai_race_panel.js)
 REPO = 'froglet-studio/cosmic-shore'
 DEFAULT_ARTIFACT = 'https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa'   # THE Vessel Studio: the only artifact (SKILL.md section 0)
 
@@ -48,10 +49,15 @@ def build(ref, out, artifact=None, session=None):
     cat_text = git('show', f'{ref}:{DIR}/studios.json')
     cat = json.loads(cat_text)
     pages = ['index.html'] + [s['file'] for s in cat.get('studios', []) if s.get('file')]
+    shared = set()
     for f in pages:
         html = git('show', f'{ref}:{DIR}/{f}')
+        shared.update(n for n in LOCAL_SCRIPT.findall(html) if n != 'sync.js')
         with open(os.path.join(out, f), 'w', encoding='utf-8') as fh:
             fh.write(inject(html))
+    for n in sorted(shared):   # every shared script a page loads ships beside it (the universal race panel)
+        with open(os.path.join(out, n), 'w', encoding='utf-8') as fh:
+            fh.write(git('show', f'{ref}:{DIR}/{n}'))
     with open(os.path.join(out, 'studios.json'), 'w', encoding='utf-8') as fh:
         fh.write(cat_text)
     try:
@@ -87,9 +93,16 @@ def check(out):
         p = os.path.join(out, f)
         if not os.path.exists(p):
             errs.append(f'{f}: missing'); continue
-        n = open(p, encoding='utf-8').read().count('src="sync.js"')
+        html = open(p, encoding='utf-8').read()
+        n = html.count('src="sync.js"')
         if n != 1:
             errs.append(f'{f}: sync panel tag {n} times (want 1)')
+        for js in LOCAL_SCRIPT.findall(html):
+            q = os.path.join(out, js)
+            if not os.path.exists(q):
+                errs.append(f'{f}: loads {js}, which the build does not carry')
+            elif js != 'sync.js' and any(c > 127 for c in open(q, 'rb').read()):
+                errs.append(f'{js}: non-ASCII bytes (escape as \\uXXXX)')
     try:
         b = json.load(open(os.path.join(out, 'build.json'), encoding='utf-8'))
         for k in ('repo', 'branch', 'sha', 'pathSha', 'subject', 'committedAt'):
@@ -126,12 +139,12 @@ def self_test():
         w = lambda f, t: open(os.path.join(d, f), 'w', encoding='utf-8').write(t)
         w('studios.json', json.dumps({'studios': [{'file': 'a.html'}, {'file': 'b.html'}]}))
         w('index.html', '<body>' + TAG + '</body>')
-        w('a.html', '<body></body>')                                   # planted: no panel
+        w('a.html', '<body><script src="gone.js"></script></body>')   # planted: no panel, and a shared script not shipped
         w('b.html', '<body>' + TAG + TAG + '</body>')                  # planted: panel twice
         w('build.json', json.dumps({'repo': 'r', 'branch': 'b', 'sha': 's', 'pathSha': '', 'subject': 's', 'committedAt': 't'}))  # planted: no pathSha
         open(os.path.join(d, 'sync.js'), 'wb').write('// ⇄\n'.encode('utf-8'))  # planted: non-ASCII
         got = ' | '.join(check(d))
-        for want in ('a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
+        for want in ('a.html: loads gone.js', 'a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
             if want not in got:
                 bad.append('check did not name: ' + want)
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))
