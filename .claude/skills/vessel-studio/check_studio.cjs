@@ -14,13 +14,13 @@
 //   3. the test hook (--hook) exists; when it has startRace() and a numeric state.t (getter or state()),
 //      a started race advances it
 //   4. the WebGL stage is not blank (more than one colour)
-//   5. on an emulated phone at 844x390 the page is in play mode (body.play), either by itself or after a
-//      real tap on "Play on phone" (#playBtn) - a tap that something covers is a failure
+//   5. the platform is detected, never asked (/vessel-studio D26): on an emulated phone at 844x390 the page
+//      opens touch play (body.play) by itself, filling the screen, and on a desktop no touch-play button (#playBtn, .playbtn) shows
 //
 // --three FILE serves three.js from a local copy (headless machines often cannot reach the CDN).
 // Fonts are stubbed so a blocked Google Fonts request is not an error.
-// --self-test plants five defects into a minimal page (a page error, a 900 px element, a missing
-// hook, a blank stage, a card lying over Play on phone) and requires the gate to name each one: a gate that has only ever passed is not a gate.
+// --self-test plants seven defects into a minimal page (a page error, a 900 px element, a missing
+// hook, a blank stage, a page that asks instead of detecting, a short stage in touch play, a touch button on a PC) and requires the gate to name each one: a gate that has only ever passed is not a gate.
 'use strict';
 const fs = require('fs'), os = require('os'), path = require('path');
 
@@ -110,6 +110,9 @@ async function check(browser, file, hook, out, three) {
     }, png);
   }
   if (blank) fails.push('desktop: the stage is blank (' + blank + ')');
+  // A PC never sees a touch-play button (D26): each device opens its own interface only.
+  const touchBtn = await d.page.evaluate(() => [...document.querySelectorAll('#playBtn, .playbtn')].some((b) => { const r = b.getBoundingClientRect(), cs = getComputedStyle(b); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; }));
+  if (touchBtn) fails.push('desktop: a touch-play button is shown on a PC (D26: detect the platform, show its interface only)');
   await d.page.screenshot({ path: path.join(out, 'desktop.png') });
   await done(d);
 
@@ -121,36 +124,25 @@ async function check(browser, file, hook, out, three) {
   await p.page.screenshot({ path: path.join(out, 'phone_portrait.png'), fullPage: true });
   await done(p);
 
-  // phone held sideways: Play on phone
+  // phone held sideways: the page detects the phone and opens touch play by itself (/vessel-studio D26) -
+  // nothing to tap. A page that still asks ("Play on phone") fails here.
   const l = await open({ width: 844, height: 390 }, 'phone 844x390', true);
-  if (await l.page.evaluate(() => document.body.classList.contains('play'))) {
-    // The page knew it was on a phone and went straight to touch play (the Stoat does): nothing to tap.
-    await l.page.screenshot({ path: path.join(out, 'phone_play.png') });
-  } else if (await l.page.$('#playBtn')) {
-    // A real tap (mouse click events still fire on an emulated touch page), not a DOM click: a start card lying over the button is exactly the bug to catch.
-    let tapped = true;
-    try { await l.page.click('#playBtn', { timeout: 3000 }); }
-    catch (e) {
-      tapped = false;
-      const why = /intercepts pointer events/.test(e.message) ? (e.message.match(/<[^>]+>[^\n]*intercepts pointer events/) || ['something covers it'])[0]
-        : /not visible/.test(e.message) ? 'the button is not visible at this size' : e.message.split('\n')[0];
-      fails.push('phone 844x390: Play on phone cannot be tapped (' + why + ')');
-    }
-    if (tapped) {
-      await l.page.waitForTimeout(600);
-      if (!(await l.page.evaluate(() => document.body.classList.contains('play')))) fails.push('phone 844x390: Play on phone did not enter play mode');
-    }
-    await l.page.screenshot({ path: path.join(out, 'phone_play.png') });
-  } else fails.push('phone 844x390: no #playBtn (every studio has Play on phone)');
+  if (!(await l.page.evaluate(() => document.body.classList.contains('play'))))
+    fails.push('phone 844x390: the page did not open touch play by itself (detect the platform, never ask: D26)');
+  else {   // touch play is the whole screen: a dock or a layout rule holding the stage short leaves half the phone dead
+    const fill = await l.page.evaluate(() => { let best = 0; for (const c of document.querySelectorAll('canvas')) { const r = c.getBoundingClientRect(); best = Math.max(best, Math.min(r.height, innerHeight) * Math.min(r.width, innerWidth)); } return best / (innerWidth * innerHeight); });
+    if (fill < 0.9) fails.push('phone 844x390: touch play does not fill the screen (the stage covers ' + Math.round(fill * 100) + '%)');
+  }
+  await l.page.screenshot({ path: path.join(out, 'phone_play.png') });
   await done(l);
   return fails;
 }
 
 const PLAIN = (body, script) => '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">' +
-  '<style>body{margin:0;background:#111}canvas{width:300px;height:200px;display:block}body.play canvas{width:100%}</style>' +
-  '<canvas id="c" width="300" height="200"></canvas><button id="playBtn">Play</button>' + body +
+  '<style>body{margin:0;background:#111}canvas{width:300px;height:200px;display:block}body.play canvas{position:fixed;inset:0;width:100%;height:100%}</style>' +
+  '<canvas id="c" width="300" height="200"></canvas>' + body +
   '<script>const x=document.getElementById("c").getContext("2d");x.fillStyle="#222";x.fillRect(0,0,300,200);x.fillStyle="#3e8";x.fillRect(20,20,80,40);' +
-  'document.getElementById("playBtn").onclick=()=>document.body.classList.add("play");' +
+  'if(!/no-detect/.test(document.body.className)&&/Mobile/.test(navigator.userAgent))document.body.classList.add("play");' +
   'let t=0;setInterval(()=>t+=0.1,100);' + script + '</script>';
 
 async function selfTest(browser, three) {
@@ -161,7 +153,9 @@ async function selfTest(browser, three) {
     ['900 px element', PLAIN('<div style="width:900px;height:4px"></div>', hookJs), /scrolls sideways/],
     ['missing hook', PLAIN('', ''), /test hook window.__s is missing/],
     ['blank stage', PLAIN('', hookJs + 'x.fillStyle="#222";x.fillRect(0,0,300,200);'), /stage is blank/],
-    ['card over the button', PLAIN('<div style="position:fixed;inset:0;background:#0008"></div>', hookJs), /cannot be tapped/],
+    ['asks instead of detecting', PLAIN('<script>document.body.className="no-detect"</script>', hookJs), /did not open touch play by itself/],
+    ['stage short in touch play', PLAIN('<style>body.play canvas{height:200px}</style>', hookJs), /does not fill the screen/],
+    ['touch button on a PC', PLAIN('<button id="playBtn">Play on phone</button>', hookJs), /touch-play button is shown on a PC/],
   ];
   let bad = 0;
   for (const [name, html, want] of cases) {

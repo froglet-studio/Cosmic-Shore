@@ -83,6 +83,7 @@
   .btn[disabled] { opacity: .5; cursor: default; }
   .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }   /* above the start card: a sideways phone must reach Play on phone */
   .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  body:not(.dev-phone) .phone-only { display: none !important; }   /* each device sees its own interface only (D26): no touch button on a PC */
   /* the studio transport (/vessel-studio D18): Play · Pause/Resume · Stop, like the Unity editor's */
   .transport { display: flex; gap: 2px; }
   .transport .btn:disabled { opacity: 0.35; cursor: default; }
@@ -183,7 +184,7 @@
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
         </div>
-        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, every pilot and the race clock halt, the stage and cameras stay live">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the start">■ Stop</button></span></div>
+        <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, every pilot and the race clock halt, the stage and cameras stay live">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Skim Race, intensity 1</h2>
@@ -251,7 +252,7 @@
           <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
           <span>Free cam</span><span>drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
           <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera</span>
-          <span>Phone</span><span>Play on phone: two thumb sticks, LT / RT handles</span>
+          <span>Phone</span><span>opens by itself on a phone: two thumb sticks, LT / RT handles</span>
         </div>
       </div>
 
@@ -732,6 +733,10 @@
   }
   document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
   $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
+  // The platform is detected, never asked (/vessel-studio D26): a phone opens straight into touch play; a PC never sees it.
+  // Real fullscreen needs a gesture, so a phone that opened in touch play asks on its first touch.
+  const PLATFORM = VesselStudioIDE.platform();   // a phone enters touch play at the end of setup
+  $('touch').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement && !document.webkitFullscreenElement) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } } } }, { capture: true });
   const playPause = () => { if (race === 'running') togglePause(); else startRace(); };   // one toggle: Play starts or resumes, Pause pauses
   $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => newRace()); $('tCam').addEventListener('click', () => cycleCamera());
@@ -923,18 +928,20 @@
   // drag, resize and dock back; splitters resize the docks; the page never scrolls (below 900 px the docks stack).
   const panelBy = (title) => [...document.querySelectorAll('aside .panel')].find((p) => { const h = p.querySelector('h3') || p.querySelector('summary'); return h && h.textContent.trim().startsWith(title); });
   const IDE = VesselStudioIDE.build({
-    // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
+    // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D27)
     key: 'squirrel-studio-ide-v2', host: document.querySelector('.layout'), stage: $('viewport'),
     right: [['scene', 'Scene Config', [panelBy('Scene')]], ['ai', 'AI Config', [panelBy('AI race'), document.querySelector('.afternote')]],
       ['style', 'Play Style Config', [panelBy('Play-style type'), panelBy('Element levels')]], ['input', 'Input', [panelBy('Controls'), panelBy('Drift feel')]],
-      ['others', 'Others', [panelBy('Ability row'), panelBy('Live numbers')]]],
+      ['others', 'Vessel Config', [panelBy('Ability row'), panelBy('Live numbers')]]],
     bottom: [['score', 'Scorecard', [panelBy('Scorecard')]], ['runs', 'Runs', [panelBy('Runs')]], ['about', 'About', [document.querySelector('header .sub'), panelBy('Where the numbers')]]],
     railW: 380, dockH: 230, winSize: { score: [760, 340], runs: [640, 360] },
     onLayout: () => { lastW = lastH = 0; },
   });
+  VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'squirrel-studio', 'vessel');   // Vessel Config: one section at a time (D27)
   syncSegs(); syncRail(); syncDrift(); renderRuns();
   newRace(); hud();
   requestAnimationFrame((t) => { last = t; frame(t); });
+  if (PLATFORM.device === 'phone') setPlayMode(true);   // detected, never asked (D26)
 
   // test hook for scripted checks (no effect on play)
   window.__squirrelStudio = {

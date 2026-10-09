@@ -249,6 +249,7 @@
     body.ide .split { display: none; }
     body.ide .dock { max-height: 70vh; }
   }
+  body.ide.play .viewport { height: auto; }   /* touch play is the whole screen: the narrow layout's 58vh must not hold it */
 </style>
 
 <div class="wrap">
@@ -708,7 +709,7 @@
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
   function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
-    rivals: typeof seatLv !== 'undefined' ? { lv: seatLv, st: seatStyle, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel,
+    rivals: typeof seatLv !== 'undefined' ? { v: 2, lv: seatLv, st: seatStyle, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel,
     youStyle: typeof youStyle !== 'undefined' ? youStyle : saved.youStyle }); }
 
   // ================= renderer =================
@@ -2339,8 +2340,10 @@
   // step as your hull: the rival block parks your hull's variables, loads a rival's, runs aiInput + stepFly, parks it
   // and loads yours back. Their pairs are real pairs in the one world: you can be carried through a rival's black hole.
   const SEATS = ['ruby', 'gold', 'blue'].map((k) => { const d = VesselStudioDomains.get(k); return { name: d.name, color: d.hex, css: d.color }; });   // the game's palette
-  const savedRivals = saved.rivals || {};
-  let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Hard', 'Medium', 'Easy'];
+  // The race starts with your hull alone; you add each rival with + in Game Config (the user, 2026-10-09). A save from
+  // before that (no v: 2) held the old three-rival default, so it is dropped once.
+  const savedRivals = saved.rivals && saved.rivals.v === 2 ? saved.rivals : {};
+  let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Off', 'Off', 'Off'];
   let seatStyle = Array.isArray(savedRivals.st) ? savedRivals.st.slice(0, 3) : ['Comet', 'Needle', 'Anchor'];
   let seatDomain = Array.isArray(savedRivals.dm) ? savedRivals.dm.slice(0, 3) : ['ruby', 'gold', 'blue'];   // Game Config (D25)
   let youStyle = STYLE_BRAIN[saved.youStyle] ? saved.youStyle : 'Balanced';
@@ -4563,10 +4566,10 @@
   const ide = Object.assign({ R: 'scene', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
-    // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
+    // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27)
     R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
-      ['others', 'Others', ['grp-lope', 'archive']]],
+      ['others', 'Vessel Config', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
@@ -4610,6 +4613,7 @@
     bindSplit(sv, 'railW', (x, r) => r.right - x, 280, 720);
     bindSplit(sh, 'dockH', (y, r) => r.bottom - y, 110, 620);
     document.body.classList.add('ide'); applyIdeSizes();
+    if (window.VesselStudioIDE && VesselStudioIDE.sectionPicker) VesselStudioIDE.sectionPicker($('pane-others'), 'stoat-studio', 'vessel');   // Vessel Config: one section at a time (D27)
     selectTab(ide.R); selectTab(ide.B);
     for (const k in ide.wins) if (ide.wins[k] && ide.wins[k].open && TAB[k]) openWindow(k);
     $('scoreShow').addEventListener('click', () => openWindow('score'));
