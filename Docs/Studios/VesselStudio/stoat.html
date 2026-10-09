@@ -337,10 +337,9 @@
 
     <aside class="rail" aria-label="Studio controls">
       <div class="card" id="mainCard">
-        <h3 id="mainH">The dipole sling</h3>
+        <h3 id="mainH">The field trajectory</h3>
         <div class="seg" role="group" aria-label="Sling mode" id="slingSegMain">
-          <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
-          <button type="button" data-sling="field" aria-pressed="false">Field trajectory (round 15)</button>
+          <button type="button" data-sling="field" aria-pressed="true">Field trajectory (round 15)</button>
         </div>
         <p class="src" style="margin-top:4px" id="mainP">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
@@ -431,10 +430,10 @@
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
         <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
       <details class="card" id="archive"><summary>Archive <small>other slings &amp; styles</small></summary>
-        <p class="src">Kept for reference, not in play: round 4's orbit sling, and the crystal wormhole from <code>cece/charming-cerf-alf1j1</code> with the side-by-side compare. In the game the crystal style is still one switch away (<code>BlackHoleConfig.crystalPairs</code>), off by default.</p>
+        <p class="src">Kept for reference, not in play: round 6's dipole sling, round 4's orbit sling, and the crystal wormhole from <code>cece/charming-cerf-alf1j1</code> with the side-by-side compare. In the game the crystal style is still one switch away (<code>BlackHoleConfig.crystalPairs</code>), off by default.</p>
         <div class="seg" role="group" aria-label="Sling" id="slingSeg">
-          <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
-          <button type="button" data-sling="field" aria-pressed="false">Field trajectory</button>
+          <button type="button" data-sling="field" aria-pressed="true">Field trajectory</button>
+          <button type="button" data-sling="dipole" aria-pressed="false">Dipole sling (round 6)</button>
           <button type="button" data-sling="orbit" aria-pressed="false">Orbit (round 4)</button>
         </div>
         <div class="styles" role="group" aria-label="Pair style">
@@ -691,7 +690,7 @@
   recomputeP();
   let liveStyles = !!saved.liveStyles;
   let style = 'A';   // the crystal pair (B) is archived: chosen from the Archive card only, never remembered
-  let slingMode = saved.slingMode === 'orbit' ? 'orbit' : saved.slingMode === 'field' ? 'field' : 'dipole';   // pair A's sling: the dipole, round 15's field trajectory, or round 4's orbit
+  let slingMode = 'field';   // pair A's sling: round 15's field trajectory; the dipole (round 6) and the orbit (round 4) are archived: chosen from the Archive card only, never remembered
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
   let invertY = !!saved.invertY;
@@ -3899,11 +3898,11 @@
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
     $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit');
     const fieldOn = s === 'A' && slingMode === 'field';
-    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling';
+    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling (archived)';
     $('mainP').innerHTML = fieldOn
       ? 'Squeeze a trigger: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways, the sum lengthways (black hole nearer, white hole beyond); let go of both and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
-    if (s === 'B' || slingMode === 'orbit') $('archive').open = true;
+    if (s === 'B' || slingMode !== 'field') $('archive').open = true;
     $('portal').checked = !!portal[s];
     $('portalSrc').textContent = s === 'A'
       ? 'As built now: anything that crosses the black hole\'s horizon (the Stoat, prisms, any vessel) comes out of the white hole, point-reflected, stretched going in and relaxing coming out.'
