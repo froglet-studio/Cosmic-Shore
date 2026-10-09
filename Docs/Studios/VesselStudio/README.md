@@ -70,3 +70,24 @@ costs it, and it recovers from a missed crystal in ~2 s where the game's pilot l
 
 STUDIOS ▸ **OPEN IN AMOEBIUS** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
 the game itself. Step-by-step checks: `../PRISMA_TEST_STEPS.md`.
+
+### Stoat AI levels, measured 2026-10-09 (field trajectory, Balanced, 2 laps; median of seeds 11/23/37/51/67, seconds)
+
+Hard is one deterministic run, so it has no spread. Medium and Easy are Hard plus the Skim Race mistakes
+(`AI_LEVELS`: late notice, misjudged ring) and the lab-only pair judgement.
+
+| Course | Easy | Medium | Hard | Medium vs Hard | Easy vs Hard |
+|---|---|---|---|---|---|
+| I1 | 82 | 77 | 56 | +38% | +46% |
+| I2 | 89 | 79 | 59 | +34% | +51% |
+| I3 | 79 | 68 | 52 | +31% | +52% |
+| I4 | 70 (1 DNF of 5) | 62 | 49 | +27% | +43% |
+
+- Before the path-watching field AI (`aiWarp`), Hard held the pair for a set time and came out at 70–89 s.
+  Medium and Easy were faster than Hard on two of the four courses, because the outcome was chaotic.
+- Holding the poles while they warp the path made Hard 49–59 s, warped 79–95% of the race.
+- The game's own gaps (`SKIM_RACE_AI.md` §10) are Medium 14–19% and Easy 23–54% slower than Hard. The Stoat's
+  Medium gap is wider than the game's: a missed ring costs a turn-back at warp speed. The Easy gap is in the
+  game's range.
+- In the page: AI Config ▸ **Score AI levels** (3 seeds, any play style).
+
