@@ -1,12 +1,18 @@
-/* Vessel Studio sync panel: Refresh from GitHub, a console log, merge suggestions with a
-   merge-now question, and a shared decision log. Injected into every page of the hub
-   (index.html, stoat.html, squirrel.html). Talks to GitHub through the viewer's own GitHub
-   connector (the `mcp` capability), republishes this artifact with the `artifact`
-   capability, and keeps decisions in the artifact's shared `db`. Every capability may be
-   absent on a given view; the panel says so instead of failing. */
+/* Vessel Studio sync panel: Refresh from GitHub, a console log, merge (then delete the merged
+   branch), and a shared decision log. Injected into every page of the hub (index.html and the
+   studio pages) by build_artifact.py and by Refresh.
+
+   The page never talks to GitHub itself. It writes a JOB to the artifact's shared `jobs`
+   collection and messages the viewer's own Claude Code session (the built-in "Claude Code Remote"
+   connector) with the job's id. That session, which already has the repo, runs
+   .claude/skills/vessel-studio/sync_job.py, writes progress into the job (shown live in the
+   console here) and, after a refresh or a merge, rebuilds and republishes this artifact.
+   Contract: the /vessel-studio skill, section 5. Every capability may be absent on a view;
+   the panel says so instead of failing. */
 (() => {
   if (window.__vsSync) return; window.__vsSync = true;
-  const OWNER = 'froglet-studio', REPO = 'cosmic-shore', DIR = 'Docs/Studios/VesselStudio', GH = 'GitHub';
+  const REPO_URL = 'https://github.com/froglet-studio/Cosmic-Shore', CCR = 'Claude Code Remote';
+  const TOOLS_REF = 'claude/peaceful-rubin-hhw49n';   // the branch that carries the /vessel-studio skill and its scripts
   const WATCH = ['cece/magical-carson-9bdq8z', 'claude/peaceful-rubin-hhw49n', 'vessel-studio', 'Ys-bleeding-edge', 'bleeding-edge'];
   const GUARDED = ['bleeding-edge', 'main', 'master', 'Ys-bleeding-edge'];
   const LS = 'vsSync.';
@@ -66,6 +72,8 @@
       <div class="row"><label for="src">Pull studio from branch</label></div>
       <div class="row"><input id="src" list="branches" spellcheck="false"><button class="pri" id="refresh">\u27f3 Refresh</button></div>
       <datalist id="branches"></datalist>
+      <div class="row"><label for="sess">Claude session that does the git work</label></div>
+      <div class="row"><input id="sess" placeholder="session_..." spellcheck="false"><button id="newSess">Start session</button></div>
     </section>
     <section>
       <h3>Console</h3>
@@ -129,235 +137,186 @@
     return b;
   });
 
-  // ---------- GitHub through the viewer's connector ----------
-  async function gh(tool, input) {
-    const mcp = await caps.mcp;
-    if (!mcp) throw { code: 'no_mcp', message: 'GitHub is not reachable from this view (open the hub page in claude.ai, signed in).' };
-    const r = await mcp.callTool(GH, tool, Object.assign({ owner: OWNER, repo: REPO }, input), { cache: false });
-    return r;
-  }
-  function ghError(e) {
+  // ---------- jobs: the page asks a Claude session to do the git work ----------
+  const ARTIFACT = () => (build && build.artifact) || 'https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc';
+  for (const b of WATCH) { const o = document.createElement('option'); o.value = b; $('branches').append(o); }
+  function mcpError(e) {
     const c = e && e.code;
-    if (c === 'server_not_connected') return 'GitHub connector not added for you: add it in claude.ai Settings \u2192 Connectors, then press Refresh.';
-    if (c === 'needs_reauth') return 'GitHub connector needs reconnecting: claude.ai Settings \u2192 Connectors \u2192 GitHub.';
-    if (c === 'not_in_manifest') return 'GitHub access was declined for this page. Allow it from the artifact\'s Permissions menu.';
-    if (c === 'selection_required') return 'You have more than one GitHub connector: pick one in the prompt, then press Refresh.';
-    if (c === 'blocked_by_policy') return 'Your organization blocks this GitHub tool.';
-    if (c === 'approval_required') return 'GitHub call needs your approval: press the button again and allow it.';
-    if (c === 'tool_error') return 'GitHub said: ' + (e.message || 'error');
+    if (c === 'server_not_connected') return 'the Claude Code Remote connector is not available to you here (open the artifact in claude.ai, signed in).';
+    if (c === 'not_in_manifest') return 'access to your Claude sessions was declined for this page; allow it from the artifact\'s Permissions menu.';
+    if (c === 'needs_reauth') return 'reconnect Claude Code in claude.ai Settings.';
+    if (c === 'tool_error') return 'the session service said: ' + (e.message || 'error');
     return (c ? c + ': ' : '') + ((e && e.message) || String(e));
   }
-  const arr = (r) => { const p = r && r.payload; return Array.isArray(p) ? p : (p && Array.isArray(p.items) ? p.items : []); };
-  function fileText(r) {
-    for (const b of (r && r.content) || []) {
-      if (b.type === 'resource' && b.resource) {
-        if (typeof b.resource.text === 'string') return b.resource.text;
-        if (typeof b.resource.blob === 'string') return new TextDecoder().decode(Uint8Array.from(atob(b.resource.blob), (c) => c.charCodeAt(0)));
-      }
-    }
-    const p = r && r.payload;
-    if (p && typeof p.content === 'string' && p.encoding === 'base64') return new TextDecoder().decode(Uint8Array.from(atob(p.content.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
-    throw { code: 'no_content', message: 'GitHub returned no file text' };
+  // the viewer's session id: private per person (data/users/<id>/sync), else this browser, else the publisher's
+  let myId = null, userDoc = null;
+  async function sessionRef() {
+    const db = await caps.db, u = await caps.user;
+    if (!db || !u) return null;
+    if (!myId) myId = await u.id();
+    return myId ? db.collection('data/users/' + myId).doc('sync') : null;
   }
-  const getFile = async (path, branch) => fileText(await gh('get_file_contents', { path: DIR + '/' + path, ref: 'refs/heads/' + branch }));
-  const commits = async (branch, n, path) => arr(await gh('list_commits', Object.assign({ sha: branch, perPage: n, fields: ['sha', 'commit'] }, path ? { path } : {})));
-  const subj = (c) => ((c.commit && c.commit.message) || '').split('\n')[0];
-  const when = (c) => (c.commit && c.commit.committer && c.commit.committer.date) || '';
+  async function loadSession() {
+    let sid = ls.get('session', '');
+    try { const r = await sessionRef(); if (r) { const d = (await r.get()).data(); if (d && d.session) sid = d.session; } } catch {}
+    if (!sid && build && build.session) sid = build.session;
+    $('sess').value = sid;
+    return sid;
+  }
+  async function saveSession(sid) {
+    ls.set('session', sid); $('sess').value = sid;
+    try { const r = await sessionRef(); if (r) await r.set({ session: sid, at: new Date().toISOString() }); } catch {}
+  }
+  buildP.then(loadSession);
+  $('sess').addEventListener('change', () => saveSession($('sess').value.trim()));
 
-  // branch list for the pickers (names only; loaded once the drawer is used)
-  let branchesLoaded = false;
-  async function loadBranches() {
-    if (branchesLoaded) return; branchesLoaded = true;
+  const PROMPT = () => `You handle Vessel Studio Sync jobs for the artifact ${ARTIFACT()}. Load the /vessel-studio skill (it is on branch ${TOOLS_REF}: check that branch out) and follow its section 5 for every job message you receive. Do nothing else until a job arrives.`;
+  async function startSession() {
+    const mcp = await caps.mcp;
+    if (!mcp) { log('starting a session needs the artifact opened in claude.ai, signed in', 'err'); return null; }
     try {
-      const names = [];
-      for (let page = 1; page <= 10; page++) { const b = arr(await gh('list_branches', { perPage: 100, page })); names.push(...b.map((x) => x.name)); if (b.length < 100) break; }
-      const dl = $('branches'); dl.textContent = '';
-      for (const n of [...new Set(WATCH.concat(names))]) { const o = document.createElement('option'); o.value = n; dl.append(o); }
-      log(`${names.length} branches on ${OWNER}/${REPO}`);
-    } catch (e) { branchesLoaded = false; log('branch list: ' + ghError(e), 'err'); }
+      log('starting a Claude session for sync jobs\u2026');
+      const envs = await mcp.callTool(CCR, 'list_environments', { limit: 20 });
+      const list = (envs.payload && (envs.payload.environments || envs.payload.data || envs.payload)) || [];
+      const env = (Array.isArray(list) ? list : []).map((x) => x.environment_id || x.id).find(Boolean) || (JSON.stringify(envs.payload || envs.content || '').match(/env_[A-Za-z0-9]+/) || [])[0];
+      if (!env) { log('no Claude Code environment found for your account; start a session at claude.ai/code and paste its id here', 'err'); return null; }
+      const res = await mcp.callTool(CCR, 'create_session', { environment_id: env, source_url: REPO_URL, source_revision: TOOLS_REF, title: 'Vessel Studio sync', prompt: PROMPT() });
+      const sid = (res.payload && (res.payload.session_id || res.payload.id)) || (JSON.stringify(res.payload || res.content || '').match(/session_[A-Za-z0-9]+/) || [])[0];
+      if (!sid) { log('session started but its id could not be read; copy it from claude.ai/code', 'warn'); return null; }
+      await saveSession(sid);
+      log(`session ${sid} started; it takes a minute to boot`, 'ok');
+      return sid;
+    } catch (e) { log('could not start a session: ' + mcpError(e), 'err'); return null; }
   }
+  $('newSess').addEventListener('click', startSession);
 
-  // ahead/behind from the last 100 commits of each side (enough for two working branches)
-  async function compare(a, b) {
-    const [ca, cb] = await Promise.all([commits(a, 100), commits(b, 100)]);
-    const sa = new Set(ca.map((c) => c.sha)), sb = new Set(cb.map((c) => c.sha));
-    const ahead = ca.filter((c) => !sb.has(c.sha)), behind = cb.filter((c) => !sa.has(c.sha));
-    return { ahead, behind, far: ahead.length >= 100 || behind.length >= 100, headA: ca[0], headB: cb[0] };
+  // create the job, follow it live, message the session
+  const live = new Map();
+  async function dispatch(kind, args, onDone) {
+    const db = await caps.db, mcp = await caps.mcp;
+    if (!db || !mcp) { log('this needs the artifact opened in claude.ai, signed in (it uses the shared database and your Claude sessions)', 'err'); return; }
+    let sid = $('sess').value.trim() || await loadSession();
+    if (!sid) { log('no Claude session set: press Start session (or paste a session id)', 'warn'); return; }
+    if (!myId) { const u = await caps.user; if (u) myId = await u.id(); }
+    let ref;
+    try { ref = await db.collection('jobs').add({ kind, args, status: 'queued', by: myId || '', at: new Date().toISOString(), session: sid, artifact: ARTIFACT(), log: [] }); }
+    catch (e) { log('could not create the job: ' + ((e && e.message) || (e && e.code)), 'err'); return; }
+    let seen = 0, finished = false;
+    const unsub = ref.onSnapshot((snap) => {
+      const d = snap.data(); if (!d) return;
+      const lines = Array.isArray(d.log) ? d.log : [];
+      for (; seen < lines.length; seen++) log('  ' + lines[seen], d.status === 'failed' ? 'err' : '');
+      if (!finished && (d.status === 'done' || d.status === 'failed')) {
+        finished = true; $('dot').className = 'dot' + (d.status === 'failed' ? ' err' : '');
+        log(`${kind} ${d.status}`, d.status === 'done' ? 'ok' : 'err');
+        setTimeout(() => { try { unsub(); } catch {} live.delete(ref.id); }, 0);
+        if (onDone) onDone(d.status === 'done', d.result || {});
+      } else if (d.status === 'running' && seen === 0) log(`${kind}: the session picked it up`);
+    }, () => {});
+    live.set(ref.id, unsub);
+    const msg = `Vessel Studio Sync job ${ref.id} (${kind} ${JSON.stringify(args)}) for ${ARTIFACT()}: run it with the /vessel-studio skill, section 5 (read jobs/${ref.id} from the artifact's database, do it, write the result back).`;
+    try {
+      await mcp.callTool(CCR, 'send_message', { session_id: sid, message: msg });
+      $('dot').className = 'dot new';
+      log(`${kind}: job ${ref.id} sent to ${sid}; the session reports back here`);
+    } catch (e) {
+      log(`${kind}: could not reach ${sid}: ${mcpError(e)}`, 'err');
+      try { await ref.update({ status: 'failed', log: ['the session could not be reached; press Start session and try again'] }); } catch {}
+    }
   }
-  const n = (list, far) => (far && list.length >= 100 ? '100+' : String(list.length));
 
   // ---------- Refresh ----------
-  let busy = false;
-  async function refresh() {
-    if (busy) return; busy = true; $('refresh').disabled = true; $('dot').className = 'dot';
-    const src = $('src').value.trim(); ls.set('src', src);
-    try {
-      await buildP; loadBranches();
-      log(`repo ${OWNER}/${REPO} \u00b7 this artifact shows ${build ? build.branch + ' @ ' + build.pathSha.slice(0, 7) : 'an unknown commit'}`);
-      const [head] = await commits(src, 1);
-      if (!head) throw { message: `branch "${src}" not found` };
-      log(`${src} head: ${head.sha.slice(0, 7)} \u201c${subj(head)}\u201d ${new Date(when(head)).toLocaleString()}`);
-      const touch = await commits(src, 10, DIR);
-      const latest = touch[0];
-      if (!latest) throw { message: `${src} has no ${DIR} folder` };
-      const same = build && build.branch === src && build.pathSha === latest.sha;
-      if (same) { log(`studio is up to date (last studio commit ${latest.sha.slice(0, 7)} \u201c${subj(latest)}\u201d)`, 'ok'); }
-      else {
-        const idx = build ? touch.findIndex((c) => c.sha === build.pathSha) : -1;
-        const fresh = idx < 0 ? touch : touch.slice(0, idx);
-        log(build && build.branch !== src ? `switching studio source ${build.branch} \u2192 ${src}` : `${idx < 0 ? fresh.length + '+' : fresh.length} new studio commit(s) on ${src}:`, 'new');
-        for (const c of fresh.slice(0, 6)) log(`  ${c.sha.slice(0, 7)} ${subj(c)}`, 'new');
-        $('dot').className = 'dot new';
-        await update(src, head, latest);
-      }
-      await suggestions(src);
-    } catch (e) { $('dot').className = 'dot err'; log('refresh failed: ' + ghError(e), 'err'); }
-    finally { busy = false; $('refresh').disabled = false; }
-  }
-  $('refresh').addEventListener('click', refresh);
+  $('refresh').addEventListener('click', async () => {
+    await buildP;
+    const branch = $('src').value.trim(); ls.set('src', branch);
+    if (!branch) { log('pick a branch', 'warn'); return; }
+    log(`refresh: ${branch} (artifact shows ${build ? build.branch + ' @ ' + build.pathSha.slice(0, 7) : 'an unknown commit'})`);
+    dispatch('refresh', { branch, shown: build && build.branch === branch ? build.pathSha : null }, (ok, r) => {
+      if (!ok) return;
+      if (r.upToDate) log('studio is up to date', 'ok');
+      else if (r.published) { log('artifact republished; this page reloads now', 'ok'); setTimeout(() => location.reload(), 1500); }
+    });
+  });
 
-  const inject = (html) => html.includes('src="sync.js"') ? html : (/<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, '<script src="sync.js"></script></body>') : html + '<script src="sync.js"></script>');
-  async function update(src, head, latest) {
-    const art = await caps.artifact;
-    if (!art) { log('cannot republish from this view (open the artifact in claude.ai). The new commits are listed above.', 'warn'); return; }
-    log('fetching studio files\u2026');
-    const cat = JSON.parse(await getFile('studios.json', src));
-    const names = ['index.html'].concat((cat.studios || []).map((s) => s.file).filter(Boolean));
-    const files = { 'studios.json': JSON.stringify(cat, null, 2) + '\n' };
-    for (const f of names) { const t = await getFile(f, src); files[f] = inject(t); log(`  ${f} ${(t.length / 1024).toFixed(0)} KB`); }
-    files['build.json'] = JSON.stringify({ repo: OWNER + '/' + REPO, branch: src, sha: head.sha, pathSha: latest.sha, subject: subj(latest), committedAt: when(latest), publishedAt: new Date().toISOString() }, null, 2);
-    try {
-      await art.publish(files);
-      log(`artifact updated to ${src} @ ${latest.sha.slice(0, 7)} \u2014 reloading`, 'ok');
-      await record(`Refreshed studio to ${src} @ ${latest.sha.slice(0, 7)} \u201c${subj(latest)}\u201d`, 'refresh', true);
-      try { sessionStorage.setItem(LS + 'reopen', '1'); } catch {}
-      setTimeout(() => location.reload(), 1200);
-    } catch (e) {
-      const c = e && e.code;
-      if (c === 'conflict') log('someone else updated the artifact first; this view is reloading to their version', 'warn');
-      else if (c === 'not_writer' || c === 'not_granted' || c === 'capability_disabled') log('you can view but not update this artifact. Ask its owner for edit access, or for them to press Refresh.', 'warn');
-      else if (c === 'too_large') log('the studio files are too large to publish', 'err');
-      else log('publish failed: ' + ((c ? c + ': ' : '') + (e && e.message || e)), 'err');
-    }
-  }
-  try { if (sessionStorage.getItem(LS + 'reopen')) { sessionStorage.removeItem(LS + 'reopen'); $('drawer').hidden = false; } } catch {}
-
-  async function suggestions(src) {
-    const others = WATCH.filter((b) => b !== src);
-    log('merge suggestions vs ' + src + ':');
-    for (const b of others) {
-      try {
-        const r = await compare(b, src);
-        if (r.far) { log(`  ${b}: far apart (100+ commits), merge from a Claude session`, 't'); continue; }
-        if (!r.ahead.length && !r.behind.length) { log(`  ${b}: identical`); continue; }
-        const s = r.ahead.length ? `\u2192 suggest merging ${b} into ${src}` : 'nothing to take';
-        log(`  ${b}: ${r.ahead.length} ahead, ${r.behind.length} behind ${s}`, r.ahead.length ? 'new' : '');
-      } catch (e) { log(`  ${b}: ${ghError(e)}`, 'err'); }
-    }
-  }
-
-  // ---------- Merge: compare, then ask ----------
+  // ---------- Merge, then offer to delete the merged branch ----------
   $('swap').addEventListener('click', () => { const a = $('from').value; $('from').value = $('to').value; $('to').value = a; });
-  $('from').addEventListener('focus', loadBranches); $('to').addEventListener('focus', loadBranches); $('src').addEventListener('focus', loadBranches);
-  async function compareUI(thenMerge) {
+  function pair() {
     const from = $('from').value.trim(), to = $('to').value.trim(); ls.set('from', from); ls.set('to', to);
-    const q = $('q'); q.hidden = false; q.textContent = 'comparing\u2026';
-    if (!from || !to || from === to) { q.textContent = 'Pick two different branches.'; return; }
-    try {
-      const r = await compare(from, to);
-      log(`${from} vs ${to}: ${n(r.ahead, r.far)} ahead, ${n(r.behind, r.far)} behind`);
-      for (const c of r.ahead.slice(0, 8)) log(`  + ${c.sha.slice(0, 7)} ${subj(c)}`);
-      if (thenMerge && r.ahead.length && !r.far) confirmMerge(from, to, r, false); else ask(from, to, r);
-    } catch (e) { q.textContent = ghError(e); log('compare: ' + ghError(e), 'err'); }
+    const q = $('q'); q.hidden = false;
+    if (!from || !to || from === to) { q.textContent = 'Pick two different branches.'; return null; }
+    return { from, to };
   }
-  $('compare').addEventListener('click', () => compareUI(false));
-  $('merge').addEventListener('click', () => compareUI(true));
+  function runCompare(thenMerge) {
+    const p = pair(); if (!p) return;
+    $('q').textContent = 'comparing (the session reports back in the console)\u2026';
+    dispatch('compare', p, (ok, r) => {
+      if (!ok) { $('q').textContent = 'Compare failed: see the console.'; return; }
+      if (thenMerge && r.ahead > 0 && !r.guarded) confirmMerge(p.from, p.to, r); else ask(p.from, p.to, r);
+    });
+  }
+  $('compare').addEventListener('click', () => runCompare(false));
+  $('merge').addEventListener('click', () => runCompare(true));
+  function ask(from, to, r) {
+    const q = $('q'); q.textContent = '';
+    const p = document.createElement('div');
+    p.textContent = !r.ahead ? `${to} already has everything on ${from}. Nothing to merge.`
+      : `${from} has ${r.ahead} commit(s) ${to} lacks${r.behind ? ` (and is ${r.behind} behind it)` : ''}. Merge ${from} into ${to} now?`;
+    q.append(p);
+    if (r.guarded) { const w = document.createElement('div'); w.className = 'meta'; w.style.color = 'var(--warn)'; w.textContent = `${to} is a shared base branch: merge it through a pull request, not from here.`; q.append(w); return; }
+    if (!r.ahead) return;
+    const row = document.createElement('div'); row.className = 'row';
+    const mk = (label, cls, fn) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.addEventListener('click', fn); row.append(b); };
+    mk('Yes, merge now', 'pri', () => confirmMerge(from, to, r));
+    mk('Not now', '', async () => { q.hidden = true; log(`not merging ${from} into ${to} now`); await record(`Not merging ${from} into ${to} yet (${r.ahead} commits waiting)`, 'merge', true); });
+    q.append(row);
+  }
+  function confirmMerge(from, to, r) {
+    const q = $('q'); q.textContent = '';
+    const p = document.createElement('div');
+    p.textContent = `Merge ${from} into ${to} (${r.ahead} commit(s)) and push ${to}? A Claude session does it; if the branches conflict nothing is pushed.`;
+    const row = document.createElement('div'); row.className = 'row';
+    const go = document.createElement('button'); go.className = 'danger'; go.textContent = 'Confirm merge';
+    const no = document.createElement('button'); no.textContent = 'Cancel';
+    no.addEventListener('click', () => ask(from, to, r));
+    go.addEventListener('click', () => {
+      go.disabled = no.disabled = true; q.textContent = 'merging (the session reports back in the console)\u2026';
+      dispatch('merge', { from, to }, async (ok, res) => {
+        if (ok && res.merged) {
+          q.textContent = `Merged ${from} into ${to}.`;
+          await record(`Merged ${from} into ${to}${res.sha ? ' (' + res.sha.slice(0, 7) + ')' : ''}`, 'merge', true);
+          askDelete(from, to);
+        } else if (ok) q.textContent = `${to} already had everything on ${from}.`;
+        else q.textContent = res.conflicts && res.conflicts.length ? `Conflicts in ${res.conflicts.length} file(s); nothing was pushed. Ask a Claude session to merge them by hand.` : 'Merge failed: see the console.';
+      });
+    });
+    row.append(go, no); q.append(p, row);
+  }
 
-  // ---------- Delete a branch (popup) ----------
-  // The GitHub connector has no delete-branch tool, so Delete opens the branch on GitHub's Branches
-  // page (one click on its bin icon deletes it) and logs the request where a Claude session can act on it.
-  function modal(build) { const box = $('modalBox'); box.textContent = ''; build(box); $('modal').hidden = false; }
+  // ---------- popups ----------
+  function modal(fill) { const box = $('modalBox'); box.textContent = ''; fill(box); $('modal').hidden = false; }
   const closeModal = () => { $('modal').hidden = true; };
   $('modalX').addEventListener('click', closeModal);
   $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
   function askDelete(name, mergedInto) {
-    if (!name) { log('pick a branch to delete', 'warn'); return; }
     modal((box) => {
-      const h = document.createElement('b');
-      h.textContent = mergedInto ? `Merged ${name} into ${mergedInto}. Delete ${name}?` : `Delete branch ${name}?`;
+      const h = document.createElement('b'); h.textContent = `Merged ${name} into ${mergedInto}. Delete ${name}?`;
       const p = document.createElement('div'); p.className = 'meta';
-      const guard = GUARDED.includes(name), shown = build && build.branch === name;
-      p.textContent = guard ? `${name} is a shared base branch. It cannot be deleted from here.`
-        : (shown ? `This artifact pulls its studio from ${name}; after deleting it, pick another branch under Refresh. ` : '')
-          + 'Delete opens the branch on GitHub: click the bin icon next to it to delete it (the GitHub connector has no delete tool). Keep leaves it as it is.';
+      const guard = GUARDED.includes(name) || name === TOOLS_REF, shown = build && build.branch === name;
+      p.textContent = guard ? `${name} is kept: it is a shared base branch or the branch the sync tools live on.`
+        : (shown ? `This artifact shows ${name}; after deleting it, pick another branch under Refresh. ` : '') + 'Its commits are safe in ' + mergedInto + '. A Claude session deletes it on GitHub.';
       const row = document.createElement('div'); row.className = 'row';
       if (!guard) {
-        const del = document.createElement('a'); del.className = 'btn'; del.target = '_blank'; del.rel = 'noopener';
-        del.href = `https://github.com/${OWNER}/${REPO}/branches/all?query=${encodeURIComponent(name)}`;
-        del.textContent = `\ud83d\uddd1 Delete ${name}`;
-        del.addEventListener('click', () => { log(`delete requested: ${name} (opened on GitHub)`, 'warn'); record(`Delete branch ${name}${mergedInto ? ' (merged into ' + mergedInto + ')' : ''}`, 'delete', true); setTimeout(closeModal, 300); });
+        const del = document.createElement('button'); del.className = 'danger'; del.textContent = `Delete ${name}`;
+        del.addEventListener('click', () => {
+          closeModal(); log(`deleting ${name}\u2026`);
+          dispatch('delete', { branch: name }, (ok) => { if (ok) record(`Deleted branch ${name} (merged into ${mergedInto})`, 'delete', true); });
+        });
         row.append(del);
       }
       const keep = document.createElement('button'); keep.textContent = guard ? 'OK' : `Keep ${name}`;
-      keep.addEventListener('click', () => { if (!guard) log(`keeping ${name}`); closeModal(); });
+      keep.addEventListener('click', () => { if (!guard) { log(`keeping ${name}`); record(`Kept branch ${name} after merging it into ${mergedInto}`, 'merge', true); } closeModal(); });
       row.append(keep); box.append(h, p, row);
     });
-  }
-  function ask(from, to, r) {
-    const q = $('q'); q.textContent = '';
-    const p = document.createElement('div');
-    const guarded = GUARDED.includes(to);
-    let text;
-    if (!r.ahead.length) text = `${to} already has everything on ${from}. Nothing to merge.`;
-    else if (r.far) text = `${from} and ${to} are more than 100 commits apart. Merge them in a Claude session so conflicts get resolved properly. You can still open a PR here.`;
-    else text = `${from} has ${r.ahead.length} commit(s) ${to} lacks${r.behind.length ? ` (and is ${r.behind.length} behind it)` : ''}. Merge ${from} into ${to} now?`;
-    p.textContent = text; q.append(p);
-    if (guarded) { const w = document.createElement('div'); w.className = 'meta'; w.style.color = 'var(--warn)'; w.textContent = `${to} is a shared base branch: merging here affects everyone.`; q.append(w); }
-    if (!r.ahead.length) return;
-    const row = document.createElement('div'); row.className = 'row';
-    const mk = (label, cls, fn) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.addEventListener('click', fn); row.append(b); return b; };
-    if (!r.far) mk('Yes, merge now', guarded ? 'danger' : 'pri', () => confirmMerge(from, to, r, false));
-    mk('Open a PR only', '', () => confirmMerge(from, to, r, true));
-    mk('Not now', '', async () => { q.hidden = true; log(`decided not to merge ${from} \u2192 ${to} now`); await record(`Not merging ${from} into ${to} yet (${r.ahead.length} commits waiting)`, 'merge', true); });
-    q.append(row);
-  }
-  function confirmMerge(from, to, r, prOnly) {
-    const q = $('q'); q.textContent = '';
-    const p = document.createElement('div');
-    p.textContent = prOnly ? `Open a pull request ${from} \u2192 ${to} on GitHub (as you)?` : `Merge ${from} into ${to} on GitHub now, as you, with a merge commit? This pushes to ${to}. If the branches conflict GitHub refuses and the PR stays open.`;
-    const row = document.createElement('div'); row.className = 'row';
-    const go = document.createElement('button'); go.className = prOnly ? 'pri' : 'danger'; go.textContent = prOnly ? 'Open PR' : 'Confirm merge';
-    const no = document.createElement('button'); no.textContent = 'Cancel';
-    no.addEventListener('click', () => ask(from, to, r));
-    go.addEventListener('click', () => { go.disabled = no.disabled = true; doMerge(from, to, r, prOnly); });
-    row.append(go, no); q.append(p, row);
-  }
-  async function doMerge(from, to, r, prOnly) {
-    const q = $('q');
-    try {
-      const open = arr(await gh('list_pull_requests', { head: OWNER + ':' + from, base: to, state: 'open', fields: ['number', 'html_url', 'title'] }));
-      let pr = open[0];
-      if (pr) log(`using open PR #${pr.number} ${pr.html_url}`);
-      else {
-        const body = `Merge ${from} into ${to}.\n\n${r.ahead.slice(0, 30).map((c) => '- ' + c.sha.slice(0, 7) + ' ' + subj(c)).join('\n')}\n\nOpened from the Vessel Studio sync panel.`;
-        const res = await gh('create_pull_request', { title: `Merge ${from} into ${to}`, head: from, base: to, body });
-        const pl = res.payload || {}, url = pl.html_url || pl.url || ((res.content || []).map((b) => b.text || '').join(' ').match(/https:\/\/github\.com\/\S+\/pull\/\d+/) || [])[0] || '';
-        const num = pl.number || +((url.match(/\/pull\/(\d+)/) || [])[1] || 0);
-        pr = { number: num, html_url: url.replace('api.github.com/repos', 'github.com').replace('/pulls/', '/pull/') };
-        log(`opened PR #${pr.number || '?'} ${pr.html_url}`, 'ok');
-      }
-      if (prOnly) { q.textContent = `PR #${pr.number || '?'}: ${pr.html_url}`; await record(`Opened PR ${from} \u2192 ${to}: ${pr.html_url}`, 'merge', true); return; }
-      if (!pr.number) { q.textContent = 'PR opened, but its number could not be read: merge it on GitHub.'; log('could not read the PR number; merge it on GitHub', 'warn'); return; }
-      await gh('merge_pull_request', { pullNumber: pr.number, merge_method: 'merge', commit_title: `Merge ${from} into ${to}` });
-      log(`merged ${from} into ${to} (PR #${pr.number})`, 'ok');
-      q.textContent = `Merged ${from} into ${to}. Press Refresh to pull it into this artifact.`;
-      await record(`Merged ${from} into ${to} (PR #${pr.number})`, 'merge', true);
-      askDelete(from, to);
-    } catch (e) {
-      const m = ghError(e);
-      log('merge: ' + m, 'err');
-      q.textContent = /conflict|not mergeable|405/i.test(m) ? `GitHub could not merge (conflicts). The PR stays open; resolve it in a Claude session. ${m}` : m;
-    }
   }
 
   // ---------- Decisions (shared db) ----------

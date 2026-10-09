@@ -21,6 +21,7 @@ import argparse, json, os, subprocess, sys, tempfile
 DIR = 'Docs/Studios/VesselStudio'
 TAG = '<script src="sync.js"></script>'
 REPO = 'froglet-studio/cosmic-shore'
+DEFAULT_ARTIFACT = 'https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc'
 
 
 def git(*a, quiet=False):
@@ -42,7 +43,7 @@ def branch_name(ref):
     return ref
 
 
-def build(ref, out):
+def build(ref, out, artifact=None, session=None):
     os.makedirs(out, exist_ok=True)
     cat_text = git('show', f'{ref}:{DIR}/studios.json')
     cat = json.loads(cat_text)
@@ -66,6 +67,8 @@ def build(ref, out):
         'subject': git('log', '-1', '--format=%s', path_sha).strip(),
         'committedAt': git('log', '-1', '--format=%cI', path_sha).strip(),
         'publishedAt': None,
+        'artifact': artifact or DEFAULT_ARTIFACT,   # the panel names it in each job
+        'session': session,                        # default Claude session for jobs (each viewer can set their own)
     }
     with open(os.path.join(out, 'build.json'), 'w', encoding='utf-8') as fh:
         json.dump(info, fh, indent=2)
@@ -139,6 +142,8 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--ref', help='git ref to build from, e.g. origin/cece/magical-carson-9bdq8z')
     ap.add_argument('--out', help='output folder (use your scratchpad)')
+    ap.add_argument('--artifact', help='the artifact URL this build is published to (default: the live Vessel Studio)')
+    ap.add_argument('--session', help='default Claude session id for Sync jobs (the publisher\'s own)')
     ap.add_argument('--check', metavar='DIR', help='check an already built folder')
     ap.add_argument('--self-test', action='store_true')
     a = ap.parse_args()
@@ -148,4 +153,4 @@ if __name__ == '__main__':
         sys.exit(1 if check(a.check) else 0)
     if not (a.ref and a.out):
         ap.error('--ref and --out are required (or --check / --self-test)')
-    sys.exit(1 if build(a.ref, a.out) else 0)
+    sys.exit(1 if build(a.ref, a.out, a.artifact, a.session) else 0)

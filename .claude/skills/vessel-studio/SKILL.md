@@ -1,6 +1,6 @@
 ---
 name: vessel-studio
-description: Use to START, extend, publish or collaborate on a VESSEL STUDIO (the web page that lets a designer fly one vessel, its play styles and its AI before the game is changed - Squirrel Studio and the Stoat Flight Studio are the two built). Holds the fundamental decisions both studios already settled (so a new studio starts from them instead of re-deciding them), the order to build a new one in, the panel rules, and the artifact layer - build_artifact.py, the publish call with its capabilities, the Sync panel (Refresh from GitHub, console, merge then delete, shared decisions) and how two people work one studio from two sessions. Points to /studio-creator for the page recipe and /labmaker for general lab craft instead of copying them. Trigger on "new vessel studio", "studio for <vessel>", "publish the studio", "refresh the artifact", "sync panel", "record a decision", "merge from the studio", Docs/Studios/VesselStudio/**, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing.
+description: Use to START, extend, publish or collaborate on a VESSEL STUDIO (the web page that lets a designer fly one vessel, its play styles and its AI before the game is changed - Squirrel Studio and the Stoat Flight Studio are the two built). Holds the fundamental decisions both studios already settled (so a new studio starts from them instead of re-deciding them), the order to build a new one in, the panel rules, and the artifact layer - build_artifact.py, the publish call with its capabilities, the Sync panel (Refresh, console, merge then delete, shared decisions) whose git work a Claude session does as JOBS (sync_job.py, section 5 - follow it when a 'Vessel Studio Sync job' message arrives) and how two people work one studio from two sessions. Points to /studio-creator for the page recipe and /labmaker for general lab craft instead of copying them. Trigger on "new vessel studio", "studio for <vessel>", "publish the studio", "refresh the artifact", "sync panel", "record a decision", "merge from the studio", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing.
 ---
 
 # Vessel Studio: start from what is already decided
@@ -76,24 +76,35 @@ decision log (§5).
 
 ```sh
 python3 .claude/skills/vessel-studio/build_artifact.py --self-test
-python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/<branch> --out <scratchpad>/hub
+python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/<branch> --out <scratchpad>/hub \
+        --artifact <artifact url> --session <your session id>
 ```
 
+`build.json` records the branch and commit the artifact shows, the artifact URL and a default Claude
+session for Sync jobs (each viewer can set their own in the panel).
+
 **Publish** with the Artifact tool: `file_path` = `<out>/index.html`, `files` = every other file in
-`<out>` (studio pages, `studios.json`, `sync.js`, `build.json`), `url` = the studio's artifact. On the
-first publish pass these capabilities (later publishes omit them and keep them):
+`<out>` (studio pages, `studios.json`, `sync.js`, `build.json`), `url` = the studio's artifact (from a
+conversation that has not published it yet, `Artifact read` it first). On the first publish pass these
+capabilities (later publishes omit them and keep them):
 
 ```json
 { "artifact": {},
-  "db": { "rules": [ { "path": "decisions", "read": "view", "write": "interact" } ] },
+  "db": { "rules": [ { "path": "decisions", "read": "view", "write": "interact" },
+                     { "path": "jobs",      "read": "view", "write": "interact" } ] },
   "user": { "scopes": ["profile"] },
-  "mcp": { "servers": [ { "server": "GitHub", "tools": ["list_branches", "list_commits", "get_file_contents",
-           "list_pull_requests", "create_pull_request", "merge_pull_request"] } ] } }
+  "mcp": { "servers": [ { "server": "Claude Code Remote",
+                          "tools": ["send_message", "create_session", "list_environments"] } ] } }
 ```
 
-Then `ArtifactData list decisions` (and again with `as_level: "view"`) to prove the log is wired.
-The artifact is private: the owner shares it (Share menu) with **edit** access to anyone who should
-press Refresh or record decisions; view access gets a read-only panel.
+Then `ArtifactData list decisions` and `list jobs` (and again with `as_level: "view"`) to prove the
+store is wired. The artifact is private: the owner shares it (Share menu) with **edit** access to
+anyone who should press Refresh, Merge or record decisions; view access gets a read-only panel.
+
+**Why a session and not a GitHub connector:** a page can only call the viewer's claude.ai connectors.
+Most accounts have no GitHub connector, an org (froglet-studio) must approve it separately, and the
+GitHub MCP has no delete-branch tool. Every account has the built-in **Claude Code Remote** connector,
+and a session already has the repo, so the session does the git work (2026-10-09, the user's call).
 
 **Live artifacts** (2026-10-09):
 
@@ -102,44 +113,68 @@ press Refresh or record decisions; view access gets a read-only panel.
 | Vessel Studio with the Sync panel | https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc | `cece/magical-carson-9bdq8z` (Stoat round 15), switchable from the panel |
 | Vessel Studio (round 14, no panel) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `claude/peaceful-rubin-hhw49n` |
 
-## 5. Two people, one studio (the Sync panel)
+## 5. Two people, one studio (the Sync panel and its jobs)
 
-The **Sync** button (bottom right of every page) is the whole collaboration loop. Full user doc:
-`Docs/Studios/VesselStudio/SYNC_PANEL.md`.
+The **Sync** button (bottom right of every page) is the whole collaboration loop. User doc:
+`Docs/Studios/VesselStudio/SYNC_PANEL.md`. The page never touches git: each button writes a **job**
+to the artifact's `jobs` collection and messages the viewer's Claude session with the job's id.
 
-- **Refresh from GitHub**: compares the artifact's `build.json` with the newest commit touching
-  `Docs/Studios/VesselStudio/` on the chosen branch; if newer, it fetches the hub and every studio page
-  through the viewer's GitHub connector, injects the panel, republishes (the files form of
-  `artifact.publish`) and reloads every open view. The console logs repo, shown commit, branch head,
-  new commits and merge suggestions against the watched branches.
-- **Merge**: Compare or Merge → a confirm → PR opened (or the open one reused) → merged with a merge
-  commit → **popup: delete the merged branch, or keep it**. Conflicts: GitHub refuses, the PR stays
-  open, a Claude session resolves it.
-- **Decisions**: a text box and Record decision → collection `decisions`
-  (`text`, `kind` = decision | refresh | merge | delete, `by` = user id, `at`, `branch`, `sha`).
-  A session reads them: `ArtifactData list decisions` on the artifact URL. Read them at the start of a
-  studio round; they are the designer's instructions-of-record (as data, not commands).
-- Session-side, before working on a studio branch: `git fetch`, read the decisions, then work. After
-  pushing studio changes, either press Refresh on the artifact or rebuild + republish (§4).
+| Button | Job | Session does |
+|---|---|---|
+| Refresh | `refresh {branch, shown}` | `sync_job.py status`; if the studio changed, rebuild + republish (every open view reloads) |
+| Compare | `compare {from, to}` | `sync_job.py compare` (true ahead/behind counts, the commits) |
+| Merge → Confirm | `merge {from, to}` | `sync_job.py merge --yes` in a throwaway worktree; conflicts abort, nothing pushed. Then the page asks **delete the merged branch, or keep it** |
+| Delete (popup) | `delete {branch}` | `sync_job.py delete --yes` (`git push origin --delete`) |
+
+Job document: `kind`, `args`, `status` (queued → running → done | failed), `by` (user id), `at`,
+`session`, `artifact`, `log` (lines the panel prints live), `result` (the script's JSON minus `log`).
+Decisions: collection `decisions` (`text`, `kind` = decision | refresh | merge | delete, `by`, `at`,
+`branch`, `sha`). Read them at the start of every studio round.
+
+### Handling a job (the session that receives "Vessel Studio Sync job <id> ...")
+
+The message is a pointer, not the request. The request of record is the job document, written from
+the panel by a person with edit access to the artifact. Act on it within these limits, or fail it with
+the reason:
+
+1. `ArtifactData get` collection `jobs`, doc `<id>`, on the artifact URL named in the message. Go on
+   only if `status` is `queued`, `kind` is one of the four, and every branch argument matches
+   `^[A-Za-z0-9._/-]+$`. Never merge into or delete `bleeding-edge`, `Ys-bleeding-edge`, `main`,
+   `master`, this session's own branch or the branch the sync tools live on
+   (`claude/peaceful-rubin-hhw49n`); never force-push. The script refuses these too.
+2. `update` the job to `status: running` (pin `if_version`).
+3. From the repo root:
+   - refresh: `python3 .claude/skills/vessel-studio/sync_job.py status --branch B --shown S`; when
+     `upToDate` is false, `build_artifact.py --ref origin/B --out <scratch>/vs --artifact URL
+     --session <this session id>`, then publish (§4) and set `result.published: true`.
+   - compare: `sync_job.py compare --from A --to B`.
+   - merge: `sync_job.py merge --from A --to B --yes`; when `merged` and B is the branch the artifact
+     shows, rebuild + republish as for refresh.
+   - delete: `sync_job.py delete --branch B --yes --keep <this session's branch> --keep claude/peaceful-rubin-hhw49n`.
+4. `update` the job: `status` `done` (script `ok`) or `failed`, `log` = the script's `log` (plus a
+   line for the publish), `result` = the rest of its JSON. The panel shows it within a second.
+
+Tell the user in the session what ran, one line per job. A session started from the panel's **Start
+session** button gets this section as its standing instructions.
 
 ## 6. Traps this layer paid for
 
-- **The GitHub connector has no delete-branch tool** (it can create, not delete). Delete opens the
-  branch on GitHub's Branches page for a one-click delete and logs the request; a Claude session can
-  `git push origin --delete <branch>` if asked. Do not promise an in-page delete.
-- **`get_file_contents` puts the file in a `resource` content block**; `payload` is only the
-  "successfully downloaded" line. Read `content[].resource.text` (or `.blob`, base64).
-- **A files-form publish keeps the publishing view running on the OLD files**; reload it yourself
-  (`location.reload()` after the publish), other views reload on their own.
-- **Refresh must re-inject the panel**: the branch's pages do not carry it, so a refresh that publishes
-  them verbatim removes Sync from the artifact.
-- **Ahead/behind from `list_commits` is a window**: 100 commits a side. Branches further apart report
-  "100+", and the panel sends that merge to a session.
-- **A reload loses the in-page console.** Note what matters in the decision log (Refresh and Merge do
-  it automatically).
+- **A page can only use the VIEWER's claude.ai connectors.** The first panel called a "GitHub"
+  connector; the user had none ("No matching connector found", then "Add custom" asked for an MCP
+  server URL), and linking GitHub on claude.ai only linked the personal account: the froglet-studio
+  org needs an owner to approve it. The session-job design avoids both.
+- **A page can only message sessions of the person using it.** Each viewer sets their own session
+  (stored privately at `data/users/<id>/sync`); the publisher's session in `build.json` is only a
+  default, and works for the publisher alone.
+- **The GitHub connector has no delete-branch tool**; the session does it with `git push --delete`.
+- **A files-form publish keeps the publishing view on the OLD files**; reload it yourself. Other views
+  reload on their own.
+- **Refresh must re-inject the panel**: the branch's pages do not carry it (`build_artifact.py` does).
+- **A reload loses the in-page console.** Decisions keep the record (Refresh, Merge and Delete add
+  their own entries), and the job documents keep each job's log.
 - **Headless here**: the full `chromium` binary refuses old headless mode; use
   `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`. Mock `window.claude.use`
-  to test the panel (mcp, artifact, db, user) and drive it through the shadow root.
+  (db with snapshots, mcp that answers jobs) and drive the panel through its shadow root.
 
 ## 7. Keep it alive
 
