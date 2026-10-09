@@ -136,6 +136,13 @@ namespace CosmicShore.Player
                         string host = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : "127.0.0.1";
                         return RelayServerMain(udp, http, host);
                     }
+                    case "--ugs-relay-check":
+                    {
+                        // --ugs-relay-check [REGION]: sign in two UGS players, allocate, join by code, connect through UGS
+                        // Relay and time frames both ways (docs/MULTIPLAYER.md §6.8). Touches the live UGS project.
+                        string region = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : null;
+                        return UgsRelayCheckMain(region);
+                    }
                     case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
@@ -250,12 +257,16 @@ namespace CosmicShore.Player
         /// <summary>
         /// Froglet's relay as a process (docs/MULTIPLAYER.md §6.7): the Relay Allocations REST shape on HTTP_PORT
         /// and Unity Relay's message protocol on UDP_PORT. Players use it with COSMIC_SHORE_RELAY=&lt;the URL it prints&gt;.
-        /// Runs until killed or until its standard input closes.
+        /// COSMIC_SHORE_RELAY_SECRET makes allocating need that bearer token. Runs until killed (Ctrl+C).
         /// </summary>
         static int RelayServerMain(int udpPort, int httpPort, string advertisedHost)
         {
             using var relay = CosmicShore.Engine.Networking.FrogletRelayServer.Start(udpPort, httpPort, advertisedHost);
+            relay.Secret = Environment.GetEnvironmentVariable("COSMIC_SHORE_RELAY_SECRET") is { Length: > 0 } secret ? secret.Trim() : null;
             Console.WriteLine($"[relay] listening: udp {relay.UdpPort}, allocations {relay.BaseUrl} (COSMIC_SHORE_RELAY={relay.BaseUrl})");
+            Console.WriteLine(relay.Secret != null
+                ? "[relay] allocating needs the secret: players set COSMIC_SHORE_RELAY_SECRET to the same value"
+                : "[relay] allocating is open to anyone who reaches this port (set COSMIC_SHORE_RELAY_SECRET before facing the internet)");
             var quit = new System.Threading.ManualResetEventSlim();
             Console.CancelKeyPress += (_, e) => { e.Cancel = true; quit.Set(); };
             AppDomain.CurrentDomain.ProcessExit += (_, _) => quit.Set();
@@ -267,6 +278,40 @@ namespace CosmicShore.Player
                 Console.WriteLine($"[relay] {relay.AllocationCount} allocation(s), {relay.Forwarded} forwarded, {relay.Refused} refused, binds {relay.BindsAccepted} ok / {relay.BindsRejected} rejected");
             }
             return 0;
+        }
+
+        /// <summary>
+        /// The owner's one-command proof that UGS Relay works from Prisma (docs/MULTIPLAYER.md §6.8): two UGS
+        /// players (each keeps its session token in this profile's folder, so repeated runs reuse the same two),
+        /// a host allocation and join code, a join, a connection through the relay and timed frames both ways.
+        /// Exit 0 = PASS. It creates players in the live project on its first run, so it runs only when asked.
+        /// </summary>
+        static int UgsRelayCheckMain(string region)
+        {
+            var root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
+            CosmicShore.Engine.Networking.UgsAuthentication host, joiner;
+            try
+            {
+                host = UgsSetup.SignIn(root, "ugs-relay-check-host.token");
+                joiner = UgsSetup.SignIn(root, "ugs-relay-check-join.token");
+            }
+            catch (InvalidOperationException e) { Console.WriteLine("[relay-check] " + e.Message); return 2; }
+            Console.WriteLine($"[relay-check] UGS project {host.ProjectId}{(host.Environment != null ? ", environment " + host.Environment : " (default environment)")}, region {region ?? "chosen by the service"}");
+            try
+            {
+                host.GetAccessTokenAsync().GetAwaiter().GetResult();
+                Console.WriteLine($"[relay-check] host signed in ({host.LastSignIn}): player {host.PlayerId}");
+                joiner.GetAccessTokenAsync().GetAwaiter().GetResult();
+                Console.WriteLine($"[relay-check] joiner signed in ({joiner.LastSignIn}): player {joiner.PlayerId}");
+            }
+            catch (Exception e) when (e is CosmicShore.Engine.Networking.UgsServiceException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException or FormatException)
+            {
+                Console.WriteLine("[relay-check] FAILED at 'sign in': " + e.Message);
+                Console.WriteLine("[relay-check] FAIL");
+                return 1;
+            }
+            var r = CosmicShore.Engine.Networking.RelayCheck.RunAsync(UgsSetup.UgsRelay(host), UgsSetup.UgsRelay(joiner), Console.Out, region).GetAwaiter().GetResult();
+            return r.Passed ? 0 : 1;
         }
 
         static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null)

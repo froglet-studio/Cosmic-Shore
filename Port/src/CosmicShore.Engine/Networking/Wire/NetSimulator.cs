@@ -138,6 +138,9 @@ namespace CosmicShore.Engine.Networking
         {
             if (NetDriver.TransportFactory is not SimulatedTransportFactory)
                 NetDriver.TransportFactory = new SimulatedTransportFactory(NetDriver.TransportFactory, () => s_settings);
+            // Say which line this player starts on, so a run's logs prove what it was tested under.
+            if (Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_SIM") is { } spec && !string.IsNullOrWhiteSpace(spec))
+                Console.WriteLine($"[netsim] starting on COSMIC_SHORE_NET_SIM={spec.Trim()}: {s_settings}");
         }
     }
 

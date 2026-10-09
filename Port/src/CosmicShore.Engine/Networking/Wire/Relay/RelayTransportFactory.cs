@@ -16,6 +16,9 @@ namespace CosmicShore.Engine.Networking
         /// <summary>The allocator sessions use, or null for direct connections (LAN, one machine).</summary>
         public static IRelayAllocator Allocator { get; set; }
 
+        /// <summary>The relay region hosts allocate in (a UGS region id such as "europe-west4"); null lets the service choose.</summary>
+        public static string Region { get; set; }
+
         internal static RelayAllocation PendingHost, PendingJoin;
 
         /// <summary>The join code of the relay host this process is running now; null when it hosts directly or not at all.</summary>
@@ -41,6 +44,7 @@ namespace CosmicShore.Engine.Networking
         public static void Reset()
         {
             Allocator = null;
+            Region = null;
             PendingHost = PendingJoin = null;
             HostingJoinCode = null;
         }

@@ -61,7 +61,8 @@ namespace Prisma
             /// <summary>
             /// How the players reach each other: null, "" or "off" = directly (the host's port); "local" =
             /// through Froglet's relay server, started beside them; an http(s) URL = through the relay
-            /// server at that URL (one started elsewhere with <c>CosmicShore --relay-server</c>).
+            /// server at that URL (one started elsewhere with <c>CosmicShore --relay-server</c>); "ugs" =
+            /// through UGS Relay, each player signed in to the game's live UGS project as its profile (§6.8).
             /// </summary>
             public string? Relay;
             /// <summary>Extra environment for every player (e.g. COSMIC_SHORE_LOG_CHANNELS).</summary>
@@ -121,14 +122,15 @@ namespace Prisma
             return run;
         }
 
-        /// <summary>"" (direct), "local", or the relay URL; anything else is refused before a process starts.</summary>
+        /// <summary>"" (direct), "local", "ugs", or the relay URL; anything else is refused before a process starts.</summary>
         public static string RelayMode(string? relay)
         {
             var r = relay?.Trim() ?? "";
             if (r.Length == 0 || r.Equals("off", StringComparison.OrdinalIgnoreCase)) return "";
             if (r.Equals("local", StringComparison.OrdinalIgnoreCase)) return "local";
+            if (r.Equals("ugs", StringComparison.OrdinalIgnoreCase)) return "ugs";
             if (Uri.TryCreate(r, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps)) return r;
-            throw new ArgumentException($"relay must be off, local or a relay server's http(s) URL, not '{r}'");
+            throw new ArgumentException($"relay must be off, local, ugs or a relay server's http(s) URL, not '{r}'");
         }
 
         /// <summary>Starts Froglet's relay server as one more process and waits for the URL it prints.</summary>
@@ -295,6 +297,7 @@ namespace Prisma
         /// <summary>The relay's URL and, when it answers <c>/health</c> (Froglet's server does), its allocations and traffic.</summary>
         async Task<string> RelayLine()
         {
+            if (RelayUrl == "ugs") return "UGS Relay (each player signed in to the live project as its profile)";
             string where = RelayUrl + (RelayProcess != null ? (RelayProcess.HasExited ? " (local, EXITED)" : " (local)") : "");
             try
             {

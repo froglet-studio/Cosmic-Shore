@@ -158,7 +158,7 @@ namespace CosmicShore.Engine.Networking
                     // resumed on the main thread), then host; joiners find the code in the session record.
                     if (!nm.IsListening)
                     {
-                        var alloc = await relay.AllocateAsync(Math.Max(1, (options.MaxPlayers > 0 ? options.MaxPlayers : 4) - 1));
+                        var alloc = await relay.AllocateAsync(Math.Max(1, (options.MaxPlayers > 0 ? options.MaxPlayers : 4) - 1), RelaySessions.Region);
                         await relay.CreateJoinCodeAsync(alloc);
                         RelaySessions.HostWith(alloc);
                         nm.StartHost();

@@ -124,18 +124,18 @@ namespace CosmicShore.Tests
         }
 
         [Fact]
-        public void TheRestApi_AllocatesJoinCodesAndJoins_InTheServicesShape()
+        public async Task TheRestApi_AllocatesJoinCodesAndJoins_InTheServicesShape()
         {
             var client = new RelayAllocationClient(server.BaseUrl);
-            var host = client.AllocateAsync(3).GetAwaiter().GetResult();
+            var host = await client.AllocateAsync(3);
             Assert.Equal(server.UdpPort, host.ServerPort);
             Assert.Equal(RelayProtocol.KeyLength, host.Key.Length);
-            var code = client.CreateJoinCodeAsync(host).GetAwaiter().GetResult();
+            var code = await client.CreateJoinCodeAsync(host);
             Assert.Matches("^[6789BCDFGHJKLMNPQRTW]{6}$", code);
-            Assert.Equal(code, client.CreateJoinCodeAsync(host).GetAwaiter().GetResult()); // idempotent
-            var join = client.JoinAsync(code.ToLowerInvariant()).GetAwaiter().GetResult();     // case-insensitive
+            Assert.Equal(code, await client.CreateJoinCodeAsync(host)); // idempotent
+            var join = await client.JoinAsync(code.ToLowerInvariant());     // case-insensitive
             Assert.Equal(host.ConnectionData, join.HostConnectionData);
-            var e = Assert.Throws<RelayServiceException>(() => client.JoinAsync("BBBBBB").GetAwaiter().GetResult());
+            var e = await Assert.ThrowsAsync<RelayServiceException>(() => client.JoinAsync("BBBBBB"));
             Assert.Equal(404, e.Status);
         }
 

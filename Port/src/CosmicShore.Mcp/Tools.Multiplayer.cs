@@ -43,7 +43,7 @@ namespace CosmicShore.Mcp
                     ["size"] = P("string", "window size per player WxH (default 960x540)"),
                     ["scene"] = P("string", "start every player in this scene"),
                     ["transport"] = P("string", "'udp' (Froglet's transport, the default) or 'tcp'; every player uses the same"),
-                    ["relay"] = P("string", "'off' (default: players connect directly), 'local' (start Froglet's relay server beside them: every host allocates and every joiner joins by code, as over the internet), or a relay server's http(s) URL"),
+                    ["relay"] = P("string", "'off' (default: players connect directly), 'local' (start Froglet's relay server beside them: every host allocates and every joiner joins by code, as over the internet), a relay server's http(s) URL, or 'ugs' (UGS Relay: every player signs in to the game's LIVE UGS project as its profile; only when the owner asks)"),
                     ["build"] = P("boolean", "compile the player first (default true)"),
                 }),
             Tool("net_input", "Run a --do action on one player or all of them (the same verbs as game_input: 'click X,Y', 'type TEXT', 'party' ..., 'net', 'netsim 4g', 'netfault full').",

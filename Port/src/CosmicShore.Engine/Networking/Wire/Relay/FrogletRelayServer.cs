@@ -24,7 +24,11 @@ namespace CosmicShore.Engine.Networking
     /// forwarded only from the address the sender bound, and only to an allocation it CONNECT_REQUESTed
     /// (or that requested it); a binding silent for 10 s is dropped. Allocations are kept in memory.
     ///
-    /// Run it standalone with the player: <c>CosmicShore --relay-server [UDP_PORT] [HTTP_PORT] [ADVERTISED_HOST]</c>.
+    /// With <see cref="Secret"/> set, the REST calls need <c>Authorization: Bearer SECRET</c> (401
+    /// otherwise), so only Froglet's players can allocate on a relay that faces the internet.
+    ///
+    /// Run it standalone with the player: <c>CosmicShore --relay-server [UDP_PORT] [HTTP_PORT] [ADVERTISED_HOST]</c>
+    /// (<c>COSMIC_SHORE_RELAY_SECRET</c> sets the secret).
     /// </summary>
     public sealed class FrogletRelayServer : IDisposable
     {
@@ -58,6 +62,9 @@ namespace CosmicShore.Engine.Networking
         public int HttpPort { get; }
         public string AdvertisedHost { get; }
         public string BaseUrl => $"http://{(AdvertisedHost == "0.0.0.0" ? "127.0.0.1" : AdvertisedHost)}:{HttpPort}";
+
+        /// <summary>The bearer token every <c>/v1/</c> call must carry; null leaves allocation open (one machine, a LAN).</summary>
+        public string Secret { get; set; }
 
         /// <summary>Datagrams forwarded and messages refused, for the tests and the console.</summary>
         public long Forwarded, Refused, BindsAccepted, BindsRejected;
@@ -343,6 +350,8 @@ namespace CosmicShore.Engine.Networking
                     if (text.Length > 0) req = JsonNode.Parse(text);
                 }
                 var meta = new JsonObject { ["requestId"] = Guid.NewGuid().ToString() };
+                if (Secret != null && path.StartsWith("/v1/", StringComparison.Ordinal) && !Authorized(ctx.Request.Headers["Authorization"]))
+                    throw new RelayServiceException(401, "a bearer token is required");
                 switch (path)
                 {
                     case "/v1/allocate":
@@ -385,6 +394,13 @@ namespace CosmicShore.Engine.Networking
                 ctx.Response.Close();
             }
             catch (Exception) { }
+        }
+
+        bool Authorized(string header)
+        {
+            const string scheme = "Bearer ";
+            if (header == null || !header.StartsWith(scheme, StringComparison.OrdinalIgnoreCase)) return false;
+            return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(header[scheme.Length..].Trim()), Encoding.UTF8.GetBytes(Secret));
         }
 
         public void Dispose()

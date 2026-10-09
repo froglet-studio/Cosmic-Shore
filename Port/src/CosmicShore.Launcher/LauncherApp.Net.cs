@@ -116,6 +116,13 @@ namespace CosmicShore.Launcher
             };
             for (int i = 0; i < help.Length; i++)
                 dl.AddText(Neon.Small, 12, a + new Vector2(16, y + 64 + i * 17), Neon.U(Neon.Dim), help[i]);
+
+            ImGui.SetCursorScreenPos(a + new Vector2(16, y + 64 + help.Length * 17 + 14));
+            if (Neon.Button("netugscheck", "UGS RELAY CHECK", new Vector2(bw, 34), Neon.Cyan, Neon.Small, 14, enabled: !_jobs.Busy))
+                _jobs.RunUgsRelayCheck();
+            Neon.Tooltip("Proves UGS Relay works from Prisma: signs in two players in the game's LIVE UGS project (the same two\n" +
+                         "every time), allocates, joins by code, connects through UGS Relay and times frames both ways.\n" +
+                         "The log names each step and the round-trip time. docs/MULTIPLAYER.md §6.8.");
         }
 
         void DrawNetLive(ImDrawListPtr dl, Vector2 a, Vector2 b)

@@ -59,12 +59,13 @@ namespace CosmicShore.Tests
         [InlineData("", "")]
         [InlineData(" off ", "")]
         [InlineData("LOCAL", "local")]
+        [InlineData("ugs", "ugs")]
         [InlineData("http://203.0.113.7:7780", "http://203.0.113.7:7780")]
         [InlineData("https://relay.example.com/", "https://relay.example.com/")]
         public void RelayMode_IsDirectLocalOrAUrl(string relay, string mode) => Assert.Equal(mode, MultiplayerRun.RelayMode(relay));
 
         [Theory]
-        [InlineData("ugs")]
+        [InlineData("froglet")]
         [InlineData("127.0.0.1:7780")]
         [InlineData("ftp://relay.example.com")]
         public void AnUnknownRelay_IsRefusedBeforeAnythingStarts(string relay)
