@@ -1,14 +1,14 @@
 # Vessel Studio (web) — the pages
 
 Pick a vessel, its studio opens. Plain HTML pages, no build step, so the same folder opens in a desktop
-browser, in a phone browser, from Prisma's **STUDIOS** page on Windows, and from Unity through
-**FrogletTools ▸ Vessels ▸ Vessel Studio** (which opens Prisma there). Plan: `../VESSEL_STUDIO_PLAN.md`.
+browser, in a phone browser, from Amoebius's **STUDIOS** page on Windows, and from Unity through
+**FrogletTools ▸ Vessels ▸ Vessel Studio** (which opens Amoebius there). Plan: `../VESSEL_STUDIO_PLAN.md`.
 
 | File | What |
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
 | `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
-| `stoat.html` | The **Stoat Flight Studio** (round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Prisma as `stoat.html#prisma`, it reads "Running on Prisma". |
+| `stoat.html` | The **Stoat Flight Studio** (round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
 
 ## Rules for every studio page
 
@@ -28,7 +28,7 @@ browser, in a phone browser, from Prisma's **STUDIOS** page on Windows, and from
   viewer's `sample` capability. It spends the viewer's own Claude usage and asks before the first call.
 - **Development requests** are stored in the published artifact's database, collection `requests`
   (`vessel`, `kind`, `text`, `status` = open/done, `createdAt`, `by`, optional `reply`). A Claude Code session
-  reads them with `ArtifactData` (`list`, collection `requests`) and marks them done; Prisma's AGENT page gets
+  reads them with `ArtifactData` (`list`, collection `requests`) and marks them done; Amoebius's AGENT page gets
   the same text through **Copy as agent prompt**.
 - The Stoat page's decision log uses the same database, collection `decisions`.
 
@@ -62,7 +62,7 @@ on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its dif
 than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
 costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
 
-## In Prisma
+## In Amoebius
 
-STUDIOS ▸ **OPEN IN PRISMA** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
+STUDIOS ▸ **OPEN IN AMOEBIUS** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
 the game itself. Step-by-step checks: `../PRISMA_TEST_STEPS.md`.

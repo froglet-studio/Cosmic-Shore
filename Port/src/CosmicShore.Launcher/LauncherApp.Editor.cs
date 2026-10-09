@@ -36,7 +36,7 @@ namespace CosmicShore.Launcher
         {
             PageHeader(a, "EDITOR", _edTab switch
             {
-                0 => "Every FrogletTools tool - RUN the native ones, BUILD the rest into Prisma with the agent",
+                0 => "Every FrogletTools tool - RUN the native ones, BUILD the rest into Amoebius with the agent",
                 1 => "The game's ScriptableObject data sets - browse and edit fields; edits land in the workspace (commit on GIT)",
                 _ => "Every model (FBX, Blender, Maya) as Unity imports it, in the game's colours - drag to turn, VIEW IN ENGINE",
             });
@@ -199,13 +199,13 @@ namespace CosmicShore.Launcher
                 if (native != null)
                 {
                     if (SmallButton(_edToolRunning == t.Menu ? "RUNNING..." : "RUN", 110, _edToolRunning == null)) RunNativeTool(t, native);
-                    Neon.Tooltip("Runs Prisma's native version of this tool (cs-asset " + string.Join(" ", native.Args) + ")" +
-                                 (native.Writes ? ".\nIt changes files in Prisma's workspace; review them on GIT." : ". It only reads."));
+                    Neon.Tooltip("Runs Amoebius's native version of this tool (cs-asset " + string.Join(" ", native.Args) + ")" +
+                                 (native.Writes ? ".\nIt changes files in Amoebius's workspace; review them on GIT." : ". It only reads."));
                 }
                 else
                 {
                     if (SmallButton("BUILD", 110, true)) BuildToolWithClaude(t);
-                    Neon.Tooltip("Opens an agent chat that builds this tool natively in Prisma (a cs-asset command, its test and a RUN button here),\n" +
+                    Neon.Tooltip("Opens an agent chat that builds this tool natively in Amoebius (a cs-asset command, its test and a RUN button here),\n" +
                                  "so it runs without Unity from then on. The chat may change only cs-asset and the native-tools registry.");
                 }
                 ImGui.SameLine(0, 6);
@@ -306,7 +306,7 @@ namespace CosmicShore.Launcher
             chat.Title = "Build tool: " + t.Name;
             _page = Page.Chat;
             SendChat(
-                $"Build the Unity editor tool \"{t.Menu}\" natively for Prisma. Its source is {t.File} (class {t.Class}, method {t.Method}, line {t.Line})" +
+                $"Build the Unity editor tool \"{t.Menu}\" natively for Amoebius. Its source is {t.File} (class {t.Class}, method {t.Method}, line {t.Line})" +
                 (t.Description != null ? $"; it describes itself as: {t.Description}" : "") + (t.Doc != null ? $". Its docs: {t.Doc}" : "") + ".\n" +
                 "Plan it first: what the tool reads and writes, the cs-asset command you will add (its name and arguments), how you will test it, and anything it " +
                 "needs from the Unity editor that has no file equivalent.",
@@ -856,7 +856,7 @@ namespace CosmicShore.Launcher
             dl.AddText(Neon.Small, 12, ra + new Vector2(18, 34), Neon.U(Neon.Dim), _edModelPath);
             ImGui.SetCursorScreenPos(new Vector2(b.X - 470, ra.Y + 10));
             if (SmallButton("VIEW IN ENGINE", 174, !_jobs.Busy)) _jobs.ViewModel(_edModelPath);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Open it in Prisma's renderer with the game's materials:\ndrag to turn, wheel to zoom, Tab for another prefab's materials.");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Open it in Amoebius's renderer with the game's materials:\ndrag to turn, wheel to zoom, Tab for another prefab's materials.");
             ImGui.SameLine(0, 6);
             if (SmallButton("ASK CLAUDE", 130, true))
             {

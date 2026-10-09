@@ -65,7 +65,7 @@ namespace CosmicShore.Launcher
         {
             _args = args;
             _s = LauncherSettings.Load();
-            // Opened from Unity (FrogletTools > Prisma > Launch Prisma): remember which clone Unity has open.
+            // Opened from Unity (FrogletTools > Amoebius > Launch Amoebius): remember which clone Unity has open.
             if (!string.IsNullOrWhiteSpace(args.ClonePathArg) && Directory.Exists(args.ClonePathArg)) { _s.UnityClonePath = Path.GetFullPath(args.ClonePathArg); _s.Save(); }
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
@@ -113,7 +113,7 @@ namespace CosmicShore.Launcher
             var options = WindowOptions.Default with
             {
                 Size = new Vector2D<int>(1360, 820),
-                Title = "Prisma - Cosmic Shore",
+                Title = "Amoebius - Cosmic Shore",
                 VSync = true,
                 PreferredStencilBufferBits = 8,
                 Samples = 4,
@@ -612,9 +612,9 @@ namespace CosmicShore.Launcher
             string head = _jobs.HeadSha?[..Math.Min(7, _jobs.HeadSha.Length)] ?? "?";
             string tip = _jobs.RemoteTip?[..Math.Min(7, _jobs.RemoteTip.Length)] ?? "?";
             ImGui.PushFont(Neon.Small);
-            dl.AddText(Neon.Small, 13, p + new Vector2(12, 4), Neon.U(Neon.Amber), $"Prisma's copy is behind {Trim(_s.Branch, 40)}: it has #{head}, GitHub has #{tip}.");
+            dl.AddText(Neon.Small, 13, p + new Vector2(12, 4), Neon.U(Neon.Amber), $"Amoebius's copy is behind {Trim(_s.Branch, 40)}: it has #{head}, GitHub has #{tip}.");
             string sub = _pendingSeen > 0
-                ? $"{_pendingSeen} unsaved change{(_pendingSeen == 1 ? "" : "s")} in Prisma's copy block the update: commit or discard them on GIT first."
+                ? $"{_pendingSeen} unsaved change{(_pendingSeen == 1 ? "" : "s")} in Amoebius's copy block the update: commit or discard them on GIT first."
                 : "The editor tools and the game run the older code until you update.";
             dl.AddText(Neon.Small, 13, p + new Vector2(12, 21), Neon.U(Neon.Dim), sub);
             ImGui.PopFont();
@@ -625,7 +625,7 @@ namespace CosmicShore.Launcher
             }
             else if (SmallButton(_jobs.Busy && _jobs.JobName == "Update workspace" ? "UPDATING" : "UPDATE", 104, !_jobs.Busy && !_jobs.GameRunning))
                 _jobs.Update();
-            Neon.Tooltip(_jobs.GameRunning ? "Close the game first." : "Fetch the branch's tip into Prisma's own copy (your Unity checkout is not touched).");
+            Neon.Tooltip(_jobs.GameRunning ? "Close the game first." : "Fetch the branch's tip into Amoebius's own copy (your Unity checkout is not touched).");
             return h + 12;
         }
 
@@ -683,7 +683,7 @@ namespace CosmicShore.Launcher
             if (ClonePath == null)
             {
                 dl.AddText(Neon.Small, 13, p + new Vector2(4, 4), Neon.U(Neon.Dim),
-                    "Open Prisma from Unity (FrogletTools > Prisma > Launch Prisma) and PLAY follows the branch Unity is on.");
+                    "Open Amoebius from Unity (FrogletTools > Amoebius > Launch Amoebius) and PLAY follows the branch Unity is on.");
             }
             else if (_cloneBranch == null)
             {
@@ -694,20 +694,20 @@ namespace CosmicShore.Launcher
                 IconBranch(dl, p + new Vector2(10, 12), Neon.U(Neon.Lime));
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 4), Neon.U(Neon.Lime), "Same branch as Unity / GitHub Desktop");
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim),
-                    "Prisma plays its own copy, so you can pick any other branch here without touching Unity's.");
+                    "Amoebius plays its own copy, so you can pick any other branch here without touching Unity's.");
             }
             else
             {
                 IconBranch(dl, p + new Vector2(10, 12), Neon.U(Neon.Amber));
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 4), Neon.U(Neon.Amber), Trim($"Unity / GitHub Desktop is on {_cloneBranch}", 60));
-                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim), "Prisma plays its own copy of this branch - your Unity checkout is not touched.");
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim), "Amoebius plays its own copy of this branch - your Unity checkout is not touched.");
                 ImGui.SetCursorScreenPos(new Vector2(p.X + w - 150, p.Y));
                 if (SmallButton("FOLLOW UNITY", 150, !_jobs.Busy)) PickBranch(_cloneBranch);
                 Neon.Tooltip($"Switch PLAY to {_cloneBranch}, and keep following Unity / GitHub Desktop when it changes branch.");
             }
             if (_cloneBranch != null && _jobs.Branches.Count > 0 && !_jobs.Branches.Contains(_cloneBranch) && _s.Branch == _cloneBranch)
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Red),
-                    $"{_cloneBranch} is not on GitHub yet: push it from GitHub Desktop so Prisma can fetch it.");
+                    $"{_cloneBranch} is not on GitHub yet: push it from GitHub Desktop so Amoebius can fetch it.");
             ImGui.PopFont();
         }
 
@@ -1120,7 +1120,7 @@ namespace CosmicShore.Launcher
                 DrawAboutVersions();
                 ImGui.Dummy(new Vector2(0, 8));
                 ImGui.PushFont(Neon.Small);
-                ImGui.TextColored(Neon.Ink, "Prisma v0.1  -  Froglet Inc.");
+                ImGui.TextColored(Neon.Ink, "Amoebius v0.1  -  Froglet Inc.");
                 ImGui.TextColored(Neon.Dim, "Cosmic Shore's own C# on our own renderer, physics, UI, audio and netcode.");
                 ImGui.TextColored(Neon.Dim, "Dear ImGui, Silk.NET (MIT)  ·  Chakra Petch, Aldrich (OFL)  ·  Roboto Mono (Apache 2.0)");
                 ImGui.PopFont();

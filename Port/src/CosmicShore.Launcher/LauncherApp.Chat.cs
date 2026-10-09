@@ -83,7 +83,7 @@ namespace CosmicShore.Launcher
         {
             var last = LauncherJobs.Sessions().FirstOrDefault();
             if (last == null) { _chat.Note("No play session yet: press START, play, close the game, then try again."); return; }
-            SendChat("Analyse my last play session in Prisma. The report is " + last.FullName +
+            SendChat("Analyse my last play session in Amoebius. The report is " + last.FullName +
                      " (scenes, frame-time percentiles, every distinct error/warning/exception with counts, and the crash if any). " +
                      "Rank what needs fixing in the engine, say which Port/ code each item points to, and propose the fixes.",
                 (ClaudeChat.Mode)_s.ChatMode, LauncherJobs.SessionsDir);
@@ -101,7 +101,7 @@ namespace CosmicShore.Launcher
             }
             if (_chat.Cli == null)
             {
-                PageHeader(a, "PRISMA AGENT", "Works on Cosmic Shore  ·  powered by Claude");
+                PageHeader(a, "AMOEBIUS AGENT", "Works on Cosmic Shore  ·  powered by Claude");
                 DrawChatInstall(dl, a, b);
                 return;
             }
@@ -111,8 +111,8 @@ namespace CosmicShore.Launcher
             a = new Vector2(a.X + listW + 18, a.Y);
 
             bool milestone = _chat.CurrentScope == ClaudeChat.Scope.Milestone;
-            PageHeader(a, milestone ? "MILESTONE " + _chat.Milestone : "PRISMA AGENT",
-                milestone ? $"{_chat.MilestoneTitle}  ·  engine work on Prisma (Port/)  ·  powered by Claude"
+            PageHeader(a, milestone ? "MILESTONE " + _chat.Milestone : "AMOEBIUS AGENT",
+                milestone ? $"{_chat.MilestoneTitle}  ·  engine work on Amoebius (Port/)  ·  powered by Claude"
                           : "Works on Cosmic Shore  ·  powered by Claude");
 
             DrawChatBar(a, b);
@@ -283,17 +283,17 @@ namespace CosmicShore.Launcher
         void DrawChatWelcome()
         {
             ImGui.Dummy(new Vector2(0, 8));
-            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, _chat.CurrentScope == ClaudeChat.Scope.Game ? "Prisma Agent" : "Milestone " + _chat.Milestone); ImGui.PopFont();
+            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, _chat.CurrentScope == ClaudeChat.Scope.Game ? "Amoebius Agent" : "Milestone " + _chat.Milestone); ImGui.PopFont();
             ImGui.PushFont(Neon.Small);
             foreach (var l in new[]
             {
                 _chat.CurrentScope == ClaudeChat.Scope.Game
                     ? "Works on the game (Assets/) - only on what you ask. Ask about a bug or a run and it reads TRACKS."
-                    : "Engine work on Prisma (Port/) for this checkpoint. The game in Assets/ is read-only here.",
+                    : "Engine work on Amoebius (Port/) for this checkpoint. The game in Assets/ is read-only here.",
                 "It can run the tests, start the game, look at it and drive it, and suggest bugs and tasks for your BOARD.",
                 "PLAN proposes before touching anything; approve the plan to let it build.",
                 "Chips below run tests, a smoke test, or analyse your last play session.",
-                "Its edits stay in Prisma's workspace until you save them on the GIT page.",
+                "Its edits stay in Amoebius's workspace until you save them on the GIT page.",
                 "Commands: /new  /clear  /rename TITLE  /usage  /plan  /edit  /auto  /model NAME  /effort LEVEL  /test  /smoke  /session",
             }) ImGui.TextColored(Neon.Dim, l);
             ImGui.PopFont();

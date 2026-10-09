@@ -184,16 +184,16 @@ For anything without a template, `add --like &fileID` copies an existing compone
 
 `schema` checks the writer. `serialization-audit` checks the other direction: for every key Unity
 wrote into a script component or ScriptableObject (recursing into nested `[Serializable]` classes
-and lists), does Unity's serializer read it, and does Prisma's loader?
+and lists), does Unity's serializer read it, and does Amoebius's loader?
 
 | Class | Meaning |
 |---|---|
-| DROPPED | Unity reads it, Prisma does not: the value silently never arrives (the worst kind) |
-| EXTRA | Prisma reads it, Unity ignores it: Prisma loads data Unity never would |
+| DROPPED | Unity reads it, Amoebius does not: the value silently never arrives (the worst kind) |
+| EXTRA | Amoebius reads it, Unity ignores it: Amoebius loads data Unity never would |
 | STALE | Neither reads it: left over from an older version of the script; harmless |
-| MANAGED | A `[SerializeReference]` (`references:`) block, which Prisma does not load yet |
+| MANAGED | A `[SerializeReference]` (`references:`) block, which Amoebius does not load yet |
 
-It exits 1 on any DROPPED or EXTRA key, so it can gate a build. Unity's rules, as Prisma applies
+It exits 1 on any DROPPED or EXTRA key, so it can gate a build. Unity's rules, as Amoebius applies
 them to script types (`Content/Serialization/UnitySerializationRules.cs`): public or
 `[SerializeField]` fields, not `[NonSerialized]`, readonly or const; the field's type must be one
 Unity serializes (no `Dictionary`, interface, abstract type or nested collection, and a custom
@@ -391,7 +391,7 @@ $T apply  <file> GameCanvas/ConnectingPanel                  # that object's ove
 $T apply  <file> GameCanvas --all                            # everything the instance changes
 
 $T schema                                             # measure the script serializer against the project
-$T serialization-audit [path...] [--json]             # what Unity reads vs what Prisma's loader reads
+$T serialization-audit [path...] [--json]             # what Unity reads vs what Amoebius's loader reads
 $T addall                                             # smoke-test adding every component
 ```
 

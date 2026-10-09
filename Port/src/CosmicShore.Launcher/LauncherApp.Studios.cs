@@ -27,7 +27,7 @@ namespace CosmicShore.Launcher
         {
             if (_studios == null || (DateTime.UtcNow - _studiosRead).TotalSeconds > 5)   // pick up a branch switch or an edited catalog
             {
-                _studios = _ws.Exists ? StudioCatalog.Load(_ws.Dir) : new StudioCatalog { Error = "Prisma's workspace is not set up yet (PLAY page)." };
+                _studios = _ws.Exists ? StudioCatalog.Load(_ws.Dir) : new StudioCatalog { Error = "Amoebius's workspace is not set up yet (PLAY page)." };
                 _studiosRead = DateTime.UtcNow;
             }
             return _studios;
@@ -36,7 +36,7 @@ namespace CosmicShore.Launcher
         void DrawStudios(Vector2 a, Vector2 b)
         {
             var cat = Studios();
-            PageHeader(a, "STUDIOS", "Vessel studios: pick a vessel, fly it, change it. OPEN IN PRISMA gives it its own window; PLAY IN ENGINE flies the game's own vessel");
+            PageHeader(a, "STUDIOS", "Vessel studios: pick a vessel, fly it, change it. OPEN IN AMOEBIUS gives it its own window; PLAY IN ENGINE flies the game's own vessel");
             ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 76));
             ImGui.BeginChild("##studios", new Vector2(b.X - a.X, b.Y - a.Y - 80));
 
@@ -77,9 +77,9 @@ namespace CosmicShore.Launcher
                 ImGui.TextColored(Neon.Ink, s.Summary);
                 ImGui.PopTextWrapPos();
                 ImGui.SetCursorScreenPos(top + new Vector2(18, 100));
-                if (SmallButton("OPEN IN PRISMA", 160, _ws.Exists)) OpenStudioWindow(StudioCatalog.PagePath(_ws.Dir, s.File));
-                Neon.Tooltip("Opens " + StudioCatalog.RelativeDir + "/" + s.File + " from Prisma's workspace as its own window (no browser tabs),\n" +
-                             "with Prisma's layout remembered. Uses Edge or Chrome's app mode; without either it opens in your browser.");
+                if (SmallButton("OPEN IN AMOEBIUS", 160, _ws.Exists)) OpenStudioWindow(StudioCatalog.PagePath(_ws.Dir, s.File));
+                Neon.Tooltip("Opens " + StudioCatalog.RelativeDir + "/" + s.File + " from Amoebius's workspace as its own window (no browser tabs),\n" +
+                             "with Amoebius's layout remembered. Uses Edge or Chrome's app mode; without either it opens in your browser.");
                 ImGui.SameLine(0, 8);
                 if (SmallButton("BROWSER", 100, _ws.Exists)) OpenUrl(StudioCatalog.PagePath(_ws.Dir, s.File));
                 Neon.Tooltip("The same page in your default browser.");
@@ -87,7 +87,7 @@ namespace CosmicShore.Launcher
                 if (s.EngineMode != null)
                 {
                     if (SmallButton("PLAY IN ENGINE", 160, _ws.Exists && !_jobs.Busy)) _jobs.Play(StudioCatalog.EngineArgs(s));
-                    Neon.Tooltip("Builds and starts the game in Prisma (as PLAY does), then opens the " + s.EngineMode + " card from the main menu\n" +
+                    Neon.Tooltip("Builds and starts the game in Amoebius (as PLAY does), then opens the " + s.EngineMode + " card from the main menu\n" +
                                  "and presses Start: the game's own " + s.Name + ". Press Ready in the race. A new profile answers the first-run prompts first.");
                     ImGui.SameLine(0, 8);
                 }
@@ -111,7 +111,7 @@ namespace CosmicShore.Launcher
 
             ImGui.Dummy(new Vector2(0, 8));
             ImGui.TextColored(Neon.Dim,
-                "Phone: open the web link in the phone's browser (Android or iPhone). The Prisma player APK with a studio scene, where the\n" +
+                "Phone: open the web link in the phone's browser (Android or iPhone). The Amoebius player APK with a studio scene, where the\n" +
                 "game's own vessel flies instead of the web copy, is next (BUILD page). Unity opens this page through FrogletTools > Vessels > Vessel Studio.");
             ImGui.EndChild();
         }

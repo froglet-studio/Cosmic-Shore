@@ -118,7 +118,7 @@ reads as a promise about the game.
 - **Editor layout, no page scroll**: stage in the middle, a right dock with a tab per settings
   group, a bottom dock for Runs / Scorecard / Decisions / About. Below 900 px the docks stack.
 - **Platform detection is answered once at load**: a native host sets `window.__labHost = {shell, device}`
-  (Prisma uses `#prisma` because a file page cannot be handed a variable); otherwise phone =
+  (Amoebius uses `#prisma` because a file page cannot be handed a variable); otherwise phone =
   mobile UA / iPadOS-as-Mac / coarse-pointer-only. A touchscreen laptop is a PC. Give a manual
   Layout override.
 - **Phones**: real fullscreen needs a gesture (request it on the first touch); portrait gets a way
@@ -223,7 +223,7 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 | A scorecard claim ("each style wins its column") | An edit-mode test that asserts it on the C# model |
 | A model the game should run | A pure-C# core plus a parity harness that scores it with the lab's UNCHANGED yardstick (`Tools/Build/swarm_core_harness/`, `nca_creature_harness/`) |
 | A design question | **Decision needed** in the write-up and the owning `Docs/` file. Never decided by the porter |
-| The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Prisma's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
+| The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
 
 - **Do not import the lab into the game.** What crosses over is the numbers and the tests.
 - **Extract a shared shell when the SECOND lab needs it, not before** (the Vessel Studio plan §4).

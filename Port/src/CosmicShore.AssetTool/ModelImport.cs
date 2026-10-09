@@ -112,7 +112,7 @@ namespace CosmicShore.AssetTool
             db.Register(dest, guid);
 
             var model = db.LoadModel(guid);
-            if (model == null) throw new InvalidOperationException($"{db.ProjectRelative(dest)} was written but Prisma's importer could not read it");
+            if (model == null) throw new InvalidOperationException($"{db.ProjectRelative(dest)} was written but Amoebius's importer could not read it");
             int meshes = model.Meshes.Count(m => m.Mesh != null), tris = model.Meshes.Sum(m => (m.Mesh?.triangles.Length ?? 0) / 3);
 
             string prefabRel = null; int renderers = 0;

@@ -4,6 +4,12 @@ A ground-up replication of Cosmic Shore onto a stack wholly owned by Froglet Inc
 no Unity, no editor-bound tooling, no dependency that blocks a fully autonomous,
 headless develop/build/test loop.
 
+**Name.** The engine is **Amoebius** (renamed from Prisma on 2026-10-09). The code still carries the old
+name, on purpose: the `Prisma.exe` binary and `Prisma-Windows.zip`, `Library/Prisma`, the `PRISMA_*`
+environment variables, the `prisma_*` MCP tools, the `/prisma` skill, the `prisma-*` workflows, class names
+(`PrismaBoard`, `PrismaTracks`), `PRISMA001`, the `#prisma` page hash and code comments. Renaming those
+breaks scripts, saved settings and other branches, so it is its own change, not part of the rename.
+
 **Just want to play a branch?** Unzip `dist/Prisma-Windows.zip` and run
 `Prisma.exe`: pick a branch, press START GAME. See `docs/LAUNCHER.md`.
 

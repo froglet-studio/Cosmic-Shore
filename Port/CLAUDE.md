@@ -1,8 +1,14 @@
-# Port/CLAUDE.md — working on Prisma
+# Port/CLAUDE.md — working on Amoebius
 
-The repository's root `CLAUDE.md` is about the Unity game. **This file is about `Port/`**: the
-Prisma, Froglet's own engine that runs the same game with no Unity. Both apply when you
+The repository's root `CLAUDE.md` is about the Unity game. **This file is about `Port/`**:
+Amoebius, Froglet's own engine that runs the same game with no Unity. Both apply when you
 edit `Assets/_Scripts`, because the engine compiles those files live.
+
+**Name.** The engine is **Amoebius** (renamed from Prisma on 2026-10-09). The code still carries the old
+name, on purpose: the `Prisma.exe` binary and `Prisma-Windows.zip`, `Library/Prisma`, the `PRISMA_*`
+environment variables, the `prisma_*` MCP tools, the `/prisma` skill, the `prisma-*` workflows, class names
+(`PrismaBoard`, `PrismaTracks`), `PRISMA001`, the `#prisma` page hash and code comments. Renaming those
+breaks scripts, saved settings and other branches, so it is its own change, not part of the rename.
 
 ## The one rule
 
@@ -10,7 +16,7 @@ edit `Assets/_Scripts`, because the engine compiles those files live.
 port only *reads* `Assets/`. A port branch may change, outside `Port/`, only `.gitignore`
 `Port/**` rules, `.github/workflows/prisma-*` and `.claude/skills/prisma*` (the legacy `froglet-*`
 names are still accepted), plus one editor-only file the port owns:
-`Assets/_Scripts/Editor/LaunchPrisma.cs` (**FrogletTools > Prisma > Launch Prisma**, which builds
+`Assets/_Scripts/Editor/LaunchPrisma.cs` (**FrogletTools > Amoebius > Launch Amoebius**, which builds
 `Prisma.exe` from the checkout into `Library/Prisma` and opens it). Check before every commit:
 
 ```bash
@@ -45,26 +51,26 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 
 | Session | Scope | May edit | Started from |
 |---|---|---|---|
-| **Prisma Agent** (powered by Claude) | the game, as it runs in Prisma | `Assets/` and the rest of the repo, **never `Port/`** | Prisma's AGENT page |
+| **Amoebius Agent** (powered by Claude) | the game, as it runs in Amoebius | `Assets/` and the rest of the repo, **never `Port/`** | Amoebius's AGENT page |
 | **Engine development / milestones** | the engine, toward a roadmap checkpoint | `Port/` (this file's rules), **never `Assets/`, `Packages/`, `ProjectSettings/`** | Claude Code at the repo root |
-| **Tool build** | one FrogletTools tool, made native | `Port/src/CosmicShore.AssetTool`, `Port/tests/CosmicShore.AssetTool.Tests`, `Port/tools/froglet-tools` only | Prisma's EDITOR > TOOLS > BUILD |
+| **Tool build** | one FrogletTools tool, made native | `Port/src/CosmicShore.AssetTool`, `Port/tests/CosmicShore.AssetTool.Tests`, `Port/tools/froglet-tools` only | Amoebius's EDITOR > TOOLS > BUILD |
 
-Deny rules on the Claude Code CLI enforce the agent's scope in every mode. Prisma runs any number of
-agent chats side by side, all in Prisma's workspace (not the user's clone): their edits
-stay uncommitted there until the user commits and pushes them on Prisma's GIT page, so a session
-in Prisma does not commit, push or switch branches unless asked, and START never discards them. Milestone work
+Deny rules on the Claude Code CLI enforce the agent's scope in every mode. Amoebius runs any number of
+agent chats side by side, all in Amoebius's workspace (not the user's clone): their edits
+stay uncommitted there until the user commits and pushes them on Amoebius's GIT page, so a session
+in Amoebius does not commit, push or switch branches unless asked, and START never discards them. Milestone work
 records progress in `docs/milestones.json` (status plus a dated note with evidence), and marks a
-checkpoint done only after running its exit criterion. Prisma plays its own workspace, so it can be
-on a different branch from the user's Unity checkout; opened from Unity's Launch Prisma it follows
+checkpoint done only after running its exit criterion. Amoebius plays its own workspace, so it can be
+on a different branch from the user's Unity checkout; opened from Unity's Launch Amoebius it follows
 Unity's branch (`--clone`) until the user picks another.
 
-## Prisma's memory: tracks and the board
+## Amoebius's memory: tracks and the board
 
-Every play run writes a session report (`--session-report`); Prisma folds them into **tracks**
+Every play run writes a session report (`--session-report`); Amoebius folds them into **tracks**
 (`%LOCALAPPDATA%/Prisma/tracks/tracks.json`, a brief in `MEMORY.md`): runs, performance per
 scene, features (modes, vessels, scenes), audio (instances, missing events, unwired one-shots)
 and every distinct problem with first/last seen. The **board** (`board.json`, same folder) holds
-bugs and tasks; Prisma and agents add only *suggestions*, which the user accepts. Every item has
+bugs and tasks; Amoebius and agents add only *suggestions*, which the user accepts. Every item has
 a **done when** criterion, the check that proves it: `prisma_board_suggest` requires one, and a bug
 that came from the tracks is verified by them (not seen in 3 runs through its scene marks it MET; a
 relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wrong), `prisma_board`,
@@ -72,7 +78,7 @@ relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wro
 
 ## The editor (M2): tools, data sets, models - not a hierarchy
 
-Prisma's editor starts where the work is (`docs/ROADMAP.md` § M2, decided 2026-10-08): EDITOR >
+Amoebius's editor starts where the work is (`docs/ROADMAP.md` § M2, decided 2026-10-08): EDITOR >
 TOOLS (every FrogletTools tool, handed to the agent with its source), DATA (the ScriptableObject
 data sets, edited field by field through `cs-asset set`) and MODELS (each FBX, and `.blend`/`.ma`/`.mb`
 through the installed Blender/Maya as Unity does, with a CPU-drawn drag turntable in the colours of
@@ -134,11 +140,11 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   name the original `Assets/_Scripts` file and line (the sync writes `#line`); fix the engine's
   missing API, not the synced copy in `obj/live-src` (regenerated as needed). Warning
   **`PRISMA001`** marks an RPC the sync cannot intercept (a generic method, an attribute split over
-  lines, `[Rpc(SendTo...)]`): in Prisma it would run locally instead of over the network.
+  lines, `[Rpc(SendTo...)]`): in Amoebius it would run locally instead of over the network.
 - **Serialization follows Unity's rules for script types**: public or `[SerializeField]` fields
   of a serializable type, `[field: SerializeField]` backing fields, `[FormerlySerializedAs]`, then
   `OnAfterDeserialize`. Properties and private unmarked fields never load. `cs-asset
-  serialization-audit` lists every key Unity and Prisma read differently; keep it at 0 DROPPED and
+  serialization-audit` lists every key Unity and Amoebius read differently; keep it at 0 DROPPED and
   0 EXTRA (`src/CosmicShore.Content/Serialization/UnitySerializationRules.cs`).
 - **GL stays behind the render boundary**: only `CosmicShore.Render` (and the player window's
   present/read-back) may use the GL binding. `RenderBoundaryTests` fails otherwise, so a Metal or

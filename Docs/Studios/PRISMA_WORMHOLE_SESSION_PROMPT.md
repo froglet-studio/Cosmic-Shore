@@ -1,11 +1,11 @@
-# Prisma session prompt — the Stoat and both wormhole pair styles
+# Amoebius session prompt — the Stoat and both wormhole pair styles
 
 Paste everything below the line into a new Claude Code session started at the repository root, with
 the branch based on `claude/peaceful-rubin-hhw49n`.
 
 ---
 
-**Goal.** Make the Stoat vessel and BOTH wormhole pair styles testable in Prisma (our .NET port under
+**Goal.** Make the Stoat vessel and BOTH wormhole pair styles testable in Amoebius (our .NET port under
 `Port/`): a tester, or you through MCP, can fly the Stoat on a gamepad, create, inspect and swap the
 two pair styles live, and see them drawn faithfully enough to choose between them.
 
@@ -67,7 +67,7 @@ If the user has recorded decisions in it, ask them to paste its "Copy log" outpu
       `ExplodingBlockGraph`, reading the global bank, with the softened tide for smooth wells.
    2. The lens as a screen-space pass: the signed Schwarzschild trace from `BlackHoleLens.hlsl`
       (port its maths once to GLSL), the shadow, the source's white core (unbent impact parameter
-      below 2.598 r_s), and the summed smooth-well deflection. Sample Prisma's own HyperSea sky
+      below 2.598 r_s), and the summed smooth-well deflection. Sample Amoebius's own HyperSea sky
       instead of `BlackHoleSky`'s faces if that is simpler. `Tools/Shaders/verify_black_hole_lens.py`
       lists the properties the trace must keep.
    3. The seamless mouth (`Wormhole.shader` with `_SoftEdge`, `WormholeSeamless.mat`). It is listed
@@ -75,10 +75,10 @@ If the user has recorded decisions in it, ask them to paste its "Copy log" outpu
 
    Done when side-by-side screenshots of one pair in each style, from the same camera, show what
    §13's table says, and the web studio's compare view is a fair visual reference.
-5. **The tool in Prisma.** Check that the runtime Black Hole tool (B) draws and works in Prisma
+5. **The tool in Amoebius.** Check that the runtime Black Hole tool (B) draws and works in Amoebius
    (uGUI): the Pair style button, the Pair buttons, the live rows and the Config view. The goal the
    user stated is to create, inspect and swap both styles while flying the Stoat. If the uGUI tool
-   already does that in Prisma, it is the deliverable. Add a Prisma-native panel or MCP tool only for
+   already does that in Amoebius, it is the deliverable. Add a Prisma-native panel or MCP tool only for
    what it cannot do, and say why.
 6. **Fly it end to end.** Fly `MinigameSlingshot` with scripted gamepad input:
    - sling a drift pair: the shadow, ring and core are visible, the Stoat is thrown, and an AI vessel
@@ -93,7 +93,7 @@ If the user has recorded decisions in it, ask them to paste its "Copy log" outpu
    "done when") for anything left. `game_stop`.
 
 **Report back** in a short report:
-- what works in Prisma now, with screenshots;
+- what works in Amoebius now, with screenshots;
 - each engine gap you closed;
 - each one still open, and why;
 - the Unity-side bugs you found, as a list for a separate PR;

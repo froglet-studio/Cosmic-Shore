@@ -1,30 +1,30 @@
-# Testing the Vessel Studio in Prisma: step by step
+# Testing the Vessel Studio in Amoebius: step by step
 
-There are two ways to test, and Prisma gives you both from one page (**STUDIOS**):
+There are two ways to test, and Amoebius gives you both from one page (**STUDIOS**):
 
 | Button | What opens | What it tests |
 |---|---|---|
-| **OPEN IN PRISMA** | The studio page (`Docs/Studios/VesselStudio/stoat.html`) in its own window: Edge's or Chrome's app mode, with no tabs or address bar, and Prisma's own window profile | **The design:** the round-14 dipole sling, play styles, course ladder, AI sim lab, editor layout |
-| **PLAY IN ENGINE** | The game itself in the Prisma player: boot, menu, the **Slingshot** card, then Start | **What is built:** the game's own Stoat (the round-4 orbit sling the game ships today) |
+| **OPEN IN AMOEBIUS** | The studio page (`Docs/Studios/VesselStudio/stoat.html`) in its own window: Edge's or Chrome's app mode, with no tabs or address bar, and Amoebius's own window profile | **The design:** the round-14 dipole sling, play styles, course ladder, AI sim lab, editor layout |
+| **PLAY IN ENGINE** | The game itself in the Amoebius player: boot, menu, the **Slingshot** card, then Start | **What is built:** the game's own Stoat (the round-4 orbit sling the game ships today) |
 
 The design in the studio is ahead of the game. The dipole sling, momentum and the five styles exist only in
 the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-contract decision in
 `STOAT_PLAY_STYLES.md` §4).
 
-## 0. Get Prisma onto this branch (once)
+## 0. Get Amoebius onto this branch (once)
 
 1. Pull `claude/peaceful-rubin-hhw49n` in GitHub Desktop.
-2. Open Prisma by either route:
-   - In Unity: **FrogletTools ▸ Vessels ▸ Vessel Studio**. This opens Prisma straight on STUDIOS, building it first if needed.
+2. Open Amoebius by either route:
+   - In Unity: **FrogletTools ▸ Vessels ▸ Vessel Studio**. This opens Amoebius straight on STUDIOS, building it first if needed.
    - Or start `Prisma.exe` and click **STUDIOS** in the left rail.
-3. The title bar shows the branch Prisma plays. If it isn't `claude/peaceful-rubin-hhw49n`, pick it on the
+3. The title bar shows the branch Amoebius plays. If it isn't `claude/peaceful-rubin-hhw49n`, pick it on the
    **GIT** page (or click **FOLLOW UNITY**). Without the studio folder on its branch, the STUDIOS page says so
    and names the branches that have it.
 
-## 1. The studio in its own window (OPEN IN PRISMA)
+## 1. The studio in its own window (OPEN IN AMOEBIUS)
 
-1. STUDIOS ▸ **STOAT** card ▸ **OPEN IN PRISMA**. A window opens with no browser chrome.
-   - **Pass:** the top bar reads **Running on Prisma · PC (mouse / trackpad)**.
+1. STUDIOS ▸ **STOAT** card ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
+   - **Pass:** the top bar reads **Running on Amoebius · PC (mouse / trackpad)**.
    - With no Edge or Chrome installed, it opens in your default browser instead and reads **Web · PC**.
 2. **Layout.**
    - The stage fills the middle.
@@ -58,10 +58,10 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 ## 2. The game's own Stoat (PLAY IN ENGINE)
 
 1. STUDIOS ▸ STOAT card ▸ **PLAY IN ENGINE**.
-   - Prisma builds the game (the first build takes a few minutes; the bar at the bottom shows progress) and starts it.
+   - Amoebius builds the game (the first build takes a few minutes; the bar at the bottom shows progress) and starts it.
 2. A **new profile** answers three first-run prompts: birth year, the data-collection choice, then a username.
    - After that it goes on by itself.
-   - A profile you have used before skips them (Prisma's PLAY ▸ profile field).
+   - A profile you have used before skips them (Amoebius's PLAY ▸ profile field).
 3. **Pass (automatic):** the game reaches the main menu, opens the **Slingshot** card and presses **Start GAME**.
    - The CONSOLE page shows:
      - `[arcade] --arcade Slingshot: opening the card`
@@ -73,7 +73,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
    - The prisms near the hole stretch.
 6. Fly the rings: the **THREAD SWITCHES 0/16** counter at the top left counts them.
 
-**Known in Prisma today:**
+**Known in Amoebius today:**
 
 - **The black hole's lens is not drawn.** Its render pass runs through URP's render graph, which the engine
   compiles but does not execute yet (`Port/src/CosmicShore.Engine/Rendering/RenderGraph.cs`). The hole's
@@ -96,7 +96,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 
 | Check | Result |
 |---|---|
-| The game on this branch compiles in Prisma | It did not before. It failed on engine API gaps from this branch's code, all now in the engine:
+| The game on this branch compiles in Amoebius | It did not before. It failed on engine API gaps from this branch's code, all now in the engine:
 
   - the black-hole field's transform jobs (`TransformAccessArray`, `IJobParallelForTransform`);
   - its lens pass (URP's render graph) and sky capture (`CommandBuffer`);
@@ -104,11 +104,11 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
   - the mouse camera's `InputSystem.Controls.ButtonControl`. |
 | Engine tests (`Port/tests/CosmicShore.Tests`) | 1,691 / 1,691 pass, including the new GLSL port of `PrismGravityWarpDeform` |
 | Launcher tests | 30 / 30 pass, including 3 new studio-catalog tests |
-| The game's edit-mode tests on Prisma | 352 / 352 pass |
+| The game's edit-mode tests on Amoebius | 352 / 352 pass |
 | `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
-| STUDIOS page (screenshot) | Both cards. The Stoat card has OPEN IN PRISMA · BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
-| `stoat.html#prisma` | Reads "Prisma · PC", has the editor layout and the back link to the hub, no console errors |
+| STUDIOS page (screenshot) | Both cards. The Stoat card has OPEN IN AMOEBIUS · BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
+| `stoat.html#prisma` | Reads "Amoebius · PC", has the editor layout and the back link to the hub, no console errors |
 
 **Not checked here:** a real Windows PC. Edge's app window, a GPU, and a gamepad through the app window all
 need your first run.

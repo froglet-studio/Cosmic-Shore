@@ -117,7 +117,7 @@ namespace CosmicShore.Player
             var content = ContentRuntime.Current;
             if (s_model == null)
             {
-                SetTitle?.Invoke($"Prisma model viewer - {System.IO.Path.GetFileName(Path)} - its own materials");
+                SetTitle?.Invoke($"Amoebius model viewer - {System.IO.Path.GetFileName(Path)} - its own materials");
                 RefreshInfo();
                 return;
             }
@@ -134,7 +134,7 @@ namespace CosmicShore.Player
             }
             string label = prefab == null ? "the model's own materials" : "materials from " + content.Db.ProjectRelative(prefab);
             Console.WriteLine($"[viewer] showing {label}");
-            SetTitle?.Invoke($"Prisma model viewer - {System.IO.Path.GetFileName(Path)} - {label}");
+            SetTitle?.Invoke($"Amoebius model viewer - {System.IO.Path.GetFileName(Path)} - {label}");
             RefreshInfo();
         }
 

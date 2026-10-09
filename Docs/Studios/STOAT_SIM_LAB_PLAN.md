@@ -209,11 +209,11 @@ style to match the next section.
 **Next studio round:** add these sections and the bonus scoring to the stand-in course. The scorecard can
 then answer "with this course mix, does each style win somewhere?" before any scene is built.
 
-## 4. Studio or Prisma?
+## 4. Studio or Amoebius?
 
 **Keep prototyping in the studio until the numbers settle, then port once.**
 
-| | Studio (web) | Prisma / Unity |
+| | Studio (web) | Amoebius / Unity |
 |---|---|---|
 | A tuning pass | a slider, seconds | an edit, a recompile, a play-mode run |
 | 80 races | 3–5 s headless | minutes in-engine, or a batch runner to build first |
@@ -221,7 +221,7 @@ then answer "with this course mix, does each style win somewhere?" before any sc
 | Fidelity | a stand-in flight model, stand-in course, screen-space lens | the real vector flight model, real prisms, real network, real HUD |
 | What it proves | the **shape** of the mechanic and the **relative** tuning | the shipped behaviour |
 
-- **Do not import the studio into Prisma.** They are different runtimes (three.js vs Unity). What crosses
+- **Do not import the studio into Amoebius.** They are different runtimes (three.js vs Unity). What crosses
   over is the **numbers** (a `StoatPlayStylesSO` and `StoatSlingConfig` preset authored from the studio's
   shipped values) and the **tests** (the scorecard's assertions become edit-mode tests and a benchmark).
 - **Per-vessel studios: yes, with a shared shell.** The shell is everything not specific to the Stoat:

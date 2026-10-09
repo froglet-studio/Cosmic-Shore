@@ -12,20 +12,20 @@ named after it, and when the asset changes the page must follow (or say on scree
 
 **Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
 
-**The Vessel Studio** (pick a vessel, its studio opens; web, Windows through Prisma's STUDIOS page, Android; Squirrel and Stoat first): `VesselStudio/` and the plan `VESSEL_STUDIO_PLAN.md`.
+**The Vessel Studio** (pick a vessel, its studio opens; web, Windows through Amoebius's STUDIOS page, Android; Squirrel and Stoat first): `VesselStudio/` and the plan `VESSEL_STUDIO_PLAN.md`.
 
-**Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
-Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
+**Next: Amoebius.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
+Stoat and both pair styles flyable, inspectable and swappable in Amoebius (`Port/`).
 
-## Vessel Studio in Prisma (2026-10-09, after round 14)
+## Vessel Studio in Amoebius (2026-10-09, after round 14)
 
-- **Merged:** `vessel-studio` came into this branch: the hub, Squirrel Studio v1, Prisma's STUDIOS page and
+- **Merged:** `vessel-studio` came into this branch: the hub, Squirrel Studio v1, Amoebius's STUDIOS page and
   Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio**.
 - **Round 14 in the hub:** the hub's Stoat is now round 14 (`VesselStudio/stoat.html`).
-- **OPEN IN PRISMA:** the studio as its own app window, reading "Running on Prisma".
+- **OPEN IN AMOEBIUS:** the studio as its own app window, reading "Running on Amoebius".
 - **PLAY IN ENGINE:** the game's own Stoat in Slingshot, one click from the studio.
-- **Engine gaps filled:** Prisma could not compile this branch's game code before. The black-hole API gaps
-  are now in the engine, and all three Prisma test suites pass.
+- **Engine gaps filled:** Amoebius could not compile this branch's game code before. The black-hole API gaps
+  are now in the engine, and all three Amoebius test suites pass.
 
 Test steps: `PRISMA_TEST_STEPS.md`.
 
@@ -82,7 +82,7 @@ The page detects where it is running and shapes its interface to match. Previous
 
 **Two questions, answered once at load** (`detectPlatform`, `__stoatStudio.PLATFORM`):
 
-- **Shell: which host runs the studio.** Today it is always `web`. A native host, the coming Prisma light
+- **Shell: which host runs the studio.** Today it is always `web`. A native host, the coming Amoebius light
   studio for every vessel, sets `window.__studioHost = { shell: 'prisma', device: 'pc' | 'phone' }` before
   the page's script runs. The same switch then applies, and the page never sniffs inside a native host.
 - **Device: PC or phone.** The page treats the device as a phone when either is true:
@@ -121,7 +121,7 @@ phone layout on a PC.
 
 ## Stoat Flight Studio (round 12 — the sim lab: an AI flies, you watch)
 
-The full write-up is `STOAT_SIM_LAB_PLAN.md`: results, the game-mode proposal, studio vs Prisma, and the AI
+The full write-up is `STOAT_SIM_LAB_PLAN.md`: results, the game-mode proposal, studio vs Amoebius, and the AI
 port.
 
 **The Sim lab card.**

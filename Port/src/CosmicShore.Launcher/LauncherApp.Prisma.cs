@@ -116,7 +116,7 @@ namespace CosmicShore.Launcher
             var a = new Vector2(RailW + 1, 0); var b = new Vector2(size.X, TitleH);
             dl.AddRectFilled(a, b, Neon.U(Neon.Space0, 0.55f));
             dl.AddLine(new Vector2(a.X, b.Y), b, Neon.U(Neon.Ink, 0.07f));
-            string title = "Prisma  ·  Cosmic Shore";
+            string title = "Amoebius  ·  Cosmic Shore";
             ImGui.PushFont(Neon.Strong);
             var ts = ImGui.CalcTextSize(title);
             ImGui.PopFont();
@@ -146,7 +146,7 @@ namespace CosmicShore.Launcher
             IconAt("tbbell", 40, IconBell, "Notifications", () => _centerOpen = !_centerOpen, _notes.Count(n => !n.Seen));
             int running = _chats.Running;
             IconAt("tbagent", 40, (d, c, col) => { d.AddCircleFilled(c, 5, Neon.U(running > 0 ? Neon.Amber : _chat.SignedIn == true || !string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? Neon.Lime : Neon.Dim)); },
-                running > 0 ? $"Prisma Agent: {running} chat{(running == 1 ? " is" : "s are")} working" : "Prisma Agent (powered by Claude)", () => _page = Page.Chat);
+                running > 0 ? $"Amoebius Agent: {running} chat{(running == 1 ? " is" : "s are")} working" : "Amoebius Agent (powered by Claude)", () => _page = Page.Chat);
             // branch chip
             var branch = Trim(_s.Branch, 34);
             ImGui.PushFont(Neon.Small);
@@ -175,7 +175,7 @@ namespace CosmicShore.Launcher
             {
                 Card(dl, ca, new Vector2(b.X, ca.Y + 120));
                 dl.AddText(Neon.Strong, 16, ca + new Vector2(22, 22), Neon.U(Neon.Ink), "No runs yet");
-                dl.AddText(Neon.Small, 14, ca + new Vector2(22, 50), Neon.U(Neon.Dim), "Press START on PLAY, play, and close the game. Prisma records the run here:");
+                dl.AddText(Neon.Small, 14, ca + new Vector2(22, 50), Neon.U(Neon.Dim), "Press START on PLAY, play, and close the game. Amoebius records the run here:");
                 dl.AddText(Neon.Small, 14, ca + new Vector2(22, 72), Neon.U(Neon.Dim), "performance per scene, the modes and vessels you used, audio, and every problem.");
                 return;
             }
@@ -373,7 +373,7 @@ namespace CosmicShore.Launcher
                 {
                     _chats.New();
                     _page = Page.Chat;
-                    SendChat($"Analyse this play run in Prisma: {r.Report}. Compare it with the tracks (prisma_tracks), rank what needs fixing in the game, and suggest the fixes as board items (prisma_board_suggest).",
+                    SendChat($"Analyse this play run in Amoebius: {r.Report}. Compare it with the tracks (prisma_tracks), rank what needs fixing in the game, and suggest the fixes as board items (prisma_board_suggest).",
                         ClaudeChat.Mode.Plan);
                 }
                 ImGui.PopID();
@@ -385,7 +385,7 @@ namespace CosmicShore.Launcher
         {
             _chats.New();
             _page = Page.Chat;
-            SendChat($"Fix this {kind} in Cosmic Shore - Prisma has seen it in {runs} run(s):\n{message}\n\nFind it in the tracks (prisma_tracks) and the game's code, reproduce it, fix it in the game, and prove the fix with the prisma tools. If its cause is in Prisma itself, say which milestone it belongs to instead.",
+            SendChat($"Fix this {kind} in Cosmic Shore - Amoebius has seen it in {runs} run(s):\n{message}\n\nFind it in the tracks (prisma_tracks) and the game's code, reproduce it, fix it in the game, and prove the fix with the prisma tools. If its cause is in Amoebius itself, say which milestone it belongs to instead.",
                 (ClaudeChat.Mode)_s.ChatMode);
         }
 
@@ -431,7 +431,7 @@ namespace CosmicShore.Launcher
             var sug = suggested.Where(Want).ToList();
             if (sug.Count > 0)
             {
-                ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Magenta, $"Suggested by Prisma  ({sug.Count})"); ImGui.PopFont();
+                ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Magenta, $"Suggested by Amoebius  ({sug.Count})"); ImGui.PopFont();
                 foreach (var it in sug.Take(8)) SuggestionCard(it);
                 ImGui.Dummy(new Vector2(0, 8));
             }
@@ -513,7 +513,7 @@ namespace CosmicShore.Launcher
                 ImGui.SameLine(0, 6);
                 if (it.Milestone == null && SmallButton("AGENT", 76, true))
                 {
-                    if (it.State == PrismaBoard.Status.Todo) MoveCard(it, PrismaBoard.Status.Doing, "handed to the Prisma Agent");
+                    if (it.State == PrismaBoard.Status.Todo) MoveCard(it, PrismaBoard.Status.Doing, "handed to the Amoebius Agent");
                     _chats.New();
                     _page = Page.Chat;
                     SendChat($"Work on board item {it.Id} ({it.Type}): {it.Title}\n{it.Detail}\n\n" +

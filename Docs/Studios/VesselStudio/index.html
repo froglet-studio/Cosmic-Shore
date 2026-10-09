@@ -1,6 +1,6 @@
 <title>Vessel Studio</title>
 <!-- Vessel Studio hub (Docs/Studios/VesselStudio/). Pick a vessel, its studio opens. The same folder is
-     what Prisma's STUDIOS page opens on Windows, and what a phone browser opens. Plan:
+     what Amoebius's STUDIOS page opens on Windows, and what a phone browser opens. Plan:
      Docs/Studios/VESSEL_STUDIO_PLAN.md. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
     --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Prisma and a direct file open do not */
+  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Amoebius and a direct file open do not */
   body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
   a { color: var(--jade); }
   button, input, select, textarea { font: inherit; color: inherit; }
@@ -89,7 +89,7 @@
   <header>
     <span class="eyebrow">Cosmic Shore · Froglet</span>
     <h1>Vessel <em>Studio</em></h1>
-    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open in this browser, in Prisma on Windows, and in your phone's browser.</p>
+    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open in this browser, in Amoebius on Windows, and in your phone's browser.</p>
   </header>
 
   <section aria-labelledby="h-bays">
@@ -128,9 +128,9 @@
         <tbody>
           <tr><td>Web</td><td>This page. Share the link, or open the files in <code>Docs/Studios/VesselStudio/</code> in any browser.</td><td><span class="st ok">works</span></td></tr>
           <tr><td>Phone browser</td><td>Open this page on the phone, pick a studio, tap <b>Play on phone</b> and turn it sideways.</td><td><span class="st ok">works</span></td></tr>
-          <tr><td>Prisma on Windows</td><td><b>STUDIOS</b> page in Prisma.exe opens these pages from its workspace. From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Prisma there.</td><td><span class="st part">first version</span></td></tr>
-          <tr><td>Prisma on Android</td><td>The Prisma player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
-          <tr><td>iOS</td><td>After Android: the Prisma <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
+          <tr><td>Amoebius on Windows</td><td><b>STUDIOS</b> page in Prisma.exe opens these pages from its workspace. From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Amoebius there.</td><td><span class="st part">first version</span></td></tr>
+          <tr><td>Amoebius on Android</td><td>The Amoebius player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
+          <tr><td>iOS</td><td>After Android: the Amoebius <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -152,7 +152,7 @@
       </div>
       <div class="panel">
         <h3>Development requests</h3>
-        <p>File a change for a studio or a vessel. A Claude Code session, or Prisma's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
+        <p>File a change for a studio or a vessel. A Claude Code session, or Amoebius's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
         <div class="row">
           <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Studio hub</option><option>New vessel</option></select>
           <select id="reqKind" aria-label="Kind"><option>Change the studio</option><option>Try a design</option><option>Bug</option><option>New studio</option></select>
@@ -217,7 +217,7 @@
     try { db = await c.use('db'); } catch (e) { db = null; }
     try { user = await c.use('user'); if (user) me = (await user.id()) || ''; } catch (e) { me = ''; }
     if (!sample) { $('askBtn').disabled = true; $('askState').textContent = 'Asking needs the claude.ai viewer. Use “Copy as agent prompt” instead.'; }
-    if (!db) { $('reqState').textContent = 'Requests are kept only in the claude.ai viewer. Copy the prompt to a Claude Code session or Prisma’s AGENT page.'; $('reqBtn').disabled = true; renderReqs([]); return; }
+    if (!db) { $('reqState').textContent = 'Requests are kept only in the claude.ai viewer. Copy the prompt to a Claude Code session or Amoebius’s AGENT page.'; $('reqBtn').disabled = true; renderReqs([]); return; }
     db.collection('requests').orderBy('createdAt', 'desc').limit(50).onSnapshot((snap) => {
       renderReqs(snap.docs.map((d) => Object.assign({ id: d.id }, d.data())));
     }, (err) => { $('reqState').textContent = 'The request list is unavailable (' + (err && err.code || 'error') + ').'; });
@@ -271,7 +271,7 @@
     const prompt = 'Vessel Studio request (' + $('reqVessel').value + ', ' + $('reqKind').value + '):\n' + text +
       '\n\nWork on the vessel-studio branch. Read Docs/Studios/VESSEL_STUDIO_PLAN.md and Docs/Studios/VesselStudio/README.md first. ' +
       'Every number a studio shows comes from a shipped asset, named in the page.';
-    const done = () => { $('reqState').textContent = 'Copied. Paste it into a Claude Code session or Prisma’s AGENT page.'; };
+    const done = () => { $('reqState').textContent = 'Copied. Paste it into a Claude Code session or Amoebius’s AGENT page.'; };
     try { navigator.clipboard.writeText(prompt).then(done, () => fallback(prompt)); } catch (e) { fallback(prompt); }
   });
   function fallback(t) { const ta = $('reqText'); ta.value = t; ta.focus(); ta.select(); $('reqState').textContent = 'Selected the prompt: copy it with your keyboard or long-press.'; }

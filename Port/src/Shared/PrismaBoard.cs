@@ -46,7 +46,7 @@ namespace Prisma
 
         /// <summary>The criterion of a bug that came from the tracks (the rule that turns an issue Quiet).</summary>
         public static string TracksCriterion(string? scene) =>
-            $"Not seen again in 3 runs through {(string.IsNullOrEmpty(scene) ? "any scene" : scene)} (Prisma checks this after every run)";
+            $"Not seen again in 3 runs through {(string.IsNullOrEmpty(scene) ? "any scene" : scene)} (Amoebius checks this after every run)";
 
         public List<Item> Items { get; set; } = new();
         public int NextBug { get; set; } = 1;

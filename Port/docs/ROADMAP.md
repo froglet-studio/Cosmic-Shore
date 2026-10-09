@@ -1,4 +1,4 @@
-# Prisma roadmap: checkpoints, timeline, prompts
+# Amoebius roadmap: checkpoints, timeline, prompts
 
 Written 2026-10-05; updated 2026-10-06 with the architecture review
 (`ARCHITECTURE_REVIEW_2026-10-06.md`: what was checked, decided and done for each of its 20
@@ -9,7 +9,7 @@ CHECK and `/prisma` read the open lists here.
 
 | | Milestone | Done when | Target |
 |---|---|---|---|
-| **M1** | **Gameplay parity.** Playing Cosmic Shore in Prisma is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
+| **M1** | **Gameplay parity.** Playing Cosmic Shore in Amoebius is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
 | **M2** | **Unity-free development.** Developers stop opening Unity. The engine's own tools do every Unity job Cosmic Shore needs, and nothing more. | One full release cycle (3 weeks) is shipped with Unity never opened (E9). | **Q1 2028** (~22 more weeks) |
 
 M2 depends on M1: nobody gives up the editor for a runtime that still looks different. Some
@@ -135,14 +135,14 @@ transition, and the cut-over is a decision, not a migration.
 the editor starts where daily work happens - the tools, the data and the models - and **builds no
 hierarchy, scene inspector, prefab-override UI or asset browser**. Scene and prefab structure is
 the agent's job: `cs-asset` already creates, deletes, reparents and adds components, writes prefab
-overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Prisma
+overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Amoebius
 shows the result in the running game. Measured that day: **95 FrogletTools** menu items (66 with
 `[FrogletTool]` metadata), **1,313 ScriptableObject data files** in **363 script types**, **66 FBX
 models**. E1-E3 do not depend on M1 and run beside it.
 
 | # | Checkpoint | Exit criterion | Weeks |
 |---|---|---|---|
-| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Prisma (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
+| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Amoebius (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
 | **E2** | **Data sets** (started 2026-10-08) | EDITOR > DATA shows every ScriptableObject data file with Unity's labels, headers, tooltips and ranges; edits every field kind the data uses (values, enums, vectors, colours, references picked from the project, list items added and removed) through `cs-asset set`, byte-stable; creates a new data file of a type with the script's defaults | 4 |
 | **E3** | **Models** (started 2026-10-08) | EDITOR > MODELS shows every FBX as Unity imports it (meshes, materials, blend shapes, bones, takes, import settings) with a preview; importing a new FBX writes its `.meta` with the settings the game's models use and a stable GUID, and the engine loads it in a prefab like the others | 4 |
 | **E4** | **Play mode** | Play from the editor with an incremental script recompile (< 5 s); data-set edits apply to the running game live | 4 |
@@ -169,14 +169,14 @@ hands, it comes back as a narrow tool for that job, not a general hierarchy.
 
 ## How to run each checkpoint (prompts)
 
-Milestones are worked in Claude Code at the repository root (Prisma's MILESTONES page was retired
+Milestones are worked in Claude Code at the repository root (Amoebius's MILESTONES page was retired
 on 2026-10-08): paste a prompt below; the session updates `docs/milestones.json` as it moves the
 checkpoint. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
 `engine_test` green, `engine_smoke` PASS, `unity_isolation_check` ok, docs updated, and this
 file's row marked done with the date and the measurement.
 
 **C1 - Parity harness**
-> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
+> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Amoebius and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
 
 **C1b - Bisect**
 > Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.

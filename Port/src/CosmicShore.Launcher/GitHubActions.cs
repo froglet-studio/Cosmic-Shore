@@ -110,10 +110,10 @@ namespace CosmicShore.Launcher
             if (cur.IsSuccessStatusCode)
                 using (var doc = JsonDocument.Parse(await cur.Content.ReadAsStringAsync(ct)))
                     sha = doc.RootElement.GetProperty("sha").GetString();
-            var text = $"Requested by Prisma at {DateTime.UtcNow:O}\n";
+            var text = $"Requested by Amoebius at {DateTime.UtcNow:O}\n";
             var put = await Send(HttpMethod.Put, Api("contents/" + RequestFile), new
             {
-                message = "ci(ios): request a Prisma .ipa build",
+                message = "ci(ios): request an Amoebius .ipa build",
                 content = Convert.ToBase64String(Encoding.UTF8.GetBytes(text)),
                 branch,
                 sha,

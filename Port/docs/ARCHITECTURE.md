@@ -1,4 +1,4 @@
-# Prisma v0.1 — Architecture Overview
+# Amoebius v0.1 — Architecture Overview
 
 *The Unity-free engine (the "port") that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
 
@@ -423,10 +423,10 @@ connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
 frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
-launcher passes one for every play session. Prisma folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
+launcher passes one for every play session. Amoebius folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
 runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
 bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent
-scopes run in the app: the Prisma Agent (the game; `Port/` is denied) and milestone sessions
+scopes run in the app: the Amoebius Agent (the game; `Port/` is denied) and milestone sessions
 (the engine; the Unity project is denied). The MCP server exposes `prisma_tracks`, `prisma_board`
 and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
 
@@ -439,9 +439,9 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Engine, content, networking, services, gameplay | `dotnet test tests/CosmicShore.Tests`: ~1,590 tests in about 70 s, no GPU. Includes execution order, Unity's serialization rules, the tracks/board criteria, and `RenderBoundaryTests` (GL only inside `CosmicShore.Render`) |
 | The project's own Unity tests | `dotnet test tests/CosmicShore.Tests.Ported`: 352 tests, verbatim |
 | File round-trip | `cs-asset roundtrip`: every YAML file parses and writes back byte-identical |
-| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Prisma reads too, and nothing more (exit 1 otherwise) |
+| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Amoebius reads too, and nothing more (exit 1 otherwise) |
 | RPC coverage | The source sync warns `PRISMA001` for any RPC it cannot intercept (0 today) |
-| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Prisma's tracks compare it with earlier runs |
+| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Amoebius's tracks compare it with earlier runs |
 | Rendering | Scripted windowed runs with screenshots, under xvfb on Linux |
 | Shaders on phones | Every shader is translated and compiled by the Khronos GLSL ES reference compiler (`GlslEsTranslationTests`) |
 | Fidelity | `--train replay` re-scores a generation Unity already scored and reports the difference |
@@ -457,7 +457,7 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Online services | Local stand-ins: no real UGS accounts, cloud or leaderboards |
 | Provenance | No Unity binary is used. Two spots still follow Unity source too closely (TMP SDF text-shader terms, a Voronoi hash from Unity's docs) and are queued for clean rewrites: `docs/LEGAL_REVIEW.md`. Third-party notices: `THIRD_PARTY_NOTICES.md` |
 | Animation Rigging, Timeline, VFX Graph | Data only; they do not animate or emit |
-| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Prisma draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Prisma yet |
+| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Amoebius draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Amoebius yet |
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
 | Legacy projects | Data, Game, Cli and Client are kept for their tests; new work goes into Engine, Content, Render or the players |

@@ -3290,7 +3290,7 @@ never fold it into a fix for something else.
   a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
   `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
   SO type is unavoidable, have the human open its first asset once before the playtest.
-- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+- **The Amoebius port is a real compile of `Assets/_Scripts`, available in about a minute.**
   `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
   surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
   syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL

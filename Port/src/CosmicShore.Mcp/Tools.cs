@@ -18,7 +18,7 @@ namespace CosmicShore.Mcp
     public sealed partial class Tools : IDisposable
     {
         public const string Instructions =
-            "Prisma (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
+            "Amoebius (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
             "game_start -> game_state / game_screenshot / game_input / game_get ... -> game_stop. The port must not change " +
             "Assets/, Packages/ or ProjectSettings/ (unity_isolation_check). Coordinates are screenshot pixels, top-left origin.";
 
@@ -81,14 +81,14 @@ namespace CosmicShore.Mcp
                     ["build"] = P("boolean", "compile first (default true)"),
                 }),
             BisectTool(),
-            Tool("prisma_tracks", "Prisma's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
+            Tool("prisma_tracks", "Amoebius's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
                 new JsonObject
                 {
                     ["section"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("memory", "issues", "runs"), ["description"] = "memory (default): the brief; issues: every problem as JSON; runs: every run as JSON" },
                 }),
-            Tool("prisma_board", "Prisma's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
+            Tool("prisma_board", "Amoebius's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
                 new JsonObject { ["state"] = P("string", "only this state (suggested, todo, doing, done); default: everything open") }),
-            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Prisma's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
+            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Amoebius's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
                 new JsonObject
                 {
                     ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("bug", "task") },
@@ -242,7 +242,7 @@ namespace CosmicShore.Mcp
                         return new JsonArray(Text("Not added: give a criterion - the check that will prove this done."));
                     var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Prisma.PrismaBoard.Status.Suggested, Int(a, "priority", 2), criterion: Str(a, "criterion"));
                     b.Save();
-                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Prisma's BOARD."));
+                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Amoebius's BOARD."));
                 }
                 case "prisma_tracks":
                 {
