@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The heritable genome — `EvolutionSettings`, the ledger, the Evolution Monitor (`cece/friendly-goodall-woddjw`, 2026-10-09) — NOT EDITOR-VERIFIED
+
+**What landed.** `Docs/EVOLUTION.md`. A four-locus genome on `LifeformVariantPick`, mutated on every birth, expressed
+on fauna at lineage bind (speed band, graze radius, feeds per birth, provisioning, cohesion radius — never size or the
+heart), carried on the fauna spawn payload, recorded per cell in `EvolutionLedger`, drawn by
+**FrogletTools ▸ Ecology ▸ Evolution Monitor**. `CellConfigDataSO.Evolution.Enabled` is **false** in every shipped
+biome, so the shipped ecology is unchanged until a designer turns it on.
+
+**What was proved without the Editor.** The game compiled through Prisma's live compile (0 errors) and booted
+Menu_Main headless with evolution off and with it temporarily on, identical error sets; the core compiled against
+netstandard2.1 / C# 9 with warnings as errors; 46 + 10 harness gates with 6 biting negative controls; 26 NUnit
+edit-mode tests under dotnet; the JS port exact against the C# golden. The Editor window was written against the
+`FrogletEditorPalette` API by reading it and has **not been compiled** (no `UnityEditor` here).
+
+**Run in the Editor (`Docs/EVOLUTION.md §9`, in this order):**
+- [ ] The project compiles; `LifeformGenomeTests` (26) green; the ecology suites unchanged.
+- [ ] Evolution off: Menu_Main freestyle plays as before, no new log line.
+- [ ] Evolution on (`Blob Cell Config ▸ Evolution ▸ Enabled`): the monitor shows species cards with the first wave,
+      generation 1 after a feed-fed birth, deaths by cause after a starvation or a shark kill; the `Ecology` channel
+      prints one census line per species per 30 s.
+- [ ] A child's gene bar sits near its parent's (±0.1), never a fresh founder spread.
+- [ ] `TempoPaceRange` 3 + `FounderSpread` 0.5 on the biome: visibly varied swimming speeds; off: uniform again.
+- [ ] A part-full newborn blooms in; a starved one withers extremities-first and drops its heart as before.
+- [ ] Host + client on a `NetworkSynced` species: the puppet's speed band matches the server's creature.
+- [ ] The monitor's Export JSON writes a file that opens.
+
 ### 🔴 Butterfly collects elemental crystals again — always-on crystal catcher (`cece/dazzling-ramanujan-hz5caq`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/BUTTERFLY.md §3.1a`, generator `Tools/Build/author_butterfly_dust.py --check`):

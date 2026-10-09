@@ -31,7 +31,10 @@ anchor does not; the old "body segments are body parts" ruling is RETRACTED,
 selection only (survival = fitness, never a scripted fitness function — and there is NO
 lifeform LEVEL, rolled or earned: a lifeform is its species and its ELEMENT, which states
 everything about itself exactly once, the size of the heart it drops included;
-`Docs/ECOSYSTEM.md` §40) · the collider budget.
+`Docs/ECOSYSTEM.md` §40) · **the heritable genome never scores, never touches size or the heart, and is
+OFF unless the biome authors `CellConfigDataSO.Evolution.Enabled`** — a founder rolls once at the seeder, a
+child's genome changes only in `Cell.OffspringPick`, and nothing a creature does is ever written back into
+its genes (`Docs/EVOLUTION.md` §10) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
 ## 2.5 When sign-off IS granted — landing a carve-out that neither leaks nor gets reverted

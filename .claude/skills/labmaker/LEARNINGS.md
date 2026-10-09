@@ -150,6 +150,36 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-STU-15 — Plant a parity defect where the mechanism it breaks actually RUNS
+- Lab: Darwin Lab (`Tools/Evolution/gate_parity.cjs`) · Branch: `cece/friendly-goodall-woddjw` · Date: 2026-10-09
+- What happened: the gate's third negative control removed the metabolic cost of pace (`TempoUpkeepRange` 1) and expected the trajectory to differ. On the cap-bound Blob golden it did NOT: nobody starves there inside twenty minutes, so upkeep never decided anything and the gate reported the control as unexercised. Moving the control to the famine case (where the stomach decides) made it bite.
+- Do instead: for each planted defect, pick the golden case in which the broken mechanism is on the critical path, and keep a golden case per mechanism (cap-bound, famine, conserved stomach, selection off). A negative control that cannot bite is a fake pass, and it is the gate's own summary line ("N/N negative controls bit") that tells you.
+- Evidence: `gate_parity.cjs` (the comment above control 3); `Tools/Evolution/README.md` round 1 "Found".
+- Promoted: no
+
+### L-STU-16 — Bake only what the page reads; a 2.9 MB first bake was 596 KB once the unused rows and genomes went
+- Lab: Darwin Lab (`Tools/Evolution/build_lab.py`) · Branch: `cece/friendly-goodall-woddjw` · Date: 2026-10-09
+- What happened: the harness writes every census row (one per minute of cell time) and every final genome for 9 regimes × 5 seeds; the page draws one sparkline per regime from the rows' means and never reads a genome. Baking `results.json` verbatim made the page 2.9 MB. Keeping one row in five and dropping `final` made it 596 KB with no visible change.
+- Do instead: the harness's result file is the record (keep it whole, tracked); the bake is a VIEW of it - downsample and strip in the build script, and say in the script's comment what the page reads.
+- Evidence: `build_lab.py` (the loop over `regimes[].runs[]`), both sizes in the bake's own output line.
+- Promoted: no
+
+### L-STU-17 — One lab, two documents: the standalone file verify_lab opens and the body the Artifact tool wraps
+- Lab: Darwin Lab · Branch: `cece/friendly-goodall-woddjw` · Date: 2026-10-09
+- What happened: `verify_lab.cjs` opens a full `file://` document (doctype, head, body); the Artifact tool wraps a BODY-ONLY file in its own skeleton and rejects a second doctype. The template keeps the page between `<!--ARTIFACT-START-->` / `<!--ARTIFACT-END-->` markers inside `<body>`, and the build writes both forms. The web-font `<link>` goes only into the artifact form: under the verifier a blocked network would log a console error and fail the page.
+- Do instead: author one template with markers, bake two outputs, and keep anything that needs the network out of the standalone form.
+- Evidence: `build_lab.py` (`standalone` / `artifact`), `lab_template.html` markers.
+- Promoted: no
+
+### L-STU-18 — A verifier PASS on the first bake still needs the screenshot read
+- Lab: Darwin Lab · Branch: `cece/friendly-goodall-woddjw` · Date: 2026-10-09
+- What happened: the first bake passed every verify_lab check, and the desktop screenshot showed the HUD printed over the top panel's title and each trait's value printed over its panel's name. Two canvas offsets fixed it; the second bake passed and read clean.
+- Do instead: SKILL.md §3 already says "read the screenshots: the gate cannot see an overlap". It is true on the first bake too, not only on later rounds.
+- Evidence: `Tools/Evolution/README.md` round 1 "Checked".
+- Promoted: no
+
+---
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
