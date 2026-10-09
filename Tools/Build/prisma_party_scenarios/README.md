@@ -5,13 +5,15 @@ bash Tools/Build/prisma_party_scenarios/run.sh          # ~10-15 min wall; exit 
 KEEP=1 bash Tools/Build/prisma_party_scenarios/run.sh   # keep the worktree, the logs and results.json
 COSMIC_SHORE_NET_SIM=4g bash .../run.sh                 # every pilot on a simulated 4G line
 PRISMA_RELAY=1 bash .../run.sh                          # every pilot through Froglet's relay (Unity Relay's protocol)
+PRISMA_RELAY=ugs bash .../run.sh                        # the same, signed in to a local UGS stand-in (COSMIC_SHORE_RELAY=ugs)
 COSMIC_SHORE_NET_TRANSPORT=tcp bash .../run.sh          # the TCP transport instead of the default UDP
 ```
 
 Needs the .NET 10 SDK (`DOTNET10_ROOT`, default `$HOME/.dotnet10`), like
 `../prisma_edit_mode_tests/run.sh`. The scratch dir is `$PRISMA_PARTY_WORK` (default
 `$TMPDIR/prisma_party_scenarios`): `logs/<A..E>.log` is each pilot's full console, and
-`results.json` is one row per scenario with the state it asserted on.
+`results.json` is one row per scenario with the state it asserted on, plus `network`: each pilot's own
+boot lines for its transport, simulated line and relay, so a result names what it ran under.
 
 ## What it does
 

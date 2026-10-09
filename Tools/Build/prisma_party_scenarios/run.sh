@@ -68,7 +68,10 @@ fi
 
 # PRISMA_RELAY=1: every pilot hosts and joins through Froglet's relay server (Unity Relay's protocol,
 # Port/docs/MULTIPLAYER.md §6.7) instead of connecting directly - the path a game over the internet takes.
-if [ "${PRISMA_RELAY:-0}" = "1" ]; then
+# PRISMA_RELAY=ugs: the same relay, reached the way UGS Relay is (COSMIC_SHORE_RELAY=ugs, §6.8): each pilot
+# signs in to a local stand-in of UGS Player Authentication (ugs_auth_standin.py) and allocates with its
+# token. Nothing here talks to the live UGS project.
+if [ "${PRISMA_RELAY:-0}" != "0" ]; then
   nohup dotnet "$PLAYER/CosmicShore.dll" --relay-server 0 0 > "$LOGS/relay.log" 2>&1 < /dev/null &
   PIDS+=($!)
   RELAY_URL=""
@@ -77,8 +80,22 @@ if [ "${PRISMA_RELAY:-0}" = "1" ]; then
     [ -n "$RELAY_URL" ] && break; sleep 0.2
   done
   if [ -z "$RELAY_URL" ]; then echo "prisma_party_scenarios: the relay server did not start:" >&2; cat "$LOGS/relay.log" >&2; exit 1; fi
-  export COSMIC_SHORE_RELAY="$RELAY_URL"
-  echo "prisma_party_scenarios: every pilot goes through Froglet's relay at $RELAY_URL (log: $LOGS/relay.log)"
+  if [ "$PRISMA_RELAY" = "ugs" ]; then
+    UGS_PROJECT="00000000-0000-0000-0000-00000000f106"
+    python3 -I "$HERE/ugs_auth_standin.py" 0 "$UGS_PROJECT" > "$LOGS/ugs-auth.log" 2>&1 < /dev/null &
+    PIDS+=($!)
+    AUTH_URL=""
+    for _ in $(seq 1 100); do
+      AUTH_URL="$(grep -o 'COSMIC_SHORE_UGS_AUTH_URL=[^)]*' "$LOGS/ugs-auth.log" 2>/dev/null | head -1 | cut -d= -f2 || true)"
+      [ -n "$AUTH_URL" ] && break; sleep 0.2
+    done
+    if [ -z "$AUTH_URL" ]; then echo "prisma_party_scenarios: the UGS sign-in stand-in did not start:" >&2; cat "$LOGS/ugs-auth.log" >&2; exit 1; fi
+    export COSMIC_SHORE_RELAY=ugs COSMIC_SHORE_UGS_PROJECT="$UGS_PROJECT" COSMIC_SHORE_UGS_AUTH_URL="$AUTH_URL" COSMIC_SHORE_UGS_RELAY_URL="$RELAY_URL"
+    echo "prisma_party_scenarios: every pilot signs in to the UGS stand-in at $AUTH_URL and goes through the relay at $RELAY_URL"
+  else
+    export COSMIC_SHORE_RELAY="$RELAY_URL"
+    echo "prisma_party_scenarios: every pilot goes through Froglet's relay at $RELAY_URL (log: $LOGS/relay.log)"
+  fi
 fi
 
 # One profile per pilot, each with its own HOME so no instance inherits another run's saved

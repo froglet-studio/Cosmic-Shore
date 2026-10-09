@@ -346,6 +346,9 @@ def main():
     for k, inst in insts.items():
         boot_to_menu(inst)
     report["boot_wall_s"] = round(time.time() - t0, 1)
+    # What each pilot's network was, as the pilot itself logged it at boot (transport, simulated line, relay).
+    report["network"] = {k: [l for l in inst.log_lines() if l.startswith(("[net] transport:", "[netsim] starting", "[relay] sessions"))][:3]
+                         for k, inst in insts.items()}
 
     session, failed = Session(insts), False
     for sid, ticket, title, fn in SCENARIOS:
