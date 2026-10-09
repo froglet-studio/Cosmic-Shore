@@ -208,6 +208,22 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: commit `30a890606`; `StudioCatalogTests.TheShippedCatalogsEngineModesAreGameModes`.
 - Promoted: no
 
+### L-STU-19 — Two people on one studio: the artifact refreshes itself from GitHub
+- Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: two designers pushed studio rounds from two sessions, and the published artifact fell
+  behind within the hour. A Sync panel now does the loop inside the artifact:
+  - it reads GitHub through the viewer's own connector (`mcp`);
+  - it republishes the hub with the files form of `artifact.publish`;
+  - it merges branches through a PR, then asks whether to delete the merged branch;
+  - it keeps a shared `decisions` collection (`db`).
+- Do instead: give every shared studio artifact the panel (`build_artifact.py`), share it with edit access,
+  and record decisions in it, not in chat. Remember the connector cannot delete branches,
+  `get_file_contents` returns the file in a `resource` block, and a files publish leaves the publishing
+  view on the old files until it reloads.
+- Evidence: `.claude/skills/vessel-studio/` (SKILL.md §4-§6, `build_artifact.py --self-test`);
+  `Docs/Studios/VesselStudio/SYNC_PANEL.md`.
+- Promoted: yes, into the `/vessel-studio` skill
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

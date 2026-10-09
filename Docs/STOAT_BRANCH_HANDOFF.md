@@ -35,6 +35,7 @@ styles are designs that have not been ported yet.
 | **Vessel Studio hub** (Squirrel v1 + Stoat) | `Docs/Studios/VESSEL_STUDIO_PLAN.md`, `Docs/Studios/VesselStudio/README.md` | `Docs/Studios/VesselStudio/` (`studios.json` is the catalog every surface reads) |
 | **Prisma: STUDIOS page, OPEN IN PRISMA, PLAY IN ENGINE, the engine gaps filled** | `Docs/Studios/PRISMA_TEST_STEPS.md`, `Port/docs/LAUNCHER.md` § STUDIOS | `Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs`, `StudioCatalog.cs`, `Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, `Port/src/CosmicShore.Engine/Jobs/`, `Rendering/RenderGraph.cs` |
 | **Prisma prompt** (Stoat + both pair styles in the engine) | `Docs/Studios/PRISMA_WORMHOLE_SESSION_PROMPT.md` | — |
+| **Starting, publishing or syncing a studio** (settled decisions D1-D15, build order, Sync panel) | the `/vessel-studio` skill, `Docs/Studios/VesselStudio/SYNC_PANEL.md` | `.claude/skills/vessel-studio/build_artifact.py`, `Docs/Studios/VesselStudio/sync.js` |
 | **What the labs taught** (reusable across labs) | `.claude/skills/labmaker/LEARNINGS.md` § STU (L-STU-1…18), `CATALOG.md` | the `/labmaker` skill |
 | **Editor checks still owed** | `Docs/UNITY_VERIFICATION_CHECKLIST.md`: the Slingshot and Stoat entries (🔴), and the black-hole entries `BLACK_HOLE.md` §0.1 lists | — |
 
@@ -42,6 +43,8 @@ styles are designs that have not been ported yet.
 
 - **Stoat Flight Studio:** https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc. Its decision log is the
   artifact's `decisions` collection.
+- **Vessel Studio with the Sync panel** (Stoat round 15 from `cece/magical-carson-9bdq8z`; Refresh pulls any
+  branch): https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc. Decisions: its `decisions` collection.
 - **Vessel Studio hub:** https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN. It is **private** until shared
   from its Share menu. Its development requests are the `requests` collection.
 
