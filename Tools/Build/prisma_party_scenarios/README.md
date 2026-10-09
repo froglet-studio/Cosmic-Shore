@@ -3,6 +3,9 @@
 ```
 bash Tools/Build/prisma_party_scenarios/run.sh          # ~10-15 min wall; exit 0 = every scenario passed
 KEEP=1 bash Tools/Build/prisma_party_scenarios/run.sh   # keep the worktree, the logs and results.json
+COSMIC_SHORE_NET_SIM=4g bash .../run.sh                 # every pilot on a simulated 4G line
+PRISMA_RELAY=1 bash .../run.sh                          # every pilot through Froglet's relay (Unity Relay's protocol)
+COSMIC_SHORE_NET_TRANSPORT=tcp bash .../run.sh          # the TCP transport instead of the default UDP
 ```
 
 Needs the .NET 10 SDK (`DOTNET10_ROOT`, default `$HOME/.dotnet10`), like

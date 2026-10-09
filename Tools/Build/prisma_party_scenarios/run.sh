@@ -66,6 +66,21 @@ if ! dotnet build "$WT/Port/src/CosmicShore.Player" -c Debug -v q -nologo -o "$P
   exit 1
 fi
 
+# PRISMA_RELAY=1: every pilot hosts and joins through Froglet's relay server (Unity Relay's protocol,
+# Port/docs/MULTIPLAYER.md §6.7) instead of connecting directly - the path a game over the internet takes.
+if [ "${PRISMA_RELAY:-0}" = "1" ]; then
+  nohup dotnet "$PLAYER/CosmicShore.dll" --relay-server 0 0 > "$LOGS/relay.log" 2>&1 < /dev/null &
+  PIDS+=($!)
+  RELAY_URL=""
+  for _ in $(seq 1 100); do
+    RELAY_URL="$(grep -o 'COSMIC_SHORE_RELAY=http[^)]*' "$LOGS/relay.log" 2>/dev/null | head -1 | cut -d= -f2 || true)"
+    [ -n "$RELAY_URL" ] && break; sleep 0.2
+  done
+  if [ -z "$RELAY_URL" ]; then echo "prisma_party_scenarios: the relay server did not start:" >&2; cat "$LOGS/relay.log" >&2; exit 1; fi
+  export COSMIC_SHORE_RELAY="$RELAY_URL"
+  echo "prisma_party_scenarios: every pilot goes through Froglet's relay at $RELAY_URL (log: $LOGS/relay.log)"
+fi
+
 # One profile per pilot, each with its own HOME so no instance inherits another run's saved
 # username, consent or party; one shared session directory standing in for UGS Lobby + Relay.
 cd "$WORK"   # nothing an instance writes relative to its cwd may land in the repo
@@ -84,7 +99,7 @@ for k in "${!LABELS[@]}"; do
   printf '  "%s": {"port": %d, "log": "%s", "pid": %d}%s\n' "$L" "$PORT" "$LOGS/$L.log" "$!" "$SEP" >> "$SPEC"
 done
 echo "}" >> "$SPEC"
-echo "prisma_party_scenarios: ${#PIDS[@]} instances up (ports $((BASE_PORT + 1))-$((BASE_PORT + ${#LABELS[@]}))), logs in $LOGS"
+echo "prisma_party_scenarios: ${#LABELS[@]} instances up (ports $((BASE_PORT + 1))-$((BASE_PORT + ${#LABELS[@]}))), logs in $LOGS"
 
 set +e
 python3 "$HERE/scenarios.py" --instances "$SPEC" --out "$WORK/results.json" --repo "$REPO"
