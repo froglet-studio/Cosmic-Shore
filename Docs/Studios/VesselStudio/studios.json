@@ -1,0 +1,23 @@
+{
+  "comment": "The Vessel Studio catalog. Prisma's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html.",
+  "web": "https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN",
+  "hub": "index.html",
+  "studios": [
+    {
+      "id": "squirrel",
+      "name": "Squirrel",
+      "file": "squirrel.html",
+      "kind": "built vessel - studio v1",
+      "summary": "The racer on its shipped numbers: drift on LT, the Boost Ring on RT, skim rival trails for boost and steal them. Six play-style types over its four element levels.",
+      "docs": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md"
+    },
+    {
+      "id": "stoat",
+      "name": "Stoat",
+      "file": "stoat.html",
+      "kind": "design studio - round 11",
+      "summary": "The slinger: squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, five types per setting group, a decision log.",
+      "docs": "Docs/Studios/STOAT_PLAY_STYLES.md"
+    }
+  ]
+}
