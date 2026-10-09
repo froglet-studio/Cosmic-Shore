@@ -588,6 +588,42 @@ def plant_glyph(species, root, up, size, dom, rng, rows):
                 branch(q, nd, L * 0.72, depth - 1)
         branch(root, up, size * 0.38, 3)
         return
+    if "lantern" in s:
+        # a stalk holding a globe of plates
+        top = v_add(root, v_mul(up, size * 0.75))
+        seg(root, top, leaf * 0.7)
+        for t in range(14):
+            a, b = 2 * math.pi * t / 14, math.acos(1 - 2 * (t + 0.5) / 14)
+            d = v_add(v_add(v_mul(side, math.cos(a) * math.sin(b)), v_mul(other, math.sin(a) * math.sin(b))), v_mul(up, math.cos(b)))
+            seg(v_add(top, v_mul(d, size * 0.16)), v_add(top, v_mul(d, size * 0.24)), leaf * 1.1)
+        return
+    if "reed" in s:
+        # a tuft of tall thin stalks
+        for k in range(7):
+            lean = v_norm(v_add(up, v_add(v_mul(side, rng.range(-0.25, 0.25)), v_mul(other, rng.range(-0.25, 0.25)))))
+            base = v_add(root, v_add(v_mul(side, rng.range(-0.08, 0.08) * size), v_mul(other, rng.range(-0.08, 0.08) * size)))
+            seg(base, v_add(base, v_mul(lean, size * rng.range(0.7, 1.05))), leaf * 0.45)
+        return
+    if "frond" in s:
+        # a fan of long pinnate leaves from one crown
+        for k in range(6):
+            a = math.pi * (0.15 + 0.7 * k / 5)
+            d = v_norm(v_add(v_mul(up, math.sin(a)), v_mul(side, math.cos(a))))
+            q = v_add(root, v_mul(d, size * 0.8))
+            seg(root, q, leaf * 0.5)
+            for j in range(1, 4):
+                m = v_add(root, v_mul(d, size * 0.8 * j / 4))
+                seg(m, v_add(m, v_mul(other, size * 0.12)), leaf * 0.4)
+        return
+    if "tendril" in s:
+        # one curling helix
+        prev = root
+        for k in range(1, 16):
+            t = k / 15
+            q = v_add(root, v_add(v_mul(up, size * t), v_add(v_mul(side, math.cos(t * 9) * size * 0.18 * t), v_mul(other, math.sin(t * 9) * size * 0.18 * t))))
+            seg(prev, q, leaf * 0.5)
+            prev = q
+        return
     # cactus (and anything unrecognised): a trunk with elbowed arms
     top = v_add(root, v_mul(up, size))
     seg(root, top, leaf * 1.3)
@@ -679,6 +715,8 @@ CAMERAS = {
     # since the bomb launch was tripled - eight rings round the nucleus, shot from a new side and
     # pulled back far enough to keep the whole lap in frame.
     "GrizzlyTime": (125, 34, 0.95, 42),
+    # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
+    "Tandava": (35, 30, 0.95, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -905,6 +943,52 @@ def recipe(stem, card_path, pal, ends):
         cam["radius"] = nuc * 1.7
         stage["radius"] = nuc * 1.3
         stage["centre"] = [0, 0, 0]
+    elif s == "Tandava":
+        # MODEL tier. The cell carries no environment; it is CLOSED and its reef DISPERSED: the planting is the cell's own seven
+        # forks drawn as ModePreviewPlantingModel draws them (each fork's count, volume-uniform radii in its band), each
+        # plant its species' glyph. The creature is the Great Serpent FEEDING - the mode's moment, and the one a pilot strikes:
+        # rolled up round a plant in its constrictor's wrap (frame 0 of SwarmPlan_tandava_great_serpent_1_wrap.json), unit
+        # for unit at 2.2x its world size so the body reads at card size, its plates out round the coil as DANGER guards,
+        # in the cell's hostile colour. The membrane wears the cell's OWN colours: Tandava's cell changes only
+        # for the dance (TANDAVA.md §3.3).
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows, plants = [], []
+        for cfg_name, prefab, count, (inner, outer) in flora_species(facts):
+            i3, o3 = (inner * R) ** 3, (outer * R) ** 3
+            for _ in range(count):
+                u = rng.unit()
+                pos = v_mul(u, rng.range(i3, o3) ** (1 / 3))
+                plants.append(pos)
+                plant_glyph(prefab, pos, u, 70 * rng.range(0.8, 1.2), GOLD if "Space" in cfg_name else JADE, rng, rows)
+        plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_great_serpent_1_wrap.json"))
+        k_world = 2.0 * 3 ** (1 / 3) * 2.2   # UnitScale 2 x cbrt(PlanDensity 3) x 2.2
+        meal = min(plants, key=lambda p: abs(v_dot(v_norm(p), [0, 1, 0])))   # the plant nearest the equator
+        up = [0.0, 1.0, 0.0]
+        fwd = v_norm(v_cross(up, meal))       # its body axes: the coil's axis is the cell's up
+        side = v_cross(fwd, up)
+        mouth = plan["mouth"]
+        centre = v_sub(meal, v_mul(v_add(v_add(v_mul(fwd, mouth[0]), v_mul(up, mouth[1])), v_mul(side, mouth[2])), k_world))
+        for u in range(plan["n"]):
+            q = plan["pos"][3 * u:3 * u + 3]
+            p = v_add(centre, v_mul(v_add(v_add(v_mul(fwd, q[0]), v_mul(up, q[1])), v_mul(side, q[2])), k_world))
+            f = plan["face"][3 * u:3 * u + 3]
+            fw = v_add(v_add(v_mul(fwd, f[0]), v_mul(up, f[1])), v_mul(side, f[2]))
+            h = plan["half"][3 * u:3 * u + 3]
+            danger = plan["elem"][u] == 0 and plan["tier"][u] == 1
+            rows.append(prism(p, fw if v_dot(fw, fw) > 1e-6 else fwd, up,
+                              # each unit drawn at 1.8x its own prism so the body reads as one animal at card size
+                              [2 * x * k_world * 1.8 for x in h], RUBY, DANGER if danger else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+        body = centre
+        # on the coiled serpent, wide enough for the crowded reef behind
+        cam["target"] = v_mul(body, 0.7)
+        cam["radius"] = 470.0
+        stage.update({"centre": body, "radius": 260.0,
+                      "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
+                                  {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},
+                                  {"domain": JADE, "r": 1.1, "tilt": 30, "a0": 110, "sweep": 40, "yaw": -15}]})
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -935,7 +1019,8 @@ def recipe(stem, card_path, pal, ends):
     accents(s, layers, stage, cam, pal, R, card_path)
 
     if R > 0:
-        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": [0.2, 0.3, 0.8], "strength": 0.1})
+        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", [0.2, 0.3, 0.8]),
+                       "strength": 0.1})
     return {"tier": tier, "layers": layers, "camera": cam, "look": look, "stage": stage,
             "cell": facts["name"] if facts else None, "env": env.stem if env else None,
             "track": track.stem if track else None}
@@ -1071,6 +1156,14 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         for k in range(60):
             p = v_add(v_add(a, v_mul(v_sub(b, a), k / 59)), v_mul(rng.unit(), span * 0.03))
             glow(p, span * rng.range(0.006, 0.012), GOLD, 1.2, 0.55)
+    elif s == "Tandava":
+        # The act the mode turns on: pilots striking the feeding body BEHIND its guards (tracers into the coils, none
+        # into the danger ring round the mouth).
+        body = stage["centre"]
+        for k in range(4):
+            tgt = v_add(body, [rng.range(-150, 150), rng.range(-20, 30), rng.range(-30, 30)])
+            src = v_add(tgt, [rng.range(-260, -120), rng.range(40, 120), rng.range(-160, 160)])
+            streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt), JADE)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)

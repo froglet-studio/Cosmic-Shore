@@ -140,7 +140,7 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 61 = IDs 0..63 with 7, 31 and 47 deliberately skipped (retired Freestyle /
+            // 60 = IDs 0..64 with 7, 28, 29, 31 and 47 deliberately skipped (retired Freestyle /
             // never assigned / retired Drumfire — see GameModes.cs). Deliberately a hard-coded
             // number rather than one derived from the enum: the whole point is that ADDING a
             // mode fails here, so a human confirms the addition was intended and that its ID
@@ -157,9 +157,9 @@ namespace CosmicShore.Tests
             // and 45 (Switchback) were both taken from under it - the fifth such collision -
             // and 62 at the 2026-10-02 merge, after WreckingBall took 54: the sixth.
             // 61 -> 59 on 2026-10-08: MultiplayerFreestyle (28) and OnlineDuelForTheCell (29)
-            // retired; both IDs stay reserved.
+            // retired; both IDs stay reserved. 59 -> 60 when Tandava landed as 64 (authored as 62).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(59, values.Length,
+            Assert.AreEqual(60, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

@@ -170,6 +170,9 @@ namespace CosmicShore.Gameplay
 
         // --- Composition: extracted trackers (SRP) ---
         protected HealthBlockTracker healthTracker;
+        /// <summary>The live health prisms (body mass) this lifeform holds right now - for a plant, what is left to eat.
+        /// Read-only; Tandava's director ranks plants by it.</summary>
+        public int HealthBlockCount => healthTracker?.Count ?? 0;
         protected SpindleTracker spindleTracker;
 
         // --- Internal state ---

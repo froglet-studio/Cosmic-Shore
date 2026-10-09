@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -118,6 +119,16 @@ namespace CosmicShore.ScriptableObjects
         /// stated rather than hidden - while a lone pilot is still asked for a number one hull
         /// can reach.</para></summary>
         public const float BroadsideExtraPilotFraction = 0.6f;
+
+        /// <summary>Tandava's shatter threshold used when <see cref="tandavaBreakPercent"/> is 0: the pilots win when the
+        /// swarm's body - whatever form it wears - is cut below this percent of that form's full body (Assets/_Scripts/
+        /// Controller/Arcade/TANDAVA.md). The match also ends when the pilots break the halo or the clock runs out (they
+        /// win) or the Antlion eats its last feast (they lose).</summary>
+        public const int DefaultTandavaBreakPercent = 35;
+
+        /// <summary>Tandava's halo used when <see cref="tandavaHaloRingsToBreak"/> is 0: the pilots win when they break
+        /// this many of the twelve halo rings round the Lord of the Dance before its drum stops (TANDAVA.md §3.6).</summary>
+        public const int DefaultTandavaHaloRingsToBreak = 9;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
@@ -353,6 +364,16 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (100).")]
         [Min(0)] public int broadsidePointsPerPilot = 100;
 
+        [Tooltip("Tandava: the pilots win when the swarm's body is cut below this PERCENT of its form's full body (it " +
+                 "shatters). They also win by breaking the halo or holding it off until the clock runs out, and lose if " +
+                 "the Antlion eats its last feast. 0 = default (35).")]
+        [Range(0, 100)] public int tandavaBreakPercent = 35;
+
+        [Tooltip("Tandava: halo rings (twelve round the Lord of the Dance) the pilots must break before its drum stops to " +
+                 "break the dance and win. Clamped to the halo's ring count. 0 = default (9).")]
+        [FormerlySerializedAs("tandavaFlamesToBreak")]
+        [Range(0, 12)] public int tandavaHaloRingsToBreak = 9;
+
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -387,6 +408,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tapestryRoundSecondsBuild = 150;
         [Min(0)] public int siroccoPrismTargetBuild = 600;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
+        [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
+        [FormerlySerializedAs("tandavaFlamesToBreakBuild")]
+        [Range(0, 12)] public int tandavaHaloRingsToBreakBuild = 9;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -692,6 +716,17 @@ namespace CosmicShore.ScriptableObjects
             Mathf.RoundToInt(GetBroadsidePointsPerPilot() *
                              (1f + BroadsideExtraPilotFraction * (Mathf.Max(1, teamSize) - 1)));
 
+        /// <summary>Tandava's shatter threshold in percent of the current form's full body: the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultTandavaBreakPercent"/>. Read server-side by TandavaController.</summary>
+        public int GetTandavaBreakPercent() =>
+            tandavaBreakPercent > 0 ? tandavaBreakPercent : DefaultTandavaBreakPercent;
+
+        /// <summary>Halo rings the pilots must break to break Tandava's dance: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultTandavaHaloRingsToBreak"/>. Read server-side by TandavaController, which clamps it to the halo
+        /// it built.</summary>
+        public int GetTandavaHaloRingsToBreak() =>
+            tandavaHaloRingsToBreak > 0 ? tandavaHaloRingsToBreak : DefaultTandavaHaloRingsToBreak;
+
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
@@ -737,6 +772,8 @@ namespace CosmicShore.ScriptableObjects
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
+                // A PERCENT of the final form's body, not a count: the readout shows the threshold.
+                GameModes.Tandava                   => GetTandavaBreakPercent(),
                 _                                   => 0,
             };
 
@@ -789,7 +826,9 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget == dustupPointTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
-            broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
+            broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
+            tandavaBreakPercent == tandavaBreakPercentBuild &&
+            tandavaHaloRingsToBreak == tandavaHaloRingsToBreakBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -825,6 +864,8 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
+            tandavaBreakPercent = tandavaBreakPercentBuild;
+            tandavaHaloRingsToBreak = tandavaHaloRingsToBreakBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -861,6 +902,8 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
+            tandavaBreakPercentBuild = tandavaBreakPercent;
+            tandavaHaloRingsToBreakBuild = tandavaHaloRingsToBreak;
         }
     }
 }

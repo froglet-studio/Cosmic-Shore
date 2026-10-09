@@ -205,6 +205,14 @@
    "track": null,
    "triangles": 20620
   },
+  "Tandava": {
+   "cell": "Tandava Cell Config",
+   "environment": null,
+   "prisms": 1458,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 40420
+  },
   "Tapestry": {
    "cell": "Barren Cell Config",
    "environment": null,

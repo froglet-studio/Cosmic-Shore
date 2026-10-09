@@ -1,0 +1,311 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4e318482672e4a9533d4a2ac8c4bc10, type: 3}
+  m_Name: TandavaSwarmFaunaConfig
+  m_EditorClassIdentifier:
+  Model: 2
+  MultiDomain: 0
+  LineageDrift: 0.01
+  ChargePlan: {fileID: 4900000, guid: 07dfea02463d653b53c1d4c2e33d628c, type: 3}
+  MassPlan: {fileID: 4900000, guid: b37e5df8f8e587075a45938a89048a3f, type: 3}
+  SpacePlan: {fileID: 4900000, guid: 337aaa14d97dd0a87399f1d0223ec939, type: 3}
+  TimePlan: {fileID: 4900000, guid: db839ccf55616a4c67e38f69d7927a62, type: 3}
+  ScriptedPlans:
+  - {fileID: 4900000, guid: a1589cf87057960e08782033a61d6c18, type: 3}
+  - {fileID: 4900000, guid: 301d28bdf8ed3927be1ba381f8f03922, type: 3}
+  - {fileID: 4900000, guid: 3c9d37a62195c1c0bcf81a132b0706cd, type: 3}
+  - {fileID: 4900000, guid: 2747ef3e7082b92fac6fdbe0130072d4, type: 3}
+  - {fileID: 4900000, guid: d67f14aa0408cb18f0ea4773519ae758, type: 3}
+  - {fileID: 4900000, guid: c4b3e9fbf9e3479add7322329d614783, type: 3}
+  - {fileID: 4900000, guid: 314522d1607a8f717520feabd865ab5c, type: 3}
+  - {fileID: 4900000, guid: 5ce6d4c6d56d8fda41d90d3040783f04, type: 3}
+  - {fileID: 4900000, guid: b88d05a349aafcbbe7217de93e679bc5, type: 3}
+  - {fileID: 4900000, guid: eea3b9f8deeabd006d7833c6e6136d9b, type: 3}
+  - {fileID: 4900000, guid: c5b180500399132b1df94c845c89c93b, type: 3}
+  - {fileID: 4900000, guid: 407c2b62295d6645550efcd1f027182a, type: 3}
+  - {fileID: 4900000, guid: 050cad9990435e94598da1bb61fd4edf, type: 3}
+  - {fileID: 4900000, guid: 6d7ac1fc6590dceb461fa96d7484adb5, type: 3}
+  - {fileID: 4900000, guid: ef90edc79a56709615df3d58518e7366, type: 3}
+  - {fileID: 4900000, guid: ef16320dbd960c290125375a8e7a0492, type: 3}
+  - {fileID: 4900000, guid: d58f0c0a90371cb3d226069556a09e80, type: 3}
+  - {fileID: 4900000, guid: f354376b1b4ac37a03590a9ddbb0f6d4, type: 3}
+  - {fileID: 4900000, guid: 3ebabf4d4830220d92ce34b6a36fc477, type: 3}
+  - {fileID: 4900000, guid: 0ba143aade06ad8002de4f9dd07a46f1, type: 3}
+  - {fileID: 4900000, guid: 826bc34d409ff5d08509dd61fb35aca3, type: 3}
+  - {fileID: 4900000, guid: 3536b54152a2c0b98d497b4c10def612, type: 3}
+  - {fileID: 4900000, guid: ab6be453d56c64666fd2ccbaca2d5f9a, type: 3}
+  - {fileID: 4900000, guid: affd3cc1b7dc21e9371c626076af1cf0, type: 3}
+  - {fileID: 4900000, guid: 8cd68d3db13e2100b9b5ae738967d016, type: 3}
+  - {fileID: 4900000, guid: 7d64bd9e9026a43742b6fc258c50e784, type: 3}
+  - {fileID: 4900000, guid: 61bc0f758e4970fa0709afff018851e0, type: 3}
+  - {fileID: 4900000, guid: 81323d968afc4e35fbe1f101496bf0d9, type: 3}
+  - {fileID: 4900000, guid: d1341091ed1f6a045c5c5093328ecb6f, type: 3}
+  - {fileID: 4900000, guid: 35d96503f3557eef4629d917ba1fde55, type: 3}
+  - {fileID: 4900000, guid: 0af71cd95bc87df145fcd9911d77f438, type: 3}
+  - {fileID: 4900000, guid: 1c89679fee9b1593c9d66f60ef0eef07, type: 3}
+  - {fileID: 4900000, guid: 3aefa21d5a31033198e9b9d6fc34ba6a, type: 3}
+  - {fileID: 4900000, guid: f13107ff0fcb678a7b2118e242e7a749, type: 3}
+  - {fileID: 4900000, guid: f108114d1a9196594db71eebd0ba30b2, type: 3}
+  - {fileID: 4900000, guid: 8b5f6a1499baeb9edf5f724e2ac6f2b8, type: 3}
+  - {fileID: 4900000, guid: e4dc8630cac7380b1515d95fb2209f65, type: 3}
+  - {fileID: 4900000, guid: ea132811d53ee96cce8f75161b9d1446, type: 3}
+  - {fileID: 4900000, guid: d779594b3a418b6f34302f2086da0047, type: 3}
+  - {fileID: 4900000, guid: 5dd8e9e5977af15fd7e4437a3a243c34, type: 3}
+  - {fileID: 4900000, guid: ca5cf5f999d5ca373b3e582ad0e6d651, type: 3}
+  - {fileID: 4900000, guid: 469fef5a3c862b5277c2c2c33d4de296, type: 3}
+  - {fileID: 4900000, guid: b31c910af4d07c675442eee71f44c4d0, type: 3}
+  - {fileID: 4900000, guid: 67f057b76085bdae34a46d44ec8275fc, type: 3}
+  - {fileID: 4900000, guid: 33b0a61f49f195da62703baf4a6c8bb3, type: 3}
+  - {fileID: 4900000, guid: d8ad7d41e805af55b86f4a3266b8beb3, type: 3}
+  - {fileID: 4900000, guid: e2bfe24d27c283ff9ba49bd03574f35d, type: 3}
+  - {fileID: 4900000, guid: 3970c26897543759522842bb6c6db567, type: 3}
+  - {fileID: 4900000, guid: cfe8addce06f49bf8056db5f142c3abb, type: 3}
+  - {fileID: 4900000, guid: 10908e19e7fcd9ed9ffe6effaa93df3c, type: 3}
+  - {fileID: 4900000, guid: c3ff6a514f76aa347a78e0ebc863b6cb, type: 3}
+  - {fileID: 4900000, guid: ade3fdf83001a5044fd4727d7eb641d3, type: 3}
+  - {fileID: 4900000, guid: 737e339c167e0f95d0e089c1726e894e, type: 3}
+  - {fileID: 4900000, guid: 7faac4d5f4ee58911ffb8c38da1eac91, type: 3}
+  - {fileID: 4900000, guid: d3073341c1141ff96a2fe8dee86ef487, type: 3}
+  ScriptedPlanPeriods:
+  - 6
+  - 40
+  - 12
+  - 12
+  - 12
+  - 6
+  - 40
+  - 12
+  - 12
+  - 12
+  - 6
+  - 40
+  - 12
+  - 12
+  - 12
+  - 6
+  - 40
+  - 12
+  - 12
+  - 12
+  - 6
+  - 6
+  - 6
+  - 40
+  - 12
+  - 12
+  - 12
+  - 6
+  - 6
+  - 6
+  - 40
+  - 12
+  - 12
+  - 12
+  - 6
+  - 6
+  - 40
+  - 40
+  - 40
+  - 12
+  - 40
+  - 12
+  - 12
+  - 12
+  - 40
+  - 12
+  - 12
+  - 12
+  - 40
+  - 12
+  - 12
+  - 6
+  - 40
+  - 6
+  - 6
+  ScriptedPlanWellClip:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 1
+  - 1
+  TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
+  UnitScale: 2
+  TickHz: 10
+  MaxStepsPerFrame: 3
+  SimBudgetMsPerFrame: 3
+  PlanDensity: 3
+  SimulateOffMainThread: 1
+  DrawMembersOnGpu: 1
+  MemberShader: {fileID: 4800000, guid: 887013231f4a269178623abc40fc1a02, type: 3}
+  Theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  EngageRadius: 160
+  MaxProxies: 155
+  ProxyLingerSeconds: 2
+  MaxHitMaterialisationsPerFrame: 48
+  UnifiedPrismBodies: 1
+  MacroLod: 0
+  SeedMembers: 180
+  BiteRadius: 10
+  BitersPerStep: 8
+  EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
+  CrossElementCost: 2
+  StomachEggs: 500
+  ForageBelow: 0.5
+  SatedAbove: 0.9
+  GiveUpSeconds: 10
+  PlantRestSeconds: 60
+  LayRate: 0.2
+  LayMax: 16
+  MaxSpawnsPerFrame: 24
+  KillLayHoldSeconds: 0
+  StarvationSeconds: 30
+  ShedIntervalSeconds: 0.25
+  ExtinctLingerSeconds: 10
+  Cruise: 3
+  TurnPerStep: 0.03
+  SortTurnCarry: 1
+  SortVMaxScale: 3
+  WanderReach: 300
+  VesselRadius: 9
+  SenseMargin: 400
+  DangerEnter: 0.45
+  DangerExit: 0.15
+  Bestiary: 1
+  HuntEnter: 0.2
+  LurkCalm: 0.05
+  LocustPhaseSeconds: 2
+  HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
+  PrismScale: 1
+  HeartPrismGap: 0.6
+  BirthBloomSeconds: 0.8
+  MoltHeartSeconds: 0.5
+  GridSize: 8
+  GridCell: 12
+  GridKClass: 10
+  GridKTotal: 1
+  GridPersist: 0.6
+  GridNoise: 0.05
+  GridLayChance: 0.1
+  GridCrossChance: 0.25
+  GridLayMaxPerStep: 3
+  GridKFine: 2
+  GridSigmaRel: 1.2
+  GridSigma: 3.5
+  GridMigrate: 1
+  GridFeedForward: 1.5
+  GridFramePeriod: {x: 8, y: 8, z: 8, w: 16}
+  GridPlanLock: 30
+  GridLossless: 1
+  GridMoltRate: 0.04
+  GridMoltSteps: 10
+  GridLayCap: 1
+  SortWellsPerType: 24
+  SortUnitsPerWell: 4
+  SortWellWidth: 0.89
+  SortWellGain: 0.412
+  SortWellClip: 1
+  SortSpacing: 2.25
+  SortRepulsion: 0.151
+  SortAdhesionRadius: 5.38
+  SortAdhesion: {x: -0.05, y: -0.0374, z: -0.027, w: -0.0637}
+  SortSwap: 0.709
+  SortSwapRadius: 3.63
+  SortInertia: 0.687
+  SortNoise: 0.1
+  SortFeedForward: 1
+  SortDwell: 12
+  SortLayRate: 0.084
+  SortLayMax: 8
+  SortCrossChance: 0.466
+  SortFillTolerance: 0.15
+  SortBodyFill: 0.939
+  SortMoltRate: 0.03
+  SortMoltSteps: 10
+  SortFramePeriod: {x: 8, y: 8, z: 8, w: 16}
+  SortWellDead: 0
+  SortWellDeadTime: 0
+  SortWander: 0.05
+  SortWanderTau: 12
+  SortUpdateFraction: 8
+  SortBudAtWound: 1
+  SortFateNear: 1
+  SortLayRampSeconds: 1.5
+  EvoRule: {fileID: 4900000, guid: 5e7a9fa52ba5247800582378f4795aa7, type: 3}
+  EvoPull: 2
+  EvoDeadZone: 1.5
+  EvoAdhesion: 0.35
+  EvoTimeSpeed: 0.7
+  EvoTimeDeadZone: 0.3
+  SwarmLoopEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  MorphEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

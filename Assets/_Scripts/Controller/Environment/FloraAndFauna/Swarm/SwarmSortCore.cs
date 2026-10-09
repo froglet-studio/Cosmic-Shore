@@ -136,9 +136,28 @@ namespace CosmicShore.Gameplay
         public float Noise = 0f;
         /// <summary>Steps per plan animation frame, indexed by research element (the dragonfly's wings: 16).</summary>
         public int[] Periods = { 8, 8, 8, 16 };
+        /// <summary>Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md): a DIRECTOR picks the body plan instead of the
+        /// census. <see cref="SwarmSortCore.Plans"/> is then an ordered list of forms (any length, each with its own
+        /// <see cref="SwarmPlanData.MajorElement"/>), the swarm hatches as the plan it is seeded with, and it changes plan
+        /// only when <see cref="SwarmSortCore.RequestPlan"/> asks - through the SAME commit as a majority switch (the
+        /// Switched event, stale fates, the region map re-picked, the lay ramp restarted). Killing the majority element
+        /// never re-plans a scripted swarm. False (every shipped config) = the majority rule, unchanged.</summary>
+        public bool Scripted = false;
+        /// <summary>Scripted only: steps per animation frame per PLAN index; a missing or non-positive entry falls back
+        /// to <see cref="Periods"/> of the plan's major element.</summary>
+        public int[] PlanPeriods;
+        /// <summary>Scripted only: per PLAN index, a multiple of <see cref="WellClip"/> - how hard a member may be pulled
+        /// toward its well in one step. A pose that must READ fast (the Tandava Antlion's jaws snapping shut) gets more;
+        /// a missing or non-positive entry is 1. Null (every census swarm) = unchanged.</summary>
+        public float[] PlanWellClip;
         /// <summary>Turn the code into the body's heading (swimming). False = the research's fixed frame.</summary>
         public bool Oriented = false;
         public float Cruise = 0f, Turn = 0.03f;
+        /// <summary>Tandava: the share (0..1) of each step's heading turn the MEMBERS ride rigidly about the body's centre,
+        /// as they already ride its swim. 0 (every shipped config) = members chase their turning wells at their own top
+        /// speed - a long body's tail, moving at turn x length, strings out behind a sharp turn. 1 = the body turns as one
+        /// piece, so a 300 u serpent can turn at a fleeing creature's rate and still read as itself.</summary>
+        public float TurnCarry = 0f;
         /// <summary>Within this many body radii of its swim target the body holds its heading and
         /// station-keeps (finding 13: a body must not chase its own centroid's jitter).</summary>
         public float AimHold = 1.5f;
@@ -355,9 +374,9 @@ namespace CosmicShore.Gameplay
         }
     }
 
-    public sealed class SwarmSortCore : ISwarmCore
+    public sealed class SwarmSortCore : ISwarmCore, IScriptedSwarmCore
     {
-        public readonly SwarmPlanData[] Plans;   // indexed by research element (0 Charge .. 3 Time)
+        public readonly SwarmPlanData[] Plans;   // indexed by research element (0 Charge .. 3 Time); a scripted swarm's forms in order
         public readonly SwarmSortParams C;
         public readonly int Cap;
 
@@ -382,9 +401,12 @@ namespace CosmicShore.Gameplay
         public readonly int[] RoleOfDom = { 0, -1, -1 };
 
         readonly Random _rng;
-        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _nLive;
+        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _nLive, _requested = -1;
         float _layU = 1f;   // round 11d: how far laying has eased back in after the last wound (0..1)
-        bool _permSet;
+        bool _permSet, _requestedPose;
+        // Tandava's levers (SetLevers); the defaults leave every other swarm exactly as authored
+        float _cruiseScale = 1f, _turnScale = 1f;
+        bool _holdLay;
         // per-step scratch (Step allocates nothing)
         readonly bool[] _live;
         readonly int[] _type, _wk, _liveIx;
@@ -440,6 +462,42 @@ namespace CosmicShore.Gameplay
 
         public SwarmPlanData Plan => Plans[Math.Max(0, PlanIx)];
         public SwarmSortCode Code => SwarmSortCode.For(Plan, C);
+        /// <summary>The current plan's major element - the element whose lead laying and molting protect. In the
+        /// majority mode the plans are indexed by element, so this IS <see cref="PlanIx"/>; a scripted form list
+        /// (<see cref="SwarmSortParams.Scripted"/>) can hold several plans of one element (the serpent's three sizes).</summary>
+        public int Major => Plans[Math.Max(0, PlanIx)].MajorElement;
+
+        /// <summary>Scripted plans (<see cref="SwarmSortParams.Scripted"/>): commit plan <paramref name="planIx"/> at the
+        /// start of the next step, through the same commit a majority switch takes. Ignored in the majority mode, for an
+        /// index outside <see cref="Plans"/>, and for the plan the swarm already wears. Call it on the thread that owns
+        /// the core (the worker, via <see cref="SwarmTickJob.RequestPlan"/>).</summary>
+        public void RequestPlan(int planIx)
+        {
+            if (!C.Scripted || planIx < 0 || planIx >= Plans.Length) return;
+            _requested = planIx; _requestedPose = false;
+        }
+
+        /// <summary>Scripted plans: commit plan <paramref name="planIx"/> as a pose of the current body (a feed twin)
+        /// - <see cref="RequestPlan"/>'s commit with the lay ease kept. Same thread rule and the same ignores.</summary>
+        public void RequestPose(int planIx)
+        {
+            if (!C.Scripted || planIx < 0 || planIx >= Plans.Length) return;
+            _requested = planIx; _requestedPose = true;
+        }
+
+        /// <summary>Tandava's levers (<see cref="IScriptedSwarmCore.SetLevers"/>). Scales are clamped to [0.05, 10];
+        /// a non-finite scale reads as 1. Works on any core, scripted or not; nothing but Tandava calls it.</summary>
+        public void SetLevers(float cruiseScale, float turnScale, bool holdLaying)
+        {
+            _cruiseScale = float.IsFinite(cruiseScale) ? Math.Clamp(cruiseScale, 0.05f, 10f) : 1f;
+            _turnScale = float.IsFinite(turnScale) ? Math.Clamp(turnScale, 0.05f, 10f) : 1f;
+            _holdLay = holdLaying;
+        }
+        /// <summary>The cruise and turn the body swims at this step: the config's, times the director's scale.</summary>
+        public float CruiseNow => C.Cruise * _cruiseScale;
+        public float TurnNow => C.Turn * _turnScale;
+        /// <summary>True while the director holds the body's laying (feeding).</summary>
+        public bool LayingHeld => _holdLay;
         int ISwarmCore.Cap => Cap;
         Vector3[] ISwarmCore.Pos => Pos;
         Vector3[] ISwarmCore.Vel => Vel;
@@ -454,6 +512,8 @@ namespace CosmicShore.Gameplay
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;
         int ISwarmCore.PlanIx => Math.Max(0, PlanIx);
+        bool IScriptedSwarmCore.Scripted => C.Scripted;
+        int IScriptedSwarmCore.PlanCount => Plans.Length;
         Vector3 ISwarmCore.Anchor => Anchor;
         Vector3 ISwarmCore.BX => BX;
         Vector3 ISwarmCore.BY => BY;
@@ -483,6 +543,31 @@ namespace CosmicShore.Gameplay
             _layU = MathF.Max(0f, _layU - 3f / Math.Max(1, _nLive));
             Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
             XferPlan[i] = -1;
+        }
+
+        /// <summary>Tandava's SEVERING (TANDAVA.md §3.11): member <paramref name="i"/> LEAVES this body - for another body of the
+        /// same creature (a severed piece, or a piece rejoining). Not a death and not a wound: the lay ease, the kill hold and
+        /// every count of the dead are untouched, because nothing died - the member is moving house (<see cref="Graft"/>
+        /// takes it in on the other side). Nothing but Tandava calls it.</summary>
+        public void Release(int i)
+        {
+            if (i < 0 || i >= Cap || !Active[i]) return;
+            Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
+            XferPlan[i] = -1;
+        }
+
+        /// <summary>Tandava's severing: take in a member another body of the same creature released (<see cref="Release"/>),
+        /// HATCHED, where it is, moving as it was. Not a birth: no egg is paid and no Laid event is raised. Returns its slot,
+        /// or -1 when the body is full.</summary>
+        public int Graft(Vector3 pos, Vector3 vel, Vector3 facing, int element, int domain = 0)
+        {
+            int j = -1;
+            for (int i = 0; i < Cap; i++) if (!Active[i]) { j = i; break; }
+            if (j < 0) return -1;
+            Pos[j] = pos; Vel[j] = vel; Wand[j] = Vector3.Zero; Facing[j] = facing.LengthSquared() > 1e-6f ? facing : Vector3.UnitZ;
+            Elem[j] = Math.Clamp(element, 0, 3); Dom[j] = domain; Active[j] = true; Hatched[j] = true; Age[j] = 0;
+            Startle[j] = 0; Molt[j] = 0; MoltTo[j] = 0; Fate[j] = 0; FKey[j] = 0; XferPlan[j] = -1; Energy[j] = 0f;
+            return j;
         }
 
         public bool TryGetLook(int i, int element, out Vector3 half, out int tier)
@@ -531,7 +616,9 @@ namespace CosmicShore.Gameplay
         // ──────────────────────────────────────────────────────────────── seeding
 
         /// <summary>The GAME's seed: <paramref name="count"/> hatched tadpoles at the plan's element mix
-        /// (every element present) in a small knot at <paramref name="anchor"/>; the body grows out of it.</summary>
+        /// (every element present) in a small knot at <paramref name="anchor"/>; the body grows out of it.
+        /// <paramref name="planElement"/> indexes <see cref="Plans"/> - the research element in the majority mode, the
+        /// FORM in a scripted one.</summary>
         public void Seed(int planElement, int count, Vector3 anchor, Vector3 heading)
         {
             var plan = Plans[planElement];
@@ -551,6 +638,7 @@ namespace CosmicShore.Gameplay
                 RoleOfDom[0] = r0; RoleOfDom[1] = RoleOfDom[2] = -1;
                 _permSet = true;
             }
+            if (C.Scripted) { PlanIx = planElement; _cand = planElement; _candN = 0; }   // Tandava: the form it was seeded as
             SetHeading(heading, snap: true);
             SwimTarget = anchor;
         }
@@ -633,18 +721,40 @@ namespace CosmicShore.Gameplay
             return Vector3.Dot(w, BX) * plan.SwimAxis + Vector3.Dot(w, BY) * plan.UpAxis + Vector3.Dot(w, BZ) * side;
         }
 
+        /// <summary><see cref="SwarmSortParams.TurnCarry"/>: every member (eggs too) rides the frame's turn from (ox, oy, oz)
+        /// to (BX, BY, BZ) about <paramref name="cen"/> - position, velocity and facing - by the carry share. The turn is
+        /// at most <see cref="SwarmSortParams.Turn"/> x the lever per step, so the linear blend of a partial carry stays
+        /// within a hair of the true rotation.</summary>
+        void CarryTurn(Vector3 cen, Vector3 ox, Vector3 oy, Vector3 oz)
+        {
+            float c = Math.Clamp(C.TurnCarry, 0f, 1f);
+            for (int i = 0; i < Cap; i++)
+            {
+                if (!Active[i]) continue;
+                var r = Pos[i] - cen;
+                Pos[i] = cen + r + c * (Turned(r, ox, oy, oz) - r);
+                Vel[i] += c * (Turned(Vel[i], ox, oy, oz) - Vel[i]);
+                var f = Facing[i] + c * (Turned(Facing[i], ox, oy, oz) - Facing[i]);
+                float fl = f.Length(); if (fl > 1e-4f) Facing[i] = f / fl;
+            }
+        }
+
+        Vector3 Turned(Vector3 v, Vector3 ox, Vector3 oy, Vector3 oz) =>
+            BX * Vector3.Dot(ox, v) + BY * Vector3.Dot(oy, v) + BZ * Vector3.Dot(oz, v);
+
         public void SetHeading(Vector3 h, bool snap = false)
         {
             float hl = h.Length(); if (hl < 1e-5f) return; h /= hl;
             if (!snap)
             {
                 float ang = MathF.Acos(Math.Clamp(Vector3.Dot(Heading, h), -1f, 1f));
-                if (ang > C.Turn)
+                float turn = TurnNow;
+                if (ang > turn)
                 {
                     var axis = Vector3.Cross(Heading, h); float al = axis.Length();
                     if (al < 1e-5f) axis = Math.Abs(Heading.Y) < 0.9f ? Vector3.Cross(Heading, Vector3.UnitY) : Vector3.Cross(Heading, Vector3.UnitX);
                     axis = Vector3.Normalize(axis);
-                    h = Vector3.Normalize(Vector3.Transform(Heading, Quaternion.CreateFromAxisAngle(axis, C.Turn)));
+                    h = Vector3.Normalize(Vector3.Transform(Heading, Quaternion.CreateFromAxisAngle(axis, turn)));
                 }
             }
             Heading = h;
@@ -656,6 +766,11 @@ namespace CosmicShore.Gameplay
         }
 
         int PeriodOf(int planIx) => C.Periods != null && planIx >= 0 && planIx < C.Periods.Length && C.Periods[planIx] > 0 ? C.Periods[planIx] : 8;
+
+        /// <summary>The current plan's steps per animation frame: a scripted form's own <see cref="SwarmSortParams.PlanPeriods"/>
+        /// entry, else its major element's <see cref="SwarmSortParams.Periods"/> (the majority mode: PlanIx IS that element).</summary>
+        int PeriodOfPlan() =>
+            C.PlanPeriods != null && PlanIx >= 0 && PlanIx < C.PlanPeriods.Length && C.PlanPeriods[PlanIx] > 0 ? C.PlanPeriods[PlanIx] : PeriodOf(Major);
 
         // ──────────────────────────────────────────────────────────────── step
 
@@ -692,12 +807,19 @@ namespace CosmicShore.Gameplay
             if (C.Oriented)
             {
                 var toT = SwimTarget - cen; float dT = toT.Length();
-                if (dT > C.AimHold * plan.Radius) SetHeading(toT / dT);
+                if (dT > C.AimHold * plan.Radius)
+                {
+                    Vector3 ox = BX, oy = BY, oz = BZ;
+                    SetHeading(toT / dT);
+                    if (C.TurnCarry > 0f && (BX != ox || BY != oy)) CarryTurn(cen, ox, oy, oz);
+                }
             }
-            float swell = 1f + C.Inflate[PlanIx] * ThreatLevel;
+            float swell = 1f + C.Inflate[Major] * ThreatLevel;
 
             // the code's frame (research: frame 0; game: the plan's animation, interpolated)
-            int fA = 0, fB = 0; float fa = 0f, per = PeriodOf(PlanIx);
+            float wellClip = C.WellClip * (C.PlanWellClip != null && PlanIx >= 0 && PlanIx < C.PlanWellClip.Length && C.PlanWellClip[PlanIx] > 0f
+                ? C.PlanWellClip[PlanIx] : 1f);
+            int fA = 0, fB = 0; float fa = 0f, per = PeriodOfPlan();
             if (C.Animate && plan.Order.Length > 0)
             {
                 int L = plan.Order.Length, slot = (int)(Clock / per);
@@ -754,7 +876,7 @@ namespace CosmicShore.Gameplay
             }
 
             // ── 5. own-well chemotaxis (the fated well's log-density gradient), orphans climb the whole body
-            float m0 = PlanIx == 3 && C.WellDeadTime >= 0f ? C.WellDeadTime : C.WellDead;
+            float m0 = Major == 3 && C.WellDeadTime >= 0f ? C.WellDeadTime : C.WellDead;
             for (int a = 0; a < nl; a++)
             {
                 int i = _liveIx[a], t = _type[i];
@@ -791,7 +913,7 @@ namespace CosmicShore.Gameplay
                 Energy[i] = E;
                 var step = -C.KWell * Rotate(g) / swell;
                 float sn = step.Length();
-                if (sn > C.WellClip) step *= C.WellClip / sn;
+                if (sn > wellClip) step *= wellClip / sn;
                 _grad[i] = step;
             }
 
@@ -884,7 +1006,7 @@ namespace CosmicShore.Gameplay
             if (C.Oriented && C.Cruise > 0f)
             {
                 var toT = SwimTarget - cen; float dT = toT.Length();
-                float pace = C.Cruise * Math.Clamp(dT / MathF.Max(1f, 1.5f * plan.Radius), 0f, 1f);
+                float pace = CruiseNow * Math.Clamp(dT / MathF.Max(1f, 1.5f * plan.Radius), 0f, 1f);
                 if (plan.SwimAxis.Y > 0.5f)   // the jellyfish jets in pulses
                     pace *= 0.4f + 0.6f * MathF.Max(0f, MathF.Sin(Clock * 2f * MathF.PI / (2f * per * 7f)));
                 Vector3 swim;
@@ -929,7 +1051,7 @@ namespace CosmicShore.Gameplay
             // ── 8. composition (paused while contested): the homeostat lays, surplus molts
             if (!contested)
             {
-                if (Clock >= _layHoldUntil) Lay(code);
+                if (Clock >= _layHoldUntil && !_holdLay) Lay(code);
                 if (C.Molt && (C.MoltWindow < 0 || Clock < _settleUntil)) MoltStep(code);
             }
 
@@ -1037,6 +1159,13 @@ namespace CosmicShore.Gameplay
         /// hold Dwell steps (contested meanwhile: no laying, no molting) before the swarm commits.</summary>
         bool DecidePlan()
         {
+            if (C.Scripted)
+            {
+                // Tandava: the director names the form; the census never does. Same commit as a majority switch.
+                if (_requested >= 0 && _requested != PlanIx) CommitPlan(_requested, _requestedPose);
+                _requested = -1; _requestedPose = false;
+                return false;
+            }
             Array.Clear(_cnt, 0, 4);
             for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) _cnt[EffectiveElement(i)]++;
             int cur = PlanIx, top = ArgMax(_cnt);
@@ -1045,11 +1174,20 @@ namespace CosmicShore.Gameplay
             _candN = _cand == maj ? _candN + 1 : 1;
             _cand = maj;
             if (_candN < C.Dwell) return true;
-            Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = cur, Other = maj });
-            PlanIx = maj; _candN = 0; _permSet = false; _layU = 0f;   // round 11d: a new body eases its laying in
+            CommitPlan(maj);
+            return false;
+        }
+
+        /// <summary>The one plan commit, whoever decided it (the majority's dwell, or a scripted director): every fate
+        /// goes stale through its key, the region map is re-picked, laying eases back in and the molt window opens. A
+        /// POSE commit (<see cref="RequestPose"/>: the same body re-arranged) keeps the lay ease where it was.</summary>
+        void CommitPlan(int to, bool pose = false)
+        {
+            Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = PlanIx, Other = to });
+            PlanIx = to; _candN = 0; _permSet = false;
+            if (!pose) _layU = 0f;   // round 11d: a new body eases its laying in
             if (C.MoltWindow >= 0) _settleUntil = Clock + C.MoltWindow;
             if (C.Oriented) SetHeading(Heading, snap: true);
-            return false;
         }
 
         static readonly int[][][] PERMS =
@@ -1274,7 +1412,7 @@ namespace CosmicShore.Gameplay
             if (nlay <= 0) return;
             Array.Clear(_ec, 0, 4);
             for (int i = 0; i < Cap; i++) if (Active[i]) _ec[EffectiveElement(i)]++;
-            int maj = PlanIx, laid = 0, freeFrom = 0, ns = Math.Clamp(code.NSlots, 1, 3);
+            int maj = Major, laid = 0, freeFrom = 0, ns = Math.Clamp(code.NSlots, 1, 3);
             bool lineages = C.DomainSlots && C.Lineages;
             // parents in random order (a partial Fisher-Yates over the hatched members)
             int np = 0; for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) _members[np++] = i;
@@ -1338,7 +1476,7 @@ namespace CosmicShore.Gameplay
             // roles are read BEFORE any transfer this step (sort_model computes them once)
             for (int q = 0; q < np; q++) _type[_members[q]] = EffRole(_members[q]);
             for (int q = np - 1; q > 0; q--) { int j = _rng.Next(q + 1); (_members[q], _members[j]) = (_members[j], _members[q]); }
-            int maj = PlanIx;
+            int maj = Major;
             bool lineages = C.DomainSlots && C.Lineages;
             for (int pq = 0; pq < np; pq++)
             {

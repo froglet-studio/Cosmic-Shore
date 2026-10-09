@@ -300,8 +300,16 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
         GrizzlyTime = 63,
 
+        // Tandava (64): an ARENA co-op chase (Squirrel / Sparrow / Rhino) - a tadpole swarm races down a long cell to
+        // the exit membrane, eating oases to take its next form (Serpent small -> medium -> large -> Bull); every pilot
+        // is on one domain and must wipe it out, starve it or break its final form before it escapes. The cell itself
+        // changes colour at each form. Swarm on the sort core's scripted-form mode, the route and the forms decided by
+        // TandavaDirectorCore. See _Scripts/Controller/Arcade/TANDAVA.md.
+        // Authored as 62 on claude/tandava-arena-mode; GrizzlyCharge held 62 on bleeding-edge - the seventh collision.
+        Tandava = 64,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 59) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 60) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

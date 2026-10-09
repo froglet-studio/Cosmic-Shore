@@ -156,6 +156,24 @@ namespace CosmicShore.UI
             gameObject.SetActive(true);
         }
 
+        /// <summary>
+        /// Show an objective whose value is a PROPORTION a mode words itself - a stage's progress ("62%") or a body's
+        /// health - with the hairline filled to <paramref name="fraction"/>. The row never punches on its own here (the
+        /// value is not a count); the mode says when something happened worth flaring for (<see cref="Punch"/>).
+        /// </summary>
+        public void ShowProgress(Sprite glyph, string title, string text, float fraction, GoalRank rank)
+        {
+            Apply(glyph, title, rank);
+            if (value) value.text = text ?? string.Empty;
+            SetFill(Mathf.Clamp01(fraction), rank, true);
+            _lastCount = -1;
+            gameObject.SetActive(true);
+        }
+
+        /// <summary>Flare the row's bloom now - the mode's own "look here" (a goal that changed what it IS, not how far
+        /// along it is: Tandava's new form).</summary>
+        public void Punch() => PunchGlow();
+
         public void Hide()
         {
             _lastCount = -1;          // a new turn starts from nothing, never from the old total

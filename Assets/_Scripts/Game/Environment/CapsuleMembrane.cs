@@ -121,6 +121,37 @@ namespace CosmicShore.Game
         // Noise sampling coordinates (one per capsule, derived from jittered position)
         Vector3[] noiseCoords;
 
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DullColorId = Shader.PropertyToID("_DullColor");
+        MaterialPropertyBlock _colourBlock;
+
+        /// <summary>The membrane's own colours as its material authors them (SpindleGraph's <c>_BrightColor</c> /
+        /// <c>_DullColor</c>) - what a mode's tint eases away from and back to. False without a material.</summary>
+        public bool TryGetMaterialColours(out Color bright, out Color dull)
+        {
+            bright = dull = Color.white;
+            if (!membraneMaterial) return false;
+            if (membraneMaterial.HasProperty(BrightColorId)) bright = membraneMaterial.GetColor(BrightColorId);
+            if (membraneMaterial.HasProperty(DullColorId)) dull = membraneMaterial.GetColor(DullColorId);
+            return true;
+        }
+
+        /// <summary>
+        /// Recolour THIS membrane's draw (a property block on its instanced draw) - never the material, which is
+        /// <c>SpindleMaterial</c>, shared with every spindle, worm segment and two fauna prefabs. A mode-side visual
+        /// (<see cref="CosmicShore.Gameplay.CellVisualTint"/>); the membrane's boundary and gameplay are untouched.
+        /// </summary>
+        public void SetColourOverride(Color bright, Color dull)
+        {
+            _colourBlock ??= new MaterialPropertyBlock();
+            _colourBlock.SetColor(BrightColorId, bright);
+            _colourBlock.SetColor(DullColorId, dull);
+            renderParams.matProps = _colourBlock;
+        }
+
+        /// <summary>Back to the material's own colours.</summary>
+        public void ClearColourOverride() => renderParams.matProps = null;
+
         /// <summary>The baked preset currently assigned, if any. Used by the editor bake tooling.</summary>
         public CapsuleMembraneAnimationSO AnimationPreset => animationPreset;
 

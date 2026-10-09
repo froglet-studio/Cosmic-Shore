@@ -186,6 +186,26 @@ namespace CosmicShore.Data
         // only when the domain fields a WINGMAN to reload - the mode's reason to play together.
         SalvoWingReload = 136,
 
+        // Tandava - the cell's NARRATOR (authored as 128-138; moved to 137-147 at the bleeding-edge merge, where
+        // the domain race beats, Astro League and Salvo had taken 128-136). {0} = the line (authored in TandavaSettings and sent as an index, so every
+        // peer reads its own copy); the hint takes no args.
+        TandavaMatchStart = 137,        // the hunt begins: {0} = TandavaSettings.StartLine
+        TandavaFormTaken = 138,         // the swarm took a new form: {0} = that form's line, naming the variant drawn
+        TandavaCompleted = 139,         // the Antlion ate its last feast - the swarm won: {0} = CompletedLine
+        TandavaBroken = 140,            // the pilots won: {0} = WonLine, DanceBrokenLine or HeldOffLine
+        TandavaFeeding = 141,           // its first meal - its guards are out, strike the body: {0} = FeedingLine
+        TandavaDenyHint = 142,          // idle hint: break its meals - hit the body while it eats
+        TandavaMealBroken = 143,        // the pilots hurt it at the table and it bolted: {0} = MealBrokenLine
+        TandavaRising = 144,            // banked, it rises into the Lord of the Dance where it stands: {0} = RisingLine
+        TandavaHaloLit = 145,           // the halo lit and the drum started: {0} = HaloLitLine
+        TandavaHaloBroken = 146,        // the first halo ring, and the last-but-one, broken: {0} = the line
+        TandavaLunge = 147,             // the creature turned on a pilot (its first lunges): {0} = LungeLine
+        TandavaSevered = 148,           // a cut parted the body and the piece crawled off: {0} = SeveredLine
+        TandavaRejoined = 149,          // the severed piece got home and grafted back on: {0} = RejoinedLine
+        TandavaSuccession = 150,        // the body was cut away and the piece took its form: {0} = SuccessionLine
+        TandavaLearned = 151,           // a wound taught it something (once per wound): {0} = that wound's Learned line
+        TandavaChimera = 152,           // on its way up it became the whale-jelly chimera: {0} = ChimeraLine
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

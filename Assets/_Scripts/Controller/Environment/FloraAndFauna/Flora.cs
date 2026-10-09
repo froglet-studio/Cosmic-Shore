@@ -67,6 +67,10 @@ namespace CosmicShore.Gameplay
             set => leafSize = value;
         }
 
+        /// <summary>One leaf prism's volume - what a grazer's single bite of this plant is worth. A forager weighing
+        /// plants of different species reads this (Tandava's director: TandavaController.SurveyFood).</summary>
+        public float LeafVolume => Mathf.Abs(leafSize.x * leafSize.y * leafSize.z);
+
         public abstract void Grow();
         public abstract void Plant();
 

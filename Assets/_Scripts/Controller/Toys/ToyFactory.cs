@@ -341,6 +341,10 @@ namespace CosmicShore.Gameplay
             if (signal == ToySwitchSignal.Next)
                 return PrismShaderMaterial(CtaLime(theme),
                                            theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
+            // HALO likewise: the pearl, minted on the prism shader once and cached by colour.
+            if (signal == ToySwitchSignal.Halo)
+                return PrismShaderMaterial(HaloPearl,
+                                           theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
 
             var painted = SwitchDomain(signal, domain);
             // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
@@ -354,9 +358,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
         public static Color SwitchColor(ThemeManagerDataContainerSO theme, ToySwitchSignal signal, Domains domain)
-            => signal == ToySwitchSignal.Next
-                ? CtaLime(theme)
-                : DomainAccentColor(theme, SwitchDomain(signal, domain));
+            => signal switch
+            {
+                ToySwitchSignal.Next => CtaLime(theme),
+                ToySwitchSignal.Halo => HaloPearl,
+                _ => DomainAccentColor(theme, SwitchDomain(signal, domain)),
+            };
+
+        /// <summary>
+        /// A HALO switch's pearl: a warm white, fixed rather than themed - a halo is light, and the one colour no playable
+        /// domain, no danger rim and no free pickup wears (ToySwitchVocabularyTests keeps it over 0.5 summed channel
+        /// distance from each of them, Gold's accent the nearest at ~0.9).
+        /// </summary>
+        public static readonly Color HaloPearl = new(0.96f, 0.94f, 0.86f);
 
         /// <summary>
         /// The free-pickup LIME - the platform's "this one is available to you" colour, taken from

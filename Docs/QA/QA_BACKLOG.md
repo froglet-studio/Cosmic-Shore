@@ -2897,6 +2897,30 @@ species are alive after 10 minutes. **FAIL:** a shapeless cloud of fish · harri
 fish or a cruising harrier · a burn the instant a harrier starts its burst · fish or harriers outside the pond · the
 shoal or the harriers die out · proxies or colliders over budget.
 
+### QA-TANDAVA-SEVER-1 ⬜ — Tandava: cut the boss in two, and watch it learn
+
+**Source:** branch `claude/tandava-severing` (draft PR into bleeding-edge). Only the headless harness has run
+(`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`, T1-T31). Reference:
+`Assets/_Scripts/Controller/Arcade/TANDAVA.md` §3.11-3.13; full steps QA-TANDAVA-21, -22 and -23 in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Why it matters:** this is the "boss you can't kill the same way twice" idea. It only lands if a clean cut visibly
+makes a second creature, and if the boss visibly changes after being hurt the same way.
+
+1. **Open Tandava** from the Arena screen (mode 64). Fly one fast pass through the Great Serpent a third of the way
+   from its tail. The tail must swim off as its own small swarm, and a goal row "The Severed - home in 0:40" appears.
+2. **Let it come home:** it feeds, the row turns "crawling home", and it merges back into the body.
+3. **Sever it again:** the second clock starts shorter (~0:24) and the narrator says it remembers being cut in two.
+4. **Strike it at the table every meal:** after the first, it says it remembers, then eats farther from you and bolts
+   sooner. Striking only at meals should stop winning; also chasing it when it bolts should still win.
+5. **Kill the body while the Severed lives:** the Severed becomes the boss and regrows.
+6. **Let the Many-Headed Serpent rise:** first it becomes the Whale-Jelly Chimera for ~24 s, turning between a jelly-
+   shelled whale and a striped whale every ~6 s ("Turning - it cannot heal"), then it rises into the Dance.
+
+**PASS:** a second creature from a clean cut; it comes home or takes over; each lesson is said once and changes how it
+plays; the chimera reads as a whale/jelly mix and turns smoothly. **FAIL:** members pop or vanish at the cut; a piece
+from a tail nibble; a repeated lesson; an unbeatable boss; the chimera is a blob or never rises.
+
 ### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
 
 **Source:** branch `overnight/balance`. Only the headless showcase harness (`Tools/Build/showcase_cell_harness/run.sh all`,

@@ -61,7 +61,7 @@ SCRIPT_DIR = A("_Scripts", "Controller", "Environment", "FloraAndFauna", "Swarm"
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 TADPOLE_SRC = os.path.join(PREFAB_DIR, "TadPoleFauna.prefab")
 
-SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmEvoFateCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
+SCRIPTS = ["ISwarmCore", "ISwarmDirector", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmEvoFateCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
            "SwarmTadpoleFauna", "SwarmTickJob", "SwarmMemberRenderer"]
 # round 7: the GPU member shader (Docs/SWARM_FAUNA.md §14) and the palette its members wear
 GRAPHS_DIR = A("_Graphics", "Materials", "Graphs")

@@ -56,5 +56,21 @@ namespace CosmicShore.Data
         /// domain's colour and never can be.</para>
         /// </summary>
         Next = 2,
+
+        /// <summary>
+        /// <i>This switch is a HALO ring: thread it to break it.</i> Painted a fixed PEARL (<c>ToyFactory.HaloPearl</c>) on
+        /// the prism shader - the light of a halo, and the one colour no playable domain, no danger rim and no free pickup
+        /// wears, so a pilot cannot mistake it for any other verb (ToySwitchVocabularyTests holds every pair apart).
+        ///
+        /// <para>Describes the switch, not the viewer, so it reads the same on every screen. Its one wearer is Tandava's
+        /// halo (TandavaHaloRing): twelve rings round the Lord of the Dance that the pilots break by threading them. A ring
+        /// its attendants are guarding does not change colour - its drawn ring dims SMALLER while the crossing test is off,
+        /// so the ring never advertises a mouth that is not open (the switch law, read in the strict direction).</para>
+        ///
+        /// <para>No domain claim: <c>ToyFactory.SwitchDomain</c> keeps it on <c>Domains.Blue</c>, and the reservation is
+        /// untouched. (It was <c>Flame</c>, a danger-red ring of fire, until the prompter took fire out of the mode: the
+        /// value is kept so nothing serialized against it moves.)</para>
+        /// </summary>
+        Halo = 3,
     }
 }

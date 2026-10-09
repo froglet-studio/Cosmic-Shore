@@ -70,6 +70,13 @@ namespace CosmicShore.Gameplay
         public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
+
+        /// <summary>The cell's own spawned VISUALS, for a mode-side effect that changes how they LOOK and nothing else
+        /// (<see cref="CellVisualTint"/>). Null until <c>SpawnVisuals</c> has run, or when the config has none. The
+        /// boundary, the nucleus control radius and every gameplay read stay the cell's own.</summary>
+        public CapsuleMembrane MembraneVisual => membrane ? membrane.GetComponentInChildren<CapsuleMembrane>() : null;
+        public GameObject NucleusVisual => nucleus;
+        public SnowChanger CytoplasmVisual => spawnedCytoplasm;
         GameObject environment;   // config-authored structural environment (lives/dies with the cell)
 
         // Optional target WORLD radius for the nucleus, requested by a mode (e.g. Astro League uses

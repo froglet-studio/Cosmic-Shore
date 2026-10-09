@@ -46,6 +46,22 @@ namespace CosmicShore.Gameplay
         [Tooltip("The Space plan - the jellyfish.")] public TextAsset SpacePlan;
         [Tooltip("The Time plan - the dragonfly.")] public TextAsset TimePlan;
 
+        [Header("Scripted forms (Tandava - Assets/_Scripts/Controller/Arcade/TANDAVA.md)")]
+        [Tooltip("Empty (every shipped swarm): the swarm grows the body plan of its MAJORITY element from the four plans " +
+                 "above. Non-empty: a DIRECTOR (ISwarmDirector) names the swarm's form from this ordered list instead - " +
+                 "it hatches as entry 0 and changes form only when the director asks (SwarmFauna.RequestForm), through " +
+                 "the same commit a majority morph takes. Killing the majority never re-forms a scripted swarm. Sort " +
+                 "model only. Baked by Tools/Build/tandava_plans.py, authored by Tools/Build/author_tandava_assets.py.")]
+        public TextAsset[] ScriptedPlans = System.Array.Empty<TextAsset>();
+        [Tooltip("Steps per animation frame for each scripted form (same order). Missing or 0 = the form's major " +
+                 "element's SortFramePeriod.")]
+        public int[] ScriptedPlanPeriods = System.Array.Empty<int>();
+        [Tooltip("How hard each scripted form's members may be pulled toward their wells, as a multiple of SortWellClip " +
+                 "(same order). Missing or 0 = 1. More makes a pose READ fast - the Tandava Antlion's jaws snapping shut.")]
+        public float[] ScriptedPlanWellClip = System.Array.Empty<float>();
+        /// <summary>True when a director, not the census, names this swarm's form.</summary>
+        public bool HasScriptedPlans => ScriptedPlans is { Length: > 0 };
+
         [Header("Member")]
         [Tooltip("The tadpole every member is: a heart, a spindle and one body prism. Must carry NO " +
                  "NetworkObject - swarm members are client-local (Docs/PartySystem/BUGS.md B16).")]
@@ -172,6 +188,15 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float Cruise = 0.35f;
         [Tooltip("Max heading turn in radians per step.")]
         [Min(0.001f)] public float TurnPerStep = 0.03f;
+        [Tooltip("SORT model: the share (0..1) of each step's heading turn the members ride rigidly about the body's " +
+                 "centre, as they already ride its swim. 0 (every shipped swarm) = members chase their turning wells at " +
+                 "their own top speed, so a long body's tail strings out behind a sharp turn. Tandava's forms are 300 u " +
+                 "long and turn at a fleeing creature's rate: 1 keeps the animal readable through the turn.")]
+        [Range(0f, 1f)] public float SortTurnCarry = 0f;
+        [Tooltip("SORT model: x each element's top member speed (SwarmSortParams.VMax, 0.8 voxels/step - Time 2). It is " +
+                 "what paces a re-sort: a member crossing a 300 u body to its new well moves at most this fast. 1 (every " +
+                 "shipped swarm) = the research's speeds. Tandava's form changes read in about a second at 3.")]
+        [Min(0.1f)] public float SortVMaxScale = 1f;
         [Tooltip("World units: a swarm with nothing to eat in sight wanders to a fresh point in its " +
                  "band at least this far away.")]
         [Min(0f)] public float WanderReach = 300f;

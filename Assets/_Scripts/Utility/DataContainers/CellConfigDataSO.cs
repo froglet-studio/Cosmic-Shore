@@ -17,6 +17,11 @@ namespace CosmicShore.Utility
         [Header("Visual Properties")] public GameObject MembranePrefab;
         public GameObject NucleusPrefab;
         public SnowChanger CytoplasmPrefab;
+        [Tooltip("Spacing of this cell's cytoplasm motes, in world units. 0 = the cytoplasm prefab's own " +
+                 "(SnowChanger.shardDistance, 120 - sized for the standard 1,200 u cell). The mote count grows as " +
+                 "the CUBE of the membrane radius over this, so a 3,600 u cell at 120 builds ~113,000 mote " +
+                 "GameObjects; at 360 it builds ~4,200. Raise it for a big arena (Tandava).")]
+        [Min(0)] public int CytoplasmShardDistance = 0;
         
         [Header("Mechanical Properties")]
         public List<CellModifier> CellModifiers = new();
