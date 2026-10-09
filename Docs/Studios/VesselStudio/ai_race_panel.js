@@ -13,6 +13,8 @@
  *                                                                            // studio yet (the string says why)
  *     levelNote: 'What Easy / Medium / Hard mean here, and where the numbers come from.',
  *     onChange: (key, value, state) => { ... },                              // after every user change
+ *     sceneHost: element,   // optional: Course, Camera and Speed go here, the studio's Scene Config tab (D21);
+ *                           // without it they stay in the panel
  *   });
  *   panel.state;              // a copy of the current state
  *   panel.set('camera', 'Free', true);   // set from code (true = do not call onChange)
@@ -99,6 +101,9 @@
     if (sup.rivals !== true) state.rivals = seats.map(function () { return 'Off'; });
 
     var root = el('div', 'arp'); root.setAttribute('data-arp', '');
+    // D21: Course, Camera and Speed describe the scene, so a studio can show them in its Scene Config tab
+    var sceneRoot = cfg.sceneHost ? el('div', 'arp') : root;
+    if (cfg.sceneHost) sceneRoot.setAttribute('data-arp-scene', '');
     var groups = {};
     function seg(key, label, values, text, opts) {
       opts = opts || {};
@@ -131,7 +136,7 @@
     seg('course', 'Course', courses.map(function (c) { return c.v; }), function (val) {
       for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return (courses[i].label || String(val)) + (courses[i].note ? ' \u00b7 ' + courses[i].note : '');
       return String(val);
-    }, { tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
+    }, { into: sceneRoot, tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
     seg('you', 'Your hull', ['You'].concat(LEVELS), function (val) { return val === 'You' ? 'You fly' : 'AI ' + val; },
       { level: function (val) { return val === 'You' ? null : val; } });
     // one row per AI rival seat, each with its own level (D20)
@@ -144,13 +149,14 @@
         onPick: function (val) { var arr = state.rivals.slice(); arr[k] = val; set('rivals', arr); }
       });
     });
-    seg('camera', 'Camera', CAMERAS, String, { tip: function (val) { return CAMERA_TIPS[val]; } });
-    seg('speed', 'Speed', SPEEDS, function (val) { return val + '\u00d7'; });
+    seg('camera', 'Camera', CAMERAS, String, { into: sceneRoot, tip: function (val) { return CAMERA_TIPS[val]; } });
+    seg('speed', 'Speed', SPEEDS, function (val) { return val + '\u00d7'; }, { into: sceneRoot });
     check('thinking', 'Show AI thinking', sup.thinking);
     check('autoRestart', 'Restart each race on its own', sup.autoRestart);
     if (cfg.levelNote) root.appendChild(el('p', 'arp-note', cfg.levelNote));
 
     host.textContent = ''; host.appendChild(root);
+    if (cfg.sceneHost) { cfg.sceneHost.textContent = ''; cfg.sceneHost.appendChild(sceneRoot); }
 
     function sync() {
       function press(box, val) {   // select the option and colour the dropdown by its level

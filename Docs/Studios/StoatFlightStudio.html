@@ -345,6 +345,8 @@
         <p class="src" id="portalSrc"></p>
       </div>
 
+      <details class="card" id="grp-scene" open><summary>Scene <small>course, camera, speed</small></summary>
+        <div id="scenePanel"></div></details>
       <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
         <div id="racePanel"></div>
         <div hidden>
@@ -3967,6 +3969,7 @@
   const levelOfNoise = (n) => n >= 0.6 ? 'Easy' : n >= 0.2 ? 'Medium' : 'Hard';
   const fire = (id, prop, v) => { const e = $(id); e[prop] = v; e.dispatchEvent(new Event('change')); };
   var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
+    sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
     courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
     value: { course: intensity, you: aiOn ? levelOfNoise(BP.aiNoise) : 'You', rivals: [], camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat },
     supports: { rivals: 'Single-pilot studio: the Stoat races the clock (Slingshot), so there are no AI rivals yet.', thinking: true, autoRestart: true },
@@ -3982,6 +3985,7 @@
       else if (key === 'autoRestart') aiRepeat = v;
     },
   }) : null;
+  if (racePanelRef) $('intensitySeg').hidden = true;   // the panel's Course dropdown is the one course picker in Scene Config (D21)
   $('batchBtn').addEventListener('click', () => {
     $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
     setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
@@ -4192,13 +4196,15 @@
   // Like an engine editor: the stage fills the middle, every settings group is a tab in the right dock, the records sit
   // in tabs under the stage, and any tab pops out (⧉) into a floating mini window you can drag, resize and dock back.
   // The scorecard opens as its own window. Splitters resize the docks. All of it is remembered in this browser.
-  const IDE_KEY = 'stoat-studio-ide';
-  const ide = Object.assign({ R: 'sling', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
+  const IDE_KEY = 'stoat-studio-ide-v2';
+  const ide = Object.assign({ R: 'scene', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
-    R: [['sling', 'Sling', ['mainCard', 'grp-sling', 'grp-A', 'grp-B']], ['dipole', 'Dipole', ['grp-D']], ['field', 'Field', ['grp-F']], ['ai', 'Sim lab', ['grp-ai']], ['styles', 'Styles', ['grp-style']],
-      ['bh', 'Black hole', ['grp-BH']], ['wh', 'White hole', ['grp-WH']], ['life', 'Life', ['grp-pair', 'grp-life']], ['course', 'Course', ['grp-flight']], ['lope', 'Lope', ['grp-lope']], ['archive', 'Archive', ['archive']]],
-    B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['controls', 'Controls', ['keysSec']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
+    // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['ai', 'AI Config', ['grp-ai']],
+      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-F', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
+      ['others', 'Others', ['grp-BH', 'grp-WH', 'grp-pair', 'grp-life', 'grp-lope', 'archive']]],
+    B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
   let winZ = 60;

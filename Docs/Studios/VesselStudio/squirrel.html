@@ -211,7 +211,12 @@
 
     <aside>
       <div class="panel lab">
-        <h3>Race <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
+        <h3>Scene <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
+        <div id="scenePanel"></div>
+      </div>
+
+      <div class="panel lab">
+        <h3>AI race</h3>
         <div id="racePanel"></div>
         <p class="note">Easy and Medium are the Hard pilot plus the game's deliberate mistakes (<code>SkimRaceDifficulty.asset</code>): Easy notices a new crystal 0.5 s late on average and misjudges 9.9% of crystals; Medium 0.25 s and 4.5%.</p>
       </div>
@@ -237,6 +242,17 @@
       <div class="panel">
         <h3>Ability row</h3>
         <div class="abilities" id="abilities"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Controls</h3>
+        <div class="keys">
+          <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
+          <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
+          <span>Free cam</span><span>drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
+          <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera</span>
+          <span>Phone</span><span>Play on phone: two thumb sticks, LT / RT handles</span>
+        </div>
       </div>
 
       <div class="panel">
@@ -774,6 +790,7 @@
   const raceKey = { course: 'course', you: 'you', rivals: 'ai', camera: 'cam', speed: 'speed', thinking: 'thinking', autoRestart: 'autoRestart' };
   const REBUILD = { course: 1, you: 1, rivals: 1 };
   const racePanel = StudioRacePanel.mount($('racePanel'), {
+    sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
     courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: COURSE_INFO[v] })),
     seats: [1, 2, 3].map((k) => ({ name: DOMAINS[k].name, color: DOMAINS[k].css })),
     value: { course: S.course, you: S.you, rivals: S.ai, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
@@ -905,9 +922,11 @@
   // drag, resize and dock back; splitters resize the docks; the page never scrolls (below 900 px the docks stack).
   const panelBy = (title) => [...document.querySelectorAll('aside .panel')].find((p) => { const h = p.querySelector('h3') || p.querySelector('summary'); return h && h.textContent.trim().startsWith(title); });
   const IDE = VesselStudioIDE.build({
-    key: 'squirrel-studio-ide', host: document.querySelector('.layout'), stage: $('viewport'),
-    right: [['race', 'Race', [panelBy('Race'), document.querySelector('.afternote')]], ['type', 'Type', [panelBy('Play-style type'), panelBy('Drift feel')]],
-      ['elements', 'Elements', [panelBy('Element levels')]], ['abilities', 'Abilities', [panelBy('Ability row')]], ['live', 'Live numbers', [panelBy('Live numbers')]]],
+    // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
+    key: 'squirrel-studio-ide-v2', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['scene', 'Scene Config', [panelBy('Scene')]], ['ai', 'AI Config', [panelBy('AI race'), document.querySelector('.afternote')]],
+      ['style', 'Play Style Config', [panelBy('Play-style type'), panelBy('Element levels')]], ['input', 'Input', [panelBy('Controls'), panelBy('Drift feel')]],
+      ['others', 'Others', [panelBy('Ability row'), panelBy('Live numbers')]]],
     bottom: [['score', 'Scorecard', [panelBy('Scorecard')]], ['runs', 'Runs', [panelBy('Runs')]], ['about', 'About', [document.querySelector('header .sub'), panelBy('Where the numbers')]]],
     railW: 380, dockH: 230, winSize: { score: [760, 340], runs: [640, 360] },
     onLayout: () => { lastW = lastH = 0; },
