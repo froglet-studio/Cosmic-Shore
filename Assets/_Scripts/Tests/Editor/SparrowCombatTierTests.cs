@@ -44,9 +44,15 @@ namespace CosmicShore.Tests
         const string SkyBurstProjectileContainer =
             "Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/" +
             "SparrowSkyBurstProjectileImpactContainer.asset";
-        const string SkyBurstExplosionContainer =
+        // The 20-point blast lives on the DESTRUCTIVE blast both rockets spawn (AOEExplosion),
+        // not on the heavy rocket's cairn (AOEConicSkyBurst / SkyBurstExplosionImpactorDataContainer):
+        // 89c8a53c "both rockets pay the blast" moved it when the base rocket lost its cairn.
+        const string SkyBurstBlastContainer =
             "Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/" +
-            "SkyBurstExplosionImpactorDataContainer.asset";
+            "SkyBurstBlastExplosionImpactorDataContainer.asset";
+        const string BlastPrefab = "Assets/_Prefabs/Projectile/AOEExplosion.prefab";
+        const string SkyBurstDetonation =
+            "Assets/_SO_Assets/Effects/Projectile Mine Effects/SkyBurstProjectileExplodeMine.asset";
         const string WarheadExplosionContainer =
             "Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/" +
             "MissileWarheadExplosionImpactorDataContainer.asset";
@@ -121,8 +127,14 @@ namespace CosmicShore.Tests
         {
             StringAssert.Contains(Guid(DirectEffect), Read(SkyBurstProjectileContainer),
                                   "a direct rocket strike would never score");
-            StringAssert.Contains(Guid(BlastEffect), Read(SkyBurstExplosionContainer),
+            StringAssert.Contains(Guid(BlastEffect), Read(SkyBurstBlastContainer),
                                   "a rocket's prism blast would never score");
+            StringAssert.Contains(Guid(SkyBurstBlastContainer), Read(BlastPrefab),
+                                  "the blast container is not on the blast both rockets spawn");
+            StringAssert.Contains(Guid(BlastPrefab), Read(SkyBurstDetonation),
+                                  "a skyburst detonation no longer spawns the scoring blast");
+            StringAssert.Contains(Guid(SkyBurstDetonation), Read(SkyBurstProjectileContainer),
+                                  "the skyburst round no longer detonates into that blast");
             StringAssert.Contains(Guid(ShockwaveEffect), Read(WarheadExplosionContainer),
                                   "the shockwave - the ORDINARY outcome of a proximity kill - " +
                                   "would never score");
@@ -442,15 +454,23 @@ namespace CosmicShore.Tests
 
         #region The missile charge economy and its gauge
 
+        // The 2026-09 ask doubled the prisms per rocket from 25 to 50. 62f1f1c9 then split the
+        // bay into two rockets: the HEAVY (turret stance, `stationaryAmmoCost`) kept that price,
+        // and the new BASE rocket (`ammoCost`) is half of it - four cheap or two heavy per tank
+        // (SPARROW_SKYBURST_BAY.md, "25 prisms per base rocket, 50 per heavy one").
         [Test]
-        public void FiftyHostilePrismsBuyOneRocket()
+        public void FiftyHostilePrismsBuyOneHeavyRocket_TwentyFiveABaseOne()
         {
+            string action = Read(SkyBurstAction);
             float perPrism = Field(Read(SparrowVessel), "ammoPerPrism");
-            float cost = Field(Read(SkyBurstAction), "ammoCost");
+            float heavy = Field(action, "stationaryAmmoCost");
+            float baseCost = Field(action, "ammoCost");
 
             Assert.Greater(perPrism, 0f, "0 disables the rearm entirely");
-            Assert.AreEqual(50f, cost / perPrism, 0.5f,
-                            "the ask was to DOUBLE the prisms per rocket (was 25)");
+            Assert.AreEqual(50f, heavy / perPrism, 0.5f,
+                            "the ask was to DOUBLE the prisms per (heavy) rocket (was 25)");
+            Assert.AreEqual(25f, baseCost / perPrism, 0.5f,
+                            "the base rocket is half the heavy one's price");
         }
 
         // The gauge is what the pilot reads that number off. It is bound on the CHARGE card
