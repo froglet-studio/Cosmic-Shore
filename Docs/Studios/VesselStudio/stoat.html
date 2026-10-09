@@ -116,6 +116,7 @@
   details.card > summary::-webkit-details-marker { display: none; }
   details.card > summary::after { content: "+"; color: var(--dim); }
   details.card[open] > summary::after { content: "–"; }
+  details.card.nested { margin: 8px 0 0; padding: 8px 10px; background: var(--panel-2, rgba(255,255,255,0.03)); }
   details.card > summary small { font-family: var(--font-body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); font-size: 0.78rem; }
   .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .stylebtn { text-align: left; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; font-family: var(--font-body); display: flex; flex-direction: column; gap: 2px; }
@@ -4202,11 +4203,12 @@
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
     // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['ai', 'AI Config', ['grp-ai']],
-      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-F', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
-      ['others', 'Others', ['grp-BH', 'grp-WH', 'grp-pair', 'grp-life', 'grp-lope', 'archive']]],
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F']], ['ai', 'AI Config', ['grp-ai']],
+      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
+      ['others', 'Others', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
+  const NESTED_IN = { F: ['grp-BH', 'grp-WH', 'grp-pair', 'grp-life'] };   // the user, 2026-10-09: black hole, white hole, pair life, birth & annihilation live inside Field trajectory
   const TAB = {};   // key -> { dock, title, btn, pane, win }
   let winZ = 60;
   function buildDocks() {
@@ -4219,6 +4221,8 @@
     const docks = { R: rail, B: document.createElement('div') };
     const els = { scoreWrap: sw };   // take every piece first: the rail is emptied below and some pieces live in it
     for (const d of ['R', 'B']) for (const [, , ids] of DOCK_TABS[d]) for (const id of ids) if (!els[id]) els[id] = $(id);
+    // The pair's own physics are subdivisions of the Field trajectory (Scene Config): each folds on its own (D22)
+    for (const id of NESTED_IN.F) { const el = $(id), host = els['grp-F']; if (!el || !host) continue; el.classList.add('nested'); if (window.VesselStudioIDE) VesselStudioIDE.collapsible(el, 'stoat-studio'); host.appendChild(el); }
     docks.B.className = 'dock'; docks.B.id = 'dockB'; docks.B.setAttribute('aria-label', 'Records');
     rail.classList.add('dock'); rail.id = 'dockR';
     for (const d of ['R', 'B']) {
