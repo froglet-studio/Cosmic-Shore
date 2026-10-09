@@ -1,5 +1,11 @@
 # STOAT — the slingshot vessel (prototype, 2026-10-08)
 
+> **SUPERSEDED ON THE TRIGGERS, 2026-10-09.** The Stoat now flies the round-15 **field dipole** and
+> **pathfinder** — `STOAT_DIPOLE.md`. LT/RT are bound to `StoatDipoleLeft/RightAction`; the orbit sling
+> below keeps its code, assets and `StoatSlingExecutor` on the prefab, unbound and inert, so rebinding
+> `StoatSlingLeft/RightAction` restores it. The hull, the stop on X, the class and the registration
+> described here are unchanged.
+
 > **Naming.** Player-facing, the Stoat lays **WORMHOLES**: an **attractor** (pulls) and a
 > **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's
 > types (`BlackHole`, `HolePolarity.Sink` = attractor, `.Source` = repulsor — the names `cece/charming-cerf-alf1j1`

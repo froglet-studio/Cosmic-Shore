@@ -133,6 +133,8 @@ against `window.__stoatStudio`. Its hooks:
 | 2026-10-09 | Rounds 12–14: AI sim lab and scorecard, momentum carry, platform detection, course ladder, editor layout with pop-out windows |
 | 2026-10-09 | `vessel-studio` merged; the game made to compile in Prisma; OPEN IN PRISMA and PLAY IN ENGINE |
 | 2026-10-09 | `Ys-bleeding-edge` (247 commits) and `bleeding-edge` (7) merged; this handoff |
+| 2026-10-09 | `/vessel-studio` skill and the Sync panel (Refresh, merge then delete, shared decisions; a Claude session does the git work as jobs) |
+| 2026-10-09 | `cece/magical-carson-9bdq8z` merged: Stoat studio round 15 (the field trajectory), its Unity port (`R_VesselActions/STOAT_DIPOLE.md`: field dipole on Space, pathfinder on Time) and the **Warpline** mode (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`). Their lab lessons are `L-STU-20`…`24` (renumbered from 15–19, which this branch had already used) |
 
 Commit messages carry the detail: `git log --oneline origin/bleeding-edge..HEAD`.
 

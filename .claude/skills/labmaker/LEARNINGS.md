@@ -46,6 +46,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: this branch's ship commit.
 - Promoted: §9
 
+### L-GEN-4 — Two batch calls in one page cannot see a load-time `Math.random`; reload and compare
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the Stoat's prism field (2,400 homes) was placed with `Math.random` at load. Every scorecard column was reproducible except "prisms pulled per sling", which differed per page load (Balanced 984.1 against 986.3). `verify_lab`'s determinism check called `runBatch()` twice in one page, so both calls saw the same random field and it passed for 14 rounds. It was found by comparing the round-14 file's batch with round 15's across two loads.
+- Do instead: seed everything a batch can read, scene setup included (`mulberry32(20261009)` for the field). `verify_lab` now opens a second, fresh page and requires the same `runBatch()` rows. Its `--self-test` plants a load-time salt that must be named, and a copy of the Stoat with the old `Math.random` fails the check.
+- Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
+- Promoted: §3
+
 ---
 
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
@@ -223,6 +230,47 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `.claude/skills/vessel-studio/` (SKILL.md §4-§6, `build_artifact.py --self-test`);
   `Docs/Studios/VesselStudio/SYNC_PANEL.md`.
 - Promoted: yes, into the `/vessel-studio` skill
+
+### L-STU-20 — Draw a predicted path on the HUD, after the lens, or the black hole bends and doubles it
+- Lab: Stoat Flight Studio, round 15 (field trajectory) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the first trajectory line was a `THREE.Line` in the scene. The lens post-pass bent it like any light, so near the pair it showed up twice, once on each side of the hole (the same thin-lens map that doubles the stars). That reads as two trajectories. A prediction is information, not light.
+- Do instead: project the points with the camera and stroke them on the 2D HUD canvas after the post-pass. That is also thicker than WebGL's 1 px lines.
+- Evidence: `drawFieldPath` (HUD); screenshots before and after in the round-15 session.
+- Promoted: §8
+
+### L-STU-21 — Check a predicted path against the flight it predicts; three bugs hid in "the line looks right"
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: a parity probe laid a pair, set the hull on a looping heading, flew it with no input and measured each flown point's distance to the drawn path. It found three bugs:
+  - the prediction held the engine at its current speed while the engine was still spooling up;
+  - it STARTED the path 8 u ahead of the nose instead of flying from the hull and DRAWING from 8 u ahead (near a hole, a path 8 u further on is a different path);
+  - it tested the horizon every 3 u, so a 3 u horizon slipped between two points while the flight's 4 ms step fell in.
+
+  After the fixes, paths clear of the horizon agree to 1.7–3.1 u. Whirls that graze the horizon still diverge by 11–78 u, and the shipped 4 ms integrator diverges as much, so that part is the chaotic orbit, not a bug.
+- Do instead: share one step function between the flight and the prediction, and run the parity probe before trusting the colours. Also run it with the prediction forced onto the flight's own step: when that diverges just as much, the divergence is the system, not the integrator.
+- Evidence: `fieldSubstep` / `fieldPath` (`stepBy` checks the horizon every substep; the pre-roll to `ftNose`); `Pv.ftExact`; README round 15 "Checked".
+- Promoted: no
+
+### L-STU-22 — A reward computed from a prediction that includes the reward can cancel itself
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the field trajectory boosts you 3× while the predicted path loops. Flown at the boosted speed (the literal request), the boost straightens the loop that earned it within about 2 frames. The lime flickered: lime 3.8% of the race against 14% with the path at engine speed, with the most loop onsets per minute (37.8). The same literal rule also made a held turn alone a permanent 3×, because a full-stick circle (about 180 u) is shorter than the 600 u path.
+- Do instead: when a mechanic's trigger reads state the mechanic changes, measure it both ways (here `ftBoostInPath` 0/1) and put a pure-input control row in the scorecard ("steering only, not in path" must equal No sling). Leave the reading to the designer as **Decision needed**.
+- Evidence: README round 15 field scorecard and "Decision needed".
+- Promoted: no
+- Superseded (same day): the designer chose a boost that cannot touch the path (L-STU-23), so the 0/1 row is gone.
+
+### L-STU-23 — To make a boost that never changes the predicted path, warp the vessel's own clock
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the designer wanted the field trajectory's 3× to move the Stoat along the drawn path sooner without bending it, so the line "always shows where you go if you hold your inputs". Adding speed changes a field path, because the bend per unit length is acceleration over speed squared. Running the hull's whole flight (steering, engine spool, momentum fade, field substeps) at `ftMul` × the clock (`kdt` in `stepFly`) keeps the curve and only reparametrises time. The race clock, the pair's life and the squeeze stay on real time. Measured: a looping heading flown with no input at boost 1 and boost 3 stays 4.5 u and 3.6 u from the drawn loop, and the boosted run is 2.9× quicker. Outside the mode the warp is 1, and the dipole scorecard stays byte-identical.
+- Do instead: when a reward must not change what a prediction shows, scale the time the prediction is parametrised by, not a state the prediction reads. Then prove it with the same heading flown at both settings against the drawn path.
+- Evidence: `stepFly` (`inField`, `warp`, `kdt`); `stepFieldFlight(kdt, dt)`; README round 15 "Checked".
+- Promoted: no
+
+### L-STU-24 — A prediction past a teleport is only as good as the exit's sensitivity; measure where the flight leaves the line
+- Lab: Stoat Flight Studio, round 15 (dipole field) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
+- Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
+- Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
 
 ---
 

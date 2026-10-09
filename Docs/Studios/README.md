@@ -10,7 +10,7 @@ named after it, and when the asset changes the page must follow (or say on scree
 | Studio | Live page (decision log on) | Repo copy |
 |---|---|---|
 | **Vessel Studio** (hub: Squirrel Studio v1 + Stoat) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `VesselStudio/` |
-| Stoat Flight Studio | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc | `StoatFlightStudio.html` |
+| Stoat Flight Studio (round 15) | https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt (new artifact, its own decision log; rounds 1–14 and their log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) | `StoatFlightStudio.html` |
 
 **Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
 
@@ -18,6 +18,180 @@ named after it, and when the asset changes the page must follow (or say on scree
 
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
+
+## Stoat Flight Studio (round 15 — the field trajectory)
+
+Live: https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt. This is a new artifact, published 2026-10-09. The round-14
+artifact is outside this login's organization, so this one starts its own decision log.
+
+**Sling tab ▸ Field trajectory** (settings in the **Field** tab) is a second way to fly the pair, beside the dipole
+sling. Everything in it is **lab-only**: the game has no such mode, and every `ft*` row is a proposal, not a shipped
+number. The round went through four of your directions in one day; the current design is below. Superseded designs are
+under **History**.
+
+### How it plays now
+
+- **The pair is a dipole of fixed poles.**
+  - The black hole has strength `ftStrength` (6) and horizon `ftHorizon` (3.5 u).
+  - The white hole pushes `ftWhite` × as hard (1, so equal and opposite).
+  - The pull is GM/(r − r<sub>s</sub>)² (Paczyński–Wiita, as on the prisms). The push is softened over twice the white
+    hole's horizon. Both are capped at the Dipole tab's force ceiling and fastest bend.
+- **The two triggers place the poles, and their separation is the dipole moment.** Squeezing either trigger opens
+  the pair `ftAhead` (250 u) in front of you, with the poles together, in the frame you had at that moment. Then, on
+  the squeeze curve:
+  - **the difference (RT − LT) sets the sideways separation**, up to `ftSepMax` (200 u) for one full trigger, with the
+    black hole on the deeper trigger's side;
+  - **the sum ((LT + RT) / 2) sets the lengthways separation**, up to `ftSepLong` (120 u) with both triggers full. The
+    black hole (the sink) is always the nearer and the white hole (the source) the further, so you shoot into the sink
+    and out of the source.
+  - One full trigger gives 200 u sideways and 60 u lengthways: the slight diagonal (17°). Both full put the black hole
+    dead ahead and the white hole 120 u beyond it on the same line.
+  - The poles follow at `ftSepFollow` /s. Ease off and they come back together; let go of both and they meet and
+    annihilate.
+  - So there is only ever one pair: the other trigger joins it instead of laying a second.
+- **The line** is drawn as **evenly spaced dots**: `ftDotPx` (4 px) across, with `ftDotGap` (10) dot-widths of space
+  between two dots, measured along the line as you see it. Each dot has a dark edge so it does not read as a star. It
+  is your path on your current inputs: throttle, and the steering you hold × `ftSteer`. It runs with the
+  flight's own step from the hull, is drawn from `ftNose` ahead of the nose, and runs `ftLength` (600 u). It is drawn on
+  the HUD after the lens, so the black hole does not bend or double it. Heading into the black hole, it follows you out
+  of the white hole, with a ring where you go in and a double ring where you come out. It stops where it would loop
+  back onto itself.
+- **Lime means the poles warp your path at all.** Either the field turns the path by `ftWarpDeg` (3°) in total, or the
+  path goes through the wormhole. Otherwise the line is blue-grey. Loops no longer decide the boost, so steering alone
+  never boosts.
+- **The boost moves you along the path; it does not change it.**
+  - While the line is lime, the hull's own flight runs at `ftBoost` (3) × the clock: steering, engine spool, momentum
+    fade and the field. This is `kdt` in `stepFly`.
+  - So you reach each point of the drawn line sooner, and the line always shows where you go if you hold your inputs.
+  - The race clock, the pair and the squeeze stay on real time.
+- **In this mode the Stoat pitches and yaws at `ftTurnScale` (0.4) × its shipped rate** (48°/s against the prefab's
+  120°/s). The pair does more of the turning, and the line moves less with the stick. Roll is unchanged.
+
+### Heading scan
+
+Each cell is the share of 121 headings, within ±60° of the pair's centre, that the poles warp. The band they fall in
+and how many go through the wormhole are in brackets. All cells use straight flight at cruise with no steering.
+
+| LT / RT (poles apart) | from 150 u | from 300 u | from 500 u |
+|---|---|---|---|
+| 0 / 0.5 (74 u) | 100% (26 through) | 98% (−60°…57°; 15) | 59% (−38°…32°; 9) |
+| 0 / 1 (209 u) | 100% (15) | 100% (8) | 92% (−60°…50°; 5) |
+| 0.5 / 0.5 (42 u, all lengthways) | 100% (25) | 85% (−51°…51°; 13) | 44% (−26°…26°; 7) |
+| 1 / 1 (120 u, all lengthways) | 100% (25) | 100% (11) | 79% (−47°…47°; 5) |
+| 0.5 / 1 (153 u) | 100% (19) | 100% (11) | 85% (−60°…42°; 6) |
+
+- **Controls:** no pair 0%, and the pair beyond the path's reach (920 u) 0%.
+- **Poles together** (both triggers 0, before they annihilate): 29%. The pull and the softened push do not cancel exactly
+  near the centre.
+- **Threshold** (`ftWarpDeg`, measured before the two-trigger placement, at half of one trigger): at 1°, 112/121 headings boost from 500 u and 16 from 800 u. At 3°
+  (default) it is 68 and 0. At 10° it is 40 and 0. "Warped at all" means nearly every heading within about 300 u boosts.
+
+### Field scorecard
+
+The run is **Score the field**:
+- skilled AI at squeezes 0.5 and 1;
+- rookie at sloppiness 0.8, three seeds;
+- course seed 7, intensity 2;
+- 11.1 s headless.
+
+In the field the AI squeezes a pair open on the side of the turn for its give-up time (3.5 s), lets go and flies for
+the ring. It never aims at the pair.
+
+| | circuit 2 laps | hairpins 2 laps | avg speed | top | time lime | lime onsets / min | rookie |
+|---|---|---|---|---|---|---|---|
+| No sling | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
+| Dipole · Balanced | 1:44.3 | 1:50.7 | 81 | 160 | 0% | 0 | 1:38.4 |
+| Field · no pair (control) | 2:14.7 | 1:33.6 | 51 | 60 | 0% | 0 | — |
+| **Field · pairs** | **1:07.5** | **0:45.4** | 149 | 777 | 48% | 13.7 | **1:09.3** |
+| Field · pairs, steering not in path | 1:23.2 | 0:44.5 | 115 | 752 | 47% | 13.7 | 1:15.8 |
+| Field · pairs, full pitch & yaw | 0:51.3 | 0:38.0 | 154 | 797 | 43% | 23.7 | 1:02.1 |
+
+The AI holds one trigger, so it flies the diagonal placement. It never uses both triggers to line the poles up ahead.
+
+- **The control reads 0% lime, as it must:** steering alone cannot warp the path. It is slower than No sling only
+  because the field mode turns at 0.4 ×.
+- **With the boost tied to any warp, the field is now the fastest way round by a wide margin.** It is 37 s quicker than
+  the dipole on the circuit, the AI is boosted about half of every race, and the rookie finishes within 2 s of the
+  skilled pilot.
+- **Top speeds of about 770 u/s** are the warp in a deep pass: 3 × (cruise + up to 240 u/s of gravity speed).
+
+### Decision needed (designer)
+
+1. **How much warp is "at all"?** At the 3° default, nearly any heading within about 300 u of an open pair boosts, and a
+   pilot who holds a trigger is boosted about half the race. Raising `ftWarpDeg` (10° roughly halves the band from
+   300 u) makes the boost something you aim for again.
+2. **Poles together still bend near the centre** (29% of headings at trigger 0). With `ftWhite` at 1 the far field
+   cancels, but the softened push and the steeper pull do not cancel close in. Say whether the poles should cancel
+   exactly when together.
+
+**Decided** this round:
+- through the wormhole is lime;
+- the boost moves you along the path and never bends it;
+- the boost comes from any warp by either pole, not from loops;
+- the poles are fixed, and the triggers set their separation: the difference sideways, the sum lengthways, the sink always nearer;
+- the path line is evenly spaced dots, ten dot-widths apart.
+
+### Checked (headless Chromium, SwiftShader)
+
+- **Decision log not read this round.** The round-14 artifact belongs to an organization outside this login, so
+  `ArtifactData` was refused. The new artifact's log (collection `decisions`) reads back empty.
+- **Verifier.** `verify_lab.cjs` passes on `StoatFlightStudio.html` and on the hub copy `VesselStudio/stoat.html`. Its
+  `--self-test` passes all six planted defects, including the new reload check (L-GEN-4).
+- **Labmaker contract.** The page is now on it: `window.__lab` (= `__stoatStudio`) exposes `SHIPPED`, `SPEC`, `reset`,
+  `state`, `score`, and a no-argument `runBatch` (L-STU-14).
+- **Layout.** Both round-14 faults are fixed: the 12 px clip at 1600 × 900, and the header's 103 px sideways scroll on
+  an iPhone 13 (L-STU-13).
+- **The five-style dipole scorecard is byte-identical** to before the field mode's flight changes. It was re-checked
+  after each change: the time warp, the turn scale and the dipole pair. The only change from round 14 is the seeded
+  prisms column (see Found).
+- **The pair's placement and life,** in the pair's own frame (right, forward), on keys (half squeeze):
+  - RT alone: black hole at (+35, −11), white hole at (−35, +11);
+  - RT + LT: black hole at (0, −21), white hole at (0, +21), so the black hole is dead ahead and the white hole beyond;
+  - LT alone: mirrored, black hole at (−35, −11);
+  - one pair throughout; let go of both and the poles meet, and the pair annihilates within 1.5 s.
+- **Dots.** Checked on a screenshot crop: round, evenly spaced, with about ten dot-widths between them, and readable
+  against the stars once they had a dark edge.
+- **The boost leaves the path alone.** I ran up with no boost, set the hull on a curved heading near the pair, then
+  flew it with no input twice, at `ftBoost` 1 and 3:
+  - both stay within 1.6 u of the drawn path;
+  - the boosted run covers it in 1.08 s against 3.10 s (2.9×).
+- **Through the wormhole.** The flight follows the drawn line within about 1.5 u up to the black hole, and comes out
+  within 1 u of the drawn exit.
+  - After the exit it drifts off the line drawn before the pass, by up to 76 u over the following 330 u of flight.
+  - The cause: you come out inside the white hole's softened push. A 1 u difference in where you enter turns into
+    about 13° of heading on the way out.
+  - Running the prediction on the flight's own 4 ms step does not remove it (63 u). It is the same at boost 1 and 3,
+    so the boost is not the cause.
+  - The line is recomputed every frame, so what you see is always from where you are.
+- **Prediction against flight, earlier in the round.** Three bugs were found and fixed:
+  - the path ignored the engine still spooling up;
+  - it was started 8 u ahead instead of drawn from 8 u ahead;
+  - it checked the horizon only every 3 u, so a small horizon slipped between two points.
+- **Tooltips.** All 22 Field-tab sliders have an illustrated tooltip, and none of the 44 previews is blank. There are no
+  console errors.
+
+### Found
+
+- **The prisms column was never reproducible across page loads**: the prism field was placed with `Math.random`. It is
+  now seeded (`mulberry32(20261009)`), so the column moves slightly from round 14 (Balanced 984 → 987) and then stays
+  fixed. Every other scorecard column was already deterministic.
+- **The studio's white hole lens matches the game's** (corrected 2026-10-09 — an earlier version of this note said
+  it bent the wrong way, which was a misreading). Both apply the black hole's converging bend to a HORIZON white hole:
+  the game's `BlackHoleLens` traces every horizon hole with polarity +1, the converging trace "kept over the merge's
+  diverging source", and only a smooth well (the crystal style) is traced differently. So the doubled image round the
+  white hole is the game's too.
+- **Coming out of the wormhole is sensitive** (above). Exiting inside the white hole's push core turns small entry
+  differences into large heading changes. A wider exit gap (`whExitGap`, now 1.05 horizons inside a push softened over
+  2 horizons) would calm it. That is a pair-wide setting, so it is not changed here.
+
+### History (superseded, measured at the time)
+
+- **Loop boost.** The first design boosted only when the path looped back onto itself. A held full turn alone was lime
+  100% of the time.
+- **Engine × 3.** The first boost multiplied the engine speed. Flown at the boosted speed, it straightened its own
+  loop within about 2 frames.
+- **Strength by squeeze.** The squeeze used to set the pair's strength, and the pair stood 10 s.
+- **The time warp** replaced the engine × 3, and the dipole pair replaced the 10 s pair.
 
 ## Vessel Studio in Prisma (2026-10-09, after round 14)
 

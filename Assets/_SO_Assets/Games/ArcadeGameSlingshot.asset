@@ -15,10 +15,11 @@ MonoBehaviour:
   Mode: 64
   IsMultiplayer: 1
   DisplayName: Slingshot
-  Description: Stoats only. You cruise slow - the speed is in the fall. Squeeze LT or RT
-    and let go to throw a wormhole pair across yourself, attractor on that side, repulsor
-    on the other; the harder the squeeze, the bigger the pull. Every sling drags you off
-    your line, so lay it where the pull will put you through the next ring. Two laps.
+  Description: Stoats only. You cruise slow and turn wide - your poles do the steering.
+    Squeeze LT and RT to hold a black hole and a white hole open ahead of you - the
+    difference pulls them apart sideways, the sum lengthways - and the field bends your
+    path round the corner. Dive into the black hole and you come out of the white one.
+    Eight rings, two laps.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5d2280c8f0184379a10183130f23c2b2, type: 3}

@@ -683,6 +683,9 @@ CAMERAS = {
     # Slingshot is the fifth gate circuit: the Stoat's smaller octagon (base 600) - shot from the
     # opposite side to Grizzly Time and a little closer, so the two cards never read as one.
     "Slingshot": (305, 30, 0.9, 42),
+    # Warpline is Slingshot's circle cut into five long legs: shot from between the two Stoat cards'
+    # angles so the pentagon does not read as Slingshot's octagon.
+    "Warpline": (215, 36, 0.9, 42),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -736,7 +739,7 @@ def recipe(stem, card_path, pal, ends):
         node["intensity"] = INTENSITY
         layers.append(node)
         nucleus()
-    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Breakwater"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "Breakwater"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -757,12 +760,14 @@ def recipe(stem, card_path, pal, ends):
                 key = {"GrizzlyTime": "grizzlyTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
                 target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
-            layers.append({"kind": s.lower(), "intensity": INTENSITY, "seed": stable_seed(s),
-                           "path": True, "settings": settings, "tube": 0.14,
+            # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
+            layers.append({"kind": {"Warpline": "slingshot"}.get(s, s.lower()), "intensity": INTENSITY,
+                           "seed": stable_seed(s), "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
                                      "Redline": [1.5, 0.25, 0.35],
                                      "GrizzlyTime": [0.95, 0.45, 1.5],
-                                     "Slingshot": [0.35, 1.5, 0.95]}[s]})
+                                     "Slingshot": [0.35, 1.5, 0.95],
+                                     "Warpline": [0.62, 1.0, 0.18]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
@@ -931,7 +936,7 @@ def recipe(stem, card_path, pal, ends):
     elif s == "SkimRace":
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
-    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Waystation"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "Waystation"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)

@@ -28,6 +28,13 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
     start, the Squirrel's icons as placeholders) and its entry in SO_Classlist_All / _Classes.
     and one entry each in `Assets/_SO_Assets/Vessel Prefab Container.asset` and
     `Assets/DefaultNetworkPrefabs.asset`, the two lists that make a hull spawnable.
+    STAGE 4 (idempotent, runs on the committed prefab): the round-15 FIELD DIPOLE and PATHFINDER
+    (`R_VesselActions/STOAT_DIPOLE.md`) - LT/RT rebound to StoatDipoleLeft/RightAction (X keeps the
+    hold), StoatDipoleExecutor + StoatPathfinderExecutor on the ShipActions object and in the
+    registry, both wired to StoatDipoleConfig, the base turn rates x0.4 (the studio's ftTurnScale:
+    the hull leans on its poles to turn), and the dipole's config / action assets and every new
+    script's .meta (deterministic guids). StoatSlingExecutor stays on the prefab, unbound and inert,
+    so rebinding the round-4 sling assets restores it.
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md, "a spent one-shot must
 stand down, not abort"). Squirrel.prefab moves on; re-cloning it would silently re-author the
@@ -96,6 +103,34 @@ SLING_RIGHT = "012d65baf31c49c496d38975eba8c0be"
 HOLD = "9b50ea11259b4b1aa750eea7f1d7f781"
 STATIONARY_MODE_CHANGED = "0b48e834efdbe654ca3c7df60370ea3f"
 ON_MINIGAME_TURN_END = "498a06d44bde9184f985c938c803b2a1"
+
+# Stage 4: the round-15 field dipole + pathfinder (R_VesselActions/STOAT_DIPOLE.md).
+DIPOLE_EXECUTOR_ID = "5137264980012345603"
+PATHFINDER_EXECUTOR_ID = "5137264980012345604"
+TRANSFORMER_ID = "7686683633640807837"       # the hull's VesselTransformer
+# The studio's ftTurnScale 0.4 on the shipped rates: the hull turns less on its own and more on its poles.
+TURN_RATES = (("PitchScaler", "120", "48"), ("YawScaler", "120", "48"), ("RollScaler", "130", "52"))
+SCRIPTS = os.path.join(ROOT, "Assets", "_Scripts")
+VESSEL_ACTIONS_SRC = os.path.join(SCRIPTS, "Controller", "Vessel", "R_VesselActions")
+DIPOLE_SCRIPTS = (   # (path, guid): every script the dipole added, its .meta authored here
+    (os.path.join(VESSEL_ACTIONS_SRC, "Executors", "StoatDipoleExecutor.cs"), "6eee000b02734120a5138fb645997915"),
+    (os.path.join(VESSEL_ACTIONS_SRC, "Executors", "StoatPathfinderExecutor.cs"), "ec03f8093b534dfe98ec25e13f18c576"),
+    (os.path.join(VESSEL_ACTIONS_SRC, "Data Containers", "StoatDipoleConfigSO.cs"), "84eb4c6b05a348e193602462d620198f"),
+    (os.path.join(VESSEL_ACTIONS_SRC, "Data Containers", "StoatDipoleActionSO.cs"), "46100aa2bb8e43e8ae09952119374c52"),
+    (os.path.join(VESSEL_ACTIONS_SRC, "StoatPathfinderDots.cs"), "f8c8092f5de744138b2c2782cdb62136"),
+    (os.path.join(VESSEL_ACTIONS_SRC, "StoatDipoleMath.cs"), "980f20f428aa4a30bf2bfd6ec5cec481"),
+    (os.path.join(SCRIPTS, "Controller", "Environment", "BlackHole", "BlackHoleCrystalStrip.cs"), "f3deff9bd0464aab8296b8cc73d51678"),
+    (os.path.join(SCRIPTS, "Tests", "Editor", "StoatDipoleTests.cs"), "4eef6292b78740038ccfc2d2507bc3ba"),
+)
+DIPOLE_DOC = os.path.join(VESSEL_ACTIONS_SRC, "STOAT_DIPOLE.md")
+DIPOLE_DOC_GUID = "6623b604f5b54f83be76d9e2c44677cc"
+DIPOLE_EXECUTOR_SCRIPT = DIPOLE_SCRIPTS[0][1]
+PATHFINDER_EXECUTOR_SCRIPT = DIPOLE_SCRIPTS[1][1]
+DIPOLE_CONFIG_SCRIPT = DIPOLE_SCRIPTS[2][1]
+DIPOLE_ACTION_SCRIPT = DIPOLE_SCRIPTS[3][1]
+DIPOLE_CONFIG = "c6ae04d75c934a21aae1b3607d52cb84"
+DIPOLE_LEFT = "9eacf723b796418caecfe237336b9985"
+DIPOLE_RIGHT = "62ce60a32bef4c70b42fd1f7cd9896ff"
 
 
 # ----------------------------------------------------------------------------- Netcode's hash
@@ -188,15 +223,16 @@ def executor_blocks(prism_controller_id: str) -> str:
 
 
 def bindings() -> str:
+    """The SHIPPED bindings (stage 4): LT/RT the dipole's two triggers, X the hold."""
     return (
         "  _touchActionOverrides: []\n"
         "  _gamepadActionOverrides:\n"
         "  - InputEvent: 2\n"
         "    ShipActions:\n"
-        f"    - {{fileID: 11400000, guid: {SLING_LEFT}, type: 2}}\n"
+        f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n"
         "  - InputEvent: 1\n"
         "    ShipActions:\n"
-        f"    - {{fileID: 11400000, guid: {SLING_RIGHT}, type: 2}}\n"
+        f"    - {{fileID: 11400000, guid: {DIPOLE_RIGHT}, type: 2}}\n"
         "  - InputEvent: 6\n"
         "    ShipActions:\n"
         f"    - {{fileID: 11400000, guid: {HOLD}, type: 2}}\n"
@@ -502,6 +538,202 @@ def register_network(text: str) -> str:
 
 
 # ----------------------------------------------------------------------------- the checks
+# ----------------------------------------------------------------------------- stage 4: the dipole
+def num(v: float) -> str:
+    """A float the way Unity's YAML writes it (7 significant digits, integers bare)."""
+    return str(int(v)) if float(v).is_integer() else ("%.7g" % v)
+
+
+def color(r: float, g: float, b: float, a: float = 1.0) -> str:
+    return f"{{r: {num(r)}, g: {num(g)}, b: {num(b)}, a: {num(a)}}}"
+
+
+def elemental(value, lo, hi, element, floor) -> str:
+    return ("    Enabled: 1\n"
+            f"    Value: {num(value)}\n"
+            f"    Min: {num(lo)}\n"
+            f"    Max: {num(hi)}\n"
+            f"    element: {element}\n"
+            "    UseFloor: 1\n"
+            f"    Floor: {num(floor)}\n")
+
+
+def empty_event(name: str) -> str:
+    return (f"  {name}:\n"
+            "    Guid:\n"
+            "      Data1: 0\n"
+            "      Data2: 0\n"
+            "      Data3: 0\n"
+            "      Data4: 0\n"
+            "    Path: \n")
+
+
+def so_header(script_guid: str, name: str) -> str:
+    return ("%YAML 1.1\n"
+            "%TAG !u! tag:unity3d.com,2011:\n"
+            "--- !u!114 &11400000\n"
+            "MonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n"
+            "  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n"
+            "  m_GameObject: {fileID: 0}\n"
+            "  m_Enabled: 1\n"
+            "  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            f"  m_Name: {name}\n"
+            "  m_EditorClassIdentifier: \n")
+
+
+def dipole_config_asset() -> str:
+    """StoatDipoleConfig: the studio's shipped round-15 row (StoatDipoleConfigSO's initializers)."""
+    return (so_header(DIPOLE_CONFIG_SCRIPT, "StoatDipoleConfig") +
+            "  holdExponent: 1.5\n"
+            "  holdRampSeconds: 1.5\n"
+            "  aheadDistance: 250\n"
+            "  sidewaysMax: 200\n"
+            "  lengthwaysMax: 120\n"
+            "  followRate: 6\n"
+            "  poleGM: 120000\n"
+            "  poleHorizon: 3.5\n"
+            "  poleSize:\n" + elemental(1, 1, 2, 3, 1) +
+            "  sourcePush: 1\n"
+            "  sourceSofteningHorizons: 2\n"
+            "  accelerationCap: 3000\n"
+            "  sinkGrowSeconds: 0.9\n"
+            "  sourceGrowSeconds: 1.1\n"
+            "  turnCap: 12\n"
+            "  grip: 0.5\n"
+            "  gravitySpeedCeilingCruises: 4\n"
+            "  gravityFadeSeconds: 2\n"
+            "  domainTintAmount: 0.7\n"
+            "  crystalStripShare: 1\n"
+            "  faunaSwallowHorizons: 1.5\n"
+            "  pathLength: 600\n"
+            "  pathStep: 3\n"
+            "  pathNoseOffset: 8\n"
+            "  loopMargin: 8\n"
+            "  minLoop: 60\n"
+            "  warpDegrees: 3\n"
+            "  boost:\n" + elemental(2, 2, 4, 4, 1) +
+            "  boostRise: 20\n"
+            "  boostFadeSeconds: 0.6\n"
+            "  dotPixels: 4\n"
+            "  dotGap: 10\n"
+            f"  openColor: {color(150 / 255, 166 / 255, 194 / 255)}\n"
+            f"  warpedColor: {color(157 / 255, 1, 46 / 255)}\n"
+            "  autopilotHold01: 0.8\n"
+            "  autopilotMinDistance: 300\n"
+            "  autopilotHoldSeconds: 4\n"
+            "  autopilotIntervalSeconds: 2\n" +
+            empty_event("openEvent") + empty_event("annihilateEvent") + empty_event("warpEvent"))
+
+
+def dipole_action_asset(name: str, side: int) -> str:
+    return so_header(DIPOLE_ACTION_SCRIPT, name) + f"  side: {side}\n"
+
+
+def asset_meta(guid: str) -> str:
+    return ("fileFormatVersion: 2\n"
+            f"guid: {guid}\n"
+            "NativeFormatImporter:\n"
+            "  externalObjects: {}\n"
+            "  mainObjectFileID: 11400000\n"
+            "  userData: \n"
+            "  assetBundleName: \n"
+            "  assetBundleVariant: \n")
+
+
+def script_meta(guid: str) -> str:
+    return ("fileFormatVersion: 2\n"
+            f"guid: {guid}\n"
+            "MonoImporter:\n"
+            "  externalObjects: {}\n"
+            "  serializedVersion: 2\n"
+            "  defaultReferences: []\n"
+            "  executionOrder: 0\n"
+            "  icon: {instanceID: 0}\n"
+            "  userData: \n"
+            "  assetBundleName: \n"
+            "  assetBundleVariant: \n")
+
+
+DIPOLE_ASSETS = (("StoatDipoleConfig", DIPOLE_CONFIG, dipole_config_asset),
+                 ("StoatDipoleLeftAction", DIPOLE_LEFT, lambda: dipole_action_asset("StoatDipoleLeftAction", 0)),
+                 ("StoatDipoleRightAction", DIPOLE_RIGHT, lambda: dipole_action_asset("StoatDipoleRightAction", 1)))
+
+
+def dipole_executor_blocks() -> str:
+    def block(fid: str, script: str) -> str:
+        return (f"--- !u!114 &{fid}\n"
+                "MonoBehaviour:\n"
+                "  m_ObjectHideFlags: 0\n"
+                "  m_CorrespondingSourceObject: {fileID: 0}\n"
+                "  m_PrefabInstance: {fileID: 0}\n"
+                "  m_PrefabAsset: {fileID: 0}\n"
+                f"  m_GameObject: {{fileID: {SHIP_ACTIONS_GO}}}\n"
+                "  m_Enabled: 1\n"
+                "  m_EditorHideFlags: 0\n"
+                f"  m_Script: {{fileID: 11500000, guid: {script}, type: 3}}\n"
+                "  m_Name: \n"
+                "  m_EditorClassIdentifier: \n"
+                f"  config: {{fileID: 11400000, guid: {DIPOLE_CONFIG}, type: 2}}\n")
+    return block(DIPOLE_EXECUTOR_ID, DIPOLE_EXECUTOR_SCRIPT) + block(PATHFINDER_EXECUTOR_ID, PATHFINDER_EXECUTOR_SCRIPT)
+
+
+def transformer_block(text: str):
+    return re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!)" % TRANSFORMER_ID, text)
+
+
+def apply_dipole(text: str) -> str:
+    """Stage 4 on the committed prefab: rebind the triggers, add the two executors, slow the base turn.
+    Idempotent (re-applying it to its own output changes nothing); re-checks its own anchors."""
+    m = re.search(r"  _touchActionOverrides:.*\n(?:.*\n)*?(?=  _onButtonPressed:)", text)
+    if not m:
+        raise RuntimeError("Stoat.prefab drifted: R_VesselActionHandler binding block not found")
+    text = text[:m.start()] + bindings() + text[m.end():]
+    if f"  - component: {{fileID: {DIPOLE_EXECUTOR_ID}}}\n" not in text:
+        text = replace_once(text, f"  - component: {{fileID: {STOP_EXECUTOR_ID}}}\n",
+                            f"  - component: {{fileID: {STOP_EXECUTOR_ID}}}\n"
+                            f"  - component: {{fileID: {DIPOLE_EXECUTOR_ID}}}\n"
+                            f"  - component: {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n", "ShipActions stop executor entry")
+    reg = re.search(r"--- !u!114 &%s\n(?:.*\n)*?  _executors:\n((?:  - \{fileID: -?\d+\}\n)+)" % REGISTRY_ID, text)
+    if not reg:
+        raise RuntimeError("Stoat.prefab drifted: ActionExecutorRegistry _executors list not found")
+    if f"  - {{fileID: {DIPOLE_EXECUTOR_ID}}}\n" not in reg.group(1):
+        text = text[:reg.end(1)] + f"  - {{fileID: {DIPOLE_EXECUTOR_ID}}}\n  - {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n" + text[reg.end(1):]
+    if f"--- !u!114 &{DIPOLE_EXECUTOR_ID}\n" not in text:
+        end = re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!)" % STOP_EXECUTOR_ID, text)
+        if not end:
+            raise RuntimeError("Stoat.prefab drifted: the stop executor's document has no successor")
+        text = text[:end.end()] + dipole_executor_blocks() + text[end.end():]
+    t = transformer_block(text)
+    if not t:
+        raise RuntimeError("Stoat.prefab drifted: the VesselTransformer document not found")
+    block = t.group(0)
+    for key, old, new in TURN_RATES:
+        block = block.replace(f"  {key}: {old}\n", f"  {key}: {new}\n", 1)
+    return text[:t.start()] + block + text[t.end():]
+
+
+def dipole_files() -> "dict[str, str]":
+    """Every non-prefab file stage 4 owns, {absolute path: content}."""
+    out = {}
+    for name, guid, make in DIPOLE_ASSETS:
+        out[os.path.join(ACTIONS, name + ".asset")] = make()
+        out[os.path.join(ACTIONS, name + ".asset.meta")] = asset_meta(guid)
+    for path, guid in DIPOLE_SCRIPTS:
+        out[path + ".meta"] = script_meta(guid)
+    out[DIPOLE_DOC + ".meta"] = ("fileFormatVersion: 2\n"
+                                 f"guid: {DIPOLE_DOC_GUID}\n"
+                                 "TextScriptImporter:\n"
+                                 "  externalObjects: {}\n"
+                                 "  userData: \n"
+                                 "  assetBundleName: \n"
+                                 "  assetBundleVariant: \n")
+    return out
+
+
 def check(files: "dict[str, str]") -> "list[str]":
     """Every invariant of the shipped set, over {relative path: content}. Pure, so the self-test
     can hand it mutated copies."""
@@ -538,10 +770,19 @@ def check(files: "dict[str, str]") -> "list[str]":
         if dm:
             want(dm.group(1) != net.group(1), "GlobalObjectIdHash still equals the Squirrel's - Netcode would key both on one entry")
 
-    want(bindings() in prefab, "gamepad bindings are not LT->sling left, RT->sling right, X->hold (touch cleared)")
+    want(bindings() in prefab, "gamepad bindings are not LT->dipole left, RT->dipole right, X->hold (touch cleared)")
+    want(f"  - component: {{fileID: {DIPOLE_EXECUTOR_ID}}}\n" in prefab, "StoatDipoleExecutor is not on the ShipActions object")
+    want(f"  - component: {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n" in prefab, "StoatPathfinderExecutor is not on the ShipActions object")
+    want(dipole_executor_blocks() in prefab, "the dipole / pathfinder executor documents are not authored as expected (StoatDipoleConfig)")
+    tb = transformer_block(prefab)
+    want(tb is not None and all(f"  {k}: {new}\n" in tb.group(0) for k, _, new in TURN_RATES),
+         "the VesselTransformer's turn rates are not the dipole's (pitch 48, yaw 48, roll 52)")
     want(f"  - component: {{fileID: {SLING_EXECUTOR_ID}}}\n" in prefab, "StoatSlingExecutor is not on the ShipActions object")
     want(f"  - component: {{fileID: {STOP_EXECUTOR_ID}}}\n" in prefab, "ToggleTranslationModeActionExecutor is not on the ShipActions object")
     reg = re.search(r"--- !u!114 &%s\n(?:.*\n)*?  _executors:\n((?:  - \{fileID: -?\d+\}\n)+)" % REGISTRY_ID, prefab)
+    want(reg is not None and f"  - {{fileID: {DIPOLE_EXECUTOR_ID}}}\n" in reg.group(1)
+         and f"  - {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n" in reg.group(1),
+         "the dipole / pathfinder executors are not in the ActionExecutorRegistry")
     want(reg is not None and f"  - {{fileID: {SLING_EXECUTOR_ID}}}\n" in reg.group(1)
          and f"  - {{fileID: {STOP_EXECUTOR_ID}}}\n" in reg.group(1), "registry _executors lacks the two Stoat executors")
     try:
@@ -582,8 +823,16 @@ def check(files: "dict[str, str]") -> "list[str]":
     else:
         if f"  vesselClass: {STOAT_CLASS_ID}\n" not in mp:
             errors.append(f"{rel_map}: vesselClass is not {STOAT_CLASS_ID}")
-        if "    Input: 2\n" not in mp or "    Input: 6\n" not in mp:
-            errors.append(f"{rel_map}: the sling (Input 2) and the hold (Input 6) must both be declared")
+        if "    AbilityLabel: Field Dipole\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
+            errors.append(f"{rel_map}: Space must be the Field Dipole on the triggers (Input 2)")
+        if "    AbilityLabel: Pathfinder\n" not in mp:
+            errors.append(f"{rel_map}: Time must be the Pathfinder")
+    for path, want_text in dipole_files().items():
+        rel = os.path.relpath(path, ROOT)
+        if not os.path.exists(path[:-5]) and path.endswith(".cs.meta"):
+            errors.append(f"{rel[:-5]} is missing (its .meta is authored here)")
+        if files.get(rel) != want_text:
+            errors.append(f"{rel} is missing or not as authored - run without --check")
     rel_class = os.path.relpath(CLASS_ASSET, ROOT)
     if files.get(rel_class) != class_asset():
         errors.append(f"{rel_class} is missing or not as authored (Class {STOAT_CLASS_ID}, owned from start)")
@@ -606,6 +855,7 @@ def read_all() -> "dict[str, str]":
     paths = [PREFAB, PREFAB + ".meta", DONOR, CONTAINER, NETWORK_PREFABS, MAP, CLASS_ASSET, CLASS_ASSET + ".meta"] + CLASS_LISTS
     for name in ("StoatSlingConfig", "StoatSlingLeftAction", "StoatSlingRightAction", "StoatHoldAction"):
         paths += [os.path.join(ACTIONS, name + ".asset"), os.path.join(ACTIONS, name + ".asset.meta")]
+    paths += list(dipole_files().keys())
     files = {}
     for p in paths:
         if os.path.exists(p):
@@ -642,10 +892,14 @@ def self_test() -> int:
     fires("wrong vesselType", lambda f: f.__setitem__(rel, f[rel].replace(f"  vesselType: {STOAT_CLASS_ID}\n", "  vesselType: 6\n")))
     fires("donor hash kept", lambda f: f.__setitem__(rel, re.sub(r"  GlobalObjectIdHash: \d+\n", "  GlobalObjectIdHash: 2256742461\n", f[rel], count=1)))
     fires("executor dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {SLING_EXECUTOR_ID}}}\n", "", 1)))
-    fires("left trigger unbound", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {SLING_LEFT}, type: 2}}\n", "", 1)))
+    fires("left trigger unbound", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n", "", 1)))
+    fires("pathfinder dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n", "", 1)))
+    fires("turn rates reverted", lambda f: f.__setitem__(rel, f[rel].replace("  PitchScaler: 48\n", "  PitchScaler: 120\n", 1)))
+    cfg = os.path.relpath(os.path.join(ACTIONS, "StoatDipoleConfig.asset"), ROOT)
+    fires("dipole config retuned by hand", lambda f: f.__setitem__(cfg, f.get(cfg, "").replace("  aheadDistance: 250\n", "  aheadDistance: 200\n")))
     fires("container entry missing", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), "")))
     fires("network entry missing", lambda f: f.__setitem__(os.path.relpath(NETWORK_PREFABS, ROOT), f[os.path.relpath(NETWORK_PREFABS, ROOT)].replace(network_entry(), "")))
-    fires("map lost the hold", lambda f: f.__setitem__(os.path.relpath(MAP, ROOT), f[os.path.relpath(MAP, ROOT)].replace("    Input: 6\n", "    Input: 0\n")))
+    fires("map lost the dipole's input", lambda f: f.__setitem__(os.path.relpath(MAP, ROOT), f[os.path.relpath(MAP, ROOT)].replace("    Input: 2\n", "    Input: 0\n")))
     fires("hull dropped", lambda f: f.__setitem__(rel, f[rel].replace(hull_blocks(), "")))
     fires("paint left on the Squirrel mesh", lambda f: f.__setitem__(rel, f[rel].replace(
         f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n", f"  _shipGeometries:\n  - {{fileID: {SQUIRREL_MESH_GO}}}\n")))
@@ -655,6 +909,9 @@ def self_test() -> int:
     # stage 2 is idempotent: applying it to the shipped prefab changes nothing
     idem = apply_hull(files[rel]) == files[rel]
     print(f"  stage 2 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
+    ok &= idem
+    idem = apply_dipole(files[rel]) == files[rel]
+    print(f"  stage 4 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
     ok &= idem
     print("self-test " + ("OK" if ok else "FAILED"))
     return 0 if ok else 1
@@ -678,6 +935,19 @@ def main(argv) -> int:
         if after != before:
             write(PREFAB, after)
             print(f"stage 2: the procedural hull + StoatAnimation authored into {os.path.relpath(PREFAB, ROOT)}")
+        before = after
+        after = apply_dipole(before)
+        if after != before:
+            write(PREFAB, after)
+            print(f"stage 4: the field dipole + pathfinder wired into {os.path.relpath(PREFAB, ROOT)}")
+        for path, text in dipole_files().items():
+            old = None
+            if os.path.exists(path):
+                with open(path, encoding="utf-8", newline="") as f:
+                    old = f.read().replace("\r\n", "\n")
+            if old != text:
+                write(path, text)
+                print(f"stage 4: wrote {os.path.relpath(path, ROOT)}")
         if not os.path.exists(CLASS_ASSET):
             write(CLASS_ASSET, class_asset())
             write(CLASS_ASSET + ".meta", class_meta())

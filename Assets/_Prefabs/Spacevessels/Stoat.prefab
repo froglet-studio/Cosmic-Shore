@@ -1024,9 +1024,9 @@ MonoBehaviour:
     Min: 1
     Max: 2.5
     element: 4
-  PitchScaler: 120
-  YawScaler: 120
-  RollScaler: 130
+  PitchScaler: 48
+  YawScaler: 48
+  RollScaler: 52
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
   touchNoseResponse: 9
@@ -1244,10 +1244,10 @@ MonoBehaviour:
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}
+    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}
+    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
@@ -1832,6 +1832,8 @@ GameObject:
   - component: {fileID: 9105512684531825410}
   - component: {fileID: 5137264980012345601}
   - component: {fileID: 5137264980012345602}
+  - component: {fileID: 5137264980012345603}
+  - component: {fileID: 5137264980012345604}
   m_Layer: 0
   m_Name: ShipActions
   m_TagString: Untagged
@@ -1874,6 +1876,8 @@ MonoBehaviour:
   - {fileID: 7788112233445566780}
   - {fileID: 5137264980012345601}
   - {fileID: 5137264980012345602}
+  - {fileID: 5137264980012345603}
+  - {fileID: 5137264980012345604}
 --- !u!114 &5137264980012345601
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1904,6 +1908,32 @@ MonoBehaviour:
   stationarySeedConfig: {fileID: 0}
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+--- !u!114 &5137264980012345603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7850473780452578400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6eee000b02734120a5138fb645997915, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: c6ae04d75c934a21aae1b3607d52cb84, type: 2}
+--- !u!114 &5137264980012345604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7850473780452578400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec03f8093b534dfe98ec25e13f18c576, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: c6ae04d75c934a21aae1b3607d52cb84, type: 2}
 --- !u!1 &7933200443638135191
 GameObject:
   m_ObjectHideFlags: 0
