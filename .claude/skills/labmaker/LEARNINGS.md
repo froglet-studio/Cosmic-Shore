@@ -32,6 +32,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `node .claude/skills/labmaker/verify_lab.cjs --self-test`
 - Promoted: §3
 
+### L-GEN-2 — In this container Playwright loads only from a CommonJS script
+- Lab: `verify_lab.cjs` · Branch: `cece/beautiful-heisenberg-yhsm7j` · Date: 2026-10-09
+- What happened: Playwright is installed globally and reached through `NODE_PATH=/usr/local/lib/node_modules_global`. `require('playwright')` from a `.cjs` file works. `import { chromium } from 'playwright'` in a `.mjs` file fails, because ESM resolution ignores `NODE_PATH`. Chromium is pre-installed (`PLAYWRIGHT_BROWSERS_PATH`), so never run `playwright install`.
+- Do instead: write headless lab checks as `.cjs`, launch with `--use-gl=swiftshader` for WebGL, and route CDN scripts to local copies when the network blocks them.
+- Evidence: measured with a two-line `.mjs` against a `.cjs` probe.
+- Promoted: no
+
+### L-GEN-3 — Check a lab survey's citations against the source before they become learnings
+- Lab: this skill's own seeding · Branch: `cece/beautiful-heisenberg-yhsm7j` · Date: 2026-10-09
+- What happened: the subagent summaries used to seed this file got two details wrong. They cited D24 for the runner-up cull (it is D23; D24 is rollout noise). They called the `_q` clobber a cross-module collision (it was one class reusing its own field name). Both were caught at `/ship` §2 by grepping `DISCOVERIES.md` and `git show <sha>`.
+- Do instead: before an entry lands, open the cited section, commit or file and confirm it says what the entry claims (the `/ship` §2 "find the PRODUCER" rule). A learnings file is read as fact by every later lab.
+- Evidence: this branch's ship commit.
+- Promoted: §9
+
 ---
 
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
@@ -120,21 +134,34 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: Docs/Studios/VesselStudio/README.md, VESSEL_STUDIO_PLAN.md §4.
 - Promoted: §7
 
+### L-STU-13 — "No page scroll" is not "fits": `overflow:hidden` hides a clipped layout from the check
+- Lab: Stoat Flight Studio, round 14 (`origin/claude/peaceful-rubin-hhw49n` @ `93fe1577`) · Found by: `verify_lab.cjs` on `cece/beautiful-heisenberg-yhsm7j` · Date: 2026-10-09
+- What happened: round 14 recorded "the stage fills its cell with no page scroll" at 1600 × 900. That is true, because `body` is `overflow:hidden`. But `.wrap` measures 912 px in a 900 px window, so the bottom dock's last 6–12 px are clipped. The same run found the round-13 platform chip (`#platChip`, `#platLayout`) pushing the header 85 px past a 400 px-wide window and 103 px past a portrait iPhone 13 (390 px). Landscape (750 px) fits. These were measured on the repo page, not yet confirmed by the studio's author.
+- Do instead: measure fit as `scrollHeight − clientHeight` (verify_lab does), not as "can the user scroll". Re-run the narrow-width check after EVERY header addition: round 7 had checked 420 px, and round 13's chip came after it.
+- Evidence: `node .claude/skills/labmaker/verify_lab.cjs StoatFlightStudio.html` plus an element-overflow probe: `div.wrap bottom=912`; `#platChip right=493` at 390 px.
+- Promoted: no
+
+### L-STU-14 — A lab that predates the `__lab` contract fails it in ways worth knowing
+- Lab: Stoat Flight Studio, round 14 · Found by: `verify_lab.cjs` · Date: 2026-10-09
+- What happened: aliasing `window.__lab = window.__stoatStudio` still left `SHIPPED`, `SPEC`, `reset`, `score` and `state` unexposed, and `runBatch()` with no arguments threw (`undefined is not iterable`; it needs its squeeze list). The verifier itself crashed on that throw until it learned to report a throwing hook as a named failure.
+- Do instead: when putting an existing lab on the contract, expose those five members and give `runBatch` a no-argument default (the shipped batch). The verifier's `--self-test` now plants a throwing hook.
+- Evidence: verify_lab report on the aliased page.
+- Promoted: §3 (the contract list)
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
-- Lab: NCA swarm labs (`Tools/NCA/`) · Branch: `cece/swarm-x-live2` (DISCOVERIES D6, D7, D24, D25) · Date: 2026-10-01
+- Lab: NCA swarm labs (`Tools/NCA/`) · Branch: `cece/swarm-x-live2` (DISCOVERIES D6, D7, D23, D25; summary item 6) · Date: 2026-10-01
 - What happened:
-  - `min()` over sentinel ties passed extinct swarms.
-  - Switch tests passed vacuously without checking `done`.
-  - The cull only ever targeted runner-ups.
-  - "Closest of four" was taken to mean "looks like it".
-  - CMA found and exploited the cull gap.
-  - The zoo found the old bar never bound: 48 of 48 random genomes passed.
-- Do instead: plant defects the metric must catch before trusting it. Run random genomes through the bar; if they pass, the bar is decoration.
-- Evidence: Tools/NCA/DISCOVERIES.md D6, D7, D24, D25.
+  - D6: `min()` over a tie of sentinels passed extinct swarms.
+  - D7: switch tests passed even when no switch happened.
+  - D23: `lose_majority` only ever handed the majority to the runner-up element. It was found independently by three sessions, and CMA exploited it.
+  - D25: "closest of four" is not "looks like the plan". Adding the absolute bar `MAX_TEST_LOSS = 8` overturned the day's headline (the evo 16/16 became 0/16).
+  - The zoo found the old bar never bound: 48 of 48 uniform-random genomes passed.
+- Do instead: plant defects the metric must catch before trusting it. Run random genomes through the bar; if they pass, the bar is decoration. D24 adds that single rollouts were noisy enough to make a pass a coin flip, so use 3 samples per test.
+- Evidence: Tools/NCA/DISCOVERIES.md D6, D7, D23, D24, D25.
 - Promoted: §2.3
 
 ### L-NCA-2 — An optimiser will find every gap in the loss
@@ -144,10 +171,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: DISCOVERIES D1, D2. The README's "Adding time" says the yardstick for "really moving" is the best any STILL image can do.
 - Promoted: §8
 
-### L-NCA-3 — `max(nan, eps)` is nan: a silent infinite loop, five diagnoses, about 10 run-hours
+### L-NCA-3 — `max(nan, eps)` is nan: a silent infinite loop, found by five separate sessions
 - Lab: NCA · Branch: `cece/swarm-x-live2` (D5) · Date: 2026-10-01
-- What happened: a state runaway produced nan, Python's `max(nan, eps)` returned nan, and a loop never terminated.
-- Do instead: assert `isfinite` on state every N steps and fail loud with the step number.
+- What happened: a NaN in the optimal-transport cost (`sinkhorn_ot`'s eps-scaling loop) made `e` NaN. `NaN <= eps` is always False, and Python's `max(nan, eps)` returns nan. The process burned 390% CPU with no exception. Five overnight babysitter sessions each diagnosed it from scratch with `py-spy dump --locals`, and it was preceded by a headcount collapse.
+- Do instead: assert `isfinite` on every loop-control value and on state every N steps, and fail loud with the step number. Give every `while True` an iteration cap.
 - Evidence: DISCOVERIES D5.
 - Promoted: §8
 
@@ -185,6 +212,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: profile the step before buying hardware. Checkpoint, and support `--resume`, from day one.
 - Evidence: DISCOVERIES D19; gpu_run.py `CHECK OK` device-vs-CPU step.
 - Promoted: no
+
+### L-NCA-9 — A verifier that starts from a mature state cannot see bugs that only matter at birth
+- Lab: NCA browser runner · Branch: `cece/swarm-x-live2` (DISCOVERIES, JS runner notes) · Date: 2026-10-01
+- What happened: the first JS runner passed the grown-colony parity check while killing 11 of 40 colonies in their first 3–7 steps. It stored its own alpha in a `Uint8Array` before the alive max, which truncated 0.96 to 0. A grown colony always has a visible neighbour; a lone seed does not.
+- Do instead: verify from the FIRST step as well as from a warmed-up state (a lone seed plus one dormant child). `verify_lab.cjs` ticks 120 frames from `reset`; a lab whose risk is at birth adds a t = 0 check of its own.
+- Evidence: DISCOVERIES "Verifier blind spot" (the check now also covers the lone seed, to 1.8e-7).
+- Promoted: §8
 
 ---
 
@@ -246,9 +280,9 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: DISCOVERIES (performance).
 - Promoted: §8
 
-### L-ECO-9 — Shared-name clobber froze regrowth
+### L-ECO-9 — A field-name clobber inside one class froze regrowth
 - Lab: ecology bestiary · Branch: `cece/lab-*` · Date: 2026-10-05
-- What happened: two modules wrote one module-level `_q`, and regrowth silently stopped.
+- What happened: `NcaCreature.mesh()` stored its quaternion in `this._q`, the name the sparse step uses for its work queue. Any creature with a mesh silently stopped regrowing. The fix renamed it to `_rq`.
 - Do instead: assert the liveness behaviour (regrowth happens) in the browser check, not only its absence of errors.
 - Evidence: commit `f903548c7`; `creatures_browser.py` now asserts regrowth.
 - Promoted: no

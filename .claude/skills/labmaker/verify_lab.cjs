@@ -9,15 +9,18 @@
 //
 // What it checks (the contract in .claude/skills/labmaker/SKILL.md §3):
 //   1. loads with NO console errors / page errors, at desktop 1600×900 and an emulated phone
-//   2. desktop: the page itself does not scroll (editor layout); phone: no horizontal scroll
+//   2. desktop: the layout fits the window — measured as scrollHeight vs clientHeight, so it also
+//      catches content CLIPPED by body{overflow:hidden}, which no scrollbar would show; phone: no
+//      horizontal scroll
 //   3. window.__lab exposes the test surface: SHIPPED, SPEC, P, tick, reset, score, runBatch, state
 //   4. every SPEC key exists in SHIPPED and every shipped value lies inside its slider range
 //   5. the manual clock advances the model (state().t moves under tick, not under wall time)
 //   6. runBatch is deterministic: two calls give byte-identical rows
 //   7. the stage is not blank after ticking (the canvas has more than one colour)
 //
-// --self-test plants three defects into a copy of the template (a console error, a SHIPPED
-// value outside its range, a non-deterministic batch) and requires the gate to name each one —
+// --self-test plants four defects into a copy of the template (a console error, a SHIPPED
+// value outside its range, a hook that throws, a non-deterministic batch) and requires the gate
+// to name each one —
 // a gate that has only ever passed is not a gate.
 'use strict';
 const fs = require('fs');
@@ -62,7 +65,9 @@ async function verify(file, outDir, browser) {
   if (!hasLab) failures.push('window.__lab is missing — the test surface is the contract (SKILL.md §3.2)');
   else {
     const r = await d.page.evaluate(() => {
-      const L = window.__lab, out = { missing: [], spec: [], scroll: null, clock: null, det: null, blank: null };
+      const L = window.__lab, out = { missing: [], spec: [], scroll: null, clock: null, det: null, blank: null, threw: [] };
+      // A hook that throws is a named failure, never a crash of the verifier.
+      const call = (name, fn) => { try { return fn(); } catch (e) { out.threw.push(name + ' threw: ' + (e && e.message || e)); return undefined; } };
       for (const k of ['SHIPPED', 'SPEC', 'P', 'tick', 'reset', 'score', 'runBatch', 'state']) if (L[k] == null) out.missing.push(k);
       if (L.SPEC && L.SHIPPED) for (const row of L.SPEC) {
         const [, key, lo, hi] = row;
@@ -72,11 +77,16 @@ async function verify(file, outDir, browser) {
       const se = document.scrollingElement || document.documentElement;
       out.scroll = { h: se.scrollHeight - se.clientHeight, w: se.scrollWidth - se.clientWidth };
       if (typeof L.tick === 'function' && typeof L.state === 'function') {
-        L.manualClock = true; L.reset(7);
-        const t0 = L.state().t; L.tick(1 / 60, 120); const t1 = L.state().t;
-        out.clock = { t0, t1 };
+        call('manualClock', () => { L.manualClock = true; });
+        call('reset(7)', () => L.reset(7));
+        const t0 = call('state()', () => L.state().t); call('tick(1/60, 120)', () => L.tick(1 / 60, 120)); const t1 = call('state()', () => L.state().t);
+        if (t0 !== undefined && t1 !== undefined) out.clock = { t0, t1 };
       }
-      if (typeof L.runBatch === 'function') out.det = [JSON.stringify(L.runBatch()), JSON.stringify(L.runBatch())];
+      if (typeof L.runBatch === 'function') {
+        const a = call('runBatch()', () => JSON.stringify(L.runBatch()));
+        const b = a === undefined ? undefined : call('runBatch()', () => JSON.stringify(L.runBatch()));
+        if (a !== undefined && b !== undefined) out.det = [a, b];
+      }
       const c = document.querySelector('canvas');
       if (c) {
         try {
@@ -91,8 +101,9 @@ async function verify(file, outDir, browser) {
       return out;
     });
     for (const k of r.missing) failures.push('window.__lab.' + k + ' is missing');
+    for (const t of r.threw) failures.push('hook: ' + t);
     for (const s of r.spec) failures.push('SPEC/SHIPPED: ' + s);
-    if (r.scroll.h > 1 || r.scroll.w > 1) failures.push('desktop: the page scrolls (' + r.scroll.w + '×' + r.scroll.h + ' px overflow) — the stage and docks must fit the window');
+    if (r.scroll.h > 1 || r.scroll.w > 1) failures.push('desktop: the layout overflows the window by ' + r.scroll.w + '×' + r.scroll.h + ' px (it scrolls, or with overflow:hidden it is CLIPPED) — the stage and docks must fit');
     if (r.clock && !(r.clock.t1 > r.clock.t0)) failures.push('manual clock: state().t did not advance under tick (' + r.clock.t0 + ' → ' + r.clock.t1 + ')');
     if (r.det && r.det[0] !== r.det[1]) failures.push('runBatch is not deterministic:\n    ' + r.det[0] + '\n    ' + r.det[1]);
     if (r.blank === true) failures.push('stage: the canvas is a single colour after 120 ticks');
@@ -121,6 +132,7 @@ async function selfTest(browser, outRoot) {
   const plants = [
     { name: 'console error', expect: /console\/page error/, edit: (s) => s.replace("'use strict';", "'use strict'; console.error('planted');") },
     { name: 'shipped out of range', expect: /outside its range/, edit: (s) => s.replace('damping: 0.4,', 'damping: 9,') },
+    { name: 'hook throws', expect: /hook: runBatch\(\) threw/, edit: (s) => s.replace("opts = opts || {};", "opts = opts || {}; if (!opts.qs) throw new TypeError('planted: runBatch needs qs');") },
     { name: 'nondeterministic batch', expect: /not deterministic/, edit: (s) => s.replace("rows.push({ variant: va.name, caughtPct:", "rows.push({ jitter: Math.random(), variant: va.name, caughtPct:") },
   ];
   let ok = true;

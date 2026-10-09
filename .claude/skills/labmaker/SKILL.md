@@ -144,8 +144,9 @@ It opens the page in headless Chromium (pre-installed; never `playwright install
 as an iPhone 13, and fails on:
 
 - any console or page error;
-- a desktop page that scrolls, or a phone page that scrolls sideways;
-- a missing `__lab` hook;
+- a desktop layout taller or wider than the window, including one CLIPPED by `overflow:hidden`
+  (L-STU-13), or a phone page that scrolls sideways;
+- a missing `__lab` hook, or a hook that throws when called with no arguments;
 - a `SPEC` key absent from `SHIPPED`, or a shipped value outside its slider range;
 - a manual clock that does not advance;
 - a non-deterministic `runBatch`;
@@ -154,7 +155,8 @@ as an iPhone 13, and fails on:
 It writes `desktop.png` and `phone.png`. **Read the screenshots**: the gate cannot see an overlap.
 
 A studio whose hook object is not called `__lab` either aliases it (`window.__lab = window.__stoatStudio`)
-or is verified by its own checks.
+or is verified by its own checks. Aliasing is not enough on its own. The Stoat page also needed
+`SHIPPED`, `SPEC`, `reset`, `score` and `state` exposed, and a no-argument `runBatch` (L-STU-14).
 
 Then add the lab-specific checks, and **list what was checked in the round's write-up**. The Stoat
 studio records, for example: "every tooltip renders and none of the 158 previews is blank", "80 races in about 4.5 s",
@@ -246,8 +248,12 @@ Each has an entry in `LEARNINGS.md` with the evidence.
   Score at the dt the game will run (L-ECO-4).
 - **A state-machine latch written as `x <= 0 && x + dt > 0`** silently never fires. Test edges
   with planted cases (L-ECO-5).
-- **`max(nan, eps)` is nan** in Python. A state runaway became a silent infinite loop that took
-  five diagnoses and about 10 run-hours (L-NCA-3).
+- **`max(nan, eps)` is nan** in Python. A NaN cost turned an eps-scaling loop into a silent
+  infinite loop that five sessions each diagnosed from scratch. Assert `isfinite` on loop-control
+  values (L-NCA-3).
+- **A verifier that starts from a mature state cannot see birth bugs.** A JS port passed parity on
+  grown colonies while killing 11 of 40 seeds in their first steps. Check from step 0 as well
+  (L-NCA-9).
 - **A size-blind loss makes "never grow" optimal**, and a one-sided gate gradient makes "never lay"
   absorbing. The optimiser finds every gap in the yardstick (L-NCA-2).
 - **A probe needs a NEUTRAL class**, or indifference reads as an emotion (L-ECO-6).
@@ -270,6 +276,9 @@ always when `/ship` §3.55 sends you here:
    a process change the human asked for. Use the entry format at the top of that file.
    - **Grep the id before claiming it.** The next free number is not always the last row (`/ship` §1).
    - Attribute it: branch, session or contributor, date.
+   - **Open the cited source and confirm it says what the entry claims**: the DISCOVERIES
+     section, the commit, the file and symbol. A summary, including your own subagent's, is a
+     hypothesis (L-GEN-3).
    - A lab that taught nothing new says so in the ship report. Silence reads as "not checked".
 3. **Promote** an entry into §2–§8 of this file when it has recurred in a second lab, or when
    it cost a round or more. Mark it `Promoted: §N` in LEARNINGS so it is not promoted twice. Keep
