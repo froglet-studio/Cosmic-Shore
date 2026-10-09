@@ -12,6 +12,47 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 5 — the dipole sling, a prototype)
+
+**What changed.** Pair A's sling is now the **dipole sling** (the rail's "A: Dipole sling" switch; "A: Orbit
+(round 4)" brings back the orbit sling). It exists only in the studio so far; the game still runs the orbit
+sling (`StoatSlingExecutor`).
+
+- **Press** LT/RT: the black hole is laid 240 u ahead and 60 u to the trigger's side, the white hole 240 u
+  ahead and 60 u to the other side, both with a 6 u horizon, so the pair's axis starts square across the nose
+  and both are in view.
+- **Squeeze**: the black hole moves at up to 80 u/s × squeeze^1.5 and its horizon grows at up to 10 u/s
+  (to 28 u). How deep you squeeze sets the rate; how long you hold sets how far. While it is still ahead it
+  aims for a point beside your line (6 horizons off it, on its own side) so you pass it rather than hit it.
+  Once it is abeam it keeps going the way it came. The white hole stays where it was laid, so the axis
+  swings diagonal.
+- **Physics**: the black hole pulls with the Paczyński–Wiita law, GM sized so a circle at 6 horizons is a
+  free orbit at cruise (GM = ((x−1)²/x)·r_s·cruise²). The white hole pushes with 0.5 × its GM, softened over
+  twice its horizon. The force across the nose bends it; the force along it is the gravity speed. The
+  flight is sub-stepped at 4 ms so a still hole gives back exactly what it gave. Diving through the portal
+  restores the speed you had before the dive (the two mouths are one throat); only the white hole's
+  bounded push is new.
+- **Let go**: the pair falls together at 40 u/s and annihilates; the gravity speed fades over 2 s once you
+  are clear of both holes.
+
+**Measured** (scripted pad, full throttle, no steering, RT held ~4.5 s of game time):
+
+| squeeze | turned | speed kept | axis at release | what happened |
+|---|---|---|---|---|
+| 0.3 | 131° | +91 u/s | 170° | slingshot round the black hole |
+| 0.6 | 119° | +27 u/s | 139° | swung round it, climbing out cost most of the gain |
+| 1.0 | 88° | +16 u/s | 62° | the black hole arrived fast and large: a dive through the portal |
+
+Control: a black hole that does not move (approach 0, growth 0, no push) gives back what it gave. The
+residue left is the depth of the well at the point where the pass ended.
+
+**Why the speed comes from the black hole's motion.** A still well hands back on the way out what it gave on
+the way in, so a pass past a still hole gains nothing. The gain is the classic gravity assist: you swing
+round a well moving against you. That is why the black hole keeps its momentum after it is abeam, and why a
+light, early squeeze (a slow black hole met early) beats a buried one (a big one that swallows you).
+
+**Round 4** (the orbit sling and the vessel portal) is described below; its numbers are still the game's.
+
 ## Stoat Flight Studio (round 4)
 
 **Round 4 — your decisions applied.** Pair **A** (the drift pair) is the pick, wearing this branch's
