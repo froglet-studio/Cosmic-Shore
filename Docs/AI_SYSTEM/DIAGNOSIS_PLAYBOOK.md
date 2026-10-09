@@ -99,3 +99,4 @@ intakes, then the restructures.
 | 6 | Manta turn boost | 2 (not gated) | Gate scope; markers; review | AI session |
 | 7 | Skim Race pilot | 1–5 (QA PASS) | Split the core, then Burst the rollouts (`ARCHITECTURE.md` §4.5); Hard vs 2 humans decision still open | AI session, then user |
 | 8 | Genetic training stack | 1, 2 | User verdict: keep / editor-only / retire | User |
+| 9 | Stoat autopilot sling / dipole (**new**) | 2, tests exist (not gated) | Gate scope; markers (`AI.StoatSling.*`); user script in Warpline (AI Stoats lay pairs) | AI session, then user |

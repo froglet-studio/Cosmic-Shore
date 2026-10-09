@@ -29,6 +29,8 @@ https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa is the only studio artifact.
 | Amoebius phone player | `Port/src/CosmicShore.Mobile` | Runs the game itself on Android/iOS; touch feeds the game's own `TouchInputStrategy`. **No device run yet** (`Port/docs/milestones.json` C8). |
 | Amoebius web build | — | **Does not exist.** Amoebius's player is .NET + OpenGL; a browser build is an engine milestone (§4). |
 
+**Which vessel gets a studio next, and what each owes:** `VESSEL_STUDIO_ROLLOUT.md` (every vessel's AI on bleeding-edge, the shared gate-race core, the recommended order).
+
 Testing in the REAL game (AI on any seat, free-fly camera, the intensity maps, a graphics-fidelity switch):
 **`VESSEL_TEST_RANGE_PLAN.md`**. Building a studio page: the **`/vessel-studio`** skill.
 
