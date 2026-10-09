@@ -79,7 +79,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | 3 | Session-service faults (full, 429, relay failure, outage, slow) | Done |
 | 4 | Launcher NET page + MCP `net_*` tools (1-4 players at once) | Done |
 | 5 | Froglet's own UDP transport + unreliable channel; **the default** | Done. Party harness 14/14 clean, 14/14 on simulated 4G after the B29 fix |
-| 6 | Relay: Unity Relay's wire protocol + a local relay server | In progress (§6) |
+| 6 | Relay: Unity Relay's wire protocol under our UDP transport + Froglet's own relay server | Done. Party harness 14/14 through the relay (`Port/docs/MULTIPLAYER.md` §6.7) |
 
 ### Unity game: the hardening programme
 
@@ -119,7 +119,13 @@ choice) and a username the first time; later runs on the same profile skip them.
    seated.
 6. **Capture.** CAPTURE 10 S on any player. Expect a console line naming a JSON file with 600
    frames.
-7. **TCP still works.** CLOSE, set Transport = TCP, repeat step 2. Expect the same result.
+7. **TCP still works.** CLOSE, set Connection = TCP, repeat step 2. Expect the same result.
+8. **Through the relay.** CLOSE, set Connection = RELAY, START, repeat step 2. Expect the log to
+   show `[relay] listening ...` first, then each player's `[relay] sessions go through the relay`
+   and, as it opens its own party, `[relay] hosting through ... (join code XXXXXX)`. When player2
+   accepts: `[P2] [relay] joining XXXXXX` with player1's code. Seated as in step 2, with about the
+   same RTT as direct on one PC (measured: 25-30 ms). Then repeat step 4 (pull the cable): same
+   result as direct.
 
 ### 5.2 Unity (MPPM, 3-4 virtual players)
 
@@ -146,6 +152,16 @@ gives the exact command here. Expected shape: two Prisma players on two differen
 PCs, or a PC and a laptop on a phone hotspot) form a party through UGS Lobby and play a Bloomrush
 match through UGS Relay.
 
+**What you can already run across two networks, with no UGS involved** (Froglet's own relay;
+P6). On a machine both players can reach (a PC with a forwarded port, or any small server), run
+`CosmicShore --relay-server 7780 7781 <its public name or IP>` and open UDP 7780 and TCP 7781.
+On each player set `COSMIC_SHORE_RELAY=http://<that name>:7781` and
+`COSMIC_SHORE_NET_DIR` to a folder both can see (a shared drive). The session folder is still the
+lobby stand-in until P8, which is why it has to be shared. Do this only on a server you control,
+for a test: the relay's allocations endpoint has no authentication yet (`MULTIPLAYER.md` §6.7).
+This route has run on one machine (the harness), not yet across two real networks: whoever tries
+it first, record what happened here.
+
 ## 6. What comes next, in order
 
 Each step has the check that proves it done. Update the state in §4 when a step lands.
@@ -154,8 +170,8 @@ Each step has the check that proves it done. Update the state in §4 when a step
 
 | # | Step | Done when |
 |---|---|---|
-| P6 | **Relay.** Unity Relay's message protocol (BIND with HMAC, PING, CONNECT_REQUEST/ACCEPTED, RELAY, DISCONNECT, CLOSE) under our UDP transport, plus a local relay server that speaks the same protocol (our own relay, and the test double) | The transport contract checks pass through the relay; the five-player harness passes with every player going through a relay |
-| P7 | **UGS Auth + Relay allocations** over REST (anonymous sign-in, allocate, join code, join); the local relay server answers the same REST shape | Unit tests against the local server; the owner's live test (§5.3) allocates on real UGS |
+| ~~P6~~ | ~~**Relay.**~~ Done 2026-10-09 (§4). Unity Relay's protocol under our UDP transport, Froglet's relay server (same protocol, same REST shape), session integration, switches in every tool | Contract checks pass over `relay`/`sim-relay`; party harness 14/14 with every pilot through the relay |
+| P7 | **UGS Auth**: anonymous sign-in over REST (`POST https://player-auth.services.api.unity.com/v1/authentication/anonymous`, header `ProjectId`), its `idToken` sent as `Authorization: Bearer` on the relay allocation calls (what Unity's own relay client sends), refreshed before `expiresIn`; the `sessionToken` kept per profile to sign the same player back in. The allocations client already speaks UGS's REST shape. `COSMIC_SHORE_RELAY=ugs` turns it on | Unit tests against a local stand-in of the sign-in endpoint; the owner's live test (§5.3) allocates on real UGS |
 | P8 | **UGS Lobby** as Prisma's session service (create, query, join, heartbeat, player data, the presence lobby) | The party harness passes on the local stand-in; two Prisma players on two networks form a party on real UGS |
 | P9 | **Less traffic.** `NetworkVariable` writes dominate (7:1 over transforms, `MULTIPLAYER.md` §6.4): batch per tick, send deltas | `net` shows the drop on the same scenario, with the harness still 14/14 |
 | P10 | Congestion control past the fixed window, measured on a real internet path | A 4-player match on two networks holds RTT and shows no resend storms in `net` |
@@ -176,6 +192,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
    `dotnet build Port/src/CosmicShore.Player` (the .NET 10 SDK); test with
    `dotnet test Port/tests/CosmicShore.Tests`.
 4. Party logic: run `bash Tools/Build/prisma_party_scenarios/run.sh` before and after (~15 min,
-   14/14 expected; add `COSMIC_SHORE_NET_SIM=4g` for the bad-line run).
+   14/14 expected; add `COSMIC_SHORE_NET_SIM=4g` for the bad-line run, `PRISMA_RELAY=1` to send
+   every pilot through the relay).
 5. Unity C#: follow §2's `/verify-unity` rule and add the checklist entry.
 6. Finish by updating §4 and §6 here.
