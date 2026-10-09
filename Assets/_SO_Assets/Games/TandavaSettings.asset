@@ -41,6 +41,8 @@ MonoBehaviour:
       Mouth: {x: 137.063, y: -0.586, z: -0.081}
       FeedMouth: {x: 136.22, y: 0, z: -0.02}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
     - DisplayName: Great Serpent
       PlanIndex: 5
       FeedPlanIndex: 6
@@ -59,6 +61,8 @@ MonoBehaviour:
       Mouth: {x: 151.419, y: -0.597, z: -0.026}
       FeedMouth: {x: 150.784, y: 0, z: -0.006}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
     - DisplayName: Great Serpent
       PlanIndex: 10
       FeedPlanIndex: 11
@@ -77,6 +81,8 @@ MonoBehaviour:
       Mouth: {x: 125.906, y: -0.45, z: -0.329}
       FeedMouth: {x: 124.746, y: 0, z: -0.092}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
   - DisplayName: Many-Headed Serpent
     Role: 0
     FillToEvolve: 0.9
@@ -102,6 +108,8 @@ MonoBehaviour:
       Mouth: {x: 146.821, y: 10.116, z: 0.185}
       FeedMouth: {x: 143.836, y: 12.054, z: 0.049}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 53
+      ChimeraAltPlanIndex: 54
     - DisplayName: Seven-Headed Serpent
       PlanIndex: 22
       FeedPlanIndex: 23
@@ -120,6 +128,8 @@ MonoBehaviour:
       Mouth: {x: 134.239, y: 8.763, z: 0.248}
       FeedMouth: {x: 129.615, y: 11.852, z: 0.101}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 53
+      ChimeraAltPlanIndex: 54
     - DisplayName: Ten-Headed Serpent
       PlanIndex: 29
       FeedPlanIndex: 30
@@ -138,6 +148,8 @@ MonoBehaviour:
       Mouth: {x: 114.719, y: 7.508, z: 0.972}
       FeedMouth: {x: 107.491, y: 12.098, z: 0.242}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 53
+      ChimeraAltPlanIndex: 54
   - DisplayName: Lord of the Dance
     Role: 1
     FillToEvolve: 0.9
@@ -157,6 +169,8 @@ MonoBehaviour:
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 3.854, z: 1.125}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
     - DisplayName: Lord of the Dance
       PlanIndex: 37
       FeedPlanIndex: -1
@@ -169,6 +183,8 @@ MonoBehaviour:
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 3.854, z: -1.125}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
     - DisplayName: Lord of the Dance
       PlanIndex: 38
       FeedPlanIndex: -1
@@ -181,6 +197,8 @@ MonoBehaviour:
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 1.76, z: 0.937}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
   - DisplayName: Antlion
     Role: 2
     FillToEvolve: 0.9
@@ -200,6 +218,8 @@ MonoBehaviour:
       Mouth: {x: 86.492, y: -0.219, z: -0.26}
       FeedMouth: {x: 74.596, y: 0.173, z: -0.254}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
     - DisplayName: Antlion
       PlanIndex: 43
       FeedPlanIndex: 44
@@ -212,6 +232,8 @@ MonoBehaviour:
       Mouth: {x: 83.336, y: -1.004, z: -0.11}
       FeedMouth: {x: 65.57, y: 0.115, z: -0.101}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
     - DisplayName: Antlion
       PlanIndex: 47
       FeedPlanIndex: 48
@@ -224,6 +246,8 @@ MonoBehaviour:
       Mouth: {x: 93.412, y: -0.329, z: -0.312}
       FeedMouth: {x: 81.975, y: 0.029, z: -0.303}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
   SeveredForm:
     DisplayName: the Severed
     Role: 3
@@ -244,6 +268,8 @@ MonoBehaviour:
       Mouth: {x: 91.407, y: -0.767, z: 0.012}
       FeedMouth: {x: 90.455, y: 0, z: 0.012}
       HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
   SwarmSpawn: {fileID: 11400000, guid: f40529e9fe9ddcc6a5eb6f47e4a6c396, type: 2}
   Director:
     RoamRadius: 616
@@ -296,6 +322,11 @@ MonoBehaviour:
     ShatterFraction: 0.35
     ArmFraction: 0.6
     RiseSeconds: 5
+    ChimeraSeconds: 24
+    ChimeraFlipSeconds: 6
+    ChimeraTurnSeconds: 2.5
+    CruiseChimera: 0.7
+    TurnChimera: 0.8
     DrumSeconds: 30
     HaloCount: 12
     HaloToBreak: 9
@@ -366,6 +397,7 @@ MonoBehaviour:
   LearnedLungingLine: It remembers what its lunges cost. It will not turn on you so readily.
   LearnedChasedLine: It remembers being run down. It feels you coming from farther away.
   LearnedSeveredLine: It remembers being cut in two. Its severed halves hurry home.
+  ChimeraLine: 'It is tearing between shapes - a whale, a jelly, neither. Strike it as it turns.'
   RoamingLabel: Roaming
   WaryLabel: Wary
   FleeingLabel: Fleeing
@@ -381,6 +413,9 @@ MonoBehaviour:
   SeveredLabel: The Severed
   SeveredOutFormat: 'home in {0}'
   SeveredHomeLabel: crawling home - cut it off
+  ChimeraName: Whale-Jelly Chimera
+  ChimeraLabel: Unstable
+  ChimeraTurningLabel: Turning - it cannot heal
   NudgeThreshold: 25
   NudgeFraction: 0.2
   MaxNudge: 8

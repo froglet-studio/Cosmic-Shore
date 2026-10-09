@@ -296,6 +296,9 @@ def build_forms():
                            mouth=wv(p["mouth"]) if "mouth" in p else [0.0, 0.0, 0.0],
                            feed_mouth=wv(PLANS[key + "_feed"]["mouth"]) if feeds else [0.0, 0.0, 0.0],
                            halo=wv(p["ring"]["centre"]) if "ring" in p else [0.0, 0.0, 0.0],
+                           # §3.13: the Many-Headed Serpent passes through the whale-jelly chimera before it rises (0 = none)
+                           chimera=PLAN_KEYS.index("chimera_whale") if k == 1 else 0,
+                           chimera_alt=PLAN_KEYS.index("chimera_jelly") if k == 1 else 0,
                            n=p["n"] * DENSITY))
         out.append(dict(f, bank=BANK_SHARE[k], meal=MEAL_VOLUME if f["role"] != 1 else 1.0, variants=vs))
     return out
@@ -601,7 +604,8 @@ for f in FORM_ROWS:
                        + f"      CoilRoamRadius: {num(round(v['coil_roam'], 1))}\n"
                        + f"      LungePlanIndex: {v['lunge']}\n      SnapPlanIndex: {v['snap']}\n"
                        + f"      LungeMouth: {v3(*v['lunge_mouth'])}\n"
-                       f"      Mouth: {v3(*v['mouth'])}\n      FeedMouth: {v3(*v['feed_mouth'])}\n      HaloCentre: {v3(*v['halo'])}\n")
+                       f"      Mouth: {v3(*v['mouth'])}\n      FeedMouth: {v3(*v['feed_mouth'])}\n      HaloCentre: {v3(*v['halo'])}\n"
+                       f"      ChimeraPlanIndex: {v['chimera']}\n      ChimeraAltPlanIndex: {v['chimera_alt']}\n")
 
 _sv = SEVERED_ROW["variant"]
 severed_yaml = (f"  SeveredForm:\n    DisplayName: {yaml_str(SEVERED_ROW['name'])}\n    Role: {SEVERED_ROW['role']}\n"
@@ -611,6 +615,7 @@ severed_yaml = (f"  SeveredForm:\n    DisplayName: {yaml_str(SEVERED_ROW['name']
                 "      CoilPlanIndices: []\n      CoilMouths: []\n      CoilRoamRadius: 0\n"
                 "      LungePlanIndex: -1\n      SnapPlanIndex: -1\n      LungeMouth: {x: 0, y: 0, z: 0}\n"
                 f"      Mouth: {v3(*_sv['mouth'])}\n      FeedMouth: {v3(*_sv['feed_mouth'])}\n      HaloCentre: {{x: 0, y: 0, z: 0}}\n"
+                "      ChimeraPlanIndex: 0\n      ChimeraAltPlanIndex: 0\n"
                 f"  SwarmSpawn: {{fileID: 11400000, guid: {G_ASSET['SwarmSpecies']}, type: 2}}\n")
 
 director_yaml = "  Director:\n" + "".join(
@@ -650,6 +655,7 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              f"  LearnedLungingLine: {yaml_str('It remembers what its lunges cost. It will not turn on you so readily.')}\n"
              f"  LearnedChasedLine: {yaml_str('It remembers being run down. It feels you coming from farther away.')}\n"
              f"  LearnedSeveredLine: {yaml_str('It remembers being cut in two. Its severed halves hurry home.')}\n"
+             f"  ChimeraLine: {yaml_str('It is tearing between shapes - a whale, a jelly, neither. Strike it as it turns.')}\n"
              "  RoamingLabel: Roaming\n  WaryLabel: Wary\n  FleeingLabel: Fleeing\n"
              f"  LungingLabel: {yaml_str('Lunging - mind its guards')}\n"
              f"  FeedingLabel: {yaml_str('Feeding - strike the body')}\n  RisingLabel: Rising\n"
@@ -659,6 +665,8 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              "  SeveredLabel: The Severed\n"
              f"  SeveredOutFormat: {yaml_str('home in {0}')}\n"
              f"  SeveredHomeLabel: {yaml_str('crawling home - cut it off')}\n"
+             f"  ChimeraName: {yaml_str('Whale-Jelly Chimera')}\n  ChimeraLabel: Unstable\n"
+             f"  ChimeraTurningLabel: {yaml_str('Turning - it cannot heal')}\n"
              "  NudgeThreshold: 25\n  NudgeFraction: 0.2\n  MaxNudge: 8\n  AiFlankBack: 70\n")
 
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/TandavaScoringRule.asset", G_ASSET["TandavaScoringRule"],
@@ -718,7 +726,8 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_AS
              lib.toast(148, "{0}", domain_names=0) +
              lib.toast(149, "{0}", domain_names=0) +
              lib.toast(150, "{0}", domain_names=0) +
-             lib.toast(151, "{0}", domain_names=0))
+             lib.toast(151, "{0}", domain_names=0) +
+             lib.toast(152, "{0}", domain_names=0))
 g.register_toast_config(G_ASSET["GameToastConfigTandava"])
 
 
@@ -947,7 +956,7 @@ if director_keys != [name for name, _, _ in DIRECTOR]:
 for spec_struct, keys in (("TandavaFormSpec", ("DisplayName", "Role", "FillToEvolve", "BankShare", "MealVolume", "Line", "Variants")),
                           ("TandavaVariantSpec", ("DisplayName", "PlanIndex", "FeedPlanIndex", "CoilPlanIndices", "CoilMouths",
                                                   "CoilRoamRadius", "LungePlanIndex", "SnapPlanIndex", "LungeMouth", "Mouth", "FeedMouth",
-                                                  "HaloCentre"))):
+                                                  "HaloCentre", "ChimeraPlanIndex", "ChimeraAltPlanIndex"))):
     body = SO_SRC["TandavaSettingsSO"].split(f"public struct {spec_struct}")[1].split("\n    }")[0]
     if re.findall(r"public\s+[\w<>\[\]]+\s+(\w+)\s*;", body) != list(keys):
         errors.append(f"{spec_struct}'s fields are not {keys} in order (the asset this script writes)")
@@ -1034,7 +1043,7 @@ toasts_src = g.read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
 for name, sid in (("TandavaMatchStart", 137), ("TandavaFormTaken", 138), ("TandavaCompleted", 139), ("TandavaBroken", 140),
                   ("TandavaFeeding", 141), ("TandavaDenyHint", 142), ("TandavaMealBroken", 143), ("TandavaRising", 144),
                   ("TandavaHaloLit", 145), ("TandavaHaloBroken", 146), ("TandavaLunge", 147), ("TandavaSevered", 148),
-                  ("TandavaRejoined", 149), ("TandavaSuccession", 150), ("TandavaLearned", 151)):
+                  ("TandavaRejoined", 149), ("TandavaSuccession", 150), ("TandavaLearned", 151), ("TandavaChimera", 152)):
     if not re.search(rf"\b{name} = {sid},", toasts_src):
         errors.append(f"GameToastSituation.{name} is not {sid}")
 if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSignal.cs")):

@@ -107,6 +107,7 @@ static partial class TandavaHarness
         "antlion_1", "antlion_1_feed", "antlion_1_gape", "antlion_1_snap", "antlion_2", "antlion_2_feed", "antlion_2_gape", "antlion_2_snap",
         "antlion_3", "antlion_3_feed", "antlion_3_gape", "antlion_3_snap",
         "severed", "severed_feed",   // §3.11: the piece a cut parts from the body (form 4 of tandava_plans, no rung of the ladder)
+        "chimera_whale", "chimera_jelly",   // §3.13: the whale-jelly chimera between the Many-Headed Serpent and the Dance (form 5)
     };
     /// <summary>Each form's own lunge poses, (the charge, the strike) - tandava_plans.lunges_of.</summary>
     static readonly (string charge, string strike)?[] Lunges = { null, ("_rear", "_strike"), null, ("_gape", "_snap") };
@@ -207,6 +208,7 @@ static partial class TandavaHarness
                 {
                     form.LungePlanIndex = b.Ix[key + l.charge]; form.SnapPlanIndex = b.Ix[key + l.strike]; form.LungeMouth = b.Mouth[key + l.charge];
                 }
+                if (f == 1 && !NoChimera) { form.ChimeraPlanIndex = b.Ix["chimera_whale"]; form.ChimeraAltPlanIndex = b.Ix["chimera_jelly"]; }
                 form.Bank = BankShare[f] * StomachCapacity;
                 form.MealVolume = MealVolume;
             }
@@ -215,6 +217,9 @@ static partial class TandavaHarness
         }
         return forms;
     }
+
+    /// <summary>TANDAVA_NOCHIMERA=1: the Many-Headed Serpent rises straight to the Dance (the ladder before §3.13).</summary>
+    static readonly bool NoChimera = Environment.GetEnvironmentVariable("TANDAVA_NOCHIMERA") == "1";
 
     static float[] _wellClip;
     static int MANY_HEADS(string key) => int.Parse(key.Substring(key.LastIndexOf('_') + 1));
@@ -413,6 +418,12 @@ static partial class TandavaHarness
         public bool Severing = Environment.GetEnvironmentVariable("TANDAVA_NOSEVER") != "1";
         public int Severs, Rejoins, Successions, PiecesLost, PieceMembersHome;
         public readonly List<(float t, string what)> SeverLog = new();
+        // §3.13: the chimera's log - when it began, each turn (time, to the jelly), the plans it wore, eggs laid mid-turn
+        public float ChimeraAt = -1f;
+        public Vector3 ChimeraAnchor;
+        public readonly List<(float t, bool jelly)> Turns = new();
+        public readonly HashSet<int> ChimeraPlans = new();
+        public int LaidWhileTurning, ChimeraMinAlive = int.MaxValue;
         public (int was, int moved, int left, float stomach) LastSever;
         // §3.12: what its wounds taught it, when
         public readonly List<(float t, TandavaWound wound)> Learned = new();
@@ -545,6 +556,8 @@ static partial class TandavaHarness
                 }
             }
             if (e.Kind == TandavaEventKind.Rising) { s.RiseAt = s.Now; s.RiseAnchor = c.Anchor * UnitScale; }
+            if (e.Kind == TandavaEventKind.ChimeraBegan) { s.ChimeraAt = s.Now; s.ChimeraAnchor = c.Anchor * UnitScale; }
+            if (e.Kind == TandavaEventKind.ChimeraTurned) s.Turns.Add((s.Now, e.A == 1));
             if (e.Kind == TandavaEventKind.DanceBegan)
             {
                 s.DanceAt = s.Now;
@@ -574,6 +587,8 @@ static partial class TandavaHarness
         c.SwimTarget = d.Goal / UnitScale;
         c.Step(ReadOnlySpan<SwarmPredator>.Empty);
         foreach (var e in c.Events) if (e.Kind == SwarmEventKind.Laid && d.Feeding) s.LaidWhileFeeding++;
+        foreach (var e in c.Events) if (e.Kind == SwarmEventKind.Laid && d.Phase == TandavaPhase.ChimeraTurning) s.LaidWhileTurning++;
+        if (d.InChimera) { s.ChimeraPlans.Add(c.PlanIx); s.ChimeraMinAlive = Math.Min(s.ChimeraMinAlive, st.Alive); }
         c.Events.Clear();
         if ((c.Anchor * UnitScale).Length() > s.MaxRadius && Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "2" && (c.Anchor * UnitScale).Length() > 630f)
             Console.WriteLine($"      r {(c.Anchor * UnitScale).Length():F0} at {s.Now:F1} s: {Keys[c.PlanIx]} phase {d.Phase} mood {d.Mood} goal r {d.Goal.Length():F0} coil {d.Coil}");
@@ -612,6 +627,7 @@ static partial class TandavaHarness
     public static int Run(SwarmPlanData[] basePlans, string dir)
     {
         var b = Load(dir);
+        if (Environment.GetEnvironmentVariable("TANDAVA_ONLY") == "chimera") { ChimeraTests(b); Console.WriteLine(_fail == 0 ? "\ntandava chimera: OK" : $"\ntandava chimera: {_fail} FAILED"); return _fail; }
         if (Environment.GetEnvironmentVariable("TANDAVA_ONLY") == "wound") { WoundTests(b); Console.WriteLine(_fail == 0 ? "\ntandava wound: OK" : $"\ntandava wound: {_fail} FAILED"); return _fail; }
         if (Environment.GetEnvironmentVariable("TANDAVA_ONLY") == "sever") { SeverTests(b); Console.WriteLine(_fail == 0 ? "\ntandava sever: OK" : $"\ntandava sever: {_fail} FAILED"); return _fail; }
         Console.WriteLine($"tandava: {b.Plans.Length} plans at density {Density}: " +
@@ -635,9 +651,9 @@ static partial class TandavaHarness
                 mouths &= b.Mouth.ContainsKey(key);
             }
             foreach (var key in Variants[2]) rings &= b.Ring.ContainsKey(key);
-            Check(b.Plans.Length == 53, "53 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
+            Check(b.Plans.Length == 55, "55 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
                                         "three coils for each serpent, two lunge poses each for the Many-Headed Serpent and the Antlion, " +
-                                        "and the Severed's travel and strike poses (§3.11)");
+                                        "the Severed's travel and strike poses (§3.11), and the chimera's two shapes (§3.13)");
             twins &= Mix(b.Plans[b.Ix["severed"]]).SequenceEqual(Mix(b.Plans[b.Ix["severed_feed"]]));
             Check(twins, "every pose carries exactly its travel plan's element counts (a pose commit is a re-sort, never a molt)");
             Check(mouths && rings, "every eating plan bakes its mouth, every dance plan its halo");
@@ -1208,6 +1224,7 @@ static partial class TandavaHarness
 
         SeverTests(b);
         WoundTests(b);
+        ChimeraTests(b);
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }

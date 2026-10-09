@@ -910,9 +910,32 @@ def antlion(v, pose="travel"):
     return units + plates, None
 
 
+# the chimera (TANDAVA.md §3.13)
+
+CHIMERA_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tandava_chimera.json")
+
+
+def chimera(shape):
+    """THE WHALE-JELLY CHIMERA: not drawn - GROWN. The hybrid NCA's whale was spliced onto its jelly and left to run,
+    and the body it grew kept reshaping between a whale wrapped in a jelly shell with a bell at its head and a whale
+    with a jelly stripe down its back; tandava_chimera_extract.py took one swim cycle of each moment and spread one
+    census over its skin. `shape` is "whale" or "jelly": the creature flips between the two (TandavaPhase.Chimera), a
+    pose change, never a molt. Slots split the body at its centre height: above is the back, below the belly."""
+    src = json.load(open(CHIMERA_JSON, encoding="utf-8"))["shapes"][shape]
+    pos = src["pos"]
+    units = []
+    for k, e in enumerate(src["elem"]):
+        u = Unit(e, 0 if pos[0][k][1] >= 0.0 else 1, 2 if e == CHARGE else 0)
+        for f in range(FRAMES):
+            u.pos[f] = list(pos[f][k])
+            u.face[f] = [1.0, 0.0, 0.0]
+        units.append(u)
+    return units, None
+
+
 # ───────────────────────────────────────────────────────────────── the catalogue
 
-FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Antlion", "the Severed"]
+FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Antlion", "the Severed", "Whale-Jelly Chimera"]
 LADDER = 4                 # forms 0-3 are the ladder; form 4 (the Severed) is no rung of it
 
 
@@ -929,6 +952,8 @@ def _variants():
     for v in (1, 2, 3):
         out.append((f"antlion_{v}", 3, "Antlion", lambda pose, v=v: antlion(v, pose), True))
     out.append(("severed", 4, "the Severed", lambda pose: severed(pose), True))   # appended: every ladder index stays put
+    for shape in ("whale", "jelly"):   # the chimera between the Many-Headed Serpent and the Dance (no rung: it never feeds)
+        out.append((f"chimera_{shape}", 5, "Whale-Jelly Chimera", lambda pose, shape=shape: chimera(shape), False))
     return out
 
 
@@ -1120,8 +1145,8 @@ def validate(plans):
             if "mouth" not in p:
                 errors.append(f"{kind}: a feed twin bakes no mouth")
     forms = sorted({p["form"] for p in plans.values()})
-    if forms != [0, 1, 2, 3, 4]:
-        errors.append(f"the plans make forms {forms}, not the four and the Severed")
+    if forms != [0, 1, 2, 3, 4, 5]:
+        errors.append(f"the plans make forms {forms}, not the four, the Severed and the chimera")
     for form in range(LADDER):
         if sum(1 for p in plans.values() if p["form"] == form and split_key(p["kind"])[1] == "travel") != 3:
             errors.append(f"form {form} does not have three variants")
@@ -1133,6 +1158,16 @@ def validate(plans):
         least = min(p["n"] for p in plans.values() if p["form"] == form)
         if least < prev:
             errors.append(f"form {form}'s smallest variant ({least} units) is smaller than form {form - 1}'s biggest ({prev})")
+    # the chimera's two shapes are ONE body re-arranged (turning is a pose change), and it sits between the rungs it
+    # bridges: no smaller than the Many-Headed Serpent it rises from, no bigger than the Dance it rises to
+    wj, jj = plans.get("chimera_whale"), plans.get("chimera_jelly")
+    if wj is None or jj is None or census(wj) != census(jj):
+        errors.append("the chimera's whale and jelly shapes must carry one census (a turn is a pose change, never a molt)")
+    else:
+        lo = max(p["n"] for p in plans.values() if p["form"] == 1)
+        hi = min(p["n"] for p in plans.values() if p["form"] == 2)
+        if not lo <= wj["n"] <= hi:
+            errors.append(f"the chimera ({wj['n']} units) is not between the Many-Headed Serpent ({lo}) and the Dance ({hi})")
     # the Severed fits the biggest piece a sever may take whole (TandavaDirectorSettings.SeverMaxShare of the biggest body)
     sev = plans.get("severed")
     biggest = max(p["n"] for p in plans.values() if p["form"] < LADDER)
