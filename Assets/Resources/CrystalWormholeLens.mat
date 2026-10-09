@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WormholeSeamless
-  m_Shader: {fileID: 4800000, guid: 1b0aa366a170fb99b7d63b228298811a, type: 3}
+  m_Name: CrystalWormholeLens
+  m_Shader: {fileID: 4800000, guid: 8c2d8efd4b47425d9063c820e8b7890e, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -16,30 +16,20 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats:
-    - _DomainRimBoost: 2
-    - _DstBlend: 10
-    - _FlareIntensity: 2.5
-    - _ProxyRadius: 600
-    - _RimDarken: 0.25
-    - _RimIntensity: 0.35
-    - _RimPower: 6
-    - _SealedIntensity: 1.5
-    - _SealedRimCutoff: 0.2
-    - _SealedRimPower: 2.5
-    - _SoftEdge: 0.65
-    - _SrcBlend: 5
-    - _ZWrite: 0
+    m_Floats: []
     m_Colors:
-    - _RimColor: {r: 0.45, g: 0.75, b: 1.6, a: 1}
-    - _VoidColor: {r: 0.01, g: 0.015, b: 0.04, a: 1}
+    - _CWLens: {r: 0, g: 0, b: 0, a: 1}
+    - _CWNeck: {r: 0, g: 30, b: 150, a: 96}
+    - _CWPoleA: {r: 0, g: 0, b: 0, a: 0}
+    - _CWPoleB: {r: 0, g: 0, b: 0, a: 0}
+    - _CWTaper: {r: 390, g: 570, b: 1200, a: 2}
   m_BuildTextureStacks: []
   m_AllowLocalizedText: 1

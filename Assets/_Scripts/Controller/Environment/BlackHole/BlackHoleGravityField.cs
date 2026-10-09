@@ -353,15 +353,17 @@ namespace CosmicShore.Gameplay
                         int by = _capturedBy[i];
                         var hole = by >= 0 && by < _wellHoles.Length ? _wellHoles[by] : null;
 
-                        // A DIPOLE's sink is a throat, not a singularity (Docs/BLACK_HOLE.md §12):
-                        // the body is carried through to the same point relative to the source
-                        // and stays a body — velocity and all — so it falls on inward, through
-                        // the source's centre, and the source drives it back out. Nothing is
-                        // consumed, so the dipole conserves the mass it moves.
+                        // A crystal wormhole's attractor is a throat, not a singularity
+                        // (Docs/CRYSTAL_WORMHOLE.md §2): the body is carried through to the ANTIPODAL
+                        // point of the repulsor's core — the point reflection through the pair's
+                        // midpoint, the rule vessels and light go through by — and stays a body,
+                        // velocity and all: falling in at one end is climbing out at the other, and the
+                        // repulsor drives it on out. Nothing is consumed, so the pair conserves the mass
+                        // it moves.
                         var throat = hole != null ? hole.Throat : null;
                         if (throat != null && !throat.IsDespawning)
                         {
-                            p.transform.position += throat.transform.position - hole.transform.position;
+                            p.transform.position = hole.transform.position + throat.transform.position - p.transform.position;
                             ThroatTransitsTotal++;
                             break;
                         }

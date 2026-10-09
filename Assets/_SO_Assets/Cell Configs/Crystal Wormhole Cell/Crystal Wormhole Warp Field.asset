@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 38da6bdfdf88483fb81efd29f2c9d39b, type: 3}
+  m_Script: {fileID: 11500000, guid: 0c8b5514425d4eee86bf0dfc4d5d59bb, type: 3}
   m_Name: Crystal Wormhole Warp Field
   m_EditorClassIdentifier: 
   fieldThickness: 200
@@ -17,7 +17,5 @@ MonoBehaviour:
   fieldHeight: 200
   fieldMax: 300
   easeSeconds: 1.5
-  referenceRadius: 350
-  exponent: 1
-  minScale: 0.01
-  maxScale: 1
+  throatRadius: 30
+  throatScale: 0.2

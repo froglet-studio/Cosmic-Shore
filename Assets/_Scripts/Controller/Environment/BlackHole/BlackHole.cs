@@ -178,7 +178,17 @@ namespace CosmicShore.Gameplay
                 Destroy(_horizon.gameObject);
                 _horizon = null;
             }
+            // A smooth well with no lens of its own draws nothing: its owner draws the light (a crystal
+            // wormhole's lens is the warp field's own optics, CrystalWormholeView).
+            if (IsSmooth && lensStrength <= 0f && _lens != null)
+            {
+                Destroy(_lens.gameObject);
+                _lens = null;
+            }
         }
+
+        /// <summary>A smooth well whose owner draws its light (lens strength 0): no lens, no fallback sphere.</summary>
+        bool DrawsNothing => IsSmooth && lensStrength <= 0f;
 
         /// <summary>The felt-pull law's strength k (0 = vessels feel the physical pull). See the field's tooltip.</summary>
         public float VesselFeltStrength => vesselFeltStrength;
@@ -323,6 +333,7 @@ namespace CosmicShore.Gameplay
         {
             if (_visualBuilt) return;
             _visualBuilt = true;
+            if (DrawsNothing) return;
             if (BlackHoleRegistry.Config.LensEnabled)
                 _lens = BlackHoleLens.Create(this);
             if (_lens == null)

@@ -51,25 +51,25 @@ MonoBehaviour:
   layAcrossFrames: 0
   layBudgetMsPerFrame: 6
   intensityLevel: 1
-  repulsorOffset: {x: 0, y: 500, z: 0}
+  repulsorOffset: {x: 0, y: 360, z: 0}
   strength: 15
-  throatRadius: 26
-  lensStrength: 0.6
+  throatRadius: 30
+  throatScale: 0.2
   spinAxis: {x: 0, y: 1, z: 0}
   vesselFeltStrength: 4
   vesselFeltCap: 1.3
   vesselFeltReach: 12
-  formSeconds: 6
-  annihilateSeconds: 9
-  lifetimeSeconds: 0
-  spiralTurns: 2.5
+  lifeSeconds: 60
+  formSeconds: 4
+  touch: 0.45
+  spiralTurns: 2
   beatCycles: 7
-  beatDepth: 0.5
-  mouthMaterial: {fileID: 2100000, guid: 7b025f919c16662b7fcec10a7a1937bb, type: 2}
+  beatDepth: 0.6
+  reformSeconds: 8
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  mouthExactRange: 2500
-  mouthExactFadeBand: 600
-  mouthExactRenderScale: 0.75
-  mouthPanoramaFaceSize: 256
+  farEyeRenderScale: 0.75
+  panoramaFaceSize: 256
+  proxyRadius: 1200
+  lensSteps: 96
   modelPlates: 48
   modelBallFraction: 0.12

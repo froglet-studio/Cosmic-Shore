@@ -53,8 +53,15 @@
 // target is the ship mapped back through the pair and the exact view is what shows it, so a hole would
 // show the empty near-side interior instead. WormholeView clears _WormholeCorridor on that mouth.
 //
-// RENDER STATE. Opaque, ZWrite On, Cull Back: from outside the sphere covers its whole footprint;
-// from inside, its back faces are culled (and the clearance drops the rest).
+// RENDER STATE. Opaque, ZWrite On, and _Cull chooses which faces paint the picture: Front (the
+// shipped Wormhole.mat) draws the INSIDE of the sphere — its far hemisphere — and Back the outside.
+// Either covers exactly the sphere's footprint, and every per-pixel term (the exact view's screen
+// lookup, the panorama's parallax ray, the rim, the sealed shell) is a function of the VIEW RAY, not
+// of which face it hit, so the picture is the same. What changes is depth: the inside's depth is the
+// far hemisphere's, so whatever is IN the ball — a hull half through, the Butterfly at the centre of
+// the mouth its fold just laid round it — is drawn in front of the view rather than cut by the near
+// face, and a camera can come right up to the surface without its near plane biting a hole in it.
+// (The clearance still drops the sphere for a camera within it, where the carry hands over.)
 //
 // COST. One screen-space fetch, or one array fetch, per fragment; a small rim term; the corridor's
 // segment test (~10 ALU), whose dither kernel runs only on fragments inside it. The real cost is
@@ -75,11 +82,7 @@ Shader "CosmicShore/Wormhole"
         _SealedRimPower ("Sealed Rim Power", Range(0.5, 8)) = 2.5
         _SealedRimCutoff ("Sealed Rim Cutoff", Range(0, 1)) = 0.2
         _SealedIntensity ("Sealed Rim Intensity", Range(0, 8)) = 1.5
-        [Header(Seamless mouth (a crystal wormhole, Docs CRYSTAL_WORMHOLE.md))]
-        _SoftEdge ("Seamless edge: 0 = the fold's hard sphere and rim; above 0 the fraction of the radius the view dissolves over", Range(0, 1)) = 0
-        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
-        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
-        [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 1
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Faces drawn: Front = the INSIDE of the sphere, Back = its outside", Float) = 1
     }
 
     SubShader
@@ -108,7 +111,7 @@ Shader "CosmicShore/Wormhole"
             float _SealedRimPower;
             float _SealedRimCutoff;
             float _SealedIntensity;
-            float _SoftEdge;
+            float _Cull;
         CBUFFER_END
 
         // PER RENDERER (WormholeMouth.ApplySurface, through a MaterialPropertyBlock).
@@ -155,13 +158,22 @@ Shader "CosmicShore/Wormhole"
             return _WormholeRimTint.a > 0.5 ? _WormholeRimTint.rgb * _DomainRimBoost : _RimColor.rgb;
         }
 
+        // The cosine between the view ray and the sphere's normal where the ray ENTERS it — from the
+        // ray's impact parameter, so the inside (far faces) and the outside (near faces) agree exactly.
+        float EntryCosine(float3 positionWS)
+        {
+            float3 viewDir = normalize(positionWS - _WorldSpaceCameraPos);
+            float3 toC = _WormholeSphere.xyz - _WorldSpaceCameraPos;
+            float b = length(toC - viewDir * dot(toC, viewDir));
+            float u = saturate(b / max(_WormholeSphere.w, 1e-4));
+            return sqrt(saturate(1.0 - u * u));
+        }
+
         // A sealed mouth keeps only its fresnel shell; everything inside the cutoff is dropped, in
         // the depth pass as well as the colour pass. Returns the shell's strength.
         float SealedShell(float3 positionWS)
         {
-            float3 n = normalize(positionWS - _WormholeSphere.xyz);
-            float3 toEye = normalize(_WorldSpaceCameraPos - positionWS);
-            float s = pow(1.0 - saturate(dot(n, toEye)), max(_SealedRimPower, 0.5));
+            float s = pow(1.0 - EntryCosine(positionWS), max(_SealedRimPower, 0.5));
             clip(s - _SealedRimCutoff);
             return s;
         }
@@ -172,12 +184,9 @@ Shader "CosmicShore/Wormhole"
             Name "Wormhole"
             Tags { "LightMode" = "SRPDefaultUnlit" }
 
-            // The fold's material: One Zero, ZWrite On (opaque). A seamless material: SrcAlpha
-            // OneMinusSrcAlpha, ZWrite Off, transparent queue.
-            Blend [_SrcBlend] [_DstBlend]
-            ZWrite [_ZWrite]
+            ZWrite On
             ZTest LEqual
-            Cull Back
+            Cull [_Cull]
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -277,7 +286,6 @@ Shader "CosmicShore/Wormhole"
                 float radius = max(_WormholeSphere.w, 1e-4);
                 float3 viewDir = normalize(input.positionWS - _WorldSpaceCameraPos);
                 float3 rel = input.positionWS - centre;
-                float3 normal = rel / max(length(rel), 1e-5);
 
                 float exact = saturate(_WormholeExactBlend) * step(0.5, _WormholeMainView);
 
@@ -300,24 +308,10 @@ Shader "CosmicShore/Wormhole"
                     colour = lerp(colour, seen, exact);
                 }
 
-                // A SEAMLESS mouth (Docs/CRYSTAL_WORMHOLE.md) has no surface of its own at all: the view
-                // beyond it dissolves into the world toward its silhouette — opaque at the centre of
-                // the disc, gone at its edge, graded by the view ray's impact parameter — and there is
-                // no rim and no flare. Nothing on screen says "here is a surface".
-                if (_SoftEdge > 0.0)
-                {
-                    float3 toC = centre - _WorldSpaceCameraPos;
-                    float b = length(toC - viewDir * dot(toC, viewDir));
-                    float u = saturate(b / radius);
-                    float alpha = 1.0 - smoothstep(1.0 - saturate(_SoftEdge), 1.0, u);
-                    alpha = alpha * alpha * (3.0 - 2.0 * alpha);   // eased twice: no visible ramp
-                    return half4(colour, alpha);
-                }
-
                 // The rim: the only thing on the surface that is the mouth itself rather than the
                 // place beyond it — a faint darkening and a glow in the DOMAIN's hue at the
                 // silhouette, punched up for a moment on every transit.
-                float rim = pow(1.0 - saturate(dot(normal, -viewDir)), max(_RimPower, 0.5));
+                float rim = pow(1.0 - EntryCosine(input.positionWS), max(_RimPower, 0.5));
                 float glow = _RimIntensity + saturate(_WormholeFlare) * _FlareIntensity;
                 colour = colour * (1.0 - rim * saturate(_RimDarken)) + RimColour() * (rim * glow);
 
@@ -333,7 +327,7 @@ Shader "CosmicShore/Wormhole"
 
             ZWrite On
             ColorMask R
-            Cull Back
+            Cull [_Cull]
 
             HLSLPROGRAM
             #pragma vertex vertDepth

@@ -25,7 +25,10 @@ survived every refactor since; the controller and all its consumers did not.
 | What | Where |
 |---|---|
 | The field contract (`ScaleAt(offset)`, 1 = no warp; `EaseSeconds`) | `_Scripts/Controller/Environment/WarpField/WarpFieldSO.cs` |
-| The radial field — `s = clamp((r/R)^k, min, max)` | `RadialWarp.cs` (same folder) |
+| The radial field — `s = √(min² + core²)`, soft cap and floor | `RadialWarp.cs` (same folder) |
+| The neck field — a pole as a catenoid-like neck, exactly flat past its reach | `ThroatWarp.cs` (same folder) |
+| ∇ln s at a point (six reads) | `WarpFieldRuntime.LogGradientAt` |
+| Heading follows the field's geodesics | `VesselTransformer.ApplyWarpGeodesicTurn` |
 | The ONE live field, its centre, its eased weight | `WarpFieldRuntime.cs` |
 | Every vessel's root size, on every peer | `WarpFieldVesselScaler.cs` |
 | Turning it on | `CellConfigDataSO.WarpField` — the scene's `Cell` activates it in `SpawnVisuals` (never a satellite), releases it in `RetireWorldIntoSuctionRoot` and `OnDisable` |
@@ -34,7 +37,7 @@ survived every refactor since; the controller and all its consumers did not.
 | Prism size, lane gap, offset, spacing, speed gate, skimmer clearance | `VesselPrismController.SpawnLoopAsync` / `CreateBlock` |
 | FOV speed tunnel reads the FELT speed (`Speed / s`) | `Utility/VesselSpeedTunnel.Tick` |
 | Gates | `WarpFieldTests` (the smooth law, no-field = exactly 1, ownership); `CrystalWormholeTests` (poles as a product, amplitude 0 = flat, frozen poles) |
-| First user | The Crystal Wormhole cell (`Docs/CRYSTAL_WORMHOLE.md`): `Crystal Wormhole Warp Field.asset` |
+| First user | The Crystal Wormhole cell (`Docs/CRYSTAL_WORMHOLE.md`): `Crystal Wormhole Warp Field.asset` (a `ThroatWarp`) |
 
 ## 2. The rules that make it hold
 
@@ -57,6 +60,12 @@ survived every refactor since; the controller and all its consumers did not.
   same trail. The FOV tunnel divides `s` back out so a shrunken cruise does not read as a crawl.
 - **Laid prisms are STATED sizes.** A warped prism is usually far below the trail prism's 0.5
   scale floor, so `CreateBlock` admits it (`Prism.AdmitTargetScale`) exactly as a widened one is.
+- **Straight is a geodesic.** Measured in a pilot's own lengths a warped world is CURVED (the metric
+  `|dx|/s`), and its straight lines bend toward small `s`. A vessel's whole frame (commanded rotation,
+  hull, momentum) turns at `|∇⊥ ln s|` radians per world unit flown
+  (`VesselTransformer.ApplyWarpGeodesicTurn`). That is the bend light takes in the crystal wormhole's
+  lens, so what a pilot sees dead ahead is where they go. It is a no-op with no field, and imperceptible
+  where the field is gentle.
 - **The spawn gate and wavelength are measured in warped lengths** (`Speed > 3·s`,
   `wavelength·s / Speed`), so the lay RATE is unchanged and a shrunken vessel never stops laying.
 
@@ -69,29 +78,42 @@ is a candidate consumer — add it by multiplying its authored length by
 `WarpFieldRuntime.ScaleAt(position)`, nothing more. The 2022 version scaled only the player, two
 AI ships, the camera and the trail.
 
-## 4. The radial field, its poles, and the crystal wormhole
+## 4. The fields, their poles, and the crystal wormhole
 
-`RadialWarp` (smooth since 2026-10-08): `s = √(min² + core²)`, `core = max·y / (1 + y⁴)^¼`,
-`y = (r / referenceRadius)^exponent / max` — proportional to distance near the centre, saturating
-toward its maximum far out, softly floored, **no crease anywhere** (a hard clamp is an interface).
+**`RadialWarp`** (smooth since 2026-10-08): `s = √(min² + core²)`, `core = max·y / (1 + y⁴)^¼`,
+`y = (r / referenceRadius)^exponent / max`. It is proportional to distance near the centre, saturates toward
+its maximum far out, is softly floored, and has **no crease anywhere** (a hard clamp is an interface). In
+felt lengths `s ∝ r` is an endless TUBE. Light skimming a tube winds round it the whole way, which is why
+the crystal wormhole does not use it.
 
-**Poles.** An environment can register poles (`WarpFieldRuntime.AddPole(transform, amplitude)`). With
-any registered, the field is read around them instead of its centre, composed as a PRODUCT, each
-raised to its live amplitude: `s = Π s_i^{a_i}` — smooth everywhere, and a pole at amplitude 0 is flat
-space. A pole keeps its last position and amplitude once its transform is gone, so it eases out with
-the field (no pop); a new field starts with none. The crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`)
-registers its attractor and repulsor, whose amplitudes beat against each other as the pair forms and
-annihilates; its cell ships `referenceRadius 350`, floor 0.01, both reaches clear of the toys.
+**`ThroatWarp`** (2026-10-09): the felt radius of the sphere at distance r is
+`F(r) = r + λ·e^(−u − u²/2)`, with `u = (r − throat)/λ` and `λ = throat/throatScale − throat`, and
+`s = r / F`.
 
-Because the vessel's world speed is proportional to `r` near a pole, a pilot holding a constant felt
-speed approaches EXPONENTIALLY: what is ahead swells at a steady rate for as long as they fly at it.
+- F is smallest and stationary at the throat: a catenoid-like NECK.
+- `ln s` is eased to exactly 0 between 3 λ and 4.5 λ beyond the throat, so the field has an edge nobody can
+  see. Inside the throat s holds at `throatScale`.
+- `CrystalWormholeLens.hlsl` carries the same lines, because the crystal wormhole's light follows this
+  field (`Docs/CRYSTAL_WORMHOLE.md` §2).
+
+**Poles.** An environment can register poles with `WarpFieldRuntime.AddPole(transform, amplitude)`.
+
+- With any registered, the field is read around them instead of its centre, composed as a PRODUCT with each
+  pole raised to its live amplitude: `s = Π s_i^{a_i}`. That is smooth everywhere, and a pole at amplitude 0
+  is flat space.
+- A pole keeps its last position and amplitude once its transform is gone, so it eases out with the field
+  (no pop). A new field starts with none.
+- The crystal wormhole registers its attractor and repulsor. Their amplitudes form, and beat against each
+  other as the pair annihilates. Its cell ships throat 30 and throatScale 0.2, so the field is flat 570 u
+  from each pole and clears the toys.
+
 The poles' pull and push on vessels is a felt law in each hull's own cruise speed and frame
-(`Docs/CRYSTAL_WORMHOLE.md` §3).
+(`Docs/CRYSTAL_WORMHOLE.md` §4).
 
 ## 5. Verify in the editor (owed)
 
-Menu_Main → freestyle → Cell Selector → **Crystal Wormhole**. Fly at the centre: your hull, camera and
-trail should stay the same on screen while the hole grows to fill the view; nothing should pop
+Menu_Main → freestyle → Cell Selector → **Crystal Wormhole**. Fly at a pole: your hull, camera and
+trail should stay the same on screen while the crystal ball grows to fill the view; nothing should pop
 when the world comes in or when you select another world (1.5 s ease). In a session with a second
 player or AI, watch them shrink as they fly in. Check that a 1%-scale trail is still laid (tiny
 prisms right behind you) and that the near plane does not clip your own hull. FrogletTools ▸

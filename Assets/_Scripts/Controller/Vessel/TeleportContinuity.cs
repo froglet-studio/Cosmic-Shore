@@ -75,6 +75,15 @@ namespace CosmicShore.Gameplay
                 CarryCameras(vessel, mouth, exit - entry);
                 mouth.LevyToll(status, entry);
             }
+            else if (CrystalWormhole.TryResolveTransit(from, to, out var crystal, out var cEntry, out var cExit,
+                                                         out var turn, out var centre))
+            {
+                // A crystal wormhole (Docs/CRYSTAL_WORMHOLE.md): the same cut at its throats, and the
+                // camera carried through by the throat's own map — which TURNS what goes through.
+                departAt = cEntry;
+                arriveAt = cExit;
+                CarryCamerasThroughCrystal(vessel, crystal, cEntry, cExit, turn, centre);
+            }
 
             CutRibbons(vessel, departAt, arriveAt, speed);
         }
@@ -94,6 +103,18 @@ namespace CosmicShore.Gameplay
             if (manager == null) return;
             if (manager.GetActiveController() is not CustomCameraController controller) return;
             controller.CarryThroughSphere(vessel, near.Centre, near.Radius, shift);
+        }
+
+        /// <summary>A crystal wormhole's carry: the throat's rigid map at the ship's crossing point, and
+        /// the camera crossing at its OWN point (<see cref="CrystalWormhole.CameraThrough"/>), which is where
+        /// the far eye showed it the far side from.</summary>
+        static void CarryCamerasThroughCrystal(Transform vessel, CrystalWormhole crystal, Vector3 entry,
+                                               Vector3 exit, Quaternion turn, Vector3 centre)
+        {
+            var manager = CameraManager.Instance;
+            if (manager == null) return;
+            if (manager.GetActiveController() is not CustomCameraController controller) return;
+            controller.CarryThrough(vessel, entry, exit, turn, centre, crystal.Throat, 0f, crystal.CameraThrough);
         }
 
         static void CutRibbons(Transform vessel, Vector3 departAt, Vector3 arriveAt, float speed)

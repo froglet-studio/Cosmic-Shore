@@ -65,6 +65,51 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Crystal wormhole rebuilt as one geometry; Butterfly mouths draw the inside of their spheres (`cece/charming-cerf-alf1j1`, 2026-10-09) — NOT EDITOR-VERIFIED
+
+`Docs/CRYSTAL_WORMHOLE.md`. **What landed:**
+
+- A `ThroatWarp` field (each pole a catenoid-like neck).
+- The throats glued antipodally with a 180° turn about the normal.
+- The light: `CrystalWormholeLens.shader`, an RK4 trace of the field's optics drawn on the INSIDE of one lens
+  sphere by `BlackHoleLensPass`, coloured from the frame copy, a far eye (colour + depth) and two panoramas
+  (`CrystalWormholeView`).
+- Vessels follow the field's geodesics (`VesselTransformer.ApplyWarpGeodesicTurn`).
+- The camera follows the ship through on a rigid map and crosses at its own point
+  (`CustomCameraController.CarryThrough`).
+- A 60 s life: form, drift together orbiting, touch, beat, annihilate, re-open 8 s later.
+- The Butterfly's `Wormhole.mat` now has `_Cull` = Front (inside).
+
+**Verified out of editor:**
+
+- `Tools/Shaders/simulate_crystal_wormhole.py --check` runs the shipped HLSL under clang++. It checks:
+  no-field identity, ThroatWarp parity, symmetry, no speckle (negative control fires), and seamless
+  transit (ship 3.4 and camera crossing 2.2 against an ordinary frame's 4.4). It also compiles both
+  shaders with glslang against the URP mock.
+- `unity_refcompile` reports 0 project errors in player, player-dev and editor.
+- The Unity CLI (`/verify-unity`) was NOT available in this session.
+
+**Steps:**
+
+1. **Life.** Menu_Main → freestyle → Cell Selector → *Crystal Wormhole*. Expect two crystal balls to form
+   (4 s), drift together while orbiting, touch at ~48 s, merge into one beating distortion, and vanish at
+   60 s, then re-open 8 s later. Nothing should pop at any point.
+2. **Look.** From afar, expect a crystal ball showing the far side's whole sky, with this side's sky
+   wrapped round it as a ring, and no surface and no blurry edge. The outer rings should read as smooth
+   bands, not sparkle; if they sparkle, check the far eye and panorama mips.
+3. **Fly the attractor.** Expect the ball to open into a tunnel as you shrink to ~1/5. Your hull never
+   pops, the ship is seen through the throat while the camera catches up, and there is no visible cut when
+   the camera crosses. You come out of the repulsor pushed away.
+4. **Repulsor.** At cruise you are held off; boosting at ~2.5× gets you through.
+5. **Off-axis.** Aim beside the ball: you swing round and out, which matches what you saw.
+6. **Frame rate inside the lens** on a mid-tier GPU: the trace is full-screen there. `lensSteps` (96)
+   and `farEyeRenderScale` (0.75) are the dials.
+7. **Butterfly fold mouths.** Fold. The view through should look as before. A ship inside or straddling a
+   mouth is no longer cut by the near face, and the camera can come right up to the surface. Set
+   `Wormhole.mat` `_Cull` to Back to compare with the old outside rendering.
+
+---
+
 ### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
 **What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.

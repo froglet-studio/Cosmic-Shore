@@ -114,6 +114,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// ∇ln s at <paramref name="worldPosition"/>, per world unit (zero with no field): which way, and how
+        /// fast, the local length scale grows. Its part across a vessel's heading is how fast that heading
+        /// turns to follow the field's geodesics — the same bend the crystal wormhole's lens gives light
+        /// (<see cref="VesselTransformer"/>'s warp turn, Docs/WARP_FIELD.md §2). Central differences over
+        /// <paramref name="step"/> world units: six reads of the field.
+        /// </summary>
+        public static Vector3 LogGradientAt(Vector3 worldPosition, float step = 0.5f)
+        {
+            if (_field == null) return Vector3.zero;
+            float h = Mathf.Max(1e-3f, step);
+            float inv = 0.5f / h;
+            return new Vector3(
+                Mathf.Log(ScaleAt(worldPosition + new Vector3(h, 0f, 0f))) - Mathf.Log(ScaleAt(worldPosition - new Vector3(h, 0f, 0f))),
+                Mathf.Log(ScaleAt(worldPosition + new Vector3(0f, h, 0f))) - Mathf.Log(ScaleAt(worldPosition - new Vector3(0f, h, 0f))),
+                Mathf.Log(ScaleAt(worldPosition + new Vector3(0f, 0f, h))) - Mathf.Log(ScaleAt(worldPosition - new Vector3(0f, 0f, h)))) * inv;
+        }
+
+        /// <summary>
         /// Switch <paramref name="field"/> on, centred on <paramref name="centre"/> (its position is
         /// read live, so a moving centre carries the field). Eases in from the current weight.
         /// </summary>

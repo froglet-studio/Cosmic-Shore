@@ -40,6 +40,16 @@ namespace CosmicShore.Gameplay
         static BlackHoleLensPass s_pass;
         static int s_users;
 
+        /// <summary>
+        /// Cameras that never draw a lens: the eyes that render what a lens SHOWS (a crystal wormhole's far eye
+        /// and panoramas, CrystalWormholeView). Their pictures are composited by the gameplay camera's own lens
+        /// pass, so lensing them too would bend the far side twice — and a panorama eye sits inside a throat.
+        /// </summary>
+        static readonly System.Collections.Generic.HashSet<Camera> s_excluded = new();
+
+        internal static void Exclude(Camera cam) { if (cam) s_excluded.Add(cam); }
+        internal static void Include(Camera cam) => s_excluded.Remove(cam);
+
         class CopyData
         {
             public TextureHandle source;
@@ -63,7 +73,7 @@ namespace CosmicShore.Gameplay
 
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
-            if (s_users == 0 || cam == null) return;
+            if (s_users == 0 || cam == null || s_excluded.Contains(cam)) return;
             ScriptableRenderer renderer = null;
             if (cam.cameraType == CameraType.Game)
             {
@@ -134,6 +144,7 @@ namespace CosmicShore.Gameplay
         static void ResetOnLoad()
         {
             s_users = 0;
+            s_excluded.Clear();
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
         }

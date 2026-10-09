@@ -41,9 +41,9 @@ SCRIPTS = ["WormholeGeometry", "WormholeMouth", "WormholeView"]
 TEST = A("_Scripts", "Tests", "Editor", "WormholeGeometryTests.cs")
 SHADER = A("_Graphics", "Materials", "Graphs", "Wormhole.shader")
 MATERIAL = A("_Graphics", "Materials", "Wormhole.mat")
-# The SEAMLESS mouth (a crystal wormhole's, Docs/CRYSTAL_WORMHOLE.md): the same shader, alpha-blended,
-# its view dissolving into the world toward the silhouette, no rim — no interface.
-SEAMLESS_MATERIAL = A("_Graphics", "Materials", "WormholeSeamless.mat")
+# Retired 2026-10-09: the crystal wormhole's alpha-dissolved mouth. Its light is now the warp field's own
+# lens (CrystalWormholeLens.shader) and it draws no mouth at all; --check asserts the material stays gone.
+RETIRED_SEAMLESS_MATERIAL = A("_Graphics", "Materials", "WormholeSeamless.mat")
 FOLD_ACTION = A("_SO_Assets", "VesselActions", "Butterfly", "ButterflyFoldAction.asset")
 FOLD_ACTION_SCRIPT = A("_Scripts", "Controller", "Vessel", "R_VesselActions", "Data Containers", "FoldActionSO.cs")
 FOLD_RETIRED_KEYS = ("gateExitClearance", "portalWindowFadeSeconds")
@@ -110,7 +110,8 @@ NativeFormatImporter:
 """
 
 
-def material_text(name="Wormhole", soft_edge=0, src_blend=1, dst_blend=0, zwrite=1, queue=-1):
+def material_text(name="Wormhole", cull=1, queue=-1):
+    """cull: UnityEngine.Rendering.CullMode — 1 Front draws the INSIDE of the sphere (shipped), 2 Back the outside."""
     return f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
@@ -138,8 +139,8 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _Cull: {cull}
     - _DomainRimBoost: 2
-    - _DstBlend: {dst_blend}
     - _FlareIntensity: 2.5
     - _ProxyRadius: 600
     - _RimDarken: 0.25
@@ -148,9 +149,6 @@ Material:
     - _SealedIntensity: 1.5
     - _SealedRimCutoff: 0.2
     - _SealedRimPower: 2.5
-    - _SoftEdge: {soft_edge}
-    - _SrcBlend: {src_blend}
-    - _ZWrite: {zwrite}
     m_Colors:
     - _RimColor: {{r: 0.45, g: 0.75, b: 1.6, a: 1}}
     - _VoidColor: {{r: 0.01, g: 0.015, b: 0.04, a: 1}}
@@ -169,11 +167,6 @@ def outputs():
         SHADER + ".meta": SHADER_META % guid_for("shader"),
         MATERIAL: material_text(),
         MATERIAL + ".meta": NATIVE_META % (guid_for("material"), 2100000),
-        # Alpha-blended (SrcAlpha / OneMinusSrcAlpha), no depth write, in the transparent queue so the
-        # lens pass — which copies the scene AFTER the transparents — bends it with everything else.
-        SEAMLESS_MATERIAL: material_text("WormholeSeamless", soft_edge=0.65, src_blend=5, dst_blend=10,
-                                         zwrite=0, queue=3000),
-        SEAMLESS_MATERIAL + ".meta": NATIVE_META % (guid_for("material/seamless"), 2100000),
     }
     for s in SCRIPTS:
         out[os.path.join(WORMHOLE_DIR, s + ".cs.meta")] = SCRIPT_META % guid_for(s)
@@ -237,6 +230,8 @@ def validate(out):
     # dangling Cell Selector entry (the asset is deleted).
     if guid_for("config") in read(MENU_SCENE):
         problems.append("Menu_Main still lists the retired Wormhole cell config")
+    if os.path.exists(RETIRED_SEAMLESS_MATERIAL) or os.path.exists(RETIRED_SEAMLESS_MATERIAL + ".meta"):
+        problems.append("WormholeSeamless.mat is retired (the crystal wormhole draws no mouth) and must stay gone")
     return problems
 
 

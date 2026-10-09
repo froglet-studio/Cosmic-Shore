@@ -415,6 +415,7 @@ public class VesselTransformer : MonoBehaviour
             }
 
             ApplyAnalogDrift();
+            ApplyWarpGeodesicTurn();
             RotateShip();
         
             if (VesselStatus.IsTranslationRestricted)
@@ -539,6 +540,31 @@ public class VesselTransformer : MonoBehaviour
         }
 
         // ----------------------------- Rotation Logic -----------------------------
+
+        /// <summary>
+        /// Warp field (Docs/WARP_FIELD.md §2): a vessel flying "straight" in a warped world follows the field's
+        /// GEODESICS — the paths light takes in the pilot's own lengths — so its heading bends toward where the
+        /// field is small, at <c>|∇⊥ ln s|</c> radians per world unit flown. The crystal wormhole's lens bends
+        /// light by exactly this (CrystalWormholeLens.hlsl), so what a pilot sees dead ahead is where they go,
+        /// and flying hands-off past a throat looks like flying straight. The whole frame turns — commanded
+        /// rotation, hull and momentum together — so nothing lags or snaps. Exactly nothing with no field.
+        /// </summary>
+        void ApplyWarpGeodesicTurn()
+        {
+            if (!WarpFieldRuntime.IsActive || VesselStatus == null) return;
+            float travelled = Mathf.Abs(VesselStatus.Speed) * Time.deltaTime;
+            if (travelled <= 0f) return;
+            Vector3 forward = transform.forward;
+            Vector3 bend = -WarpFieldRuntime.LogGradientAt(transform.position);
+            Vector3 across = bend - forward * Vector3.Dot(bend, forward);
+            float rate = across.magnitude;
+            if (rate < 1e-6f) return;
+            var turn = Quaternion.AngleAxis(rate * travelled * Mathf.Rad2Deg, Vector3.Cross(forward, across / rate));
+            accumulatedRotation = turn * accumulatedRotation;
+            transform.rotation = turn * transform.rotation;
+            if (_vectorSeeded) _velocity = turn * _velocity;
+        }
+
         protected virtual void RotateShip()
         {
             // Apply rotational inputs

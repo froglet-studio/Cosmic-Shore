@@ -93,7 +93,15 @@ namespace CosmicShore.Gameplay
         /// while one is being carried (<see cref="CarryThroughSphere"/>).
         /// </summary>
         private Vector3 FollowPoint =>
-            PlacementAnchor ?? (_followTarget ? _followTarget.position - PortalShift : Vector3.zero);
+            PlacementAnchor ?? (_followTarget ? CarryBack(_followTarget.position) : Vector3.zero);
+
+        /// <summary>The follow target's rotation as this camera frames it — taken back through a portal it is
+        /// still carrying (a crystal wormhole turns what goes through; a Butterfly fold's pair does not).</summary>
+        private Quaternion FollowRotation =>
+            _followTarget ? (_carrying ? Quaternion.Inverse(_carryTurn) * _followTarget.rotation : _followTarget.rotation)
+                          : Quaternion.identity;
+
+        private Vector3 FollowUp => FollowRotation * Vector3.up;
 
         /// <summary>The transform this camera follows (the vessel's camera follow target).</summary>
         public Transform FollowTarget => _followTarget;
@@ -105,16 +113,24 @@ namespace CosmicShore.Gameplay
         // cut — the whole picture changes around a ship that has not visibly moved — and letting
         // the teleport guard snap it is the same cut with the smoothing state thrown away too.
         // So the camera follows the ship THROUGH the mouth instead: it keeps framing where the
-        // ship WOULD be had the two mouths been one (the ship's position mapped back through the
+        // ship WOULD be had the two mouths been one (the ship's pose mapped back through the
         // pair), and it is itself moved across on the frame IT reaches the near mouth. Until
-        // then the pilot sees their own ship through the mouth's exact view (WormholeView), which
-        // is rendered from exactly the far-side vantage this camera is about to take — so the
-        // hand-over is a change of frame with nothing on screen to show it. (The Butterfly's
-        // original ring gates used a planar version of this; they became wormholes.)
+        // then the pilot sees their own ship through the mouth (WormholeView's exact view, or a
+        // crystal wormhole's far eye), rendered from exactly the far-side vantage this camera is
+        // about to take — so the hand-over is a change of frame with nothing on screen to show it.
+        //
+        // The map through is RIGID: p → far + turn·(p − near). A Butterfly fold's pair is a pure
+        // translation (turn = identity); a crystal wormhole's throats turn what goes through by
+        // 180° about the throat normal (Docs/CRYSTAL_WORMHOLE.md §2), and the camera crosses at its
+        // OWN point of the throat (the cross delegate), which is where its view was rendered from.
         private bool _carrying;
-        private Vector3 _carryShift;          // far mouth - near mouth, the pair's translation
+        private Vector3 _carryNear;           // the pivot on the near side (a fold: the near mouth's centre)
+        private Vector3 _carryFar;            // where it comes out (a fold: the far mouth's centre)
+        private Quaternion _carryTurn = Quaternion.identity;
         private Vector3 _carryCentre;         // the near mouth's centre
         private float _carryRadius;           // the near mouth's radius
+        private float _carryClearance;        // how far outside the sphere the camera counts as there
+        private System.Func<Pose, Pose> _carryCross;   // the camera's own crossing, or null for the rigid map
         private float _carryDeadline;
 
         /// <summary>
@@ -125,8 +141,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private const float MaxCarrySeconds = 6f;
 
-        /// <summary>The translation the camera is still waiting to take, or zero.</summary>
-        private Vector3 PortalShift => _carrying ? _carryShift : Vector3.zero;
+        /// <summary>A far-side point taken back through the carried portal (unchanged when not carrying).</summary>
+        private Vector3 CarryBack(Vector3 far) =>
+            _carrying ? _carryNear + Quaternion.Inverse(_carryTurn) * (far - _carryFar) : far;
+
+        /// <summary>A near-side point taken through the carried portal.</summary>
+        private Vector3 CarryThrough(Vector3 near) => _carryFar + _carryTurn * (near - _carryNear);
+
+        /// <summary>The translation the camera is still waiting to take, or zero (a fold's pair; for a
+        /// turning portal, the displacement of the point the camera frames).</summary>
+        private Vector3 PortalShift =>
+            _carrying && _followTarget ? _followTarget.position - CarryBack(_followTarget.position) : Vector3.zero;
 
         /// <summary>True while the camera is still on the near side of a portal its ship has
         /// already gone through.</summary>
@@ -161,24 +186,45 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool CarryThroughSphere(Transform subject, Vector3 centre, float radius, Vector3 shift)
         {
+            if (shift.sqrMagnitude < 1e-6f) return false;
+            float nearClip = Camera ? Camera.nearClipPlane : 0.3f;
+            return CarryThrough(subject, centre, centre + shift, Quaternion.identity, centre, radius,
+                WormholeGeometry.Clearance(nearClip), null);
+        }
+
+        /// <summary>
+        /// The general carry: the ship went through a portal whose map is the rigid
+        /// <c>p → <paramref name="farPivot"/> + <paramref name="turn"/>·(p − <paramref name="nearPivot"/>)</c>
+        /// (rotations by <paramref name="turn"/>), at the sphere <paramref name="centre"/>/<paramref name="radius"/>.
+        /// The camera frames the ship taken back through, and crosses when it comes within
+        /// <paramref name="clearance"/> of the sphere — by <paramref name="cross"/> if given (the portal's own
+        /// rule for a camera at that point), else by the same rigid map. Identity-guarded like
+        /// <see cref="CarryThroughSphere"/>.
+        /// </summary>
+        public bool CarryThrough(Transform subject, Vector3 nearPivot, Vector3 farPivot, Quaternion turn,
+                                 Vector3 centre, float radius, float clearance, System.Func<Pose, Pose> cross)
+        {
             if (!_followTarget || !subject) return false;
             if (_followTarget != subject && !_followTarget.IsChildOf(subject)) return false;
-            if (shift.sqrMagnitude < 1e-6f) return false;
 
             // A carry already in flight is finished first: two wormholes in a row compose, and the
             // camera must be in the first one's far frame before it can follow the ship into the
             // second.
             if (_carrying) FinishCarry();
 
-            // A placement moves the framed point to an explicit world position; there is no ship
-            // for the camera to trail through the mouth, so hand it across outright.
-            if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
-
-            _carryShift = shift;
+            _carryNear = nearPivot;
+            _carryFar = farPivot;
+            _carryTurn = turn;
             _carryCentre = centre;
             _carryRadius = Mathf.Max(0.01f, radius);
+            _carryClearance = Mathf.Max(0f, clearance);
+            _carryCross = cross;
             _carryDeadline = Time.time + MaxCarrySeconds;
             _carrying = true;
+
+            // A placement moves the framed point to an explicit world position; there is no ship
+            // for the camera to trail through the mouth, so hand it across outright.
+            if (PlacementAnchor.HasValue) { FinishCarry(); return true; }
 
             // Already through (rear view, or a camera that sits level with the ship): move now.
             if (CameraHasCrossed()) FinishCarry();
@@ -190,8 +236,7 @@ namespace CosmicShore.Gameplay
         {
             // "At the surface" counts as through: a camera within its own near clip of the sphere
             // would clip the mouth it is looking through and show the near side for a frame.
-            float nearClip = Camera ? Camera.nearClipPlane : 0.3f;
-            float reach = _carryRadius + WormholeGeometry.Clearance(nearClip);
+            float reach = _carryRadius + _carryClearance;
             return (transform.position - _carryCentre).sqrMagnitude <= reach * reach;
         }
 
@@ -213,32 +258,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Move the camera through the wormhole: its pose and its smoothing state together, by the
-        /// pair's own translation. The map has no rotation, so the camera keeps its orientation and
-        /// its SmoothDamp velocity exactly, which is what makes the frame after the hand-over
-        /// continue the frame before it.
+        /// Move the camera through the wormhole: its pose and its smoothing state together. Under a
+        /// fold's pure translation the camera keeps its orientation and its SmoothDamp velocity
+        /// exactly; through a turning portal both are turned with it — either way the frame after
+        /// the hand-over continues the frame before it.
         /// </summary>
         private void FinishCarry()
         {
             if (!_carrying) return;
-            var shift = _carryShift;
+            var from = new Pose(transform.position, transform.rotation);
+            var to = _carryCross != null
+                ? _carryCross(from)
+                : new Pose(CarryThrough(from.position), _carryTurn * from.rotation);
+            var turn = to.rotation * Quaternion.Inverse(from.rotation);
+            var lastFramed = CarryThrough(_lastTargetPos);
             _carrying = false;
-            _carryShift = Vector3.zero;
-            ShiftCamera(shift);
+            _carryCross = null;
+            transform.SetPositionAndRotation(to.position, to.rotation);
+            _velocity = turn * _velocity;
+            _lastTargetPos = lastFramed;
+            _carryTurn = Quaternion.identity;
             PublishCarryToCorridor();
-        }
-
-        private void ShiftCamera(Vector3 shift)
-        {
-            transform.position += shift;
-            _lastTargetPos += shift;
         }
 
         private void CancelCarry()
         {
             if (!_carrying) return;
             _carrying = false;
-            _carryShift = Vector3.zero;
+            _carryCross = null;
+            _carryTurn = Quaternion.identity;
             PublishCarryToCorridor();
         }
 
@@ -335,7 +383,7 @@ namespace CosmicShore.Gameplay
             float warp = WarpFieldRuntime.ScaleAt(followPoint);
             ApplyWarpToNearClip(warp);
 
-            Vector3 desiredPos = followPoint + _followTarget.rotation * (EffectiveOffset * warp);
+            Vector3 desiredPos = followPoint + FollowRotation * (EffectiveOffset * warp);
             Vector3 shipDelta = followPoint - _lastTargetPos;
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
@@ -345,7 +393,7 @@ namespace CosmicShore.Gameplay
             if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(followPoint - transform.position, FollowUp, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
@@ -353,8 +401,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
-            float lat = Vector3.Dot(shipDelta, _followTarget.right);
+            var followRotation = FollowRotation;
+            float fwd = Vector3.Dot(shipDelta, followRotation * Vector3.forward);
+            float lat = Vector3.Dot(shipDelta, followRotation * Vector3.right);
 
             // How lateral the ship's motion is (0 = pure forward, 1 = pure strafe), LOW-PASS FILTERED so
             // it can't flip frame-to-frame. The old code hard-SNAPPED the camera when |lat| > |fwd| and
@@ -381,7 +430,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(followPoint - transform.position, FollowUp, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -537,9 +586,9 @@ namespace CosmicShore.Gameplay
             if (!_followTarget) return;
 
             Vector3 followPoint = FollowPoint;
-            transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
+            transform.position = followPoint + FollowRotation * EffectiveOffset;
 
-            if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (SafeLookRotation.TryGet(followPoint - transform.position, FollowUp, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = followPoint;

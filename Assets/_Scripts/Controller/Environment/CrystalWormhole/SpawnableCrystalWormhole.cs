@@ -6,14 +6,16 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The <b>Crystal Wormhole cell</b>'s environment (Docs/CRYSTAL_WORMHOLE.md): one
-    /// <see cref="CrystalWormhole"/> — an attractor at the cell's centre and a repulsor at
-    /// <see cref="repulsorOffset"/>, joined by a seamless wormhole — and nothing else. It is a
+    /// <see cref="CrystalWormhole"/> — an attractor and a repulsor opened either side of the cell's centre
+    /// (<see cref="repulsorOffset"/>), glued through their throats — and nothing else. It is a
     /// <see cref="SpawnableBase"/> only so a <see cref="CellConfigDataSO"/> can name it as its
     /// <c>EnvironmentPrefab</c>, which is how the Cell Selector offers a world and how <see cref="Cell"/>
     /// builds and retires one.
     ///
-    /// <para><b>Spawn</b> lays nothing: it opens the wormhole on the container the Cell adopts, which
-    /// FORMS out of nothing; when the cell retires the world, the pair ANNIHILATES inside the suction.
+    /// <para><b>Spawn</b> lays nothing: it opens the wormhole on the container the Cell adopts. The pair
+    /// forms, drifts together for <see cref="lifeSeconds"/>, meets at the centre and annihilates, and opens
+    /// again <see cref="reformSeconds"/> later; when the cell retires the world, it annihilates inside the
+    /// suction and stays gone.
     /// This is a stand-in for the crystals that will open a wormhole in play — every number a crystal
     /// mechanic needs is the <see cref="CrystalWormhole.Settings"/> built here.</para>
     ///
@@ -25,25 +27,25 @@ namespace CosmicShore.Gameplay
     public sealed class SpawnableCrystalWormhole : SpawnableBase
     {
         [Header("The pair")]
-        [SerializeField, Tooltip("Where the repulsor sits relative to the attractor (the cell's centre). " +
-                                 "Keep both poles' reach clear of the toy ring (horizontal, ~0.82 of the " +
-                                 "membrane) and of each other.")]
-        Vector3 repulsorOffset = new(0f, 500f, 0f);
+        [SerializeField, Tooltip("From the cell's centre to the repulsor; the attractor opens at the opposite " +
+                                 "point, so the pair meets at the centre. Keep both necks (each reaches " +
+                                 "ThroatWarp's 4.5 λ beyond its throat) clear of the toy ring (horizontal, " +
+                                 "~0.82 of the membrane).")]
+        Vector3 repulsorOffset = new(0f, 360f, 0f);
 
         [SerializeField, Min(0f), Tooltip("Each pole's gravity on PRISMS (BlackHoleConfig: GM = strength × " +
                                           "gmPerStrength), Plummer-softened by the throat.")]
         float strength = 15f;
 
-        [SerializeField, Min(1f), Tooltip("The throat, world units: each mouth's radius, the wells' soft core " +
-                                          "and the lens's width. Everything else is measured in it.")]
-        float throatRadius = 26f;
+        [SerializeField, Min(1f), Tooltip("The throats' radius, world units: the spheres glued to each other. MUST " +
+                                          "equal the cell's ThroatWarp throatRadius (CrystalWormholeTests holds it).")]
+        float throatRadius = 30f;
 
-        [SerializeField, Range(0f, 0.9f), Tooltip("Lens strength A: the attractor magnifies what lies behind it " +
-                                                  "by up to 1/(1−A), the repulsor shrinks it by 1/(1+A). Under 1, " +
-                                                  "so the warp never folds.")]
-        float lensStrength = 0.6f;
+        [SerializeField, Range(0.02f, 0.9f), Tooltip("The scale on the throat, used only if the live warp field is " +
+                                                     "not a ThroatWarp (the cell's is; its own value wins).")]
+        float throatScale = 0.2f;
 
-        [SerializeField, Tooltip("Axis the pair is laid along by default (the wells drag no frame).")]
+        [SerializeField, Tooltip("Axis the wells spin about (they drag no frame).")]
         Vector3 spinAxis = Vector3.up;
 
         [Header("Felt pull on vessels (Docs/CRYSTAL_WORMHOLE.md §3)")]
@@ -59,37 +61,47 @@ namespace CosmicShore.Gameplay
         float vesselFeltReach = 12f;
 
         [Header("Life (Docs/CRYSTAL_WORMHOLE.md §5)")]
-        [SerializeField, Min(0f), Tooltip("Seconds the pair takes to form out of nothing.")]
-        float formSeconds = 6f;
+        [SerializeField, Min(0f), Tooltip("Seconds from opening until the poles meet and annihilate. 0 = they " +
+                                          "stand until the world retires.")]
+        float lifeSeconds = 60f;
 
-        [SerializeField, Min(0f), Tooltip("Seconds the poles take to spiral together and annihilate.")]
-        float annihilateSeconds = 9f;
+        [SerializeField, Min(0f), Tooltip("Seconds the pair takes to form where it opens.")]
+        float formSeconds = 4f;
 
-        [SerializeField, Min(0f), Tooltip("Seconds the pair stands before it annihilates on its own; 0 = until " +
-                                          "its world retires.")]
-        float lifetimeSeconds = 0f;
+        [SerializeField, Range(0.05f, 1f), Tooltip("Separation (a fraction of the opening one) at which the poles " +
+                                                   "touch and start to annihilate — 0.45 is the last ~12 s of 60.")]
+        float touch = 0.45f;
 
-        [SerializeField, Min(0f), Tooltip("Turns the poles spiral through on their way together.")]
-        float spiralTurns = 2.5f;
+        [SerializeField, Min(0f), Tooltip("Turns the pair orbits through on its way together.")]
+        float spiralTurns = 2f;
 
         [SerializeField, Min(0f), Tooltip("Amplitude beats over the annihilation — quickening, anti-phase between " +
                                           "the poles, so the warp convolutes as they close.")]
         float beatCycles = 7f;
 
         [SerializeField, Range(0f, 1f), Tooltip("How deep each beat swings the poles' amplitudes against each other.")]
-        float beatDepth = 0.5f;
+        float beatDepth = 0.6f;
 
-        [Header("Wormhole (the Butterfly fold's mouths, seamless)")]
-        [SerializeField, Tooltip("The seamless mouth material — WormholeSeamless.mat (alpha-dissolved, no rim).")]
-        Material mouthMaterial;
+        [SerializeField, Tooltip("Seconds after annihilating that the pair opens again, so it can be watched " +
+                                 "again; negative = never.")]
+        float reformSeconds = 8f;
 
-        [SerializeField, Tooltip("Whose vessels a mouth may carry: the session's runtime GameData.")]
+        [Header("View (CrystalWormholeView)")]
+        [SerializeField, Tooltip("Whose vessels the throats carry: the session's runtime GameData.")]
         GameDataSO gameData;
 
-        [SerializeField, Min(0f)] float mouthExactRange = 2500f;
-        [SerializeField, Min(1f)] float mouthExactFadeBand = 600f;
-        [SerializeField, Range(0.1f, 1f)] float mouthExactRenderScale = 0.75f;
-        [SerializeField, Range(32, 1024)] int mouthPanoramaFaceSize = 256;
+        [SerializeField, Range(0.25f, 1f), Tooltip("The far eye's resolution, × the screen's (the device tier caps it).")]
+        float farEyeRenderScale = 0.75f;
+
+        [SerializeField, Range(64, 1024), Tooltip("Each pole's panorama face, texels: what the far eye's frame misses.")]
+        int panoramaFaceSize = 256;
+
+        [SerializeField, Min(1f), Tooltip("Distance a panorama assumes what it shows is at (the membrane).")]
+        float proxyRadius = 1200f;
+
+        [SerializeField, Range(16, 256), Tooltip("Ray steps per pixel at most. Rays near the crystal ball's ring use " +
+                                                 "them all; everything else leaves in a few dozen.")]
+        int lensSteps = 96;
 
         [Header("Scale model")]
         [SerializeField, Range(16, 63), Tooltip("Plates in the Cell Selector's scale model, split between the " +
@@ -101,12 +113,14 @@ namespace CosmicShore.Gameplay
         float modelBallFraction = 0.12f;
 
         public Vector3 RepulsorOffset => repulsorOffset;
+        public Vector3 AttractorOffset => -repulsorOffset;
         public float Strength => strength;
         public float ThroatRadius => throatRadius;
-        public float LensStrength => lensStrength;
         public float VesselFeltStrength => vesselFeltStrength;
         public float VesselFeltCap => vesselFeltCap;
         public float VesselFeltReach => vesselFeltReach;
+        public float LifeSeconds => lifeSeconds;
+        public float Touch => touch;
         public float SpiralTurns => spiralTurns;
         public float BeatCycles => beatCycles;
         public float BeatDepth => beatDepth;
@@ -117,11 +131,11 @@ namespace CosmicShore.Gameplay
         /// <summary>A ball of plates for each pole — for the scale model only (see the class summary).</summary>
         protected override SpawnTrailData[] GenerateTrailData()
         {
-            float ball = Mathf.Max(throatRadius, repulsorOffset.magnitude * modelBallFraction);
+            float ball = Mathf.Max(throatRadius, 2f * repulsorOffset.magnitude * modelBallFraction);
             int half = Mathf.Max(1, modelPlates / 2);
             return new[]
             {
-                new SpawnTrailData(Ball(Vector3.zero, ball, half), false, domain),
+                new SpawnTrailData(Ball(AttractorOffset, ball, half), false, domain),
                 new SpawnTrailData(Ball(repulsorOffset, ball, half), false, domain),
             };
         }
@@ -149,23 +163,23 @@ namespace CosmicShore.Gameplay
         {
             Strength = strength,
             ThroatRadius = throatRadius,
-            LensStrength = lensStrength,
+            ThroatScale = throatScale,
             FeltStrength = vesselFeltStrength,
             FeltCap = vesselFeltCap,
             FeltReach = vesselFeltReach,
             SpinAxis = spinAxis,
-            MouthMaterial = mouthMaterial,
             Players = gameData ? gameData.Players : null,
-            MouthExactRange = mouthExactRange,
-            MouthExactFadeBand = mouthExactFadeBand,
-            MouthExactRenderScale = mouthExactRenderScale,
-            MouthPanoramaFaceSize = mouthPanoramaFaceSize,
+            LifeSeconds = lifeSeconds,
             FormSeconds = formSeconds,
-            AnnihilateSeconds = annihilateSeconds,
-            LifetimeSeconds = lifetimeSeconds,
+            Touch = touch,
             SpiralTurns = spiralTurns,
             BeatCycles = beatCycles,
             BeatDepth = beatDepth,
+            ReformSeconds = reformSeconds,
+            FarEyeRenderScale = farEyeRenderScale,
+            PanoramaFaceSize = panoramaFaceSize,
+            ProxyRadius = proxyRadius,
+            LensSteps = lensSteps,
         };
 
         /// <summary>
@@ -181,8 +195,8 @@ namespace CosmicShore.Gameplay
             if (!Application.isPlaying) return container;
 
             if (!gameData)
-                CSDebug.LogWarning("[CrystalWormhole] No GameData on the environment - its mouths will carry no one.");
-            CrystalWormhole.Open(container, Vector3.zero, repulsorOffset, BuildSettings());
+                CSDebug.LogWarning("[CrystalWormhole] No GameData on the environment - its throats will carry no one.");
+            CrystalWormhole.Open(container, AttractorOffset, repulsorOffset, BuildSettings());
             return container;
         }
     }

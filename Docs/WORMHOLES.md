@@ -11,10 +11,23 @@ playtested and confirmed the same day).
 > fold carried it: there is no wormhole cell, and `Tools/Build/author_wormholes.py --check` asserts
 > none is listed in Menu_Main.
 >
-> **A second placer (2026-10-08):** the crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`) seats an untolled,
-> ownerless pair on its attractor and repulsor, drawn with `WormholeSeamless.mat` — the same shader with
-> `_SoftEdge > 0`: alpha-blended, its view dissolving into the world toward the silhouette, no rim. The
-> fold's `Wormhole.mat` keeps `_SoftEdge 0` (its hard sphere and domain rim, unchanged).
+> **The mouths draw the INSIDE of their spheres (2026-10-09).** `Wormhole.shader`'s `_Cull` property
+> chooses the faces that paint the picture. The shipped `Wormhole.mat` has `_Cull` = Front: the far
+> hemisphere, the inside. Set it to Back for the outside, which is how the mouths drew before.
+>
+> - **The picture is the same either way.** The exact view is looked up at the pixel's screen position, the
+>   panorama along the view ray, and the rim and sealed shell come from the ray's impact parameter
+>   (`EntryCosine`). None of them depends on which face the ray hit.
+> - **Depth is what changes.** Whatever is IN the ball is drawn in front of the view instead of being cut by
+>   the near face: a hull half through, or the Butterfly at the centre of the destination mouth its fold
+>   just laid round it.
+> - **No near-plane bite.** A camera can come right up to the surface without its near plane cutting a hole
+>   in it.
+>
+> **The crystal wormhole no longer uses a mouth (2026-10-09).** For one day it seated an alpha-faded
+> "seamless" pair (`WormholeSeamless.mat`, retired). Its light is now its own warp field's lens, its throats
+> are glued antipodally with a turn, and only its camera carry reuses this machinery's idea
+> (`Docs/CRYSTAL_WORMHOLE.md`).
 
 Files:
 
