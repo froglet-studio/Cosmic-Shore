@@ -12,7 +12,44 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
-## Stoat Flight Studio (round 5 — the dipole sling, a prototype)
+## Stoat Flight Studio (round 6 — strength and hold)
+
+**The page.** The dipole sling is the only thing on show. Round 4's orbit sling and charming-cerf's crystal
+pair (with the side-by-side compare) moved into a closed **Archive** card; the crystal pair is never the
+remembered default. The game still runs the orbit sling; this round is the studio's.
+
+**The sling.** One trigger, two inputs:
+
+- **Squeeze depth = strength.** It is read live and eased over ~80 ms. Strength runs 0.5 → 12 (GM = 20,000 × strength, the game's
+  unit) along squeeze^1.5. The horizon grows only 1.5 → 6 u: mostly mass, a little size. The white hole
+  mirrors both and pushes with 0.5 × the pull, softened over twice its horizon. **Hold time plays no part in
+  the strength.** A keyboard key gives a fixed squeeze (0.5, on the rail).
+- **Neither hole moves.** The press lays the black hole 150 u ahead and 45 u to the trigger's side, and the
+  white hole the same distance ahead on the other side.
+- **The hold radius** is the circle on which the pull exactly bends you round at the engine's speed:
+  GM = v²(r − r_s)²/r. **A heavier hole holds you on a WIDER circle**, which is also why it can catch you
+  from further out. At 60 u/s this circle is 24 u at a 0.4 squeeze, 48 u at 0.7 and 78 u fully buried.
+- **The grip.** Pass within 1.5 × that circle with the hole at least 50° off your nose, or get inside the
+  circle, and it catches you. The engine then holds your speed, you settle onto the circle (3 /s), and you
+  go round for as long as you hold, up to one full turn (360°, then it lets go on its own). Outside the
+  grip the pull only bends you.
+- **Release = slingshot.** The pair lets go of you. You leave on the tangent at that angle with a boost of
+  speed × (0.25 … 0.9) by the squeeze, over 1.5 s. The pair then falls together and annihilates.
+- **The camera** swings out and up on the far side of the circle while you are in the grip, so the hole you
+  are going round stays on screen.
+
+**Measured** (scripted pad, full throttle, no steering, RT held):
+
+| squeeze | strength | hold circle | result |
+|---|---|---|---|
+| 0.15 | 1.2 | 10 u | not caught; bent 27°, release boost +17 u/s |
+| 0.4 | 3.4 | 24 u | caught at 28 u; a full turn in ~2.5 s |
+| 0.7 | 7.2 | 48 u | caught at 40 u; a full turn in ~4 s; released at 190° → out on the tangent, +38 u/s |
+| 1.0 | 12 | 78 u | caught at 76 u; ~8 s a turn; released at 128° → +54 u/s |
+
+The black hole's position was constant in every run.
+
+## Stoat Flight Studio (round 5 — the dipole sling, superseded)
 
 **What changed.** Pair A's sling is now the **dipole sling** (the rail's "A: Dipole sling" switch; "A: Orbit
 (round 4)" brings back the orbit sling). It exists only in the studio so far; the game still runs the orbit

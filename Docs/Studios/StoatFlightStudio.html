@@ -127,8 +127,8 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 5 · the dipole sling</span>
-    <p>Round 5 tries your dipole sling on pair <b style="color:var(--a-col)">A</b>: <b>press</b> a trigger and the black hole appears ahead of you on that side, the white hole ahead on the other, so you can see them; <b>squeeze</b> and the black hole comes in toward you and grows while the white hole stays put, turning the pair's axis diagonal; fly past and the pull bends you round the black hole while the white hole pushes from the far side — real forces, so the angle decides the slingshot, and the HUD measures it. <b>Let go</b> and the pair falls together and annihilates. Round 4's orbit sling is one switch away for comparison, and <b style="color:var(--b-col)">B</b> stays too.</p>
+    <span class="round">Round 6 · strength &amp; hold</span>
+    <p>Round 6 follows your notes. The black hole no longer moves: <b>press</b> a trigger and a small black hole appears ahead on that side, its white hole on the other. <b>How deep</b> you squeeze is its strength — mostly mass, a little size. <b>How long</b> you hold is how far round you go: if it is heavy enough to catch you where you pass, you stay in its grip, up to a full turn. <b>Let go</b> at the angle you want and you slingshot out on the tangent with a boost. A run is one race; the log is saved with the studio, so I can read it back.</p>
   </header>
 
   <div class="stage">
@@ -149,10 +149,9 @@
           <tr><td>Both sticks up / down</td><td><kbd>W</kbd> <kbd>S</kbd></td><td>Pitch (up = nose up; Invert Y flips it)</td></tr>
           <tr><td>Sticks opposite, up / down</td><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Roll</td></tr>
           <tr><td>Sticks spread apart / together</td><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Throttle</td></tr>
-          <tr><td><b>LT</b>: press, hold, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Pair A, dipole: press lays the black hole ahead-LEFT and the white hole ahead-right; squeeze to bring the black hole in (deeper, faster; a key ramps over its hold); let go to release the pair. Orbit (round 4): press, hold to orbit, let go. Pair B: lays the crystal pair on release.</td></tr>
-          <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other pair is held releases that one first.</td></tr>
+          <tr><td><b>LT</b>: press, hold, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Press: a black hole ahead-LEFT, its white hole ahead-right. Squeeze depth = strength (a key gives the keyboard squeeze on the rail). Hold = stay in its grip and go round. Let go = slingshot out.</td></tr>
+          <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance); a sling breaks it</td></tr>
-          <tr><td><b>Y</b></td><td><kbd>T</kbd></td><td>Swap pair A ⇄ B mid-flight</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again</td></tr>
           <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
@@ -163,8 +162,7 @@
     <section class="card log" aria-labelledby="logH">
       <div class="logHead"><h2 id="logH">Decisions</h2><span id="logStatus" class="hint" style="margin:0">Connecting…</span></div>
       <div class="quick">
-        <button class="pick" type="button" data-quick="A">A feels right</button>
-        <button class="pick" type="button" data-quick="B">B feels right</button>
+        <button class="pick" type="button" data-quick="A">The dipole sling feels right</button>
         <button class="pick" type="button" data-quick="run">Log my last race</button>
       </div>
       <form id="logForm" autocomplete="off">
@@ -183,23 +181,11 @@
     </div>
 
     <aside class="rail" aria-label="Studio controls">
-      <div class="card">
-        <h3>Wormhole pair</h3>
-        <div class="styles" role="group" aria-label="Pair style">
-          <button class="stylebtn" data-s="A" type="button" aria-pressed="true"><b>A · Drift pair</b><span>This branch, your pick. Dipole sling: press to lay it ahead, squeeze to bring the black hole in, fly past it, let go. Shadow and Einstein ring; the white hole's horizon glows white-hot.</span></button>
-          <button class="stylebtn" data-s="B" type="button" aria-pressed="false"><b>B · Crystal wormhole</b><span>charming-cerf. Smooth wells, a graded lens, seamless mouths you can fly through, a felt pull in cruise units, a spiral annihilation.</span></button>
-        </div>
-        <div class="seg" role="group" aria-label="Pair A's sling" id="slingSeg">
-          <button type="button" data-sling="dipole" aria-pressed="true">A: Dipole sling</button>
-          <button type="button" data-sling="orbit" aria-pressed="false">A: Orbit (round 4)</button>
-        </div>
-        <div class="seg" role="group" aria-label="View">
-          <button type="button" data-mode="fly" aria-pressed="true">Fly</button>
-          <button type="button" data-mode="compare" aria-pressed="false">Compare side by side</button>
-        </div>
+      <div class="card" id="mainCard">
+        <h3>The dipole sling</h3>
+        <p class="src" style="margin-top:4px">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
         <p class="src" id="portalSrc"></p>
-        <p class="src">In the game the same switch is <b>Black Hole tool ▸ Pair style</b> (press B), <code>blackhole style crystal</code>, or <code>BlackHoleConfig.crystalPairs</code>.</p>
       </div>
 
       <div class="card" id="runsCard">
@@ -210,13 +196,13 @@
       <details class="card" id="grp-sling" open><summary>Squeeze <small>StoatSlingConfig</small></summary><div class="rows"></div>
         <p class="src">A key ramps to a full squeeze over its hold time; a gamepad trigger is read live.</p>
         <div class="btns"><button class="pick" type="button" data-reset="sling">Reset to shipped</button></div></details>
-      <details class="card" id="grp-D"><summary>Pair A · dipole sling <small>round 5</small></summary><div class="rows"></div>
-        <p class="src"><b>Press</b>: the black hole is laid <i>spawn ahead</i> in front and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side, both with the spawn horizon. <b>Squeeze</b>: the black hole moves at up to <i>comes in</i> × squeeze<sup>curve</sup> and grows at <i>grows</i> × the same. It comes in only while it is still ahead of you, toward a point <i>passes beside</i> horizons off your line on its own side, so you fly past it; once abeam it keeps going the way it came, so you swing round a well moving against you — that motion is where the slingshot's speed comes from. The white hole stays where it was laid. The pull is Paczyński–Wiita, GM sized so that at cruise a circle at <i>pull</i> horizons is a free orbit: GM = ((x−1)²/x)·r<sub>s</sub>·cruise². The white hole pushes with the same GM × <i>push</i>, softened over twice its horizon so it bends the path without a spike. The force across your nose bends it; the force along it is the gravity speed, exact while you are near the holes and fading over <i>speed gain fades</i> once you are clear. <b>Let go</b>: the pair closes (pair A's closing numbers below) and annihilates; the gravity speed fades. Prototype: the game still runs the orbit sling.</p>
+      <details class="card" id="grp-D" open><summary>Dipole sling <small>round 6</small></summary><div class="rows"></div>
+        <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
-      <details class="card" id="grp-A"><summary>Pair A · orbit sling <small>this branch</small></summary><div class="rows"></div>
+      <details class="card" id="grp-A" hidden><summary>Orbit sling (round 4) <small>this branch</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b> lays the attractor beside you at the orbit radius, the repulsor mirrored. <b>Hold</b> and you circle the attractor: squeeze harder, tighter circle. Its horizon is radius ÷ 6 and its pull is exactly the one that makes that a circular orbit at your speed: GM = v²(r − r<sub>s</sub>)²/r. <b>Let go</b> and you slingshot out along the tangent; the pair falls together and annihilates.</p>
         <div class="btns"><button class="pick" type="button" data-reset="A">Reset to shipped</button></div></details>
-      <details class="card" id="grp-B"><summary>Pair B · crystal <small>charming-cerf</small></summary><div class="rows"></div>
+      <details class="card" id="grp-B" hidden><summary>Crystal pair (archived) <small>charming-cerf</small></summary><div class="rows"></div>
         <p class="src">Laid on release, sized by the deepest squeeze. Felt pull k·cruise²·R<sub>t</sub>·r/(r²+R<sub>t</sub>²)<sup>1.5</sup>; lens α = A·u·e<sup>−u²/2</sup>, u = b/w, shipped w = the throat (lens width 1). Life is sling-tuned as <code>BlackHoleConfig</code> ships it for the Stoat (0.6 s + 0.05 s + 3.35 s = the drift pair's 4 s); their crystal cell ships 6 s to form, 9 s to annihilate.</p>
         <div class="btns"><button class="pick" type="button" data-reset="B">Reset</button><button class="pick" type="button" id="theirLife">Their cell's 6 s / 9 s</button></div></details>
       <details class="card" id="grp-flight"><summary>Flight & course</summary><div class="rows"></div>
@@ -235,6 +221,22 @@
       <details class="card" id="grp-lope"><summary>Lope <small>StoatLopeMath</small></summary><div class="rows"></div>
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
         <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
+      <details class="card" id="archive"><summary>Archive <small>other slings &amp; styles</small></summary>
+        <p class="src">Kept for reference, not in play: round 4's orbit sling, and the crystal wormhole from <code>cece/charming-cerf-alf1j1</code> with the side-by-side compare. In the game the crystal style is still one switch away (<code>BlackHoleConfig.crystalPairs</code>), off by default.</p>
+        <div class="seg" role="group" aria-label="Sling" id="slingSeg">
+          <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
+          <button type="button" data-sling="orbit" aria-pressed="false">Orbit (round 4)</button>
+        </div>
+        <div class="styles" role="group" aria-label="Pair style">
+          <button class="stylebtn" data-s="A" type="button" aria-pressed="true"><b>Black + white hole</b><span>This branch: shadow and Einstein ring; the white hole glows white-hot.</span></button>
+          <button class="stylebtn" data-s="B" type="button" aria-pressed="false"><b>Crystal wormhole</b><span>charming-cerf: smooth wells, graded lens, seamless mouths, felt pull.</span></button>
+        </div>
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" data-mode="fly" aria-pressed="true">Fly</button>
+          <button type="button" data-mode="compare" aria-pressed="false">Compare side by side</button>
+        </div>
+        <p class="src">In the game: <b>Black Hole tool ▸ Pair style</b> (press B), <code>blackhole style crystal</code>.</p>
+      </details>
     </aside>
   </div>
 
@@ -258,8 +260,9 @@
     // A: the orbit sling and the drift pair (StoatSlingConfig + BlackHoleConfig)
     orbitWide: 150, orbitTight: 40, orbitHorizons: 6, followRate: 3, radialRate: 5, boostMin: 0.25, boostMax: 0.9, boostSeconds: 1.5,
     closeSpeed: 40, closeRamp: 0.6, holdCap: 12, vesselTide: 0.08, releaseDamping: 1.5,
-    // A: the dipole sling (round 5 prototype — not in the game yet)
-    dpAhead: 240, dpSide: 60, dpApproach: 80, dpStandoff: 6, dpRs0: 6, dpRsMax: 28, dpGrow: 10, dpOrbitX: 6, dpWhite: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2,
+    // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
+    dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
+    dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2,
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
     minStrength: 2, maxStrength: 12, aheadHorizons: 4, halfGapHorizons: 6,
     feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
@@ -272,18 +275,23 @@
   const SPEC = [
     ['sling', 'holdExponent', 'Squeeze curve', 0.5, 4, 0.05],
     ['sling', 'holdRamp', 'Key hold = full (s)', 0.1, 5, 0.05],
-    ['D', 'dpAhead', 'Spawn ahead (u)', 40, 600, 5],
-    ['D', 'dpSide', 'Spawn to the side (u)', 0, 200, 1],
-    ['D', 'dpApproach', 'Black hole speed (u/s, full)', 0, 300, 1],
-    ['D', 'dpStandoff', 'Passes beside at (horizons)', 1.5, 12, 0.1],
-    ['D', 'dpRs0', 'Horizon at spawn (u)', 1, 30, 0.5],
-    ['D', 'dpRsMax', 'Largest horizon (u)', 2, 60, 0.5],
-    ['D', 'dpGrow', 'Grows (u/s, full)', 0, 40, 0.5],
-    ['D', 'dpOrbitX', 'Pull: circle at cruise (horizons)', 3, 20, 0.5],
-    ['D', 'dpWhite', 'White hole push (× pull)', 0, 4, 0.05],
-    ['D', 'dpAccelCap', 'Force ceiling (u/s²)', 50, 3000, 10],
-    ['D', 'dpTurnCap', 'Fastest bend (rad/s)', 0.5, 10, 0.1],
-    ['D', 'dpAssistFade', 'Speed gain fades (s)', 0.2, 10, 0.1],
+    ['D', 'dpAhead', 'Laid ahead (u)', 30, 400, 5],
+    ['D', 'dpSide', 'Laid to the side (u)', 5, 150, 1],
+    ['D', 'dpSMin', 'Strength, a touch', 0.1, 6, 0.1],
+    ['D', 'dpSMax', 'Strength, buried', 2, 30, 0.5],
+    ['D', 'dpRsMin', 'Horizon, a touch (u)', 0.5, 6, 0.1],
+    ['D', 'dpRsMax', 'Horizon, buried (u)', 1, 15, 0.1],
+    ['D', 'dpCaptureX', 'Catches you within (× circle)', 1, 3, 0.05],
+    ['D', 'dpCatchDeg', 'Catches once off the nose by (°)', 0, 90, 1],
+    ['D', 'dpSettle', 'Settles onto the circle (/s)', 0.2, 12, 0.1],
+    ['D', 'dpGrip', 'Engine holds speed in grip (/s)', 0, 10, 0.1],
+    ['D', 'dpMaxTurn', 'Longest hold (° round)', 45, 1080, 15],
+    ['D', 'dpBoostMin', 'Release boost, a touch (× speed)', 0, 3, 0.05],
+    ['D', 'dpBoostMax', 'Release boost, buried (× speed)', 0, 3, 0.05],
+    ['D', 'dpBoostSeconds', 'Boost fade (s)', 0.1, 5, 0.1],
+    ['D', 'dpWhite', 'White hole push (× pull)', 0, 2, 0.05],
+    ['D', 'dpKeySqueeze', 'Keyboard squeeze', 0.05, 1, 0.05],
+    ['D', 'dpAssistFade', 'Gravity speed fades (s)', 0.2, 10, 0.1],
     ['A', 'orbitWide', 'Orbit at a touch (u)', 40, 400, 5],
     ['A', 'orbitTight', 'Orbit buried (u)', 10, 200, 1],
     ['A', 'orbitHorizons', 'Orbit ÷ horizon', 3, 20, 0.5],
@@ -322,12 +330,12 @@
   ];
 
   // ================= per-viewer state (convenience only) =================
-  const LS_KEY = 'stoat-studio-v5';
+  const LS_KEY = 'stoat-studio-v6';
   function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked: fine */ } }
   const saved = lsGet(LS_KEY, {});
   const P = Object.assign({}, SHIPPED, saved.P || {});
-  let style = saved.style === 'B' ? 'B' : 'A';
+  let style = 'A';   // the crystal pair (B) is archived: chosen from the Archive card only, never remembered
   let slingMode = saved.slingMode === 'orbit' ? 'orbit' : 'dipole';   // pair A's sling: round 5's dipole, or round 4's orbit
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
@@ -870,14 +878,20 @@
     lastOrbit = { angle: slingOrbit.angle, r: slingOrbit.r };
     slingOrbit = null;
   }
-  // ---- the dipole sling (round 5 prototype) ----
-  // Press: the black hole ahead on the trigger's side, the white hole ahead on the other, the axis square across the nose.
-  // Hold: the squeeze (how deep) and the hold (how long) bring the black hole in toward you and grow it; the white hole
-  // stays put, so the axis swings diagonal. Both act on you physically — the pull and the push are summed; the part
-  // across your nose bends it, the part along it speeds you up or slows you down. Let go: the pair falls together.
+  // ---- the dipole sling (round 6) ----
+  // Press: a small black hole ahead on the trigger's side and its white hole ahead on the other. Neither moves.
+  // Squeeze DEPTH is the black hole's mass (and, a little, its size); the white hole mirrors it. Hold TIME is how far
+  // round you go: once the black hole is heavy enough to catch you where you pass, you stay in its grip — on the circle
+  // where its pull exactly holds your speed — for as long as you hold, up to a full turn. Let go and it lets go of you:
+  // you leave on the tangent, at that angle, with the boost the squeeze earned. Then the pair falls together.
   let slingDipole = null, lastDipole = null, gravSpeed = 0;
-  const dipoleGM = (rs) => { const x = Math.max(1.5, P.dpOrbitX); return (x - 1) * (x - 1) / x * rs * P.cruise * P.cruise; };   // a circle at x horizons at cruise
-  const aD = new V3(), aPerp = new V3(), turnAxis = new V3();
+  const squeezeT = (q) => Math.pow(clamp01(q), Math.max(0.01, P.holdExponent));
+  const dipoleS = (q) => P.dpSMin + (Math.max(P.dpSMin, P.dpSMax) - P.dpSMin) * squeezeT(q);
+  const dipoleRs = (q) => P.dpRsMin + (Math.max(P.dpRsMin, P.dpRsMax) - P.dpRsMin) * squeezeT(q);
+  // The circle a black hole of GM holds a hull flying at v on (Paczyński–Wiita): GM = v²(r − rs)²/r, solved for r.
+  // At a fixed speed a HEAVIER hole holds you on a WIDER circle — which is also why it can catch you from further out.
+  function holdRadius(GM, v, rs) { const k = GM / Math.max(1, v * v), b = 2 * rs + k; return 0.5 * (b + Math.sqrt(Math.max(0, b * b - 4 * rs * rs))); }
+  const aD = new V3(), aPerp = new V3(), turnAxis = new V3(), rPrev = new V3();
   function layDipole(side) {
     if (mode !== 'fly' || race === 'ready') return;
     if (slingDipole) releaseDipole();
@@ -886,106 +900,133 @@
     const sideV = right.clone().multiplyScalar(side === 'L' ? -1 : 1);
     const att = hull.position.clone().addScaledVector(fwd, P.dpAhead).addScaledVector(sideV, P.dpSide);
     const rep = hull.position.clone().addScaledVector(fwd, P.dpAhead).addScaledVector(sideV, -P.dpSide);
-    const rs = Math.max(0.5, P.dpRs0), S = dipoleGM(rs) / GM_PER_STRENGTH;
+    const q = holds[side].live, rs = dipoleRs(q), S = dipoleS(q);
     myPair = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), tv.subVectors(rep, att), up, S, true,
       { rs, held: true, dipole: { att, rep, rsR: rs, SR: S * P.dpWhite } });
     pairs.push(myPair);
-    slingDipole = { side, pair: myPair, turned: 0, gain0: gravSpeed, peakGain: 0, t: 0, u: 0, uDir: new V3().subVectors(hull.position, att).normalize() };
+    slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, reach: 0, t: 0, gain0: gravSpeed };
     slings++; runStyles.add('A');
     if (stance) stance = false;
   }
+  // The squeeze is read live (eased a touch so a shaky thumb does not flicker the mass); the hold time does nothing to it.
   function holdDipole(dt) {
-    const sd = slingDipole, pr = sd.pair, k = Math.pow(clamp01(holds[sd.side].live), Math.max(0.01, P.holdExponent));
+    const sd = slingDipole, pr = sd.pair;
     sd.t += dt;
-    // It comes in while it is still ahead, aimed at a point BESIDE your line — the standoff, on its own side — so you
-    // pass it rather than hit it. Once it is abeam it keeps the way it was going: a well moving against you as you swing
-    // round it is what gives a slingshot its speed (a still one hands back on the way out what it gave on the way in).
-    basis();
-    tv.subVectors(pr.att, hull.position);
-    const ahead = tv.dot(fwd);
-    if (ahead > 0) {
-      const lat = tv2.copy(tv).addScaledVector(fwd, -ahead), l = lat.length();
-      if (l > 1e-3) lat.divideScalar(l); else lat.copy(right).multiplyScalar(sd.side === 'L' ? -1 : 1);
-      const goal = tv3.copy(hull.position).addScaledVector(lat, Math.max(Math.min(l, P.dpStandoff * pr.rs), 1e-3));
-      goal.sub(pr.att); const gd = goal.length();
-      if (gd > 1e-3) sd.uDir.copy(goal).divideScalar(gd);
+    sd.q += (holds[sd.side].live - sd.q) * (1 - Math.exp(-12 * dt));
+    pr.rs = pr.rsR = dipoleRs(sd.q); pr.S = dipoleS(sd.q); pr.SR = pr.S * P.dpWhite;
+    // The circle is the one at the ENGINE's speed — the speed its grip holds you at — not the fall-in speed of the moment.
+    sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed, 10), pr.rs);
+    sd.reach = P.dpCaptureX * sd.rc;
+    // It catches you as you PASS it — within reach and off to your side rather than still dead ahead — or as soon as you
+    // are inside its circle (a heavy hole bends your nose onto itself, so it would never get off to your side).
+    if (!sd.captured) {
+      basis(); tv.subVectors(pr.att, hull.position); const d = tv.length();
+      if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); }
     }
-    sd.u = P.dpApproach * k;
-    pr.att.addScaledVector(sd.uDir, sd.u * dt);
-    pr.rs = Math.min(Math.max(P.dpRsMax, P.dpRs0), pr.rs + P.dpGrow * k * dt);
-    pr.S = dipoleGM(pr.rs) / GM_PER_STRENGTH;
   }
-  function releaseDipole() {
+  function releaseDipole(auto) {
     const sd = slingDipole; if (!sd) return;
     sd.pair.held = false;
-    lastDipole = { turned: sd.turned, gain: gravSpeed - sd.gain0, axisDeg: dipoleAxisDeg(sd.pair) };
+    basis();
+    const kick = Math.max(speed, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
+    if (kick > 0) boosts.push({ dir: fwd.clone(), amp: kick, t: 0, dur: P.dpBoostSeconds });
+    lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
     slingFlash = 1.6; slingDipole = null;
   }
   // The angle between the pair's axis (black → white) and the nose: 90° = square across it.
   function dipoleAxisDeg(pr) { basis(); tv.subVectors(pr.rep, pr.att).normalize(); return Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI; }
   let dipoleFlying = false;
-  // The dipole flies the hull in steps of at most 4 ms: near the black hole the force turns over faster than a frame,
-  // and a frame-sized step there hands out speed no slingshot earned (a still hole must give back what it gave).
+  // Only a HELD pair acts on its pilot; let go, it lets go of you. The flight is stepped at ≤ 4 ms: near the hole the
+  // force turns over faster than a frame, and a frame-sized step there hands out speed no slingshot earned.
   function stepDipoleForce(dt) {
     dipoleFlying = false;
-    if (slingDipole) { if (!slingDipole.pair.alive) slingDipole = null; else if (!slingDipole.pair.held) releaseDipole(); else holdDipole(dt); }
-    let pr = null;
-    for (const q of pairs) if (q.owned && q.dipole && q.alive) pr = q;
-    if (!pr || race === 'ready' || stance) {
+    if (slingDipole) { if (!slingDipole.pair.alive) slingDipole = null; else if (!slingDipole.pair.held) releaseDipole(true); else holdDipole(dt); }
+    if (!slingDipole || race === 'ready' || stance) {
       gravSpeed *= Math.exp(-dt / Math.max(0.05, P.dpAssistFade));
       if (race === 'ready' || stance) gravSpeed = 0;
       return;
     }
+    const sd = slingDipole, pr = sd.pair;
     dipoleFlying = true;
     const n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n;
     for (let i = 0; i < n; i++) {
       dipoleSubstep(pr, h); basis(); hull.position.addScaledVector(fwd, (speed + gravSpeed) * h);
-      const rA = hull.position.distanceTo(pr.att);
-      if (rA > P.dpOrbitX * pr.rs) pr.gFar = gravSpeed;     // the speed you had before any dive into the black hole
-      if (rA <= pr.rs && portal.A) dipoleCarry(pr);
+      tv.subVectors(hull.position, pr.att); const rA = tv.length();
+      if (sd.captured) { sd.sweep += rPrev.angleTo(tv); rPrev.copy(tv); }
+      if (rA > 2 * Math.max(sd.rc, pr.rs)) pr.gFar = gravSpeed;     // the speed you had before any dive into the black hole
+      if (rA <= pr.rs && portal.A) { dipoleCarry(pr); break; }
     }
+    if (slingDipole && sd.sweep * 180 / Math.PI >= P.dpMaxTurn) releaseDipole(true);   // the longest hold is one full turn
   }
-  // Through the dipole: out of the white hole, point-reflected, with the speed you had BEFORE the dive. The two mouths
-  // are one throat, so a dive cannot keep what falling in gave it — only the white hole's push (bounded: its softened
-  // well is finite) is new speed.
+  // Through the dipole: out of the white hole, point-reflected, with the speed you had BEFORE the dive (the two mouths
+  // are one throat). Diving through ends the hold: the pair lets you go on the far side.
   function dipoleCarry(pr) {
     const off = tv.subVectors(hull.position, pr.att), dist = Math.max(off.length(), 1e-3);
     const exit = tv2.copy(pr.rep).addScaledVector(off, -Math.max(dist, 1.05 * pr.rsR) / dist);
     const delta = tv3.subVectors(exit, hull.position);
     hull.position.add(delta); cam.position.add(delta); camLook.add(delta); portalFlash = 1;
     gravSpeed = pr.gFar || 0;
+    if (slingDipole && slingDipole.pair === pr) releaseDipole(true);
   }
   function dipoleSubstep(pr, dt) {
-    // the pull (Paczyński–Wiita) and the push, as on the prisms
+    const sd = slingDipole;
+    // the pull (Paczyński–Wiita) and the white hole's push (softened over twice its horizon), as on the prisms
     aD.set(0, 0, 0);
     const p = hull.position;
     tv.subVectors(pr.att, p); let r = tv.length() + 1e-6, x = Math.max(r - pr.rs, 0.05 * pr.rs);
     aD.addScaledVector(tv, pr.S * GM_PER_STRENGTH / (x * x) / r);
-    // the white hole's push is softened over twice its horizon, so it bends the path without a spike at its edge
     tv.subVectors(pr.rep, p); const e2 = 4 * pr.rsR * pr.rsR, q = tv.lengthSq() + e2;
     aD.addScaledVector(tv, -pr.SR * GM_PER_STRENGTH / (q * Math.sqrt(q)));
     aD.clampLength(0, P.dpAccelCap);
-    const clear = aD.length() < 3;                     // out of both holes' reach: the gained speed bleeds off like a boost
     basis();
     const v = Math.max(speed + gravSpeed, 5), along = aD.dot(fwd);
     gravSpeed = Math.max(-Math.max(0, speed - 8), Math.min(4 * P.cruise, gravSpeed + along * dt));
-    if (clear) gravSpeed *= Math.exp(-dt / Math.max(0.05, P.dpAssistFade));
+    if (sd.captured) gravSpeed *= Math.exp(-P.dpGrip * dt);   // in its grip the engine holds your speed
     aPerp.copy(aD).addScaledVector(fwd, -along);
     const am = aPerp.length();
     if (am > 1e-4) {
       const ang = Math.min(am / v, P.dpTurnCap) * dt;
       turnAxis.crossVectors(fwd, aPerp).normalize();
       hull.quaternion.premultiply(dq.setFromAxisAngle(turnAxis, ang)).normalize();
-      if (slingDipole) slingDipole.turned += ang;
+      sd.turned += ang;
     }
-    if (slingDipole) slingDipole.peakGain = Math.max(slingDipole.peakGain, gravSpeed - slingDipole.gain0);
+    if (sd.captured) {
+      // Held on the circle: at the hold radius the pull exactly bends you round at your speed, so this only takes out
+      // the drift — onto the radius, and the nose onto the tangent.
+      const k = 1 - Math.exp(-P.dpSettle * dt);
+      tv.subVectors(p, pr.att); const d = tv.length();
+      if (d > 1e-3) {
+        tv.divideScalar(d);
+        p.addScaledVector(tv, (sd.rc - d) * k);
+        basis();
+        const radial = fwd.dot(tv);
+        tv2.copy(fwd).addScaledVector(tv, -radial);
+        if (tv2.lengthSq() > 1e-6) {
+          tv2.normalize();
+          const want = tv3.copy(fwd).lerp(tv2, k).normalize();
+          hull.quaternion.premultiply(dq.setFromUnitVectors(fwd, want)).normalize();
+        }
+      }
+    }
   }
   const axisLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3(0, 0, 1)]),
     new THREE.LineDashedMaterial({ color: 0xd9ccff, dashSize: 6, gapSize: 5, transparent: true, opacity: 0.7, depthTest: false }));
   axisLine.renderOrder = 6; axisLine.visible = false; axisLine.frustumCulled = false; scene.add(axisLine);
+  // The circle the black hole would hold you on (solid) and how far out it can catch you (faint), in the plane of
+  // your pass — so you can see whether the squeeze is heavy enough before you get there.
+  const holdLoop = circleLoop(0xb9a4ff), reachLoop = circleLoop(0x8a7fc0);
+  reachLoop.material.opacity = 0.35;
   function updateAxisLine() {
     let pr = null; for (const q of pairs) if (q.owned && q.dipole && q.alive) pr = q;
     axisLine.visible = !!pr && mode === 'fly';
+    const sd = slingDipole;
+    holdLoop.visible = reachLoop.visible = !!sd && mode === 'fly';
+    if (sd) {
+      basis(); tv.subVectors(hull.position, sd.pair.att); tv2.crossVectors(tv, fwd);
+      if (tv2.lengthSq() < 1e-6) tv2.copy(up); tv2.normalize();
+      for (const [l, r] of [[holdLoop, sd.rc], [reachLoop, sd.reach]]) { l.position.copy(sd.pair.att); l.quaternion.setFromUnitVectors(ZAX, tv2); l.scale.setScalar(Math.max(r, 0.1)); }
+      holdLoop.material.opacity = sd.captured ? 0.95 : 0.55;
+    }
     if (!pr) return;
     const a = axisLine.geometry.attributes.position;
     a.setXYZ(0, pr.att.x, pr.att.y, pr.att.z); a.setXYZ(1, pr.rep.x, pr.rep.y, pr.rep.z); a.needsUpdate = true;
@@ -1014,12 +1055,12 @@
     const h = holds[side];
     const pressed = raw > 0.05;
     if (pressed && !h.on) {
-      h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : 0;
+      h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'dipole' ? P.dpKeySqueeze : 0;
       if (style === 'A') { if (slingMode === 'dipole') layDipole(side); else layOrbit(side); }   // A: the press lays the pair
     }
     if (h.on) {
       h.t += dt;
-      h.live = analog ? clamp01(raw) : clamp01(h.t / P.holdRamp);
+      h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'dipole' ? P.dpKeySqueeze : clamp01(h.t / P.holdRamp);
       h.peak = Math.max(h.peak, h.live);                // the boost (A) and the crystal size (B) use the DEEPEST squeeze
     }
     if (!pressed && h.on) {
@@ -1069,7 +1110,6 @@
     keys.add(e.code);
     if (e.code === 'Enter') startRace();
     if (e.code === 'Space') stance = !stance && race === 'running';
-    if (e.code === 'KeyT') swapStyle();
     if (e.code === 'KeyR') spawn();
   });
   window.addEventListener('keyup', (e) => { keys.delete(e.code); });
@@ -1097,7 +1137,6 @@
       if (e[0] || e[9]) startRace();
       if ((e[1] || e[8]) && mode === 'fly') spawn();
       if (e[2]) stance = !stance && race === 'running';
-      if (e[3]) swapStyle();
     }
     const k = (c) => keys.has(c) ? 1 : 0;
     if (!g || (inp.L.x === 0 && inp.L.y === 0 && inp.R.x === 0 && inp.R.y === 0 && inp.lt === 0 && inp.rt === 0 && keys.size)) {
@@ -1121,11 +1160,24 @@
   // each half rendered with only its own wells, both under the same orbit.
   const CMP = { A: new V3(640, 40, 0), B: new V3(-640, 40, 0) };
   const camA = new THREE.PerspectiveCamera(68, 0.8, 0.5, 9000), camB = new THREE.PerspectiveCamera(68, 0.8, 0.5, 9000);
+  let camGrip = 0, lastGripR = 0; const lastGripAtt = new V3();
   function updateCamera(dt) {
     if (mode === 'fly') {
       basis();
       const want = tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
       const look = tv2.copy(hull.position).addScaledVector(fwd, 40).addScaledVector(up, 3);
+      // In the black hole's grip it sits square off your side, out of a chase camera's view: swing out and up on the
+      // far side of the circle and look between you and it, so the hole you are going round stays on screen.
+      const sd = slingDipole;
+      camGrip += ((sd && sd.captured ? 1 : 0) - camGrip) * (1 - Math.exp(-3 * dt));
+      if (camGrip > 0.001 && (sd || lastGripAtt)) {
+        if (sd) { lastGripAtt.copy(sd.pair.att); lastGripR = sd.rc; }
+        const out = tv3.subVectors(hull.position, lastGripAtt); const d = Math.max(out.length(), 1e-3); out.divideScalar(d);
+        const R = Math.max(lastGripR, 10);
+        const gw = new V3().copy(hull.position).addScaledVector(fwd, -0.55 * R - 14).addScaledVector(out, 0.45 * R + 6).addScaledVector(up, 0.4 * R + 8);
+        const gl = new V3().copy(hull.position).lerp(lastGripAtt, 0.45).addScaledVector(fwd, 0.25 * R);
+        want.lerp(gw, camGrip); look.lerp(gl, camGrip);
+      }
       const k = snapCam ? 1 : 1 - Math.exp(-7 * dt);
       cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
       cam.up.copy(up); cam.lookAt(camLook);
@@ -1330,17 +1382,18 @@
     wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
     // top-left: the pair being flown
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
-    c.fillText(style === 'A' ? 'PAIR A · ' + (slingMode === 'dipole' ? 'DIPOLE SLING' : 'ORBIT SLING') : 'PAIR B · CRYSTAL WORMHOLE', pad, pad + 12 * sc);
+    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'DIPOLE SLING' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', pad, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
-    c.fillText(style === 'A' ? 'this branch' : 'cece/charming-cerf-alf1j1', pad, pad + 27 * sc);
+    c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', pad, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), pad, pad + 41 * sc);
     if (swapFlash > 0) { c.globalAlpha = Math.min(1, swapFlash); c.textAlign = 'center'; c.font = font(22, 700); c.fillStyle = style === 'A' ? colA : colB; c.fillText('NOW FLYING PAIR ' + style, cw / 2, ch * 0.3); c.globalAlpha = 1; }
     if (slingDipole) {
-      const pr = slingDipole.pair, dA = Math.round(hull.position.distanceTo(pr.att));
+      const sd = slingDipole, pr = sd.pair, dA = Math.round(hull.position.distanceTo(pr.att));
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA;
-      c.fillText('DIPOLE  axis ' + Math.round(dipoleAxisDeg(pr)) + '° to nose  ·  black hole ' + dA + ' u, r\u209b ' + pr.rs.toFixed(0) + '  ·  turned ' + Math.round(slingDipole.turned * 180 / Math.PI) + '°  ·  ' + (gravSpeed >= 0 ? '+' : '') + Math.round(gravSpeed) + ' u/s', cw / 2, pad + 14 * sc);
-      c.font = font(11, 500); c.fillStyle = dim; c.fillText('squeeze to bring it in · let go to release', cw / 2, pad + 30 * sc);
-    } else if (slingFlash > 0 && lastDipole) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · turned ' + Math.round(lastDipole.turned * 180 / Math.PI) + '° · ' + (lastDipole.gain >= 0 ? '+' : '') + Math.round(lastDipole.gain) + ' u/s · axis ' + Math.round(lastDipole.axisDeg) + '°', cw / 2, ch * 0.3); c.globalAlpha = 1; }
+      c.fillText('STRENGTH ' + pr.S.toFixed(1) + '  ·  holds you at ' + Math.round(sd.rc) + ' u  ·  black hole ' + dA + ' u' + (sd.captured ? '  ·  IN ITS GRIP ' + Math.round(sd.sweep * 180 / Math.PI) + '° round' : '  ·  bent ' + Math.round(sd.turned * 180 / Math.PI) + '°'), cw / 2, pad + 14 * sc);
+      c.font = font(11, 500); c.fillStyle = dim;
+      c.fillText(sd.captured ? 'let go to slingshot out on the tangent' : dA <= sd.reach ? '' : 'too light to catch you from here: squeeze deeper, or fly closer', cw / 2, pad + 30 * sc);
+    } else if (slingFlash > 0 && lastDipole) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + (lastDipole.captured ? Math.round(lastDipole.sweep * 180 / Math.PI) + '° round' : 'bent ' + Math.round(lastDipole.turned * 180 / Math.PI) + '°') + ' · boost +' + Math.round(lastDipole.kick) + ' u/s', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     else if (slingOrbit) { c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA; c.fillText('ORBIT  r ' + Math.round(slingOrbit.r) + ' u  ·  ' + Math.round(slingOrbit.angle * 180 / Math.PI) + '°  ·  let go to slingshot', cw / 2, pad + 14 * sc); }
     else if (slingFlash > 0 && lastOrbit) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + Math.round(lastOrbit.angle * 180 / Math.PI) + '° round r ' + Math.round(lastOrbit.r) + ' u', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText('THROUGH THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
@@ -1371,7 +1424,7 @@
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = h.on ? ink : dim; c.fillText(side === 'L' ? 'LT' : 'RT', x, y + 5 * sc);
       if (h.on) {
         c.font = font(11, 600); c.fillStyle = ink;
-        if (style === 'A' && slingMode === 'dipole') c.fillText('in ' + Math.round(Math.pow(h.live, P.holdExponent) * P.dpApproach) + ' u/s', x, y - r - 8 * sc);
+        if (style === 'A' && slingMode === 'dipole') c.fillText('S ' + dipoleS(h.live).toFixed(1), x, y - r - 8 * sc);
         else if (style === 'A') c.fillText('orbit ' + Math.round(orbitRadius(h.live)) + ' u', x, y - r - 8 * sc);
         else { const S = strengthOf(h.peak); c.fillText('S ' + S.toFixed(1) + ' · ' + Math.max(MIN_HORIZON, S * 2).toFixed(0) + ' u', x, y - r - 8 * sc); }
       }
@@ -1392,7 +1445,7 @@
       if (!on) { const m = Math.max(Math.abs(x) / 0.93, Math.abs(y) / 0.86); x /= m; y /= m; }
       const px = x0 + (x * 0.5 + 0.5) * cw, py = (-y * 0.5 + 0.5) * ch;
       const col = w.style === 'A' ? (w.sign > 0 ? '#b9a4ff' : '#fff1c9') : (w.sign > 0 ? '#6fe3d0' : '#d8fff6');
-      const word = (w.sign > 0 ? 'attractor' : 'repulsor') + (withDist ? ' · ' + Math.round(hull.position.distanceTo(w.p)) + ' u' : '');
+      const word = (w.style === 'A' ? (w.sign > 0 ? 'black hole' : 'white hole') : (w.sign > 0 ? 'attractor' : 'repulsor')) + (withDist ? ' · ' + Math.round(hull.position.distanceTo(w.p)) + ' u' : '');
       c.fillStyle = col; c.strokeStyle = col; c.lineWidth = 1.5; c.textAlign = 'center'; c.font = font(11, 600);
       if (on) {
         const r = 5 * sc; c.beginPath(); c.moveTo(px - r, py); c.lineTo(px, py - r); c.lineTo(px + r, py); c.lineTo(px, py + r); c.closePath(); c.stroke();
@@ -1426,7 +1479,7 @@
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
         (style === 'A' && slingMode === 'dipole'
-          ? '<p>Pair <b style="color:#b9a4ff">A</b>, the dipole sling: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the black hole appears ahead on that side, the white hole ahead on the other. <b>Squeeze</b> and the black hole comes in toward you and grows (deeper, faster); the white hole stays put. Fly past the black hole and its pull bends you round it while the white hole pushes from the far side; <b>let go</b> and the pair falls together and annihilates. The HUD shows the axis angle, how far you turned and the speed gravity gave you.</p>'
+          ? '<p><b>The dipole sling.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a small black hole appears ahead on that side, its white hole ahead on the other. <b>How deep</b> you squeeze is its strength; the solid circle is where it would hold you, the faint one how far out it can catch you. Fly past it: once it catches you, you stay in its grip and go round for as long as you <b>hold</b>. <b>Let go</b> and you slingshot out on the tangent with a boost; the pair falls together and annihilates.</p>'
           : style === 'A'
           ? '<p>Pair <b style="color:#b9a4ff">A</b>: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the attractor appears on that side; <b>hold</b> and you orbit it (squeeze harder, tighter circle); <b>let go</b> to slingshot out along your nose.</p>'
           : '<p>Pair <b style="color:#6fe3d0">B</b>: squeeze <kbd>LT</kbd> or <kbd>RT</kbd> and let go to lay the crystal pair across your nose, the attractor on that side.</p>') +
@@ -1472,8 +1525,8 @@
   function setStyle(s) {
     style = s;
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
-    $('grp-A').open = s === 'A' && slingMode === 'orbit'; $('grp-D').open = s === 'A' && slingMode === 'dipole'; $('grp-B').open = s === 'B';
-    $('slingSeg').hidden = s !== 'A';
+    $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode === 'dipole');
+    if (s === 'B' || slingMode === 'orbit') $('archive').open = true;
     $('portal').checked = !!portal[s];
     $('portalSrc').textContent = s === 'A'
       ? 'As built now: anything that crosses the black hole\'s horizon (the Stoat, prisms, any vessel) comes out of the white hole, point-reflected, stretched going in and relaxing coming out.'
@@ -1505,7 +1558,7 @@
     if (bar) return;
     bar = document.createElement('div'); bar.id = 'cmpBar'; bar.className = 'btns';
     bar.innerHTML = '<button class="pick" type="button" id="cmpLives" aria-pressed="false">Play their lives</button><span class="hint" style="margin:0">Split screen, same orbit: A on the left, B on the right. Off: both held at full strength. On: A is held 2 s, then falls together and annihilates; B forms, spirals and annihilates; on a loop.</span>';
-    document.querySelector('.rail .card').appendChild(bar);
+    $('archive').appendChild(bar);
     $('cmpLives').addEventListener('click', (e) => { playLives = !playLives; e.currentTarget.setAttribute('aria-pressed', playLives ? 'true' : 'false'); buildCompare(playLives); });
   }
   $('intensity').value = String(intensity); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
@@ -1521,8 +1574,8 @@
     const key = courseKey({ seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
     const tb = $('runs').tBodies[0];
     if (!here.length) { tb.innerHTML = '<tr><td class="empty" colspan="2">No finished runs on this course yet (seed ' + seed + ', intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ').</td></tr>'; return; }
-    const row = (s) => { const rs = here.filter((r) => r.style === s); if (!rs.length) return '<tr><td>Pair ' + s + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>Pair ' + s + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
-    tb.innerHTML = row('A') + row('B');
+    const row = (s) => { const rs = here.filter((r) => r.style === s); const name = s === 'A' ? 'Black + white hole' : 'Crystal (archived)'; if (!rs.length) return '<tr><td>' + name + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>' + name + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
+    tb.innerHTML = row('A') + (here.some((r) => r.style.indexOf('B') >= 0) ? row('B') : '');
   }
 
   // ================= the decision log (shared db when the viewer serves it, else this browser) =================
@@ -1533,7 +1586,7 @@
   function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + P[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
   const SLING_KEYS = ['holdExponent', 'holdRamp'];
   const A_KEYS = ['orbitWide', 'orbitTight', 'orbitHorizons', 'boostMin', 'boostMax', 'boostSeconds', 'closeSpeed', 'closeRamp', 'holdCap', 'followRate', 'radialRate', 'vesselTide'];
-  const D_KEYS = ['dpAhead', 'dpSide', 'dpApproach', 'dpStandoff', 'dpRs0', 'dpRsMax', 'dpGrow', 'dpOrbitX', 'dpWhite', 'dpAccelCap', 'dpTurnCap', 'dpAssistFade', 'closeSpeed', 'closeRamp', 'holdCap'];
+  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'closeSpeed', 'closeRamp'];
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function currentChoice(topic) {
     switch (topic) {
@@ -1549,6 +1602,7 @@
   }
   $('logTopic').addEventListener('change', () => { $('logChoice').value = currentChoice($('logTopic').value); });
   $('useCurrent').addEventListener('click', () => { $('logChoice').value = currentChoice($('logTopic').value); });
+  $('logTopic').value = 'Sling feel';
   $('logChoice').value = currentChoice($('logTopic').value);
 
   async function record(entry) {
@@ -1568,7 +1622,7 @@
   function quick(kind) {
     if (kind === 'run') { if (!lastRun) { toast('Finish a race first: all the rings, every lap.'); return; } record({ topic: 'Race result', choice: currentChoice('Race result'), note: '', style: lastRun.style }); return; }
     const best = bestFor(kind);
-    record({ topic: 'Wormhole style', choice: kind === 'A' ? 'Pair A feels right: the drift pair (this branch)' : 'Pair B feels right: the crystal wormhole (charming-cerf)', note: (best != null ? 'Best run with it on this course: ' + fmtTime(best) + '. ' : '') + $('logNote').value.trim(), style: kind });
+    record({ topic: 'Sling feel', choice: currentChoice('Sling feel') + ' — feels right', note: (best != null ? 'Best run with it on this course: ' + fmtTime(best) + '. ' : '') + $('logNote').value.trim(), style: kind });
     $('logNote').value = '';
   }
   document.querySelectorAll('[data-quick]').forEach((b) => b.addEventListener('click', () => quick(b.dataset.quick)));
