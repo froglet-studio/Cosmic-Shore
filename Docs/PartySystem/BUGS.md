@@ -36,7 +36,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B26 | A late online success could still build a Relay session over a live OFFLINE host: the §4.2 invariant was checked only at entry | Fixed 2026-10-08 (re-checked under the mutex and after the shutdown); L1 test + negative control | 🟡 |
 | B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
-| B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | Open - found by the five-process runs 2026-10-08; the cure is Block 5 (push instead of poll) | 🔴 |
+| B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1977,7 +1977,7 @@ must arrive within five attempt timeouts: three Relay waits plus two bounded ret
 
 ---
 
-## B29 — The Join/Accept pre-flight refuses on stale presence 🔴 (found by the five-process runs 2026-10-08; open)
+## B29 — The Join/Accept pre-flight refuses on stale presence 🟡 (found by the five-process runs 2026-10-08; Session case fixed 2026-10-09, Count case open)
 
 **Shape.** `JoinTargetValidator`, the zero-request pre-flight from review Phase 1c, decides from
 the target's **polled presence**. A host publishes `partyCount` and `partySession` on its own
@@ -1999,4 +1999,27 @@ the authority, so a false "full" costs the player a retry and nothing else.
 **Cure.** Block 5 (push instead of poll) shrinks the window this rides on. Until then the
 scenarios wait until each racer's row shows the host's real count before pressing Join
 (`wait_joinable`), as a person reads the row.
+
+**The Session case is fixed (2026-10-09).** For an Accept there *is* a fresher source, and it was
+being published out of order:
+- `SendInviteAsync` saved the invite lines alone.
+- The sender's `partySession` advertisement went out only on its next presence tick
+  (`PublishPartyState`).
+- A guest's poll that landed in between read a brand-new invite next to the sender's previous
+  session, and refused it.
+
+Now `PublishInvitePayloadsToCurrentPlayer` stages both properties for the same save
+(`HostConnectionService.InvitePublicationProperties`). No poll can read an invite without the
+session it names, so an Accept is refused only when the session really moved.
+
+This was "defect 5" of the Block 3 runs, mislabelled as "the new host's invite expired on send".
+The expiry in the host's log is a symptom: an unaccepted invite outlives its 60 s lifetime during
+the harness's 240 s wait. The cause was on the invitee's side:
+`Join pre-flight refused (SessionChanged) … PilotC's party is no longer available.`
+- **Reproduced** on Prisma's five-player harness with every player on a simulated 4G line
+  (`COSMIC_SHORE_NET_SIM=4g`, `Port/docs/MULTIPLAYER.md`).
+- **Tests:** `JoinTargetValidatorTests` pins the failure shape and the one-save rule.
+- **Harness:** the T4-lobby classifier now reads the invitee's log first.
+- **Direct Join** (no invite) compares the row's own session with itself, so it never had this
+  case.
 

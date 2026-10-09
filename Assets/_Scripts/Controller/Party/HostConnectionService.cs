@@ -764,8 +764,10 @@ namespace CosmicShore.Gameplay
                 try { await _lobbyService.RefreshAsync(); }
                 catch { /* SaveAsync re-reads before any retry */ }
 
-                PublishInvitePayloadsToCurrentPlayer();
+                string advertisedSession = PublishInvitePayloadsToCurrentPlayer();
                 await _propertyWriter.SaveAsync(_lobbyService.ActiveLobby);
+                // The advertisement went out with the invite: the next presence tick need not resend it.
+                _publishedPartySessionId = advertisedSession;
 
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed - properties persisted");
@@ -2106,12 +2108,34 @@ namespace CosmicShore.Gameplay
         // ║  Outgoing invite serialization & expiry                           ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        private void PublishInvitePayloadsToCurrentPlayer()
+        /// <summary>
+        /// Stages the invite lines AND the party session they name on the local player, for the
+        /// caller's one save. Returns the session id advertised.
+        /// </summary>
+        private string PublishInvitePayloadsToCurrentPlayer()
         {
-            string composite = _inviteService.SerializeAll();
-            _lobbyService.ActiveLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
-                new PlayerProperty(composite, VisibilityPropertyOptions.Public));
+            string advertised = ResolvePublishedPartySessionId();
+            foreach (var kv in InvitePublicationProperties(_inviteService.SerializeAll(), advertised))
+                _lobbyService.ActiveLobby.CurrentPlayer.SetProperty(kv.Key,
+                    new PlayerProperty(kv.Value, VisibilityPropertyOptions.Public));
+            return advertised;
         }
+
+        /// <summary>
+        /// What one invite publish writes, in ONE save: the invite lines and the party session they
+        /// name (Docs/PartySystem/BUGS.md B29, the Accept case). Publishing the lines alone let a poll
+        /// read a fresh invite next to the sender's PREVIOUS <see cref="PARTY_SESSION_KEY"/>, which is
+        /// otherwise republished only on the next presence tick. Right after a host drop the sender
+        /// has just re-created its session, so the invitee's Accept pre-flight
+        /// (<see cref="JoinTargetValidator"/>) compared the new session to the old advertisement and
+        /// refused a valid invite as "no longer available" (defect 5 of the five-process runs). Pure,
+        /// so it is tested without a lobby.
+        /// </summary>
+        public static Dictionary<string, string> InvitePublicationProperties(string inviteLines, string advertisedSessionId) => new()
+        {
+            [INVITE_PAYLOADS_KEY] = inviteLines ?? string.Empty,
+            [PARTY_SESSION_KEY]   = advertisedSessionId ?? string.Empty,
+        };
 
         private void ExpireOutgoingInvites()
         {

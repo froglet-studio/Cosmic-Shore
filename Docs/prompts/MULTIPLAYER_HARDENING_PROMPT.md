@@ -315,25 +315,25 @@ error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay ð
    `NetworkDiagnostics.ClassifyException` has no Full label. It is the log classifier, kept
    separate from `UgsRequestPolicy.Classify` on purpose. Proposal: derive the NetDiag label from the
    policy's class.
-4. **Not fixed, B29: the pre-flight refuses on stale presence.**
-   - **Count:** a 2/4 party read as "full" right after a kick and a leave.
-   - **Session:** a new host's invite was refused as "no longer available" because its presence
-     still carried the old session.
-
-   Polled presence lags by up to two refresh intervals. Block 5 is the cure. The scenarios now
-   wait until each racer's row shows the real count.
-5. **Open, intermittent, and unexplained.** After T7 (host killed mid-match), the bounced member's
-   first outgoing invite is sometimes cleared by its own expiry check on the very next refresh
-   tick (runs 3, 4 and 8 of 8). The guest then cannot accept, and the pre-flight sees the stale
-   session (4).
-   - Ruled out: the game clock (paced, measured at 60 ticks/s) and the harness key leak (gone by
-     run 8).
-   - An instrumented 3-instance repro of the same sequence passed.
-   - If this is game code, a player whose host just dropped sends an invite that vanishes.
-   - Hit in 3 of 10 full runs. It never recurred on the two instrumented full runs (both 14/14).
-     The instrumentation added `[DIAG-INVITE]` warnings on `now` / `expiresAt` in
-     `InviteService.AddOrRefresh` / `RemoveExpired`, in the throwaway worktree only.
-   - T4-lobby now labels it `KNOWN-OPEN` when it happens. It is still a FAIL, never hidden.
+4. **B29: the pre-flight refuses on stale presence. Session case fixed 2026-10-09; Count case open.**
+   - **Count (open):** a 2/4 party read as "full" right after a kick and a leave. Polled presence
+     lags by up to two refresh intervals; Block 5 is the cure. The scenarios wait until each
+     racer's row shows the real count.
+   - **Session (fixed):** a new host's invite was refused as "no longer available" because its
+     presence still carried the old session. The invite lines were saved alone, and `partySession`
+     only went out on the next presence tick. Now both go in one save
+     (`HostConnectionService.InvitePublicationProperties`; tests in `JoinTargetValidatorTests`).
+5. **Explained 2026-10-09: defect 5 was B29's Session case (4), not an invite expiry.**
+   - **Reproduced** on the Prisma five-player harness with every player on a simulated 4G line
+     (`Port/docs/MULTIPLAYER.md`).
+   - **The invitee's log shows the cause.** After the host drop, PilotC re-hosted and invited
+     PilotA. PilotA's Accept was refused at once:
+     `Join pre-flight refused (SessionChanged) â€¦ PilotC's party is no longer available`.
+   - **The expiry was a symptom.** The `RemoveExpired - 1 expired` in the host's log came later:
+     the unaccepted invite outlived its 60 s lifetime during the harness's 240 s wait. The logs
+     carry no timestamps, so "on the very next tick" was read from line order.
+   - **Fixed by (4).** The T4-lobby classifier now reads the invitee's log first and names B29
+     when that is what happened.
 
 **Harness faults found and fixed along the way:**
 - Ready was pressed through the controller before the HUD showed the button.

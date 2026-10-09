@@ -65,6 +65,43 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B29 Session case (defect 5): an invite and the `partySession` it names go out in one save (`Ys-bleeding-edge`, 2026-10-09)
+
+**What landed:**
+- **`HostConnectionService.PublishInvitePayloadsToCurrentPlayer`** stages the invite lines AND the
+  sender's `partySession` advertisement for the same save (`InvitePublicationProperties`, pure).
+  `SendInviteAsync` then records the advertised session as published, so the next presence tick
+  does not resend it.
+- **The bug:** the invite lines were saved alone, and `partySession` went out only on the next
+  presence tick. Right after a host drop, a guest's poll read the new host's fresh invite next to
+  its OLD session. The guest's Accept pre-flight then refused a valid invite as "…party is no
+  longer available."
+- **Defect 5 re-diagnosed:** the "invite expired on send" seen in Block 3 was a symptom. The
+  unaccepted invite outlived its 60 s lifetime during the harness's 240 s wait.
+- **Tests:** `JoinTargetValidatorTests` pin the failure shape and the one-save rule (3 new).
+- **Harness:** the T4-lobby classifier now reads the invitee's log first.
+
+**Proven without the editor:**
+- **Before the fix:** the Prisma five-player harness on UDP with every player on a simulated 4G
+  line ran 13/14. T4-lobby failed, and the invitee's log shows
+  `Join pre-flight refused (SessionChanged)`.
+- **After the fix:** the same run went 14/14. T4-lobby passed in 15.6 s, and there were 0
+  SessionChanged refusals in any pilot's log. That is one run of an intermittent defect: it
+  supports the fix, it does not prove it. The tests pin the invariant.
+- **Prisma edit-mode harness:** JoinTargetValidator, PartyInvite*, UgsRequestPolicy and
+  OfflineSession suites, 215/215.
+- **`unity_refcompile`:** the player config is OK with 0 unverified. The editor config is OK; it
+  lists `HostConnectionService` among the package-absent errors (the Multiplayer Services SDK's
+  `PlayerProperty` / `ISession` cannot be fetched here). So the new lines' Unity compile is
+  unverified. Prisma's live compile, where those types exist, built them.
+- **Not run:** `/verify-unity` (no editor in the cloud session).
+
+**Needs the editor (MPPM, 3 players):**
+1. P1 hosts and invites P2 and P3. Kill P1's process.
+2. P2 lands in its own menu. At once, P2 invites P3.
+3. **Expect:** P3's Accept seats it, with no "party is no longer available" toast. Repeat 5 times,
+   because the race window is one presence refresh interval.
+
 ### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
 **What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
