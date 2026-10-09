@@ -17,5 +17,5 @@ MonoBehaviour:
   fieldHeight: 200
   fieldMax: 300
   easeSeconds: 1.5
-  throatRadius: 30
-  throatScale: 0.2
+  throatRadius: 20
+  throatScale: 0.4

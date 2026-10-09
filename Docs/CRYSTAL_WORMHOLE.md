@@ -60,8 +60,9 @@ world length `dx` is `dx / s`: a metric. Around a pole, the sphere at distance `
   `F` is smallest at the throat and stationary there (`F′ = 0`): a catenoid-like neck, which is the optics
   of an Ellis wormhole. A smootherstep on `ln s` makes the field exactly 1 beyond `throat + 4.5 λ`. Inside
   the throat (only an eye just carried through is ever there) the scale holds at its floor.
-- **Shipped:** throat 30, throatScale 0.2, so a pilot is one fifth of their size going through. The ring
-  is `throat/scale` = 150 u across in impact parameter, and the field is flat by 570 u from a pole.
+- **Shipped (retuned 2026-10-09: "warp less, size both down"):** throat 20, throatScale 0.4, so a pilot is
+  40% of their size going through (it was 20%). The ring is `throat/scale` = 50 u in impact parameter (it
+  was 150), and the field is flat by 155 u from a pole (it was 570).
 - `ThroatWarp.cs` and `CrystalWormholeLnS` carry the same lines. `--check` §2 and
   `ThroatWarp_NarrowestAtTheThroat_FlatPastItsReach_AndNoCrease` hold them together.
 
@@ -156,20 +157,37 @@ along does (simulated: `attractor_offaxis`).
    frame with nothing on screen to show it. The camera's smoothing velocity turns with it.
 
 Measured by the simulator, as the frame change across each moment against an ordinary frame near it:
-**ship transit 3.4, the camera's own crossing 2.2, ordinary frame 4.4** (`--check` §5).
+**ship transit 22.4 and the camera's own crossing 17.1, against an ordinary frame's 23.3** (`--check` §5).
+These numbers are larger than at the first tuning (3.4, 2.2 and 4.4) because the pilot now moves ~3.5× faster
+through the throat. What matters is that a transit changes the picture no more than an ordinary frame does.
 
 ## 4. The felt pull
 
 Vessels feel `Sign · k · cruise² · R_t · s · r / (r² + R_t²)^1.5` (× amplitude) in their own frame. It is
 measured in each hull's cruise speed, because the fleet's cruise speeds span 35 → 216 u/s. The ceiling is
-`1.3 × cruise`. Shipped values: `k = 4`, reach 12 throats (360 u).
+`2.5 × cruise`. Shipped values: `k = 10` and reach 12 throats (240 u), up from `k = 4` with a 1.3 ceiling:
+"increase how much the sink sucks in and the source spits out".
 
 `FeltLaw_TheAttractorCarriesYouIn_TheRepulsorMustBeBoostedThrough` asserts, on the ThroatWarp numbers for
 cruise 35/60/180:
 
-- the attractor carries a hull in at ~2.3× its cruise;
+- the attractor carries a hull in at ~3.5× its cruise;
 - the repulsor holds off any hull at cruise;
-- a hull boosting at 2.5× its cruise gets through.
+- a hull boosting at 3× its cruise gets through.
+
+`SinkToSource_AnyHull_UnderTenSeconds` holds the playtest promise: any hull, at its cruise with hands off,
+goes from the edge of the sink's reach, through the throat, and out past the source's reach in under 10 s.
+The radial part of the sink's pull carries through the throat, and the source adds to it. Modelled:
+
+| Hull | Seconds |
+|---|---|
+| Sparrow (cruise 35) | 6.2 |
+| Rhino (50) | 4.3 |
+| Cruise 60 | 3.6 |
+| Cruise 180 | 1.2 |
+| Scarab (flies 216, felt law reads 25) | 2.1 |
+
+The full 3D flight in the simulator agrees: 6.1 s for cruise 35 and 1.3 s for cruise 180.
 
 Prisms the attractor takes into its core (half the throat) come out at the antipodal point of the
 repulsor's core and are driven on out (`BlackHoleGravityField`). Nothing is destroyed.
@@ -198,9 +216,9 @@ over `lifeSeconds` (60).
 - **Untested in the editor.** Cell Selector → *Crystal Wormhole*, then:
   1. Watch two crystal balls form, drift together while orbiting, touch, merge into one distortion that
      beats, and vanish at 60 s (and again 8 s later).
-  2. Fly at the attractor: the ball grows into a tunnel, you shrink to a fifth, your ship never pops, and
-     you come out of the repulsor and are pushed away.
-  3. Fly at the repulsor at cruise (held off), then boost (through).
+  2. Fly at the attractor: the ball grows into a tunnel, you shrink to 40%, you are sucked through and
+     spat out in well under 10 s, and your ship never pops.
+  3. Fly at the repulsor at cruise (held off), then boost at 3× (through).
   4. Lay trail near the attractor and watch it come out of the repulsor.
   5. Check the frame rate inside the lens on a mid-tier GPU: the trace is full-screen there.
 - **Simulated, not rendered by Unity.** `simulate_crystal_wormhole.py` runs the shipped HLSL and reproduces

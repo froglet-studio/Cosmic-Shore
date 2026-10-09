@@ -104,7 +104,7 @@ the crystal wormhole does not use it.
 - A pole keeps its last position and amplitude once its transform is gone, so it eases out with the field
   (no pop). A new field starts with none.
 - The crystal wormhole registers its attractor and repulsor. Their amplitudes form, and beat against each
-  other as the pair annihilates. Its cell ships throat 30 and throatScale 0.2, so the field is flat 570 u
+  other as the pair annihilates. Its cell ships throat 20 and throatScale 0.4, so the field is flat 155 u
   from each pole and clears the toys.
 
 The poles' pull and push on vessels is a felt law in each hull's own cruise speed and frame

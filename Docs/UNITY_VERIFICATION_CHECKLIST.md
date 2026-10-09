@@ -84,7 +84,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 - `Tools/Shaders/simulate_crystal_wormhole.py --check` runs the shipped HLSL under clang++. It checks:
   no-field identity, ThroatWarp parity, symmetry, no speckle (negative control fires), and seamless
-  transit (ship 3.4 and camera crossing 2.2 against an ordinary frame's 4.4). It also compiles both
+  transit (a transit changes the picture no more than an ordinary frame does). It also compiles both
   shaders with glslang against the URP mock.
 - `unity_refcompile` reports 0 project errors in player, player-dev and editor.
 - The Unity CLI (`/verify-unity`) was NOT available in this session.
@@ -97,10 +97,11 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 2. **Look.** From afar, expect a crystal ball showing the far side's whole sky, with this side's sky
    wrapped round it as a ring, and no surface and no blurry edge. The outer rings should read as smooth
    bands, not sparkle; if they sparkle, check the far eye and panorama mips.
-3. **Fly the attractor.** Expect the ball to open into a tunnel as you shrink to ~1/5. Your hull never
+3. **Fly the attractor.** Expect the ball to open into a tunnel as you shrink to ~40%. Any hull should go
+   sink to source in under 10 s (modelled: Sparrow 6.2 s). Your hull never
    pops, the ship is seen through the throat while the camera catches up, and there is no visible cut when
    the camera crosses. You come out of the repulsor pushed away.
-4. **Repulsor.** At cruise you are held off; boosting at ~2.5× gets you through.
+4. **Repulsor.** At cruise you are held off; boosting at ~3× gets you through.
 5. **Off-axis.** Aim beside the ball: you swing round and out, which matches what you saw.
 6. **Frame rate inside the lens** on a mid-tier GPU: the trace is full-screen there. `lensSteps` (96)
    and `farEyeRenderScale` (0.75) are the dials.

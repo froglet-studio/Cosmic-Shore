@@ -30,13 +30,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f), Tooltip("The throat's radius, world units: the sphere a crystal wormhole glues to its " +
                                           "partner, where the neck is narrowest. Keep it equal to the wormhole's own " +
                                           "throat (CrystalWormholeTests holds the cell to it).")]
-        float throatRadius = 30f;
+        float throatRadius = 20f;
 
         [SerializeField, Range(0.02f, 0.9f), Tooltip("The scale ON the throat: how small a pilot is when they go through. " +
                                                      "Also sets how far the neck reaches — λ = throat/scale − throat, and " +
                                                      "the field is flat 4.5 λ beyond the throat — and how big the throat " +
                                                      "looks: its ring is throat/scale across, in impact parameter.")]
-        float throatScale = 0.2f;
+        float throatScale = 0.4f;
 
         public float ThroatRadius => throatRadius;
         public float ThroatScale => throatScale;

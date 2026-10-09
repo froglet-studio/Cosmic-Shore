@@ -35,15 +35,15 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Min(0f), Tooltip("Each pole's gravity on PRISMS (BlackHoleConfig: GM = strength × " +
                                           "gmPerStrength), Plummer-softened by the throat.")]
-        float strength = 15f;
+        float strength = 30f;
 
         [SerializeField, Min(1f), Tooltip("The throats' radius, world units: the spheres glued to each other. MUST " +
                                           "equal the cell's ThroatWarp throatRadius (CrystalWormholeTests holds it).")]
-        float throatRadius = 30f;
+        float throatRadius = 20f;
 
         [SerializeField, Range(0.02f, 0.9f), Tooltip("The scale on the throat, used only if the live warp field is " +
                                                      "not a ThroatWarp (the cell's is; its own value wins).")]
-        float throatScale = 0.2f;
+        float throatScale = 0.4f;
 
         [SerializeField, Tooltip("Axis the wells spin about (they drag no frame).")]
         Vector3 spinAxis = Vector3.up;
@@ -51,11 +51,12 @@ namespace CosmicShore.Gameplay
         [Header("Felt pull on vessels (Docs/CRYSTAL_WORMHOLE.md §3)")]
         [SerializeField, Min(0f), Tooltip("k: how hard both poles pull/push VESSELS, measured in each hull's own " +
                                           "cruise speed and the throat.")]
-        float vesselFeltStrength = 4f;
+        float vesselFeltStrength = 10f;
 
-        [SerializeField, Min(0f), Tooltip("The felt pull's ceiling, × cruise. 1.3: the repulsor holds off any hull " +
-                                          "at cruise (boost through); the attractor carries one in at 2.3× cruise.")]
-        float vesselFeltCap = 1.3f;
+        [SerializeField, Min(0f), Tooltip("The felt pull's ceiling, × cruise. 2.5: the attractor carries a hull " +
+                                          "through at up to 3.5× its cruise and the repulsor spits it out as hard; " +
+                                          "the repulsor holds off any hull at cruise, and a 3× boost forces it.")]
+        float vesselFeltCap = 2.5f;
 
         [SerializeField, Min(1f), Tooltip("How far each pole's felt pull reaches, in throat radii.")]
         float vesselFeltReach = 12f;

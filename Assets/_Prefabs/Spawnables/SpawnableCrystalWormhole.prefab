@@ -52,12 +52,12 @@ MonoBehaviour:
   layBudgetMsPerFrame: 6
   intensityLevel: 1
   repulsorOffset: {x: 0, y: 360, z: 0}
-  strength: 15
-  throatRadius: 30
-  throatScale: 0.2
+  strength: 30
+  throatRadius: 20
+  throatScale: 0.4
   spinAxis: {x: 0, y: 1, z: 0}
-  vesselFeltStrength: 4
-  vesselFeltCap: 1.3
+  vesselFeltStrength: 10
+  vesselFeltCap: 2.5
   vesselFeltReach: 12
   lifeSeconds: 60
   formSeconds: 4

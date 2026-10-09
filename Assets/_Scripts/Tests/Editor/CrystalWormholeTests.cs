@@ -196,8 +196,8 @@ namespace CosmicShore.Tests
 
         /// <summary>
         /// The playtest contract on the SHIPPED law and numbers: a pilot flying straight at a pole under the
-        /// cell's warp. The attractor carries a hull at cruise in faster than it flies; the repulsor turns
-        /// back a hull at cruise and lets a boosting one through — for a slow, a middling and a fast hull.
+        /// cell's warp. The attractor carries a hull at cruise in much faster than it flies; the repulsor turns
+        /// back a hull at cruise and lets one boosting at 3× through — for a slow, a middling and a fast hull.
         /// </summary>
         [Test]
         public void FeltLaw_TheAttractorCarriesYouIn_TheRepulsorMustBeBoostedThrough()
@@ -208,12 +208,66 @@ namespace CosmicShore.Tests
             {
                 var attract = Approach(+1f, cruise, cruise, env, warp);
                 Assert.IsTrue(attract.through, $"a hull at cruise {cruise} never reached the attractor's mouth.");
-                Assert.Greater(attract.topSpeed, 1.8f * cruise, $"the attractor did not carry a hull at cruise {cruise} in.");
+                Assert.Greater(attract.topSpeed, 3f * cruise, $"the attractor did not suck a hull at cruise {cruise} in.");
                 Assert.IsFalse(Approach(-1f, cruise, cruise, env, warp).through,
                     $"a hull at cruise {cruise} flew into the repulsor without boosting — it is not a challenge.");
-                Assert.IsTrue(Approach(-1f, 2.5f * cruise, cruise, env, warp).through,
-                    $"a hull boosting at 2.5x cruise ({cruise}) could not get through the repulsor.");
+                Assert.IsTrue(Approach(-1f, 3f * cruise, cruise, env, warp).through,
+                    $"a hull boosting at 3x cruise ({cruise}) could not get through the repulsor.");
             }
+        }
+
+        /// <summary>
+        /// The playtest promise: ANY hull, flying at its cruise with hands off, goes from the edge of the
+        /// sink's reach through the throat and out past the source's reach in under ten seconds — the sink's
+        /// suck carries through the throat (its radial part is kept) and the source spits it on out. The
+        /// slowest flier is the Sparrow (35); the Scarab flies at 216 while its felt law reads cruise 25.
+        /// </summary>
+        [Test]
+        public void SinkToSource_AnyHull_UnderTenSeconds()
+        {
+            var env = Environment();
+            var warp = Warp();
+            foreach (var (engine, cruise) in new[] { (35f, 35f), (50f, 50f), (60f, 60f), (180f, 180f), (216f, 25f) })
+            {
+                float seconds = SinkToSource(engine, cruise, env, warp);
+                Assert.Less(seconds, 10f, $"a hull flying {engine} (cruise {cruise}) took {seconds:F1} s sink to source.");
+            }
+        }
+
+        static float SinkToSource(float engine, float cruise, SpawnableCrystalWormhole env, ThroatWarp warp)
+        {
+            const float dt = 1f / 120f;
+            float throat = env.ThroatRadius;
+            float reach = env.VesselFeltReach * throat;
+            float edge = Mathf.Max(reach, warp.Reach);
+            float cap = env.VesselFeltCap * cruise;
+            float r = edge, vg = 0f, t = 0f;
+            // In: the sink pulls (inward positive).
+            while (r > throat)
+            {
+                float s = warp.ScaleAt(new Vector3(r, 0f, 0f));
+                if (r < reach)
+                    vg -= BlackHoleVesselPull.FeltAcceleration(new float3(r, 0f, 0f), float3.zero, +1f,
+                        env.VesselFeltStrength, cruise, throat, s).x * dt;
+                vg = Mathf.Clamp(vg, -cap, cap);
+                r -= (engine + vg) * s * dt;
+                t += dt;
+                if (t > 60f) return t;
+            }
+            // Out: the pull's radial part comes through the throat, and the source pushes (outward positive).
+            r = throat;
+            while (r < edge)
+            {
+                float s = warp.ScaleAt(new Vector3(r, 0f, 0f));
+                if (r < reach)
+                    vg += BlackHoleVesselPull.FeltAcceleration(new float3(r, 0f, 0f), float3.zero, -1f,
+                        env.VesselFeltStrength, cruise, throat, s).x * dt;
+                vg = Mathf.Clamp(vg, -cap, cap);
+                r += (engine + vg) * s * dt;
+                t += dt;
+                if (t > 60f) return t;
+            }
+            return t;
         }
 
         static (bool through, float topSpeed) Approach(float sign, float engine, float cruise, SpawnableCrystalWormhole env, ThroatWarp warp)
@@ -306,10 +360,10 @@ namespace CosmicShore.Tests
             float throat = warp.ThroatRadius;
             Assert.AreEqual(warp.ThroatScale, warp.ScaleAt(new Vector3(throat, 0f, 0f)), 1e-4f, "the scale on the throat is not the authored one.");
             Assert.AreEqual(1f, warp.ScaleAt(new Vector3(0f, warp.Reach + 1f, 0f)), 0f, "the field is not exactly flat past its reach — the lens sphere would have a seam.");
-            // Shipped numbers (simulate_crystal_wormhole.py computes the same law): throat 30, scale 0.2.
-            Assert.AreEqual(0.398457f, warp.ScaleAt(new Vector3(60f, 0f, 0f)), 2e-5f);
-            Assert.AreEqual(0.639029f, warp.ScaleAt(new Vector3(100f, 0f, 0f)), 2e-5f);
-            Assert.AreEqual(0.949356f, warp.ScaleAt(new Vector3(200f, 0f, 0f)), 2e-5f);
+            // Shipped numbers (simulate_crystal_wormhole.py computes the same law): throat 20, scale 0.4.
+            Assert.AreEqual(0.596015f, warp.ScaleAt(new Vector3(30f, 0f, 0f)), 2e-5f);
+            Assert.AreEqual(0.764331f, warp.ScaleAt(new Vector3(40f, 0f, 0f)), 2e-5f);
+            Assert.AreEqual(0.948601f, warp.ScaleAt(new Vector3(60f, 0f, 0f)), 2e-5f);
             // Felt radius r/s is stationary at the throat (a neck, not a tube) and grows on both sides of it.
             float Felt(float r) => r / warp.ScaleAt(new Vector3(r, 0f, 0f));
             Assert.AreEqual(Felt(throat), Felt(throat + 0.5f), Felt(throat) * 2e-3f, "the felt radius is not stationary at the throat.");

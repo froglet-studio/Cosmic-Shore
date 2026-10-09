@@ -65,8 +65,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 HLSL = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs/CrystalWormholeLens.hlsl")
 
 # ---- the shipped numbers (kept in step with the cell's assets by CrystalWormholeTests) -------------
-THROAT = float(os.environ.get("CW_THROAT", 30.0))          # ThroatWarp.throatRadius = the glued spheres
-THROAT_SCALE = float(os.environ.get("CW_SCALE", 0.2))      # ThroatWarp.throatScale: s at the neck
+THROAT = float(os.environ.get("CW_THROAT", 20.0))          # ThroatWarp.throatRadius = the glued spheres
+THROAT_SCALE = float(os.environ.get("CW_SCALE", 0.4))      # ThroatWarp.throatScale: s at the neck
 FELT_NECK = THROAT / THROAT_SCALE
 LAMBDA = FELT_NECK - THROAT
 TAPER_IN = THROAT + 3.0 * LAMBDA
@@ -77,7 +77,7 @@ PROXY = 1200.0           # the panoramas' proxy sphere (the membrane)
 FAR_EYE_FOV = 85.0      # the far eye: the gameplay camera view plus a margin for bent rays
 NEAR_FRACTION = 0.5      # the near field: within this fraction of the eye's distance to its nearest pole
 
-FELT_K, FELT_CAP, FELT_REACH = 4.0, 1.3, 12.0
+FELT_K, FELT_CAP, FELT_REACH = 10.0, 2.5, 12.0
 MEMBRANE = 1200.0
 
 SHIM = r"""
@@ -704,7 +704,7 @@ def approach_sheet(so, width, height, outdir, supersample=2):
     shader's derivative-chosen mips stand in as a box filter)."""
     field = Field((0, -HALF_SEPARATION, 0), (0, HALF_SEPARATION, 0))
     frames = []
-    for d in (900, 600, 400, 250, 150, 90, 55, 38):
+    for d in (600, 400, 250, 150, 90, 55, 35, 26):
         pos = np.array([-d, -HALF_SEPARATION + 0.15 * d, 0.1 * d])
         f = field.a - pos
         cam = Camera(pos, f / np.linalg.norm(f), np.array([0, 1.0, 0]), width * supersample, height * supersample)
@@ -886,7 +886,7 @@ def main():
             "attractor_offaxis": fly(so, field, (-700, -360, 160), (1, 0, 0), 30.0),
             # At the repulsor at cruise (it should hold you off), then boosting (you get through).
             "repulsor_cruise": fly(so, field, (-700, 360, 0), (1, 0, 0), 30.0),
-            "repulsor_boost": fly(so, field, (-700, 360, 0), (1, 0, 0), 30.0, boost=2.4),
+            "repulsor_boost": fly(so, field, (-700, 360, 0), (1, 0, 0), 30.0, boost=3.0),
         }
         watch_life(so, width, height, args.out)
         approach_sheet(so, 2 * width, 2 * height, args.out)
