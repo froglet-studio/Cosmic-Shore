@@ -5770,6 +5770,50 @@ doc comments. Headless only: harness T1-T19 pass, `unity_refcompile` 0 project e
 3. **Stung.** Let a strike land: the hood plates sting and slow the hull.
 4. **The Antlion** still snaps as QA-TANDAVA-19 describes, its jaws now held shut a little longer (1.3 s).
 
+### QA-TANDAVA-21 — Severing: cut it in two and the piece crawls off (`TANDAVA.md` §3.11)
+
+Branch `claude/tandava-severing`. New C#: `TandavaSever` (the piece finder), `TandavaController.Severing.cs`, the
+release / graft seams in `SwarmTickJob` and `SwarmFauna`, `ISwarmSeedGraft`; toasts 148-150. Headless only: harness
+T20-T26 pass, `unity_refcompile` 0 project errors; never seen in the Editor.
+
+1. **A clean cut.** Fly straight through a roaming Great Serpent about a third of the way up from its tail, fast, in one
+   pass. The tail third must come away as its OWN small swarm (no pop: the same tadpoles, where they were, nothing dies)
+   and swim off away from the body. The narrator: "You cut it in two..." A goal row appears: "The Severed - home in 0:40".
+2. **Not every cut.** Nibble its tail a few tadpoles at a time: nothing parts. Strike it mid-lunge or in the dance:
+   nothing parts. Only one Severed at a time.
+3. **The piece lives.** The Severed eats on its own, regrows, and when it is fed (or its clock runs out) the row reads
+   "crawling home - cut it off" and it swims back. Touching the body, it grafts back on and the row goes ("...found its
+   way home").
+4. **Kill the piece.** Cut the Severed to nothing before it gets home: the row goes, and the body has lost those members
+   for good.
+5. **Heir.** Cut the BODY away to nothing while the Severed lives: the Severed becomes the creature ("...it remembers the
+   shape"), regrows into the form the body wore, and the HUD's form row carries on.
+6. **Two peers (MPPM host + client).** The client sees its own Severed part from the same place within a second, and it
+   follows the server's (it may drift and be nudged).
+7. **Budgets.** Physics debugger during a sever: proxies and colliders stay under the ceilings.
+
+**PASS:** the cut piece leaves as a second swarm, lives, comes home or dies or takes over; nothing pops. **FAIL:** a
+piece from a nibble, a lunge or the dance · the cut members vanish or bloom in from nothing · two Severed at once ·
+the match ends while the Severed lives and the body is gone · a client's Severed missing or in another place.
+
+### QA-TANDAVA-22 — Wound memory: it will not die the same way twice (`TANDAVA.md` §3.12)
+
+Director-only (`TandavaDirectorCore`: `TandavaWound`, the Learn* settings); toast 151. Headless only: harness T11 and
+T27-T29 pass; never seen in the Editor.
+
+1. **The table.** Strike it at its first meal hard enough to break it: "It remembers being struck at the table..." Its
+   next meals are at plants farther from you and it bolts after a smaller cut. Striking every meal and nothing else
+   should stop working; striking at the table AND running it down when it bolts should still win.
+2. **The lunge.** Let it lunge at you and punish each lunge: after a few, "It remembers what its lunges cost..." and it
+   lunges noticeably less.
+3. **The chase.** Harry it while it roams: "It remembers being run down..." and it reacts to you from farther away.
+4. **The second sever.** Sever it twice: the second Severed's clock starts shorter (about 0:24 instead of 0:40), and the
+   narrator says it learned.
+5. Each line is said once per match.
+
+**PASS:** each lesson is narrated once and its change is visible. **FAIL:** a line repeats · it becomes unbeatable
+(note what you tried) · a lesson with no visible change.
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm

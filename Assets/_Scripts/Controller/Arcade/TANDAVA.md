@@ -340,6 +340,61 @@ that bolts) and is nudged toward the server's anchor (20% of the gap a tick, at 
 not heard the variant draw when its swarm hatches hatches as the first variant and re-sorts into the drawn one on its
 first tick. Narration is an index into the settings' lines (`TandavaLine`), so every peer reads its own text.
 
+### 3.11 Severing: cut it in two and the piece crawls off
+
+A boss you cannot kill the same way twice starts with a body you can cut. Fly cleanly through the body - kill every
+member across a band of it - and for the moment before the wound buds shut, the members beyond the cut are a separate
+cloud. `TandavaSever.FindPiece` finds that moment: live members linked to every neighbour within `SeverLink` (13 u -
+a whole body's loosest knot of a dozen members sits inside it in every pose but the dance and the lunges, harness T20)
+fall into pieces; the largest is the body, and the second, if it holds 12-40% of the form (and at least 45 members), is
+**the Severed**. `TandavaDirectorCore.MaySever` allows it only for an eater roaming or feeding, never mid-lunge, never in
+the rise or the dance, never while a Severed lives, and not within 8 s of the last.
+
+The piece's members **move**: nothing dies and nothing is born. `SwarmFauna.ReleaseMembers` hands them over (their
+proxies retire quietly, their index entries and body entities go, the core drops them next tick through
+`SwarmTickJob.QueueRelease` without counting a death or laying a replacement), and the Severed - a second Tandava swarm
+spawned through `CellLifeSpawnerBase.SpawnFaunaWithDomain` from `TandavaSettings.SwarmSpawn`, so the cell counts it as
+the same creature and never reseeds one - hatches as exactly those members, grown and in place (`ISwarmSeedGraft`; the
+first frame marks them grown, so nothing blooms in). The stomach splits by members. The body bolts: being cut in two is
+the worst wound there is, and a meal it was cut at is broken.
+
+The Severed is its own creature on its own director (`TandavaSettings.SeveredForm`: role `Severed`, one small plan and
+its strike twin, `tandava_plans.SEVERED`). It eats where it likes; once it has regrown 75% of its plan and banked 1,000
+volume, or after 40 s apart whatever it has managed (the HUD counts it down: "The Severed - home in 0:40"), it turns for
+home (`TandavaPhase.Rejoin`, "crawling home - cut it off") and grafts back on when it is within 90 u: up to the room the
+body's form has (`SwarmTickJob.QueueGraft`), the rest paid into the stomach as the eggs they were, its own stomach
+poured in up to capacity. Kill it first and those members are gone for good. Cut the BODY away to nothing while the
+Severed lives and the Severed takes its place (**succession**): the director runs that swarm now, in the same form, and
+it regrows into it. The shatter counts the whole animal - body and piece.
+
+**A fed creature cut in two becomes more** (T23: both halves regrow out of their stomach shares, +121); a starved one
+stays cut (-27). Severing is the hydra's rule, and the pilots' answer is the same as ever: starve it first.
+
+Every peer runs its own swarms. The server finds the piece exactly on its body and runs the Severed's director; a
+client parts the same number of members nearest the server's piece centre from its own body (`Sever_ClientRpc`), and
+its Severed takes the replicated plan, levers and goal and is nudged toward the server's, as the body is. Rejoin,
+succession and the piece's end are the server's call, sent to every peer. A peer that joins while a Severed lives does
+not grow one (the HUD row still shows it).
+
+### 3.12 Wound memory: it will not die the same way twice
+
+The director remembers what it was doing when it lost members (`TandavaWound`) - eating, lunging, roaming, or being cut
+in two - for the rest of the match, a succession included (the director is the creature's mind, and a Severed is born
+knowing what its body knows, `RememberFrom`). Each memory is `1 - exp(-share lost that way / ScarRef)` (0.15 of a
+form's body: one badly broken meal teaches it); hunger's own sheds teach it nothing. At half strength it has LEARNED
+that wound and the narrator says so, once (toast 151):
+
+| Wound | What it learns (at full memory) |
+|---|---|
+| Struck at the table | bolts after 8% of its body instead of 20% (`LearnMealBreak`); a pilot spoils a plant 2.5x as far off and it fears every table at least warily (`LearnSafeRadius`) |
+| Punished in a lunge | lunges only above 95% of its body instead of 70% (`LearnLungeBody`), with 3x the cooldown (`LearnLungeCooldown`) |
+| Run down while roaming | senses pilots 40% farther (`LearnSense`), and runs at 35% less threat (`LearnFlee`) |
+| Cut in two | each Severed after the first gets 0.6x the time apart (`LearnRejoin`): 40 s, 24 s, 14 s... |
+
+So the play that broke it once works less the next time, and the pilots have to change theirs: T11 shows the classic
+denial (strike every meal) shattering a creature that cannot learn at 145 s, failing against one that can (it reaches
+the Antlion), and winning again (96 s) when the pilots also run it down when it bolts.
+
 ## 4. What the harness proves (`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`)
 
 The shipped sort core (scripted, with the levers) and the shipped director in a closed 800 u cell of 27 dispersed,
@@ -359,7 +414,7 @@ policies.
 | T8 | healthy: it lunges at a pilot, jaws aimed at it, guards out, at up to 143 u/s, never fleeing; hurt: it bolts away and never lunges; alone again, calm in 1.7 s |
 | T9 | it takes the far plant when a pilot sits by the near one |
 | T10 | a 21% cut mid-meal breaks it and it bolts; nothing laid while it ate; fed before, it regrows at once afterwards |
-| T11 | every meal broken: the pilots win (shattered at 123 s) |
+| T11 | every meal broken: a creature that cannot learn is shattered (145 s); one that learns the table outlasts it (the Antlion at 420 s); strike the table AND run it down when it bolts and it falls again (96 s) |
 | T12 | the halo lights 5 s after the rise; the drum's end brings the Antlion; nine rings broken break the dance; the packs guard ~22% |
 | T13 | 30% of its body: shattered (starved if starving); half its body fights on; none: wiped |
 | T14 | over 300 seeds every variant of every form is drawn; the draw packs into one int and is the same on every peer |
@@ -368,6 +423,16 @@ policies.
 | T17 | aggression does not starve it: a pilot loitering 250 u off it for 120 s is charged 8 times, and it still eats 4 meals |
 | T19 | its own lunge STRIKES: every Many-Headed and Antlion variant charges in its charge pose (heads reared / jaws wide) and ends every lunge it finishes in its strike; the live heads thrust 28-36 u, the live jaws close 28-38 u (at least half each plan's difference); danger plates ride the weapon (2 per head; the Antlion's 6 teeth) |
 | T18 | it eats ROLLED UP: every serpent meal in a coil (12 of 12), every formation used, never the same twice running; the Great Serpent coiled round its plant eats 3.4x as fast as its strike pose and finishes a meal in 2.5 s (10.7 s); the free run 125 s against 170 s (the A/B: `NoCoils`, or `TANDAVA_NOCOIL=1` for every test) |
+| T20 | the sever finder: no false pieces in any pose but the dance and the lunges (link 13 u); a slice parts the tail |
+| T21 | the Severed: every member accounted for, the stomach conserved, the body bolts, the piece crawls off in its own plan and regrows |
+| T22 | home: unopposed, the piece feeds, turns for home and rejoins within its clock and the swim |
+| T23 | the hydra: a fed creature cut in two outgrows the body that was cut (+121); a starved one stays cut (-27) |
+| T24 | succession: cut the body away and the piece takes the form and regrows (93 -> 228 in 30 s) |
+| T25 | the shatter counts both bodies |
+| T26 | no sever in an unopposed run, nor from nibbling the tail as it roams |
+| T27 | the scarred lunger: punished at every lunge, it learns and lunges less (7 -> 5; a creature that cannot learn: 10 -> 10) |
+| T28 | severed twice: the second piece's clock is 24 s, not 40, and it is home sooner (43 -> 24 s); the narrator says so |
+| T29 | run down: it learns, and feels a pilot at 518 u that an unscarred creature (450 u) cannot |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
 collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..16 measure them.
@@ -486,4 +551,5 @@ Prisms: the reef 2,682 + one body of up to 642.
 2. **Tune from the playtest**: the moods' thresholds and speeds, the meal-break share, the banks, the clock.
 3. **The tactic chooser**: per-form defences beyond the guard ring (a Many-Headed lunge, the Antlion's jaw snap) on the
    same queued-lever seam, each with a visible tell.
-4. **Severing**: a cut region split into its own `SwarmFauna` (a decoy or a hunter), within the proxy and collider ceilings.
+4. **Severing and wound memory** landed (§3.11, §3.12; QA-TANDAVA-21, -22). Next: a Severed that hunts pilots rather
+   than plants, a sever late-joiners can see, and the chimera form (an unstable whale-jelly in-between on the ladder).
