@@ -156,7 +156,9 @@ field), both always on and both invisible, and an RT that spent a wing-energy me
 wake. It now has **ONE skimmer** — a capsule hanging below the hull — and the right trigger is a
 **mode switch**: Mass mode paints (wide wake, dust off), Dust mode dusts (narrow wake, capsule on
 and drawn as falling motes). Nothing costs energy any more; the choice itself is the cost, because
-you cannot paint wide and dust at once.
+you cannot paint wide and dust at once. (Since 2026-10-09 it also carries an always-on **crystal
+catcher** in the far-field slot — §3.1a — because the re-cut took elemental crystal pickup away
+with the wing skimmers.)
 
 ### 3.1 Charge — Scale Dust
 
@@ -198,6 +200,36 @@ width would otherwise be computed from each machine's own (wrong) idea of the pi
 clamped 0..15) publishes the integer levels and `ElementalFloat.EvaluateReplicated(status)` reads
 them. Integer levels are exactly what an `ElementalFloat` is authored against, so nothing is lost;
 fractional overcharge above 15 clamps.
+
+### 3.1a The crystal catcher (2026-10-09)
+
+**Symptom:** "the Butterfly does not collect elemental crystals." An elemental crystal is collected
+**only** by a skimmer contact — `ElementalCrystalImpactor.AcceptImpactee` ignores everything that is
+not a `SkimmerImpactor` (the hull's `VesselImpactor` takes omni crystals, which is why the bloom
+still fired). The re-cut left the dust capsule as the hull's ONLY skimmer, and `ButterflyDustField`
+switches its collider and impactor off outside Dust mode — the mode the Butterfly spawns and mostly
+flies in. So in Mass mode the hull had no live skimmer and flew straight through every elemental
+crystal; even in Dust mode only the column hanging *below* the hull could take one.
+
+**Fix:** `ButterflyCrystalSkimmer.prefab`, a plain trigger sphere (fixed **30 u** diameter — no
+element owns it; Space is the dust's length, one parameter per element), always on, wired as
+`VesselStatus._farFieldSkimmer` so `VesselController.Initialize` initialises it (an uninitialised
+skimmer credits nobody — vessel skill rule 11). Its container
+(`ButterflyCrystalSkimmerImpactorDataContainer`) is **empty on purpose**: collection is the
+crystal's side (`ElementalCrystalImpactor.CollectBy` runs the crystal's own collection effects and
+credits `skimmer.VesselStatus` — score, element level), and with every list empty
+`SkimmerImpactor.AcceptImpactee` returns before doing anything to a prism, pilot or heart, so an
+always-on sphere cannot dust in Mass mode. Fleet-wide nothing reacts to a skimmer from the other
+side either (every vessel container's `vesselSkimmerEffects` is empty; `PrismImpactor`'s skimmer
+list is never assigned). It vacuums crystals toward the hull like every other skimmer
+(`vacuumCrystal`, 80). Both are authored by `Tools/Build/author_butterfly_dust.py` (its `--check`
+fails if the far field stops pointing at the catcher or its container gains an effect) and mirrored
+by the Create Butterfly Vessel tool.
+
+The same pass wired the dust capsule's `onSkimmerShipImpact` (`EventOnSkimmerShipCollision`, as
+every other hull): it was null, and `Skimmer.ExecuteImpactOnShip` raises it unguarded after the
+vessel effects run, so every Dust-mode bite on a pilot threw a `NullReferenceException` from
+`OnTriggerEnter`.
 
 ### 3.2 Mass — Mass / Dust Mode
 
@@ -417,6 +449,7 @@ screen is unchanged apart from the row itself.
 | Fold tuning / executor | `R_VesselActions/Data Containers/FoldActionSO.cs`, `R_VesselActions/Executors/FoldActionExecutor.cs` |
 | Mode switch tuning / executor | `R_VesselActions/Data Containers/SpreadWingsActionSO.cs`, `R_VesselActions/Executors/SpreadWingsActionExecutor.cs` |
 | Dust capsule (collider gate + motes) | `R_VesselActions/ButterflyDustField.cs`, `_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab` |
+| Crystal catcher (always-on elemental pickup, §3.1a) | `_Prefabs/Spacevessels/Components/ButterflyCrystalSkimmer.prefab`, `ButterflyCrystalSkimmerImpactorDataContainer.asset` (empty) |
 | Dust (mass) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs` |
 | Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` (`biteScale`) |
 | Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` (opposing), `SkimmerNourishLifeformByCrystalEffectSO.cs` (ally) |
@@ -448,8 +481,9 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 1. **Build.** Run the tool. Expect zero `UNWIRED` lines. It is idempotent — safe to re-run.
 2. **Offline gate.** `DOTNET_ROOT=… Tools/Build/butterfly_hull_harness/run.sh` → `ALL CHECKS PASSED`.
 3. **Audits.** `FrogletTools ▸ Vessels ▸` **Audit Vessel Ability Rows** (4/4, in order),
-   **Audit Vessel Skimmers** (ONE skimmer, the near field, assigned; the far field EMPTY by design
-   — the audit may flag its collider as disabled at rest, which is Mass mode working), **Audit Vessel Elemental Morphs**
+   **Audit Vessel Skimmers** (near field = the dust capsule — the audit may flag its collider as
+   disabled at rest, which is Mass mode working; far field = `ButterflyCrystalSkimmer`, reported
+   `OK (crystal pickup only — no prism effects)`), **Audit Vessel Elemental Morphs**
    (four PROCEDURAL morphs, none INERT), **Audit Ability Lockups**, **Audit Vessel Construction**.
 4. **Fly it** in Menu_Main freestyle via the vessel-changer toy. Check: the hull is a butterfly and
    the wings BEAT visibly from the chase camera; the wake is a row of separate wide keys.
@@ -475,6 +509,11 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
    before anything else. Run it twice on MPPM: the same keys
    do the same thing on both clients. With a dense arena in range, confirm no frame hitch beyond the
    ordinary debris (≤ 48 outcomes per frame).
+5d. **Elemental crystals (§3.1a).** In **Mass mode** (the spawn mode — do not press RT) fly through
+   an elemental crystal: it is snatched into the hull, the matching element's flower fills, and the
+   pickup counts in a mode that scores crystals. Repeat in Dust mode. Then dust a lifeform to death
+   and collect the crystal it drops. The console must show NO `[CrystalMorph] [HullFusion] … collected
+   by a skimmer with no vessel` warning, and no `NullReferenceException` when the dust bites a pilot.
 6. **Fold** (LT): the vessel stops, a ghost appears on the hull and travels; thumbs IN pull it to the
    cell core, thumbs OUT to the membrane, hands off leaves it at half radius; `YDiff` rolls the
    whole frame; release teleports you. Confirm the Time card's veil sweeps and a second press inside

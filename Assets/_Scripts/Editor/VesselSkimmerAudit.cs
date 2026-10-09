@@ -99,6 +99,7 @@ namespace CosmicShore.Editor
 
             var go = skimmer.gameObject;
             var problems = new List<string>();
+            bool crystalPickupOnly = false;
 
             // Active in the PREFAB hierarchy: VesselController initializes the component, but an
             // inactive GameObject never receives a trigger callback, so the skim is still dead.
@@ -114,8 +115,15 @@ namespace CosmicShore.Editor
                     problems.Add("SkimmerImpactor.skimmer points at a different Skimmer");
                 if (!impactor.EffectContainer)
                     problems.Add("SkimmerImpactor has no effect container");
+                // A far-field skimmer with no prism effects is a CRYSTAL CATCHER, not a dead skim:
+                // elemental crystals are collected by any initialised skimmer's contact, effects or
+                // not. The Butterfly's dust capsule (its near field) is off in Mass mode, so its
+                // always-on far field exists only to collect. The near field must still skim.
                 else if (impactor.EffectContainer.SkimmerPrismEffects is not { Length: > 0 })
-                    problems.Add($"container '{impactor.EffectContainer.name}' has no prism effects");
+                {
+                    if (optional) crystalPickupOnly = true;
+                    else problems.Add($"container '{impactor.EffectContainer.name}' has no prism effects");
+                }
                 else
                     AuditCrackle(problems, go, impactor.EffectContainer);
             }
@@ -137,7 +145,9 @@ namespace CosmicShore.Editor
 
             if (problems.Count == 0)
             {
-                report.AppendLine($"   {slot}: '{go.name}' OK");
+                report.AppendLine(crystalPickupOnly
+                    ? $"   {slot}: '{go.name}' OK (crystal pickup only — no prism effects)"
+                    : $"   {slot}: '{go.name}' OK");
                 return 0;
             }
 
