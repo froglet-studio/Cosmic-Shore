@@ -102,10 +102,10 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
   - its lens pass (URP's render graph) and sky capture (`CommandBuffer`);
   - the black-hole tool's `typeof(SerializeField)`;
   - the mouse camera's `InputSystem.Controls.ButtonControl`. |
-| Engine tests (`Port/tests/CosmicShore.Tests`) | 1,691 / 1,691 pass, including the new GLSL port of `PrismGravityWarpDeform` |
+| Engine tests (`Port/tests/CosmicShore.Tests`) | 1,913 / 1,913 pass after merging both bleeding-edges (1,691 before), including the new GLSL port of `PrismGravityWarpDeform` |
 | Launcher tests | 30 / 30 pass, including 3 new studio-catalog tests |
-| The game's edit-mode tests on Prisma | 352 / 352 pass |
-| `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 |
+| The game's edit-mode tests on Prisma | 352 / 352 pass (before and after the merges) |
+| `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 (re-run after the merges: same) |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
 | STUDIOS page (screenshot) | Both cards. The Stoat card has OPEN IN PRISMA · BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
 | `stoat.html#prisma` | Reads "Prisma · PC", has the editor layout and the back link to the hub, no console errors |
