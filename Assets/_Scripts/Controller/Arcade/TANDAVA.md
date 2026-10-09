@@ -395,6 +395,33 @@ So the play that broke it once works less the next time, and the pilots have to 
 denial (strike every meal) shattering a creature that cannot learn at 145 s, failing against one that can (it reaches
 the Antlion), and winning again (96 s) when the pilots also run it down when it bolts.
 
+### 3.13 The whale-jelly chimera: torn between two animals
+
+Before the Many-Headed Serpent rises into the Dance it passes through a body nobody drew. The hybrid 3D NCA (branch
+`claude/hybrid-creatures`: one rule grows the lizard, the whale and the jelly, the form chosen by genome channels) was
+given a grown whale's front spliced onto a grown jelly's back and left to run. The body it grows never settles: jelly
+spreads over the whale for 200 steps (a whale core in a jelly shell, a bell at the head), then the whale climbs back
+(by step 1,200 a whale with a jelly stripe down its back and a jelly fringe at the tail), and it is still mixed at step
+1,600. One swim cycle of each moment is the chimera's two shapes (`chimera_whale`, `chimera_jelly`).
+
+`Tools/Build/tandava_chimera_extract.py` turns the probe's voxels into plans: the skin voxels (live, with a dead
+neighbour), 200 units spread over frame 0 by farthest-point sampling and carried frame to frame to the nearest skin
+voxel, Space for the most jelly-genome units (the bell and the threads) and Time for the next, Charge at the tail, Mass
+for the rest. Both shapes share that census, so a turn is a pose change (`RequestPose`), never a molt; 200 units sits
+between the biggest Many-Headed Serpent (195) and the Dance (204), so entering it and rising from it only ever grow the
+body (`tandava_plans.validate`). The committed `tandava_chimera.json` is what the bake reads: the bake needs no numpy
+and no NCA.
+
+In the director (`TandavaPhase.Chimera`, `ChimeraTurning`): when a banked Many-Headed Serpent would rise, it becomes the
+chimera instead (toast 152) for `ChimeraSeconds` (24 s), drifting slowly to where it will rise. Every
+`ChimeraFlipSeconds` (6 s) it turns from one shape to the other, and for `ChimeraTurnSeconds` (2.5 s) of each turn it
+holds its laying: it cannot heal while it changes, which is the pilots' window (the HUD reads "Turning - it cannot
+heal"). It does not feed. It can still be cut in two (§3.11); its whale end trails a thin fringe, so only a cut through
+its middle takes a piece big enough to live. When its time is up it rises into the Dance where it drifted to.
+
+The chimera is not a rung of the ladder (form 5 of `tandava_plans`, like the Severed's form 4): a variant names it with
+`ChimeraPlanIndex` / `ChimeraAltPlanIndex` (0 = none), and only the Many-Headed Serpent's variants do.
+
 ## 4. What the harness proves (`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`)
 
 The shipped sort core (scripted, with the levers) and the shipped director in a closed 800 u cell of 27 dispersed,
@@ -433,6 +460,8 @@ policies.
 | T27 | the scarred lunger: punished at every lunge, it learns and lunges less (7 -> 5; a creature that cannot learn: 10 -> 10) |
 | T28 | severed twice: the second piece's clock is 24 s, not 40, and it is home sooner (43 -> 24 s); the narrator says so |
 | T29 | run down: it learns, and feels a pilot at 518 u that an unscarred creature (450 u) cannot |
+| T30 | the chimera: it becomes the chimera as the Many-Headed Serpent (40 s), wears both shapes and nothing else, turns 3 times whale/jelly in turn, lays nothing mid-turn, loses no members turning, rises 24.1 s later where it drifted to, and still completes unopposed in under 200 s (154 s, 167 s) |
+| T31 | cut while torn: a slice through its middle parts a piece (94 of 504) and the piece is the Severed; the chimera stays torn |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
 collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..16 measure them.
@@ -507,7 +536,8 @@ Prisms: the reef 2,682 + one body of up to 642.
 | `Environment/CellVisualTint.cs` | the cell's colour transition (platform, phase A) |
 | `Environment/FloraAndFauna/Swarm/*` | the levers (§3.1) |
 | `Tools/Build/tandava_plans.py`, `Tools/Build/author_tandava_assets.py` | the plans; every asset (`--check`; `--self-test` runs the scene checks on the donor scene, where all 16 must fire) |
-| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T19 |
+| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T19; `TandavaSeverHarness.cs` T20-T26, `TandavaWoundHarness.cs` T27-T29, `TandavaChimeraHarness.cs` T30-T31 |
+| `Tools/Build/tandava_chimera_extract.py`, `Tools/Build/tandava_chimera.json` | the chimera's two shapes, from the hybrid NCA's whale/jelly splice (§3.13) |
 | `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 600 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
 | `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and the seven dispersed flora forks |
 | `Assets/_Prefabs/Environment/TandavaMembrane.prefab` | a generated copy: the CapsuleMembrane at 800 u |
@@ -552,4 +582,6 @@ Prisms: the reef 2,682 + one body of up to 642.
 3. **The tactic chooser**: per-form defences beyond the guard ring (a Many-Headed lunge, the Antlion's jaw snap) on the
    same queued-lever seam, each with a visible tell.
 4. **Severing and wound memory** landed (§3.11, §3.12; QA-TANDAVA-21, -22). Next: a Severed that hunts pilots rather
-   than plants, a sever late-joiners can see, and the chimera form (an unstable whale-jelly in-between on the ladder).
+   than plants, and a sever late-joiners can see.
+5. **The whale-jelly chimera** landed (§3.13; QA-TANDAVA-23). Next: let the turn itself matter more (a turn that sheds
+   the members caught between shapes), and grow a second chimera for the Antlion's rise.

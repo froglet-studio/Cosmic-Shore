@@ -5814,6 +5814,23 @@ T27-T29 pass; never seen in the Editor.
 **PASS:** each lesson is narrated once and its change is visible. **FAIL:** a line repeats · it becomes unbeatable
 (note what you tried) · a lesson with no visible change.
 
+### QA-TANDAVA-23 — The whale-jelly chimera: torn between two animals (`TANDAVA.md` §3.13)
+
+Director (`TandavaPhase.Chimera` / `ChimeraTurning`), two new plans (`chimera_whale`, `chimera_jelly`, grown by the
+hybrid NCA), `TandavaController` HUD and toast 152. Headless only: harness T30-T31 pass; never seen in the Editor.
+
+1. **It becomes the chimera.** Let the Many-Headed Serpent bank and rise. Instead of rising at once it reshapes into a
+   long whale-like body: "It is tearing between shapes..." The form row reads "Whale-Jelly Chimera", the mood "Unstable".
+2. **It turns.** Every ~6 s it re-sorts between a whale wrapped in a jelly shell with a bell at the head, and a whale
+   with a jelly stripe down its back. The re-sort must look like the same tadpoles moving, not members popping.
+3. **The window.** During each turn the mood reads "Turning - it cannot heal"; members cut then do not regrow until the
+   turn ends.
+4. **Cut it.** A pass through its middle parts a Severed; a pass through the thin tail does not.
+5. **It rises.** About 24 s after it began it rises into the Lord of the Dance where it drifted to, gold burst and all.
+
+**PASS:** both shapes read as a whale/jelly mix, the turns are smooth, it rises after ~24 s. **FAIL:** a blob · members
+pop at a turn · it never rises · it heals mid-turn.
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm

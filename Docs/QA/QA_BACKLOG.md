@@ -2898,8 +2898,8 @@ shoal or the harriers die out · proxies or colliders over budget.
 ### QA-TANDAVA-SEVER-1 ⬜ — Tandava: cut the boss in two, and watch it learn
 
 **Source:** branch `claude/tandava-severing` (draft PR into bleeding-edge). Only the headless harness has run
-(`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`, T1-T29). Reference:
-`Assets/_Scripts/Controller/Arcade/TANDAVA.md` §3.11-3.12; full steps QA-TANDAVA-21 and -22 in
+(`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`, T1-T31). Reference:
+`Assets/_Scripts/Controller/Arcade/TANDAVA.md` §3.11-3.13; full steps QA-TANDAVA-21, -22 and -23 in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **Why it matters:** this is the "boss you can't kill the same way twice" idea. It only lands if a clean cut visibly
@@ -2912,9 +2912,12 @@ makes a second creature, and if the boss visibly changes after being hurt the sa
 4. **Strike it at the table every meal:** after the first, it says it remembers, then eats farther from you and bolts
    sooner. Striking only at meals should stop winning; also chasing it when it bolts should still win.
 5. **Kill the body while the Severed lives:** the Severed becomes the boss and regrows.
+6. **Let the Many-Headed Serpent rise:** first it becomes the Whale-Jelly Chimera for ~24 s, turning between a jelly-
+   shelled whale and a striped whale every ~6 s ("Turning - it cannot heal"), then it rises into the Dance.
 
 **PASS:** a second creature from a clean cut; it comes home or takes over; each lesson is said once and changes how it
-plays. **FAIL:** members pop or vanish at the cut; a piece from a tail nibble; a repeated lesson; an unbeatable boss.
+plays; the chimera reads as a whale/jelly mix and turns smoothly. **FAIL:** members pop or vanish at the cut; a piece
+from a tail nibble; a repeated lesson; an unbeatable boss; the chimera is a blob or never rises.
 
 ### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
 
