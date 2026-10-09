@@ -34,6 +34,8 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<Vector3> _pieceAnchor = new();
         /// <summary>Seconds until the Severed turns for home; negative once it has.</summary>
         readonly NetworkVariable<float> _pieceHome = new(0f);
+        /// <summary>How many members the Severed has: what a peer that joins while it lives parts from its own body.</summary>
+        readonly NetworkVariable<int> _pieceMembers = new(0);
 
         TandavaDirectorSettings _ds;                 // server: the settings both directors run on (BuildCore's clone)
         TandavaDirectorCore _pieceCore;              // server: the Severed's director
@@ -49,6 +51,7 @@ namespace CosmicShore.Gameplay
         bool _seedPending;
         int _lostSeen;
         float _pieceLastTick = -1f;
+        float _pieceSeenAt = -1f;                    // client: when this peer first saw a Severed it does not have
 
         /// <summary>The Severed, as this peer has it (the HUD's arrow could point at it).</summary>
         public Transform SeveredTransform => _severed ? _severed.transform : null;
@@ -100,9 +103,35 @@ namespace CosmicShore.Gameplay
             _pieceCore.RememberFrom(_core);   // §3.12: the piece knows what the body knows
             _pieceCore.Home = S(swarm.AnchorWorld);
             _pieceLastTick = -1f;
-            PublishPiece(at);
+            PublishPiece(at, n);
             Sever_ClientRpc(at, n, away);
         }
+
+        /// <summary>Client, each main tick: a Severed lives on the server but not here - this peer joined after the cut
+        /// (the sever's RPC went out before it was listening). Once its body has caught up with the server's, it parts
+        /// the same number of members nearest the server's piece. A grace second first, so a peer that is only waiting
+        /// for the sever's RPC (state can land before it) is never parted twice.</summary>
+        void CatchUpSevered(SwarmFauna swarm)
+        {
+            if (IsServer || _severed || !_pieceLive.Value || _pieceMembers.Value <= 0 || _pieceAnchor.Value == Vector3.zero)
+            {
+                _pieceSeenAt = -1f;
+                return;
+            }
+            if (_pieceSeenAt < 0f) { _pieceSeenAt = Time.time; return; }
+            if (Time.time - _pieceSeenAt < LateSeverGraceSeconds) return;
+            if (_anchor.Value == Vector3.zero || Vector3.Distance(_anchor.Value, swarm.AnchorWorld) > LateSeverCatchUp * settings.NudgeThreshold)
+                return;   // still being nudged in from where it hatched: a piece cut from there would start in the wrong place
+            Vector3 at = _pieceAnchor.Value;
+            Vector3 away = at - swarm.AnchorWorld;
+            away = away.sqrMagnitude > 1e-4f ? away.normalized : -swarm.BodyForward;
+            swarm.NearestMembers(at, Mathf.Min(_pieceMembers.Value, swarm.MemberCount / 2), _sevPiece);
+            Sever(swarm, _sevPiece, at, away);
+            _pieceSeenAt = -1f;
+        }
+
+        const float LateSeverGraceSeconds = 1f;
+        const float LateSeverCatchUp = 4f;   // x NudgeThreshold: how close its body must have come to the server's
 
         [ClientRpc]
         void Sever_ClientRpc(Vector3 at, int members, Vector3 away)
@@ -194,7 +223,7 @@ namespace CosmicShore.Gameplay
                     Rejoin_ClientRpc();
                     return;
                 }
-                PublishPiece(piece.AnchorWorld);
+                PublishPiece(piece.AnchorWorld, piece.MemberCount);
             }
             ApplyToSevered(piece);
             if (!IsServer)
@@ -206,9 +235,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void PublishPiece(Vector3 anchor)
+        void PublishPiece(Vector3 anchor, int members)
         {
             _pieceLive.Value = true;
+            _pieceMembers.Value = members;
             _piecePlan.Value = _pieceCore.WantPlan;
             _piecePhase.Value = (int)_pieceCore.Phase;
             _pieceMood.Value = (int)_pieceCore.Mood;

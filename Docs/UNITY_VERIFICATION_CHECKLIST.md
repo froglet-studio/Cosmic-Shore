@@ -5790,6 +5790,8 @@ T20-T26 pass, `unity_refcompile` 0 project errors; never seen in the Editor.
    shape"), regrows into the form the body wore, and the HUD's form row carries on.
 6. **Two peers (MPPM host + client).** The client sees its own Severed part from the same place within a second, and it
    follows the server's (it may drift and be nudged).
+   **Late join:** sever the host's creature, THEN connect a second client. Within a few seconds of its body catching up,
+   that client's own Severed parts near the host's piece (one, not two), and follows it home.
 7. **Budgets.** Physics debugger during a sever: proxies and colliders stay under the ceilings.
 
 **PASS:** the cut piece leaves as a second swarm, lives, comes home or dies or takes over; nothing pops. **FAIL:** a

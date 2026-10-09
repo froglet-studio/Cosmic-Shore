@@ -373,8 +373,10 @@ stays cut (-27). Severing is the hydra's rule, and the pilots' answer is the sam
 Every peer runs its own swarms. The server finds the piece exactly on its body and runs the Severed's director; a
 client parts the same number of members nearest the server's piece centre from its own body (`Sever_ClientRpc`), and
 its Severed takes the replicated plan, levers and goal and is nudged toward the server's, as the body is. Rejoin,
-succession and the piece's end are the server's call, sent to every peer. A peer that joins while a Severed lives does
-not grow one (the HUD row still shows it).
+succession and the piece's end are the server's call, sent to every peer. A peer that joins while a Severed lives
+(it missed the sever's RPC) catches up (`CatchUpSevered`): once its body has been nudged to within 4 x `NudgeThreshold`
+of the server's, and after a grace second (so a peer merely waiting on the RPC is never parted twice), it parts the
+replicated member count (`_pieceMembers`, at most half its body) nearest the server's piece.
 
 ### 3.12 Wound memory: it will not die the same way twice
 
@@ -582,6 +584,6 @@ Prisms: the reef 2,682 + one body of up to 642.
 3. **The tactic chooser**: per-form defences beyond the guard ring (a Many-Headed lunge, the Antlion's jaw snap) on the
    same queued-lever seam, each with a visible tell.
 4. **Severing and wound memory** landed (§3.11, §3.12; QA-TANDAVA-21, -22). Next: a Severed that hunts pilots rather
-   than plants, and a sever late-joiners can see.
+   than plants. (A sever late-joiners can see landed with the chimera: `CatchUpSevered`.)
 5. **The whale-jelly chimera** landed (§3.13; QA-TANDAVA-23). Next: let the turn itself matter more (a turn that sheds
    the members caught between shapes), and grow a second chimera for the Antlion's rise.

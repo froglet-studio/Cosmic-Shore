@@ -532,6 +532,7 @@ namespace CosmicShore.Gameplay
                 float d = gap.magnitude;
                 if (d > settings.NudgeThreshold && _anchor.Value != Vector3.zero)
                     swarm.TryNudge(gap * (Mathf.Min(settings.MaxNudge, d * settings.NudgeFraction) / d));
+                CatchUpSevered(swarm);
             }
         }
 
