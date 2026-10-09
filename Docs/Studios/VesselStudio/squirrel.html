@@ -132,6 +132,7 @@
 
   .touch { position: absolute; inset: 0; display: none; }
   body.play .touch { display: block; }
+  body.play .vside-dock, body.play .vside-split, body.play .vside-win { display: none !important; }
   body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
   body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed, body.play .afternote { display: none !important; }
   .tz { position: absolute; bottom: 0; top: 30%; width: 50%; }
@@ -190,7 +191,7 @@
             <div class="keys">
               <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
               <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
-              <span>Free cam</span><span>drag to look · I J K L move · U O down/up</span>
+              <span>Free cam</span><span>orbits the watched hull: drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
               <span></span><span>Enter play · P pause / resume · R stop · C next camera</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
@@ -282,6 +283,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="studio-look.js"></script>
+<script src="studio-ide.js"></script>
 <script>
 (function () {
   'use strict';
@@ -901,6 +903,18 @@
     hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
     requestAnimationFrame(frame);
   }
+  // ================= the editor layout (/vessel-studio D8, studio-ide.js) =================
+  // The stage fills the middle; every panel is a tab in the right or bottom dock; any tab pops out into a window you
+  // drag, resize and dock back; splitters resize the docks; the page never scrolls (below 900 px the docks stack).
+  const panelBy = (title) => [...document.querySelectorAll('aside .panel')].find((p) => { const h = p.querySelector('h3') || p.querySelector('summary'); return h && h.textContent.trim().startsWith(title); });
+  const IDE = VesselStudioIDE.build({
+    key: 'squirrel-studio-ide', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['race', 'Race', [panelBy('Race'), document.querySelector('.afternote')]], ['type', 'Type', [panelBy('Play-style type'), panelBy('Drift feel')]],
+      ['elements', 'Elements', [panelBy('Element levels')]], ['abilities', 'Abilities', [panelBy('Ability row')]], ['live', 'Live numbers', [panelBy('Live numbers')]]],
+    bottom: [['score', 'Scorecard', [panelBy('Scorecard')]], ['runs', 'Runs', [panelBy('Runs')]], ['about', 'About', [document.querySelector('header .sub'), panelBy('Where the numbers')]]],
+    railW: 380, dockH: 230, winSize: { score: [760, 340], runs: [640, 360] },
+    onLayout: () => { lastW = lastH = 0; },
+  });
   syncSegs(); syncRail(); syncDrift(); renderRuns();
   newRace(); hud();
   requestAnimationFrame((t) => { last = t; frame(t); });
@@ -908,7 +922,7 @@
   // test hook for scripted checks (no effect on play)
   window.__squirrelStudio = {
     get state() { const P = W.pilots[0]; return { race, t: +W.t.toFixed(2), course: S.course, target: W.track.target, lineLen: Math.round(W.track.len), speed: +P.speed.toFixed(1), pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, crystals: p.crystals, finishT: p.finishT, boost: +p.boost.toFixed(2), skims: p.skims, resets: p.resets, mistakes: p.mistakes, state: p.aiState })) }; },
-    set: (k, v) => { S[k] = v; syncSegs(); newRace(); }, startRace, raceHeadless, raceStats, runScorecard, mults,
+    set: (k, v) => { S[k] = v; syncSegs(); newRace(); }, startRace, raceHeadless, raceStats, runScorecard, mults, ide: IDE,
   };
 })();
 </script>

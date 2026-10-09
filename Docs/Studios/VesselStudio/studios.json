@@ -25,6 +25,7 @@
     }
   ],
   "shared": [
-    "studio-look.js"
+    "studio-look.js",
+    "studio-ide.js"
   ]
 }
