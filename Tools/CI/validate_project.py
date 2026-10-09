@@ -55,6 +55,14 @@ EXCLUDED_PREFIXES = (
     "Assets/TextMesh Pro/",
     "Assets/Unity Assests/",   # sic: vendored Unity sample assets
     "Assets/StreamingAssets/",
+    # Prisma, the project's own .NET engine (Port/CLAUDE.md). It is a separate
+    # dotnet solution that Unity never imports or compiles - Unity only builds
+    # Assets/ and Packages/ - so a Unity player-build rule cannot apply to it.
+    # Its ShaderGraph importer legitimately names the Unity type
+    # "UnityEditor.ShaderGraph.GraphData" in a string, which this check read as
+    # an editor reference and failed bleeding-edge on (issue #1037). Top-level
+    # Port/ only: an Assets/.../Port folder is still scanned.
+    "Port/",
 )
 
 # Severity decides whether a check can block a promotion. Only breaks-the-build

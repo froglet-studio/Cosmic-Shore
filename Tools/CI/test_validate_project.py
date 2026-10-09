@@ -69,6 +69,18 @@ MONO_CASES = [
 ]
 
 
+# (name, relative path, should_be_excluded) - is_excluded decides what every
+# check scans, so a too-broad exclusion silently switches the guard off.
+EXCLUDE_CASES = [
+    ("Prisma engine source", "Port/src/CosmicShore.Content/Shaders/ShaderGraphAsset.cs", True),
+    ("Prisma engine tests", "Port/tests/CosmicShore.Tests/ShaderGraphCompilerTests.cs", True),
+    ("game scripts still scanned", "Assets/_Scripts/UI/Thing.cs", False),
+    ("a Port folder inside Assets is still scanned", "Assets/_Scripts/Port/Thing.cs", False),
+    ("a Port-prefixed asset folder is still scanned", "Assets/Portal/Thing.cs", False),
+    ("a top-level name that merely starts with Port", "Portal/Thing.cs", False),
+]
+
+
 def _write(src: str, name: str = "Thing.cs") -> tuple[Path, list[str]]:
     d = Path(tempfile.mkdtemp())
     (d / "Assets").mkdir()
@@ -95,7 +107,26 @@ def main() -> int:
         failures += not ok
         print(f"  {'PASS' if ok else 'FAIL'}  {name:34} flagged={got} expected={expected}")
 
-    total = len(EDITOR_CASES) + len(MONO_CASES)
+    print("\nexclusions")
+    for name, rel, expected in EXCLUDE_CASES:
+        got = v.is_excluded(rel)
+        ok = got == expected
+        failures += not ok
+        print(f"  {'PASS' if ok else 'FAIL'}  {name:34} excluded={got} expected={expected}")
+
+    # End to end through collect(): the same leak under Port/ and under Assets/
+    # must produce exactly the Assets/ finding.
+    print("\nend to end")
+    root = Path(tempfile.mkdtemp())
+    for sub in ("Assets", "Port/src"):
+        (root / sub).mkdir(parents=True)
+        (root / sub / "Leak.cs").write_text("using UnityEditor;\n", encoding="utf-8")
+    found = sorted(f.path for f in v.check_editor_in_runtime(root, v.collect(root)))
+    ok = found == ["Assets/Leak.cs"]
+    failures += not ok
+    print(f"  {'PASS' if ok else 'FAIL'}  {'Port/ skipped, Assets/ flagged':34} found={found}")
+
+    total = len(EDITOR_CASES) + len(MONO_CASES) + len(EXCLUDE_CASES) + 1
     print(f"\n{total - failures}/{total} passed")
     return 1 if failures else 0
 
