@@ -38,8 +38,13 @@ namespace CosmicShore.Data
         MazeRun = 25,
         WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
-        MultiplayerFreestyle = 28,
-        OnlineDuelForTheCell = 29,
+        // 28 was MultiplayerFreestyle, the prototype multiplayer sandbox (no rules, no clock,
+        // no score) that grew into the Menu_Main lava lamp, freestyle, toybox and lobby, which
+        // replaced it. Removed 2026-10 with its card, scene and controller; the mode is in git.
+        // 28 IS RESERVED FOREVER, exactly like 7, 31 and 47 - saved selections still carry it.
+        // 29 was OnlineDuelForTheCell, the two-human vessel-swap duel. Brood Rush (38) replaced
+        // it. Removed 2026-10 with its card, scene and mode preview; OnlineDuelForTheCellController
+        // stays because the CoOp Wildlife Blitz scene still runs on it. 29 IS RESERVED FOREVER.
         Multiplayer2v2CoOpVsAI = 30,
         CoOpWildlifeBlitz = 32,
         SkimRace = 33,
@@ -47,7 +52,7 @@ namespace CosmicShore.Data
         Scurry = 35,
         // Maelstrom (36): session-level meta that chains the domain minigames
         // (SkimRace, Joust, Scurry) into one tournament. See
-        // Docs/MaelstromSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7, 28, 29 and 31 stay reserved.)
         Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
@@ -280,16 +285,31 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/SIROCCO.md.
         Sirocco = 61,
 
-        // Tandava (62): an ARENA co-op chase (Squirrel / Sparrow / Rhino) - a tadpole swarm races down a long cell to
+
+        // GrizzlyCharge (62): the Grizzly-only assault mode (in development). Authored as 42
+        // on grizzly-v2, moved to 44 when Bends/ScarabScramble took 42/43, to 54 at the
+        // 2026-09-12 merge after Salvo took 44 and Switchback 45, and to 62 at the 2026-10-02
+        // merge after WreckingBall took 54 (bleeding-edge had run on to Sirocco = 61) - the
+        // parallel-branch collision the Skein and Bloomrush notes above record, hit a SIXTH
+        // time. The ArcadeGameGrizzlyCharge asset's serialized Mode moved with it each time.
+        GrizzlyCharge = 62,
+
+        // GrizzlyTime (63): the Grizzly-only circuit race - Redline's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Grizzly riding its own
+        // trigger-bomb blasts rather than a boost: a corner asks how much launch it is worth. See
+        // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
+        GrizzlyTime = 63,
+
+        // Tandava (64): an ARENA co-op chase (Squirrel / Sparrow / Rhino) - a tadpole swarm races down a long cell to
         // the exit membrane, eating oases to take its next form (Serpent small -> medium -> large -> Bull); every pilot
         // is on one domain and must wipe it out, starve it or break its final form before it escapes. The cell itself
         // changes colour at each form. Swarm on the sort core's scripted-form mode, the route and the forms decided by
         // TandavaDirectorCore. See _Scripts/Controller/Arcade/TANDAVA.md.
-        Tandava = 62,
-
+        // Authored as 62 on claude/tandava-arena-mode; GrizzlyCharge held 62 on bleeding-edge - the seventh collision.
+        Tandava = 64,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 60) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 60) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

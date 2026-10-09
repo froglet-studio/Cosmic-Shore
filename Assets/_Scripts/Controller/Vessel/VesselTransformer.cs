@@ -183,6 +183,22 @@ public class VesselTransformer : MonoBehaviour
                  "not scaled. 1 = no change while stopped.")]
         [SerializeField, Min(0f)] float restrictedTurnMultiplier = 3f;
 
+        [Tooltip("How fast the hull swings onto the rotation the pilot has commanded, per second, " +
+                 "while this machine's HUMAN pilot flies on touch - in a drift as well as out of " +
+                 "one. AI, autopilot and remote hulls always use the fleet's shared response. " +
+                 "0 = the fleet's shared response (1.5/s, a 0.67 s time constant). Read by the " +
+                 "base RotateShip only: a transformer that overrides it (single-stick, command) " +
+                 "ignores this field.")]
+        [SerializeField, Min(0f)] float touchNoseResponse = 0f;
+
+        /// <summary>
+        /// The nose closes a LEFTOVER gap - one a discontinuous command left behind (a 180 degree
+        /// flip, a device switch from a lagging pad mid-turn) - no faster than this multiple of the
+        /// vessel's own combined max turn rate. It never binds while flying: chasing a command that
+        /// turns at w, an exponential follower moves at most w, which is under the cap.
+        /// </summary>
+        const float NoseCatchUpTurnRateMultiple = 1.5f;
+
         /// <summary>Pitch/yaw rate scalar for this frame — <c>restrictedTurnMultiplier</c> while
         /// the vessel is translation-restricted, 1 otherwise. Read at use time (the stance is
         /// toggled mid-flight), and applied by both this class's Pitch/Yaw and the overrides in
@@ -287,7 +303,9 @@ public class VesselTransformer : MonoBehaviour
         public Quaternion CommandedRotation => accumulatedRotation;
 
         /// <summary>Per-second fraction with which the hull's rotation and the smoothed cruise
-        /// speed close on their commanded values (the shared <c>LERP_AMOUNT</c>). Read-only.</summary>
+        /// speed close on their commanded values (the shared <c>LERP_AMOUNT</c>). Read-only.
+        /// Exact for every AI and autopilot hull: <see cref="touchNoseResponse"/> only ever
+        /// applies to a local human touch pilot (see <see cref="NoseFollowFraction"/>).</summary>
         public static float RotationFollowRate => LERP_AMOUNT;
 
         /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
@@ -299,6 +317,10 @@ public class VesselTransformer : MonoBehaviour
         // happens on the transition instead of every frame. Starts true so the first
         // ApplyVelocityModifiers pass normalizes the material once, as it always did.
         bool _bodyFlaring = true;
+
+        // Same edge-trigger for the engine flare. Seeded true so the first pass writes the
+        // rest state once.
+        bool _engineFlaring = true;
 
         /// <summary>Current additive world-space displacement (the ModifyVelocity channel),
         /// summed on top of speed * Course by MoveShip. Read-only view for systems that need
@@ -423,6 +445,11 @@ public class VesselTransformer : MonoBehaviour
             transform.position += velocityShift * Time.deltaTime;
         }
 
+        // The multiplier this transformer last raised on boostChanged. NaN = raise on the next
+        // decay whatever the value (set on initialize and reset, which write the multiplier
+        // without raising).
+        float _lastRaisedBoost = float.NaN;
+
         protected virtual void DecayBoost()
         {
             if (VesselStatus == null) return;
@@ -432,6 +459,15 @@ public class VesselTransformer : MonoBehaviour
             VesselStatus.BoostMultiplier = VesselStatus.BoostMultiplier > 1 ? 
                     VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime:
                     Mathf.Min(1f, VesselStatus.BoostMultiplier + BoostDecayRate * Time.deltaTime);
+
+            // Raise only when the value moved since this transformer last raised it. At rest the
+            // multiplier sits at 1.0 and an unconditional raise ran every listener every frame -
+            // and the channel is global, so on every peer each vessel's rest fanned out to every
+            // vessel's HUD and boost audio. A writer that changes the multiplier and raises itself
+            // (skim boost, reset-boost, consume-boost) is caught here on its next decay step.
+            if (Mathf.Approximately(_lastRaisedBoost, VesselStatus.BoostMultiplier))
+                return;
+            _lastRaisedBoost = VesselStatus.BoostMultiplier;
 
             boostChanged?.Raise(new BoostChangedPayload
             {
@@ -446,6 +482,7 @@ public class VesselTransformer : MonoBehaviour
         public virtual void Initialize(IVessel vessel)
         {
             Vessel = vessel;
+            _lastRaisedBoost = float.NaN;
             // ResetTransformer();
         }
     
@@ -460,6 +497,7 @@ public class VesselTransformer : MonoBehaviour
             speed = 0f;
             throttleMultiplier = 1f;
             _speedTrackingRate = 0f;
+            _lastRaisedBoost = float.NaN;   // the next decay re-announces the boost to its listeners
 
             // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
@@ -470,6 +508,7 @@ public class VesselTransformer : MonoBehaviour
             ExternalTurnRateMultiplier = 1f;  // ...nor a slowed turn
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
+            _engineFlaring = true;
 
             // Vector flight model: drop the momentum vector and re-seed on the next frame from
             // whatever `speed` is by then, so an inherited-speed swap (SetInitialSpeed after a
@@ -507,20 +546,75 @@ public class VesselTransformer : MonoBehaviour
             Yaw();
             Pitch();
 
-            if (InputStatus != null && InputStatus.IsGyroEnabled)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    accumulatedRotation * InputStatus.GetGyroRotation(),
-                    LERP_AMOUNT * Time.deltaTime);
-            }
-            else
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    accumulatedRotation,
-                    LERP_AMOUNT * Time.deltaTime);
-            }
+            Quaternion target = InputStatus != null && InputStatus.IsGyroEnabled
+                ? accumulatedRotation * InputStatus.GetGyroRotation()
+                : accumulatedRotation;
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, target, NoseFollowFraction(target, Time.deltaTime));
+        }
+
+        /// <summary>
+        /// This frame's slerp fraction from the hull's rotation toward the commanded one.
+        ///
+        /// The fleet value, <c>LERP_AMOUNT * dt</c>, is a first-order lag with a 0.67 s time
+        /// constant: while turning at w the nose trails the command by w / 1.5 - eighty degrees
+        /// at the Squirrel's full 120 deg/s - and keeps swinging for a second after the input
+        /// stops. A stick hides most of that: its spring returns it to centre the moment the
+        /// thumb lets go, and the pad's cosine curve keeps mid-stick rates low. Glass has neither.
+        /// A thumb has to be walked back to an origin it cannot feel, while the hull is still
+        /// coming round from the last input, so the pilot reads the swing as their own and
+        /// counter-steers into it. That is the overcorrection.
+        ///
+        /// A vessel that authors <see cref="touchNoseResponse"/> follows at that rate instead,
+        /// for the local human pilot on touch (<see cref="IsLocalHumanTouchPilot"/>) - in a drift
+        /// too, so the remaining thumb steers the slide as crisply
+        /// as it steers straight flight, and the drift's Mult turns it sharper exactly as it does
+        /// on a pad. The steady turn RATE is unchanged - only the lag behind it shrinks (at a
+        /// full-lock drift's 216 deg/s, 144 degrees behind at the fleet rate, 24 at 9). Never
+        /// slower than the fleet.
+        /// </summary>
+        protected float NoseFollowFraction(Quaternion target, float dt)
+        {
+            float fleet = LERP_AMOUNT * dt;
+            if (touchNoseResponse <= LERP_AMOUNT || !IsLocalHumanTouchPilot)
+                return fleet;
+
+            float t = 1f - Mathf.Exp(-touchNoseResponse * dt);
+
+            float gap = Quaternion.Angle(transform.rotation, target);
+            if (gap > 1e-3f)
+                t = Mathf.Min(t, MaxCombinedTurnRateDegreesPerSecond() * NoseCatchUpTurnRateMultiple * dt / gap);
+
+            return Mathf.Max(t, fleet);
+        }
+
+        /// <summary>
+        /// True only while THIS machine's human flies the hull on glass. A handheld selects the
+        /// touch strategy for every <c>InputController</c> on it (<c>SystemInfo.deviceType</c>),
+        /// so the AI players and the menu's autopilot also report <see cref="InputDeviceType.Touch"/>
+        /// there - and an autopilot steering off a hull it models at <see cref="RotationFollowRate"/>
+        /// (the Skim Race pilot) would mis-lead every corner if its own hull answered faster. A
+        /// remote player's replica is not ours to tune either. Same test as the gun hull's camera
+        /// gate (<c>GunVesselTransformer.IsLocalPilotCamera</c>).
+        /// </summary>
+        bool IsLocalHumanTouchPilot =>
+            InputStatus != null && InputStatus.ActiveInputDevice == InputDeviceType.Touch
+            && VesselStatus != null && !VesselStatus.AutoPilotEnabled
+            && VesselStatus.Player != null && VesselStatus.Player.IsLocalPilot;
+
+        /// <summary>The fastest the command can rotate with every axis at full stick at once -
+        /// pitch, yaw and roll are applied as three rotations per frame, so their rates combine
+        /// as a vector. The catch-up cap is measured against THIS rather than
+        /// <see cref="MaxTurnRateDegreesPerSecond"/> (one axis), or a full pitch+yaw+roll turn
+        /// would hit the cap in steady flight and fall back toward the fleet lag.</summary>
+        float MaxCombinedTurnRateDegreesPerSecond()
+        {
+            float fromSpeed = speed * RotationThrottleScaler;
+            float pitch = (fromSpeed + PitchScaler) * TurnScalar;
+            float yaw = (fromSpeed + YawScaler) * TurnScalar;
+            float roll = (fromSpeed + RollScaler) * RollScalar;
+            return Mathf.Sqrt(pitch * pitch + yaw * yaw + roll * roll);
         }
 
         // ----------------------------- Public Controls -----------------------------
@@ -556,7 +650,7 @@ public class VesselTransformer : MonoBehaviour
             // write lands (TeleportContinuity; a Butterfly fold gate transit is the case that
             // needed it to be seamless rather than merely correct).
             float jumpSpeed = VesselStatus != null ? VesselStatus.Speed : speed;
-            TeleportContinuity.OnTeleported(transform, from, pose.position, jumpSpeed);
+            TeleportContinuity.OnTeleported(transform, from, pose.position, jumpSpeed, VesselStatus);
             accumulatedRotation = pose.rotation;
 
             // A pose write is a teleport, so momentum must follow the new facing rather than the
@@ -1253,7 +1347,7 @@ public class VesselTransformer : MonoBehaviour
                 if (modifier.elapsedTime >= modifier.duration)
                 {
                     ThrottleModifiers.RemoveAt(i);
-                    if (ThrottleModifiers.Count == 0)
+                    if (ThrottleModifiers.Count == 0 && VesselStatus.IsSlowed)
                     {
                         VesselStatus.IsSlowed = false;
                         Vessel.RemoveSlowedShipTransformFromGameData();
@@ -1262,8 +1356,13 @@ public class VesselTransformer : MonoBehaviour
                 else if (modifier.initialValue < 1f)
                 {
                     accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
-                    VesselStatus.IsSlowed = true;
-                    Vessel.AddSlowedShipTransformToGameData();
+                    // On the TRANSITION only: the add is a ServerRpc + ClientRpc broadcast, and
+                    // it used to go out every frame for as long as the slow lasted.
+                    if (!VesselStatus.IsSlowed)
+                    {
+                        VesselStatus.IsSlowed = true;
+                        Vessel.AddSlowedShipTransformToGameData();
+                    }
                 }
                 else
                 {
@@ -1273,7 +1372,7 @@ public class VesselTransformer : MonoBehaviour
 
             accumulatedThrottleModification = Mathf.Clamp(accumulatedThrottleModification, 0f, speedModifierMax);
 
-            if (accumulatedThrottleModification < 0.001f)
+            if (accumulatedThrottleModification < 0.001f && VesselStatus.IsSlowed)
             {
                 VesselStatus.IsSlowed = false;
                 Vessel.RemoveSlowedShipTransformFromGameData();
@@ -1281,10 +1380,16 @@ public class VesselTransformer : MonoBehaviour
 
             throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);
 
-            if (throttleMultiplier > 1f)
-                VesselStatus.VesselAnimation?.FlareEngine();
-            else
-                VesselStatus.VesselAnimation?.StopFlareEngine();
+            // Edge-triggered, like the body flare: FlareEngine/StopFlareEngine write through
+            // SkinnedMeshRenderer.materials[3], which allocates the array (and instances the
+            // materials) on every call - and this ran every frame for every flying hull.
+            bool engineFlaring = throttleMultiplier > 1f;
+            if (engineFlaring != _engineFlaring)
+            {
+                if (engineFlaring) VesselStatus.VesselAnimation?.FlareEngine();
+                else VesselStatus.VesselAnimation?.StopFlareEngine();
+                _engineFlaring = engineFlaring;
+            }
         }
 
         /// <param name="translationRestricted">While true, every modifier still ages out, but
@@ -1293,6 +1398,7 @@ public class VesselTransformer : MonoBehaviour
         private void ApplyVelocityModifiers(bool translationRestricted = false)
         {
             Vector3 accumulatedVelocity = Vector3.zero;
+            float ceiling = velocityModifierMax;
 
             for (int i = VelocityModifiers.Count - 1; i >= 0; i--)
             {
@@ -1303,10 +1409,14 @@ public class VesselTransformer : MonoBehaviour
                 if (modifier.elapsedTime >= modifier.duration)
                     VelocityModifiers.RemoveAt(i);
                 else if (!translationRestricted || modifier.ignoresTranslationRestriction)
+                {
                     accumulatedVelocity += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration) / 2) + 1) * modifier.initialValue;
+                    // A live modifier may RAISE the shared ceiling (ShipVelocityModifier.ceiling).
+                    if (modifier.ceiling > ceiling) ceiling = modifier.ceiling;
+                }
             }
 
-            velocityShift = Vector3.ClampMagnitude(accumulatedVelocity, velocityModifierMax);
+            velocityShift = Vector3.ClampMagnitude(accumulatedVelocity, ceiling);
 
             var sqrMag = velocityShift.sqrMagnitude;
 
@@ -1341,8 +1451,19 @@ public class VesselTransformer : MonoBehaviour
         /// dodges that must remain available in a stance that pins the vessel — do not set it
         /// to make an ordinary ability work while stopped.</param>
         public void ModifyVelocity(Vector3 amount, float duration, bool ignoresTranslationRestriction)
+            => ModifyVelocity(amount, duration, ignoresTranslationRestriction, 0f);
+
+        /// <param name="ceiling">Raise the velocity ceiling to this many u/s while this
+        /// displacement lives (see <see cref="ShipVelocityModifier.ceiling"/>); 0 or anything
+        /// under the vessel's own ceiling leaves that ceiling in charge.</param>
+        public void ModifyVelocity(Vector3 amount, float duration, bool ignoresTranslationRestriction, float ceiling)
         {
-            VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0, ignoresTranslationRestriction));
+            VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0, ignoresTranslationRestriction,
+                                                           Mathf.Max(0f, ceiling)));
         }
+
+        /// <summary>The ceiling every displacement shares unless a live one raises it
+        /// (<see cref="ShipVelocityModifier.ceiling"/>), u/s.</summary>
+        public float VelocityModifierCeiling => velocityModifierMax;
     }
 }

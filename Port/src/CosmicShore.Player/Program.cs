@@ -12,6 +12,8 @@ namespace CosmicShore.Player
     ///   CosmicShore [--scene NAME] [--size WxH] [--screenshot out.png] [--frames N]
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
     ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
+    ///   CosmicShore [--headless] --replay FILE --parity-out DIR     (parity harness, see ParityRun)
+    ///   CosmicShore --random-golden DIR --seeds S1,S2,...
     ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
     ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G] [--recycle-mb MB]
     ///
@@ -61,6 +63,7 @@ namespace CosmicShore.Player
             string trainDir = null, resume = null, evalPopulation = null;
             int recycleMb = 2500, controlPort = 0;
             string sessionReport = null;
+            string replay = null, parityOut = null, randomGolden = null, seedList = null;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
@@ -107,17 +110,38 @@ namespace CosmicShore.Player
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
+                    case "--check-shaders": PlayerWindow.CheckShaders = true; break;
+                    case "--shader-gallery" when i + 1 < args.Length:
+                    {
+                        var spec = args[++i];
+                        int c = spec.IndexOf(':');
+                        int.TryParse(c > 0 ? spec[..c] : spec, out PlayerWindow.GalleryFrame);
+                        PlayerWindow.GalleryLegend = c > 0 ? spec[(c + 1)..] : null;
+                        break;
+                    }
+                    case "--view-model" when i + 1 < args.Length: ModelViewer.Path = args[++i]; break;
+                    case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
                     case "--render-scale" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.RenderScale); break;
                     case "--no-vsync": CosmicShore.Render.RenderQuality.VSync = false; break;
+                    // --gc-latency low: .NET's SustainedLowLatency (no blocking gen-2 collections while
+                    // memory allows), for an A/B of GC pauses against the default Interactive mode.
+                    case "--gc-latency" when i + 1 < args.Length:
+                        System.Runtime.GCSettings.LatencyMode = args[++i] is "low" or "sustained"
+                            ? System.Runtime.GCLatencyMode.SustainedLowLatency : System.Runtime.GCLatencyMode.Interactive;
+                        break;
                     case "--fps" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.TargetFps); break;
                     case "--aniso" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.Anisotropy); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
                     case "--do" when i + 1 < args.Length: script.Add(args[++i]); break;
+                    case "--replay" when i + 1 < args.Length: replay = args[++i]; break;
+                    case "--parity-out" when i + 1 < args.Length: parityOut = args[++i]; break;
+                    case "--random-golden" when i + 1 < args.Length: randomGolden = args[++i]; break;
+                    case "--seeds" when i + 1 < args.Length: seedList = args[++i]; break;
                     case "--shot" when i + 1 < args.Length:
                     {
                         var spec = args[++i];
@@ -136,6 +160,16 @@ namespace CosmicShore.Player
                     }
                 }
             }
+
+            if (randomGolden != null)
+                return ParityRun.WriteRandomGoldens(randomGolden, (seedList ?? "0").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse));
+            if (replay != null)
+            {
+                var record = ParityRun.LoadReplay(replay, script, ref scene, ref seed, ref frames);
+                if (record != null && parityOut != null && !headless && !FrameRecorder.TryAdd(System.IO.Path.Combine(parityOut, "frames") + ":" + record))
+                    Console.WriteLine($"[parity] bad record spec '{record}'");
+            }
+            if (parityOut != null) ParityRun.Begin(parityOut);
 
             CosmicShore.Render.RenderQuality.Clamp();
             if (!wantTrain) SessionReport.Begin(sessionReport);
@@ -187,6 +221,7 @@ namespace CosmicShore.Player
                 SessionReport.Write("crash", e);
                 return 2;
             }
+            finally { ParityRun.End(); }
         }
 
         static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null)
@@ -213,6 +248,7 @@ namespace CosmicShore.Player
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
                 boot.Tick(1f / 60f);
+                ParityRun.AfterTick(f);
                 double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;
                 SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick
                 SessionReport.SimTime(tickMs);

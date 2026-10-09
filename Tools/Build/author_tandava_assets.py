@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Author every serialized asset Tandava (GameModes.Tandava = 62) adds - the swarm hunt in a closed cell.
+Author every serialized asset Tandava (GameModes.Tandava = 64) adds - the swarm hunt in a closed cell.
 Assets/_Scripts/Controller/Arcade/TANDAVA.md is the design and status doc.
 
 One creature, a tadpole swarm, hatches WHOLE as the Great Serpent inside a closed cell (the standard membrane is its
@@ -43,7 +43,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib          # noqa: E402
 import tandava_plans                   # noqa: E402
 
-MODE_ID = 62
+MODE_ID = 64
 g = lib.Generator(MODE_ID, "Tandava")
 guid = lib.guid
 num = lib.num
@@ -561,7 +561,7 @@ g.emit_asset(f"{CELL_DIR}/Tandava Cell Config.asset", G_ASSET["CellConfig"],
   EnvironmentPrefab: {{fileID: 0}}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
-  PetalBurnRule: 0
+  PetalBurnRule: 1
   initialControllingDomain: 1
   conservedFaunaStomach: 0
   PhaseThresholds:
@@ -670,17 +670,17 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeG
 g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_ASSET["GameToastConfigTandava"],
              so(EXISTING["GameToastConfigSO"], "GameToastConfig_Tandava") +
              f"  gameMode: {MODE_ID}\n  toasts:\n" +
-             lib.toast(128, "{0}", domain_names=0) +
-             lib.toast(129, "{0}", domain_names=0) +
-             lib.toast(130, "{0}", domain_names=0) +
-             lib.toast(131, "{0}", domain_names=0) +
-             lib.toast(132, "{0}", domain_names=0) +
-             lib.toast(133, "Break its meals - strike the body while it eats", domain_names=0, idle=1, idle_seconds=40) +
-             lib.toast(134, "{0}", domain_names=0) +
-             lib.toast(135, "{0}", domain_names=0) +
-             lib.toast(136, "{0}", domain_names=0) +
              lib.toast(137, "{0}", domain_names=0) +
-             lib.toast(138, "{0}", domain_names=0))
+             lib.toast(138, "{0}", domain_names=0) +
+             lib.toast(139, "{0}", domain_names=0) +
+             lib.toast(140, "{0}", domain_names=0) +
+             lib.toast(141, "{0}", domain_names=0) +
+             lib.toast(142, "Break its meals - strike the body while it eats", domain_names=0, idle=1, idle_seconds=40) +
+             lib.toast(143, "{0}", domain_names=0) +
+             lib.toast(144, "{0}", domain_names=0) +
+             lib.toast(145, "{0}", domain_names=0) +
+             lib.toast(146, "{0}", domain_names=0) +
+             lib.toast(147, "{0}", domain_names=0))
 g.register_toast_config(G_ASSET["GameToastConfigTandava"])
 
 
@@ -993,9 +993,9 @@ if "tandavaFlamesToBreak" in g.files[lib.END_CONDITIONS]:
 if not re.search(rf"\bTandava = {MODE_ID},", g.read("Assets/_Scripts/Data/Enums/GameModes.cs")):
     errors.append(f"GameModes.Tandava is not {MODE_ID}")
 toasts_src = g.read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
-for name, sid in (("TandavaMatchStart", 128), ("TandavaFormTaken", 129), ("TandavaCompleted", 130), ("TandavaBroken", 131),
-                  ("TandavaFeeding", 132), ("TandavaDenyHint", 133), ("TandavaMealBroken", 134), ("TandavaRising", 135),
-                  ("TandavaHaloLit", 136), ("TandavaHaloBroken", 137), ("TandavaLunge", 138)):
+for name, sid in (("TandavaMatchStart", 137), ("TandavaFormTaken", 138), ("TandavaCompleted", 139), ("TandavaBroken", 140),
+                  ("TandavaFeeding", 141), ("TandavaDenyHint", 142), ("TandavaMealBroken", 143), ("TandavaRising", 144),
+                  ("TandavaHaloLit", 145), ("TandavaHaloBroken", 146), ("TandavaLunge", 147)):
     if not re.search(rf"\b{name} = {sid},", toasts_src):
         errors.append(f"GameToastSituation.{name} is not {sid}")
 if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSignal.cs")):

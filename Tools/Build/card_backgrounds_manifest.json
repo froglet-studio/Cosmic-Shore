@@ -72,6 +72,22 @@
    "track": null,
    "triangles": 278200
   },
+  "GrizzlyCharge": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16101,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 216196
+  },
+  "GrizzlyTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 14032
+  },
   "Headlong": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -251,5 +267,5 @@
   768,
   510
  ],
- "source_hash": "cb5a888650370954be6d0a7315e439dfcd9ec9add889f9325b090890e7be52c8"
+ "source_hash": "3d49eb29d45177276e45d2ebd13de7e4829922ce98c98ca7501d3d01017dcf0b"
 }

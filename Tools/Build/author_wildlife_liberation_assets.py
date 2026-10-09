@@ -102,17 +102,20 @@ EXISTING = {
     "Cytoplasm_prefab":   "9cacd903fcf4643459f5f14ac811bb20",
     "CellIcon":           "6aa1c06e11b265744a5f9fa8858ac72a",
     "Vessel_Sparrow":     "7b7053dd065edb54baa3b831b90f4985",
-    # arcade card art - shared with the Wildlife Blitz family (this is its multiplayer cousin)
+    # arcade card art - the icons are shared with the Wildlife Blitz family (this is its
+    # multiplayer cousin); the BACKGROUND is this mode's own /cardart render
+    # (Assets/_Graphics/ARCADE/CardBackgrounds/WildlifeLiberation.png). It used to name the
+    # Blitz family's shared background, so a re-run silently reverted the shipped card art.
     "IconActive":         "576d21301c622e9489beb58263f393cb",
     "IconInactive":       "ebb26aeda98ffe840ad60e7ab88c8a28",
-    "CardBackground":     "325ba2d27b2b2c24c9a6b06681eecbe5",
-    "PreviewClip":        "4fb5927c0dce75b4298b94514abc0150",
+    "CardBackground":     "d158c4fd34d94218a67750ebf3d7190c",
     # fauna prefabs
     "TadpolePrefab":      "c7fd418d426de8740ac888dcc23a5d24",
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
     "BrittlestarPrefab":  "c719f00ea7596c24185379994f7dc824",
     "SharkPrefab":        "a67ba7ddaecf6624ab37cd9f5f2210a6",
     "WormColonyPrefab":   "8f79c97ef2bd4624a730a96900e4daaa",
+    "ClawfishPrefab":     "a525483096f54bc44a73646161623bf5",
     "TadpoleBodyMat":     "5140ec1c42866e849927f442d5965f7f",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this, and it now
     # also owns the fauna-kill SOAP channel this mode scores on
@@ -127,6 +130,7 @@ FAUNA_FILEID = {
     "Brittlestar": 5351160486092638538,   # LightFauna, herbivore, 10 body prisms
     "Shark":       5351160486092638538,   # LightFauna, PREDATOR,  11 body prisms
     "WormColony":                  1002,  # WormFauna,  apex omnivore colony
+    "Clawfish":     369859875180954115,   # LightFauna, herbivore, 4 fluke-rib body prisms
 }
 FAUNA_PREFAB = {
     "Tadpole":     EXISTING["TadpolePrefab"],
@@ -134,6 +138,7 @@ FAUNA_PREFAB = {
     "Brittlestar": EXISTING["BrittlestarPrefab"],
     "Shark":       EXISTING["SharkPrefab"],
     "WormColony":  EXISTING["WormColonyPrefab"],
+    "Clawfish":    EXISTING["ClawfishPrefab"],
 }
 
 # Per-element sibling configs, reused verbatim (read-only species identity assets) so every
@@ -149,12 +154,13 @@ PALETTE = {
                     "eaf56c14345740849f35fc84467059e9", "78ce842bb8554d748af1e96abf430137"],
     "WormColony":  ["c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10", "a3d59c8e71b24f6a9c0e4d8b5f172c33",
                     "e7f1b3a2c9d84e5fb6a08c7d4e392b55", "b9c4d7e2a1f34b8cd5e6f0a39b8d1c77"],
+    "Clawfish":    ["9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f813",
+                    "0e87f3117e7141a7b5bce66b0385a2d0", "c7ff7791587d4467ba9fbe88358b2119"],
 }
 
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-PREVIEW_FILEID = 241334157148977051
 
 # The kill target - the race metric, summed PER DOMAIN. The 25%/50% milestone rungs are
 # fractions of this (so 8 and 15), and moving it moves the whole progress ladder.
@@ -372,7 +378,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameWildlifeLiberation
   Vessels:
@@ -383,7 +388,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 427
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -440,6 +444,11 @@ TADPOLE_VARIANT = f"""  Variant:
     AudioMinDistance: -1
     AudioMaxDistance: -1
 """
+# Species replicated server-authoritatively (FaunaConfigurationSO.NetworkSynced, the per-species
+# rollout gate - Docs/ECOSYSTEM_NETWORK_SYNC.md). The Shark is the one this mode switched on;
+# the key is only emitted where it is set, so the other species keep their shipped bytes.
+NETWORK_SYNCED_SPECIES = {"Shark"}
+
 PLAIN_VARIANT = """  Variant:
     Enabled: 0
 """
@@ -454,13 +463,15 @@ for i in INTENSITIES:
 
         # Reproduction: the population DRIVER above the seed floor. Bigger creatures convert
         # prey to offspring more slowly, so the swarm churns and the kaiju does not.
-        feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0}[species]
-        cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60}[species]
+        feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0,
+                 "Clawfish": 18}[species]
+        cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60,
+                    "Clawfish": 13}[species]
 
         emit(fauna_asset_path(species, i),
              HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, i)) +
              f"""  FaunaPrefab: {{fileID: {FAUNA_FILEID[species]}, guid: {FAUNA_PREFAB[species]}, type: 3}}
-  InitialSpawnCount: {seed}
+""" + ("  NetworkSynced: 1\n" if species in NETWORK_SYNCED_SPECIES else "") + f"""  InitialSpawnCount: {seed}
   PopulationSize: {seed}
   SpawnProbability: 1
   FeedsPerOffspring: {feeds}
@@ -550,9 +561,41 @@ for i in INTENSITIES:
 # a fresh copy of whatever MinigameRampage.unity has since become.
 if not POPULATION_ONLY:
     # ── 7. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
+    #
+    # ONE-SHOT, AND THE DONOR HAS MOVED ON. The Rampage rework deleted RampageController's
+    # arenaCell / aiRetargetSeconds block and replaced its single Cell config, so the asserts
+    # below fire on a donor that is simply a different scene now. Before this guard that assert
+    # aborted the whole script ABOVE `errors = []`, so `--check` validated nothing at all
+    # (CLAUDE.md: a spent one-shot must STAND DOWN, not take the checks with it). The clone is
+    # GUARDED, not asserted: when the donor no longer matches, the already-committed scene is
+    # registered read-only so every scene check below describes the artifact that SHIPS. It is
+    # byte-identical to disk, so a write-mode run cannot rewrite the scene from here. If this
+    # mode ever needs a re-clone, re-point it at a current donor instead of satisfying these.
     DONOR_SCENE = os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
     with open(DONOR_SCENE, encoding="utf-8") as fh:
         scene = fh.read()
+    _DONOR_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      aiRetargetSeconds: 1.5
+    """
+    SCENE_STEP_LIVE = (_DONOR_FIELDS in scene
+                       and scene.count(EXISTING["RampageController"]) == 1
+                       and scene.count(EXISTING["RampagePrismTurnMonitor"]) == 1)
+else:
+    SCENE_STEP_LIVE = False
+
+_SCENE_REL = "Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity"
+if not SCENE_STEP_LIVE:
+    if not POPULATION_ONLY:
+        print("note: section 7 (scene clone) stood down - the Rampage donor has moved on and "
+              "MinigameWildlifeLiberation.unity is already committed. Every other section still runs.")
+    # The .meta goes in too: the minted-GUID sweep excludes metas THIS script owns, so leaving
+    # it out reports the committed scene as a foreign asset colliding with its own minted guid.
+    for _rel in (_SCENE_REL, _SCENE_REL + ".meta"):
+        with open(os.path.join(ROOT, _rel), encoding="utf-8") as _fh:
+            files[_rel] = _fh.read()
+
+if SCENE_STEP_LIVE:
 
     # 7a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
     scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["WildlifeKillTurnMonitor"], scene)
@@ -628,6 +671,7 @@ if not POPULATION_ONLY:
          scene_meta(G_ASSET["MinigameWildlifeLiberation.unity"]))
 
 
+if not POPULATION_ONLY:
     # ── 8. Register the card in the party-games list ─────────────────────────────
     LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
     with open(os.path.join(ROOT, LIST_PATH), encoding="utf-8") as fh:
@@ -735,12 +779,7 @@ for species, pal in PALETTE.items():
 
 # the scene must no longer mention the donor's mode-specific guids. Read from disk under
 # --population (this run did not re-clone it) so the assertions still hold against what SHIPS.
-_scene_rel = "Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity"
-if _scene_rel in files:
-    sc = files[_scene_rel]
-else:
-    with open(os.path.join(ROOT, _scene_rel), encoding="utf-8") as _fh:
-        sc = _fh.read()
+sc = files[_SCENE_REL]
 for name in ("RampageController", "RampagePrismTurnMonitor", "RampageCellConfig", "RampageScoringRule"):
     if EXISTING[name] in sc:
         errors.append(f"cloned scene still references {name}")
@@ -855,9 +894,12 @@ if _quarter_deficit_levels < 1.0:
         f"quarter-of-target deficit - under one whole level the comeback does nothing. Rescale "
         f"COMEBACK_RATE with the target (>= {4.0 / WILDLIFE_KILL_TARGET:.3f}).")
 
+# No `PreviewClip`: SO_Game.PreviewClip is RETIRED (arcade_mode_lib.RETIRED_CARD_KEYS). This set
+# listed it, which is how the card kept emitting a dead key - pointing at a video - with the
+# key-validation below waving it through.
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
-           "PreviewClip", "GolfScoring", "SceneName"}
+           "GolfScoring", "SceneName"}
 for asset_path, cs_path in CHECKS:
     keys = set(re.findall(r"^  (\w+):", files[asset_path], re.M)) - {
         "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset",
@@ -931,7 +973,26 @@ if stale:
         print("   -", os.path.relpath(f, ROOT))
 
 if CHECK_ONLY:
-    print("\n--check: no files written, nothing deleted.")
+    # --check must read the DISK (flora skill 8): a check that only re-runs the in-memory
+    # validation passes whatever the shipped assets actually say. Drift or a pending prune is a
+    # failure, so a hand-edit or a generator change that was never re-run cannot sit green.
+    drifted = []
+    for rel, content in sorted(files.items()):
+        path = os.path.join(ROOT, rel)
+        if not os.path.exists(path):
+            drifted.append(rel + " (missing)")
+            continue
+        with open(path, encoding="utf-8", newline="") as fh:
+            if fh.read() != content:
+                drifted.append(rel)
+    if drifted or stale:
+        print(f"\n--check: {len(drifted)} file(s) differ from the authored output"
+              f"{f' and {len(stale)} stale file(s) await pruning' if stale else ''}:")
+        for rel in drifted:
+            print("  -", rel)
+        print("Re-run without --check to author them.")
+        sys.exit(1)
+    print(f"\n--check: OK, all {len(files)} generated file(s) match disk; nothing written.")
     sys.exit(0)
 
 for f in stale:

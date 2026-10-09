@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Gameplay;
@@ -55,6 +56,13 @@ namespace CosmicShore.Gameplay
 
         public void Initialize()
         {
+            // A device tier may go without the mote field (PlatformProfileSO.DisableCytoplasm,
+            // MobileLow): ~300 transparent objects per cell and the reorient sweep over all of
+            // them. Cosmetic only - not mass, not lifeforms. Docs/PLATFORM_UNIFICATION.md §3.6.
+            var profile = PlatformProfile.Current;
+            if (profile && profile.DisableCytoplasm)
+                return;
+
             if (!cellData.TryGetLocalCrystal(out Crystal crystal))
                 return;
 

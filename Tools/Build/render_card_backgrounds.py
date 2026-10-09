@@ -108,6 +108,7 @@ SOURCES = [
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
     f"{_AR}/Redline/RedlineCourse.cs",
+    f"{_AR}/GrizzlyTime/GrizzlyTimeCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -707,6 +708,13 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
+    # low, close, and down the axis of the Grizzly's run.
+    "GrizzlyCharge": (75, 6, 0.55, 48),
+    # Grizzly Time is the fourth gate circuit (Headlong / Redline / Regatta): Headlong's octagon
+    # since the bomb launch was tripled - eight rings round the nucleus, shot from a new side and
+    # pulled back far enough to keep the whole lap in frame.
+    "GrizzlyTime": (125, 34, 0.95, 42),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
 }
@@ -762,7 +770,7 @@ def recipe(stem, card_path, pal, ends):
         node["intensity"] = INTENSITY
         layers.append(node)
         nucleus()
-    elif s in ("Switchback", "Headlong", "Redline", "Breakwater"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Breakwater"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -780,12 +788,14 @@ def recipe(stem, card_path, pal, ends):
                 settings["GateCount"] = ends.get("switchbackGateTarget", 20)
                 settings["FirstGateDistance"] = min(max(ctl.get("firstGateDistance", 620.0), inner), outer)
             else:
-                target = ends.get(f"{s.lower()}GateTarget", 24)
+                key = {"GrizzlyTime": "grizzlyTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
             layers.append({"kind": s.lower(), "intensity": INTENSITY, "seed": stable_seed(s),
                            "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
-                                     "Redline": [1.5, 0.25, 0.35]}[s]})
+                                     "Redline": [1.5, 0.25, 0.35],
+                                     "GrizzlyTime": [0.95, 0.45, 1.5]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
@@ -1000,7 +1010,7 @@ def recipe(stem, card_path, pal, ends):
     elif s == "SkimRace":
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
-    elif s in ("Switchback", "Headlong", "Redline", "Waystation"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Waystation"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1092,6 +1102,18 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             stage["vessels"] = vessels([(d, None, None, None, 70) for d in (JADE, RUBY, GOLD, JADE, RUBY, GOLD)])
             tgt = jitter(0.3)
             cone(v_add(tgt, v_mul(rng.unit(), span * 0.5)), tgt, 12, GOLD, 0.3)
+    elif s == "GrizzlyCharge":
+        # The Grizzly's two blasts: one big cannon shell going off in the wreckage, and the bomb
+        # pump - a line of alternating-side puffs, growing with the squeeze, kicking the hull
+        # down its own line of flight.
+        glow(jitter(0.5), span * 0.16, GOLD, 1.2, 0.45)
+        start = jitter(0.6)
+        d = v_norm(rng.unit())
+        side = v_norm(v_cross([0, 1, 0], d))
+        for k in range(6):
+            p = v_add(v_add(start, v_mul(d, span * 0.07 * k)), v_mul(side, span * 0.02 * (1 if k % 2 else -1)))
+            glow(p, span * (0.02 + 0.008 * k), JADE, 0.9, 0.35)
+        streak(v_add(start, v_mul(d, span * 0.45)), d, span * 0.12, JADE)
     elif s == "Salvo":
         for k in range(4):
             glow(jitter(0.8), span * rng.range(0.06, 0.12), (GOLD, JADE, RUBY, GOLD)[k], 1.1, 0.4)
@@ -1170,7 +1192,8 @@ def env_seed(env):
 def end_conditions():
     body = read(ROOT / END_CONDITIONS)
     out = {}
-    for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget"):
+    for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget",
+              "grizzlyTimeGateTarget"):
         m = re.search(rf"^  {k}: (\d+)", body, re.M)
         if m:
             out[k] = int(m.group(1))

@@ -394,9 +394,12 @@ namespace CosmicShore.Gameplay
         /// The JOUSTED death (Docs/ECOSYSTEM.md §26): a vessel took this lifeform's heart, so
         /// the plant does not detonate. Its prisms are left standing as a skeleton - the frame
         /// of the thing that grew here, now ordinary cell mass the food web can graze - while
-        /// the soft tissue withers spindle by spindle FROM THE HEART OUTWARD, unravelling
-        /// around the hole the joust left. Exactly the mirror of the outside-in starvation
-        /// wither a creature does (see <see cref="LightFauna"/>).
+        /// the soft tissue withers spindle by spindle FROM THE MISSING CRYSTAL TO THE LEAVES
+        /// along the spindle tree (<see cref="Spindle.OrderHeartOutward"/>), unravelling around
+        /// the hole the joust left. This is the ONE sanctioned exception to "every standing limb
+        /// has a path to its crystal" (Docs/ECOSYSTEM.md §26.10): every other death and every
+        /// graze spends a lifeform outside-in. The mirror of the starvation wither a creature
+        /// does (see <see cref="LightFauna"/>).
         ///
         /// <see cref="DieCoroutine"/> is what waits for it: the husk is destroyed only once
         /// every spindle has finished evaporating, so this needs no completion callback.
@@ -407,9 +410,12 @@ namespace CosmicShore.Gameplay
             // already on its way to whoever took it.
             Vector3 heart = crystal ? crystal.transform.position : transform.position;
 
-            // Isolate first: ForceWither recurses into child spindles and destroying a spindle
+            // Ordered BEFORE isolation, because the order is read off the spindle tree and
+            // isolation is what severs it. The joust exception: crystal-adjacent limbs first.
+            var spindles = Spindle.OrderHeartOutward(GetComponentsInChildren<Spindle>(true), heart);
+
+            // Isolate: ForceWither recurses into child spindles and destroying a spindle
             // destroys its children, either of which would collapse the plant in one step.
-            var spindles = GetComponentsInChildren<Spindle>(true).Where(s => s).ToList();
             foreach (var sp in spindles)
                 sp.IsolateForOrderedWither(transform);
 
@@ -418,10 +424,6 @@ namespace CosmicShore.Gameplay
             Transform skeletonParent = cell ? cell.transform : null;
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
                 if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
-
-            spindles.Sort((a, b) =>
-                (a.transform.position - heart).sqrMagnitude.CompareTo(
-                (b.transform.position - heart).sqrMagnitude));
 
             // Can't animate while inactive (scene teardown) - the skeleton above already
             // conserved the mass, so collapse what's left in one step rather than throwing.

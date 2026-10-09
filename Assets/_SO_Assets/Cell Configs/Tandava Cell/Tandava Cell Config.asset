@@ -30,7 +30,7 @@ MonoBehaviour:
   EnvironmentPrefab: {fileID: 0}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
-  PetalBurnRule: 0
+  PetalBurnRule: 1
   initialControllingDomain: 1
   conservedFaunaStomach: 0
   PhaseThresholds:

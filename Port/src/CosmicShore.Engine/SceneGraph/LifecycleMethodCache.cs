@@ -26,6 +26,9 @@ namespace CosmicShore.Engine
         public Action<MonoBehaviour, Collider> TriggerEnter;
         public Action<MonoBehaviour, Collider> TriggerExit;
         public Action<MonoBehaviour, Collider> TriggerStay;
+        public Action<MonoBehaviour, Collision> CollisionEnter;
+        public Action<MonoBehaviour, Collision> CollisionStay;
+        public Action<MonoBehaviour, Collision> CollisionExit;
         public int ExecutionOrder;
 
         static readonly ConcurrentDictionary<Type, LifecycleHooks> Cache = new();
@@ -50,6 +53,9 @@ namespace CosmicShore.Engine
                 TriggerEnter = FindTrigger(type, "OnTriggerEnter"),
                 TriggerExit = FindTrigger(type, "OnTriggerExit"),
                 TriggerStay = FindTrigger(type, "OnTriggerStay"),
+                CollisionEnter = FindCollision(type, "OnCollisionEnter"),
+                CollisionStay = FindCollision(type, "OnCollisionStay"),
+                CollisionExit = FindCollision(type, "OnCollisionExit"),
                 // The project's Script Execution Order settings (.meta) win over the attribute.
                 ExecutionOrder = ScriptExecutionOrder.TryGet(type, out var configured) ? configured
                     : type.GetCustomAttribute<DefaultExecutionOrderAttribute>()?.order ?? 0,
@@ -93,6 +99,31 @@ namespace CosmicShore.Engine
         static Action<MonoBehaviour> BindAction<T>(Action<T> call) where T : MonoBehaviour => mb => call((T)mb);
         static Action<MonoBehaviour> BindCoroutine<T>(Func<T, System.Collections.IEnumerator> start) where T : MonoBehaviour => mb => mb.StartCoroutine(start((T)mb));
         static Action<MonoBehaviour, Collider> BindTrigger<T>(Action<T, Collider> call) where T : MonoBehaviour => (mb, other) => call((T)mb, other);
+        static Action<MonoBehaviour, Collision> BindCollision<T>(Action<T, Collision> call) where T : MonoBehaviour => (mb, c) => call((T)mb, c);
+
+        /// <summary>
+        /// Collision-message variant (the contact pass): one <see cref="Collision"/> parameter, or
+        /// none (the original engine accepts both), most-derived declaration wins.
+        /// </summary>
+        static Action<MonoBehaviour, Collision> FindCollision(Type type, string methodName)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            for (Type t = type; t != null && t != typeof(MonoBehaviour); t = t.BaseType)
+            {
+                MethodInfo method = t.GetMethod(methodName, flags, binder: null, types: new[] { typeof(Collision) }, modifiers: null);
+                if (method is not null && !method.IsAbstract)
+                {
+                    if (method.ReturnType == typeof(void))
+                        return (Action<MonoBehaviour, Collision>)Generic(nameof(BindCollision), t)
+                            .Invoke(null, new object[] { method.CreateDelegate(typeof(Action<,>).MakeGenericType(t, typeof(Collision))) });
+                    return (mb, c) => method.Invoke(mb, new object[] { c });
+                }
+                MethodInfo bare = t.GetMethod(methodName, flags, binder: null, types: Type.EmptyTypes, modifiers: null);
+                if (bare is not null && !bare.IsAbstract)
+                    return (mb, _) => bare.Invoke(mb, null);
+            }
+            return null;
+        }
 
         /// <summary>
         /// Trigger-message variant of <see cref="Find"/>: any visibility, exactly one

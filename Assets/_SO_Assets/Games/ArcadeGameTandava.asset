@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameTandava
   m_EditorClassIdentifier:
-  Mode: 62
+  Mode: 64
   IsMultiplayer: 1
   DisplayName: Tandava
   Description: One creature lives in this cell, and it is hungry. It hatches as a great serpent and

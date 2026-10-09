@@ -204,9 +204,10 @@ namespace CosmicShore.Gameplay
             bool birth = IsBirthTransition;
             GetShedColors(PrismKind.Shielded, out var octBright, out var octDark);
             if (octahedronShield != null) octahedronShield.Disengage(birth, default, 0f, octBright, octDark);
-            if (stellatedShield == null)
-                stellatedShield = GetComponent<PrismStellatedOctahedronShield>()
-                                  ?? gameObject.AddComponent<PrismStellatedOctahedronShield>();
+            // TryGetComponent, never `GetComponent() ?? AddComponent()`: a missing component is a
+            // fake-null object in the Editor, so the coalesce never added one and Engage threw.
+            if (stellatedShield == null && !TryGetComponent(out stellatedShield))
+                stellatedShield = gameObject.AddComponent<PrismStellatedOctahedronShield>();
             stellatedShield.Engage(birth);
 
             SyncAOERegistryShieldState();

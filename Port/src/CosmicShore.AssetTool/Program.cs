@@ -38,14 +38,18 @@ namespace CosmicShore.AssetTool
     /// Close the scene in the Unity Editor first; Unity does not merge external edits to a
     /// scene it has open.
     /// </summary>
-    static class Program
+    static partial class Program
     {
         static int Main(string[] args)
         {
+            // UTF-8 out, whatever the console's code page (Windows redirects in the OEM page otherwise).
+            Console.OutputEncoding = new System.Text.UTF8Encoding(false);
             var opts = new Dictionary<string, string>();
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
+                // --json is a flag, or names the file to write when a .json path follows (shadergraph-census --json PATH).
+                if (args[i] == "--json" && i + 1 < args.Length && args[i + 1].EndsWith(".json", StringComparison.OrdinalIgnoreCase)) { opts["json"] = args[++i]; continue; }
                 if (args[i] is "--dry-run" or "--force" or "--all" or "--json") { opts[args[i][2..]] = "1"; continue; }
                 if (args[i].StartsWith("--", StringComparison.Ordinal) && i + 1 < args.Length) { opts[args[i][2..]] = args[++i]; continue; }
                 pos.Add(args[i]);
@@ -58,7 +62,16 @@ namespace CosmicShore.AssetTool
                     "roundtrip" => RoundTrip(pos.Skip(1).ToList()),
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
                     "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
+                    "shadergraph-census" => ShaderCensus.Run(opts),
                     "addall" => Scripts.AddAll(),
+                    // Prisma's editor pages (TOOLS, DATA, MODELS) read these; JSON on stdout.
+                    "tools" => EditorData.Tools(),
+                    "datasets" => EditorData.Datasets(),
+                    "dataset" => EditorData.Dataset(Need(pos, 2)[1]),
+                    "model" => EditorData.Model(Need(pos, 2)[1]),
+                    "model-preview" => EditorData.ModelPreview(Need(pos, 2)[1], opts),
+                    "model-import" => ModelImportCommand(Need(pos, 2), opts),
+                    "new-asset" => NewAssetCommand(Need(pos, 3), opts),
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
                     "get" => Get(Need(pos, 3), opts),
@@ -97,6 +110,8 @@ namespace CosmicShore.AssetTool
 
   roundtrip [path...]                       verify parse -> write is byte-identical (default: all of Assets/)
   serialization-audit [path...] [--json]    every script field Unity reads that Prisma drops (and the reverse)
+  shadergraph-census [--json PATH]          Shader Graph compiler coverage: node types, custom functions, each
+                                            shader's route (family / compiled / missing); writes Port/parity/shaders.json
   list   <file>                             GameObjects and their hierarchy paths
   docs   <file>                             every document: fileID, class, type
   get    <file> <object> [field.path]       print a document, or one field of it
@@ -119,6 +134,21 @@ namespace CosmicShore.AssetTool
                                             removals). Writes the prefab AND this file
   schema [path...]                          check the component serializer against every saved script
 
+Editor data (JSON on stdout, what Prisma's TOOLS / DATA / MODELS pages read):
+  tools                                     every FrogletTools menu item: category, importance, description, source
+  datasets                                  every ScriptableObject .asset, grouped by script type
+  dataset <file.asset>                      its fields: value, kind, type, header, tooltip, range (edit with set)
+  model <file.fbx>                          nodes, meshes, triangles, materials, blend shapes, bones, takes, import settings,
+                                            and the game's materials (the prefabs that draw it: usedBy, gameMaterials)
+  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20] [--colors game|submesh] [--turntable N] [--shapes ""A=50;B=100""]
+                                            a shaded picture drawn on the CPU, in the game's material colours;
+                                            --turntable: N views around it in one sheet, 6 to a row
+  new-asset <ScriptableObjectType> <Assets/dir/Name.asset> [--dry-run]
+                                            a new data file with the script's defaults, as Unity's Create menu writes it
+  model-import <src.fbx> --to Assets/<dir> [--name N] [--prefab] [--dry-run]
+                                            copy a new model in with a .meta in the project's import settings
+                                            (fresh GUID); --prefab writes N.prefab nesting it and loads it
+
 <object>: &id | GameObject path (Canvas/Panel/Button) | unique GameObject name
           paths and names reach inside placed prefabs; there, set/add/create/delete/remove-component
           are written as the instance's overrides, exactly as the Unity Editor writes them
@@ -133,11 +163,11 @@ namespace CosmicShore.AssetTool
             public readonly string Path;
             public readonly UnityAssetEditor Ed;
             public readonly PrefabInstanceEditor Pie;
-            public Session(string path)
+            public Session(string path, AssetDatabase db = null)
             {
                 Path = System.IO.Path.GetFullPath(path);
                 Ed = new UnityAssetEditor(UnityYamlFile.Load(Path));
-                Pie = new PrefabInstanceEditor(Ed, Scripts.Db, Path);
+                Pie = new PrefabInstanceEditor(Ed, db ?? Scripts.Db, Path);
             }
             public UnityYamlFile File => Ed.File;
         }

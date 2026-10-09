@@ -1,5 +1,16 @@
 # Prompt — author the Urchin's HUD
 
+> **STATUS: EXECUTED 6 Oct 2026 (#973).** The Urchin now HAS a HUD: `UrchinHUDVariant.prefab` (a
+> Prefab Variant of `VesselHUDPrefab`) binds the four-icon row Chain Spikes / Trail Rider / Track
+> Projector / Slip, with the ammo fill on the Charge card's gauge, the riding indicator on Mass and
+> the Track Projector recharge veil on Space; `Urchin.prefab` carries a `ShipHUDContainer`, an
+> `UrchinVesselHUDController`, and `VesselStatus.vesselHUDController` points at it. Everything is
+> written by `Tools/Build/author_urchin_hud.py` (`--check`). Not delivered as written: the four
+> icons are white PLACEHOLDER silhouettes awaiting the art pass, the Chain Spikes hold-to-charge has
+> no gauge (the executor does not expose charge progress), and the HUD has **not been opened in the
+> Unity editor** (the checks are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). The "no HUD" text
+> below describes the state the prompt was written against. Kept for the record.
+
 Paste everything below into a fresh session.
 
 ---

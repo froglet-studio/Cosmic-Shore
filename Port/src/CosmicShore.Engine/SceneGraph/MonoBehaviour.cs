@@ -131,6 +131,18 @@ namespace CosmicShore.Engine
             catch (Exception e) { Debug.LogException(e, this); }
         }
 
+        // Collision messages (the contact pass, Physics/ContactPass.cs): same delivery rules as triggers.
+        internal void RunCollisionEnter(Collision collision) => RunCollision(hooks?.CollisionEnter, collision);
+        internal void RunCollisionStay(Collision collision) => RunCollision(hooks?.CollisionStay, collision);
+        internal void RunCollisionExit(Collision collision) => RunCollision(hooks?.CollisionExit, collision);
+
+        void RunCollision(Action<MonoBehaviour, Collision> hook, Collision collision)
+        {
+            if (hook is null) return;
+            try { hook(this, collision); }
+            catch (Exception e) { Debug.LogException(e, this); }
+        }
+
         internal bool HasUpdate => hooks.Update != null;
         internal bool HasFixedUpdate => hooks.FixedUpdate != null;
         internal bool HasLateUpdate => hooks.LateUpdate != null;

@@ -22,6 +22,8 @@ namespace CosmicShore.Launcher
         public string Text;
         public string? Detail;
         public string? ToolId;
+        /// <summary>The file an Edit/Write/NotebookEdit call changed (repository-relative when it can be), for the GIT page.</summary>
+        public string? File;
         public bool Failed;
         public byte[]? Image;
         public List<(string text, string status)>? Todos;
@@ -48,7 +50,19 @@ namespace CosmicShore.Launcher
         public string? ActiveModel { get; private set; }
         public DateTime BusySince { get; private set; }
         public long ContextTokens { get; private set; }
+        /// <summary>The model's context window as the CLI reports it (modelUsage.contextWindow); 0 until a run ends.</summary>
+        public long ContextWindow { get; private set; }
         public int Turns { get; private set; }
+        /// <summary>How many files the last run's edit calls changed (the GIT page has them).</summary>
+        public int LastRunEdits { get; private set; }
+
+        /// <summary>This conversation's identity in the chat list: a short id, a title (its first message, or the milestone), when it was last used.</summary>
+        public string Id { get; private set; } = DateTime.UtcNow.ToString("yyMMddHHmmss") + "-" + Guid.NewGuid().ToString("N")[..4];
+        public string Title { get; set; } = "";
+        public DateTime Created { get; private set; } = DateTime.Now;
+        public DateTime Updated { get; private set; } = DateTime.Now;
+        /// <summary>Raised on the chat thread when a run ends and the conversation was saved (the chat list re-sorts).</summary>
+        public event Action? Saved;
 
         /// <summary>Raised on the chat thread when a reply finishes (voice reads it aloud).</summary>
         public event Action<string>? ReplyFinished;
@@ -59,24 +73,30 @@ namespace CosmicShore.Launcher
         /// <summary>Raised on the chat thread when a milestone run stops short (never for the user's own STOP).</summary>
         public event Action<SessionStop>? MilestoneStopped;
 
-        // Why a run ended early, as "at the 80-turn limit" (a budget) - set by the result event or the watchdog.
+        // Why a run ended early, as "at the turn limit" - set by the result event.
         volatile string? _stopReason;
         volatile string? _lastError;
         volatile bool _userStopped;
 
         readonly LauncherSettings _s;
         readonly Toolchain _tools;
+        readonly ClaudeCli _cli;
         readonly object _lock = new();
         readonly List<ChatItem> _items = new();
         Process? _proc;
         string? _session;
 
-        public ClaudeChat(LauncherSettings s, Toolchain tools) { _s = s; _tools = tools; }
+        public ClaudeChat(LauncherSettings s, Toolchain tools, ClaudeCli cli, Scope scope = Scope.Game, string? milestone = null, string? title = null)
+        {
+            _s = s; _tools = tools; _cli = cli;
+            CurrentScope = scope; Milestone = milestone; MilestoneTitle = title;
+            if (scope == Scope.Milestone) Title = $"{milestone} - {title}";
+        }
 
         public bool Busy { get; private set; }
         public double CostUsd { get; private set; }
-        public string? Cli { get; private set; }
-        public bool Installing { get; private set; }
+        /// <summary>Whether the conversation has anything in it worth keeping in the list.</summary>
+        public bool Empty { get { lock (_lock) return !_items.Any(i => i.Role == ChatRole.User); } }
 
         public void Snapshot(List<ChatItem> into) { lock (_lock) { into.Clear(); foreach (var i in _items) into.Add(i.Copy()); } }
         public int Count { get { lock (_lock) return _items.Count; } }
@@ -85,11 +105,14 @@ namespace CosmicShore.Launcher
         /// <summary>A launcher-side note in the transcript (not sent to Claude).</summary>
         public void Note(string t) => Add(ChatRole.System, t);
 
+        /// <summary>Empties this conversation (Claude Code's /clear): the transcript and the CLI session start over.</summary>
         public void NewChat()
         {
             Stop();
             lock (_lock) _items.Clear();
-            _session = null; CostUsd = 0; ContextTokens = 0; Turns = 0; ActiveModel = null;
+            _session = null; CostUsd = 0; ContextTokens = 0; ContextWindow = 0; Turns = 0; ActiveModel = null;
+            if (CurrentScope == Scope.Game) Title = "";
+            Save();
         }
 
         public void Stop()
@@ -98,166 +121,21 @@ namespace CosmicShore.Launcher
             try { if (_proc is { HasExited: false }) _proc.Kill(entireProcessTree: true); } catch { }
         }
 
-        /// <summary>Finds the claude CLI: the configured path, the native installer's folder, then PATH.</summary>
-        public string? Detect()
-        {
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var candidates = new List<string>();
-            if (!string.IsNullOrWhiteSpace(_s.ClaudePath)) candidates.Add(_s.ClaudePath.Trim());
-            candidates.Add(Path.Combine(home, ".local", "bin", OperatingSystem.IsWindows() ? "claude.exe" : "claude"));
-            foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
-            {
-                if (dir.Length == 0) continue;
-                foreach (var name in OperatingSystem.IsWindows() ? new[] { "claude.exe", "claude.cmd" } : new[] { "claude" })
-                    candidates.Add(Path.Combine(dir, name));
-            }
-            Cli = candidates.FirstOrDefault(File.Exists);
-            return Cli;
-        }
-
-        /// <summary>null until checked; whether the CLI holds a sign-in (a Claude Pro/Max plan or a Console account).</summary>
-        public bool? SignedIn { get; private set; }
-
-        /// <summary>Asks the CLI whether it is signed in (<c>claude auth status</c>).</summary>
-        public void RefreshAuth()
-        {
-            if (Cli == null && Detect() == null) { SignedIn = null; return; }
-            var json = ProcessRunner.Capture(Cli!, "auth", "status", "--json");
-            try { using var d = JsonDocument.Parse(json ?? "{}"); SignedIn = d.RootElement.TryGetProperty("loggedIn", out var l) && l.ValueKind == JsonValueKind.True; }
-            catch { SignedIn = null; }
-        }
-
-        /// <summary>
-        /// Opens a terminal running <c>claude auth login --claudeai</c>: the browser sign-in that puts
-        /// Claude Code on the user's Claude Pro/Max plan instead of pay-as-you-go API billing. It needs
-        /// a real terminal (it may ask to paste a code), so it is not run inside the launcher.
-        /// </summary>
-        public void SignIn()
-        {
-            if (Cli == null && Detect() == null) return;
-            var cli = Cli!;
-            try
-            {
-                if (OperatingSystem.IsWindows())
-                    Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"\"{cli}\" auth login --claudeai & echo. & echo You can close this window. & pause\"") { UseShellExecute = true });
-                else if (OperatingSystem.IsMacOS())
-                    Process.Start("osascript", new[] { "-e", $"tell application \"Terminal\" to do script \"'{cli}' auth login --claudeai\"", "-e", "tell application \"Terminal\" to activate" });
-                else
-                    Process.Start("x-terminal-emulator", new[] { "-e", cli, "auth", "login", "--claudeai" });
-                Add(ChatRole.System, "Finish signing in in the window that opened, then come back here.");
-            }
-            catch (Exception e) { Add(ChatRole.Error, "Could not open a terminal: " + e.Message + $". Run  {cli} auth login  yourself."); }
-        }
-
-        public float InstallProgress { get; private set; } = -1;
-        public string InstallStatus { get; private set; } = "";
-        CancellationTokenSource? _installCts;
-
-        public void CancelInstall() => _installCts?.Cancel();
-
-        const string Releases = "https://downloads.claude.ai/claude-code-releases";
-
-        static string Platform()
-        {
-            string arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? "arm64" : "x64";
-            return (OperatingSystem.IsWindows() ? "win32" : OperatingSystem.IsMacOS() ? "darwin" : "linux") + "-" + arch;
-        }
-
-        /// <summary>
-        /// Installs Claude Code the way Anthropic's install script does (latest version, manifest
-        /// checksum, then the binary's own <c>install</c> step), but with a progress bar: the script
-        /// downloads a ~250 MB binary with its progress display switched off, which looks frozen.
-        /// If the binary's setup step stalls, the verified binary is placed in ~/.local/bin itself.
-        /// </summary>
+        // The CLI itself (where it is, sign-in, install, plan usage) is shared by every chat.
+        public ClaudeCli Shared => _cli;
+        public string? Cli => _cli.Cli;
+        public bool? SignedIn => _cli.SignedIn;
+        public bool Installing => _cli.Installing;
+        public float InstallProgress => _cli.InstallProgress;
+        public string InstallStatus => _cli.InstallStatus;
+        public string? Detect() => _cli.Detect();
+        public void RefreshAuth() => _cli.RefreshAuth();
+        public void CancelInstall() => _cli.CancelInstall();
+        public void SignIn() { if (_cli.SignIn() is { } note) Note(note); }
         public async Task Install(LogBuffer log)
         {
-            if (Installing) return;
-            Installing = true;
-            _installCts = new CancellationTokenSource();
-            var ct = _installCts.Token;
-            string? download = null;
-            try
-            {
-                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/0.1");
-                InstallStatus = "Finding the latest version";
-                string version = (await http.GetStringAsync($"{Releases}/latest", ct)).Trim();
-                if (!System.Text.RegularExpressions.Regex.IsMatch(version, @"^\d+\.\d+\.\d+"))
-                    throw new Exception("downloads.claude.ai did not answer with a version (blocked network, or a region Claude Code is not offered in).");
-                string platform = Platform();
-                using var manifest = JsonDocument.Parse(await http.GetStringAsync($"{Releases}/{version}/manifest.json", ct));
-                if (!manifest.RootElement.GetProperty("platforms").TryGetProperty(platform, out var entry))
-                    throw new Exception($"Claude Code {version} has no build for {platform}.");
-                string checksum = entry.GetProperty("checksum").GetString()!.ToLowerInvariant();
-                string exeName = OperatingSystem.IsWindows() ? "claude.exe" : "claude";
-
-                var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                var dir = Path.Combine(home, ".claude", "downloads");
-                Directory.CreateDirectory(dir);
-                download = Path.Combine(dir, $"claude-{version}-{platform}" + (OperatingSystem.IsWindows() ? ".exe" : ""));
-                log.Add(LogKind.Command, $"> download Claude Code {version} ({platform})");
-                using (var resp = await http.GetAsync($"{Releases}/{version}/{platform}/{exeName}", System.Net.Http.HttpCompletionOption.ResponseHeadersRead, ct))
-                {
-                    resp.EnsureSuccessStatusCode();
-                    long total = resp.Content.Headers.ContentLength ?? (entry.TryGetProperty("size", out var sz) ? sz.GetInt64() : 0);
-                    await using var src = await resp.Content.ReadAsStreamAsync(ct);
-                    await using var dst = File.Create(download);
-                    var buf = new byte[1 << 16];
-                    long got = 0; int n;
-                    while ((n = await src.ReadAsync(buf, ct)) > 0)
-                    {
-                        await dst.WriteAsync(buf.AsMemory(0, n), ct);
-                        got += n;
-                        InstallProgress = total > 0 ? (float)got / total : -1;
-                        InstallStatus = total > 0 ? $"Downloading {got >> 20} / {total >> 20} MB" : $"Downloading {got >> 20} MB";
-                    }
-                }
-                InstallProgress = -1;
-                InstallStatus = "Verifying";
-                string actual;
-                await using (var f = File.OpenRead(download))
-                    actual = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(f, ct)).ToLowerInvariant();
-                if (actual != checksum) throw new Exception("The download failed its checksum. Try again.");
-                if (!OperatingSystem.IsWindows())
-                    File.SetUnixFileMode(download, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-
-                InstallStatus = "Setting up";
-                bool setUp = false;
-                try
-                {
-                    using var setupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    setupCts.CancelAfter(TimeSpan.FromMinutes(3));
-                    var r = await ProcessRunner.Run(download, new[] { "install", "latest" }, null, log, setupCts.Token, closeStdin: true);
-                    setUp = r.ExitCode == 0;
-                }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                {
-                    log.Add(LogKind.Info, "Claude Code's setup step did not finish in 3 minutes - placing the binary directly.");
-                }
-                if (!setUp || Detect() == null)
-                {
-                    // What the setup step does at its core: the binary in ~/.local/bin.
-                    var bin = Path.Combine(home, ".local", "bin");
-                    Directory.CreateDirectory(bin);
-                    File.Copy(download, Path.Combine(bin, exeName), overwrite: true);
-                    if (!OperatingSystem.IsWindows())
-                        File.SetUnixFileMode(Path.Combine(bin, exeName), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-                }
-                bool ok = Detect() != null;
-                if (ok) RefreshAuth();
-                Add(ok ? ChatRole.System : ChatRole.Error, ok ? $"Claude Code {version} installed." : "Install finished but claude was not found - see CONSOLE.");
-            }
-            catch (OperationCanceledException) { Add(ChatRole.System, "Install cancelled."); }
-            catch (Exception e)
-            {
-                log.Add(LogKind.Error, "Claude Code install: " + e.Message);
-                Add(ChatRole.Error, "Install failed: " + e.Message);
-            }
-            finally
-            {
-                try { if (download != null && File.Exists(download)) File.Delete(download); } catch { }
-                Installing = false; InstallProgress = -1; InstallStatus = "";
-            }
+            var (ok, message) = await _cli.Install(log);
+            if (message.Length > 0) Add(ok ? ChatRole.System : ChatRole.Error, message);
         }
 
         public void Send(string text, string workDir, Mode mode, string? extraDir = null)
@@ -265,6 +143,8 @@ namespace CosmicShore.Launcher
             if (Busy || string.IsNullOrWhiteSpace(text)) return;
             if (Cli == null && Detect() == null) { Add(ChatRole.Error, "Claude Code is not installed."); return; }
             Add(ChatRole.User, text.Trim());
+            if (Title.Length == 0) Title = TitleFrom(text);
+            Updated = DateTime.Now;
             Busy = true;
             BusySince = DateTime.UtcNow;
             Task.Run(() => Run(text.Trim(), workDir, mode, extraDir));
@@ -281,30 +161,33 @@ namespace CosmicShore.Launcher
         /// Prisma itself. MILESTONE: a roadmap checkpoint session - engine work on Port/ toward a
         /// milestone, which never edits the game. Deny rules enforce each side in every mode.
         /// </summary>
-        public enum Scope { Game = 0, Milestone = 1 }
+        /// TOOL: builds one FrogletTools tool natively in Prisma (EDITOR > TOOLS > BUILD) - a cs-asset
+        /// command, its test and its registry entry, and nothing else of Prisma or the game.
+        public enum Scope { Game = 0, Milestone = 1, Tool = 2 }
 
-        public Scope CurrentScope { get; private set; } = Scope.Game;
-        public string? Milestone { get; private set; }
-        public string? MilestoneTitle { get; private set; }
+        public Scope CurrentScope { get; }
+        public string? Milestone { get; }
+        public string? MilestoneTitle { get; }
 
-        /// <summary>Switches who the conversation is; a different scope starts a fresh conversation.</summary>
-        public void SetScope(Scope scope, string? milestone = null, string? title = null)
-        {
-            if (scope == CurrentScope && milestone == Milestone) return;
-            NewChat();
-            CurrentScope = scope; Milestone = milestone; MilestoneTitle = title;
-            Note(scope == Scope.Game ? "Prisma Agent: working on the game." : $"Milestone {milestone} - {title}: engine work on Prisma.");
-        }
+        // Every chat runs in Prisma's workspace, a checkout separate from the user's own clone. Its edits
+        // stay there until the user saves them on the GIT page, so the agent leaves git to them.
+        const string WorkspaceNote =
+            " The checkout is Prisma's workspace, not the user's own clone: your edits stay here until the user reviews, commits and pushes them on Prisma's " +
+            "GIT page. Do not commit, push or switch branches unless the user asks you to.";
 
+        // Only what the user asks for: the tracks and the board are there to read when the question is about them,
+        // not a standing order to go and fix whatever the last runs recorded.
         const string GameScope =
             "You are the Prisma Agent, powered by Claude, running inside Prisma - Froglet's own engine - on a checkout of the Cosmic Shore repository. " +
-            "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Prisma. You do not change Prisma itself (Port/): " +
-            "engine work happens in Prisma's MILESTONES sessions, so when a problem's cause is in the engine, say which milestone it belongs to and describe it. " +
-            "Follow the repository's root CLAUDE.md for game work. Prisma records every play run as tracks (performance per scene, features, audio, every problem " +
-            "with when it was first and last seen); the brief below is the latest, and prisma_tracks has the rest. Start from it: when asked to fix something, " +
-            "find it in the tracks, reproduce it with the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...), fix it, and prove the fix the same way. " +
-            "A board item's 'done when' is its acceptance test: run it and show the result before calling the work done. " +
-            "Keep replies short; the user reads them in Prisma's chat panel.";
+            "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Prisma. Follow the repository's root CLAUDE.md for game work. " +
+            "Do what the user asks and nothing more: do not go looking for other problems, and do not investigate Prisma (Port/) or its recorded problems unless the request is about them. " +
+            "You never change Prisma itself (Port/); engine work happens in Claude Code sessions at the repository root, so when a cause you meet is in the engine, say so in one line and carry on. " +
+            "When a request is about a bug, a crash, performance or a play run, prisma_tracks has every run Prisma recorded (performance per scene, features, audio, each problem " +
+            "with when it was first and last seen) and the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...) reproduce and prove a fix. " +
+            "For data and models without Unity: asset_datasets / asset_dataset (ScriptableObject data sets; edit a field with cs-asset set), asset_model / " +
+            "asset_model_preview (FBX as Unity imports it), asset_froglet_tools (the FrogletTools and their source). Scene and hierarchy edits go through cs-asset. " +
+            "A board item's 'done when' is its acceptance test: run it and show the result before calling that work done. " +
+            "Keep replies short; the user reads them in Prisma's chat panel." + WorkspaceNote;
 
         string MilestoneScope() =>
             $"You are running milestone {Milestone} ({MilestoneTitle}) inside Prisma, Froglet's own engine for Cosmic Shore, on a checkout of the Cosmic Shore repository. " +
@@ -313,19 +196,54 @@ namespace CosmicShore.Launcher
             $"Prove every step with the prisma tools (engine_build, engine_test, engine_smoke, game_* ...). When the work moves the checkpoint, update {Milestone}'s entry in " +
             "Port/docs/milestones.json: status (todo, in-progress, done) and a dated note with the evidence. The exit criterion is the acceptance test: never set a " +
             "checkpoint to done until you have run that check and it passed, and put the command and its result in the note. Problems you find but do not fix go on " +
-            "the board with prisma_board_suggest, each with its own criterion. Keep replies short.";
+            "the board with prisma_board_suggest, each with its own criterion. Keep replies short." + WorkspaceNote;
+
+        /// <summary>Where a TOOL chat may write: cs-asset, its tests, and the native-tools registry and recipes.</summary>
+        public static readonly string[] ToolWritable =
+        {
+            "Port/src/CosmicShore.AssetTool", "Port/tests/CosmicShore.AssetTool.Tests", "Port/tools/froglet-tools",
+        };
+
+        const string ToolScope =
+            "You are building one Unity editor tool (a FrogletTools menu item) NATIVELY for Prisma, Froglet's own engine for Cosmic Shore, so it runs without Unity. " +
+            "Read the tool's C# source (the user names it) and its docs, then implement the same job as a cs-asset command in Port/src/CosmicShore.AssetTool " +
+            "(one file per tool under FrogletTools/, a case in Program.cs's command switch and a line in its usage text), working on the project files the way the " +
+            "other cs-asset commands do (AssetDatabase, the YAML editor, ComponentSerializer, the prefab instance editor). Writers must go through the same editing " +
+            "APIs and refuse to write what does not read back. Add an xunit test in Port/tests/CosmicShore.AssetTool.Tests that runs the command (on a temp copy " +
+            "when it writes). Register it in Port/tools/froglet-tools/tools.json as {\"menu\": the exact menu path, \"args\": the cs-asset arguments, " +
+            "\"writes\": true|false, \"summary\": one line}, and add its recipe (what it checks or changes, how it maps to the Unity tool, what it cannot do) " +
+            "to Port/tools/froglet-tools/README.md. Build (dotnet build Port/src/CosmicShore.AssetTool), run the test, then run the command once and show its output. " +
+            "Those three places are all you may change: never the game (Assets/, Packages/, ProjectSettings/) or the rest of Prisma. If the tool's job truly needs the " +
+            "running Unity editor (play mode, the scene view, an editor-only API with no file equivalent), say exactly why, do not build a half version, and stop. " +
+            "Keep replies short." + WorkspaceNote;
+
+        /// <summary>Everything a TOOL chat may not edit: the Unity project, and every part of Port/ outside <see cref="ToolWritable"/>.</summary>
+        internal static IEnumerable<string> ToolDenies(string workDir)
+        {
+            foreach (var d in UnityDenies) yield return d;
+            var port = Path.Combine(workDir, "Port");
+            if (!Directory.Exists(port)) { yield return "Edit(Port/**)"; yield break; }
+            var allowed = ToolWritable.Select(a => a.Replace('/', Path.DirectorySeparatorChar)).ToList();
+            IEnumerable<string> Walk(string dir)
+            {
+                foreach (var entry in Directory.EnumerateFileSystemEntries(dir))
+                {
+                    var rel = Path.GetRelativePath(workDir, entry);
+                    if (allowed.Any(a => string.Equals(a, rel, StringComparison.OrdinalIgnoreCase))) continue;
+                    // A folder that holds an allowed path is opened up; anything else is denied whole.
+                    if (Directory.Exists(entry) && allowed.Any(a => a.StartsWith(rel + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+                    { foreach (var d in Walk(entry)) yield return d; continue; }
+                    var r = rel.Replace('\\', '/');
+                    yield return Directory.Exists(entry) ? $"Edit({r}/**)" : $"Edit({r})";
+                }
+            }
+            foreach (var d in Walk(port)) yield return d;
+        }
 
         // Edit(path) rules cover every file-editing tool (Edit, Write, NotebookEdit) in every mode.
         static readonly string[] UnityDenies = { "Edit(Assets/**)", "Edit(Packages/**)", "Edit(ProjectSettings/**)" };
 
         static readonly string[] EngineDenies = { "Edit(Port/**)" };
-
-        /// <summary>The tracks brief the Prisma Agent starts every prompt with.</summary>
-        static string TracksBrief()
-        {
-            try { return Prisma.PrismaTracks.Load(Path.Combine(LauncherSettings.DataDir, "tracks")).Memory(5000); }
-            catch { return ""; }
-        }
 
         void Run(string text, string workDir, Mode mode, string? extraDir)
         {
@@ -335,7 +253,6 @@ namespace CosmicShore.Launcher
             _stopReason = null;
             _lastError = null;
             _userStopped = false;
-            System.Threading.Timer? watchdog = null;
             try
             {
                 var psi = new ProcessStartInfo(Cli!)
@@ -355,24 +272,19 @@ namespace CosmicShore.Launcher
                 if (model.Length > 0 && model != "default") { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(model); }
                 var effort = _s.ClaudeEffort?.Trim() ?? "";
                 if (effort.Length > 0 && effort != "default") { psi.ArgumentList.Add("--effort"); psi.ArgumentList.Add(effort); }
-                if (milestone)
-                {
-                    // Engine work runs unattended for long stretches: give each run a budget.
-                    psi.ArgumentList.Add("--max-turns");
-                    psi.ArgumentList.Add(Math.Max(1, _s.MilestoneMaxTurns).ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    if (_s.MilestoneMaxUsd > 0)
-                    {
-                        psi.ArgumentList.Add("--max-budget-usd");
-                        psi.ArgumentList.Add(_s.MilestoneMaxUsd.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
-                    }
-                }
                 psi.ArgumentList.Add("--disallowedTools");
-                foreach (var d in CurrentScope == Scope.Game ? EngineDenies : UnityDenies) psi.ArgumentList.Add(d);
+                foreach (var d in CurrentScope switch
+                         {
+                             Scope.Game => EngineDenies,
+                             Scope.Tool => ToolDenies(psi.WorkingDirectory),
+                             _ => UnityDenies,
+                         })
+                    psi.ArgumentList.Add(d);
                 foreach (var dir in new[] { extraDir, Path.Combine(LauncherSettings.DataDir, "tracks") })
                     if (dir != null && Directory.Exists(dir)) { psi.ArgumentList.Add("--add-dir"); psi.ArgumentList.Add(dir); }
                 WireEngine(psi, psi.WorkingDirectory);
                 psi.ArgumentList.Add("--append-system-prompt");
-                psi.ArgumentList.Add((CurrentScope == Scope.Game ? GameScope + "\n\n" + TracksBrief() : MilestoneScope()) + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
+                psi.ArgumentList.Add(CurrentScope switch { Scope.Game => GameScope, Scope.Tool => ToolScope, _ => MilestoneScope() } + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
                     ? " You are in PLAN mode: investigate (reading files and using the prisma tools is fine), then make your final message " +
                       "the plan itself - a short title line and numbered steps naming the files to change. The launcher shows that message as the plan " +
                       "with Approve buttons, so do not write plan files and do not ask how to submit it."
@@ -380,13 +292,6 @@ namespace CosmicShore.Launcher
                 if (!string.IsNullOrWhiteSpace(_s.AnthropicApiKey)) psi.Environment["ANTHROPIC_API_KEY"] = _s.AnthropicApiKey.Trim();
 
                 _proc = Process.Start(psi)!;
-                var proc = _proc;
-                if (milestone && _s.MilestoneMaxMinutes > 0)
-                    watchdog = new System.Threading.Timer(_ =>
-                    {
-                        _stopReason = $"at the {_s.MilestoneMaxMinutes}-minute limit";
-                        try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
-                    }, null, TimeSpan.FromMinutes(_s.MilestoneMaxMinutes), System.Threading.Timeout.InfiniteTimeSpan);
                 _proc.StandardInput.Write(text);
                 _proc.StandardInput.Close();
                 var err = _proc.StandardError.ReadToEndAsync();
@@ -408,7 +313,6 @@ namespace CosmicShore.Launcher
             catch (Exception ex) { Add(ChatRole.Error, ex.Message); exit = -1; }
             finally
             {
-                watchdog?.Dispose();
                 if (milestone && !_userStopped && (_stopReason != null || exit != 0))
                 {
                     string reason = _stopReason ?? (_lastError is { } le ? "after an error: " + (le.Length > 90 ? le[..89] + "..." : le) : $"after claude exited with {exit}");
@@ -423,7 +327,15 @@ namespace CosmicShore.Launcher
                         int last = _items.FindLastIndex(x => x.Role == ChatRole.Assistant);
                         if (last > user && user >= 0 && !_items.Skip(user).Any(x => x.Role == ChatRole.Plan)) _items[last].Role = ChatRole.Plan;
                     }
+                lock (_lock)
+                {
+                    int user = _items.FindLastIndex(x => x.Role == ChatRole.User);
+                    LastRunEdits = _items.Skip(Math.Max(0, user)).Where(x => x.File != null).Select(x => x.File!).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                }
                 Busy = false;
+                Updated = DateTime.Now;
+                Save();
+                try { Saved?.Invoke(); } catch { }
                 if (reply.Length > 0) try { ReplyFinished?.Invoke(reply.ToString()); } catch { }
             }
         }
@@ -450,7 +362,8 @@ namespace CosmicShore.Launcher
                     },
                 },
             };
-            var path = Path.Combine(LauncherSettings.DataDir, "engine-mcp.json");
+            var path = Path.Combine(LauncherSettings.DataDir, "chats", $"mcp-{Id}.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, JsonSerializer.Serialize(config));
             psi.ArgumentList.Add("--mcp-config");
             psi.ArgumentList.Add(path);
@@ -470,6 +383,7 @@ namespace CosmicShore.Launcher
                 if (root.TryGetProperty("session_id", out var sid) && sid.ValueKind == JsonValueKind.String) _session = sid.GetString();
                 string type = root.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
                 if (type == "system" && root.TryGetProperty("model", out var m) && m.ValueKind == JsonValueKind.String) ActiveModel = m.GetString();
+                if (type == "rate_limit_event" && root.TryGetProperty("rate_limit_info", out var rl) && rl.ValueKind == JsonValueKind.Object) _cli.OnRateLimit(rl);
                 if (type == "assistant" && root.TryGetProperty("message", out var msg))
                 {
                     if (msg.TryGetProperty("usage", out var u)) ContextTokens = Tokens(u);
@@ -496,10 +410,16 @@ namespace CosmicShore.Launcher
                 {
                     if (root.TryGetProperty("total_cost_usd", out var c) && c.ValueKind == JsonValueKind.Number) CostUsd += c.GetDouble();
                     if (root.TryGetProperty("num_turns", out var nt) && nt.ValueKind == JsonValueKind.Number) Turns += nt.GetInt32();
+                    // The window of the model this chat runs on (modelUsage also lists helper models).
+                    if (root.TryGetProperty("modelUsage", out var mu) && mu.ValueKind == JsonValueKind.Object)
+                        foreach (var mm in mu.EnumerateObject())
+                            if (mm.Value.TryGetProperty("contextWindow", out var cw) && cw.ValueKind == JsonValueKind.Number &&
+                                (ActiveModel == null || mm.Name == ActiveModel || ContextWindow == 0))
+                                ContextWindow = cw.GetInt64();
                     string sub = root.TryGetProperty("subtype", out var st) && st.ValueKind == JsonValueKind.String ? st.GetString() ?? "" : "";
                     // A run that ends on a limit says so in subtype (error_max_turns, error_max_budget_usd ...), with no result text.
-                    if (sub == "error_max_turns") _stopReason = $"at the {_s.MilestoneMaxTurns}-turn limit";
-                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = $"at the ${_s.MilestoneMaxUsd:0.##} budget";
+                    if (sub == "error_max_turns") _stopReason = "at the turn limit";
+                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = "at the budget limit";
                     else if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True)
                     {
                         string? text = root.TryGetProperty("result", out var res) ? res.ToString()
@@ -560,7 +480,10 @@ namespace CosmicShore.Launcher
                 lock (_lock) _items.Add(new ChatItem(ChatRole.Plan, plan.GetString() ?? "") { ToolId = id });
                 return;
             }
-            lock (_lock) _items.Add(new ChatItem(ChatRole.Tool, Describe(block)) { ToolId = id });
+            string? file = name is "Edit" or "Write" or "MultiEdit" or "NotebookEdit" && input.ValueKind == JsonValueKind.Object &&
+                           (input.TryGetProperty("file_path", out var fp) || input.TryGetProperty("notebook_path", out fp)) && fp.ValueKind == JsonValueKind.String
+                ? fp.GetString() : null;
+            lock (_lock) _items.Add(new ChatItem(ChatRole.Tool, Describe(block)) { ToolId = id, File = file });
         }
 
         /// <summary>Folds a tool's result under its call: the first lines of text, and any picture it returned.</summary>
@@ -591,6 +514,74 @@ namespace CosmicShore.Launcher
                 if (item == null) return;
                 if (item.Role == ChatRole.Tool) { item.Detail = detail; item.Failed = failed; item.Image = image; }
             }
+        }
+
+        // ------------------------------------------------------------------ the chat list
+
+        public static string ChatsDir => Path.Combine(LauncherSettings.DataDir, "chats");
+        string FilePath => Path.Combine(ChatsDir, Id + ".json");
+
+        static string TitleFrom(string text)
+        {
+            var line = text.Trim().Split('\n')[0].Trim();
+            return line.Length > 60 ? line[..57].TrimEnd() + "..." : line;
+        }
+
+        /// <summary>Every file this conversation's edit calls touched, as the CLI named them.</summary>
+        public HashSet<string> EditedFiles()
+        {
+            lock (_lock) return _items.Where(i => i.File != null).Select(i => i.File!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        sealed record SavedItem(ChatRole Role, string Text, string? Detail, string? ToolId, string? File, bool Failed, List<string[]>? Todos);
+        sealed record SavedChat(string Id, string Title, Scope Scope, string? Milestone, string? MilestoneTitle, string? Session, DateTime Created, DateTime Updated,
+                                double Cost, long ContextTokens, long ContextWindow, int Turns, string? Model, List<SavedItem> Items);
+
+        /// <summary>Writes the conversation to chats/ID.json (screenshots are not kept). An empty one is not kept at all.</summary>
+        public void Save()
+        {
+            try
+            {
+                if (Empty) { if (File.Exists(FilePath)) File.Delete(FilePath); return; }
+                List<SavedItem> items;
+                lock (_lock) items = _items.Select(i => new SavedItem(i.Role, i.Text, i.Detail, i.ToolId, i.File, i.Failed,
+                    i.Todos?.Select(t => new[] { t.text, t.status }).ToList())).ToList();
+                Directory.CreateDirectory(ChatsDir);
+                var tmp = FilePath + ".tmp";
+                File.WriteAllText(tmp, JsonSerializer.Serialize(new SavedChat(Id, Title, CurrentScope, Milestone, MilestoneTitle, _session, Created, Updated,
+                    CostUsd, ContextTokens, ContextWindow, Turns, ActiveModel, items)));
+                File.Move(tmp, FilePath, overwrite: true);
+            }
+            catch { /* a chat that cannot be saved still works for this run */ }
+        }
+
+        public static ClaudeChat? Load(string path, LauncherSettings s, Toolchain tools, ClaudeCli cli)
+        {
+            try
+            {
+                var c = JsonSerializer.Deserialize<SavedChat>(File.ReadAllText(path));
+                if (c == null) return null;
+                var chat = new ClaudeChat(s, tools, cli, c.Scope, c.Milestone, c.MilestoneTitle)
+                {
+                    Id = c.Id, Title = c.Title, _session = c.Session, Created = c.Created, Updated = c.Updated, CostUsd = c.Cost,
+                    ContextTokens = c.ContextTokens, ContextWindow = c.ContextWindow, Turns = c.Turns, ActiveModel = c.Model,
+                };
+                foreach (var i in c.Items)
+                    chat._items.Add(new ChatItem(i.Role, i.Text)
+                    {
+                        Detail = i.Detail, ToolId = i.ToolId, File = i.File, Failed = i.Failed,
+                        Todos = i.Todos?.Select(t => (t[0], t.Length > 1 ? t[1] : "pending")).ToList(),
+                    });
+                return chat;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>Removes the conversation from the list (the CLI's own session history stays where Claude Code keeps it).</summary>
+        public void Delete()
+        {
+            Stop();
+            try { File.Delete(FilePath); File.Delete(Path.Combine(ChatsDir, $"mcp-{Id}.json")); } catch { }
         }
 
         static string Describe(JsonElement toolUse)

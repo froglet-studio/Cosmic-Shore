@@ -19,6 +19,11 @@ MonoBehaviour:
   NewPlantPeriod: 2147483647
   PopulationSize: 3
   MaxLivePopulation: 3
+  GrowthPerOffspring: 49
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
   PreferredSites: 9
   Element: 3
   Variant:

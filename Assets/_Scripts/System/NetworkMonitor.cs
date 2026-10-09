@@ -84,7 +84,7 @@ namespace CosmicShore.Core
                     CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Offline -> Online (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
                 }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(intervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(intervalSeconds), DelayType.UnscaledDeltaTime, cancellationToken: token);
             }
         }
 

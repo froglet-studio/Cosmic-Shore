@@ -337,6 +337,12 @@ namespace CosmicShore.Gameplay.Audio
 
         readonly List<LayerRuntime> _layers = new List<LayerRuntime>();
 
+        // Hull names already told their engine slot is empty - one line per hull per session.
+        static readonly HashSet<string> s_warnedEmptyEngine = new HashSet<string>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_warnedEmptyEngine.Clear();
+
         void Awake()
         {
             _vessel = GetComponent<IVessel>();
@@ -510,7 +516,13 @@ namespace CosmicShore.Gameplay.Audio
         {
             if (engineEvent.IsNull)
             {
-                CSDebug.LogError($"[ShipAudioController] '{name}' has no Engine Event assigned; nothing will play.", this);
+                // An EMPTY slot is the shipped state of a hull the audio owner has not voiced yet
+                // (the LOCKED FMOD convention: ship the field empty, never a borrowed event), so
+                // it is a silent no-op that says so ONCE per hull per session - not an error on
+                // every spawn.
+                if (s_warnedEmptyEngine.Add(name))
+                    CSDebug.LogWarning($"[ShipAudioController] '{name}' has no Engine Event assigned; " +
+                                       "the engine is silent until one is authored.", this);
                 return;
             }
 
@@ -994,9 +1006,23 @@ namespace CosmicShore.Gameplay.Audio
             }
             else if (_creationState == CreationState.SkippedRemote)
             {
-                // Remote / AI ship with onlyAudibleToController on - never
-                // make any sound on this client. Skip the per-frame work
-                // entirely.
+                // Remote / AI ship with onlyAudibleToController on - no sound on this client.
+                // But ownership can change on a LIVE hull (Cellular Duel's round swap, the arena
+                // PilotSwap - VesselController.ChangePlayer), so this is re-checked rather than
+                // final: a hull handed to the local pilot starts its engine.
+                if (_status == null || _status.Player == null || !_status.IsLocalUser) return;
+
+                _creationState = CreationState.PendingEvaluation;
+                TryEvaluateAndCreate();
+                if (_creationState != CreationState.Created) return;
+            }
+            else if (onlyAudibleToController && !forceAttachToListener
+                     && _status != null && _status.Player != null && !_status.IsLocalUser)
+            {
+                // The reverse: the local pilot left this hull, which kept its 2D engine running at
+                // full volume driven by a ship they no longer fly. Release it; the next frame
+                // re-evaluates and settles on SkippedRemote.
+                StopAndRelease();
                 return;
             }
 

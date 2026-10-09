@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DG.Tweening;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using TMPro;
@@ -206,6 +207,17 @@ namespace CosmicShore.UI
 
             _glowBreath?.Kill();
             if (glowBreathDepth <= 0f || glowBreathPeriod <= 0f) return;
+
+            // A device tier may rest the glow instead (PlatformProfileSO.QuietScoreGlow,
+            // MobileLow): an endless alpha loop dirties the HUD canvas every frame of the match,
+            // so it re-batches every frame for a decoration. The glow still rests at its tint and
+            // still punches on a score change. Docs/PLATFORM_UNIFICATION.md §3.6.
+            var profile = PlatformProfile.Current;
+            if (profile && profile.QuietScoreGlow)
+            {
+                _glowBreath = null; // killed above - a punch must not Pause/Play a dead tween
+                return;
+            }
 
             // Yoyo between the two ends of the swing, starting from the DIM end so a freshly
             // built bar brightens into view instead of fading out of it.

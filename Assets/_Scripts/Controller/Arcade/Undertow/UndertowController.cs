@@ -340,7 +340,10 @@ namespace CosmicShore.Gameplay
 
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s != null && s.Domain == winningDomain)
-                .OrderByDescending(s => s.CombatPoints + s.LifeformsKilled)
+                // Weighted exactly as the rule folds the domain (bends + kills x killPoints), so the
+                // banner names the pilot who actually contributed most; an unweighted sum picked the
+                // wrong teammate whenever killPoints != 1.
+                .OrderByDescending(s => s.CombatPoints + KillPointsForRep() * s.LifeformsKilled)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal)
                 .FirstOrDefault();
             if (winnerRep == null) return;
@@ -356,6 +359,8 @@ namespace CosmicShore.Gameplay
             DisarmHunters();
             SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
+
+        int KillPointsForRep() => rule is UndertowScoringRuleSO undertow ? undertow.KillPoints : 1;
 
         protected override void SetupNewRound()
         {

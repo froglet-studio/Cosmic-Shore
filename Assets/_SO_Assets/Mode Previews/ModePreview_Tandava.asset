@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
   m_Name: ModePreview_Tandava
   m_EditorClassIdentifier:
-  Mode: 62
+  Mode: 64
   Notes: 'The Tandava cell as the mode flies it - the dispersed flora, the creature, the pilots'' line.
     No director runs in a preview, so the swarm grazes as its first form rather than hunting, and the
     cell keeps its own colours. Vessel is -1 (ANY): the carousel''s pick flies it.'

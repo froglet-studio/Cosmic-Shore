@@ -463,6 +463,10 @@ namespace CosmicShore.UI
                     // and "your next gate" is the only thing that tells two pilots on the same
                     // ring at the same moment apart.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Redline");
+                case GameModes.GrizzlyTime:
+                    // Redline's answer on the Grizzly's circuit: identical neutral rings, so
+                    // the per-viewer arrow is the only thing that names YOUR next gate.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_GrizzlyTime");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which
@@ -484,8 +488,35 @@ namespace CosmicShore.UI
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
                     // you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
-                // Sirocco deliberately has NO arrow, like Cleave: the forest rings the whole
-                // cell, so "where is the thing to erode" has no single answer worth pointing at.
+                case GameModes.Bends:
+                    // The provider was written for this mode and borrowed by three others before
+                    // the mode itself was registered: the nearest pilot this player may bend.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Bends");
+                case GameModes.Cleave:
+                    // The arena surrounds you, so "where is mass" has no answer - but "where is
+                    // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
+                    // from obvious. Densest hostile mass, the query Cleave's AI raids with.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Sirocco:
+                    // Same provider, same reason: the forest rings the cell, so the arrow names
+                    // the densest standing hostile stand - the point Sirocco's AI erosion runs
+                    // steer to. NOT Rampage's crystal: here the crystal is a pickup, not the weapon.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Sirocco");
+                case GameModes.WildlifeLiberation:
+                    // The nearest living creature, any colour - wildlife is quarry whatever it
+                    // wears, and fauna are client-local, so this peer's registry IS what the
+                    // pilot can shoot.
+                    return CreateProviderComponent<WildlifeObjectiveProvider>("ObjectiveProvider_WildlifeLiberation");
+                case GameModes.BroodRush:
+                    // The nucleus: control is decided only by mass laid inside it, and every
+                    // wave hatched under a claim is the score. Hidden while you are inside it.
+                    return CreateProviderComponent<BroodRushObjectiveProvider>("ObjectiveProvider_BroodRush");
+                case GameModes.Scurry:
+                    // Rampage's provider: the nearest collectable MANAGED crystal. Scurry's
+                    // crystals are neutral and manager-spawned, so this names exactly the
+                    // scoring crystals and never a lifeform heart (SkimRace's own-domain filter
+                    // would reject every one of them).
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Scurry");
                 case GameModes.Tandava:
                     // the swarm: one opponent, one side, a long cell - "which way is it" is the whole question
                     return CreateProviderComponent<TandavaObjectiveProvider>("ObjectiveProvider_Tandava");

@@ -1,6 +1,6 @@
 # Tandava
 
-`GameModes.Tandava = 62` · ARENA card · Squirrel, Sparrow, Rhino · co-op (every pilot on one domain) · scene
+`GameModes.Tandava = 64` · ARENA card · Squirrel, Sparrow, Rhino · co-op (every pilot on one domain) · scene
 `MinigameTandava` · assets owned by `Tools/Build/author_tandava_assets.py` (`--check`, `--self-test`).
 
 **Status: authored headless, NOT yet run in the Unity editor.** Everything below that describes behaviour is from the

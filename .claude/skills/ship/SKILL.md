@@ -43,7 +43,8 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
   about your own change; never as a checklist item, never as evidence, and never as a reason
   to sit on finished work.
 - **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
-  human wants CI watched, they will ask.
+  human wants CI watched, they will ask. The one CI action a ship command takes is to FIRE
+  it, once, at the end (§5.5) — `claude/**` branches trigger nothing on their own.
 - **Say so plainly instead.** The verification line in the PR body and the ship report reads
   "not compiled — no editor or compiler in this environment", followed by what a human must
   do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
@@ -67,6 +68,15 @@ script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do 
 negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).
+
+**One tool changes the premise above, though not the policy: `Tools/Build/unity_refcompile`
+(2026-10).** It binds the whole of `Assembly-CSharp`, method bodies included, against real Unity 6
+reference assemblies and every package at its locked source — not the syntax-only Roslyn pass this
+section warns about — and `check_generated_assets.py` then audits changed YAML assets against the
+schema it wrote. It is still not a ship gate and still optional; but when a session has network and
+ten minutes, a green run of it (negative-controlled) IS evidence, and the verification line may say
+"compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
+of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
 
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
@@ -312,6 +322,18 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+  **That check sees only what has MERGED. The collision that costs a whole branch is the one
+  still in flight.** Two sessions were given the same refcompile bug within minutes of each other
+  (2026-10-06). Both fixed it, and the second to reach the base conflicted in four files. The other
+  branch was even NAMED in a base README this branch merged (*"an unmerged branch,
+  `claude/hopeful-heisenberg-murjor`, does this"*). One `git log` of it would have shown the
+  duplicate fix before the PR opened, not after the PR conflicted. Listing every remote branch is
+  no help (`git ls-remote origin 'refs/heads/*'` returns 500+), so follow the names. Before opening
+  the PR, grep the files you changed for branch names
+  (`git grep -ohE '(claude|cece)/[a-z0-9-]+' origin/<base> -- <your changed files> | sort -u`).
+  For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
+  `git fetch --depth=50 origin <name>` and then
+  `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
 - **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
   they do not — ask about scope before you discard either.** The collision above assumes two
   implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
@@ -860,9 +882,44 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 - Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
   CI (§0.05); subscribe only if the human asks you to follow the review.
 
+## 5.5 Fire CI once (every mode — `/ship`, `/ship-quick`, `/ship-deep`, `/ship-tools`)
+
+A `claude/**` branch fires no CI by itself: `unity-ci.yml` skips every pull-request event whose
+head is `claude/**`, and the iOS request-file workflows ignore those branches
+(`Docs/BUILD_AND_DELIVERY.md` § "`claude/**` branches do not trigger CI on their own"). CI runs
+for it only when it lands on `bleeding-edge` or when a ship command runs — so this step is the
+branch's one pre-merge check. Do it after the LAST push of the command (the PR in §5, or the
+§6/§7 push in `/ship-tools`), on a GO and on a `/ship-tools` push alike; a NO-GO pushes nothing
+new and fires nothing.
+
+```
+mcp__github__actions_run_trigger
+  method: run_workflow
+  owner: froglet-studio   repo: cosmic-shore
+  workflow_id: unity-ci.yml
+  ref: <this branch>
+  inputs: { mode: static }
+```
+
+- **`static`, not `compile`.** It is the ubuntu static checks only and never takes the single
+  Unity runner, which is reserved for post-merge compiles and the scheduled IL2CPP builds. A
+  human who wants a real compile of the branch dispatches `compile` from the Actions tab.
+- **Once per command, and fire-and-forget.** Do not wait on it, poll it, or subscribe to it
+  (§0.05). Put "CI dispatched: `unity-ci.yml` static on `<branch>`" in the PR body or the
+  `/ship-tools` report — the run lands on the branch head's checks.
+- **The branch must carry the `static` choice.** A dispatch runs the ref's own copy of
+  `unity-ci.yml`, so a branch cut before the option existed is refused with a 422 until
+  bleeding-edge is merged in (which §1 normally does anyway).
+- **If the dispatch is refused** (no tool, a 403), say so in the report in one line with the
+  manual route — Actions → Unity CI → Run workflow → `static` → the branch. It is never a
+  reason to hold a GO.
+- **Never push an empty commit, or close and reopen the PR, to make CI fire.** The dispatch is
+  the only trigger.
+
 ## 6. Report
 
-Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
+Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), whether
+the §5.5 CI dispatch went out, the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
 what was retired), the follow-ups you recorded, the §3.5 skill-capture outcome
 (skills created/extended, or the explicit "nothing reusable this session"), and the
