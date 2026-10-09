@@ -89,6 +89,7 @@
   .row output.styled { color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
   .presets .pick { padding: 4px 9px; font-size: 0.8rem; }
+  .presets .pick[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
   .presets .pick i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
   .tipbtn { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--dim); font: 700 11px/16px var(--font-display); cursor: help; padding: 0; }
   .tipbtn:hover, .tipbtn:focus-visible, .tipbtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); outline: none; }
@@ -145,8 +146,8 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 9 · five play styles</span>
-    <p>Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <span class="round">Round 10 · five types everywhere</span>
+    <p>Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -2690,6 +2691,112 @@
   window.__stoatTips = { TIPS, SCENES, showTip: (k) => { const row = document.getElementById('p-' + k) && document.getElementById('p-' + k).closest('.row'); if (row) showTip(k, row, true); }, hideTip: () => hideTip(true), at: (sec) => { if (tipState) tipState.forceT = sec; } };
 
 
+  // ================= five types per group =================
+  // One click sets a whole group's sliders to a type; play styles still blend on top. Hovering a type shows a card:
+  // what it is, and the group's preview as shipped next to the same preview with this type.
+  const PRESET_DOTS = ['#b9a4ff', '#7fd7ff', '#ffb347', '#ff6b8b', '#7dffb0'];
+  const GROUP_TYPES = {
+    BH: { scene: 'hole', cfg: { kind: 'bh' }, types: [
+      { name: 'Pinpoint', d: 'Tiny and deadly: small for its strength, a razor-thin bright ring and a tight, hard lens. Whatever gets close is stretched hard.', v: { bhHorizonPerStrength: 0.8, bhGmPerStrength: 24000, bhLensStrength: 1.4, bhLensReach: 18, bhLensFade: 0.7, bhRingGlow: 1.1, bhRingWidth: 0.03, bhTideGain: 2.2, bhTideMax: 9, vesselTide: 0.15, bhPrismAccelCap: 7000 } },
+      { name: 'Gentle giant', d: 'Big and soft: a large horizon with a gentle pull that reaches far, a wide soft halo and mild stretching.', v: { bhHorizonPerStrength: 4, bhGmPerStrength: 15000, bhInfluenceFloor: 0.3, bhMaxInfluence: 1200, bhLensStrength: 0.8, bhLensReach: 45, bhLensFade: 0.35, bhRingGlow: 0.35, bhRingWidth: 0.14, bhTideGain: 0.5, bhTideMax: 3, vesselTide: 0.04, bhPrismMaxSpeed: 300, releaseDamping: 1 } },
+      { name: 'Cinematic', d: 'The film look: a strong Einstein ring and a bright golden photon ring, the sky bent wide across the screen.', v: { bhLensStrength: 2.2, bhLensReach: 55, bhLensFade: 0.75, bhRingGlow: 1.6, bhRingWidth: 0.12, bhTideGain: 1.4, bhTideMax: 7 } },
+      { name: 'Ravenous', d: 'A hungry hole: far more pull per strength, reaching prisms from far away and yanking them in fast and long; slow to let go of them.', v: { bhGmPerStrength: 34000, bhInfluenceFloor: 0.25, bhMaxInfluence: 1600, bhPrismAccelCap: 9000, bhPrismMaxSpeed: 800, bhTideGain: 2.5, bhTideMax: 12, vesselTide: 0.2, releaseDamping: 0.6, bhPrismReturn: 0.3, bhRingGlow: 0.8 } },
+      { name: 'Minimal', d: 'Low noise: a clean black disc with little bending or glow; prisms barely stretch and settle home quickly. Readable in a busy race.', v: { bhLensStrength: 0.5, bhLensReach: 14, bhLensFade: 0.5, bhRingGlow: 0.15, bhRingWidth: 0.04, bhTideGain: 0.4, bhTideMax: 2, releaseDamping: 3.5, bhPrismReturn: 1.5, vesselTide: 0.03 } },
+    ] },
+    WH: { scene: 'hole', cfg: { kind: 'pair' }, types: [
+      { name: 'Supernova', d: 'A blinding star: a big, solid, white-hot core.', v: { whCoreBrightness: 10, whCoreSkyMix: 0.3, whCoreSize: 3.4, whSizeX: 1.2 } },
+      { name: 'Ghost', d: 'Faint and small: a pale glow you can see stars through, and a weak push.', v: { whCoreBrightness: 1.5, whCoreSkyMix: 0.95, whCoreSize: 2, whSizeX: 0.7, whLensStrength: 0.6, dpWhite: 0.3 } },
+      { name: 'Twin', d: 'The exact mirror of its black hole: the same size and the same strength — a true dipole.', v: { whSizeX: 1, dpWhite: 1, whPushSoften: 1.5 } },
+      { name: 'Fountain', d: 'A strong pusher: it shoves you hard away from itself and throws whatever comes through well clear.', v: { dpWhite: 1.4, whPushSoften: 1, whExitGap: 1.8, whLensStrength: 1.4, whCoreBrightness: 6, whSizeX: 1.1 } },
+      { name: 'Mirage', d: 'All lens, little light: it bends the sky dramatically around a soft core.', v: { whLensStrength: 2.4, whCoreBrightness: 2.2, whCoreSkyMix: 0.6, whCoreSize: 2.2, whSizeX: 1.4, dpWhite: 0.4, whPushSoften: 4 } },
+    ] },
+    life: { scene: 'birth', cfg: {}, types: [
+      { name: 'Snap', d: 'Arcade-quick: the holes pop in and out, and the wave is short and sharp.', v: { bornS: 0.25, whInS: 0.3, whInFrom: 300, dieS: 0.2, whOutSpeed: 900, whOutFade: 0.6, shellBend: 4, gwAmp: 10, gwSpeed: 300, gwPeriod: 0.2, gwRingdown: 0.35, gwPrism: 0.5, gwShake: 0.8, gwGlow: 0.8 } },
+      { name: 'Cinematic', d: 'Slow and grand: long births, a light shell from far beyond the view, a slow, majestic wave.', v: { bornS: 1.8, whInS: 2.2, whInFrom: 1500, dieS: 1.4, whOutSpeed: 300, whOutFade: 3, shellBend: 9, gwAmp: 16, gwSpeed: 80, gwPeriod: 0.5, gwRingdown: 1.8, gwPrism: 0.8, gwShake: 1.2, gwGlow: 1.4 } },
+      { name: 'Shockwave', d: 'Violent: the annihilation slams outward, the prisms shudder and your view shakes.', v: { bornS: 0.5, whInS: 0.6, dieS: 0.25, whOutSpeed: 1200, whOutFade: 1, shellBend: 14, gwAmp: 30, gwSpeed: 260, gwPeriod: 0.2, gwRingdown: 0.6, gwPrism: 1.4, gwShake: 2.6, gwGlow: 1.2 } },
+      { name: 'Calm', d: 'Gentle on the eyes: soft births, a faint wave and almost no screen shake — easy for long sessions.', v: { bornS: 1, whInS: 1.2, dieS: 0.9, whOutSpeed: 350, whOutFade: 1.2, shellBend: 2, gwAmp: 4, gwSpeed: 140, gwPeriod: 0.4, gwRingdown: 0.7, gwPrism: 0.2, gwShake: 0.15, gwGlow: 0.4 } },
+      { name: 'Ripple pond', d: 'Your puddle picture: a slow, wide, long-lasting ripple spreading across space and fading out.', v: { dieS: 0.8, whOutSpeed: 400, whOutFade: 2, shellBend: 7, gwAmp: 14, gwSpeed: 70, gwPeriod: 0.6, gwRingdown: 2.5, gwPrism: 0.9, gwShake: 1, gwGlow: 2 } },
+    ] },
+    flight: { scene: 'turn', cfg: { mode: 'yaw' }, types: [
+      { name: 'Cruiser', d: 'Relaxed: slower, gentle turns and the widest rings (intensity 1).', v: { cruise: 50, pitchYaw: 95, roll: 110 }, course: { intensity: 1, laps: 2 } },
+      { name: 'Racer', d: 'Faster, with tighter rings (intensity 3).', v: { cruise: 80, pitchYaw: 140, roll: 160 }, course: { intensity: 3, laps: 2 } },
+      { name: 'Agile', d: 'The same speed with very snappy turns, and the smallest rings (intensity 4).', v: { cruise: 60, pitchYaw: 210, roll: 260 }, course: { intensity: 4, laps: 2 } },
+      { name: 'Heavy', d: 'Momentum: quicker, but slow to turn — let the slings do your turning.', v: { cruise: 75, pitchYaw: 85, roll: 95 }, course: { intensity: 2, laps: 2 } },
+      { name: 'Sprint', d: 'One fast lap.', v: { cruise: 100, pitchYaw: 160, roll: 180 }, course: { intensity: 2, laps: 1 } },
+    ] },
+    lope: { scene: 'lope', cfg: {}, types: [
+      { name: 'True stoat', d: 'A real weasel\'s bound: high, arched and springy.', v: { lopeAmp: 2.2, lopeRate: 0.85, lopeArch: 0.8, lopeSquash: 0.4 } },
+      { name: 'Glide', d: 'Smooth and calm, almost no bounce.', v: { lopeAmp: 0.4, lopeRate: 0.35, lopeArch: 0.15, lopeSquash: 0.05 } },
+      { name: 'Bounce', d: 'Big, cartoony hops.', v: { lopeAmp: 3.2, lopeRate: 1, lopeArch: 0.5, lopeSquash: 0.6 } },
+      { name: 'Slink', d: 'Low and serpentine, with a deep arch.', v: { lopeAmp: 0.9, lopeRate: 0.5, lopeArch: 0.95, lopeSquash: 0.3 } },
+      { name: 'Scamper', d: 'Quick little bounds.', v: { lopeAmp: 1.2, lopeRate: 1.6, lopeArch: 0.4, lopeSquash: 0.25 } },
+    ] },
+  };
+  const groupKeys = (grp) => SPEC.filter((r) => r[0] === grp).map((r) => r[1]);
+  function typeValues(grp, i) { const o = {}; for (const k of groupKeys(grp)) o[k] = SHIPPED[k]; return i < 0 ? o : Object.assign(o, GROUP_TYPES[grp].types[i].v); }
+  function applyType(grp, i) {
+    const v = typeValues(grp, i);
+    for (const k in v) { BP[k] = v[k]; if (outputs[k]) outputs[k].inp.value = v[k]; }
+    recomputeP(); refreshAllOuts();
+    const course = i >= 0 ? GROUP_TYPES[grp].types[i].course : grp === 'flight' ? { intensity: 2, laps: 2 } : null;
+    if (course && (course.intensity !== intensity || course.laps !== laps)) {
+      intensity = course.intensity; laps = course.laps; $('intensity').value = String(intensity); $('laps').value = String(laps);
+      buildCourse(); spawn(); renderRuns();
+    }
+    persist(); markTypes();
+  }
+  function activeType(grp) {
+    const T = GROUP_TYPES[grp], keys = groupKeys(grp), eq = (v) => keys.every((k) => Math.abs(BP[k] - v[k]) < 1e-6);
+    for (let i = 0; i < T.types.length; i++) { const c = T.types[i].course; if (eq(typeValues(grp, i)) && (!c || (c.intensity === intensity && c.laps === laps))) return i; }
+    return eq(typeValues(grp, -1)) && (grp !== 'flight' || (intensity === 2 && laps === 2)) ? -1 : -2;   // -1 shipped, -2 custom
+  }
+  function markTypes() {
+    for (const grp in GROUP_TYPES) {
+      const a = activeType(grp);
+      document.querySelectorAll('#types-' + grp + ' button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === a)));
+    }
+  }
+  function showTypeTip(grp, i, anchor, pinned) {
+    const T = GROUP_TYPES[grp], ty = T.types[i], key = 'type:' + grp + ':' + i;
+    if (tipState && tipState.key === key) return;
+    clearTimeout(tipHide);
+    const scene = SCENES[T.scene], cfg = Object.assign({ key }, T.cfg);
+    const mk = (vals) => { const base = Object.assign({}, BP, vals); return blendInto({}, base, base); };
+    const PA = mk(typeValues(grp, -1)), PB = mk(typeValues(grp, i)), sA = scene.make(PA, cfg), sB = scene.make(PB, cfg);
+    tipEl.innerHTML = '<h4></h4><p class="what"></p><div class="figs"><figure><canvas></canvas><figcaption></figcaption></figure><figure><canvas></canvas><figcaption></figcaption></figure></div><p class="foot"></p>';
+    tipEl.querySelector('h4').textContent = ty.name;
+    tipEl.querySelector('.what').textContent = ty.d;
+    const caps = tipEl.querySelectorAll('figcaption');
+    caps[0].innerHTML = '<b>Shipped</b>'; caps[1].innerHTML = '<b>' + escapeHtml(ty.name) + '</b>';
+    const changed = Object.keys(ty.v).map((k) => SPEC_BY_KEY[k][2] + ' ' + fmtNum(ty.v[k], SPEC_BY_KEY[k][5])).join(' · ');
+    tipEl.querySelector('.foot').textContent = 'Click to use it. Sets: ' + changed + (ty.course ? ' · course intensity ' + ty.course.intensity + ', ' + ty.course.laps + ' lap' + (ty.course.laps > 1 ? 's' : '') : '');
+    const cvs = tipEl.querySelectorAll('canvas');
+    let view = null; if (scene.bounds) view = { b: bUnion(scene.bounds(sA, cfg), scene.bounds(sB, cfg)) };
+    tipState = { key, anchor, pinned: !!pinned, scene, cfg, parts: [{ c: cvs[0], st: sA, Pv: PA }, { c: cvs[1], st: sB, Pv: PB }], view, t0: performance.now() };
+    tipEl.hidden = false; placeTip(anchor);
+    cancelAnimationFrame(tipRaf); tipRaf = requestAnimationFrame(tipFrame);
+  }
+  function buildTypes() {
+    for (const grp in GROUP_TYPES) {
+      const card = $('grp-' + grp), host = document.createElement('div');
+      host.className = 'presets'; host.id = 'types-' + grp; host.setAttribute('role', 'group'); host.setAttribute('aria-label', 'Five types');
+      GROUP_TYPES[grp].types.forEach((ty, i) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'pick'; b.dataset.i = String(i);
+        b.innerHTML = '<i style="background:' + PRESET_DOTS[i] + '"></i>' + escapeHtml(ty.name);
+        b.addEventListener('click', () => applyType(grp, i));
+        b.addEventListener('mouseenter', () => { clearTimeout(tipHide); clearTimeout(tipShowT); tipShowT = setTimeout(() => showTypeTip(grp, i, b, false), 220); });
+        b.addEventListener('mouseleave', () => { clearTimeout(tipShowT); tipHide = setTimeout(() => hideTip(false), 160); });
+        b.addEventListener('focus', () => showTypeTip(grp, i, b, false));
+        b.addEventListener('blur', () => hideTip(false));
+        host.appendChild(b);
+      });
+      const s = document.createElement('button'); s.type = 'button'; s.className = 'pick'; s.dataset.i = '-1'; s.textContent = 'Shipped';
+      s.addEventListener('click', () => applyType(grp, -1)); host.appendChild(s);
+      card.insertBefore(host, card.querySelector('.rows'));
+    }
+    markTypes();
+  }
+
   // ================= rail =================
   const outputs = {};
   function buildRail() {
@@ -2702,7 +2809,7 @@
       attachTip(row, key, label);
       const inp = row.querySelector('input'), out = row.querySelector('output');
       inp.value = P[key]; outputs[key] = { inp, out, step };
-      inp.addEventListener('input', () => { BP[key] = parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
+      inp.addEventListener('input', () => { BP[key] = parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
       refreshOut(key);
     }
   }
@@ -2716,7 +2823,7 @@
     o.out.title = 'shipped ' + SHIPPED[key] + (styled ? ' · your setting ' + b.toFixed(dec) + ', the play styles make it ' + e.toFixed(dec) : '');
   }
 
-  function resetGroup(grp) { for (const [g, key] of SPEC) if (g === grp) { BP[key] = SHIPPED[key]; outputs[key].inp.value = BP[key]; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); }
+  function resetGroup(grp) { if (GROUP_TYPES[grp]) { applyType(grp, -1); return; } for (const [g, key] of SPEC) if (g === grp) { BP[key] = SHIPPED[key]; outputs[key].inp.value = BP[key]; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); }
   document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => resetGroup(b.dataset.reset)));
   $('theirLife').addEventListener('click', () => { for (const [k, v] of [['formS', 6], ['annihilateS', 9]]) { BP[k] = v; outputs[k].inp.value = v; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); });
 
@@ -2777,8 +2884,8 @@
     $('liveStyles').addEventListener('change', (e) => { liveStyles = e.target.checked; persist(); });
   }
   $('intensity').value = String(intensity); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
-  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); });
-  $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); });
+  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); });
+  $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); markTypes(); });
   $('invertY').addEventListener('change', (e) => { invertY = e.target.checked; persist(); });
   $('newCourse').addEventListener('click', () => { seed = 1 + Math.floor(Math.random() * 9999); buildCourse(); spawn(); persist(); renderRuns(); });
   $('domain').addEventListener('change', (e) => { domainKey = e.target.value; const c = DOMAIN[domainKey]; domainMat.color.setHex(c); domainMat.emissive.setHex(c); trailMat.color.setHex(c); trailMat.emissive.setHex(c); persist(); });
@@ -2806,18 +2913,19 @@
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'closeSpeed', 'closeRamp'];
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
+  function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
   function currentChoice(topic) {
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
       case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (slingMode === 'dipole' ? D_KEYS : A_KEYS) : B_KEYS));
       case 'Play styles': return 'Play styles: ' + STYLES.map((st) => st.name + ' ' + BP[st.key].toFixed(2)).join(', ') + (liveStyles ? ' (live)' : '') + changedText(['styleStep', 'styleDrift', 'needleStep', 'needleCone']);
-      case 'Birth & annihilation': return 'Birth & annihilation' + changedText(LIFE_KEYS);
-      case 'Black hole': return 'Black hole' + changedText(BH_KEYS);
-      case 'White hole': return 'White hole' + changedText(WH_KEYS);
+      case 'Birth & annihilation': return 'Birth & annihilation' + typeName('life') + changedText(LIFE_KEYS);
+      case 'Black hole': return 'Black hole' + typeName('BH') + changedText(BH_KEYS);
+      case 'White hole': return 'White hole' + typeName('WH') + changedText(WH_KEYS);
       case 'Portal': return 'Pair ' + style + ': carry the Stoat through = ' + (portal[style] ? 'yes' : 'no');
-      case 'Lope & body': return 'Plated body, body-only lope' + changedText(['lopeAmp', 'lopeRate', 'lopeArch', 'lopeSquash']);
+      case 'Lope & body': return 'Plated body, body-only lope' + typeName('lope') + changedText(['lopeAmp', 'lopeRate', 'lopeArch', 'lopeSquash']);
       case 'Course': return 'Intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
-      case 'Controls': return 'Game dual-stick mix' + (invertY ? ', Y inverted' : '') + changedText(['cruise', 'pitchYaw', 'roll']);
+      case 'Controls': return 'Game dual-stick mix' + typeName('flight') + (invertY ? ', Y inverted' : '') + changedText(['cruise', 'pitchYaw', 'roll']);
       case 'Race result': return lastRun ? 'Pair ' + lastRun.style + ': ' + fmtTime(lastRun.time) + ', ' + lastRun.slings + ' slings (intensity ' + lastRun.intensity + ', seed ' + lastRun.seed + ')' : 'No finished race yet';
       default: return '';
     }
@@ -2912,7 +3020,7 @@
   }
   window.addEventListener('resize', resize);
 
-  buildRail(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
+  buildRail(); buildTypes(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
@@ -2930,7 +3038,7 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__stoatStudio = { nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 

@@ -12,6 +12,30 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 10 — five types per group)
+
+Each setting group has five one-click **types** above its sliders, plus **Shipped**. A type sets the
+whole group's sliders, and the play styles still blend on top of it. Hovering a type opens a card with what
+it is, the group's preview as shipped next to the same preview with this type, and every value it sets.
+The active type is highlighted, and the decision log records it ("Black hole: the Cinematic type", or
+"custom" once a slider has moved).
+
+| Group | The five types |
+|---|---|
+| Black hole | Pinpoint (tiny, sharp, stretches hard) · Gentle giant (big, soft, far reach) · Cinematic (strong Einstein ring, golden photon ring) · Ravenous (far more pull, prisms from far away) · Minimal (clean disc, little bending, quick settling) |
+| White hole | Supernova (blinding solid core) · Ghost (faint, small, weak push) · Twin (the black hole's exact mirror) · Fountain (strong push, throws you clear) · Mirage (all lens, soft core) |
+| Birth & annihilation | Snap (pops in and out) · Cinematic (slow, from far beyond the view, majestic wave) · Shockwave (violent wave, shaking view) · Calm (faint, almost no shake) · Ripple pond (slow, wide, long-lasting ripple) |
+| Flight & course | Cruiser (slower, gentle, intensity 1) · Racer (faster, intensity 3) · Agile (snappy turns, intensity 4) · Heavy (quick but slow to turn) · Sprint (fast, one lap) |
+| Lope | True stoat · Glide · Bounce · Slink · Scamper |
+
+The values are in the studio source (`GROUP_TYPES`). Flight & course types also set the course's intensity
+and laps. **Checked offline:**
+
+- every type's values lie within its sliders' ranges;
+- each type applies, highlights, and returns to Shipped;
+- Sprint switches to one lap at cruise 100;
+- none of the 25 type cards renders a blank preview, and there are no console errors.
+
 ## Stoat Flight Studio (round 9 — five play styles)
 
 **Play styles.** The rail's **Play styles** card blends the sling and hole settings five ways: Comet
