@@ -71,7 +71,7 @@ press **Start session** and try again.
    - Both are recorded in Decisions.
 6. Never touched from the panel:
    - `bleeding-edge`, `Ys-bleeding-edge`, `main` and `master` (no merging into them, no deleting them);
-   - the session's own branch and the tools branch (`claude/peaceful-rubin-hhw49n`) are never deleted.
+   - the session's own branch is never deleted, and the tools live on `Ys-bleeding-edge`, which is guarded.
 
 ### Decisions
 

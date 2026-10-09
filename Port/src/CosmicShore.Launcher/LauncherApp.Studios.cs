@@ -43,7 +43,7 @@ namespace CosmicShore.Launcher
             if (cat.Error != null)
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, Neon.Amber);
-                ImGui.TextWrapped(cat.Error + " Switch the workspace on the GIT page to a branch that has the Vessel Studio (Docs/Studios/VesselStudio): vessel-studio, or claude/peaceful-rubin-hhw49n for the Stoat's latest studio and its engine run.");
+                ImGui.TextWrapped(cat.Error + " Switch the workspace on the GIT page to a branch that has the Vessel Studio (Docs/Studios/VesselStudio): vessel-studio, or Ys-bleeding-edge for the latest studios and the engine run.");
                 ImGui.PopStyleColor();
             }
 

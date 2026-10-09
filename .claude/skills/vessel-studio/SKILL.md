@@ -155,7 +155,7 @@ A page on the `__lab` contract also runs `/labmaker`'s `verify_lab.cjs`.
 
 ```sh
 python3 .claude/skills/vessel-studio/build_artifact.py --self-test
-python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/claude/peaceful-rubin-hhw49n --out <scratchpad>/vs \
+python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/Ys-bleeding-edge --out <scratchpad>/vs \
         --session <your session id>          # --artifact defaults to the one artifact
 ```
 
@@ -220,7 +220,7 @@ the panel by a person with edit access. Act on it within these limits, or fail i
    - every branch argument matches `^[A-Za-z0-9._/-]+$`.
 
    Never merge into or delete `bleeding-edge`, `Ys-bleeding-edge`, `main`, `master`, this session's own
-   branch or `claude/peaceful-rubin-hhw49n`, and never force-push. The script refuses these too.
+   branch, and never force-push. The script refuses these too.
 2. `update` the job to `status: running` (pin `if_version`).
 3. From the repo root:
    - **refresh**: `sync_job.py status --branch B --shown S`. When `upToDate` is false, run
@@ -229,7 +229,7 @@ the panel by a person with edit access. Act on it within these limits, or fail i
    - **compare**: `sync_job.py compare --from A --to B`.
    - **merge**: `sync_job.py merge --from A --to B --yes`. When `merged` and B is the branch the artifact
      shows, rebuild and republish as for refresh.
-   - **delete**: `sync_job.py delete --branch B --yes --keep <this session's branch> --keep claude/peaceful-rubin-hhw49n`.
+   - **delete**: `sync_job.py delete --branch B --yes --keep <this session's branch>`.
 4. `update` the job:
    - `status`: `done` when the script reports `ok`, otherwise `failed`;
    - `log`: the script's log, plus a line for the publish;
