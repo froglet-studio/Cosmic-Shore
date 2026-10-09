@@ -442,7 +442,7 @@ public class VesselTransformer : MonoBehaviour
         protected virtual void MoveRestricted()
         {
             if (velocityShift.sqrMagnitude <= 0f) return;
-            transform.position += velocityShift * Time.deltaTime;
+            transform.position += velocityShift * (WarpFieldRuntime.ScaleAt(transform.position) * Time.deltaTime);
         }
 
         // The multiplier this transformer last raised on boostChanged. NaN = raise on the next
@@ -1253,11 +1253,15 @@ public class VesselTransformer : MonoBehaviour
             if (toggleManualThrottle)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
+            // Warp field: see MoveShipScalar.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            effectiveSpeed *= warp;
+
             VesselStatus.Speed = effectiveSpeed;
             VesselStatus.Course = speedNow > 1e-4f ? _velocity / speedNow : transform.forward;
             _lastPublishedCourse = VesselStatus.Course;
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * dt;
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift * warp) * dt;
         }
 
         void MoveShipScalar()
@@ -1323,9 +1327,18 @@ public class VesselTransformer : MonoBehaviour
                 VesselStatus.Course = -VesselStatus.Course;
             }
 
+            // Warp field (Docs/WARP_FIELD.md): the vessel is warp-sized here, so it travels in
+            // warp-sized lengths — its output speed and its additive velocity channel (knockback,
+            // a black hole's pull) both scale, and in its own frame nothing changed. The internal
+            // `speed` stays unwarped: the turn scalers read it, and angles are scale-free. The
+            // PUBLISHED Speed is the warped world speed, which is what replicates and what the
+            // trail's wavelength timing divides by. Exactly 1 with no field.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            effectiveSpeed *= warp;
+
             VesselStatus.Speed = effectiveSpeed;
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift * warp) * Time.deltaTime;
         }
 
         // ----------------------------- Modifiers -----------------------------
@@ -1465,5 +1478,13 @@ public class VesselTransformer : MonoBehaviour
         /// <summary>The ceiling every displacement shares unless a live one raises it
         /// (<see cref="ShipVelocityModifier.ceiling"/>), u/s.</summary>
         public float VelocityModifierCeiling => velocityModifierMax;
+
+        /// <summary>
+        /// The hull's unboosted full-throttle speed, u/s: <see cref="MinimumSpeed"/> + <see cref="ThrottleScaler"/>
+        /// (the fleet table's "cruise" for every hull whose speed comes from its throttle). A
+        /// yardstick for anything that must feel the same to a slow hull and a fast one — a black
+        /// hole's felt pull is measured in it (Docs/BLACK_HOLE.md §12).
+        /// </summary>
+        public float CruiseSpeed => Mathf.Max(0f, MinimumSpeed) + Mathf.Max(0f, ThrottleScaler);
     }
 }

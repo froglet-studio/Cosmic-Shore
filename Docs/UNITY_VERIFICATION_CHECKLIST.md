@@ -65,6 +65,71 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Slingshot (`GameModes.Slingshot = 64`) + the Stoat's plated hull, lope and autopilot sling (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Arcade/SLINGSHOT.md`, `R_VesselActions/STOAT.md` §2.1–2.2. The Stoat's drawn hull is now its own
+procedural plated body (`StoatHullBuilder` on a `StoatHull` object; the Squirrel model's renderers
+off, colliders on) with the user's body-only bounding lope (`StoatAnimation`); its game is a two-lap
+Stoat-only circuit race in the barren race cell. Proven offline: `stoat_hull_harness`,
+`slingshot_course_harness` (1,600 courses), both generators' `--check` (+ watched fail), the card art
+(`render_card_backgrounds --check`, 32/32 wired), preview / game-list / switch-label / enum / using /
+logging gates, the offline refcompile. `StoatHullTests`, `SlingshotCourseTests` written, not run.
+
+1. **Vessel Changer → Stoat (lava-lamp).** Expect: a blue plated stoat (diamond plates, wedge head),
+   domain-coloured fins, eyes and tail crystal; NOT the Squirrel. It lopes every ~1.5 s (rises
+   nose-up, arches, lands bunched, legs reach) while the vessel's path and trail stay straight; the
+   spine bends into a stick turn and the tail swings out. Collect elements: Charge grows the fins and
+   crystal, Mass thickens it, Space lengthens it, Time lengthens the legs. Inspector on `StoatHull`:
+   right-click the builder ▸ Rebuild Hull previews it in edit mode.
+2. **Arcade ▸ Slingshot** (intensity 1–4). Expect: eight neutral rings round the nucleus, gate 0 above
+   the spawn ring; LT/RT throw a pair (attractor on the trigger's side); the pull drags only YOUR
+   Stoat; two laps; golf result. AI Stoats fly the gates and sling into turns (BlackHole verbose
+   channel: `[Stoat] Left sling` lines from AI hulls).
+3. **Rival's pair never moves you**: in a 2-player match, fly through another Stoat's pair — no pull.
+4. **Feel**: if the throw is weak or wild, tune `StoatSlingConfig` (`maxStrength`, `aheadHorizons`,
+   `halfGapHorizons`) first; `BlackHoleConfig.vesselPullScale` / `maxVesselPullSpeed` are fleet-wide.
+
+---
+
+### 🔴 The Stoat (`VesselClassType.Stoat = 14`): black–white hole slingshot on the triggers, the Sparrow's stop on X (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`_Scripts/Controller/Vessel/R_VesselActions/STOAT.md`; the black hole itself (lens, pull, tides, white
+holes, pairs) is `Docs/BLACK_HOLE.md`, whose §0.1 lists ITS untested rows — none of that work has been
+run in the editor by its author either. `Stoat.prefab` is a text clone of `Squirrel.prefab` written by
+`Tools/Build/author_stoat_assets.py` (fresh Netcode `GlobalObjectIdHash`, computed the way
+`NetworkObject.OnValidate` does and proven against the Squirrel's own). Verified out of editor: the
+generator's `--check` and `--self-test` (seven negative controls), every vessel gate, the console /
+conditional-compilation / abstract-member gates, the generated-asset audit, the offline refcompile on
+all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRITTEN, not run.
+
+1. **Open `Stoat.prefab`.** Expect: no "missing script" on the `ShipActions` object (two added
+   components: `StoatSlingExecutor` with its config wired, `ToggleTranslationModeActionExecutor` with
+   the hull's own `VesselPrismController` and the two shared channels); `VesselStatus.vesselType` reads
+   **Stoat**; the `NetworkObject` keeps `GlobalObjectIdHash` unchanged on save (if it changes, the
+   generator's hash is wrong — report the number). Run `FrogletTools ▸ Vessels ▸ Audit Vessel Ability
+   Rows`: the row will show the SQUIRREL's icons (prototype debt, STOAT.md §4) — expected.
+2. **Run the edit-mode tests** `StoatSlingTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`,
+   `OneThumbVesselCoverageTests`. The enum count is now asserted at 16 (it was 14 and had not been
+   bumped for the Butterfly).
+3. **Lava-lamp (Menu_Main), Vessel Changer → Stoat.** Expect: the Squirrel hull, flyable. Press **X**:
+   the hull stops translating and stops laying prisms; press again: moves. Hold **LT** ~1 s and release
+   (gamepad: the trigger's depth is the size; keyboard: Left Shift, 1.2 s = full): a black hole on the
+   LEFT and a white hole on the RIGHT, ahead, on the hull's horizontal; the hull is pulled toward the
+   black hole / shoved off the white one. **RT** / Right Shift mirrors it. A tap is a nudge (horizon
+   radius 4 u), a buried trigger the big swing (24 u). The pair drifts apart, stops at 2 s, falls back
+   and is gone at 4 s. A second sling while the first pair lives annihilates the first.
+4. **Console** (`BlackHole` channel ON in FrogletTools ▸ Toolbox ▸ Logging): one `[Stoat] Left sling:
+   hold … → strength …` line per sling; NO per-frame lines. With the channel off: nothing.
+5. **Game mode** (any arcade mode as the Stoat): the same, and `IsTranslationRestricted` replicates
+   (a party guest sees the stopped Stoat stopped). Pairs do NOT replicate (STOAT.md §7).
+
+**First-pass tuning** (`_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset`): `minStrength 2`,
+`maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
+`lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
+and `aheadHorizons` first.
+
+---
+
 ### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
 **What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.

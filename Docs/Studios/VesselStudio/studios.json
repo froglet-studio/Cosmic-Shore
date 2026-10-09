@@ -1,0 +1,25 @@
+{
+  "comment": "The Vessel Studio catalog. Prisma's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Prisma player, the game's own vessel; engineNote says what that run is.",
+  "web": "https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN",
+  "hub": "index.html",
+  "studios": [
+    {
+      "id": "squirrel",
+      "name": "Squirrel",
+      "file": "squirrel.html",
+      "kind": "built vessel - studio v1",
+      "summary": "The racer on its shipped numbers: drift on LT, the Boost Ring on RT, skim rival trails for boost and steal them. Six play-style types over its four element levels.",
+      "docs": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md"
+    },
+    {
+      "id": "stoat",
+      "name": "Stoat",
+      "file": "stoat.html",
+      "kind": "design studio - round 14",
+      "summary": "The slinger: squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, and an AI sim lab that races and scores every style.",
+      "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
+      "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
+      "engineMode": "Slingshot"
+    }
+  ]
+}

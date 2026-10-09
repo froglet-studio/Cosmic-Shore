@@ -96,6 +96,7 @@
     <Compile Include="../CosmicShore.Player/PlayerAudio.cs" Link="Player/PlayerAudio.cs" />
     <Compile Include="../CosmicShore.Player/SilkInputBridge.cs" Link="Player/SilkInputBridge.cs" />
     <Compile Include="../CosmicShore.Player/InputScript.cs" Link="Player/InputScript.cs" />
+    <Compile Include="../CosmicShore.Player/ArcadeAutoStart.cs" Link="Player/ArcadeAutoStart.cs" />
     <Compile Include="../CosmicShore.Player/FrameRecorder.cs" Link="Player/FrameRecorder.cs" />
     <Compile Include="../CosmicShore.Player/ParityRun.cs" Link="Player/ParityRun.cs" />
     <Compile Include="../CosmicShore.Player/Inspector.cs" Link="Player/Inspector.cs" />

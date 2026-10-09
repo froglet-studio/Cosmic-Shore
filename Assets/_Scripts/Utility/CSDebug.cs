@@ -316,6 +316,18 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[ButterflyBloom] omni-crystal bloom sweep and dust outcomes")]
         ButterflyBloom = 1 << 30,
+        /// <summary>
+        /// <c>[BlackHole]</c> — the gravity well's one-line-per-second report: live holes
+        /// (strength, horizon, influence), the prism bodies under gravity, captures this
+        /// second, how many holes are stretching prisms, vessels being pulled — including the idle case with its
+        /// reason, because a field's failure modes all render as "nothing is happening"
+        /// (Docs/BLACK_HOLE.md). Off by default like every channel; a real fault (a spawn
+        /// with no prefab, a job that could not schedule) stays a warning or an error.
+        /// Nothing per-body or per-frame logs here. The SIGN bit, and the last free one: this
+        /// int-backed enum is FULL — the next channel needs the enum widened to long.
+        /// </summary>
+        [CSLogChannelLabel("[BlackHole] gravity wells, bodies, captures, stretching, vessels")]
+        BlackHole = 1 << 31,
         All = ~0
     }
 

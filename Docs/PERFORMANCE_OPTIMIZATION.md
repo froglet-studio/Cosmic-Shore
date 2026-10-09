@@ -1116,7 +1116,7 @@ fix spreads or de-allocates the same work.
   `PoolMiss.<prefab>` (on-demand Get miss = buffer empty on the caller's
   frame), `PoolActivate.<prefab>` (pooled Get `SetActive(true)` — first-Awake
   vs OnEnable attribution).
-- **Console commands**: `prisms N` / `prisms off` / `prismcolors`.
+- **Console commands**: `prisms N` / `prisms off` / `prismcolors`; `blackhole spawn <strength> [x y z] [vx vy vz]` / `move` / `strength` / `spin` / `list` / `despawn` (alias `bh`, `Docs/BLACK_HOLE.md` §6).
 - **Collider-LOD telemetry**: `PrismColliderLodManager.LastNearCount` /
   `LastLiveCount`.
 - **Shell-contact tier markers**: `ShellContact.Build` (per-frame probe

@@ -34,6 +34,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
+| **STUDIOS** | The Vessel Studio: one card per vessel studio (Squirrel, Stoat), each opening its page from the workspace in the browser, an **AGENT** chat on it, and its docs. **WEB LINK** is the same studio published on claude.ai, which a phone opens. Catalog: `Docs/Studios/VesselStudio/studios.json` (below). |
 | **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
@@ -54,6 +55,43 @@ The two dots at the bottom of the rail are git and .NET (hover for versions). Th
 bottom shows what is happening, a progress bar and CANCEL. The title bar shows the branch, the
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
+
+## STUDIOS - the Vessel Studio
+
+Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
+and element levels, and read what each number does. The pages are plain HTML in
+`Docs/Studios/VesselStudio/` (no build step), so the same files open here, in any desktop browser, and on a
+phone through **WEB LINK** (the published copy on claude.ai). Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
+
+Each card has these buttons:
+
+- **OPEN IN PRISMA**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
+  - It has no tabs or address bar.
+  - It uses a window profile under Prisma's data folder (`studio-window`), so the studio's layout and pop-out
+    windows are remembered.
+  - The page is opened with `#prisma`, so it reads "Running on Prisma".
+  - With neither browser installed it falls back to the default browser.
+  - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenStudioWindow`.
+- **BROWSER**: the same page in the default browser.
+- **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
+  - Prisma builds and starts the game as PLAY does.
+  - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
+  - The player waits for the main menu, opens that arcade card and presses its Start
+    (`Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, through the same path as the `arcade` input verb).
+  - The pilot presses Ready. First-run prompts on a new profile still come first.
+  - `engineNote` says what the engine run is when it differs from the studio's design (the Stoat's game sling
+    is still round 4's).
+
+- **The list comes from data:** `Docs/Studios/VesselStudio/studios.json` (`id`, `name`, `file`, `kind`,
+  `summary`, `docs`, optional `engineMode` and `engineNote`, plus `web` and `hub`). A test checks every
+  `engineMode` is a `GameModes` member. A branch without it shows why, and how to switch. Adding a studio
+  is a page plus a catalog entry; no launcher change. Read by `StudioCatalog` (tested in
+  `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
+- **AGENT** starts a Prisma Agent chat on that studio, in plan mode, pointed at the plan and the studio's rules.
+- **From Unity:** **FrogletTools > Vessels > Vessel Studio** opens Prisma on this page (`--page studios`); the
+  studio itself never runs inside Unity.
+- **Phones today** use the web pages. A studio scene inside the Prisma phone player (the game's own vessel
+  instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
 
 ## TIME - benchmarks and local multiplayer
 

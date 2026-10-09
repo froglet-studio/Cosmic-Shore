@@ -155,6 +155,10 @@ namespace CosmicShore.Editor
                 "finish the Grizzly bomb-jump circuit; the controller lays target/laps rings, so " +
                 "this is also the size of the circuit. Default " +
                 EndConditionOverridesSO.DefaultGrizzlyTimeGateTarget + ".\n" +
+                "  • Slingshot: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
+                "finish the Stoat wormhole-sling circuit; the controller lays target/laps rings, so " +
+                "this is also the size of the circuit. Default " +
+                EndConditionOverridesSO.DefaultSlingshotGateTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the mixed-fleet rail circuit. The arena lays eight rings a lap with the " +
                 "rails threaded through them, so this must be a multiple of eight. Default " +
@@ -202,6 +206,7 @@ namespace CosmicShore.Editor
             int tw  = Mathf.Max(0, EditorGUILayout.IntField("Tollway - Toll Target", _config.tollwayTollTarget));
             int rl  = Mathf.Max(0, EditorGUILayout.IntField("Redline - Gate Target (laps x rings)", _config.redlineGateTarget));
             int gzt = Mathf.Max(0, EditorGUILayout.IntField("Grizzly Time - Gate Target (laps x rings)", _config.grizzlyTimeGateTarget));
+            int sls = Mathf.Max(0, EditorGUILayout.IntField("Slingshot - Gate Target (laps x rings)", _config.slingshotGateTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
@@ -236,6 +241,7 @@ namespace CosmicShore.Editor
                     _config.tollwayTollTarget = tw;
                     _config.redlineGateTarget = rl;
                     _config.grizzlyTimeGateTarget = gzt;
+                    _config.slingshotGateTarget = sls;
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
@@ -275,6 +281,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Tollway", tw > 0 ? tw.ToString() : EndConditionOverridesSO.DefaultTollwayTollTarget + " (default)");
             EditorGUILayout.LabelField("Redline", rl > 0 ? rl.ToString() : EndConditionOverridesSO.DefaultRedlineGateTarget + " (default)");
             EditorGUILayout.LabelField("Grizzly Time", gzt > 0 ? gzt.ToString() : EndConditionOverridesSO.DefaultGrizzlyTimeGateTarget + " (default)");
+            EditorGUILayout.LabelField("Slingshot", sls > 0 ? sls.ToString() : EndConditionOverridesSO.DefaultSlingshotGateTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
@@ -334,6 +341,7 @@ namespace CosmicShore.Editor
                    "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget) + "\n" +
                    "Redline: " + Fmt(_config.redlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRedlineGateTarget) + "\n" +
                    "Grizzly Time: " + Fmt(_config.grizzlyTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultGrizzlyTimeGateTarget) + "\n" +
+                   "Slingshot: " + Fmt(_config.slingshotGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSlingshotGateTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +

@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using CosmicShore.Engine.InputSystem.Utilities;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Engine.InputSystem
 {

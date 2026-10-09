@@ -322,7 +322,8 @@ The main thread pays the array copies (~30 capacity-sized arrays in, 14 out); th
   one-line helpers. It checks that the kernel structs hold only blittable fields, and that the job is
   `[BurstCompile] ... : IJobParallelFor` with only NativeArray/blittable fields and calls the kernel. Negative control:
   the pre-11c step trips 7 rules. Mutations checked by hand: `var`, `Math.`, a `Vector3` local, a managed array, a
-  string field, a managed job field and a missing `[BurstCompile]` each fail it.
+  string field, a managed job field and a missing `[BurstCompile]` each fail it. Since 2026-10-07 it also fails
+  `MathF.` (§7.6): the kernel's maths go through `KernelMath`.
 - **Bit-match (group K):** each agent is stepped by the reference and by the kernel from the same saved state. All
   212,859 agent-steps were bit-identical on .NET.
 - **Split tick (group J):** the parked tick plus a main-thread `RunAgentPass` publishes exactly the plain tick.
@@ -368,6 +369,17 @@ Both holds are asserted.
 - **Burst never compiled the job.** Burst is not available here. `Span`/`ReadOnlySpan` locals, `stackalloc` into a
   `Span`, `NativeArray.AsSpan()/AsReadOnlySpan()` and `System.Numerics.Vector3` as a plain struct are Burst-supported
   as far as we know (Burst 1.8 docs), but the Burst Inspector is the proof (QA-SWARM-ROUND11-8).
+- **Burst DID reject the job, the first time it saw it (2026-10-07).** In the editor:
+  `Unable to find internal function System.MathF::Sqrt` (and `::Pow`, `::Exp`, `::Sin`, `::Cos`, `::Acos`). In
+  Unity's Mono corlib those `MathF` methods are `[MethodImpl(InternalCall)]` externs with no IL, so Burst cannot
+  compile them; it refused this job and `SwarmPoseJob` (whose `PoseMatrix` used `MathF.Sqrt`), and both ran
+  managed. The "as far as we know" above was wrong about `MathF`, and the textual gate had encoded it ("use
+  MathF"). Fix: both kernels call `KernelMath` (`FloraAndFauna/Swarm/KernelMath.cs`), which forwards to
+  `Unity.Mathematics` in Unity (`UNITY_5_3_OR_NEWER`, every Unity compile) and to `MathF` in the harness, so group
+  K's bit-match is unchanged. Both Burst gates now forbid `MathF.` in a kernel (negative control: the pre-fix
+  kernels fail them on exactly that rule), and `Tools/Build/swarm_core_harness/check_kernel_math.py` checks the
+  shim's two branches agree and that the Unity branch never calls `MathF`. Still not proved: that nothing ELSE in
+  the kernels trips Burst — the Burst Inspector is that proof.
 - **Burst's floats are not bit-matched.** Burst's math intrinsics may round differently from .NET's. The bit-match is
   .NET-to-.NET. Behaviour under Burst is expected to match to float rounding, not bits.
 - **The safety system was not run.** The job's `[NativeDisableParallelForRestriction]` writes (slot `Live[q]`, not

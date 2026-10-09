@@ -87,6 +87,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity
     guid: d812410bca4cfa283c84f0302b92fd28
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSlingshot.unity
+    guid: 87cd34d2d5ebd54e6b4706b61183df6b
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRegatta.unity
     guid: 49396577723d994f703e783dce685bff
   - enabled: 1

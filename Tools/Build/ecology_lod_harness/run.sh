@@ -22,7 +22,7 @@ FF="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna"
 # the pure cores (CellEcologyLod.cs is Unity glue - Tools/Build/swarm_glue_typecheck covers it)
 ECO=(); for f in "$FF"/Ecology/*.cs; do [[ "$(basename "$f")" == CellEcologyLod.cs ]] || ECO+=("$f"); done
 SW=("$FF/Swarm/ISwarmCore.cs" "$FF/Swarm/SwarmFieldCore.cs" "$FF/Swarm/SwarmGridCore.cs" "$FF/Swarm/SwarmSortCore.cs"
-    "$FF/Swarm/SwarmEvoFateCore.cs" "$FF/Swarm/SwarmTickJob.cs" "$FF/Swarm/SwarmPrismSync.cs")
+    "$FF/Swarm/SwarmEvoFateCore.cs" "$FF/Swarm/SwarmTickJob.cs" "$FF/Swarm/SwarmPrismSync.cs" "$FF/Swarm/KernelMath.cs")
 # Unity compiles against netstandard2.1 + C# 9: fail the way Unity would first
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -warnaserror -nowarn:CS1591 \
   -out:"$OUT/unityprofile.dll" "${ECO[@]}" "${SW[@]}" \

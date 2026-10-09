@@ -17,6 +17,6 @@ W="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 mapfile -t SUB < <(ls "$S"/*.cs)
 "$DOTNET_ROOT/dotnet" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" -target:library \
   -warnaserror+ -nowarn:CS0108,CS0114,CS1574,CS0649 -out:"$OUT/glue.dll" "$HERE/Stubs.cs" "${SUB[@]}" \
-  "$W/ISwarmCore.cs" "$W/SwarmFieldCore.cs" "$W/SwarmSortCore.cs" "$W/SwarmGridCore.cs" "$W/SwarmEvoFateCore.cs" "$W/SwarmTickJob.cs" "$W/SwarmPrismSync.cs" "$W/../VirtualFauna.cs" \
+  "$W/ISwarmCore.cs" "$W/SwarmFieldCore.cs" "$W/SwarmSortCore.cs" "$W/SwarmGridCore.cs" "$W/SwarmEvoFateCore.cs" "$W/SwarmTickJob.cs" "$W/SwarmPrismSync.cs" "$W/KernelMath.cs" "$W/../VirtualFauna.cs" \
   "$W"/../Ecology/*.cs
 echo "type-check OK (${#SUB[@]} substrate files)"

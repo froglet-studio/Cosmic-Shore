@@ -139,7 +139,7 @@ namespace CosmicShore.Content.Editing
                                        .OrderBy(f => f.MetadataToken))
                     {
                         if (f.IsInitOnly || f.IsLiteral || f.IsDefined(typeof(NonSerializedAttribute), false)) continue;
-                        bool isSerializeField = HasAttr(f, "SerializeFieldAttribute");
+                        bool isSerializeField = HasAttr(f, "SerializeField");
                         bool isReference = HasAttr(f, "SerializeReferenceAttribute");
                         bool backing = f.Name.StartsWith('<') && f.Name.EndsWith(">k__BackingField", StringComparison.Ordinal);
                         if (f.Name.Contains('<') && !backing) continue;
