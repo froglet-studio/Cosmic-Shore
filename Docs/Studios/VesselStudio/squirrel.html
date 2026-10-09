@@ -83,6 +83,11 @@
   .btn[disabled] { opacity: .5; cursor: default; }
   .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }   /* above the start card: a sideways phone must reach Play on phone */
   .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  /* the studio transport (/vessel-studio D18): Play · Pause/Resume · Stop, like the Unity editor's */
+  .transport { display: flex; gap: 2px; }
+  .transport .btn:disabled { opacity: 0.35; cursor: default; }
+  .transport .btn.on { background: var(--jade, #35e0b0); color: #04130e; opacity: 1; }
+  .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
 
   aside { display: grid; gap: 10px; min-width: 0; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
@@ -177,7 +182,7 @@
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
         </div>
-        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><button class="btn" id="stopBtn" type="button" hidden aria-pressed="false" title="Stop: your hull and the race clock halt, the stage and cameras stay live (P)">■ Stop</button></div>
+        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" title="Play (Enter)">▶ Play</button><button class="btn" id="tpPause" type="button" aria-pressed="false" title="Pause / resume (P): every pilot and the race clock halt, the stage and cameras stay live">❚❚ Pause</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Skim Race, intensity 1</h2>
@@ -186,7 +191,7 @@
               <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
               <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
               <span>Free cam</span><span>drag to look · I J K L move · U O down/up</span>
-              <span></span><span>Enter start · R reset · P stop / resume · C next camera</span>
+              <span></span><span>Enter play · P pause / resume · R stop · C next camera</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
           </div>
@@ -196,7 +201,7 @@
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
           <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
-          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">■ Stop</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tStop" type="button">❚❚ Pause</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
@@ -704,7 +709,7 @@
   $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', () => { if (paused) togglePause(); else startRace(); }); $('tStop').addEventListener('click', () => togglePause());
   $('tBack').addEventListener('click', () => newRace()); $('tCam').addEventListener('click', () => cycleCamera());
-  $('stopBtn').addEventListener('click', () => togglePause()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
+  $('tpPlay').addEventListener('click', () => { if (race !== 'running') startRace(); }); $('tpPause').addEventListener('click', () => togglePause()); $('tpStop').addEventListener('click', () => newRace()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
   function humanInput(dt) {
     camTouch = S.cam === 'Free' && S.you !== 'You';   // with an AI on your hull, the phone's sticks fly the free camera
     if (playMode && touch.used) return camTouch ? { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 } : { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
@@ -730,7 +735,7 @@
     $('courseInfo').textContent = 'I' + S.course + ' · ' + COURSE_INFO[S.course] + ' · ' + W.track.target + ' crystals';
   }
   function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
-  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Stopped' : 'Resumed'); }
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
   function finishRace() {
     race = 'finished';
     const order = W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.crystals - a.crystals);
@@ -850,9 +855,11 @@
     const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
     // the universal studio Stop (/vessel-studio D18): same label, key and place in every studio
-    $('stopBtn').hidden = race !== 'running'; $('stopBtn').textContent = paused ? '▶ Resume' : '■ Stop'; $('stopBtn').setAttribute('aria-pressed', paused ? 'true' : 'false');
-    $('tStop').textContent = paused ? '▶ Resume' : '■ Stop';
-    $('tStart').hidden = race === 'running' && !paused; $('tStart').textContent = paused ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
+    $('tpPlay').disabled = race === 'running'; $('tpPlay').classList.toggle('on', race === 'running' && !paused);
+    $('tpPause').disabled = race !== 'running'; $('tpPause').textContent = paused ? '▶ Resume' : '❚❚ Pause'; $('tpPause').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready';
+    $('tStop').textContent = paused ? '▶ Resume' : '❚❚ Pause';
+    $('tStart').hidden = race === 'running' && !paused; $('tStart').textContent = paused ? '▶ Resume' : '▶ Play';
     while (W.events.length) say(W.events.shift());
   }
 
