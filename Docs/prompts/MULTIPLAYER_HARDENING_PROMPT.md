@@ -2,6 +2,8 @@
 
 Paste everything below into a fresh session. The full reasoning, measurements and thresholds live
 in `Docs/MultiplayerArchitecture/HARDENING_PLAN_STEAM_LAUNCH.md`; this is the executable brief.
+`Docs/MULTIPLAYER_START_HERE.md` is the front door over this file and Prisma's multiplayer work:
+the current state, the owner's hand-test list and the order of next steps.
 
 ---
 

@@ -2,6 +2,9 @@
 
 > Moved verbatim from the root `CLAUDE.md`, which indexes every topic file. Paths in this file are relative to the repository root.
 
+> **Doing multiplayer work? Read `Docs/MULTIPLAYER_START_HERE.md` first:** the owner's goals and
+> rules, current state, the hand-test list and the ordered next steps, for Unity and Prisma alike.
+
 ### Multiplayer / Netcode
 
 The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.13.3; the pinned versions live in `Packages/manifest.json`) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
