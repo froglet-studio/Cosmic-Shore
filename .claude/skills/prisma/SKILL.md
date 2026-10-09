@@ -24,7 +24,9 @@ checklist.
 5. **Multiplayer: several players at once.** `net_players action=start players=N` (1-4, a party
    is four) starts them over one session folder; `net_input` / `net_command` drive any of them,
    `net_sim` gives each a bad line (latency, loss, a pulled cable), `net_fault` breaks the session
-   service, `net_stats` reads traffic and RTT. `Port/docs/MULTIPLAYER.md` is the manual.
+   service, `net_stats` reads traffic and RTT. `relay=local` sends them through Froglet's relay
+   server as an internet game would; `relay=ugs` signs them in to the game's LIVE UGS project, so
+   only when the owner asks. `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md`.
 6. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
    anchors, `game_logs` for errors.
