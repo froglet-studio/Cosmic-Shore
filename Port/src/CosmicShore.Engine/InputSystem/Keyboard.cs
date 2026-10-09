@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Engine.InputSystem
 {

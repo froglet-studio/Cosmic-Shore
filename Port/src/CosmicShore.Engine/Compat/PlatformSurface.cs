@@ -453,7 +453,7 @@ namespace CosmicShore.Engine
         public static int touchCount => InputSystem.EnhancedTouch.Touch.activeTouches.Count;
         public static Touch GetTouch(int index) => touches[index];
 
-        static InputSystem.ButtonControl Control(KeyCode key)
+        static InputSystem.Controls.ButtonControl Control(KeyCode key)
         {
             var mouse = InputSystem.Mouse.current;
             switch (key)

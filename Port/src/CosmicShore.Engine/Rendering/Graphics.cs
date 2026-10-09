@@ -47,6 +47,9 @@ namespace CosmicShore.Engine
     /// </summary>
     public static class Graphics
     {
+        /// <summary>Runs a command buffer (UnityEngine.Graphics.ExecuteCommandBuffer). The port's CommandBuffer records nothing, so this does nothing (Rendering/RenderGraph.cs).</summary>
+        public static void ExecuteCommandBuffer(Rendering.CommandBuffer buffer) { }
+
         /// <summary>
         /// Installed by the GL renderer: performs a GPU copy (optionally through a material).
         /// Headless it bumps the destination's version so a reader sees fresh contents.

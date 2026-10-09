@@ -285,6 +285,8 @@ namespace CosmicShore.Engine.Rendering
         public bool fsrOverrideSharpness { get => m_FsrOverrideSharpness; set => m_FsrOverrideSharpness = value; }
         public float fsrSharpness { get => m_FsrSharpness; set => m_FsrSharpness = value; }
         public bool useSRPBatcher { get => m_UseSRPBatcher; set => m_UseSRPBatcher = value; }
+        /// <summary>The default renderer (URP's asset.scriptableRenderer): passes enqueued here are counted, not run (RenderGraph.cs).</summary>
+        public ScriptableRenderer scriptableRenderer { get; } = new();
     }
 
     /// <summary>URP per-camera data (UniversalAdditionalCameraData).</summary>
@@ -307,6 +309,8 @@ namespace CosmicShore.Engine.Rendering
         public bool stopNaN { get; set; }
         public bool dithering { get; set; }
         public List<Camera> cameraStack { get; } = new();
+        /// <summary>The camera's renderer (URP): passes enqueued here are counted, not run (RenderGraph.cs).</summary>
+        public ScriptableRenderer scriptableRenderer { get; } = new();
     }
 
     public static class CameraExtensions

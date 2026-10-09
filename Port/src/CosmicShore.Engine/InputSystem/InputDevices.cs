@@ -153,49 +153,6 @@ namespace CosmicShore.Engine.InputSystem
         }
     }
 
-    /// <summary>A button: an axis with a press point and frame edges.</summary>
-    public class ButtonControl : AxisControl
-    {
-        bool _pressed, _pressedThisFrame, _releasedThisFrame;
-
-        public float pressPoint = -1f;
-        public static float s_GlobalDefaultButtonPressPoint = 0.5f;
-        public float pressPointOrDefault => pressPoint > 0f ? pressPoint : s_GlobalDefaultButtonPressPoint;
-
-        public override float value
-        {
-            get => _current;
-            set { _raw = value; _current = value; _pressed = value >= pressPointOrDefault; }
-        }
-
-        public bool isPressed
-        {
-            get => _pressed;
-            set { _pressed = value; _raw = _current = value ? 1f : 0f; }
-        }
-
-        public bool wasPressedThisFrame { get => _pressedThisFrame; set => _pressedThisFrame = value; }
-        public bool wasReleasedThisFrame { get => _releasedThisFrame; set => _releasedThisFrame = value; }
-        public bool IsValueConsideredPressed(float v) => v >= pressPointOrDefault;
-        public bool IsPressed() => _pressed;
-        public bool WasPressedThisFrame() => _pressedThisFrame;
-        public bool WasReleasedThisFrame() => _releasedThisFrame;
-
-        /// <summary>Backend write of a digital state (takes effect at the next commit).</summary>
-        public void SetRaw(bool down) => _raw = down ? 1f : 0f;
-
-        internal override void Commit()
-        {
-            bool was = _pressed;
-            base.Commit();
-            _pressed = RecomputeCurrent() >= pressPointOrDefault;
-            _pressedThisFrame = _pressed && !was;
-            _releasedThisFrame = !_pressed && was;
-        }
-
-        /// <summary>Derived buttons (any-key, shift, stick directions) recompute from their sources.</summary>
-        protected virtual float RecomputeCurrent() => _current;
-    }
 
     public class KeyControl : ButtonControl
     {
@@ -716,6 +673,52 @@ namespace CosmicShore.Engine.InputSystem
 
 namespace CosmicShore.Engine.InputSystem.Controls
 {
+    // ButtonControl lives here, as in Unity (UnityEngine.InputSystem.Controls.ButtonControl), so a game
+    // file that names it fully qualified resolves to this same class.
+    /// <summary>A button: an axis with a press point and frame edges.</summary>
+    public class ButtonControl : AxisControl
+    {
+        bool _pressed, _pressedThisFrame, _releasedThisFrame;
+
+        public float pressPoint = -1f;
+        public static float s_GlobalDefaultButtonPressPoint = 0.5f;
+        public float pressPointOrDefault => pressPoint > 0f ? pressPoint : s_GlobalDefaultButtonPressPoint;
+
+        public override float value
+        {
+            get => _current;
+            set { _raw = value; _current = value; _pressed = value >= pressPointOrDefault; }
+        }
+
+        public bool isPressed
+        {
+            get => _pressed;
+            set { _pressed = value; _raw = _current = value ? 1f : 0f; }
+        }
+
+        public bool wasPressedThisFrame { get => _pressedThisFrame; set => _pressedThisFrame = value; }
+        public bool wasReleasedThisFrame { get => _releasedThisFrame; set => _releasedThisFrame = value; }
+        public bool IsValueConsideredPressed(float v) => v >= pressPointOrDefault;
+        public bool IsPressed() => _pressed;
+        public bool WasPressedThisFrame() => _pressedThisFrame;
+        public bool WasReleasedThisFrame() => _releasedThisFrame;
+
+        /// <summary>Backend write of a digital state (takes effect at the next commit).</summary>
+        public void SetRaw(bool down) => _raw = down ? 1f : 0f;
+
+        internal override void Commit()
+        {
+            bool was = _pressed;
+            base.Commit();
+            _pressed = RecomputeCurrent() >= pressPointOrDefault;
+            _pressedThisFrame = _pressed && !was;
+            _releasedThisFrame = !_pressed && was;
+        }
+
+        /// <summary>Derived buttons (any-key, shift, stick directions) recompute from their sources.</summary>
+        protected virtual float RecomputeCurrent() => _current;
+    }
+
 
     /// <summary>One touch slot on a touchscreen.</summary>
     public class TouchControl : InputControl<TouchState>

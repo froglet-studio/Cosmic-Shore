@@ -6,7 +6,7 @@ namespace CosmicShore.Engine
     // verbatim; the engine's asset serializer and (future) inspector tooling read them.
 
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class SerializeFieldAttribute : Attribute { }
+    public sealed class SerializeField : Attribute { }
 
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
     public sealed class HeaderAttribute : PropertyAttribute
