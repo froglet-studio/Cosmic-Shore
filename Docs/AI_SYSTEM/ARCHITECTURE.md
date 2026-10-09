@@ -1,6 +1,6 @@
 # AI System — Architecture (every vessel AI, as it is and where it is going)
 
-Measured on `ai-system` at the 2026-10-08 cut (perf `1f3c7e829` + Ys-bleeding-edge `be50ff6ba`). The
+Measured on `ai-system` (retired 2026-10-09; the work now lives on `Ys-bleeding-edge`) at the 2026-10-08 cut (perf `1f3c7e829` + Ys-bleeding-edge `be50ff6ba`). The
 **roster in §2 is the source of truth for "which AIs exist"**: when a new one arrives from bleeding-edge,
 it gets a row here first (`BRANCH_WORKFLOW.md` §4). Every count below was measured with `git grep`.
 When a row and the code disagree, the code wins; fix the row.

@@ -1,7 +1,9 @@
-# AI System — Branch Workflow (four branches, kept in sync)
+# AI System — Branch Workflow (AI work lives on `Ys-bleeding-edge`)
 
-Read this before you merge anything into or out of `ai-system`. It says which branch owns which work,
-which way changes flow, how often, and how to resolve the conflicts that come back every time.
+**2026-10-09: the `ai-system` branch is retired.** Its work (the Skim Race AI retunes, the perf
+diagnostics, these docs) was merged into `claude/peaceful-rubin-hhw49n` and from there into
+`Ys-bleeding-edge`, and the branch was deleted. Every AI session now works on **`Ys-bleeding-edge`**
+(the user's call). The rules below are the old ones with that one change; the history is in `SYNC_LOG.md`.
 
 Run the sync report first, every time — it lists what is waiting to come in, and which of it is AI work:
 
@@ -12,75 +14,47 @@ python3 Tools/Build/ai_branch_sync.py --no-fetch # offline / already fetched
 
 ---
 
-## 1. The four branches
+## 1. The branches
 
-| Branch | Owner and purpose | What `ai-system` does with it |
+| Branch | Owner and purpose | What `Ys-bleeding-edge` does with it |
 |---|---|---|
-| `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull only.** Never push to it from here. New AI found here is *intake* (§4). |
-| `Ys-bleeding-edge` | Ys's integration branch: everything in `bleeding-edge` plus the multiplayer / party / networking work (request discipline, package bumps). | **Pull.** When it is level with or ahead of `bleeding-edge` (the usual case), pulling it brings `bleeding-edge` too, already reconciled with the networking work. |
-| `perf/performance-optimization` | Performance testing: the instruments (`prof`, `diag`, `burst`, `freeze`, `ab`), allocation gates, perf fixes (Burst, float loops). | **Two-way.** Pull its tools and fixes into `ai-system`; push AI changes to it when they need perf testing (§3). |
-| `ai-system` | **This branch.** Every vessel AI: review, restructure, diagnose, test, tune. Cut 2026-10-08 from `perf/performance-optimization` (which carried all the Skim Race AI work) plus `Ys-bleeding-edge`. | Home. Goes to `bleeding-edge` by pull request when the user decides a batch is ready. |
-
-```
- bleeding-edge ──────────────► Ys-bleeding-edge
-       │  (pull, when Ys lags)        │  (pull — usual path)
-       ▼                              ▼
-   ┌──────────────── ai-system ◄──────────────┐
-   │        ▲                                 │
-   │        │ tools, perf fixes               │ AI changes that need perf testing
-   │        │                                 ▼
-   │   perf/performance-optimization ◄────────┘
-   │
-   └──► bleeding-edge (pull request, user's call)
-```
+| `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull.** New AI found here is *intake* (§4). Goes back by pull request when the user decides. |
+| `Ys-bleeding-edge` | **Home.** Ys's integration branch: everything in `bleeding-edge` plus multiplayer / party / networking, and now every vessel AI (review, restructure, diagnose, test, tune). | — |
+| `perf/performance-optimization` | Performance testing: the instruments (`prof`, `diag`, `burst`, `freeze`, `ab`), allocation gates, perf fixes. | **Two-way.** Pull its tools and fixes; merge Ys into perf when an AI change needs perf testing (§3). |
+| `claude/peaceful-rubin-hhw49n` | The Stoat, the black and white holes, Amoebius (`Port/`), the Vessel Studio and its one artifact (`/vessel-studio`). | **Pull** when the report shows work there. |
 
 **Ownership rule.** A change belongs on the branch that owns its area, then merges across:
 
 | Area | Owning branch |
 |---|---|
-| `Assets/_Scripts/Controller/AI/**`, mode/ability AI code, AI configs, `Docs/SKIM_RACE_AI*.md`, `Docs/AI_SYSTEM/**`, the Skim Race simulator | `ai-system` |
-| `Assets/_Scripts/Utility/PerformanceBenchmark/**`, `Docs/PERFORMANCE_OPTIMIZATION.md`, allocation / Burst gates | `perf/performance-optimization` |
+| `Assets/_Scripts/Controller/AI/**`, mode/ability AI code, AI configs, `Docs/SKIM_RACE_AI*.md`, `Docs/AI_SYSTEM/**`, the Skim Race simulator | `Ys-bleeding-edge` |
 | Party, presence, lobby, netcode, multiplayer packages | `Ys-bleeding-edge` |
+| `Assets/_Scripts/Utility/PerformanceBenchmark/**`, `Docs/PERFORMANCE_OPTIMIZATION.md`, allocation / Burst gates | `perf/performance-optimization` |
+| Stoat, black holes, `Port/`, `Docs/Studios/**` | `claude/peaceful-rubin-hhw49n` |
 | Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors) |
-
-A bug found on `ai-system` in someone else's area is fixed here only when the AI cannot be tested
-without it, and the commit says so; otherwise it is reported to the owner.
 
 ---
 
-## 2. Pulling into `ai-system` (the routine sync)
-
-Do this at the start of every AI session, and whenever the sync report shows new AI work.
+## 2. Pulling into `Ys-bleeding-edge` (the routine sync)
 
 1. **Report.** `python3 Tools/Build/ai_branch_sync.py`. Read the "AI commits" lines for each source.
-2. **Pick the source.** If `Ys-bleeding-edge` contains `bleeding-edge` (the report says
-   `behind bleeding-edge: 0`), merge **only** `Ys-bleeding-edge`. If Ys lags, merge `bleeding-edge`
-   first, then `Ys-bleeding-edge`. Merging both when Ys already contains bleeding-edge doubles the
-   conflicts for nothing (measured 2026-10-08: 25 conflicts merging bleeding-edge, 8 merging Ys).
-3. **Merge, never rebase** (others pull these branches; history is never rewritten):
+2. **Merge, never rebase** (others pull these branches; history is never rewritten):
    ```sh
-   git checkout ai-system && git pull --ff-only origin ai-system
-   git merge --no-ff origin/Ys-bleeding-edge      # or origin/bleeding-edge
-   git merge --no-ff origin/perf/performance-optimization   # when the report shows perf work
+   git checkout Ys-bleeding-edge && git pull --ff-only origin Ys-bleeding-edge
+   git merge --no-ff origin/bleeding-edge                    # when the report shows work there
+   git merge --no-ff origin/perf/performance-optimization    # when perf landed a tool or fix
+   git merge --no-ff origin/claude/peaceful-rubin-hhw49n     # when the studios / Stoat / Amoebius moved
    ```
-4. **Resolve** with the rules in §5. Never resolve a whole file to one side after other hunks in it
-   auto-merged — resolve hunk by hunk.
-5. **Verify** (§6). A merge commit message carries the source commits, every conflict and how it was
-   resolved, and the verification results. `Docs/AI_SYSTEM/SYNC_LOG.md` gets one row.
-6. **Push** `git push -u origin ai-system`. Then do intake (§4) for any new AI the merge brought.
+3. **Resolve** with §5, hunk by hunk. **Verify** (§6). The merge message carries the sources, every
+   conflict and its resolution, and the results; `SYNC_LOG.md` gets one row.
+4. **Push** `git push -u origin Ys-bleeding-edge`, then intake (§4) for any new AI the merge brought.
 
 ## 3. Exchanging with `perf/performance-optimization`
 
-- **perf → ai-system**: merge perf whenever it lands a tool, a gate, or a fix the AI uses (a new
-  console command, an allocation gate, a Burst fix). Do not cherry-pick: a cherry-pick makes the same
-  change twice and both copies conflict at the next merge.
-- **ai-system → perf**: merge `ai-system` into perf when an AI change must be perf-tested there (a
-  planner rewrite, a Burst port, a new AI that runs per frame). This also carries everything
-  `ai-system` pulled from Ys/bleeding-edge, which perf wants anyway for realistic tests.
-- **Perf findings about the AI** (a `prof` capture showing an AI marker) are written into the AI's own
-  doc on `ai-system` (§4 of `DIAGNOSIS_PLAYBOOK.md`), so the AI branch keeps the record.
-- Both directions are plain merges; criss-cross merges are fine in git and keep both branches
-  pullable by anyone.
+- **perf → Ys**: merge perf whenever it lands a tool, a gate, or a fix the AI uses. Never cherry-pick.
+- **Ys → perf**: merge Ys into perf when an AI change must be perf-tested there.
+- **Perf findings about the AI** are written into the AI's own doc on `Ys-bleeding-edge`
+  (`DIAGNOSIS_PLAYBOOK.md` §4).
 
 ## 4. When someone adds a new vessel AI on bleeding-edge
 
@@ -133,8 +107,7 @@ in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## 7. Things git or the session proxy will not do
 
-- Pushes to `bleeding-edge` / `Ys-bleeding-edge` from an AI session: never. They go by pull request.
-- Deleting a remote branch from a cloud session is refused by its proxy (2026-10-07); delete it on
-  GitHub's Branches page or from a local machine.
+- Deleting a remote branch from a cloud session may be refused by its proxy (it was on 2026-10-07);
+  then delete it on GitHub's Branches page.
 - A push is refused if the target moved while you merged: fetch, merge the new commits, push again.
   Never force-push a shared branch.

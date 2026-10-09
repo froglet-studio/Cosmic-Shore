@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""ai_branch_sync.py - what is waiting to come into ai-system, and which of it is AI work.
+"""ai_branch_sync.py - what is waiting to come into Ys-bleeding-edge (the AI home), and which of it is AI work.
 
 A READER (report only): it fetches and reads git, it never merges, commits or writes a file.
 Workflow it serves: Docs/AI_SYSTEM/BRANCH_WORKFLOW.md (sections 2-4).
 
-For each source branch (Ys-bleeding-edge, bleeding-edge, perf/performance-optimization) it prints
-  - how many commits it has that HEAD lacks, and whether Ys-bleeding-edge already contains bleeding-edge
-    (if so, merge Ys only);
+For each source branch (bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n) it prints
+  - how many commits it has that HEAD lacks;
   - the AI commits among them: a commit is AI work when it touches an AI path (AI_PATHS), adds or
     removes a line naming an AI hook (AI_CODE_PATTERN, which catches AI living in mode controllers and
     ability executors, e.g. the Scarab jukes and the Grizzly bombs), or its subject says AI/autopilot;
   - the AI files those commits touch that Docs/AI_SYSTEM/ARCHITECTURE.md does not mention yet (intake).
-It also prints what ai-system has that perf lacks (when to merge ai-system into perf for testing).
+It also prints what HEAD has that perf lacks (when to merge Ys-bleeding-edge into perf for testing).
+The ai-system branch was retired 2026-10-09; its work lives on Ys-bleeding-edge (BRANCH_WORKFLOW.md).
 
 Usage:
   python3 Tools/Build/ai_branch_sync.py              # fetch the sources, then report
@@ -26,7 +26,8 @@ import sys
 import time
 
 REMOTE = "origin"
-SOURCES = ["Ys-bleeding-edge", "bleeding-edge", "perf/performance-optimization"]
+HOME = "Ys-bleeding-edge"
+SOURCES = ["bleeding-edge", "perf/performance-optimization", "claude/peaceful-rubin-hhw49n"]
 PERF = "perf/performance-optimization"
 ROSTER = "Docs/AI_SYSTEM/ARCHITECTURE.md"
 
@@ -134,12 +135,6 @@ def report_source(branch, roster_text):
     tip = git("log", "-1", "--format=%h %ad %s", "--date=short", ref).strip()
     print(f"\n== {branch}  (tip {tip[:90]})")
     print(f"   commits not in HEAD: {ahead}")
-    if branch == "Ys-bleeding-edge":
-        be = f"{REMOTE}/bleeding-edge"
-        if subprocess.run(["git", "rev-parse", "-q", "--verify", be], capture_output=True).returncode == 0:
-            behind = int(git("rev-list", "--count", f"{ref}..{be}").strip())
-            print(f"   behind bleeding-edge: {behind}"
-                  + ("  -> merge Ys-bleeding-edge only" if behind == 0 else "  -> merge bleeding-edge first"))
     if ahead == 0:
         return
     found = ai_commits(f"HEAD..{ref}")
@@ -164,7 +159,7 @@ def report_outgoing(roster_text):
     n = int(git("rev-list", "--count", f"{ref}..HEAD").strip())
     found = ai_commits(f"{ref}..HEAD") if n else {}
     print(f"\n== HEAD -> {PERF}: {n} commits perf lacks, {len(found)} of them AI work"
-          + ("  (merge ai-system into perf when these need perf testing)" if found else ""))
+          + ("  (merge Ys-bleeding-edge into perf when these need perf testing)" if found else ""))
 
 
 def self_test():
@@ -198,12 +193,12 @@ def main():
         sys.exit(0 if self_test() else 1)
     root = git("rev-parse", "--show-toplevel").strip()
     os.chdir(root)
-    if not a.no_fetch and not fetch(SOURCES):
+    if not a.no_fetch and not fetch(SOURCES + [HOME]):
         print("fetch failed; reporting on what is already fetched", file=sys.stderr)
     branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
     print(f"HEAD: {branch} {git('rev-parse', '--short', 'HEAD').strip()}")
-    if branch != "ai-system":
-        print("  (not on ai-system - the report compares the sources against this HEAD)")
+    if branch != HOME:
+        print(f"  (not on {HOME} - the report compares the sources against this HEAD)")
     roster_text = open(ROSTER, encoding="utf-8").read() if os.path.exists(ROSTER) else ""
     for b in SOURCES:
         report_source(b, roster_text)

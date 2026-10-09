@@ -38,7 +38,7 @@ web page (A), its `engineMode` (B, exists), and **range presets** (B and C, §4)
 | The four Squirrel race maps | `MinigameSkimRace.unity`, intensity 1–4 (four tracks, the same data the web studio reads) | `Docs/SKIM_RACE_AI.md`, `Tools/Build/skimrace_track_fingerprint.py` |
 | Other Squirrel maps | Arcade cards that fly the Squirrel: **AstroLeague, Broadside, BroodRush, Joust, Maelstrom, Regatta, Scurry, SkimRace** | `Assets/_SO_Assets/Games/ArcadeGame*.asset` (Vessels = `SO_Class_Squirrel`) |
 | Stoat map | **Slingshot** (the only card with `SO_Class_Stoat`) | `ArcadeGameSlingshot.asset` |
-| AI on every seat | `AIPilot` (platform autopilot, incl. the Stoat's autopilot sling); `SkimRacePilot` / `SkimRaceDriver` for Squirrel in Skim Race and Regatta; Easy/Medium/Hard via `SkimRaceDifficultySO` | `Assets/_Scripts/Controller/AI/`, `Docs/AI_SYSTEM/` (`ai-system` branch) |
+| AI on every seat | `AIPilot` (platform autopilot, incl. the Stoat's autopilot sling); `SkimRacePilot` / `SkimRaceDriver` for Squirrel in Skim Race and Regatta; Easy/Medium/Hard via `SkimRaceDifficultySO` | `Assets/_Scripts/Controller/AI/`, `Docs/AI_SYSTEM/` |
 | AI flying **your own** hull | `Vessel.ToggleAIPilot(true/false)` (Mode Preview uses it: "plays under AI, tap to take the stick") | `ModePreviewSession.cs` |
 | AI seat counts and difficulty | `GameDataSO.ConfigurePlayerCounts`, the launch panel's difficulty row | `BenchmarkSceneLauncher.cs` shows the whole launch path in 15 lines |
 | Watch another pilot | `SpectatorController` re-points the follow rig at any vessel, plus a slow **dolly** orbit, and moves the occlusion corridor and vision shading onto the watched hull | `Controller/Multiplayer/SpectatorController.cs`, `Docs/PartySystem/SPECTATOR.md` |
@@ -120,6 +120,4 @@ by itself.
    The second is a shader change and needs `/verify-unity` plus a render check.
 2. **Stoat in the game**: the game ships the round-4 orbit sling. The web studio's dipole sling is not
    built yet. Should the Test Range test the shipped Stoat now, or wait for the new sling?
-3. **Which branch builds R1–R3**: `ai-system` (AI diagnosis is its job; `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`)
-   or `vessel-studio`. The recommendation is `ai-system`, since the harness is mostly an AI-diagnosis
-   tool, with this plan linked from both branches.
+3. **Which branch builds R1–R3**: `Ys-bleeding-edge`, the home of all AI work since 2026-10-09 (`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`). Decided by the user's move off `ai-system`.

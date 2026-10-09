@@ -1,6 +1,6 @@
 # AI System — Diagnosis Playbook (one AI at a time)
 
-How every AI on `ai-system` gets diagnosed, reviewed and tested, and how a new AI from bleeding-edge is
+How every AI on `Ys-bleeding-edge` (formerly the `ai-system` branch) gets diagnosed, reviewed and tested, and how a new AI from bleeding-edge is
 taken in. The roster of AIs is `ARCHITECTURE.md` §2; the branch mechanics are `BRANCH_WORKFLOW.md`.
 
 The principle: **an AI is diagnosed from the cheapest evidence up**, and every claim about it ("it is

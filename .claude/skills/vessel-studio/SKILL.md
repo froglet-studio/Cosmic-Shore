@@ -69,7 +69,7 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
      (`grep -l <class guid> Assets/_SO_Assets/Games/*.asset`). Squirrel: SkimRace, Regatta, AstroLeague,
      Broadside, BroodRush, Joust, Maelstrom, Scurry. Stoat: Slingshot, Warpline;
    - its AI: platform `AIPilot` or a replacement pilot (`Docs/AI_SYSTEM/ARCHITECTURE.md`, branch
-     `ai-system`) and where its difficulty lives (Skim Race: `SkimRaceDifficultySO` = Hard +
+     `Ys-bleeding-edge`) and where its difficulty lives (Skim Race: `SkimRaceDifficultySO` = Hard +
      `SkimRaceHandicap`'s late notice and misjudged crystal);
    - ships or design (D2).
 2. **`python3 Tools/Build/element_ability_table.py <Vessel>`** (the `/vessel` skill), so numbers start
