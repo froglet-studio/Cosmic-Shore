@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Spike: can a plain .NET app (no Unity) use Unity Relay for Prisma-to-Prisma play?
+    Standalone on purpose: not in CosmicShore.slnx, not referenced by the launcher, player or
+    updater, and it touches nothing Unity reads. See README.md.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Prisma.RelaySpike</RootNamespace>
+    <AssemblyName>relay-spike</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- DTLS 1.2 with a pre-shared key (Relay's encrypted mode). MIT-style license. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
+  </ItemGroup>
+</Project>
