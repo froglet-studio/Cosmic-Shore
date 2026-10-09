@@ -1,0 +1,279 @@
+<title>Vessel Studio</title>
+<!-- Vessel Studio hub (Docs/Studios/VesselStudio/). Pick a vessel, its studio opens. The same folder is
+     what Prisma's STUDIOS page opens on Windows, and what a phone browser opens. Plan:
+     Docs/Studios/VESSEL_STUDIO_PLAN.md. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a hangar wall. Vessel bays across the top (the thing you came for), then where the studio
+     runs, then the studio agent. One dark world shared with every studio page. */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d16;
+    --panel: #121524;
+    --panel-2: #181c30;
+    --line: #262b47;
+    --fg: #e9ecff;
+    --muted: #8e95bf;
+    --jade: #35e0b0;
+    --stoat: #c48bff;
+    --ok: #4be38f;
+    --warn: #ffb454;
+    --off: #5d6488;
+    --display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
+    --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Prisma and a direct file open do not */
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
+  a { color: var(--jade); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 34px; }
+  header { display: grid; gap: 8px; }
+  .eyebrow { font: 600 13px/1 var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin: 0; font: 800 clamp(40px, 7vw, 76px)/.92 var(--display); text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--jade); }
+  .lede { margin: 0; color: var(--muted); max-width: 64ch; }
+  h2 { margin: 0 0 12px; font: 700 22px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+
+  .bays { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+  .bay { position: relative; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); text-decoration: none; color: inherit; overflow: hidden; min-width: 0; }
+  .bay:hover { border-color: var(--accent); }
+  .bay canvas { width: 100%; max-width: 100%; height: 150px; display: block; border-radius: 8px; background: #05060c; }
+  .bay .name { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .bay .name b { font: 800 34px/1 var(--display); text-transform: uppercase; color: var(--accent); }
+  .chip { font: 500 11px/1 var(--mono); padding: 4px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .bay p { margin: 0; color: var(--muted); font-size: 14px; }
+  .bay .open { font: 700 14px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .spec { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font: 12px/1.5 var(--mono); color: var(--muted); }
+  .spec b { color: var(--fg); font-weight: 500; }
+
+  .fleet { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .fleet span { font: 500 12px/1 var(--mono); padding: 6px 9px; border: 1px dashed var(--line); border-radius: 6px; color: var(--off); }
+
+  .platforms { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .platforms th, .platforms td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .platforms th { font: 600 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); background: var(--panel); }
+  .platforms tr:last-child td { border-bottom: 0; }
+  .st { font: 500 12px/1 var(--mono); white-space: nowrap; }
+  .st::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: currentColor; vertical-align: 1px; }
+  .st.ok { color: var(--ok); } .st.part { color: var(--warn); } .st.later { color: var(--off); }
+
+  .agent { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 820px) { .agent { grid-template-columns: minmax(0, 1fr); } }
+  .panel { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .panel h3 { margin: 0; font: 700 17px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+  .panel p { margin: 0; color: var(--muted); font-size: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select, textarea, input[type=text] { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+  textarea { width: 100%; min-height: 84px; resize: vertical; box-sizing: border-box; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 8px 14px; font-weight: 600; }
+  .btn.primary { background: var(--jade); color: #04130e; border-color: var(--jade); }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .answer { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; font-size: 14px; max-height: 360px; overflow: auto; }
+  .reqs { display: grid; gap: 8px; }
+  .req { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; display: grid; gap: 4px; background: var(--panel-2); }
+  .req .meta { font: 12px/1.3 var(--mono); color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .req .meta .stt { color: var(--warn); } .req .meta .stt.done { color: var(--ok); }
+  .req .txt { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .hint { font-size: 12px !important; }
+  code { font-family: var(--mono); font-size: .9em; }
+  footer { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Cosmic Shore · Froglet</span>
+    <h1>Vessel <em>Studio</em></h1>
+    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open in this browser, in Prisma on Windows, and in your phone's browser.</p>
+  </header>
+
+  <section aria-labelledby="h-bays">
+    <h2 id="h-bays">Studios</h2>
+    <div class="bays">
+      <a class="bay" href="squirrel.html" style="--accent: var(--jade)">
+        <canvas id="pvSquirrel" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Squirrel</b><span class="chip" style="color:var(--jade)">built vessel · v1</span></div>
+          <p>The racer. Drift on the left trigger, the Boost Ring on the right, skim rival trails for boost and steal them. Six play-style types over its four element levels.</p>
+          <div class="spec"><span>Cruise</span><b>60 u/s × boost (to 5×)</b><span>Drift</span><b>×1.8 turn, grip 0.25</b><span>Elements</span><b>Charge · Mass · Space · Time</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="stoat.html" style="--accent: var(--stoat)">
+        <canvas id="pvStoat" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Stoat</b><span class="chip" style="color:var(--stoat)">design studio · round 11</span></div>
+          <p>The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, five types per setting group, a decision log.</p>
+          <div class="spec"><span>Sling</span><b>strength 0.5–12 by squeeze</b><span>Styles</span><b>Comet · Needle · Anchor · Maelstrom · Flare</b><span>Status</span><b>design not yet in the game</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+    </div>
+    <div class="fleet" aria-label="Vessels without a studio yet">
+      <span>Manta</span><span>Dolphin</span><span>Rhino</span><span>Serpent</span><span>Sparrow</span><span>Urchin</span><span>Grizzly</span><span>Scarab</span><span>Butterfly</span><span>Termite</span><span>Falcon</span><span>Shrike</span>
+    </div>
+    <p class="lede hint" style="margin-top:8px">No studio yet. Ask the studio agent below to start one; each needs the vessel's own numbers read from its assets first.</p>
+  </section>
+
+  <section aria-labelledby="h-plat">
+    <h2 id="h-plat">Where it runs</h2>
+    <div class="tablewrap">
+      <table class="platforms">
+        <thead><tr><th>Platform</th><th>How to open it</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Web</td><td>This page. Share the link, or open the files in <code>Docs/Studios/VesselStudio/</code> in any browser.</td><td><span class="st ok">works</span></td></tr>
+          <tr><td>Phone browser</td><td>Open this page on the phone, pick a studio, tap <b>Play on phone</b> and turn it sideways.</td><td><span class="st ok">works</span></td></tr>
+          <tr><td>Prisma on Windows</td><td><b>STUDIOS</b> page in Prisma.exe opens these pages from its workspace. From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Prisma there.</td><td><span class="st part">first version</span></td></tr>
+          <tr><td>Prisma on Android</td><td>The Prisma player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
+          <tr><td>iOS</td><td>After Android: the Prisma <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-agent" id="agent">
+    <h2 id="h-agent">Studio agent</h2>
+    <div class="agent">
+      <div class="panel">
+        <h3>Ask about a vessel</h3>
+        <p>Ask for a design idea, a new play-style type, or what a number does. The answer comes from Claude with the studio's numbers in hand.</p>
+        <div class="row">
+          <label for="askVessel" class="hint" style="color:var(--muted)">Vessel</label>
+          <select id="askVessel"><option>Squirrel</option><option>Stoat</option></select>
+        </div>
+        <textarea id="askText" placeholder="Example: suggest a play-style type for a Squirrel that wins by blocking with Boost Rings."></textarea>
+        <div class="row"><button class="btn primary" id="askBtn" type="button">Ask</button><span class="hint" id="askState" style="color:var(--muted)"></span></div>
+        <div class="answer" id="askAnswer" hidden></div>
+      </div>
+      <div class="panel">
+        <h3>Development requests</h3>
+        <p>File a change for a studio or a vessel. A Claude Code session, or Prisma's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
+        <div class="row">
+          <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Studio hub</option><option>New vessel</option></select>
+          <select id="reqKind" aria-label="Kind"><option>Change the studio</option><option>Try a design</option><option>Bug</option><option>New studio</option></select>
+        </div>
+        <textarea id="reqText" placeholder="Example: add an AI rival on Hard that flies the real Skim Race pilot's line."></textarea>
+        <div class="row"><button class="btn primary" id="reqBtn" type="button">File request</button><button class="btn" id="copyBtn" type="button">Copy as agent prompt</button><span class="hint" id="reqState" style="color:var(--muted)"></span></div>
+        <div class="reqs" id="reqList"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Every studio is a reader of the game's shipped numbers, never their authority: each page names the asset it copied a value from. Plan and platform notes: <code>Docs/Studios/VESSEL_STUDIO_PLAN.md</code>.</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ---- bay previews: a small looping flight per vessel (2D canvas, cheap on phones) ----
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function preview(id, draw) {
+    const c = $(id), g = c.getContext('2d'); let t = 0, lastT = performance.now();
+    function tick(now) { const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; t += dt; draw(g, c.width, c.height, t); if (!reduce) requestAnimationFrame(tick); }
+    requestAnimationFrame(tick);
+  }
+  preview('pvSquirrel', (g, w, h, t) => {
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    for (let lane = 0; lane < 2; lane++) { // rival trails
+      g.fillStyle = lane ? '#ffc247' : '#ff4f7b';
+      for (let i = 0; i < 40; i++) { const x = ((i * 34 - t * 140) % (w + 60) + w + 60) % (w + 60) - 30; const y = h * (0.38 + lane * 0.26) + Math.sin(i * 0.7 + lane) * 8; g.globalAlpha = 0.8; g.fillRect(x, y, 16, 4); }
+    }
+    g.globalAlpha = 1;
+    const sx = w * 0.42, sy = h * 0.5 + Math.sin(t * 1.3) * h * 0.18;
+    g.strokeStyle = '#35e0b055'; g.beginPath(); g.arc(sx, sy, 34, 0, Math.PI * 2); g.stroke(); // skimmer
+    for (let i = 1; i < 14; i++) { g.fillStyle = 'rgba(53,224,176,' + (0.5 - i * 0.03) + ')'; g.fillRect(sx - i * 18, h * 0.5 + Math.sin((t - i * 0.12) * 1.3) * h * 0.18 - 2, 10, 4); }
+    g.fillStyle = '#35e0b0'; g.beginPath(); g.moveTo(sx + 18, sy); g.lineTo(sx - 10, sy - 9); g.lineTo(sx - 4, sy); g.lineTo(sx - 10, sy + 9); g.closePath(); g.fill();
+    const rx = w * 0.82, ry = h * 0.5; g.strokeStyle = '#ff6a4d'; // a boost ring ahead
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t * 0.5; g.fillStyle = '#ff6a4d'; g.fillRect(rx + Math.cos(a) * 9 - 3, ry + Math.sin(a) * 28 - 3, 6, 6); }
+  });
+  preview('pvStoat', (g, w, h, t) => {
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const bx = w * 0.55, by = h * 0.42, wx = w * 0.55, wy = h * 0.78;
+    const grd = g.createRadialGradient(bx, by, 4, bx, by, 60); grd.addColorStop(0, '#000'); grd.addColorStop(0.25, '#000'); grd.addColorStop(0.32, '#ffcf8a'); grd.addColorStop(0.5, '#c48bff33'); grd.addColorStop(1, '#05060c00');
+    g.fillStyle = grd; g.beginPath(); g.arc(bx, by, 60, 0, Math.PI * 2); g.fill();
+    const wg = g.createRadialGradient(wx, wy, 1, wx, wy, 26); wg.addColorStop(0, '#fff'); wg.addColorStop(1, '#ffffff00'); g.fillStyle = wg; g.beginPath(); g.arc(wx, wy, 26, 0, Math.PI * 2); g.fill();
+    const a = t * 1.6, r = 46; const px = bx + Math.cos(a) * r * 1.6, py = by + Math.sin(a) * r * 0.6; // the orbit
+    g.strokeStyle = '#c48bff66'; g.beginPath(); g.ellipse(bx, by, r * 1.6, r * 0.6, 0, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#c48bff'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
+  });
+
+  // ---- the studio agent ----
+  const SPEC = {
+    Squirrel: 'Squirrel (racer). Flight: speed = throttle x 60 u/s x boost (boost 1-5x, decays 0.3/s); pitch/yaw 120 deg/s, roll 130 deg/s. Drift on LT (analog): turn x1 -> x1.8, grip -> 0.25 (course lags nose). RT: Boost Ring = ring of 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s x Mass (1 -> 0.5, floor 0.35). Elements 0-10, L5 unlock at 5: Charge = Crystal Joust (overtake steals petals x1 -> x2.5; L5 Shepherd nourishes own lifeforms); Mass = Boost Ring cooldown (L5 Twin Rings); Space = Steal reach, skimmer 15 -> 30 (L5 Iron Grip steals shielded prisms keeping the shield); Time = Skimming energy +0.1/prism x1 -> x2 (L5 Live Wire: danger prisms x10). Studio types: Shipped, Thief, Speedster, Skimmer, Brawler, Maxed.',
+    Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases).',
+  };
+  let sample = null, db = null, user = null, me = '';
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') { offline(); return; }
+    try { sample = await c.use('sample'); } catch (e) { sample = null; }
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { user = await c.use('user'); if (user) me = (await user.id()) || ''; } catch (e) { me = ''; }
+    if (!sample) { $('askBtn').disabled = true; $('askState').textContent = 'Asking needs the claude.ai viewer. Use “Copy as agent prompt” instead.'; }
+    if (!db) { $('reqState').textContent = 'Requests are kept only in the claude.ai viewer. Copy the prompt to a Claude Code session or Prisma’s AGENT page.'; $('reqBtn').disabled = true; renderReqs([]); return; }
+    db.collection('requests').orderBy('createdAt', 'desc').limit(50).onSnapshot((snap) => {
+      renderReqs(snap.docs.map((d) => Object.assign({ id: d.id }, d.data())));
+    }, (err) => { $('reqState').textContent = 'The request list is unavailable (' + (err && err.code || 'error') + ').'; });
+  })();
+  function offline() {
+    $('askBtn').disabled = true; $('askState').textContent = 'Asking works inside the claude.ai viewer.';
+    $('reqBtn').disabled = true; $('reqState').textContent = 'Outside the claude.ai viewer: copy the request as an agent prompt instead.'; renderReqs([]);
+  }
+  function renderReqs(list) {
+    const box = $('reqList'); box.textContent = '';
+    if (!list.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No requests yet. The first one you file appears here, and stays until a session marks it done.'; box.appendChild(p); return; }
+    for (const r of list) {
+      const d = document.createElement('div'); d.className = 'req';
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const st = document.createElement('span'); st.className = 'stt' + (r.status === 'done' ? ' done' : ''); st.textContent = r.status || 'open';
+      const v = document.createElement('span'); v.textContent = (r.vessel || '?') + ' · ' + (r.kind || '');
+      const t = document.createElement('span'); t.textContent = r.createdAt ? new Date(r.createdAt).toLocaleString() : '';
+      meta.append(st, v, t);
+      const txt = document.createElement('div'); txt.className = 'txt'; txt.textContent = r.text || '';
+      d.append(meta, txt);
+      if (r.reply) { const rp = document.createElement('div'); rp.className = 'meta'; rp.textContent = 'Reply: ' + r.reply; d.appendChild(rp); }
+      box.appendChild(d);
+    }
+  }
+  $('askBtn').addEventListener('click', async () => {
+    const q = $('askText').value.trim(); if (!q || !sample) return;
+    const v = $('askVessel').value;
+    $('askBtn').disabled = true; $('askState').textContent = 'Thinking…'; $('askAnswer').hidden = false; $('askAnswer').textContent = '';
+    const prompt = 'You are the design agent of the Cosmic Shore Vessel Studio, a browser studio for testing vessel mechanics. ' +
+      'Answer the developer plainly and concretely, in under 250 words. When you propose a design, give exact numbers and say which element level or asset field they would change. ' +
+      'Never invent mechanics the spec does not have without labelling them as a new idea.\n\nVessel spec (from the shipped assets):\n' + SPEC[v] + '\n\nQuestion:\n' + q;
+    try {
+      await sample(prompt, { onText: ({ text }) => { $('askAnswer').textContent = text; }, cache: false });
+      $('askState').textContent = 'File it as a request if you want it built.';
+    } catch (e) {
+      $('askState').textContent = e && e.code === 'not_granted' ? 'Asking was not allowed in this view.' : e && e.code === 'rate_limited' ? 'Too many questions at once; try again in a minute.' : 'The answer did not arrive (' + (e && e.code || 'error') + ').';
+      if (e && e.code === 'not_granted') $('askBtn').hidden = true;
+    } finally { $('askBtn').disabled = !sample; }
+  });
+  $('reqBtn').addEventListener('click', async () => {
+    const text = $('reqText').value.trim(); if (!text || !db) return;
+    $('reqBtn').disabled = true;
+    try {
+      await db.collection('requests').add({ vessel: $('reqVessel').value, kind: $('reqKind').value, text, status: 'open', createdAt: Date.now(), by: me });
+      $('reqText').value = ''; $('reqState').textContent = 'Filed. A session picks it up from this list.';
+    } catch (e) { $('reqState').textContent = 'Not filed (' + (e && e.code || 'error') + '). Copy it as an agent prompt instead.'; }
+    finally { $('reqBtn').disabled = false; }
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const text = $('reqText').value.trim() || '(describe the change)';
+    const prompt = 'Vessel Studio request (' + $('reqVessel').value + ', ' + $('reqKind').value + '):\n' + text +
+      '\n\nWork on the vessel-studio branch. Read Docs/Studios/VESSEL_STUDIO_PLAN.md and Docs/Studios/VesselStudio/README.md first. ' +
+      'Every number a studio shows comes from a shipped asset, named in the page.';
+    const done = () => { $('reqState').textContent = 'Copied. Paste it into a Claude Code session or Prisma’s AGENT page.'; };
+    try { navigator.clipboard.writeText(prompt).then(done, () => fallback(prompt)); } catch (e) { fallback(prompt); }
+  });
+  function fallback(t) { const ta = $('reqText'); ta.value = t; ta.focus(); ta.select(); $('reqState').textContent = 'Selected the prompt: copy it with your keyboard or long-press.'; }
+})();
+</script>

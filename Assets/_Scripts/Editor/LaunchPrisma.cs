@@ -20,7 +20,8 @@ namespace CosmicShore.Editor
     /// once and rebuild only when the launcher's source changed (after a pull, say). Without a
     /// .NET 10 SDK on the machine it falls back to <c>Port/dist/Prisma-Windows.zip</c>, and Prisma
     /// installs its own SDK the first time START is pressed, after which builds work. Prisma is told
-    /// which clone opened it, so its PLAY page follows the branch Unity has checked out.
+    /// which clone opened it, so its PLAY page follows the branch Unity has checked out. FrogletTools > Vessels > Vessel
+    /// Studio opens it the same way, on its STUDIOS page (<c>--page studios</c>).
     /// READER: writes only under the gitignored <c>Library/</c>, never assets - no ship panel.
     /// </summary>
     public static class LaunchPrisma
@@ -65,6 +66,19 @@ namespace CosmicShore.Editor
                 return;
             }
             Build(dotnet, stamp);
+        }
+
+        /// <summary>The Prisma page the next start opens (<c>--page</c>), then cleared. Null = Prisma's own default.</summary>
+        static string _openPage;
+
+        [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+            Description = "Opens Prisma on its STUDIOS page: pick a vessel and fly its studio (Squirrel, Stoat) in the browser or on a phone. The studio lives in Prisma, not in Unity.",
+            DocPath = "Docs/Studios/VESSEL_STUDIO_PLAN.md")]
+        public static void OpenVesselStudio()
+        {
+            _openPage = "studios";
+            Launch();
         }
 
         [MenuItem("FrogletTools/Prisma/Rebuild Prisma", false, 1)]
@@ -280,7 +294,10 @@ namespace CosmicShore.Editor
             try
             {
                 // --clone: Prisma's PLAY follows the branch this checkout is on (and says when it plays another).
-                Process.Start(new ProcessStartInfo(exe, $"--clone \"{Root}\"") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
+                // --page: a menu item that opens a particular page (Vessel Studio -> STUDIOS) asks for it once.
+                string args = $"--clone \"{Root}\"" + (_openPage != null ? $" --page {_openPage}" : "");
+                _openPage = null;
+                Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
             }
             catch (Exception e) { Debug.LogError($"[Prisma] Could not start {exe}: {e.Message}"); }
         }

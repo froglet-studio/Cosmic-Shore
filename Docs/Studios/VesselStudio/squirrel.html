@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel Studio</title>
+<!-- Squirrel Studio: a page of the Vessel Studio (Docs/Studios/VesselStudio/). A READER of the shipped
+     numbers, never their authority. Every constant below names the asset or class it was copied from
+     (claude/peaceful-rubin-hhw49n, 2026-10-09). When the asset changes, change it here too. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a cockpit. The stage owns the screen; a rail of tuning cards sits beside it on wide screens
+     and under it on phones. One deliberate dark world (the Squirrel is a vaporwave racer), so a single
+     palette set explicitly on :root. */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d16;
+    --panel: #121524;
+    --panel-2: #181c30;
+    --line: #262b47;
+    --fg: #e9ecff;
+    --muted: #8e95bf;
+    --jade: #35e0b0;      /* the Squirrel's domain in this studio: Jade */
+    --ruby: #ff4f7b;
+    --gold: #ffc247;
+    --charge: #ffd23f;    /* element hues: Charge, Mass, Space, Time */
+    --mass: #ff6a4d;
+    --space: #6aa8ff;
+    --time: #c48bff;
+    --warn: #ff9b54;
+    --ok: #4be38f;
+    --display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
+    --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Prisma and a direct file open do not */
+  html, body { height: 100%; }
+  body { margin: 0; -webkit-text-size-adjust: 100%; }
+  *, *::before, *::after { box-sizing: border-box; }
+  img, canvas { max-width: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--body); }
+  a { color: var(--jade); }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+
+  .wrap { max-width: 1400px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  .back { font: 600 13px/1.2 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--fg); }
+  h1 { margin: 0; font: 800 clamp(28px, 4vw, 40px)/1 var(--display); letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+  h1 span { color: var(--jade); }
+  .sub { color: var(--muted); max-width: 70ch; margin: 0; }
+
+  .layout > section { min-width: 0; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  /* ---- stage ---- */
+  #viewport { position: relative; border-radius: 10px; overflow: hidden; background: #05060c; border: 1px solid var(--line); aspect-ratio: 16 / 10; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #c { display: block; width: 100%; max-width: 100%; height: 100%; outline: none; }
+  .hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .hud .tl { position: absolute; left: 12px; top: 10px; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
+  .hud .tr { position: absolute; right: 12px; top: 10px; text-align: right; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
+  .hud .big { font: 700 34px/1 var(--display); letter-spacing: .02em; }
+  .hud .lbl { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .hud .bars { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 6px; width: min(260px, 44%); }
+  .meter { height: 8px; border-radius: 4px; background: #ffffff1a; overflow: hidden; }
+  .meter > i { display: block; height: 100%; width: 0; background: var(--jade); }
+  .meter.boost > i { background: linear-gradient(90deg, var(--jade), var(--time)); }
+  .meter.drift > i { background: var(--space); }
+  .meter.ring > i { background: var(--mass); }
+  .hud .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .hud .row b { color: var(--fg); font-weight: 500; }
+  .hud .feed { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
+  .hud .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; max-width: 460px; display: grid; gap: 10px; }
+  .card h2 { margin: 0; font: 700 26px/1.05 var(--display); text-transform: uppercase; letter-spacing: .03em; }
+  .card p { margin: 0; color: var(--muted); }
+  .card .keys { font-family: var(--mono); font-size: 12px; color: var(--fg); display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
+  .btn.primary { background: var(--jade); color: #04130e; border-color: var(--jade); }
+  .btn:hover { border-color: var(--muted); }
+  .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+
+  /* ---- rail ---- */
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+  .panel h3 { margin: 0; font: 700 15px/1.1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; }
+  .types { display: flex; flex-wrap: wrap; gap: 6px; }
+  .type { border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
+  .type[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .typeinfo { font-size: 12px; color: var(--muted); margin: 0; min-height: 2.5em; }
+  .el { display: grid; grid-template-columns: 74px minmax(0, 1fr) 30px; align-items: center; gap: 8px; }
+  .el label { font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+  .el input { width: 100%; accent-color: var(--accent); }
+  .el output { font-family: var(--mono); text-align: right; }
+  .el .what { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -4px; display: flex; justify-content: space-between; gap: 8px; }
+  .el .what b { color: var(--fg); font-weight: 500; font-family: var(--mono); }
+  .l5 { font: 600 10px/1 var(--mono); padding: 2px 5px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+  .l5.on { color: #0b0d16; background: var(--accent); border-color: var(--accent); }
+  .abilities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .ab { border: 1px solid var(--line); border-radius: 8px; padding: 7px 6px; display: grid; gap: 4px; justify-items: center; text-align: center; background: var(--panel-2); position: relative; overflow: hidden; }
+  .ab .ic { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font: 700 13px/1 var(--display); color: var(--accent); }
+  .ab .nm { font-size: 11px; line-height: 1.15; }
+  .ab .st { font: 500 10px/1.1 var(--mono); color: var(--muted); }
+  .ab .cd { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: transparent; padding: 5px 6px; font-size: 12px; }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--jade); font-weight: 600; }
+  .read { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .read span { color: var(--muted); }
+  .runs { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .runs td, .runs th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  .runs th { color: var(--muted); font-weight: 500; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; display: grid; gap: 3px; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+
+  /* ---- phone play ---- */
+  .touch { position: absolute; inset: 0; display: none; }
+  body.play .touch { display: block; }
+  body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
+  body.play .wrap > :not(.layout), body.play aside { display: none; }
+  .tz { position: absolute; bottom: 0; top: 30%; width: 50%; }
+  .tz.L { left: 0; } .tz.R { right: 0; }
+  .ts { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none; }
+  .ts.idle { opacity: .45; }
+  .ts > i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: #ffffff40; }
+  .tt { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); width: 64px; height: 42%; border-radius: 12px; border: 1px solid #ffffff33; background: #ffffff0a; overflow: hidden; }
+  .tt.L { left: calc(10px + env(safe-area-inset-left, 0px)); } .tt.R { right: calc(10px + env(safe-area-inset-right, 0px)); }
+  .tt .tfill { position: absolute; left: 0; right: 0; top: 0; height: 0; background: #6aa8ff44; }
+  .tt.R .tfill { background: #ff6a4d44; }
+  .tt .thandle { position: absolute; left: 6px; right: 6px; top: 6px; height: 32px; border-radius: 8px; background: #ffffff33; display: grid; place-items: center; font: 700 12px/1 var(--display); letter-spacing: .08em; }
+  .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .tbar .btn { padding: 6px 12px; font-size: 13px; background: #121524d9; }
+  .portrait { position: absolute; inset: 0; display: none; place-items: center; background: #05060cf2; text-align: center; padding: 24px; font: 700 22px/1.2 var(--display); text-transform: uppercase; }
+  @media (orientation: portrait) { body.play .portrait { display: grid; } }
+  body.play .hud .tl { left: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  body.play .hud .tr { right: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  body.play .hud .bars { left: 50%; transform: translateX(-50%); bottom: 10px; }
+  body.play .hud .feed { display: none; }
+  body.play .stagebtns, body.play #overlay { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="index.html">&larr; Vessel Studio</a>
+    <h1><span>Squirrel</span> Studio</h1>
+    <p class="sub">Fly the racer on the game's numbers: drift on the left trigger, the Boost Ring on the right, skim prisms for boost, steal rival trails. Set its four element levels or pick a play-style type and feel what changes.</p>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div id="viewport">
+        <canvas id="c" tabindex="0" aria-label="Squirrel flight stage"></canvas>
+        <div class="hud" aria-live="off">
+          <div class="tl">
+            <span class="lbl">Speed u/s</span><span class="big" id="hSpeed">0</span>
+            <span class="lbl" id="hBoostTxt">Boost 1.00×</span>
+          </div>
+          <div class="tr">
+            <span class="lbl">Lap</span><span class="big" id="hLap">1 / 2</span>
+            <span class="lbl" id="hTime">0.0 s · crystals 0/12</span>
+          </div>
+          <div class="bars">
+            <div class="row"><span>Boost</span><b id="hBoost">1.00×</b></div><div class="meter boost"><i id="mBoost"></i></div>
+            <div class="row"><span>Drift (LT)</span><b id="hDrift">0%</b></div><div class="meter drift"><i id="mDrift"></i></div>
+            <div class="row"><span>Boost Ring (RT)</span><b id="hRing">ready</b></div><div class="meter ring"><i id="mRing"></i></div>
+          </div>
+          <div class="feed" id="feed"></div>
+        </div>
+        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><button class="btn" id="stopBtn" type="button">Pause</button></div>
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <h2 id="ovTitle">Skim the circuit</h2>
+            <p id="ovText">Two laps, six crystals a lap. Rival Ruby and Gold trails line the course: skim them for boost, steal them to Jade. Two rival pilots fly the line; overtake one close to steal petals.</p>
+            <div class="keys" id="ovKeys">
+              <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
+              <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle</span>
+              <span></span><span>Space drift (hold) · Shift half drift · F Boost Ring</span>
+              <span></span><span>Enter start · R reset · P pause</span>
+              <span>Phone</span><span>Play on phone, hold it sideways</span>
+            </div>
+            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
+          </div>
+        </div>
+        <div class="touch" id="touch">
+          <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
+          <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
+          <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
+          <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">Pause</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="portrait">Turn the phone sideways</div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:8px">Phone controls here are the gamepad's: drag the LT handle down to drift (how far = how hard), tap RT for the Boost Ring. The game's own touch scheme differs: a right-thumb lift is a full drift and keeping the right finger down places the ring (<code>SQUIRREL_DRIFT.md</code> §1).</p>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h3>Play-style type <span id="typeName" style="color:var(--fg);letter-spacing:.04em">Shipped</span></h3>
+        <div class="types" id="types"></div>
+        <p class="typeinfo" id="typeInfo"></p>
+      </div>
+
+      <div class="panel">
+        <h3>Element levels <span style="font-family:var(--mono);font-size:11px;letter-spacing:0">0–10 · L5 unlocks at 5</span></h3>
+        <div id="elements" style="display:grid;gap:12px"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Ability row</h3>
+        <div class="abilities" id="abilities"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Drift feel</h3>
+        <div class="seg" role="group" aria-label="Keyboard and button drift depth">
+          <button type="button" id="dFeather" aria-pressed="false">Feathered (½ pull)</button>
+          <button type="button" id="dBuried" aria-pressed="true">Buried (full pull)</button>
+        </div>
+        <p class="note">Space (or a tap of LT on the phone) drifts at this depth. A gamepad or the LT handle is analog: the drift is exactly how far it is pulled. Full pull turns ×1.8 faster with grip 0.25, so the course lags the nose.</p>
+      </div>
+
+      <div class="panel">
+        <h3>Live numbers</h3>
+        <div class="read" id="read"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Runs</h3>
+        <table class="runs"><thead><tr><th>Type</th><th>Time</th><th>Skims</th><th>Stolen</th></tr></thead><tbody id="runs"></tbody></table>
+        <p class="note">Kept in this browser. Use them to compare types on the same course.</p>
+      </div>
+
+      <div class="panel">
+        <details>
+          <summary>Where the numbers come from, and what is not modelled</summary>
+          <ul>
+            <li>Flight: <code>Squirrel.prefab</code> VesselTransformer: throttle × 60 u/s × boost; pitch and yaw 120°/s, roll 130°/s; vector flight model.</li>
+            <li>Drift: <code>SquirrelDriftAction</code> Mult 1.8, grip 0.25, lerped by the LT pull (<code>singleTriggerDrift</code>).</li>
+            <li>Boost: <code>SkimmerBoostPrismEffect</code> +0.1 per prism skimmed, × Time (1 → 2), clamped 1–5; decays 0.3/s (<code>BoostDecayRate</code>).</li>
+            <li>Boost Ring: <code>SquirrelTubeAction</code> 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s × Mass (1 → 0.5, floor 0.35); Twin Rings at Mass 5.</li>
+            <li>Steal: skimmer sphere 15 → 30 by Space; shielded prisms lose their shield, or at Space 5 (Iron Grip) change hands and keep it.</li>
+            <li>Crystal Joust: an overtake steals petals × Charge (1 → 2.5, <code>VesselOvertakeBySkimmerEffect.stealScale</code>), 1 s cooldown.</li>
+            <li>Not modelled: lifeforms (so no Shepherd), the game's Skim Race AI (the two rivals follow the line at a fixed speed), the real course and crystal spawns, prism lifetimes, the omni-crystal ring morph, the game's touch scheme, sound. The trail plates are drawn smaller than the game's so the stage stays readable.</li>
+            <li>Level scaling is read as linear between level 0 and level 10, as <code>ElementalFloat</code> authors it.</li>
+          </ul>
+        </details>
+        <p class="note">Want something changed in this studio, or a design idea tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= shipped numbers (see the details panel for sources) =================
+  const SHIP = {
+    throttleScaler: 60,          // VesselTransformer.DefaultThrottleScaler
+    pitchYaw: 120, roll: 130,    // PitchScaler / YawScaler, RollScaler (deg/s)
+    maxBoost: 5, boostDecay: 0.3,  // MaxBoostMultiplier, BoostDecayRate
+    driftMult: 1.8, driftGrip: 0.25, // SquirrelDriftAction Mult, driftDamping
+    noDriftGrip: 30,             // outside a drift the course follows the nose; a stiff grip stands in for that
+    skimAdd: 0.1, dangerMult: 10,  // SkimmerBoostPrismEffect addPerHit, dangerEnergyMultiplier
+    ring: { prisms: 8, radius: 8, ahead: 100, spacing: 10, scale: 4, cooldown: 20, fullMassMult: 0.5, floor: 0.35, life: 14 }, // SquirrelTubeAction (life: studio's own)
+    trail: { wavelength: 7, gap: 18.5, startDelay: 2, cap: 360 },  // VesselPrismController initialWavelength, Gap, startDelay
+    skimmerScale: [15, 30],      // skimmer Scale ElementalFloat by Space (diameter)
+    stealScale: [1, 2.5],        // VesselOvertakeBySkimmerEffect.stealScale by Charge
+    overtakeCooldown: 1,
+  };
+  const ELEMENTS = [
+    { key: 'charge', name: 'Charge', color: '--charge', ability: 'Crystal Joust', l5: 'Shepherd', input: 'passive' },
+    { key: 'mass', name: 'Mass', color: '--mass', ability: 'Boost Ring', l5: 'Twin Rings', input: 'RT' },
+    { key: 'space', name: 'Space', color: '--space', ability: 'Steal', l5: 'Iron Grip', input: 'passive' },
+    { key: 'time', name: 'Time', color: '--time', ability: 'Skimming', l5: 'Live Wire', input: 'passive' },
+  ];
+  const TYPES = [
+    { name: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 }, info: 'The start state of a match: every element at 0, no level-5 upgrades.' },
+    { name: 'Thief', lv: { charge: 10, mass: 0, space: 10, time: 0 }, info: 'Steals everything: a 30 u skimmer takes whole rival trails, Iron Grip takes shielded prisms with their shield, and each overtake takes 2.5× the petals.' },
+    { name: 'Speedster', lv: { charge: 0, mass: 10, space: 0, time: 10 }, info: 'Lives on boost: double skim energy, Live Wire makes danger prisms worth 10×, and two Boost Rings every 10 s.' },
+    { name: 'Skimmer', lv: { charge: 0, mass: 0, space: 4, time: 10 }, info: 'Trail rider: a wider skimmer than shipped and the best skim energy, without the ring.' },
+    { name: 'Brawler', lv: { charge: 10, mass: 6, space: 4, time: 0 }, info: 'Hunts pilots: big petal steals on every overtake, Twin Rings to block, a medium skimmer.' },
+    { name: 'Maxed', lv: { charge: 10, mass: 10, space: 10, time: 10 }, info: 'Every element at 10 and all four upgrades on. A ceiling to compare against, not a real match state.' },
+  ];
+
+  // ================= state =================
+  const lv = { charge: 0, mass: 0, space: 0, time: 0 };
+  let typeName = 'Shipped';
+  let driftDepth = 1;  // keyboard / tap depth
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const f01 = (k) => clamp(lv[k] / 10, 0, 1);
+  const up5 = (k) => lv[k] >= 5;
+  const skimRadius = () => lerp(SHIP.skimmerScale[0], SHIP.skimmerScale[1], f01('space')) / 2;
+  const energyMult = () => Math.max(0.25, lerp(1, 2, f01('time')));
+  const stealMult = () => Math.max(1, lerp(SHIP.stealScale[0], SHIP.stealScale[1], f01('charge')));
+  const ringCooldown = () => SHIP.ring.cooldown * Math.max(SHIP.ring.floor, lerp(1, SHIP.ring.fullMassMult, f01('mass')));
+
+  // ================= three.js stage =================
+  const canvas = $('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x05060c);
+  scene.fog = new THREE.Fog(0x05060c, 600, 2200);
+  const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 5000);
+  scene.add(new THREE.HemisphereLight(0x8fa0ff, 0x1a1030, 0.9));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(300, 800, 200); scene.add(sun);
+
+  { // stars
+    const n = 1600, g = new THREE.BufferGeometry(), p = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { const v = new THREE.Vector3().randomDirection ? new THREE.Vector3().randomDirection() : new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize(); v.multiplyScalar(2600 + Math.random() * 600); p.set([v.x, v.y, v.z], i * 3); }
+    g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9aa6ff, size: 2.2, sizeAttenuation: false, fog: false })));
+  }
+
+  // ---- the course: a closed loop with height changes (a stand-in for a Skim Race track) ----
+  const seedPts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = i / 10 * Math.PI * 2, r = 820 + 160 * Math.sin(a * 3 + 0.6);
+    seedPts.push(new THREE.Vector3(Math.cos(a) * r, 140 * Math.sin(a * 2 + 1.1), Math.sin(a) * r * 0.72));
+  }
+  const curve = new THREE.CatmullRomCurve3(seedPts, true, 'centripetal');
+  const LEN = curve.getLength();
+  const SAMPLES = 900, cPts = curve.getSpacedPoints(SAMPLES);
+  const cTan = []; for (let i = 0; i < SAMPLES; i++) cTan.push(curve.getTangentAt(i / SAMPLES));
+  { // a faint racing line
+    const g = new THREE.BufferGeometry().setFromPoints(cPts);
+    scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x2a3160, transparent: true, opacity: 0.6 })));
+  }
+  function frameAt(u) { // position, tangent and a side vector at fraction u
+    const p = curve.getPointAt(((u % 1) + 1) % 1), t = curve.getTangentAt(((u % 1) + 1) % 1);
+    const side = new THREE.Vector3().crossVectors(t, new THREE.Vector3(0, 1, 0)).normalize();
+    const upv = new THREE.Vector3().crossVectors(side, t).normalize();
+    return { p, t, side, up: upv };
+  }
+  function progressOf(pos, hint) { // nearest sample index, searched around a hint
+    let best = hint, bd = Infinity;
+    for (let k = -40; k <= 40; k++) { const i = (hint + k + SAMPLES) % SAMPLES; const d = cPts[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } }
+    return best;
+  }
+
+  // ---- prisms: one instanced mesh, coloured per instance ----
+  const DOMAIN_COLOR = { jade: new THREE.Color(0x35e0b0), ruby: new THREE.Color(0xff4f7b), gold: new THREE.Color(0xffc247) };
+  const DANGER_TINT = new THREE.Color(0xff2a2a);
+  const MAXP = 4200;
+  const prismGeo = new THREE.BoxGeometry(1, 1, 1);
+  const prismMat = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1, emissive: 0x111111 });
+  const prismMesh = new THREE.InstancedMesh(prismGeo, prismMat, MAXP);
+  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(prismMesh);
+  const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.55 }), MAXP);
+  shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(shieldMesh);
+  const prisms = []; // {pos, quat, scale, domain, shield, danger, kind: 'rival'|'ring'|'own', cool, born, life}
+  const m4 = new THREE.Matrix4(), q0 = new THREE.Quaternion(), s0 = new THREE.Vector3(), tmpC = new THREE.Color();
+  let prismsDirty = true;
+  function addPrism(o) { if (prisms.length >= MAXP) return null; o.cool = 0; prisms.push(o); prismsDirty = true; return o; }
+  function rebuildPrisms() {
+    let ns = 0;
+    for (let i = 0; i < prisms.length; i++) {
+      const p = prisms[i];
+      m4.compose(p.pos, p.quat, p.scale); prismMesh.setMatrixAt(i, m4);
+      tmpC.copy(DOMAIN_COLOR[p.domain]); if (p.danger) tmpC.lerp(DANGER_TINT, 0.55);
+      if (p.flash > 0) tmpC.lerp(new THREE.Color(0xffffff), Math.min(1, p.flash));
+      prismMesh.setColorAt(i, tmpC);
+      if (p.shield) { s0.copy(p.scale).multiplyScalar(1.35); m4.compose(p.pos, p.quat, s0); shieldMesh.setMatrixAt(ns++, m4); }
+    }
+    prismMesh.count = prisms.length; shieldMesh.count = ns;
+    prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
+    if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
+    prismsDirty = false;
+  }
+  function buildCourse() {
+    prisms.length = 0;
+    // two rival trails along the line, each a pair of plates, as a pilot would leave them
+    const lanes = [{ domain: 'ruby', off: -26, h: 6 }, { domain: 'gold', off: 24, h: -8 }];
+    for (const L of lanes) {
+      const step = SHIP.trail.wavelength * 1.6;
+      let k = 0;
+      for (let d = 0; d < LEN; d += step, k++) {
+        const u = d / LEN, f = frameAt(u);
+        const wob = Math.sin(u * Math.PI * 14 + L.off) * 10;
+        for (const sgn of [-1, 1]) {
+          const pos = f.p.clone().addScaledVector(f.side, L.off + wob + sgn * 5).addScaledVector(f.up, L.h);
+          const quat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.side, f.up, f.t.clone().negate()));
+          addPrism({ pos, quat, scale: new THREE.Vector3(4, 0.75, 5.5), domain: L.domain, shield: k % 7 === 0, danger: k % 11 === 5, kind: 'rival' });
+        }
+      }
+    }
+    prismsDirty = true;
+  }
+
+  // ---- crystals ----
+  const crystals = [];
+  const crystalGeo = new THREE.OctahedronGeometry(6, 0);
+  function buildCrystals() {
+    for (const c of crystals) scene.remove(c.mesh);
+    crystals.length = 0;
+    for (let i = 0; i < 6; i++) {
+      const u = (i + 0.5) / 6, f = frameAt(u);
+      const mesh = new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: 0x35e0b0, emissive: 0x0d5c48, roughness: 0.2, metalness: 0.3 }));
+      mesh.position.copy(f.p).addScaledVector(f.up, 4);
+      scene.add(mesh); crystals.push({ mesh, u, taken: false });
+    }
+  }
+
+  // ---- rival pilots (stand-ins on the line, not the game's AI) ----
+  function makeHull(color) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.ConeGeometry(2.2, 9, 6), new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.2, emissive: new THREE.Color(color).multiplyScalar(0.15) }));
+    body.rotation.x = -Math.PI / 2; g.add(body);
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(9, 0.4, 2.6), body.material); wing.position.z = 2; g.add(wing);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 2.2), body.material); tail.position.set(0, 1.2, 3.2); g.add(tail);
+    return g;
+  }
+  const rivals = [{ name: 'Ruby rival', color: 0xff4f7b, speed: 54, lane: -8, u: 0.012 }, { name: 'Gold rival', color: 0xffc247, speed: 61, lane: 9, u: 0.03 }];
+  for (const r of rivals) { r.mesh = makeHull(r.color); scene.add(r.mesh); }
+
+  // ---- the Squirrel ----
+  const hull = makeHull(0x35e0b0);
+  scene.add(hull);
+  const skimSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0x35e0b0, wireframe: true, transparent: true, opacity: 0.045 }));
+  scene.add(skimSphere);
+
+  // ================= flight state =================
+  let speed = 0, boost = 1, course = new THREE.Vector3(0, 0, -1);
+  let race = 'ready', paused = false, raceT = 0, lap = 1, LAPS = 2, crystalsTaken = 0, hint = 0, lastHint = 0;
+  let skims = 0, stolen = 0, petals = 0, ringReadyAt = 0, rings = 0, trailAcc = 0, flightT = 0;
+  let lastDrift = 0, throttleNow = 0.5;
+  const fwd = new THREE.Vector3(), upv = new THREE.Vector3(), rightv = new THREE.Vector3(), dq = new THREE.Quaternion();
+  const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0), AZ = new THREE.Vector3(0, 0, 1);
+  function basis() { fwd.set(0, 0, -1).applyQuaternion(hull.quaternion); upv.set(0, 1, 0).applyQuaternion(hull.quaternion); rightv.set(1, 0, 0).applyQuaternion(hull.quaternion); }
+
+  function spawn() {
+    const f = frameAt(0);
+    hull.position.copy(f.p).addScaledVector(f.up, 2);
+    hull.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.side, f.up, f.t.clone().negate()));
+    basis(); course.copy(fwd);
+    speed = 0; boost = 1; raceT = 0; lap = 1; crystalsTaken = 0; hint = 0; lastHint = 0;
+    skims = 0; stolen = 0; petals = 0; ringReadyAt = 0; rings = 0; trailAcc = 0; flightT = 0;
+    rivals.forEach((r, i) => { r.u = 0.012 + i * 0.018; r.cool = 0; r.wasAhead = true; });
+    buildCourse(); buildCrystals();
+    race = 'ready'; paused = false; feed.length = 0; renderFeed(); showOverlay('Skim the circuit', null);
+  }
+  function startRace() {
+    if (race === 'finished') spawn();
+    race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true });
+  }
+  function finishRace() {
+    race = 'finished';
+    const run = { type: typeName + (TYPES.some((t) => t.name === typeName) ? '' : ''), time: raceT, skims, stolen: stolen, at: Date.now() };
+    runs.unshift(run); runs.length = Math.min(runs.length, 30); saveRuns(); renderRuns();
+    showOverlay('Finished in ' + raceT.toFixed(1) + ' s', 'Type ' + typeName + ' · ' + skims + ' prisms skimmed · ' + stolen + ' stolen · ' + petals.toFixed(1) + ' petals taken · ' + rings + ' rings. Change the type or the levels and race again.');
+  }
+  function showOverlay(title, text) {
+    $('ovTitle').textContent = title;
+    if (text) $('ovText').textContent = text;
+    $('startBtn').textContent = race === 'finished' ? 'Race again' : 'Start';
+    $('overlay').hidden = false;
+  }
+
+  // ---- feed ----
+  const feed = [];
+  function say(msg) { feed.unshift({ msg, t: performance.now() }); feed.length = Math.min(feed.length, 4); renderFeed(); }
+  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const f of feed) { const d = document.createElement('div'); d.textContent = f.msg; el.appendChild(d); } }
+
+  // ---- boost ring ----
+  function placeRings() {
+    basis();
+    const count = up5('mass') ? 2 : 1;
+    for (let r = 0; r < count; r++) {
+      const centre = hull.position.clone().addScaledVector(fwd, SHIP.ring.ahead + r * SHIP.ring.spacing);
+      for (let i = 0; i < SHIP.ring.prisms; i++) {
+        const a = i / SHIP.ring.prisms * Math.PI * 2;
+        const pos = centre.clone().addScaledVector(rightv, Math.cos(a) * SHIP.ring.radius).addScaledVector(upv, Math.sin(a) * SHIP.ring.radius);
+        const quat = hull.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(AZ, a));
+        addPrism({ pos, quat, scale: new THREE.Vector3(SHIP.ring.scale * 0.5, SHIP.ring.scale * 0.5, SHIP.ring.scale), domain: 'jade', shield: false, danger: true, kind: 'ring', born: flightT, life: SHIP.ring.life });
+      }
+    }
+    rings++; ringReadyAt = flightT + ringCooldown();
+    say(count === 2 ? 'Twin Rings placed' : 'Boost Ring placed');
+  }
+  // ---- own trail ----
+  function layTrail(drifting) {
+    basis();
+    for (const sgn of [-1, 1]) {
+      const pos = hull.position.clone().addScaledVector(fwd, -10).addScaledVector(rightv, sgn * SHIP.trail.gap / 2 * 0.45);
+      addPrism({ pos, quat: hull.quaternion.clone(), scale: new THREE.Vector3(1.6, 0.35, 4), domain: 'jade', shield: drifting, danger: false, kind: 'own' });
+    }
+    // keep the own trail capped (oldest first)
+    let own = 0; for (const p of prisms) if (p.kind === 'own') own++;
+    if (own > SHIP.trail.cap) { const i = prisms.findIndex((p) => p.kind === 'own'); if (i >= 0) prisms.splice(i, 2); }
+  }
+
+  // ================= the step =================
+  const ease = (x) => x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1);
+  let rtWas = 0;
+  function step(dt, inp) {
+    flightT += dt;
+    basis();
+    // the game's dual-stick mix (InputController): sums steer, differences roll and throttle, eased
+    let XSum, YSum, YDiff, XDiff;
+    if (inp.pad) { XSum = ease(inp.R.x + inp.L.x); YSum = -ease(inp.R.y + inp.L.y); YDiff = ease(inp.R.y - inp.L.y); XDiff = (inp.R.x - inp.L.x + 2) / 4; }
+    else { XSum = inp.kYaw; YSum = -inp.kPitch; YDiff = inp.kRoll; XDiff = kbThrottle; }
+    const drift = clamp(inp.lt, 0, 1); lastDrift = drift;
+    const rotMul = lerp(1, SHIP.driftMult, drift);
+    const rad = Math.PI / 180;
+    if (race === 'running') {
+      dq.setFromAxisAngle(AX, -YSum * SHIP.pitchYaw * rotMul * rad * dt); hull.quaternion.multiply(dq);
+      dq.setFromAxisAngle(AY, -XSum * SHIP.pitchYaw * rotMul * rad * dt); hull.quaternion.multiply(dq);
+      dq.setFromAxisAngle(AZ, YDiff * SHIP.roll * rotMul * rad * dt); hull.quaternion.multiply(dq);
+      hull.quaternion.normalize();
+    }
+    basis();
+    throttleNow = XDiff;
+    // speed: throttle × 60 × boost, eased; boost decays toward 1
+    const target = race === 'running' ? XDiff * SHIP.throttleScaler * boost : 0;
+    speed += (target - speed) * (1 - Math.exp(-2.2 * dt));
+    if (boost > 1) boost = Math.max(1, boost - SHIP.boostDecay * dt);
+    // vector flight: the course turns toward the nose at the grip rate (stiff outside a drift)
+    const grip = lerp(SHIP.noDriftGrip, SHIP.driftGrip, drift);
+    course.lerp(fwd, 1 - Math.exp(-grip * dt)).normalize();
+    if (race === 'running') hull.position.addScaledVector(course, speed * dt);
+
+    // Boost Ring on the RT press
+    const rt = inp.rt;
+    if (race === 'running' && rt > 0.5 && rtWas <= 0.5) { if (flightT >= ringReadyAt) placeRings(); else say('Boost Ring cooling: ' + (ringReadyAt - flightT).toFixed(1) + ' s'); }
+    rtWas = rt;
+
+    // own trail every wavelength travelled, after the start delay
+    if (race === 'running' && raceT > SHIP.trail.startDelay) { trailAcc += speed * dt; while (trailAcc >= SHIP.trail.wavelength * 2.4) { trailAcc -= SHIP.trail.wavelength * 2.4; layTrail(drift > 0.05); } }
+
+    // skimming: every prism inside the skimmer sphere, once per pass
+    const R = skimRadius();
+    skimSphere.position.copy(hull.position); skimSphere.scale.setScalar(R);
+    if (race === 'running') {
+      const R2 = (R + 2) * (R + 2);
+      for (const p of prisms) {
+        if (p.kind === 'own') continue;
+        if (p.pos.distanceToSquared(hull.position) > R2) continue;
+        if (p.cool > flightT) continue;
+        p.cool = flightT + 0.6; p.flash = 1;
+        let add = SHIP.skimAdd * energyMult();
+        if (p.danger && up5('time')) add *= SHIP.dangerMult;
+        boost = clamp(boost + add, 1, SHIP.maxBoost);
+        skims++;
+        if (p.domain !== 'jade') {
+          if (p.shield) { if (up5('space')) { p.domain = 'jade'; stolen++; } else { p.shield = false; } }
+          else { p.domain = 'jade'; stolen++; }
+        }
+        prismsDirty = true;
+      }
+    }
+    // ring lifetimes and skim flashes
+    for (let i = prisms.length - 1; i >= 0; i--) {
+      const p = prisms[i];
+      if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); prismsDirty = true; }
+      if (p.kind === 'ring' && flightT - p.born > p.life) { prisms.splice(i, 1); prismsDirty = true; }
+    }
+
+    // rivals fly the line; an overtake within the skimmer steals petals
+    hint = progressOf(hull.position, hint);
+    const myU = hint / SAMPLES;
+    for (const r of rivals) {
+      if (race === 'running') r.u = (r.u + r.speed * dt / LEN) % 1;
+      const f = frameAt(r.u);
+      r.mesh.position.copy(f.p).addScaledVector(f.side, r.lane).addScaledVector(f.up, 3);
+      r.mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.side, f.up, f.t.clone().negate()));
+      let du = r.u - myU; if (du > 0.5) du -= 1; if (du < -0.5) du += 1;
+      const ahead = du > 0;
+      if (race === 'running' && r.wasAhead && !ahead && r.mesh.position.distanceTo(hull.position) < R + 6 && flightT >= r.cool) {
+        const take = stealMult(); petals += take; r.cool = flightT + SHIP.overtakeCooldown;
+        say('Overtook ' + r.name + ': ' + take.toFixed(2) + ' petals taken');
+      }
+      r.wasAhead = ahead;
+    }
+
+    // crystals and laps
+    if (race === 'running') {
+      raceT += dt;
+      for (const c of crystals) {
+        c.mesh.rotation.y += dt * 1.4;
+        if (!c.taken && c.mesh.position.distanceTo(hull.position) < 7 + R * 0.6) { c.taken = true; c.mesh.visible = false; crystalsTaken++; say('Crystal ' + crystalsTaken + ' / ' + LAPS * 6); }
+      }
+      if (lastHint > SAMPLES * 0.85 && hint < SAMPLES * 0.15) { // crossed the start line forward
+        if (lap >= LAPS) { finishRace(); } else { lap++; crystals.forEach((c) => { c.taken = false; c.mesh.visible = true; }); say('Lap ' + lap); }
+      }
+    }
+    lastHint = hint;
+  }
+
+  // ---- chase camera ----
+  const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+  function placeCamera(dt, snap) {
+    basis();
+    const want = hull.position.clone().addScaledVector(course, -26 - speed * 0.05).addScaledVector(upv, 8);
+    const look = hull.position.clone().addScaledVector(fwd, 30).addScaledVector(upv, 2);
+    const k = snap ? 1 : 1 - Math.exp(-6 * dt);
+    camPos.lerp(want, k); camLook.lerp(look, k);
+    if (snap) { camPos.copy(want); camLook.copy(look); }
+    cam.position.copy(camPos); cam.up.copy(upv); cam.lookAt(camLook);
+    cam.fov = lerp(cam.fov, 70 + (boost - 1) * 4 + lastDrift * 4, 1 - Math.exp(-4 * dt)); cam.updateProjectionMatrix();
+  }
+
+  // ================= input (the Stoat studio's layer, unchanged in spirit) =================
+  const keys = new Set();
+  let kbThrottle = 0.75, armed = false;
+  function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
+  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'Space', 'ShiftLeft', 'ShiftRight', 'Enter', 'ArrowUp', 'ArrowDown']);
+  window.addEventListener('keydown', (e) => {
+    if (isFormTarget(e.target) || !armed) return;
+    if (GAME_KEYS.has(e.code)) e.preventDefault();
+    if (e.repeat) return;
+    keys.add(e.code);
+    if (e.code === 'Enter') startRace();
+    if (e.code === 'KeyR') spawn();
+    if (e.code === 'KeyP') togglePause();
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
+  canvas.addEventListener('focus', () => { armed = true; });
+  function readPad() {
+    let pads = [];
+    try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; }
+    for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g;
+    return null;
+  }
+  function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
+  let playMode = false;
+  const touch = { used: false, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 };
+  const STICK_R = 56, TRIG_TRAVEL = () => Math.max(80, $('ttL').clientHeight - 44);
+  function bindStick(zoneId, stickId, side) {
+    const zone = $(zoneId), el = $(stickId), knob = el.firstElementChild; let id = null, ox = 0, oy = 0;
+    const home = () => { el.classList.add('idle'); el.style.left = side === 'L' ? '22%' : '78%'; el.style.top = '72%'; knob.style.transform = ''; touch[side].x = touch[side].y = 0; };
+    home();
+    zone.addEventListener('pointerdown', (e) => {
+      if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* lost pointer */ } touch.used = true;
+      const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top;
+      el.classList.remove('idle'); el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault();
+    });
+    zone.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== id) return;
+      const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy);
+      if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; }
+      knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      touch[side].x = dx / STICK_R; touch[side].y = -dy / STICK_R; e.preventDefault();
+    });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); };
+    zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  }
+  function bindTrigger(trigId, side) {
+    const el = $(trigId), handle = el.querySelector('.thandle'), fill = el.querySelector('.tfill'), key = side === 'L' ? 'lt' : 'rt'; let id = null, y0 = 0;
+    const show = (v) => { handle.style.transform = 'translateY(' + (v * TRIG_TRAVEL()) + 'px)'; fill.style.height = (v * 100) + '%'; };
+    el.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { el.setPointerCapture(id); } catch (err) { /* lost pointer */ } y0 = e.clientY; touch.used = true; touch[key] = key === 'lt' ? driftDepth : 1; show(touch[key]); e.preventDefault(); });
+    el.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const d = (e.clientY - y0) / TRIG_TRAVEL(); if (Math.abs(d) < 0.04) return; const v = clamp(d, 0.06, 1); touch[key] = v; show(v); e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; touch[key] = 0; show(0); };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  }
+  bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R'); bindTrigger('ttL', 'L'); bindTrigger('ttR', 'R');
+  function setPlayMode(on) {
+    playMode = !!on; document.body.classList.toggle('play', playMode);
+    if (playMode) {
+      const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;
+      if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } }
+      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
+    } else {
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } }
+      touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0; touch.used = false;
+    }
+    lastW = lastH = 0; resize();
+  }
+  document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
+  $('playBtn').addEventListener('click', () => setPlayMode(true));
+  $('tExit').addEventListener('click', () => setPlayMode(false));
+  $('tStart').addEventListener('click', () => { if (paused) togglePause(); else startRace(); });
+  $('tStop').addEventListener('click', () => togglePause());
+  $('tBack').addEventListener('click', () => spawn());
+  $('stopBtn').addEventListener('click', () => togglePause());
+  $('startBtn').addEventListener('click', () => startRace());
+  $('resetBtn').addEventListener('click', () => spawn());
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
+  function syncButtons() {
+    $('stopBtn').textContent = paused ? 'Resume' : 'Pause';
+    $('tStop').textContent = paused ? 'Resume' : 'Pause';
+    $('tStart').hidden = race === 'running' && !paused;
+    $('tStart').textContent = paused ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
+  }
+  function pollInput(dt) {
+    if (playMode && touch.used) return { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
+    const g = readPad();
+    const inp = { pad: !!g, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, kYaw: 0, kPitch: 0, kRoll: 0 };
+    if (g) {
+      inp.L = stick(g.axes[0], -g.axes[1]); inp.R = stick(g.axes[2], -g.axes[3]);
+      inp.lt = g.buttons[6] ? g.buttons[6].value : 0; inp.rt = g.buttons[7] ? g.buttons[7].value : 0;
+      if (g.buttons[9] && g.buttons[9].pressed && race !== 'running') startRace();
+      return inp;
+    }
+    const k = (c) => keys.has(c) ? 1 : 0;
+    inp.kYaw = k('KeyD') - k('KeyA'); inp.kPitch = k('KeyS') - k('KeyW'); inp.kRoll = k('KeyE') - k('KeyQ');
+    if (keys.has('ArrowUp')) kbThrottle = Math.min(1, kbThrottle + dt * 0.6);
+    if (keys.has('ArrowDown')) kbThrottle = Math.max(0, kbThrottle - dt * 0.6);
+    inp.lt = keys.has('Space') ? driftDepth : keys.has('ShiftLeft') || keys.has('ShiftRight') ? 0.5 : 0;
+    inp.rt = keys.has('KeyF') ? 1 : 0;
+    return inp;
+  }
+
+  // ================= rail =================
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  const typeBtns = [];
+  for (const t of TYPES) {
+    const b = el('button', 'type', t.name); b.type = 'button';
+    b.addEventListener('click', () => applyType(t));
+    $('types').appendChild(b); typeBtns.push({ b, t });
+  }
+  function applyType(t) { Object.assign(lv, t.lv); typeName = t.name; syncRail(); save(); }
+  const elRows = {};
+  for (const E of ELEMENTS) {
+    const row = el('div', 'el'); row.style.setProperty('--accent', 'var(' + E.color + ')');
+    const lab = el('label', null, E.name); lab.htmlFor = 'lv-' + E.key; lab.style.color = 'var(' + E.color + ')';
+    const inp = document.createElement('input'); inp.type = 'range'; inp.min = 0; inp.max = 10; inp.step = 1; inp.id = 'lv-' + E.key;
+    const out = el('output'); out.htmlFor = inp.id;
+    const what = el('div', 'what'); const wl = el('span'); const badge = el('span', 'l5', E.l5);
+    what.append(wl, badge);
+    inp.addEventListener('input', () => { lv[E.key] = +inp.value; typeName = matchType(); syncRail(); save(); });
+    row.append(lab, inp, out, what); $('elements').appendChild(row);
+    elRows[E.key] = { inp, out, wl, badge };
+  }
+  function matchType() { const t = TYPES.find((t) => ELEMENTS.every((E) => t.lv[E.key] === lv[E.key])); return t ? t.name : 'Custom'; }
+  const abCards = {};
+  for (const E of ELEMENTS) {
+    const c = el('div', 'ab'); c.style.setProperty('--accent', 'var(' + E.color + ')');
+    const ic = el('div', 'ic', E.name[0]); const nm = el('div', 'nm', E.ability); const st = el('div', 'st'); const cd = el('i', 'cd');
+    c.append(ic, nm, st, cd); $('abilities').appendChild(c); abCards[E.key] = { st, cd, c };
+  }
+  function syncRail() {
+    for (const { b, t } of typeBtns) b.setAttribute('aria-pressed', String(t.name === typeName));
+    $('typeName').textContent = typeName;
+    const t = TYPES.find((x) => x.name === typeName);
+    $('typeInfo').textContent = t ? t.info : 'Custom levels. Pick a type to compare against a named set.';
+    for (const E of ELEMENTS) {
+      const r = elRows[E.key]; r.inp.value = lv[E.key]; r.out.textContent = lv[E.key];
+      r.badge.classList.toggle('on', up5(E.key));
+      r.badge.style.setProperty('--accent', 'var(' + E.color + ')');
+      r.wl.innerHTML = '';
+      const val = E.key === 'charge' ? '×' + stealMult().toFixed(2) + ' petals' : E.key === 'mass' ? ringCooldown().toFixed(1) + ' s cooldown' : E.key === 'space' ? (skimRadius() * 2).toFixed(1) + ' u skimmer' : '×' + energyMult().toFixed(2) + ' skim energy';
+      r.wl.append(document.createTextNode(E.ability + ' '), el('b', null, val));
+    }
+  }
+  $('dFeather').addEventListener('click', () => { driftDepth = 0.5; syncDrift(); save(); });
+  $('dBuried').addEventListener('click', () => { driftDepth = 1; syncDrift(); save(); });
+  function syncDrift() { $('dFeather').setAttribute('aria-pressed', String(driftDepth === 0.5)); $('dBuried').setAttribute('aria-pressed', String(driftDepth === 1)); }
+
+  // ---- persistence (this browser only) ----
+  const LS = 'cs.studio.squirrel.v1';
+  let runs = [];
+  function save() { try { localStorage.setItem(LS, JSON.stringify({ lv, typeName, driftDepth })); } catch (e) { /* storage blocked */ } }
+  function saveRuns() { try { localStorage.setItem(LS + '.runs', JSON.stringify(runs)); } catch (e) { /* storage blocked */ } }
+  try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) { Object.assign(lv, s.lv || {}); typeName = s.typeName || 'Shipped'; driftDepth = s.driftDepth === 0.5 ? 0.5 : 1; } } catch (e) { /* ignore */ }
+  try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
+  function renderRuns() {
+    const tb = $('runs'); tb.textContent = '';
+    if (!runs.length) { const tr = el('tr'); const td = el('td', null, 'No runs yet. Finish a race to add one.'); td.colSpan = 4; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
+    for (const r of runs.slice(0, 8)) { const tr = el('tr'); tr.append(el('td', null, r.type), el('td', null, r.time.toFixed(1) + ' s'), el('td', null, String(r.skims)), el('td', null, String(r.stolen))); tb.appendChild(tr); }
+  }
+
+  // ---- HUD + readouts ----
+  function hud() {
+    $('hSpeed').textContent = Math.round(speed);
+    $('hBoostTxt').textContent = 'Boost ' + boost.toFixed(2) + '× · throttle ' + Math.round(throttleNow * 100) + '%';
+    $('hLap').textContent = Math.min(lap, LAPS) + ' / ' + LAPS;
+    $('hTime').textContent = raceT.toFixed(1) + ' s · crystals ' + crystalsTaken + '/' + LAPS * 6;
+    $('hBoost').textContent = boost.toFixed(2) + '×'; $('mBoost').style.width = ((boost - 1) / (SHIP.maxBoost - 1) * 100) + '%';
+    $('hDrift').textContent = Math.round(lastDrift * 100) + '%'; $('mDrift').style.width = (lastDrift * 100) + '%';
+    const left = Math.max(0, ringReadyAt - flightT), cdTot = ringCooldown();
+    $('hRing').textContent = left > 0 ? left.toFixed(1) + ' s' : 'ready'; $('mRing').style.width = ((1 - left / cdTot) * 100) + '%';
+    abCards.mass.cd.style.width = ((1 - left / cdTot) * 100) + '%';
+    abCards.mass.st.textContent = left > 0 ? left.toFixed(1) + ' s' : (up5('mass') ? 'ready ×2' : 'ready');
+    abCards.charge.st.textContent = petals.toFixed(1) + ' petals';
+    abCards.space.st.textContent = stolen + ' stolen';
+    abCards.time.st.textContent = skims + ' skims';
+    for (const E of ELEMENTS) abCards[E.key].c.style.borderColor = up5(E.key) ? 'var(' + E.color + ')' : '';
+    const rows = [
+      ['speed', speed.toFixed(1) + ' u/s'], ['target', (throttleNow * SHIP.throttleScaler * boost).toFixed(1) + ' u/s'],
+      ['boost', boost.toFixed(2) + '×'], ['drift', Math.round(lastDrift * 100) + '%'],
+      ['turn rate', (SHIP.pitchYaw * lerp(1, SHIP.driftMult, lastDrift)).toFixed(0) + '°/s'], ['grip', lerp(SHIP.noDriftGrip, SHIP.driftGrip, lastDrift).toFixed(2) + ' /s'],
+      ['slip angle', (Math.acos(clamp(course.dot(fwd), -1, 1)) * 180 / Math.PI).toFixed(1) + '°'], ['skimmer', (skimRadius() * 2).toFixed(1) + ' u'],
+      ['skims', String(skims)], ['stolen', String(stolen)], ['petals', petals.toFixed(2)], ['rings', String(rings)],
+    ];
+    const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) { box.append(el('span', null, k), el('b')); } }
+    rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
+    syncButtons();
+  }
+
+  // ================= sizing + loop =================
+  let lastW = 0, lastH = 0;
+  function resize() {
+    const w = canvas.clientWidth || 960, h = canvas.clientHeight || Math.round(w * 10 / 16);
+    if (w === lastW && h === lastH) return; lastW = w; lastH = h;
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  let last = performance.now(), hudT = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    resize();
+    const inp = pollInput(dt);
+    if (!paused) step(dt, inp);
+    if (prismsDirty) rebuildPrisms();
+    placeCamera(dt, false);
+    renderer.render(scene, cam);
+    hudT += dt; if (hudT > 0.08) { hudT = 0; hud(); }
+    requestAnimationFrame(frame);
+  }
+
+  // ---- boot ----
+  syncRail(); syncDrift(); renderRuns();
+  spawn(); placeCamera(0, true); hud();
+  requestAnimationFrame((t) => { last = t; frame(t); });
+
+  // test hook for scripted checks (no effect on play)
+  window.__squirrelStudio = { get state() { return { speed, boost, skims, stolen, petals, rings, lap, raceT, race, lv: Object.assign({}, lv), typeName, skimRadius: skimRadius(), ringCooldown: ringCooldown(), energyMult: energyMult(), stealMult: stealMult() }; }, applyType: (n) => applyType(TYPES.find((t) => t.name === n)), startRace, placeRings: () => placeRings() };
+})();
+</script>
+</html>
