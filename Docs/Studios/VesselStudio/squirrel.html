@@ -81,7 +81,7 @@
   .btn.primary { background: var(--jade); color: #04130e; border-color: var(--jade); }
   .btn.small { padding: 4px 10px; font-size: 12px; }
   .btn[disabled] { opacity: .5; cursor: default; }
-  .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }   /* above the start card: a sideways phone must reach Play on phone */
   .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
 
   aside { display: grid; gap: 10px; min-width: 0; }

@@ -24,6 +24,9 @@ Android**, iOS later; Squirrel and Stoat first.
 | Amoebius phone player | `Port/src/CosmicShore.Mobile` | Runs the game itself on Android/iOS; touch feeds the game's own `TouchInputStrategy`. **No device run yet** (`Port/docs/milestones.json` C8). |
 | Amoebius web build | — | **Does not exist.** Amoebius's player is .NET + OpenGL; a browser build is an engine milestone (§4). |
 
+Testing in the REAL game (AI on any seat, free-fly camera, the intensity maps, a graphics-fidelity switch):
+**`VESSEL_TEST_RANGE_PLAN.md`**. Building a studio page: the **`/studio-creator`** skill.
+
 ## 2. Two kinds of studio
 
 | | **Web studio** (now) | **Game studio** (next) |
