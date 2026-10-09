@@ -220,8 +220,8 @@ crystal's side (`ElementalCrystalImpactor.CollectBy` runs the crystal's own coll
 credits `skimmer.VesselStatus` — score, element level), and with every list empty
 `SkimmerImpactor.AcceptImpactee` returns before doing anything to a prism, pilot or heart, so an
 always-on sphere cannot dust in Mass mode. Fleet-wide nothing reacts to a skimmer from the other
-side either (every vessel container's `vesselSkimmerEffects` is empty; `PrismImpactor`'s skimmer
-list is never assigned). It vacuums crystals toward the hull like every other skimmer
+side either (measured 2026-10-09: eight `VesselContainers/*.asset` author `vesselSkimmerEffects: []`
+and Dolphin/Urchin omit the key; `PrismImpactor`'s skimmer list is never assigned). It vacuums crystals toward the hull like every other skimmer
 (`vacuumCrystal`, 80). Both are authored by `Tools/Build/author_butterfly_dust.py` (its `--check`
 fails if the far field stops pointing at the catcher or its container gains an effect) and mirrored
 by the Create Butterfly Vessel tool.
@@ -526,6 +526,13 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 
 ## 9. Follow-ups
 
+- **The crystal catcher does not grow with the hull** (§3.1a, 2026-10-09). It is a fixed 30 u
+  sphere (`CRYSTAL_DIAMETER` in `author_butterfly_dust.py`) against a 21.35 u span at rest, and Mass
+  makes the hull bigger everywhere (§2.1), so at high Mass the wingtips can pass a crystal the sphere
+  does not reach. Deliberately NOT element-scaled: giving it an `ElementalFloat` would be a second
+  parameter on an element that already owns one, which is a design call, not wiring. Decide after a
+  playtest whether 30 reads right at Mass 0 and Mass 10; if it needs to follow the hull, the
+  candidate is reading the hull's own live span rather than adding an element channel.
 - **The bloom does not touch opposing TEAM crystals.** (It now strips pilots and dusts prisms —
   §3.3a.) "Destroys opposing domain crystals" was read as the hearts of an opposing domain's flora
   and fauna. Opposing **team crystals** (`TeamCrystalImpactor`) are not in the blast's sweep
