@@ -41,6 +41,8 @@
     <!-- Prisma's run memory and board (linked into the launcher and the MCP server the same way). -->
     <Compile Include="../../src/Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
     <Compile Include="../../src/Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
+    <!-- The BRANCHES page's rules and GitHub calls. -->
+    <Compile Include="../../src/Shared/BranchCleanup.cs" Link="Shared/BranchCleanup.cs" />
   </ItemGroup>
 
 </Project>

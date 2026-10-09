@@ -8,6 +8,8 @@ capped at 150 lines per commit). Unity scene/prefab/asset YAML and binaries are 
 The commit SHAs stay recoverable from this doc only while the branch or a tag still points at them —
 if a branch here matters, tag it (`git tag archive/<name> origin/<branch>`) before deleting it.
 
+**The plan, routine and test steps: [`BRANCH_HYGIENE_PLAN.md`](BRANCH_HYGIENE_PLAN.md).**
+
 ## Status of the inactive-branch cleanup (2026-10-08)
 
 The audit found **505** remote branches; **363** had no commit since 2026-09-08.
@@ -44,7 +46,9 @@ See **How to delete — step by step** below.
 
 ## How to delete — step by step
 
-**Easiest: the Branch cleanup workflow.** GitHub ▸ Actions ▸ **Branch cleanup** ▸ Run workflow. Paste the branch
+**From Prisma:** left rail ▸ **BRANCHES** ▸ LOAD, tick, DELETE, CONFIRM (uses Prisma's GitHub sign-in; see `Port/docs/LAUNCHER.md`).
+
+**Or the Branch cleanup workflow.** GitHub ▸ Actions ▸ **Branch cleanup** ▸ Run workflow. Paste the branch
 names, pick `dry-run` to check them, then run again with `delete`. It uses the repo's own Actions token (no personal
 token), saves an `archive/<branch>` tag for each branch, and skips anything the policy locks. Claude can also start it
 for you from a chat through the GitHub connector. It runs a report-only listing on the 1st of every month.

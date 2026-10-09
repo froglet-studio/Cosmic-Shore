@@ -29,7 +29,7 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `src/CosmicShore.Render` | The OpenGL renderer (GL 3.3 / GL ES 3.0), post stack, uGUI and TMP drawing |
 | `src/CosmicShore.Player` | `CosmicShore.exe`: window, headless mode, scripted input, **control port** |
 | `src/CosmicShore.Mobile` · `src/CosmicShore.Build` | Phone player · `cs-build` (player data, APK/AAB, iOS) |
-| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
+| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat, branch cleanup |
 | `src/CosmicShore.Mcp` | `prisma-mcp`: this engine as an MCP server for Claude Code |
 | `ProjectSettings/PrismaProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |

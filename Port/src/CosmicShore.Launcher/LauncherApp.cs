@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones, Branches }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1);
 
@@ -286,6 +286,7 @@ namespace CosmicShore.Launcher
                 case Page.Tracks: DrawTracks(contentA, contentB); break;
                 case Page.Board: DrawBoard(contentA, contentB); break;
                 case Page.Milestones: DrawMilestones(contentA, contentB); break;
+                case Page.Branches: DrawBranches(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -390,6 +391,7 @@ namespace CosmicShore.Launcher
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Milestones, "MILESTONES", IconFlag),
+                (Page.Branches, "BRANCHES", IconBranch),
                 (Page.Options, "SETTINGS", Neon.IconGear),
                 (Page.Console, "CONSOLE", Neon.IconTerminal),
             };

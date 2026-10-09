@@ -1,9 +1,12 @@
 # Branch Janitor
 
-Two ways to clean up branches, same rules (`policy.json`):
+Ways to clean up branches, all with the same rules (`policy.json`). The routine and test steps are in
+`Docs/BranchArchive/BRANCH_HYGIENE_PLAN.md`.
+
+- **Prisma ▸ BRANCHES**: the launcher page, using Prisma's GitHub sign-in (`Port/docs/LAUNCHER.md`).
 
 - **Branch cleanup workflow** (recommended): GitHub ▸ Actions ▸ *Branch cleanup* ▸ Run workflow. Modes `report`,
-  `dry-run`, `delete`; paste branch names; tick `allow_large` only on purpose. Needs no personal token. Runs
+  `dry-run`, `archive` (tags only), `delete`; paste branch names; tick `allow_large` only on purpose. Needs no personal token. Runs
   `branch_cleanup.py`. A report-only run happens on the 1st of every month (see the run's summary page).
 - **Branch Janitor page** (below): a browser page for picking branches visually, using your own token.
 

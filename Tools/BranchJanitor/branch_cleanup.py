@@ -7,6 +7,8 @@ Modes
   report   list every inactive branch by group; changes nothing (the monthly scheduled run).
   dry-run  check the requested branches against the rules and say what delete would do; changes nothing.
   delete   for each requested branch that passes the rules: save tag archive/<branch>, then delete it.
+  archive  save tag archive/<branch> for each requested branch and delete nothing. Tagging is harmless,
+           so it applies to any branch, LARGE and locked ones included.
 
 A requested branch is SKIPPED, never deleted, when it is a trunk or pipeline branch, has a commit
 newer than inactiveDays, has an open pull request, is LARGE (>= largeCommitThreshold commits in no
@@ -117,6 +119,16 @@ def classify(b, policy, now, allow_large=False):
     return "large", (None if allow_large else f"large: {u} unique commits (rerun with allow_large)")
 
 
+def save_tag(gh, b):
+    """Point tag archive/<branch> at the branch tip. An existing tag at the same commit counts as saved."""
+    status, body = gh.rest("POST", "/git/refs", {"ref": f"refs/tags/archive/{b['name']}", "sha": b["sha"]})
+    if status == 201:
+        return True, f"saved tag `archive/{b['name']}`"
+    if status == 422 and "already exists" in str(body):
+        return True, f"tag `archive/{b['name']}` already saved"
+    return False, f"FAILED to save tag ({status})"
+
+
 def parse_names(text):
     """Branch names separated by spaces, commas or new lines; lines starting with # are comments."""
     lines = [l for l in (text or "").splitlines() if not l.lstrip().startswith("#")]
@@ -163,15 +175,20 @@ def run(gh, mode, requested, allow_large, policy, now):
     for b in targets:
         group, lock = classify(b, policy, now, allow_large)
         u = b["unique"] if b["unique"] is not None else "?"
+        if mode == "archive":
+            ok, note = save_tag(gh, b)
+            out.append(f"| `{b['name']}` | {group} | {u} | {note} |")
+            failures += 0 if ok else 1
+            continue
         if lock:
             out.append(f"| `{b['name']}` | {group} | {u} | skipped: {lock} |")
             continue
         if mode == "dry-run":
             out.append(f"| `{b['name']}` | {group} | {u} | would delete (tag `archive/{b['name']}`) |")
             continue
-        status, body = gh.rest("POST", "/git/refs", {"ref": f"refs/tags/archive/{b['name']}", "sha": b["sha"]})
-        if status not in (201,) and not (status == 422 and "already exists" in str(body)):
-            out.append(f"| `{b['name']}` | {group} | {u} | FAILED to save tag ({status}); branch kept |")
+        ok, note = save_tag(gh, b)
+        if not ok:
+            out.append(f"| `{b['name']}` | {group} | {u} | {note}; branch kept |")
             failures += 1
             continue
         status, body = gh.rest("DELETE", "/git/refs/heads/" + urllib.parse.quote(b["name"], safe="/"))
@@ -186,7 +203,7 @@ def run(gh, mode, requested, allow_large, policy, now):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", choices=["report", "dry-run", "delete"], default="report")
+    ap.add_argument("--mode", choices=["report", "dry-run", "delete", "archive"], default="report")
     ap.add_argument("--branches", default="", help="branch names separated by spaces, commas or newlines")
     ap.add_argument("--branches-file", help="file with branch names, one per line")
     ap.add_argument("--allow-large", action="store_true")
@@ -195,7 +212,7 @@ def main(argv=None):
     if a.branches_file:
         names += parse_names(open(a.branches_file).read())
     if a.mode != "report" and not names:
-        ap.error("dry-run and delete need --branches or --branches-file")
+        ap.error("dry-run, delete and archive need --branches or --branches-file")
     policy = json.load(open(os.path.join(HERE, "policy.json")))
     gh = GitHub(os.environ["GITHUB_TOKEN"], os.environ.get("GITHUB_REPOSITORY", "froglet-studio/Cosmic-Shore"))
     return run(gh, a.mode, list(dict.fromkeys(names)), a.allow_large, policy, dt.datetime.now(dt.timezone.utc))

@@ -75,5 +75,6 @@
   <ItemGroup>
     <Compile Include="../Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
     <Compile Include="../Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
+    <Compile Include="../Shared/BranchCleanup.cs" Link="Shared/BranchCleanup.cs" />
   </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@ name: Branch cleanup
 #
 #   report   (monthly schedule, or by hand)  lists inactive branches by group. Changes nothing.
 #   dry-run  checks a list of branches and says what delete would do. Changes nothing.
+#   archive  saves each listed branch as tag archive/<branch> and deletes nothing (any branch).
 #   delete   saves each branch as tag archive/<branch>, then deletes it. Skips anything locked:
 #            trunk/pipeline branches, recent commits, open PRs, and LARGE branches unless
 #            allow_large is ticked.
@@ -22,12 +23,12 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: report lists, dry-run checks the list, delete deletes it
+        description: report lists, dry-run checks the list, archive tags it, delete tags then deletes it
         type: choice
-        options: [dry-run, delete, report]
+        options: [dry-run, archive, delete, report]
         default: dry-run
       branches:
-        description: Branch names to delete, separated by spaces, commas or new lines (ignored by report)
+        description: Branch names, separated by spaces, commas or new lines (ignored by report)
         default: ''
         required: false
       allow_large:

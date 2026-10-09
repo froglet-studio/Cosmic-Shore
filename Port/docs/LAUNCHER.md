@@ -30,6 +30,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **MILESTONES** | The roadmap's checkpoints; START opens an engine session for one (below). |
+| **BRANCHES** | The repo's inactive branches, sorted by unmerged work; tick and delete them, each saved as an `archive/` tag first (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
@@ -96,6 +97,29 @@ tool call it made and its last message, a dated note on the checkpoint, and a no
 **CONTINUE** (the same conversation, a fresh budget) and **BOARD**. Your own STOP leaves none.
 
 ![A milestone run that stopped at its budget](architecture/prisma_milestone_stopped.png)
+
+## BRANCHES - clearing out old branches
+
+![BRANCHES (example data)](architecture/prisma_branches.png)
+
+**LOAD** reads every branch of the repository from GitHub with the same sign-in the iOS build uses
+(git / GitHub Desktop, or the token in SETTINGS > Source, which needs *Contents: read & write* to
+delete). Inactive branches are measured against `bleeding-edge` and `master` and sorted into
+tiles: **MERGED** (nothing that is not already in a trunk), **SMALL** (1-3 commits), **MEDIUM**
+(4-10), **LARGE** (11+), plus **LOCKED** and **ACTIVE**. Click a tile to list it.
+
+Tick branches (or **TICK ALL** for the tile), press **DELETE**, then **CONFIRM**. For each branch
+Prisma re-reads its tip (a branch that moved since LOAD is skipped), saves tag
+`archive/<branch>`, and only then deletes it; if the tag cannot be saved the branch is kept. The
+result shows on each row and in CONSOLE. `git checkout -b <branch> archive/<branch>` restores one.
+
+Never offered: `master`, `main`, `bleeding-edge`, `development`, `Ys-bleeding-edge`, `build/*`,
+`release/*`, `archive/*`, a branch with an open pull request, or one with a commit in the last 30
+days. LARGE branches get a checkbox only with **Allow LARGE** on. The rules come from the
+workspace's `Tools/BranchJanitor/policy.json` when it has one (defaults otherwise), the same file
+the repo's Branch cleanup workflow uses. Process and schedule: `Docs/BranchArchive/BRANCH_HYGIENE_PLAN.md`.
+Code: `src/Shared/BranchCleanup.cs` (rules and GitHub calls, tested in `BranchCleanupTests`),
+`LauncherApp.Branches.cs` (the page).
 
 ## BUILD
 
