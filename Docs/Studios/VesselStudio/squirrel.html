@@ -94,12 +94,7 @@
   .panel.lab { border-color: #35e0b055; }
   .panel h3 { margin: 0; font: 700 15px/1.1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; }
-  .field > span, .field > label { font-size: 12px; color: var(--muted); }
-  /* the Race card's choices are dropdowns (artifact comment, 2026-10-09); a level shows in its own colour */
-  select.pick { width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; font-size: 12px; }
-  select.pick option { background: var(--panel-2); color: var(--fg); }
-  select.pick.diff[data-v="Easy"] { color: var(--easy); } select.pick.diff[data-v="Medium"] { color: var(--medium); } select.pick.diff[data-v="Hard"] { color: var(--hard); }
-  select.pick.diff[data-v="Off"] { color: var(--muted); }
+  .field > span { font-size: 12px; color: var(--muted); }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
   .seg button { flex: 1; border: 0; background: transparent; padding: 5px 4px; font-size: 12px; min-width: 0; }
   .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--jade); font-weight: 600; }
@@ -217,13 +212,7 @@
     <aside>
       <div class="panel lab">
         <h3>Race <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
-        <div class="field"><label for="segCourse">Course</label><select class="pick" id="segCourse" aria-label="Skim Race intensity"></select></div>
-        <div class="field"><label for="segYou">Your hull</label><select class="pick diff" id="segYou" aria-label="Who flies your hull"></select></div>
-        <div id="rivalRows" style="display:grid;gap:8px" aria-label="AI rivals, each with its own level"></div>
-        <div class="field"><label for="segCam">Camera</label><select class="pick" id="segCam" aria-label="Camera"></select></div>
-        <div class="field"><label for="segSpeed">Speed</label><select class="pick" id="segSpeed" aria-label="Simulation speed"></select></div>
-        <label class="check"><input type="checkbox" id="thinking"> Show AI thinking</label>
-        <label class="check"><input type="checkbox" id="autoRestart"> Restart each race on its own</label>
+        <div id="racePanel"></div>
         <p class="note">Easy and Medium are the Hard pilot plus the game's deliberate mistakes (<code>SkimRaceDifficulty.asset</code>): Easy notices a new crystal 0.5 s late on average and misjudges 9.9% of crystals; Medium 0.25 s and 4.5%.</p>
       </div>
 
@@ -288,6 +277,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="studio-look.js"></script>
 <script src="studio-ide.js"></script>
+<script src="ai_race_panel.js"></script>
 <script>
 (function () {
   'use strict';
@@ -779,31 +769,22 @@
 
   // ================= rail =================
   const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
-  const SEGS = {
-    segCourse: { key: 'course', vals: [1, 2, 3, 4], label: (v) => 'I' + v + ' \u00b7 ' + COURSE_INFO[v], rebuild: true },
-    segYou: { key: 'you', vals: ['You', 'Easy', 'Medium', 'Hard'], label: (v) => v === 'You' ? 'You fly' : 'AI ' + v, rebuild: true },
-    segCam: { key: 'cam', vals: ['Chase', 'Follow', 'Free'], label: (v) => v },
-    segSpeed: { key: 'speed', vals: [1, 2, 4], label: (v) => v + '×' },
-  };
-  for (const [id, d] of Object.entries(SEGS)) {
-    for (const v of d.vals) { const o = elx('option', null, d.label(v)); o.value = String(v); $(id).appendChild(o); }
-    $(id).addEventListener('change', (e) => { const v = d.vals.find((x) => String(x) === e.target.value); S[d.key] = v; if (d.key === 'cam' && v === 'Free') followIdx = 0; save(); syncSegs(); if (d.rebuild) newRace(); });
-  }
-  // one row per AI rival: Off / Easy / Medium / Hard, each in its own colour (/vessel-studio D20)
-  const rivalSegs = [];
-  for (let k = 0; k < 3; k++) {
-    const D = DOMAINS[k + 1], row = elx('div', 'field'), name = elx('label', null, 'AI ' + D.name), seg = elx('select', 'pick diff');
-    name.style.color = D.css; seg.id = 'segAi' + k; name.htmlFor = seg.id; seg.setAttribute('aria-label', 'AI ' + D.name + ' level');
-    for (const v of ['Off', 'Easy', 'Medium', 'Hard']) { const o = elx('option', null, v); o.value = v; seg.appendChild(o); }
-    seg.addEventListener('change', (e) => { S.ai[k] = e.target.value; save(); syncSegs(); newRace(); });
-    row.append(name, seg); $('rivalRows').appendChild(row); rivalSegs.push(seg);
-  }
-  function syncSegs() {
-    for (const id of Object.keys(SEGS)) { const el = $(id); el.value = String(S[SEGS[id].key]); el.dataset.v = el.value; }
-    rivalSegs.forEach((seg, k) => { seg.value = S.ai[k]; seg.dataset.v = seg.value; });
-  }
-  $('thinking').checked = S.thinking; $('thinking').addEventListener('change', (e) => { S.thinking = e.target.checked; save(); });
-  $('autoRestart').checked = S.autoRestart; $('autoRestart').addEventListener('change', (e) => { S.autoRestart = e.target.checked; save(); });
+  // The universal AI race config panel (ai_race_panel.js, /vessel-studio D17): every studio mounts the same one.
+  // Its keys map onto this page's settings; each AI rival is its own seat with its own level (D20).
+  const raceKey = { course: 'course', you: 'you', rivals: 'ai', camera: 'cam', speed: 'speed', thinking: 'thinking', autoRestart: 'autoRestart' };
+  const REBUILD = { course: 1, you: 1, rivals: 1 };
+  const racePanel = StudioRacePanel.mount($('racePanel'), {
+    courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: COURSE_INFO[v] })),
+    seats: [1, 2, 3].map((k) => ({ name: DOMAINS[k].name, color: DOMAINS[k].css })),
+    value: { course: S.course, you: S.you, rivals: S.ai, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
+    supports: { rivals: true, thinking: true, autoRestart: true },
+    onChange: (key, v) => {
+      S[raceKey[key]] = v;
+      if (key === 'camera' && v === 'Free') followIdx = 0;
+      save(); if (REBUILD[key]) newRace();
+    },
+  });
+  function syncSegs() { for (const [k, s] of Object.entries(raceKey)) racePanel.set(k, S[s], true); }
   $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
   const typeBtns = [];
   for (const t of TYPES) { const b = elx('button', 'type', t.name); b.type = 'button'; b.addEventListener('click', () => { S.type = t.name; Object.assign(S.lv, t.lv); syncRail(); save(); applyLevels(); }); $('types').appendChild(b); typeBtns.push({ b, t }); }

@@ -336,10 +336,9 @@
 
     <aside class="rail" aria-label="Studio controls">
       <div class="card" id="mainCard">
-        <h3 id="mainH">The dipole sling</h3>
+        <h3 id="mainH">The field trajectory</h3>
         <div class="seg" role="group" aria-label="Sling mode" id="slingSegMain">
-          <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
-          <button type="button" data-sling="field" aria-pressed="false">Field trajectory (round 15)</button>
+          <button type="button" data-sling="field" aria-pressed="true">Field trajectory (round 15)</button>
         </div>
         <p class="src" style="margin-top:4px" id="mainP">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
@@ -347,10 +346,13 @@
       </div>
 
       <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
+        <div id="racePanel"></div>
+        <div hidden>
         <label class="check"><input type="checkbox" id="aiOn"> <span><b>AI flies the Stoat</b> — races, then starts again; change any setting and watch the next lap</span></label>
         <div class="rowsel">
           <label>Camera <select id="camMode"><option value="chase">Chase</option><option value="follow">Follow (wide)</option><option value="free">Free (drag, wheel)</option></select></label>
           <label>Speed <select id="simSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+        </div>
         </div>
         <pre class="aistats" id="aiStats">Not flying yet.</pre>
         <div class="rows"></div>
@@ -427,10 +429,10 @@
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
         <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
       <details class="card" id="archive"><summary>Archive <small>other slings &amp; styles</small></summary>
-        <p class="src">Kept for reference, not in play: round 4's orbit sling, and the crystal wormhole from <code>cece/charming-cerf-alf1j1</code> with the side-by-side compare. In the game the crystal style is still one switch away (<code>BlackHoleConfig.crystalPairs</code>), off by default.</p>
+        <p class="src">Kept for reference, not in play: round 6's dipole sling, round 4's orbit sling, and the crystal wormhole from <code>cece/charming-cerf-alf1j1</code> with the side-by-side compare. In the game the crystal style is still one switch away (<code>BlackHoleConfig.crystalPairs</code>), off by default.</p>
         <div class="seg" role="group" aria-label="Sling" id="slingSeg">
-          <button type="button" data-sling="dipole" aria-pressed="true">Dipole sling</button>
-          <button type="button" data-sling="field" aria-pressed="false">Field trajectory</button>
+          <button type="button" data-sling="field" aria-pressed="true">Field trajectory</button>
+          <button type="button" data-sling="dipole" aria-pressed="false">Dipole sling (round 6)</button>
           <button type="button" data-sling="orbit" aria-pressed="false">Orbit (round 4)</button>
         </div>
         <div class="styles" role="group" aria-label="Pair style">
@@ -449,6 +451,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="VesselStudio/ai_race_panel.js"></script>
 <script>
 (function () {
   'use strict';
@@ -686,7 +689,7 @@
   recomputeP();
   let liveStyles = !!saved.liveStyles;
   let style = 'A';   // the crystal pair (B) is archived: chosen from the Archive card only, never remembered
-  let slingMode = saved.slingMode === 'orbit' ? 'orbit' : saved.slingMode === 'field' ? 'field' : 'dipole';   // pair A's sling: the dipole, round 15's field trajectory, or round 4's orbit
+  let slingMode = 'field';   // pair A's sling: round 15's field trajectory; the dipole (round 6) and the orbit (round 4) are archived: chosen from the Archive card only, never remembered
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
   let invertY = !!saved.invertY;
@@ -2074,7 +2077,16 @@
   // costs on the shared x axes; roll keeps the hull upright. Sling: lay the pair on the side of the turn, hold, release
   // when the nose is on the next ring (a clean release), or give up when the hole never catches.
   let aiOn = false, simSpeed = 1, aiRepeat = true, camMode = 'chase', batching = false, aiRestartT = 0;
-  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null, fHold: 0 };
+  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1, prevOff: null, fHold: 0, aimPt: new THREE.Vector3(), aimSet: false };
+  // Show AI thinking (the universal race panel): a line from the hull to the point the AI is steering for.
+  let aiThinking = true;
+  const aiThinkLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffb454, transparent: true, opacity: 0.85 }));
+  aiThinkLine.frustumCulled = false; aiThinkLine.visible = false; scene.add(aiThinkLine);
+  function updateAiThinking() {
+    const show = aiThinking && aiOn && race === 'running' && ai.aimSet; aiThinkLine.visible = show; if (!show) return;
+    const a = aiThinkLine.geometry.attributes.position; a.setXYZ(0, hull.position.x, hull.position.y, hull.position.z); a.setXYZ(1, ai.aimPt.x, ai.aimPt.y, ai.aimPt.z); a.needsUpdate = true;
+    aiThinkLine.material.color.setHex(ai.phase === 'hold' || ai.phase === 'bank' ? 0xc48bff : 0xffb454);   // violet: working the pair; amber: flying for the ring
+  }
   function aiRand() { let t = (ai.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   let raceStats = null;
   function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0, limeT: 0, limeOn: 0, mulTop: 1 }; }
@@ -2090,6 +2102,7 @@
     const g = gates[threaded % 8], g2 = gates[(threaded + 1) % 8];
     const d = hull.position.distanceTo(g.p);
     const tgt = tv3.copy(g.p).addScaledVector(g.n, -Math.min(70, d * 0.35));
+    ai.aimPt.copy(tgt); ai.aimSet = true;
     const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     const rate = Math.max(0.2, P.pitchYaw * (style === 'A' && slingMode === 'field' ? P.ftTurnScale : 1) * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
     const sd = slingDipole, gripped = !!(sd && sd.captured);
@@ -2106,7 +2119,7 @@
       // never comes within reach, and turning for the ring flies you out of it
       const att = sd.pair.att; aiOff.subVectors(hull.position, att); aiOff.addScaledVector(fwd, -aiOff.dot(fwd));
       if (aiOff.lengthSq() < 1e-6) aiOff.copy(right);
-      aiAim.copy(att).addScaledVector(aiOff.normalize(), sd.rc * 0.9);
+      aiAim.copy(att).addScaledVector(aiOff.normalize(), sd.rc * 0.9); ai.aimPt.copy(aiAim);
       const la = localOf(aiAim), ye = Math.atan2(la.x, -la.z), pe = Math.atan2(la.y, Math.hypot(la.x, la.z));
       yawCmd = la.z < 0 ? Math.max(-1, Math.min(1, ye / (rate * tau))) : 0; pitchCmd = la.z < 0 ? Math.max(-1, Math.min(1, pe / (rate * tau))) : 0;
     }
@@ -3884,11 +3897,11 @@
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
     $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit');
     const fieldOn = s === 'A' && slingMode === 'field';
-    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling';
+    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling (archived)';
     $('mainP').innerHTML = fieldOn
       ? 'Squeeze a trigger: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways, the sum lengthways (black hole nearer, white hole beyond); let go of both and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
-    if (s === 'B' || slingMode === 'orbit') $('archive').open = true;
+    if (s === 'B' || slingMode !== 'field') $('archive').open = true;
     $('portal').checked = !!portal[s];
     $('portalSrc').textContent = s === 'A'
       ? 'As built now: anything that crosses the black hole\'s horizon (the Stoat, prisms, any vessel) comes out of the white hole, point-reflected, stretched going in and relaxing coming out.'
@@ -3945,6 +3958,30 @@
   $('aiOn').addEventListener('change', (e) => { aiOn = e.target.checked; aiRestartT = 0; if (aiOn) { if (mode !== 'fly') setMode('fly'); if (race !== 'running') { spawn(); startRace(); } } else { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); } showOverlay(); });
   $('camMode').addEventListener('change', (e) => { camMode = e.target.value; snapCam = true; });
   $('simSpeed').addEventListener('change', (e) => { simSpeed = parseFloat(e.target.value) || 1; });
+  // ---- the universal AI race config panel (VesselStudio/ai_race_panel.js, /vessel-studio D17) ----
+  // It drives the controls above (kept, hidden) so every existing path stays the one way in.
+  // AI levels are LAB-ONLY here: the game ships no Stoat AI difficulty. Hard = the skilled pilot, Easy = the
+  // scorecard's rookie (sloppiness 0.8), Medium in between.
+  const STOAT_LEVEL_NOISE = { Hard: 0, Medium: 0.4, Easy: 0.8 };
+  const CAM_OF = { Chase: 'chase', Follow: 'follow', Free: 'free' }, CAM_BACK = { chase: 'Chase', follow: 'Follow', free: 'Free' };
+  const levelOfNoise = (n) => n >= 0.6 ? 'Easy' : n >= 0.2 ? 'Medium' : 'Hard';
+  const fire = (id, prop, v) => { const e = $(id); e[prop] = v; e.dispatchEvent(new Event('change')); };
+  var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
+    courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
+    value: { course: intensity, you: aiOn ? levelOfNoise(BP.aiNoise) : 'You', rivals: [], camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat },
+    supports: { rivals: 'Single-pilot studio: the Stoat races the clock (Slingshot), so there are no AI rivals yet.', thinking: true, autoRestart: true },
+    levelNote: 'AI levels are lab-only here (the game ships no Stoat AI difficulty): Hard = the skilled pilot, Medium = sloppiness 0.4, Easy = the scorecard\'s rookie (0.8). Show AI thinking: amber = flying for the ring, violet = working the pair.',
+    onChange: (key, v) => {
+      if (key === 'course') fire('intensity', 'value', String(v));
+      else if (key === 'you') {
+        if (v !== 'You') { BP.aiNoise = STOAT_LEVEL_NOISE[v]; recomputeP(); refreshAllOuts(); persist(); }
+        fire('aiOn', 'checked', v !== 'You');
+      } else if (key === 'camera') fire('camMode', 'value', CAM_OF[v]);
+      else if (key === 'speed') fire('simSpeed', 'value', String(v));
+      else if (key === 'thinking') aiThinking = v;
+      else if (key === 'autoRestart') aiRepeat = v;
+    },
+  }) : null;
   $('batchBtn').addEventListener('click', () => {
     $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
     setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; $('scoreEmpty').hidden = true; openWindow('score'); }, 30);
@@ -3974,6 +4011,7 @@
   $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); markIntensity(); });
   function markIntensity() {
     for (const b of document.querySelectorAll('#intensitySeg button')) b.setAttribute('aria-pressed', String(+b.dataset.i === intensity));
+    if (racePanelRef) racePanelRef.set('course', intensity, true);
     const L = CIRCUIT_LADDER[intensity - 1];
     $('intensityNote').textContent = courseKind === 'hairpin' ? 'Hairpins: the hop between rings shrinks with intensity (190 → 120 u) and the rings climb and drop more.' : 'Intensity ' + intensity + ' · ' + L.name + ': ' + L.d;
   }
@@ -4147,7 +4185,7 @@
     } else simStep(dt, pollInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
-    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
+    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================

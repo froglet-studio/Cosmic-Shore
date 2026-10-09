@@ -16,10 +16,11 @@ so a studio branch merges without touching the panel. Then publish:
   Artifact(file_path=<out>/index.html, files={each other file: <out>/<file>}, url=<the artifact>)
   with the capabilities listed in SKILL.md section 4 on the first publish.
 """
-import argparse, json, os, subprocess, sys, tempfile
+import argparse, json, os, re, subprocess, sys, tempfile
 
 DIR = 'Docs/Studios/VesselStudio'
 TAG = '<script src="sync.js"></script>'
+LOCAL_SCRIPT = re.compile(r'<script src="([A-Za-z0-9_.-]+\.js)"></script>')   # a page may only load a script the build carries
 REPO = 'froglet-studio/cosmic-shore'
 DEFAULT_ARTIFACT = 'https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa'   # THE Vessel Studio: the only artifact (SKILL.md section 0)
 
@@ -94,9 +95,13 @@ def check(out):
         p = os.path.join(out, f)
         if not os.path.exists(p):
             errs.append(f'{f}: missing'); continue
-        n = open(p, encoding='utf-8').read().count('src="sync.js"')
+        html = open(p, encoding='utf-8').read()
+        n = html.count('src="sync.js"')
         if n != 1:
             errs.append(f'{f}: sync panel tag {n} times (want 1)')
+        for js in LOCAL_SCRIPT.findall(html):   # list a shared script under `shared` in studios.json, or the page breaks
+            if not os.path.exists(os.path.join(out, js)):
+                errs.append(f'{f}: loads {js}, which the build does not carry')
     try:
         b = json.load(open(os.path.join(out, 'build.json'), encoding='utf-8'))
         for k in ('repo', 'branch', 'sha', 'pathSha', 'subject', 'committedAt'):
@@ -134,12 +139,12 @@ def self_test():
         w = lambda f, t: open(os.path.join(d, f), 'w', encoding='utf-8').write(t)
         w('studios.json', json.dumps({'studios': [{'file': 'a.html'}, {'file': 'b.html'}], 'shared': ['look.js']}))   # planted: look.js missing
         w('index.html', '<body>' + TAG + '</body>')
-        w('a.html', '<body></body>')                                   # planted: no panel
+        w('a.html', '<body><script src="gone.js"></script></body>')   # planted: also loads a script the build lacks                                   # planted: no panel
         w('b.html', '<body>' + TAG + TAG + '</body>')                  # planted: panel twice
         w('build.json', json.dumps({'repo': 'r', 'branch': 'b', 'sha': 's', 'pathSha': '', 'subject': 's', 'committedAt': 't'}))  # planted: no pathSha
         open(os.path.join(d, 'sync.js'), 'wb').write('// ⇄\n'.encode('utf-8'))  # planted: non-ASCII
         got = ' | '.join(check(d))
-        for want in ('look.js: missing', 'a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
+        for want in ('look.js: missing', 'a.html: loads gone.js', 'a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
             if want not in got:
                 bad.append('check did not name: ' + want)
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))

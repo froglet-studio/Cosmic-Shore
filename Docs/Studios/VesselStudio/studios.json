@@ -26,6 +26,7 @@
   ],
   "shared": [
     "studio-look.js",
-    "studio-ide.js"
+    "studio-ide.js",
+    "ai_race_panel.js"
   ]
 }
