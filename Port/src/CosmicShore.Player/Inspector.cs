@@ -369,6 +369,30 @@ namespace CosmicShore.Player
             Console.WriteLine($"[score] OnDomainMetricSumsChanged subscribers={sumsEvent?.GetInvocationList().Length ?? 0}");
         }
 
+        /// <summary>
+        /// "console diag skim 20" runs a command registered with the game's DiagnosticsHUD (diag, prof,
+        /// prisms, fps ...) as if typed into its command box, and prints its one-line answer. The
+        /// registry exists in development builds only (the Debug player).
+        /// </summary>
+        public static void HudCommand(string line)
+        {
+            var words = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) { System.Console.WriteLine("[console] usage: console COMMAND [ARGS]"); return; }
+            var field = typeof(CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD).GetField("s_commands",
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            if (field?.GetValue(null) is not System.Collections.Generic.Dictionary<string, Func<string[], string>> commands)
+            {
+                System.Console.WriteLine("[console] no DiagnosticsHUD command registry in this build (Release strips it; use the Debug player)");
+                return;
+            }
+            if (!commands.TryGetValue(words[0].ToLowerInvariant(), out var handler))
+            {
+                System.Console.WriteLine($"[console] unknown command '{words[0]}' - registered: {string.Join(", ", commands.Keys)}");
+                return;
+            }
+            System.Console.WriteLine($"[console] {line} -> {handler(words[1..])}");
+        }
+
         public static void Arcade(string arg)
         {
             if (arg == "start")
@@ -388,6 +412,22 @@ namespace CosmicShore.Player
                 {
                     Console.WriteLine($"[arcade] ready pressed ({c.GetType().Name})");
                     c.OnReadyClicked();
+                }
+                return;
+            }
+            // "arcade players N" / "arcade intensity N": the configure modal's own stepper and intensity
+            // handlers, so a scripted run sets up the match a player would (AI seats fill the surplus).
+            var words = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 2 && (words[0] == "players" || words[0] == "intensity") && int.TryParse(words[1], out int value))
+            {
+                string handler = words[0] == "players" ? "HandlePlayerCountSelected" : "HandleIntensitySelected";
+                var method = typeof(CosmicShore.UI.ArcadeGameConfigureModal).GetMethod(handler,
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                foreach (var m in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.ArcadeGameConfigureModal>(FindObjectsSortMode.None))
+                {
+                    if (!m.isActiveAndEnabled) continue;
+                    method?.Invoke(m, new object[] { value });
+                    Console.WriteLine($"[arcade] {words[0]} {value}");
                 }
                 return;
             }

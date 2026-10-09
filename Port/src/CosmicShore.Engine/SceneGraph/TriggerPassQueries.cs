@@ -123,6 +123,20 @@ namespace CosmicShore.Engine
             QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => Pass?.OverlapBox(center, halfExtents, layerMask, queryTriggerInteraction) ?? Array.Empty<Collider>();
 
+        /// <summary>
+        /// Original contract: fills <paramref name="results"/> with the colliders overlapping the box
+        /// and returns how many, never more than the buffer holds. Same AABB convention as
+        /// <see cref="OverlapBox"/> (orientation ignored, phase 2).
+        /// </summary>
+        public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation = default,
+            int layerMask = AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+        {
+            var all = OverlapBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction);
+            int n = Math.Min(all.Length, results.Length);
+            Array.Copy(all, results, n);
+            return n;
+        }
+
         public static bool CheckSphere(Vector3 position, float radius, int layerMask = AllLayers,
             QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => OverlapSphereNonAlloc(position, radius, new Collider[1], layerMask, queryTriggerInteraction) > 0;

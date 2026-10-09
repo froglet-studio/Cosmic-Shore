@@ -61,6 +61,16 @@ namespace CosmicShore.Engine
         }
         public static void Blit(Texture source, Material mat, int pass = -1) => Blit(source, null, mat, pass);
 
+        /// <summary>
+        /// Original contract: GPU copy of one texture region. Not implemented (see
+        /// <see cref="SystemInfo.copyTextureSupport"/>, which reports None); a render-texture destination is
+        /// marked modified so a reader does not keep a stale cached version.
+        /// </summary>
+        public static void CopyTexture(Texture src, Texture dst) => (dst as RenderTexture)?.MarkModified();
+
+        public static void CopyTexture(Texture src, int srcElement, int srcMip, Texture dst, int dstElement, int dstMip)
+            => (dst as RenderTexture)?.MarkModified();
+
         public const int MaxRecordedSubmissions = 16;
 
         /// <summary>One recorded RenderMeshInstanced call.</summary>

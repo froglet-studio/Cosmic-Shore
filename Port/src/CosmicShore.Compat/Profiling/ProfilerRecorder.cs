@@ -14,42 +14,74 @@ namespace CosmicShore.Engine.Profiling
     public struct ProfilerRecorderSample { public long Value { get; set; } public long Count { get; set; } }
 
     /// <summary>
-    /// Original contract: reads a named engine counter. The port answers the counters it
-    /// can measure ("Main Thread" frame time in ns, "GC Reserved/Used Memory" in bytes,
-    /// "System Used Memory"); every other counter is valid but reads 0.
+    /// Original contract: records a named profiler marker or engine counter.
+    ///
+    /// <para><b>A marker</b> (anything a <see cref="ProfilerMarker"/> times) records through
+    /// <see cref="MarkerCollector"/>: one sample per frame the marker ran, in nanoseconds of
+    /// main-thread time with that frame's call count, kept in a ring of <c>capacity</c> frames.</para>
+    ///
+    /// <para><b>A counter</b> the engine can measure reads live: "Main Thread" frame time in ns,
+    /// "GC Allocated In Frame" (the loop thread's bytes in the last frame), "GC Reserved/Used Memory",
+    /// "System Used Memory". Every other counter (draw calls, batches, network) is valid but reads 0.</para>
+    ///
+    /// <para>The state lives in a shared buffer, so copies of this struct are one recorder, as with
+    /// Unity's native handle (<c>diag</c> resets and restarts copies held in a list).</para>
     /// </summary>
     public struct ProfilerRecorder : IDisposable
     {
         readonly string _name;
-        bool _running;
+        readonly MarkerSampleBuffer _buffer;
 
         public ProfilerRecorder(ProfilerCategory category, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
-        { _name = statName; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
+            : this(category.Name, statName, capacity, options) { }
 
         public ProfilerRecorder(string categoryName, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
-        { _name = statName; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
+        {
+            _name = statName ?? "";
+            int id = IsCounter(_name) ? 0 : MarkerCollector.Register(categoryName, _name, declared: false);
+            _buffer = new MarkerSampleBuffer(id, capacity);
+            if ((options & ProfilerRecorderOptions.StartImmediately) != 0) _buffer.Start();
+        }
 
-        /// <summary>Records the marker a <see cref="LowLevel.Unsafe.ProfilerRecorderHandle"/> names; the engine
-        /// enumerates no handles yet, so this is reached only with an invalid one and reads 0.</summary>
+        /// <summary>Records the marker a <see cref="LowLevel.Unsafe.ProfilerRecorderHandle"/> names (from <c>GetAvailable</c>).</summary>
         public ProfilerRecorder(LowLevel.Unsafe.ProfilerRecorderHandle statHandle, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
-        { _name = LowLevel.Unsafe.ProfilerRecorderHandle.GetDescription(statHandle).Name ?? ""; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
+        {
+            var description = LowLevel.Unsafe.ProfilerRecorderHandle.GetDescription(statHandle);
+            _name = description.Name ?? "";
+            _buffer = new MarkerSampleBuffer(statHandle.MarkerId, capacity);
+            if ((options & ProfilerRecorderOptions.StartImmediately) != 0) _buffer.Start();
+        }
+
+        ProfilerRecorder(ProfilerMarker marker, int capacity, ProfilerRecorderOptions options)
+        {
+            _name = marker.Name ?? "";
+            _buffer = new MarkerSampleBuffer(marker.Id, capacity);
+            if ((options & ProfilerRecorderOptions.StartImmediately) != 0) _buffer.Start();
+        }
 
         public static ProfilerRecorder StartNew(ProfilerCategory category, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
             => new(category, statName, capacity, options | ProfilerRecorderOptions.StartImmediately);
 
         public static ProfilerRecorder StartNew(ProfilerMarker marker, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
-            => new("Scripts", "marker", capacity, options | ProfilerRecorderOptions.StartImmediately);
+            => new(marker, capacity, options | ProfilerRecorderOptions.StartImmediately);
 
-        public bool Valid => _name != null;
-        public bool IsRunning => _running;
-        public bool WrappedAround => false;
-        public int Capacity => 1;
-        public int Count => 1;
-        public ProfilerMarkerDataUnit UnitType => ProfilerMarkerDataUnit.Undefined;
-        public long CurrentValue => Read();
-        public double CurrentValueAsDouble => Read();
-        public long LastValue => Read();
-        public double LastValueAsDouble => Read();
+        static bool IsCounter(string name) => name is "Main Thread" or "CPU Main Thread Frame Time" or "CPU Total Frame Time"
+            or "GC Reserved Memory" or "Total Reserved Memory" or "GC Used Memory" or "Total Used Memory"
+            or "System Used Memory" or "GC Allocated In Frame"
+            || name.EndsWith(" Count", StringComparison.Ordinal) || name.StartsWith("CSM ", StringComparison.Ordinal);
+
+        bool IsMarker => _buffer != null && _buffer.MarkerId > 0;
+
+        public bool Valid => _buffer != null;
+        public bool IsRunning => _buffer?.Running ?? false;
+        public bool WrappedAround => IsMarker && _buffer.WrappedAround;
+        public int Capacity => IsMarker ? _buffer.Capacity : 1;
+        public int Count => IsMarker ? _buffer.Count : 1;
+        public ProfilerMarkerDataUnit UnitType => IsMarker ? ProfilerMarkerDataUnit.TimeNanoseconds : ProfilerMarkerDataUnit.Undefined;
+        public long CurrentValue => IsMarker ? _buffer.Last.value : Read();
+        public double CurrentValueAsDouble => CurrentValue;
+        public long LastValue => IsMarker ? _buffer.Last.value : Read();
+        public double LastValueAsDouble => LastValue;
 
         long Read() => _name switch
         {
@@ -57,15 +89,28 @@ namespace CosmicShore.Engine.Profiling
             "GC Reserved Memory" or "Total Reserved Memory" => GC.GetGCMemoryInfo().HeapSizeBytes,
             "GC Used Memory" or "Total Used Memory" => GC.GetTotalMemory(false),
             "System Used Memory" => Environment.WorkingSet,
-            "GC Allocated In Frame" => 0,
+            "GC Allocated In Frame" => MarkerCollector.LastFrameAllocatedBytes,
             _ => 0,
         };
 
-        public void Start() => _running = true;
-        public void Stop() => _running = false;
-        public void Reset() { }
-        public ProfilerRecorderSample GetSample(int index) => new() { Value = Read(), Count = 1 };
-        public void CopyTo(List<ProfilerRecorderSample> outSamples, bool reset = false) { outSamples.Clear(); outSamples.Add(GetSample(0)); }
-        public void Dispose() => _running = false;
+        public void Start() => _buffer?.Start();
+        public void Stop() => _buffer?.Stop();
+        public void Reset() => _buffer?.Reset();
+
+        public ProfilerRecorderSample GetSample(int index)
+        {
+            if (!IsMarker) return new() { Value = Read(), Count = 1 };
+            var (value, count) = _buffer.Get(index);
+            return new() { Value = value, Count = count };
+        }
+
+        public void CopyTo(List<ProfilerRecorderSample> outSamples, bool reset = false)
+        {
+            outSamples.Clear();
+            for (int i = 0; i < Count; i++) outSamples.Add(GetSample(i));
+            if (reset && IsMarker) { bool running = _buffer.Running; _buffer.Reset(); if (running) _buffer.Start(); }
+        }
+
+        public void Dispose() => _buffer?.Stop();
     }
 }

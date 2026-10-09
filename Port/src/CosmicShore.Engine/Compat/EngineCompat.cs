@@ -561,6 +561,12 @@ namespace CosmicShore.Engine
         public virtual Vector3 ClosestPoint(Vector3 position) => transform.position;
 
         /// <summary>
+        /// Original contract: the Rigidbody this collider is attached to - its own, else the nearest
+        /// one up the hierarchy - or null for a static collider.
+        /// </summary>
+        public Rigidbody attachedRigidbody => GetComponentInParent<Rigidbody>();
+
+        /// <summary>
         /// World-space AABB of this collider (original contract). Phase-2 convention —
         /// rotation ignored: center transformed through the hierarchy, extents scaled by
         /// |lossyScale| (the same AABB the <see cref="TriggerPass"/> overlaps with). The

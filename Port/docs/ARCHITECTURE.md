@@ -362,6 +362,27 @@ own touch controls.
 | 6 | Command box + **Run** | Type a registered command, e.g. `prisms 50000` (a stress test) or `prisms off` |
 | — | **F7** | Show or hide the panel |
 
+### 11.3b Per-system profiling: the game's own markers
+
+Every `ProfilerMarker` the game times (`SkimRace.Pilot.Decide`, `ShellContact.Query`, ... - about 160
+scopes) records in this engine (`src/CosmicShore.Engine/Profiling/MarkerCollector.cs`): inclusive
+time, call count and **bytes allocated** per marker per frame, on the loop thread only. The
+original surface reads it unchanged - `ProfilerRecorderHandle.GetAvailable`, `new
+ProfilerRecorder(handle)`, `CopyTo`, `Reset` (which stops, as in Unity), `ProfilerRecorder.StartNew(marker)`
+and the `GC Allocated In Frame` counter - so the game's `diag` (`MarkerBudgetRecorder`) reports real
+numbers here. `COSMIC_SHORE_MARKERS=off` turns it back into a no-op.
+
+| Where | What |
+|---|---|
+| `--do markers reset` / `markers [N]` / `markers json PATH` (also over the control port) | Open a window, print the top N, write it as JSON |
+| `--session-report` → `markers` | Every marker from frame 30: ms/frame, p50/p95/max, calls/frame, KB/frame, plus an `allocating` list |
+| `tools/prisma_markers_run.py` | One command: boot headless, drive Menu_Main to a mode (`arcade MODE`, `arcade intensity N`, `arcade players N`, `arcade start`, `arcade ready`), open a window, write JSON. `--compare A B` diffs two runs |
+
+What carries over to Unity: the names, the **allocations** (the game's own IL allocates the same way)
+and the change between two runs. What does not: absolute milliseconds (.NET JIT, no Burst, jobs on
+the loop thread). Measure with `DOTNET_TieredCompilation=0` (the script's default): with tiering on,
+a short headless window runs part of the hot code unoptimised and reads ~3x slow.
+
 ### 11.4 Player command-line options (testing)
 
 | Option | Use |
@@ -413,7 +434,7 @@ Port/src/CosmicShore.Mcp --` or `claude --mcp-config Port/.mcp.json`; the launch
 connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
-frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
+frame-time percentiles, per-marker costs (§11.3b), distinct errors/warnings/exceptions, crash, branch and commit); the
 launcher passes one for every play session. Prisma folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
 runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
 bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent

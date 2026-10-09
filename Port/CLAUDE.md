@@ -122,7 +122,8 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
 - `--verbose` opens every `CSDebug` log channel; `game_logs grep` filters them.
 - **Session reports**: `--session-report PATH` (the launcher always passes one) writes JSON at
   exit - scenes, frame-time percentiles, CPU per loop phase (`cpu.phaseAvgMs`), allocations per
-  phase and steady-state GC (`memory`), audio, distinct errors/warnings/exceptions with counts,
+  phase and steady-state GC (`memory`), the game's own ProfilerMarkers with time, calls and KB per
+  frame (`markers`; `docs/ARCHITECTURE.md` §11.3b, `tools/prisma_markers_run.py`), audio, distinct errors/warnings/exceptions with counts,
   crash. A user's "LAST SESSION" message points at one; read it before guessing. A `--headless`
   run has no GPU: its render figures are zero and the prism render service is off, so
   `[PrismClock]`/`[PrismFactory]` errors in a headless report are expected (xvfb renders in

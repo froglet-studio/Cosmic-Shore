@@ -188,6 +188,12 @@ namespace CosmicShore.Engine.Audio.Fmod
         public EventReference EventReference;
         public EmitterGameEvent PlayEvent = EmitterGameEvent.None;
         public EmitterGameEvent StopEvent = EmitterGameEvent.None;
+
+        /// <summary>FMOD for Unity 2.02+ names the stop trigger <c>EventStopTrigger</c>; one field, two names.</summary>
+        public EmitterGameEvent EventStopTrigger { get => StopEvent; set => StopEvent = value; }
+
+        /// <summary>FMOD for Unity 2.02+ name for <see cref="PlayEvent"/>.</summary>
+        public EmitterGameEvent EventPlayTrigger { get => PlayEvent; set => PlayEvent = value; }
         public bool AllowFadeout = true;
         public bool TriggerOnce;
         public bool Preload;

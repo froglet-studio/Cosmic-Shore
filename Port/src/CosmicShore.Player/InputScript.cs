@@ -155,6 +155,8 @@ namespace CosmicShore.Player
                     case "blast":
                         Inspector.Blast(int.Parse(arg.Trim(), CultureInfo.InvariantCulture));
                         break;
+                    case "markers": MarkerReport.Run(arg); break;
+                    case "console": Inspector.HudCommand(arg.Trim()); break;
                     case "eval":
                         // eval Type.StaticMember[.member…] — read a static chain, this frame.
                         Inspector.PrintStatic(arg);
