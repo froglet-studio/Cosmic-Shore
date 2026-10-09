@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
         SwarmFauna _swarm;
         float _lastTick = -1f, _nextFoodCheck, _nextGuardCheck, _turnStartedAt = -1f, _flashUntil;
         int _endedForm = -1, _revision, _appliedForm = -1, _meals, _lunges;
+        bool _appliedChimera;
         bool _finalResultsSent, _cellPrepared, _warnedNoSwarm, _tinted;
         Vector3 _flashAt;
         readonly List<TandavaFood> _food = new();
@@ -293,6 +294,8 @@ namespace CosmicShore.Gameplay
                     CoilPlanIndices = coilMouths.Length > 0 ? v.CoilPlanIndices : System.Array.Empty<int>(), CoilMouths = coilMouths,
                     CoilRoamRadius = v.CoilRoamRadius, LungePlanIndex = v.LungePlanIndex, SnapPlanIndex = v.SnapPlanIndex,
                     LungeMouth = S(v.LungeMouth),
+                    ChimeraPlanIndex = v.ChimeraPlanIndex > 0 ? v.ChimeraPlanIndex : -1,
+                    ChimeraAltPlanIndex = v.ChimeraAltPlanIndex > 0 ? v.ChimeraAltPlanIndex : -1,
                 });
             }
             var overrides = EndConditionOverridesSO.Instance;
@@ -431,6 +434,9 @@ namespace CosmicShore.Gameplay
                     case TandavaEventKind.Succession:
                         Narrate(GameToastSituation.TandavaSuccession, TandavaLine.Succession, e.A);
                         break;
+                    case TandavaEventKind.ChimeraBegan:
+                        Narrate(GameToastSituation.TandavaChimera, TandavaLine.Chimera);
+                        break;
                     case TandavaEventKind.Learned:
                         Narrate(GameToastSituation.TandavaLearned, TandavaLine.Learned, e.A);
                         break;
@@ -540,12 +546,15 @@ namespace CosmicShore.Gameplay
         {
             int want = _plan.Value >= 0 ? _plan.Value : Variant(0).PlanIndex;
             int form = _form.Value;
+            bool chimera = Phase is TandavaPhase.Chimera or TandavaPhase.ChimeraTurning;
             if (swarm.FormIndex != want)
             {
-                if (form != _appliedForm) swarm.RequestForm(want);
+                // a new form is a new body - and so is the chimera (§3.13: its shapes are their own census), coming or going
+                if (form != _appliedForm || chimera != _appliedChimera) swarm.RequestForm(want);
                 else swarm.RequestPose(want);
             }
             _appliedForm = form;
+            _appliedChimera = chimera;
             // snapping: the body wears its form's snap plan (index 0 is the hatchling's travel plan, never a snap - and a
             // default spec reads 0)
             int snapPlan = Variant(Mathf.Clamp(form, 0, settings.Forms.Count - 1)).SnapPlanIndex;
@@ -584,7 +593,13 @@ namespace CosmicShore.Gameplay
             else if (previous == DanceForm) RestoreCell();
         }
 
-        void OnPhaseChanged(int previous, int current) => GoalStack.RefreshAll();
+        void OnPhaseChanged(int previous, int current)
+        {
+            // §3.13: becoming the chimera reads like a form change - the old shape bursts into gold as the torn one takes it
+            bool was = (TandavaPhase)previous is TandavaPhase.Chimera or TandavaPhase.ChimeraTurning;
+            if ((TandavaPhase)current == TandavaPhase.Chimera && !was && settings) { _revision++; FormBurst(); }
+            GoalStack.RefreshAll();
+        }
 
         void OnOutcomeChanged(int previous, int current)
         {
@@ -650,6 +665,7 @@ namespace CosmicShore.Gameplay
             int form = Mathf.Clamp(_form.Value, 0, settings.Forms.Count - 1);
             string name = VariantName(form);
             if (settings.Forms[form].Role == TandavaFormRole.Final) name = $"{name} - {settings.FeastLabel}";
+            if (phase is TandavaPhase.Chimera or TandavaPhase.ChimeraTurning) name = settings.ChimeraName;
             if (phase == TandavaPhase.Rising)
                 goals.Add(GoalEntry.Progress(null, name, 1f, settings.RisingLabel));
             else
@@ -668,6 +684,8 @@ namespace CosmicShore.Gameplay
             TandavaPhase.Feed => settings.FeedingLabel,
             TandavaPhase.Rising => settings.RisingLabel,
             TandavaPhase.Dance => settings.DancingLabel,
+            TandavaPhase.Chimera => settings.ChimeraLabel,
+            TandavaPhase.ChimeraTurning => settings.ChimeraTurningLabel,
             _ => Mood switch
             {
                 TandavaMood.Lunging => settings.LungingLabel,

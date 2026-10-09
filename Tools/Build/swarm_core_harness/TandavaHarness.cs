@@ -393,6 +393,7 @@ static partial class TandavaHarness
         public readonly List<TandavaPilot> Sensed = new();
         public float Now, SinceBite = float.PositiveInfinity, SinceFed, Eaten, LastShed = -1e9f;
         public int Lost, BiteCursor, LastForm, NextPlantId = 1000;
+        public bool LastChimera;
         public Random Rng;
         // the log
         public readonly List<(float t, int form)> Commits = new();
@@ -562,12 +563,13 @@ static partial class TandavaHarness
         if (d.Outcome != TandavaOutcome.Running) return;
         // the plan the director wants (TandavaController.ApplyPlan): a new FORM is a new body (RequestPlan, the lay ease
         // restarts); the same form's other pose is a re-arrangement (RequestPose, the lay ease kept)
+        // §3.13: the chimera is a new body too (its shapes are one census, not the form's), and so is leaving it
         if (c.PlanIx != d.WantPlan)
         {
-            if (d.FormIx != s.LastForm) c.RequestPlan(d.WantPlan);
+            if (d.FormIx != s.LastForm || d.InChimera != s.LastChimera) c.RequestPlan(d.WantPlan);
             else c.RequestPose(d.WantPlan);
         }
-        s.LastForm = d.FormIx;
+        s.LastForm = d.FormIx; s.LastChimera = d.InChimera;
         c.SetLevers(d.CruiseScale, d.TurnScale, d.HoldLaying);
         c.SwimTarget = d.Goal / UnitScale;
         c.Step(ReadOnlySpan<SwarmPredator>.Empty);

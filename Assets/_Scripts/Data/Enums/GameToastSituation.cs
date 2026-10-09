@@ -204,6 +204,7 @@ namespace CosmicShore.Data
         TandavaRejoined = 149,          // the severed piece got home and grafted back on: {0} = RejoinedLine
         TandavaSuccession = 150,        // the body was cut away and the piece took its form: {0} = SuccessionLine
         TandavaLearned = 151,           // a wound taught it something (once per wound): {0} = that wound's Learned line
+        TandavaChimera = 152,           // on its way up it became the whale-jelly chimera: {0} = ChimeraLine
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

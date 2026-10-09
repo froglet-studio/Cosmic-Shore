@@ -41,6 +41,11 @@ namespace CosmicShore.Gameplay
         public Vector3 FeedMouth;
         [Tooltip("The dance form only: the halo's centre from the body's centre, in its axes (world).")]
         public Vector3 HaloCentre;
+        [Tooltip("§3.13: the whale-jelly chimera this form passes through on its way up to the dance - its whale shape's " +
+                 "index in ScriptedPlans (0 = none: it rises straight).")]
+        [Min(0)] public int ChimeraPlanIndex;
+        [Tooltip("The chimera's jelly shape: the same members re-arranged (0 = none).")]
+        [Min(0)] public int ChimeraAltPlanIndex;
     }
 
     /// <summary>One form the swarm takes, in order (Tandava's director names them; the swarm's scripted plans hold them).</summary>
@@ -93,6 +98,8 @@ namespace CosmicShore.Gameplay
         Succession = 15,
         /// <summary>A wound taught it something (§3.12): A = the <see cref="TandavaWound"/> - each has its own line.</summary>
         Learned = 16,
+        /// <summary>It became the whale-jelly chimera on its way up (§3.13).</summary>
+        Chimera = 17,
     }
 
     /// <summary>
@@ -209,6 +216,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("{0} = the members that came home.")]
         [TextArea] public string RejoinedLine = "The severed half found its way home. It is whole again.";
         [TextArea] public string SuccessionLine = "You cut the body away - but the severed half lives, and it remembers the shape.";
+        [TextArea] public string ChimeraLine = "It is tearing between shapes - a whale, a jelly, neither. Strike it as it turns.";
         [Header("Narration - what its wounds taught it (§3.12), said once each")]
         [TextArea] public string LearnedFeedingLine = "It remembers being struck at the table. It eats far from you now, and bolts sooner.";
         [TextArea] public string LearnedLungingLine = "It remembers what its lunges cost. It will not turn on you so readily.";
@@ -228,6 +236,10 @@ namespace CosmicShore.Gameplay
         public string DrumLabel = "Drum";
         public string TimeLabel = "Time left";
         public string BodyFormat = "Body {0}%";
+        [Tooltip("§3.13: the chimera's name on the form row, and its two moods.")]
+        public string ChimeraName = "Whale-Jelly Chimera";
+        public string ChimeraLabel = "Unstable";
+        public string ChimeraTurningLabel = "Turning - it cannot heal";
         public string SeveredLabel = "The Severed";
         [Tooltip("The Severed row's text while it is out feeding: {0} = the time until it turns for home.")]
         public string SeveredOutFormat = "home in {0}";
@@ -269,6 +281,7 @@ namespace CosmicShore.Gameplay
                 TandavaLine.Severed => SeveredLine,
                 TandavaLine.Rejoined => RejoinedLine,
                 TandavaLine.Succession => SuccessionLine,
+                TandavaLine.Chimera => ChimeraLine,
                 TandavaLine.Learned => (TandavaWound)a switch
                 {
                     TandavaWound.Feeding => LearnedFeedingLine,

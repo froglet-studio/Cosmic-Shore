@@ -69,6 +69,13 @@ namespace CosmicShore.Gameplay
         Over = 4,
         /// <summary>The Severed only: regrown and fed, it swims home to rejoin the body it was cut from.</summary>
         Rejoin = 5,
+        /// <summary>§3.13: on its way up to the dance it passes through the WHALE-JELLY CHIMERA - a body grown by the hybrid
+        /// NCA, torn between a whale and a jelly. It drifts to where it will rise, and every few seconds it turns from one
+        /// shape to the other.</summary>
+        Chimera = 6,
+        /// <summary>The chimera mid-turn: its members are crossing from one shape to the other - it neither heals nor
+        /// moves well. The window to strike.</summary>
+        ChimeraTurning = 7,
     }
 
     /// <summary>How threatened the swarm feels. Explicit values: replicated as an int.</summary>
@@ -127,6 +134,10 @@ namespace CosmicShore.Gameplay
         Succession = 11,
         /// <summary>The Severed only: regrown and fed, it turns for home. A: its members.</summary>
         HomeBound = 12,
+        /// <summary>It became the whale-jelly chimera on its way up (§3.13). A: the form it is leaving.</summary>
+        ChimeraBegan = 14,
+        /// <summary>The chimera turned: A = 1 into its jelly shape, 0 into its whale shape.</summary>
+        ChimeraTurned = 15,
         /// <summary>A wound has taught it something (its memory of that wound crossed <see cref="TandavaDirectorSettings.LearnedAt"/>).
         /// A: the <see cref="TandavaWound"/>.</summary>
         Learned = 13,
@@ -209,6 +220,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Where its mouth is, in WORLD units along the body axes (x forward, y up, z side) from its centre: in
         /// the travel pose (how it lines up on a plant) and in the feed pose (where the plant must sit while it eats).</summary>
         public Vector3 Mouth, FeedMouth;
+        /// <summary>§3.13: the whale-jelly chimera this form passes through on its way up to the dance - its whale shape's
+        /// and its jelly shape's plan indices (the same members re-arranged), or -1 for none (it rises straight).</summary>
+        public int ChimeraPlanIndex = -1, ChimeraAltPlanIndex = -1;
     }
 
     /// <summary>A plant the swarm could eat (the glue lists only what it CAN eat).</summary>
@@ -321,6 +335,15 @@ namespace CosmicShore.Gameplay
         // ── the ascension
         /// <summary>Seconds the Lord of the Dance takes to assemble before the halo lights.</summary>
         public float RiseSeconds = 5f;
+        /// <summary>§3.13: how long it is the whale-jelly chimera before it rises (a form with a chimera only).</summary>
+        public float ChimeraSeconds = 24f;
+        /// <summary>The chimera turns from one shape to the other this often...</summary>
+        public float ChimeraFlipSeconds = 6f;
+        /// <summary>...and each turn leaves it unable to heal or swim well for this long - the window to strike.</summary>
+        public float ChimeraTurnSeconds = 2.5f;
+        /// <summary>The chimera's speed and turn (the levers' scale): it staggers rather than swims.</summary>
+        public float CruiseChimera = 0.7f;
+        public float TurnChimera = 0.8f;
         /// <summary>How long the drum runs: the pilots' window to break the halo.</summary>
         public float DrumSeconds = 30f;
         public int HaloCount = 12, HaloToBreak = 9;
@@ -441,6 +464,12 @@ namespace CosmicShore.Gameplay
         public int HaloOut { get; private set; }
 
         public bool Feeding => Phase == TandavaPhase.Feed;
+        /// <summary>§3.13: it is the whale-jelly chimera (turning or not).</summary>
+        public bool InChimera => Phase is TandavaPhase.Chimera or TandavaPhase.ChimeraTurning;
+        /// <summary>The chimera wears its jelly shape (else its whale shape).</summary>
+        public bool ChimeraJelly { get; private set; }
+        /// <summary>Seconds of the chimera left before it rises (0 when it is not the chimera).</summary>
+        public float ChimeraRemaining => InChimera ? MathF.Max(0f, S.ChimeraSeconds - (Clock - _chimeraSince)) : 0f;
         public bool InDance => Phase == TandavaPhase.Dance;
         public TandavaForm Form => Forms[FormIx];
         public int FinalIx => Forms.Count - 1;
@@ -448,7 +477,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The plan the body should wear now: its coil while it eats (its strike pose, for a form without coils),
         /// while it lunges its lunge pose (the Antlion's gaping jaws, then the same jaws snapped shut) or else its strike pose (it charges a pilot with the
         /// guard plates out round its jaws), else its travel plan.</summary>
-        public int WantPlan => Feeding && Coil >= 0 ? Form.CoilPlanIndices[Coil]
+        public int WantPlan => InChimera ? (ChimeraJelly ? Form.ChimeraAltPlanIndex : Form.ChimeraPlanIndex)
+            : Feeding && Coil >= 0 ? Form.CoilPlanIndices[Coil]
             : Snapping && Form.SnapPlanIndex >= 0 ? Form.SnapPlanIndex
             : Lunging && Form.LungePlanIndex >= 0 ? Form.LungePlanIndex
             : (Feeding || Lunging) && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
@@ -466,6 +496,8 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<int, float> _restUntil = new();
         float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt, _snapUntil = -1f;
         int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1, _learnedMask;
+        float _chimeraSince, _nextTurn, _turnUntil;
+        bool _chimeraDone;
         /// <summary>The wounds it remembers, by <see cref="TandavaWound"/>: the share of a form's body lost each way (severs:
         /// a count).</summary>
         readonly float[] _scars = new float[4];
@@ -489,6 +521,7 @@ namespace CosmicShore.Gameplay
         public float Progress(in TandavaSwarmState s)
         {
             var f = Form;
+            if (InChimera) return S.ChimeraSeconds > 0f ? Math.Clamp((Clock - _chimeraSince) / S.ChimeraSeconds, 0f, 1f) : 1f;
             if (f.Role == TandavaFormRole.Dance)
                 return Phase == TandavaPhase.Dance && S.DrumSeconds > 0f ? Math.Clamp(DanceTime / S.DrumSeconds, 0f, 1f) : 0f;
             float fill = f.PlanCount > 0 ? s.Alive / (f.FillToEvolve * f.PlanCount) : 1f;
@@ -563,7 +596,7 @@ namespace CosmicShore.Gameplay
         /// never for a piece itself.</summary>
         public bool MaySever(in TandavaSwarmState s) =>
             Outcome == TandavaOutcome.Running && Form.Role is TandavaFormRole.Eater or TandavaFormRole.Final
-            && Phase is TandavaPhase.Roam or TandavaPhase.Feed && !Lunging && !Snapping && s.Severed <= 0 && Clock >= _severReadyAt;
+            && Phase is TandavaPhase.Roam or TandavaPhase.Feed or TandavaPhase.Chimera or TandavaPhase.ChimeraTurning && !Lunging && !Snapping && s.Severed <= 0 && Clock >= _severReadyAt;
 
         /// <summary>The smallest and largest piece (members) the current form may part with (<see cref="TandavaSever.FindPiece"/>).</summary>
         public int SeverMinMembers => Math.Max(S.SeverMinMembers, (int)MathF.Ceiling(S.SeverMinShare * Form.PlanCount));
@@ -670,6 +703,10 @@ namespace CosmicShore.Gameplay
                     FeedTick(s, food);
                     if (Phase == TandavaPhase.Roam) Roam(s, food, pilots);   // the meal ended: be somewhere this tick
                     break;
+                case TandavaPhase.Chimera:
+                case TandavaPhase.ChimeraTurning:
+                    ChimeraTick(s);
+                    break;
                 case TandavaPhase.Rising:
                     Goal = DancePoint;
                     if (Clock - _phaseSince >= S.RiseSeconds)
@@ -706,6 +743,18 @@ namespace CosmicShore.Gameplay
             if (Form.Role == TandavaFormRole.Final) { End(TandavaOutcome.Completed); return; }
             int next = FormIx + 1;
             if (next >= Forms.Count) { End(TandavaOutcome.Completed); return; }
+            if (Forms[next].Role == TandavaFormRole.Dance && !_chimeraDone && Form.ChimeraPlanIndex > 0 && Form.ChimeraAltPlanIndex > 0
+                && S.ChimeraSeconds > 0f)
+            {
+                // §3.13: before it rises it is torn between a whale and a jelly - it staggers to where it will rise
+                if (Lunging) EndLunge();
+                DancePoint = ClampInside(s.Anchor, MathF.Max(0f, S.RoamRadius - S.DanceReach));
+                Phase = TandavaPhase.Chimera; _phaseSince = Clock; _chimeraSince = Clock; TargetFood = -1;
+                ChimeraJelly = false; _nextTurn = Clock + S.ChimeraFlipSeconds;
+                Goal = DancePoint;
+                Events.Add(new TandavaEvent { Kind = TandavaEventKind.ChimeraBegan, A = FormIx });
+                return;
+            }
             if (Forms[next].Role == TandavaFormRole.Dance)
             {
                 int from = FormIx;
@@ -720,9 +769,33 @@ namespace CosmicShore.Gameplay
             Commit(next, s);
         }
 
+        /// <summary>§3.13: the chimera drifts to where it will rise, turning shape every few seconds; when its time is up it
+        /// rises as any banked serpent does.</summary>
+        void ChimeraTick(in TandavaSwarmState s)
+        {
+            Goal = DancePoint;
+            if (Clock - _chimeraSince >= S.ChimeraSeconds)
+            {
+                _chimeraDone = true;
+                Phase = TandavaPhase.Roam; _phaseSince = Clock;
+                Advance(s);   // the rise
+                return;
+            }
+            if (Clock >= _nextTurn)
+            {
+                ChimeraJelly = !ChimeraJelly;
+                _nextTurn = Clock + S.ChimeraFlipSeconds;
+                _turnUntil = Clock + S.ChimeraTurnSeconds;
+                Phase = TandavaPhase.ChimeraTurning;
+                Events.Add(new TandavaEvent { Kind = TandavaEventKind.ChimeraTurned, A = ChimeraJelly ? 1 : 0 });
+            }
+            else if (Phase == TandavaPhase.ChimeraTurning && Clock >= _turnUntil) Phase = TandavaPhase.Chimera;
+        }
+
         void Commit(int to, in TandavaSwarmState s)
         {
             int from = FormIx; FormIx = to;
+            _chimeraDone = false;
             Events.Add(new TandavaEvent { Kind = TandavaEventKind.FormCommitted, A = from, B = to });
             // the body it commits with counts toward the new form's arming: a cull the next second can still shatter it
             _armed = s.Alive >= S.ArmFraction * Forms[to].PlanCount;
@@ -853,6 +926,12 @@ namespace CosmicShore.Gameplay
                     return;
                 case TandavaPhase.Rejoin:
                     cruise = s.CruiseWary; turn = s.TurnWary; holdLaying = false;
+                    return;
+                case TandavaPhase.Chimera:
+                    cruise = s.CruiseChimera; turn = s.TurnChimera; holdLaying = false;
+                    return;
+                case TandavaPhase.ChimeraTurning:
+                    cruise = s.CruiseFeed; turn = s.TurnFeed; holdLaying = true;   // mid-turn: it cannot heal
                     return;
             }
             holdLaying = false;
