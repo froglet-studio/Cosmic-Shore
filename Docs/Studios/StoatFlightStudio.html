@@ -66,7 +66,15 @@
   .tbtn.ghost { background: rgba(232,236,255,0.18); color: #e8ecff; }
   .tturn { position: absolute; inset: 0; display: none; place-items: center; text-align: center; color: #e8ecff; font: 600 16px/1.4 var(--font-display); background: rgba(5,8,23,0.86); z-index: 6; padding: 24px; }
   @media (orientation: portrait) { body.play .tturn { display: grid; } }
-  body.play .stagebtn { display: none; }
+  body.play .stagebtn, body.play .transport { display: none; }
+  /* the studio transport (/vessel-studio D18): Play · Pause/Resume · Stop, like the Unity editor's */
+  .transport { position: absolute; left: 12px; bottom: 96px; z-index: 3; display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: rgba(8, 10, 20, 0.78); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+  .transport button { font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: #e8ecff; background: transparent; border: 0; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+  .transport button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+  .transport button:disabled { opacity: 0.35; cursor: default; }
+  .transport button.on { color: #1a1200; background: var(--accent); opacity: 1; }
+  .transport button[aria-pressed="true"] { color: #04131c; background: #7fd7ff; }
+  .transport button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
   .stagebtn.playbtn { right: 12px; top: 12px; left: auto; bottom: auto; }
   body.play .playbtn { display: none; }
   /* the device decides the interface: a PC flies with a gamepad or keyboard (no touch layout offered), a phone gets the touch layout */
@@ -258,14 +266,14 @@
       <canvas id="stage" tabindex="0" width="1280" height="800" aria-label="3D flight stage: the Stoat, the Slingshot course rings, prisms, and any wormhole pair you sling"></canvas>
       <canvas id="hud" aria-hidden="true"></canvas>
       <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
-      <button type="button" id="stopBtn" class="stagebtn" hidden aria-pressed="false">■ Stop</button>
+      <div class="transport" id="transport" role="toolbar" aria-label="Play controls"><button type="button" id="tpPlay" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, the Stoat and the race clock halt, the world and cameras stay live">▶ Play</button><button type="button" id="tpStop" title="Stop (R): end the run, back to the start line">■ Stop</button></div>
       <button type="button" id="playBtn" class="stagebtn playbtn">📱 Fly with touch</button>
       <div id="touchUI" aria-label="Touch controls">
         <div class="tzone l" id="tzL"><div class="tstick idle" id="tsL"><div class="tknob"></div></div></div>
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <div class="tbar"><button type="button" class="tbtn" id="tStart">Start</button><button type="button" class="tbtn ghost" id="tStop">■ Stop</button><button type="button" class="tbtn ghost" id="tBack">Back</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
+        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
@@ -296,7 +304,7 @@
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
-          <tr><td>The <b>■ Stop</b> button on the stage</td><td><kbd>P</kbd></td><td>Stop: the Stoat halts and the clock pauses while the world carries on; press again to resume</td></tr>
+          <tr><td><b>❚❚ Pause</b> on the stage</td><td><kbd>P</kbd></td><td>Pause: the Stoat halts and the clock pauses while the world carries on; press again (<b>▶ Resume</b>) to resume</td></tr>
           <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
       </table></div>
@@ -1192,10 +1200,14 @@
     if (!slingDipole.pair.alive) slingDipole = null; else if (!slingDipole.pair.held) releaseDipole(true); else holdDipole(dt);
     boosts.length = 0;   // a released pair's boost is not spent on a Stoat standing still
   }
+  // the studio transport (/vessel-studio D18): Play · Pause/Resume · Stop, like the Unity editor's
   function showStopBtn() {
-    const b = $('stopBtn'); if (!b) return;
-    b.hidden = !(mode === 'fly' && (race === 'running' || stopped));
-    b.textContent = stopped ? '▶ Resume' : '■ Stop'; b.setAttribute('aria-pressed', stopped ? 'true' : 'false');
+    const t = $('transport'); if (!t) return;
+    t.hidden = mode !== 'fly';
+    const playing = race === 'running';
+    const live = playing && !stopped;   // one toggle: Play starts or resumes, Pause pauses
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', stopped ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready' && !stopped;
   }
   let race = 'ready', raceT = 0, threaded = 0, slings = 0, lastRun = null, swapFlash = 0, portalFlash = 0;
   function spawn() {
@@ -1203,7 +1215,7 @@
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
     speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.end = 'none'; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
-    myPair = null; snapCam = true; ai.phase = 'cruise'; if (!batching) showOverlay();
+    myPair = null; snapCam = true; ai.phase = 'cruise'; if (!batching) showOverlay(); showStopBtn();
   }
   function startRace() {
     if (stopped) { setStopped(false); return; }
@@ -1915,7 +1927,9 @@
     if (e.code === 'KeyP') setStopped(!stopped);
   });
   window.addEventListener('keyup', (e) => { keys.delete(e.code); });
-  $('stopBtn').addEventListener('click', () => setStopped(!stopped));
+  const playPause = () => { if (race === 'running' && !stopped) setStopped(true); else startRace(); };   // startRace resumes a paused run
+  $('tpPlay').addEventListener('click', playPause);
+  $('tpStop').addEventListener('click', () => spawn());
   window.addEventListener('blur', () => keys.clear());
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
   canvas.addEventListener('focus', () => { armed = true; });
@@ -2015,15 +2029,11 @@
   $('tPage').addEventListener('click', () => setPlayMode(false));
   $('playBtn').addEventListener('click', () => setPlayMode(true));
   $('tExit').addEventListener('click', () => setPlayMode(false));
-  $('tStart').addEventListener('click', () => { if (race === 'running' && !stopped) return; startRace(); });
-  $('tStop').addEventListener('click', () => setStopped(!stopped));
+  $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => spawn());
   function syncTouchBar() {
     if (!playMode) return;
-    $('tStart').textContent = stopped ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
-    $('tStart').hidden = race === 'running' && !stopped;
-    $('tStop').hidden = !(race === 'running' || stopped); $('tStop').textContent = stopped ? '▶ Resume' : '■ Stop';   // the universal studio Stop (/vessel-studio D18)
-    if (stopped) $('tStart').hidden = true;
+    $('tStart').textContent = race === 'running' && !stopped ? '❚❚ Pause' : '▶ Play';   // the studio transport (/vessel-studio D18)
   }
   function pollInput(dt) {
     syncTouchBar();

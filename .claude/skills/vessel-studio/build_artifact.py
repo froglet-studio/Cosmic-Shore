@@ -60,6 +60,13 @@ def build(ref, out, artifact=None, session=None):
         sync = open(os.path.join(DIR, 'sync.js'), encoding='utf-8').read()
     with open(os.path.join(out, 'sync.js'), 'w', encoding='utf-8') as fh:
         fh.write(sync)
+    for f in cat.get('shared', []):   # files every studio loads, e.g. studio-look.js (the default graphics, D19)
+        try:
+            txt = git('show', f'{ref}:{DIR}/{f}', quiet=True)
+        except subprocess.CalledProcessError:
+            txt = open(os.path.join(DIR, f), encoding='utf-8').read()
+        with open(os.path.join(out, f), 'w', encoding='utf-8') as fh:
+            fh.write(txt)
     head = git('rev-parse', ref).strip()
     path_sha = git('log', '-1', '--format=%H', ref, '--', DIR).strip()
     info = {
@@ -97,12 +104,13 @@ def check(out):
                 errs.append(f'build.json: no {k}')
     except Exception as e:
         errs.append(f'build.json: {e}')
-    try:
-        raw = open(os.path.join(out, 'sync.js'), 'rb').read()
-        if any(c > 127 for c in raw):
-            errs.append('sync.js: non-ASCII bytes (a page served without a charset garbles them; escape as \\uXXXX)')
-    except OSError:
-        errs.append('sync.js: missing')
+    for f in ['sync.js'] + list(cat.get('shared', [])):
+        try:
+            raw = open(os.path.join(out, f), 'rb').read()
+            if any(c > 127 for c in raw):
+                errs.append(f'{f}: non-ASCII bytes (a page served without a charset garbles them; escape as \\uXXXX)')
+        except OSError:
+            errs.append(f'{f}: missing')
     for e in errs:
         print('FAIL', e)
     if not errs:
@@ -124,14 +132,14 @@ def self_test():
         bad.append('inject: injected twice')
     with tempfile.TemporaryDirectory() as d:
         w = lambda f, t: open(os.path.join(d, f), 'w', encoding='utf-8').write(t)
-        w('studios.json', json.dumps({'studios': [{'file': 'a.html'}, {'file': 'b.html'}]}))
+        w('studios.json', json.dumps({'studios': [{'file': 'a.html'}, {'file': 'b.html'}], 'shared': ['look.js']}))   # planted: look.js missing
         w('index.html', '<body>' + TAG + '</body>')
         w('a.html', '<body></body>')                                   # planted: no panel
         w('b.html', '<body>' + TAG + TAG + '</body>')                  # planted: panel twice
         w('build.json', json.dumps({'repo': 'r', 'branch': 'b', 'sha': 's', 'pathSha': '', 'subject': 's', 'committedAt': 't'}))  # planted: no pathSha
         open(os.path.join(d, 'sync.js'), 'wb').write('// ⇄\n'.encode('utf-8'))  # planted: non-ASCII
         got = ' | '.join(check(d))
-        for want in ('a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
+        for want in ('look.js: missing', 'a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
             if want not in got:
                 bad.append('check did not name: ' + want)
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))

@@ -83,6 +83,11 @@
   .btn[disabled] { opacity: .5; cursor: default; }
   .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }   /* above the start card: a sideways phone must reach Play on phone */
   .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  /* the studio transport (/vessel-studio D18): Play · Pause/Resume · Stop, like the Unity editor's */
+  .transport { display: flex; gap: 2px; }
+  .transport .btn:disabled { opacity: 0.35; cursor: default; }
+  .transport .btn.on { background: var(--jade, #35e0b0); color: #04130e; opacity: 1; }
+  .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
 
   aside { display: grid; gap: 10px; min-width: 0; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
@@ -127,6 +132,7 @@
 
   .touch { position: absolute; inset: 0; display: none; }
   body.play .touch { display: block; }
+  body.play .vside-dock, body.play .vside-split, body.play .vside-win { display: none !important; }
   body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
   body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed, body.play .afternote { display: none !important; }
   .tz { position: absolute; bottom: 0; top: 30%; width: 50%; }
@@ -177,7 +183,7 @@
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
         </div>
-        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><button class="btn" id="stopBtn" type="button" hidden aria-pressed="false" title="Stop: your hull and the race clock halt, the stage and cameras stay live (P)">■ Stop</button></div>
+        <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, every pilot and the race clock halt, the stage and cameras stay live">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Skim Race, intensity 1</h2>
@@ -185,8 +191,8 @@
             <div class="keys">
               <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
               <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
-              <span>Free cam</span><span>drag to look · I J K L move · U O down/up</span>
-              <span></span><span>Enter start · R reset · P stop / resume · C next camera</span>
+              <span>Free cam</span><span>orbits the watched hull: drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
+              <span></span><span>Enter play · P pause / resume · R stop · C next camera</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
           </div>
@@ -196,7 +202,7 @@
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
           <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
-          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">■ Stop</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
@@ -208,8 +214,7 @@
         <h3>Race <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
         <div class="field"><span>Course</span><div class="seg" id="segCourse" role="group" aria-label="Skim Race intensity"></div></div>
         <div class="field"><span>Your hull</span><div class="seg diff" id="segYou" role="group" aria-label="Who flies your hull"></div></div>
-        <div class="field"><span>AI rivals</span><div class="seg" id="segRivals" role="group" aria-label="Number of AI rivals"></div></div>
-        <div class="field"><span>Rival level</span><div class="seg diff" id="segDiff" role="group" aria-label="Rival difficulty"></div></div>
+        <div id="rivalRows" style="display:grid;gap:8px" aria-label="AI rivals, each with its own level"></div>
         <div class="field"><span>Camera</span><div class="seg" id="segCam" role="group" aria-label="Camera"></div></div>
         <div class="field"><span>Speed</span><div class="seg" id="segSpeed" role="group" aria-label="Simulation speed"></div></div>
         <label class="check"><input type="checkbox" id="thinking"> Show AI thinking</label>
@@ -276,6 +281,8 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js"></script>
+<script src="studio-ide.js"></script>
 <script>
 (function () {
   'use strict';
@@ -317,9 +324,12 @@
   const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
   // ================= settings =================
-  const S = { course: 1, you: 'You', rivals: 2, diff: 'Hard', cam: 'Chase', speed: 1, thinking: true, autoRestart: false, typeToAll: false, driftDepth: 1, type: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 } };
+  const S = { course: 1, you: 'You', ai: ['Hard', 'Hard', 'Off'], cam: 'Chase', speed: 1, thinking: true, autoRestart: false, typeToAll: false, driftDepth: 1, type: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 } };
   const LS = 'cs.studio.squirrel.v2';
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}) }); } catch (e) { /* storage blocked */ }
+  // each AI rival is its own seat with its own level (/vessel-studio D20); an older save's "N rivals at one level" carries over
+  if (S.rivals != null || S.diff != null) { let had = false; try { had = Array.isArray((JSON.parse(localStorage.getItem(LS) || 'null') || {}).ai); } catch (e) { /* storage blocked */ } if (!had) S.ai = [0, 1, 2].map((k) => k < (S.rivals == null ? 2 : S.rivals) ? (S.diff || 'Hard') : 'Off'); }
+  delete S.rivals; delete S.diff;
   function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
   function mults(lv) {
     const f = (k) => clamp(lv[k] / 10, 0, 1);
@@ -373,7 +383,7 @@
     pilotsSpec.forEach((spec, i) => {
       const off = (i - (pilotsSpec.length - 1) / 2) * 26;
       const P = {
-        i, spec, domain: DOMAINS[i], pos: track.line[0].clone().addScaledVector(side, off).addScaledVector(t0, -40), quat: q0.clone(), course: t0.clone(),
+        i, spec, domain: DOMAINS[spec.dom != null ? spec.dom : i], pos: track.line[0].clone().addScaledVector(side, off).addScaledVector(t0, -40), quat: q0.clone(), course: t0.clone(),
         speed: 0, boost: 1, slow: 1, lastDrift: 0, throttle: 0.5, lv: Object.assign({}, spec.lv), m: mults(spec.lv), ringReadyAt: 0, rtWas: 0, railAcc: 0, rails: 0,
         crystals: 0, anchor: 0, crystal: null, finishT: null, hint: 0, skims: 0, stolen: 0, petals: 0, rings: 0, resets: 0, mistakes: 0,
         hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
@@ -571,13 +581,13 @@
   const canvas = $('c');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x05060c); scene.fog = new THREE.Fog(0x05060c, 900, 3800);
+  const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 9000);
-  scene.add(new THREE.HemisphereLight(0x8fa0ff, 0x1a1030, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(300, 800, 200); scene.add(sun);
-  { const n = 1600, g = new THREE.BufferGeometry(), p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const v = new V(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(5200 + Math.random() * 800); p.set([v.x, v.y, v.z], i * 3); } g.setAttribute('position', new THREE.BufferAttribute(p, 3)); scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9aa6ff, size: 2.2, sizeAttenuation: false, fog: false }))); }
+  // the Vessel Studio look (/vessel-studio D19, studio-look.js): the Stoat's sky, stars, lights and drifting prism field
+  const ENV = VesselStudioLook.install(scene, { field: 2400, prismScale: 2.4 });
+  const mark = VesselStudioLook.marker($('viewport'));
   const MAXP = 9000;
-  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1, emissive: 0x111111 }), MAXP);
+  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, emissive: 0x0b1b4a, flatShading: true }), MAXP);
   prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(prismMesh);
   const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.5 }), MAXP);
   shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
@@ -604,14 +614,20 @@
     const tail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 2.2), mat); tail.position.set(0, 1.2, 3.2); g.add(tail);
     return g;
   }
-  const crystalGeo = new THREE.OctahedronGeometry(7, 0);
   const view = { hulls: [], crystals: [], skims: [], lines: [] };
   function mountWorld(W) {
+    {   // ring the drifting prism field round this course (the Stoat's field sits just outside its rings)
+      const ln = W.track.line, lo = new V(Infinity, Infinity, Infinity), hi = new V(-Infinity, -Infinity, -Infinity);
+      for (const q of ln) { lo.min(q); hi.max(q); }
+      const ctr = lo.clone().add(hi).multiplyScalar(0.5); let rad = 0;
+      for (const q of ln) rad = Math.max(rad, Math.hypot(q.x - ctr.x, q.z - ctr.z));   // the course's farthest point: the field starts outside it
+      ENV.placeField(ctr, (rad + 160) / 0.75, Math.max(160, (hi.y - lo.y) * 0.5 + 140));
+    }
     for (const o of [...view.hulls, ...view.crystals, ...view.skims, ...view.lines]) scene.remove(o);
     view.hulls = []; view.crystals = []; view.skims = []; view.lines = [];
     for (const P of W.pilots) {
       const h = makeHull(P.domain.color); scene.add(h); view.hulls.push(h);
-      const c = new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: P.domain.color, emissive: new THREE.Color(P.domain.color).multiplyScalar(0.35), roughness: 0.2 })); scene.add(c); view.crystals.push(c);
+      const c = VesselStudioLook.crystal(P.domain.color, 7); scene.add(c); view.crystals.push(c);
       const s = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), new THREE.MeshBasicMaterial({ color: P.domain.color, wireframe: true, transparent: true, opacity: 0.05 })); scene.add(s); view.skims.push(s);
       const lg = new THREE.BufferGeometry().setFromPoints([new V(), new V(), new V(), new V()]);
       const ln = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.85 })); ln.frustumCulled = false; scene.add(ln); view.lines.push(ln);
@@ -621,7 +637,7 @@
     if (W.dirty) drawPrisms(W);
     W.pilots.forEach((P, i) => {
       view.hulls[i].position.copy(P.pos); view.hulls[i].quaternion.copy(P.quat);
-      const c = view.crystals[i]; c.visible = !!P.crystal; if (P.crystal) { c.position.copy(P.crystal.pos); c.rotation.y = t * 1.3 + i; }
+      const c = view.crystals[i]; c.visible = !!P.crystal; if (P.crystal) { c.position.copy(P.crystal.pos); VesselStudioLook.spinCrystal(c, t + i); }
       view.skims[i].visible = i !== chased; view.skims[i].position.copy(P.pos); view.skims[i].scale.setScalar(P.m.skimR);
       const ln = view.lines[i], show = S.thinking && !!P.spec.ai && !!P.crystal && P.finishT == null; ln.visible = show;
       if (show) {
@@ -634,17 +650,18 @@
   }
 
   // ---- cameras: chase your hull, follow any AI, or fly free ----
-  const camPos = new V(), camLook = new V(), free = { pos: new V(0, 500, 1100), yaw: Math.PI, pitch: -0.4 };
+  const camPos = new V(), camLook = new V(), free = { yaw: 2.6, pitch: 0.35, dist: 90 };   // Free orbits the watched hull, as in the Stoat studio (D16)
   let followIdx = 1, chased = -1;
   function placeCamera(W, dt, snap) {
     let tag;
     chased = -1;
-    if (S.cam === 'Free') {
-      const fwd = new V(Math.sin(free.yaw) * Math.cos(free.pitch), Math.sin(free.pitch), Math.cos(free.yaw) * Math.cos(free.pitch)), rightv = new V().crossVectors(fwd, new V(0, 1, 0)).normalize();
-      const k = (c) => keys.has(c) ? 1 : 0, sp = 300 * dt * (keys.has('ShiftLeft') ? 3 : 1);
-      free.pos.addScaledVector(fwd, (k('KeyI') - k('KeyK')) * sp).addScaledVector(rightv, (k('KeyL') - k('KeyJ')) * sp).addScaledVector(AY, (k('KeyO') - k('KeyU')) * sp);
-      if (playMode && touch.used && camTouch) { free.pos.addScaledVector(fwd, touch.L.y * sp * 2).addScaledVector(rightv, touch.L.x * sp * 2); free.yaw -= touch.R.x * dt * 1.6; free.pitch = clamp(free.pitch + touch.R.y * dt * 1.2, -1.4, 1.4); }
-      cam.position.copy(free.pos); cam.up.set(0, 1, 0); cam.lookAt(free.pos.clone().add(fwd)); tag = 'Free camera';
+    if (S.cam === 'Free') {   // orbit the watched hull: drag to turn, wheel to zoom; J/L and I/K turn, U/O zoom; on a phone the sticks
+      const P = W.pilots[Math.min(followIdx, W.pilots.length - 1)] || W.pilots[0], k = (c) => keys.has(c) ? 1 : 0;
+      free.yaw += (k('KeyJ') - k('KeyL')) * 1.4 * dt; free.pitch = clamp(free.pitch + (k('KeyI') - k('KeyK')) * 1.1 * dt, -1.3, 1.3); free.dist = clamp(free.dist * (1 + (k('KeyO') - k('KeyU')) * 1.2 * dt), 25, 3000);
+      if (playMode && touch.used && camTouch) { free.yaw -= touch.R.x * dt * 1.6; free.pitch = clamp(free.pitch + touch.R.y * dt * 1.2, -1.3, 1.3); free.dist = clamp(free.dist * (1 + touch.L.y * dt * 1.5), 25, 3000); }
+      const want = new V(Math.sin(free.yaw) * Math.cos(free.pitch), Math.sin(free.pitch), Math.cos(free.yaw) * Math.cos(free.pitch)).multiplyScalar(free.dist).add(P.pos);
+      const kk = snap ? 1 : 1 - Math.exp(-12 * dt); cam.position.lerp(want, kk); cam.up.set(0, 1, 0); cam.lookAt(P.pos);
+      chased = -1; tag = 'Free: orbiting ' + P.domain.name + ' (drag, wheel)';
     } else {
       const P = W.pilots[S.cam === 'Follow' ? Math.min(followIdx, W.pilots.length - 1) : 0];
       const fwd = new V(0, 0, -1).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat);
@@ -671,7 +688,8 @@
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
   let drag = null;
   canvas.addEventListener('pointerdown', (e) => { if (S.cam === 'Free' && !playMode) drag = { x: e.clientX, y: e.clientY }; });
-  window.addEventListener('pointermove', (e) => { if (!drag) return; free.yaw -= (e.clientX - drag.x) * 0.005; free.pitch = clamp(free.pitch - (e.clientY - drag.y) * 0.005, -1.4, 1.4); drag = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; e.preventDefault(); free.dist = clamp(free.dist * (1 + Math.sign(e.deltaY) * 0.1), 25, 3000); }, { passive: false });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; free.yaw -= (e.clientX - drag.x) * 0.008; free.pitch = clamp(free.pitch + (e.clientY - drag.y) * 0.006, -1.3, 1.3); drag = { x: e.clientX, y: e.clientY }; });
   window.addEventListener('pointerup', () => { drag = null; });
   function readPad() { let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; } for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g; return null; }
   function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
@@ -702,9 +720,10 @@
   }
   document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
   $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
-  $('tStart').addEventListener('click', () => { if (paused) togglePause(); else startRace(); }); $('tStop').addEventListener('click', () => togglePause());
+  const playPause = () => { if (race === 'running') togglePause(); else startRace(); };   // one toggle: Play starts or resumes, Pause pauses
+  $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => newRace()); $('tCam').addEventListener('click', () => cycleCamera());
-  $('stopBtn').addEventListener('click', () => togglePause()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', () => newRace()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
   function humanInput(dt) {
     camTouch = S.cam === 'Free' && S.you !== 'You';   // with an AI on your hull, the phone's sticks fly the free camera
     if (playMode && touch.used) return camTouch ? { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 } : { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
@@ -719,7 +738,7 @@
   let W = null, race = 'ready', paused = false, seedN = 1;
   function pilotsSpec() {
     const zero = { charge: 0, mass: 0, space: 0, time: 0 }, list = [{ ai: S.you === 'You' ? null : S.you, lv: Object.assign({}, S.lv) }];
-    for (let i = 0; i < S.rivals; i++) list.push({ ai: S.diff, lv: Object.assign({}, S.typeToAll ? S.lv : zero) });
+    S.ai.forEach((lvl, k) => { if (lvl !== 'Off') list.push({ ai: lvl, dom: k + 1, lv: Object.assign({}, S.typeToAll ? S.lv : zero) }); });   // a seat keeps its colour (Ruby, Gold, Blue) whichever seats are on
     return list;
   }
   function newRace() {
@@ -730,7 +749,7 @@
     $('courseInfo').textContent = 'I' + S.course + ' · ' + COURSE_INFO[S.course] + ' · ' + W.track.target + ' crystals';
   }
   function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
-  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Stopped' : 'Resumed'); }
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
   function finishRace() {
     race = 'finished';
     const order = W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.crystals - a.crystals);
@@ -744,8 +763,8 @@
   }
   function cycleCamera() {
     const n = W ? W.pilots.length : 1;
-    if (S.cam === 'Chase') { if (n > 1) { S.cam = 'Follow'; followIdx = 1; } else { S.cam = 'Free'; free.pos.copy(cam.position); } }
-    else if (S.cam === 'Follow') { followIdx++; if (followIdx >= n) { S.cam = 'Free'; free.pos.copy(cam.position); } }
+    if (S.cam === 'Chase') { if (n > 1) { S.cam = 'Follow'; followIdx = 1; } else { S.cam = 'Free'; followIdx = 0; } }
+    else if (S.cam === 'Follow') { followIdx++; if (followIdx >= n) { S.cam = 'Free'; followIdx = 0; } }
     else S.cam = 'Chase';
     syncSegs(); save();
   }
@@ -758,17 +777,30 @@
   const SEGS = {
     segCourse: { key: 'course', vals: [1, 2, 3, 4], label: (v) => 'I' + v, rebuild: true },
     segYou: { key: 'you', vals: ['You', 'Easy', 'Medium', 'Hard'], label: (v) => v === 'You' ? 'You fly' : 'AI ' + v, rebuild: true },
-    segRivals: { key: 'rivals', vals: [0, 1, 2, 3], label: (v) => String(v), rebuild: true },
-    segDiff: { key: 'diff', vals: ['Easy', 'Medium', 'Hard'], label: (v) => v, rebuild: true },
     segCam: { key: 'cam', vals: ['Chase', 'Follow', 'Free'], label: (v) => v },
     segSpeed: { key: 'speed', vals: [1, 2, 4], label: (v) => v + '×' },
   };
   for (const [id, d] of Object.entries(SEGS)) for (const v of d.vals) {
     const b = elx('button', null, d.label(v)); b.type = 'button'; b.dataset.v = String(v);
-    b.addEventListener('click', () => { S[d.key] = v; if (d.key === 'cam' && v === 'Free') free.pos.copy(cam.position); save(); syncSegs(); if (d.rebuild) newRace(); });
+    b.addEventListener('click', () => { S[d.key] = v; if (d.key === 'cam' && v === 'Free') followIdx = 0; save(); syncSegs(); if (d.rebuild) newRace(); });
     $(id).appendChild(b);
   }
-  function syncSegs() { for (const [id, d] of Object.entries(SEGS)) for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.v === String(S[d.key]))); }
+  // one row per AI rival: Off / Easy / Medium / Hard, each in its own colour (/vessel-studio D20)
+  const rivalSegs = [];
+  for (let k = 0; k < 3; k++) {
+    const D = DOMAINS[k + 1], row = elx('div', 'field'), name = elx('span', null, 'AI ' + D.name), seg = elx('div', 'seg diff');
+    name.style.color = D.css; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'AI ' + D.name + ' level');
+    for (const v of ['Off', 'Easy', 'Medium', 'Hard']) {
+      const b = elx('button', null, v); b.type = 'button'; b.dataset.v = v;
+      b.addEventListener('click', () => { S.ai[k] = v; save(); syncSegs(); newRace(); });
+      seg.appendChild(b);
+    }
+    row.append(name, seg); $('rivalRows').appendChild(row); rivalSegs.push(seg);
+  }
+  function syncSegs() {
+    for (const [id, d] of Object.entries(SEGS)) for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.v === String(S[d.key])));
+    rivalSegs.forEach((seg, k) => { for (const b of seg.children) b.setAttribute('aria-pressed', String(b.dataset.v === S.ai[k])); });
+  }
   $('thinking').checked = S.thinking; $('thinking').addEventListener('change', (e) => { S.thinking = e.target.checked; save(); });
   $('autoRestart').checked = S.autoRestart; $('autoRestart').addEventListener('change', (e) => { S.autoRestart = e.target.checked; save(); });
   $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
@@ -850,10 +882,20 @@
     const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
     // the universal studio Stop (/vessel-studio D18): same label, key and place in every studio
-    $('stopBtn').hidden = race !== 'running'; $('stopBtn').textContent = paused ? '▶ Resume' : '■ Stop'; $('stopBtn').setAttribute('aria-pressed', paused ? 'true' : 'false');
-    $('tStop').textContent = paused ? '▶ Resume' : '■ Stop';
-    $('tStart').hidden = race === 'running' && !paused; $('tStart').textContent = paused ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
+    const live = race === 'running' && !paused;
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready';
+    $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
     while (W.events.length) say(W.events.shift());
+  }
+
+  // the crystal to collect, marked on screen (the Stoat's "RING 1 . 105 u" marker): the watched pilot's next crystal
+  function markCrystal(W) {
+    const P = W.pilots[S.cam === 'Chase' ? 0 : Math.min(followIdx, W.pilots.length - 1)] || W.pilots[0];
+    if (!P.crystal || race === 'finished') { mark.hide(); return; }
+    cam.updateMatrixWorld();
+    mark.set(cam, P.crystal.pos, 'Crystal ' + (P.crystals + 1) + '/' + W.track.target + ' \u00b7 ' + Math.round(P.crystal.pos.distanceTo(P.pos)) + ' u',
+      '#' + new THREE.Color(P.domain.color).getHexString(), canvas.clientWidth, canvas.clientHeight);
   }
 
   // ================= loop =================
@@ -870,11 +912,24 @@
         if (W.over) { finishRace(); break; }
       }
     }
-    if (W) { drawWorld(W, now / 1000); placeCamera(W, dt, false); }
+    ENV.update(dt);
+    if (W) { drawWorld(W, now / 1000); placeCamera(W, dt, false); markCrystal(W); }
     renderer.render(scene, cam);
     hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
     requestAnimationFrame(frame);
   }
+  // ================= the editor layout (/vessel-studio D8, studio-ide.js) =================
+  // The stage fills the middle; every panel is a tab in the right or bottom dock; any tab pops out into a window you
+  // drag, resize and dock back; splitters resize the docks; the page never scrolls (below 900 px the docks stack).
+  const panelBy = (title) => [...document.querySelectorAll('aside .panel')].find((p) => { const h = p.querySelector('h3') || p.querySelector('summary'); return h && h.textContent.trim().startsWith(title); });
+  const IDE = VesselStudioIDE.build({
+    key: 'squirrel-studio-ide', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['race', 'Race', [panelBy('Race'), document.querySelector('.afternote')]], ['type', 'Type', [panelBy('Play-style type'), panelBy('Drift feel')]],
+      ['elements', 'Elements', [panelBy('Element levels')]], ['abilities', 'Abilities', [panelBy('Ability row')]], ['live', 'Live numbers', [panelBy('Live numbers')]]],
+    bottom: [['score', 'Scorecard', [panelBy('Scorecard')]], ['runs', 'Runs', [panelBy('Runs')]], ['about', 'About', [document.querySelector('header .sub'), panelBy('Where the numbers')]]],
+    railW: 380, dockH: 230, winSize: { score: [760, 340], runs: [640, 360] },
+    onLayout: () => { lastW = lastH = 0; },
+  });
   syncSegs(); syncRail(); syncDrift(); renderRuns();
   newRace(); hud();
   requestAnimationFrame((t) => { last = t; frame(t); });
@@ -882,7 +937,7 @@
   // test hook for scripted checks (no effect on play)
   window.__squirrelStudio = {
     get state() { const P = W.pilots[0]; return { race, t: +W.t.toFixed(2), course: S.course, target: W.track.target, lineLen: Math.round(W.track.len), speed: +P.speed.toFixed(1), pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, crystals: p.crystals, finishT: p.finishT, boost: +p.boost.toFixed(2), skims: p.skims, resets: p.resets, mistakes: p.mistakes, state: p.aiState })) }; },
-    set: (k, v) => { S[k] = v; syncSegs(); newRace(); }, startRace, raceHeadless, raceStats, runScorecard, mults,
+    set: (k, v) => { S[k] = v; syncSegs(); newRace(); }, startRace, raceHeadless, raceStats, runScorecard, mults, ide: IDE,
   };
 })();
 </script>
