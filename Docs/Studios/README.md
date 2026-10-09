@@ -12,6 +12,32 @@ named after it, and when the asset changes the page must follow (or say on scree
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
 
+## Stoat Flight Studio (round 9 — five play styles)
+
+**Play styles.** The rail's **Play styles** card blends the sling and hole settings five ways: Comet
+(velocity), Needle (precision), Anchor (forgiving control), Maelstrom (gravity) and Flare (surge). The
+sliders elsewhere are now your *base* tuning, and the five weights blend it. A value a style has changed
+shows underlined in blue, and its tooltip gives both numbers.
+
+- **Presets** set one style to 1 and the rest to 0.5; **Balanced** returns all five to 0.5.
+- **Live** makes a race move the weights:
+  - each race starts them at 0.5;
+  - element crystals along the course feed one style each: Time → Comet, Space → Anchor, Mass → Maelstrom,
+    Charge → Flare;
+  - a clean release (out of the grip, nose within 20° of the next ring) earns Needle;
+  - unfed weights drift back to 0.5.
+- **HUD.** The five weights show as bars on the stage.
+
+The design, the full table of what each style changes, the measured results and the plan for taking it
+into the game are in **`STOAT_PLAY_STYLES.md`**.
+
+**Checked offline:**
+
+- the presets measurably differ (table in that doc);
+- a Mass crystal moves Maelstrom 0.50 → 0.65, then it drifts back;
+- a clean release raises Needle 0.50 → 0.60 and a sloppy one does not;
+- all 102 tooltip cards render, with no console errors.
+
 ## Stoat Flight Studio (round 8 — birth, annihilation, one pair, Stop)
 
 **A pair's life** (the dipole pair; the **Birth & annihilation** group, 14 settings, each with a tooltip):

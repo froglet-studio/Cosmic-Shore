@@ -86,6 +86,10 @@
   .row input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: var(--accent); }
   .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .row output.changed { color: var(--accent); }
+  .row output.styled { color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+  .presets .pick { padding: 4px 9px; font-size: 0.8rem; }
+  .presets .pick i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
   .tipbtn { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--dim); font: 700 11px/16px var(--font-display); cursor: help; padding: 0; }
   .tipbtn:hover, .tipbtn:focus-visible, .tipbtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); outline: none; }
   #tip { box-sizing: border-box; position: fixed; z-index: 60; width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 16px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45); padding: 12px 14px; color: var(--fg); }
@@ -141,8 +145,8 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 8 · birth &amp; annihilation</span>
-    <p>Round 8. A pair now has a life you can watch: the <b>black hole grows from a point</b> as its mass arrives, while the <b>white hole's light converges from far away</b> onto its spot. When the two meet they <b>annihilate</b>: the black hole sinks back to a point and the pair's mass leaves as a <b>gravitational wave</b>. The wave rolls outward, stretching space one way and squeezing it the other, so prisms pulse and your view breathes as it passes. <b>One pair at a time</b>: no new one until this one has vanished. <b>■ Stop</b> (or <kbd>P</kbd>) halts the Stoat and the clock. While stopped, LT/RT lays a pair ahead so you can watch its whole life head-on. Every setting has an ⓘ with before/after previews.</p>
+    <span class="round">Round 9 · five play styles</span>
+    <p>Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -184,7 +188,7 @@
       <form id="logForm" autocomplete="off">
         <label>Topic
           <select id="logTopic">
-            <option>Wormhole style</option><option>Sling feel</option><option>Black hole</option><option>Birth &amp; annihilation</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
+            <option>Wormhole style</option><option>Play styles</option><option>Sling feel</option><option>Black hole</option><option>Birth &amp; annihilation</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
           </select></label>
         <label>Decision <input type="text" id="logChoice" maxlength="400" required></label>
         <label class="full">Why (optional) <textarea id="logNote" rows="2" maxlength="1500"></textarea></label>
@@ -203,6 +207,14 @@
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
         <p class="src" id="portalSrc"></p>
       </div>
+
+      <details class="card" id="grp-style" open><summary>Play styles <small>five ways to fly the sling</small></summary>
+        <div class="presets" role="group" aria-label="Play-style presets" id="stylePresets"></div>
+        <div class="rows"></div>
+        <label class="check"><input type="checkbox" id="liveStyles"> <span>Live: crystals, clean releases and drift move the weights during a race (each race starts them at 0.5)</span></label>
+        <div class="presets" role="group" aria-label="Collect a crystal without flying" id="crystalBtns"></div>
+        <p class="src">Each style is a set of changes to the sling and hole settings: full at 1, none at 0.5 (your tuning), reversed at 0. Values a style has changed show <span style="color:var(--accent-2);text-decoration:underline dotted">underlined in blue</span>. <b>Live</b>: the element crystals along the course feed a style each — <b style="color:#9e6bf0">Time</b> → Comet, <b style="color:#3d99f2">Space</b> → Anchor, <b style="color:#ed4561">Mass</b> → Maelstrom, <b style="color:#fabf2e">Charge</b> → Flare. Needle is earned, not collected: a clean release (out of the grip with your nose on the next ring) raises it. Unfed weights drift back to 0.5. The Stoat's own flight is never changed.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="style">Reset</button></div></details>
 
       <div class="card" id="runsCard">
         <h3>Runs on this course</h3>
@@ -297,6 +309,9 @@
     // the black hole (BlackHoleConfig where the game has the field; the studio's own otherwise)
     bhGmPerStrength: 20000, bhHorizonPerStrength: 2, bhInfluenceFloor: 0.6, bhMaxInfluence: 900, bhPrismAccelCap: 4000, bhPrismMaxSpeed: 450, bhPrismReturn: 0.5,
     bhTideGain: 1, bhTideMax: 5, bhShadow: 2.6, bhLensStrength: 1, bhLensReach: 30, bhLensFade: 0.55, bhRingGlow: 0.55, bhRingWidth: 0.06,
+    // play styles (weights 0..1, 0.5 = the base tuning) and how a race moves them
+    styleComet: 0.5, styleNeedle: 0.5, styleAnchor: 0.5, styleMaelstrom: 0.5, styleFlare: 0.5,
+    styleStep: 0.15, styleDrift: 0.04, needleStep: 0.1, needleCone: 20,
     // birth & annihilation (the dipole pair)
     bornS: 0.9, whInS: 1.1, whInFrom: 700, dieS: 0.7, whOutSpeed: 450, whOutFade: 1.6, shellBend: 6,
     gwAmp: 12, gwSpeed: 120, gwPeriod: 0.35, gwRingdown: 1.0, gwPrism: 0.6, gwShake: 1, gwGlow: 1,
@@ -310,6 +325,15 @@
   let GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2;   // refreshed from the Black hole group every frame
   const MIN_HORIZON = 1.5;
   const SPEC = [
+    ['style', 'styleComet', 'Comet · velocity', 0, 1, 0.01],
+    ['style', 'styleNeedle', 'Needle · precision', 0, 1, 0.01],
+    ['style', 'styleAnchor', 'Anchor · control', 0, 1, 0.01],
+    ['style', 'styleMaelstrom', 'Maelstrom · gravity', 0, 1, 0.01],
+    ['style', 'styleFlare', 'Flare · surge', 0, 1, 0.01],
+    ['style', 'styleStep', 'One crystal adds', 0, 0.5, 0.01],
+    ['style', 'styleDrift', 'Drift back to 0.5 (/s)', 0, 0.5, 0.005],
+    ['style', 'needleStep', 'One clean release adds', 0, 0.5, 0.01],
+    ['style', 'needleCone', 'Clean = nose within (°)', 2, 60, 1],
     ['sling', 'holdExponent', 'Squeeze curve', 0.5, 4, 0.05],
     ['sling', 'holdRamp', 'Key hold = full (s)', 0.1, 5, 0.05],
     ['D', 'dpAhead', 'Laid ahead (u)', 30, 400, 5],
@@ -405,12 +429,51 @@
     ['lope', 'lopeSquash', 'Stretch', 0, 1, 0.01],
   ];
 
+  // ================= the five play styles =================
+  // Each style is a set of changes to the sling and hole settings, applied in full at weight 1, not at all at 0.5, and
+  // reversed at 0 (Comet at 0 = steadier and slower). Every result is clamped to its slider's range. Only the sling,
+  // the holes and their birth & annihilation are touched — never the Stoat's own flight.
+  const STYLES = [
+    { key: 'styleComet', name: 'Comet', what: 'velocity', el: 'Time', col: '#9e6bf0', d: {
+      dpBoostMax: 0.6, dpBoostMin: 0.3, dpBoostSeconds: 0.6, dpAssistFade: 2.5, dpGrip: -1.2, dpAhead: 60, dpSettle: 1.5,
+      dpMaxTurn: -90, closeSpeed: 20, bornS: -0.3, whInS: -0.35, dpCatchDeg: -10 } },
+    { key: 'styleNeedle', name: 'Needle', what: 'precision', el: 'skill', col: '#e8ecff', d: {
+      holdExponent: 0.6, dpCatchDeg: 15, dpRsMax: -1.5, dpRsMin: -0.4, dpSettle: 3, dpGrip: 2, dpMaxTurn: 360, dpCaptureX: -0.2,
+      dpTurnCap: 4, bornS: -0.3, dpBoostSeconds: -0.4, gwShake: -0.3 } },
+    { key: 'styleAnchor', name: 'Anchor', what: 'control', el: 'Space', col: '#3d99f2', d: {
+      dpCaptureX: 0.6, dpCatchDeg: -15, dpSettle: -0.8, dpGrip: 2.5, dpRsMax: -2, dpRsMin: -0.3, dpSide: -10, closeSpeed: -15,
+      holdCap: 6, dpMaxTurn: 180, gwShake: -0.6, shellBend: -3, dpWhite: -0.2, dpAccelCap: -1500 } },
+    { key: 'styleMaelstrom', name: 'Maelstrom', what: 'gravity', el: 'Mass', col: '#ed4561', d: {
+      dpSMax: 6, dpSMin: 1, dpRsMax: 3, dpRsMin: 0.8, bhInfluenceFloor: -0.3, bhTideGain: 1.2, bhTideMax: 3, dpWhite: 0.4,
+      bhLensStrength: 0.6, bhRingGlow: 0.4, gwPrism: 0.4, dpTurnCap: -2, dpSide: 15 } },
+    { key: 'styleFlare', name: 'Flare', what: 'surge', el: 'Charge', col: '#fabf2e', d: {
+      dpBoostMax: 0.9, dpBoostSeconds: -0.5, dpBoostMin: 0.4, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
+      whCoreBrightness: 3, bornS: -0.4, dieS: -0.3, closeSpeed: 40, whOutSpeed: 250 } },
+  ];
+  const STYLE_BY_KEY = {}; for (const st of STYLES) STYLE_BY_KEY[st.key] = st;
+  const RANGE = {}; for (const r of SPEC) RANGE[r[1]] = [r[3], r[4]];
+  const STYLE_TOUCHED = new Set(); for (const st of STYLES) for (const k in st.d) STYLE_TOUCHED.add(k);
+  function blendInto(out, base, weights) {
+    Object.assign(out, base);
+    for (const st of STYLES) {
+      const sgn = 2 * (Math.max(0, Math.min(1, weights[st.key])) - 0.5); if (!sgn) continue;
+      for (const k in st.d) out[k] += sgn * st.d[k];
+    }
+    for (const k of STYLE_TOUCHED) { const r = RANGE[k]; if (r) out[k] = Math.min(r[1], Math.max(r[0], out[k])); }
+    return out;
+  }
+  function recomputeP() { blendInto(P, BP, BP); }
+
   // ================= per-viewer state (convenience only) =================
-  const LS_KEY = 'stoat-studio-v8';
+  const LS_KEY = 'stoat-studio-v9';
   function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked: fine */ } }
   const saved = lsGet(LS_KEY, {});
-  const P = Object.assign({}, SHIPPED, saved.P || {});
+  // BP is your tuning (the sliders); P is what flies and draws: BP blended by the five play-style weights.
+  const BP = Object.assign({}, SHIPPED, saved.P || {});
+  const P = Object.assign({}, BP);
+  recomputeP();
+  let liveStyles = !!saved.liveStyles;
   let style = 'A';   // the crystal pair (B) is archived: chosen from the Archive card only, never remembered
   let slingMode = saved.slingMode === 'orbit' ? 'orbit' : 'dipole';   // pair A's sling: round 5's dipole, or round 4's orbit
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
@@ -418,7 +481,7 @@
   let invertY = !!saved.invertY;
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { P, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, runs: runs.slice(-40) }); }
+  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, runs: runs.slice(-40) }); }
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
@@ -557,6 +620,35 @@
   let gates = [];
   const courseGroup = new THREE.Group(); scene.add(courseGroup);
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  // Element crystals between the rings, two of each, a little off the line so taking one is a choice.
+  const CRYSTAL_KINDS = [{ el: 'Time', col: 0x9e6bf0, key: 'styleComet' }, { el: 'Space', col: 0x3d99f2, key: 'styleAnchor' }, { el: 'Mass', col: 0xed4561, key: 'styleMaelstrom' }, { el: 'Charge', col: 0xfabf2e, key: 'styleFlare' }];
+  let crystals = [];
+  function buildCrystals() {
+    for (const c of crystals) courseGroup.remove(c.mesh);
+    crystals = [];
+    for (let k = 0; k < 8 && gates.length >= 8; k++) {
+      const a = gates[k].p, b = gates[(k + 1) % 8].p, kind = CRYSTAL_KINDS[k % 4];
+      const side = new V3().subVectors(b, a).cross(Y).normalize().multiplyScalar(k % 2 ? 22 : -22);
+      const p = new V3().addVectors(a, b).multiplyScalar(0.5).add(side);
+      const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(5.5, 0), new THREE.MeshStandardMaterial({ color: kind.col, emissive: kind.col, emissiveIntensity: 0.9, roughness: 0.3, metalness: 0.1, flatShading: true }));
+      mesh.position.copy(p); courseGroup.add(mesh);
+      crystals.push({ mesh, p, kind, wait: 0 });
+    }
+  }
+  function spinCrystals(dt) {
+    for (const c of crystals) {
+      c.mesh.rotation.y += dt * 1.4; c.mesh.position.y = c.p.y + Math.sin(simT * 1.6 + c.p.x) * 1.5;
+      if (c.wait > 0) { c.wait -= dt; if (c.wait <= 0) c.mesh.visible = true; }
+    }
+  }
+  function collectCrystals() {
+    for (const c of crystals) {
+      if (!c.mesh.visible || hull.position.distanceTo(c.mesh.position) > 13) continue;
+      c.mesh.visible = false; c.wait = 8;
+      if (liveStyles) styleBump(c.kind.key, P.styleStep, c.kind.el + ' crystal');
+      else { styleFlash = 1.4; styleFlashCol = '#' + c.kind.col.toString(16).padStart(6, '0'); styleFlashText = c.kind.el.toUpperCase() + ' CRYSTAL (tick Live to let it move ' + STYLE_BY_KEY[c.kind.key].name + ')'; }
+    }
+  }
   function buildCourse() {
     while (courseGroup.children.length) { const c = courseGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
     const rng = mulberry32(seed * 7919 + intensity), I = intensity - 1, mouth = MOUTHS[I];
@@ -577,6 +669,7 @@
     });
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(400)), new THREE.LineBasicMaterial({ color: 0x35448a, transparent: true, opacity: 0.55 }));
     courseGroup.add(line);
+    buildCrystals();
     $('seedOut').textContent = seed;
   }
 
@@ -839,7 +932,20 @@
   }
 
   // ---- race ----
-  let stopped = false, blockFlash = 0;
+  let stopped = false, blockFlash = 0, styleFlash = 0, styleFlashText = '', styleFlashCol = '#ffffff', outsClock = 0;
+  function styleBump(key, amt, why) {
+    BP[key] = Math.min(1, Math.max(0, BP[key] + amt)); recomputeP();
+    const st = STYLE_BY_KEY[key]; styleFlash = 1.6; styleFlashCol = st.col;
+    styleFlashText = '+ ' + st.name.toUpperCase() + ' · ' + why + ' · ' + BP[key].toFixed(2);
+  }
+  function stepStyles(dt) {
+    if (!liveStyles || race !== 'running' || stopped) return;
+    const k = 1 - Math.exp(-Math.max(0, P.styleDrift) * dt);
+    for (const st of STYLES) BP[st.key] += (0.5 - BP[st.key]) * k;
+    recomputeP();
+    outsClock += dt; if (outsClock > 0.25) { outsClock = 0; refreshAllOuts(); }
+  }
+  function startStyles() { if (!liveStyles) return; for (const st of STYLES) BP[st.key] = 0.5; recomputeP(); refreshAllOuts(); }
   // Stop: the Stoat halts where it is and the race clock pauses; the world keeps going (watch a pair live out its life).
   function setStopped(on) {
     if (mode !== 'fly' || (race !== 'running' && !stopped)) return;
@@ -870,7 +976,7 @@
     if (stopped) { setStopped(false); return; }
     if (mode !== 'fly' || race === 'running') return;
     if (race === 'finished') spawn();
-    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
+    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
   }
   const runStyles = new Set();
   function finishRace() {
@@ -968,6 +1074,7 @@
       hull.position.add(delta); cam.position.add(delta); camLook.add(delta); portalFlash = 1;
       break;
     }
+    collectCrystals();
     dropTrail(dt);
     applyLope(dt, speed / Math.max(1, P.cruise));
   }
@@ -1075,6 +1182,12 @@
     const sd = slingDipole; if (!sd) return;
     sd.pair.held = false;
     basis();
+    // Needle is earned: let go yourself, out of the grip, with your nose on the next ring
+    if (!auto && !stopped && sd.captured && race === 'running' && gates.length) {
+      tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
+      const off = Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI;
+      if (off <= P.needleCone) { if (liveStyles) styleBump('styleNeedle', P.needleStep, 'clean release'); else { styleFlash = 1.6; styleFlashCol = '#e8ecff'; styleFlashText = 'CLEAN RELEASE (tick Live to let it raise Needle)'; } }
+    }
     const kick = Math.max(speed, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
     if (kick > 0) boosts.push({ dir: fwd.clone(), amp: kick, t: 0, dur: P.dpBoostSeconds });
     lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
@@ -1612,6 +1725,17 @@
       c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, pad + 50 * sc);
       c.font = font(11, 500); c.fillStyle = ink; c.fillText('Press LT or RT to lay a pair ahead and watch its whole life: hold it, let go, watch it close, annihilate and send its wave past you. ▶ Resume (or P) to fly on.', cw / 2, pad + 66 * sc);
     }
+    if (liveStyles || STYLES.some((st) => Math.abs(BP[st.key] - 0.5) > 1e-3)) {
+      const x0 = pad, y0 = pad + 56 * sc, bw = 70 * sc;
+      STYLES.forEach((st, n) => {
+        const y = y0 + n * 13 * sc, w = BP[st.key];
+        c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(x0 + 54 * sc, y - 6 * sc, bw, 5 * sc);
+        c.fillStyle = st.col; c.fillRect(x0 + 54 * sc, y - 6 * sc, bw * w, 5 * sc);
+        c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillRect(x0 + 54 * sc + bw * 0.5, y - 8 * sc, 1, 9 * sc);
+        c.textAlign = 'left'; c.font = font(9.5, 600); c.fillStyle = st.col; c.fillText(st.name, x0, y);
+      });
+    }
+    if (styleFlash > 0) { c.globalAlpha = Math.min(1, styleFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = styleFlashCol; c.fillText(styleFlashText, cw / 2, ch * 0.62); c.globalAlpha = 1; }
     if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
     if (myPair && myPair.alive && myPair.dipole && !slingDipole && !(slingFlash > 0)) {
       const pr = myPair; c.textAlign = 'center'; c.font = font(12, 600); c.fillStyle = dim;
@@ -1653,7 +1777,7 @@
     trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc);
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
     c.fillText(lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
-    swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
+    swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); styleFlash = Math.max(0, styleFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
   // The sling lays its pair wide (half gap 4 horizons), so most of a throw happens off-screen.
@@ -2335,8 +2459,67 @@
     },
   };
 
+  // ---------- how a race moves the weights: crystals raise one, clean releases raise Needle, all drift back ----------
+  SCENES.weights = {
+    make(Pv) {
+      const ev = [[1.0, 'styleComet', 'Time'], [2.0, 'styleComet', 'Time'], [3.0, 'styleComet', 'Time'], [4.5, 'styleAnchor', 'Space'], [6.0, 'styleNeedle', 'clean'], [7.5, 'styleNeedle', 'clean'], [9.0, 'styleFlare', 'Charge']];
+      const frames = [], w = {}; for (const st of STYLES) w[st.key] = 0.5;
+      let e = 0, last = '';
+      for (let t = 0; t <= 24; t += 0.1) {
+        while (e < ev.length && ev[e][0] <= t) { const [, k, why] = ev[e++]; w[k] = Math.min(1, w[k] + (why === 'clean' ? Pv.needleStep : Pv.styleStep)); last = why === 'clean' ? 'clean release → Needle' : why + ' crystal → ' + STYLE_BY_KEY[k].name; }
+        const k1 = 1 - Math.exp(-Math.max(0, Pv.styleDrift) * 0.1);
+        for (const st of STYLES) w[st.key] += (0.5 - w[st.key]) * k1;
+        frames.push({ t, w: Object.assign({}, w), last });
+      }
+      return { frames };
+    },
+    period: () => 8.4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 53);
+      const f = st.frames[Math.min(st.frames.length - 1, Math.floor(tt * 3 * 10))];   // 24 s of race shown in 8 s
+      const x0 = 74, x1 = W - 14, y0 = 26;
+      STYLES.forEach((s5, n) => {
+        const y = y0 + n * ((H - 40) / 5), w = f.w[s5.key];
+        c.fillStyle = 'rgba(255,255,255,0.1)'; c.fillRect(x0, y, x1 - x0, 9);
+        c.fillStyle = s5.col; c.fillRect(x0, y, (x1 - x0) * w, 9);
+        c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(x0 + (x1 - x0) * 0.5, y - 3, 1.5, 15);
+        txt(c, s5.name, 8, y + 9, s5.col, 10.5); txt(c, w.toFixed(2), x1, y - 3, '#9aa6d6', 9.5, 'right');
+      });
+      txt(c, 'race time ' + f.t.toFixed(0) + ' s  ·  ' + f.last, 6, 13, '#e8ecff', 10);
+    },
+  };
+  // ---------- what counts as a clean release ----------
+  SCENES.cone = {
+    make: () => ({}), period: () => 5.4,
+    draw(c, W, H, tt, st, view, Pv) {
+      previewBg(c, W, H, 59);
+      const cx = W / 2, cy = H - 22, L = H - 50, ringA = -Math.PI / 2 - 0.25, cone = Pv.needleCone * Math.PI / 180;
+      c.fillStyle = 'rgba(232,236,255,0.10)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, L, ringA - cone, ringA + cone); c.closePath(); c.fill();
+      const rx = cx + Math.cos(ringA) * L, ry = cy + Math.sin(ringA) * L;
+      c.strokeStyle = '#ffb347'; c.lineWidth = 2; c.beginPath(); c.ellipse(rx, ry, 10, 6, 0, 0, TAU); c.stroke(); txt(c, 'next ring', rx + 14, ry + 4, '#ffb347', 9.5);
+      const tries = [-50, -32, -18, -8, 0, 10, 22, 38, 55], k = Math.min(tries.length, Math.floor(tt / 0.55) + 1);
+      let clean = 0;
+      for (let i = 0; i < k; i++) {
+        const a = ringA + tries[i] * Math.PI / 180, ok = Math.abs(tries[i]) <= Pv.needleCone; if (ok) clean++;
+        c.strokeStyle = ok ? '#7dffb0' : 'rgba(154,166,214,0.6)'; c.lineWidth = ok ? 2.2 : 1.4;
+        c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * L * 0.8, cy + Math.sin(a) * L * 0.8); c.stroke();
+      }
+      ship(c, cx, cy, 0, 1, '#ffd27a', 6);
+      txt(c, clean + ' of ' + k + ' releases count as clean (±' + Math.round(Pv.needleCone) + '°)', 6, 13, '#e8ecff', 10);
+    },
+  };
+
   // ---------- what each number means, in plain words ----------
   const TIPS = {
+    styleComet: { scene: 'sling', cfg: { q: 0.7, release: 180 }, at: [0.1, 0.9], d: 'Comet — velocity. For players who never want to slow down: the sling keeps more of the speed gravity gives you, catches and lets go quicker, the release boost lasts longer and the pair is laid further ahead. Fed by Time crystals (Time = rate and mobility). Watch the dot spacing after the release: wider = faster.', lo: 'Steadier and slower: the sling soaks up speed.', hi: 'Keeps its speed and launches longer.' },
+    styleNeedle: { scene: 'sling', cfg: { q: 0.5 }, at: [0.1, 0.9], d: 'Needle — precision. For players who want exact control: finer control at light squeezes, it catches you only once the hole is beside you, smaller crisper holes, a firm snap onto the circle and more turns allowed so you choose your exit angle. Earned by skill, not crystals: each clean release raises it.', lo: 'Looser, blunter control.', hi: 'Crisper and more exact.' },
+    styleAnchor: { scene: 'sling', cfg: { q: 0.35, over: { dpSide: 70 } }, at: [0.1, 0.9], d: 'Anchor — control. For players who want it forgiving: it catches you from further away, settles you gently and holds your speed steady, it is hard to dive into by accident, the pair lingers and the screen effects are calmer. Fed by Space crystals (Space = reach and presence). The preview passes wide, to show the reach.', lo: 'Less forgiving: pass close or miss.', hi: 'Forgiving: it reaches out and holds you.' },
+    styleMaelstrom: { scene: 'sling', cfg: { q: 0.9 }, at: [0.1, 0.9], d: 'Maelstrom — gravity. For the power fantasy: heavier, bigger holes, wide sweeping circles, prisms pulled from further and stretched more, a stronger white-hole push. Fed by Mass crystals (Mass = size and volume).', lo: 'Lighter, smaller holes.', hi: 'Huge, world-bending holes.' },
+    styleFlare: { scene: 'birth', at: [0.1, 0.9], d: 'Flare — surge. For spectacle and burst lovers: a bigger punch on release, quicker and more dramatic births, a more violent annihilation wave that shakes the prisms and your view. Fed by Charge crystals (Charge = threat and energy).', lo: 'Quieter, gentler bursts.', hi: 'Explosive releases and annihilations.' },
+    styleStep: { scene: 'weights', d: 'How much one element crystal raises its play style: Time → Comet, Space → Anchor, Mass → Maelstrom, Charge → Flare. The preview plays a race: three Time crystals, a Space crystal, two clean releases, a Charge crystal.', lo: 'Each crystal nudges its style.', hi: 'Each crystal pushes its style hard.' },
+    styleDrift: { scene: 'weights', d: 'How fast unfed weights drift back toward 0.5, so your style reflects how you are playing now rather than for the whole match (per second).', lo: 'Styles you build up last longer.', hi: 'Styles fade back quickly unless you keep feeding them.' },
+    needleStep: { scene: 'weights', d: 'How much one clean release raises Needle.', lo: 'Precision builds slowly.', hi: 'A few clean releases make you a Needle.' },
+    needleCone: { scene: 'cone', d: 'How close to the next ring your nose must point when you let go yourself, out of the grip, for the release to count as clean (degrees either side).', lo: 'Only near-perfect exits count.', hi: 'Rough exits count too.' },
     bornS: { scene: 'birth', d: 'How long the black hole takes to grow from a point to full size. Its mass arrives over this time and its horizon grows with it (a horizon\'s radius is proportional to the mass inside it), so its pull grows too.', lo: 'It pops into being.', hi: 'A slow swelling from a point.' },
     whInS: { scene: 'birth', d: 'How long the white hole takes to arrive. A white hole is a black hole run backwards, so it comes in the way it will leave, reversed: a light shell converging from far away onto its spot. Its core lights up as the shell lands.', lo: 'It snaps in quickly.', hi: 'A slow, visible convergence.' },
     whInFrom: { scene: 'birth', d: 'How far out that incoming light shell starts. Far enough, and it seems to come from infinity — from beyond what you can see.', lo: 'The shell starts nearer.', hi: 'It starts from further beyond the view.' },
@@ -2436,21 +2619,23 @@
   const tipEl = document.createElement('div'); tipEl.id = 'tip'; tipEl.setAttribute('role', 'tooltip'); tipEl.hidden = true; document.body.appendChild(tipEl);
   let tipState = null, tipHide = 0, tipShowT = 0, tipRaf = 0;
   const SPEC_BY_KEY = {}; for (const r of SPEC) SPEC_BY_KEY[r[1]] = r;
-  function tipValues(key) { const [, , , lo, hi, step] = SPEC_BY_KEY[key]; const snap = (v) => Math.round(v / step) * step; return [snap(lo + 0.3 * (hi - lo)), snap(lo + 0.7 * (hi - lo))]; }
+  function tipFracs(key) { return (TIPS[key] && TIPS[key].at) || [0.3, 0.7]; }
+  function tipValues(key) { const [, , , lo, hi, step] = SPEC_BY_KEY[key], [a, b] = tipFracs(key); const snap = (v) => Math.round(v / step) * step; return [snap(lo + a * (hi - lo)), snap(lo + b * (hi - lo))]; }
   function showTip(key, anchor, pinned) {
     clearTimeout(tipHide);
     const tip = TIPS[key], spec = SPEC_BY_KEY[key]; if (!tip || !spec) return;
     if (tipState && tipState.key === key) { tipState.pinned = tipState.pinned || !!pinned; return; }
     const [, , label, lo, hi, step] = spec, [vLo, vHi] = tipValues(key), scene = SCENES[tip.scene], cfg = Object.assign({ key }, tip.cfg || {});
-    const mk = (v) => Object.assign({}, P, cfg.over || {}, { [key]: v });
+    const mk = (v) => { const base = Object.assign({}, BP, { [key]: v }); return Object.assign(blendInto({}, base, base), cfg.over || {}); };
     const Plo = mk(vLo), Phi = mk(vHi), sLo = scene.make(Plo, cfg), sHi = scene.make(Phi, cfg);
     tipEl.innerHTML = '<h4></h4><p class="what"></p><div class="figs"><figure><canvas></canvas><figcaption></figcaption></figure><figure><canvas></canvas><figcaption></figcaption></figure></div><p class="foot"></p>';
     tipEl.querySelector('h4').textContent = label;
     tipEl.querySelector('.what').textContent = tip.d;
     const caps = tipEl.querySelectorAll('figcaption');
-    caps[0].innerHTML = '<b>Lower</b> · 30% of the range: <b>' + fmtNum(vLo, step) + '</b><br>'; caps[0].appendChild(document.createTextNode(tip.lo));
-    caps[1].innerHTML = '<b>Higher</b> · 70% of the range: <b>' + fmtNum(vHi, step) + '</b><br>'; caps[1].appendChild(document.createTextNode(tip.hi));
-    tipEl.querySelector('.foot').textContent = 'Range ' + fmtNum(lo, step) + ' – ' + fmtNum(hi, step) + ' · shipped ' + fmtNum(SHIPPED[key], step) + ' · now ' + fmtNum(P[key], step) + (pinned ? ' · pinned (Esc or ⓘ to close)' : '');
+    const [fa, fb] = tipFracs(key);
+    caps[0].innerHTML = '<b>Lower</b> · ' + Math.round(fa * 100) + '% of the range: <b>' + fmtNum(vLo, step) + '</b><br>'; caps[0].appendChild(document.createTextNode(tip.lo));
+    caps[1].innerHTML = '<b>Higher</b> · ' + Math.round(fb * 100) + '% of the range: <b>' + fmtNum(vHi, step) + '</b><br>'; caps[1].appendChild(document.createTextNode(tip.hi));
+    tipEl.querySelector('.foot').textContent = 'Range ' + fmtNum(lo, step) + ' – ' + fmtNum(hi, step) + ' · shipped ' + fmtNum(SHIPPED[key], step) + ' · your setting ' + fmtNum(BP[key], step) + (Math.abs(P[key] - BP[key]) > 1e-6 ? ' · with the play styles ' + fmtNum(P[key], step) : '') + (pinned ? ' · pinned (Esc or ⓘ to close)' : '');
     const cvs = tipEl.querySelectorAll('canvas');
     let view = null;
     if (scene.bounds) { const b = bUnion(scene.bounds(sLo, cfg), scene.bounds(sHi, cfg)); view = { b }; }
@@ -2517,18 +2702,23 @@
       attachTip(row, key, label);
       const inp = row.querySelector('input'), out = row.querySelector('output');
       inp.value = P[key]; outputs[key] = { inp, out, step };
-      inp.addEventListener('input', () => { P[key] = parseFloat(inp.value); refreshOut(key); persist(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
+      inp.addEventListener('input', () => { BP[key] = parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
       refreshOut(key);
     }
   }
+  function refreshAllOuts() { for (const k in outputs) refreshOut(k); }
   function refreshOut(key) {
-    const o = outputs[key], v = P[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2;
-    o.out.textContent = v.toFixed(dec); o.out.classList.toggle('changed', Math.abs(v - SHIPPED[key]) > 1e-9);
-    o.out.title = 'shipped ' + SHIPPED[key];
+    const o = outputs[key], b = BP[key], e = P[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2, styled = Math.abs(e - b) > 1e-6;
+    if (document.activeElement !== o.inp && Math.abs(parseFloat(o.inp.value) - b) > 1e-9) o.inp.value = b;
+    o.out.textContent = (styled ? e : b).toFixed(dec);
+    o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9);
+    o.out.classList.toggle('styled', styled);
+    o.out.title = 'shipped ' + SHIPPED[key] + (styled ? ' · your setting ' + b.toFixed(dec) + ', the play styles make it ' + e.toFixed(dec) : '');
   }
-  function resetGroup(grp) { for (const [g, key] of SPEC) if (g === grp) { P[key] = SHIPPED[key]; outputs[key].inp.value = P[key]; refreshOut(key); } persist(); if (mode === 'compare') buildCompare(playLives); }
+
+  function resetGroup(grp) { for (const [g, key] of SPEC) if (g === grp) { BP[key] = SHIPPED[key]; outputs[key].inp.value = BP[key]; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); }
   document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => resetGroup(b.dataset.reset)));
-  $('theirLife').addEventListener('click', () => { for (const [k, v] of [['formS', 6], ['annihilateS', 9]]) { P[k] = v; outputs[k].inp.value = v; refreshOut(k); } persist(); if (mode === 'compare') buildCompare(playLives); });
+  $('theirLife').addEventListener('click', () => { for (const [k, v] of [['formS', 6], ['annihilateS', 9]]) { BP[k] = v; outputs[k].inp.value = v; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); });
 
   function setStyle(s) {
     style = s;
@@ -2569,6 +2759,23 @@
     $('archive').appendChild(bar);
     $('cmpLives').addEventListener('click', (e) => { playLives = !playLives; e.currentTarget.setAttribute('aria-pressed', playLives ? 'true' : 'false'); buildCompare(playLives); });
   }
+  {
+    const host = $('stylePresets');
+    const mk = (label, col, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pick'; b.innerHTML = (col ? '<i style="background:' + col + '"></i>' : '') + label; b.addEventListener('click', fn); host.appendChild(b); };
+    const setW = (w) => { for (const st of STYLES) BP[st.key] = w[st.key] != null ? w[st.key] : 0.5; recomputeP(); refreshAllOuts(); persist(); };
+    for (const st of STYLES) mk(st.name, st.col, () => setW({ [st.key]: 1 }));
+    mk('Balanced', '', () => setW({}));
+    const ch = $('crystalBtns');
+    for (const kind of CRYSTAL_KINDS) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pick';
+      b.innerHTML = '<i style="background:#' + kind.col.toString(16).padStart(6, '0') + '"></i>+ ' + kind.el + ' crystal';
+      b.title = 'As if you flew through a ' + kind.el + ' crystal: raises ' + STYLE_BY_KEY[kind.key].name + ' by ' + 'the crystal step';
+      b.addEventListener('click', () => { styleBump(kind.key, P.styleStep, kind.el + ' crystal'); refreshAllOuts(); persist(); });
+      ch.appendChild(b);
+    }
+    $('liveStyles').checked = liveStyles;
+    $('liveStyles').addEventListener('change', (e) => { liveStyles = e.target.checked; persist(); });
+  }
   $('intensity').value = String(intensity); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
   $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); });
   $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); });
@@ -2590,8 +2797,8 @@
   let db = null, me = '', remote = null;
   const LOCAL_LOG = 'stoat-studio-log';
   let localLog = lsGet(LOCAL_LOG, []);
-  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return { style, slingMode, portalA: portal.A, portalB: portal.B, intensity, laps, seed, changed: o }; }
-  function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + P[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
+  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) o[k] = BP[k]; return { liveStyles, style, slingMode, portalA: portal.A, portalB: portal.B, intensity, laps, seed, changed: o }; }
+  function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + BP[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
   const SLING_KEYS = ['holdExponent', 'holdRamp'];
   const A_KEYS = ['orbitWide', 'orbitTight', 'orbitHorizons', 'boostMin', 'boostMax', 'boostSeconds', 'closeSpeed', 'closeRamp', 'holdCap', 'followRate', 'radialRate', 'vesselTide'];
   const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
@@ -2603,6 +2810,7 @@
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
       case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (slingMode === 'dipole' ? D_KEYS : A_KEYS) : B_KEYS));
+      case 'Play styles': return 'Play styles: ' + STYLES.map((st) => st.name + ' ' + BP[st.key].toFixed(2)).join(', ') + (liveStyles ? ' (live)' : '') + changedText(['styleStep', 'styleDrift', 'needleStep', 'needleCone']);
       case 'Birth & annihilation': return 'Birth & annihilation' + changedText(LIFE_KEYS);
       case 'Black hole': return 'Black hole' + changedText(BH_KEYS);
       case 'White hole': return 'White hole' + changedText(WH_KEYS);
@@ -2711,7 +2919,7 @@
     resize();
     GM_PER_STRENGTH = P.bhGmPerStrength; HORIZON_PER_STRENGTH = P.bhHorizonPerStrength;
     const inp = pollInput(dt);
-    simT += dt; waves = waves.filter(waveAlive);
+    simT += dt; waves = waves.filter(waveAlive); stepStyles(dt); spinCrystals(dt);
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     collectWells();
@@ -2722,7 +2930,7 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__stoatStudio = { get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 
