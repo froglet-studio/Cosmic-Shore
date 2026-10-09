@@ -9,8 +9,9 @@ named after it, and when the asset changes the page must follow (or say on scree
 
 | Studio | Live page (decision log on) | Repo copy |
 |---|---|---|
-| **Vessel Studio** (hub: Squirrel Studio v1 + Stoat) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `VesselStudio/` |
-| Stoat Flight Studio (round 15) | https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt (new artifact, its own decision log; rounds 1–14 and their log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) | `StoatFlightStudio.html` |
+| **Vessel Studio**: the ONE artifact (hub, Squirrel AI sim lab, Stoat Flight Studio round 15, studio agent, decisions, Sync panel) | https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa | `VesselStudio/` (the Stoat's source stays `StoatFlightStudio.html`) |
+
+Every earlier studio artifact is retired; publish only to the one above (`/vessel-studio` §0).
 
 **Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
 
@@ -21,8 +22,8 @@ Stoat and both pair styles flyable, inspectable and swappable in Amoebius (`Port
 
 ## Stoat Flight Studio (round 15 — the field trajectory)
 
-Live: https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt. This is a new artifact, published 2026-10-09. The round-14
-artifact is outside this login's organization, so this one starts its own decision log.
+Live: the Stoat page of the one Vessel Studio, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa (round 15 was first published on its own artifact,
+`8Wvnsx3gxJXXMNUCoyyuEt`, now retired).
 
 **Sling tab ▸ Field trajectory** (settings in the **Field** tab) is a second way to fly the pair, beside the dipole
 sling. Everything in it is **lab-only**: the game has no such mode, and every `ft*` row is a proposal, not a shipped

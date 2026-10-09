@@ -41,12 +41,10 @@ styles are designs that have not been ported yet.
 
 **Live pages:**
 
-- **Stoat Flight Studio:** https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc. Its decision log is the
-  artifact's `decisions` collection.
-- **Vessel Studio with the Sync panel** (Stoat round 15 from `cece/magical-carson-9bdq8z`; Refresh pulls any
-  branch): https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc. Decisions: its `decisions` collection.
-- **Vessel Studio hub:** https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN. It is **private** until shared
-  from its Share menu. Its development requests are the `requests` collection.
+- **Vessel Studio (the one artifact):** https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa. The hub, the Squirrel AI sim lab, the Stoat
+  Flight Studio (round 15), the studio agent and the Sync panel. Decisions: `decisions`; development requests:
+  `requests`; Sync jobs: `jobs`. It is **private** until shared from its Share menu. Every earlier studio
+  artifact is retired (`/vessel-studio` §0).
 
 ## 2. Decided (with the designer)
 

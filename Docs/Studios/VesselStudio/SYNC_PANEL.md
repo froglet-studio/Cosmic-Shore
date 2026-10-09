@@ -5,7 +5,7 @@ button (bottom right of every page of the Vessel Studio artifact) brings the art
 shows what changed, merges branches (then offers to delete the merged one), and keeps a shared log of
 decisions.
 
-- Live: https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc
+- Live: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa (the one Vessel Studio artifact)
 - Source: `Docs/Studios/VesselStudio/sync.js`. It is injected into the pages at publish time by
   `.claude/skills/vessel-studio/build_artifact.py`, and by Refresh. The studio pages in the repo do not
   carry it.

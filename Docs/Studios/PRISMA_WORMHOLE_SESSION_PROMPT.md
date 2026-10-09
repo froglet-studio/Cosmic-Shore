@@ -20,7 +20,7 @@ list it for a Unity PR on `claude/peaceful-rubin-hhw49n`, with file:line and how
 note on hand-written `.shader` files), `Docs/BLACK_HOLE.md` §0.1, §5.1 and §11–13,
 `Docs/CRYSTAL_WORMHOLE.md`, `Docs/WORMHOLES.md`, `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md`,
 `Assets/_Scripts/Controller/Arcade/SLINGSHOT.md`, and `Docs/Studios/README.md`. The web studio
-(`Docs/Studios/StoatFlightStudio.html`; live copy https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) is
+(`Docs/Studios/StoatFlightStudio.html`; live in the one Vessel Studio, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) is
 the reference for how each style should look and feel, and it already models the game's dual-stick mix.
 If the user has recorded decisions in it, ask them to paste its "Copy log" output.
 

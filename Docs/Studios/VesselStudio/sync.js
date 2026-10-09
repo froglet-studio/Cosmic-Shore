@@ -138,7 +138,7 @@
   });
 
   // ---------- jobs: the page asks a Claude session to do the git work ----------
-  const ARTIFACT = () => (build && build.artifact) || 'https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc';
+  const ARTIFACT = () => (build && build.artifact) || 'https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa';
   for (const b of WATCH) { const o = document.createElement('option'); o.value = b; $('branches').append(o); }
   function mcpError(e) {
     const c = e && e.code;

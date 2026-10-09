@@ -13,13 +13,14 @@ Android**, iOS later; Squirrel and Stoat first.
 
 **Starting or publishing a studio:** the **`/vessel-studio`** skill holds the decisions the Squirrel and Stoat
 studios settled (D1-D15), the build order, the artifact build and publish, and the **Sync panel** for two people
-on one studio (`VesselStudio/SYNC_PANEL.md`). Page recipe: `/studio-creator` (branch `vessel-studio`).
+on one studio (`VesselStudio/SYNC_PANEL.md`), the page recipe and the gate. It is the only studio skill, and
+https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa is the only studio artifact.
 
 ## 1. What exists (2026-10-09, branch `vessel-studio`)
 
 | Piece | Where | State |
 |---|---|---|
-| **Web Vessel Studio** | `Docs/Studios/VesselStudio/` (`index.html` hub, `squirrel.html`, `stoat.html`, `studios.json`, `README.md`); published at https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | **Works.** Hub + Squirrel Studio v1 + the Stoat Flight Studio (round 11). Phone play on every studio. |
+| **Web Vessel Studio** | `Docs/Studios/VesselStudio/` (`index.html` hub, `squirrel.html`, `stoat.html`, `studios.json`, `README.md`); published at https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa (the one artifact) | **Works.** Hub + Squirrel Studio round 2 (AI sim lab) + the Stoat Flight Studio (round 15) + the Sync panel. Phone play on every studio. |
 | **Squirrel Studio** (round 2: AI sim lab) | `squirrel.html` | Flight, drift, skimming boost, Boost Ring, steal, overtake petals, six play-style types over four element levels, all on the shipped numbers (each named in the page). Checked headless: Thief run skims 23 prisms, steals 15, boost 1.68× in 8 s; no console errors; fits 400 px. |
 | **Studio agent** | `index.html` § Studio agent | **Ask** (Claude answers with the vessel's spec, through the claude.ai viewer) and **Development requests** (stored in the artifact's database, collection `requests`; a Claude Code session reads them with `ArtifactData`). **Copy as agent prompt** for Amoebius's AGENT page. |
 | **Amoebius STUDIOS page** | `Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs`, `StudioCatalog.cs`; doc `Port/docs/LAUNCHER.md` § STUDIOS | **Works** (built and screenshotted headless). One card per studio from `studios.json`: OPEN (browser), AGENT (an Amoebius Agent chat on that studio), DOCS; plus OPEN HUB, WEB LINK, FOLDER. 6 tests. |
@@ -29,7 +30,7 @@ on one studio (`VesselStudio/SYNC_PANEL.md`). Page recipe: `/studio-creator` (br
 | Amoebius web build | — | **Does not exist.** Amoebius's player is .NET + OpenGL; a browser build is an engine milestone (§4). |
 
 Testing in the REAL game (AI on any seat, free-fly camera, the intensity maps, a graphics-fidelity switch):
-**`VESSEL_TEST_RANGE_PLAN.md`**. Building a studio page: the **`/studio-creator`** skill.
+**`VESSEL_TEST_RANGE_PLAN.md`**. Building a studio page: the **`/vessel-studio`** skill.
 
 ## 2. Two kinds of studio
 

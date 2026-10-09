@@ -819,8 +819,8 @@ config can hold the mouth material (shown by name, edited on the asset). Tests: 
 `PairStyle_*` (ships as drift with the seamless mouth wired; equal sling lives; throat = horizon) and
 `ToolModel_AnAssetReferenceIsShownNotUnsupported`; `black_hole_tool_harness` covers the 56 fields.
 
-**Fly both before choosing:** the web studio (`Docs/Studios/StoatFlightStudio.html`, live copy with
-the shared decision log at https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) flies the Stoat on a
+**Fly both before choosing:** the web studio (`Docs/Studios/StoatFlightStudio.html`, live in the one Vessel Studio with
+the shared decision log, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) flies the Stoat on a
 gamepad through the game's own stick mix with either style, and compares them split-screen.
 
 ## 14. Owner rules on a hole (2026-10-09, the Stoat's field dipole)

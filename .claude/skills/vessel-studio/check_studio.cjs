@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// check_studio.cjs - the /studio-creator gate for one vessel studio page (Docs/Studios/VesselStudio/*.html).
+// check_studio.cjs - the /vessel-studio gate for one vessel studio page (Docs/Studios/VesselStudio/*.html).
 //
-//   node .claude/skills/studio-creator/check_studio.cjs <page.html> --hook __squirrelStudio [--out DIR] [--three FILE]
-//   node .claude/skills/studio-creator/check_studio.cjs --self-test [--three FILE]
+//   node .claude/skills/vessel-studio/check_studio.cjs <page.html> --hook __squirrelStudio [--out DIR] [--three FILE]
+//   node .claude/skills/vessel-studio/check_studio.cjs --self-test [--three FILE]
 //
 // A READER: it opens the page in headless Chromium, never edits it, writes screenshots into --out.
 // Exit 0 = every check passed, 1 = a check failed (each one named), 2 = it could not run.

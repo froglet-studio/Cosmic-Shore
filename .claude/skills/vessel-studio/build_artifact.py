@@ -21,7 +21,7 @@ import argparse, json, os, subprocess, sys, tempfile
 DIR = 'Docs/Studios/VesselStudio'
 TAG = '<script src="sync.js"></script>'
 REPO = 'froglet-studio/cosmic-shore'
-DEFAULT_ARTIFACT = 'https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc'
+DEFAULT_ARTIFACT = 'https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa'   # THE Vessel Studio: the only artifact (SKILL.md section 0)
 
 
 def git(*a, quiet=False):

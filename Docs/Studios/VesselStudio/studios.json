@@ -1,6 +1,6 @@
 {
   "comment": "The Vessel Studio catalog. Amoebius's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is.",
-  "web": "https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN",
+  "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
   "hub": "index.html",
   "studios": [
     {
