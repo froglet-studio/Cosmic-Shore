@@ -3,100 +3,105 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squirrel Studio</title>
-<!-- Squirrel Studio: a page of the Vessel Studio (Docs/Studios/VesselStudio/). A READER of the shipped
-     numbers, never their authority. Every constant below names the asset or class it was copied from
-     (claude/peaceful-rubin-hhw49n, 2026-10-09). When the asset changes, change it here too. -->
+<!-- Squirrel Studio, round 2: the AI sim lab. A page of the Vessel Studio (Docs/Studios/VesselStudio/).
+     A READER of the shipped numbers, never their authority: every constant below names the asset or class
+     it was copied from. The four courses are the game's own Skim Race tracks (MinigameSkimRace.unity, as
+     Tools/Build/skimrace_track_fingerprint.py --emit-track reads them). -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* Layout: a cockpit. The stage owns the screen; a rail of tuning cards sits beside it on wide screens
-     and under it on phones. One deliberate dark world (the Squirrel is a vaporwave racer), so a single
-     palette set explicitly on :root. */
+  /* Layout: a cockpit and a race director's desk. The stage owns the screen; the rail holds the lab
+     (pilots, course, cameras, scorecard) above the vessel tuning. One dark world, explicit palette. */
   :root {
     color-scheme: dark;
-    --bg: #0b0d16;
-    --panel: #121524;
-    --panel-2: #181c30;
-    --line: #262b47;
-    --fg: #e9ecff;
-    --muted: #8e95bf;
-    --jade: #35e0b0;      /* the Squirrel's domain in this studio: Jade */
-    --ruby: #ff4f7b;
-    --gold: #ffc247;
-    --charge: #ffd23f;    /* element hues: Charge, Mass, Space, Time */
-    --mass: #ff6a4d;
-    --space: #6aa8ff;
-    --time: #c48bff;
-    --warn: #ff9b54;
-    --ok: #4be38f;
+    --bg: #0b0d16; --panel: #121524; --panel-2: #181c30; --line: #262b47;
+    --fg: #e9ecff; --muted: #8e95bf;
+    --jade: #35e0b0; --ruby: #ff4f7b; --gold: #ffc247; --blue: #6aa8ff;
+    --charge: #ffd23f; --mass: #ff6a4d; --space: #6aa8ff; --time: #c48bff;
+    --easy: #4be38f; --medium: #ffb454; --hard: #ff5c6c;
     --display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
     --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Prisma and a direct file open do not */
-  html, body { height: 100%; }
-  body { margin: 0; -webkit-text-size-adjust: 100%; }
+  [hidden] { display: none !important; }
   *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   img, canvas { max-width: 100%; }
-  body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--body); }
   a { color: var(--jade); }
   button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+  code { font-family: var(--mono); font-size: .9em; }
 
-  .wrap { max-width: 1400px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
   .back { font: 600 13px/1.2 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
-  .back:hover { color: var(--fg); }
-  h1 { margin: 0; font: 800 clamp(28px, 4vw, 40px)/1 var(--display); letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+  h1 { margin: 0; font: 800 clamp(28px, 4vw, 40px)/1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
   h1 span { color: var(--jade); }
-  .sub { color: var(--muted); max-width: 70ch; margin: 0; }
+  .round { font: 600 12px/1 var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
+  .sub { color: var(--muted); max-width: 78ch; margin: 0; }
+  .host { font: 600 11px/1 var(--mono); color: var(--jade); }
 
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
   .layout > section { min-width: 0; }
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; align-items: start; }
-  @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 1020px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 
-  /* ---- stage ---- */
   #viewport { position: relative; border-radius: 10px; overflow: hidden; background: #05060c; border: 1px solid var(--line); aspect-ratio: 16 / 10; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
   #c { display: block; width: 100%; max-width: 100%; height: 100%; outline: none; }
   .hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .hud .tl { position: absolute; left: 12px; top: 10px; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
-  .hud .tr { position: absolute; right: 12px; top: 10px; text-align: right; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
-  .hud .big { font: 700 34px/1 var(--display); letter-spacing: .02em; }
+  .hud .big { font: 700 32px/1 var(--display); }
   .hud .lbl { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
-  .hud .bars { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 6px; width: min(260px, 44%); }
-  .meter { height: 8px; border-radius: 4px; background: #ffffff1a; overflow: hidden; }
-  .meter > i { display: block; height: 100%; width: 0; background: var(--jade); }
+  .board { position: absolute; right: 10px; top: 10px; display: grid; gap: 3px; min-width: 210px; background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+  .board .hd { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .board .pl { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+  .board .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .board .st { color: var(--muted); font-size: 11px; }
+  .bars { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 5px; width: min(250px, 44%); }
+  .meter { height: 7px; border-radius: 4px; background: #ffffff1a; overflow: hidden; }
+  .meter > i { display: block; height: 100%; width: 0; }
   .meter.boost > i { background: linear-gradient(90deg, var(--jade), var(--time)); }
   .meter.drift > i { background: var(--space); }
   .meter.ring > i { background: var(--mass); }
   .hud .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
   .hud .row b { color: var(--fg); font-weight: 500; }
-  .hud .feed { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
-  .hud .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
+  .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font: 600 11px/1 var(--mono); color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
 
   .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; max-width: 460px; display: grid; gap: 10px; }
-  .card h2 { margin: 0; font: 700 26px/1.05 var(--display); text-transform: uppercase; letter-spacing: .03em; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 480px; display: grid; gap: 10px; }
+  .card h2 { margin: 0; font: 700 24px/1.05 var(--display); text-transform: uppercase; letter-spacing: .03em; }
   .card p { margin: 0; color: var(--muted); }
-  .card .keys { font-family: var(--mono); font-size: 12px; color: var(--fg); display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .keys { font-family: var(--mono); font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
   .btns { display: flex; flex-wrap: wrap; gap: 8px; }
   .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
   .btn.primary { background: var(--jade); color: #04130e; border-color: var(--jade); }
-  .btn:hover { border-color: var(--muted); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn[disabled] { opacity: .5; cursor: default; }
   .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
   .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
 
-  /* ---- rail ---- */
   aside { display: grid; gap: 10px; min-width: 0; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
-  .panel h3 { margin: 0; font: 700 15px/1.1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; }
+  .panel.lab { border-color: #35e0b055; }
+  .panel h3 { margin: 0; font: 700 15px/1.1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .field > span { font-size: 12px; color: var(--muted); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+  .seg button { flex: 1; border: 0; background: transparent; padding: 5px 4px; font-size: 12px; min-width: 0; }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--jade); font-weight: 600; }
+  .seg.diff button[data-v="Easy"][aria-pressed="true"] { color: var(--easy); }
+  .seg.diff button[data-v="Medium"][aria-pressed="true"] { color: var(--medium); }
+  .seg.diff button[data-v="Hard"][aria-pressed="true"] { color: var(--hard); }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
   .types { display: flex; flex-wrap: wrap; gap: 6px; }
   .type { border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
   .type[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .typeinfo { font-size: 12px; color: var(--muted); margin: 0; min-height: 2.5em; }
-  .el { display: grid; grid-template-columns: 74px minmax(0, 1fr) 30px; align-items: center; gap: 8px; }
+  .el { display: grid; grid-template-columns: 70px minmax(0, 1fr) 26px; align-items: center; gap: 8px; }
   .el label { font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
   .el input { width: 100%; accent-color: var(--accent); }
   .el output { font-family: var(--mono); text-align: right; }
@@ -105,28 +110,25 @@
   .l5 { font: 600 10px/1 var(--mono); padding: 2px 5px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
   .l5.on { color: #0b0d16; background: var(--accent); border-color: var(--accent); }
   .abilities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .ab { border: 1px solid var(--line); border-radius: 8px; padding: 7px 6px; display: grid; gap: 4px; justify-items: center; text-align: center; background: var(--panel-2); position: relative; overflow: hidden; }
-  .ab .ic { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font: 700 13px/1 var(--display); color: var(--accent); }
+  .ab { border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px; display: grid; gap: 4px; justify-items: center; text-align: center; background: var(--panel-2); position: relative; overflow: hidden; }
+  .ab .ic { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font: 700 13px/1 var(--display); color: var(--accent); }
   .ab .nm { font-size: 11px; line-height: 1.15; }
   .ab .st { font: 500 10px/1.1 var(--mono); color: var(--muted); }
   .ab .cd { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; }
-  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-  .seg button { flex: 1; border: 0; background: transparent; padding: 5px 6px; font-size: 12px; }
-  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--jade); font-weight: 600; }
   .read { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
   .read span { color: var(--muted); }
-  .runs { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .runs td, .runs th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: left; }
-  .runs th { color: var(--muted); font-weight: 500; }
+  .tbl { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .tbl td, .tbl th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; }
+  .tbl th { color: var(--muted); font-weight: 500; }
+  .tblwrap { overflow-x: auto; }
   details summary { cursor: pointer; color: var(--muted); }
   details ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; display: grid; gap: 3px; }
-  .note { font-size: 12px; color: var(--muted); margin: 0; }
 
-  /* ---- phone play ---- */
   .touch { position: absolute; inset: 0; display: none; }
   body.play .touch { display: block; }
   body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
-  body.play .wrap > :not(.layout), body.play aside { display: none; }
+  body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed, body.play .afternote { display: none !important; }
   .tz { position: absolute; bottom: 0; top: 30%; width: 50%; }
   .tz.L { left: 0; } .tz.R { right: 0; }
   .ts { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none; }
@@ -138,14 +140,13 @@
   .tt.R .tfill { background: #ff6a4d44; }
   .tt .thandle { position: absolute; left: 6px; right: 6px; top: 6px; height: 32px; border-radius: 8px; background: #ffffff33; display: grid; place-items: center; font: 700 12px/1 var(--display); letter-spacing: .08em; }
   .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
-  .tbar .btn { padding: 6px 12px; font-size: 13px; background: #121524d9; }
+  .tbar .btn { padding: 6px 10px; font-size: 13px; background: #121524d9; }
   .portrait { position: absolute; inset: 0; display: none; place-items: center; background: #05060cf2; text-align: center; padding: 24px; font: 700 22px/1.2 var(--display); text-transform: uppercase; }
   @media (orientation: portrait) { body.play .portrait { display: grid; } }
   body.play .hud .tl { left: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); }
-  body.play .hud .tr { right: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); }
-  body.play .hud .bars { left: 50%; transform: translateX(-50%); bottom: 10px; }
-  body.play .hud .feed { display: none; }
-  body.play .stagebtns, body.play #overlay { display: none !important; }
+  body.play .board { right: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); min-width: 0; }
+  body.play .bars { left: 50%; transform: translateX(-50%); bottom: 10px; }
+  body.play .camtag { bottom: auto; top: calc(56px + env(safe-area-inset-top, 0px)); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -153,40 +154,39 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1><span>Squirrel</span> Studio</h1>
-    <p class="sub">Fly the racer on the game's numbers: drift on the left trigger, the Boost Ring on the right, skim prisms for boost, steal rival trails. Set its four element levels or pick a play-style type and feel what changes.</p>
+    <span class="round">Round 2 · AI sim lab</span>
+    <span class="host" id="hostTag" hidden>Running on Amoebius</span>
+    <p class="sub">Race the Squirrel on the game's four Skim Race courses, against AI Squirrels at Easy, Medium or Hard, or hand your own hull to the AI and watch. Chase, follow or free camera, 1–4× speed, and a scorecard that races every difficulty on every course in a few seconds.</p>
   </header>
 
   <div class="layout">
     <section>
       <div id="viewport">
-        <canvas id="c" tabindex="0" aria-label="Squirrel flight stage"></canvas>
-        <div class="hud" aria-live="off">
+        <canvas id="c" tabindex="0" aria-label="Squirrel race stage"></canvas>
+        <div class="hud">
           <div class="tl">
-            <span class="lbl">Speed u/s</span><span class="big" id="hSpeed">0</span>
+            <span class="lbl" id="hWho">You · speed u/s</span><span class="big" id="hSpeed">0</span>
             <span class="lbl" id="hBoostTxt">Boost 1.00×</span>
           </div>
-          <div class="tr">
-            <span class="lbl">Lap</span><span class="big" id="hLap">1 / 2</span>
-            <span class="lbl" id="hTime">0.0 s · crystals 0/12</span>
-          </div>
+          <div class="board" id="board"></div>
           <div class="bars">
             <div class="row"><span>Boost</span><b id="hBoost">1.00×</b></div><div class="meter boost"><i id="mBoost"></i></div>
             <div class="row"><span>Drift (LT)</span><b id="hDrift">0%</b></div><div class="meter drift"><i id="mDrift"></i></div>
             <div class="row"><span>Boost Ring (RT)</span><b id="hRing">ready</b></div><div class="meter ring"><i id="mRing"></i></div>
           </div>
           <div class="feed" id="feed"></div>
+          <div class="camtag" id="camTag">Chase camera</div>
         </div>
         <div class="stagebtns"><button class="btn" id="playBtn" type="button">Play on phone</button><button class="btn" id="stopBtn" type="button">Pause</button></div>
         <div class="overlay" id="overlay">
           <div class="card">
-            <h2 id="ovTitle">Skim the circuit</h2>
-            <p id="ovText">Two laps, six crystals a lap. Rival Ruby and Gold trails line the course: skim them for boost, steal them to Jade. Two rival pilots fly the line; overtake one close to steal petals.</p>
-            <div class="keys" id="ovKeys">
+            <h2 id="ovTitle">Skim Race, intensity 1</h2>
+            <p id="ovText">Collect your Jade crystals: each one appears at the next anchor of the course. First to the target wins. Skim the track and the other pilots' rails for boost; touching a prism with the hull resets it.</p>
+            <div class="keys">
               <span>Gamepad</span><span>both sticks steer (the game's mix), LT drift, RT Boost Ring</span>
-              <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle</span>
-              <span></span><span>Space drift (hold) · Shift half drift · F Boost Ring</span>
-              <span></span><span>Enter start · R reset · P pause</span>
-              <span>Phone</span><span>Play on phone, hold it sideways</span>
+              <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space drift · F ring</span>
+              <span>Free cam</span><span>drag to look · I J K L move · U O down/up</span>
+              <span></span><span>Enter start · R reset · P pause · C next camera</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
           </div>
@@ -196,22 +196,42 @@
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
           <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
-          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">Pause</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">Start</button><button class="btn" id="tStop" type="button">Pause</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">Reset</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
-      <p class="note" style="margin-top:8px">Phone controls here are the gamepad's: drag the LT handle down to drift (how far = how hard), tap RT for the Boost Ring. The game's own touch scheme differs: a right-thumb lift is a full drift and keeping the right finger down places the ring (<code>SQUIRREL_DRIFT.md</code> §1).</p>
+      <p class="note afternote" style="margin-top:8px">Show AI thinking draws each AI's line to the crystal it believes in and to the real one. Amber means it has not noticed its crystal yet; red means it misjudged the pass and will turn back. Those are the Easy and Medium mistakes.</p>
     </section>
 
     <aside>
-      <div class="panel">
-        <h3>Play-style type <span id="typeName" style="color:var(--fg);letter-spacing:.04em">Shipped</span></h3>
-        <div class="types" id="types"></div>
-        <p class="typeinfo" id="typeInfo"></p>
+      <div class="panel lab">
+        <h3>Race <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
+        <div class="field"><span>Course</span><div class="seg" id="segCourse" role="group" aria-label="Skim Race intensity"></div></div>
+        <div class="field"><span>Your hull</span><div class="seg diff" id="segYou" role="group" aria-label="Who flies your hull"></div></div>
+        <div class="field"><span>AI rivals</span><div class="seg" id="segRivals" role="group" aria-label="Number of AI rivals"></div></div>
+        <div class="field"><span>Rival level</span><div class="seg diff" id="segDiff" role="group" aria-label="Rival difficulty"></div></div>
+        <div class="field"><span>Camera</span><div class="seg" id="segCam" role="group" aria-label="Camera"></div></div>
+        <div class="field"><span>Speed</span><div class="seg" id="segSpeed" role="group" aria-label="Simulation speed"></div></div>
+        <label class="check"><input type="checkbox" id="thinking"> Show AI thinking</label>
+        <label class="check"><input type="checkbox" id="autoRestart"> Restart each race on its own</label>
+        <p class="note">Easy and Medium are the Hard pilot plus the game's deliberate mistakes (<code>SkimRaceDifficulty.asset</code>): Easy notices a new crystal 0.5 s late on average and misjudges 9.9% of crystals; Medium 0.25 s and 4.5%.</p>
+      </div>
+
+      <div class="panel lab">
+        <h3>Scorecard <button class="btn small" id="scoreBtn" type="button">Run</button></h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Course</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Game sim</th></tr></thead><tbody id="score"></tbody></table></div>
+        <p class="note" id="scoreNote">Races each difficulty alone on each course, three seeds each, headless; median finish in seconds. "Game sim" is the shipped Hard pilot in the offline simulator (<code>Docs/SKIM_RACE_AI.md</code> §14.5), for scale: the studio's pilot is simpler than the game's.</p>
       </div>
 
       <div class="panel">
-        <h3>Element levels <span style="font-family:var(--mono);font-size:11px;letter-spacing:0">0–10 · L5 unlocks at 5</span></h3>
+        <h3>Play-style type <span id="typeName" style="color:var(--fg);letter-spacing:.04em">Shipped</span></h3>
+        <div class="types" id="types"></div>
+        <p class="note" id="typeInfo"></p>
+        <label class="check"><input type="checkbox" id="typeToAll"> Rivals fly this type too</label>
+      </div>
+
+      <div class="panel">
+        <h3>Element levels <span style="font-family:var(--mono);font-size:11px;letter-spacing:0">0–10 · L5 at 5</span></h3>
         <div id="elements" style="display:grid;gap:12px"></div>
       </div>
 
@@ -222,39 +242,34 @@
 
       <div class="panel">
         <h3>Drift feel</h3>
-        <div class="seg" role="group" aria-label="Keyboard and button drift depth">
-          <button type="button" id="dFeather" aria-pressed="false">Feathered (½ pull)</button>
-          <button type="button" id="dBuried" aria-pressed="true">Buried (full pull)</button>
-        </div>
-        <p class="note">Space (or a tap of LT on the phone) drifts at this depth. A gamepad or the LT handle is analog: the drift is exactly how far it is pulled. Full pull turns ×1.8 faster with grip 0.25, so the course lags the nose.</p>
+        <div class="seg" role="group" aria-label="Keyboard drift depth"><button type="button" id="dFeather" aria-pressed="false">Feathered (½)</button><button type="button" id="dBuried" aria-pressed="true">Buried (full)</button></div>
       </div>
 
       <div class="panel">
-        <h3>Live numbers</h3>
+        <h3>Live numbers <span id="readWho" style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none"></span></h3>
         <div class="read" id="read"></div>
       </div>
 
       <div class="panel">
         <h3>Runs</h3>
-        <table class="runs"><thead><tr><th>Type</th><th>Time</th><th>Skims</th><th>Stolen</th></tr></thead><tbody id="runs"></tbody></table>
-        <p class="note">Kept in this browser. Use them to compare types on the same course.</p>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Course</th><th>Pilot</th><th>Type</th><th>Time</th><th>Place</th></tr></thead><tbody id="runs"></tbody></table></div>
       </div>
 
       <div class="panel">
         <details>
           <summary>Where the numbers come from, and what is not modelled</summary>
           <ul>
-            <li>Flight: <code>Squirrel.prefab</code> VesselTransformer: throttle × 60 u/s × boost; pitch and yaw 120°/s, roll 130°/s; vector flight model.</li>
-            <li>Drift: <code>SquirrelDriftAction</code> Mult 1.8, grip 0.25, lerped by the LT pull (<code>singleTriggerDrift</code>).</li>
-            <li>Boost: <code>SkimmerBoostPrismEffect</code> +0.1 per prism skimmed, × Time (1 → 2), clamped 1–5; decays 0.3/s (<code>BoostDecayRate</code>).</li>
-            <li>Boost Ring: <code>SquirrelTubeAction</code> 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s × Mass (1 → 0.5, floor 0.35); Twin Rings at Mass 5.</li>
-            <li>Steal: skimmer sphere 15 → 30 by Space; shielded prisms lose their shield, or at Space 5 (Iron Grip) change hands and keep it.</li>
-            <li>Crystal Joust: an overtake steals petals × Charge (1 → 2.5, <code>VesselOvertakeBySkimmerEffect.stealScale</code>), 1 s cooldown.</li>
-            <li>Not modelled: lifeforms (so no Shepherd), the game's Skim Race AI (the two rivals follow the line at a fixed speed), the real course and crystal spawns, prism lifetimes, the omni-crystal ring morph, the game's touch scheme, sound. The trail plates are drawn smaller than the game's so the stage stays readable.</li>
-            <li>Level scaling is read as linear between level 0 and level 10, as <code>ElementalFloat</code> authors it.</li>
+            <li>Courses: the four Skim Race tracks of <code>MinigameSkimRace.unity</code>, laid as <code>SpawnableWaypointTrack</code> lays them (a prism every ~12 u, straight or Catmull-Rom); crystals at the <code>CrystalManager</code> anchors with 35 u jitter; target = waypoints × laps (24, 30, 56, 54).</li>
+            <li>Flight: <code>Squirrel.prefab</code>: throttle × 60 u/s × boost; pitch and yaw 120°/s, roll 130°/s. Drift: <code>SquirrelDriftAction</code> ×1.8 turn, grip 0.25.</li>
+            <li>Boost: +0.1 per prism skimmed × Time (1 → 2), 1–5×, decay 0.3/s. A hull contact resets it and slows the hull 10%.</li>
+            <li>Trails: two rails at ±9.66 u, a pair per 7 u, own-trail grace 1 s. Pickup ring: 8 shielded prisms, radius 8.2, 8 u ahead on each capture (the crystal morph).</li>
+            <li>Boost Ring: <code>SquirrelTubeAction</code> 8 danger prisms, radius 8, 100 u ahead, 20 s × Mass. The AI places it as <code>SquirrelAIBoostPolicy</code> does: below 3× boost, lined up with the line ahead.</li>
+            <li>AI: a simplified stand-in for <code>SkimRaceDriver</code>; it follows the line and turns for its crystal through the same sticks and triggers a player has. Easy and Medium are <code>SkimRaceHandicap</code>: slow reaction (0.5–1.5 × the level) and misjudged passes (believed 2 capture radii + 4 u off the line, for up to 6 s).</li>
+            <li>The difficulty gaps are smaller here than in the game (there, Medium is 14–19% slower than Hard and Easy 23–54%: <code>SKIM_RACE_AI.md</code> §10). The studio pilot plans only ~100 u ahead, so a late notice rarely costs it anything, and it turns back for a missed crystal in about 2 s where the game's pilot loses about 10. The mistakes themselves (how many, when) are the game's.</li>
+            <li>Not modelled: the game's racing-line planner, team play, lifeforms, crystal capture shapes beyond a 25.5 u reach, sound. Read every time as relative, between difficulties and types.</li>
           </ul>
         </details>
-        <p class="note">Want something changed in this studio, or a design idea tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
+        <p class="note">Want a change in this studio or a design tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
       </div>
     </aside>
   </div>
@@ -265,575 +280,608 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
+  if (/(^|[#&])(amoebius|prisma)\b/i.test(location.hash) || window.__studioHost) $('hostTag').hidden = false;
 
-  // ================= shipped numbers (see the details panel for sources) =================
+  // ================= shipped numbers =================
   const SHIP = {
-    throttleScaler: 60,          // VesselTransformer.DefaultThrottleScaler
-    pitchYaw: 120, roll: 130,    // PitchScaler / YawScaler, RollScaler (deg/s)
-    maxBoost: 5, boostDecay: 0.3,  // MaxBoostMultiplier, BoostDecayRate
-    driftMult: 1.8, driftGrip: 0.25, // SquirrelDriftAction Mult, driftDamping
-    noDriftGrip: 30,             // outside a drift the course follows the nose; a stiff grip stands in for that
-    skimAdd: 0.1, dangerMult: 10,  // SkimmerBoostPrismEffect addPerHit, dangerEnergyMultiplier
-    ring: { prisms: 8, radius: 8, ahead: 100, spacing: 10, scale: 4, cooldown: 20, fullMassMult: 0.5, floor: 0.35, life: 14 }, // SquirrelTubeAction (life: studio's own)
-    trail: { wavelength: 7, gap: 18.5, startDelay: 2, cap: 360 },  // VesselPrismController initialWavelength, Gap, startDelay
-    skimmerScale: [15, 30],      // skimmer Scale ElementalFloat by Space (diameter)
-    stealScale: [1, 2.5],        // VesselOvertakeBySkimmerEffect.stealScale by Charge
-    overtakeCooldown: 1,
+    throttleScaler: 60, pitchYaw: 120, roll: 130, maxBoost: 5, boostDecay: 0.3,
+    driftMult: 1.8, driftGrip: 0.25, noDriftGrip: 30,
+    skimAdd: 0.1, dangerMult: 10, captureReach: 25.5, hullReach: 1.6,
+    ring: { prisms: 8, radius: 8, ahead: 100, spacing: 10, cooldown: 20, fullMassMult: 0.5, floor: 0.35, life: 14 },
+    pickupRing: { prisms: 8, radius: 8.2, ahead: 8, life: 6 },
+    rail: { offset: 9.66, spacing: 7, grace: 1, startDelay: 2, cap: 300 },
+    skimmerScale: [15, 30], stealScale: [1, 2.5], overtakeCooldown: 1,
+    blockSpacing: 12, jitter: 35, limit: 300,
   };
+  const LOOK = { base: 24, perSpeed: 0.35, reachMargin: 17, side: 0.7 };   // the studio pilot's own tuning, not a shipped number
+  const AIPOLICY = { ringBelowBoost: 3, ringAlignDeg: 2.5, clearance: 60 };          // SquirrelAIBoostPolicy.asset
+  const DIFF = { Easy: { reaction: 0.5, mistake: 0.099 }, Medium: { reaction: 0.25, mistake: 0.045 }, Hard: { reaction: 0, mistake: 0 } }; // SkimRaceDifficulty.asset
+  const SIM_REF = { 1: 64.3, 2: 79.3, 3: 183.4, 4: 149.1 };   // SKIM_RACE_AI.md §14.5, Hard
+  const TRACKS = {"1":{"spline":false,"laps":3,"wp":[[700,0,0],[500,0,500],[0,0,700],[-500,0,500],[-700,0,0],[-500,0,-500],[0,0,-700],[500,0,-500]],"an":[[670,0,75],[425,0,530],[-75,0,670],[-530,0,425],[-670,0,-75],[-425,0,-530],[75,0,-670],[530,0,-425]]},"2":{"spline":true,"laps":3,"wp":[[700,0,0],[445,-324,433],[198,-610,280],[-198,-610,-280],[-445,-324,-433],[-700,0,0],[-445,324,433],[-198,610,280],[198,610,-280],[445,324,-433]],"an":[[662,-49,65],[408,-367,410],[139,-610,196],[-235,-567,-303],[-483,-275,-368],[-662,49,65],[-408,367,410],[-139,610,196],[235,567,-303],[483,275,-368]]},"3":{"spline":true,"laps":2,"wp":[[-2785,0,-60],[-2438.8,20,-60],[-1746.3,-20,-60],[-1053.7,20,-60],[-361.2,-20,-60],[-15,0,-60],[96.6,0,-265.3],[310.7,0,-358.8],[537.1,0,-301.2],[680.5,0,-116.8],[680.5,0,116.8],[537.1,0,301.2],[310.7,0,358.8],[96.6,0,265.3],[-15,0,60],[-361.2,20,60],[-1053.7,-20,60],[-1746.3,20,60],[-2438.8,-20,60],[-2785,0,60],[-2896.6,0,265.3],[-3110.7,0,358.8],[-3337.1,0,301.2],[-3480.5,0,116.8],[-3480.5,0,-116.8],[-3337.1,0,-301.2],[-3110.7,0,-358.8],[-2896.6,0,-265.3]],"an":[[700,0,0],[370.1,0,358.7],[-361.2,20,60],[-1053.7,-20,60],[-1746.3,20,60],[-2438.8,-20,60],[-3170.1,0,358.7],[-3500,0,0],[-3170.1,0,-358.7],[-2438.8,20,-60],[-1746.3,-20,-60],[-1053.7,20,-60],[-361.2,-20,-60],[370.1,0,-358.7]]},"4":{"spline":false,"laps":2,"wp":[[700,0,0],[600,100,-350],[350,300,-550],[0,500,-500],[-300,550,-250],[-500,400,100],[-550,200,350],[-450,-100,550],[-300,-450,450],[-200,-650,200],[-250,-550,-100],[-350,-250,-300],[-400,0,-350],[-300,150,-500],[-100,250,-550],[150,300,-400],[350,200,-150],[400,100,150],[300,0,400],[150,-150,550],[0,-300,400],[-100,-350,150],[0,-300,-100],[150,-200,-300],[350,-100,-400],[500,-50,-300],[600,0,-150]],"an":[[685,15,-53],[563,130,-380],[298,330,-543],[-45,508,-463],[-330,528,-198],[-508,370,138],[-535,155,380],[-428,-153,535],[-285,-480,413],[-208,-635,155],[-265,-505,-130],[-358,-213,-308],[-385,23,-373],[-270,165,-508],[-63,258,-528],[180,285,-363],[358,185,-105],[385,85,188],[278,-23,423],[128,-173,528],[-15,-308,363],[-85,-343,113],[23,-285,-130],[180,-185,-315],[373,-93,-385],[515,-43,-278],[615,0,-128]]}};
+  const COURSE_INFO = { 1: 'flat octagon, 3 laps', 2: 'tilted spline, 3 laps', 3: 'long spline, 2 laps', 4: '3D course, 2 laps' };
   const ELEMENTS = [
-    { key: 'charge', name: 'Charge', color: '--charge', ability: 'Crystal Joust', l5: 'Shepherd', input: 'passive' },
-    { key: 'mass', name: 'Mass', color: '--mass', ability: 'Boost Ring', l5: 'Twin Rings', input: 'RT' },
-    { key: 'space', name: 'Space', color: '--space', ability: 'Steal', l5: 'Iron Grip', input: 'passive' },
-    { key: 'time', name: 'Time', color: '--time', ability: 'Skimming', l5: 'Live Wire', input: 'passive' },
+    { key: 'charge', name: 'Charge', color: '--charge', ability: 'Crystal Joust', l5: 'Shepherd' },
+    { key: 'mass', name: 'Mass', color: '--mass', ability: 'Boost Ring', l5: 'Twin Rings' },
+    { key: 'space', name: 'Space', color: '--space', ability: 'Steal', l5: 'Iron Grip' },
+    { key: 'time', name: 'Time', color: '--time', ability: 'Skimming', l5: 'Live Wire' },
   ];
   const TYPES = [
     { name: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 }, info: 'The start state of a match: every element at 0, no level-5 upgrades.' },
-    { name: 'Thief', lv: { charge: 10, mass: 0, space: 10, time: 0 }, info: 'Steals everything: a 30 u skimmer takes whole rival trails, Iron Grip takes shielded prisms with their shield, and each overtake takes 2.5× the petals.' },
-    { name: 'Speedster', lv: { charge: 0, mass: 10, space: 0, time: 10 }, info: 'Lives on boost: double skim energy, Live Wire makes danger prisms worth 10×, and two Boost Rings every 10 s.' },
-    { name: 'Skimmer', lv: { charge: 0, mass: 0, space: 4, time: 10 }, info: 'Trail rider: a wider skimmer than shipped and the best skim energy, without the ring.' },
-    { name: 'Brawler', lv: { charge: 10, mass: 6, space: 4, time: 0 }, info: 'Hunts pilots: big petal steals on every overtake, Twin Rings to block, a medium skimmer.' },
-    { name: 'Maxed', lv: { charge: 10, mass: 10, space: 10, time: 10 }, info: 'Every element at 10 and all four upgrades on. A ceiling to compare against, not a real match state.' },
+    { name: 'Thief', lv: { charge: 10, mass: 0, space: 10, time: 0 }, info: 'A 30 u skimmer takes whole rails, Iron Grip keeps the shields it steals, and each overtake takes 2.5× the petals.' },
+    { name: 'Speedster', lv: { charge: 0, mass: 10, space: 0, time: 10 }, info: 'Double skim energy, Live Wire makes danger prisms worth 10×, and two Boost Rings every 10 s.' },
+    { name: 'Skimmer', lv: { charge: 0, mass: 0, space: 4, time: 10 }, info: 'Trail rider: a wider skimmer and the best skim energy, without the ring.' },
+    { name: 'Brawler', lv: { charge: 10, mass: 6, space: 4, time: 0 }, info: 'Hunts pilots: big petal steals, Twin Rings to block, a medium skimmer.' },
+    { name: 'Maxed', lv: { charge: 10, mass: 10, space: 10, time: 10 }, info: 'Every element at 10 and all four upgrades. A ceiling, not a real match state.' },
   ];
+  const DOMAINS = [{ key: 'jade', color: 0x35e0b0, css: '#35e0b0', name: 'You' }, { key: 'ruby', color: 0xff4f7b, css: '#ff4f7b', name: 'Ruby' }, { key: 'gold', color: 0xffc247, css: '#ffc247', name: 'Gold' }, { key: 'blue', color: 0x6aa8ff, css: '#6aa8ff', name: 'Blue' }];
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
-  // ================= state =================
-  const lv = { charge: 0, mass: 0, space: 0, time: 0 };
-  let typeName = 'Shipped';
-  let driftDepth = 1;  // keyboard / tap depth
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-  const f01 = (k) => clamp(lv[k] / 10, 0, 1);
-  const up5 = (k) => lv[k] >= 5;
-  const skimRadius = () => lerp(SHIP.skimmerScale[0], SHIP.skimmerScale[1], f01('space')) / 2;
-  const energyMult = () => Math.max(0.25, lerp(1, 2, f01('time')));
-  const stealMult = () => Math.max(1, lerp(SHIP.stealScale[0], SHIP.stealScale[1], f01('charge')));
-  const ringCooldown = () => SHIP.ring.cooldown * Math.max(SHIP.ring.floor, lerp(1, SHIP.ring.fullMassMult, f01('mass')));
+  // ================= settings =================
+  const S = { course: 1, you: 'You', rivals: 2, diff: 'Hard', cam: 'Chase', speed: 1, thinking: true, autoRestart: false, typeToAll: false, driftDepth: 1, type: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 } };
+  const LS = 'cs.studio.squirrel.v2';
+  try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}) }); } catch (e) { /* storage blocked */ }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
+  function mults(lv) {
+    const f = (k) => clamp(lv[k] / 10, 0, 1);
+    return {
+      skimR: lerp(SHIP.skimmerScale[0], SHIP.skimmerScale[1], f('space')) / 2,
+      energy: Math.max(0.25, lerp(1, 2, f('time'))),
+      steal: Math.max(1, lerp(SHIP.stealScale[0], SHIP.stealScale[1], f('charge'))),
+      ringCd: SHIP.ring.cooldown * Math.max(SHIP.ring.floor, lerp(1, SHIP.ring.fullMassMult, f('mass'))),
+      twin: lv.mass >= 5, liveWire: lv.time >= 5, ironGrip: lv.space >= 5,
+    };
+  }
+  function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 
-  // ================= three.js stage =================
-  const canvas = $('c');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x05060c);
-  scene.fog = new THREE.Fog(0x05060c, 600, 2200);
-  const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 5000);
-  scene.add(new THREE.HemisphereLight(0x8fa0ff, 0x1a1030, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(300, 800, 200); scene.add(sun);
+  // ================= the world (no rendering, so the scorecard runs it headless) =================
+  const V = THREE.Vector3, Q = THREE.Quaternion;
+  function spline(p, seg, t) {
+    const c = p.length, p0 = p[((seg - 1) % c + c) % c], p1 = p[seg], p2 = p[(seg + 1) % c], p3 = p[(seg + 2) % c];
+    const t2 = t * t, t3 = t2 * t;
+    const f = (i) => 0.5 * ((2 * p1[i]) + (-p0[i] + p2[i]) * t + (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * t2 + (-p0[i] + 3 * p1[i] - 3 * p2[i] + p3[i]) * t3);
+    return new V(f(0), f(1), f(2));
+  }
+  function buildTrack(def) {
+    const w = def.wp, n = w.length, line = [];
+    for (let seg = 0; seg < n; seg++) {
+      let len = 0;
+      if (!def.spline) len = new V(...w[seg]).distanceTo(new V(...w[(seg + 1) % n]));
+      else { let prev = spline(w, seg, 0); for (let s = 1; s <= 20; s++) { const c = spline(w, seg, s / 20); len += prev.distanceTo(c); prev = c; } }
+      const blocks = Math.max(1, Math.round(len / SHIP.blockSpacing));
+      for (let i = 0; i < blocks; i++) { const t = i / blocks; line.push(def.spline ? spline(w, seg, t) : new V(...w[seg]).lerp(new V(...w[(seg + 1) % n]), t)); }
+    }
+    const tan = line.map((p, i) => line[(i + 1) % line.length].clone().sub(p).normalize());
+    let len = 0; for (let i = 0; i < line.length; i++) len += line[i].distanceTo(line[(i + 1) % line.length]);
+    return { def, line, tan, len, anchors: def.an.map((a) => new V(...a)), target: def.wp.length * def.laps };
+  }
+  function Grid(cell) { this.cell = cell; this.map = new Map(); }
+  Grid.prototype.h = function (x, y, z) { return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) | 0; };
+  Grid.prototype.add = function (p) { const c = this.cell; const k = this.h(Math.floor(p.pos.x / c), Math.floor(p.pos.y / c), Math.floor(p.pos.z / c)); let a = this.map.get(k); if (!a) this.map.set(k, a = []); a.push(p); p.k = k; };
+  Grid.prototype.remove = function (p) { const a = this.map.get(p.k); if (!a) return; const i = a.indexOf(p); if (i >= 0) a.splice(i, 1); };
+  Grid.prototype.near = function (pos, r, out) {
+    out.length = 0; const c = this.cell, n = Math.ceil(r / c), cx = Math.floor(pos.x / c), cy = Math.floor(pos.y / c), cz = Math.floor(pos.z / c);
+    for (let x = cx - n; x <= cx + n; x++) for (let y = cy - n; y <= cy + n; y++) for (let z = cz - n; z <= cz + n; z++) { const a = this.map.get(this.h(x, y, z)); if (a) for (const p of a) out.push(p); }
+    return out;
+  };
+  function basisQuat(t) { const s = new V().crossVectors(t, new V(0, 1, 0)); if (s.lengthSq() < 1e-4) s.set(1, 0, 0); s.normalize(); const u = new V().crossVectors(s, t).normalize(); return new Q().setFromRotationMatrix(new THREE.Matrix4().makeBasis(s, u, t.clone().negate())); }
 
-  { // stars
-    const n = 1600, g = new THREE.BufferGeometry(), p = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { const v = new THREE.Vector3().randomDirection ? new THREE.Vector3().randomDirection() : new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize(); v.multiplyScalar(2600 + Math.random() * 600); p.set([v.x, v.y, v.z], i * 3); }
-    g.setAttribute('position', new THREE.BufferAttribute(p, 3));
-    scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9aa6ff, size: 2.2, sizeAttenuation: false, fog: false })));
+  function makeWorld(courseId, pilotsSpec, seed) {
+    const track = buildTrack(TRACKS[courseId]);
+    const W = { track, prisms: [], grid: new Grid(24), pilots: [], t: 0, rand: rng(seed), events: [], over: false, dirty: true, watch: 0 };
+    for (let i = 0; i < track.line.length; i++) addPrism(W, { pos: track.line[i].clone(), quat: basisQuat(track.tan[i]), scale: [3.2, 3.2, 9], owner: -1, domain: 'track', shield: false, danger: false, kind: 'track' });
+    const t0 = track.tan[0], q0 = basisQuat(t0), side = new V(1, 0, 0).applyQuaternion(q0);
+    pilotsSpec.forEach((spec, i) => {
+      const off = (i - (pilotsSpec.length - 1) / 2) * 26;
+      const P = {
+        i, spec, domain: DOMAINS[i], pos: track.line[0].clone().addScaledVector(side, off).addScaledVector(t0, -40), quat: q0.clone(), course: t0.clone(),
+        speed: 0, boost: 1, slow: 1, lastDrift: 0, throttle: 0.5, lv: Object.assign({}, spec.lv), m: mults(spec.lv), ringReadyAt: 0, rtWas: 0, railAcc: 0, rails: 0,
+        crystals: 0, anchor: 0, crystal: null, finishT: null, hint: 0, skims: 0, stolen: 0, petals: 0, rings: 0, resets: 0, mistakes: 0,
+        hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
+        believed: null, aiState: '',
+      };
+      W.pilots.push(P); spawnCrystal(W, P);
+    });
+    return W;
   }
-
-  // ---- the course: a closed loop with height changes (a stand-in for a Skim Race track) ----
-  const seedPts = [];
-  for (let i = 0; i < 10; i++) {
-    const a = i / 10 * Math.PI * 2, r = 820 + 160 * Math.sin(a * 3 + 0.6);
-    seedPts.push(new THREE.Vector3(Math.cos(a) * r, 140 * Math.sin(a * 2 + 1.1), Math.sin(a) * r * 0.72));
+  function addPrism(W, o) { o.cool = []; o.flash = 0; W.prisms.push(o); W.grid.add(o); W.dirty = true; return o; }
+  function removePrism(W, o) { W.grid.remove(o); o.dead = true; W.dirty = true; }
+  function spawnCrystal(W, P) {
+    const a = W.track.anchors[P.anchor % W.track.anchors.length], r = W.rand; let j;
+    do { j = new V(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1); } while (j.lengthSq() > 1);
+    P.crystal = { pos: a.clone().addScaledVector(j, SHIP.jitter), id: (P.i + 1) * 100000 + P.crystals };
   }
-  const curve = new THREE.CatmullRomCurve3(seedPts, true, 'centripetal');
-  const LEN = curve.getLength();
-  const SAMPLES = 900, cPts = curve.getSpacedPoints(SAMPLES);
-  const cTan = []; for (let i = 0; i < SAMPLES; i++) cTan.push(curve.getTangentAt(i / SAMPLES));
-  { // a faint racing line
-    const g = new THREE.BufferGeometry().setFromPoints(cPts);
-    scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x2a3160, transparent: true, opacity: 0.6 })));
-  }
-  function frameAt(u) { // position, tangent and a side vector at fraction u
-    const p = curve.getPointAt(((u % 1) + 1) % 1), t = curve.getTangentAt(((u % 1) + 1) % 1);
-    const side = new THREE.Vector3().crossVectors(t, new THREE.Vector3(0, 1, 0)).normalize();
-    const upv = new THREE.Vector3().crossVectors(side, t).normalize();
-    return { p, t, side, up: upv };
-  }
-  function progressOf(pos, hint) { // nearest sample index, searched around a hint
-    let best = hint, bd = Infinity;
-    for (let k = -40; k <= 40; k++) { const i = (hint + k + SAMPLES) % SAMPLES; const d = cPts[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } }
+  function nearestIndex(track, pos, hint, full) {
+    const L = track.line, n = L.length; let best = hint, bd = Infinity;
+    if (full) { for (let i = 0; i < n; i++) { const d = L[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } } return best; }
+    for (let k = -30; k <= 60; k++) { const i = ((hint + k) % n + n) % n; const d = L[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } }
     return best;
   }
 
-  // ---- prisms: one instanced mesh, coloured per instance ----
-  const DOMAIN_COLOR = { jade: new THREE.Color(0x35e0b0), ruby: new THREE.Color(0xff4f7b), gold: new THREE.Color(0xffc247) };
-  const DANGER_TINT = new THREE.Color(0xff2a2a);
-  const MAXP = 4200;
-  const prismGeo = new THREE.BoxGeometry(1, 1, 1);
-  const prismMat = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1, emissive: 0x111111 });
-  const prismMesh = new THREE.InstancedMesh(prismGeo, prismMat, MAXP);
-  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  scene.add(prismMesh);
-  const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.55 }), MAXP);
-  shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  scene.add(shieldMesh);
-  const prisms = []; // {pos, quat, scale, domain, shield, danger, kind: 'rival'|'ring'|'own', cool, born, life}
-  const m4 = new THREE.Matrix4(), q0 = new THREE.Quaternion(), s0 = new THREE.Vector3(), tmpC = new THREE.Color();
-  let prismsDirty = true;
-  function addPrism(o) { if (prisms.length >= MAXP) return null; o.cool = 0; prisms.push(o); prismsDirty = true; return o; }
-  function rebuildPrisms() {
-    let ns = 0;
-    for (let i = 0; i < prisms.length; i++) {
-      const p = prisms[i];
-      m4.compose(p.pos, p.quat, p.scale); prismMesh.setMatrixAt(i, m4);
-      tmpC.copy(DOMAIN_COLOR[p.domain]); if (p.danger) tmpC.lerp(DANGER_TINT, 0.55);
-      if (p.flash > 0) tmpC.lerp(new THREE.Color(0xffffff), Math.min(1, p.flash));
-      prismMesh.setColorAt(i, tmpC);
-      if (p.shield) { s0.copy(p.scale).multiplyScalar(1.35); m4.compose(p.pos, p.quat, s0); shieldMesh.setMatrixAt(ns++, m4); }
-    }
-    prismMesh.count = prisms.length; shieldMesh.count = ns;
-    prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
-    if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
-    prismsDirty = false;
-  }
-  function buildCourse() {
-    prisms.length = 0;
-    // two rival trails along the line, each a pair of plates, as a pilot would leave them
-    const lanes = [{ domain: 'ruby', off: -26, h: 6 }, { domain: 'gold', off: 24, h: -8 }];
-    for (const L of lanes) {
-      const step = SHIP.trail.wavelength * 1.6;
-      let k = 0;
-      for (let d = 0; d < LEN; d += step, k++) {
-        const u = d / LEN, f = frameAt(u);
-        const wob = Math.sin(u * Math.PI * 14 + L.off) * 10;
-        for (const sgn of [-1, 1]) {
-          const pos = f.p.clone().addScaledVector(f.side, L.off + wob + sgn * 5).addScaledVector(f.up, L.h);
-          const quat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.side, f.up, f.t.clone().negate()));
-          addPrism({ pos, quat, scale: new THREE.Vector3(4, 0.75, 5.5), domain: L.domain, shield: k % 7 === 0, danger: k % 11 === 5, kind: 'rival' });
-        }
+  // ---- the handicap: SkimRaceHandicap's two mistakes, applied to what the AI believes ----
+  function believe(W, P) {
+    const c = P.crystal; if (!c) return null;
+    const h = P.hc; if (!h || (h.level.reaction <= 0 && h.level.mistake <= 0)) return c.pos;
+    if (h.tracking !== c.id) {
+      h.tracking = c.id;
+      h.noticeAt = W.t + h.level.reaction * lerp(0.5, 1.5, h.rng());
+      h.misjudged = h.rng() < h.level.mistake;
+      if (h.misjudged) {
+        P.mistakes++;
+        const near = W.track.line[nearestIndex(W.track, c.pos, 0, true)];
+        const away = c.pos.clone().sub(near); if (away.lengthSq() < 1) away.set(0, 1, 0);
+        h.off.copy(away.normalize().multiplyScalar(2 * SHIP.captureReach + 4));
+        h.until = W.t + 6;
       }
     }
-    prismsDirty = true;
-  }
-
-  // ---- crystals ----
-  const crystals = [];
-  const crystalGeo = new THREE.OctahedronGeometry(6, 0);
-  function buildCrystals() {
-    for (const c of crystals) scene.remove(c.mesh);
-    crystals.length = 0;
-    for (let i = 0; i < 6; i++) {
-      const u = (i + 0.5) / 6, f = frameAt(u);
-      const mesh = new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: 0x35e0b0, emissive: 0x0d5c48, roughness: 0.2, metalness: 0.3 }));
-      mesh.position.copy(f.p).addScaledVector(f.up, 4);
-      scene.add(mesh); crystals.push({ mesh, u, taken: false });
+    h.unnoticed = W.t < h.noticeAt;
+    if (h.unnoticed) return null;
+    if (h.misjudged) {
+      const fake = c.pos.clone().add(h.off), toFake = fake.clone().sub(P.pos), fwd = new V(0, 0, -1).applyQuaternion(P.quat);
+      if (W.t > h.until || toFake.length() < 12 || toFake.dot(fwd) < 0) h.misjudged = false; else return fake;
     }
+    return c.pos;
   }
 
-  // ---- rival pilots (stand-ins on the line, not the game's AI) ----
-  function makeHull(color) {
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.ConeGeometry(2.2, 9, 6), new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.2, emissive: new THREE.Color(color).multiplyScalar(0.15) }));
-    body.rotation.x = -Math.PI / 2; g.add(body);
-    const wing = new THREE.Mesh(new THREE.BoxGeometry(9, 0.4, 2.6), body.material); wing.position.z = 2; g.add(wing);
-    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 2.2), body.material); tail.position.set(0, 1.2, 3.2); g.add(tail);
-    return g;
-  }
-  const rivals = [{ name: 'Ruby rival', color: 0xff4f7b, speed: 54, lane: -8, u: 0.012 }, { name: 'Gold rival', color: 0xffc247, speed: 61, lane: 9, u: 0.03 }];
-  for (const r of rivals) { r.mesh = makeHull(r.color); scene.add(r.mesh); }
-
-  // ---- the Squirrel ----
-  const hull = makeHull(0x35e0b0);
-  scene.add(hull);
-  const skimSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0x35e0b0, wireframe: true, transparent: true, opacity: 0.045 }));
-  scene.add(skimSphere);
-
-  // ================= flight state =================
-  let speed = 0, boost = 1, course = new THREE.Vector3(0, 0, -1);
-  let race = 'ready', paused = false, raceT = 0, lap = 1, LAPS = 2, crystalsTaken = 0, hint = 0, lastHint = 0;
-  let skims = 0, stolen = 0, petals = 0, ringReadyAt = 0, rings = 0, trailAcc = 0, flightT = 0;
-  let lastDrift = 0, throttleNow = 0.5;
-  const fwd = new THREE.Vector3(), upv = new THREE.Vector3(), rightv = new THREE.Vector3(), dq = new THREE.Quaternion();
-  const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0), AZ = new THREE.Vector3(0, 0, 1);
-  function basis() { fwd.set(0, 0, -1).applyQuaternion(hull.quaternion); upv.set(0, 1, 0).applyQuaternion(hull.quaternion); rightv.set(1, 0, 0).applyQuaternion(hull.quaternion); }
-
-  function spawn() {
-    const f = frameAt(0);
-    hull.position.copy(f.p).addScaledVector(f.up, 2);
-    hull.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.side, f.up, f.t.clone().negate()));
-    basis(); course.copy(fwd);
-    speed = 0; boost = 1; raceT = 0; lap = 1; crystalsTaken = 0; hint = 0; lastHint = 0;
-    skims = 0; stolen = 0; petals = 0; ringReadyAt = 0; rings = 0; trailAcc = 0; flightT = 0;
-    rivals.forEach((r, i) => { r.u = 0.012 + i * 0.018; r.cool = 0; r.wasAhead = true; });
-    buildCourse(); buildCrystals();
-    race = 'ready'; paused = false; feed.length = 0; renderFeed(); showOverlay('Skim the circuit', null);
-  }
-  function startRace() {
-    if (race === 'finished') spawn();
-    race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true });
-  }
-  function finishRace() {
-    race = 'finished';
-    const run = { type: typeName + (TYPES.some((t) => t.name === typeName) ? '' : ''), time: raceT, skims, stolen: stolen, at: Date.now() };
-    runs.unshift(run); runs.length = Math.min(runs.length, 30); saveRuns(); renderRuns();
-    showOverlay('Finished in ' + raceT.toFixed(1) + ' s', 'Type ' + typeName + ' · ' + skims + ' prisms skimmed · ' + stolen + ' stolen · ' + petals.toFixed(1) + ' petals taken · ' + rings + ' rings. Change the type or the levels and race again.');
-  }
-  function showOverlay(title, text) {
-    $('ovTitle').textContent = title;
-    if (text) $('ovText').textContent = text;
-    $('startBtn').textContent = race === 'finished' ? 'Race again' : 'Start';
-    $('overlay').hidden = false;
-  }
-
-  // ---- feed ----
-  const feed = [];
-  function say(msg) { feed.unshift({ msg, t: performance.now() }); feed.length = Math.min(feed.length, 4); renderFeed(); }
-  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const f of feed) { const d = document.createElement('div'); d.textContent = f.msg; el.appendChild(d); } }
-
-  // ---- boost ring ----
-  function placeRings() {
-    basis();
-    const count = up5('mass') ? 2 : 1;
-    for (let r = 0; r < count; r++) {
-      const centre = hull.position.clone().addScaledVector(fwd, SHIP.ring.ahead + r * SHIP.ring.spacing);
-      for (let i = 0; i < SHIP.ring.prisms; i++) {
-        const a = i / SHIP.ring.prisms * Math.PI * 2;
-        const pos = centre.clone().addScaledVector(rightv, Math.cos(a) * SHIP.ring.radius).addScaledVector(upv, Math.sin(a) * SHIP.ring.radius);
-        const quat = hull.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(AZ, a));
-        addPrism({ pos, quat, scale: new THREE.Vector3(SHIP.ring.scale * 0.5, SHIP.ring.scale * 0.5, SHIP.ring.scale), domain: 'jade', shield: false, danger: true, kind: 'ring', born: flightT, life: SHIP.ring.life });
+  // ---- the AI: decides through the same sticks and triggers a player has ----
+  const easeInv = (e) => { e = clamp(e, -0.999, 0.999); return Math.sign(e) * (4 / Math.PI) * Math.acos(1 - Math.abs(e)); };
+  function aiInput(W, P) {
+    const tr = W.track, n = tr.line.length, fwd = new V(0, 0, -1).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat), right = new V(1, 0, 0).applyQuaternion(P.quat);
+    P.hint = nearestIndex(tr, P.pos, P.hint, false);
+    const look = clamp(Math.round((LOOK.base + P.speed * LOOK.perSpeed) / SHIP.blockSpacing), 2, 14), li = (P.hint + look) % n;
+    const sideOff = new V().crossVectors(tr.tan[li], up); if (sideOff.lengthSq() < 1e-4) sideOff.copy(right); sideOff.normalize().multiplyScalar(Math.min(P.m.skimR * LOOK.side, 6));
+    let aim = tr.line[li].clone().add(sideOff), why = 'line';   // beside the ribbon: the skimmer takes it, the hull does not touch it
+    // the crystal: stay on the line and lean out only as far as the capture reach needs
+    const b = believe(W, P); P.believed = b;
+    if (b) {
+      if (!P.bLine || P.bLine.at !== b) P.bLine = { at: b, i: nearestIndex(tr, b, 0, true) };
+      let ahead = P.bLine.i - P.hint; if (ahead < -n / 2) ahead += n; if (ahead > n / 2) ahead -= n;
+      if (ahead < -2 || (ahead <= 2 && b.clone().sub(P.pos).dot(fwd) < 0)) { aim = b; why = 'turn back'; }
+      else if (ahead <= look + 2) {
+        const base = tr.line[P.bLine.i], perp = b.clone().sub(base), need = Math.max(0, perp.length() - (P.hc && P.hc.misjudged ? 0 : LOOK.reachMargin));   // a misjudged crystal is flown to where it is believed to be
+        aim = base.clone().addScaledVector(perp.normalize(), need); why = 'crystal';
+        if (ahead < 1) aim.addScaledVector(tr.tan[P.bLine.i], 20);
       }
     }
-    rings++; ringReadyAt = flightT + ringCooldown();
-    say(count === 2 ? 'Twin Rings placed' : 'Boost Ring placed');
-  }
-  // ---- own trail ----
-  function layTrail(drifting) {
-    basis();
-    for (const sgn of [-1, 1]) {
-      const pos = hull.position.clone().addScaledVector(fwd, -10).addScaledVector(rightv, sgn * SHIP.trail.gap / 2 * 0.45);
-      addPrism({ pos, quat: hull.quaternion.clone(), scale: new THREE.Vector3(1.6, 0.35, 4), domain: 'jade', shield: drifting, danger: false, kind: 'own' });
+    const dir = aim.clone().sub(P.pos).normalize();
+    const x = dir.dot(right), y = dir.dot(up), z = dir.dot(fwd);
+    const yawErr = Math.atan2(x, z), pitchErr = Math.atan2(y, Math.max(0.05, Math.hypot(x, z)) * (z < 0 ? -1 : 1));
+    const yawCmd = clamp(yawErr * 2.4, -1, 1), pitchCmd = clamp(pitchErr * 2.4, -1, 1), rollCmd = clamp(-right.y * 2, -1, 1);
+    const err = Math.acos(clamp(z, -1, 1)) * 180 / Math.PI;
+    const lt = err > 45 && P.speed > 70 ? clamp((err - 45) / 60, 0.3, 1) : 0;
+    // sticks: their sum steers, their difference is throttle (x) and roll (y); steering keeps priority over throttle
+    const sx = easeInv(yawCmd), sy = easeInv(pitchCmd), dy = easeInv(rollCmd), dx = Math.min(2, 2 - Math.abs(sx));
+    const R = { x: (sx + dx) / 2, y: clamp((sy + dy) / 2, -1, 1) }, L = { x: (sx - dx) / 2, y: clamp((sy - dy) / 2, -1, 1) };
+    // Boost Ring as SquirrelAIBoostPolicy places it: below 3x boost, lined up with the line past the ring
+    let rt = 0;
+    if (W.t >= P.ringReadyAt && P.boost < AIPOLICY.ringBelowBoost && why === 'line') {
+      const ahead = (P.hint + Math.round((SHIP.ring.ahead + AIPOLICY.clearance) / SHIP.blockSpacing)) % n;
+      const lineDir = tr.line[ahead].clone().sub(P.pos).normalize();
+      if (Math.acos(clamp(lineDir.dot(fwd), -1, 1)) * 180 / Math.PI < AIPOLICY.ringAlignDeg * 4) rt = 1;
     }
-    // keep the own trail capped (oldest first)
-    let own = 0; for (const p of prisms) if (p.kind === 'own') own++;
-    if (own > SHIP.trail.cap) { const i = prisms.findIndex((p) => p.kind === 'own'); if (i >= 0) prisms.splice(i, 2); }
+    P.aiState = P.hc && P.hc.unnoticed ? 'not noticed' : P.hc && P.hc.misjudged ? 'misjudged' : why;
+    return { pad: true, L, R, lt, rt };
   }
 
-  // ================= the step =================
+  // ---- one step of one pilot: the same physics for a player and an AI ----
   const ease = (x) => x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1);
-  let rtWas = 0;
-  function step(dt, inp) {
-    flightT += dt;
-    basis();
-    // the game's dual-stick mix (InputController): sums steer, differences roll and throttle, eased
+  const tmpArr = [], AX = new V(1, 0, 0), AY = new V(0, 1, 0), AZ = new V(0, 0, 1), dq = new Q();
+  function stepPilot(W, P, inp, dt) {
+    if (P.finishT != null) { P.speed *= Math.exp(-1.5 * dt); P.pos.addScaledVector(P.course, P.speed * dt); return; }
     let XSum, YSum, YDiff, XDiff;
     if (inp.pad) { XSum = ease(inp.R.x + inp.L.x); YSum = -ease(inp.R.y + inp.L.y); YDiff = ease(inp.R.y - inp.L.y); XDiff = (inp.R.x - inp.L.x + 2) / 4; }
-    else { XSum = inp.kYaw; YSum = -inp.kPitch; YDiff = inp.kRoll; XDiff = kbThrottle; }
-    const drift = clamp(inp.lt, 0, 1); lastDrift = drift;
-    const rotMul = lerp(1, SHIP.driftMult, drift);
-    const rad = Math.PI / 180;
-    if (race === 'running') {
-      dq.setFromAxisAngle(AX, -YSum * SHIP.pitchYaw * rotMul * rad * dt); hull.quaternion.multiply(dq);
-      dq.setFromAxisAngle(AY, -XSum * SHIP.pitchYaw * rotMul * rad * dt); hull.quaternion.multiply(dq);
-      dq.setFromAxisAngle(AZ, YDiff * SHIP.roll * rotMul * rad * dt); hull.quaternion.multiply(dq);
-      hull.quaternion.normalize();
-    }
-    basis();
-    throttleNow = XDiff;
-    // speed: throttle × 60 × boost, eased; boost decays toward 1
-    const target = race === 'running' ? XDiff * SHIP.throttleScaler * boost : 0;
-    speed += (target - speed) * (1 - Math.exp(-2.2 * dt));
-    if (boost > 1) boost = Math.max(1, boost - SHIP.boostDecay * dt);
-    // vector flight: the course turns toward the nose at the grip rate (stiff outside a drift)
-    const grip = lerp(SHIP.noDriftGrip, SHIP.driftGrip, drift);
-    course.lerp(fwd, 1 - Math.exp(-grip * dt)).normalize();
-    if (race === 'running') hull.position.addScaledVector(course, speed * dt);
-
-    // Boost Ring on the RT press
-    const rt = inp.rt;
-    if (race === 'running' && rt > 0.5 && rtWas <= 0.5) { if (flightT >= ringReadyAt) placeRings(); else say('Boost Ring cooling: ' + (ringReadyAt - flightT).toFixed(1) + ' s'); }
-    rtWas = rt;
-
-    // own trail every wavelength travelled, after the start delay
-    if (race === 'running' && raceT > SHIP.trail.startDelay) { trailAcc += speed * dt; while (trailAcc >= SHIP.trail.wavelength * 2.4) { trailAcc -= SHIP.trail.wavelength * 2.4; layTrail(drift > 0.05); } }
-
-    // skimming: every prism inside the skimmer sphere, once per pass
-    const R = skimRadius();
-    skimSphere.position.copy(hull.position); skimSphere.scale.setScalar(R);
-    if (race === 'running') {
-      const R2 = (R + 2) * (R + 2);
-      for (const p of prisms) {
-        if (p.kind === 'own') continue;
-        if (p.pos.distanceToSquared(hull.position) > R2) continue;
-        if (p.cool > flightT) continue;
-        p.cool = flightT + 0.6; p.flash = 1;
-        let add = SHIP.skimAdd * energyMult();
-        if (p.danger && up5('time')) add *= SHIP.dangerMult;
-        boost = clamp(boost + add, 1, SHIP.maxBoost);
-        skims++;
-        if (p.domain !== 'jade') {
-          if (p.shield) { if (up5('space')) { p.domain = 'jade'; stolen++; } else { p.shield = false; } }
-          else { p.domain = 'jade'; stolen++; }
-        }
-        prismsDirty = true;
+    else { XSum = inp.kYaw; YSum = -inp.kPitch; YDiff = inp.kRoll; XDiff = inp.kThrottle; }
+    const drift = clamp(inp.lt || 0, 0, 1); P.lastDrift = drift; P.throttle = XDiff;
+    const rot = lerp(1, SHIP.driftMult, drift) * Math.PI / 180;
+    dq.setFromAxisAngle(AX, -YSum * SHIP.pitchYaw * rot * dt); P.quat.multiply(dq);
+    dq.setFromAxisAngle(AY, -XSum * SHIP.pitchYaw * rot * dt); P.quat.multiply(dq);
+    dq.setFromAxisAngle(AZ, YDiff * SHIP.roll * rot * dt); P.quat.multiply(dq);
+    P.quat.normalize();
+    const fwd = new V(0, 0, -1).applyQuaternion(P.quat), right = new V(1, 0, 0).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat);
+    P.speed += (XDiff * SHIP.throttleScaler * P.boost - P.speed) * (1 - Math.exp(-1.5 * dt));
+    P.slow += (1 - P.slow) * (1 - Math.exp(-1 * dt));
+    if (P.boost > 1) P.boost = Math.max(1, P.boost - SHIP.boostDecay * dt);
+    P.course.lerp(fwd, 1 - Math.exp(-lerp(SHIP.noDriftGrip, SHIP.driftGrip, drift) * dt)).normalize();
+    P.pos.addScaledVector(P.course, P.speed * P.slow * dt);
+    if (inp.rt > 0.5 && P.rtWas <= 0.5 && W.t >= P.ringReadyAt) placeRing(W, P, fwd, right, up);
+    P.rtWas = inp.rt;
+    if (W.t > SHIP.rail.startDelay) { P.railAcc += P.speed * dt; while (P.railAcc >= SHIP.rail.spacing) { P.railAcc -= SHIP.rail.spacing; layRails(W, P, right, drift > 0.05); } }
+    const R = P.m.skimR, near = W.grid.near(P.pos, R + 6, tmpArr);
+    for (const p of near) {
+      if (p.dead || (p.cool[P.i] || 0) > W.t) continue;
+      const d = p.pos.distanceTo(P.pos), own = p.owner === P.i;
+      if (d < SHIP.hullReach + (p.kind === 'track' ? 1.6 : 0.9) && !(own && p.kind === 'ring') && !(own && p.kind === 'rail' && W.t - p.born < SHIP.rail.grace)) {
+        p.cool[P.i] = W.t + 0.6; P.boost = 1; P.slow = Math.min(P.slow, 0.9); P.resets++;
+        if (P.i === W.watch) W.events.push('Hull contact: boost reset');
+        continue;
+      }
+      if (d > R + 2 || (own && (p.kind === 'rail' || p.kind === 'pickup'))) continue;
+      p.cool[P.i] = W.t + 0.6; p.flash = 1; W.dirty = true;
+      let add = SHIP.skimAdd * P.m.energy; if (p.danger && P.m.liveWire) add *= SHIP.dangerMult;
+      P.boost = clamp(P.boost + add, 1, SHIP.maxBoost); P.skims++;
+      if (p.kind === 'rail' && p.domain !== P.domain.key) {
+        if (p.shield) { if (P.m.ironGrip) { p.domain = P.domain.key; p.owner = P.i; P.stolen++; } else p.shield = false; }
+        else { p.domain = P.domain.key; p.owner = P.i; P.stolen++; }
       }
     }
-    // ring lifetimes and skim flashes
-    for (let i = prisms.length - 1; i >= 0; i--) {
-      const p = prisms[i];
-      if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); prismsDirty = true; }
-      if (p.kind === 'ring' && flightT - p.born > p.life) { prisms.splice(i, 1); prismsDirty = true; }
+    if (P.crystal && P.crystal.pos.distanceTo(P.pos) < SHIP.captureReach) {
+      P.crystals++; P.anchor++;
+      placePickupRing(W, P, fwd, right, up);
+      if (P.crystals >= W.track.target) { P.finishT = W.t; P.crystal = null; if (P.i === W.watch) W.events.push('Finished in ' + W.t.toFixed(1) + ' s'); }
+      else spawnCrystal(W, P);
     }
-
-    // rivals fly the line; an overtake within the skimmer steals petals
-    hint = progressOf(hull.position, hint);
-    const myU = hint / SAMPLES;
-    for (const r of rivals) {
-      if (race === 'running') r.u = (r.u + r.speed * dt / LEN) % 1;
-      const f = frameAt(r.u);
-      r.mesh.position.copy(f.p).addScaledVector(f.side, r.lane).addScaledVector(f.up, 3);
-      r.mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.side, f.up, f.t.clone().negate()));
-      let du = r.u - myU; if (du > 0.5) du -= 1; if (du < -0.5) du += 1;
-      const ahead = du > 0;
-      if (race === 'running' && r.wasAhead && !ahead && r.mesh.position.distanceTo(hull.position) < R + 6 && flightT >= r.cool) {
-        const take = stealMult(); petals += take; r.cool = flightT + SHIP.overtakeCooldown;
-        say('Overtook ' + r.name + ': ' + take.toFixed(2) + ' petals taken');
-      }
-      r.wasAhead = ahead;
+  }
+  function placeRing(W, P, fwd, right, up) {
+    const count = P.m.twin ? 2 : 1;
+    for (let r = 0; r < count; r++) {
+      const c = P.pos.clone().addScaledVector(fwd, SHIP.ring.ahead + r * SHIP.ring.spacing);
+      for (let i = 0; i < SHIP.ring.prisms; i++) { const a = i / SHIP.ring.prisms * Math.PI * 2; addPrism(W, { pos: c.clone().addScaledVector(right, Math.cos(a) * SHIP.ring.radius).addScaledVector(up, Math.sin(a) * SHIP.ring.radius), quat: P.quat.clone(), scale: [2, 2, 4], owner: P.i, domain: P.domain.key, shield: false, danger: true, kind: 'ring', born: W.t, life: SHIP.ring.life }); }
     }
-
-    // crystals and laps
-    if (race === 'running') {
-      raceT += dt;
-      for (const c of crystals) {
-        c.mesh.rotation.y += dt * 1.4;
-        if (!c.taken && c.mesh.position.distanceTo(hull.position) < 7 + R * 0.6) { c.taken = true; c.mesh.visible = false; crystalsTaken++; say('Crystal ' + crystalsTaken + ' / ' + LAPS * 6); }
-      }
-      if (lastHint > SAMPLES * 0.85 && hint < SAMPLES * 0.15) { // crossed the start line forward
-        if (lap >= LAPS) { finishRace(); } else { lap++; crystals.forEach((c) => { c.taken = false; c.mesh.visible = true; }); say('Lap ' + lap); }
+    P.rings++; P.ringReadyAt = W.t + P.m.ringCd;
+    if (P.i === W.watch) W.events.push(count === 2 ? 'Twin Rings placed' : 'Boost Ring placed');
+  }
+  function placePickupRing(W, P, fwd, right, up) {
+    const c = P.pos.clone().addScaledVector(fwd, SHIP.pickupRing.ahead);
+    for (let i = 0; i < SHIP.pickupRing.prisms; i++) { const a = i / SHIP.pickupRing.prisms * Math.PI * 2; addPrism(W, { pos: c.clone().addScaledVector(right, Math.cos(a) * SHIP.pickupRing.radius).addScaledVector(up, Math.sin(a) * SHIP.pickupRing.radius), quat: P.quat.clone(), scale: [1.8, 1.8, 7.5], owner: P.i, domain: P.domain.key, shield: true, danger: false, kind: 'pickup', born: W.t, life: SHIP.pickupRing.life }); }
+  }
+  function layRails(W, P, right, drifting) {
+    for (const s of [-1, 1]) addPrism(W, { pos: P.pos.clone().addScaledVector(right, s * SHIP.rail.offset), quat: P.quat.clone(), scale: [0.83, 0.83, 6.1], owner: P.i, domain: P.domain.key, shield: drifting, danger: false, kind: 'rail', born: W.t });
+    P.rails += 2;
+    if (P.rails > SHIP.rail.cap) { let removed = 0; for (const p of W.prisms) { if (!p.dead && p.kind === 'rail' && p.owner === P.i) { removePrism(W, p); P.rails--; if (++removed >= 2) break; } } }
+  }
+  function overtakes(W) {
+    const n = W.track.line.length;
+    for (const A of W.pilots) for (const B of W.pilots) {
+      if (A === B || A.finishT != null) continue;
+      let du = A.hint - B.hint; if (du > n / 2) du -= n; if (du < -n / 2) du += n;
+      const was = A['o' + B.i]; A['o' + B.i] = du;
+      if (A.pos.distanceTo(B.pos) < A.m.skimR + 6 && was != null && was <= 0 && du > 0 && (A['oc' + B.i] || 0) <= W.t) {
+        A.petals += A.m.steal; A['oc' + B.i] = W.t + SHIP.overtakeCooldown;
+        if (A.i === W.watch) W.events.push('Overtook ' + B.domain.name + ': ' + A.m.steal.toFixed(2) + ' petals');
       }
     }
-    lastHint = hint;
+  }
+  function stepWorld(W, dt, inputs) {
+    W.t += dt;
+    W.pilots.forEach((P, i) => { stepPilot(W, P, inputs[i], dt); if (!P.spec.ai) P.hint = nearestIndex(W.track, P.pos, P.hint, false); });
+    overtakes(W);
+    let dead = 0;
+    for (const p of W.prisms) {
+      if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); W.dirty = true; }
+      if (!p.dead && p.life && W.t - p.born > p.life) removePrism(W, p);
+      if (p.dead) dead++;
+    }
+    if (dead > 200) { W.prisms = W.prisms.filter((p) => !p.dead); W.dirty = true; }
+    if (!W.over && (W.pilots.every((P) => P.finishT != null) || W.t > SHIP.limit)) W.over = true;
   }
 
-  // ---- chase camera ----
-  const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
-  function placeCamera(dt, snap) {
-    basis();
-    const want = hull.position.clone().addScaledVector(course, -26 - speed * 0.05).addScaledVector(upv, 8);
-    const look = hull.position.clone().addScaledVector(fwd, 30).addScaledVector(upv, 2);
-    const k = snap ? 1 : 1 - Math.exp(-6 * dt);
-    camPos.lerp(want, k); camLook.lerp(look, k);
-    if (snap) { camPos.copy(want); camLook.copy(look); }
-    cam.position.copy(camPos); cam.up.copy(upv); cam.lookAt(camLook);
-    cam.fov = lerp(cam.fov, 70 + (boost - 1) * 4 + lastDrift * 4, 1 - Math.exp(-4 * dt)); cam.updateProjectionMatrix();
+  // ---- headless race for the scorecard ----
+  function raceHeadless(course, diff, seed) {
+    const W = makeWorld(course, [{ ai: diff, lv: { charge: 0, mass: 0, space: 0, time: 0 } }], seed); W.watch = -1;
+    const dt = 1 / 30; while (!W.over) stepWorld(W, dt, [aiInput(W, W.pilots[0])]);
+    return W.pilots[0].finishT;
+  }
+  function raceStats(course, diff, seed) {
+    const W = makeWorld(course, [{ ai: diff, lv: { charge: 0, mass: 0, space: 0, time: 0 } }], seed); W.watch = -1;
+    const dt = 1 / 30, P = W.pilots[0]; let n = 0, sp = 0, bo = 0, off = 0, st = {};
+    while (!W.over) { const inp = aiInput(W, P); stepWorld(W, dt, [inp]); n++; sp += P.speed * P.slow; bo += P.boost; off += W.track.line[P.hint].distanceTo(P.pos); st[P.aiState] = (st[P.aiState] || 0) + 1; }
+    return { finish: P.finishT, crystals: P.crystals, avgSpeed: +(sp / n).toFixed(1), avgBoost: +(bo / n).toFixed(2), avgOffLine: +(off / n).toFixed(1), resets: P.resets, skims: P.skims, rings: P.rings, mistakes: P.mistakes, states: st };
   }
 
-  // ================= input (the Stoat studio's layer, unchanged in spirit) =================
-  const keys = new Set();
-  let kbThrottle = 0.75, armed = false;
-  function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
-  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'Space', 'ShiftLeft', 'ShiftRight', 'Enter', 'ArrowUp', 'ArrowDown']);
+  // ================= rendering =================
+  const canvas = $('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x05060c); scene.fog = new THREE.Fog(0x05060c, 900, 3800);
+  const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 9000);
+  scene.add(new THREE.HemisphereLight(0x8fa0ff, 0x1a1030, 0.9));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(300, 800, 200); scene.add(sun);
+  { const n = 1600, g = new THREE.BufferGeometry(), p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const v = new V(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(5200 + Math.random() * 800); p.set([v.x, v.y, v.z], i * 3); } g.setAttribute('position', new THREE.BufferAttribute(p, 3)); scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9aa6ff, size: 2.2, sizeAttenuation: false, fog: false }))); }
+  const MAXP = 9000;
+  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1, emissive: 0x111111 }), MAXP);
+  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(prismMesh);
+  const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.5 }), MAXP);
+  shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
+  const COL = { track: new THREE.Color(0x3a4380), jade: new THREE.Color(0x35e0b0), ruby: new THREE.Color(0xff4f7b), gold: new THREE.Color(0xffc247), blue: new THREE.Color(0x6aa8ff) };
+  const DANGER = new THREE.Color(0xff2a2a), WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V();
+  function drawPrisms(W) {
+    let n = 0, ns = 0;
+    for (const p of W.prisms) {
+      if (p.dead || n >= MAXP) continue;
+      sc.set(p.scale[0], p.scale[1], p.scale[2]); m4.compose(p.pos, p.quat, sc); prismMesh.setMatrixAt(n, m4);
+      tmpC.copy(COL[p.domain] || COL.track); if (p.danger) tmpC.lerp(DANGER, 0.5); if (p.flash > 0) tmpC.lerp(WHITE, p.flash);
+      prismMesh.setColorAt(n, tmpC); n++;
+      if (p.shield && ns < MAXP) { sc.multiplyScalar(1.4); m4.compose(p.pos, p.quat, sc); shieldMesh.setMatrixAt(ns++, m4); }
+    }
+    prismMesh.count = n; shieldMesh.count = ns;
+    prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
+    if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
+    W.dirty = false;
+  }
+  function makeHull(color) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.2, emissive: new THREE.Color(color).multiplyScalar(0.18) });
+    const body = new THREE.Mesh(new THREE.ConeGeometry(2.2, 9, 6), mat); body.rotation.x = -Math.PI / 2; g.add(body);
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(9, 0.4, 2.6), mat); wing.position.z = 2; g.add(wing);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 2.2), mat); tail.position.set(0, 1.2, 3.2); g.add(tail);
+    return g;
+  }
+  const crystalGeo = new THREE.OctahedronGeometry(7, 0);
+  const view = { hulls: [], crystals: [], skims: [], lines: [] };
+  function mountWorld(W) {
+    for (const o of [...view.hulls, ...view.crystals, ...view.skims, ...view.lines]) scene.remove(o);
+    view.hulls = []; view.crystals = []; view.skims = []; view.lines = [];
+    for (const P of W.pilots) {
+      const h = makeHull(P.domain.color); scene.add(h); view.hulls.push(h);
+      const c = new THREE.Mesh(crystalGeo, new THREE.MeshStandardMaterial({ color: P.domain.color, emissive: new THREE.Color(P.domain.color).multiplyScalar(0.35), roughness: 0.2 })); scene.add(c); view.crystals.push(c);
+      const s = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), new THREE.MeshBasicMaterial({ color: P.domain.color, wireframe: true, transparent: true, opacity: 0.05 })); scene.add(s); view.skims.push(s);
+      const lg = new THREE.BufferGeometry().setFromPoints([new V(), new V(), new V(), new V()]);
+      const ln = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.85 })); ln.frustumCulled = false; scene.add(ln); view.lines.push(ln);
+    }
+  }
+  function drawWorld(W, t) {
+    if (W.dirty) drawPrisms(W);
+    W.pilots.forEach((P, i) => {
+      view.hulls[i].position.copy(P.pos); view.hulls[i].quaternion.copy(P.quat);
+      const c = view.crystals[i]; c.visible = !!P.crystal; if (P.crystal) { c.position.copy(P.crystal.pos); c.rotation.y = t * 1.3 + i; }
+      view.skims[i].visible = i !== chased; view.skims[i].position.copy(P.pos); view.skims[i].scale.setScalar(P.m.skimR);
+      const ln = view.lines[i], show = S.thinking && !!P.spec.ai && !!P.crystal && P.finishT == null; ln.visible = show;
+      if (show) {
+        const a = ln.geometry.attributes.position, b = P.believed || P.pos;
+        a.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); a.setXYZ(1, P.crystal.pos.x, P.crystal.pos.y, P.crystal.pos.z);
+        a.setXYZ(2, P.pos.x, P.pos.y + 3, P.pos.z); a.setXYZ(3, b.x, b.y + 3, b.z); a.needsUpdate = true;
+        ln.material.color.set(P.hc && P.hc.misjudged ? 0xff5c6c : P.hc && P.hc.unnoticed ? 0xffb454 : P.domain.color);
+      }
+    });
+  }
+
+  // ---- cameras: chase your hull, follow any AI, or fly free ----
+  const camPos = new V(), camLook = new V(), free = { pos: new V(0, 500, 1100), yaw: Math.PI, pitch: -0.4 };
+  let followIdx = 1, chased = -1;
+  function placeCamera(W, dt, snap) {
+    let tag;
+    chased = -1;
+    if (S.cam === 'Free') {
+      const fwd = new V(Math.sin(free.yaw) * Math.cos(free.pitch), Math.sin(free.pitch), Math.cos(free.yaw) * Math.cos(free.pitch)), rightv = new V().crossVectors(fwd, new V(0, 1, 0)).normalize();
+      const k = (c) => keys.has(c) ? 1 : 0, sp = 300 * dt * (keys.has('ShiftLeft') ? 3 : 1);
+      free.pos.addScaledVector(fwd, (k('KeyI') - k('KeyK')) * sp).addScaledVector(rightv, (k('KeyL') - k('KeyJ')) * sp).addScaledVector(AY, (k('KeyO') - k('KeyU')) * sp);
+      if (playMode && touch.used && camTouch) { free.pos.addScaledVector(fwd, touch.L.y * sp * 2).addScaledVector(rightv, touch.L.x * sp * 2); free.yaw -= touch.R.x * dt * 1.6; free.pitch = clamp(free.pitch + touch.R.y * dt * 1.2, -1.4, 1.4); }
+      cam.position.copy(free.pos); cam.up.set(0, 1, 0); cam.lookAt(free.pos.clone().add(fwd)); tag = 'Free camera';
+    } else {
+      const P = W.pilots[S.cam === 'Follow' ? Math.min(followIdx, W.pilots.length - 1) : 0];
+      const fwd = new V(0, 0, -1).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat);
+      // the offset from the hull is smoothed, not the position, so the camera keeps up at 5x boost
+      const wantOff = new V().addScaledVector(P.course, -24 - P.speed * 0.03).addScaledVector(up, 8), lookOff = new V().addScaledVector(fwd, 30).addScaledVector(up, 2);
+      const k = snap ? 1 : 1 - Math.exp(-6 * dt); camPos.lerp(wantOff, k); camLook.lerp(lookOff, k);
+      cam.position.copy(P.pos).add(camPos); cam.up.copy(up); cam.lookAt(P.pos.clone().add(camLook));
+      chased = P.i;
+      tag = (S.cam === 'Follow' ? 'Following ' : 'Chase: ') + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
+    }
+    $('camTag').textContent = tag + ' · ' + S.speed + '×';
+  }
+
+  // ================= input: gamepad, keys, phone =================
+  const keys = new Set(); let kbThrottle = 0.75, armed = false;
+  const isForm = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyC', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyO', 'Space', 'Enter', 'ArrowUp', 'ArrowDown']);
   window.addEventListener('keydown', (e) => {
-    if (isFormTarget(e.target) || !armed) return;
-    if (GAME_KEYS.has(e.code)) e.preventDefault();
-    if (e.repeat) return;
-    keys.add(e.code);
-    if (e.code === 'Enter') startRace();
-    if (e.code === 'KeyR') spawn();
-    if (e.code === 'KeyP') togglePause();
+    if (isForm(e.target) || !armed) return;
+    if (GAME_KEYS.has(e.code)) e.preventDefault(); if (e.repeat) return; keys.add(e.code);
+    if (e.code === 'Enter') startRace(); if (e.code === 'KeyR') newRace(); if (e.code === 'KeyP') togglePause(); if (e.code === 'KeyC') cycleCamera();
   });
-  window.addEventListener('keyup', (e) => keys.delete(e.code));
-  window.addEventListener('blur', () => keys.clear());
-  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
-  canvas.addEventListener('focus', () => { armed = true; });
-  function readPad() {
-    let pads = [];
-    try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; }
-    for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g;
-    return null;
-  }
+  window.addEventListener('keyup', (e) => keys.delete(e.code)); window.addEventListener('blur', () => keys.clear());
+  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (S.cam === 'Free' && !playMode) drag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; free.yaw -= (e.clientX - drag.x) * 0.005; free.pitch = clamp(free.pitch - (e.clientY - drag.y) * 0.005, -1.4, 1.4); drag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { drag = null; });
+  function readPad() { let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; } for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g; return null; }
   function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
-  let playMode = false;
+  let playMode = false, camTouch = false;
   const touch = { used: false, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 };
   const STICK_R = 56, TRIG_TRAVEL = () => Math.max(80, $('ttL').clientHeight - 44);
   function bindStick(zoneId, stickId, side) {
     const zone = $(zoneId), el = $(stickId), knob = el.firstElementChild; let id = null, ox = 0, oy = 0;
     const home = () => { el.classList.add('idle'); el.style.left = side === 'L' ? '22%' : '78%'; el.style.top = '72%'; knob.style.transform = ''; touch[side].x = touch[side].y = 0; };
     home();
-    zone.addEventListener('pointerdown', (e) => {
-      if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* lost pointer */ } touch.used = true;
-      const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top;
-      el.classList.remove('idle'); el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault();
-    });
-    zone.addEventListener('pointermove', (e) => {
-      if (e.pointerId !== id) return;
-      const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy);
-      if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; }
-      knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-      touch[side].x = dx / STICK_R; touch[side].y = -dy / STICK_R; e.preventDefault();
-    });
-    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); };
-    zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+    zone.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* lost */ } touch.used = true; const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top; el.classList.remove('idle'); el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault(); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy); if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; } knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; touch[side].x = dx / STICK_R; touch[side].y = -dy / STICK_R; e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); }; zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
   }
   function bindTrigger(trigId, side) {
     const el = $(trigId), handle = el.querySelector('.thandle'), fill = el.querySelector('.tfill'), key = side === 'L' ? 'lt' : 'rt'; let id = null, y0 = 0;
     const show = (v) => { handle.style.transform = 'translateY(' + (v * TRIG_TRAVEL()) + 'px)'; fill.style.height = (v * 100) + '%'; };
-    el.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { el.setPointerCapture(id); } catch (err) { /* lost pointer */ } y0 = e.clientY; touch.used = true; touch[key] = key === 'lt' ? driftDepth : 1; show(touch[key]); e.preventDefault(); });
+    el.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { el.setPointerCapture(id); } catch (err) { /* lost */ } y0 = e.clientY; touch.used = true; touch[key] = key === 'lt' ? S.driftDepth : 1; show(touch[key]); e.preventDefault(); });
     el.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const d = (e.clientY - y0) / TRIG_TRAVEL(); if (Math.abs(d) < 0.04) return; const v = clamp(d, 0.06, 1); touch[key] = v; show(v); e.preventDefault(); });
-    const end = (e) => { if (e.pointerId !== id) return; id = null; touch[key] = 0; show(0); };
-    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    const end = (e) => { if (e.pointerId !== id) return; id = null; touch[key] = 0; show(0); }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   }
   bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R'); bindTrigger('ttL', 'L'); bindTrigger('ttR', 'R');
   function setPlayMode(on) {
     playMode = !!on; document.body.classList.toggle('play', playMode);
-    if (playMode) {
-      const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen;
-      if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } }
-      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ }
-    } else {
-      const ex = document.exitFullscreen || document.webkitExitFullscreen;
-      if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } }
-      touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0; touch.used = false;
-    }
+    if (playMode) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } } try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ } }
+    else { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } } touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0; touch.used = false; }
     lastW = lastH = 0; resize();
   }
   document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
-  $('playBtn').addEventListener('click', () => setPlayMode(true));
-  $('tExit').addEventListener('click', () => setPlayMode(false));
-  $('tStart').addEventListener('click', () => { if (paused) togglePause(); else startRace(); });
-  $('tStop').addEventListener('click', () => togglePause());
-  $('tBack').addEventListener('click', () => spawn());
-  $('stopBtn').addEventListener('click', () => togglePause());
-  $('startBtn').addEventListener('click', () => startRace());
-  $('resetBtn').addEventListener('click', () => spawn());
-  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
-  function syncButtons() {
-    $('stopBtn').textContent = paused ? 'Resume' : 'Pause';
-    $('tStop').textContent = paused ? 'Resume' : 'Pause';
-    $('tStart').hidden = race === 'running' && !paused;
-    $('tStart').textContent = paused ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
-  }
-  function pollInput(dt) {
-    if (playMode && touch.used) return { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
+  $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
+  $('tStart').addEventListener('click', () => { if (paused) togglePause(); else startRace(); }); $('tStop').addEventListener('click', () => togglePause());
+  $('tBack').addEventListener('click', () => newRace()); $('tCam').addEventListener('click', () => cycleCamera());
+  $('stopBtn').addEventListener('click', () => togglePause()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
+  function humanInput(dt) {
+    camTouch = S.cam === 'Free' && S.you !== 'You';   // with an AI on your hull, the phone's sticks fly the free camera
+    if (playMode && touch.used) return camTouch ? { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 } : { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
     const g = readPad();
-    const inp = { pad: !!g, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, kYaw: 0, kPitch: 0, kRoll: 0 };
-    if (g) {
-      inp.L = stick(g.axes[0], -g.axes[1]); inp.R = stick(g.axes[2], -g.axes[3]);
-      inp.lt = g.buttons[6] ? g.buttons[6].value : 0; inp.rt = g.buttons[7] ? g.buttons[7].value : 0;
-      if (g.buttons[9] && g.buttons[9].pressed && race !== 'running') startRace();
-      return inp;
-    }
+    if (g) { if (g.buttons[9] && g.buttons[9].pressed && race !== 'running') startRace(); return { pad: true, L: stick(g.axes[0], -g.axes[1]), R: stick(g.axes[2], -g.axes[3]), lt: g.buttons[6] ? g.buttons[6].value : 0, rt: g.buttons[7] ? g.buttons[7].value : 0 }; }
     const k = (c) => keys.has(c) ? 1 : 0;
-    inp.kYaw = k('KeyD') - k('KeyA'); inp.kPitch = k('KeyS') - k('KeyW'); inp.kRoll = k('KeyE') - k('KeyQ');
-    if (keys.has('ArrowUp')) kbThrottle = Math.min(1, kbThrottle + dt * 0.6);
-    if (keys.has('ArrowDown')) kbThrottle = Math.max(0, kbThrottle - dt * 0.6);
-    inp.lt = keys.has('Space') ? driftDepth : keys.has('ShiftLeft') || keys.has('ShiftRight') ? 0.5 : 0;
-    inp.rt = keys.has('KeyF') ? 1 : 0;
-    return inp;
+    if (keys.has('ArrowUp')) kbThrottle = Math.min(1, kbThrottle + dt * 0.6); if (keys.has('ArrowDown')) kbThrottle = Math.max(0, kbThrottle - dt * 0.6);
+    return { pad: false, kYaw: k('KeyD') - k('KeyA'), kPitch: k('KeyS') - k('KeyW'), kRoll: k('KeyE') - k('KeyQ'), kThrottle: kbThrottle, lt: keys.has('Space') ? S.driftDepth : 0, rt: keys.has('KeyF') ? 1 : 0 };
   }
+
+  // ================= race flow =================
+  let W = null, race = 'ready', paused = false, seedN = 1;
+  function pilotsSpec() {
+    const zero = { charge: 0, mass: 0, space: 0, time: 0 }, list = [{ ai: S.you === 'You' ? null : S.you, lv: Object.assign({}, S.lv) }];
+    for (let i = 0; i < S.rivals; i++) list.push({ ai: S.diff, lv: Object.assign({}, S.typeToAll ? S.lv : zero) });
+    return list;
+  }
+  function newRace() {
+    W = makeWorld(S.course, pilotsSpec(), seedN++); followIdx = Math.max(1, Math.min(followIdx, W.pilots.length - 1));
+    mountWorld(W); drawWorld(W, 0); placeCamera(W, 0, true);
+    race = 'ready'; paused = false; feed.length = 0; renderFeed();
+    $('ovTitle').textContent = 'Skim Race, intensity ' + S.course; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
+    $('courseInfo').textContent = 'I' + S.course + ' · ' + COURSE_INFO[S.course] + ' · ' + W.track.target + ' crystals';
+  }
+  function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
+  function finishRace() {
+    race = 'finished';
+    const order = W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.crystals - a.crystals);
+    for (const P of W.pilots) runs.unshift({ course: S.course, pilot: P.i === 0 ? (P.spec.ai ? 'Your hull (AI ' + P.spec.ai + ')' : 'You') : P.domain.name + ' (AI ' + P.spec.ai + ')', type: P.i === 0 || S.typeToAll ? S.type : 'Shipped', time: P.finishT, place: order.indexOf(P) + 1 });
+    runs.length = Math.min(runs.length, 40); saveRuns(); renderRuns();
+    const me = W.pilots[0];
+    $('ovTitle').textContent = me.finishT != null ? 'Place ' + (order.indexOf(me) + 1) + ' · ' + me.finishT.toFixed(1) + ' s' : 'Race over';
+    $('ovText').textContent = order.map((P, i) => (i + 1) + '. ' + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '') + ': ' + (P.finishT != null ? P.finishT.toFixed(1) + ' s' : P.crystals + '/' + W.track.target)).join(' · ');
+    $('startBtn').textContent = 'Race again';
+    if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
+  }
+  function cycleCamera() {
+    const n = W ? W.pilots.length : 1;
+    if (S.cam === 'Chase') { if (n > 1) { S.cam = 'Follow'; followIdx = 1; } else { S.cam = 'Free'; free.pos.copy(cam.position); } }
+    else if (S.cam === 'Follow') { followIdx++; if (followIdx >= n) { S.cam = 'Free'; free.pos.copy(cam.position); } }
+    else S.cam = 'Chase';
+    syncSegs(); save();
+  }
+  const feed = [];
+  function say(m) { feed.unshift(m); feed.length = Math.min(feed.length, 4); renderFeed(); }
+  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const m of feed) { const d = document.createElement('div'); d.textContent = m; el.appendChild(d); } }
 
   // ================= rail =================
-  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  const typeBtns = [];
-  for (const t of TYPES) {
-    const b = el('button', 'type', t.name); b.type = 'button';
-    b.addEventListener('click', () => applyType(t));
-    $('types').appendChild(b); typeBtns.push({ b, t });
+  const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  const SEGS = {
+    segCourse: { key: 'course', vals: [1, 2, 3, 4], label: (v) => 'I' + v, rebuild: true },
+    segYou: { key: 'you', vals: ['You', 'Easy', 'Medium', 'Hard'], label: (v) => v === 'You' ? 'You fly' : 'AI ' + v, rebuild: true },
+    segRivals: { key: 'rivals', vals: [0, 1, 2, 3], label: (v) => String(v), rebuild: true },
+    segDiff: { key: 'diff', vals: ['Easy', 'Medium', 'Hard'], label: (v) => v, rebuild: true },
+    segCam: { key: 'cam', vals: ['Chase', 'Follow', 'Free'], label: (v) => v },
+    segSpeed: { key: 'speed', vals: [1, 2, 4], label: (v) => v + '×' },
+  };
+  for (const [id, d] of Object.entries(SEGS)) for (const v of d.vals) {
+    const b = elx('button', null, d.label(v)); b.type = 'button'; b.dataset.v = String(v);
+    b.addEventListener('click', () => { S[d.key] = v; if (d.key === 'cam' && v === 'Free') free.pos.copy(cam.position); save(); syncSegs(); if (d.rebuild) newRace(); });
+    $(id).appendChild(b);
   }
-  function applyType(t) { Object.assign(lv, t.lv); typeName = t.name; syncRail(); save(); }
+  function syncSegs() { for (const [id, d] of Object.entries(SEGS)) for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.v === String(S[d.key]))); }
+  $('thinking').checked = S.thinking; $('thinking').addEventListener('change', (e) => { S.thinking = e.target.checked; save(); });
+  $('autoRestart').checked = S.autoRestart; $('autoRestart').addEventListener('change', (e) => { S.autoRestart = e.target.checked; save(); });
+  $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
+  const typeBtns = [];
+  for (const t of TYPES) { const b = elx('button', 'type', t.name); b.type = 'button'; b.addEventListener('click', () => { S.type = t.name; Object.assign(S.lv, t.lv); syncRail(); save(); applyLevels(); }); $('types').appendChild(b); typeBtns.push({ b, t }); }
   const elRows = {};
   for (const E of ELEMENTS) {
-    const row = el('div', 'el'); row.style.setProperty('--accent', 'var(' + E.color + ')');
-    const lab = el('label', null, E.name); lab.htmlFor = 'lv-' + E.key; lab.style.color = 'var(' + E.color + ')';
+    const row = elx('div', 'el'); row.style.setProperty('--accent', 'var(' + E.color + ')');
+    const lab = elx('label', null, E.name); lab.htmlFor = 'lv-' + E.key; lab.style.color = 'var(' + E.color + ')';
     const inp = document.createElement('input'); inp.type = 'range'; inp.min = 0; inp.max = 10; inp.step = 1; inp.id = 'lv-' + E.key;
-    const out = el('output'); out.htmlFor = inp.id;
-    const what = el('div', 'what'); const wl = el('span'); const badge = el('span', 'l5', E.l5);
-    what.append(wl, badge);
-    inp.addEventListener('input', () => { lv[E.key] = +inp.value; typeName = matchType(); syncRail(); save(); });
-    row.append(lab, inp, out, what); $('elements').appendChild(row);
-    elRows[E.key] = { inp, out, wl, badge };
+    const out = elx('output'), what = elx('div', 'what'), wl = elx('span'), badge = elx('span', 'l5', E.l5); what.append(wl, badge);
+    inp.addEventListener('input', () => { S.lv[E.key] = +inp.value; const m = TYPES.find((t) => ELEMENTS.every((x) => t.lv[x.key] === S.lv[x.key])); S.type = m ? m.name : 'Custom'; syncRail(); save(); applyLevels(); });
+    row.append(lab, inp, out, what); $('elements').appendChild(row); elRows[E.key] = { inp, out, wl, badge };
   }
-  function matchType() { const t = TYPES.find((t) => ELEMENTS.every((E) => t.lv[E.key] === lv[E.key])); return t ? t.name : 'Custom'; }
+  function applyLevels() { if (!W) return; for (const P of W.pilots) if (P.i === 0 || S.typeToAll) { P.lv = Object.assign({}, S.lv); P.m = mults(P.lv); } }
   const abCards = {};
-  for (const E of ELEMENTS) {
-    const c = el('div', 'ab'); c.style.setProperty('--accent', 'var(' + E.color + ')');
-    const ic = el('div', 'ic', E.name[0]); const nm = el('div', 'nm', E.ability); const st = el('div', 'st'); const cd = el('i', 'cd');
-    c.append(ic, nm, st, cd); $('abilities').appendChild(c); abCards[E.key] = { st, cd, c };
-  }
+  for (const E of ELEMENTS) { const c = elx('div', 'ab'); c.style.setProperty('--accent', 'var(' + E.color + ')'); const st = elx('div', 'st'), cd = elx('i', 'cd'); c.append(elx('div', 'ic', E.name[0]), elx('div', 'nm', E.ability), st, cd); $('abilities').appendChild(c); abCards[E.key] = { c, st, cd }; }
   function syncRail() {
-    for (const { b, t } of typeBtns) b.setAttribute('aria-pressed', String(t.name === typeName));
-    $('typeName').textContent = typeName;
-    const t = TYPES.find((x) => x.name === typeName);
-    $('typeInfo').textContent = t ? t.info : 'Custom levels. Pick a type to compare against a named set.';
+    for (const { b, t } of typeBtns) b.setAttribute('aria-pressed', String(t.name === S.type));
+    $('typeName').textContent = S.type; const t = TYPES.find((x) => x.name === S.type); $('typeInfo').textContent = t ? t.info : 'Custom levels.';
+    const m = mults(S.lv);
     for (const E of ELEMENTS) {
-      const r = elRows[E.key]; r.inp.value = lv[E.key]; r.out.textContent = lv[E.key];
-      r.badge.classList.toggle('on', up5(E.key));
-      r.badge.style.setProperty('--accent', 'var(' + E.color + ')');
-      r.wl.innerHTML = '';
-      const val = E.key === 'charge' ? '×' + stealMult().toFixed(2) + ' petals' : E.key === 'mass' ? ringCooldown().toFixed(1) + ' s cooldown' : E.key === 'space' ? (skimRadius() * 2).toFixed(1) + ' u skimmer' : '×' + energyMult().toFixed(2) + ' skim energy';
-      r.wl.append(document.createTextNode(E.ability + ' '), el('b', null, val));
+      const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key]; r.badge.classList.toggle('on', S.lv[E.key] >= 5); r.badge.style.setProperty('--accent', 'var(' + E.color + ')');
+      const val = E.key === 'charge' ? '×' + m.steal.toFixed(2) + ' petals' : E.key === 'mass' ? m.ringCd.toFixed(1) + ' s cooldown' : E.key === 'space' ? (m.skimR * 2).toFixed(1) + ' u skimmer' : '×' + m.energy.toFixed(2) + ' skim energy';
+      r.wl.textContent = ''; r.wl.append(document.createTextNode(E.ability + ' '), elx('b', null, val));
     }
   }
-  $('dFeather').addEventListener('click', () => { driftDepth = 0.5; syncDrift(); save(); });
-  $('dBuried').addEventListener('click', () => { driftDepth = 1; syncDrift(); save(); });
-  function syncDrift() { $('dFeather').setAttribute('aria-pressed', String(driftDepth === 0.5)); $('dBuried').setAttribute('aria-pressed', String(driftDepth === 1)); }
-
-  // ---- persistence (this browser only) ----
-  const LS = 'cs.studio.squirrel.v1';
-  let runs = [];
-  function save() { try { localStorage.setItem(LS, JSON.stringify({ lv, typeName, driftDepth })); } catch (e) { /* storage blocked */ } }
+  $('dFeather').addEventListener('click', () => { S.driftDepth = 0.5; syncDrift(); save(); }); $('dBuried').addEventListener('click', () => { S.driftDepth = 1; syncDrift(); save(); });
+  function syncDrift() { $('dFeather').setAttribute('aria-pressed', String(S.driftDepth === 0.5)); $('dBuried').setAttribute('aria-pressed', String(S.driftDepth === 1)); }
+  let runs = []; try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
   function saveRuns() { try { localStorage.setItem(LS + '.runs', JSON.stringify(runs)); } catch (e) { /* storage blocked */ } }
-  try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) { Object.assign(lv, s.lv || {}); typeName = s.typeName || 'Shipped'; driftDepth = s.driftDepth === 0.5 ? 0.5 : 1; } } catch (e) { /* ignore */ }
-  try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
   function renderRuns() {
     const tb = $('runs'); tb.textContent = '';
-    if (!runs.length) { const tr = el('tr'); const td = el('td', null, 'No runs yet. Finish a race to add one.'); td.colSpan = 4; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
-    for (const r of runs.slice(0, 8)) { const tr = el('tr'); tr.append(el('td', null, r.type), el('td', null, r.time.toFixed(1) + ' s'), el('td', null, String(r.skims)), el('td', null, String(r.stolen))); tb.appendChild(tr); }
+    if (!runs.length) { const tr = elx('tr'), td = elx('td', null, 'No runs yet. Finish a race to add one.'); td.colSpan = 5; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
+    for (const r of runs.slice(0, 10)) { const tr = elx('tr'); tr.append(elx('td', null, 'I' + r.course), elx('td', null, r.pilot), elx('td', null, r.type), elx('td', null, r.time != null ? r.time.toFixed(1) : 'DNF'), elx('td', null, String(r.place))); tb.appendChild(tr); }
   }
+  function renderScore(rows) {
+    const tb = $('score'); tb.textContent = '';
+    for (const c of [1, 2, 3, 4]) { const r = rows && rows[c]; const tr = elx('tr'); tr.append(elx('td', null, 'I' + c)); for (const d of ['Easy', 'Medium', 'Hard']) tr.append(elx('td', null, r && d in r ? (r[d] != null ? r[d].toFixed(1) : 'DNF') : '·')); tr.append(elx('td', null, SIM_REF[c].toFixed(1))); tb.appendChild(tr); }
+  }
+  let scoreRows = null; try { scoreRows = JSON.parse(localStorage.getItem(LS + '.score') || 'null'); } catch (e) { scoreRows = null; }
+  renderScore(scoreRows);
+  function runScorecard(seeds, done) {
+    const rows = {}, jobs = []; for (const c of [1, 2, 3, 4]) { rows[c] = {}; for (const d of ['Easy', 'Medium', 'Hard']) jobs.push([c, d]); }
+    const med = (a) => { const v = a.filter((x) => x != null).sort((x, y) => x - y); return v.length > a.length / 2 ? v[Math.floor(v.length / 2)] : null; };
+    let j = 0;
+    const next = () => { if (j >= jobs.length) { done(rows); return; } const [c, d] = jobs[j++]; rows[c][d] = med(seeds.map((s) => raceHeadless(c, d, s))); renderScore(rows); setTimeout(next, 0); };
+    setTimeout(next, 20);
+  }
+  $('scoreBtn').addEventListener('click', () => {
+    $('scoreBtn').disabled = true; $('scoreNote').textContent = 'Racing every difficulty on every course…';
+    runScorecard([11, 22, 33], (rows) => { scoreRows = rows; try { localStorage.setItem(LS + '.score', JSON.stringify(rows)); } catch (e) { /* storage blocked */ } renderScore(rows); $('scoreBtn').disabled = false; $('scoreNote').textContent = 'Median of three seeds per cell, in seconds; DNF = no finish in ' + SHIP.limit + ' s. "Game sim" is the shipped Hard pilot (SKIM_RACE_AI.md §14.5), for scale. The game spreads its levels wider (see the sources panel).'; });
+  });
 
-  // ---- HUD + readouts ----
+  // ---- HUD ----
   function hud() {
-    $('hSpeed').textContent = Math.round(speed);
-    $('hBoostTxt').textContent = 'Boost ' + boost.toFixed(2) + '× · throttle ' + Math.round(throttleNow * 100) + '%';
-    $('hLap').textContent = Math.min(lap, LAPS) + ' / ' + LAPS;
-    $('hTime').textContent = raceT.toFixed(1) + ' s · crystals ' + crystalsTaken + '/' + LAPS * 6;
-    $('hBoost').textContent = boost.toFixed(2) + '×'; $('mBoost').style.width = ((boost - 1) / (SHIP.maxBoost - 1) * 100) + '%';
-    $('hDrift').textContent = Math.round(lastDrift * 100) + '%'; $('mDrift').style.width = (lastDrift * 100) + '%';
-    const left = Math.max(0, ringReadyAt - flightT), cdTot = ringCooldown();
-    $('hRing').textContent = left > 0 ? left.toFixed(1) + ' s' : 'ready'; $('mRing').style.width = ((1 - left / cdTot) * 100) + '%';
-    abCards.mass.cd.style.width = ((1 - left / cdTot) * 100) + '%';
-    abCards.mass.st.textContent = left > 0 ? left.toFixed(1) + ' s' : (up5('mass') ? 'ready ×2' : 'ready');
-    abCards.charge.st.textContent = petals.toFixed(1) + ' petals';
-    abCards.space.st.textContent = stolen + ' stolen';
-    abCards.time.st.textContent = skims + ' skims';
-    for (const E of ELEMENTS) abCards[E.key].c.style.borderColor = up5(E.key) ? 'var(' + E.color + ')' : '';
-    const rows = [
-      ['speed', speed.toFixed(1) + ' u/s'], ['target', (throttleNow * SHIP.throttleScaler * boost).toFixed(1) + ' u/s'],
-      ['boost', boost.toFixed(2) + '×'], ['drift', Math.round(lastDrift * 100) + '%'],
-      ['turn rate', (SHIP.pitchYaw * lerp(1, SHIP.driftMult, lastDrift)).toFixed(0) + '°/s'], ['grip', lerp(SHIP.noDriftGrip, SHIP.driftGrip, lastDrift).toFixed(2) + ' /s'],
-      ['slip angle', (Math.acos(clamp(course.dot(fwd), -1, 1)) * 180 / Math.PI).toFixed(1) + '°'], ['skimmer', (skimRadius() * 2).toFixed(1) + ' u'],
-      ['skims', String(skims)], ['stolen', String(stolen)], ['petals', petals.toFixed(2)], ['rings', String(rings)],
-    ];
-    const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) { box.append(el('span', null, k), el('b')); } }
+    if (!W) return;
+    const P = W.pilots[S.cam === 'Follow' ? Math.min(followIdx, W.pilots.length - 1) : 0]; W.watch = P.i;
+    $('hWho').textContent = P.domain.name + (P.spec.ai ? ' · AI ' + P.spec.ai : '') + ' · speed u/s';
+    $('hSpeed').textContent = Math.round(P.speed * P.slow);
+    $('hBoostTxt').textContent = 'Boost ' + P.boost.toFixed(2) + '× · throttle ' + Math.round(P.throttle * 100) + '%';
+    $('hBoost').textContent = P.boost.toFixed(2) + '×'; $('mBoost').style.width = ((P.boost - 1) / (SHIP.maxBoost - 1) * 100) + '%';
+    $('hDrift').textContent = Math.round(P.lastDrift * 100) + '%'; $('mDrift').style.width = (P.lastDrift * 100) + '%';
+    const left = Math.max(0, P.ringReadyAt - W.t); $('hRing').textContent = left > 0 ? left.toFixed(1) + ' s' : 'ready'; $('mRing').style.width = ((1 - left / P.m.ringCd) * 100) + '%';
+    const b = $('board'); b.textContent = '';
+    const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' · ' + W.t.toFixed(1) + ' s'), elx('span', null, 'crystals / ' + W.track.target)); b.appendChild(hd);
+    W.pilots.slice().sort((a, c) => (a.finishT ?? 1e9) - (c.finishT ?? 1e9) || c.crystals - a.crystals).forEach((X) => {
+      const row = elx('div', 'pl'), dot = elx('span', 'dot'); dot.style.background = X.domain.css;
+      const st = elx('span', 'st', X.finishT != null ? X.finishT.toFixed(1) + ' s' : X.crystals + (X.spec.ai ? ' · ' + X.aiState : ''));
+      if (X.hc && X.hc.misjudged) st.style.color = 'var(--hard)'; else if (X.hc && X.hc.unnoticed) st.style.color = 'var(--medium)';
+      row.append(dot, elx('span', null, X.domain.name + (X.spec.ai ? ' · ' + X.spec.ai : '')), st); b.appendChild(row);
+    });
+    abCards.mass.cd.style.width = ((1 - left / P.m.ringCd) * 100) + '%'; abCards.mass.st.textContent = left > 0 ? left.toFixed(1) + ' s' : (P.m.twin ? 'ready ×2' : 'ready');
+    abCards.charge.st.textContent = P.petals.toFixed(1) + ' petals'; abCards.space.st.textContent = P.stolen + ' stolen'; abCards.time.st.textContent = P.skims + ' skims';
+    for (const E of ELEMENTS) abCards[E.key].c.style.borderColor = P.lv[E.key] >= 5 ? 'var(' + E.color + ')' : '';
+    $('readWho').textContent = P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
+    const fwd = new V(0, 0, -1).applyQuaternion(P.quat);
+    const rows = [['speed', (P.speed * P.slow).toFixed(1) + ' u/s'], ['boost', P.boost.toFixed(2) + '×'], ['drift', Math.round(P.lastDrift * 100) + '%'], ['slip', (Math.acos(clamp(P.course.dot(fwd), -1, 1)) * 180 / Math.PI).toFixed(1) + '°'], ['crystals', P.crystals + ' / ' + W.track.target], ['skims', String(P.skims)], ['hull resets', String(P.resets)], ['stolen', String(P.stolen)], ['rings', String(P.rings)], ['mistakes', P.spec.ai ? String(P.mistakes) : '—'], ['AI state', P.spec.ai ? P.aiState : 'player'], ['skimmer', (P.m.skimR * 2).toFixed(0) + ' u']];
+    const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
-    syncButtons();
+    $('stopBtn').textContent = paused ? 'Resume' : 'Pause'; $('tStop').textContent = paused ? 'Resume' : 'Pause';
+    $('tStart').hidden = race === 'running' && !paused; $('tStart').textContent = paused ? 'Resume' : race === 'finished' ? 'Again' : 'Start';
+    while (W.events.length) say(W.events.shift());
   }
 
-  // ================= sizing + loop =================
+  // ================= loop =================
   let lastW = 0, lastH = 0;
-  function resize() {
-    const w = canvas.clientWidth || 960, h = canvas.clientHeight || Math.round(w * 10 / 16);
-    if (w === lastW && h === lastH) return; lastW = w; lastH = h;
-    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-  }
+  function resize() { const w = canvas.clientWidth || 960, h = canvas.clientHeight || Math.round(w * 10 / 16); if (w === lastW && h === lastH) return; lastW = w; lastH = h; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
   window.addEventListener('resize', resize);
   let last = performance.now(), hudT = 0;
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    resize();
-    const inp = pollInput(dt);
-    if (!paused) step(dt, inp);
-    if (prismsDirty) rebuildPrisms();
-    placeCamera(dt, false);
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
+    const hin = humanInput(dt);
+    if (W && race === 'running' && !paused) {
+      for (let s = 0; s < S.speed; s++) {
+        stepWorld(W, dt, W.pilots.map((P) => P.spec.ai ? aiInput(W, P) : hin));
+        if (W.over) { finishRace(); break; }
+      }
+    }
+    if (W) { drawWorld(W, now / 1000); placeCamera(W, dt, false); }
     renderer.render(scene, cam);
-    hudT += dt; if (hudT > 0.08) { hudT = 0; hud(); }
+    hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
     requestAnimationFrame(frame);
   }
-
-  // ---- boot ----
-  syncRail(); syncDrift(); renderRuns();
-  spawn(); placeCamera(0, true); hud();
+  syncSegs(); syncRail(); syncDrift(); renderRuns();
+  newRace(); hud();
   requestAnimationFrame((t) => { last = t; frame(t); });
 
   // test hook for scripted checks (no effect on play)
-  window.__squirrelStudio = { get state() { return { speed, boost, skims, stolen, petals, rings, lap, raceT, race, lv: Object.assign({}, lv), typeName, skimRadius: skimRadius(), ringCooldown: ringCooldown(), energyMult: energyMult(), stealMult: stealMult() }; }, applyType: (n) => applyType(TYPES.find((t) => t.name === n)), startRace, placeRings: () => placeRings() };
+  window.__squirrelStudio = {
+    get state() { const P = W.pilots[0]; return { race, t: +W.t.toFixed(2), course: S.course, target: W.track.target, lineLen: Math.round(W.track.len), speed: +P.speed.toFixed(1), pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, crystals: p.crystals, finishT: p.finishT, boost: +p.boost.toFixed(2), skims: p.skims, resets: p.resets, mistakes: p.mistakes, state: p.aiState })) }; },
+    set: (k, v) => { S[k] = v; syncSegs(); newRace(); }, startRace, raceHeadless, raceStats, runScorecard, mults,
+  };
 })();
 </script>
 </html>

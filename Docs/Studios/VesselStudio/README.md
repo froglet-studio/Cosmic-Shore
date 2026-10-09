@@ -7,7 +7,7 @@ browser, in a phone browser, from Prisma's **STUDIOS** page on Windows, and from
 | File | What |
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
-| `squirrel.html` | **Squirrel Studio v1** (2026-10-09). The racer on its shipped numbers; six play-style types over its four element levels. |
+| `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
 | `stoat.html` | The **Stoat Flight Studio** (round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Prisma as `stoat.html#prisma`, it reads "Running on Prisma". |
 
 ## Rules for every studio page
@@ -44,9 +44,23 @@ browser, in a phone browser, from Prisma's **STUDIOS** page on Windows, and from
 ## Checking a page without a phone
 
 A headless Chromium run (Playwright with the pre-installed `/opt/pw-browsers` headless shell) loads a page,
-drives it through `window.__squirrelStudio` and the keyboard, screenshots desktop and 844 × 390 phone play,
+drives it through `window.__squirrelStudio` (`state`, `set`, `startRace`, `raceHeadless(course, difficulty, seed)`, `raceStats(...)`) and the keyboard, screenshots desktop and 844 × 390 phone play,
 and fails on any console error or horizontal overflow at 400 px. If the CDN is unreachable from the test
 machine, serve `three.min.js` (r128) to the page from a local copy.
+
+### Squirrel scorecard, measured 2026-10-09 (median of seeds 11/22/33, seconds)
+
+| Course | Easy | Medium | Hard | Game sim, Hard (`SKIM_RACE_AI.md` §14.5) |
+|---|---|---|---|---|
+| I1 | 73.6 | 73.6 | 69.3 | 64.3 |
+| I2 | 94.2 | 97.3 | 90.8 | 79.3 |
+| I3 | 238.9 | 239.7 | 229.1 | 183.4 |
+| I4 | 108.2 | 102.4 | 90.8 | 149.1 |
+
+Read it as relative. The studio pilot finishes every course at every level within ~25% of the game's Hard
+on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its difficulty gaps are smaller
+than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
+costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
 
 ## In Prisma
 
