@@ -41,6 +41,11 @@ namespace CosmicShore.Engine.Networking
     /// after the frames queued before it are acknowledged (a kick's reason arrives before the close), or after
     /// <see cref="LingerMs"/>. One background thread owns the socket and every peer's state; the main thread
     /// only queues frames and reads events, as with <see cref="NetSocket"/>.
+    ///
+    /// LINKS. The packets travel over an <see cref="IDatagramLink"/>: a UDP socket here, or Unity Relay
+    /// (CosmicShore.Online, docs/RELAY.md), which wraps each packet for the relay server to forward. Everything
+    /// above (handshake, acks, resends, ordering, fragments, keepalive, timeouts) is the same code on both.
+    /// A packet is at most <see cref="MaxPacket"/> bytes, so it fits a relay datagram with room to spare.
     /// </summary>
     internal sealed class UdpTransport : INetTransport
     {
@@ -51,7 +56,7 @@ namespace CosmicShore.Engine.Networking
         const int HeaderBytes = 1 + 8 + 4 + 8, FragmentHeaderBytes = 4 + 1 + 2;
         /// <summary>Fragment payload: a full packet stays under 1,200 bytes, inside any internet path's MTU.</summary>
         public const int FragmentBytes = 1150;
-        const int MaxPacket = HeaderBytes + FragmentHeaderBytes + FragmentBytes;
+        public const int MaxPacket = HeaderBytes + FragmentHeaderBytes + FragmentBytes;
         public const int Window = 512;
         const int ReorderWindow = 8192;
         public const int TimeoutMs = 10000;
@@ -95,7 +100,7 @@ namespace CosmicShore.Engine.Networking
             public double ClosingSince;
         }
 
-        readonly Socket _sock;
+        readonly IDatagramLink _link;
         readonly Thread _thread;
         readonly ConcurrentQueue<NetEvent> _inbox = new();
         readonly ConcurrentQueue<(int peer, byte[] data, NetChannel channel)> _outbox = new();
@@ -111,7 +116,7 @@ namespace CosmicShore.Engine.Networking
         double _disposedAt = -1;
 
         // Client side.
-        readonly IPEndPoint _server;
+        readonly EndPoint _server;
         readonly ulong _nonce;
         double _connectDeadline, _lastConnectSend = -1;
         bool _connecting;
@@ -130,11 +135,11 @@ namespace CosmicShore.Engine.Networking
 
         double Now => System.Diagnostics.Stopwatch.GetElapsedTime(_origin).TotalMilliseconds;
 
-        UdpTransport(bool server, Socket sock, IPEndPoint serverEndPoint, int timeoutMs)
+        UdpTransport(bool server, IDatagramLink link, EndPoint serverEndPoint, int timeoutMs, string threadName = null)
         {
             IsServer = server;
-            _sock = sock;
-            ListenPort = server ? ((IPEndPoint)sock.LocalEndPoint).Port : 0;
+            _link = link;
+            ListenPort = server ? link.LocalPort : 0;
             if (!server)
             {
                 _server = serverEndPoint;
@@ -142,32 +147,18 @@ namespace CosmicShore.Engine.Networking
                 _connecting = true;
                 _connectDeadline = Now + timeoutMs;
             }
-            _thread = new Thread(Loop) { IsBackground = true, Name = server ? "udp-server" : "udp-client" };
+            _thread = new Thread(Loop) { IsBackground = true, Name = threadName ?? (server ? "udp-server" : "udp-client") };
             _thread.Start();
-        }
-
-        static Socket NewSocket(AddressFamily family)
-        {
-            var s = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
-            // A burst (a scene snapshot is hundreds of fragments) must not overflow the kernel's buffer.
-            try { s.ReceiveBufferSize = 4 * 1024 * 1024; s.SendBufferSize = 4 * 1024 * 1024; } catch (SocketException) { }
-            if (OperatingSystem.IsWindows())
-            {
-                // Windows reports an ICMP "port unreachable" from an earlier send as an error on the next
-                // receive (SIO_UDP_CONNRESET); a server must not lose its socket to one gone client.
-                try { s.IOControl(unchecked((int)0x9800000C), new byte[] { 0 }, null); } catch (SocketException) { }
-            }
-            return s;
         }
 
         public static UdpTransport Listen(string address, int port)
         {
             var ip = string.IsNullOrEmpty(address) || address == "0.0.0.0" ? IPAddress.Any : IPAddress.Parse(address);
-            var s = NewSocket(ip.AddressFamily);
+            var s = SocketDatagramLink.NewSocket(ip.AddressFamily);
             s.ExclusiveAddressUse = true; // a second instance on the same port must fail and pick another
             try { s.Bind(new IPEndPoint(ip, port)); }
             catch { s.Dispose(); throw; }
-            return new UdpTransport(true, s, null, 0);
+            return new UdpTransport(true, new SocketDatagramLink(s), null, 0);
         }
 
         /// <summary>Connects in the background; a Connected or Disconnected event reports the outcome.</summary>
@@ -179,10 +170,18 @@ namespace CosmicShore.Engine.Networking
                 try { ip = Array.Find(Dns.GetHostAddresses(address), a => a.AddressFamily == AddressFamily.InterNetwork) ?? IPAddress.Loopback; }
                 catch (SocketException) { ip = IPAddress.Loopback; }
             }
-            var s = NewSocket(ip.AddressFamily);
+            var s = SocketDatagramLink.NewSocket(ip.AddressFamily);
             s.Bind(new IPEndPoint(ip.AddressFamily == AddressFamily.InterNetworkV6 ? IPAddress.IPv6Any : IPAddress.Any, 0));
-            return new UdpTransport(false, s, new IPEndPoint(ip, port), timeoutMs);
+            return new UdpTransport(false, new SocketDatagramLink(s), new IPEndPoint(ip, port), timeoutMs);
         }
+
+        /// <summary>A server over any link (Unity Relay, a test network): peers are whoever sends a ConnectRequest.</summary>
+        internal static UdpTransport ListenOver(IDatagramLink link, string threadName = null)
+            => new UdpTransport(true, link, null, 0, threadName);
+
+        /// <summary>A client over any link, reaching <paramref name="server"/> as that link names it.</summary>
+        internal static UdpTransport ConnectOver(IDatagramLink link, EndPoint server, int timeoutMs, string threadName = null)
+            => new UdpTransport(false, link, server, timeoutMs, threadName);
 
         static ulong RandomU64()
         {
@@ -235,11 +234,10 @@ namespace CosmicShore.Engine.Networking
             {
                 while (!_stopped)
                 {
-                    bool readable;
-                    try { readable = _sock.Poll(1000, SelectMode.SelectRead); }
-                    catch (ObjectDisposedException) { return; }
-                    if (readable) Receive();
+                    Receive();
                     double now = Now;
+                    _link.Service(now);
+                    if (_link.Fault is { } fault) { LinkFailed(fault); return; }
                     TakeOutbox();
                     if (_disposed)
                     {
@@ -257,24 +255,29 @@ namespace CosmicShore.Engine.Networking
                 }
             }
             catch (Exception e) { Console.WriteLine($"[net] udp transport stopped: {e.Message}"); }
-            finally { try { _sock.Dispose(); } catch { } }
+            finally { try { _link.Dispose(); } catch { } }
         }
 
+        /// <summary>Waits up to a millisecond for the first datagram, then takes whatever else has arrived.</summary>
         void Receive()
         {
+            int wait = 1000;
             while (true)
             {
-                int n;
-                EndPoint from = new IPEndPoint(_sock.AddressFamily == AddressFamily.InterNetworkV6 ? IPAddress.IPv6Any : IPAddress.Any, 0);
-                try
-                {
-                    if (_sock.Available <= 0) return;
-                    n = _sock.ReceiveFrom(_rx, ref from);
-                }
-                catch (SocketException) { continue; } // an ICMP error about an earlier send: not this packet
-                catch (ObjectDisposedException) { return; }
+                int n = _link.Receive(_rx, wait, out var from);
+                if (n < 0) return;
+                wait = 0;
                 if (n > 0) Handle(n, from);
             }
+        }
+
+        /// <summary>The link died under us: every peer is gone at once (a client hears its connect fail).</summary>
+        void LinkFailed(string fault)
+        {
+            Console.WriteLine($"[net] {(IsServer ? "server" : "client")} link failed: {fault}");
+            if (_connecting) { _connecting = false; _inbox.Enqueue(new NetEvent(NetEventKind.Disconnected, 0, null)); }
+            foreach (var p in new List<Peer>(_byId.Values)) Remove(p, notifyRemote: false);
+            _stopped = true;
         }
 
         void Handle(int n, EndPoint from)
@@ -303,7 +306,7 @@ namespace CosmicShore.Engine.Networking
                 }
                 case TConnectAccept when !IsServer && n >= 17:
                 {
-                    if (!_connecting || BitConverter.ToUInt64(_rx, 1) != _nonce || !SameEndPoint(from, _server)) return;
+                    if (!_connecting || BitConverter.ToUInt64(_rx, 1) != _nonce || !_link.IsServer(from, _server)) return;
                     _connecting = false;
                     // Keyed by the address that answered (a loopback server may answer from another loopback address).
                     var p = new Peer { Id = 0, EndPoint = from, Token = BitConverter.ToUInt64(_rx, 9), LastRecv = now, LastSend = now };
@@ -342,9 +345,6 @@ namespace CosmicShore.Engine.Networking
             }
         }
 
-        static bool SameEndPoint(EndPoint a, IPEndPoint b)
-            => a is IPEndPoint ia && ia.Port == b.Port && (ia.Address.Equals(b.Address) || (IPAddress.IsLoopback(ia.Address) && IPAddress.IsLoopback(b.Address)));
-
         void SendAccept(Peer p)
         {
             _tx[0] = TConnectAccept;
@@ -357,9 +357,7 @@ namespace CosmicShore.Engine.Networking
         {
             DatagramsSent++;
             if (DropPercent > 0 && _dropRng.NextDouble() * 100 < DropPercent) return;
-            try { _sock.SendTo(_tx, 0, length, SocketFlags.None, to); }
-            catch (SocketException) { } // the line is down or the buffer full: the resend timer covers it
-            catch (ObjectDisposedException) { }
+            _link.Send(_tx, length, to);
         }
 
         /// <summary>The remote acknowledged everything below <paramref name="next"/>, and the fragments flagged in <paramref name="bits"/>.</summary>

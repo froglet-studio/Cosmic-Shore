@@ -121,15 +121,19 @@ namespace CosmicShore.Engine.Networking
 
         /// <summary>True after <see cref="SessionOptionsExtensions.WithRelayNetwork"/> — the transport request marker.</summary>
         public bool UseRelay { get; internal set; }
+
+        /// <summary>The Relay region <see cref="SessionOptionsExtensions.WithRelayNetwork"/> asked for (null = the closest).</summary>
+        public string RelayRegion { get; internal set; }
     }
 
     /// <summary>Original contract: the Unity.Services.Multiplayer SessionOptions network extensions.</summary>
     public static class SessionOptionsExtensions
     {
-        /// <summary>Request Relay transport for the session (placeholder: records the intent; the transport phase acts on it).</summary>
+        /// <summary>Request Relay transport for the session: real Unity Relay when CosmicShore.Online's backend is installed (docs/RELAY.md), the local stand-in otherwise.</summary>
         public static SessionOptions WithRelayNetwork(this SessionOptions options, string region = null)
         {
             options.UseRelay = true;
+            options.RelayRegion = string.IsNullOrWhiteSpace(region) ? null : region.Trim();
             return options;
         }
     }

@@ -145,6 +145,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | Transport seam | `Wire/INetTransport.cs` | Landed. TCP (`NetSocket`) and, from Step 5, UDP (`UdpTransport`); tests also use an in-memory loopback |
 | Session service stand-in | `Wire/DirectoryMultiplayerService.cs` | One JSON file per session in `COSMIC_SHORE_NET_DIR` |
 | Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | T1-T7 pass. Patches the engine in a throwaway worktree (Step 0 removes that need) |
+| Unity Relay transport, UGS sign-in, region pick | `src/CosmicShore.Online/`, `Wire/DatagramLink.cs`, `Wire/NetRelay.cs` | Landed 2026-10-09 (§6.7, `docs/RELAY.md`). `--relay-host` / `--relay-join CODE`; party sessions go through Relay with `--relay` |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
 | Launcher | One game at a time, with the Online toggle and the Profile field | No multi-player panel |
 | Network simulator, stats, profiler, fault injection | | Missing |
@@ -349,11 +350,62 @@ up in `do net` as resends, and as `unreliable out/in` counts.
 | The same, with the unreliable channel and every player on `4g` (`COSMIC_SHORE_NET_SIM=4g`) | **13/14**. T4-lobby failed on a game defect, not the transport: the invitee's Accept pre-flight refused a fresh invite because the new host's `partySession` advertisement lagged its invite (B29; the fix is in the game code). Five game processes on a 4-core container are CPU-bound, so RTTs there (300-900 ms) include several frame waits on top of the simulated line |
 
 **Next for the transport.**
-- **The relay (gate G2).** Our fragments ride inside UGS Relay's `RELAY` messages, with the Relay
-  protocol's `BIND`/`PING` around them. Or they ride Steam Datagram Relay.
+- **The relay (gate G2).** Done for UGS Relay (§6.7): our fragments ride inside Relay's `RELAY`
+  messages. Steam Datagram Relay would be a second `IDatagramLink`.
 - **Congestion control** past the fixed window: needed only on internet paths, measured first.
 - **Delta-compressed `NetworkVariable` writes:** the first measurement (§6.4) shows they dominate
   traffic.
+
+### 6.7 Unity Relay (internet play)
+
+How to use it: `docs/RELAY.md`. This section is the design and the evidence.
+
+**Shape.** `UdpTransport`'s reliability layer (acks, resends, ordering, fragments, keepalives,
+timeouts, both channels) no longer owns a socket: it reads and writes datagrams through an
+`IDatagramLink`. `SocketDatagramLink` is the old socket code, unchanged in behaviour.
+`RelayLink` (in `CosmicShore.Online`) speaks the documented Relay protocol: `BIND` signed with
+HMAC-SHA256 under the allocation key, `CONNECT_REQUEST`/`ACCEPTED`, `RELAY`, `PING` every second,
+`CLOSE`, and rebinds on `ClientPlayerMismatch` or a timeout error. It runs over plain UDP or over
+DTLS 1.2 PSK (`TLS_PSK_WITH_AES_128_GCM_SHA256`). The host learns each joiner from its first
+`RELAY` message, and a joiner's only peer is the host. So the "relay" transport is the same
+transport as "udp", over a different link.
+
+**Why not LiteNetLib.** We already had a reliability layer: the default transport, proven by the
+party harness (14/14) and the loss tests. Reusing it adds no dependency and gives one behaviour
+on LAN and on Relay. Its largest datagram (1178 B) plus Relay's 38 B and DTLS's 37 B stays under
+Relay's 1394 B content limit. LiteNetLib would bring a second protocol to test and to tune.
+
+**Dependencies.** The engine stays free of new packages. It holds only the seam
+(`IDatagramLink`, `INetRelayBackend`, `NetRelay`). The UGS REST client, the Relay protocol and
+BouncyCastle (MIT, for DTLS) live in `CosmicShore.Online`, which only the player references. The
+launcher's updater builds nothing new.
+
+**Services.** `IUgsApi`/`UgsClient`: anonymous sign-in and session-token sign-in, Relay regions,
+QoS servers, allocate, join code, join. `UgsSession` caches the session token per data folder
+(`ugs-session.json`, owner-only on Unix) and renews it before expiry, so a profile keeps one
+anonymous player. `RelayRegions` measures each region with Unity's documented QoS ping (UDP 7778)
+and falls back to ICMP only when no QoS server answers. With no "relay" transport selected,
+nothing here runs, and the local session folder and direct UDP stay the default.
+
+**Wiring.** `DirectoryMultiplayerService.CreateSessionAsync` with `WithRelayNetwork()` (the
+game's party flow already asks for it) prepares a Relay slot and stores its join code in the
+session record. If Relay is unreachable, it falls back to LAN with a warning. Joining a record
+that carries a code resolves the code first. Outside sessions: player flags `--relay`,
+`--relay-host`, `--relay-join CODE`, `--relay-region`, `--relay-udp`, and the `relay` command.
+The join code appears in the window title (`HOST · Relay CODE (region)`) and in the log
+(`[relay] JOIN CODE: ...`).
+
+**Evidence (2026-10-09, from a US-east container, `development` environment).**
+
+| Check | Result |
+|---|---|
+| Offline Relay tests (protocol bytes from the spike's live run, loss/dup/reorder, 1 MB fragmentation, fake Relay server: rebind, drop, close, timeouts, session cache, region pick, session wiring) | 55 passed, 2 live skipped |
+| `RelayLiveTests` (two processes over real Relay: spawn, 20 KB RPC, 100 ping/pong RPCs, `NetworkVariable` kept pace) | **2/2** (DTLS and UDP). RPC round trip p50 60.5 ms, p95 61 ms (DTLS); Relay server ping 18 ms; host prepare 1.5 s (sign-in, QoS, allocate, code), join prepare 0.6 s |
+| Two real headless players, `--relay-host` / `--relay-join` (DTLS) | Client approved, spawns and NetVars synced; `net` showed RTT 66 ms on both ends |
+
+Not yet checked: Windows (DTLS and QoS should be portable .NET, but untested there), the
+five-player harness over Relay, the phone builds (not wired), and internet party *discovery* (no
+Lobby: across the internet, share the code).
 
 ## 7. Status
 
@@ -366,7 +418,8 @@ up in `do net` as resends, and as `unreliable out/in` counts.
 | 3 | Session-service faults | Done 2026-10-08 | `NetFaultsTests` 10/10. Two real players: `netfault full` refused the guest's join with the game's "That party is full." and bounced it to its menu (host stayed 1/4; the next join seated it); `ratelimit=3` raised 3 and the party survived |
 | 4 | Launcher NET page, MCP `net_*` tools | Done 2026-10-08 | `MultiplayerRunTests` 7/7, Launcher tests 21/21; NET page screenshotted under xvfb (empty and with four player rows); the MCP server over stdio started 2 headless players (one on `4g` from launch), and `net_sim`, `net_fault`, `net_stats`, `net_players status`, `net_logs` and `stop` worked against them |
 | 5 | UDP transport, unreliable channel for opted-in transforms | Done 2026-10-08 | `UdpTransportTests` 6/6, `UnreliableChannelTests` 8/8, `UnreliableDeltasPrefabTests` 3/3; contract checks over `udp` and `sim-udp`; network suites stable over 5 repeats; CosmicShore.Tests 1862/1862; the five-player party harness **14/14 on UDP** |
-| G2 | UGS backend (Auth, Lobby, Relay protocol) | After gate G2 | |
+| G2a | Unity Relay transport, UGS anonymous sign-in, region pick (§6.7) | Done 2026-10-09 | Relay tests 55/55 offline; `RelayLiveTests` 2/2 over real Relay (RPC RTT p50 60.5 ms); two headless players joined by code |
+| G2 | UGS Lobby (internet party discovery) | After gate G2 | |
 
 ## 8. Sources
 

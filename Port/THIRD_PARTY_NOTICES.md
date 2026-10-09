@@ -16,6 +16,7 @@ no Unity binary is used at build time or at run time.
 | FMOD Studio (Firelight Technologies Pty Ltd.) | audio | **Proprietary — FMOD EULA**; needs an FMOD licence for the shipped tier and the in-game credit "FMOD Studio by Firelight Technologies Pty Ltd." | yes |
 | Inter, Chakra Petch, Aldrich | Prisma UI fonts | SIL Open Font License 1.1 | Prisma app only |
 | Roboto Mono | launcher console font | Apache 2.0 | launcher only |
+| BouncyCastle.Cryptography 2.7 (DTLS 1.2 PSK for Unity Relay) | `CosmicShore.Online` (player only; the engine does not reference it) | MIT | yes (player) |
 | xunit, NUnit, Microsoft.NET.Test.Sdk | tests | Apache 2.0 / MIT | never |
 
 ## APIs we re-implement (no vendor source used)

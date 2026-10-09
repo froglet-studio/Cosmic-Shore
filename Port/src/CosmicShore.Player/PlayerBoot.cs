@@ -68,10 +68,13 @@ namespace CosmicShore.Player
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
             // Sessions (lobby + relay) through a directory every local/LAN player shares.
-            // The transport every player of a session shares: COSMIC_SHORE_NET_TRANSPORT=udp (default) | tcp.
+            // The transport every player of a session shares: COSMIC_SHORE_NET_TRANSPORT=udp (default) | tcp | relay.
+            // "relay" (--relay) sends Relay-networked sessions through Unity Relay; the UGS sign-in it needs is cached
+            // in this instance's data folder (docs/RELAY.md). Nothing touches UGS unless "relay" is chosen.
             // Every transport then runs behind the network simulator (off unless COSMIC_SHORE_NET_SIM or `do netsim`).
             if (CosmicShore.Engine.Networking.NetDriver.Enabled)
             {
+                CosmicShore.Online.OnlineBoot.Register(Application.persistentDataPath);
                 var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
                 Console.WriteLine($"[net] transport: {transport}");
                 CosmicShore.Engine.Networking.NetSimulator.Install();
@@ -133,6 +136,7 @@ namespace CosmicShore.Player
         {
             Loop.Tick(step);
             CosmicShore.Engine.Audio.Fmod.RuntimeManager.Update();
+            CosmicShore.Online.RelayCommands.Tick(); // an armed --relay-host / --relay-join starts once the game's host is up
         }
 
         public void Dispose()

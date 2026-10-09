@@ -12,12 +12,14 @@
     <Project Path="src/CosmicShore.Launcher/CosmicShore.Launcher.csproj" />
     <Project Path="src/CosmicShore.Live/CosmicShore.Live.csproj" />
     <Project Path="src/CosmicShore.Mcp/CosmicShore.Mcp.csproj" />
+    <Project Path="src/CosmicShore.Online/CosmicShore.Online.csproj" />
     <Project Path="src/CosmicShore.Player/CosmicShore.Player.csproj" />
     <Project Path="src/CosmicShore.Render/CosmicShore.Render.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CosmicShore.AssetTool.Tests/CosmicShore.AssetTool.Tests.csproj" />
     <Project Path="tests/CosmicShore.Launcher.Tests/CosmicShore.Launcher.Tests.csproj" />
+    <Project Path="tests/CosmicShore.RelayProbe/CosmicShore.RelayProbe.csproj" />
     <Project Path="tests/CosmicShore.Tests.Ported/CosmicShore.Tests.Ported.csproj" />
     <Project Path="tests/CosmicShore.Tests/CosmicShore.Tests.csproj" />
   </Folder>

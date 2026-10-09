@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The live Relay check (docs/RELAY.md): two of these, one hosting and one joining by code, run the
+       engine's real netcode (NetDriver: spawn, RPCs, NetworkVariables) over Unity Relay and report what
+       arrived and how long it took. RelayLiveTests (env-gated) launches the pair; it also runs by hand. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>relay-probe</AssemblyName>
+    <RootNamespace>CosmicShore.RelayProbe</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../../src/CosmicShore.Online/CosmicShore.Online.csproj" />
+  </ItemGroup>
+</Project>
