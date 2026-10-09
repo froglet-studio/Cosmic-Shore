@@ -457,6 +457,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="VesselStudio/studio-domains.js"></script>
 <script src="VesselStudio/ai_race_panel.js"></script>
 <script src="VesselStudio/studio-ide.js"></script>
 <script>
@@ -760,7 +761,7 @@
   }
 
   // ================= the plated Stoat (round 2, Option 2), world scale ×1.6 =================
-  const DOMAIN = { jade: 0x37e3a0, ruby: 0xff4d6d, blue: 0x4da3ff, gold: 0xffc93c };
+  const DOMAIN = Object.fromEntries(VesselStudioDomains.list.map((d) => [d.key, d.hex]));   // the game's palette (studio-domains.js, /vessel-studio 1.5.5)
   const FUR = 0xa5682a, BELLY = 0xf1e6cf, TIP = 0x1a1410, EYE = 0x111111;
   const domainMat = new THREE.MeshStandardMaterial({ color: DOMAIN[domainKey], emissive: DOMAIN[domainKey], emissiveIntensity: 0.5, roughness: 0.4, flatShading: true });
   function makeStoat(o) {
@@ -2337,7 +2338,7 @@
   // Up to three more Stoats, each its own seat (Ruby, Gold, Blue) with its own level and play style. They fly the SAME
   // step as your hull: the rival block parks your hull's variables, loads a rival's, runs aiInput + stepFly, parks it
   // and loads yours back. Their pairs are real pairs in the one world: you can be carried through a rival's black hole.
-  const SEATS = [{ name: 'Ruby', color: 0xff4f7b, css: '#ff4f7b' }, { name: 'Gold', color: 0xffc247, css: '#ffc247' }, { name: 'Blue', color: 0x6aa8ff, css: '#6aa8ff' }];
+  const SEATS = ['ruby', 'gold', 'blue'].map((k) => { const d = VesselStudioDomains.get(k); return { name: d.name, color: d.hex, css: d.color }; });   // the game's palette
   const savedRivals = saved.rivals || {};
   let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Hard', 'Medium', 'Easy'];
   let seatStyle = Array.isArray(savedRivals.st) ? savedRivals.st.slice(0, 3) : ['Comet', 'Needle', 'Anchor'];

@@ -17,7 +17,7 @@
     color-scheme: dark;
     --bg: #0b0d16; --panel: #121524; --panel-2: #181c30; --line: #262b47;
     --fg: #e9ecff; --muted: #8e95bf;
-    --jade: #35e0b0; --ruby: #ff4f7b; --gold: #ffc247; --blue: #6aa8ff;
+    --jade: #13fff2; --ruby: #ff00f9; --gold: #ffa700; --blue: #6680ff;   /* the game's palette; studio-domains.js sets them from it */
     --charge: #ffd23f; --mass: #ff6a4d; --space: #6aa8ff; --time: #c48bff;
     --easy: #4be38f; --medium: #ffb454; --hard: #ff5c6c;
     --display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
@@ -292,6 +292,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="studio-look.js"></script>
+<script src="studio-domains.js"></script>
 <script src="studio-ide.js"></script>
 <script src="ai_race_panel.js"></script>
 <script>
@@ -331,7 +332,7 @@
     { name: 'Brawler', lv: { charge: 10, mass: 6, space: 4, time: 0 }, info: 'Hunts pilots: big petal steals, Twin Rings to block, a medium skimmer.' },
     { name: 'Maxed', lv: { charge: 10, mass: 10, space: 10, time: 10 }, info: 'Every element at 10 and all four upgrades. A ceiling, not a real match state.' },
   ];
-  const DOMAINS = [{ key: 'jade', color: 0x35e0b0, css: '#35e0b0', name: 'You' }, { key: 'ruby', color: 0xff4f7b, css: '#ff4f7b', name: 'Ruby' }, { key: 'gold', color: 0xffc247, css: '#ffc247', name: 'Gold' }, { key: 'blue', color: 0x6aa8ff, css: '#6aa8ff', name: 'Blue' }];
+  const DOMAINS = VesselStudioDomains.list.map((d, i) => ({ key: d.key, color: d.hex, css: d.color, name: i === 0 ? 'You' : d.name }));   // the game's palette (studio-domains.js, /vessel-studio 1.5.5)
   const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
   // ================= settings =================
@@ -602,7 +603,7 @@
   prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(prismMesh);
   const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.5 }), MAXP);
   shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
-  const COL = { track: new THREE.Color(0x3a4380), jade: new THREE.Color(0x35e0b0), ruby: new THREE.Color(0xff4f7b), gold: new THREE.Color(0xffc247), blue: new THREE.Color(0x6aa8ff) };
+  const COL = { track: new THREE.Color(0x3a4380), jade: new THREE.Color(DOMAINS[0].color), ruby: new THREE.Color(DOMAINS[1].color), gold: new THREE.Color(DOMAINS[2].color), blue: new THREE.Color(DOMAINS[3].color) };
   const DANGER = new THREE.Color(0xff2a2a), WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V();
   function drawPrisms(W) {
     let n = 0, ns = 0;
