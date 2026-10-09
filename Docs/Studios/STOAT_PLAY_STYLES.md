@@ -1,6 +1,6 @@
 # Stoat play styles — five ways to fly the dipole sling
 
-Status: **prototype in the Stoat Flight Studio** (round 9). The game still runs the orbit sling; nothing
+Status: **prototype in the Stoat Flight Studio** (round 9; retuned in round 12 from the sim lab). The game still runs the orbit sling; nothing
 here is in `Assets/` yet. Decisions recorded 2026-10-09 with the designer:
 
 - **The five styles.** Comet, Needle, Anchor, Maelstrom and Flare.
@@ -37,22 +37,27 @@ the same setting (Comet and Flare both lengthen or sharpen the boost).
 
 ### What each style changes (Δ at w = 1)
 
+Retuned in round 12 against the sim lab's scorecard (`STOAT_SIM_LAB_PLAN.md` §2), so each style wins the
+one thing it was built for. The momentum rows are new in round 12.
+
 | | Comet | Needle | Anchor | Maelstrom | Flare |
 |---|---|---|---|---|---|
 | **Squeeze curve** | | +0.6 (finer at light squeezes) | | | |
 | **Laid ahead / to the side (u)** | ahead +60 | | side −10 | side +15 | |
-| **Strength, touch / buried** | | | | +1 / +6 | |
+| **Strength, touch / buried** | — / −3 | | +1.5 / — | +1 / +6 | |
 | **Horizon, touch / buried (u)** | | −0.4 / −1.5 | −0.3 / −2 | +0.8 / +3 | |
-| **Catches within (× circle)** | | −0.2 | +0.6 | | |
-| **Catches off the nose by (°)** | −10 | +15 | −15 | | |
-| **Settles onto the circle (/s)** | +1.5 | +3 | −0.8 | | |
-| **Engine holds speed in grip (/s)** | −1.2 | +2 | +2.5 | | |
+| **Catches within (× circle)** | | | +1 | | |
+| **Catches off the nose by (°)** | −10 | +15 | −30 | +20 | |
+| **Settles onto the circle (/s)** | +1.5 | +8 | −0.8 | | |
+| **Engine holds speed in grip (/s)** | | +2 | +2.5 | −1.8 | |
 | **Longest hold (°)** | −90 | +360 | +180 | | |
-| **Release boost, touch / buried (× speed)** | +0.3 / +0.6 | | | | +0.4 / +0.9 |
-| **Boost fade (s)** | +0.6 | −0.4 | | | −0.5 |
-| **Gravity speed fades (s)** | +2.5 | | | | |
+| **Release boost, touch / buried (× speed)** | +0.05 / +0.1 | −0.15 / −0.4 | | | +0.9 / +2.1 |
+| **Boost fade (s)** | +0.6 | −0.4 | | | −0.7 |
+| **Release kept as momentum (share)** | +0.45 | −0.35 | | | −0.3 |
+| **Momentum fades (s)** | +6 | | | | |
+| **Most momentum (× cruise)** | +1.5 | −1 | | | |
 | **Force ceiling (u/s²)** | | | −1500 | | |
-| **Fastest bend (rad/s)** | | +4 | | −2 | |
+| **Fastest bend (rad/s)** | −4 | | | −2 | |
 | **White hole push** | | | −0.2 | +0.4 | |
 | **Prism reach (pull felt down to)** | | | | −0.3 | |
 | **Prism spaghettify gain / limit** | | | | +1.2 / +3 | |
@@ -67,18 +72,32 @@ the same setting (Comet and Flare both lengthen or sharpen the boost).
 | **Prisms pulse in the wave** | | | | +0.4 | +0.6 |
 | **View stretches as it passes you** | | −0.3 | −0.6 | | +1 |
 
-### Measured in the studio
+In words:
 
-Scripted pad, full throttle, no steering; one preset at 1 and the rest at 0.5.
+- **Comet** turns its kicks into lasting momentum with a high ceiling, but its holes are lighter and it bends
+  slower.
+- **Needle** gives up momentum for an exact line: fine squeezes, a fast settle onto small circles, a gentle
+  release.
+- **Anchor** catches from twice as far and almost as soon as the hole is off the nose, and it holds you longer.
+- **Maelstrom** lays the heaviest holes, with the widest pull on the prisms.
+- **Flare** spends everything on the punch: up to 3 × speed at a full squeeze, gone in under a second.
 
-| Preset | Squeeze 0.5, released at 180° | Squeeze 0.3, held |
-|---|---|---|
-| Balanced | caught at 28 u, 31 u circle, boost +29 u/s | not caught, bent 58° |
-| Comet | same circle, boost **+53** | not caught, boost +42 |
-| Needle | **21 u** circle, smaller holes, finer squeeze (strength 3.2 vs 4.6) | bent 31° |
-| Anchor | caught at 28 u, 30 u circle | **caught**, 548° round before it let go |
-| Maelstrom | caught from **44 u**, **50 u** circle, strength 7.3 | **caught**, a full 366° |
-| Flare | boost **+63**, wave twice as strong | boost +50 |
+### Measured in the studio (round 12 scorecard)
+
+Each preset at 1 and the rest at 0.5, on seed 7, intensity 2, 2 laps. A skilled AI flew squeezes 0.3–1 on
+both courses; a rookie AI (sloppiness 0.8) flew three seeds. Each column is the best the skilled AI reached
+going for that one thing.
+
+| Preset | avg speed | top speed | ring error, hairpins | rookie caught | prisms per sling |
+|---|---|---|---|---|---|
+| Balanced | 108 | 228 | 2.2 u | 88% | 979 |
+| Comet | **168** | 329 | 6.3 u | 21% | 690 |
+| Needle | 67 | 110 | **1.5 u** | 74% | 991 |
+| Anchor | 108 | 209 | 2.0 u | **100%** | 970 |
+| Maelstrom | 110 | 191 | 2.2 u | 94% | **1,859** |
+| Flare | 148 | **470** | 5.0 u | 83% | 978 |
+
+(The round-9 measurements in the git history were taken before momentum carry and the retune.)
 
 ## 3. How a race moves the weights
 

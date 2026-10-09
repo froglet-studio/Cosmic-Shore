@@ -9,8 +9,65 @@ named after it, and when the asset changes the page must follow (or say on scree
 |---|---|---|
 | Stoat Flight Studio | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc | `StoatFlightStudio.html` |
 
+**Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
+
 **Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
 Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
+
+## Stoat Flight Studio (round 12 — the sim lab: an AI flies, you watch)
+
+The full write-up is `STOAT_SIM_LAB_PLAN.md`: results, the game-mode proposal, studio vs Prisma, and the AI
+port.
+
+**The Sim lab card.**
+
+- **AI flies the Stoat.** The AI races and restarts on its own, so you can move any slider and watch the next
+  lap. It drives only the dual-stick mix and the analog triggers a player has.
+- **Cameras.** Chase; Follow (wide and level, like the menu's lava-lamp rig); Free (drag to orbit, wheel to
+  zoom).
+- **Speed.** 1×, 2× or 4×.
+- **AI sliders.**
+  - squeeze, release cone and give-up time;
+  - when to sling: on a straight (`aiMinRing`) or before a sharp turn (`aiTurn`);
+  - steering response;
+  - **sloppiness** (`aiNoise`, a rookie).
+- **Score all five styles.** Each style at 1 against Balanced and a no-sling baseline, on both courses, with a
+  skilled pilot at five squeezes and a rookie on three seeds, all headless in a few seconds. Each style owns
+  one column, and the table colours the winner:
+  - Comet: average speed;
+  - Flare: top speed;
+  - Needle: ring error in the hairpins;
+  - Anchor: rookie catch rate;
+  - Maelstrom: prisms pulled per sling.
+
+**Momentum carry** (Dipole sling card). Part of each release kick is kept as lasting speed:
+
+| Slider | Shipped | Meaning |
+|---|---|---|
+| `dpCarry` | 0.4 | Share of the kick kept as momentum |
+| `dpFlowFade` | 5 s | How long momentum takes to fade |
+| `dpFlowCap` | 1.5 × cruise | The momentum ceiling |
+
+The kick scales with the speed you carry, so a chain of slings stacks. A perfect pilot on the shipped tuning
+went from 70 to **108 u/s** average. The HUD shows the momentum beside the gravity readout.
+
+**Hairpins course** (Flight card, Course). Eight rings alternate direction 120–190 u apart, then a long straight
+runs home. Runs are recorded per course.
+
+**The five styles were retuned against the scorecard.** Each now wins its own column; the new Δ table is in
+`STOAT_PLAY_STYLES.md`.
+
+**Found: the tap sling.** The release kick ignores how far round you went, so on a circuit the AI's best play is caught-and-release at 0°. The opt-in `dpKickSweep` slider makes the kick earned. With it on, Balanced slinging loses to not slinging, so the swing has to pay first. Measured and open for a decision in `STOAT_SIM_LAB_PLAN.md` §2.
+
+**Fixed.** Round 11's "Play on phone" button inherited the Stop button's `left`/`bottom` and stretched across
+the whole stage on wide screens. The Stop button also sat over the speed readout.
+
+**Verified (headless Chromium, SwiftShader).**
+
+- The scorecard reproduces: 80 races in about 4.5 s, with no console errors.
+- Every style wins its own column.
+- AI flights for each style were recorded frame by frame through the page's manual clock
+  (`__stoatStudio.tick`).
 
 ## Stoat Flight Studio (round 11 — play on a phone)
 

@@ -67,12 +67,12 @@
   .tturn { position: absolute; inset: 0; display: none; place-items: center; text-align: center; color: #e8ecff; font: 600 16px/1.4 var(--font-display); background: rgba(5,8,23,0.86); z-index: 6; padding: 24px; }
   @media (orientation: portrait) { body.play .tturn { display: grid; } }
   body.play .stagebtn { display: none; }
-  .playbtn { position: absolute; right: 12px; top: 12px; z-index: 3; }
+  .stagebtn.playbtn { right: 12px; top: 12px; left: auto; bottom: auto; }
   body.play .playbtn { display: none; }
   #stage { width: 100%; max-width: 100%; display: block; aspect-ratio: 16 / 10; background: #050817; border: 1px solid var(--line); border-radius: 8px; outline: none; }
   #stage:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
   #hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
-  .stagebtn { position: absolute; left: 12px; bottom: 64px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+  .stagebtn { position: absolute; left: 12px; bottom: 96px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
   .stagebtn[aria-pressed="true"] { background: #7fd7ff; }
   .stagebtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
@@ -113,6 +113,14 @@
   .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .row output.changed { color: var(--accent); }
   .row output.styled { color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .aistats { margin: 6px 0; padding: 6px 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 var(--font-display); white-space: pre-wrap; color: var(--fg); font-variant-numeric: tabular-nums; }
+  table.batch { width: 100%; font-size: 0.78rem; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  table.batch th, table.batch td { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  table.batch th:first-child, table.batch td:first-child { text-align: left; }
+  table.batch td.win { color: var(--accent); font-weight: 700; }
+  #batchOut { overflow-x: auto; }
+  #batchOut .batch th, #batchOut .batch td { white-space: nowrap; font-size: 0.78rem; padding: 3px 6px; }
+  #batchOut .batch th { vertical-align: bottom; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
   .presets .pick { padding: 4px 9px; font-size: 0.8rem; }
   .presets .pick[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
@@ -245,6 +253,18 @@
         <p class="src" id="portalSrc"></p>
       </div>
 
+      <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
+        <label class="check"><input type="checkbox" id="aiOn"> <span><b>AI flies the Stoat</b> — races, then starts again; change any setting and watch the next lap</span></label>
+        <div class="rowsel">
+          <label>Camera <select id="camMode"><option value="chase">Chase</option><option value="follow">Follow (wide)</option><option value="free">Free (drag, wheel)</option></select></label>
+          <label>Speed <select id="simSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+        </div>
+        <pre class="aistats" id="aiStats">Not flying yet.</pre>
+        <div class="rows"></div>
+        <div class="btns"><button class="pick primary" type="button" id="batchBtn">Score all five styles</button><span class="hint" id="batchNote" style="margin:0">no drawing, a few seconds</span></div>
+        <div id="batchOut"></div>
+        <p class="src">The scorecard races a no-sling baseline, Balanced and each style at 1 on both courses, two laps flat out: a <b>skilled</b> AI at squeezes 0.3–1 (each column keeps the best it reached going for that one thing) and a <b>rookie</b> (sloppiness 0.8, three seeds). Each style owns one column: Comet the average speed, Flare the top speed, Needle the ring error in the hairpins, Anchor the rookie's catch rate, Maelstrom the prisms each sling pulls. The AI uses your current settings, so a slider you move changes its next race.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="ai">Reset</button></div></details>
       <details class="card" id="grp-style" open><summary>Play styles <small>five ways to fly the sling</small></summary>
         <div class="presets" role="group" aria-label="Play-style presets" id="stylePresets"></div>
         <div class="rows"></div>
@@ -286,6 +306,7 @@
         <div class="rowsel">
           <label>Intensity <select id="intensity"><option value="1">1 · 48 u mouths</option><option value="2" selected>2 · 40 u</option><option value="3">3 · 32 u</option><option value="4">4 · 26 u</option></select></label>
           <label>Laps <select id="laps"><option value="1">1</option><option value="2" selected>2</option></select></label>
+          <label>Course <select id="courseKind"><option value="circuit">Circuit</option><option value="hairpin">Hairpins</option></select></label>
           <label><input type="checkbox" id="invertY"> Invert Y</label>
         </div>
         <div class="rowsel">
@@ -293,7 +314,7 @@
           <button class="pick" type="button" id="newCourse">New course</button>
           <label>Domain <select id="domain"><option value="jade">Jade</option><option value="ruby">Ruby</option><option value="blue">Blue</option><option value="gold">Gold</option></select></label>
         </div>
-        <p class="src">A stand-in course on the shipped numbers: 8 rings on a 600 u circle, the mouth per intensity. Not the shipped HeadlongCircuit solver.</p>
+        <p class="src">Stand-in courses on the shipped numbers, the mouth per intensity. <b>Circuit</b>: 8 rings on a 600 u circle (rewards speed). <b>Hairpins</b>: 8 rings that alternate direction, 120–190 u apart, then a long straight home (rewards tight turns). Not the shipped HeadlongCircuit solver.</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
       <details class="card" id="grp-lope"><summary>Lope <small>StoatLopeMath</small></summary><div class="rows"></div>
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
@@ -339,7 +360,7 @@
     closeSpeed: 40, closeRamp: 0.6, holdCap: 12, vesselTide: 0.08, releaseDamping: 1.5,
     // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
     dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
-    dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2,
+    dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
     minStrength: 2, maxStrength: 12, aheadHorizons: 4, halfGapHorizons: 6,
     feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
@@ -349,6 +370,8 @@
     // play styles (weights 0..1, 0.5 = the base tuning) and how a race moves them
     styleComet: 0.5, styleNeedle: 0.5, styleAnchor: 0.5, styleMaelstrom: 0.5, styleFlare: 0.5,
     styleStep: 0.15, styleDrift: 0.04, needleStep: 0.1, needleCone: 20,
+    // the AI pilot (sim lab)
+    aiQ: 0.6, aiCone: 12, aiGiveUp: 3.5, aiMinRing: 200, aiTurn: 70, aiSling: 1, aiTau: 0.3, aiNoise: 0,
     // birth & annihilation (the dipole pair)
     bornS: 0.9, whInS: 1.1, whInFrom: 700, dieS: 0.7, whOutSpeed: 450, whOutFade: 1.6, shellBend: 6,
     gwAmp: 12, gwSpeed: 120, gwPeriod: 0.35, gwRingdown: 1.0, gwPrism: 0.6, gwShake: 1, gwGlow: 1,
@@ -362,6 +385,14 @@
   let GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2;   // refreshed from the Black hole group every frame
   const MIN_HORIZON = 1.5;
   const SPEC = [
+    ['ai', 'aiSling', 'AI uses the sling (0 = no, 1 = yes)', 0, 1, 1],
+    ['ai', 'aiQ', 'AI squeeze', 0.05, 1, 0.05],
+    ['ai', 'aiCone', 'AI releases when nose within (°)', 2, 60, 1],
+    ['ai', 'aiGiveUp', 'AI gives up if not caught after (s)', 0.5, 10, 0.1],
+    ['ai', 'aiMinRing', 'AI slings if the ring is further than (u)', 0, 600, 10],
+    ['ai', 'aiTurn', '…or if the turn to it is sharper than (°)', 10, 180, 5],
+    ['ai', 'aiTau', 'AI steering response (s)', 0.05, 1, 0.01],
+    ['ai', 'aiNoise', 'AI sloppiness (0 = perfect, 1 = rookie)', 0, 1, 0.05],
     ['style', 'styleComet', 'Comet · velocity', 0, 1, 0.01],
     ['style', 'styleNeedle', 'Needle · precision', 0, 1, 0.01],
     ['style', 'styleAnchor', 'Anchor · control', 0, 1, 0.01],
@@ -390,6 +421,10 @@
     ['WH', 'dpWhite', 'Push (× the black hole\'s pull)', 0, 2, 0.05],
     ['D', 'dpKeySqueeze', 'Keyboard squeeze', 0.05, 1, 0.05],
     ['D', 'dpAssistFade', 'Gravity speed fades (s)', 0.2, 10, 0.1],
+    ['D', 'dpCarry', 'Release kept as momentum (share)', 0, 1, 0.05],
+    ['D', 'dpFlowFade', 'Momentum fades (s)', 0.5, 20, 0.1],
+    ['D', 'dpFlowCap', 'Most momentum (× cruise)', 0, 5, 0.05],
+    ['D', 'dpKickSweep', 'Full kick only after going round (°, 0 = always)', 0, 360, 5],
     ['D', 'dpAccelCap', 'Force ceiling (u/s²)', 50, 6000, 10],
     ['D', 'dpTurnCap', 'Fastest bend (rad/s)', 0.5, 20, 0.1],
     ['BH', 'bhGmPerStrength', 'Pull per strength (GM)', 2000, 60000, 500],
@@ -472,20 +507,24 @@
   // the holes and their birth & annihilation are touched — never the Stoat's own flight.
   const STYLES = [
     { key: 'styleComet', name: 'Comet', what: 'velocity', el: 'Time', col: '#9e6bf0', d: {
-      dpBoostMax: 0.6, dpBoostMin: 0.3, dpBoostSeconds: 0.6, dpAssistFade: 2.5, dpGrip: -1.2, dpAhead: 60, dpSettle: 1.5,
-      dpMaxTurn: -90, closeSpeed: 20, bornS: -0.3, whInS: -0.35, dpCatchDeg: -10 } },
+      dpBoostMax: 0.1, dpBoostMin: 0.05, dpBoostSeconds: 0.6, dpAhead: 60, dpSettle: 1.5, dpMaxTurn: -90,
+      closeSpeed: 20, bornS: -0.3, whInS: -0.35, dpCatchDeg: -10, dpCarry: 0.45, dpFlowCap: 1.5, dpFlowFade: 6,
+      dpTurnCap: -4, dpSMax: -3 } },
     { key: 'styleNeedle', name: 'Needle', what: 'precision', el: 'skill', col: '#e8ecff', d: {
-      holdExponent: 0.6, dpCatchDeg: 15, dpRsMax: -1.5, dpRsMin: -0.4, dpSettle: 3, dpGrip: 2, dpMaxTurn: 360, dpCaptureX: -0.2,
-      dpTurnCap: 4, bornS: -0.3, dpBoostSeconds: -0.4, gwShake: -0.3 } },
+      holdExponent: 0.6, dpCatchDeg: 15, dpRsMax: -1.5, dpRsMin: -0.4, dpSettle: 8, dpGrip: 2, dpMaxTurn: 360,
+      bornS: -0.3, dpBoostSeconds: -0.4, gwShake: -0.3, dpCarry: -0.35, dpFlowCap: -1, dpBoostMax: -0.4,
+      dpBoostMin: -0.15 } },
     { key: 'styleAnchor', name: 'Anchor', what: 'control', el: 'Space', col: '#3d99f2', d: {
-      dpCaptureX: 0.6, dpCatchDeg: -15, dpSettle: -0.8, dpGrip: 2.5, dpRsMax: -2, dpRsMin: -0.3, dpSide: -10, closeSpeed: -15,
-      holdCap: 6, dpMaxTurn: 180, gwShake: -0.6, shellBend: -3, dpWhite: -0.2, dpAccelCap: -1500 } },
+      dpCaptureX: 1, dpCatchDeg: -30, dpSettle: -0.8, dpGrip: 2.5, dpRsMax: -2, dpRsMin: -0.3, dpSide: -10,
+      closeSpeed: -15, holdCap: 6, dpMaxTurn: 180, gwShake: -0.6, shellBend: -3, dpWhite: -0.2, dpAccelCap: -1500,
+      dpSMin: 1.5 } },
     { key: 'styleMaelstrom', name: 'Maelstrom', what: 'gravity', el: 'Mass', col: '#ed4561', d: {
-      dpSMax: 6, dpSMin: 1, dpRsMax: 3, dpRsMin: 0.8, bhInfluenceFloor: -0.3, bhTideGain: 1.2, bhTideMax: 3, dpWhite: 0.4,
-      bhLensStrength: 0.6, bhRingGlow: 0.4, gwPrism: 0.4, dpTurnCap: -2, dpSide: 15 } },
+      dpSMax: 6, dpSMin: 1, dpRsMax: 3, dpRsMin: 0.8, bhInfluenceFloor: -0.3, bhTideGain: 1.2, bhTideMax: 3,
+      dpWhite: 0.4, bhLensStrength: 0.6, bhRingGlow: 0.4, gwPrism: 0.4, dpTurnCap: -2, dpSide: 15, dpGrip: -1.8,
+      dpCatchDeg: 20 } },
     { key: 'styleFlare', name: 'Flare', what: 'surge', el: 'Charge', col: '#fabf2e', d: {
-      dpBoostMax: 0.9, dpBoostSeconds: -0.5, dpBoostMin: 0.4, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
-      whCoreBrightness: 3, bornS: -0.4, dieS: -0.3, closeSpeed: 40, whOutSpeed: 250 } },
+      dpBoostMax: 2.1, dpBoostSeconds: -0.7, dpBoostMin: 0.9, gwAmp: 12, gwShake: 1, gwPrism: 0.6, shellBend: 6,
+      whCoreBrightness: 3, bornS: -0.4, dieS: -0.3, closeSpeed: 40, whOutSpeed: 250, dpCarry: -0.3 } },
   ];
   const STYLE_BY_KEY = {}; for (const st of STYLES) STYLE_BY_KEY[st.key] = st;
   const RANGE = {}; for (const r of SPEC) RANGE[r[1]] = [r[3], r[4]];
@@ -516,9 +555,9 @@
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
   let invertY = !!saved.invertY;
-  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade';
+  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, runs: runs.slice(-40) }); }
+  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40) }); }
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
@@ -690,14 +729,22 @@
     while (courseGroup.children.length) { const c = courseGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
     const rng = mulberry32(seed * 7919 + intensity), I = intensity - 1, mouth = MOUTHS[I];
     const jitA = [0.10, 0.2, 0.3, 0.38][I], jitR = [50, 100, 150, 190][I], yAmp = [20, 80, 140, 190][I];
-    const pts = [];
-    for (let k = 0; k < 8; k++) {
-      const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * jitA : 0), r = 600 + (k ? (rng() - 0.5) * 2 * jitR : 0), y = k ? (rng() - 0.5) * 2 * yAmp : 0;
-      pts.push(new V3(Math.cos(ang) * r, y, Math.sin(ang) * r));
+    const pts = [], norms = [];
+    if (courseKind === 'hairpin') {
+      // Hairpins: a slalom of U-turns — each ring faces the opposite way to the last, a short hop to the side — then
+      // a long straight home. Speed alone overshoots every one of them; a tight sling turn does not.
+      const gap = [190, 160, 140, 120][I], lift = [0, 15, 30, 45][I];
+      for (let k = 0; k < 8; k++) { pts.push(new V3((k - 3.5) * gap, (k % 2 ? 1 : -1) * lift + (rng() - 0.5) * lift, 0)); norms.push(new V3(0, 0, k % 2 ? -1 : 1)); }
+    } else {
+      for (let k = 0; k < 8; k++) {
+        const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * jitA : 0), r = 600 + (k ? (rng() - 0.5) * 2 * jitR : 0), y = k ? (rng() - 0.5) * 2 * yAmp : 0;
+        pts.push(new V3(Math.cos(ang) * r, y, Math.sin(ang) * r));
+      }
     }
-    const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+    const linePts = courseKind === 'hairpin' ? pts.flatMap((p, k) => [p.clone().addScaledVector(norms[k], -50), p, p.clone().addScaledVector(norms[k], 50)]) : pts;
+    const curve = new THREE.CatmullRomCurve3(linePts, true, 'centripetal');
     gates = pts.map((p, k) => {
-      const n = curve.getTangent(k / 8).normalize();
+      const n = courseKind === 'hairpin' ? norms[k] : curve.getTangent(k / 8).normalize();
       const ring = new THREE.Mesh(new THREE.TorusGeometry(mouth, 1.1, 8, 72), new THREE.MeshBasicMaterial({ color: 0x7fd7ff, transparent: true, opacity: 0.85 }));
       ring.position.copy(p); ring.quaternion.setFromUnitVectors(ZAX, n); courseGroup.add(ring);
       const disc = new THREE.Mesh(new THREE.CircleGeometry(mouth, 48), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }));
@@ -987,7 +1034,7 @@
   function setStopped(on) {
     if (mode !== 'fly' || (race !== 'running' && !stopped)) return;
     stopped = !!on;
-    if (stopped) { speed = 0; gravSpeed = 0; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
+    if (stopped) { speed = 0; gravSpeed = 0; flow = 0; boosts.length = 0; if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false); }
     else boosts.length = 0;
     showStopBtn(); showOverlay();
   }
@@ -1005,21 +1052,22 @@
   function spawn() {
     const g = gates[0]; hull.position.copy(g.p).addScaledVector(g.n, -170);
     const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
-    speed = 0; gravSpeed = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
+    speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
-    myPair = null; snapCam = true; showOverlay();
+    myPair = null; snapCam = true; ai.phase = 'cruise'; if (!batching) showOverlay();
   }
   function startRace() {
     if (stopped) { setStopped(false); return; }
     if (mode !== 'fly' || race === 'running') return;
     if (race === 'finished') spawn();
-    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
+    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); startStyles(); raceStats = newStats(); ai.phase = 'cruise'; hideOverlay(); showStopBtn(); canvas.focus({ preventScroll: true });
   }
   const runStyles = new Set();
   function finishRace() {
     race = 'finished'; stopped = false; showStopBtn();
+    if (batching) return;
     const used = Array.from(runStyles).sort().join('+') || style;   // a run that swapped pairs mid-race is its own row
-    lastRun = { time: raceT, slings, style: used, intensity, seed, laps, at: Date.now() };
+    lastRun = { time: raceT, slings, style: used, intensity, seed, laps, courseKind, at: Date.now() };
     runs.push(lastRun); persist(); renderRuns(); showOverlay();
   }
 
@@ -1050,7 +1098,8 @@
     aB.set(0, 0, 0); let anyB = false;
     for (const w of W) { if (!w.pr.owned || w.style !== 'B') continue; anyB = true; vesselAccel(w, hull.position, aB); }
     if (anyB && aB.lengthSq() > 1e-4) { vf.addScaledVector(aB, dt); vf.clampLength(0, P.feltCap * P.cruise); } else vf.multiplyScalar(Math.exp(-P.releaseDamping * dt));
-    if (race === 'ready' || stance) { vf.set(0, 0, 0); boosts.length = 0; }
+    if (race === 'ready' || stance) { vf.set(0, 0, 0); boosts.length = 0; flow = 0; }
+    flow *= Math.exp(-dt / Math.max(0.05, P.dpFlowFade));
     // The slingshot: VesselTransformer.ModifyVelocity's shape — 1.5× the amount at first, fading over the duration.
     vg.set(0, 0, 0);
     for (let i = boosts.length - 1; i >= 0; i--) {
@@ -1071,19 +1120,24 @@
     if (dipoleFlying) {
       // the dipole moved the hull itself, in small steps (stepDipoleForce); add only the other channels
       tv2.copy(vg).add(vf); hull.position.addScaledVector(tv2, dt);
-      basis(); velNow.copy(fwd).multiplyScalar(speed + gravSpeed).add(tv2);
+      basis(); velNow.copy(fwd).multiplyScalar(speed + gravSpeed + flow).add(tv2);
+      if (raceStats && race === 'running') { const v = velNow.length(); raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; raceStats.flowTop = Math.max(raceStats.flowTop, flow); raceStats.gravTop = Math.max(raceStats.gravTop, gravSpeed); }
     } else {
-      tv2.copy(fwd).multiplyScalar(speed + gravSpeed).add(vg).add(vf);
+      tv2.copy(fwd).multiplyScalar(speed + gravSpeed + flow).add(vg).add(vf);
       hull.position.addScaledVector(tv2, dt);
       velNow.copy(tv2);
+      if (raceStats && race === 'running') { const v = velNow.length(); raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; raceStats.flowTop = Math.max(raceStats.flowTop, flow); raceStats.gravTop = Math.max(raceStats.gravTop, gravSpeed); }
     }
 
     if (race === 'running') {
       raceT += dt;
+      if (raceStats && threaded % 8 !== 0 && threaded > 0) raceStats.turnT += dt;   // the hairpins: from ring 1 to ring 8, the straight home left out
       const g = gates[threaded % 8], s0 = tv.subVectors(p0, g.p).dot(g.n), s1 = tv3.subVectors(hull.position, g.p).dot(g.n);
       if (s0 * s1 <= 0 && s0 !== s1) {
         const t = s0 / (s0 - s1); tv.copy(p0).lerp(hull.position, t);
-        if (tv.distanceTo(g.p) <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) finishRace(); }
+        const err = tv.distanceTo(g.p);
+        if (raceStats) { if (err <= g.mouth) { raceStats.errSum += err; raceStats.errN++; } else if (err <= 4 * g.mouth) raceStats.misses++; }
+        if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) finishRace(); }
       }
     }
     // Through the pair. A (BlackHoleVesselPull.TryCarryThrough): cross the black hole's horizon and come out of the
@@ -1171,7 +1225,7 @@
   // round you go: once the black hole is heavy enough to catch you where you pass, you stay in its grip — on the circle
   // where its pull exactly holds your speed — for as long as you hold, up to a full turn. Let go and it lets go of you:
   // you leave on the tangent, at that angle, with the boost the squeeze earned. Then the pair falls together.
-  let slingDipole = null, lastDipole = null, gravSpeed = 0;
+  let slingDipole = null, lastDipole = null, gravSpeed = 0, flow = 0;   // flow: momentum kept from earlier releases
   const squeezeT = (q) => Math.pow(clamp01(q), Math.max(0.01, P.holdExponent));
   const dipoleS = (q) => P.dpSMin + (Math.max(P.dpSMin, P.dpSMax) - P.dpSMin) * squeezeT(q);
   const dipoleRs = (q) => P.dpRsMin + (Math.max(P.dpRsMin, P.dpRsMax) - P.dpRsMin) * squeezeT(q);
@@ -1191,6 +1245,7 @@
       { rs: 0.02, held: true, dipole: { att, rep, rsR: 0.02, SR: 0 } });   // born from a point
     pairs.push(myPair);
     spawnWave('in', rep);
+    if (raceStats && race === 'running') raceStats.slings++;
     slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, reach: 0, t: 0, gain0: gravSpeed };
     slings++; runStyles.add('A');
     if (stance) stance = false;
@@ -1206,13 +1261,13 @@
     pr.rs = Math.max(0.02, dipoleRs(sd.q) * bB); pr.S = dipoleS(sd.q) * bB;
     pr.rsR = Math.max(0.02, dipoleRs(sd.q) * P.whSizeX * bW); pr.SR = dipoleS(sd.q) * P.dpWhite * bW;
     // The circle is the one at the ENGINE's speed — the speed its grip holds you at — not the fall-in speed of the moment.
-    sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed, 10), pr.rs);
+    sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed + flow, 10), pr.rs);
     sd.reach = P.dpCaptureX * sd.rc;
     // It catches you as you PASS it — within reach and off to your side rather than still dead ahead — or as soon as you
     // are inside its circle (a heavy hole bends your nose onto itself, so it would never get off to your side).
     if (!sd.captured && !stopped) {
       basis(); tv.subVectors(pr.att, hull.position); const d = tv.length();
-      if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); }
+      if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); if (raceStats) { raceStats.catches++; raceStats.reachSum += d; raceStats.rcSum += sd.rc; raceStats.rcMin = Math.min(raceStats.rcMin, sd.rc); } }
     }
   }
   function releaseDipole(auto) {
@@ -1223,10 +1278,27 @@
     if (!auto && !stopped && sd.captured && race === 'running' && gates.length) {
       tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
       const off = Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI;
-      if (off <= P.needleCone) { if (liveStyles) styleBump('styleNeedle', P.needleStep, 'clean release'); else { styleFlash = 1.6; styleFlashCol = '#e8ecff'; styleFlashText = 'CLEAN RELEASE (tick Live to let it raise Needle)'; } }
+      if (off <= P.needleCone) { if (raceStats) raceStats.clean++; if (liveStyles) styleBump('styleNeedle', P.needleStep, 'clean release'); else { styleFlash = 1.6; styleFlashCol = '#e8ecff'; styleFlashText = 'CLEAN RELEASE (tick Live to let it raise Needle)'; } }
     }
-    const kick = Math.max(speed, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
-    if (kick > 0) boosts.push({ dir: fwd.clone(), amp: kick, t: 0, dur: P.dpBoostSeconds });
+    // The kick scales with the speed you are carrying, and part of it STAYS as momentum (flow) — so a chain of slings
+    // stacks, up to the cap, and fades only slowly. The rest is the classic punch that fades over the boost time.
+    // dpKickSweep > 0: the kick is earned by going round — none if it never caught you, the full kick only after that
+    // many degrees (0 = the round-6 rule: every release kicks, even a tap the moment it catches you).
+    const earned = P.dpKickSweep > 0 ? (sd.captured ? Math.min(1, sd.sweep * 180 / Math.PI / P.dpKickSweep) : 0) : 1;
+    const kick = earned * Math.max(speed + flow, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
+    const keep = clamp01(P.dpCarry) * kick;
+    flow = Math.max(flow, Math.min(P.dpFlowCap * P.cruise, flow + keep));
+    if (kick - keep > 0) boosts.push({ dir: fwd.clone(), amp: kick - keep, t: 0, dur: P.dpBoostSeconds });
+    if (raceStats && sd.captured && race === 'running') raceStats.sweepSum += sd.sweep;
+    if (raceStats && race === 'running') {   // the world it bent: field prisms inside the black hole's reach at the release
+      const pr = sd.pair, inf = Math.min(P.bhMaxInfluence, Math.sqrt(pr.S * GM_PER_STRENGTH / Math.max(1e-3, P.bhInfluenceFloor))), i2 = inf * inf;
+      let n = 0; for (let i = 0; i < NF; i++) { const j = i * 3, dx = bh[j] - pr.att.x, dy = bh[j + 1] - pr.att.y, dz = bh[j + 2] - pr.att.z; if (dx * dx + dy * dy + dz * dz <= i2) n++; }
+      raceStats.prisms += n; raceStats.released++;
+    }
+    if (raceStats && sd.captured && race === 'running' && gates.length) {   // how close to the next ring the nose was at the release
+      tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
+      raceStats.relSum += Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI; raceStats.relN++;
+    }
     lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
     slingFlash = 1.6; slingDipole = null;
   }
@@ -1247,9 +1319,9 @@
     dipoleFlying = true;
     const n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n;
     for (let i = 0; i < n; i++) {
-      dipoleSubstep(pr, h); basis(); hull.position.addScaledVector(fwd, (speed + gravSpeed) * h);
+      dipoleSubstep(pr, h); basis(); hull.position.addScaledVector(fwd, (speed + gravSpeed + flow) * h);
       tv.subVectors(hull.position, pr.att); const rA = tv.length();
-      if (sd.captured) { sd.sweep += rPrev.angleTo(tv); rPrev.copy(tv); }
+      if (sd.captured) { sd.sweep += rPrev.angleTo(tv); rPrev.copy(tv); if (raceStats && race === 'running') raceStats.gripT += h; }
       if (rA > 2 * Math.max(sd.rc, pr.rs)) pr.gFar = gravSpeed;     // the speed you had before any dive into the black hole
       if (rA <= pr.rs && portal.A) { dipoleCarry(pr); break; }
     }
@@ -1276,7 +1348,7 @@
     aD.addScaledVector(tv, -pr.SR * GM_PER_STRENGTH / (q * Math.sqrt(q)));
     aD.clampLength(0, P.dpAccelCap);
     basis();
-    const v = Math.max(speed + gravSpeed, 5), along = aD.dot(fwd);
+    const v = Math.max(speed + gravSpeed + flow, 5), along = aD.dot(fwd);
     gravSpeed = Math.max(-Math.max(0, speed - 8), Math.min(4 * P.cruise, gravSpeed + along * dt));
     if (sd.captured) gravSpeed *= Math.exp(-P.dpGrip * dt);   // in its grip the engine holds your speed
     aPerp.copy(aD).addScaledVector(fwd, -along);
@@ -1515,8 +1587,166 @@
     lastInput = inp;
     return inp;
   }
-  let lastInput = null;
+  let lastInput = null, lastBatch = null;
   function swapStyle() { setStyle(style === 'A' ? 'B' : 'A'); swapFlash = 1.6; }
+
+  // ================= the AI pilot (the sim lab) =================
+  // It flies through the same dual-stick mix and analog triggers a player does — no shortcuts. Steering: a pursuit
+  // point a little before the next ring along its normal, so it threads rings square; full throttle bar what yaw
+  // costs on the shared x axes; roll keeps the hull upright. Sling: lay the pair on the side of the turn, hold, release
+  // when the nose is on the next ring (a clean release), or give up when the hole never catches.
+  let aiOn = false, simSpeed = 1, aiRepeat = true, camMode = 'chase', batching = false, aiRestartT = 0;
+  const ai = { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: 1 };
+  function aiRand() { let t = (ai.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+  let raceStats = null;
+  function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0 }; }
+  const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
+  const qInv = new THREE.Quaternion(), aiLoc = new V3();
+  function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
+  function aiInput(dt) {
+    const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
+    if (mode === 'fly' && race === 'ready' && !batching) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
+    if (mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
+    if (race !== 'running' || stopped) { lastInput = inp; trackHold('L', 0, true, dt); trackHold('R', 0, true, dt); return inp; }
+    basis();
+    const g = gates[threaded % 8], g2 = gates[(threaded + 1) % 8];
+    const d = hull.position.distanceTo(g.p);
+    const tgt = tv3.copy(g.p).addScaledVector(g.n, -Math.min(70, d * 0.35));
+    const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
+    const rate = Math.max(0.2, P.pitchYaw * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
+    const sd = slingDipole, gripped = !!(sd && sd.captured);
+    let yawCmd = Math.max(-1, Math.min(1, yawErr / (rate * tau))), pitchCmd = Math.max(-1, Math.min(1, pitchErr / (rate * tau)));
+    if (gripped) { yawCmd = 0; pitchCmd = 0; }                    // in the grip the hole turns you; let it
+    const rollCmd = Math.max(-1, Math.min(1, -1.2 * right.dot(Y)));
+    const sx = easeInv(yawCmd);                                   // the sum of the x axes; their difference is throttle
+    if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
+    let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
+    inp.R.y = Math.max(-1, Math.min(1, (b + r) / 2)); inp.L.y = Math.max(-1, Math.min(1, (b - r) / 2));
+    // ---- the sling ----
+    ai.t += dt;
+    const useSling = P.aiSling > 0.5 && style === 'A' && slingMode === 'dipole';
+    if (ai.phase === 'cruise') {
+      if (useSling && !(myPair && myPair.alive) && (d > P.aiMinRing || Math.abs(yawErr) * 180 / Math.PI > P.aiTurn)) {
+        const turnTo = Math.abs(yawErr) > 0.08 ? yawErr : Math.atan2(localOf(g2.p).x, -localOf(g2.p).z);
+        // a rookie (aiNoise) squeezes off the mark, lets go off the mark and lays a beat late; a perfect pilot does none of it
+        const n = clamp01(P.aiNoise);
+        if (ai.wait <= 0) ai.wait = 0.001 + n * aiRand() * 1.2;
+        ai.wait -= dt;
+        if (ai.wait <= 0) {
+          ai.side = turnTo >= 0 ? 'R' : 'L'; ai.q = Math.max(0.05, Math.min(1, P.aiQ + n * (aiRand() - 0.5) * 0.9)); ai.cone = P.aiCone + n * aiRand() * 45;
+          ai.phase = 'hold'; ai.t = 0; ai.wait = 0;
+        }
+      }
+    } else if (ai.phase === 'hold') {
+      const off = Math.acos(Math.max(-1, Math.min(1, tv.subVectors(g.p, hull.position).normalize().dot(fwd)))) * 180 / Math.PI;
+      const lost = !(myPair && myPair.alive && slingDipole);
+      if (lost && ai.t > 0.2) ai.phase = 'cruise';
+      else if ((gripped && off <= ai.cone && (!(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
+    }
+    const trig = ai.phase === 'hold' ? Math.max(0.06, ai.q) : 0;
+    inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
+    trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+    lastInput = inp;
+    return inp;
+  }
+  // The five tests. Every preset (and a no-sling baseline) flies the same course, flat out, without drawing:
+  //  · a SKILLED pilot at several squeezes (its best run is kept) — race time, average and top speed, momentum, how
+  //    close to the next ring its nose was at each release, and the tightest circle it was held on;
+  //  · a ROOKIE (aiNoise 0.8, a few seeds) — the share of its slings that were caught, and its race time.
+  // Each column names the style that should win it.
+  function raceOnce() {
+    spawn(); startRace(); hideOverlay();
+    let t = 0; const h = 1 / 60;
+    while (race === 'running' && t < 400) { simStep(h, aiInput(h), false); t += h; }
+    const s = raceStats;
+    return { finished: race === 'finished', time: raceT, top: s.top, gravTop: s.gravTop, prisms: s.released ? s.prisms / s.released : NaN, avg: s.dist / Math.max(1e-3, raceT), flowTop: s.flowTop, slings: s.slings, catches: s.catches, clean: s.clean,
+      err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin };
+  }
+  function batchPresets() { return [{ name: 'No sling', w: {}, noSling: true }, { name: 'Balanced', w: {} }].concat(STYLES.map((st) => ({ name: st.name, w: { [st.key]: 1 } }))); }
+  function runBatch(qs, opts) {
+    opts = opts || {};
+    const saveBP = Object.assign({}, BP), saveLive = liveStyles, saveMode = mode, saveKind = courseKind, rows = [];
+    batching = true; liveStyles = false; if (mode !== 'fly') setMode('fly');
+    const onCourse = (k) => { if (courseKind !== k) { courseKind = k; buildCourse(); } };
+    const seeds = opts.seeds || [11, 23, 37];
+    for (const pr of (opts.presets || batchPresets())) {
+      for (const st of STYLES) BP[st.key] = pr.w[st.key] != null ? pr.w[st.key] : 0.5;
+      BP.aiSling = pr.noSling ? 0 : 1;
+      const row = { preset: pr.name, circuit: [], hairpin: [], rookie: [] };
+      for (const kind of ['circuit', 'hairpin']) {
+        onCourse(kind);
+        for (const q of (pr.noSling ? [0] : qs)) { BP.aiQ = q; BP.aiNoise = 0; recomputeP(); ai.seed = 1; row[kind].push(Object.assign({ q }, raceOnce())); }
+      }
+      onCourse('circuit');
+      if (!pr.noSling) for (const sd of seeds) { BP.aiQ = 0.5; BP.aiNoise = 0.8; recomputeP(); ai.seed = sd; row.rookie.push(raceOnce()); }
+      rows.push(row);
+    }
+    Object.assign(BP, saveBP); liveStyles = saveLive; recomputeP(); refreshAllOuts(); batching = false;
+    onCourse(saveKind);
+    if (saveMode !== 'fly') setMode(saveMode); spawn();
+    return rows;
+  }
+  // Each column is the best a SKILLED pilot gets when going for that one thing (over the squeezes tried), except the
+  // rookie's, which is the average of its seeds. A column owned by a style names it.
+  const fin = (list) => list.filter((r) => r.finished);
+  const bestOf = (list, f, lo) => { let b = null; for (const r of list) { const v = f(r); if (isNaN(v) || !isFinite(v)) continue; if (!b || (lo ? v < b.v : v > b.v)) b = { v, r }; } return b; };
+  const BATCH_COLS = [
+    { key: 'avg', label: 'avg speed, circuit', win: 'max', for: 'Comet', get: (w) => bestOf(fin(w.circuit), (r) => r.avg), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'top', label: 'top speed', win: 'max', for: 'Flare', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.top), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'ring', label: 'ring error, hairpins', win: 'min', for: 'Needle', get: (w) => bestOf(fin(w.hairpin), (r) => r.err, true), fmt: (b) => b.v.toFixed(1) + ' u' },
+    { key: 'rookie', label: 'rookie slings caught', win: 'max', for: 'Anchor', get: (w) => { let s = 0, c = 0; for (const r of w.rookie) { s += r.slings; c += r.catches; } return s ? { v: c / s } : null; }, fmt: (b) => Math.round(100 * b.v) + '%' },
+    { key: 'prisms', label: 'prisms pulled per sling', win: 'max', for: 'Maelstrom', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.prisms), fmt: (b) => b.v.toFixed(0) },
+    { key: 'grav', label: 'gravity speed', win: 'max', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.gravTop), fmt: (b) => '+' + b.v.toFixed(0) + ' u/s' },
+    { key: 'reach', label: 'caught from', win: 'max', get: (w) => bestOf(w.circuit.concat(w.hairpin), (r) => r.reach), fmt: (b) => b.v.toFixed(0) + ' u' },
+    { key: 'time', label: 'circuit 2 laps', win: 'min', get: (w) => bestOf(fin(w.circuit), (r) => r.time, true), fmt: (b) => fmtTime(b.v) + ' <small>q ' + b.r.q.toFixed(1) + '</small>' },
+    { key: 'hair', label: 'hairpins 2 laps', win: 'min', get: (w) => bestOf(fin(w.hairpin), (r) => r.time, true), fmt: (b) => fmtTime(b.v) + ' <small>q ' + b.r.q.toFixed(1) + '</small>' },
+    { key: 'flow', label: 'momentum', win: 'max', get: (w) => bestOf(w.circuit, (r) => r.flowTop), fmt: (b) => b.v.toFixed(0) + ' u/s' },
+    { key: 'rtime', label: 'rookie 2 laps', win: 'min', get: (w) => { const f = fin(w.rookie); return f.length ? { v: f.reduce((a, r) => a + r.time, 0) / f.length, dnf: w.rookie.length - f.length } : null; }, fmt: (b) => fmtTime(b.v) + (b.dnf ? ' (' + b.dnf + ' DNF)' : '') },
+  ];
+  function batchWinners(rows) {
+    const out = {};
+    for (const c of BATCH_COLS) {
+      let bv = NaN, bn = null;
+      for (const r of rows) { if (r.preset === 'No sling') continue; const g = c.get(r); if (!g) continue; if (isNaN(bv) || (c.win === 'min' ? g.v < bv : g.v > bv)) { bv = g.v; bn = r.preset; } }
+      out[c.key] = bn;
+    }
+    return out;
+  }
+  function batchTable(rows) {
+    const win = batchWinners(rows);
+    const col = (name) => { const c = (STYLE_BY_KEY['style' + name] || {}).col; return !c || c === '#e8ecff' ? 'var(--fg)' : c; };   // Needle's white reads on the dark stage only
+    let h = '<table class="runs batch"><thead><tr><th>Style</th>';
+    for (const c of BATCH_COLS) h += '<th>' + c.label + (c.for ? '<br><span style="color:' + col(c.for) + ';font-weight:400">' + c.for + '\'s</span>' : '') + '</th>';
+    h += '</tr></thead><tbody>';
+    for (const r of rows) {
+      h += '<tr><td style="color:' + col(r.preset) + '">' + r.preset + '</td>';
+      for (const c of BATCH_COLS) { const g = c.get(r); h += '<td' + (win[c.key] === r.preset ? ' class="win" style="color:' + col(r.preset) + '"' : '') + '>' + (g ? c.fmt(g) : '—') + '</td>'; }
+      h += '</tr>';
+    }
+    h += '</tbody></table>';
+    const owned = BATCH_COLS.filter((c) => c.for).map((c) => '<span style="color:' + col(c.for) + '">' + c.for + '</span> ' + (win[c.key] === c.for ? 'wins' : 'loses (' + (win[c.key] || '—') + ' wins)') + ' ' + c.label);
+    return h + '<p class="src">Same seed and intensity as the Flight card. Skilled pilot: squeezes ' + (lastBatchQs || []).join(', ') + ' on both courses; each column keeps its best. Rookie: squeeze 0.5 ± 0.36, late lays, sloppy releases, 3 seeds on the circuit. ' + owned.join(' · ') + '.</p>';
+  }
+  function batchSummary(rows) {   // plain numbers, for scripts
+    const out = {};
+    for (const r of rows) { out[r.preset] = {}; for (const c of BATCH_COLS) { const g = c.get(r); out[r.preset][c.key] = g ? +g.v.toFixed(3) : null; } }
+    return out;
+  }
+  let lastBatchQs = null;
+  let statsClock = 0;
+  function aiStatsText() {
+    const s = raceStats; if (!s) return 'Not flying yet.';
+    const avg = raceT > 0 ? s.dist / raceT : 0;
+    return 'Race ' + fmtTime(raceT) + ' · rings ' + threaded + '/' + 8 * laps + ' · now ' + velNow.length().toFixed(0) + ' u/s · top ' + s.top.toFixed(0) + ' · avg ' + avg.toFixed(0) + ' u/s\n' +
+      'slings ' + s.slings + ' · caught ' + s.catches + ' · clean releases ' + s.clean + ' · ring error ' + (s.errN ? (s.errSum / s.errN).toFixed(1) : '—') + ' u · missed ' + s.misses + (lastRun ? '\nlast finished: ' + fmtTime(lastRun.time) : '');
+  }
+  // the free camera: drag to orbit the Stoat, wheel to zoom
+  const freeCam = { yaw: 2.6, pitch: 0.35, dist: 90 };
+  let freeDrag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (mode !== 'fly' || camMode !== 'free' || playMode) return; freeDrag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointermove', (e) => { if (!freeDrag) return; freeCam.yaw -= (e.clientX - freeDrag.x) * 0.008; freeCam.pitch = Math.max(-1.3, Math.min(1.3, freeCam.pitch + (e.clientY - freeDrag.y) * 0.006)); freeDrag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { freeDrag = null; });
+  canvas.addEventListener('wheel', (e) => { if (mode !== 'fly' || camMode !== 'free') return; e.preventDefault(); freeCam.dist = Math.max(25, Math.min(900, freeCam.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
 
   // ================= camera =================
   const camLook = new V3(); let snapCam = true;
@@ -1529,12 +1759,16 @@
   function updateCamera(dt) {
     if (mode === 'fly') {
       basis();
-      const want = tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
-      const look = tv2.copy(hull.position).addScaledVector(fwd, 40).addScaledVector(up, 3);
+      const want = camMode === 'follow' ? tv.set(0, 22, 62).applyQuaternion(hull.quaternion).add(hull.position) : tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
+      const look = tv2.copy(hull.position).addScaledVector(fwd, camMode === 'follow' ? 60 : 40).addScaledVector(up, 3);
+      if (camMode === 'free') {   // orbit the Stoat: drag to turn, wheel to zoom
+        want.set(Math.sin(freeCam.yaw) * Math.cos(freeCam.pitch), Math.sin(freeCam.pitch), Math.cos(freeCam.yaw) * Math.cos(freeCam.pitch)).multiplyScalar(freeCam.dist).add(hull.position);
+        look.copy(hull.position);
+      }
       // In the black hole's grip it sits square off your side, out of a chase camera's view: swing out and up on the
       // far side of the circle and look between you and it, so the hole you are going round stays on screen.
       const sd = slingDipole;
-      camGrip += ((sd && sd.captured ? 1 : 0) - camGrip) * (1 - Math.exp(-3 * dt));
+      camGrip += ((sd && sd.captured && camMode !== 'free' ? 1 : 0) - camGrip) * (1 - Math.exp(-3 * dt));
       if (camGrip > 0.001 && (sd || lastGripAtt)) {
         if (sd) { lastGripAtt.copy(sd.pair.att); lastGripR = sd.rc; }
         const out = tv3.subVectors(hull.position, lastGripAtt); const d = Math.max(out.length(), 1e-3); out.divideScalar(d);
@@ -1543,9 +1777,10 @@
         const gl = new V3().copy(hull.position).lerp(lastGripAtt, 0.45).addScaledVector(fwd, 0.25 * R);
         want.lerp(gw, camGrip); look.lerp(gl, camGrip);
       }
-      const k = snapCam ? 1 : 1 - Math.exp(-7 * dt);
+      const k = snapCam ? 1 : 1 - Math.exp(-(camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) * dt);
       cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
-      cam.up.copy(up); cam.lookAt(camLook);
+      if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
+      cam.lookAt(camLook);
     } else {
       if (orbit.auto) orbit.yaw += dt * 0.12;
       for (const [k, c] of [['A', camA], ['B', camB]]) {
@@ -1840,6 +2075,11 @@
         c.textAlign = 'left'; c.font = font(9.5, 600); c.fillStyle = st.col; c.fillText(st.name, x0, y);
       });
     }
+    if (aiOn && mode === 'fly') {   // the sim lab: say who is flying, and as what
+      const lead = STYLES.filter((st) => P[st.key] > 0.6).map((st) => st.name), noisy = P.aiNoise > 0.05;
+      c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = lead.length === 1 ? STYLE_BY_KEY['style' + lead[0]].col : ink;
+      c.fillText('AI PILOT' + (noisy ? ' (ROOKIE)' : '') + ' · ' + (lead.length ? lead.join(' + ').toUpperCase() : 'BALANCED') + (courseKind === 'hairpin' ? ' · HAIRPINS' : ''), cw / 2, ch - pad - 4 * sc);
+    }
     if (styleFlash > 0) { c.globalAlpha = Math.min(1, styleFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = styleFlashCol; c.fillText(styleFlashText, cw / 2, ch * 0.62); c.globalAlpha = 1; }
     if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
     if (myPair && myPair.alive && myPair.dipole && !slingDipole && !(slingFlash > 0)) {
@@ -1862,7 +2102,7 @@
     c.fillStyle = ink; c.fillRect(pad, by, bw * Math.min(1, speed / (P.cruise * 2.5)), 5 * sc);
     c.fillStyle = style === 'A' ? colA : colB; c.fillRect(pad, by + 7 * sc, bw * Math.min(1, Math.max(0, pull) / (P.cruise * 2.5)), 5 * sc);
     c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(pad + bw * 0.4, by - 3 * sc, 1.5, 17 * sc);
-    c.font = font(10, 500); c.fillStyle = dim; c.fillText('engine / ' + (dip ? 'gravity ' + (pull >= 0 ? '+' : '') : style === 'A' ? 'slingshot ' : 'pull ') + Math.round(pull) + ' u/s', pad + bw + 8 * sc, by + 10 * sc);
+    c.font = font(10, 500); c.fillStyle = dim; c.fillText('engine / ' + (dip ? 'gravity ' + (pull >= 0 ? '+' : '') : style === 'A' ? 'slingshot ' : 'pull ') + Math.round(pull) + ' u/s' + (dip && flow > 0.5 ? ' · momentum +' + Math.round(flow) : ''), pad + bw + 8 * sc, by + 10 * sc);
     // bottom-right: the two triggers
     const trig = (side, x) => {
       const h = holds[side], r = 22 * sc, y = ch - pad - r - 6 * sc;
@@ -1924,7 +2164,7 @@
   function showOverlay() {
     const box = $('overlayBox');
     if (mode === 'fly' && stopped) { hideOverlay(); return; }
-    if (mode !== 'fly' || race === 'running') { hideOverlay(); return; }
+    if (mode !== 'fly' || race === 'running' || aiOn) { hideOverlay(); return; }
     $('overlay').hidden = false;
     if (race === 'ready') {
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
@@ -2007,12 +2247,12 @@
       const rs = Pv.dpRsMin + (Math.max(Pv.dpRsMin, Pv.dpRsMax) - Pv.dpRsMin) * tp(q0), rsR = rs * Pv.whSizeX;
       const GM = S * Pv.bhGmPerStrength, GMr = GM * Pv.dpWhite, speed = Pv.cruise;
       const holdR = (v) => { const k = GM / Math.max(1, v * v), b = 2 * rs + k; return 0.5 * (b + Math.sqrt(Math.max(0, b * b - 4 * rs * rs))); };
-      let x = 0, y = 0, hx = 0, hy = 1, g = 0, gFar = 0;
+      let x = 0, y = 0, hx = 0, hy = 1, g = 0, gFar = 0, fl = 0;
       let pressed = false, released = false, cap = false, sweep = 0, bent = 0, rc = 0, reach = 0, prevA = 0, dove = false, alive = false;
       let bx = 0, by = 0, wx = 0, wy = 0, mx = 0, my = 0, ax0 = 0, ay0 = 0, h0 = 0, closeT = 0, boostT = -1, kick = 0, bdx = 0, bdy = 0, relX = 0, relY = 0, gone = false;
       const frames = []; let nextRec = 0;
       const release = (t) => {
-        released = true; kick = speed * (Pv.dpBoostMin + (Pv.dpBoostMax - Pv.dpBoostMin) * tp(q0)); boostT = t; bdx = hx; bdy = hy; relX = x; relY = y;
+        released = true; kick = speed * (Pv.dpBoostMin + (Pv.dpBoostMax - Pv.dpBoostMin) * tp(q0)); fl = Math.min(Pv.dpFlowCap * Pv.cruise, clamp01(Pv.dpCarry) * kick); kick -= fl; boostT = t; bdx = hx; bdy = hy; relX = x; relY = y;
         mx = (bx + wx) / 2; my = (by + wy) / 2; ax0 = wx - bx; ay0 = wy - by; h0 = Math.hypot(ax0, ay0) / 2; ax0 /= 2 * h0 || 1; ay0 /= 2 * h0 || 1; closeT = 0;
       };
       for (let t = 0; t < T; t += dt) {
@@ -2052,7 +2292,8 @@
         } else g *= Math.exp(-dt / Math.max(0.05, Pv.dpAssistFade));
         let vb = 0;
         if (boostT >= 0 && t - boostT < Pv.dpBoostSeconds) vb = (kick / 1.5) * (Math.cos(Math.PI * (t - boostT) / Pv.dpBoostSeconds) / 2 + 1);
-        x += (hx * (speed + g) + bdx * vb) * dt; y += (hy * (speed + g) + bdy * vb) * dt;
+        fl *= Math.exp(-dt / Math.max(0.05, Pv.dpFlowFade));
+        x += (hx * (speed + g) + bdx * (vb + fl)) * dt; y += (hy * (speed + g) + bdy * (vb + fl)) * dt;
         if (held && cap) { const a = Math.atan2(y - by, x - bx); let da = a - prevA; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU; sweep += Math.abs(da); prevA = a; }
         if (held) {
           const dB = Math.hypot(x - bx, y - by);
@@ -2596,26 +2837,35 @@
   // ---------- what counts as a clean release ----------
   SCENES.cone = {
     make: () => ({}), period: () => 5.4,
-    draw(c, W, H, tt, st, view, Pv) {
+    draw(c, W, H, tt, st, view, Pv, cfg) {
       previewBg(c, W, H, 59);
-      const cx = W / 2, cy = H - 22, L = H - 50, ringA = -Math.PI / 2 - 0.25, cone = Pv.needleCone * Math.PI / 180;
+      const coneDeg = cfg && cfg.key === 'aiCone' ? Pv.aiCone : Pv.needleCone;
+      const cx = W / 2, cy = H - 22, L = H - 50, ringA = -Math.PI / 2 - 0.25, cone = coneDeg * Math.PI / 180;
       c.fillStyle = 'rgba(232,236,255,0.10)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, L, ringA - cone, ringA + cone); c.closePath(); c.fill();
       const rx = cx + Math.cos(ringA) * L, ry = cy + Math.sin(ringA) * L;
       c.strokeStyle = '#ffb347'; c.lineWidth = 2; c.beginPath(); c.ellipse(rx, ry, 10, 6, 0, 0, TAU); c.stroke(); txt(c, 'next ring', rx + 14, ry + 4, '#ffb347', 9.5);
       const tries = [-50, -32, -18, -8, 0, 10, 22, 38, 55], k = Math.min(tries.length, Math.floor(tt / 0.55) + 1);
       let clean = 0;
       for (let i = 0; i < k; i++) {
-        const a = ringA + tries[i] * Math.PI / 180, ok = Math.abs(tries[i]) <= Pv.needleCone; if (ok) clean++;
+        const a = ringA + tries[i] * Math.PI / 180, ok = Math.abs(tries[i]) <= coneDeg; if (ok) clean++;
         c.strokeStyle = ok ? '#7dffb0' : 'rgba(154,166,214,0.6)'; c.lineWidth = ok ? 2.2 : 1.4;
         c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * L * 0.8, cy + Math.sin(a) * L * 0.8); c.stroke();
       }
       ship(c, cx, cy, 0, 1, '#ffd27a', 6);
-      txt(c, clean + ' of ' + k + ' releases count as clean (±' + Math.round(Pv.needleCone) + '°)', 6, 13, '#e8ecff', 10);
+      txt(c, clean + ' of ' + k + ' releases inside ±' + Math.round(coneDeg) + '°', 6, 13, '#e8ecff', 10);
     },
   };
 
   // ---------- what each number means, in plain words ----------
   const TIPS = {
+    aiSling: { scene: 'sling', d: 'Whether the AI pilot uses the dipole sling at all. 0 flies the course on steering and throttle alone — the baseline every style is measured against.', lo: 'No slings.', hi: 'Slings whenever it can.' },
+    aiQ: { scene: 'sling', cfg: { qFromValue: true, key: 'aiQ' }, d: 'How deep the AI squeezes the trigger when it lays a pair: the black hole\'s strength. The batch race tries several and keeps each style\'s best.', lo: 'Light holes: fewer catches.', hi: 'Heavy holes: caught from far, wide circles.' },
+    aiCone: { scene: 'cone', over: {}, d: 'The AI lets go once its nose is within this many degrees of the next ring — its release precision. Tight cones mean clean, Needle-earning releases but longer holds.', lo: 'Waits for a near-perfect exit.', hi: 'Lets go early and rough.' },
+    aiGiveUp: { scene: 'sling', cfg: { q: 0.3, hold: 6 }, d: 'If the hole has not caught the AI after this many seconds, it lets go anyway (and still gets the release boost).', lo: 'Abandons a miss quickly.', hi: 'Hangs on hoping to be caught.' },
+    aiMinRing: { scene: 'sling', d: 'The AI lays a pair on a straight when the next ring is at least this far away, so a sling never throws it past a ring it is about to thread.', lo: 'Slings right up to the ring.', hi: 'Slings only on long straights.' },
+    aiTurn: { scene: 'sling', d: 'The AI also lays a pair when the turn to the next ring is sharper than this, however close the ring is — the sling as a turning tool, which is what a hairpin needs.', lo: 'Slings on gentle bends too.', hi: 'Slings only on hairpins.' },
+    aiNoise: { scene: 'sling', d: 'How sloppy the AI is. A rookie squeezes too lightly or too hard, lays the pair at the wrong moment and lets go late or early. Use it to see which settings forgive mistakes.', lo: 'A perfect pilot.', hi: 'A rookie.' },
+    aiTau: { scene: 'turn', cfg: { mode: 'yaw' }, d: 'How hard the AI steers: the time it aims to close its heading error in. Smaller is snappier, but can overshoot.', lo: 'Snappy steering.', hi: 'Lazy, smooth steering.' },
     styleComet: { scene: 'sling', cfg: { q: 0.7, release: 180 }, at: [0.1, 0.9], d: 'Comet — velocity. For players who never want to slow down: the sling keeps more of the speed gravity gives you, catches and lets go quicker, the release boost lasts longer and the pair is laid further ahead. Fed by Time crystals (Time = rate and mobility). Watch the dot spacing after the release: wider = faster.', lo: 'Steadier and slower: the sling soaks up speed.', hi: 'Keeps its speed and launches longer.' },
     styleNeedle: { scene: 'sling', cfg: { q: 0.5 }, at: [0.1, 0.9], d: 'Needle — precision. For players who want exact control: finer control at light squeezes, it catches you only once the hole is beside you, smaller crisper holes, a firm snap onto the circle and more turns allowed so you choose your exit angle. Earned by skill, not crystals: each clean release raises it.', lo: 'Looser, blunter control.', hi: 'Crisper and more exact.' },
     styleAnchor: { scene: 'sling', cfg: { q: 0.35, over: { dpSide: 70 } }, at: [0.1, 0.9], d: 'Anchor — control. For players who want it forgiving: it catches you from further away, settles you gently and holds your speed steady, it is hard to dive into by accident, the pair lingers and the screen effects are calmer. Fed by Space crystals (Space = reach and presence). The preview passes wide, to show the reach.', lo: 'Less forgiving: pass close or miss.', hi: 'Forgiving: it reaches out and holds you.' },
@@ -2656,6 +2906,10 @@
     dpBoostMax: { scene: 'sling', cfg: { q: 1, release: 180 }, d: 'The boost you get on release after a FULL squeeze, as a multiple of your speed. Watch the spacing of the dots after the release: wider = faster.', lo: 'A buried sling throws you out more gently.', hi: 'A buried sling launches you harder.' },
     dpBoostSeconds: { scene: 'sling', cfg: { q: 0.7, release: 180 }, d: 'How long the release boost lasts. It starts at its strongest and fades out over this time.', lo: 'A shorter punch.', hi: 'A longer, rolling push.' },
     dpKeySqueeze: { scene: 'sling', cfg: { qFromValue: true }, d: 'Keyboard only: how deep a squeeze a key gives (a key cannot be half pressed). The preview uses this squeeze.', lo: 'Keys give a lighter, weaker black hole.', hi: 'Keys give a stronger black hole.' },
+    dpCarry: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How much of the release kick you KEEP as momentum instead of a punch that fades. Kept momentum stacks over a chain of slings — this is how a skilled pilot climbs past cruise and stays there.', lo: 'All punch: fast for a moment, then back to cruise.', hi: 'All momentum: a smaller jump that lasts.' },
+    dpFlowFade: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How long kept momentum takes to fade (to about a third). Sling again before it is gone and the next kick builds on it.', lo: 'Momentum bleeds off quickly.', hi: 'Momentum lingers — chains stack high.' },
+    dpFlowCap: { scene: 'sling', cfg: { q: 1, release: 180, T: 9 }, d: 'The most momentum you can carry, as a multiple of cruise speed. It is the ceiling a perfect chain of slings climbs to.', lo: 'A low ceiling.', hi: 'A high ceiling: 60 cruise + 1.5 × 60 = 150 u/s of lasting speed.' },
+    dpKickSweep: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'Whether the release kick has to be EARNED by going round the hole. At 0 every release kicks, so a skilled pilot can tap — caught and let go at once — for a free boost. Above 0, the kick grows with how far round you went and is full only after this many degrees; a release before it catches you gives none.', lo: 'Every release kicks (a tap works).', hi: 'Only a long swing round pays.' },
     dpAssistFade: { scene: 'sling', cfg: { q: 0.35, hold: 2.6 }, d: 'Speed that gravity gave you while you were NOT caught (a fast bend past the hole) fades away over about this long after you let go.', lo: 'The gravity speed is gone sooner.', hi: 'You carry the gravity speed for longer.' },
     dpAccelCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A safety ceiling on how hard the pair can pull or push you, so a pass right at the horizon cannot fling you absurdly. Mostly reached only very close in — the preview passes close.', lo: 'Close passes are softened: less violent, less turning.', hi: 'Close passes get more of the full, violent pull.' },
     dpTurnCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A ceiling on how fast gravity may swing your nose round, in radians per second (6.3 = a whole turn every second). The preview passes close.', lo: 'Your nose swings round more slowly: you skid wider.', hi: 'Your nose can whip round faster.' },
@@ -2987,17 +3241,24 @@
     $('liveStyles').checked = liveStyles;
     $('liveStyles').addEventListener('change', (e) => { liveStyles = e.target.checked; persist(); });
   }
-  $('intensity').value = String(intensity); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
+  $('aiOn').addEventListener('change', (e) => { aiOn = e.target.checked; aiRestartT = 0; if (aiOn) { if (mode !== 'fly') setMode('fly'); if (race !== 'running') { spawn(); startRace(); } } else { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); } showOverlay(); });
+  $('camMode').addEventListener('change', (e) => { camMode = e.target.value; snapCam = true; });
+  $('simSpeed').addEventListener('change', (e) => { simSpeed = parseFloat(e.target.value) || 1; });
+  $('batchBtn').addEventListener('click', () => {
+    $('batchNote').textContent = 'racing…'; $('batchOut').innerHTML = '';
+    setTimeout(() => { const t0 = performance.now(); lastBatchQs = [0.3, 0.5, 0.7, 0.9, 1]; const rows = runBatch(lastBatchQs); lastBatch = rows; $('batchOut').innerHTML = batchTable(rows); $('batchNote').textContent = 'done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s'; }, 30);
+  });
+  $('intensity').value = String(intensity); $('courseKind').value = courseKind; $('courseKind').addEventListener('change', (e) => { courseKind = e.target.value; buildCourse(); spawn(); persist(); renderRuns(); }); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
   $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); markTypes(); });
   $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); markTypes(); });
   $('invertY').addEventListener('change', (e) => { invertY = e.target.checked; persist(); });
   $('newCourse').addEventListener('click', () => { seed = 1 + Math.floor(Math.random() * 9999); buildCourse(); spawn(); persist(); renderRuns(); });
   $('domain').addEventListener('change', (e) => { domainKey = e.target.value; const c = DOMAIN[domainKey]; domainMat.color.setHex(c); domainMat.emissive.setHex(c); trailMat.color.setHex(c); trailMat.emissive.setHex(c); persist(); });
 
-  function courseKey(r) { return r.seed + '/' + r.intensity + '/' + r.laps; }
-  function bestFor(s) { const key = courseKey({ seed, intensity, laps }); const t = runs.filter((r) => r.style === s && courseKey(r) === key).map((r) => r.time); return t.length ? Math.min.apply(null, t) : null; }
+  function courseKey(r) { return (r.courseKind || 'circuit') + '/' + r.seed + '/' + r.intensity + '/' + r.laps; }
+  function bestFor(s) { const key = courseKey({ courseKind, seed, intensity, laps }); const t = runs.filter((r) => r.style === s && courseKey(r) === key).map((r) => r.time); return t.length ? Math.min.apply(null, t) : null; }
   function renderRuns() {
-    const key = courseKey({ seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
+    const key = courseKey({ courseKind, seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
     const tb = $('runs').tBodies[0];
     if (!here.length) { tb.innerHTML = '<tr><td class="empty" colspan="2">No finished runs on this course yet (seed ' + seed + ', intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ').</td></tr>'; return; }
     const row = (s) => { const rs = here.filter((r) => r.style === s); const name = s === 'A' ? 'Black + white hole' : 'Crystal (archived)'; if (!rs.length) return '<tr><td>' + name + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>' + name + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
@@ -3008,14 +3269,14 @@
   let db = null, me = '', remote = null;
   const LOCAL_LOG = 'stoat-studio-log';
   let localLog = lsGet(LOCAL_LOG, []);
-  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) o[k] = BP[k]; return { liveStyles, style, slingMode, portalA: portal.A, portalB: portal.B, intensity, laps, seed, changed: o }; }
+  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) o[k] = BP[k]; return { liveStyles, style, slingMode, portalA: portal.A, portalB: portal.B, courseKind, intensity, laps, seed, changed: o }; }
   function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(BP[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + BP[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
   const SLING_KEYS = ['holdExponent', 'holdRamp'];
   const A_KEYS = ['orbitWide', 'orbitTight', 'orbitHorizons', 'boostMin', 'boostMax', 'boostSeconds', 'closeSpeed', 'closeRamp', 'holdCap', 'followRate', 'radialRate', 'vesselTide'];
   const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
-  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'closeSpeed', 'closeRamp'];
+  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'closeSpeed', 'closeRamp'];
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
   function currentChoice(topic) {
@@ -3028,7 +3289,7 @@
       case 'White hole': return 'White hole' + typeName('WH') + changedText(WH_KEYS);
       case 'Portal': return 'Pair ' + style + ': carry the Stoat through = ' + (portal[style] ? 'yes' : 'no');
       case 'Lope & body': return 'Plated body, body-only lope' + typeName('lope') + changedText(['lopeAmp', 'lopeRate', 'lopeArch', 'lopeSquash']);
-      case 'Course': return 'Intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
+      case 'Course': return (courseKind === 'hairpin' ? 'Hairpins, i' : 'Circuit, i') + 'ntensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
       case 'Controls': return 'Game dual-stick mix' + typeName('flight') + (invertY ? ', Y inverted' : '') + changedText(['cruise', 'pitchYaw', 'roll']);
       case 'Race result': return lastRun ? 'Pair ' + lastRun.style + ': ' + fmtTime(lastRun.time) + ', ' + lastRun.slings + ' slings (intensity ' + lastRun.intensity + ', seed ' + lastRun.seed + ')' : 'No finished race yet';
       default: return '';
@@ -3126,23 +3387,38 @@
 
   buildRail(); buildTypes(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
   let last = performance.now();
-  function frame(now) {
-    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
-    resize();
+  // One step of the world: everything but drawing. The frame runs it once (or several times when the sim lab runs
+  // fast); the sim lab's batch runs it thousands of times without drawing at all.
+  function simStep(dt, inp, withBodies) {
     GM_PER_STRENGTH = P.bhGmPerStrength; HORIZON_PER_STRENGTH = P.bhHorizonPerStrength;
-    const inp = pollInput(dt);
     simT += dt; waves = waves.filter(waveAlive); stepStyles(dt); spinCrystals(dt);
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     collectWells();
     if (mode === 'fly') { if (!stopped) stepFly(dt, inp); else watchStep(dt); } else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
-    stepBodies(dt); writeBodies();
-    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
-    renderAll(); drawHud(dt);
+    if (withBodies) stepBodies(dt);
+  }
+  let manualClock = false;   // a recorder steps the world itself, frame by frame (window.__stoatStudio.tick)
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (manualClock) { requestAnimationFrame(frame); return; }
+    advance(dt, now);
     requestAnimationFrame(frame);
   }
+  let manualNow = 0;
+  function advance(dt, now) {
+    resize();
+    if (aiOn && mode === 'fly') {
+      const n = Math.max(1, Math.round(simSpeed)), h = dt * simSpeed / n;
+      for (let i = 0; i < n; i++) simStep(h, aiInput(h), i === n - 1);
+    } else simStep(dt, pollInput(dt), true);
+    statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
+    writeBodies();
+    updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateGhosts(); updateRings(now);
+    renderAll(); drawHud(dt);
+  }
   requestAnimationFrame(frame);
-  window.__stoatStudio = { setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+  window.__stoatStudio = { set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
 })();
 </script>
 
