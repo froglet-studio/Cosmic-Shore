@@ -35,6 +35,8 @@ namespace CosmicShore.Gameplay
             public float score;
             public List<float> collectionTimes = new();
             public string policy = "";
+            public string difficulty = "";   // the lobby AI difficulty this AI seat flew
+            public int mistakes;             // crystals it misjudged on purpose (Easy / Medium)
             public int recoveries;
             public int speedLossEvents;
             public int stallEvents;
@@ -168,6 +170,7 @@ namespace CosmicShore.Gameplay
                     if (TraceFrames && _pilots.Count == 0) WriteProbe(p, pilot);
                     _pilots[p.Name] = pilot;
                     seat.policy = pilot.Config != null ? pilot.Config.PolicyVersion : "";
+                    seat.difficulty = AIDifficultyRules.Resolve(_gameData.RequestedAIDifficulty).ToString();
                     if (string.IsNullOrEmpty(_race.aiDomain)) _race.aiDomain = p.Domain.ToString();
                 }
             }
@@ -205,6 +208,7 @@ namespace CosmicShore.Gameplay
                 if (_pilots.TryGetValue(p.Name, out var pilot) && pilot != null && pilot.Driver != null)
                 {
                     seat.recoveries = pilot.Driver.Recoveries;
+                    seat.mistakes = pilot.Driver.Handicap != null ? pilot.Driver.Handicap.Mistakes : 0;
                     if (TraceFrames) NoteBoostReset(now, p, st, c, pilot);
                     if (TraceFrames && now >= _nextTrace) AppendTrace(now, p.Name, pilot);
                 }

@@ -93,6 +93,7 @@
     <Compile Include="../CosmicShore.Player/ModelViewer.Ui.cs" Link="Player/ModelViewer.Ui.cs" />
     <Compile Include="../CosmicShore.Player/UiSweep.cs" Link="Player/UiSweep.cs" />
     <Compile Include="../CosmicShore.Player/PlayerBoot.cs" Link="Player/PlayerBoot.cs" />
+    <Compile Include="../CosmicShore.Player/UgsSetup.cs" Link="Player/UgsSetup.cs" />
     <Compile Include="../CosmicShore.Player/PlayerAudio.cs" Link="Player/PlayerAudio.cs" />
     <Compile Include="../CosmicShore.Player/SilkInputBridge.cs" Link="Player/SilkInputBridge.cs" />
     <Compile Include="../CosmicShore.Player/InputScript.cs" Link="Player/InputScript.cs" />

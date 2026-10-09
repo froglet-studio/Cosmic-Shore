@@ -119,13 +119,14 @@ namespace CosmicShore.Tests
         {
             var record = LaunchPreference.Empty(GameModes.ScarabScramble)
                 .WithHostTerms(3, 3, new List<Domains> { Domains.Ruby, Domains.Ruby },
-                               Domains.Gold, VesselClassType.Scarab);
+                               AIDifficulty.Hard, Domains.Gold, VesselClassType.Scarab);
 
             Assert.IsTrue(record.HasHostTerms);
             Assert.IsTrue(record.HasPilotChoice);
             Assert.AreEqual(3, record.Intensity);
             Assert.AreEqual(3, record.DomainCount);
             CollectionAssert.AreEqual(new[] { Domains.Ruby, Domains.Ruby }, record.AIDomains);
+            Assert.AreEqual(AIDifficulty.Hard, record.AIDifficulty);
             Assert.AreEqual(Domains.Gold, record.Domain);
             Assert.AreEqual(VesselClassType.Scarab, record.Vessel);
         }
@@ -136,13 +137,16 @@ namespace CosmicShore.Tests
             // A guest readying on a card this machine once hosted must not clobber the host
             // terms it last launched with.
             var hosted = LaunchPreference.Empty(GameModes.ScarabScramble)
-                .WithHostTerms(3, 3, new List<Domains> { Domains.Ruby }, Domains.Jade, VesselClassType.Scarab);
+                .WithHostTerms(3, 3, new List<Domains> { Domains.Ruby }, AIDifficulty.Easy,
+                               Domains.Jade, VesselClassType.Scarab);
             var asGuest = hosted.WithPilotChoice(Domains.Ruby, VesselClassType.Scarab);
 
             Assert.IsTrue(asGuest.HasHostTerms);
             Assert.AreEqual(3, asGuest.Intensity);
             Assert.AreEqual(3, asGuest.DomainCount);
             CollectionAssert.AreEqual(new[] { Domains.Ruby }, asGuest.AIDomains);
+            Assert.AreEqual(AIDifficulty.Easy, asGuest.AIDifficulty,
+                "the AI difficulty is a HOST term - a guest's ready press must not clobber it");
             Assert.AreEqual(Domains.Ruby, asGuest.Domain);
         }
 
@@ -150,7 +154,8 @@ namespace CosmicShore.Tests
         public void Copies_DoNotShareTheirPlacementList()
         {
             var a = LaunchPreference.Empty(GameModes.Rampage)
-                .WithHostTerms(1, 3, new List<Domains> { Domains.Ruby }, Domains.Jade, VesselClassType.Dolphin);
+                .WithHostTerms(1, 3, new List<Domains> { Domains.Ruby }, AIDifficulty.Medium,
+                               Domains.Jade, VesselClassType.Dolphin);
             var b = a.WithPilotChoice(Domains.Gold, VesselClassType.Dolphin);
             b.AIDomains.Add(Domains.Gold);
 
@@ -165,6 +170,29 @@ namespace CosmicShore.Tests
             Assert.IsFalse(empty.HasPilotChoice);
             Assert.AreEqual(Domains.Blue, empty.Domain);
             Assert.AreEqual(VesselClassType.Random, empty.Vessel);
+        }
+
+        // ── AI difficulty ────────────────────────────────────────────────────
+
+        [Test]
+        public void AIDifficulty_NeverWritten_OpensOnMedium()
+        {
+            // An empty record, and every record saved before difficulty existed, reads the field
+            // as 0 - which is not a difficulty, and must open the card on the default.
+            var empty = LaunchPreference.Empty(GameModes.SkimRace);
+            Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(empty.AIDifficulty));
+        }
+
+        [Test]
+        public void AIDifficulty_Remembered_IsRestored()
+        {
+            var launched = LaunchPreference.Empty(GameModes.SkimRace)
+                .WithHostTerms(1, 1, new List<Domains>(), AIDifficulty.Hard, Domains.Jade, VesselClassType.Squirrel);
+
+            // The toughest AI at intensity 1 is a legal, remembered setup - difficulty is not
+            // derived from intensity.
+            Assert.AreEqual(1, launched.Intensity);
+            Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Resolve(launched.AIDifficulty));
         }
     }
 }

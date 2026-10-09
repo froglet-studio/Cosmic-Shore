@@ -930,7 +930,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeLiberation` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -1436,7 +1436,7 @@ decision, made per profile.
 (still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
 hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
 the benchmark now runs a fuller average fauna population; re-baseline before reading it
-against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+against older numbers (`Docs/archive/PERFORMANCE_LOG_2026.md`).
 
 ### 16.2 Shielded mass is not food for any herbivore
 
@@ -3713,7 +3713,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
+**MinigameWildlifeLiberation** for a populated cell (both Wildlife Blitz scenes were deleted, 2026-09 and 2026-10).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
@@ -11459,4 +11459,35 @@ outer-sheet fragments the rider cannot bridge (largest component 83–99%).
 * **Unrelated, pre-existing:** `Tools/Build/author_flora_populations.py --check` exits 1 on `Tollway Anchor Flora
   Gyroid` (no recorded pre-conversion budget in `LATTICE_SOURCE_BUDGET`), identically on a clean `bleeding-edge`
   worktree (A/B'd at ship). Needs the number only that conversion's author has.
+---
+
+## 59. The diagnostic production hold — `freeze`, for a same-state A/B (Sep 2026)
+
+**What it is.** `Cell.DiagnosticProductionHold` — one static flag, raised and released only by the
+DiagnosticsHUD `freeze on | off` console command (`EcologyFreezeSwitch`), settable only in the Editor
+and Development builds. While it is up, no cell produces: `FloraGrowingEnabled` is false (so growth,
+planting, plant reproduction and the lattice colonies' population births stop, exactly as they do at
+Frenzy), `FaunaSpawningEnabled` is false, `IsFaunaAtCap` / `IsFloraAtCap` read full (the Microscene
+conveyor, `Fauna.TryReproduce`, the IntensityWise seeder), and the two producers that ask none of
+those — `RandomLifeSpawner`'s fauna seeder and `WormFauna.TickProduction` — check the flag directly.
+
+**Why it exists.** A performance A/B is only valid when the only difference between its two arms is
+the thing under test (`Docs/PERFORMANCE_OPTIMIZATION.md` §4.3). A growing world breaks that: the first
+spindle A/B compared 24,243 prisms against 49,116 because the Lattice cell had kept growing between
+the arms, and the result could not be separated from the growth.
+
+**Invariants (restated per the protocol).** It is **production gating**, which §0 already permits
+("not creating mass is allowed"), and the same class of gate as Frenzy — so it is not a carve-out.
+Nothing is removed, aged or culled; no timer runs; grazing, predation, starvation and vessel abilities
+keep working, so a held world can only LOSE mass. Continuity of existence is untouched (nothing
+appears or disappears because of it). Domain symmetry is untouched (it gates every domain alike and
+changes no spawn colour). The phase is not touched, so fauna aggression does not change. **Nothing
+catches up on release**: every producer already turns its cycle whether or not it produced (the
+lattice colony books, the worm colony's production stamp, the seeders), so `freeze off` resumes at the
+ordinary rate. Collider impact: none.
+
+**Its two fences.** It is released on any active-scene change, with a warning, so a hold set for one
+scenario can never freeze the next one. And it is not a lever: nothing in gameplay may raise it — a
+mode that wants less production tunes its spawn profile or its volume ladder, the way every shipped
+mode does. Explicit player acts are deliberately not gated (the Lifeform Matrix toy's releases).
 

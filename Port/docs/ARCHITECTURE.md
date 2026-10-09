@@ -231,23 +231,37 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 (`Networking/Wire/INetTransport.cs`) through `NetDriver.TransportFactory`, and reads its events
 in `EarlyUpdate`. The contract is reliable, ordered, whole frames; events come only through `Poll`
 on the main thread; peer 0 is the server; a failed connect reports `Disconnected`; a listen on a
-taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) is the first implementation and the
-default. An internet relay is the next one (C6, after gate G2). `NetTransportContractTests` runs
-the same checks against every implementation (TCP and the in-memory loopback the tests use), and
-`NetDriverTransportTests` drives the driver's handshake over both.
+taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) was the first implementation, and stays
+the engine's in-process default for tests; Froglet's UDP transport (`UdpTransport`: reliable-ordered
+fragments with selective acks and RTT-timed resends, plus an unreliable channel) is what every
+networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). Below it,
+an `IDatagramLink` decides where its datagrams go: straight to the peer (`DirectLink`), or through a
+relay speaking Unity Relay's protocol (`RelayLink`), which is how players behind home routers reach
+each other. Froglet's own relay server (`FrogletRelayServer`, `CosmicShore --relay-server`) speaks
+the same protocol and REST shape as UGS Relay (`MULTIPLAYER.md` §6.7). `NetTransportContractTests`
+runs the same checks against every implementation (TCP, UDP, UDP through the relay, the in-memory
+loopback the tests use, and each behind the network simulator), and `NetDriverTransportTests`
+drives the driver's handshake.
 
-**`DirectoryMultiplayerService`** stands in for the UGS Lobby + Relay. It keeps one JSON file per
+**`DirectoryMultiplayerService`** stands in for the UGS Lobby. It keeps one JSON file per
 session in a shared folder: roster, per-player properties (the game's invite channel), heartbeat,
-host endpoint.
+and the host's endpoint, or its relay join code when `COSMIC_SHORE_RELAY` names a relay (the host
+allocates before it starts listening; a joiner joins by code).
 
 **Services** are local stand-ins:
-- Authentication: an anonymous id persisted per install.
+- Authentication: an anonymous id persisted per install. Separately, with `COSMIC_SHORE_RELAY=ugs`
+  the relay signs in to UGS itself (`UgsAuthentication`, REST, one UGS player per save profile) to
+  get the bearer token UGS Relay needs (`MULTIPLAYER.md` §6.8).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
 
 **Turning it off:** `COSMIC_SHORE_NET=off` keeps everything in one process. A second player on one
-machine runs with `COSMIC_SHORE_PROFILE=b`.
+machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
+`--realtime`, which keeps its game clock on the wall clock (`RealtimePacer`).
+
+**The plan, the backends and the test tools** (simulator, stats, faults, the Launcher's
+MULTIPLAYER panel, the UDP transport) are in `MULTIPLAYER.md`.
 
 ---
 

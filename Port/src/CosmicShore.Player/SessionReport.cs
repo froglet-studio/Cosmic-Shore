@@ -363,6 +363,7 @@ namespace CosmicShore.Player
                     modes = s_scenes.Select(x => x.scene).Where(n => n.StartsWith("Minigame", StringComparison.Ordinal)).Distinct().ToList(),
                     vessels = Vessels(),
                     audio = Audio(),
+                    net = CosmicShore.Engine.Networking.NetStats.Any ? CosmicShore.Engine.Networking.NetStats.Summary() : null,
                     render = RenderStats(),
                     counts = new { errors = Log?.Errors ?? 0, exceptions = Log?.Exceptions ?? 0, warnings = Log?.Warnings ?? 0 },
                     exceptions = Problems("Exception"),

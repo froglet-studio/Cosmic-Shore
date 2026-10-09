@@ -41,14 +41,21 @@ namespace CosmicShore.Gameplay
         [SerializeField] private ToastChannel bounceToastChannel;
 
         [Header("Timing")]
+        // The initializers below equal what PartyServices.prefab SERIALIZES (5 / 10 / 30), so a reader
+        // of this file is not misled: a serialized field's initializer is not its shipped value.
+        // Bootstrap.unity additionally overrides connectionTimeoutSeconds to 30 on its PartyServices
+        // instance, so the live connect wait is 30 s there. Nest rule (REVIEW_INVITE_AND_RESILIENCE.md
+        // §5.5): UTP's connect window (MaxConnectAttempts × ConnectTimeoutMS = 10 × 1 s on
+        // NetworkManager.prefab) must end BEFORE this wait does, and WaitForClientConnectionAsync now
+        // returns the moment the transport gives up rather than sitting out the remainder.
         [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
-        [SerializeField] private float shutdownTimeoutSeconds = 2f;
+        [SerializeField] private float shutdownTimeoutSeconds = 5f;
 
-        [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
-        [SerializeField] private float connectionTimeoutSeconds = 8f;
+        [Tooltip("Max time (seconds) to wait for client connection after joining party session. Must exceed UTP's connect window (MaxConnectAttempts × ConnectTimeoutMS on NetworkManager.prefab) so the transport gives up first.")]
+        [SerializeField] private float connectionTimeoutSeconds = 10f;
 
         [Tooltip("Max seconds to wait for the local player's vessel to initialise (OnClientReady fires) after joining. On timeout the client bounces back to its own solo menu.")]
-        [SerializeField] private float joinReadyTimeoutSeconds = 10f;
+        [SerializeField] private float joinReadyTimeoutSeconds = 30f;
 
         [Inject] private GameDataSO gameData;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
@@ -125,6 +132,15 @@ namespace CosmicShore.Gameplay
             if (_transitioning)
             {
                 CSDebug.LogWarning("[PartyInviteController] Already transitioning - ignoring duplicate accept.");
+                return;
+            }
+            // Pre-flight BEFORE any teardown: a stale invite (sender left, party filled, session
+            // recreated) is resolved with a toast while our own session and menu are still intact,
+            // instead of after the shutdown + join failure + scene-reload bounce.
+            if (!PreflightOrToast(invite.HostPlayerId, invite.PartySessionId, asSpectator: false))
+            {
+                if (HostConnectionService.Instance != null)
+                    await HostConnectionService.Instance.DeclineInviteAsync(); // clears the stale row
                 return;
             }
 
@@ -241,6 +257,14 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Accept flow cancelled.");
             }
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            {
+                // The party filled between our pre-flight and the join (two players pressing Join
+                // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
+                // An expected refusal, not a fault - back to our own menu with the reason.
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync("That party is full.");
+            }
             catch (Exception e)
             {
                 // Timeout / cancel continuations can land on the thread pool.
@@ -275,12 +299,16 @@ namespace CosmicShore.Gameplay
         /// hardened path), differing only in the session join it performs
         /// (<see cref="HostConnectionService.JoinPartyDirectAsync"/>).
         /// </summary>
-        public UniTask JoinPartyAsync(PartyPlayerData target) =>
-            RunClientJoinAsync(
+        public UniTask JoinPartyAsync(PartyPlayerData target)
+        {
+            if (!PreflightOrToast(target.PlayerId, target.PartySessionId, asSpectator: false))
+                return UniTask.CompletedTask;
+            return RunClientJoinAsync(
                 $"direct-join -> {target.DisplayName}",
                 expectLocalVessel: true,
                 joinSession: () => HostConnectionService.Instance.JoinPartyDirectAsync(target),
                 afterConnected: null);
+        }
 
         /// <summary>
         /// The online row's SPECTATE button: connect to the match <paramref name="target"/> is
@@ -291,8 +319,11 @@ namespace CosmicShore.Gameplay
         /// and the exit. The success gate is "watching a vessel", never OnClientReady - a
         /// spectator has no local vessel, so that event never fires for it.
         /// </summary>
-        public UniTask SpectateAsync(PartyPlayerData target) =>
-            RunClientJoinAsync(
+        public UniTask SpectateAsync(PartyPlayerData target)
+        {
+            if (!PreflightOrToast(target.PlayerId, target.PartySessionId, asSpectator: true))
+                return UniTask.CompletedTask;
+            return RunClientJoinAsync(
                 $"spectate -> {target.DisplayName}",
                 expectLocalVessel: false,
                 joinSession: () =>
@@ -305,6 +336,24 @@ namespace CosmicShore.Gameplay
                     var controller = SpectatorController.Begin(target, gameData, _sceneTransitionManager, _sceneNames);
                     return controller.WaitUntilWatchingAsync(spectateReadyTimeoutSeconds, ct);
                 });
+        }
+
+        /// <summary>
+        /// The zero-request pre-flight shared by Accept, Join and Spectate
+        /// (<see cref="HostConnectionService.TryValidateJoinTarget"/>). A refusal shows the reason
+        /// on the live menu's toast and returns false with NOTHING torn down. No service is
+        /// treated as a refusal - the flow then surfaces the real error itself.
+        /// </summary>
+        private bool PreflightOrToast(string targetPlayerId, string sessionId, bool asSpectator)
+        {
+            var hcs = HostConnectionService.Instance;
+            if (hcs == null) return true;
+            if (hcs.TryValidateJoinTarget(targetPlayerId, sessionId, asSpectator, out var refusal)) return true;
+            CSDebug.LogWarning($"[PartyInviteController] Refused before teardown: {refusal}");
+            NetSessionRecorder.Mark("refused", refusal);
+            bounceToastChannel?.ShowPrefix(refusal);
+            return false;
+        }
 
         /// <summary>
         /// Shared body of the two no-invite joins. Mirrors <see cref="AcceptInviteAsync"/> step
@@ -393,6 +442,14 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException)
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] {label} cancelled.");
+            }
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            {
+                // The party filled between our pre-flight and the join (two players pressing Join
+                // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
+                // An expected refusal, not a fault - back to our own menu with the reason.
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync("That party is full.");
             }
             catch (Exception e)
             {
@@ -603,6 +660,7 @@ namespace CosmicShore.Gameplay
         private async UniTask BounceToSoloMenuAsync(string toastMessage)
         {
             CSDebug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
+            NetSessionRecorder.Mark("bounce", toastMessage);
             await RecoverFromFailedTransitionAsync();
             // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
             // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by

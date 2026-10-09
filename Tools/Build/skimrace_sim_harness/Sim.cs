@@ -18,6 +18,7 @@
 // Usage: sim <track.json> <mode> [args]
 //   eval  <intensity> <seeds> [key=value ...]          evaluate one config, print stats
 //   tune  <intensity> <seeds> <iters> [key=value ...]  cross-entropy search, print best config
+//   fingerprint                                         each track's map fingerprint (SkimRaceTrackFingerprint)
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -107,6 +108,18 @@ class Physics
     public int RingGeometry = 1;
     public int TrackHits = 1, MassHits = 1;
     public int Seats = 1;           // AI seats racing at once (each its own crystal stream)
+    // TEAM RACE (Docs/SKIM_RACE_AI.md section 13). Team=1 puts every seat on ONE domain, as the game
+    // does for teammates: one crystal per seat, each walking the anchors on its own
+    // (CrystalManager.CalculateNewSpawnPos), any teammate may take any of them, and the team's SUM
+    // races the target (SkimRaceScoringRuleSO.IsObjectiveReached; the pilot observes the sum).
+    // TeamRule picks each seat's crystal: 1 = the game's team plan (SkimRaceTeamPlan): the shipped
+    // SkimRaceTeamAssignment gives every seat a different crystal, the least total distance, kept until
+    // another plan is SplitHyst cheaper (SkimRaceTargetTracker.Hysteresis in the game); 0 = the rule
+    // before team play, every seat on the nearest crystal (SkimRaceTargetTracker.SelectIndex) - for A/B.
+    // A lone seat flies the nearest crystal under either rule, as a lone AI does in the game.
+    public int Team = 0;
+    public int TeamRule = 1;
+    public float SplitHyst = 0.85f;
     public int TargetHintFix = 1;   // 0 = project the crystal from the VESSEL's hint (the pre-fix behaviour), for A/B only
     public int LineDiag = 0;
     public float ExtraTime = 60f;   // a race is cut at limit + this
@@ -127,6 +140,14 @@ class Physics
     public Vector3 SpawnFwd = new(0, 0, 1);
     public float Dt = 1f / 60f;
     public float DtJitter = 0f;          // frame-time noise as a fraction of Dt (editor frames are uneven)
+    // The lobby AI difficulty's deliberate mistakes (SkimRaceHandicap, Docs/SKIM_RACE_AI.md section 10):
+    // seconds before a new crystal is noticed, and the chance per crystal of misjudging its pass.
+    // Both 0 = no handicap (Hard). The `handicap` mode searches HcMistake for a target time.
+    public float HcReaction = 0f;
+    public float HcMistake = 0f;
+
+    /// <summary>A copy to vary one setting on while other races read this one (parallel evaluation).</summary>
+    public Physics Clone() => (Physics)MemberwiseClone();
 }
 
 class TrackPrisms
@@ -247,6 +268,7 @@ class RaceResult
     public int Required;
     public int Recoveries;
     public int HullHits;
+    public int Mistakes;      // deliberate misjudged crystals, all seats (SkimRaceHandicap)
     public float MeanSpeed;
 }
 
@@ -297,7 +319,11 @@ sealed class Obstacles
 static class Race
 {
     // Wall-clock cost of the shipped decision core (the sim's own dt never sees it; the game's frame does).
-    public static long DecideTicks, DecideCalls;
+    public static long DecideTicks, DecideCalls, DecideBytes;
+    // eval only (races run one at a time): every seat's decision time added up per frame - what one
+    // frame of the game pays for all its AI together. Off in the parallel tuners.
+    public static bool RecordFrames;
+    public static readonly List<float> FrameMs = new();
     // Unity's Random.onUnitSphere stand-in (the shape matters, not the stream).
     static Vector3 OnUnitSphere(System.Random r)
     {
@@ -318,6 +344,7 @@ static class Race
         public float Speed, Boost = 1f; public bool Boosting;
         public float SlowUntil = -1f;
         public int Anchor; public Vector3 Crystal; public int Collected;
+        public int TeamTarget = -1; public Vector3 TeamTargetAt;   // team race: the crystal flown at, and where it was
         public readonly HashSet<int> Inside = new(), Hull = new(), ObsInside = new(), ObsHull = new();
         public int Hint = -1, TargetHint = -1, HullHits;
         public float SpeedSum, BoostSum; public int Frames, FarFrames;
@@ -348,6 +375,14 @@ static class Race
         return r;
     }
 
+    /// <summary>The seat's difficulty handicap (null = Hard), seeded per race and seat like the game
+    /// seeds per bind: every race errs differently, and a seed always errs the same way.</summary>
+    static SkimRaceHandicap HandicapFor(Physics ph, int seed, int seat)
+    {
+        var level = new SkimRaceHandicapLevel(ph.HcReaction, ph.HcMistake);
+        return level.IsNone ? null : new SkimRaceHandicap(level, unchecked(seed * 7919 + seat * 104729 + 17));
+    }
+
     public static RaceResult Run(TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg,
         Physics ph, int seed, float limit, bool trace = false)
     {
@@ -359,7 +394,7 @@ static class Race
         var agents = new List<Agent>();
         for (int k = 0; k < Math.Max(1, ph.Seats); k++)
         {
-            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k }, Rng = new System.Random(seed * 31 + k * 977) };
+            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k, Handicap = HandicapFor(ph, seed, k) }, Rng = new System.Random(seed * 31 + k * 977) };
             ag.Driver.Reset();
             ag.Pos = ph.SpawnPos + Vector3.up * (10f * k);
             ag.Rot = ag.Acc = Quaternion.LookRotation(ph.SpawnFwd, Vector3.up);
@@ -367,6 +402,38 @@ static class Race
             agents.Add(ag);
         }
         float t = 0f, maxT = limit + ph.ExtraTime;
+
+        // Team race: the team's crystals (one per seat, all starting round anchor 0 like the game's
+        // first batch) and the team's summed count. Unused when Team=0.
+        var teamCrystals = new List<Vector3>();
+        var teamAnchor = new List<int>();
+        int teamCollected = 0;
+        var teamRng = new System.Random(seed * 131 + 7);
+        var candidates = new List<SkimRaceTargetTracker.Candidate>();
+        if (ph.Team != 0)
+            for (int k = 0; k < agents.Count; k++)
+            {
+                teamCrystals.Add(def.Anchors[0] + OnUnitSphere(teamRng) * ph.Jitter);
+                teamAnchor.Add(0);
+            }
+
+        // TeamRule 1: the game's team plan - once a frame, every seat a different crystal
+        // (SkimRaceTeamAssignment, the shipped code), the last plan kept until another is SplitHyst cheaper.
+        var teamPilots = new List<Vector3>();
+        var teamPrevious = new List<int>();
+        var teamResult = new int[Math.Max(1, ph.Seats)];
+        void PlanTeam()
+        {
+            teamPilots.Clear();
+            teamPrevious.Clear();
+            foreach (var a in agents)
+            {
+                teamPilots.Add(a.Pos);
+                teamPrevious.Add(a.TeamTarget);
+            }
+            SkimRaceTeamAssignment.Assign(teamPilots, teamCrystals, teamPrevious, teamResult, ph.SplitHyst);
+            for (int k = 0; k < agents.Count; k++) agents[k].TeamTarget = teamResult[k];
+        }
 
         float Mult(Agent ag, float now)
         {
@@ -379,6 +446,19 @@ static class Race
             }
             return m;
         }
+        // SquirrelVesselExplosionByCrystalEffect -> AOEShieldedRingSpawner: 8 prisms, radius 8.2,
+        // 8 u ahead of the hull that took the crystal; colliders live from frame 0 for everyone.
+        void AddPickupRing(Agent ag, float now)
+        {
+            Vector3 rc = ag.Pos + (ag.Rot * Vector3.forward) * 8f;
+            for (int k = 0; k < 8; k++)
+            {
+                float ang = k * Mathf.PI * 2f / 8f;
+                Vector3 radial = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
+                obs.Add(rc + ag.Rot * (radial * 8.2f), ag.Rot * Quaternion.LookRotation(Vector3.forward, radial),
+                    new Vector3(0.9f, 0.9f, 3.75f), now);
+            }
+        }
         void Slow(Agent ag, float volume, float now)
         {
             if (ph.StackedSlow != 0) ag.Mods.Add((1f - Math.Min(volume * 0.1f, 0.5f), now));
@@ -388,10 +468,31 @@ static class Race
         while (t < maxT && agents.Exists(x => !x.Done))
         {
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
+            long frameTicks = 0;
+            int frameDecides = 0;
+            if (ph.Team != 0 && ph.TeamRule == 1 && agents.Count >= 2) PlanTeam();
             foreach (var ag in agents)
             {
                 if (ag.Done) continue;
                 var driver = ag.Driver;
+                if (ph.Team != 0)
+                {
+                    int pick = ag.TeamTarget;
+                    if (ph.TeamRule == 0 || agents.Count < 2 || pick < 0)
+                    {
+                        // The nearest crystal (SkimRaceTargetTracker.Select): the rule before team play, and
+                        // what a lone AI - or one the plan has nothing for - still flies.
+                        candidates.Clear();
+                        foreach (var c in teamCrystals)
+                            candidates.Add(new SkimRaceTargetTracker.Candidate { Alive = true, Domain = CosmicShore.Data.Domains.Jade, Position = c });
+                        pick = SkimRaceTargetTracker.SelectIndex(candidates, CosmicShore.Data.Domains.Jade, ag.Pos, ag.TeamTarget);
+                    }
+                    // A new crystal, or this one moved (a teammate took it): the target hint searches afresh.
+                    if (pick != ag.TeamTarget || (teamCrystals[pick] - ag.TeamTargetAt).sqrMagnitude > 1f) ag.TargetHint = -1;
+                    ag.TeamTarget = pick;
+                    ag.TeamTargetAt = ag.Crystal = teamCrystals[pick];
+                }
+
                 // ── observe ──
                 Vector3 fwd = ag.Rot * Vector3.forward, up = ag.Rot * Vector3.up, right = ag.Rot * Vector3.right;
                 var o = new SkimRaceObservation
@@ -402,7 +503,8 @@ static class Race
                     Speed = ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f), Velocity = fwd * (ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f)),
                     BoostMultiplier = ag.Boosting ? ag.Boost : 1f, MaxBoost = ph.MaxBoost,
                     TurnRateDegrees = ph.TurnRate, FollowRate = ph.Follow, ThrottleScaler = ph.ThrottleScaler,
-                    RaceTime = t, Collected = ag.Collected, Remaining = required - ag.Collected,
+                    RaceTime = t, Collected = ph.Team != 0 ? teamCollected : ag.Collected,
+                    Remaining = required - (ph.Team != 0 ? teamCollected : ag.Collected),
                     HasTarget = true, TargetPosition = ag.Crystal, ToTarget = ag.Crystal - ag.Pos,
                 };
                 o.TargetDistance = o.ToTarget.magnitude;
@@ -434,9 +536,13 @@ static class Race
                         driver.Obstacles.Add(new SkimRaceObstacle { Center = it.c, Rotation = it.r, Half = it.half });
                     }
                 }
+                long b0 = GC.GetAllocatedBytesForCurrentThread();
                 long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 var a = driver.Decide(o, course, t, dt);
-                DecideTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; DecideCalls++;
+                long spent = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+                DecideTicks += spent; DecideCalls++;
+                frameTicks += spent; frameDecides++;
+                DecideBytes += GC.GetAllocatedBytesForCurrentThread() - b0;
                 if (driver.LastTrackError >= 0f && ag.Frames % 4 == 0) ag.TrackErrors.Add(driver.LastTrackError);
                 if (ph.LineDiag != 0 && ag.Frames % 20 == 0)
                 {
@@ -557,23 +663,36 @@ static class Race
                 ag.Hull.IntersectWith(hnow);
 
                 // ── crystal ──
-                if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
+                if (ph.Team != 0)
+                {
+                    // Any of the team's crystals in reach is taken (TeamCrystalImpactor admits any crystal of
+                    // the vessel's domain); it moves to ITS next anchor; the team's sum finishes everyone.
+                    for (int j = 0; j < teamCrystals.Count && !ag.Done; j++)
+                    {
+                        if ((teamCrystals[j] - ag.Pos).sqrMagnitude > ph.CaptureReach * ph.CaptureReach) continue;
+                        teamCollected++;
+                        ag.Collected++;
+                        ag.LastPickupAt = tn;
+                        if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
+                        else
+                        {
+                            ag.Boosting = true;
+                            ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
+                        }
+                        if (teamCollected >= required)
+                        {
+                            foreach (var x in agents) if (!x.Done) { x.Done = true; x.DoneAt = tn; }
+                            break;
+                        }
+                        teamAnchor[j] = (teamAnchor[j] + 1) % def.Anchors.Count;
+                        teamCrystals[j] = def.Anchors[teamAnchor[j]] + OnUnitSphere(teamRng) * ph.Jitter;
+                    }
+                }
+                else if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
                 {
                     ag.Collected++;
                     ag.LastPickupAt = tn;
-                    if (ph.RingGeometry != 0)
-                    {
-                        // SquirrelVesselExplosionByCrystalEffect -> AOEShieldedRingSpawner: 8 prisms,
-                        // radius 8.2, 8 u ahead; colliders live from frame 0 for everyone.
-                        Vector3 rc = ag.Pos + (ag.Rot * Vector3.forward) * 8f;
-                        for (int k = 0; k < 8; k++)
-                        {
-                            float ang = k * Mathf.PI * 2f / 8f;
-                            Vector3 radial = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
-                            obs.Add(rc + ag.Rot * (radial * 8.2f), ag.Rot * Quaternion.LookRotation(Vector3.forward, radial),
-                                new Vector3(0.9f, 0.9f, 3.75f), tn);
-                        }
-                    }
+                    if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
                     else
                     {
                         ag.Boosting = true;
@@ -600,6 +719,7 @@ static class Race
                         driver.LastDiagnostics.CrystalPull ? 1 : 0, ag.Id));
                 }
             }
+            if (RecordFrames && frameDecides > 0) FrameMs.Add((float)(1000.0 * frameTicks / System.Diagnostics.Stopwatch.Frequency));
             t += dt;
         }
 
@@ -611,8 +731,9 @@ static class Race
         return new RaceResult
         {
             Finished = allDone, Time = allDone ? agents.Max(x => x.DoneAt) : t,
-            Collected = agents.Min(x => x.Collected), Required = required,
+            Collected = ph.Team != 0 ? teamCollected : agents.Min(x => x.Collected), Required = required,
             Recoveries = agents.Sum(x => x.Driver.Recoveries), HullHits = agents.Sum(x => x.HullHits),
+            Mistakes = agents.Sum(x => x.Driver.Handicap != null ? x.Driver.Handicap.Mistakes : 0),
             MeanSpeed = worst.SpeedSum / frames, FarFrac = worst.FarFrames / (float)frames, MeanBoost = worst.BoostSum / frames,
             AgentTimes = agents.Select(x => x.Done ? x.DoneAt : 999f).ToArray(),
             PhaseTime = Sum(agents.Select(x => x.PhaseTime)), PhaseBoostT = Sum(agents.Select(x => x.PhaseBoostT)),
@@ -793,17 +914,260 @@ static class Program
     static string Describe(SkimRaceAIConfigSO cfg) =>
         string.Join(" ", Tunables.Select(k => k + "=" + GetNum(cfg, k).ToString("0.###", CultureInfo.InvariantCulture)));
 
+    // The benchmark limit per intensity: a COPY of SkimRaceRaceRecorder.DefaultLimitSeconds (keep the
+    // two in step). I2 was re-baselined to 80 s by product decision; `limit=` overrides.
+    static float DefaultLimit(int intensity) => intensity == 2 ? 80f : 70f;
+
+    /// <summary>
+    /// The race flown ALONG the ribbon at the Squirrel's top speed (300 u/s): each anchor to the next,
+    /// measured forward along the course, every lap. A straight line between anchors is not the race -
+    /// on a winding track it is half the distance the pilot actually flies. Dividing by this puts a
+    /// short track and a long one on one scale.
+    /// </summary>
+    static float IdealSeconds(TrackDef d, SkimRaceCourse course)
+    {
+        float loop = 0f;
+        for (int i = 0; i < d.Anchors.Count; i++)
+        {
+            int h0 = -1, h1 = -1;
+            float s0 = course.Project(d.Anchors[i], ref h0, out _, out _);
+            float s1 = course.Project(d.Anchors[(i + 1) % d.Anchors.Count], ref h1, out _, out _);
+            loop += course.Ahead(s0, s1);
+        }
+        return Math.Max(1f, loop * Math.Max(1, d.Laps) / 300f);
+    }
+
+    /// <summary>
+    /// <c>tuneall &lt;i,j,...&gt; &lt;seeds&gt; &lt;iters&gt; [sigma=s] [final=n] [Field=v ...] [ph.Field=v ...]</c>: ONE policy
+    /// tuned on several tracks at once. This is the GENERAL policy - the one every intensity without its
+    /// own tuning file flies (<c>SkimRaceAIConfigSO.LoadFor</c> falls back to it) - so it is judged on
+    /// finishing EVERY track, not on being the fastest on one. Same cross-entropy loop as <c>tune</c>.
+    ///
+    /// <para>Scoring, per track, in units of that track's ideal time (<see cref="IdealSeconds"/>): a
+    /// finished race is its time; a race that does not finish is the time it was cut at plus twice the
+    /// fraction of crystals it missed, so a DNF always scores worse than any finish. Each track adds its
+    /// mean plus half its worst race, and the tracks are averaged. Every track is raced to a generous
+    /// limit (three times its ideal time) because finishing is the thing being tuned for.</para>
+    ///
+    /// <para><c>set=winner</c> searches the tracking-MPC set instead of the pursuit set (as in <c>tune</c>).
+    /// <c>final=0</c> skips the fresh-seed check (<c>skimrace_retune.py</c> races its own, against the general policy).
+    /// <c>only=stated</c> narrows the search to the fields the command line states AND whose stated value
+    /// lies inside the search range: a value outside it (0 for a control whose range starts above 0) is a
+    /// control the policy keeps OFF, and searching it would switch it on. <c>Tools/Build/skimrace_retune.py</c>
+    /// uses it so a retune re-fits the numbers a policy already uses and never changes which controls it uses.</para>
+    /// </summary>
+    static int TuneAll(Dictionary<int, TrackDef> tracks, string[] args)
+    {
+        var ints = args[2].Split(',').Select(s => int.Parse(s, CultureInfo.InvariantCulture)).ToArray();
+        int seeds = int.Parse(args[3]);
+        int iters = int.Parse(args[4]);
+        float sigmaScale = 0.25f;
+        int finalSeeds = 20;
+        bool onlyStated = false;
+        Tunables = PursuitTunables;
+        foreach (var a in args.Skip(5))
+        {
+            if (a.StartsWith("sigma=")) sigmaScale = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+            if (a.StartsWith("final=")) finalSeeds = int.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+            if (a == "set=winner") Tunables = WinnerTunables;
+            if (a == "only=stated") onlyStated = true;
+        }
+        var policyArgs = args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("final=") && !a.StartsWith("set=") && !a.StartsWith("only=")).ToArray();
+        var (baseCfg, ph) = Parse(policyArgs);
+        if (onlyStated)
+        {
+            var stated = new HashSet<string>(policyArgs.Where(a => a.Contains('=') && !a.StartsWith("ph.")).Select(a => a.Substring(0, a.IndexOf('='))));
+            Tunables = Tunables.Where(k => stated.Contains(k) && GetNum(baseCfg, k) >= Ranges[k].lo && GetNum(baseCfg, k) <= Ranges[k].hi).ToArray();
+            Console.WriteLine($"  tuning {Tunables.Length} stated fields: {string.Join(" ", Tunables)}");
+        }
+
+        var sets = ints.Select(i =>
+        {
+            var d = tracks[i];
+            var pr = new TrackPrisms(d);
+            var co = new SkimRaceCourse(pr.Points, pr.Normals, pr.Rotations, pr.ShellHalf);
+            float ideal = IdealSeconds(d, co);
+            return (i, d, pr, co, ideal, lim: Math.Max(DefaultLimit(i), 3f * ideal));
+        }).ToArray();
+        foreach (var s in sets)
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "  I{0}: ideal {1:F1} s, raced to {2:F0} s (+{3:F0} s cut)", s.i, s.ideal, s.lim, ph.ExtraTime));
+
+        float Score(SkimRaceAIConfigSO cfg, int seedBase)
+        {
+            float total = 0f;
+            foreach (var s in sets)
+            {
+                var e = Evaluate(s.d, s.pr, s.co, cfg, ph, seeds, s.lim, seedBase);
+                float cut = s.lim + ph.ExtraTime, sum = 0f, worst = 0f;
+                foreach (var r in e.runs)
+                {
+                    float v = r.Finished
+                        ? r.Time / s.ideal
+                        : cut / s.ideal + 2f * (r.Required - r.Collected) / Math.Max(1, r.Required);
+                    sum += v;
+                    worst = Math.Max(worst, v);
+                }
+                total += sum / Math.Max(1, e.runs.Count) + 0.5f * worst;
+            }
+            return total / sets.Length;
+        }
+
+        var rng = new System.Random(7);
+        int dim = Tunables.Length;
+        var mu = Tunables.Select(k => GetNum(baseCfg, k)).ToArray();
+        var sigma = Tunables.Select(k => (Ranges[k].hi - Ranges[k].lo) * sigmaScale).ToArray();
+        for (int d = 0; d < dim; d++) mu[d] = Mathf.Clamp(mu[d], Ranges[Tunables[d]].lo, Ranges[Tunables[d]].hi);
+        float bestScore = float.MaxValue; float[] best = (float[])mu.Clone();
+        int pop = 24, elite = 6;
+        for (int it = 0; it < iters; it++)
+        {
+            var xs = new List<float[]>();
+            for (int p = 0; p < pop; p++)
+            {
+                var x = new float[dim];
+                for (int d = 0; d < dim; d++)
+                {
+                    double u1 = 1 - rng.NextDouble(), u2 = rng.NextDouble();
+                    float g = (float)(Math.Sqrt(-2 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2));
+                    x[d] = Mathf.Clamp(mu[d] + g * sigma[d], Ranges[Tunables[d]].lo, Ranges[Tunables[d]].hi);
+                }
+                if (p == 0) x = (float[])best.Clone();
+                xs.Add(x);
+            }
+            var scores = new float[pop];
+            int iterSeed = 1000 + it * 7919;
+            System.Threading.Tasks.Parallel.For(0, pop, p =>
+            {
+                var cfg = CloneConfig(baseCfg);
+                for (int d = 0; d < dim; d++) SetNum(cfg, Tunables[d], xs[p][d]);
+                scores[p] = Score(cfg, iterSeed);
+            });
+            var samples = new List<(float score, float[] x)>();
+            for (int p = 0; p < pop; p++) samples.Add((scores[p], xs[p]));
+            samples.Sort((a, b) => a.score.CompareTo(b.score));
+            if (samples[0].score < bestScore) { bestScore = samples[0].score; best = (float[])samples[0].x.Clone(); }
+            for (int d = 0; d < dim; d++)
+            {
+                float m = 0; for (int e = 0; e < elite; e++) m += samples[e].x[d]; m /= elite;
+                float v = 0; for (int e = 0; e < elite; e++) v += (samples[e].x[d] - m) * (samples[e].x[d] - m); v /= elite;
+                mu[d] = m; sigma[d] = Math.Max((float)Math.Sqrt(v), (Ranges[Tunables[d]].hi - Ranges[Tunables[d]].lo) * 0.02f);
+            }
+            var bc = CloneConfig(baseCfg);
+            for (int d = 0; d < dim; d++) SetNum(bc, Tunables[d], best[d]);
+            Console.WriteLine($"iter {it} gen-best={samples[0].score:F3} best={bestScore:F3} :: {Describe(bc)}");
+        }
+
+        var fc = CloneConfig(baseCfg);
+        for (int d = 0; d < dim; d++) SetNum(fc, Tunables[d], best[d]);
+        foreach (var s in finalSeeds > 0 ? sets : sets.Take(0)) // final=0: the caller runs its own check
+        {
+            var fe = Evaluate(s.d, s.pr, s.co, fc, ph, finalSeeds, s.lim, 99000);
+            var w = fe.runs.Select(r => r.AgentTimes.Min()).OrderBy(x => x).ToList();
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "FINAL I{0} ({1} fresh seeds): finished {2}/{1}, median {3:F1} s, worst {4:F1} s, winner median {5:F1} s",
+                s.i, finalSeeds, fe.fin, fe.median, fe.worst, w[w.Count / 2]));
+        }
+        Console.WriteLine("BEST " + Describe(fc));
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>handicap &lt;intensity&gt; &lt;seeds&gt; &lt;targetSeconds&gt; [ph.HcReaction=r] [hi=h] [steps=n] [Field=v ...] [ph.Field=v ...]</c>:
+    /// the lobby difficulty's mistake chance (<c>ph.HcMistake</c>) at which an AI seat's MEDIAN finish
+    /// time is the target, at the given reaction time. Bisection over 0..hi (default 1; a smaller bound
+    /// skips the slow races at a high chance - each misjudged crystal costs ~10 s) on the same seeds every step
+    /// (common random numbers, so a step's answer differs from the last only by the chance), then a check
+    /// on fresh seeds. Every seat counts - a match is judged by how long each AI takes, not by the
+    /// fastest - and races run to 2.5x the target so a slow seat is measured, not cut.
+    /// </summary>
+    static int TuneHandicap(Dictionary<int, TrackDef> tracks, string[] args)
+    {
+        int intensity = int.Parse(args[2]);
+        int seeds = int.Parse(args[3]);
+        float target = float.Parse(args[4], CultureInfo.InvariantCulture);
+        int steps = 8;
+        float upper = 1f;
+        foreach (var a in args.Skip(5))
+        {
+            if (a.StartsWith("steps=")) steps = int.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+            if (a.StartsWith("hi=")) upper = Mathf.Clamp01(float.Parse(a.Substring(3), CultureInfo.InvariantCulture));
+        }
+        var (cfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("steps=") && !a.StartsWith("hi=")));
+        var def = tracks[intensity];
+        var prisms = new TrackPrisms(def);
+        var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
+        float lim = Math.Max(DefaultLimit(intensity), 2.5f * target);
+
+        (float median, float p10, float p90, int fin, int total, float mistakes) Measure(float chance, int seedBase, int n)
+        {
+            var local = ph.Clone();
+            local.HcMistake = chance;
+            var runs = new RaceResult[n];
+            System.Threading.Tasks.Parallel.For(0, n, s => runs[s] = Race.Run(def, prisms, course, cfg, local, seedBase + s, lim));
+            var times = runs.SelectMany(r => r.AgentTimes).OrderBy(x => x).ToList();
+            int fin = times.Count(x => x < 999f);
+            return (times[times.Count / 2], times[times.Count / 10], times[times.Count * 9 / 10], fin, times.Count,
+                runs.Sum(r => r.Mistakes) / (float)times.Count);
+        }
+
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+            "I{0}: target seat median {1:F1} s at reaction {2:0.###} s ({3} seeds x {4} seats, races to {5:F0} s)",
+            intensity, target, ph.HcReaction, seeds, Math.Max(1, ph.Seats), lim));
+        var at0 = Measure(0f, 1000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance 0.000 -> median {0:F1} s", at0.median));
+        if (at0.median >= target)
+        {
+            Console.WriteLine("  the reaction time alone already reaches the target - lower ph.HcReaction");
+            Console.WriteLine("BEST HcMistake=0");
+            return 0;
+        }
+        float lo = 0f, hi = upper;
+        var atHi = Measure(hi, 1000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance {0:0.000} -> median {1:F1} s", hi, atHi.median));
+        if (atHi.median <= target)
+        {
+            Console.WriteLine(hi < 1f
+                ? "  the upper bound stays under the target - raise hi="
+                : "  even misjudging every crystal stays under the target - raise ph.HcReaction");
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "BEST HcMistake={0:0.000}", hi));
+            return 0;
+        }
+        for (int i = 0; i < steps; i++)
+        {
+            float mid = 0.5f * (lo + hi);
+            var m = Measure(mid, 1000, seeds);
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance {0:0.000} -> median {1:F1} s (misjudged {2:F2}/seat/race)", mid, m.median, m.mistakes));
+            if (m.median < target) lo = mid; else hi = mid;
+        }
+        float best = 0.5f * (lo + hi);
+        var check = Measure(best, 99000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+            "FINAL fresh seeds: chance {0:0.000} -> seat median {1:F1} s, p10 {2:F1}, p90 {3:F1}, finished {4}/{5}, misjudged {6:F2}/seat/race",
+            best, check.median, check.p10, check.p90, check.fin, check.total, check.mistakes));
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "BEST HcMistake={0:0.000}", best));
+        return 0;
+    }
+
     static int Main(string[] args)
     {
         var tracks = Json.Load(args[0]);
         string mode = args[1];
+        if (mode == "fingerprint")
+        {
+            // The C# SkimRaceTrackFingerprint of every track the scene file gave us - the value the game
+            // computes in the scene. skimrace_retune.py checks it equals the Python script's before stamping.
+            foreach (var kv in tracks.OrderBy(k => k.Key))
+                Console.WriteLine($"I{kv.Key}: {SkimRaceTrackFingerprint.Compute(kv.Value.Waypoints, kv.Value.Spline, kv.Value.Laps, kv.Value.Anchors)}");
+            return 0;
+        }
+        if (mode == "tuneall") return TuneAll(tracks, args);
+        if (mode == "handicap") return TuneHandicap(tracks, args);
         int intensity = int.Parse(args[2]);
         var def = tracks[intensity];
         var prisms = new TrackPrisms(def);
         var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
-        // The benchmark limit per intensity: a COPY of SkimRaceRaceRecorder.DefaultLimitSeconds (keep the
-        // two in step). I2 was re-baselined to 80 s by product decision; `limit=` overrides.
-        float limit = intensity == 2 ? 80f : 70f;
+        float limit = DefaultLimit(intensity);
         foreach (var a in args)
             if (a.StartsWith("limit=")) limit = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
         if (mode == "eval" || mode == "tune") Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  benchmark limit: {0:F0} s (I{1})", limit, intensity));
@@ -871,10 +1235,30 @@ static class Program
             foreach (var a in args.Skip(4))
                 if (a.StartsWith("seedbase=")) seedBase = int.Parse(a.Substring(9), CultureInfo.InvariantCulture);
             var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=") && !a.StartsWith("diag=") && !a.StartsWith("limit=")));
+            Race.RecordFrames = true;
             if (mode == "trace") { var r = Race.Run(def, prisms, course, cfg, ph, 1000 + seeds, limit, true); Console.WriteLine($"finished={r.Finished} t={r.Time:F2} {r.Collected}/{r.Required}"); return 0; }
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
-            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  decide cost: {0:F3} ms per seat per frame (sim runtime, {1} calls)",
-                1000.0 * Race.DecideTicks / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, Race.DecideCalls), Race.DecideCalls));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  decide cost: {0:F3} ms per seat per frame (sim runtime, {1} calls), {2:F0} bytes allocated per decision",
+                1000.0 * Race.DecideTicks / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, Race.DecideCalls), Race.DecideCalls,
+                Race.DecideBytes / (double)Math.Max(1, Race.DecideCalls)));
+            if (Race.FrameMs.Count > 0)
+            {
+                var fm = Race.FrameMs.OrderBy(x => x).ToList();
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  AI thinking per frame, all {0} seats together: median {1:F3} ms, p90 {2:F3} ms, p99 {3:F3} ms, max {4:F3} ms ({5} frames)",
+                    ph.Seats, fm[fm.Count / 2], fm[fm.Count * 9 / 10], fm[fm.Count * 99 / 100], fm[fm.Count - 1], fm.Count));
+            }
+            // Where it goes: the pilot's own Profiler markers (the names the Unity Profiler shows), per decision.
+            var tally = Unity.Profiling.ProfilerTally.Names.Select((n, k) => (n, k)).Where(x => Unity.Profiling.ProfilerTally.Calls[x.k] > 0).ToList();
+            if (tally.Count > 0)
+                foreach (var x in tally)
+                {
+                    double ms = 1000.0 * Unity.Profiling.ProfilerTally.Ticks[x.k] / System.Diagnostics.Stopwatch.Frequency;
+                    long calls = Unity.Profiling.ProfilerTally.Calls[x.k];
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "  marker {0,-28} {1,7:F3} ms per decision  {2,5:F2} calls per decision  {3,7:F3} ms per call",
+                        x.n, ms / Math.Max(1, Race.DecideCalls), calls / (double)Math.Max(1, Race.DecideCalls), ms / Math.Max(1, calls)));
+                }
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
                               $"median={e.median:F2} mean={e.mean:F2} worst={e.worst:F2} score={e.score:F2}");
             {
@@ -894,6 +1278,10 @@ static class Program
             var lost = e.runs.SelectMany(r => r.ResetBoostLost).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value));
             Console.WriteLine("  boost resets per race by cause: " + string.Join(", ", causes.Select(c =>
                 string.Format(CultureInfo.InvariantCulture, "{0} {1:F1} (boost lost {2:F1})", c.Key, c.n / (float)seeds, lost[c.Key] / seeds))));
+            if (ph.HcReaction > 0f || ph.HcMistake > 0f)
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  handicap: reaction {0:0.###} s, mistake chance {1:0.###}; misjudged crystals {2:F2} per seat per race",
+                    ph.HcReaction, ph.HcMistake, e.runs.Sum(r => r.Mistakes) / (float)seeds / Math.Max(1, ph.Seats)));
             if (args.Contains("diag=1"))
             {
                 float seatsN = Math.Max(1, ph.Seats);
@@ -937,7 +1325,7 @@ static class Program
                     "  planned line (next 300 u) min shell clearance: <0.6 in {0:P0}, <1.5 in {1:P0}, <3 in {2:P0} of decisions",
                     lc.Count(x => x < 0.6f) / (float)lc.Count, lc.Count(x => x < 1.5f) / (float)lc.Count, lc.Count(x => x < 3f) / (float)lc.Count));
             foreach (var r in e.runs)
-                Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2} seats=[{string.Join(" ", r.AgentTimes.Select(x => x.ToString("F1", CultureInfo.InvariantCulture)))}]");
+                Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} mist={r.Mistakes} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2} seats=[{string.Join(" ", r.AgentTimes.Select(x => x.ToString("F1", CultureInfo.InvariantCulture)))}]");
             return 0;
         }
 

@@ -156,7 +156,7 @@ namespace CosmicShore.Engine
                 // COSMIC_SHORE_PROFILE runs a second install side by side (a second player on one machine).
                 string profile = Environment.GetEnvironmentVariable("COSMIC_SHORE_PROFILE");
                 string folder = string.IsNullOrWhiteSpace(profile) ? "CosmicShore" : "CosmicShore-" + profile.Trim();
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), folder);
+                string path = LocalDataPath.Combine(folder);
                 Directory.CreateDirectory(path);
                 return path;
             }

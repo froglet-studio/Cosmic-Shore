@@ -222,10 +222,10 @@ block (companion to the existing entry guard at the top of
 |---|---|
 | Service implementation | `Assets/_Scripts/Controller/Party/Services/PresenceLobbyService.cs` |
 | Interface | `Assets/_Scripts/Controller/Party/Interfaces/IPresenceLobbyService.cs` |
-| Property writer (mutex + retry) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| Property writer (mutex; save under the request policy) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` |
 | Refresh cadence | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Acceptance signal | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Benign log filter | `Assets/_Scripts/Utility/BenignLobbyLogFilter.cs` |
 
 ## Related docs

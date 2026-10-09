@@ -313,7 +313,7 @@ at the editor:
    becoming untouchable afterwards.
 4. **Profiler** (SkimRace, Deep Profile off): `ShellContact.Build/Query` sub-ms;
    `Physics.SendEvents` flat vs bleeding-edge; no new spike train (§5 protocol
-   in Docs/PERFORMANCE_OPTIMIZATION.md).
+   in Docs/archive/PERFORMANCE_LOG_2026.md).
 5. **A/B**: toggling `PrismShellContactManager.ForceLegacyBoxInteraction` at
    runtime reverts to authored-box interaction cleanly (pairs drop with exit
    bookkeeping, box triggers resume).

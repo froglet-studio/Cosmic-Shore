@@ -306,8 +306,9 @@ def iter_refs(node, path=""):
 # the audit
 # --------------------------------------------------------------------------------------------
 class Audit:
-    def __init__(self, tree, schema, guids):
+    def __init__(self, tree, schema, guids, external=frozenset()):
         self.tree, self.schema, self.guids = tree, schema, guids
+        self.external = external  # package-script guids the base tree already references (see external_script_guids)
         self._docs = {}
         self.unverified = collections.Counter()
 
@@ -392,6 +393,12 @@ class Audit:
         target = self.resolve(guid)
         if path.endswith("m_SourcePrefab") and fid == "100100000":
             return [] if target else [("guid", rel, "%s.%s -> source prefab guid %s resolves to no asset" % (where, path, guid))]
+        if not target and guid in self.external:
+            # a script in a package (UGUI Button/Image, TextMeshPro, Netcode...): Unity resolves it
+            # through Library/PackageCache, which this audit never sees. The base tree already
+            # references it, so the project depends on it either way.
+            self.unverified["script in a package (guid %s)" % guid] += 1
+            return []
         if not target:
             return [("guid", rel, "%s.%s -> guid %s resolves to no asset in Assets/" % (where, path, guid))]
         if target.endswith(YAML_EXT) and self.tree.exists(target):
@@ -617,9 +624,26 @@ def changed_assets(base):
     return added, modified, deleted
 
 
+def external_script_guids(base, guids):
+    """m_Script guids the BASE tree references that resolve to no .cs/.dll under Assets/ on the base:
+    scripts that live in a package (UGUI, TextMeshPro, Netcode, Cinemachine, ...). Unity resolves
+    those through Library/PackageCache, which this audit never sees, so a NEW document that names
+    one is not a dangling reference - the project already depends on that script. A guid that DID
+    resolve under Assets/ on the base and no longer does is deliberately not in this set, so the
+    orphaned references of a deleted script still surface as findings."""
+    def grep(pattern, *pathspec):
+        r = subprocess.run(["git", "grep", "-h", "-o", "-E", pattern, base, "--", *pathspec],
+                           cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        return set(re.findall(r"[0-9a-f]{32}", r.stdout))
+    referenced = grep(r"m_Script: \{fileID: -?[0-9]+, guid: [0-9a-f]{32}", "Assets")
+    in_base_assets = grep(r"^guid: [0-9a-f]{32}", "Assets/*.cs.meta", "Assets/*.dll.meta")
+    return frozenset(referenced - in_base_assets - set(guids))
+
+
 def run_audit(tree, schema, base, added, modified, deleted_metas, base_text):
     guids, dups = build_guid_index(tree)
-    audit = Audit(tree, schema, guids)
+    external = external_script_guids(base, guids)
+    audit = Audit(tree, schema, guids, external)
     findings = [("meta", "Assets/", "guid %s is shared by %s" % (g, ", ".join(p))) for g, p in dups]
     for rel in added:
         if tree.exists(rel):
@@ -642,7 +666,7 @@ def run_audit(tree, schema, base, added, modified, deleted_metas, base_text):
         now = audit.check_file(rel, only)
         before_tree = Tree(tree.root, {rel: old_text}, tree.deleted)
         before_tree.overlay.update({k: v for k, v in tree.overlay.items() if k != rel})
-        old = set(Audit(before_tree, schema, guids).check_file(rel, only))
+        old = set(Audit(before_tree, schema, guids, external).check_file(rel, only))
         findings += [f for f in now if f not in old]
     # nothing may still reference a deleted file's guid
     for meta, guid in deleted_metas:
@@ -790,6 +814,15 @@ def self_test(schema, base):
     if [f for f in clean_scene if f[0] != "swarm"]:
         ok = False
         print("self-test: the unmodified scene reports findings:", clean_scene[:3])
+    # a package script (UGUI Image, which lives in Library/PackageCache, never under Assets/) named by a
+    # NEW document is not a dangling guid; the "reference to an unknown guid" control above proves a
+    # guid the base tree never saw is still one
+    ugui_image = "fe87c0e1cc204ed48ad3b37840f39efc"
+    pkg = sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_Script: {fileID: 11500000, guid: " + ugui_image + "}  # ", 1)
+    found, _ = run_audit(Tree(ROOT, pkg), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
+    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
+    ok &= not hit
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)

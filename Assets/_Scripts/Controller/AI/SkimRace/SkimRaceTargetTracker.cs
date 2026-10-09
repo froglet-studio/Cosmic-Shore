@@ -22,6 +22,9 @@ namespace CosmicShore.Gameplay
     /// <item>With several valid crystals (teammates share a domain) the nearest wins, with a
     /// small hysteresis so a near-tie cannot flip the pilot's aim every frame.</item>
     /// </list>
+    /// That is the whole rule for a LONE AI on its team. Several AI on one team are first given
+    /// different crystals by <see cref="SkimRaceTeamPlan"/> (same validity rules, the same
+    /// <see cref="Hysteresis"/>); this rule is their fallback when the plan has nothing for them.
     /// A missing target is a normal, transient state (between collection and respawn); callers
     /// handle it by following the track.
     /// </summary>

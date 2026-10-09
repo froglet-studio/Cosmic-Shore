@@ -126,29 +126,62 @@ namespace CosmicShore.ScriptableObjects
         public static bool SuppressesSkimContact(Prism prism, IVesselStatus vessel) =>
             IsOwnFreshMass(prism, vessel, Instance.SkimGraceSeconds);
 
+        /// <summary>
+        /// <see cref="SuppressesHullContact"/> for a caller that asks about MANY prisms in one frame - the
+        /// Skim Race pilot gathers 100-300 every frame for each AI seat. The grace, the vessel's name and
+        /// the clock are read once here instead of once per prism; the rule itself is
+        /// <see cref="OwnFreshMassFilter.Suppresses"/>, the same one every other caller runs. The prisms
+        /// asked about must be live (a <see cref="PrismSpatialIndex"/> query returns only live ones).
+        /// </summary>
+        public static OwnFreshMassFilter HullContactFilter(IVesselStatus vessel) =>
+            new(vessel, Instance.HullGraceSeconds);
+
         static bool IsOwnFreshMass(Prism prism, IVesselStatus vessel, float graceSeconds)
         {
-            if (graceSeconds <= 0f) return false;
-
             // Unity's implicit bool, not `!= null` — a destroyed prism is not C# null.
             if (!prism) return false;
-            if (vessel is null) return false;
+            return new OwnFreshMassFilter(vessel, graceSeconds).Suppresses(prism);
+        }
 
-            // Environment mass (flora, fauna, authored cell structure, the SkimRace track) has no
-            // pilot behind it and is never anyone's "own trail", however it is named.
-            if (prism.IsEnvironmentOwned) return false;
+        /// <summary>"Did this vessel lay this prism less than the grace ago?", with the per-frame inputs
+        /// captured. Build one per frame; it is the one place the rule is written.</summary>
+        public readonly struct OwnFreshMassFilter
+        {
+            readonly string _vesselName;
+            readonly bool _hasVessel;
+            readonly float _graceSeconds;
+            readonly float _now;
 
-            // ownerID is stamped by VesselPrismController.CreateBlock / Prism.RegisterProjectileCreated
-            // and records WHO LAID IT — unlike Prism.PlayerName, which a steal reassigns. A prism
-            // stolen from an opponent was never yours to be making, so it stays interactable.
-            string owner = prism.ownerID;
-            if (string.IsNullOrEmpty(owner)) return false;
-            if (!string.Equals(owner, vessel.PlayerName, StringComparison.Ordinal)) return false;
+            internal OwnFreshMassFilter(IVesselStatus vessel, float graceSeconds)
+            {
+                _hasVessel = vessel is not null;
+                _vesselName = _hasVessel ? vessel.PlayerName : null;
+                _graceSeconds = graceSeconds;
+                _now = Time.time;
+            }
 
-            var props = prism.prismProperties;
-            if (props == null) return false;
+            /// <summary>True when the vessel should ignore this LIVE prism as its own fresh mass.</summary>
+            public bool Suppresses(Prism prism)
+            {
+                if (_graceSeconds <= 0f) return false;
+                if (!_hasVessel) return false;
 
-            return Time.time - props.TimeCreated < graceSeconds;
+                // Environment mass (flora, fauna, authored cell structure, the SkimRace track) has no
+                // pilot behind it and is never anyone's "own trail", however it is named.
+                if (prism.IsEnvironmentOwned) return false;
+
+                // ownerID is stamped by VesselPrismController.CreateBlock / Prism.RegisterProjectileCreated
+                // and records WHO LAID IT — unlike Prism.PlayerName, which a steal reassigns. A prism
+                // stolen from an opponent was never yours to be making, so it stays interactable.
+                string owner = prism.ownerID;
+                if (string.IsNullOrEmpty(owner)) return false;
+                if (!string.Equals(owner, _vesselName, StringComparison.Ordinal)) return false;
+
+                var props = prism.prismProperties;
+                if (props == null) return false;
+
+                return _now - props.TimeCreated < _graceSeconds;
+            }
         }
     }
 }

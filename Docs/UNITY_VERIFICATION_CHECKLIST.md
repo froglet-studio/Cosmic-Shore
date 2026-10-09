@@ -65,6 +65,43 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B29 Session case (defect 5): an invite and the `partySession` it names go out in one save (`Ys-bleeding-edge`, 2026-10-09)
+
+**What landed:**
+- **`HostConnectionService.PublishInvitePayloadsToCurrentPlayer`** stages the invite lines AND the
+  sender's `partySession` advertisement for the same save (`InvitePublicationProperties`, pure).
+  `SendInviteAsync` then records the advertised session as published, so the next presence tick
+  does not resend it.
+- **The bug:** the invite lines were saved alone, and `partySession` went out only on the next
+  presence tick. Right after a host drop, a guest's poll read the new host's fresh invite next to
+  its OLD session. The guest's Accept pre-flight then refused a valid invite as "…party is no
+  longer available."
+- **Defect 5 re-diagnosed:** the "invite expired on send" seen in Block 3 was a symptom. The
+  unaccepted invite outlived its 60 s lifetime during the harness's 240 s wait.
+- **Tests:** `JoinTargetValidatorTests` pin the failure shape and the one-save rule (3 new).
+- **Harness:** the T4-lobby classifier now reads the invitee's log first.
+
+**Proven without the editor:**
+- **Before the fix:** the Prisma five-player harness on UDP with every player on a simulated 4G
+  line ran 13/14. T4-lobby failed, and the invitee's log shows
+  `Join pre-flight refused (SessionChanged)`.
+- **After the fix:** the same run went 14/14. T4-lobby passed in 15.6 s, and there were 0
+  SessionChanged refusals in any pilot's log. That is one run of an intermittent defect: it
+  supports the fix, it does not prove it. The tests pin the invariant.
+- **Prisma edit-mode harness:** JoinTargetValidator, PartyInvite*, UgsRequestPolicy and
+  OfflineSession suites, 215/215.
+- **`unity_refcompile`:** the player config is OK with 0 unverified. The editor config is OK; it
+  lists `HostConnectionService` among the package-absent errors (the Multiplayer Services SDK's
+  `PlayerProperty` / `ISession` cannot be fetched here). So the new lines' Unity compile is
+  unverified. Prisma's live compile, where those types exist, built them.
+- **Not run:** `/verify-unity` (no editor in the cloud session).
+
+**Needs the editor (MPPM, 3 players):**
+1. P1 hosts and invites P2 and P3. Kill P1's process.
+2. P2 lands in its own menu. At once, P2 invites P3.
+3. **Expect:** P3's Accept seats it, with no "party is no longer available" toast. Repeat 5 times,
+   because the race window is one presence refresh interval.
+
 ### 🔴 Slingshot (`GameModes.Slingshot = 64`) + the Stoat's plated hull, lope and autopilot sling (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
 
 `Arcade/SLINGSHOT.md`, `R_VesselActions/STOAT.md` §2.1–2.2. The Stoat's drawn hull is now its own
@@ -229,6 +266,447 @@ config reports 0 errors in project code.
    is collected (petal gained), the blade bursts and the energy meter drains, and **no explosion spawns**.
 2. Fly through an omni crystal: the Rhino's vessel crystal blast still fires (unchanged).
 3. The inspector on `RhinoSwordCrystalBurstEffect.asset` shows no fields, and the console is clean.
+
+---
+
+### 🔴 Offline mode: the seven cases tested, B26–B28 fixed (Block 4) (`Ys-bleeding-edge`, 2026-10-08)
+
+**What landed:**
+- **`OfflineSessionTests`:** HARDENING_PLAN §4.1's seven offline cases plus the §4.2 invariant. To
+  test them in place, each decision got a seam, with no behaviour change:
+  - `AuthenticationSceneController.PlanBootNetwork`
+  - `OfflineModeService.TryStartOfflineHost` / `EndOfflineSession`
+  - `NetworkMonitor.Poll`, plus an injectable reachability probe
+  - `ReconnectService`'s optional party-reset and scene-load seams
+- **Fixes:**
+  - **B26:** `EnsurePartySessionAsync` re-checks the offline flag under its mutex and after its
+    shutdown.
+  - **B27:** a late sign-in no longer re-joins the presence lobby of an offline session.
+  - **B28:** the boot gate's in-attempt retry is bounded by the attempt timeout.
+  - `ReconnectService` no longer writes the flag itself; `OfflineModeService` is its single writer
+    again.
+
+**Proven without the editor:**
+- **The Prisma edit-mode harness:** `OfflineSessionTests` 15/15, and every multiplayer and party
+  suite green.
+- **Negative control:** without the two `HostConnectionService` fixes, exactly the B26 and B27
+  tests fail (13/15).
+- **The run's other failures are not this change's:**
+  - RaceRankToastDriverTests (4) fails identically on `40a10b62`, before this session's work.
+  - SceneTransitionManager (3), AppManagerBootstrap (1) and SparrowCombatTier (2) are the
+    harness's known port-semantics and non-multiplayer cases.
+- **`unity_refcompile`:** the player config has 0 project errors and 0 unverified. The editor config compiled `OfflineSessionTests.cs` against Unity's NUnit and Editor references with no error in it. Its 4 errors are the known artifacts, all in untouched files.
+- **Not run:** `/verify-unity`.
+
+**Needs the editor (and Block 4's real gate, a Windows IL2CPP player):**
+1. **Boot with the NIC disabled.** Expect no Relay attempts, the "No internet connection…" notice,
+   then the menu offline.
+2. **Boot with UGS blocked at the firewall but the NIC up.** Expect three attempts, then the
+   "Could not reach the servers…" notice. The notice arrives within five attempt timeouts (B28).
+3. **Toggle offline from the menu lamp.** Expect no notice and no attempts.
+4. **Play offline, then re-enable the network.** Expect the session to stay offline: no presence
+   lobby join in the console, even if sign-in completes (B27).
+5. **Press Reconnect.** Expect the Authentication scene, then online.
+
+### 🔴 Session record: who this peer is, and what happened (Block 1's remainder) (`Ys-bleeding-edge`, 2026-10-08)
+
+**What landed:**
+- **Providers.** `AppManager.InstallNetSessionProviders`, next to the existing `NetworkDiagnostics`
+  wiring, gives `NetSessionRecorder` its three providers:
+  - **role:** `host` / `server` / `client` / `spectator` / `offline` / `none`.
+  - **offline:** the session's `IsOfflineSession`.
+  - **device-online:** the device's reachability.
+- **The offline mark.** `OfflineModeService` marks how a session went offline:
+  `MarkOfflineFallback(deviceWasOnline)` for a fallback nobody asked for, or `offlineChosen` for
+  the menu toggle. Before this, the record's `verdict.offlineFallbacksWhileOnline` could only ever
+  read 0, because nothing called it.
+- **Lifecycle marks,** one line each where the event already logs:
+  - `party` (every `PartyStateMachine` transition);
+  - `refused` (pre-flight refusal);
+  - `bounce`;
+  - `clientApproved` / `clientLeft` (host);
+  - `readyGate` (match gate passed);
+  - `leaverToAI`.
+
+**Proven without the editor:**
+- **The `net` scenario,** added to `Tools/Build/prisma_party_scenarios/`, passed in run 6 (14/14):
+  - `net` named each peer `host`, `client` and `spectator`. Before this it printed `unknown` on
+    every peer.
+  - The host's `net dump` record held `party`, `clientApproved`, `clientLeft`, `readyGate` and
+    `leaverToAI`.
+- **`unity_refcompile` player config:** 0 project errors, 0 unverified.
+- **Not run:** `/verify-unity`.
+
+**Needs the editor:**
+1. Two MPPM players in a party, then type `net` on each. Expect `net CLEAN | host | …` and
+   `net CLEAN | client | …`, each with a non-zero event count.
+2. On the host, type `net dump` and open the JSON it names. `lifecycle` reads in order: the party
+   transitions, `clientApproved`, and so on.
+3. Pull the network and let the boot fall back to offline, then type `net`. The role reads
+   `offline`, `/offline` is shown, and `offlineWhileOnline` stays 0 when the device really had
+   no network.
+
+### 🔴 `party` console command, the five-process party scenarios, and B20's lobby half (`Ys-bleeding-edge`, 2026-10-08)
+
+**What landed:**
+- **`PartyConsoleCommand`** (`Assets/_Scripts/Controller/Party/`): a dev-only `party` command on the
+  DiagnosticsHUD console (`party`, `party online`, `invite` / `cancel` / `kick <name>`, `accept`,
+  `decline`, `join` / `spectate <name>`, `leave`).
+  - Each subcommand calls the method its button calls.
+  - `party online` prints each joinable row's own N/M, as polled presence reports it (added later
+    the same day; B29).
+  - `party` prints one `key=value` state line, including `members`, `conns`, `humans` and
+    `spectators`.
+  - It self-registers. In a release player it is a no-op, because `DiagnosticsHUD.RegisterCommand`
+    is dev-only.
+- **`HostConnectionService`:**
+  - Two read-only getters for the command.
+  - One `LogJoinFailure` helper replaces three copies. A failed accept, join or spectate still logs
+    a red error with the full exception, EXCEPT a full party. Since B25 that is a designed outcome,
+    and `PartyInviteController` already toasts and warns it. Step 8 of the entry below promised
+    "a warning, not a red error", and the five-process run showed the red error.
+- **`ArcadeConfigSyncManager`** (B20's lobby half):
+  - A departure now clamps the commit-time head-count floor to the humans still connected. Before
+    this, `ExpectedHumanCount = Max(committed, connected)` never dropped, so after an unready member
+    left, the re-decide compared 3 against 4 and held forever with no log line.
+  - The lobby gate now logs each re-decision.
+- **Comments:** five comments still described the retired 6-seat split; they are corrected.
+- **`Tools/Build/prisma_party_scenarios/`:** five instances on Prisma, 13 scenarios. See its README.
+
+**Proven without the editor:**
+- **Prisma, the 2026-10-08 runs:**
+
+  | Run | Result | Cause |
+  |---|---|---|
+  | 1 | 8/12 | Harness: it pressed Ready before the HUD showed the button |
+  | 2 | 12/13 | T4-lobby failed on the real B20 defect above |
+  | 3 | 12/13 | T4-lobby could not reach its lobby: the new host's first invite expired on the new host the moment it was sent, and the guest's pre-flight read the host's old session (investigation in progress) |
+  | 4 (game clock paced to the wall) | 12/13 | Same as run 3 |
+| 5 (keyless driver) | 6/14 | Harness: the double-tap's two presses landed in one frame, so the second read an empty field |
+| 6 | **14/14** | T4-lobby passed: `All players ready (client 3 left) - launching game` |
+
+- **Every other scenario passed on runs 2–4:**
+  - **T2b (B25).** The two Enters were 0.38 ms apart; both passed the pre-flight; the session's 4
+    seats refused one.
+  - **T4 (B20, match).**
+  - **T3 (B21).**
+  - **T6.**
+  - **T7 (B10).**
+- **`unity_refcompile` player config:** 0 project errors, 0 unverified (91 assemblies).
+- **Editor config:** 4 errors, all in files this change does not touch. They are the tool's
+  approximation: two changed Editor-folder files that declare `namespace CosmicShore.Editor` get
+  compiled into the runtime compilation.
+- **Textual gates:** green.
+- **Not run:** `/verify-unity` (cloud container, no Editor).
+- **Runs 3, 4 and 8: open, cause unknown.** T4-lobby failed the same way each time. After T7, the
+  new host's first invite was cleared by its own expiry check on the next refresh tick
+  (`RemoveExpired - 1 expired` right after `AddOrRefresh`), and the guest's pre-flight then read
+  the host's old session. Runs 2 and 6 passed the same step.
+  - **Not the clock.** The game clock is paced (60 ticks per wall second, measured).
+  - **Not the key leak.** A leaked Enter, now fixed in the driver, was present in run 3 but not in
+    run 8.
+  - **Not reproduced in isolation.** A 3-instance instrumented repro (host drop mid-match, then
+    invite) did not reproduce it: expiry at `now + 60`, as written. Still under investigation.
+
+**Needs the editor:**
+1. Press **F7** in a dev build and type `party`. Expect `party role=host state=InParty … members=1/4
+   conns=1 humans=1 spectators=0 … scene=Menu_Main`.
+2. Two MPPM players: on P2 type `party join <P1's name>`. P2 should be seated, as if it had pressed
+   Join.
+3. **B20 lobby:**
+   - Four players open a card.
+   - Three press Start, and the fourth leaves.
+   - Expect the three to launch within a tick, and the console to show
+     `[ArcadeConfigSync] Lobby gate (client N left): 3/3`.
+4. **Re-run step 8 below (B25).**
+   - The loser's console shows the "That party is full." WARNING.
+   - There is NO red `[HostConnectionService] JoinPartyDirect error`.
+   - Any other join failure is still red.
+
+### 🔴 Party request discipline — review Phases 0–1 (`Ys-bleeding-edge`, 2026-10-07)
+
+**What landed.** Five commits from `Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md`
+§7: `931dcd51` one UGS failure classifier (`UgsRequestPolicy.Classify`, replacing five private copies)
+plus the `ugs[...]` request counters on every NetDiag line; `0521b858` every UGS create / join / query /
+save routed through `UgsRequestPolicy.ExecuteAsync` (jittered back-off, per-client retry budget,
+single-flight on create/join; nine inline retry loops deleted); `d31e01b2` the PENDING acceptance
+handshake deleted (`AcceptanceSignalService`, the `accepted_invite` write per Accept, the per-tick
+acceptance scan); `12e2cb1b` `JoinTargetValidator` — Accept / Join / Spectate refuse a stale, full or
+offline target with a toast BEFORE the local host is torn down; `8a0eaa0d` UTP `MaxConnectAttempts`
+60 → 10 and `DisconnectTimeoutMS` 30 000 → 10 000 on `NetworkManager.prefab`, and
+`WaitForClientConnectionAsync` returns as soon as the client stops listening.
+
+**Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies on each commit
+(real Netcode 2.13.3 / Multiplayer Services 2.3.3 / UniTask / engine references). The shipped
+edit-mode tests executed headlessly against those assemblies: `UgsRequestPolicyTests` (77),
+`UgsRequestTelemetryTests` (5), `JoinTargetValidatorTests` (14), `PartyAcceptFlowPlayModeTests`
+(4) — all green; negative controls fail as expected. All textual gates green;
+`check_generated_assets.py` green on the prefab edit.
+
+**Needs the editor (MPPM, 1 host + 3 virtual players, `CSLogChannel.Party` verbose ON, read the
+`ugs[...]` field of any NetDiag line):**
+1. T1 — host invites P2/P3/P4 within 5 s, all accept within 10 s → roster 4/4 on all four screens
+   < 2 s after the last accept; `429/min=0`, `reset=0`.
+2. T2 — P2/P3/P4 press **Join** simultaneously → all seated, no bounce.
+3. T4 — party 4/4, a fifth client presses Join → toast "…party is full", its own session untouched
+   (no `EnsurePartySessionAsync` log), no scene reload.
+4. T10 — P2 accepts an invite whose sender left 2 s earlier → toast "…no longer online" /
+   "…no longer available", invite row cleared, no bounce.
+5. T8 — all four spam Invite / Cancel for 60 s → `429/min` may rise, `budget-out/min` may rise,
+   `reset=0`, `offline=0`, UI never stalls > 2 s.
+6. Timeout nest — kill the host's Relay reachability before a guest joins → the guest bounces within
+   ~12 s (transport gives up at 10 s), not after 30 s; mid-match, pull a client's network → the host
+   re-decides the ready gate / converts the vessel at ~10 s (was 30 s).
+7. Watch the Console for the retired `AcceptanceSignalService` / `[INVITE-SEND]` chatter: none
+   expected; any `UgsRequestPolicy` warning names a spent retry budget.
+8. **Party size is 4, enforced by the session (B25, 2026-10-08).** Party at 3/4; two other clients
+   press **Join** on it at the same moment → exactly one is seated, the other bounces to its own
+   menu with "That party is full." (a warning, not a red error). Party at 4/4 → the Invite button is
+   disabled, Join and Spectate both refuse with "…'s party is full." before anything is torn down.
+   The lobby and every online row read `x/4`, never `x/6`.
+
+---
+
+### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
+
+**What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`
+0c48d08f5 (PRs #964-#969), `claude/confident-pascal-w76l2o` 21f74d8ee (which already contained
+`claude/bold-fermi-54nlts` 059450b16 and `Bug_Hunt` a334af21c), then the two branches' later tips,
+`Bug_Hunt` a88ad646a and `claude/bold-fermi-54nlts` 10e8c8c48. Six conflicts were resolved by hand:
+the QA backlog header, the Tollway intensity-4 cell config (bleeding-edge's content regenerated with
+BH-5.2's quoting), the dogfight generator's import, `SkimRacePilot.cs`'s profiler markers (both
+branches added them; the duplicates were dropped), the simulator `run.sh`, and this file's entries.
+Two fixes of its own: `check_generated_assets.py` recognises package scripts, and the stale
+`BasePrice` key is gone from all 71 SO_Captain assets (64 shipped, 7 under `_SO_Assets/_TEMP`).
+
+**Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies, with Netcode
+2.13.3, Transport 2.7.4, Multiplayer Services 2.3.3, Friends 1.3.0 compiled from source, so every
+call site of the SDK bump compiled against the real new API. All 27 `Tools/Build/check_*.py` gates
+and all 25 `author_*_assets.py --check` pass. The Skim Race simulator gives byte-identical races
+(`eval 1 4`, solo and `ph.Seats=2 ph.Team=1`) on this tree, on the AI branch and on the perf branch.
+
+**Verify in editor** — the per-branch entries below and the `QA-NET-*` items in `Docs/QA/QA_BACKLOG.md`
+hold the detailed steps; this entry is the gate they all share:
+- [ ] Project opens on 6000.3.17f1 with **zero red errors**; about 20 yellow `RequireOwnership` /
+      `InScenePlaced` deprecation warnings are expected (QA-NET-SDK-UPGRADE). Any red error naming
+      `CurrentPlayer` means the MPPM 2.0 engine module is missing: revert that one manifest line to 1.6.3.
+- [ ] Two MPPM instances reach the same party and the arcade panel shows the party UI on BOTH. If one
+      shows the offline notice at boot, that is B24 (`Docs/PartySystem/BUGS.md`): read the console for a
+      429 and see whether the new retry now survives it.
+- [ ] Skim Race, Hard, you vs a 2-AI team: the two AI fly DIFFERENT crystals from the first pickup
+      (team plan), and the Profiler shows `SkimRace.Pilot.*` with no per-frame GC allocation from the pilot.
+- [ ] A build from this branch refuses to pair with a `bleeding-edge` build (`NetworkConfig mismatch`,
+      protocol 9): intended.
+- [ ] The Bug Hunt playtest list in `Docs/BUG_HUNT_HANDOFF_2026-09.md` §0.
+
+### 🔴 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0f): `MathfNoAlloc` replaces the 7 three-value
+`Mathf.Min/Max` calls (new gate `check_mathf_params_alloc.py`); the planner's inner loops in floats
+(`SkimRaceCourse`, `SkimRaceShell`, `SkimRaceObstacle.LocalFrame`); `FillObstacles` reads its
+per-frame inputs once (`SelfTrailContactConfigSO.HullContactFilter`) and gains `.Query` / `.Pack`
+child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateManager` /
+`PrismOctahedronShield` `Awake` use `TryGetComponent`.
+
+**Verified without the editor:** simulator race output byte-identical on .NET and Mono;
+`SkimRaceCourseQueryTests` (5) pass on both; the Froglet Engine's live compile of runtime
+`Assets/_Scripts` builds with 0 errors and its suites pass (1569 + 352); offline gates pass.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass - in BOTH
+   Code Optimization modes (the bug icon, bottom-right: Debug, then Release). The first editor run
+   failed 3 of 5 because the editor computes floats in double precision; fixed in `81df54ed0`
+   (`Docs/SKIM_RACE_AI.md` §8.0g) and passing off-editor in six runtime configurations, but not yet
+   seen green in the editor.
+2. Skim Race I2, 2 AI: the AI races as before (no new strikes or orbits).
+3. Skim along a trail and along the track: the green skim beams appear, stretch to the ship and
+   vanish as before - no beam left frozen in place, none appearing at the world origin, none
+   carrying old particles from a previous contact.
+4. Leave a race for the menu and start another: beams still appear (the pool survives scenes).
+5. F7 > `diag S_SkimRace_I2 15` and `prof S_SkimRace_I2`: `SkimRace.Pilot.Decide` shows ~0 GC.Alloc
+   (was 840 a frame), and `SkimRace.Pilot.FillObstacles.Query` / `.Pack` appear under the pilot.
+
+### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** When two or more AI fly for one Skim Race team, `SkimRaceTeamPlan` gives each a DIFFERENT
+crystal: one plan per team per frame (`SkimRaceTeamAssignment`, least total distance, kept until another plan
+is 15% cheaper), read by every AI on that team. AI only: a human teammate is never planned for. A team with one
+AI gets no plan, so solo races fly exactly as before. Every difficulty (the user's call); Easy and Medium keep
+their mistakes. Before this, two AI on a team both chased the nearest crystal: in the simulator that team was
+slower than ONE AI alone on I1 and I2. With the plan it is 28-51% faster than before
+(`Docs/SKIM_RACE_AI.md` §13). Proven outside Unity: the simulator runs the same `SkimRaceTeamAssignment`
+(identical races to the experiment); `SkimRaceTeamAssignmentTests` run offline (8/8, three deliberate breaks
+each caught); real-Unity-reference compile: player 0 errors in project code; editor 0 errors in changed files.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceTeamAssignmentTests` pass (and `SkimRaceAITests`, `SkimRaceHandicapTests`,
+      `SkimRaceTrackFingerprintTests` still do).
+- [ ] **Two AI on one team.** Skim Race, Hard, any intensity. In the launch panel remove the placed AI (✕ on
+      their chips), arm **Add AI** and tap the same other-team tile (e.g. Ruby) twice: you alone vs a 2-AI team.
+      From the first crystal on, the two AI fly at DIFFERENT crystals: no "both chase one, one swings back".
+      Their team's count climbs about twice as fast as one AI's. The race records itself
+      (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`); the simulator's 2-AI team on I1 Hard finishes in about
+      36.5 s.
+- [ ] **A lone AI is unchanged.** You + one AI on separate teams: the AI flies as before.
+- [ ] **An AI on YOUR team never waits for you.** Place one AI on your own tile and idle: it keeps collecting at
+      its normal pace (it flies the nearest crystal and takes yours too).
+- [ ] Profiler (as in the Profiler-timers entry below): with two AI on one team, `SkimRace.Pilot.Sense` stays
+      small - the plan is built once a frame per team.
+- [ ] **The real test (the user's plan):** you and a friend vs a 2-AI team on Hard (set up as above, both AI
+      on one team). Note who wins and both teams' times; the AI's next speed step is decided from that.
+
+### 🔴 Network protocol version 8 -> 9 (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` went from
+8 to 9, because `LobbySnapshot` gained `AIDifficulty` (the lobby AI difficulty row) and a build without
+that field reads a host's lobby bytes out of step: a party invite then "does not get you into the lobby",
+silently. With the bump Netcode refuses a mismatched build at the connection request. The rule for every
+future wire change: `Docs/claude/MULTIPLAYER_AND_SOCIAL.md` (Multiplayer / Netcode).
+
+**Compiled without the editor (the whole branch, this and the entries below):** against real Unity
+references with `Tools/Build/unity_refcompile` - player config: 0 errors in project code (91 assemblies;
+the only unverifiable files are those using the unfetchable services packages, none of them on this
+branch's lines); editor config: 0 errors in the 14 changed Editor-folder files (this branch's tests and the
+benchmark window). The Froglet Engine's live compile of the runtime scripts: 0 errors.
+
+**Verify in editor (two players)**
+- [ ] Both on THIS branch, the same commit: invite, accept - the guest joins the host's party, and a lobby the
+      host opens (any arcade card) opens on the guest. Skim Race: the guest's AI difficulty row shows the host's pick.
+- [ ] One player on this branch, the other on a build WITHOUT the bump (e.g. `bleeding-edge`): the join is
+      refused at once and the HOST's console shows `NetworkConfig mismatch`; the guest falls back to its own
+      lobby without hanging.
+
+### 🔴 Skim Race AI Profiler timers - read the AI's real per-frame cost (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `ProfilerMarker`s on the Skim Race pilot - `SkimRace.Pilot.Update` (the whole pilot),
+`.Sense`, `.FillObstacles`, `.Decide` - and on the parts of its thinking (`SkimRace.Driver.*`;
+`SkimRace.Driver.TrackMpc` only on the frames intensity 2's planner re-plans). `.Decide` and `.FillObstacles`
+are also `diag`'s default markers (the `claude/bold-fermi-54nlts` entry below). No behaviour change: every
+simulator race is byte-identical with and without them. The simulator's numbers are in
+`Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the simulator cannot give (the editor runs C# on Mono,
+a build on IL2CPP). Simulator, intensity 2, two AI, merged code: 0.34 ms in a typical
+frame, 1.93 / 2.95 ms in the worst 10% / 1% (the planner's re-plan frames).
+
+**Verify in editor (about 5 minutes)**
+- [ ] Compiles.
+- [ ] First check the bug icon at the bottom right of the editor: **Release** code optimization gives
+      representative numbers (Debug runs all C# much slower and would overstate the AI's cost).
+- [ ] Window > Analysis > Profiler (Ctrl+7), CPU Usage module, recording on. Play Skim Race at
+      **intensity 2** with **two AI**, Hard, and let it race for 20-30 seconds.
+- [ ] Click a frame in the CPU chart, switch the bottom pane to **Hierarchy**, type `SkimRace` in its search
+      box. Note the **Total ms** of `SkimRace.Pilot.Update` (its Calls column should read 2 - one per AI;
+      Unity's own `SkimRacePilot.Update() [Invoke]` sample sits just above it and reads about the same).
+- [ ] Click through 5-10 frames: on some, `SkimRace.Driver.TrackMpc` appears (the planner re-plans 20 times
+      a second, both AIs on the same frames). Note `SkimRace.Pilot.Update` on a frame WITH it and on one
+      WITHOUT it - those two numbers are the result.
+- [ ] Optional: the same on intensity 1 (no planner - expect a much smaller number).
+
+### 🔴 Skim Race AI tuning files know their map (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** Each per-intensity AI tuning file records the fingerprint of the map it was tuned on
+(`SkimRaceAIConfigSO.TrackFingerprint`; `SkimRaceTrackFingerprint`). `SkimRaceAIDeployment.PolicyFor` reads
+the live map (`SkimRaceCourseSource.TryFingerprintFromScene`, through new read-only accessors on
+`SpawnableWaypointTrack`, `CrystalCollisionTurnMonitor` and `CrystalManager`) and flies the general policy,
+with ONE console warning per race, when they differ. The 1..4 intensity clamp is gone: a new intensity flies
+the general policy. Proven outside Unity: the game's C# and the Python script agree on every shipped track and
+on edited ones; the deployment's choice and warn-once rule ran against the real scene data and shipped assets
+in a stub harness (with negative controls). Design: `Docs/SKIM_RACE_AI.md` §11.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceTrackFingerprintTests` pass (and `SkimRaceAITests` / `SkimRaceHandicapTests` still do).
+- [ ] Skim Race at intensity 2 with AI seats: NO `[SkimRaceAI] ... tuned on a different map` warning, and the
+      verbose `[SkimRaceAI]` line (AITraining channel) names `skimrace-v2-i2`.
+- [ ] Move one intensity-2 waypoint of the `SpawnableWaypointTrack` in `MinigameSkimRace` by 10 units (do NOT
+      save) and race intensity 2 with two AI seats: exactly one warning naming `SkimRaceAIConfig_I2` and
+      `python3 Tools/Build/skimrace_retune.py 2`, and the verbose line names `skimrace-v2-general`.
+- [ ] Crystal spawning and the lap count are unchanged in Skim Race and in another `CrystalManager` mode
+      (the anchor-set lookup was folded into a shared helper; same clamp, same set).
+
+### 🔴 Easy / Medium Skim Race AI make deliberate mistakes (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `SkimRaceHandicap` (slow reaction + misjudged crystal, per crystal, random every race)
+installed by `SkimRaceAIDeployment` from `Resources/SkimRaceDifficulty.asset` for Easy and Medium; Hard
+has none. Proven in the offline simulator (Hard byte-identical to before; tests compiled and run outside
+Unity). Design: `Docs/SKIM_RACE_AI.md` §10.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceHandicapTests` pass (including `Difficulty_ShippedAssetLoadsFromResources`).
+- [ ] Skim Race on Easy with one AI: the verbose `[SkimRaceAI]` line (AITraining channel) names Easy with its
+      reaction and mistake chance; the AI visibly turns in late and now and then flies over a crystal and comes
+      back for it. On Hard it flies exactly as before.
+- [ ] `FrogletTools > AI > Skim Race AI Benchmark` has an AI difficulty field (default Hard); a run's records
+      carry `difficulty` and `mistakes` per AI seat.
+
+### 🔴 AI difficulty picker on the Skim Race launch panel (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** An Easy / Medium / Hard row under the intensity buttons (Skim Race card only),
+host-only, replicated to guests through `LobbySnapshot.AIDifficulty`, remembered with the host
+terms, and carried to the match as `GameDataSO.RequestedAIDifficulty`. The row's objects were
+written into `ArcadeGameConfigureModal.prefab` as YAML by `Tools/Build/author_ai_difficulty_row.py`
+(`--check` passes); the C# was type-checked against stubs and the pure rules + lobby snapshot
+tests were compiled and RUN outside Unity (31 passing, negative controls failing as expected). No
+editor compile, no play mode. Design: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3.
+
+**Verify in editor**
+- [ ] The project compiles; `AIDifficultyRulesTests`, `HomeHubPreferenceTests`, `ArcadeLobbySnapshotTests` pass.
+- [ ] Open `ArcadeGameConfigureModal.prefab`: `ConfigurationDetailView/AIDifficulty` exists (inactive), its
+      `AIDifficultyPicker` shows three options wired to Easy/Medium/Hard, and `MinigameLaunchPanel` ->
+      `Ai Difficulty Picker` points at it. No "Missing" components.
+- [ ] Open the Skim Race card: the row shows under the intensity row with MEDIUM lit (first time), EASY under 1,
+      MEDIUM under 2, HARD under 3; the controls block starts just below the row. Open any other card: no row,
+      the controls block is back at its full height.
+- [ ] Press each button: the lit plate moves, the click sound plays. Gamepad: D-pad down from intensity reaches
+      the row on Skim Race (left/right steps Easy..Hard) and skips it on other cards.
+- [ ] Launch Skim Race on Hard with an AI seat: the verbose `[SkimRaceAI]` line (AITraining channel) reads
+      `..., Hard)`. Re-open the card: Hard is still lit.
+- [ ] Party of two: the guest sees the host's pick, its row is greyed, and it follows a change live.
+
+---
+
+### 🔴 Skim Race pilot cost, PrismTimerManager list pool, diag markers (`claude/bold-fermi-54nlts`, 2026-10-05)
+
+**What landed:**
+- The Skim Race AI pilot's per-frame planning cost, halved with identical decisions: a hash-grid
+  broadphase for the laid-mass guard (`SkimRaceDriver.BuildObstacleGrid`), a nearest-first,
+  box-bounded `SkimRaceCourse.ShellClearance`, and precomputed segment vectors in
+  `SkimRaceCourse.Project` (`Docs/SKIM_RACE_AI.md` §8.0e).
+- `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` profiler markers, timed by `diag` by
+  default (`MarkerBudget.DefaultMarkers`).
+- `PrismTimerManager` recycles its per-owner lists (`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up 2").
+- New EditMode tests: `SkimRaceCourseQueryTests` (3).
+
+**Verified without the editor:** the offline simulator's race output is byte-identical to the
+previous code (I1/I2/I4 x 6 seeds and I2/I4 x 20 seeds, 3 AI seats); `SkimRaceCourseQueryTests`
+pass in .NET against the simulator's Unity shim and fail on three deliberate breaks; the Froglet
+Engine's live compile of runtime `Assets/_Scripts` builds with 0 errors and its suites pass.
+
+**Verify in editor:**
+1. The project compiles.
+2. Test Runner > EditMode: `SkimRaceCourseQueryTests`, `SkimRaceShellTests` and `SkimRaceAITests`
+   pass.
+3. Play Skim Race at I2 with 2 AI seats; the AI finishes the course as before (no new hull strikes
+   or orbits).
+4. During that race, F7 > console: `diag S_SkimRace_I2 15`. The report lists
+   `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` with `found: true` and non-zero ms.
+5. Play any arcade mode with prisms for a minute and return to the menu: no `PrismTimerManager`
+   errors or exceptions in the console.
+
+---
+
+### 🔴 PrismTimerManager compile fix (BH-4.7 follow-up) (`Bug_Hunt`, 2026-10-05)
+
+**What landed:** `PrismTimerManager.OnDestroy` cleared `scheduledActions`, a field BH-4.7 had
+replaced with `scheduledByOwner` + `scheduledActionCount`, so `Bug_Hunt` did not compile. It now
+clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
+(`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up").
+
+**Verified without the editor:** the Froglet Engine's live compile of the runtime
+`Assets/_Scripts` (`dotnet build Port/src/CosmicShore.Player`) went from 1 error to 0.
+
+**Verify in editor:**
+1. The project compiles: the console shows no `CS0103` for `PrismTimerManager.cs`.
+2. Play any arcade mode with prisms, then return to the menu (this unloads the scene and destroys
+   the manager): no `PrismTimerManager` errors or exceptions in the console.
 
 ---
 
@@ -2414,7 +2892,7 @@ Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main 
 **Verify in editor**
 1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
 2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. SkimRace still uses `SegmentSpawner`.
-3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
+3. ~~Do not Raise the two shape events~~ — moot since 2026-09: their prism-prefab listeners were stripped (`Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6), so nothing listens.
 
 ---
 

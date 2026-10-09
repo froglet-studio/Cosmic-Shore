@@ -339,12 +339,13 @@ namespace UnityEngine
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
         public static float Sign(float f) => f >= 0f ? 1f : -1f;
         public static float Max(float a, float b) => a > b ? a : b;
-        public static float Max(float a, float b, float c) => Max(Max(a, b), c);
+        // No three-argument overloads, exactly like UnityEngine.Mathf: a 3-value call binds to the
+        // params form (and allocates, in Unity). The shim used to define them, which hid 840
+        // allocations per frame in the pilot from this simulator; MathfNoAlloc is the fix.
         public static float Max(params float[] v) { float m = v[0]; foreach (var f in v) if (f > m) m = f; return m; }
         public static int Max(int a, int b) => a > b ? a : b;
         public static int Max(params int[] v) { int m = v[0]; foreach (var f in v) if (f > m) m = f; return m; }
         public static float Min(float a, float b) => a < b ? a : b;
-        public static float Min(float a, float b, float c) => Min(Min(a, b), c);
         public static float Min(params float[] v) { float m = v[0]; foreach (var f in v) if (f < m) m = f; return m; }
         public static int Min(int a, int b) => a < b ? a : b;
         public static int Min(params int[] v) { int m = v[0]; foreach (var f in v) if (f < m) m = f; return m; }
@@ -369,6 +370,13 @@ namespace UnityEngine
         public static float Round(float f) => (float)Math.Round((double)f, MidpointRounding.ToEven);
         public static int FloorToInt(float f) => (int)Math.Floor((double)f);
         public static int CeilToInt(float f) => (int)Math.Ceiling((double)f);
+        // Unity's native bit-smear: the smallest power of two >= value, and 0 for 0.
+        public static int NextPowerOfTwo(int value)
+        {
+            uint v = (uint)value - 1u;
+            v |= v >> 16; v |= v >> 8; v |= v >> 4; v |= v >> 2; v |= v >> 1;
+            return (int)(v + 1u);
+        }
         public static float Floor(float f) => (float)Math.Floor(f);
         public static float Ceil(float f) => (float)Math.Ceiling(f);
         public static bool Approximately(float a, float b) =>
@@ -462,4 +470,69 @@ namespace UnityEngine.Serialization
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
     public class FormerlySerializedAsAttribute : Attribute { public FormerlySerializedAsAttribute(string s) { } }
+}
+
+namespace Unity.Profiling
+{
+    /// <summary>
+    /// The simulator's stand-in for Unity's ProfilerMarker: the SAME marker names the game shows in its
+    /// Profiler, timed with Stopwatch and tallied per name (<see cref="ProfilerTally"/>), so a simulator run
+    /// can say where the pilot's time goes (Sim.cs prints the tally after an eval).
+    /// </summary>
+    public readonly struct ProfilerMarker
+    {
+        readonly int _id;
+        public ProfilerMarker(string name) { _id = ProfilerTally.Register(name); }
+        public AutoScope Auto() => new AutoScope(_id, System.Diagnostics.Stopwatch.GetTimestamp());
+
+        public readonly struct AutoScope : System.IDisposable
+        {
+            readonly int _id;
+            readonly long _start;
+            internal AutoScope(int id, long start) { _id = id; _start = start; }
+            public void Dispose() => ProfilerTally.Add(_id, System.Diagnostics.Stopwatch.GetTimestamp() - _start);
+        }
+    }
+
+    public static class ProfilerTally
+    {
+        public const int Capacity = 64;
+        public static readonly System.Collections.Generic.List<string> Names = new();
+        public static readonly long[] Ticks = new long[Capacity];
+        public static readonly long[] Calls = new long[Capacity];
+
+        public static int Register(string name)
+        {
+            lock (Names)
+            {
+                int i = Names.IndexOf(name);
+                if (i >= 0) return i;
+                Names.Add(name);
+                return Names.Count - 1;
+            }
+        }
+
+        public static void Add(int id, long ticks)
+        {
+            System.Threading.Interlocked.Add(ref Ticks[id], ticks);
+            System.Threading.Interlocked.Increment(ref Calls[id]);
+        }
+    }
+}
+
+// ── the two game types SkimRaceTargetTracker.cs names (the team race flies its selection rule) ──
+namespace CosmicShore.Data
+{
+    public enum Domains { Jade = 1, Ruby = 2, Blue = 3, Gold = 4 }
+}
+namespace CosmicShore.Gameplay
+{
+    // Only SkimRaceTargetTracker.Select reads it, and the simulator calls SelectIndex instead.
+    public class Crystal : UnityEngine.MonoBehaviour
+    {
+        public static readonly System.Collections.Generic.List<Crystal> Active = new();
+        public bool IsEmbedded, IsExploding;
+        public CosmicShore.Data.Domains ownDomain;
+        public bool isActiveAndEnabled => enabled;
+    }
 }

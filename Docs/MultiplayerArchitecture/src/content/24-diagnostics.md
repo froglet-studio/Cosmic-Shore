@@ -45,8 +45,8 @@ editor.
 :::
 
 ::: pitfall A log classifier is not a retry predicate
-`ClassifyException` decides *what to log*; `PartySessionService.IsTransientSessionException` decides
-*what to retry*. They are kept separate on purpose so log format never silently drives retry policy —
+`ClassifyException` decides *what to log*; `UgsRequestPolicy.Classify` decides
+*what to retry* (one classifier for every UGS catch since 2026-10-07). They are kept separate on purpose so log format never silently drives retry policy —
 a `PaymentRequired` class could be interesting to log yet must not trigger a retry. If you change retry
 behaviour, change the retry predicate, not the log classifier.
 :::

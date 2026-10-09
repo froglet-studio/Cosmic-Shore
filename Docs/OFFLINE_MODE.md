@@ -714,3 +714,48 @@ when the first three were wiped.
 which layer held what — the thing that was actually missing when this was first diagnosed by hand.
 Its Cloud Save key list is read off `UGSKeys` by reflection rather than kept by hand, because a
 stale list in a wipe tool fails as a wipe that quietly leaves data behind.
+
+## 9. The seven cases, tested (2026-10-08)
+
+`Assets/_Scripts/Tests/Editor/OfflineSessionTests.cs` covers every case in
+`Docs/MultiplayerArchitecture/HARDENING_PLAN_STEAM_LAUNCH.md` §4.1, plus §4.2's invariant. It runs
+headlessly with `bash Tools/Build/prisma_edit_mode_tests/run.sh` (15/15). Each case is pinned where
+its decision is made:
+
+| Case | Seam | Asserts |
+|---|---|---|
+| 1 no network at boot | `AuthenticationSceneController.PlanBootNetwork` | no Relay attempts; counted and explained |
+| 2 network up, UGS down | `PlanBootNetwork` + `OfflineModeService.TryStartOfflineHost` | attempts are walked; the flag is up BEFORE `StartHost` |
+| 3 the player chose offline | `PlanBootNetwork` | no attempts, no notice, no `OfflineFallback` count |
+| 4 network dies mid-session | `NetworkMonitor.Poll` + a source scan | one `OnNetworkLost` per loss; the boot gate is the only caller of `EnterOfflineSessionAsync` |
+| 5 the network returns while offline | `HostConnectionService` | `EnsurePartySessionAsync` touches nothing; `SendInviteAsync` returns early; a late sign-in does not re-join the presence lobby |
+| 6 Reconnect | `ReconnectService` (two optional seams) | order: party reset → shutdown (flag still up) → clear stale → flag down → Authentication load; `OfflinePreferred` withdrawn |
+| 7 `StartHost` refuses | `TryStartOfflineHost` | the flag comes down again, on a `false` and on a throw |
+| §4.2 the invariant | `HostConnectionService.EnsurePartySessionAsync` | offline begins while a creation's shutdown is in flight, and no session is created |
+
+**Two real defects the tests were written against:**
+1. **The §4.2 invariant was enforced only at entry.** `EnsurePartySessionAsync` checked the flag
+   when it started and never again. A call queued on its mutex or inside its NetworkManager
+   shutdown, when the offline host came up, went on to `CreateAsync`. It now re-checks under the
+   mutex (no await separates that check from the shutdown) and again after the shutdown.
+2. **A late sign-in re-joined the presence lobby of an offline session.** That restarted UGS
+   traffic under a player who had been told they were offline. `EnsureInitializedAsync` now stands
+   down while the flag is up.
+
+**Fixed alongside:**
+- **The boot gate's in-attempt retry was unbounded.** A create that hung made "three attempts" a
+  minimum, and the offline fallback could arrive minutes late. It is now bounded by the per-attempt
+  timeout.
+- **§2.3's "one authoritative flag" had a second writer** in `ReconnectService`. The flag is now
+  written only in `OfflineModeService` (`TryStartOfflineHost` and `EndOfflineSession`).
+
+Negative control: with the two `HostConnectionService` fixes removed, exactly the invariant test
+and the late-sign-in test fail (13/15).
+
+**Still open:**
+- **A player-build pass,** per Block 4's gate (`QA-NET-OFFLINE-MODE` on a Windows IL2CPP player).
+- **The progression decision** (§4.3 of the plan: unlocks do not persist offline).
+- **The mid-session notice may have no Reconnect button.** `DisconnectNotice` reads
+  `ReconnectService.CanReconnect` once, when it shows. Mid-session the host is usually still
+  listening, so it reads false.
+

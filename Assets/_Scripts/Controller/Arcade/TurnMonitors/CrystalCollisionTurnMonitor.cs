@@ -110,9 +110,10 @@ namespace CosmicShore.Gameplay
         /// Laps for the given 1-based intensity: the per-intensity entry when one is
         /// authored and positive, otherwise the flat <see cref="optionalLaps"/>. Keeps
         /// scenes that predate <see cref="lapsPerIntensity"/> (empty list) on their
-        /// original single-value behavior.
+        /// original single-value behavior. Public read-only: the Skim Race AI's map fingerprint
+        /// counts the laps too.
         /// </summary>
-        int ResolveLaps(int intensity)
+        public int ResolveLaps(int intensity)
         {
             int index = intensity - 1;
             if (lapsPerIntensity != null && index >= 0 && index < lapsPerIntensity.Count && lapsPerIntensity[index] > 0)

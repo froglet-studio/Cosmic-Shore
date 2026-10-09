@@ -24,6 +24,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Architecture Patterns; ScriptableObject Config Separation; SOAP — Scriptable Object Architecture Pattern (Primary Architecture); Threading & Main-Thread Affinity; Bootstrap & Scene Flow; Authentication & Session Flow; Dependency Injection (Reflex); Input Strategy Pattern
 - [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED FMOD exposed-field convention.
   Sections: Impact Effects Architecture; Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+- [`Docs/MULTIPLAYER_START_HERE.md`](Docs/MULTIPLAYER_START_HERE.md): **Read first for ANY multiplayer work (Unity or Prisma).** What the owner wants, the standing rules, where everything is, current state, the owner's hand-test list, and the ordered next steps.
+  Sections: What the owner wants; Rules every session keeps; Where everything is; Where things stand; What the owner tests by hand; What comes next, in order; How a session starts here
 - [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace.
   Sections: Multiplayer / Netcode; Party / Invite Lobby System; Friend System; Player Count & AI Backfill Pipeline; SkimRace Game Mode
 - [`Docs/Studios/VESSEL_STUDIO_PLAN.md`](Docs/Studios/VESSEL_STUDIO_PLAN.md): The Vessel Studio — pick a vessel and fly its studio on web, Windows (Prisma's STUDIOS page; Unity opens it via FrogletTools > Vessels > Vessel Studio) and phones. Pages in `Docs/Studios/VesselStudio/`; every studio is a reader of the shipped numbers. Read before touching a studio.

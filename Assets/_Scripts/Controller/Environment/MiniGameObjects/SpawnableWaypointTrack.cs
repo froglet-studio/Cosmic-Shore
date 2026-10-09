@@ -79,6 +79,10 @@ public class SpawnableWaypointTrack : SpawnableBase
             waypointScaleMultiplier, waypointDomain, trackDomain, intensityLevel);
     }
 
+    /// <summary>True when the given 1-based intensity's path is laid as a Catmull-Rom spline rather
+    /// than straight segments. Read-only; the Skim Race AI's map fingerprint reads it.</summary>
+    public bool UsesSplineFor(int intensityLevel) => UseSpline(intensityLevel);
+
     private bool UseSpline(int intensityLevel)
     {
         int index = intensityLevel - 1;
