@@ -12,22 +12,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb3ae478d1f44c3094a018efb792f5cb, type: 3}
   m_Name: StoatSlingConfig
   m_EditorClassIdentifier: 
+  holdExponent: 1.5
+  holdRampSeconds: 3
+  autopilotHold01: 0.5
+  orbitRadiusWide: 150
+  orbitRadiusTight: 40
+  orbitReach:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 3
+    UseFloor: 1
+    Floor: 1
+  orbitHorizons: 6
+  minOrbitCruise: 1
+  radiusFollowRate: 3
+  radialCorrectionRate: 5
+  slingBoostMin: 0.25
+  slingBoostMax: 0.9
+  slingBoostSeconds: 1.5
+  driftSpeed: 40
+  lifetime: 12
   minStrength: 2
   maxStrength: 12
-  holdExponent: 1.5
-  holdRampSeconds: 1.2
-  autopilotHold01: 0.5
-  aheadHorizons: 2
+  aheadHorizons: 4
   halfGapHorizons:
     Enabled: 1
-    Value: 4
-    Min: 4
-    Max: 8
+    Value: 6
+    Min: 6
+    Max: 9
     element: 3
     UseFloor: 1
     Floor: 1.5
-  driftSpeed: 20
-  lifetime: 4
   aiSlingMinTurnDegrees: 30
   aiSlingIntervalSeconds: 3
   aiSlingMinDistance: 120

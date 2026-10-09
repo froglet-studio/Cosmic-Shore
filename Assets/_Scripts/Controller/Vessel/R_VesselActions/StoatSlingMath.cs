@@ -67,6 +67,71 @@ namespace CosmicShore.Gameplay
             return offNose >= minTurnDegrees;
         }
 
+        // ------------------------------------------------------------------ the orbit (drift pair)
+
+        /// <summary>
+        /// The orbit radius a squeeze asks for: <paramref name="wide"/> at a touch, <paramref name="tight"/>
+        /// fully buried, along <c>hold^exponent</c> — squeeze harder, turn tighter.
+        /// </summary>
+        public static float OrbitRadius(float hold01, float wide, float tight, float exponent)
+        {
+            float t = Mathf.Pow(Mathf.Clamp01(hold01), Mathf.Max(0.01f, exponent));
+            float w = Mathf.Max(1f, wide);
+            return Mathf.Lerp(w, Mathf.Clamp(tight, 1f, w), t);
+        }
+
+        /// <summary>
+        /// The horizon of the hole an orbit of <paramref name="radius"/> circles, <paramref name="orbitHorizons"/>
+        /// horizon radii out. Floored at 3: inside 3 r_s (the Paczyński–Wiita ISCO) no circular orbit is
+        /// stable, so a hole is never laid that close.
+        /// </summary>
+        public static float OrbitHorizon(float radius, float orbitHorizons) => Mathf.Max(0f, radius) / Mathf.Max(3f, orbitHorizons);
+
+        /// <summary>
+        /// The gravitational parameter that makes <paramref name="radius"/> a CIRCULAR orbit at
+        /// <paramref name="speed"/> under the Paczyński–Wiita law the holes pull with:
+        /// <c>v² / r = GM / (r − r_s)²</c>. The hole's strength is chosen, not authored — the right mass
+        /// for the turn the squeeze asked for at the speed the pilot is flying.
+        /// </summary>
+        public static float CircularOrbitGM(float speed, float radius, float horizon)
+        {
+            float r = Mathf.Max(radius, 1e-3f);
+            float gap = Mathf.Max(r - Mathf.Max(0f, horizon), 1e-3f);
+            return speed * speed * gap * gap / r;
+        }
+
+        /// <summary>
+        /// The next heading on the orbit: <paramref name="forward"/> with its radial part removed (the
+        /// tangent), turned toward the centre (along <paramref name="toCentre"/>) by
+        /// <paramref name="angleRadians"/>. A nose pointed straight at or away from the centre has no
+        /// tangent and is returned as is.
+        /// </summary>
+        public static Vector3 OrbitHeading(Vector3 forward, Vector3 toCentre, float angleRadians)
+        {
+            if (toCentre.sqrMagnitude < 1e-8f) return forward;
+            var u = toCentre.normalized;
+            var t = forward - Vector3.Dot(forward, u) * u;
+            if (t.sqrMagnitude < 1e-8f) return forward;
+            t.Normalize();
+            return Quaternion.AngleAxis(angleRadians * Mathf.Rad2Deg, Vector3.Cross(t, u)) * t;
+        }
+
+        /// <summary>
+        /// How far to move the hull toward the centre this step to settle on <paramref name="targetRadius"/>
+        /// at <paramref name="rate"/> per second (negative = outward).
+        /// </summary>
+        public static float RadialCorrection(float distance, float targetRadius, float rate, float dt) =>
+            (distance - targetRadius) * (1f - Mathf.Exp(-Mathf.Max(0f, rate) * Mathf.Max(0f, dt)));
+
+        /// <summary>The slingshot on release: <paramref name="speed"/> × lerp(min, max, the deepest squeeze), u/s.</summary>
+        public static float SlingBoost(float speed, float peak01, float minFraction, float maxFraction) =>
+            Mathf.Max(0f, speed) * Mathf.Lerp(Mathf.Max(0f, minFraction), Mathf.Max(0f, maxFraction), Mathf.Clamp01(peak01));
+
+        /// <summary>Seconds an autopilot holds its squeeze to turn <paramref name="turnRadians"/> on an orbit of
+        /// <paramref name="radius"/> at <paramref name="speed"/>: the arc over the speed.</summary>
+        public static float AutopilotHoldSeconds(float turnRadians, float speed, float radius) =>
+            Mathf.Abs(turnRadians) * Mathf.Max(1f, radius) / Mathf.Max(1f, speed);
+
         /// <summary>The pair's midpoint: <paramref name="aheadHorizons"/> horizon radii ahead of the hull.</summary>
         public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)
             => hullPosition + hullForward * (Mathf.Max(0f, horizonRadius) * Mathf.Max(0f, aheadHorizons));

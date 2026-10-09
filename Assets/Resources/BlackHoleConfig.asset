@@ -30,6 +30,7 @@ MonoBehaviour:
   warpEnabled: 1
   tidalResponseSeconds: 0.9
   maxTidalStretch: 12
+  vesselTideScale: 0.08
   warpReachMultiplier: 6
   warpEaseSeconds: 0.5
   lensEnabled: 1
@@ -51,6 +52,7 @@ MonoBehaviour:
   pairHalfGapHorizons: 4
   pairDriftSpeed: 20
   pairLifetime: 5
+  pairCloseRampSeconds: 0.6
   crystalPairs: 0
   crystalFormSeconds: 0.6
   crystalStandSeconds: 0.05

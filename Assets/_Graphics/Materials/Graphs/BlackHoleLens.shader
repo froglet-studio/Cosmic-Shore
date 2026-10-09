@@ -40,7 +40,7 @@ Shader "CosmicShore/BlackHoleLens"
     {
         [Header(Written per hole by BlackHoleLens.cs through a MaterialPropertyBlock)]
         _BHHorizon ("Horizon radius r_s (world units), eased", Float) = 1
-        _BHLens ("Lens (radius in r_s, step budget, polarity +1 sink / -1 source, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
+        _BHLens ("Lens (radius in r_s, step budget, trace polarity: +1 every horizon hole / -1 a smooth source, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
         _BHThroat ("Wormhole mouth radius at the centre (world units, 0 = none)", Float) = 0
         _BHSmooth ("Smooth well lens strength A, signed by polarity outside (0 = the black hole's ray trace)", Float) = 0
         _BHWhite ("1 = a WHITE hole: its horizon disc emits a white-hot core", Float) = 0
@@ -223,17 +223,18 @@ Shader "CosmicShore/BlackHoleLens"
                 }
 
                 float3 background = float3(0.0, 0.0, 0.0);
-                if (_BHWhite > 0.5 && b < 2.598)
+                if (escaped < 0.5 && _BHWhite > 0.5)
                 {
-                    // A WHITE hole's core (Docs/BLACK_HOLE.md §11): light comes OUT of the horizon. Its
-                    // lens diverges (polarity −1, §12), so no backward ray ever falls in to say where
-                    // from: the core is drawn over the disc a sink's shadow would cover (unbent impact
-                    // parameter b < b_c = 2.598 r_s), carrying the sky straight through — what fell into
-                    // the paired black hole comes out here. White-hot at the centre (b → 0), the
-                    // emitted sky showing through toward its rim.
+                    // A WHITE hole (Docs/BLACK_HOLE.md §11): light comes OUT of the horizon. Outside
+                    // the horizon its spacetime is the black hole's, so the trace is the same (a
+                    // horizon hole's lens is traced with polarity +1 whatever its sign — §13); the
+                    // backward trace crossed the horizon travelling along `bent`, the line the light
+                    // came out on, carrying what fell into the paired black hole from the far side —
+                    // the sky continues through the tunnel. White-hot at the core's centre (b → 0),
+                    // the emitted sky showing through toward its rim (b → b_c = 2.598 r_s).
                     float t = saturate(b / 2.598);
                     float glow = (1.0 - t) * (1.0 - t);
-                    background = BlackHoleSkyColour(d) * _BHCore.y + _BHCore.x * glow;
+                    background = BlackHoleSkyColour(bent) * _BHCore.y + _BHCore.x * glow;
                 }
                 else if (escaped > 0.5)
                 {

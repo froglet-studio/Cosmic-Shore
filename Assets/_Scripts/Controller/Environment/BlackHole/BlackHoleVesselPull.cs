@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -51,6 +52,39 @@ namespace CosmicShore.Gameplay
         /// <summary>Vessels this machine applied a pull to on the last tick (diagnostics).</summary>
         public static int PulledVesselCount { get; private set; }
 
+        /// <summary>Vessels carried through a pair since the session began (diagnostics, tests).</summary>
+        public static int VesselTransitsTotal { get; private set; }
+
+        /// <summary>
+        /// The vessel half of the tunnel (the prisms' is in <see cref="BlackHoleGravityField"/>): a vessel
+        /// whose centre is inside the horizon of a black hole that has a white partner is moved to the
+        /// point reflection of its entry just outside the white horizon (<c>BlackHolePairMath.ExitPosition</c>),
+        /// keeping its heading — which points outward there, the way it went in — through
+        /// <c>VesselTransformer.SetPose</c>, so its trail and camera are carried across the jump
+        /// (TeleportContinuity) and a gate watcher sees a teleport, not a fast frame. Its drawn
+        /// spaghettification relaxes as it leaves (§11). A smooth well (the crystal style) carries pilots
+        /// through its mouths instead.
+        /// </summary>
+        static bool TryCarryThrough(VesselStatus vessel, VesselTransformer transformer, BlackHolePhysics.NativeWells wells, Vector3 p)
+        {
+            for (int w = 0; w < wells.Count; w++)
+            {
+                var hole = _wellHoles[w];
+                if (hole == null || hole.IsSource || hole.IsSmooth || hole.IsDespawning) continue;
+                var exitHole = hole.Throat;
+                if (exitHole == null || exitHole.IsDespawning) continue;
+                var centre = hole.transform.position;
+                if ((p - centre).sqrMagnitude > hole.HorizonRadius * hole.HorizonRadius) continue;
+                var white = exitHole.transform.position;
+                var exit = BlackHolePairMath.ExitPosition(p, centre, white, exitHole.HorizonRadius, white - centre);
+                transformer.SetPose(new Pose(exit, vessel.transform.rotation));
+                VesselTransitsTotal++;
+                CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[BlackHole] {vessel.name} carried through #{hole.Id} → #{exitHole.Id}");
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>The gravitational velocity a vessel is currently carrying (diagnostics, tests).</summary>
         public static bool TryGetPull(VesselStatus vessel, out Vector3 pull)
         {
@@ -98,14 +132,12 @@ namespace CosmicShore.Gameplay
             }
 
             var wells = new BlackHolePhysics.NativeWells();
-            int owned = 0;
             for (int i = 0; i < _wellHoles.Length; i++) _wellHoles[i] = null;
             for (int i = 0; i < holes.Count && i < BlackHolePhysics.NativeWells.Capacity; i++)
             {
                 var h = holes[i];
                 if (h == null) continue;
                 _wellOwners[wells.Count] = h.OwnerVessel;
-                if (h.OwnerVessel != null) owned++;
                 _wellHoles[wells.Count] = h;
                 wells.Add(h.ToWell(config));
             }
@@ -133,6 +165,14 @@ namespace CosmicShore.Gameplay
                 var p = vessel.transform.position;
                 var pos = new float3(p.x, p.y, p.z);
 
+                // Through the pair: a vessel that crosses a PAIRED black hole's horizon — anyone's, by
+                // its own flying — comes out of the white hole (Docs/BLACK_HOLE.md §11).
+                if (TryCarryThrough(vessel, transformer, wells, p))
+                {
+                    _pullByVessel.Remove(key);
+                    continue;
+                }
+
                 float3 a = float3.zero;
                 bool inside = false;
                 float cap = maxSpeed;
@@ -140,11 +180,14 @@ namespace CosmicShore.Gameplay
                 float warp = WarpFieldRuntime.ScaleAt(p);
                 for (int w = 0; w < wells.Count; w++)
                 {
-                    // An owned hole (a pilot's slung pair) moves only its owner — never an opposing
-                    // vessel (Docs/ELEMENTAL_ECONOMY.md §9). Environmental holes move everyone.
-                    if (owned > 0 && _wellOwners[w] != null && _wellOwners[w] != vessel.transform) continue;
                     var well = wells[w];
                     var hole = _wellHoles[w];
+                    // An owned hole (a pilot's slung pair) never moves an opposing vessel
+                    // (Docs/ELEMENTAL_ECONOMY.md §9). An owned DRIFT pair does not pull its owner either:
+                    // its owner flies the orbit (StoatSlingExecutor), which IS that pull, held to a circle.
+                    // An owned crystal pair keeps charming-cerf's felt pull on its owner. Environmental
+                    // holes move everyone.
+                    if (_wellOwners[w] != null && (_wellOwners[w] != vessel.transform || hole == null || !hole.IsSmooth)) continue;
                     float d = math.length(pos - well.Position);
                     if (hole != null && hole.VesselFeltStrength > 0f)
                     {

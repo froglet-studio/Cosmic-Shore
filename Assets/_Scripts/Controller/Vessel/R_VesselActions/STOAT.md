@@ -22,60 +22,84 @@ run in the editor** — every proof below is offline (§5), the same standing as
 §0.1. The black hole itself — the pull, the lens, the tides, the pair, the pass-through — is
 documented there and not repeated here.
 
-## 1. The loop
+## 1. The loop — orbit and slingshot (the playtest's design, 2026-10-09)
 
 | Input | What happens |
 |---|---|
-| **LT press** (`InputEvents.LeftStickAction`, 2) | the squeeze begins; a sound slot (`holdStartEvent`, empty) |
-| **LT held** | the trigger's depth (its hold time on keyboard / mouse / touch) is sampled every frame; the DEEPEST squeeze of the hold is the pair's SIZE |
-| **LT release** | the pair is slung: **attractor on the LEFT, repulsor on the RIGHT**, on the hull's own horizontal, `aheadHorizons` horizon radii ahead; the previous pair this hull slung is annihilated first; if the hull was holding still (X) the stance ENDS — a sling is a launch |
-| **RT** (`RightStickAction`, 1) | the mirror: attractor on the right, repulsor on the left |
+| **LT press** (`InputEvents.LeftStickAction`, 2) | the pair is LAID: the **attractor to the LEFT**, perpendicular to the nose at the orbit radius the squeeze asks for; the **repulsor** mirrored to the right, same distance, same size; this hull's previous pair ends first; if the hull was holding still (X) the stance ENDS — a sling is a launch |
+| **LT held** | the hull **ORBITS** the attractor. The squeeze (its hold time on keyboard, over `holdRampSeconds`) sets the radius LIVE: a touch circles wide (`orbitRadiusWide`, 150 u), buried circles tight (`orbitRadiusTight`, 40 u). Keep squeezing and you keep circling, up to `lifetime` (12 s) |
+| **LT release** | the **SLINGSHOT**: out along the tangent with a boost (`slingBoostMin`→`Max` × orbit speed by the deepest squeeze, 0.25 → 0.9); the pair is let go — the two holes fall together (accelerating to `driftSpeed`, 40 u/s) and annihilate where their horizons touch |
+| **RT** (`RightStickAction`, 1) | the mirror: attractor on the right; pressing the other trigger mid-orbit slings out of the first and into the second — chained turns |
 | **X** (`Button1Action`, 6) | `StoatHoldAction` — `ToggleTranslationModeActionSO` in **Sparrow** mode: stop translating and stop laying prisms; press again to move |
 
-A light tap is a **nudge** (strength `minStrength` = 2, horizon radius 4 u); a buried trigger is the
-**~90° swing** (`maxStrength` = 12, horizon radius 24 u), along `hold^1.5` so the last bit of travel
-counts. The pair lives `lifetime` = 4 s: the two holes drift apart at 20 u/s, stop at 2 s, fall back
-and annihilate (`BlackHolePairMath`). Whatever the black hole swallows comes out of the white hole
-the point-reflected way, including the hull's own prisms.
+**The physics is real, held to a circle.** The attractor's horizon is `1/orbitHorizons` (1/6) of the
+radius — never inside 3, the Paczyński–Wiita last stable orbit — and its strength is CHOSEN, not
+authored: the one that makes the radius a circular orbit at the hull's speed,
+`GM = v²(r − r_s)²/r` (`StoatSlingMath.CircularOrbitGM`). So the turn is exactly what that hole's
+gravity would do to a hull at that speed, and prisms feel the same mass. Because r/r_s is fixed, the
+hole looks the same size from the hull whatever the squeeze: a tighter turn is a smaller hole,
+nearer. The repulsor is retuned with it ("same size and distance").
 
-**The pull moves only THIS Stoat.** A slung pair is owned (`BlackHole.OwnerVessel`), and
-`BlackHoleVesselPull` applies an owned hole only to its owner: a vessel may not move an opposing
-vessel (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Prisms feel every hole; tool/console holes pull
-every vessel. **Why the sling ends the stop:** while `IsTranslationRestricted`, the transformer
-displaces a vessel only by modifiers flagged `ignoresTranslationRestriction` (the Sparrow's dodge),
-so a held-still Stoat would ignore its own pull; `ToggleTranslationModeActionExecutor.EndStance()`
-(the turn-end exit, through the controller so it replicates) is called on release instead.
+**How it flies** (`StoatSlingExecutor.StepOrbit`, simulating machine only): each frame the heading
+turns along the orbit at ω = v/r (`VesselTransformer.ApplyRotation`, momentum re-aimed with
+`SetCourseVelocity`), the hull is eased onto the radius (`TranslateShip`, `radialCorrectionRate`), and
+both holes follow the radius (`radiusFollowRate`). An offline simulation of exactly that step held the
+radius to within 0.2 u at 60 fps and released on the tangent; in the editor the transformer's own
+easing toward its commanded heading is the thing to watch.
 
-**The autopilot slings** (`AutopilotSling`, simulating machine only): when the AI's target
-(`AIPilot.TargetPosition`) is at least `aiSlingMinTurnDegrees` (30°) off the nose and
-`aiSlingMinDistance` (120 u) away, at most every `aiSlingIntervalSeconds` (3 s), it presses and
-releases the trigger on the target's side through `PerformShipControllerActionsReplicated` /
-`StopShipControllerActionsReplicated` — so every peer runs the same sling a human's squeeze would —
-at the fixed `autopilotHold01` squeeze (set at the press: an autopilot has no frame to sample a
-squeeze in). Never assume an AI can use a human's input (the arcade rule); the Grizzly's autopilot
-bomb is the model. `StoatSlingMath.TryAutopilotSide` is the pure choice.
+**Nobody else is moved.** An owned drift pair is skipped by `BlackHoleVesselPull` for every vessel:
+its owner's pull IS the orbit, and a vessel may not move an opposing vessel
+(`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Prisms feel every hole. **Anything that flies in comes
+out:** a vessel — this one after its slingshot, an opponent or an AI by its own flying — whose centre
+crosses a paired black hole's horizon is carried to the point reflection just outside the white
+horizon, heading kept (outward there), through `VesselTransformer.SetPose` (trail and camera
+carried, a gate watcher sees a teleport) — `BlackHoleVesselPull.TryCarryThrough`. Prisms the same
+way (`BlackHoleGravityField`). The Stoat's drawn hull **spaghettifies** near a horizon — stretched
+along its length falling in, and the same stretch relaxing as it leaves the white hole (tides are
+even under time reversal): `BlackHoleWarp.VesselLogStretch` × `BlackHoleConfig.vesselTideScale`
+(0.08), applied by `StoatAnimation` on top of the lope. Other hulls are carried but not yet drawn
+stretched (their hull transform is no single component's to scale).
 
-**It works while idle, deliberately.** The holes are laid in the hull's FRAME (position, forward,
-right, up), not thrown from its velocity, so a stopped Stoat is the ideal slinger: stop (X), squeeze,
-let go, get thrown.
+**The autopilot slings** (`AutopilotSling`, simulating machine only): when the AI's target is at least
+`aiSlingMinTurnDegrees` (30°) off the nose and `aiSlingMinDistance` (120 u) away, at most every
+`aiSlingIntervalSeconds` (3 s), it presses the trigger on the target's side and HOLDS for the arc
+the turn needs at its fixed squeeze (`StoatSlingMath.AutopilotHoldSeconds`: angle × r / v), then
+releases — both edges through the replicated path. Never assume an AI can use a human's input.
+
+**From a standstill:** the orbit runs at least `minOrbitCruise` × cruise, so stop (X), squeeze, and
+the Stoat launches into the circle.
+
+**Networking.** Press and release replicate, so every peer lays its own copy of the pair at the
+replicated pose; the squeeze does not, so a remote copy keeps its press-time size. The holes are the
+placeholder system's local objects (`Docs/BLACK_HOLE.md` §11 "Not yet").
+
+**The crystal style** (`BlackHoleConfig.crystalPairs`, §13) keeps its first design: the pair is laid
+on RELEASE, sized by the deepest squeeze (`StoatSlingMath.Peak` — a let-go trigger sweeps back down
+before the release edge), `aheadHorizons` (4) ahead, `halfGapHorizons` (Space, 6 → 9) apart.
 
 ## 2. The numbers (`StoatSlingConfigSO`, asset `_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset`)
 
 | Field | Ships as | What it is |
 |---|---|---|
-| `minStrength` / `maxStrength` | 2 / 12 | black hole strength at a touch / fully buried — its horizon radius is `strength × BlackHoleConfig.horizonPerStrength` (2), its pull `strength × gmPerStrength` (2000) |
-| `holdExponent` | 1.5 | `strength = lerp(min, max, hold^exponent)` |
-| `holdRampSeconds` | 1.2 | seconds of hold that count as a full squeeze on a device with no analog trigger |
-| `autopilotHold01` | 0.5 | the AI writes no trigger; every AI sling is this squeeze |
-| `aheadHorizons` | 2 | midpoint, in horizon radii ahead of the hull |
-| `halfGapHorizons` | **ElementalFloat, Space, 4 → 8, floor 1.5** | each hole's offset to the side, in horizon radii — the one element-scaled number, read live at release (`EvaluateLive`), never cached |
-| `driftSpeed` / `lifetime` | 20 u/s / 4 s | the pair's drift and its life, handed to `BlackHoleRegistry.SpawnPair` |
-| `holdStartEvent` / `slingEvent` | **empty** | FMOD slots; wire them in the inspector |
+| `holdExponent` | 1.5 | `radius = lerp(wide, tight, squeeze^exponent)` (crystal: the strength curve) |
+| `holdRampSeconds` | **3** | seconds of hold that count as a full squeeze on a device with no analog trigger (playtest) |
+| `autopilotHold01` | 0.5 | the AI's squeeze |
+| `orbitRadiusWide` / `orbitRadiusTight` | 150 / 40 u | the orbit at a touch / buried |
+| `orbitReach` | **ElementalFloat, Space, ×1 → ×1.4, floor 1** | multiplies both radii — Space is reach; read live, never cached |
+| `orbitHorizons` | **6** | orbit radius ÷ horizon radius (the playtest's 6), floored at 3 |
+| `minOrbitCruise` | 1 | the orbit runs at least cruise |
+| `radiusFollowRate` / `radialCorrectionRate` | 3 / 5 per s | how fast the radius follows the squeeze / how hard the hull is held on it |
+| `slingBoostMin` / `Max` / `Seconds` | 0.25 / 0.9 × speed, 1.5 s | the slingshot |
+| `driftSpeed` | **40 u/s** | how fast the let-go pair closes (playtest); `BlackHoleConfig.pairCloseRampSeconds` (0.6 s) is its run-up |
+| `lifetime` | **12 s** | the longest hold (playtest); past it the pair lets go on its own and the hull slings |
+| `minStrength` / `maxStrength`, `aheadHorizons`, `halfGapHorizons` | 2 / 12, **4**, **Space 6 → 9** | the crystal style only |
+| `holdStartEvent` / `slingEvent` | **empty** | FMOD slots (press / slingshot); wire them in the inspector |
 
-Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `Strength`, `PairAxis`, `Midpoint`), held by
-`StoatSlingTests`. The axis runs black → white, so the LEFT trigger's axis is the hull's **+right**:
-`BlackHolePairMath.Positions` puts the black hole at −axis. Spin axis = the hull's up, so the frame
-drag turns on the plane the pair lies in.
+Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `OrbitRadius`, `OrbitHorizon`,
+`CircularOrbitGM`, `OrbitHeading`, `RadialCorrection`, `SlingBoost`, `AutopilotHoldSeconds`,
+`Strength`, `PairAxis`, `Midpoint`), held by `StoatSlingTests`. The axis runs attractor → repulsor,
+so the LEFT trigger's axis is the hull's **+right** (`BlackHolePairMath.Positions` puts the attractor
+at −axis).
 
 ## 2.1 The hull — plated, procedural (`StoatHullForm` + `StoatHullBuilder`)
 
@@ -111,7 +135,7 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 |---|---|
 | `Data Containers/StoatSlingConfigSO.cs` | the numbers above |
 | `Data Containers/StoatSlingActionSO.cs` | one asset per trigger (`side`), shared and stateless: press → `BeginHold`, release → `Release` |
-| `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes, the last pair; samples the hold every frame; calls `BlackHoleRegistry.Annihilate` / `SpawnPair` |
+| `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes (live + deepest), the orbit, the last pair; lays the pair on press, flies the orbit, slings on release (`SpawnPair(held)`, `LetGo`) |
 | `StoatSlingMath.cs` | the pure maths |
 | `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow) |
 | `Resources/ElementalAbilityMaps/Stoat.asset` | Space = Slingshot (Input 2), Time = Hold Still (Input 6), Charge and Mass open — see §6 |

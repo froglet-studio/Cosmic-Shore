@@ -64,11 +64,20 @@ namespace CosmicShore.Gameplay
             /// <summary>Unit axis from the black hole to the white hole.</summary>
             public Vector3 Axis { get; internal set; }
             public float HalfGap0 { get; internal set; }
+            /// <summary>The speed the two holes close at once let go, u/s (the serialized "drift speed").</summary>
             public float DriftSpeed { get; internal set; }
+            /// <summary>Seconds the let-go fall takes to reach <see cref="DriftSpeed"/>.</summary>
+            public float CloseRamp { get; internal set; }
+            /// <summary>The longest the pair may be HELD before it is let go on its own, seconds.</summary>
             public float Lifetime { get; internal set; }
+            /// <summary>Seconds since birth.</summary>
             public float Age { get; internal set; }
+            /// <summary>Seconds since it was let go (0 while held).</summary>
+            public float CloseAge { get; internal set; }
+            /// <summary>True while its owner holds it in place (the Stoat orbiting the black hole).</summary>
+            public bool Held { get; internal set; }
             public bool IsAlive => Black != null && White != null && !Black.IsDespawning && !White.IsDespawning;
-            public float HalfGap => BlackHolePairMath.HalfGap(HalfGap0, DriftSpeed, Lifetime, Age);
+            public float HalfGap => BlackHolePairMath.ClosingHalfGap(HalfGap0, DriftSpeed, CloseRamp, CloseAge);
         }
 
         /// <summary>
@@ -153,13 +162,15 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Spawn a black–white PAIR (Docs/BLACK_HOLE.md §11): the black hole <paramref name="halfGap"/>
         /// along −<paramref name="axis"/> from <paramref name="midpoint"/>, the white hole the same
-        /// along +axis, both of <paramref name="strength"/> and <paramref name="horizonRadius"/>. They
-        /// drift apart at <paramref name="driftSpeed"/>, stop, come back and annihilate after
-        /// <paramref name="lifetime"/> seconds; what the black hole captures the white hole emits.
+        /// along +axis, both of <paramref name="strength"/> and <paramref name="horizonRadius"/>. A
+        /// <paramref name="held"/> pair stands still until <see cref="LetGo"/> (or until
+        /// <paramref name="lifetime"/> lets it go on its own); an unheld one is let go at birth. Let go,
+        /// the two fall together, accelerating to <paramref name="driftSpeed"/>, and annihilate where
+        /// their horizons touch; what the black hole captures meanwhile the white hole emits.
         /// Null when there is no room for two (nothing is spawned).
         /// </summary>
         public static Pair SpawnPair(Vector3 midpoint, Vector3 axis, float strength, float horizonRadius, float halfGap,
-            float driftSpeed, float lifetime, Vector3? spinAxis = null, Transform ownerVessel = null)
+            float driftSpeed, float lifetime, Vector3? spinAxis = null, Transform ownerVessel = null, bool held = false)
         {
             Prune();
             var config = Config;
@@ -183,13 +194,25 @@ namespace CosmicShore.Gameplay
             var pair = new Pair
             {
                 Black = black, White = white, Midpoint = midpoint, Axis = a, HalfGap0 = halfGap,
-                DriftSpeed = Mathf.Max(0f, driftSpeed), Lifetime = Mathf.Max(0.01f, lifetime), Age = 0f,
+                DriftSpeed = Mathf.Max(0f, driftSpeed), CloseRamp = config.PairCloseRampSeconds,
+                Lifetime = Mathf.Max(0.01f, lifetime), Age = 0f, Held = held,
             };
             _pairs.Add(pair);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[BlackHole] pair #{black.Id}/#{white.Id} at {midpoint} axis {a} half-gap {halfGap:F1} drift {driftSpeed:F1} u/s " +
-                $"lifetime {lifetime:F1} s (widest {BlackHolePairMath.MaxHalfGap(halfGap, driftSpeed, lifetime):F1})");
+                $"[BlackHole] pair #{black.Id}/#{white.Id} at {midpoint} axis {a} half-gap {halfGap:F1} closing {driftSpeed:F1} u/s " +
+                $"{(held ? $"held (at most {lifetime:F1} s)" : "let go")}");
             return pair;
+        }
+
+        /// <summary>
+        /// Let a held pair go: from now the two holes fall together and annihilate where their horizons
+        /// touch (the Stoat's trigger release — its pilot slingshots out of the orbit).
+        /// </summary>
+        public static void LetGo(Pair pair)
+        {
+            if (pair == null || !pair.Held) return;
+            pair.Held = false;
+            pair.CloseAge = 0f;
         }
 
         /// <summary>
@@ -303,7 +326,8 @@ namespace CosmicShore.Gameplay
                 var pair = SpawnPairFromConfig(attractorOnLeft);
                 return pair == null ? null
                     : $"drift pair: attractor #{pair.Black.Id} on the {(attractorOnLeft ? "left" : "right")}, repulsor #{pair.White.Id}; " +
-                      $"half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, annihilates in {pair.Lifetime:F1} s";
+                      $"half-gap {pair.HalfGap0:F0} u, closing at {pair.DriftSpeed:F0} u/s, meets in " +
+                      $"{BlackHolePairMath.SecondsToMeet(pair.HalfGap0, pair.Black.HorizonRadius, pair.DriftSpeed, pair.CloseRamp):F1} s";
             }
             var cam = BlackHoleLens.ViewCamera();
             float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
@@ -357,7 +381,13 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
                 pair.Age += dt;
-                if (BlackHolePairMath.IsSpent(pair.Lifetime, pair.Age))
+                // Held too long: it lets go on its own (the owner reads Held and ends its orbit).
+                if (pair.Held && pair.Age >= pair.Lifetime) LetGo(pair);
+                if (pair.Held) continue;   // standing still: its owner is orbiting the black hole
+                pair.CloseAge += dt;
+                float rs = Mathf.Max(pair.Black.HorizonRadius, pair.White.HorizonRadius);
+                // Met (horizons touching) — or, with nothing to close them, a fallback so a pair never lingers.
+                if (BlackHolePairMath.HaveMet(pair.HalfGap, rs) || (pair.DriftSpeed <= 0f && pair.CloseAge >= pair.Lifetime))
                 {
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[BlackHole] pair #{pair.Black.Id}/#{pair.White.Id} annihilated after {pair.Age:F1} s");
                     Annihilate(pair);

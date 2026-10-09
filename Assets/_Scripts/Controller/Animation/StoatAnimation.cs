@@ -126,8 +126,14 @@ namespace CosmicShore.Gameplay
             // The whole drawn hull: lift, pitch, stretch (volume kept). The vessel's transform is untouched.
             _hullTransform.localPosition = _hullRestPos + Vector3.up * pose.BodyLift;
             _hullTransform.localRotation = _hullRestRot * Quaternion.Euler(pose.PitchDegrees, 0f, 0f);
-            float girth = 1f / Mathf.Sqrt(Mathf.Max(0.1f, pose.Stretch));
-            _hullTransform.localScale = Vector3.Scale(_hullRestScale, new Vector3(girth, girth, pose.Stretch));
+            // Spaghettification (Docs/BLACK_HOLE.md §11): near a horizon the tide stretches the drawn hull
+            // along its length — falling into a black hole, and in reverse leaving a white one. The hull's
+            // own axis stands in for the line to the hole, which is where a hull falling in or flying out
+            // points. Volume kept, like the lope's own stretch it multiplies.
+            float tide = Mathf.Exp(BlackHoleWarp.VesselLogStretch(transform.position, out _));
+            float stretch = pose.Stretch * tide;
+            float girth = 1f / Mathf.Sqrt(Mathf.Max(0.1f, stretch));
+            _hullTransform.localScale = Vector3.Scale(_hullRestScale, new Vector3(girth, girth, stretch));
 
             // The spine: plates rise toward the middle when arched (∩) and sink when bunched (∪),
             // each tilted along the curve's slope; the stick bends the front into a turn and the back out.

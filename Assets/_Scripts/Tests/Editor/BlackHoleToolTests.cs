@@ -191,15 +191,15 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void PairStyle_ACrystalSlingLivesAsLongAsADriftSling()
+        public void PairStyle_ACrystalSlingIsGoneWithinTheDriftPairsHoldCap()
         {
-            // The two styles are compared in play (and in the Stoat Flight Studio) on the same clock:
-            // form + stand + annihilate = the drift pair's sling life.
+            // A drift pair lives as long as its pilot holds it (at most StoatSlingConfig.lifetime) and then
+            // closes; a crystal sling's whole life must fit inside that cap so chaining feels alike.
             var config = AssetDatabase.LoadAssetAtPath<BlackHoleConfigSO>(ConfigAssetPath);
             var sling = AssetDatabase.LoadAssetAtPath<StoatSlingConfigSO>("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
             Assert.IsNotNull(sling, "StoatSlingConfig.asset is missing.");
             float crystal = config.CrystalFormSeconds + config.CrystalStandSeconds + config.CrystalAnnihilateSeconds;
-            Assert.AreEqual(sling.Lifetime, crystal, 0.01f, "a crystal sling and a drift sling no longer live equally long.");
+            Assert.LessOrEqual(crystal, sling.Lifetime, "a crystal sling outlives the drift pair's hold cap.");
         }
 
         [Test]

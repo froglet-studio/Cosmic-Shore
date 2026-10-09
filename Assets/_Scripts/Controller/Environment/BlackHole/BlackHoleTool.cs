@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
                 if (h == null || h.IsDespawning) continue;
                 string away = cam != null ? $" · {Vector3.Distance(cam.transform.position, h.transform.position):F0} u away" : "";
                 var pair = BlackHoleRegistry.PairOf(h);
-                string paired = pair != null ? $" · pair {pair.Lifetime - pair.Age:F1} s" : "";
+                string paired = pair != null ? (pair.Held ? " · pair held" : $" · pair closing, gap {pair.HalfGap:F0} u") : "";
                 _live[row].Bind(h, $"{(h.IsSource ? "R" : "A")}#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}{paired}");
                 row++;
             }

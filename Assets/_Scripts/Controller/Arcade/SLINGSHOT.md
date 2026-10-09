@@ -18,21 +18,23 @@ threads the last ring of the last lap wins (golf: finish time).
 
 ## 1. What the mode is asking
 
-**Where to fall.** The Stoat (`R_VesselActions/STOAT.md`) cruises at **60 u/s** on a flat 120°/s
-turn — a 29 u pivot — and the barren race cell has nothing to skim, so it has **no speed of its own
-past cruise**. Its speed is its ability: squeeze LT or RT and let go, and an attractor–repulsor
-**wormhole pair** is laid across the hull (attractor on the trigger's side, repulsor on the other;
-squeeze depth = size). The pull adds up to **90 u/s** (`BlackHoleConfig.maxVesselPullSpeed`)
-toward the attractor and off the repulsor: **150 u/s slung, on a 72 u circle.**
+**Where to turn.** The Stoat (`R_VesselActions/STOAT.md`) cruises at **60 u/s** at full throttle
+(30 at rest sticks — the game's throttle sits at half) on a flat 120°/s stick turn, and the barren race
+cell has nothing to skim. Its speed and its turns are its ability. **Press** LT or RT and an attractor
+is laid beside the hull on that side with a repulsor mirrored on the other; **hold** and the Stoat
+orbits the attractor — the squeeze sets the circle live, 150 u at a touch down to 40 u buried, and the
+hole's strength is whatever makes that a circular orbit at the speed being flown; **let go** and it
+slingshots out along the tangent with up to 0.9 × its speed on top, while the pair falls together
+and annihilates.
 
-A sling is a **throw**: it drags the hull off the line it was flying. So the race is not "can you
-make the corner" — at this scale a cruising Stoat makes every corner the solver lays — it is
-"lay the pair so the pull has you lined up when the next ring arrives". Lay it too big and the
-throw carries you past the ring; too small and you crawl the leg at cruise.
+So a corner is a decision about WHERE to start the orbit, HOW TIGHT to squeeze and WHEN to let go:
+release on the line to the next ring and the boost carries you there; hold a beat too long and you
+leave pointed past it. A chained press on the other trigger slings straight into the opposite turn.
 
-The pull moves **only the Stoat that slung it** (`BlackHole.OwnerVessel`): a vessel may not move an
-opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). A rival's pair is scenery — its lens
-bends your view and its attractor eats prisms — never a force on your hull.
+The pair moves **only the Stoat that laid it** — through its orbit; the pull of an owned drift pair
+reaches nobody (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). A rival's pair is scenery: its lens bends
+your view and its attractor eats prisms. But anything that FLIES INTO a black hole — a rival included,
+by its own flying — comes out of its white hole.
 
 ## 2. The course, measured
 
@@ -67,11 +69,12 @@ levels — and Space widens the slung pair, so it lands on the mode's axis).
 ## 4. AI
 
 An AI Stoat flies the course on the platform's gate approach (commit 160 / lead 180 / through
-120 u, sized to the 72 u slung circle) and **slings**: `StoatSlingExecutor.AutopilotSling` lays a
-pair, attractor on the side of the AI's target, whenever that target is at least 30° off the nose
-and 120 u away, at most every 3 s, through the **replicated** press path (the Grizzly's autopilot
-bomb is the model), at a fixed half squeeze. It is a turning aid, not a racing line — a human who
-aims the throw beats it, which is the point. Tunable on `StoatSlingConfig` (Autopilot sling).
+120 u) and **slings**: `StoatSlingExecutor.AutopilotSling` presses the trigger on the side of its
+target whenever the target is at least 30° off the nose and 120 u away (at most every 3 s), HOLDS for
+the arc the orbit needs to swing the nose round to it at its fixed half squeeze
+(`StoatSlingMath.AutopilotHoldSeconds`), and releases — both edges through the **replicated** press
+path (the Grizzly's autopilot bomb is the model). It is a turning aid, not a racing line — a human who
+times the release beats it. Tunable on `StoatSlingConfig` (Autopilot sling).
 
 ## 5. Status
 
@@ -83,8 +86,8 @@ replicated path, the Stoat on the toy roster and a class asset), the course harn
 offline refcompile. What only the editor can say: how the throw FEELS at these numbers — the pull
 was tuned for a black hole spawned ahead of a camera, not for racing — and whether the AI's
 heuristic sling helps or hurts it. **The first tuning knobs**, in order: `StoatSlingConfig`
-(`maxStrength`, `aheadHorizons`, `halfGapHorizons`), `BlackHoleConfig.vesselPullScale` /
-`maxVesselPullSpeed` (fleet-wide — they also move tool-spawned holes), then the course's mouths.
+(`orbitRadiusWide` / `orbitRadiusTight`, `slingBoostMin` / `Max`, `radialCorrectionRate`), then the
+course's mouths. The web studio flies the same orbit (`Docs/Studios/StoatFlightStudio.html`).
 
 **Known limits.** The card wears the placeholder background until `/cardart` renders the mode;
 the Stoat's ability-row icons are still the Squirrel's; the wormholes themselves are the

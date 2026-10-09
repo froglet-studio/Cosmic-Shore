@@ -303,19 +303,28 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Pair_DriftsApartStopsAtHalfLifeAndMeetsAgainAtTheEnd()
+        public void Pair_OnceLetGoFallsTogetherAndMeetsWhenTheHorizonsTouch()
         {
-            const float s0 = 80f, drift = 20f, life = 5f;
-            Assert.AreEqual(s0, BlackHolePairMath.HalfGap(s0, drift, life, 0f), 1e-5f, "born at the birth gap");
-            Assert.AreEqual(s0 + 0.25f * drift * life, BlackHolePairMath.HalfGap(s0, drift, life, 0.5f * life), 1e-4f, "widest at half the lifetime");
-            Assert.AreEqual(BlackHolePairMath.MaxHalfGap(s0, drift, life), BlackHolePairMath.HalfGap(s0, drift, life, 0.5f * life), 1e-4f);
-            Assert.AreEqual(s0, BlackHolePairMath.HalfGap(s0, drift, life, life), 1e-4f, "back at the birth gap at the end: they meet and annihilate");
-            // Monotone out, then monotone back.
+            const float s0 = 80f, speed = 40f, ramp = 0.6f, rs = 10f;
+            Assert.AreEqual(s0, BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, 0f), 1e-5f, "at rest at the let-go");
+            Assert.AreEqual(s0 - 0.5f * speed * 0.3f * 0.3f / ramp, BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, 0.3f), 1e-4f,
+                "accelerating from rest during the ramp");
+            Assert.AreEqual(s0 - 0.5f * speed * ramp - speed, BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, ramp + 1f), 1e-4f,
+                "at the closing speed after it");
             float prev = s0;
-            for (float t = 0.1f; t <= 0.5f * life; t += 0.1f) { float g = BlackHolePairMath.HalfGap(s0, drift, life, t); Assert.GreaterOrEqual(g, prev - 1e-5f); prev = g; }
-            for (float t = 0.5f * life + 0.1f; t <= life; t += 0.1f) { float g = BlackHolePairMath.HalfGap(s0, drift, life, t); Assert.LessOrEqual(g, prev + 1e-5f); prev = g; }
-            Assert.IsFalse(BlackHolePairMath.IsSpent(life, life - 0.01f));
-            Assert.IsTrue(BlackHolePairMath.IsSpent(life, life));
+            for (float t = 0.05f; t < 3f; t += 0.05f)
+            {
+                float g = BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, t);
+                Assert.LessOrEqual(g, prev + 1e-5f, "a let-go pair only ever closes");
+                Assert.GreaterOrEqual(g, 0f);
+                prev = g;
+            }
+            float meet = BlackHolePairMath.SecondsToMeet(s0, rs, speed, ramp);
+            Assert.AreEqual(rs, BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, meet), 1e-3f, "SecondsToMeet lands on the touch");
+            Assert.IsFalse(BlackHolePairMath.HaveMet(BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, meet - 0.05f), rs));
+            Assert.IsTrue(BlackHolePairMath.HaveMet(BlackHolePairMath.ClosingHalfGap(s0, speed, ramp, meet + 0.01f), rs));
+            Assert.AreEqual(s0, BlackHolePairMath.ClosingHalfGap(s0, 0f, ramp, 10f), 1e-5f, "nothing closes a pair with no speed");
+            Assert.IsTrue(float.IsPositiveInfinity(BlackHolePairMath.SecondsToMeet(s0, rs, 0f, ramp)));
             BlackHolePairMath.Positions(new Vector3(10f, 0f, 0f), Vector3.right * 3f, 50f, out var black, out var white);
             Assert.AreEqual(new Vector3(-40f, 0f, 0f), black, "the black hole sits −axis from the midpoint");
             Assert.AreEqual(new Vector3(60f, 0f, 0f), white, "the white hole sits +axis from the midpoint");

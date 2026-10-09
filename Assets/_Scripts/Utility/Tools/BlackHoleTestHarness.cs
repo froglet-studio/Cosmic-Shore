@@ -615,7 +615,7 @@ namespace CosmicShore.Utility
                         return Usage;
                     var pair = SpawnCentrePair(strength);
                     return pair == null ? "pair refused (see console)"
-                        : $"pair B#{pair.Black.Id}/W#{pair.White.Id} strength {strength:F1} across the centre, annihilates in {pair.Lifetime:F1} s";
+                        : $"pair B#{pair.Black.Id}/W#{pair.White.Id} strength {strength:F1} across the centre, closing at {pair.DriftSpeed:F0} u/s";
                 }
                 case "fly":
                 {

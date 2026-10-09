@@ -50,6 +50,41 @@ namespace CosmicShore.Gameplay
         public static int LiveSlotCount => _publishedCount;
 
         /// <summary>
+        /// The tide a VESSEL's drawn hull feels at <paramref name="position"/> — the CPU twin of the prisms'
+        /// (<c>PrismGravityWarp.hlsl</c>): the strongest hole's log-stretch <c>|GM|·τ²/r³</c> (r floored at
+        /// the horizon, faded by the warp weight), scaled by <see cref="BlackHoleConfigSO.VesselTideScale"/>
+        /// and eased into the same <c>ln(maxTidalStretch)</c> ceiling. Even under time reversal, so a hull
+        /// leaving a white hole is stretched exactly as one falling into a black hole and relaxes as it goes
+        /// (§11). Horizon holes only; <paramref name="towardHole"/> is the unit line to the strongest one.
+        /// 0 with no hole near.
+        /// </summary>
+        public static float VesselLogStretch(Vector3 position, out Vector3 towardHole)
+        {
+            towardHole = Vector3.forward;
+            var config = BlackHoleRegistry.Config;
+            if (!config.WarpEnabled || config.VesselTideScale <= 0f || config.TidalResponseSeconds <= 0f) return 0f;
+            float tau2 = config.TidalResponseSeconds * config.TidalResponseSeconds;
+            float best = 0f;
+            var holes = BlackHoleRegistry.Holes;
+            for (int i = 0; i < holes.Count; i++)
+            {
+                var h = holes[i];
+                if (h == null || h.IsSmooth) continue;
+                var d = h.transform.position - position;
+                float r = Mathf.Max(d.magnitude, h.HorizonRadius, 1e-3f);
+                if (r > h.WarpReach) continue;
+                float eps = Mathf.Abs(h.GM) * tau2 * h.WarpWeight / (r * r * r);
+                if (eps <= best) continue;
+                best = eps;
+                towardHole = d.sqrMagnitude > 1e-8f ? d.normalized : Vector3.forward;
+            }
+            if (best <= 0f) return 0f;
+            float ceiling = Mathf.Log(config.MaxTidalStretch);
+            float x = Mathf.Min(best * config.VesselTideScale / ceiling, 1e4f);
+            return ceiling * x / Mathf.Sqrt(Mathf.Sqrt(1f + x * x * x * x));
+        }
+
+        /// <summary>
         /// Pack this frame's holes into the bank. <paramref name="holes"/> is every hole with a
         /// non-zero warp weight — live ones and those easing out.
         /// </summary>
@@ -70,7 +105,12 @@ namespace CosmicShore.Gameplay
                     _centre[count] = new Vector4(p.x, p.y, p.z, h.HorizonRadius);
                     // GM·τ², eased by the weight: the tidal log-stretch at distance r is this / r³.
                     // z: a smooth well's Plummer core (0 = a black hole's tide, floored at the horizon).
-                    _weight[count] = new Vector4(h.GM * tau2 * w, h.WarpReach, h.Softening, 0f);
+                    // Tides are EVEN under time reversal: a white hole stretches what it emits exactly as
+                    // a black hole stretches what it swallows, so a body leaving it starts a needle and
+                    // relaxes — the capture run backwards (§11). A horizon hole therefore publishes |GM|;
+                    // a smooth well keeps charming-cerf's signed tide (a source flattens, §12).
+                    float tideGM = h.IsSmooth ? h.GM : Mathf.Abs(h.GM);
+                    _weight[count] = new Vector4(tideGM * tau2 * w, h.WarpReach, h.Softening, 0f);
                     count++;
                 }
             }

@@ -46,6 +46,58 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, StoatSlingMath.Hold01(0f, 0f, false, 0f, false, 0.5f), 1e-6f, "no ramp = full squeeze");
         }
 
+        // ------------------------------------------------------------------ the orbit
+
+        [Test]
+        public void OrbitRadius_SqueezeHarderTurnsTighter()
+        {
+            Assert.AreEqual(150f, StoatSlingMath.OrbitRadius(0f, 150f, 40f, 1.5f), 1e-4f, "a touch is the wide orbit");
+            Assert.AreEqual(40f, StoatSlingMath.OrbitRadius(1f, 150f, 40f, 1.5f), 1e-4f, "buried is the tight one");
+            float half = StoatSlingMath.OrbitRadius(0.5f, 150f, 40f, 1.5f);
+            Assert.Less(half, 150f); Assert.Greater(half, 40f);
+            Assert.AreEqual(150f - 110f * Mathf.Pow(0.5f, 1.5f), half, 1e-3f, "along hold^exponent");
+        }
+
+        [Test]
+        public void OrbitHorizon_NeverInsideTheLastStableOrbit()
+        {
+            Assert.AreEqual(25f, StoatSlingMath.OrbitHorizon(150f, 6f), 1e-4f);
+            Assert.AreEqual(50f, StoatSlingMath.OrbitHorizon(150f, 1f), 1e-4f, "floored at 3 horizons (the PW ISCO)");
+        }
+
+        [Test]
+        public void CircularOrbitGM_MakesThePullExactlyTheCentripetalAcceleration()
+        {
+            const float v = 60f, r = 100f, rs = 16.6667f;
+            float gm = StoatSlingMath.CircularOrbitGM(v, r, rs);
+            float pull = gm / ((r - rs) * (r - rs));          // Paczyński–Wiita at r
+            Assert.AreEqual(v * v / r, pull, 1e-3f, "the hole's pull at the orbit radius is v²/r: a circle");
+        }
+
+        [Test]
+        public void OrbitHeading_TurnsTheTangentTowardTheCentre()
+        {
+            var forward = new Vector3(0f, 0f, 1f);
+            var toCentre = new Vector3(-1f, 0f, 0f);           // the attractor to the LEFT
+            var heading = StoatSlingMath.OrbitHeading(forward, toCentre, 10f * Mathf.Deg2Rad);
+            Assert.AreEqual(1f, heading.magnitude, 1e-4f);
+            Assert.AreEqual(10f, Vector3.Angle(forward, heading), 1e-3f, "turned by the step");
+            Assert.Less(heading.x, 0f, "turned toward the centre (left)");
+            // A nose with a radial part is first laid back onto the tangent.
+            var skewed = StoatSlingMath.OrbitHeading(new Vector3(-0.3f, 0f, 1f).normalized, toCentre, 0f);
+            Assert.AreEqual(0f, Vector3.Dot(skewed, toCentre), 1e-4f, "zero step = the tangent itself");
+            Assert.AreEqual(forward, StoatSlingMath.OrbitHeading(toCentre, toCentre, 0.2f), "no tangent: unchanged");
+        }
+
+        [Test]
+        public void Slingshot_TheDeeperSqueezeThrowsHarder()
+        {
+            Assert.AreEqual(15f, StoatSlingMath.SlingBoost(60f, 0f, 0.25f, 0.9f), 1e-4f);
+            Assert.AreEqual(54f, StoatSlingMath.SlingBoost(60f, 1f, 0.25f, 0.9f), 1e-4f);
+            Assert.AreEqual(Mathf.PI, StoatSlingMath.AutopilotHoldSeconds(Mathf.PI / 2f, 50f, 100f), 1e-4f,
+                "a quarter turn on r = 100 at 50 u/s: the quarter-circle's arc (50π u) over the speed");
+        }
+
         [Test]
         public void Peak_KeepsTheDeepestSqueezeThroughTheLetGo()
         {

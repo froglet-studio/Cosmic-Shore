@@ -697,38 +697,39 @@ geometry is identical; what differs is the horizon: nothing can enter it and eve
 comes out. In this project that is one sign — `HolePolarity.Source` on `BlackHole`, a NEGATIVE `GM`
 (and frame drag) in the physics `Well`. (This branch first carried it as a separate `Well.Polarity`;
 the merge with charming-cerf, which had built the same thing as a signed GM, kept theirs. Their
-source also flips the tides and the lens, below — the antisymmetric twin rather than the time-reversed
-one.)
+source also flipped the tides and the lens — the antisymmetric twin rather than the time-reversed one;
+the playtest preferred this branch's look, so a HORIZON source is drawn as below again, and only a
+smooth well (§12) keeps charming-cerf's signed lens and tides.)
 
 | | Sink (black, attractor) | Source (white, repulsor) |
 |---|---|---|
 | Radial law (§2) | `a = −GM/(r − r_s)²` toward it | the same magnitude AWAY from it |
 | Frame dragging (§2) | ω about the spin axis | −ω (angular momentum flips under time reversal) |
 | Capture | a body at r ≤ r_s is captured | never — a body inside the horizon is one it is emitting, and the pole guard's floor gives it the kick out |
-| Tides (§5) | `GM·τ²/r³` stretch along the radial | the signed GM in the bank FLATTENS instead (charming-cerf's choice, kept) |
-| Lens (§5.1) | rays through the horizon draw the SHADOW | the trace runs with polarity −1: the lens DIVERGES and nothing falls in; the CORE is drawn over the horizon's disc |
-| Vessels (§4) | pulled | pushed, through the same channel |
+| Tides (§5) | `GM·τ²/r³` stretch along the radial | the same (tides are even under time reversal; the bank publishes \|GM\|) — an emitted body starts a needle and relaxes as it leaves: the capture movie backwards |
+| Lens (§5.1) | the same bending; rays through the horizon draw the SHADOW | the same bending (traced +1); rays through the horizon draw the CORE |
+| Vessels (§4) | pulled; a vessel crossing a PAIRED horizon is carried to the white hole | pushed, through the same channel |
 
 **The core.** What comes out of a white hole is what fell into its paired black hole from the far
 side — the sky continues through the tunnel — so the core samples the scene's own skybox
-(`BlackHoleSky`) under a glow that is white-hot at the core's centre and gone at its rim (the
-photon-capture radius, 2.6 r_s): `core = sky × whiteCoreSkyMix + whiteCoreBrightness × (1 − b/b_c)²`.
-Since the merge the source's lens diverges, so no backward ray falls in to report the line it crossed
-on; the core is drawn over the disc a sink's shadow would cover (the UNBENT impact parameter b < b_c)
-and samples the sky straight through. A smooth well (§12) has no horizon and so no core. With
+(`BlackHoleSky`) in the direction the backward trace crossed the horizon, under a glow that is
+white-hot at the core's centre and gone at its rim (the photon-capture radius, 2.6 r_s):
+`core = sky(crossing) × whiteCoreSkyMix + whiteCoreBrightness × (1 − b/b_c)²`. A smooth well (§12) has
+no horizon and so no core. With
 HDR on and no tonemapper, a brightness above 1 clips to pure white at the centre. Stated
 approximation: the emitted light is the SKY behind the black hole, not the prisms around it (that would
 need a camera render per hole); the lensed background outside the core is the real scene.
 
 **A pair** (`BlackHoleRegistry.SpawnPair`, `BlackHolePairMath`): a black hole and a white hole born
-together, `pairHalfGapHorizons` either side of a midpoint along one axis, both drifting outward at
-`pairDriftSpeed`, decelerating to a stop at half of `pairLifetime`, falling back and meeting again at
-the end of it — the half-gap is the parabola `s(t) = s0 + v·t − (v/T)·t²` — when they ANNIHILATE: both
-ease out through their warp weight. Paired holes have no velocity of their own (the registry moves
-them), and if one is despawned alone the other goes too. From a camera (the tool's Pair buttons, N/M,
-`blackhole pair`): the midpoint `pairAheadHorizons` ahead, the holes on the camera's own horizontal
-to its left and right. A vessel between them is pulled toward the black hole and pushed from the white
-one — the sling toward the black hole's side. A pair takes two of the four hole slots.
+together, either side of a midpoint along one axis, the same size. A HELD pair (the Stoat's, while its
+pilot orbits the black hole) stands still for up to its lifetime; once let go (`LetGo` — at birth for
+a tool pair) the two FALL TOGETHER, accelerating from rest to `pairDriftSpeed` over
+`pairCloseRampSeconds` (`s(t) = s0 − v·t²/2τ`, then linear), and ANNIHILATE where their horizons touch:
+both ease out through their warp weight. (The first version drifted them apart and back on a
+parabola; the playtest asked for a pair that only closes, 2026-10-09.) Paired holes have no velocity
+of their own (the registry moves them), and if one is despawned alone the other goes too. From a
+camera (the tool's Pair buttons, N/M, `blackhole pair`): the midpoint `pairAheadHorizons` ahead, the
+holes on the camera's own horizontal to its left and right. A pair takes two of the four hole slots.
 
 **Pass-through.** A prism captured by a black hole WITH a `Throat` (its pair's other pole) is not
 consumed: it comes out of the white hole at the point reflection of its entry (relative to each
@@ -738,19 +739,28 @@ pure translation instead (charming-cerf's rule, kept for their style); both go t
 own notify. `BlackHoleGravityField.ThroatTransitsTotal` counts both. A lone black hole still
 consumes. The prism's own notify (index + queued render matrix) moves it, the mover's contract.
 
+**Vessels go through too** (`BlackHoleVesselPull.TryCarryThrough`, the playtest's ask): a vessel —
+player or AI, by its own flying — whose centre crosses a paired black hole's horizon is put at the
+same point-reflected exit, heading kept (outward there), through `VesselTransformer.SetPose`, so its
+trail and camera are carried across the jump and a gate watcher counts a teleport
+(`VesselTransitsTotal`). Its drawn hull spaghettifies on the way in and relaxes the same way on the way
+out (`BlackHoleWarp.VesselLogStretch`, the prisms' tide × `vesselTideScale`; drawn on the Stoat by
+`StoatAnimation`, other hulls not yet).
+
 **Proof.** `BlackHolePhysicsTests`: a white hole repels with the black hole's magnitude and turns its
-frame the other way (the source's sign in GM and frame drag), a white hole never captures and pushes a body at its horizon past its influence sphere, the pair's half-gap
-is widest at half-life and back at birth at the end, the exit is the point reflection with the entry
+frame the other way (the source's sign in GM and frame drag), a white hole never captures and pushes a body at its horizon past its influence sphere, a let-go
+pair only closes and meets where its horizons touch (`SecondsToMeet`), the exit is the point reflection with the entry
 velocity outward. `verify_black_hole_lens.py` property 9: 2,000 captured rays report a unit, finite,
 inward crossing direction. `render_black_hole_lens.py --white` renders the core offline.
 
-**The Stoat** (`R_VesselActions/STOAT.md`) is the vessel built on this: its triggers call
-`BlackHoleRegistry.SpawnPair` (or, in the crystal style, `SpawnCrystalPair` — §13) from the HULL's
-frame rather than the camera's — midpoint `aheadHorizons` ahead, the holes on the hull's own
-horizontal, the ATTRACTOR on the side of the trigger pressed, the squeeze's depth (its hold time without analog triggers) setting the strength
-between 2 and 12, the half-gap Space-scaled — and it annihilates its own previous pair before
-slinging the next. The hull then does what §4 says: falls toward the black hole, is shoved off the
-white one. The sling works from a standstill, which is why the Stoat carries the Sparrow's stop.
+**The Stoat** (`R_VesselActions/STOAT.md` §1) is the vessel built on this. PRESS lays a HELD pair
+beside the hull — the attractor perpendicular to the nose on the trigger's side at the orbit radius the
+squeeze asks for, the repulsor mirrored — with the strength that makes that radius a circular
+Paczyński–Wiita orbit at the hull's speed and a horizon a sixth of it. HOLD and the hull orbits the
+black hole (the squeeze tightens the circle live, and the holes follow); RELEASE and it slingshots out
+along the tangent while the pair falls together and annihilates. An owned drift pair pulls nobody
+through `BlackHoleVesselPull` (the owner's pull is the orbit; opponents are §9's). In the crystal
+style (§13) it still lays `SpawnCrystalPair` on release.
 
 **Not yet:** a flash at annihilation and a thump at birth (the Stoat's feel pass, FMOD slots shipped
 empty on `StoatSlingConfig`); the pair's AI/network replication (pairs exist on the machine that
@@ -776,20 +786,20 @@ every pair spawn lays: the Stoat's sling, the tool's Pair buttons, N/M and `blac
 | | `crystalPairs` off: the DRIFT pair (§11, this branch) | `crystalPairs` on: the CRYSTAL wormhole (§12, charming-cerf) |
 |---|---|---|
 | Wells | horizon holes: Paczyński–Wiita, frame dragging, capture | smooth (Plummer) wells, no horizon, no frame dragging |
-| Look | the attractor's shadow + Einstein ring; the repulsor's lens diverges under a white-hot core | the graded lens (one throat wide), seamless mouths — no edge anywhere |
-| Vessel pull | the physical pull into the 90 u/s channel | the felt law in the hull's cruise (k 4, ceiling 1.3 × cruise, reach 12 throats) |
+| Look | the attractor's shadow + Einstein ring; the repulsor bends light the same way and its horizon is a white-hot core | the graded lens (one throat wide), seamless mouths — no edge anywhere |
+| The Stoat's sling | PRESS lays it, HOLD orbits the attractor (radius from the squeeze, the strength that makes it circular), RELEASE slingshots | laid on RELEASE, sized by the squeeze |
+| Vessel pull | none from an owned pair (the owner flies the orbit); a tool pair's physical pull into the 90 u/s channel | the felt law in the hull's cruise (k 4, ceiling 1.3 × cruise, reach 12 throats) |
 | Prisms through the pair | emitted at the point reflection just outside the repulsor | carried by pure translation into the repulsor's core |
-| The pilot | not carried (held at the pull ceiling inside the horizon) | carried through either mouth, by pure translation |
-| Life | drift apart, stop, fall back, annihilate (`StoatSlingConfig.lifetime`, 4 s) | form 0.6 s, stand 0.05 s, spiral and annihilate 3.35 s (`crystal*Seconds`, = 4 s) |
+| The pilot | any vessel crossing the black horizon comes out of the white hole (point-reflected), spaghettified in and out | carried through either mouth, by pure translation |
+| Life | held while orbiting (≤ 12 s), then the two fall together at 40 u/s and annihilate where the horizons touch | form 0.6 s, stand 0.05 s, spiral and annihilate 3.35 s (`crystal*Seconds`) |
 
-**Geometry is shared:** midpoint `aheadHorizons` ahead of the hull, the attractor `halfGapHorizons`
-to the pressed trigger's side, strength from the squeeze. The crystal style's throat is the size dial
-a drift pair's horizon is (`horizonPerStrength × strength`), so a full squeeze opens a 24 u throat,
-close to the crystal cell's ~26 u. **Ownership is shared:** both wells carry `OwnerVessel` (the pull
-moves only the slinger), and a slung crystal pair's mouths carry only the slinger's own player — a
-vessel may not move an opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9). A tool-spawned crystal pair
-is environmental: its mouths carry every pilot in the scene when it opens. One pair per Stoat either
-way: a new sling ends the last one (a crystal pair annihilates over `crystalReplaceSeconds`, 0.4 s).
+**Ownership is shared:** both styles' wells carry `OwnerVessel`, so nothing an owned pair does moves
+an opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9); a slung crystal pair's mouths carry only the
+slinger's own player. A tool-spawned pair is environmental (a crystal one carries every pilot in the
+scene when it opens). One pair per Stoat either way: a new press ends the last one (a crystal pair
+annihilates over `crystalReplaceSeconds`, 0.4 s). The crystal throat is the size dial a drift pair's
+horizon is (`horizonPerStrength × strength`), so a full squeeze opens a 24 u throat, close to the
+crystal cell's ~26 u.
 
 **Where the switch is:** the Black Hole tool's **Pair style** button (spawn section), the generated
 row in its Config view, `blackhole style drift|crystal`, or the asset. It edits the config live, like

@@ -138,6 +138,13 @@ namespace CosmicShore.ScriptableObjects
         [Range(1.5f, 30f)]
         [SerializeField] float maxTidalStretch = 12f;
 
+        [Tooltip("How much of the prisms' tide a VESSEL's drawn hull feels (its spaghettification falling into a " +
+                 "black hole and its reverse leaving a white one). Physical tides at a fixed r/r_s grow as 1/r_s², " +
+                 "so a hull passing a small hole would be a needle long before it fell in; this keeps a near pass a " +
+                 "hint while the horizon still reaches the full stretch. 0 = off.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vesselTideScale = 0.08f;
+
         [Tooltip("How far beyond the horizon the stretch is computed, as a multiple of the horizon " +
                  "radius. The tide is drawn exactly across the inner half of that shell and faded " +
                  "smoothly to zero across the outer half, where the 1/r³ tide is already ≤ 1/43 of the " +
@@ -249,17 +256,20 @@ namespace CosmicShore.ScriptableObjects
         [Range(1.5f, 30f)]
         [SerializeField] float pairHalfGapHorizons = 4f;
 
-        [Tooltip("How fast each hole drifts AWAY from the midpoint at birth, u/s. They decelerate uniformly, " +
-                 "stop at half the lifetime, fall back together and annihilate at the end of it; the pair " +
-                 "is widest by driftSpeed x lifetime / 4 beyond its birth gap.")]
+        [Tooltip("How fast the two holes CLOSE on each other once let go, u/s (a tool pair is let go at birth; " +
+                 "the Stoat's when its trigger is released). They fall together, accelerating to this over " +
+                 "pairCloseRampSeconds, and annihilate where their horizons touch.")]
         [Range(0f, 200f)]
         [SerializeField] float pairDriftSpeed = 20f;
 
-        [Tooltip("Seconds from the pair's birth to its annihilation (the two holes meet again and ease " +
-                 "out together). Mass the black hole swallowed and the white hole emitted is already " +
-                 "on its way by then.")]
+        [Tooltip("Fallback seconds after which a let-go pair with nothing closing it (speed 0) annihilates anyway.")]
         [Range(0.5f, 30f)]
         [SerializeField] float pairLifetime = 5f;
+
+        [Tooltip("Seconds a let-go pair takes to reach its closing speed — the two start from rest and fall " +
+                 "together, as two attracting masses would.")]
+        [Range(0f, 5f)]
+        [SerializeField] float pairCloseRampSeconds = 0.6f;
 
         [Header("Pair style (Docs/BLACK_HOLE.md §13)")]
         [Tooltip("Which wormhole pair every pair spawn lays — the Stoat's sling, the tool's Pair buttons, N/M and " +
@@ -361,6 +371,7 @@ namespace CosmicShore.ScriptableObjects
         public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
         public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
         public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);
+        public float PairCloseRampSeconds => Mathf.Clamp(pairCloseRampSeconds, 0f, 5f);
 
         /// <summary>The pair style (§13): false = the drift pair, true = the crystal wormhole. Settable: the
         /// tool's style switch and <c>blackhole style</c> flip it live, like every other field the tool edits.</summary>
@@ -400,6 +411,7 @@ namespace CosmicShore.ScriptableObjects
         public bool WarpEnabled => warpEnabled;
         public float TidalResponseSeconds => Mathf.Clamp(tidalResponseSeconds, 0f, 3f);
         public float MaxTidalStretch => Mathf.Clamp(maxTidalStretch, 1.5f, 30f);
+        public float VesselTideScale => Mathf.Clamp01(vesselTideScale);
         public float WarpReachMultiplier => Mathf.Max(1.01f, warpReachMultiplier);
         public float WarpEaseSeconds => Mathf.Max(0f, warpEaseSeconds);
 

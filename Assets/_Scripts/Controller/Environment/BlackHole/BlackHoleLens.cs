@@ -292,8 +292,11 @@ namespace CosmicShore.Gameplay
 
             _renderer.GetPropertyBlock(_block);
             _block.SetFloat(HorizonId, rs);
-            // z: the polarity — +1 a black hole, −1 a white hole (Docs/BLACK_HOLE.md §12): a source's lens diverges.
-            _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, _hole.Sign, config.LensFadeStart));
+            // z: the trace's polarity. A HORIZON hole is traced +1 whatever its sign: outside the horizon a
+            // white hole's spacetime is the black hole's, so it bends light the same way and its rays through
+            // the horizon draw the core (Docs/BLACK_HOLE.md §11 — this branch's look, kept over the merge's
+            // diverging source, §13). A smooth well (§12) has no horizon and keeps charming-cerf's signed lens.
+            _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, smooth ? _hole.Sign : 1f, config.LensFadeStart));
             _block.SetFloat(ThroatId, smooth ? 0f : _hole.ThroatRadius);
             // A flag for the smooth path; the strengths it sums come from the global bank.
             _block.SetFloat(SmoothId, smooth ? 1f : 0f);

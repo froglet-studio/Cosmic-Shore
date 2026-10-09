@@ -109,7 +109,7 @@ void BlackHoleLensTraceSigned(float3 x0, float3 d, float lensR, int maxSteps, fl
         if (polarity > 0.0 && r < 1.0)
         {
             escaped = 0.0;                        // through the horizon: no light from here (black)
-            outDir = normalize(v);
+            outDir = normalize(v);                // ...or, for a white hole, the line the light comes out along
             return;
         }
         if (r > lensR && dot(x, v) > 0.0)
