@@ -331,7 +331,9 @@ failures".
 appear at all (it did not compile into the editor assembly), or a total materially
 below 762.
 
-### QA-AUDIT-TOOLS ⬜ — run every FrogletTools auditor and record its verdict
+### QA-AUDIT-TOOLS 🔴 — run every FrogletTools auditor and record its verdict
+**Last QA:** FAIL on `88478a6d` (2026-10-09, akouroshm) — Auditors ran without throwing, but several report beyond the known exceptions. Audit Vessel Skimmers: **6 faults** (known exception is Serpent only). Validate Lifeform Crystals: **34 warnings**. Measure Cell Environment Baselines: **1 warning**. Game Mode Prefab Kit Validate: **75 warnings**. Pending Tool Changes: **~11 uncommitted files**. Ability Rows / Elemental Morphs / Speed Tunnel / Corridor Radii / Cell-Owned Visuals / Occlusion Corridor: ran clean. NOTE: the item's step 10 is STALE — End Game Conditions correctly shows Wildlife Liberation **30** (the mode was re-targeted 250 to 30) and Dog Fight 120; 30 is right, so that line is a doc bug in this item, not a tool fault (fixed in the item body).
+
 **Source:** PRs #637, #641, #653, #659, #661, #668, #646, #650, #702. Each auditor is a
 cheap, asset-only check that encodes a contract; several have never been run.
 
@@ -346,8 +348,8 @@ Run each and paste its report into your results file:
 7. **Ecology ▸ Validate Lifeform Crystals**
 8. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
 9. **Ecology ▸ Measure Cell Environment Baselines**
-10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **250**
-    and Dog Fight **120**
+10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **30**
+    and Dog Fight **120** (Wildlife Liberation was re-targeted 250 → 30; 30 is correct)
 11. **Game Modes ▸ Game Mode Prefab Kit ▸ Validate**
 12. **Build ▸ Pending Tool Changes** (should list nothing unexpected)
 
@@ -3969,22 +3971,35 @@ a creature frozen mid-approach · any element **held** above level 10.
 
 ### QA-VESSEL-RHINO-SWORD ⬜ — sword point-velocity + the debris retune
 **Source:** PR #639. Reference: `RHINO_SHIELD_SWIPE.md` § In-editor verification (5–11).
+**⚠ Partly outdated (noted 2026-10-09, SKIP):** this item predates the sword rework
+(PRs #914 slice-on-destroy, #904 super-shield bind, #921 combos). That rework — and whether
+the sword behaves correctly today — is covered by **QA-RHINO-SWORD-COMBOS**; this item is
+*only* about the PR #639 debris physics (point-velocity + the ~⅓ debris-speed retune). Run
+the two together and keep this one scoped to debris speed.
 1. Fly straight with **no trigger**: hit a prism with the hull, then hit one with the
-   parked sword at the same speed.
+   parked sword at the same speed. **Judge the debris SPEED, not the break style** — the
+   sword SLICES where the hull shatters (that difference is expected, see "Known" below);
+   what this step tests is whether the two throw debris at the *same speed*.
 2. Mid-swipe: hit prisms with the **tip** and with the **hilt**. Select the
    ForceFieldSkimmer in play mode to see the per-point velocity gizmo rays.
 3. Clip your own Rhino trail (small prisms, vol ≈ 0.75) and a fat environment prism at
    the same speed.
 4. Fly a couple of other vessels and fire projectiles at prisms.
-5. Play Astro League and trigger a field reset.
+5. **(If reachable)** In Astro League, if you can trigger a field reset, confirm its prisms
+   **animate out** instead of freezing. **As of 2026-10-09 no way to trigger a field reset
+   was found in the build** — if you cannot find one, skip this step and flag it rather than
+   failing the item (see FAIL note).
 
 **PASS:** hull and parked-sword hits throw debris at the **same** speed; a tip strike
 visibly beats a hilt strike and throws along the swing tangent; small and large prisms
 at the same speed match; other vessels/projectiles throw debris at ~1/3 the old speed
-with nothing else changed; Astro League's field-reset prisms animate out instead of
-freezing.
+with nothing else changed. (Astro League field-reset prisms animating out — only if a
+reset can be triggered.)
 **FAIL:** a parked sword adding speed · tip and hilt identical · debris speed varying
-with prism size · debris pinned to one speed regardless of impact.
+with prism size · debris pinned to one speed regardless of impact. **Not a fail:** the
+sword breaking prisms differently from a hull (that is the intended slice), or being
+unable to find an Astro League field-reset trigger (flag that to design/engineering — it
+may be a removed or renamed mechanic — rather than failing here).
 **Judgement call to report:** shatter is now ~3× slower on gentle grazes (violence
 tracks force by design). Say whether the slow end reads as sluggish.
 
