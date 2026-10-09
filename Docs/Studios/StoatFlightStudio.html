@@ -370,7 +370,7 @@
         <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
       <details class="card" id="grp-F" open><summary>Field trajectory <small>round 15 · lab-only</small></summary><div class="rows"></div>
-        <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i>. <b>The poles are fixed</b> (<i>pole strength</i>, <i>horizon</i>, <i>white hole push</i>). <b>Squeeze</b> either trigger and the pair opens <i>ahead</i> of you with the poles together, then the trigger pulls them apart along your wings, up to <i>full trigger</i> u (on the squeeze curve): the separation is the dipole moment. The black hole sits on the side of the trigger that opened it. Ease off and the poles come back together; let go and they meet and annihilate, so there is only ever one pair. <b>The line</b> is your path on your current inputs, from just ahead of the nose, run with the flight's own step: <span style="color:#96a6c2">blue-grey</span> while the poles leave it alone, <b style="color:#9dff2e">lime</b> as soon as they <b>warp it at all</b> (bend it by <i>boost once … bend</i> in total) or it goes <b>through the wormhole</b>. While it is lime you travel down it at <i>loop boost</i> ×: the boost runs your own flight faster (steering, engine and field together), so you reach each point of the line sooner and the line does not change. It stops where it would loop back onto itself. In this mode the Stoat turns at <i>pitch &amp; yaw in this mode</i> × its shipped rate, so the pair does more of the turning. Force ceiling and fastest bend come from the <b>Dipole</b> tab.</p>
+        <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i>. <b>The poles are fixed</b> (<i>pole strength</i>, <i>horizon</i>, <i>white hole push</i>). <b>Squeeze</b> either trigger and the pair opens <i>ahead</i> of you with the poles together. Then the two triggers place them (each on the squeeze curve): the <b>difference</b> between the triggers pulls them apart <b>sideways</b> (up to <i>sideways</i> u for one full trigger, the black hole on the deeper trigger's side), and the <b>sum</b> pulls them apart <b>lengthways</b> (up to <i>lengthways</i> u with both full), the black hole always the nearer, so you shoot into the sink and out of the source. One trigger gives a slight diagonal; both full put the black hole dead ahead and the white hole further ahead on the same line. The separation is the dipole moment. Ease off and the poles come back together; let go of both and they meet and annihilate, so there is only ever one pair. <b>The line</b> is your path on your current inputs, drawn as evenly spaced dots (<i>dot size</i>, <i>gap</i>) from just ahead of the nose, run with the flight's own step: <span style="color:#96a6c2">blue-grey</span> while the poles leave it alone, <b style="color:#9dff2e">lime</b> as soon as they <b>warp it at all</b> (bend it by <i>boost once … bend</i> in total) or it goes <b>through the wormhole</b>. While it is lime you travel down it at <i>loop boost</i> ×: the boost runs your own flight faster (steering, engine and field together), so you reach each point of the line sooner and the line does not change. It stops where it would loop back onto itself. In this mode the Stoat turns at <i>pitch &amp; yaw in this mode</i> × its shipped rate, so the pair does more of the turning. Force ceiling and fastest bend come from the <b>Dipole</b> tab.</p>
         <div class="btns"><button class="pick primary" type="button" id="ftScanBtn">Scan headings</button><button class="pick" type="button" id="ftBatchBtn">Score the field</button><span class="hint" id="ftNote" style="margin:0">no drawing</span></div>
         <div id="ftScanOut"></div>
         <p class="src"><b>Not modelled.</b> The game has no field mode: this is a lab proposal and every row above is lab-only. The path holds your current inputs constant (a pilot keeps steering) and the poles where they are (they move with the trigger). It follows you through the wormhole only with the Portal tick on (as the flight does). Near the horizon a whirl is chaotic: a path that grazes it can flip from one frame to the next, and the flown path can leave the drawn one there. Prisms and other vessels do not bend it, and "its own trail" is the path's own earlier points (plus, if ticked, your laid trail), not colliders.</p>
@@ -463,7 +463,7 @@
     dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
     // the field trajectory (round 15 — LAB-ONLY: the game has no such mode and no such fields). The pair's strength,
     // horizon, push, force ceiling and fastest bend are the Dipole sling's rows; these are the mode's own.
-    ftAhead: 250, ftStrength: 6, ftHorizon: 3.5, ftWhite: 1, ftSepMax: 200, ftSepFollow: 6, ftWarpDeg: 3,
+    ftAhead: 250, ftStrength: 6, ftHorizon: 3.5, ftWhite: 1, ftSepMax: 200, ftSepLong: 120, ftSepFollow: 6, ftWarpDeg: 3, ftDotPx: 4, ftDotGap: 10,
     ftGrip: 0.5, ftLength: 600, ftNose: 8, ftStep: 3, ftMargin: 8, ftMinLoop: 60,
     ftBoost: 3, ftRise: 20, ftFade: 0.6, ftSteer: 1, ftTrail: 0, ftTurnScale: 0.4,
     // B: charming-cerf crystal wormhole (laid on release; felt law, lens, life curve)
@@ -537,9 +537,12 @@
     ['F', 'ftStrength', 'Pole strength (fixed)', 0.5, 30, 0.5],
     ['F', 'ftHorizon', 'Black hole horizon (u, fixed)', 0.5, 15, 0.1],
     ['F', 'ftWhite', 'White hole push (× the pull)', 0, 2, 0.05],
-    ['F', 'ftSepMax', 'Full trigger pulls the poles apart to (u)', 20, 600, 5],
+    ['F', 'ftSepMax', 'Sideways: one full trigger pulls the poles apart by (u)', 20, 600, 5],
+    ['F', 'ftSepLong', 'Lengthways: both full triggers put the white hole beyond the black hole by (u)', 0, 600, 5],
     ['F', 'ftSepFollow', 'Poles follow the trigger (/s)', 0.5, 30, 0.5],
     ['F', 'ftWarpDeg', 'Boost once the poles bend your path by (°)', 0.1, 45, 0.1],
+    ['F', 'ftDotPx', 'Path dot size (px)', 1, 10, 0.5],
+    ['F', 'ftDotGap', 'Gap between dots (× the dot size)', 1, 30, 0.5],
     ['F', 'ftGrip', 'Engine holds speed in the field (/s, 0 = pure gravity)', 0, 10, 0.1],
     ['F', 'ftLength', 'Trajectory length (u)', 100, 1500, 10],
     ['F', 'ftNose', 'Starts ahead of the nose (u)', 0, 40, 1],
@@ -1667,21 +1670,30 @@
     return out;
   }
   // The pair is a DIPOLE of fixed poles: a black hole of strength ftStrength (horizon ftHorizon) and a white hole pushing
-  // ftWhite × as hard. The press lays it ftAhead in front of you with the poles together; the analog trigger (either
-  // one; the deeper squeeze) pulls them apart along your wings, up to ftSepMax at a full squeeze, the black hole on the
-  // side of the trigger that laid it. The separation is the dipole moment. Ease off and they come back together; let go
-  // and they meet and annihilate. So there is only ever one pair, and only while you hold it.
+  // ftWhite × as hard. A squeeze lays it ftAhead in front of you with the poles together, in the frame you had then.
+  // The TWO triggers then place the poles relative to each other (each on the squeeze curve):
+  //   · the DIFFERENCE (RT − LT) pulls them apart sideways, up to ftSepMax for one full trigger; the black hole goes to
+  //     the side of the deeper trigger;
+  //   · the SUM ((LT + RT) / 2) pulls them apart lengthways, up to ftSepLong with both full: the black hole (the sink)
+  //     always the nearer, the white hole (the source) further on, so you shoot into the sink and out of the source.
+  // One trigger alone gives a slight diagonal (its sum part); both full put the sink straight ahead and the source
+  // further ahead on the same line. Ease off and the poles come back together; let go of both and they meet and
+  // annihilate. So there is only ever one pair, and only while you hold it.
   function fieldStanding() { const fs = fieldSling; return fs && fs.pair.alive && fs.pair.held && !fs.pair.dying ? fs.pair : null; }
-  const fieldSepTarget = () => Math.max(0, P.ftSepMax) * squeezeT(Math.max(holds.L.on ? holds.L.live : 0, holds.R.on ? holds.R.live : 0));
+  // the separation (sink → source) the triggers ask for, in the pair's own frame: lat along its right, lon along its forward
+  function dipoleOffsets(Pv, lt, rt) {
+    const e = Math.max(0.01, Pv.holdExponent), a = Math.pow(clamp01(lt), e), b = Math.pow(clamp01(rt), e);
+    return { lat: (a - b) * Math.max(0, Pv.ftSepMax), lon: 0.5 * (a + b) * Math.max(0, Pv.ftSepLong) };   // source sits on the LIGHTER trigger's side
+  }
+  const ftTarget = { lat: 0, lon: 0 };
   function layField(side) {
     if (mode !== 'fly' || race === 'ready') return;
     if (fieldStanding()) return;                                              // one pair: the other trigger just joins it
     for (const pr of pairs) if (pr.owned && pr.alive) pr.alive = false;       // a dying one is cut short
     basis();
-    const sideV = right.clone().multiplyScalar(side === 'L' ? -1 : 1);
     const mid = hull.position.clone().addScaledVector(fwd, P.ftAhead);
-    const pr = new Pair('A', mid, sideV, up, 0, true, { rs: 0.02, held: true, dipole: { att: mid.clone(), rep: mid.clone(), rsR: 0.02, SR: 0 } });
-    pr.field = true; pr.sep = 0; pr.mid0 = mid.clone(); pr.axis0 = sideV.clone();
+    const pr = new Pair('A', mid, right, up, 0, true, { rs: 0.02, held: true, dipole: { att: mid.clone(), rep: mid.clone(), rsR: 0.02, SR: 0 } });
+    pr.field = true; pr.lat = 0; pr.lon = 0; pr.sep = 0; pr.mid0 = mid.clone(); pr.right0 = right.clone(); pr.fwd0 = fwd.clone();
     pairs.push(pr); myPair = pr; runStyles.add('F');
     spawnWave('in', mid);
     fieldSling = { side, pair: pr };
@@ -1693,13 +1705,16 @@
     const fs = fieldSling; if (!fs) return;
     if (!fs.pair.alive) { fieldSling = null; return; }
     const pr = fs.pair; if (!pr.held || pr.dying) return;
-    const target = fieldSepTarget(), held = holds.L.on || holds.R.on;
-    pr.sep += (target - pr.sep) * (1 - Math.exp(-Math.max(0.1, P.ftSepFollow) * dt));
+    const held = holds.L.on || holds.R.on, o = dipoleOffsets(P, holds.L.on ? holds.L.live : 0, holds.R.on ? holds.R.live : 0);
+    const k = 1 - Math.exp(-Math.max(0.1, P.ftSepFollow) * dt);
+    pr.lat += (o.lat - pr.lat) * k; pr.lon += (o.lon - pr.lon) * k; pr.sep = Math.hypot(pr.lat, pr.lon);
     const bB = smooth(0, 1, pr.t / Math.max(0.01, P.bornS)), bW = smooth(0.55, 1, pr.t / Math.max(0.01, P.whInS));
     pr.rs = Math.max(0.02, P.ftHorizon * bB); pr.S = P.ftStrength * bB;
     pr.rsR = Math.max(0.02, P.ftHorizon * P.whSizeX * bW); pr.SR = P.ftStrength * P.ftWhite * bW;
-    pr.att.copy(pr.mid0).addScaledVector(pr.axis0, 0.5 * pr.sep); pr.rep.copy(pr.mid0).addScaledVector(pr.axis0, -0.5 * pr.sep);
-    // let go: the poles fall back together and annihilate when their horizons touch
+    // the sink on the deeper trigger's side and nearer; the source mirrored through the middle, further on
+    pr.att.copy(pr.mid0).addScaledVector(pr.right0, -0.5 * pr.lat).addScaledVector(pr.fwd0, -0.5 * pr.lon);
+    pr.rep.copy(pr.mid0).addScaledVector(pr.right0, 0.5 * pr.lat).addScaledVector(pr.fwd0, 0.5 * pr.lon);
+    // let go of both: the poles fall back together and annihilate when their horizons touch
     if (!held && pr.sep <= Math.max(1, 0.5 * (pr.rs + pr.rsR))) pr.startDying();
   }
   const ftFly = { p: null, q: null, g: 0 };
@@ -1746,26 +1761,31 @@
     if (mode !== 'fly' || ftLive.n < 2) return;
     const n = ftLive.n, pts = ftLive.pts, lime = ftLive.lime, hole = ftLive.end === 'hole';
     const rgb = lime ? '157,255,46' : hole ? '255,179,71' : '150,166,194';
-    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
-    let px = 0, py = 0, have = false, jk = 0;
+    // evenly spaced DOTS along the line as it is seen: diameter ftDotPx, ftDotGap diameters of space between two dots
+    const dia = Math.max(0.5, P.ftDotPx) * sc, step = dia * (1 + Math.max(0, P.ftDotGap));
+    c.save();
+    let px = 0, py = 0, have = false, jk = 0, carry = 0;   // carry: screen distance still owed before the next dot
+    // a dark edge so a dot never reads as a star
+    const dot = (x, y, a) => { c.beginPath(); c.arc(x, y, dia / 2, 0, TAU); c.fillStyle = 'rgba(' + rgb + ',' + a.toFixed(3) + ')'; c.fill(); c.lineWidth = Math.max(1, dia * 0.22); c.strokeStyle = 'rgba(4,6,20,' + (0.75 * a).toFixed(3) + ')'; c.stroke(); };
     for (let i = 0; i < n; i++) {
       const jump = jk < ftLive.nj && ftLive.jumps[jk] === i; if (jump) jk++;
       ftScr.set(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]).applyMatrix4(cam.matrixWorldInverse);
       if (ftScr.z > -cam.near - 0.5) { have = false; continue; }
       ftScr.applyMatrix4(cam.projectionMatrix);
       const x = (ftScr.x * 0.5 + 0.5) * cw, y = (-ftScr.y * 0.5 + 0.5) * ch;
-      if (jump) {   // through the wormhole: no line across it — a ring where you go in, a ring where you come out
+      if (jump) {   // through the wormhole: no dots across it, a ring where you go in, a double ring where you come out
         c.strokeStyle = 'rgba(' + rgb + ',0.95)'; c.lineWidth = 2 * sc;
         if (have) { c.beginPath(); c.arc(px, py, 6 * sc, 0, TAU); c.stroke(); }
         c.beginPath(); c.arc(x, y, 6 * sc, 0, TAU); c.stroke(); c.beginPath(); c.arc(x, y, 10 * sc, 0, TAU); c.stroke();
-        px = x; py = y; have = true; continue;
+        px = x; py = y; have = true; carry = step; continue;
       }
-      if (have) {
-        const inLoop = ftLive.hitJ >= 0 && i > ftLive.hitJ, a = lime ? (inLoop ? 0.95 : 0.6) : Math.max(0.15, 0.85 - 0.7 * i / n);
-        c.strokeStyle = 'rgba(' + rgb + ',' + a.toFixed(3) + ')'; c.lineWidth = (lime && inLoop ? 3 : 2) * sc;
-        c.beginPath(); c.moveTo(px, py); c.lineTo(x, y); c.stroke();
-      }
-      px = x; py = y; have = true;
+      const inLoop = ftLive.hitJ >= 0 && i > ftLive.hitJ, a = lime ? (inLoop ? 0.95 : 0.8) : Math.max(0.45, 0.95 - 0.5 * i / n);
+      if (!have) { dot(x, y, a); carry = step; px = x; py = y; have = true; continue; }
+      const dx = x - px, dy = y - py, len = Math.hypot(dx, dy);
+      let t = carry;
+      for (; t <= len; t += step) dot(px + dx * t / len, py + dy * t / len, a);
+      carry = t - len;
+      px = x; py = y;
     }
     if (ftLive.end !== 'open' && have) { c.strokeStyle = 'rgba(' + rgb + ',0.95)'; c.lineWidth = 2 * sc; c.beginPath(); c.arc(px, py, 7 * sc, 0, TAU); c.stroke(); }
     c.restore();
@@ -1775,9 +1795,11 @@
   // Controls that must stay at 0: no pair at all, and the white hole alone (black hole massless).
   function fieldScan(opts) {
     opts = opts || {};
-    const Pv = opts.Pv || P, D = opts.D || 300, q = opts.q != null ? opts.q : 1, span = opts.span || 60, stepDeg = opts.step || 1;
-    const tp = Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent)), sep = Math.max(0, Pv.ftSepMax) * tp, S = Pv.ftStrength, rs = Pv.ftHorizon;
-    const f = opts.none ? null : { att: new V3(0.5 * sep, 0, 0), rep: new V3(-0.5 * sep, 0, 0), S, rs, SR: S * Pv.ftWhite, rsR: rs * Pv.whSizeX };
+    const Pv = opts.Pv || P, D = opts.D || 300, span = opts.span || 60, stepDeg = opts.step || 1;
+    const lt = opts.lt != null ? opts.lt : 0, rt = opts.rt != null ? opts.rt : (opts.q != null ? opts.q : 1), q = rt;
+    const o = dipoleOffsets(Pv, lt, rt), S = Pv.ftStrength, rs = Pv.ftHorizon, sep = Math.hypot(o.lat, o.lon);
+    // the pair's frame: forward = −z (the Stoat flies at it from +z), right = +x
+    const f = opts.none ? null : { att: new V3(-0.5 * o.lat, 0, 0.5 * o.lon), rep: new V3(0.5 * o.lat, 0, -0.5 * o.lon), S, rs, SR: S * Pv.ftWhite, rsR: rs * Pv.whSizeX };
     const p0 = new V3(0, 0, D), q0 = new THREE.Quaternion(), out = { pts: new Float32Array(FT_MAX * 3) }, rates = { pitch: 0, yaw: 0, roll: 0 };
     let lime = 0, total = 0, lo = null, hi = null, loops = 0, thru = 0;
     for (let a = -span; a <= span + 1e-9; a += stepDeg) {
@@ -1786,7 +1808,7 @@
       total++;
       if (out.lime) { lime++; if (lo == null) lo = a; hi = a; if (out.end === 'self') loops++; if (out.thru) thru++; }
     }
-    return { D, q, sep: Math.round(sep), share: lime / total, lime, loops, thru, total, lo, hi };
+    return { D, lt, rt, q, sep: Math.round(sep), share: lime / total, lime, loops, thru, total, lo, hi };
   }
   const axisLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3(0, 0, 1)]),
     new THREE.LineDashedMaterial({ color: 0xd9ccff, dashSize: 6, gapSize: 5, transparent: true, opacity: 0.7, depthTest: false }));
@@ -2599,7 +2621,7 @@
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = lim ? lime : f ? colA : dim;
       c.fillText((ftMul > 1.05 ? '× ' + ftMul.toFixed(1) + '  ·  ' : '') + endTxt, cw / 2, tY + pad + 14 * sc);
       c.font = font(11, 500); c.fillStyle = dim;
-      c.fillText(f ? 'poles ' + Math.round(f.sep) + ' u apart  ·  black hole ' + Math.round(hull.position.distanceTo(f.att)) + ' u' + (holds.L.on || holds.R.on ? '' : '  ·  let go: closing') : (myPair && myPair.alive && myPair.field ? 'the poles met: annihilating' : 'no pair: squeeze LT or RT to open one'), cw / 2, tY + pad + 30 * sc);
+      c.fillText(f ? 'poles ' + Math.round(Math.abs(f.lat)) + ' u apart sideways, ' + Math.round(f.lon) + ' u lengthways  ·  black hole ' + Math.round(hull.position.distanceTo(f.att)) + ' u' + (holds.L.on || holds.R.on ? '' : '  ·  let go: closing') : (myPair && myPair.alive && myPair.field ? 'the poles met: annihilating' : 'no pair: squeeze LT or RT to open one'), cw / 2, tY + pad + 30 * sc);
     }
     if (stopped) {
       c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#7fd7ff'; c.fillText('STOPPED · ' + fmtTime(raceT) + ' · the clock is paused', cw / 2, tY + pad + 50 * sc);
@@ -2654,7 +2676,7 @@
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = h.on ? ink : dim; c.fillText(side === 'L' ? 'LT' : 'RT', x, y + 5 * sc);
       if (h.on) {
         c.font = font(11, 600); c.fillStyle = ink;
-        if (style === 'A' && slingMode === 'field') c.fillText(Math.round(P.ftSepMax * squeezeT(h.live)) + ' u apart', x, y - r - 8 * sc);
+        if (style === 'A' && slingMode === 'field') { const o = dipoleOffsets(P, holds.L.on ? holds.L.live : 0, holds.R.on ? holds.R.live : 0); c.fillText(Math.round(Math.abs(o.lat)) + ' ↔  ' + Math.round(o.lon) + ' ↑', x, y - r - 8 * sc); }
         else if (style === 'A' && slingMode !== 'orbit') c.fillText('S ' + dipoleS(h.live).toFixed(1), x, y - r - 8 * sc);
         else if (style === 'A') c.fillText('orbit ' + Math.round(orbitRadius(h.live)) + ' u', x, y - r - 8 * sc);
         else { const S = strengthOf(h.peak); c.fillText('S ' + S.toFixed(1) + ' · ' + Math.max(MIN_HORIZON, S * 2).toFixed(0) + ' u', x, y - r - 8 * sc); }
@@ -2722,7 +2744,7 @@
       box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
         (style === 'A' && slingMode === 'field'
-          ? '<p><b>The field trajectory.</b> <b>Squeeze</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole and a white hole open ahead, pulled apart by how far you squeeze (the black hole on that trigger\'s side). Ease off and they come together; let go and they annihilate. Nothing catches you: the line from your nose is the path your inputs fly through their field. Whenever the poles bend that path at all, or it runs <b style="color:#9dff2e">through the wormhole</b>, it turns lime and you travel down it ' + P.ftBoost + '× faster; the line does not move.</p>'
+          ? '<p><b>The field trajectory.</b> <b>Squeeze</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways (the black hole on the deeper trigger\'s side), their sum lengthways (the black hole always nearer, the white hole beyond). Ease off and they come together; let go of both and they annihilate. Nothing catches you: the line from your nose is the path your inputs fly through their field. Whenever the poles bend that path at all, or it runs <b style="color:#9dff2e">through the wormhole</b>, it turns lime and you travel down it ' + P.ftBoost + '× faster; the line does not move.</p>'
           : style === 'A' && slingMode === 'dipole'
           ? '<p><b>The dipole sling.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a small black hole appears ahead on that side, its white hole ahead on the other. <b>How deep</b> you squeeze is its strength; the solid circle is where it would hold you, the faint one how far out it can catch you. Fly past it: once it catches you, you stay in its grip and go round for as long as you <b>hold</b>. <b>Let go</b> and you slingshot out on the tangent with a boost; the pair falls together and annihilates.</p>'
           : style === 'A'
@@ -3397,9 +3419,9 @@
   // hole), amber = into the black hole without counting, faint blue-grey = open.
   SCENES.field = {
     make(Pv, cfg) {
-      const D = cfg.D || Pv.ftAhead, q = cfg.q != null ? cfg.q : 0.5, tp = Math.pow(clamp01(q), Math.max(0.01, Pv.holdExponent));
-      const S = Pv.ftStrength, rs = Pv.ftHorizon, sep = Math.max(0, Pv.ftSepMax) * tp;
-      const f = cfg.none ? null : { att: new V3(0.5 * sep, 0, 0), rep: new V3(-0.5 * sep, 0, 0), S, rs, SR: S * Pv.ftWhite, rsR: rs * Pv.whSizeX };
+      const D = cfg.D || Pv.ftAhead, q = cfg.q != null ? cfg.q : 0.5, o = dipoleOffsets(Pv, cfg.lt != null ? cfg.lt : 0, q);
+      const S = Pv.ftStrength, rs = Pv.ftHorizon, sep = Math.hypot(o.lat, o.lon);
+      const f = cfg.none ? null : { att: new V3(-0.5 * o.lat, 0, 0.5 * o.lon), rep: new V3(0.5 * o.lat, 0, -0.5 * o.lon), S, rs, SR: S * Pv.ftWhite, rsR: rs * Pv.whSizeX };
       const mul = 1;
       const rates = { pitch: 0, yaw: (cfg.yaw || 0) * Pv.pitchYaw * Pv.ftTurnScale * Math.PI / 180, roll: 0 }, Pq = Object.assign({}, Pv, { ftTrail: 0 });
       const paths = [], span = cfg.span || 30, stp = cfg.step || 2.5, q0 = new THREE.Quaternion(), out = { pts: new Float32Array(FT_MAX * 3) };
@@ -3423,7 +3445,7 @@
         for (let i = 0; i < p.xs.length; i += 2) { const x = X(p.xs[i]), y = Yc(p.xs[i + 1]); if (i && p.jumps.indexOf(i / 2) < 0) c.lineTo(x, y); else c.moveTo(x, y); }
         c.stroke();
       }
-      if (st.f) { drawWhiteHole(c, X(st.f.rep.x), Yc(0), Math.max(3, st.rs * V.s), Pv); drawBlackHole(c, X(st.f.att.x), Yc(0), Math.max(3, st.rs * V.s * 2.6), Pv); }
+      if (st.f) { drawWhiteHole(c, X(st.f.rep.x), Yc(st.f.rep.z), Math.max(3, st.rs * V.s), Pv); drawBlackHole(c, X(st.f.att.x), Yc(st.f.att.z), Math.max(3, st.rs * V.s * 2.6), Pv); }
       ship(c, X(0), Yc(st.D), 0, 1, '#ffd27a', 6);
       txt(c, st.lime + ' of ' + st.total + ' headings are warped (boost)', 6, 13, st.lime ? '#9dff2e' : '#e8ecff', 10);
       txt(c, 'from ' + Math.round(st.D) + ' u · poles ' + Math.round(st.sep) + ' u apart', 6, H - 6, '#9aa6d6', 9.5);
@@ -3437,7 +3459,7 @@
       const x0 = 26, x1 = W - 10, y0 = H - 20, y1 = 22, T = 3.5, top = Math.max(1, Pv.ftSepMax), sx = (t) => x0 + (x1 - x0) * t / T, sy = (d) => y0 + (y1 - y0) * d / top;
       c.fillStyle = 'rgba(185,164,255,0.12)'; c.fillRect(sx(0.2), y1, sx(1.7) - sx(0.2), y0 - y1);
       c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
-      const target = Pv.ftSepMax * Math.pow(0.8, Math.max(0.01, Pv.holdExponent)), k = Math.max(0.1, Pv.ftSepFollow);
+      const o = dipoleOffsets(Pv, 0, 0.8), target = Math.hypot(o.lat, o.lon), k = Math.max(0.1, Pv.ftSepFollow);
       let d = 0, dead = null, cur = 0; c.strokeStyle = '#b9a4ff'; c.lineWidth = 2; c.beginPath();
       for (let t = 0; t <= T; t += 1 / 120) {
         const held = t >= 0.2 && t < 1.7;
@@ -3501,8 +3523,11 @@
     ftStrength: { scene: 'field', cfg: { D: 300 }, d: 'How strong each pole is (GM = 20,000 × strength, the game\'s unit). Fixed: the trigger no longer sets it, it only pulls the poles apart. A stronger pair bends paths from further away, so more headings boost.', lo: 'A weak pair: only close passes bend.', hi: 'A strong pair: paths bend from far out.' },
     ftHorizon: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'The black hole\'s horizon, fixed (the white hole is this × its size). A path that crosses it goes through the wormhole. The preview pulls the poles fully apart.', lo: 'A small mouth: few paths go through.', hi: 'A wide mouth: many paths go through.' },
     ftWhite: { scene: 'field', cfg: { D: 300 }, d: 'How hard the white hole pushes, as a share of the black hole\'s pull. At 1 the two are equal and opposite: a true dipole, whose field fades as the poles come together and grows with how far apart they are (the dipole moment).', lo: 'Mostly a black hole: it pulls even when the poles are together.', hi: 'A strong push: paths are shoved off the white side.' },
-    ftSepMax: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'How far apart the poles go at a full trigger. The analog trigger sets the separation (on the squeeze curve), and so the dipole moment; let go and they come back together and annihilate. The preview is a full trigger.', lo: 'A tight dipole: a short reach.', hi: 'A wide dipole: a long reach.' },
-    ftSepFollow: { scene: 'ftSep', cfg: {}, d: 'How quickly the poles follow the trigger. The preview squeezes for 1.5 s and lets go: the separation rises, falls back, and the pair annihilates when the poles touch.', lo: 'The poles drift apart and back slowly.', hi: 'The poles snap to the trigger.' },
+    ftSepMax: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'How far apart sideways the poles go for one full trigger. The DIFFERENCE between the triggers sets the sideways separation, the black hole going to the deeper trigger\'s side; with both pulled equally it is zero. The preview is RT full, LT off.', lo: 'A tight dipole: a short reach.', hi: 'A wide dipole: a long reach.' },
+    ftSepLong: { scene: 'field', cfg: { D: 300, q: 1, lt: 1 }, d: 'How far beyond the black hole the white hole goes with BOTH triggers full. The SUM of the triggers sets this lengthways separation, the black hole always the nearer, so you shoot into the sink and out of the source. One trigger alone gets half of it, which gives the slight diagonal. The preview is both triggers full.', lo: 'Both triggers: the poles stay close.', hi: 'Both triggers: the source far beyond the sink.' },
+    ftSepFollow: { scene: 'ftSep', cfg: {}, d: 'How quickly the poles follow the triggers. The preview squeezes for 1.5 s and lets go: the separation rises, falls back, and the pair annihilates when the poles touch.', lo: 'The poles drift apart and back slowly.', hi: 'The poles snap to the trigger.' },
+    ftDotPx: { scene: 'field', cfg: { D: 300 }, d: 'The size of each dot of the path line on screen. The dots are evenly spaced along the line as you see it, the gap between two dots this many times the dot size (next row).', lo: 'Fine dots.', hi: 'Bold dots.' },
+    ftDotGap: { scene: 'field', cfg: { D: 300 }, d: 'The gap between two dots of the path line, as a multiple of the dot size (10 = ten dot-widths of space between dots).', lo: 'Dense dots.', hi: 'Sparse dots.' },
     ftWarpDeg: { scene: 'field', cfg: { D: 300, q: 0.5 }, d: 'The boost is on whenever either pole bends your path at all. This is how much the field has to turn the path, in total, to count. A path through the wormhole always counts.', lo: 'The faintest bend boosts.', hi: 'Only a hard bend boosts.', at: [0.02, 0.3] },
     ftAhead: { scene: 'field', cfg: {}, d: 'How far ahead of the nose the pair is laid. The preview starts the Stoat that far from the black hole and fans its headings: the further out, the more path is spent getting there before a loop can close.', lo: 'Laid close: loops close sooner.', hi: 'Laid far: fewer headings reach a loop within the path.' },
     ftGrip: { scene: 'field', cfg: { D: 300 }, d: 'How firmly the engine pulls the gravity speed back toward cruise. 0 is pure gravity: you speed up falling in and slow climbing out, so a pass from far away is unbound and loops only when it whirls at the edge of capture. Higher, the field turns you without speeding you up, so it bends harder — orbits close, and at the top the strong squeezes swallow everything.', lo: 'Closer to pure gravity.', hi: 'The engine holds your speed: the field only turns you.', at: [0.05, 0.3] },
@@ -3851,7 +3876,7 @@
     const fieldOn = s === 'A' && slingMode === 'field';
     $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling';
     $('mainP').innerHTML = fieldOn
-      ? 'Squeeze a trigger: a black hole and a white hole open ahead, as far apart as you squeeze; let go and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
+      ? 'Squeeze a trigger: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways, the sum lengthways (black hole nearer, white hole beyond); let go of both and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
     if (s === 'B' || slingMode === 'orbit') $('archive').open = true;
     $('portal').checked = !!portal[s];
@@ -3917,14 +3942,15 @@
   // ---- the field: the heading scan and the field scorecard ----
   function fieldScanAll() {
     const rows = [];
-    for (const q of [0.25, 0.5, 1]) for (const D of [150, 300, 500]) rows.push(fieldScan({ q, D }));
-    const ctl = { none: fieldScan({ D: 300, none: true }), far: fieldScan({ D: 1.2 * P.ftLength + 200 }), together: fieldScan({ D: 300, q: 0 }) };
+    for (const [lt, rt] of FT_SCAN_TRIGGERS) for (const D of [150, 300, 500]) rows.push(fieldScan({ lt, rt, D }));
+    const ctl = { none: fieldScan({ D: 300, none: true }), far: fieldScan({ D: 1.2 * P.ftLength + 200 }), together: fieldScan({ D: 300, lt: 0, rt: 0 }) };
     return { rows, ctl };
   }
+  const FT_SCAN_TRIGGERS = [[0, 0.5], [0, 1], [0.5, 0.5], [1, 1], [0.5, 1]];
   function fieldScanTable(r) {
     const pct = (x) => Math.round(100 * x.share) + '%' + (x.lime ? ' <small>(' + x.lo + '°…' + x.hi + '°; ' + x.thru + ' through)</small>' : '');
-    let h = '<table class="runs batch"><thead><tr><th>Trigger (separation)</th><th>from 150 u</th><th>from 300 u</th><th>from 500 u</th></tr></thead><tbody>';
-    for (const q of [0.25, 0.5, 1]) { const rs = r.rows.filter((x) => x.q === q); h += '<tr><td>' + q + ' (' + rs[0].sep + ' u)</td>' + rs.map((x) => '<td' + (x.lime ? ' class="win" style="color:#9dff2e"' : '') + '>' + pct(x) + '</td>').join('') + '</tr>'; }
+    let h = '<table class="runs batch"><thead><tr><th>LT / RT (poles apart)</th><th>from 150 u</th><th>from 300 u</th><th>from 500 u</th></tr></thead><tbody>';
+    for (const [lt, rt] of FT_SCAN_TRIGGERS) { const rs = r.rows.filter((x) => x.lt === lt && x.rt === rt); h += '<tr><td>' + lt + ' / ' + rt + ' (' + rs[0].sep + ' u)</td>' + rs.map((x) => '<td' + (x.lime ? ' class="win" style="color:#9dff2e"' : '') + '>' + pct(x) + '</td>').join('') + '</tr>'; }
     h += '</tbody></table><p class="src">The share of headings within ±60° of the pair\'s centre (1° apart, in the plane of the pair, straight flight at cruise, no steering) whose path the poles warp — bent at least ' + P.ftWarpDeg + '°, or through the wormhole — and the band they fall in (0° = dead at the centre; positive headings turn toward the white hole). <b>Controls, both must be 0%</b>: no pair ' + pct(r.ctl.none) + ' · the pair beyond the path\'s reach (' + r.ctl.far.D + ' u) ' + pct(r.ctl.far) + '. With the poles together (trigger 0, before they annihilate): ' + pct(r.ctl.together) + '.</p>';
     return h;
   }
@@ -4232,7 +4258,7 @@
     state() { return { t: simT, race, raceT, threaded, speed, ftMul, gravSpeed, flow, slingMode, style, pos: hull.position.toArray(), path: { n: ftLive.n, end: ftLive.end, lime: ftLive.lime, loop: ftLive.loop, len: ftLive.len } }; },
     score() { return { fieldScan: fieldScanAll(), field: lastFieldBatch ? fieldSummary(lastFieldBatch) : null, styles: lastBatch ? batchSummary(lastBatch) : null }; },
     get slingMode() { return slingMode; },
-    fieldScan, fieldScanAll, fieldPath, runFieldBatch, fieldTable, fieldSummary, fieldStanding, layField,
+    fieldScan, fieldScanAll, fieldPath, runFieldBatch, fieldTable, fieldSummary, fieldStanding, layField, dipoleOffsets,
     get ftLive() { return ftLive; }, get ftMul() { return ftMul; }, get ftRates() { return ftRates; },
   });
   window.__lab = window.__stoatStudio;

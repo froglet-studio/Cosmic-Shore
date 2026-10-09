@@ -34,13 +34,22 @@ under **History**.
   - The white hole pushes `ftWhite` × as hard (1, so equal and opposite).
   - The pull is GM/(r − r<sub>s</sub>)² (Paczyński–Wiita, as on the prisms). The push is softened over twice the white
     hole's horizon. Both are capped at the Dipole tab's force ceiling and fastest bend.
-- **The trigger sets the separation, which is the dipole moment.**
-  - Squeeze either trigger and the pair opens `ftAhead` (250 u) in front of you, with the poles together.
-  - The analog squeeze, on the squeeze curve, pulls them apart along your wings, up to `ftSepMax` (200 u) at a full
-    squeeze. They follow at `ftSepFollow` /s. The black hole sits on the side of the trigger that opened the pair.
-  - Ease off and the poles come back together. Let go and they meet and annihilate, about 0.7 s after a key release.
+- **The two triggers place the poles, and their separation is the dipole moment.** Squeezing either trigger opens
+  the pair `ftAhead` (250 u) in front of you, with the poles together, in the frame you had at that moment. Then, on
+  the squeeze curve:
+  - **the difference (RT − LT) sets the sideways separation**, up to `ftSepMax` (200 u) for one full trigger, with the
+    black hole on the deeper trigger's side;
+  - **the sum ((LT + RT) / 2) sets the lengthways separation**, up to `ftSepLong` (120 u) with both triggers full. The
+    black hole (the sink) is always the nearer and the white hole (the source) the further, so you shoot into the sink
+    and out of the source.
+  - One full trigger gives 200 u sideways and 60 u lengthways: the slight diagonal (17°). Both full put the black hole
+    dead ahead and the white hole 120 u beyond it on the same line.
+  - The poles follow at `ftSepFollow` /s. Ease off and they come back together; let go of both and they meet and
+    annihilate.
   - So there is only ever one pair: the other trigger joins it instead of laying a second.
-- **The line** is your path on your current inputs: throttle, and the steering you hold × `ftSteer`. It runs with the
+- **The line** is drawn as **evenly spaced dots**: `ftDotPx` (4 px) across, with `ftDotGap` (10) dot-widths of space
+  between two dots, measured along the line as you see it. Each dot has a dark edge so it does not read as a star. It
+  is your path on your current inputs: throttle, and the steering you hold × `ftSteer`. It runs with the
   flight's own step from the hull, is drawn from `ftNose` ahead of the nose, and runs `ftLength` (600 u). It is drawn on
   the HUD after the lens, so the black hole does not bend or double it. Heading into the black hole, it follows you out
   of the white hole, with a ring where you go in and a double ring where you come out. It stops where it would loop
@@ -61,16 +70,18 @@ under **History**.
 Each cell is the share of 121 headings, within ±60° of the pair's centre, that the poles warp. The band they fall in
 and how many go through the wormhole are in brackets. All cells use straight flight at cruise with no steering.
 
-| Trigger (separation) | from 150 u | from 300 u | from 500 u |
+| LT / RT (poles apart) | from 150 u | from 300 u | from 500 u |
 |---|---|---|---|
-| 0.25 (25 u) | 100% (19 through) | 62% (−40°…34°; 9) | 35% (−22°…19°; 5) |
-| 0.5 (71 u) | 100% (33) | 98% (−60°…58°; 17) | 56% (−34°…33°; 9) |
-| 1 (200 u) | 100% (14) | 100% (9) | 90% (−55°…53°; 5) |
+| 0 / 0.5 (74 u) | 100% (26 through) | 98% (−60°…57°; 15) | 59% (−38°…32°; 9) |
+| 0 / 1 (209 u) | 100% (15) | 100% (8) | 92% (−60°…50°; 5) |
+| 0.5 / 0.5 (42 u, all lengthways) | 100% (25) | 85% (−51°…51°; 13) | 44% (−26°…26°; 7) |
+| 1 / 1 (120 u, all lengthways) | 100% (25) | 100% (11) | 79% (−47°…47°; 5) |
+| 0.5 / 1 (153 u) | 100% (19) | 100% (11) | 85% (−60°…42°; 6) |
 
 - **Controls:** no pair 0%, and the pair beyond the path's reach (920 u) 0%.
-- **Poles together** (trigger 0, before they annihilate): 29%. The pull and the softened push do not cancel exactly
+- **Poles together** (both triggers 0, before they annihilate): 29%. The pull and the softened push do not cancel exactly
   near the centre.
-- **Threshold** (`ftWarpDeg`, at half trigger): at 1°, 112/121 headings boost from 500 u and 16 from 800 u. At 3°
+- **Threshold** (`ftWarpDeg`, measured before the two-trigger placement, at half of one trigger): at 1°, 112/121 headings boost from 500 u and 16 from 800 u. At 3°
   (default) it is 68 and 0. At 10° it is 40 and 0. "Warped at all" means nearly every heading within about 300 u boosts.
 
 ### Field scorecard
@@ -79,7 +90,7 @@ The run is **Score the field**:
 - skilled AI at squeezes 0.5 and 1;
 - rookie at sloppiness 0.8, three seeds;
 - course seed 7, intensity 2;
-- 12.7 s headless.
+- 11.1 s headless.
 
 In the field the AI squeezes a pair open on the side of the turn for its give-up time (3.5 s), lets go and flies for
 the ring. It never aims at the pair.
@@ -89,14 +100,16 @@ the ring. It never aims at the pair.
 | No sling | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
 | Dipole · Balanced | 1:44.3 | 1:50.7 | 81 | 160 | 0% | 0 | 1:38.4 |
 | Field · no pair (control) | 2:14.7 | 1:33.6 | 51 | 60 | 0% | 0 | — |
-| **Field · pairs** | **1:10.1** | **0:42.5** | 142 | 768 | 53% | 16.2 | **1:13.2** |
-| Field · pairs, steering not in path | 1:05.4 | 0:42.3 | 139 | 768 | 50% | 15.5 | 1:19.8 |
-| Field · pairs, full pitch & yaw | 0:56.4 | 0:38.3 | 157 | 717 | 47% | 22.0 | 1:00.1 |
+| **Field · pairs** | **1:07.5** | **0:45.4** | 149 | 777 | 48% | 13.7 | **1:09.3** |
+| Field · pairs, steering not in path | 1:23.2 | 0:44.5 | 115 | 752 | 47% | 13.7 | 1:15.8 |
+| Field · pairs, full pitch & yaw | 0:51.3 | 0:38.0 | 154 | 797 | 43% | 23.7 | 1:02.1 |
+
+The AI holds one trigger, so it flies the diagonal placement. It never uses both triggers to line the poles up ahead.
 
 - **The control reads 0% lime, as it must:** steering alone cannot warp the path. It is slower than No sling only
   because the field mode turns at 0.4 ×.
-- **With the boost tied to any warp, the field is now the fastest way round by a wide margin.** It is 34 s quicker than
-  the dipole on the circuit, the AI is boosted about half of every race, and the rookie finishes within 3 s of the
+- **With the boost tied to any warp, the field is now the fastest way round by a wide margin.** It is 37 s quicker than
+  the dipole on the circuit, the AI is boosted about half of every race, and the rookie finishes within 2 s of the
   skilled pilot.
 - **Top speeds of about 770 u/s** are the warp in a deep pass: 3 × (cruise + up to 240 u/s of gravity speed).
 
@@ -113,7 +126,8 @@ the ring. It never aims at the pair.
 - through the wormhole is lime;
 - the boost moves you along the path and never bends it;
 - the boost comes from any warp by either pole, not from loops;
-- the poles are fixed, and the trigger sets their separation.
+- the poles are fixed, and the triggers set their separation: the difference sideways, the sum lengthways, the sink always nearer;
+- the path line is evenly spaced dots, ten dot-widths apart.
 
 ### Checked (headless Chromium, SwiftShader)
 
@@ -128,8 +142,13 @@ the ring. It never aims at the pair.
 - **The five-style dipole scorecard is byte-identical** to before the field mode's flight changes. It was re-checked
   after each change: the time warp, the turn scale and the dipole pair. The only change from round 14 is the seeded
   prisms column (see Found).
-- **The pair's life.** On a held key the poles open to 71 u (half squeeze on the 1.5 curve). The other trigger joins
-  the same pair, so there is still one. On release they close and annihilate about 0.7 s later.
+- **The pair's placement and life,** in the pair's own frame (right, forward), on keys (half squeeze):
+  - RT alone: black hole at (+35, −11), white hole at (−35, +11);
+  - RT + LT: black hole at (0, −21), white hole at (0, +21), so the black hole is dead ahead and the white hole beyond;
+  - LT alone: mirrored, black hole at (−35, −11);
+  - one pair throughout; let go of both and the poles meet, and the pair annihilates within 1.5 s.
+- **Dots.** Checked on a screenshot crop: round, evenly spaced, with about ten dot-widths between them, and readable
+  against the stars once they had a dark edge.
 - **The boost leaves the path alone.** I ran up with no boost, set the hull on a curved heading near the pair, then
   flew it with no input twice, at `ftBoost` 1 and 3:
   - both stay within 1.6 u of the drawn path;
@@ -146,7 +165,7 @@ the ring. It never aims at the pair.
   - the path ignored the engine still spooling up;
   - it was started 8 u ahead instead of drawn from 8 u ahead;
   - it checked the horizon only every 3 u, so a small horizon slipped between two points.
-- **Tooltips.** All 19 Field-tab sliders have an illustrated tooltip, and none of the 38 previews is blank. There are no
+- **Tooltips.** All 22 Field-tab sliders have an illustrated tooltip, and none of the 44 previews is blank. There are no
   console errors.
 
 ### Found
