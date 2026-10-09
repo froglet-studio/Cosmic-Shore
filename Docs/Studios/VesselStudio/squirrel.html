@@ -214,8 +214,7 @@
         <h3>Race <span style="font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
         <div class="field"><span>Course</span><div class="seg" id="segCourse" role="group" aria-label="Skim Race intensity"></div></div>
         <div class="field"><span>Your hull</span><div class="seg diff" id="segYou" role="group" aria-label="Who flies your hull"></div></div>
-        <div class="field"><span>AI rivals</span><div class="seg" id="segRivals" role="group" aria-label="Number of AI rivals"></div></div>
-        <div class="field"><span>Rival level</span><div class="seg diff" id="segDiff" role="group" aria-label="Rival difficulty"></div></div>
+        <div id="rivalRows" style="display:grid;gap:8px" aria-label="AI rivals, each with its own level"></div>
         <div class="field"><span>Camera</span><div class="seg" id="segCam" role="group" aria-label="Camera"></div></div>
         <div class="field"><span>Speed</span><div class="seg" id="segSpeed" role="group" aria-label="Simulation speed"></div></div>
         <label class="check"><input type="checkbox" id="thinking"> Show AI thinking</label>
@@ -325,9 +324,12 @@
   const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
   // ================= settings =================
-  const S = { course: 1, you: 'You', rivals: 2, diff: 'Hard', cam: 'Chase', speed: 1, thinking: true, autoRestart: false, typeToAll: false, driftDepth: 1, type: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 } };
+  const S = { course: 1, you: 'You', ai: ['Hard', 'Hard', 'Off'], cam: 'Chase', speed: 1, thinking: true, autoRestart: false, typeToAll: false, driftDepth: 1, type: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 } };
   const LS = 'cs.studio.squirrel.v2';
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}) }); } catch (e) { /* storage blocked */ }
+  // each AI rival is its own seat with its own level (/vessel-studio D20); an older save's "N rivals at one level" carries over
+  if (S.rivals != null || S.diff != null) { let had = false; try { had = Array.isArray((JSON.parse(localStorage.getItem(LS) || 'null') || {}).ai); } catch (e) { /* storage blocked */ } if (!had) S.ai = [0, 1, 2].map((k) => k < (S.rivals == null ? 2 : S.rivals) ? (S.diff || 'Hard') : 'Off'); }
+  delete S.rivals; delete S.diff;
   function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
   function mults(lv) {
     const f = (k) => clamp(lv[k] / 10, 0, 1);
@@ -381,7 +383,7 @@
     pilotsSpec.forEach((spec, i) => {
       const off = (i - (pilotsSpec.length - 1) / 2) * 26;
       const P = {
-        i, spec, domain: DOMAINS[i], pos: track.line[0].clone().addScaledVector(side, off).addScaledVector(t0, -40), quat: q0.clone(), course: t0.clone(),
+        i, spec, domain: DOMAINS[spec.dom != null ? spec.dom : i], pos: track.line[0].clone().addScaledVector(side, off).addScaledVector(t0, -40), quat: q0.clone(), course: t0.clone(),
         speed: 0, boost: 1, slow: 1, lastDrift: 0, throttle: 0.5, lv: Object.assign({}, spec.lv), m: mults(spec.lv), ringReadyAt: 0, rtWas: 0, railAcc: 0, rails: 0,
         crystals: 0, anchor: 0, crystal: null, finishT: null, hint: 0, skims: 0, stolen: 0, petals: 0, rings: 0, resets: 0, mistakes: 0,
         hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
@@ -736,7 +738,7 @@
   let W = null, race = 'ready', paused = false, seedN = 1;
   function pilotsSpec() {
     const zero = { charge: 0, mass: 0, space: 0, time: 0 }, list = [{ ai: S.you === 'You' ? null : S.you, lv: Object.assign({}, S.lv) }];
-    for (let i = 0; i < S.rivals; i++) list.push({ ai: S.diff, lv: Object.assign({}, S.typeToAll ? S.lv : zero) });
+    S.ai.forEach((lvl, k) => { if (lvl !== 'Off') list.push({ ai: lvl, dom: k + 1, lv: Object.assign({}, S.typeToAll ? S.lv : zero) }); });   // a seat keeps its colour (Ruby, Gold, Blue) whichever seats are on
     return list;
   }
   function newRace() {
@@ -775,8 +777,6 @@
   const SEGS = {
     segCourse: { key: 'course', vals: [1, 2, 3, 4], label: (v) => 'I' + v, rebuild: true },
     segYou: { key: 'you', vals: ['You', 'Easy', 'Medium', 'Hard'], label: (v) => v === 'You' ? 'You fly' : 'AI ' + v, rebuild: true },
-    segRivals: { key: 'rivals', vals: [0, 1, 2, 3], label: (v) => String(v), rebuild: true },
-    segDiff: { key: 'diff', vals: ['Easy', 'Medium', 'Hard'], label: (v) => v, rebuild: true },
     segCam: { key: 'cam', vals: ['Chase', 'Follow', 'Free'], label: (v) => v },
     segSpeed: { key: 'speed', vals: [1, 2, 4], label: (v) => v + '×' },
   };
@@ -785,7 +785,22 @@
     b.addEventListener('click', () => { S[d.key] = v; if (d.key === 'cam' && v === 'Free') followIdx = 0; save(); syncSegs(); if (d.rebuild) newRace(); });
     $(id).appendChild(b);
   }
-  function syncSegs() { for (const [id, d] of Object.entries(SEGS)) for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.v === String(S[d.key]))); }
+  // one row per AI rival: Off / Easy / Medium / Hard, each in its own colour (/vessel-studio D20)
+  const rivalSegs = [];
+  for (let k = 0; k < 3; k++) {
+    const D = DOMAINS[k + 1], row = elx('div', 'field'), name = elx('span', null, 'AI ' + D.name), seg = elx('div', 'seg diff');
+    name.style.color = D.css; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'AI ' + D.name + ' level');
+    for (const v of ['Off', 'Easy', 'Medium', 'Hard']) {
+      const b = elx('button', null, v); b.type = 'button'; b.dataset.v = v;
+      b.addEventListener('click', () => { S.ai[k] = v; save(); syncSegs(); newRace(); });
+      seg.appendChild(b);
+    }
+    row.append(name, seg); $('rivalRows').appendChild(row); rivalSegs.push(seg);
+  }
+  function syncSegs() {
+    for (const [id, d] of Object.entries(SEGS)) for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.v === String(S[d.key])));
+    rivalSegs.forEach((seg, k) => { for (const b of seg.children) b.setAttribute('aria-pressed', String(b.dataset.v === S.ai[k])); });
+  }
   $('thinking').checked = S.thinking; $('thinking').addEventListener('change', (e) => { S.thinking = e.target.checked; save(); });
   $('autoRestart').checked = S.autoRestart; $('autoRestart').addEventListener('change', (e) => { S.autoRestart = e.target.checked; save(); });
   $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
