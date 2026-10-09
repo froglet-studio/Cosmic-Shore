@@ -2,7 +2,7 @@
 
 Paste everything below into a fresh session. The full reasoning, measurements and thresholds live
 in `Docs/MultiplayerArchitecture/HARDENING_PLAN_STEAM_LAUNCH.md`; this is the executable brief.
-`Docs/MULTIPLAYER_START_HERE.md` is the front door over this file and Prisma's multiplayer work:
+`Docs/MULTIPLAYER_START_HERE.md` is the front door over this file and Amoebius's multiplayer work:
 the current state, the owner's hand-test list and the order of next steps.
 
 ---
@@ -272,7 +272,7 @@ reaches this layer:
 - **`PartyConsoleCommand`,** the dev-only `party` command. Each button's method is reachable from
   the console, and `party` prints one `key=value` state line.
 - **`Tools/Build/prisma_party_scenarios/`.** Five instances of the game, each its own process, on
-  Prisma (`Port/`) with the real `Assets/_Scripts`.
+  Amoebius (`Port/`) with the real `Assets/_Scripts`.
   - Netcode's model runs over TCP, and a shared directory stands in for Lobby + Relay.
   - One command plays **14 scenarios** and writes `results.json`.
   - The game clock is paced to the wall, and no key event is ever sent to the game.
@@ -302,7 +302,7 @@ reaches this layer:
 - **T4-lobby (B20, launch lobby).**
 
 What a pass there does **not** prove is in the tool's README: the Unity runtime, UGS's exact
-error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay 🟡 until MPPM.
+error shapes, and UTP timings. So the tickets read "passed on Amoebius" and stay 🟡 until MPPM.
 
 **Defects the runs found:**
 1. **B20's lobby half never worked when the leaver was unready.**
@@ -326,7 +326,7 @@ error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay �
      only went out on the next presence tick. Now both go in one save
      (`HostConnectionService.InvitePublicationProperties`; tests in `JoinTargetValidatorTests`).
 5. **Explained 2026-10-09: defect 5 was B29's Session case (4), not an invite expiry.**
-   - **Reproduced** on the Prisma five-player harness with every player on a simulated 4G line
+   - **Reproduced** on the Amoebius five-player harness with every player on a simulated 4G line
      (`Port/docs/MULTIPLAYER.md`).
    - **The invitee's log shows the cause.** After the host drop, PilotC re-hosted and invited
      PilotA. PilotA's Accept was refused at once:

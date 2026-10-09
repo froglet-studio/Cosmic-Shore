@@ -142,7 +142,7 @@ namespace CosmicShore.Engine
         {
             if (s_primitivesWarned || mesh is null || instanceCount <= 0) return;
             s_primitivesWarned = true;
-            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Prisma backend yet.");
+            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Amoebius backend yet.");
         }
 
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,

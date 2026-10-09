@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// FrogletTools > Prisma > Launch Prisma: opens Prisma (Froglet's own engine for Cosmic Shore,
+    /// FrogletTools > Amoebius > Launch Amoebius: opens Prisma (Froglet's own engine for Cosmic Shore,
     /// <c>Port/</c>) straight from the checkout this editor has open, so it is always the version
     /// the branch carries - no zip, no download. The first launch builds <c>Prisma.exe</c> from
     /// <c>Port/src/CosmicShore.Launcher</c> into <c>Library/Prisma</c>; later launches start it at
@@ -38,16 +38,16 @@ namespace CosmicShore.Editor
         static string _buildStamp;
         static double _buildStarted;
 
-        [MenuItem("FrogletTools/Prisma/Launch Prisma", false, 0)]
+        [MenuItem("FrogletTools/Amoebius/Launch Amoebius", false, 0)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
-            Description = "Opens Prisma, our own engine, built from this checkout (rebuilt only when its source changed).",
+            Description = "Opens Amoebius, our own engine, built from this checkout (rebuilt only when its source changed).",
             DocPath = "Port/docs/LAUNCHER.md")]
         public static void Launch()
         {
-            if (_build != null) { EditorUtility.DisplayDialog("Prisma", "Prisma is still being built - it opens by itself when the build finishes.", "OK"); return; }
+            if (_build != null) { EditorUtility.DisplayDialog("Amoebius", "Amoebius is still being built - it opens by itself when the build finishes.", "OK"); return; }
             if (!Directory.Exists(LauncherProject))
             {
-                EditorUtility.DisplayDialog("Prisma", "This checkout has no Port/src/CosmicShore.Launcher. Pull a branch that contains Prisma (bleeding-edge does).", "OK");
+                EditorUtility.DisplayDialog("Amoebius", "This checkout has no Port/src/CosmicShore.Launcher. Pull a branch that contains Amoebius (bleeding-edge does).", "OK");
                 return;
             }
             string stamp = SourceStamp();
@@ -73,7 +73,7 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
-            Description = "Opens Prisma on its STUDIOS page: pick a vessel and fly its studio (Squirrel, Stoat) in the browser or on a phone. The studio lives in Prisma, not in Unity.",
+            Description = "Opens Amoebius on its STUDIOS page: pick a vessel and fly its studio (Squirrel, Stoat) in the browser or on a phone. The studio lives in Amoebius, not in Unity.",
             DocPath = "Docs/Studios/VESSEL_STUDIO_PLAN.md")]
         public static void OpenVesselStudio()
         {
@@ -81,9 +81,9 @@ namespace CosmicShore.Editor
             Launch();
         }
 
-        [MenuItem("FrogletTools/Prisma/Rebuild Prisma", false, 1)]
+        [MenuItem("FrogletTools/Amoebius/Rebuild Amoebius", false, 1)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
-            Description = "Builds Prisma from this checkout again even if its source looks unchanged, then opens it.",
+            Description = "Builds Amoebius from this checkout again even if its source looks unchanged, then opens it.",
             DocPath = "Port/docs/LAUNCHER.md")]
         public static void Rebuild()
         {
@@ -91,7 +91,7 @@ namespace CosmicShore.Editor
             Launch();
         }
 
-        [MenuItem("FrogletTools/Prisma/Show Prisma Folder", false, 2)]
+        [MenuItem("FrogletTools/Amoebius/Show Amoebius Folder", false, 2)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 1,
             Description = "Reveals Library/Prisma, where the built Prisma.exe lives.")]
         public static void Reveal()
@@ -193,7 +193,7 @@ namespace CosmicShore.Editor
             catch (Exception e)
             {
                 _build = null;
-                Debug.LogError($"[Prisma] Could not start the build with {dotnet}: {e.Message}");
+                Debug.LogError($"[Amoebius] Could not start the build with {dotnet}: {e.Message}");
                 return;
             }
             EditorApplication.update += WatchBuild;
@@ -207,13 +207,13 @@ namespace CosmicShore.Editor
             if (!_build.HasExited)
             {
                 // The first build restores packages (a minute or two); later ones take seconds.
-                if (EditorUtility.DisplayCancelableProgressBar("Building Prisma",
+                if (EditorUtility.DisplayCancelableProgressBar("Building Amoebius",
                         $"Building Prisma.exe from this checkout ({(int)secs}s)... the first build takes a minute or two.",
                         (float)(1 - Math.Exp(-secs / 60.0)) * 0.95f))
                 {
                     try { _build.Kill(); } catch (InvalidOperationException) { }
                     Finish();
-                    Debug.LogWarning("[Prisma] Build cancelled.");
+                    Debug.LogWarning("[Amoebius] Build cancelled.");
                 }
                 return;
             }
@@ -226,7 +226,7 @@ namespace CosmicShore.Editor
                 // The build also leaves its pre-rename copy and symbols; the folder keeps only Prisma.
                 foreach (var extra in Directory.GetFiles(OutDir, "FrogletLauncher*").Concat(Directory.GetFiles(OutDir, "*.pdb")))
                     try { File.Delete(extra); } catch (IOException) { }
-                Debug.Log($"[Prisma] Built from this checkout in {(int)secs}s - opening it.");
+                Debug.Log($"[Amoebius] Built from this checkout in {(int)secs}s - opening it.");
                 Start(Exe);
                 return;
             }
@@ -234,8 +234,8 @@ namespace CosmicShore.Editor
             lock (_buildLog) File.WriteAllText(logPath, _buildLog.ToString());
             string firstError;
             lock (_buildLog) firstError = _buildLog.ToString().Split('\n').FirstOrDefault(l => l.Contains(" error ")) ?? $"dotnet exited with {code}";
-            Debug.LogError($"[Prisma] The build failed: {firstError.Trim()}  (full log: {logPath})");
-            if (File.Exists(Exe) && EditorUtility.DisplayDialog("Prisma", "Building Prisma from this checkout failed (see the Console). Open the copy built earlier?", "Open it", "Cancel"))
+            Debug.LogError($"[Amoebius] The build failed: {firstError.Trim()}  (full log: {logPath})");
+            if (File.Exists(Exe) && EditorUtility.DisplayDialog("Amoebius", "Building Amoebius from this checkout failed (see the Console). Open the copy built earlier?", "Open it", "Cancel"))
                 Start(Exe);
         }
 
@@ -253,7 +253,7 @@ namespace CosmicShore.Editor
             var zip = Path.Combine(Root, "Port", "dist", "Prisma-Windows.zip");
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !File.Exists(zip))
             {
-                EditorUtility.DisplayDialog("Prisma", "Building Prisma needs the .NET 10 SDK, and there is no ready-made copy for this machine.\n\n" +
+                EditorUtility.DisplayDialog("Amoebius", "Building Amoebius needs the .NET 10 SDK, and there is no ready-made copy for this machine.\n\n" +
                     "Install the .NET 10 SDK (dotnet.microsoft.com), then launch again.", "OK");
                 return;
             }
@@ -261,12 +261,12 @@ namespace CosmicShore.Editor
             using (var z = ZipFile.OpenRead(zip))
             {
                 var entry = z.Entries.FirstOrDefault(e => e.Name.Equals("Prisma.exe", StringComparison.OrdinalIgnoreCase));
-                if (entry == null) { Debug.LogError($"[Prisma] {zip} holds no Prisma.exe."); return; }
+                if (entry == null) { Debug.LogError($"[Amoebius] {zip} holds no Prisma.exe."); return; }
                 entry.ExtractToFile(Exe, overwrite: true);
             }
             // No stamp: once Prisma has installed its SDK, the next launch builds from source.
             try { if (File.Exists(StampFile)) File.Delete(StampFile); } catch (IOException) { }
-            Debug.Log("[Prisma] No .NET 10 SDK found - opened the ready-made copy from Port/dist. Press START in Prisma once; " +
+            Debug.Log("[Amoebius] No .NET 10 SDK found - opened the ready-made copy from Port/dist. Press START in Amoebius once; " +
                       "it installs its own SDK, and later launches build from this checkout.");
             Start(Exe);
         }
@@ -280,7 +280,7 @@ namespace CosmicShore.Editor
                 catch (Exception) { return false; }
             }).ToList();
             if (running.Count == 0) return true;
-            if (!EditorUtility.DisplayDialog("Prisma", "Prisma's source changed since it was built, and the old Prisma is still open.\n\nClose it and rebuild?", "Close and rebuild", "Cancel"))
+            if (!EditorUtility.DisplayDialog("Amoebius", "Amoebius's source changed since it was built, and the old Amoebius is still open.\n\nClose it and rebuild?", "Close and rebuild", "Cancel"))
                 return false;
             foreach (var p in running)
             {
@@ -299,7 +299,7 @@ namespace CosmicShore.Editor
                 _openPage = null;
                 Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
             }
-            catch (Exception e) { Debug.LogError($"[Prisma] Could not start {exe}: {e.Message}"); }
+            catch (Exception e) { Debug.LogError($"[Amoebius] Could not start {exe}: {e.Message}"); }
         }
     }
 }

@@ -9,20 +9,21 @@ named after it, and when the asset changes the page must follow (or say on scree
 
 | Studio | Live page (decision log on) | Repo copy |
 |---|---|---|
-| **Vessel Studio** (hub: Squirrel Studio v1 + Stoat) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `VesselStudio/` |
-| Stoat Flight Studio (round 15) | https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt (new artifact, its own decision log; rounds 1–14 and their log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) | `StoatFlightStudio.html` |
+| **Vessel Studio**: the ONE artifact (hub, Squirrel AI sim lab, Stoat Flight Studio round 15, studio agent, decisions, Sync panel) | https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa | `VesselStudio/` (the Stoat's source stays `StoatFlightStudio.html`) |
+
+Every earlier studio artifact is retired; publish only to the one above (`/vessel-studio` §0).
 
 **Sim lab results and the plan:** `STOAT_SIM_LAB_PLAN.md`.
 
-**The Vessel Studio** (pick a vessel, its studio opens; web, Windows through Prisma's STUDIOS page, Android; Squirrel and Stoat first): `VesselStudio/` and the plan `VESSEL_STUDIO_PLAN.md`.
+**The Vessel Studio** (pick a vessel, its studio opens; web, Windows through Amoebius's STUDIOS page, Android; Squirrel and Stoat first): `VesselStudio/` and the plan `VESSEL_STUDIO_PLAN.md`.
 
-**Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
-Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
+**Next: Amoebius.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
+Stoat and both pair styles flyable, inspectable and swappable in Amoebius (`Port/`).
 
 ## Stoat Flight Studio (round 15 — the field trajectory)
 
-Live: https://claude.ai/artifact/8Wvnsx3gxJXXMNUCoyyuEt. This is a new artifact, published 2026-10-09. The round-14
-artifact is outside this login's organization, so this one starts its own decision log.
+Live: the Stoat page of the one Vessel Studio, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa (round 15 was first published on its own artifact,
+`8Wvnsx3gxJXXMNUCoyyuEt`, now retired).
 
 **Sling tab ▸ Field trajectory** (settings in the **Field** tab) is a second way to fly the pair, beside the dipole
 sling. Everything in it is **lab-only**: the game has no such mode, and every `ft*` row is a proposal, not a shipped
@@ -193,15 +194,15 @@ The AI holds one trigger, so it flies the diagonal placement. It never uses both
 - **Strength by squeeze.** The squeeze used to set the pair's strength, and the pair stood 10 s.
 - **The time warp** replaced the engine × 3, and the dipole pair replaced the 10 s pair.
 
-## Vessel Studio in Prisma (2026-10-09, after round 14)
+## Vessel Studio in Amoebius (2026-10-09, after round 14)
 
-- **Merged:** `vessel-studio` came into this branch: the hub, Squirrel Studio v1, Prisma's STUDIOS page and
+- **Merged:** `vessel-studio` came into this branch: the hub, Squirrel Studio v1, Amoebius's STUDIOS page and
   Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio**.
 - **Round 14 in the hub:** the hub's Stoat is now round 14 (`VesselStudio/stoat.html`).
-- **OPEN IN PRISMA:** the studio as its own app window, reading "Running on Prisma".
+- **OPEN IN AMOEBIUS:** the studio as its own app window, reading "Running on Amoebius".
 - **PLAY IN ENGINE:** the game's own Stoat in Slingshot, one click from the studio.
-- **Engine gaps filled:** Prisma could not compile this branch's game code before. The black-hole API gaps
-  are now in the engine, and all three Prisma test suites pass.
+- **Engine gaps filled:** Amoebius could not compile this branch's game code before. The black-hole API gaps
+  are now in the engine, and all three Amoebius test suites pass.
 
 Test steps: `PRISMA_TEST_STEPS.md`.
 
@@ -258,7 +259,7 @@ The page detects where it is running and shapes its interface to match. Previous
 
 **Two questions, answered once at load** (`detectPlatform`, `__stoatStudio.PLATFORM`):
 
-- **Shell: which host runs the studio.** Today it is always `web`. A native host, the coming Prisma light
+- **Shell: which host runs the studio.** Today it is always `web`. A native host, the coming Amoebius light
   studio for every vessel, sets `window.__studioHost = { shell: 'prisma', device: 'pc' | 'phone' }` before
   the page's script runs. The same switch then applies, and the page never sniffs inside a native host.
 - **Device: PC or phone.** The page treats the device as a phone when either is true:
@@ -297,7 +298,7 @@ phone layout on a PC.
 
 ## Stoat Flight Studio (round 12 — the sim lab: an AI flies, you watch)
 
-The full write-up is `STOAT_SIM_LAB_PLAN.md`: results, the game-mode proposal, studio vs Prisma, and the AI
+The full write-up is `STOAT_SIM_LAB_PLAN.md`: results, the game-mode proposal, studio vs Amoebius, and the AI
 port.
 
 **The Sim lab card.**

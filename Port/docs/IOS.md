@@ -1,11 +1,11 @@
-# iOS builds of Prisma
+# iOS builds of Amoebius
 
 Apple only compiles iPhone apps on macOS. The engine gives three ways around that, all from the
 same source the Windows player builds from (no Unity export involved):
 
 | Way | Command | Output |
 |---|---|---|
-| **No Mac: GitHub's Mac** | Launcher > BUILD > iOS > GITHUB, or Actions > *Prisma iOS ipa* > Run workflow (type the branch) | unsigned `CosmicShore-unsigned.ipa` (artifact `CosmicShore-ios-ipa`, kept 3 days) |
+| **No Mac: GitHub's Mac** | Launcher > BUILD > iOS > GITHUB, or Actions > *Amoebius iOS ipa* > Run workflow (type the branch) | unsigned `CosmicShore-unsigned.ipa` (artifact `CosmicShore-ios-ipa`, kept 3 days) |
 | **Xcode project** | `cs-build ios --xcode` (any OS) | `Builds/iOS/CosmicShore.xcodeproj` + `PlayerData/` |
 | **On a Mac** | `cs-build ios` (signed) / `cs-build ios --unsigned` | `Builds/iOS/*.ipa` |
 

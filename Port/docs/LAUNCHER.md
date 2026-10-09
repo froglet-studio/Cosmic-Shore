@@ -1,20 +1,20 @@
-# Prisma (the app)
+# Amoebius (the app)
 
-Prisma is Froglet's own engine for Cosmic Shore, and this is its app: one `.exe` for anyone who
-works on or tests the game. Pick a branch, press **START**: Prisma fetches that branch, builds it
+Amoebius is Froglet's own engine for Cosmic Shore, and this is its app: one `.exe` for anyone who
+works on or tests the game. Pick a branch, press **START**: Amoebius fetches that branch, builds it
 from its own source and runs it - and records the run. It also builds phone apps, keeps the
-engine's Project Settings, tracks every play run, keeps a task and bug board, and has the **Prisma Agent, powered by Claude**, built in.
+engine's Project Settings, tracks every play run, keeps a task and bug board, and has the **Amoebius Agent, powered by Claude**, built in.
 
 Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET window).
 
 ## Getting the .exe
 
-- **From Unity (the everyday way): FrogletTools > Prisma > Launch Prisma.** It builds
+- **From Unity (the everyday way): FrogletTools > Amoebius > Launch Amoebius.** It builds
   `Prisma.exe` from the checkout the editor has open into `Library/Prisma` and opens it. After a
   pull it rebuilds by itself (it compares the launcher's source files with the last build); a first
-  build takes a minute or two, later launches open at once. *Rebuild Prisma* forces a build, *Show
-  Prisma Folder* reveals the .exe. With no .NET 10 SDK yet it opens the copy in
-  `Port/dist/Prisma-Windows.zip` instead; press START in Prisma once (it installs its own SDK) and
+  build takes a minute or two, later launches open at once. *Rebuild Amoebius* forces a build, *Show
+  Amoebius Folder* reveals the .exe. With no .NET 10 SDK yet it opens the copy in
+  `Port/dist/Prisma-Windows.zip` instead; press START in Amoebius once (it installs its own SDK) and
   later launches build from source. Source: `Assets/_Scripts/Editor/LaunchPrisma.cs`.
 - Without Unity: `Port/dist/Prisma-Windows.zip` (one file), or double-click `Port\build-launcher.bat`.
 
@@ -31,26 +31,26 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **PLAY** | Branch, **START**, and four quick toggles (fullscreen, audio, online, pull first). The small buttons beside them update without playing and open the workspace folder. |
 | **BUILD** | One card per phone platform. Each card has one choice and one button; everything else is under *Options*. |
 | **PROJECT** | The engine's own Project Settings (below). |
-| **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
+| **AGENT** | The Amoebius Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
 | **STUDIOS** | The Vessel Studio: one card per vessel studio (Squirrel, Stoat), each opening its page from the workspace in the browser, an **AGENT** chat on it, and its docs. **WEB LINK** is the same studio published on claude.ai, which a phone opens. Catalog: `Docs/Studios/VesselStudio/studios.json` (below). |
 | **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
 | **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
-| **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
+| **BOARD** | Bugs and tasks, with Amoebius's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
 ![PLAY](architecture/launcher_play.png)
 
-**Prisma and Unity can be on different branches.** Prisma plays its *own* copy of the repository
-(the workspace), never your Unity checkout. Opened from Unity (**FrogletTools > Prisma > Launch
-Prisma**), it is told where that checkout is and follows the branch Unity / GitHub Desktop has open:
+**Amoebius and Unity can be on different branches.** Amoebius plays its *own* copy of the repository
+(the workspace), never your Unity checkout. Opened from Unity (**FrogletTools > Amoebius > Launch
+Amoebius**), it is told where that checkout is and follows the branch Unity / GitHub Desktop has open:
 PLAY shows *Same branch as Unity / GitHub Desktop*, and switches with you (checked every few
-seconds). Pick any other branch and Prisma plays that one instead, with your Unity checkout
+seconds). Pick any other branch and Amoebius plays that one instead, with your Unity checkout
 untouched; **FOLLOW UNITY** goes back. A branch that exists only on your machine has to be pushed
-from GitHub Desktop before Prisma can fetch it.
+from GitHub Desktop before Amoebius can fetch it.
 
 The two dots at the bottom of the rail are git and .NET (hover for versions). The bar at the
 bottom shows what is happening, a progress bar and CANCEL. The title bar shows the branch, the
@@ -66,16 +66,16 @@ phone through **WEB LINK** (the published copy on claude.ai). Test steps: `Docs/
 
 Each card has these buttons:
 
-- **OPEN IN PRISMA**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
+- **OPEN IN AMOEBIUS**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
   - It has no tabs or address bar.
-  - It uses a window profile under Prisma's data folder (`studio-window`), so the studio's layout and pop-out
+  - It uses a window profile under Amoebius's data folder (`studio-window`), so the studio's layout and pop-out
     windows are remembered.
-  - The page is opened with `#prisma`, so it reads "Running on Prisma".
+  - The page is opened with `#prisma`, so it reads "Running on Amoebius".
   - With neither browser installed it falls back to the default browser.
   - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenStudioWindow`.
 - **BROWSER**: the same page in the default browser.
 - **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
-  - Prisma builds and starts the game as PLAY does.
+  - Amoebius builds and starts the game as PLAY does.
   - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
   - The player waits for the main menu, opens that arcade card and presses its Start
     (`Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, through the same path as the `arcade` input verb).
@@ -88,10 +88,10 @@ Each card has these buttons:
   `engineMode` is a `GameModes` member. A branch without it shows why, and how to switch. Adding a studio
   is a page plus a catalog entry; no launcher change. Read by `StudioCatalog` (tested in
   `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
-- **AGENT** starts a Prisma Agent chat on that studio, in plan mode, pointed at the plan and the studio's rules.
-- **From Unity:** **FrogletTools > Vessels > Vessel Studio** opens Prisma on this page (`--page studios`); the
+- **AGENT** starts an Amoebius Agent chat on that studio, in plan mode, pointed at the plan and the studio's rules.
+- **From Unity:** **FrogletTools > Vessels > Vessel Studio** opens Amoebius on this page (`--page studios`); the
   studio itself never runs inside Unity.
-- **Phones today** use the web pages. A studio scene inside the Prisma phone player (the game's own vessel
+- **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
   instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
 
 ## TIME - benchmarks
@@ -112,11 +112,11 @@ to its first frame; hover for boot to first frame), GC pause per frame and
 the frame count, each with its change against the previous benchmark on the same machine (green
 faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` and can be picked
 from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
-benchmark unattended and closes Prisma when it is saved.
+benchmark unattended and closes Amoebius when it is saved.
 
 ## NET - multiplayer on this PC
 
-Prisma's counterpart of Unity's Multiplayer Play Mode, Network Simulator and Runtime Network Stats
+Amoebius's counterpart of Unity's Multiplayer Play Mode, Network Simulator and Runtime Network Stats
 Monitor (`docs/MULTIPLAYER.md` §6).
 
 **PLAYERS** opens 2, 3 or 4 game windows (a party is four), tiled two by two, each in its own save
@@ -133,11 +133,11 @@ CABLE** (after 10 s every peer drops it, as a real timeout does; **PLUG IN** end
 fault (full, ratelimit=3, relayfail, slow=2000, down) and **CAPTURE 10 S** (600 frames of per-frame
 traffic and RTT to a JSON file the console names). The windows' titles carry the same line.
 
-## TRACKS - Prisma's memory of every run
+## TRACKS - Amoebius's memory of every run
 
 ![TRACKS](architecture/prisma_tracks.png)
 
-Every game started from PLAY writes a session report when it closes or crashes. Prisma folds it
+Every game started from PLAY writes a session report when it closes or crashes. Amoebius folds it
 into **tracks** (`%LOCALAPPDATA%\Prisma\tracks`): OVERVIEW (runs, crash-free rate, median
 frame time, open problems), PERFORMANCE (a *Frame budget* card with simulation and render CPU,
 allocations per frame and GC pause per frame, then each scene's 95th-percentile frame time per run
@@ -150,7 +150,7 @@ scene goes *quiet*. A run whose steady GC pause tops 1 ms per frame is a perform
 ## Notifications and clean-ups
 
 After every run a banner (top right) says what the run found - a crash, new problems, a slower
-scene, or a clean run - with one-click actions. Prisma also watches for things it can clean up:
+scene, or a clean run - with one-click actions. Amoebius also watches for things it can clean up:
 a stale git lock blocking updates, a failed build with stale outputs, low disk space. **It always
 asks first**: every clean-up is a button on a notification, never automatic. The bell keeps the
 history.
@@ -160,19 +160,19 @@ history.
 ![BOARD](architecture/prisma_board.png)
 
 TO DO / DOING / DONE columns of bugs and tasks; click a card for its detail and to move it, or
-hand it to the agent. Prisma *suggests* items - problems from the tracks - and so can the agent (`prisma_board_suggest`); a suggestion joins
+hand it to the agent. Amoebius *suggests* items - problems from the tracks - and so can the agent (`prisma_board_suggest`); a suggestion joins
 the board only when you ACCEPT it.
 
 Every card has a **done when** line: the check that proves it. Type one next to a new item's
-title; the agent must give one with every suggestion. A bug that came from the tracks is checked by Prisma itself after every run: when
+title; the agent must give one with every suggestion. A bug that came from the tracks is checked by Amoebius itself after every run: when
 the problem has stayed away for three runs through its scene, the card gets a green **MET** pill
 and a notification offers MARK DONE (moving it stays your call). If the problem comes back, the
 card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
 fix is in progress.
 
-The board is `board.json` beside the tracks. A suggestion an agent makes while Prisma is open shows up
-within a second and survives Prisma's next save (saves merge with the file instead of overwriting it).
-If the file cannot be read, Prisma keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
+The board is `board.json` beside the tracks. A suggestion an agent makes while Amoebius is open shows up
+within a second and survives Amoebius's next save (saves merge with the file instead of overwriting it).
+If the file cannot be read, Amoebius keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
 starts an empty board; the copy is never overwritten.
 How it works, how to test it on Windows, and the scheduler that builds on it: [`PRISMA_BOARD_SCHEDULER.md`](PRISMA_BOARD_SCHEDULER.md).
 
@@ -220,7 +220,7 @@ Edits save as you make them. Commit the file to share them with the branch.
 ## Updating the launcher (and keeping old versions)
 
 The launcher never updates itself without asking. When the selected branch has a newer launcher,
-an **UPDATE** badge pulses on the rail (Prisma checks at start and every 30 minutes); click it to
+an **UPDATE** badge pulses on the rail (Amoebius checks at start and every 30 minutes); click it to
 see what changed, then **UPDATE NOW** or **NOT NOW**. The new version is built from that branch's
 own source in the workspace (no zip to download), the screen shows the build, and the launcher
 restarts into it. If a check cannot answer (offline, or the selected branch was merged and
@@ -246,19 +246,19 @@ allocations of each loop phase, GC collections and pauses, audio use, every dist
 warning and exception with its count, and the crash, branch and commit. They are kept in `%LOCALAPPDATA%\Prisma\sessions` (the last
 40). The CLAUDE page's LAST SESSION hands the newest one to Claude to analyse.
 
-## AGENT - the Prisma Agent, powered by Claude
+## AGENT - the Amoebius Agent, powered by Claude
 
 ![AGENT](architecture/launcher_claude.png)
 
-The **Prisma Agent** works on the game (Cosmic Shore's code and content in `Assets/`) as it runs
-in Prisma, and it is refused any edit to Prisma itself (`Port/`) in every mode - engine work (the
-roadmap's milestones) is done in Claude Code at the repository root, not in Prisma. It does what you ask and nothing more: it reads TRACKS (every
-run Prisma recorded) only when your question is about a bug, a crash, performance or a run, and
+The **Amoebius Agent** works on the game (Cosmic Shore's code and content in `Assets/`) as it runs
+in Amoebius, and it is refused any edit to Amoebius itself (`Port/`) in every mode - engine work (the
+roadmap's milestones) is done in Claude Code at the repository root, not in Amoebius. It does what you ask and nothing more: it reads TRACKS (every
+run Amoebius recorded) only when your question is about a bug, a crash, performance or a run, and
 it does not go looking for engine problems on its own.
 
 **Chats.** The list on the left holds every conversation, the way Claude Code keeps sessions:
 **+ NEW CHAT** opens another, a click switches, the x deletes. Each chat has its own transcript,
-its own Claude Code session (resumed on the next message, also after Prisma restarts) and its own
+its own Claude Code session (resumed on the next message, also after Amoebius restarts) and its own
 context, and several can work at once - a pulsing dot marks the ones that are. FIX, AGENT and ANALYSE buttons elsewhere open a fresh chat for the
 job. Chats are kept in `%LOCALAPPDATA%\Prisma\chats`.
 
@@ -305,7 +305,7 @@ and show you. Those tools never edit files, so PLAN may use them too.
 
 ![GIT](architecture/launcher_git.png)
 
-The agent edits files in **Prisma's workspace**, which is not your own clone (it is a clone Prisma
+The agent edits files in **Amoebius's workspace**, which is not your own clone (it is a clone Amoebius
 manages, or a worktree beside your clone - SETTINGS > SOURCE). Its edits stay there, uncommitted,
 until you decide; the agent does not commit or push unless you ask it to. A notification says when
 a chat changed files.
@@ -322,7 +322,7 @@ a chat changed files.
 
 **In GitHub Desktop:** with *Beside my clone* the workspace shares your clone, so a commit here
 is a local branch in GitHub Desktop at once (you can push from there). With the managed clone,
-push here, then **Fetch origin** in GitHub Desktop and pick the branch. Pushing from Prisma uses
+push here, then **Fetch origin** in GitHub Desktop and pick the branch. Pushing from Amoebius uses
 git's own sign-in, or the GitHub token in SETTINGS > SOURCE (Contents: read & write).
 
 **START never throws edits away.** With unsaved changes in the workspace, START plays them as
@@ -331,7 +331,7 @@ committed or discarded.
 
 ## EDITOR - tools, data sets, models
 
-Prisma's editor starts with what daily content work needs, for a game whose content already
+Amoebius's editor starts with what daily content work needs, for a game whose content already
 exists (`ROADMAP.md` § M2). There is no hierarchy or scene inspector: scene and prefab edits are
 the agent's job, through `cs-asset`. Everything on this page is read through the workspace's own
 `cs-asset`, built once per session (a minute or two the first time; **REBUILD** after a pull or a
@@ -341,8 +341,8 @@ script edit), and every edit lands in the workspace, where GIT commits it.
 
 **TOOLS** - every FrogletTools menu item in the project (95 on 2026-10-08), read from source: its
 category, importance (the dots), description, whether it is a window or one click, and whether it
-writes assets. Filter by category or search. A tool Prisma has a native version of shows **RUN**: it
-runs that `cs-asset` command on Prisma's workspace (output on CONSOLE, a writer's changes on GIT).
+writes assets. Filter by category or search. A tool Amoebius has a native version of shows **RUN**: it
+runs that `cs-asset` command on Amoebius's workspace (output on CONSOLE, a writer's changes on GIT).
 Every other tool shows **BUILD**: an agent chat that builds the native version - reads the tool's
 source, plans first, then adds a `cs-asset` command, its test and an entry in
 `Port/tools/froglet-tools/tools.json`, after which the card shows RUN. That chat may change only
@@ -365,15 +365,15 @@ fresh GUID), and opens it for editing.
 
 **+ IMPORT** brings a new model in (`cs-asset model-import`): the file is copied to the folder you
 pick with a `.meta` in the import settings the project's models share (majority values, a fresh
-GUID, no tables from another model), Prisma's importer reads it back, and optionally a prefab that
+GUID, no tables from another model), Amoebius's importer reads it back, and optionally a prefab that
 holds it is written and loaded through the engine as proof.
 
 **MODELS** - every model by folder: the 66 FBX files, and Blender (`.blend`) and Maya (`.ma`/`.mb`)
 files, tagged BLENDER / MAYA. Unity cannot read those two either: its importer runs the installed
-Blender or Maya in the background to export an FBX. Prisma does the same (Unity's own export
+Blender or Maya in the background to export an FBX. Amoebius does the same (Unity's own export
 settings), keeps the FBX until the file changes, and says so plainly when the application is not
 installed. SETTINGS > TOOLCHAIN shows whether Blender and Maya were found, their version and path,
-with **BROWSE** to point at one Prisma did not find (passed on as `PRISMA_BLENDER` / `PRISMA_MAYAPY`).
+with **BROWSE** to point at one Amoebius did not find (passed on as `PRISMA_BLENDER` / `PRISMA_MAYAPY`).
 
 Pick a model for a preview **in the colours the game draws it with**: the materials come from the
 prefabs that draw its meshes (Manta's model from `Manta.prefab`, VesselGraph's `_Color1`), not from
@@ -385,7 +385,7 @@ prefabs that draw it and each mesh's materials with shader and colour swatch. A 
 shapes (the vessels' Mass / Charge / Space / Time hull morphs, the crystals' spins) gets a **BLEND
 SHAPES** slider each: let go and the turntable is drawn again with those weights; **ZERO** resets them.
 
-**VIEW IN ENGINE** opens the model in Prisma's own renderer - the real shaders, not the CPU
+**VIEW IN ENGINE** opens the model in Amoebius's own renderer - the real shaders, not the CPU
 picture - on a turntable: drag to turn, wheel to zoom, right-drag to pan, **F** frame, **R** reset,
 **Space** stop/start the spin, **Tab** the next prefab's materials (and the model's own). On screen:
 the model, whose colours are shown and its size (top left), the controls (bottom left, **H** hides
@@ -413,8 +413,8 @@ own clone: *Beside my clone* uses a git worktree next to it.
 `Prisma --page build --screenshot out.png --frames 40` renders a page and exits
 (`--page project:1` opens a Project tab, `--page options:look` one settings section, `--page chat:usage` the usage card,
 `--page editor:1:Assets/x.asset` an EDITOR tab with a data file or model open).
-`PRISMA_DATA_DIR` points all of Prisma's data (settings, chats, tracks, versions) at another
-folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
+`PRISMA_DATA_DIR` points all of Amoebius's data (settings, chats, tracks, versions) at another
+folder - a second, separate Amoebius, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
 chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
 its own and echoes the log; `--auto "chat:<message>"` sends one chat message; `--auto bench:A,B[:frames[:low|ab]]` runs a headless benchmark (optionally low-latency GC, or both) and exits;

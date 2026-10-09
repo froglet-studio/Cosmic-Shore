@@ -27,12 +27,12 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
 | B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
 | B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
-| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed; the lobby half did not work and was re-fixed 2026-10-08; both halves passed on Prisma (5 processes) | 🟡 |
-| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed; passed on Prisma 2026-10-08 | 🟡 |
+| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed; the lobby half did not work and was re-fixed 2026-10-08; both halves passed on Amoebius (5 processes) | 🟡 |
+| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed; passed on Amoebius 2026-10-08 | 🟡 |
 | B22 | The Scoreboard's client exit and rematch caption were never wired (`{fileID: 0}`), so B18's propagated fix was a no-op here | Root-caused & fixed | 🟡 |
 | B23 | The arcade card lobby does not follow the host: a flying guest is never pulled in, a guest who missed it once never gets it, a host who changes card cannot move the party, and guests draw phantom AI | Root-caused & fixed | 🟡 |
 | B24 | A rate-limited (HTTP 429) session create/join matched NEITHER retry filter, so the retry budget never ran: the guest bounced to its own solo menu and the host fell back to an OFFLINE session, which then correctly hid the online-only party panel | Root-caused & fixed 2026-10-06 from the first MPPM run | 🟡 |
-| B25 | Nothing enforced the four-player party size: two simultaneous Joins on a 3/4 party seated a fifth | Fixed 2026-10-08 (one size, 4, enforced by the session's own seats); passed on Prisma 2026-10-08 | 🟡 |
+| B25 | Nothing enforced the four-player party size: two simultaneous Joins on a 3/4 party seated a fifth | Fixed 2026-10-08 (one size, 4, enforced by the session's own seats); passed on Amoebius 2026-10-08 | 🟡 |
 | B26 | A late online success could still build a Relay session over a live OFFLINE host: the §4.2 invariant was checked only at entry | Fixed 2026-10-08 (re-checked under the mutex and after the shutdown); L1 test + negative control | 🟡 |
 | B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
@@ -1049,7 +1049,7 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 > — so without the explicit clear the stale value would persist until the next
 > join/leave.
 
-**Re-run on Prisma (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T7: with a party of host + member + spectator in a match, the host was `kill -9`ed. The member and the spectator each became a solo host at 1/4 on Menu_Main within 2.3 s wall. TCP sees the dead peer at once; UTP waits out its 10 s disconnect timeout, so the real figure is about 10 s more. Prisma, not Unity.
+**Re-run on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T7: with a party of host + member + spectator in a match, the host was `kill -9`ed. The member and the spectator each became a solo host at 1/4 on Menu_Main within 2.3 s wall. TCP sees the dead peer at once; UTP waits out its 10 s disconnect timeout, so the real figure is about 10 s more. Amoebius, not Unity.
 
 ---
 
@@ -1578,7 +1578,7 @@ disagrees (`EvaluateLobbyReadyGate`).
 the turn/launch should proceed within a tick. Also: press Ready twice quickly → the match
 must NOT start until everyone has pressed.
 
-**Run on Prisma (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08). The match half held; the LOBBY half did not, until fixed.** T4 (match): three pilots clicked the HUD's Ready button and the fourth left. The host's gate logged `3/4`, then `(client N disconnected): 3/3`, and the countdown started. The gate re-counts inside the disconnect callback, and NGO 2.13.3 removes the id from `ConnectedClientIds` before invoking it (`NetworkConnectionManager.cs` 1537 → 1567, read from the package), so the count is right on real NGO too. **T4-lobby (the arcade card lobby) FAILED on run 2:** three pressed Start, the fourth (unready) left, and the lobby sat at 3/4 forever. `ExpectedHumanCount` is `Max(_committedHumanCount, connected)`. The departure lowered `connected` but never the commit-time floor (4), so the re-decide this entry added compared 3 with 4 and returned, with no log. The fix in `ArcadeConfigSyncManager.HandleClientDisconnected` clamps the floor to the humans still connected; the floor exists for members still connecting, not for ones who left. The lobby gate now also logs each re-decision, as the match gate does. Run 6, after the fix: T4-lobby passed (`All players ready (client 3 left) - launching game`, and the three loaded the match). Prisma, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+**Run on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08). The match half held; the LOBBY half did not, until fixed.** T4 (match): three pilots clicked the HUD's Ready button and the fourth left. The host's gate logged `3/4`, then `(client N disconnected): 3/3`, and the countdown started. The gate re-counts inside the disconnect callback, and NGO 2.13.3 removes the id from `ConnectedClientIds` before invoking it (`NetworkConnectionManager.cs` 1537 → 1567, read from the package), so the count is right on real NGO too. **T4-lobby (the arcade card lobby) FAILED on run 2:** three pressed Start, the fourth (unready) left, and the lobby sat at 3/4 forever. `ExpectedHumanCount` is `Max(_committedHumanCount, connected)`. The departure lowered `connected` but never the commit-time floor (4), so the re-decide this entry added compared 3 with 4 and returned, with no log. The fix in `ArcadeConfigSyncManager.HandleClientDisconnected` clamps the floor to the humans still connected; the floor exists for members still connecting, not for ones who left. The lobby gate now also logs each re-decision, as the match gate does. Run 6, after the fix: T4-lobby passed (`All players ready (client 3 left) - launching game`, and the three loaded the match). Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
 
 ---
 
@@ -1623,7 +1623,7 @@ separately a hard kill). Expect: the ship keeps flying under AI, a toast names t
 pilot, the scoreboard still shows their score, and their domain's total still includes it.
 Watch that the host's roster does not double-count them.
 
-**Passed on Prisma (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T3: a guest left mid-race. The host logged `left mid-match - handing '<name>' to the AI`; that vessel's owner flipped to the server and its position kept changing; the leaver's RoundStats row was still on the host. Prisma, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+**Passed on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T3: a guest left mid-race. The host logged `left mid-match - handing '<name>' to the AI`; that vessel's owner flipped to the server and its position kept changing; the leaver's RoundStats row was still on the host. Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
 
 ---
 
@@ -1912,7 +1912,7 @@ The capacity split was pinned by `PartyInviteSystemTests.FourMembers_PartyIsFull
 deleted with the split; the one size is pinned by `HostConnectionDataSOTests.MaxPartySlots_IsFour` /
 `HasOpenSlots_CountsEachPlayerOnce` and `JoinTargetValidatorTests.Spectate_FullParty_IsPartyFull`.
 
-**Passed on Prisma (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T2b: two players pressed Join on a 3/4 party, the presses < 1 ms apart. Both passed the pre-flight; the session's 4 seats refused one (`Session is full.`), which `UgsRequestPolicy` classified `Full`; it bounced with "That party is full." and came back as a solo host at 1/4. The host ended at members 4/4, conns 4. **Found by the run:** that loser also logged a red `[HostConnectionService] JoinPartyDirect error`. The Phases 0–1 checklist promised a warning, so the three join catch sites now share `LogJoinFailure`, which keeps the error for real faults only. Prisma, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+**Passed on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T2b: two players pressed Join on a 3/4 party, the presses < 1 ms apart. Both passed the pre-flight; the session's 4 seats refused one (`Session is full.`), which `UgsRequestPolicy` classified `Full`; it bounced with "That party is full." and came back as a solo host at 1/4. The host ended at members 4/4, conns 4. **Found by the run:** that loser also logged a red `[HostConnectionService] JoinPartyDirect error`. The Phases 0–1 checklist promised a warning, so the three join catch sites now share `LogJoinFailure`, which keeps the error for real faults only. Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
 
 ---
 
@@ -2016,7 +2016,7 @@ This was "defect 5" of the Block 3 runs, mislabelled as "the new host's invite e
 The expiry in the host's log is a symptom: an unaccepted invite outlives its 60 s lifetime during
 the harness's 240 s wait. The cause was on the invitee's side:
 `Join pre-flight refused (SessionChanged) … PilotC's party is no longer available.`
-- **Reproduced** on Prisma's five-player harness with every player on a simulated 4G line
+- **Reproduced** on Amoebius's five-player harness with every player on a simulated 4G line
   (`COSMIC_SHORE_NET_SIM=4g`, `Port/docs/MULTIPLAYER.md`).
 - **Tests:** `JoinTargetValidatorTests` pins the failure shape and the one-save rule.
 - **Harness:** the T4-lobby classifier now reads the invitee's log first.

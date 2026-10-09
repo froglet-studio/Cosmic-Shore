@@ -90,7 +90,7 @@ namespace CosmicShore.Launcher
                 if (!_ws.Exists || _tools.Git == null)
                 {
                     Available = null;
-                    CheckError = "Press START once so Prisma has a workspace to build new versions from.";
+                    CheckError = "Press START once so Amoebius has a workspace to build new versions from.";
                     return;
                 }
                 await CheckSource(fetch);

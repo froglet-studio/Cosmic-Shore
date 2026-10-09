@@ -1,15 +1,17 @@
 {
-  "comment": "The Vessel Studio catalog. Prisma's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Prisma player, the game's own vessel; engineNote says what that run is.",
-  "web": "https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN",
+  "comment": "The Vessel Studio catalog. Amoebius's STUDIOS page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is.",
+  "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
   "hub": "index.html",
   "studios": [
     {
       "id": "squirrel",
       "name": "Squirrel",
       "file": "squirrel.html",
-      "kind": "built vessel - studio v1",
-      "summary": "The racer on its shipped numbers: drift on LT, the Boost Ring on RT, skim rival trails for boost and steal them. Six play-style types over its four element levels.",
-      "docs": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md"
+      "kind": "built vessel - studio round 2 (AI sim lab)",
+      "summary": "The racer on its shipped numbers, with an AI sim lab: AI Squirrels at Easy, Medium or Hard on the game's four Skim Race courses, chase/follow/free cameras, 1-4x speed and a scorecard. Six play-style types over its four element levels.",
+      "docs": "Docs/SKIM_RACE_AI.md",
+      "engineNote": "The game's own Squirrel in Skim Race, against the shipped AI (pick intensity and AI difficulty on the card).",
+      "engineMode": "SkimRace"
     },
     {
       "id": "stoat",

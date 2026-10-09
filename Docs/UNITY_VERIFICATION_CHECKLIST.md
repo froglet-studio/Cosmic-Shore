@@ -168,18 +168,18 @@ Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hu
 - **Harness:** the T4-lobby classifier now reads the invitee's log first.
 
 **Proven without the editor:**
-- **Before the fix:** the Prisma five-player harness on UDP with every player on a simulated 4G
+- **Before the fix:** the Amoebius five-player harness on UDP with every player on a simulated 4G
   line ran 13/14. T4-lobby failed, and the invitee's log shows
   `Join pre-flight refused (SessionChanged)`.
 - **After the fix:** the same run went 14/14. T4-lobby passed in 15.6 s, and there were 0
   SessionChanged refusals in any pilot's log. That is one run of an intermittent defect: it
   supports the fix, it does not prove it. The tests pin the invariant.
-- **Prisma edit-mode harness:** JoinTargetValidator, PartyInvite*, UgsRequestPolicy and
+- **Amoebius edit-mode harness:** JoinTargetValidator, PartyInvite*, UgsRequestPolicy and
   OfflineSession suites, 215/215.
 - **`unity_refcompile`:** the player config is OK with 0 unverified. The editor config is OK; it
   lists `HostConnectionService` among the package-absent errors (the Multiplayer Services SDK's
   `PlayerProperty` / `ISession` cannot be fetched here). So the new lines' Unity compile is
-  unverified. Prisma's live compile, where those types exist, built them.
+  unverified. Amoebius's live compile, where those types exist, built them.
 - **Not run:** `/verify-unity` (no editor in the cloud session).
 
 **Needs the editor (MPPM, 3 players):**
@@ -373,7 +373,7 @@ config reports 0 errors in project code.
     again.
 
 **Proven without the editor:**
-- **The Prisma edit-mode harness:** `OfflineSessionTests` 15/15, and every multiplayer and party
+- **The Amoebius edit-mode harness:** `OfflineSessionTests` 15/15, and every multiplayer and party
   suite green.
 - **Negative control:** without the two `HostConnectionService` fixes, exactly the B26 and B27
   tests fail (13/15).
@@ -457,10 +457,10 @@ config reports 0 errors in project code.
     left, the re-decide compared 3 against 4 and held forever with no log line.
   - The lobby gate now logs each re-decision.
 - **Comments:** five comments still described the retired 6-seat split; they are corrected.
-- **`Tools/Build/prisma_party_scenarios/`:** five instances on Prisma, 13 scenarios. See its README.
+- **`Tools/Build/prisma_party_scenarios/`:** five instances on Amoebius, 13 scenarios. See its README.
 
 **Proven without the editor:**
-- **Prisma, the 2026-10-08 runs:**
+- **Amoebius, the 2026-10-08 runs:**
 
   | Run | Result | Cause |
   |---|---|---|

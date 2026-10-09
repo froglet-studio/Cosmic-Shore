@@ -46,10 +46,10 @@ namespace CosmicShore.AssetTool.Tests
                 .SelectMany(f => Regex.Matches(File.ReadAllText(f), @"\[MenuItem\(""(FrogletTools/[^""]+)""(?!\s*,\s*true)").Cast<Match>().Select(m => m.Groups[1].Value))
                 .Distinct().Count();
             Assert.Equal(expected, tools.Count);
-            var launch = Assert.Single(tools, t => t.Menu == "FrogletTools/Prisma/Launch Prisma");
+            var launch = Assert.Single(tools, t => t.Menu == "FrogletTools/Amoebius/Launch Amoebius");
             Assert.Equal(("Build", 5, "Launch"), (launch.Category, launch.Importance, launch.Method));
             Assert.Equal("Assets/_Scripts/Editor/LaunchPrisma.cs", launch.File);
-            Assert.StartsWith("Opens Prisma", launch.Description);
+            Assert.StartsWith("Opens Amoebius", launch.Description);
             // " & " inside a name is not a hotkey.
             Assert.Contains(tools, t => t.Menu.EndsWith("Warnings & Errors Only", StringComparison.Ordinal));
             // Text with non-ASCII characters (the occlusion tools' summaries use "↔") still come out as JSON that parses.

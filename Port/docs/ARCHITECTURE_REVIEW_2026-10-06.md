@@ -1,6 +1,6 @@
 # Architecture review response (2026-10-06)
 
-An outside review proposed 20 changes to Prisma (A1-H20). It was written from the project
+An outside review proposed 20 changes to Amoebius (A1-H20). It was written from the project
 description, not the source, so every item was checked against the repository before deciding.
 This file records what the repository showed, the decision, and where the work went.
 
@@ -150,7 +150,7 @@ License (UCL) and proprietary ones. Document the decision per package.
 | Unity.Mathematics | 1.3.2 | UCL, "for Unity-dependent projects" | Must stay re-implemented |
 | Unity.Collections | 2.6.6 | UCL | Must stay re-implemented |
 | Netcode for GameObjects | 2.5.0 | UCL (the 2.x release branches; only the old `develop` branch says MIT) | Must stay re-implemented (`Engine/Networking`) |
-| Unity Transport | 2.6.0 | UCL | Not used; Prisma has its own wire format |
+| Unity Transport | 2.6.0 | UCL | Not used; Amoebius has its own wire format |
 | Entities / Entities Graphics | 1.4.2 / 1.4.15 | UCL | Must stay re-implemented |
 | Burst | 1.8.29 | UCL | Must stay re-implemented (inline stand-in) |
 | Cinemachine | 3.1.2 | UCL | Must stay re-implemented |
@@ -162,11 +162,11 @@ License (UCL) and proprietary ones. Document the decision per package.
 
 **Decision.** The recorded policy stands.
 - Three of the four packages the review believed MIT are under the UCL. The UCL licenses code for
-  Unity-dependent projects only, which is the opposite of what Prisma is.
+  Unity-dependent projects only, which is the opposite of what Amoebius is.
 - That leaves UniTask, which is MIT. Its upstream source is built on Unity's PlayerLoop
-  (`UnityEngine.LowLevel`, `PlayerLoopHelper`), `AsyncOperation` and `UnityWebRequest`, so Prisma
+  (`UnityEngine.LowLevel`, `PlayerLoopHelper`), `AsyncOperation` and `UnityWebRequest`, so Amoebius
   would still have to implement those.
-- Prisma's UniTask is about 1.2k lines covering what the game uses.
+- Amoebius's UniTask is about 1.2k lines covering what the game uses.
 - Vendoring it would reverse a recorded decision for little gain, and would need updated notices
   and a legal sign-off (G3).
 - Revisit only if C1's harness finds UniTask fidelity bugs.
@@ -203,7 +203,7 @@ License (UCL) and proprietary ones. Document the decision per package.
 **Decision.** Accepted, through goldens rather than Unity's source (the provenance policy).
 - C1's Unity PR (the same one that adds the replay recorder) adds a capture step. It writes N draws
   of every `Random` API, for a set of seeds, to `Port/tests/goldens/random.json`.
-- Prisma's tests compare those sequences exactly. The geometric draws are re-derived until they
+- Amoebius's tests compare those sequences exactly. The geometric draws are re-derived until they
   match.
 
 ### C7. Execution order
@@ -250,8 +250,8 @@ License (UCL) and proprietary ones. Document the decision per package.
 
   | Class | Meaning |
   |---|---|
-  | DROPPED | Unity reads it, Prisma doesn't |
-  | EXTRA | Prisma reads it, Unity doesn't |
+  | DROPPED | Unity reads it, Amoebius doesn't |
+  | EXTRA | Amoebius reads it, Unity doesn't |
   | STALE | Neither reads it |
   | MANAGED | A `[SerializeReference]` block |
 
@@ -296,7 +296,7 @@ Why these bars:
 - The fixed step quantises when events fire.
 - Small float differences grow chaotically in free flight, which is why transforms are compared
   as paths only for the first 10 s.
-- PhysX and Prisma's contacts will never match bit for bit.
+- PhysX and Amoebius's contacts will never match bit for bit.
 - Rendering differs at the bit level by design.
 
 ---
@@ -399,7 +399,7 @@ write a general solver in-house.**
   - one ball that bounces;
   - plus oriented boxes (~2 days), which triggers need anyway.
 - If AstroLeague's ball needs contacts against mesh colliders, or friction and restitution that
-  feel like PhysX, bind **BepuPhysics v2** for contacts only, behind Prisma's trigger and query
+  feel like PhysX, bind **BepuPhysics v2** for contacts only, behind Amoebius's trigger and query
   API:
   - Its license is Apache-2.0, and it is pure C#.
   - It needs no per-platform native binary, which matters for the Android and iOS builds.
@@ -431,12 +431,12 @@ write a general solver in-house.**
 
 The UGS boundary, stated explicitly (the G2 columns are candidates, not commitments):
 
-| Service | Prisma today | G2 (a): UGS over REST | G2 (b): Steam + own backend |
+| Service | Amoebius today | G2 (a): UGS over REST | G2 (b): Steam + own backend |
 |---|---|---|---|
 | Authentication | Local stub; anonymous id from `PlayerBoot` | UGS Authentication | Steam auth tickets (Steamworks.NET) + own session service |
 | Cloud Save | Local file (`ugs-cloudsave.json`) | UGS Cloud Save | Own backend, or Steam Cloud for small files |
 | Leaderboards | In memory, local player only | UGS Leaderboards | Steam leaderboards |
-| Lobby and Relay | Session files in a shared folder (LAN); in-process when networking is off | UGS Lobby + Relay (needs a Relay client for Prisma's transport) | Steam lobbies + Steam Datagram Relay |
+| Lobby and Relay | Session files in a shared folder (LAN); in-process when networking is off | UGS Lobby + Relay (needs a Relay client for Amoebius's transport) | Steam lobbies + Steam Datagram Relay |
 | Friends | Local stub | UGS Friends | Steam friends |
 | Analytics | Stub | UGS Analytics | Own endpoint, or PostHog (the game already integrates it) |
 
@@ -464,7 +464,7 @@ The UGS boundary, stated explicitly (the G2 columns are candidates, not commitme
   - the kilobytes per frame each loop phase allocates.
 - Phase timing turns on with a session report. Its cost is one timestamp per phase.
 
-How Prisma uses those numbers:
+How Amoebius uses those numbers:
 - `PrismaTracks` carries the CPU and GC figures per run, and the agent's brief shows them.
 - A run whose steady GC pause tops 1 ms per frame becomes a *perf* problem. It goes to the board
   with an acceptance criterion like any other.
@@ -482,7 +482,7 @@ How Prisma uses those numbers:
   in a single frame. That is a load-time target for C7, not a gameplay hitch.
 - The `tasks` phase (the async scheduler) is the clearest steady-state allocator, at 279-728 KB per
   frame in the menu. With the renderer running, steady GC reaches 1.9 ms per frame. That is about
-  11% of a 60 fps budget, over Prisma's own 1 ms problem line, and C7's first lead.
+  11% of a 60 fps budget, over Amoebius's own 1 ms problem line, and C7's first lead.
 - Under xvfb, frames take over 100 ms, so the render-time histogram (which tops out at 100 ms)
   reads 100. Real GPUs fall well inside it.
 
@@ -533,7 +533,7 @@ needs `EXT_disjoint_timer_query`, so they are measured on desktop.
 ### H17. Acceptance criteria
 
 **Done.** Every board item has a **done when** criterion:
-- A bug Prisma found in the tracks carries the tracks' own check: the problem is not seen again in
+- A bug Amoebius found in the tracks carries the tracks' own check: the problem is not seen again in
   3 runs through its scene.
   - After every ingest, `PrismaBoard.Verify` applies it.
   - A passing card gets a green **MET** pill and a notification offering **MARK DONE**. Moving it
@@ -570,7 +570,7 @@ inputs are the contract until they do.
   | Limit | Default | Enforced by |
   |---|---|---|
   | Agentic turns | 80 | `--max-turns` |
-  | Wall-clock minutes | 60 | Prisma kills the process tree |
+  | Wall-clock minutes | 60 | Amoebius kills the process tree |
   | Dollars | none (optional) | `--max-budget-usd` |
 
   All three are in Settings > CLAUDE > Milestone budget.
@@ -589,9 +589,9 @@ inputs are the contract until they do.
   that older bug.
 
 **Deferred: worktrees and PRs.** The developer works on one branch in GitHub Desktop. A worktree
-session produces a second branch that has to be merged, and Prisma has no merge or review view
+session produces a second branch that has to be merged, and Amoebius has no merge or review view
 yet. When two milestone sessions need to run at once, each will run in `claude --worktree <id>`
-(the CLI supports it) on a `prisma/<checkpoint>` branch, with a PR opened from Prisma. Until then,
+(the CLI supports it) on a `prisma/<checkpoint>` branch, with a PR opened from Amoebius. Until then,
 the deny rules and one session at a time keep every change reviewable in GitHub Desktop.
 
 ### H20. `prisma_bisect`

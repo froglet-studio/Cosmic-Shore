@@ -1,184 +1,295 @@
 ---
 name: vessel-studio
-description: Use to START, extend, publish or collaborate on a VESSEL STUDIO (the web page that lets a designer fly one vessel, its play styles and its AI before the game is changed - Squirrel Studio and the Stoat Flight Studio are the two built). Holds the fundamental decisions both studios already settled (so a new studio starts from them instead of re-deciding them), the order to build a new one in, the panel rules, and the artifact layer - build_artifact.py, the publish call with its capabilities, the Sync panel (Refresh, console, merge then delete, shared decisions) whose git work a Claude session does as JOBS (sync_job.py, section 5 - follow it when a 'Vessel Studio Sync job' message arrives) and how two people work one studio from two sessions. Points to /studio-creator for the page recipe and /labmaker for general lab craft instead of copying them. Trigger on "new vessel studio", "studio for <vessel>", "publish the studio", "refresh the artifact", "sync panel", "record a decision", "merge from the studio", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing.
+description: The ONE skill for the Vessel Studio - the single claude.ai artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where every vessel and its AI are flown, tested and decided on, on phone or PC, before the game is changed. Use for ANYTHING about a vessel studio or vessel AI testing in a page - starting a studio for a new vessel, extending the Squirrel AI sim lab or the Stoat Flight Studio, the page recipe (SHIP constants, the dual-stick mix, input-only AI with difficulty levels, cameras, phone play, scorecard), the gate (check_studio.cjs), the catalog (studios.json, the hub, Amoebius STUDIOS, Unity FrogletTools > Vessels > Vessel Studio), building and publishing the artifact (build_artifact.py), the Sync panel and its jobs (sync_job.py), shared decisions and requests, and testing in the real game (PLAY IN ENGINE, the Vessel Test Range plan). Trigger on "vessel studio", "studio for <vessel>", "studio creator", "test the <vessel> AI visually", "AI sim lab", "publish / refresh the studio", "sync panel", "record a decision", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, Docs/Studios/StoatFlightStudio.html, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing. Never publish a second studio artifact.
 ---
 
-# Vessel Studio: start from what is already decided
+# Vessel Studio: one artifact, one skill, every vessel
 
 A vessel studio answers one question about one hull ("how does it fly, what do its play styles do,
 how well does its AI fly it?") by letting a person **play and watch** on a phone or a PC. Two are
-built: **Squirrel Studio** (a shipped vessel, read from its prefab) and the **Stoat Flight Studio**
-(a vessel being designed, 15 rounds so far). Between them they settled most of the questions a third
-studio would otherwise ask again. This skill is those answers, plus how a studio is published and
-worked on by two people at once.
+built: **Squirrel Studio** (a shipped vessel with its Skim Race AI at Easy/Medium/Hard) and the
+**Stoat Flight Studio** (a vessel being designed, 15 rounds so far). This skill holds what they
+settled, how a new one is built, how the one artifact is published and shared, and how a studio
+reaches the real game. `/labmaker` holds the general lab craft (any lab, not only vessels): defer to
+it for the `__lab` contract and `verify_lab.cjs`, never copy it here.
 
-| You need | Go to |
-|---|---|
-| The fundamental decisions, and the order to build a new studio | this file, §1 and §2 |
-| The page recipe: copy `squirrel.html`, the `SHIP` constants, the dual-stick mix, the AI, cameras, the gate `check_studio.cjs` | **`/studio-creator`**. It lives on branch `vessel-studio` until merged: `git show origin/vessel-studio:.claude/skills/studio-creator/SKILL.md` |
-| The general lab contract (`__lab`, SHIPPED/SPEC, seeds, `verify_lab.cjs`), rounds, fleets, graduation, the trap list | **`/labmaker`** (`.claude/skills/labmaker/`; Stoat lessons are its `L-STU-*` entries) |
-| Publishing, the Sync panel, decisions, merging, two people at once | this file, §4 and §5; user doc `Docs/Studios/VesselStudio/SYNC_PANEL.md` |
+## 0. The one artifact (LOCKED, the user's rule 2026-10-09)
 
-Do not copy the other two skills in here. When one of them changes, this file's §1 rows stay true
-because they only point.
+**There is exactly one Vessel Studio artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.**
+Every studio page, the hub, the studio agent (Ask + Development requests), the shared decision log
+and the Sync panel live in it. From any session, anything about vessels, their AI or their studios
+goes to THIS artifact:
+
+- **Never publish a studio as its own artifact**, and never publish a new hub. A new studio is a page
+  in `Docs/Studios/VesselStudio/` + a row in `studios.json`, published into this artifact (§4).
+- From a conversation that has not published it yet: `Artifact read` it first, then publish with
+  `url` = this URL. A publish refused as "newer version live" hands you that version: merge onto it.
+- Its data: `requests` (studio agent), `decisions` (both the Stoat log and the Sync panel), `jobs`
+  (Sync panel). Read `requests` and `decisions` at the start of every studio round
+  (`ArtifactData list`).
+- **Retired** (do not publish to them, do not link them): `EJYgDToG9R2eLzupaQpLgN` (old hub),
+  `8YakjgME9H7kNuiVyNXGzc` (hub + Sync panel), `Busc3KW6DmVzbsiA2qxoHc` and `HZ6MYm4MNR2iEMnMhCWJxn`
+  (Stoat rounds ≤14), `8Wvnsx3gxJXXMNUCoyyuEt` (Stoat round 15, another account). Their stores held
+  no decisions or requests when this one replaced them (checked 2026-10-09).
+- The artifact is private: the owner shares it (Share menu) with **edit** access to anyone who
+  should press Refresh / Merge or record decisions.
 
 ## 1. The fundamental decisions (settled; do not re-decide them)
 
-Each row was paid for once. Break one only with the designer's say-so, and record why in the
-decision log (§5).
+Each row was paid for once. Break one only with the designer's say-so, and record why (§5).
 
 | # | Decision | Why | Squirrel | Stoat |
 |---|---|---|---|---|
-| D1 | **A reader of the shipped numbers.** Every number names its asset; a studio-only knob is marked lab-only | The game is the record. A number the page made up is a design nobody approved | `SHIP` constants, each `// Squirrel.prefab` | `SHIPPED` + `SPEC`, round-15 rows say "lab-only" |
-| D2 | **Say which you model: what ships, or a design.** In the page header | A design studio is ahead of the game. Players and reviewers must know which they fly | Ships: the built racer | Design: the dipole sling, the field trajectory. The game ships the round-4 orbit sling |
-| D3 | **One pure step, seeded.** The frame loop, the headless scorecard and the test hook all run the same `step`; `Math.random` never decides a result | Otherwise the scorecard measures a different game from the one you fly, and two loads disagree | `makeWorld` / `stepWorld` / `raceHeadless` | `stepFly`; the prism field seeded `mulberry32(20261009)` (round 15) |
+| D1 | **A reader of the shipped numbers.** Every number names its asset; a studio-only knob is marked lab-only | The game is the record. A number the page made up is a design nobody approved | `SHIP` constants, each `// Squirrel.prefab`; `LOOK` marked "the studio pilot's own tuning" | `SHIPPED` + `SPEC`, round-15 rows say "lab-only" |
+| D2 | **Say which you model: what ships, or a design.** In the page header | A design studio is ahead of the game | Ships: the built racer | Design: the dipole sling, the field trajectory. The game ships the round-4 orbit sling |
+| D3 | **One pure step, seeded.** Frame loop, headless scorecard and test hook run the same step; `Math.random` never decides a result | Otherwise the scorecard measures a different game | `makeWorld` / `stepWorld` / `raceHeadless` | `stepFly`; prism field seeded `mulberry32(20261009)` |
 | D4 | **The AI writes the same input a gamepad does.** Difficulty changes what the AI *believes*, never its stick | An AI that cheats measures nothing; the game's AI is input-only too | `believe()` + `aiInput()`, `SkimRaceHandicap`'s rule | `aiInput()` squeezes LT/RT like a player (`L-STU-1`) |
-| D5 | **A scorecard of columns, one per question.** Each play style must win its own column; keep a rookie column; rescore every column after ANY AI change | A scorecard that cannot say NO decides nothing; a better AI moves every column (`L-STU-4`, `L-STU-15`, `L-STU-16`) | Finish times per course × difficulty beside the game simulator's | Comet avg speed, Flare top speed, Needle ring error, Anchor rookie catches, Maelstrom prisms per sling |
-| D6 | **Play styles are named types over the four element levels**, not raw sliders | A designer picks a feel; sliders are for after (`L-STU-11`) | Six types over Charge/Mass/Space/Time | Five styles: Time→Comet, Space→Anchor, Mass→Maelstrom, Charge→Flare, Needle earned |
-| D7 | **Courses come from the game's data**, generated and embedded with the script named; a 4-step intensity ladder | Courses retyped by eye drift; one easy course hides the AI's failures (`L-STU-15`) | Skim Race tracks from `skimrace_track_fingerprint.py --emit-track` | Course ladder 1-4 (flat circle → dive rings) |
-| D8 | **Editor layout, never page scroll.** Stage centre, right dock (one tab per settings group), bottom dock (Runs, Scorecard, Decisions, About), pop-out windows; fits 900 px tall | A designer tunes while flying; scrolling loses the stage (`L-STU-13`) | Rail of tabs | Round-14 tabbed editor, pop-outs |
-| D9 | **Platform answered once at load.** Host hash (`#prisma` / `#amoebius`) or `window.__studioHost`, else phone = mobile UA / iPadOS / coarse pointer; manual Layout override. Phone = two thumb sticks + LT/RT drag handles feeding the SAME input object | One page for web, Prisma and phones; touch must not be a second control scheme | Play on phone | Phone layout opens straight into touch |
-| D10 | **Every setting explains itself**: tooltip with live previews at 30% and 70% of its range | 79 sliders became legible (`L-STU-10`) | Ability row + live numbers | Every `SPEC` row |
-| D11 | **One hub, one catalog** (`studios.json`), never a copy per surface. `engineMode` gives PLAY IN ENGINE | Web, Prisma and Unity all read the one list (`L-STU-12`, `L-STU-18`) | Bay in `index.html` | Bay + `engineMode: Slingshot` |
-| D12 | **The repo copy is the source.** Publish from it to the SAME artifact URL; a new URL forks the decision log | Two sources drift; the log is how the designer's choices reach Claude | `squirrel.html` | `StoatFlightStudio.html` → re-copied to `VesselStudio/stoat.html` |
-| D13 | **Prototype in the studio until the numbers settle, then port once** | Porting every round to C# costs a Unity verification each time | — | `STOAT_SIM_LAB_PLAN.md` §4 |
-| D14 | **A test hook and a gate**: `window.__<vessel>Studio` (and `__lab` when the page meets the lab contract); `check_studio.cjs` + `verify_lab.cjs` with negative controls | A later session, a recorder and the gate all drive the page the same way | `__squirrelStudio` | `__stoatStudio` = `__lab` (round 15) |
-| D15 | **Every panel and popup closes**: a × button, a press anywhere outside it, and Escape | The user's rule (2026-10-09): a panel that cannot be dismissed blocks the stage | — | Sync panel, merge popup |
+| D5 | **A scorecard of columns, one per question**, beside the game's own numbers; keep a rookie/low-difficulty column; rescore every column after ANY AI change | A scorecard that cannot say NO decides nothing (`L-STU-4`, `L-STU-15`, `L-STU-16`) | Finish times per course × Easy/Medium/Hard beside the game simulator's | Comet avg speed, Flare top speed, Needle ring error, Anchor rookie catches, Maelstrom prisms per sling |
+| D6 | **Play styles are named types over the four element levels**, not raw sliders | A designer picks a feel (`L-STU-11`) | Six types over Charge/Mass/Space/Time | Five styles: Time→Comet, Space→Anchor, Mass→Maelstrom, Charge→Flare, Needle earned |
+| D7 | **Courses come from the game's data**, generated and embedded with the script named; a 4-step intensity ladder | Courses retyped by eye drift; one easy course hides the AI's failures | Skim Race I1–I4 from `skimrace_track_fingerprint.py --emit-track` | Course ladder 1–4 |
+| D8 | **Editor layout, never page scroll.** Stage centre, right dock (one tab per settings group), bottom dock, pop-outs; fits 900 px tall | A designer tunes while flying (`L-STU-13`) | Rail of panels | Round-14 tabbed editor, pop-outs |
+| D9 | **Platform answered once at load.** Host hash (`#prisma` / `#amoebius`) or `window.__studioHost`, else phone = mobile UA / iPadOS / coarse pointer; manual override. Phone = two thumb sticks + LT/RT drag handles into the SAME input object | One page for web, Amoebius and phones | Play on phone | Phone layout opens straight into touch |
+| D10 | **Every setting explains itself**: tooltip with live previews | 79 sliders became legible (`L-STU-10`) | Ability row + live numbers | Every `SPEC` row |
+| D11 | **One hub, one catalog** (`studios.json`), never a copy per surface. `engineMode` gives PLAY IN ENGINE | Web, Amoebius and Unity all read the one list (`L-STU-12`, `L-STU-18`) | Bay + `engineMode: SkimRace` | Bay + `engineMode: Slingshot` |
+| D12 | **The repo copy is the source; ONE artifact** (§0) | Two sources drift; a second artifact forks the decision log | `squirrel.html` | `StoatFlightStudio.html` → re-copied to `VesselStudio/stoat.html` |
+| D13 | **Prototype in the studio until the numbers settle, then port once** | Porting every round costs a Unity verification each time | — | `STOAT_SIM_LAB_PLAN.md` §4 |
+| D14 | **A test hook and a gate**: `window.__<vessel>Studio` (and `__lab` when the page meets the lab contract); `check_studio.cjs` (+ `verify_lab.cjs`) with negative controls | A later session, a recorder and the gate drive the page the same way | `__squirrelStudio` | `__stoatStudio` = `__lab` |
+| D15 | **Every panel and popup closes**: ×, a press outside it, and Escape | A panel that cannot be dismissed blocks the stage (the user, 2026-10-09) | — | Sync panel, merge popup |
+| D16 | **Three cameras in every studio: Chase · Follow · Free** (the user, 2026-10-09). **Chase**: close behind the watched hull, rolls with it. **Follow**: wider and world-up; in a race it can pick any pilot (yours, then each AI). **Free**: detached from the hull; it either flies (drag to look, I J K L / U O, Shift fast, phone sticks) or orbits the watched hull (drag to turn, wheel to zoom). C, or the pad, cycles them | One camera vocabulary across studios, so watching an AI reads the same everywhere. The chase offset is smoothed, not the position (§7) | Chase / Follow (any pilot) / Free fly | Chase / Follow (wide) / Free orbit. **Open:** offer both Free modes (fly and orbit) in both studios |
+| D17 | **The RACE panel is the standard AI-test config** for every vessel AI (the user, 2026-10-09): Course (the 4-intensity ladder, D7) · Your hull (You fly / AI Easy / Medium / Hard) · AI rivals 0–3 · Rival level (Easy / Medium / Hard) · Camera (D16) · Speed 1× / 2× / 4× · Show AI thinking · Restart each race on its own. The **Scorecard** sits beside it (D5) | Any AI is tested the same way: the same knobs, the same order, comparable runs | `squirrel.html` Race panel (the reference) | AI pilot + sim lab controls; move to this panel shape at its next round |
 
 ## 2. A new studio, in order
 
-1. **Intake**: `/studio-creator` §1 (the vessel, its maps, its AI, the decision the studio exists to make
-   written as scorecard columns, ships-or-design).
-2. **Run `python3 Tools/Build/element_ability_table.py <Vessel>`** (the `/vessel` skill) so the page's
-   numbers start from the shipped asset, not from a doc (D1).
-3. **Copy the template, never a blank page**: `squirrel.html` (round 2, on `vessel-studio`) for a
-   shipped vessel; the Stoat page's structure for a design studio. Walk D1-D15 against the copy.
-4. **Gate**: `check_studio.cjs` (and `verify_lab.cjs` if it carries `__lab`), then READ the screenshots.
-5. **Catalog**: `studios.json` row + `index.html` bay (`/studio-creator` §3). Prisma and Unity need no code.
-6. **Publish** (§4) and record the first decision (§5): what the studio is for.
-7. **Rounds**: `/labmaker` §4. After each round add a trap to §6 here or to the other skill that owns it.
+1. **Intake** — answer before the first line:
+   - the vessel, its class (`VesselClassType`), prefab, ability map (`Assets/Resources/ElementalAbilityMaps/`),
+     action SOs and `R_VesselActions/*.md`;
+   - the decision the studio exists to make, written as scorecard columns (D5);
+   - its maps: the arcade cards whose `Vessels` list holds `SO_Class_<Vessel>`
+     (`grep -l <class guid> Assets/_SO_Assets/Games/*.asset`). Squirrel: SkimRace, Regatta, AstroLeague,
+     Broadside, BroodRush, Joust, Maelstrom, Scurry. Stoat: Slingshot, Warpline;
+   - its AI: platform `AIPilot` or a replacement pilot (`Docs/AI_SYSTEM/ARCHITECTURE.md`, branch
+     `ai-system`) and where its difficulty lives (Skim Race: `SkimRaceDifficultySO` = Hard +
+     `SkimRaceHandicap`'s late notice and misjudged crystal);
+   - ships or design (D2).
+2. **`python3 Tools/Build/element_ability_table.py <Vessel>`** (the `/vessel` skill), so numbers start
+   from the shipped asset (D1).
+3. **Copy a template, never a blank page** (§3): `squirrel.html` for a shipped vessel with AI; the
+   Stoat page's structure for a design studio. Walk D1–D15 against the copy.
+4. **Gate** (§3.3), then READ the screenshots.
+5. **Catalog** (§3.4). Amoebius and Unity need no code.
+6. **Publish into the one artifact** (§4) and record the first decision (§5): what the studio is for.
+7. **Rounds**: `/labmaker` §4 (one round = one commit + one write-up). Add traps to §7.
 
-## 3. Panel rules (any panel a studio or the hub adds)
+## 3. The page recipe
 
-- A **×** in its top-right corner, closes on a press outside it (`pointerdown` on `document`, tested
-  with `e.composedPath().includes(host)` so a Shadow-DOM panel counts its own clicks), and on Escape.
-  A popup above a panel closes first on Escape.
-- Build it in **Shadow DOM** (`host.attachShadow`) with its own tokens, so the studio's styles never
-  reach it and it never restyles the studio.
-- **ASCII-only JavaScript** in files served beside the page (`\uXXXX` escapes): a supporting file served
-  without a charset garbles `⟳`, `×` and `→`.
-- Destructive or outward actions (merge, delete, publish) take a **second, explicit confirm** in the
-  panel, never a `confirm()` (the viewer returns false).
+### 3.1 `squirrel.html`, part by part
 
-## 4. The artifact layer
+| Part | What to change for a new vessel |
+|---|---|
+| Header + `hostTag` | Name, round chip. Keep the `#amoebius` / `#prisma` hash and `window.__studioHost` detection |
+| `SHIP` constants | Every number names its asset (`// Squirrel.prefab`, `// SquirrelTubeAction`). Studio-only knobs live apart (`LOOK`) and say so |
+| `DIFF`, `SIM_REF` | The game's difficulty-asset numbers and the game simulator's reference times, both cited |
+| `TRACKS` / map data | Generated, embedded verbatim, the script named in the header comment |
+| Pure world: `makeWorld`, `stepPilot`, `stepWorld`, `raceHeadless`, `raceStats` | Never draws, never reads a device; seeded `rng` everywhere (D3) |
+| `believe()` + `aiInput()` | AI through sticks + triggers (D4); difficulty edits only belief |
+| Rendering | One `InstancedMesh` for every prism, hull meshes, "Show AI thinking" lines (believed vs real target; amber = not noticed, red = misjudged) |
+| Cameras | Chase (smooth the OFFSET, not the position), Follow any pilot, Free (drag to look, IJKL/UO; phone sticks drive it when your hull is AI-flown) |
+| Input layer | Gamepad, keyboard, Play on phone; all into one input object (D9) |
+| Rail | Race (course, your hull You/AI Easy/Medium/Hard, rivals, rival level, camera, speed 1/2/4×, auto-restart), Scorecard, Types, Elements, Ability row, Live numbers, Runs, Sources + not modelled |
+| Test hook | `window.__<vessel>Studio = { state, set, startRace, raceHeadless, raceStats, … }` |
 
-**Build** from any branch (the repo pages are never edited; the panel is injected here and by Refresh):
+### 3.2 The game's dual-stick mix (any flying vessel)
+
+From `InputController`: `XSum = ease(R.x+L.x)` (yaw), `YSum = -ease(R.y+L.y)` (pitch),
+`YDiff = ease(R.y-L.y)` (roll), `XDiff = (R.x-L.x+2)/4` (throttle),
+`ease(x) = x<0 ? cos(xπ/4)-1 : -(cos(xπ/4)-1)`. The nose is −Z. An AI that wants yaw `y`, pitch `p`, roll `r`
+and as much throttle as steering allows inverts it: `sx = easeInv(y)`, `dx = min(2, 2-|sx|)`,
+`R = ((sx+dx)/2, (sy+dy)/2)`, `L = ((sx-dx)/2, (sy-dy)/2)`.
+
+**Measure the AI against the game every round** (`raceStats`: average speed, boost, off-line distance,
+resets, skims, time per AI state). Tune only the studio pilot's own knobs and publish the table in
+`VesselStudio/README.md`. Where the studio's pilot differs from the game's (the Squirrel's difficulty
+gaps are smaller: quick turn-back, short look-ahead), **say so on the page**; never fudge it.
+
+### 3.3 The gate
+
+```sh
+export NODE_PATH=<a folder with node_modules/playwright-core>   # pre-installed browsers; never `playwright install`
+node .claude/skills/vessel-studio/check_studio.cjs --self-test --three <local three.min.js>
+node .claude/skills/vessel-studio/check_studio.cjs Docs/Studios/VesselStudio/<vessel>.html \
+     --hook __<vessel>Studio --three <local three.min.js> --out <dir>
+```
+
+It fails, by name, on:
+- a console or page error (desktop, 400 px, emulated phone);
+- sideways scroll in a plain 400 px window;
+- a missing hook, or a race that does not advance `state.t`;
+- a blank WebGL stage (read from a real screenshot);
+- a page that is not in touch play on a sideways phone, either by itself or after a REAL tap on Play on
+  phone. A card lying over the button fails.
+
+`--self-test` plants each defect and must name every one. Then run the studio's own checks:
+- every course at every difficulty finishes (`raceHeadless`);
+- the scorecard computes;
+- a live 3-AI race at 4× runs;
+- a keyboard pilot moves.
+
+A page on the `__lab` contract also runs `/labmaker`'s `verify_lab.cjs`.
+
+### 3.4 Catalog (one list feeds everything)
+
+1. `Docs/Studios/VesselStudio/studios.json`: `id`, `name`, `file`, `kind`, `summary`, `docs`, plus
+   `engineMode` (a `GameModes` name with an arcade card) and `engineNote` once the game has the mode.
+   `web` is the one artifact (§0).
+2. `index.html`: the vessel's bay and its `SPEC` string for the Ask box; take it off "no studio yet".
+3. **Amoebius** reads `studios.json` (`StudioCatalog.cs`): run `dotnet test Port/tests/CosmicShore.Launcher.Tests`.
+4. **Unity**: `FrogletTools ▸ Vessels ▸ Vessel Studio` opens Amoebius on STUDIOS. Nothing to add.
+5. `VesselStudio/README.md` (the page's row, its scorecard) and `VESSEL_STUDIO_PLAN.md` (phase status).
+
+## 4. Publishing the one artifact
+
+**Build** (the repo pages are never edited; the Sync panel is injected here and by Refresh):
 
 ```sh
 python3 .claude/skills/vessel-studio/build_artifact.py --self-test
-python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/<branch> --out <scratchpad>/hub \
-        --artifact <artifact url> --session <your session id>
+python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/claude/peaceful-rubin-hhw49n --out <scratchpad>/vs \
+        --session <your session id>          # --artifact defaults to the one artifact
 ```
 
-`build.json` records the branch and commit the artifact shows, the artifact URL and a default Claude
-session for Sync jobs (each viewer can set their own in the panel).
+**Publish** with the Artifact tool:
+- `file_path` = `<out>/index.html`;
+- `files` = every other file in `<out>` (studio pages, `studios.json`, `sync.js`, `build.json`);
+- `url` = https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.
 
-**Publish** with the Artifact tool: `file_path` = `<out>/index.html`, `files` = every other file in
-`<out>` (studio pages, `studios.json`, `sync.js`, `build.json`), `url` = the studio's artifact (from a
-conversation that has not published it yet, `Artifact read` it first). On the first publish pass these
-capabilities (later publishes omit them and keep them):
+Omit `capabilities` to keep them. If they must ever be restated, the full set is:
 
 ```json
-{ "artifact": {},
+{ "artifact": {}, "sample": {}, "user": { "scopes": ["profile"] },
   "db": { "rules": [ { "path": "decisions", "read": "view", "write": "interact" },
-                     { "path": "jobs",      "read": "view", "write": "interact" } ] },
-  "user": { "scopes": ["profile"] },
+                     { "path": "jobs",      "read": "view", "write": "interact" },
+                     { "path": "requests",  "read": "view", "write": "interact" } ] },
   "mcp": { "servers": [ { "server": "Claude Code Remote",
                           "tools": ["send_message", "create_session", "list_environments"] } ] } }
 ```
 
-Then `ArtifactData list decisions` and `list jobs` (and again with `as_level: "view"`) to prove the
-store is wired. The artifact is private: the owner shares it (Share menu) with **edit** access to
-anyone who should press Refresh, Merge or record decisions; view access gets a read-only panel.
+Then `ArtifactData list` of `decisions`, `jobs` and `requests`. Re-copy `StoatFlightStudio.html` into
+`VesselStudio/stoat.html` (keeping the back link) before a build whenever the Stoat changed.
 
-**Why a session and not a GitHub connector:** a page can only call the viewer's claude.ai connectors.
-Most accounts have no GitHub connector, an org (froglet-studio) must approve it separately, and the
-GitHub MCP has no delete-branch tool. Every account has the built-in **Claude Code Remote** connector,
-and a session already has the repo, so the session does the git work (2026-10-09, the user's call).
+**Why a session and not a GitHub connector:**
+- A page can only call the viewer's claude.ai connectors.
+- Most accounts have no GitHub connector, and the froglet-studio org must approve one separately.
+- The GitHub MCP has no delete-branch tool.
 
-**Live artifacts** (2026-10-09):
+Every account has the built-in **Claude Code Remote** connector, and a session already has the repo,
+so the session does the git work.
 
-| Artifact | URL | Built from |
-|---|---|---|
-| Vessel Studio with the Sync panel | https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc | `cece/magical-carson-9bdq8z` (Stoat round 15), switchable from the panel |
-| Vessel Studio (round 14, no panel) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `claude/peaceful-rubin-hhw49n` |
+## 5. Two people, one studio (Sync panel, jobs, decisions)
 
-## 5. Two people, one studio (the Sync panel and its jobs)
-
-The **Sync** button (bottom right of every page) is the whole collaboration loop. User doc:
-`Docs/Studios/VesselStudio/SYNC_PANEL.md`. The page never touches git: each button writes a **job**
-to the artifact's `jobs` collection and messages the viewer's Claude session with the job's id.
+The **Sync** button (bottom right of every page) is the collaboration loop. User doc:
+`Docs/Studios/VesselStudio/SYNC_PANEL.md`. The page never touches git: each button writes a **job** to
+the `jobs` collection and messages the viewer's Claude session with the job's id.
 
 | Button | Job | Session does |
 |---|---|---|
 | Refresh | `refresh {branch, shown}` | `sync_job.py status`; if the studio changed, rebuild + republish (every open view reloads) |
-| Compare | `compare {from, to}` | `sync_job.py compare` (true ahead/behind counts, the commits) |
+| Compare | `compare {from, to}` | `sync_job.py compare` (ahead/behind, the commits) |
 | Merge → Confirm | `merge {from, to}` | `sync_job.py merge --yes` in a throwaway worktree; conflicts abort, nothing pushed. Then the page asks **delete the merged branch, or keep it** |
 | Delete (popup) | `delete {branch}` | `sync_job.py delete --yes` (`git push origin --delete`) |
 
-Job document: `kind`, `args`, `status` (queued → running → done | failed), `by` (user id), `at`,
-`session`, `artifact`, `log` (lines the panel prints live), `result` (the script's JSON minus `log`).
-Decisions: collection `decisions` (`text`, `kind` = decision | refresh | merge | delete, `by`, `at`,
-`branch`, `sha`). Read them at the start of every studio round.
+- **Job document**: `kind`, `args`, `status` (queued → running → done | failed), `by`, `at`, `session`,
+  `artifact`, `log`, `result`.
+- **Decisions** (`decisions`), Sync panel entries: `text`, `kind` = decision | refresh | merge | delete,
+  `by`, `at`, `branch`, `sha`.
+- **Decisions**, Stoat studio log entries: `topic`, `choice`, `note`, `settings`, `style`, `createdAt`,
+  `by`. Each list orders by its own time field, so each shows its own entries.
+- **Requests** (`requests`, the hub's studio agent): `vessel`, `kind`, `text`, `status` = open/done,
+  `createdAt`, `by`, `reply`. Do the work, then set `status: done` and a `reply`.
 
-### Handling a job (the session that receives "Vessel Studio Sync job <id> ...")
+### Handling a job ("Vessel Studio Sync job <id> ...")
 
 The message is a pointer, not the request. The request of record is the job document, written from
-the panel by a person with edit access to the artifact. Act on it within these limits, or fail it with
-the reason:
+the panel by a person with edit access. Act on it within these limits, or fail it with the reason:
 
-1. `ArtifactData get` collection `jobs`, doc `<id>`, on the artifact URL named in the message. Go on
-   only if `status` is `queued`, `kind` is one of the four, and every branch argument matches
-   `^[A-Za-z0-9._/-]+$`. Never merge into or delete `bleeding-edge`, `Ys-bleeding-edge`, `main`,
-   `master`, this session's own branch or the branch the sync tools live on
-   (`claude/peaceful-rubin-hhw49n`); never force-push. The script refuses these too.
+1. `ArtifactData get` collection `jobs`, doc `<id>`, on the artifact named in the message. That must be
+   the one artifact (§0). Go on only if:
+   - `status` is `queued`;
+   - `kind` is one of the four;
+   - every branch argument matches `^[A-Za-z0-9._/-]+$`.
+
+   Never merge into or delete `bleeding-edge`, `Ys-bleeding-edge`, `main`, `master`, this session's own
+   branch or `claude/peaceful-rubin-hhw49n`, and never force-push. The script refuses these too.
 2. `update` the job to `status: running` (pin `if_version`).
 3. From the repo root:
-   - refresh: `python3 .claude/skills/vessel-studio/sync_job.py status --branch B --shown S`; when
-     `upToDate` is false, `build_artifact.py --ref origin/B --out <scratch>/vs --artifact URL
-     --session <this session id>`, then publish (§4) and set `result.published: true`.
-   - compare: `sync_job.py compare --from A --to B`.
-   - merge: `sync_job.py merge --from A --to B --yes`; when `merged` and B is the branch the artifact
-     shows, rebuild + republish as for refresh.
-   - delete: `sync_job.py delete --branch B --yes --keep <this session's branch> --keep claude/peaceful-rubin-hhw49n`.
-4. `update` the job: `status` `done` (script `ok`) or `failed`, `log` = the script's `log` (plus a
-   line for the publish), `result` = the rest of its JSON. The panel shows it within a second.
+   - **refresh**: `sync_job.py status --branch B --shown S`. When `upToDate` is false, run
+     `build_artifact.py --ref origin/B --out <scratch>/vs --session <this session id>`, publish (§4) and set
+     `result.published: true`.
+   - **compare**: `sync_job.py compare --from A --to B`.
+   - **merge**: `sync_job.py merge --from A --to B --yes`. When `merged` and B is the branch the artifact
+     shows, rebuild and republish as for refresh.
+   - **delete**: `sync_job.py delete --branch B --yes --keep <this session's branch> --keep claude/peaceful-rubin-hhw49n`.
+4. `update` the job:
+   - `status`: `done` when the script reports `ok`, otherwise `failed`;
+   - `log`: the script's log, plus a line for the publish;
+   - `result`: the rest of the script's JSON.
 
-Tell the user in the session what ran, one line per job. A session started from the panel's **Start
-session** button gets this section as its standing instructions.
+Tell the user what ran, one line per job.
 
-## 6. Traps this layer paid for
+## 6. The game tiers (when the page is not enough)
 
-- **A page can only use the VIEWER's claude.ai connectors.** The first panel called a "GitHub"
-  connector; the user had none ("No matching connector found", then "Add custom" asked for an MCP
-  server URL), and linking GitHub on claude.ai only linked the personal account: the froglet-studio
-  org needs an owner to approve it. The session-job design avoids both.
-- **A page can only message sessions of the person using it.** Each viewer sets their own session
-  (stored privately at `data/users/<id>/sync`); the publisher's session in `build.json` is only a
-  default, and works for the publisher alone.
-- **The GitHub connector has no delete-branch tool**; the session does it with `git push --delete`.
-- **A files-form publish keeps the publishing view on the OLD files**; reload it yourself. Other views
-  reload on their own.
-- **Refresh must re-inject the panel**: the branch's pages do not carry it (`build_artifact.py` does).
-- **A reload loses the in-page console.** Decisions keep the record (Refresh, Merge and Delete add
-  their own entries), and the job documents keep each job's log.
-- **Headless here**: the full `chromium` binary refuses old headless mode; use
-  `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`. Mock `window.claude.use`
-  (db with snapshots, mcp that answers jobs) and drive the panel through its shadow root.
+| Tier | What flies | Where |
+|---|---|---|
+| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; Amoebius STUDIOS ▸ OPEN IN AMOEBIUS |
+| B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius STUDIOS (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
+| C. Vessel Test Range | The real mode scenes with AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look | Unity + Amoebius; **plan only**: `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` |
 
-## 7. Keep it alive
+C is shared infrastructure: one dev-only harness for every vessel, installed into the real mode
+scenes. Do not make a per-vessel copy or a new environment scene. It reuses `SpectatorController`,
+the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` simulation and
+`CellMiniatureBuilder`. Before writing it, read `Docs/CONDITIONAL_COMPILATION.md` and run
+`check_conditional_compilation.py`.
 
-After a studio round or a panel change: add the decision to §1 if it settled something fleet-wide, a
-trap to §6 if it cost time, extend `build_artifact.py --self-test` when a check would have caught it,
-and update the Live artifacts table. When `/studio-creator` merges, link its path here instead of the
-`git show` line.
+## 7. Traps these studios paid for
+
+**AI and flight**
+- **An AI that chases the crystal leaves the line and loses every skim.** Aiming straight at crystals
+  320 u away gave boost 1.1–2.1× and 2–3× the game's times. Stay on the line and lean out only as far
+  as capture reach needs.
+- **A difficulty mistake must cost what it costs in the game.** Easy only bit once a misjudged crystal
+  was flown to where it was BELIEVED.
+- **Chase cameras lag at 5× boost** if they lerp the POSITION. Lerp the offset from the hull.
+- **Your own skimmer sphere hides your hull** in chase view: hide the chased pilot's sphere.
+- **The latest trigger sample is not the squeeze** (`L-STU-1`), and **gamepad Y is inverted**
+  (`L-STU-8`).
+
+**Pages and checks**
+- **The start card covered Play on phone on a sideways phone.** Only a real tap at phone size finds it.
+- **A 400 px check under phone emulation passes everything**: the emulated phone zooms out to fit.
+- **WebGL canvases read back blank** without `preserveDrawingBuffer`: judge the stage from a screenshot.
+- **A page that detects a phone may skip the button** (the Stoat goes straight to touch play).
+  Accept `body.play`.
+- **Headless here**: use `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`,
+  serve three.js from a local copy, stub Google Fonts, `--use-gl=swiftshader`.
+- **ASCII-only JavaScript in served files** (`\uXXXX`): a file served without a charset garbles `×` and `→`.
+- **Panels**: build them in Shadow DOM with their own tokens. Destructive actions take a second
+  in-panel confirm, never `confirm()` (the viewer returns false).
+
+**The artifact**
+- **A page can only use the VIEWER's connectors, and only message that viewer's own sessions.**
+  - Each viewer sets their own session (`data/users/<id>/sync`).
+  - The publisher's session in `build.json` is a default for the publisher alone.
+  - A job sent to a session that has ended fails "could not be reached": press Start session.
+- **A files-form publish keeps the publishing view on the OLD files**: reload it. Refresh must
+  re-inject the panel.
+- **A new artifact forks the data**: this is why §0 exists. Before anything else, check the artifact
+  you are about to publish to is the one.
+- **The Write tool refuses a file it has not read in this session**: read first, and check `git log`.
+
+## 8. Keep it alive
+
+After a studio round or a panel change:
+- add a settled decision to §1 and a costly trap to §7;
+- extend `check_studio.cjs` or `build_artifact.py --self-test` when a check would have caught the
+  problem, with a planted defect;
+- update the studio's README row.
+
+**This is the only vessel-studio skill**: fold any new studio guidance in here, never into a second skill.

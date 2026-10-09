@@ -49,7 +49,7 @@ namespace CosmicShore.Launcher
             RefreshGit();
             if (c.LastRunEdits > 0 && _page != Page.Git)
                 Notify($"The agent changed {c.LastRunEdits} file{(c.LastRunEdits == 1 ? "" : "s")}",
-                    $"In \"{Trim(c.Title, 50)}\". They stay in Prisma's workspace until you commit them.", NoteKind.Info,
+                    $"In \"{Trim(c.Title, 50)}\". They stay in Amoebius's workspace until you commit them.", NoteKind.Info,
                     ("REVIEW", () => _page = Page.Git));
         }
 
@@ -71,7 +71,7 @@ namespace CosmicShore.Launcher
             var chats = st.Changes.SelectMany(c => _chats.EditorsOf(System.IO.Path.Combine(_ws.Dir, c.Path))).Distinct().ToList();
             var first = chats.FirstOrDefault()?.Title;
             bool engine = st.Changes.Any(c => c.Path.StartsWith("Port/"));
-            string head = first != null ? (engine ? "feat(prisma): " : "fix: ") + first : (engine ? "chore(prisma): " : "chore: ") + $"{st.Changes.Count} changes from Prisma";
+            string head = first != null ? (engine ? "feat(prisma): " : "fix: ") + first : (engine ? "chore(prisma): " : "chore: ") + $"{st.Changes.Count} changes from Amoebius";
             var body = string.Join("\n", st.Changes.Take(12).Select(c => $"- {c.Path}"));
             return head + "\n\n" + body + (st.Changes.Count > 12 ? $"\n- ... and {st.Changes.Count - 12} more" : "");
         }
@@ -89,7 +89,7 @@ namespace CosmicShore.Launcher
         {
             var dl = ImGui.GetWindowDrawList();
             PageHeader(a, "GIT", _ws.Exists
-                ? $"Prisma's workspace  ·  {Trim(_ws.Dir, 70)}  ·  {(_s.Workspace == WorkspaceMode.WorktreeOfMyClone ? "a worktree of your clone" : "a clone Prisma manages")}"
+                ? $"Amoebius's workspace  ·  {Trim(_ws.Dir, 70)}  ·  {(_s.Workspace == WorkspaceMode.WorktreeOfMyClone ? "a worktree of your clone" : "a clone Amoebius manages")}"
                 : "No workspace yet: press START on PLAY once.");
             if (!_ws.Exists || _tools.Git == null) return;
             if ((DateTime.Now - _gitPolled).TotalSeconds > 4 && !_git.Busy) { _gitPolled = DateTime.Now; RefreshGit(); }

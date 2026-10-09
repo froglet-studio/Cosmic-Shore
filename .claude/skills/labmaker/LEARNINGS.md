@@ -136,7 +136,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ### L-STU-12 — Graduate a studio to a hub plus a catalog, not to a copy per surface
 - Lab: Vessel Studio · Branch: `vessel-studio` → `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
-- What happened: `studios.json` (`{id, name, file, kind, summary, docs, engineMode?}`) drives the web hub, Prisma's STUDIOS page (`StudioCatalog.cs`, with tests) and `FrogletTools ▸ Vessels ▸ Vessel Studio`. `stoat.html` in the hub is a COPY of the source page, so the two can drift.
+- What happened: `studios.json` (`{id, name, file, kind, summary, docs, engineMode?}`) drives the web hub, Amoebius's STUDIOS page (`StudioCatalog.cs`, with tests) and `FrogletTools ▸ Vessels ▸ Vessel Studio`. `stoat.html` in the hub is a COPY of the source page, so the two can drift.
 - Do instead: one catalog file feeds every surface. When a page is copied into a hub, record which file is the source and re-copy it every round, or build the copy rather than hand-copying it.
 - Evidence: Docs/Studios/VesselStudio/README.md, VESSEL_STUDIO_PLAN.md §4.
 - Promoted: §7
@@ -184,9 +184,9 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: round-14 scorecard in `STOAT_SIM_LAB_PLAN.md`; `aiInput` `P.aiNoise < 0.5` gate.
 - Promoted: no
 
-### L-STU-17 — A lab's vessel can be in the game and still not run in Prisma: compile the engine before you call it portable
+### L-STU-17 — A lab's vessel can be in the game and still not run in Amoebius: compile the engine before you call it portable
 - Lab: Stoat (game side) and Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
-- What happened: the game on this branch did not compile in Prisma at all. Its black-hole code used:
+- What happened: the game on this branch did not compile in Amoebius at all. Its black-hole code used:
   - `UnityEngine.Jobs` transform jobs;
   - URP's script-injected render-graph pass and `CommandBuffer`;
   - `typeof(SerializeField)` (the engine called it `SerializeFieldAttribute`);
@@ -194,7 +194,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - and the engine had no GLSL port of a new shader-graph custom function.
 
   All of it was filled as engine API. Engine 1,691/1,691, ported game tests 352/352.
-- Do instead: before saying "test it in Prisma", run `dotnet build Port/src/CosmicShore.Player` on the
+- Do instead: before saying "test it in Amoebius", run `dotnet build Port/src/CosmicShore.Player` on the
   branch. A Unity-only API in new game code fails there first. Fill gaps in the engine (`Port/src`),
   never in `Assets/`.
 - Evidence: commit `84898d17a`; `Port/src/CosmicShore.Engine/Jobs/TransformAccess.cs`, `Rendering/RenderGraph.cs`.
@@ -202,8 +202,8 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ### L-STU-18 — One-click "play the real thing" from a studio: a catalog field plus a player flag
 - Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
-- What happened: Prisma's STUDIOS page gained two buttons:
-  - **OPEN IN PRISMA**: Edge or Chrome app mode, opening the page as `#prisma` with its own window profile.
+- What happened: Amoebius's STUDIOS page gained two buttons:
+  - **OPEN IN AMOEBIUS**: Edge or Chrome app mode, opening the page as `#prisma` with its own window profile.
   - **PLAY IN ENGINE**: `studios.json` `engineMode`. The player's `--arcade MODE` waits for `Menu_Main`,
     opens that card and presses Start (`ArcadeAutoStart`, through the existing `arcade` input verb).
 

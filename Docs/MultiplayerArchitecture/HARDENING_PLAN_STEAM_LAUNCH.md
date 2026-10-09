@@ -182,7 +182,7 @@ That is **3,918 lines of harness we do not have to write.**
 > `NetworkManager.Singleton` at **161 sites in 54 runtime files**. Two `NetworkManager`s in one
 > process share one `Singleton`, so the 150-line fallback hits the same wall: every gameplay path
 > would talk to whichever registered last. The route taken instead is **one process per player**,
-> on Prisma (`Port/`). It runs the real `Assets/_Scripts`, Netcode's model over TCP, and a shared
+> on Amoebius (`Port/`). It runs the real `Assets/_Scripts`, Netcode's model over TCP, and a shared
 > session directory standing in for Lobby + Relay. Tool: `Tools/Build/prisma_party_scenarios/`. Its
 > README lists what a pass there does not prove: the Unity runtime, UGS's exact error shapes, and
 > UTP timings. It sits between L1 and L2: L2's shape (processes), with L1's property (no human,

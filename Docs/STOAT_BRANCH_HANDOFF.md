@@ -13,7 +13,7 @@ attractor–repulsor (black hole–white hole) pair to sling round. Around it:
 - **A browser design studio** that went through 14 rounds: dipole sling, play styles, AI sim lab, course
   ladder, editor layout.
 - **The Vessel Studio hub** (Squirrel + Stoat), merged from `vessel-studio`.
-- **Prisma support:** the game on this branch now compiles and runs in Prisma, and Prisma's STUDIOS page
+- **Amoebius support:** the game on this branch now compiles and runs in Amoebius, and Amoebius's STUDIOS page
   opens the studio and plays the Stoat in the engine.
 
 **The game still ships the round-4 orbit sling.** The studio's newer dipole sling, momentum and play
@@ -31,22 +31,20 @@ styles are designs that have not been ported yet.
 | **Slingshot mode** | `Assets/_Scripts/Controller/Arcade/SLINGSHOT.md` | `Controller/Arcade/Slingshot/`, scene `MinigameSlingshot.unity`, card `ArcadeGameSlingshot.asset` |
 | **The design studio** (rounds 4–14) | `Docs/Studios/README.md` (one section per round, newest first) | `Docs/Studios/StoatFlightStudio.html` (the source) |
 | **Play styles** (Comet, Needle, Anchor, Maelstrom, Flare) | `Docs/Studios/STOAT_PLAY_STYLES.md` | the studio's `STYLES` table |
-| **AI sim lab: results, max speeds, game-mode idea, studio vs Prisma, AI port plan** | `Docs/Studios/STOAT_SIM_LAB_PLAN.md` | the studio's Sim lab tab |
+| **AI sim lab: results, max speeds, game-mode idea, studio vs Amoebius, AI port plan** | `Docs/Studios/STOAT_SIM_LAB_PLAN.md` | the studio's Sim lab tab |
 | **Vessel Studio hub** (Squirrel v1 + Stoat) | `Docs/Studios/VESSEL_STUDIO_PLAN.md`, `Docs/Studios/VesselStudio/README.md` | `Docs/Studios/VesselStudio/` (`studios.json` is the catalog every surface reads) |
-| **Prisma: STUDIOS page, OPEN IN PRISMA, PLAY IN ENGINE, the engine gaps filled** | `Docs/Studios/PRISMA_TEST_STEPS.md`, `Port/docs/LAUNCHER.md` § STUDIOS | `Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs`, `StudioCatalog.cs`, `Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, `Port/src/CosmicShore.Engine/Jobs/`, `Rendering/RenderGraph.cs` |
-| **Prisma prompt** (Stoat + both pair styles in the engine) | `Docs/Studios/PRISMA_WORMHOLE_SESSION_PROMPT.md` | — |
+| **Amoebius: STUDIOS page, OPEN IN AMOEBIUS, PLAY IN ENGINE, the engine gaps filled** | `Docs/Studios/PRISMA_TEST_STEPS.md`, `Port/docs/LAUNCHER.md` § STUDIOS | `Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs`, `StudioCatalog.cs`, `Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, `Port/src/CosmicShore.Engine/Jobs/`, `Rendering/RenderGraph.cs` |
+| **Amoebius prompt** (Stoat + both pair styles in the engine) | `Docs/Studios/PRISMA_WORMHOLE_SESSION_PROMPT.md` | — |
 | **Starting, publishing or syncing a studio** (settled decisions D1-D15, build order, Sync panel) | the `/vessel-studio` skill, `Docs/Studios/VesselStudio/SYNC_PANEL.md` | `.claude/skills/vessel-studio/build_artifact.py`, `Docs/Studios/VesselStudio/sync.js` |
 | **What the labs taught** (reusable across labs) | `.claude/skills/labmaker/LEARNINGS.md` § STU (L-STU-1…18), `CATALOG.md` | the `/labmaker` skill |
 | **Editor checks still owed** | `Docs/UNITY_VERIFICATION_CHECKLIST.md`: the Slingshot and Stoat entries (🔴), and the black-hole entries `BLACK_HOLE.md` §0.1 lists | — |
 
 **Live pages:**
 
-- **Stoat Flight Studio:** https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc. Its decision log is the
-  artifact's `decisions` collection.
-- **Vessel Studio with the Sync panel** (Stoat round 15 from `cece/magical-carson-9bdq8z`; Refresh pulls any
-  branch): https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc. Decisions: its `decisions` collection.
-- **Vessel Studio hub:** https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN. It is **private** until shared
-  from its Share menu. Its development requests are the `requests` collection.
+- **Vessel Studio (the one artifact):** https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa. The hub, the Squirrel AI sim lab, the Stoat
+  Flight Studio (round 15), the studio agent and the Sync panel. Decisions: `decisions`; development requests:
+  `requests`; Sync jobs: `jobs`. It is **private** until shared from its Share menu. Every earlier studio
+  artifact is retired (`/vessel-studio` §0).
 
 ## 2. Decided (with the designer)
 
@@ -57,7 +55,7 @@ styles are designs that have not been ported yet.
 | Momentum carry (`dpCarry` 0.4, `dpFlowFade` 5 s, `dpFlowCap` 1.5 × cruise) | `STOAT_SIM_LAB_PLAN.md` §2 |
 | Each style wins one column of the scorecard (Comet avg speed, Flare top speed, Needle ring error, Anchor rookie catch rate, Maelstrom prisms per sling) | `STOAT_PLAY_STYLES.md`, `STOAT_SIM_LAB_PLAN.md` §2 |
 | Prototype in the studio until the numbers settle, then port once; per-vessel studios on a shared shell | `STOAT_SIM_LAB_PLAN.md` §4 |
-| The studio lives in Prisma; web first, then Windows and Android | `VESSEL_STUDIO_PLAN.md` |
+| The studio lives in Amoebius; web first, then Windows and Android | `VESSEL_STUDIO_PLAN.md` |
 
 ## 3. Open: decisions for the designer
 
@@ -84,8 +82,8 @@ styles are designs that have not been ported yet.
 | Studio layout is 912 px tall in a 900 px window: the bottom dock's last ~12 px are clipped | `StoatFlightStudio.html` at 1600 × 900 | Found by `verify_lab.cjs` (L-STU-13) |
 | The round-13 platform chip pushes the header past the edge at 390–400 px wide (portrait phone) | the page header | L-STU-13; landscape fits |
 | The studio is not on the `/labmaker` `__lab` contract (`SHIPPED`, `SPEC`, `reset`, `score`, `state`, `runBatch()` with no args) | `window.__stoatStudio` | L-STU-14 |
-| The black hole's lens is not drawn in Prisma | Prisma only | The engine compiles URP's render-graph API but does not execute passes yet (`Port/src/CosmicShore.Engine/Rendering/RenderGraph.cs`) |
-| `CrystalFlipWave.LateUpdate` throws a NullReferenceException every frame in Prisma | menu and races | Pre-existing: the file is identical on bleeding-edge |
+| The black hole's lens is not drawn in Amoebius | Amoebius only | The engine compiles URP's render-graph API but does not execute passes yet (`Port/src/CosmicShore.Engine/Rendering/RenderGraph.cs`) |
+| `CrystalFlipWave.LateUpdate` throws a NullReferenceException every frame in Amoebius | menu and races | Pre-existing: the file is identical on bleeding-edge |
 | None of the game-side Stoat / black-hole / Slingshot work has been opened in the Unity editor | — | No `/verify-unity` was available in these sessions. The editor steps are in `UNITY_VERIFICATION_CHECKLIST.md` |
 | `Stoat.prefab` shows the Squirrel's HUD icons | ability row | Prototype debt, `STOAT.md` §4 |
 
@@ -98,9 +96,9 @@ gamepad works).
 - Sim lab ▸ **AI flies the Stoat**.
 - **Score all five styles**: each style should win its own column.
 
-**Prisma:** `Docs/Studios/PRISMA_TEST_STEPS.md`, step by step.
+**Amoebius:** `Docs/Studios/PRISMA_TEST_STEPS.md`, step by step.
 
-- In short: Unity ▸ **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ STOAT ▸ **OPEN IN PRISMA** (the studio)
+- In short: Unity ▸ **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ STOAT ▸ **OPEN IN AMOEBIUS** (the studio)
   or **PLAY IN ENGINE** (the game's own Stoat in Slingshot).
 
 **Headless, from a cloud session** (what the previous sessions ran):
@@ -109,7 +107,7 @@ gamepad works).
 # .NET 10 SDK: bash dotnet-install.sh --channel 10.0 --install-dir ~/.dotnet ; export DOTNET_ROOT=~/.dotnet PATH=~/.dotnet:$PATH
 dotnet test Port/tests/CosmicShore.Tests            # engine, ~2 min (1,913 passed on 2026-10-09, after merging both bleeding-edges)
 dotnet test Port/tests/CosmicShore.Launcher.Tests   # 30 passed (after the merge)
-dotnet test Port/tests/CosmicShore.Tests.Ported     # the game's edit-mode tests on Prisma (352 passed after the merge; launcher 30/30; player 0 errors)
+dotnet test Port/tests/CosmicShore.Tests.Ported     # the game's edit-mode tests on Amoebius (352 passed after the merge; launcher 30/30; player 0 errors)
 dotnet build Port/src/CosmicShore.Player            # live-compiles Assets/_Scripts (0 errors after the merge)
 COSMIC_SHORE_NET=off COSMIC_SHORE_AUDIO=off COSMIC_SHORE_PROFILE=studiotest \
   Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore --headless --frames 2400 --arcade Slingshot
@@ -131,7 +129,7 @@ against `window.__stoatStudio`. Its hooks:
 | 2026-10-07 – 08 | Black-hole system; white holes and pairs; tool and console; crystal-wormhole merge; the Stoat prefab, sling, hull and lope; Slingshot mode |
 | 2026-10-08 – 09 | Studio rounds 4–11: orbit sling → dipole sling, strength/hold, hole settings + illustrated tooltips, birth/annihilation, five play styles, types per group, phone play |
 | 2026-10-09 | Rounds 12–14: AI sim lab and scorecard, momentum carry, platform detection, course ladder, editor layout with pop-out windows |
-| 2026-10-09 | `vessel-studio` merged; the game made to compile in Prisma; OPEN IN PRISMA and PLAY IN ENGINE |
+| 2026-10-09 | `vessel-studio` merged; the game made to compile in Amoebius; OPEN IN AMOEBIUS and PLAY IN ENGINE |
 | 2026-10-09 | `Ys-bleeding-edge` (247 commits) and `bleeding-edge` (7) merged; this handoff |
 | 2026-10-09 | `/vessel-studio` skill and the Sync panel (Refresh, merge then delete, shared decisions; a Claude session does the git work as jobs) |
 | 2026-10-09 | `cece/magical-carson-9bdq8z` merged: Stoat studio round 15 (the field trajectory), its Unity port (`R_VesselActions/STOAT_DIPOLE.md`: field dipole on Space, pathfinder on Time) and the **Warpline** mode (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`). Their lab lessons are `L-STU-20`…`24` (renumbered from 15–19, which this branch had already used) |
@@ -145,7 +143,7 @@ Commit messages carry the detail: `git log --oneline origin/bleeding-edge..HEAD`
   the page. (`VesselStudio/README.md`)
 - **`StoatFlightStudio.html` is the source; `VesselStudio/stoat.html` is a copy** with a back link.
   Re-copy every round, or the hub drifts (L-STU-12).
-- **Prisma's port rule:** `Port/` changes never touch the Unity project (`Port/CLAUDE.md`). This branch
+- **Amoebius's port rule:** `Port/` changes never touch the Unity project (`Port/CLAUDE.md`). This branch
   also carries Unity work, so `check_unity_isolation.py` lists that work. Send the `Port/` commits to
   bleeding-edge as their own PR when the time comes.
 - **The AI is input-only** (stick mix + triggers), in the studio and in any game port

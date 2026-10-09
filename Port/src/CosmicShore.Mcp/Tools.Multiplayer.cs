@@ -31,7 +31,7 @@ namespace CosmicShore.Mcp
 
         public static IEnumerable<JsonObject> MultiplayerTools() => new[]
         {
-            Tool("net_players", "Prisma's Multiplayer Play Mode: start 1-4 players of the game as separate processes that find each other through one fresh session folder (the stand-in for UGS Lobby + Relay), each with its own profile, save, control port and log; or stop them, or report each one's scene, fps, role, traffic and RTT. Windows are tiled 2x2 (under xvfb on a display-less server); headless players keep game time on the wall clock (--realtime). Party up with net_input: 'party invite PilotB' on the host's DiagnosticsHUD is run by the game's console (see Tools/Build/prisma_party_scenarios/driver.py for the console route).",
+            Tool("net_players", "Amoebius's Multiplayer Play Mode: start 1-4 players of the game as separate processes that find each other through one fresh session folder (the stand-in for UGS Lobby + Relay), each with its own profile, save, control port and log; or stop them, or report each one's scene, fps, role, traffic and RTT. Windows are tiled 2x2 (under xvfb on a display-less server); headless players keep game time on the wall clock (--realtime). Party up with net_input: 'party invite PilotB' on the host's DiagnosticsHUD is run by the game's console (see Tools/Build/prisma_party_scenarios/driver.py for the console route).",
                 new JsonObject
                 {
                     ["action"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("start", "stop", "status"), ["description"] = "default status" },

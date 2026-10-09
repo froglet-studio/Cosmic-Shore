@@ -17,7 +17,7 @@ boot lines for its transport, simulated line and relay, so a result names what i
 
 ## What it does
 
-It builds Prisma's player (`Port/`) against **this checkout's** `Assets/_Scripts` and launches five
+It builds Amoebius's player (`Port/`) against **this checkout's** `Assets/_Scripts` and launches five
 instances, `PilotA`…`PilotE`. Each instance runs as its own process with its own `NetworkManager`,
 its own save folder and its own control port. Netcode's model runs over TCP, and UGS Lobby + Relay
 are a shared session directory. Then `scenarios.py` plays one continuous session through
@@ -57,7 +57,7 @@ Every later row then reads `not run`, never `pass`.
 - The verdicts come from each process's own view: its Netcode role, its party state and its roster.
 
 **Does not prove:**
-- **The Unity runtime.** Prisma re-implements the engine. NGO's internals, Unity Transport and the
+- **The Unity runtime.** Amoebius re-implements the engine. NGO's internals, Unity Transport and the
   UGS SDK are stood in for.
 - **UGS error shapes.** UGS's error for a full lobby, or for a 429, is not reproduced byte for
   byte. The stand-in throws `SessionException("Session is full.")`, which reaches
@@ -72,7 +72,7 @@ Every later row then reads `not run`, never `pass`.
 - **The offline cases (T8).** These need fault injection into the session stand-in. They are L1
   tests by design: see `HARDENING_PLAN_STEAM_LAUNCH.md` §4.1.
 
-So a green run moves a 🟡 ticket to **"passed on Prisma, <date>"**, not to 🟢. A 🟢 still means the
+So a green run moves a 🟡 ticket to **"passed on Amoebius, <date>"**, not to 🟢. A 🟢 still means the
 owner's MPPM run.
 
 ## Why processes and not NGO's in-process harness
@@ -93,7 +93,7 @@ A process per player gives each player its own `Singleton`, and runs the code un
 
 ## Game time runs on the wall clock
 
-A `--headless` Prisma ticks a fixed 1/60 s as fast as the CPU allows. An idle menu therefore runs
+A `--headless` Amoebius ticks a fixed 1/60 s as fast as the CPU allows. An idle menu therefore runs
 its game clock ~200× ahead of the session directory and the TCP links, which both run on the wall
 clock. Game-time timers then fire early against them. Run 3 showed this: an invite's 60 s lifetime
 lapsed before the guest had polled it, and the Accept met a withdrawn invite.

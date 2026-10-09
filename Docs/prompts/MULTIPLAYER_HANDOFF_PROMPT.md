@@ -52,13 +52,13 @@ session itself. Fix that figure and its legend when you next touch the diagram.
 **Landed and verified by a real test run:**
 
 - **Block 3, by the multi-process route (2026-10-08).** `Tools/Build/prisma_party_scenarios/run.sh`
-  runs five game processes on Prisma and **14/14** scenarios pass. Covered: T1, T2, T2b (B25),
+  runs five game processes on Amoebius and **14/14** scenarios pass. Covered: T1, T2, T2b (B25),
   T3 (B21), T4 (B20 match + lobby), T5, T6, T7 (B10), kick, leave and the session record.
   - NGO's in-process harness cannot reach this layer. The brief's Block 3 status says why
     (161 `NetworkManager.Singleton` sites).
   - The runs found two real defects, both fixed: B20's lobby half had never worked, and B25's
     loser logged a red error.
-  - **Prisma is not Unity:** the tickets read "passed on Prisma" and stay 🟡 until MPPM.
+  - **Amoebius is not Unity:** the tickets read "passed on Amoebius" and stay 🟡 until MPPM.
 - **Block 1's code remainder.** The recorder's providers and the lifecycle marks are in. On the
   five-process run, `net` names host, client and spectator and the record holds the marks.
 

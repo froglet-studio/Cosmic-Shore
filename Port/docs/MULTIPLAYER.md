@@ -1,7 +1,7 @@
-# Multiplayer in Prisma: the networking system, its backends and its test tools
+# Multiplayer in Amoebius: the networking system, its backends and its test tools
 
 Written 2026-10-08. Owner: Froglet Inc. This is the plan and the manual for Cosmic Shore's
-four-player online play in Prisma, and for the tools that test it **without Unity**. Read it before
+four-player online play in Amoebius, and for the tools that test it **without Unity**. Read it before
 touching `src/CosmicShore.Engine/Networking/**`, the Launcher's multiplayer panel or the `net_*`
 MCP tools. It extends `ARCHITECTURE.md` §8 (how the netcode works today) and the C6 row of
 `ROADMAP.md`.
@@ -16,7 +16,7 @@ MCP tools. It extends `ARCHITECTURE.md` §8 (how the netcode works today) and th
 1. **A very good four-player online game**: the fewest network problems a player can see, and the
    best performance, on a budget as close to free as possible.
 2. **Our own networking system in our own engine**, so the multiplayer can keep being built and
-   tested in Prisma.
+   tested in Amoebius.
 3. **Built-in multiplayer test tools**, matching what Unity gives (Multiplayer Play Mode, the
    Network Simulator, the Runtime Network Stats Monitor, the Network Profiler) and adding what
    Unity lacks (session-service fault injection, scripted multi-player scenarios an agent can run).
@@ -28,27 +28,27 @@ changes `Assets/`, `Packages/` or `ProjectSettings/` (`Port/CLAUDE.md`, "the one
 
 ## 2. Can we use Unity's Netcode in our engine? (licensing)
 
-| Package | Licence | In the Unity build | In Prisma |
+| Package | Licence | In the Unity build | In Amoebius |
 |---|---|---|---|
 | Netcode for GameObjects 2.13.3 | Unity Companion License (UCL) | Allowed: the UCL covers content made under a Unity engine licence | **Its source may not be vendored or shipped.** The UCL grants use "in connection with" a Unity Engine License only |
 | Unity Transport 2.7.4 | UCL | Allowed | Same: not usable |
 | Multiplayer Services SDK 2.3.3 (Lobby/Relay/Sessions client) | UCL | Allowed | Same: not usable. **The services behind it are reachable** (§4) |
-| Multiplayer Play Mode, Multiplayer Tools | UCL, editor-only | Allowed | Not needed: Prisma builds its own (§6) |
+| Multiplayer Play Mode, Multiplayer Tools | UCL, editor-only | Allowed | Not needed: Amoebius builds its own (§6) |
 
-So the answer is **no, we do not run Unity's Netcode code in Prisma, and we do not need to**:
+So the answer is **no, we do not run Unity's Netcode code in Amoebius, and we do not need to**:
 
-- **Prisma already has its own netcode.** `NetDriver` (`src/CosmicShore.Engine/Networking/Wire/`)
+- **Amoebius already has its own netcode.** `NetDriver` (`src/CosmicShore.Engine/Networking/Wire/`)
   was written for the port. It offers types *named* like NGO's (`NetworkManager`, `NetworkObject`,
   `NetworkVariable`, RPCs) so the game's 2,090 scripts compile unchanged, but none of the code
   behind those names is Unity's. That is the API re-implementation pattern the whole engine uses
   (`LEGAL_REVIEW.md` §3: Google v. Oracle, Wine, Mono). Whether the engine may *declare* Unity's
-  namespaces is an open counsel question (review item A1, gate G3). Prisma sidesteps it today by
+  namespaces is an open counsel question (review item A1, gate G3). Amoebius sidesteps it today by
   rewriting `Unity.Netcode` to `CosmicShore.Engine.Networking` at sync time.
 - **Rule for every session**: never copy code from the NGO, Unity Transport or Multiplayer
   Services packages. Reading their *documentation* to match behaviour is fine. Reading their
   *source* to find out what a behaviour is (for example, the disconnect callback order) is
   allowed. Copying its expression is not.
-- **Consequence**: a Unity build and a Prisma build cannot play each other. Their wire formats
+- **Consequence**: a Unity build and an Amoebius build cannot play each other. Their wire formats
   differ. Cross-engine play is out of scope; each build plays its own kind.
 
 ## 3. Topology: what a "very good four-player system" needs
@@ -77,13 +77,13 @@ The netcode does not care where its bytes travel. Two seams keep the backend swa
 - **The session service** (exists in stand-in form: `DirectoryMultiplayerService`) finds and joins
   sessions: lobby, roster, invites, host endpoint.
 
-### 4.1 UGS from Prisma: yes, without Unity's SDK
+### 4.1 UGS from Amoebius: yes, without Unity's SDK
 
 UGS is a set of web services. Unity documents their REST APIs for non-Unity clients, and
-documents the Relay *wire protocol* for "an alternative engine or networking solution". So Prisma
+documents the Relay *wire protocol* for "an alternative engine or networking solution". So Amoebius
 can use UGS without any UCL code:
 
-| Service | How Prisma reaches it | What we write |
+| Service | How Amoebius reaches it | What we write |
 |---|---|---|
 | Authentication | REST: anonymous sign-in with the project id, then a session token | A small HTTP client (`HttpClient`, no new dependency) |
 | Lobby | REST: create/join/query/heartbeat/update player data | The session-service implementation behind the game's `ISession` calls |
@@ -92,7 +92,7 @@ can use UGS without any UCL code:
 | Cloud Save, Leaderboards, Friends | REST | Implementations behind the game's existing facades |
 
 Limits that come with it:
-- Relay connects only players of **the same UGS project and environment**. A Prisma test build and
+- Relay connects only players of **the same UGS project and environment**. An Amoebius test build and
   the Unity build can share the project but, per §2, not a match.
 - Relay forwards datagrams. Reliability is ours, which is why Step 5's reliable-UDP layer comes
   first: the same layer runs over direct UDP, over UGS Relay and over our own relay.
@@ -123,11 +123,11 @@ Relay cost nothing extra for a Steam game. Re-check
 
 ### 4.4 Recommendation
 
-1. **Now: test everything locally in Prisma** with the stand-in session service and the tools in
+1. **Now: test everything locally in Amoebius** with the stand-in session service and the tools in
    §6. Most multiplayer bugs this project has had (B2-B29) were decision bugs in the party,
    ready-gate and spectator code. Five local processes reproduce those.
 2. **Gate G2 (2026-12-15)**: build the backend that matches the shipped Unity build: **UGS**
-   (Auth, Lobby, Relay over REST and the Relay protocol). Prisma testers then use the same lobby
+   (Auth, Lobby, Relay over REST and the Relay protocol). Amoebius testers then use the same lobby
    service as the Unity game, for free inside the allowance.
 3. **Steam** (Steamworks.NET, MIT; a new dependency to approve at that time) for Steam auth,
    achievements, and optionally Steam lobbies plus Steam Datagram Relay for the PC build. This is
@@ -152,7 +152,7 @@ Relay cost nothing extra for a Steam game. Re-check
 
 ## 6. The tools, mapped to Unity's
 
-| Unity | Prisma | Step |
+| Unity | Amoebius | Step |
 |---|---|---|
 | Multiplayer Play Mode (virtual players with tags) | **MULTIPLAYER panel** in the Launcher: 1-4 players, each its own process, profile and save folder, one shared session folder; MCP `net_players` | 4 |
 | Network Simulator (latency, jitter, loss, disconnect) | **`SimulatedTransport`**: wraps any transport. Set at launch with `COSMIC_SHORE_NET_SIM` or live with `do netsim` | 1 |
@@ -460,7 +460,7 @@ WebSocket (`ws`/`wss`) endpoints are not.
 **What UGS Relay needs from a client.** Every Relay Allocations call carries
 `Authorization: Bearer <access token>`, and the token is the signed-in player's (read from Unity's
 relay client package: it sends the Authentication service's access token, nothing else). So the only
-piece Prisma lacked was the sign-in.
+piece Amoebius lacked was the sign-in.
 
 **`UgsAuthentication`** (`Wire/Ugs/UgsAuthentication.cs`) is that sign-in, over the Player
 Authentication REST API (§8):
@@ -479,7 +479,7 @@ Authentication REST API (§8):
   game's is `3030fd69-28ab-433f-b4bd-22b9b93c5118`) unless `COSMIC_SHORE_UGS_PROJECT` names another.
   No environment is sent unless `COSMIC_SHORE_UGS_ENVIRONMENT` names one, which matches the game:
   its code sets none, so it uses the project's default environment.
-- Prisma's game-side identity (`AuthenticationService`) is still the local stand-in; only the relay
+- Amoebius's game-side identity (`AuthenticationService`) is still the local stand-in; only the relay
   signs in to UGS. P8 (Lobby) is where the two must become the same player.
 
 **Using it:**

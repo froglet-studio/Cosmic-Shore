@@ -122,7 +122,7 @@ namespace CosmicShore.Launcher
             ImGui.SetCursorScreenPos(a + new Vector2(16, y + 64 + help.Length * 17 + 6));
             if (Neon.Button("netugscheck", "UGS RELAY CHECK", new Vector2(bw, 28), Neon.Cyan, Neon.Small, 13, enabled: !_jobs.Busy))
                 _jobs.RunUgsRelayCheck();
-            Neon.Tooltip("Proves UGS Relay works from Prisma: signs in two players in the game's LIVE UGS project (the same two\n" +
+            Neon.Tooltip("Proves UGS Relay works from Amoebius: signs in two players in the game's LIVE UGS project (the same two\n" +
                          "every time), allocates, joins by code, connects through UGS Relay and times frames both ways.\n" +
                          "The log names each step and the round-trip time. docs/MULTIPLAYER.md §6.8.");
         }

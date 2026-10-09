@@ -3,7 +3,7 @@
 > Moved verbatim from the root `CLAUDE.md`, which indexes every topic file. Paths in this file are relative to the repository root.
 
 > **Doing multiplayer work? Read `Docs/MULTIPLAYER_START_HERE.md` first:** the owner's goals and
-> rules, current state, the hand-test list and the ordered next steps, for Unity and Prisma alike.
+> rules, current state, the hand-test list and the ordered next steps, for Unity and Amoebius alike.
 
 ### Multiplayer / Netcode
 

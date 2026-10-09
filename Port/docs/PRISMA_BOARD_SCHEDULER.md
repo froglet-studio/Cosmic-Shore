@@ -1,4 +1,4 @@
-# Prisma BOARD: safe saves and the task-scheduler foundation
+# Amoebius BOARD: safe saves and the task-scheduler foundation
 
 *PR [#1044](https://github.com/froglet-studio/Cosmic-Shore/pull/1044), branch `prisma-task-scheduler-p1` → `Ys-bleeding-edge`.
 Step P1.0 + P1.1 of the task-scheduler plan. Written 2026-10-09.*
@@ -7,7 +7,7 @@ Step P1.0 + P1.1 of the task-scheduler plan. Written 2026-10-09.*
 
 ## 1. What this is
 
-**Prisma** has two parts:
+**Amoebius** has two parts:
 
 | | What it is | Where |
 |---|---|---|
@@ -19,7 +19,7 @@ This change only touches **Prisma.exe's BOARD** (bugs and tasks) and the code th
 (`python3 Port/tools/check_unity_isolation.py` says `ok: 0 change(s) outside Port/`).
 
 **You do not need Unity to test it.** You test it from **Command Prompt** (section 6). If you prefer, Unity's menu
-**FrogletTools > Prisma > Launch Prisma** also works: it builds Prisma.exe from your checkout and opens it. But Unity
+**FrogletTools > Amoebius > Launch Amoebius** also works: it builds Prisma.exe from your checkout and opens it. But Unity
 is only acting as a shortcut there, and nothing in Unity itself changed.
 
 There are **no visible UI changes** in this step. The BOARD looks and works the same. What changed is
@@ -41,7 +41,7 @@ Prisma.exe also **re-reads the file once a second** when it changes. An agent's 
 on the BOARD within about a second and is never lost.
 
 ### 2.2 Corrupt-file protection
-If `board.json` cannot be read (half-written, hand-edited wrongly, written by a much newer build), Prisma:
+If `board.json` cannot be read (half-written, hand-edited wrongly, written by a much newer build), Amoebius:
 1. copies it to `board.json.corrupt-YYYYMMDD-HHMMSS` in the same folder (only once per distinct content),
 2. writes a warning in **CONSOLE**: *"board.json could not be read (...); a copy was kept at ... The board starts
    empty and the copy is never overwritten."*,
@@ -126,8 +126,8 @@ recreate both situations and show the old behaviour is gone. Line numbers refer 
 - `Port/src/CosmicShore.Mcp/Tools.cs:237-245`: `prisma_board_suggest` does its own Load → Add → Save.
 - `PrismaBoard.cs:81`: keys came from per-copy counters (`T-{NextTask++}`).
 
-**How it happens:** Prisma is open, and you ask the agent to "suggest that as a board item". The agent's
-`prisma-mcp` adds T-5 and saves. Then you click ACCEPT/ADD/START on any card, or a play run ends. Prisma saves
+**How it happens:** Amoebius is open, and you ask the agent to "suggest that as a board item". The agent's
+`prisma-mcp` adds T-5 and saves. Then you click ACCEPT/ADD/START on any card, or a play run ends. Amoebius saves
 its old copy, which does not contain T-5, and **the suggestion disappears**. If you had added a card yourself in the
 meantime, it could also be called T-5.
 **Impact:** agent findings vanished silently, and duplicate keys confused card opening and AGENT hand-off.
@@ -141,7 +141,7 @@ newer build with a value this build does not know. Old string enums throw on unk
 `"State": "Blocked"` would have been enough. **Impact:** every card was gone, with no message and no backup.
 
 ### Smaller risks found on the way
-- Fields a build does not know were dropped on save, so an older Prisma would strip newer data.
+- Fields a build does not know were dropped on save, so an older Amoebius would strip newer data.
 - Writers shared the temp file name `board.json.tmp`, so two simultaneous saves could trip over each other.
 
 ---
@@ -179,7 +179,7 @@ dotnet --version
 ```
 You need **10.x** (for example `10.0.401`). If it says `'dotnet' is not recognized`, or shows a lower number,
 install the **.NET 10 SDK** (x64) from https://dotnet.microsoft.com/download/dotnet/10.0. Then **open a new**
-Command Prompt and check again. Prisma also installs its own SDK the first time you press START on PLAY, but that
+Command Prompt and check again. Amoebius also installs its own SDK the first time you press START on PLAY, but that
 copy is not on your PATH.
 
 ### 6.2 Back up your board first
@@ -189,64 +189,64 @@ mkdir "%USERPROFILE%\Desktop\board-backup"
 copy "%LOCALAPPDATA%\Prisma\tracks\board.json" "%USERPROFILE%\Desktop\board-backup\"
 ```
 ("The system cannot find the file" just means you have no board yet. That is fine.)
-To restore it later, **close Prisma** first, then:
+To restore it later, **close Amoebius** first, then:
 ```
 copy /Y "%USERPROFILE%\Desktop\board-backup\board.json" "%LOCALAPPDATA%\Prisma\tracks\board.json"
 ```
 
-### 6.3 Open Prisma from source
+### 6.3 Open Amoebius from source
 ```
 cd /d C:\path\to\Cosmic-Shore
 dotnet run --project Port\src\CosmicShore.Launcher
 ```
-The first build takes a minute or two (it downloads packages). Then the Prisma window opens. The very first start
-of Prisma on a PC shows a one-minute tour; click through it. Leave this Command Prompt open: closing it closes
-Prisma.
+The first build takes a minute or two (it downloads packages). Then the Amoebius window opens. The very first start
+of Amoebius on a PC shows a one-minute tour; click through it. Leave this Command Prompt open: closing it closes
+Amoebius.
 
 **What to expect:** click **BOARD** on the left. You see the same board as before (TO DO / DOING / DONE, "Suggested by
-Prisma" if there are suggestions) with all your existing cards. Nothing looks different. That is the point of this
+Amoebius" if there are suggestions) with all your existing cards. Nothing looks different. That is the point of this
 step.
 
 **Quick sanity check:**
 1. Choose **TASK**, type `Test card A` in "Add a bug or task, then Enter", type `it appears` in "Done when...",
    then press **ADD**. The card appears in TO DO.
 2. Click the card, then **START >**. It moves to DOING.
-3. Close Prisma and run the `dotnet run` line again. The card is still in DOING.
+3. Close Amoebius and run the `dotnet run` line again. The card is still in DOING.
 
-### 6.4 Manual check 1: an agent suggestion survives while Prisma is open
+### 6.4 Manual check 1: an agent suggestion survives while Amoebius is open
 This is bug 1's scenario.
-1. Keep Prisma open on **BOARD** (from 6.3).
+1. Keep Amoebius open on **BOARD** (from 6.3).
 2. Open a **second** Command Prompt and run:
    ```
    cd /d C:\path\to\Cosmic-Shore
    dotnet run --project Port\src\CosmicShore.Mcp -- --call prisma_board_suggest "{\"type\":\"task\",\"title\":\"Hello from the agent\",\"criterion\":\"I can see it on the BOARD\"}"
    ```
-   It prints `Suggested T-n: Hello from the agent. The user accepts or dismisses it on Prisma's BOARD.`
+   It prints `Suggested T-n: Hello from the agent. The user accepts or dismisses it on Amoebius's BOARD.`
    This is exactly what Claude's `prisma_board_suggest` tool does.
-3. Within about a second, **"Hello from the agent"** appears under **Suggested by Prisma** without restarting Prisma.
-4. Now make Prisma save: add another task (e.g. `Test card B`) or move a card.
+3. Within about a second, **"Hello from the agent"** appears under **Suggested by Amoebius** without restarting Amoebius.
+4. Now make Amoebius save: add another task (e.g. `Test card B`) or move a card.
 5. **Expected:** "Hello from the agent" is **still there**, and all keys are different. Before this PR, step 4 would have
    erased it. Click **ACCEPT** or **DISMISS** to tidy up.
 
-(Instead of step 2 you can ask the Prisma Agent in AGENT: "suggest a board task titled Hello from the agent, done
+(Instead of step 2 you can ask the Amoebius Agent in AGENT: "suggest a board task titled Hello from the agent, done
 when I can see it". It uses the same tool.)
 
 ### 6.5 Manual check 2: a broken board.json is kept, not wiped
 This is bug 2's scenario. Do 6.2 (backup) first.
-1. **Close Prisma.**
+1. **Close Amoebius.**
 2. Open the board in Notepad:
    ```
    notepad "%LOCALAPPDATA%\Prisma\tracks\board.json"
    ```
    Delete the **last** `}` in the file, save, and close Notepad.
-3. Start Prisma again (`dotnet run --project Port\src\CosmicShore.Launcher`).
+3. Start Amoebius again (`dotnet run --project Port\src\CosmicShore.Launcher`).
 4. **Expected:**
    - **BOARD** is empty.
    - **CONSOLE** has a line starting `board.json could not be read (` that ends with
      `a copy was kept at ...board.json.corrupt-YYYYMMDD-HHMMSS. The board starts empty and the copy is never overwritten.`
    - The copy is there: `dir "%LOCALAPPDATA%\Prisma\tracks"` lists `board.json.corrupt-...`.
-5. Add a card (so Prisma saves), then run `dir` again. The `.corrupt-` file is still there, unchanged.
-6. **Restore:** close Prisma and run the restore line from 6.2. Alternatively, open the `.corrupt-` copy in Notepad,
+5. Add a card (so Amoebius saves), then run `dir` again. The `.corrupt-` file is still there, unchanged.
+6. **Restore:** close Amoebius and run the restore line from 6.2. Alternatively, open the `.corrupt-` copy in Notepad,
    put the `}` back, and save it over `board.json`. Before this PR, step 3 would have shown an empty board too, but
    step 5 would have destroyed your cards for good.
 
@@ -255,13 +255,13 @@ You may also see a zero-byte `board.json.lock` in that folder. It is expected; l
 ### 6.6 Automated tests
 ```
 cd /d C:\path\to\Cosmic-Shore
-dotnet test Port\tests\CosmicShore.Tests --filter Prisma
+dotnet test Port\tests\CosmicShore.Tests --filter Amoebius
 ```
 The first run builds the engine test project, which takes a few minutes. **Expected last line:**
 ```
 Passed!  - Failed:     0, Passed:    85, Skipped:     0, Total:    85, ...
 ```
-(`--filter Prisma` runs every test whose name contains "Prisma": the 4 existing board/tracks tests plus the 81 new ones.)
+(`--filter Amoebius` runs every test whose name contains "Amoebius": the 4 existing board/tracks tests plus the 81 new ones.)
 
 Optional: `dotnet test Port\tests\CosmicShore.Launcher.Tests` (Prisma.exe's own tests). Expected: `Passed: 21`
 on the merged branch.
@@ -281,7 +281,7 @@ on the merged branch.
 | Repeat rules | same | The next date for every rule, the month-end clamp, rejecting bad rules, and completing a repeating card (next date after today, deadline shift, checklist reset, new key and Uid). A plain card does not repeat. |
 | Existing board/tracks behaviour | `Port/tests/CosmicShore.Tests/PrismaTracksBoardTests.cs` | Unchanged and still passing. |
 
-Results on the build box (Linux): **85/85** for `--filter Prisma`, **21/21** launcher tests. The full engine suite has
+Results on the build box (Linux): **85/85** for `--filter Amoebius`, **21/21** launcher tests. The full engine suite has
 13 failures that need model and shader files the box's checkout does not have. They fail the same way without
 this change.
 
@@ -293,9 +293,9 @@ this change.
   retries when Windows briefly holds the file open were only exercised on Linux. Manual checks 6.4 and 6.5 are
   the first Windows test.
 - **Old builds still overwrite.** A Prisma.exe or `prisma-mcp` built **before** this PR saves the old way. Update
-  every copy you run: pull, then rebuild or use Prisma's UPDATE. Close old Prisma windows. Only then are all writers safe.
+  every copy you run: pull, then rebuild or use Amoebius's UPDATE. Close old Amoebius windows. Only then are all writers safe.
 - **`PRISMA_DATA_DIR` mismatch.** Prisma.exe honours this variable (it moves all its data elsewhere), but
-  `prisma-mcp` does not (`PrismaTracks.DefaultDir()`). If you set it, agents write to the default folder while Prisma
+  `prisma-mcp` does not (`PrismaTracks.DefaultDir()`). If you set it, agents write to the default folder while Amoebius
   reads the other one. Not changed in this PR. Normally the variable is unset and both use `%LOCALAPPDATA%\Prisma\tracks`.
 - **No UI for the new fields yet.** There is no quick-add bar, no TODAY/UPCOMING view, no dates on cards and no reminders.
   Coming in P1.2-P1.5.
@@ -323,7 +323,7 @@ Prisma.exe (CosmicShore.Launcher)          prisma-mcp (CosmicShore.Mcp)         
                   Recurrence.cs           repeat rules and next-date maths
 ```
 
-**Why `Shared/Workspace` and not a new project:** Prisma's UPDATE button and Unity's Launch Prisma only build
+**Why `Shared/Workspace` and not a new project:** Amoebius's UPDATE button and Unity's Launch Amoebius only build
 `Port/src/CosmicShore.Launcher`, `Port/src/Shared` and `Port/Directory.Build.props`
 (`LauncherUpdater.cs` `SourcePaths`, `Assets/_Scripts/Editor/LaunchPrisma.cs`). A new project would break updates.
 The files are linked with `<Compile Include="../Shared/Workspace/*.cs" .../>` in the launcher, MCP and test `.csproj` files.
@@ -331,10 +331,10 @@ The files are linked with `<Compile Include="../Shared/Workspace/*.cs" .../>` in
 **How the next pieces plug in:**
 - **Scheduler screens (P1.2-P1.5):** new views under `Port/src/CosmicShore.Launcher/` call `BoardQueries` to show
   lists and `BoardCommands` to change cards, then `SaveBoard()`. They never touch JSON or files. Reminders reuse
-  Prisma's `Notify()` toasts.
+  Amoebius's `Notify()` toasts.
 - **Shared workspace / sync (Phase 2):** a new `IBoardStore` (e.g. a private Git repo or a server) replaces
   `FileBoardStore`. The merge by Uid already handles several writers, which is the hard part of sync.
-- **Prism view (Phase 3):** another view over the same `BoardQueries`, drawn with ImGui like the rest of Prisma.
+- **Prism view (Phase 3):** another view over the same `BoardQueries`, drawn with ImGui like the rest of Amoebius.
 - **Agents:** the MCP tools already go through `PrismaBoard.Load/Save`, so they got the safe saves for free.
   New tools (filters by day/tag, notes) will call the same queries and commands.
 
@@ -342,11 +342,11 @@ The files are linked with `<Compile Include="../Shared/Workspace/*.cs" .../>` in
 
 ## 10. Next steps (roadmap)
 
-Short version of the plan (Phase 1 = local scheduler in Prisma, then sharing, then the game-like view, then messaging):
+Short version of the plan (Phase 1 = local scheduler in Amoebius, then sharing, then the game-like view, then messaging):
 
 | Step | What | Done when |
 |---|---|---|
-| **P1.0 + P1.1** (this PR) | Safe saves, corrupt-file protection, scheduler logic and tests | 85 Prisma tests pass; manual checks 6.4 / 6.5 pass on Windows |
+| **P1.0 + P1.1** (this PR) | Safe saves, corrupt-file protection, scheduler logic and tests | 85 Amoebius tests pass; manual checks 6.4 / 6.5 pass on Windows |
 | P1.2 | Quick-add bar on BOARD using the cheat sheet above | typing `Fix trail tomorrow #vfx !1` makes a P1 card tagged vfx for tomorrow |
 | P1.3 | TODAY (default), UPCOMING (7-day strip) and the current BOARD as switchable views | a screenshot of each view |
 | P1.4 | Card editor (dates, tags, checklist, estimate) and drag and drop (columns, days) | dragging a card onto Thursday plans it for Thursday |

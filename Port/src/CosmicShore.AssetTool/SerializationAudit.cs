@@ -71,9 +71,9 @@ namespace CosmicShore.AssetTool
                 Console.WriteLine($"{instances} script instances, {keys} keys checked; {unresolved} unresolvable scripts and {standIns} package/built-in instances skipped");
                 foreach (var (name, what) in new[]
                 {
-                    ("DROPPED", "Unity reads, Prisma does not (values that never arrive)"),
-                    ("EXTRA", "Prisma reads, Unity ignores"),
-                    ("MANAGED", "[SerializeReference] blocks Prisma does not load"),
+                    ("DROPPED", "Unity reads, Amoebius does not (values that never arrive)"),
+                    ("EXTRA", "Amoebius reads, Unity ignores"),
+                    ("MANAGED", "[SerializeReference] blocks Amoebius does not load"),
                     ("STALE", "neither reads (left over from older scripts)"),
                 })
                 {

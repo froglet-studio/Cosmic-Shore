@@ -12,7 +12,7 @@ prisma-* CI workflows and the prisma* Claude Code skills.
 import argparse, subprocess, sys
 
 ALLOWED = {".gitignore",             # only Port/** un-ignore lines; checked below
-           # The one Unity-side file the port owns: FrogletTools > Prisma > Launch Prisma, an
+           # The one Unity-side file the port owns: FrogletTools > Amoebius > Launch Amoebius, an
            # editor-only menu that builds and opens Prisma from the checkout (writes only Library/).
            "Assets/_Scripts/Editor/LaunchPrisma.cs", "Assets/_Scripts/Editor/LaunchPrisma.cs.meta",
            "Docs/TOOLING.md"}                # that tool's rows in the FrogletTools index

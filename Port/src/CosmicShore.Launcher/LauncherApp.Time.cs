@@ -33,7 +33,7 @@ namespace CosmicShore.Launcher
 
         void DrawTime(Vector2 a, Vector2 b)
         {
-            PageHeader(a, "TIME", "The game timed by Prisma: benchmark runs that close themselves (several players on one machine: the NET page)");
+            PageHeader(a, "TIME", "The game timed by Amoebius: benchmark runs that close themselves (several players on one machine: the NET page)");
             var dl = ImGui.GetWindowDrawList();
             float top = a.Y + 76, leftW = Math.Min(430, (b.X - a.X) * 0.42f);
             var la = new Vector2(a.X, top);

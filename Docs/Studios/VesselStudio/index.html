@@ -1,6 +1,6 @@
 <title>Vessel Studio</title>
 <!-- Vessel Studio hub (Docs/Studios/VesselStudio/). Pick a vessel, its studio opens. The same folder is
-     what Prisma's STUDIOS page opens on Windows, and what a phone browser opens. Plan:
+     what Amoebius's STUDIOS page opens on Windows, and what a phone browser opens. Plan:
      Docs/Studios/VESSEL_STUDIO_PLAN.md. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
     --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Prisma and a direct file open do not */
+  [hidden] { display: none !important; }  /* the claude.ai viewer adds this; Amoebius and a direct file open do not */
   body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
   a { color: var(--jade); }
   button, input, select, textarea { font: inherit; color: inherit; }
@@ -89,7 +89,7 @@
   <header>
     <span class="eyebrow">Cosmic Shore · Froglet</span>
     <h1>Vessel <em>Studio</em></h1>
-    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open in this browser, in Prisma on Windows, and in your phone's browser.</p>
+    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open in this browser, in Amoebius on Windows, and in your phone's browser.</p>
   </header>
 
   <section aria-labelledby="h-bays">
@@ -98,8 +98,8 @@
       <a class="bay" href="squirrel.html" style="--accent: var(--jade)">
         <canvas id="pvSquirrel" width="640" height="300" aria-hidden="true"></canvas>
         <div style="display:grid;gap:8px">
-          <div class="name"><b>Squirrel</b><span class="chip" style="color:var(--jade)">built vessel · v1</span></div>
-          <p>The racer. Drift on the left trigger, the Boost Ring on the right, skim rival trails for boost and steal them. Six play-style types over its four element levels.</p>
+          <div class="name"><b>Squirrel</b><span class="chip" style="color:var(--jade)">built vessel · round 2</span></div>
+          <p>The racer, now with an AI sim lab: race AI Squirrels at Easy, Medium or Hard on the game's four Skim Race courses, or hand your hull to the AI and watch with a chase, follow or free camera. Six play-style types over its four element levels.</p>
           <div class="spec"><span>Cruise</span><b>60 u/s × boost (to 5×)</b><span>Drift</span><b>×1.8 turn, grip 0.25</b><span>Elements</span><b>Charge · Mass · Space · Time</b></div>
         </div>
         <span class="open">Open studio &rarr;</span>
@@ -128,9 +128,9 @@
         <tbody>
           <tr><td>Web</td><td>This page. Share the link, or open the files in <code>Docs/Studios/VesselStudio/</code> in any browser.</td><td><span class="st ok">works</span></td></tr>
           <tr><td>Phone browser</td><td>Open this page on the phone, pick a studio, tap <b>Play on phone</b> and turn it sideways.</td><td><span class="st ok">works</span></td></tr>
-          <tr><td>Prisma on Windows</td><td><b>STUDIOS</b> page in Prisma.exe opens these pages from its workspace. From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Prisma there.</td><td><span class="st part">first version</span></td></tr>
-          <tr><td>Prisma on Android</td><td>The Prisma player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
-          <tr><td>iOS</td><td>After Android: the Prisma <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
+          <tr><td>Amoebius on Windows</td><td><b>STUDIOS</b> page in Prisma.exe opens these pages from its workspace. From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Amoebius there.</td><td><span class="st part">first version</span></td></tr>
+          <tr><td>Amoebius on Android</td><td>The Amoebius player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
+          <tr><td>iOS</td><td>After Android: the Amoebius <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -152,7 +152,7 @@
       </div>
       <div class="panel">
         <h3>Development requests</h3>
-        <p>File a change for a studio or a vessel. A Claude Code session, or Prisma's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
+        <p>File a change for a studio or a vessel. A Claude Code session, or Amoebius's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
         <div class="row">
           <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Studio hub</option><option>New vessel</option></select>
           <select id="reqKind" aria-label="Kind"><option>Change the studio</option><option>Try a design</option><option>Bug</option><option>New studio</option></select>
@@ -206,7 +206,7 @@
 
   // ---- the studio agent ----
   const SPEC = {
-    Squirrel: 'Squirrel (racer). Flight: speed = throttle x 60 u/s x boost (boost 1-5x, decays 0.3/s); pitch/yaw 120 deg/s, roll 130 deg/s. Drift on LT (analog): turn x1 -> x1.8, grip -> 0.25 (course lags nose). RT: Boost Ring = ring of 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s x Mass (1 -> 0.5, floor 0.35). Elements 0-10, L5 unlock at 5: Charge = Crystal Joust (overtake steals petals x1 -> x2.5; L5 Shepherd nourishes own lifeforms); Mass = Boost Ring cooldown (L5 Twin Rings); Space = Steal reach, skimmer 15 -> 30 (L5 Iron Grip steals shielded prisms keeping the shield); Time = Skimming energy +0.1/prism x1 -> x2 (L5 Live Wire: danger prisms x10). Studio types: Shipped, Thief, Speedster, Skimmer, Brawler, Maxed.',
+    Squirrel: 'Squirrel (racer). Flight: speed = throttle x 60 u/s x boost (boost 1-5x, decays 0.3/s); pitch/yaw 120 deg/s, roll 130 deg/s. Drift on LT (analog): turn x1 -> x1.8, grip -> 0.25 (course lags nose). RT: Boost Ring = ring of 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s x Mass (1 -> 0.5, floor 0.35). Elements 0-10, L5 unlock at 5: Charge = Crystal Joust (overtake steals petals x1 -> x2.5; L5 Shepherd nourishes own lifeforms); Mass = Boost Ring cooldown (L5 Twin Rings); Space = Steal reach, skimmer 15 -> 30 (L5 Iron Grip steals shielded prisms keeping the shield); Time = Skimming energy +0.1/prism x1 -> x2 (L5 Live Wire: danger prisms x10). Studio types: Shipped, Thief, Speedster, Skimmer, Brawler, Maxed. Studio round 2 is an AI sim lab on the four Skim Race intensity courses (I1 flat octagon 3 laps 24 crystals, I2 tilted spline 3 laps 30, I3 long spline 2 laps 56, I4 3D course 2 laps 54); AI difficulty: Hard = the shipped pilot, Medium = 0.25 s reaction + 4.5% misjudged crystals, Easy = 0.5 s + 9.9% (SkimRaceHandicap).',
     Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Part of each release kick is kept as lasting momentum (share 0.4, fades over 5 s, up to 1.5 x cruise), so a chain of slings stacks. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases).',
   };
   let sample = null, db = null, user = null, me = '';
@@ -217,7 +217,7 @@
     try { db = await c.use('db'); } catch (e) { db = null; }
     try { user = await c.use('user'); if (user) me = (await user.id()) || ''; } catch (e) { me = ''; }
     if (!sample) { $('askBtn').disabled = true; $('askState').textContent = 'Asking needs the claude.ai viewer. Use “Copy as agent prompt” instead.'; }
-    if (!db) { $('reqState').textContent = 'Requests are kept only in the claude.ai viewer. Copy the prompt to a Claude Code session or Prisma’s AGENT page.'; $('reqBtn').disabled = true; renderReqs([]); return; }
+    if (!db) { $('reqState').textContent = 'Requests are kept only in the claude.ai viewer. Copy the prompt to a Claude Code session or Amoebius’s AGENT page.'; $('reqBtn').disabled = true; renderReqs([]); return; }
     db.collection('requests').orderBy('createdAt', 'desc').limit(50).onSnapshot((snap) => {
       renderReqs(snap.docs.map((d) => Object.assign({ id: d.id }, d.data())));
     }, (err) => { $('reqState').textContent = 'The request list is unavailable (' + (err && err.code || 'error') + ').'; });
@@ -271,7 +271,7 @@
     const prompt = 'Vessel Studio request (' + $('reqVessel').value + ', ' + $('reqKind').value + '):\n' + text +
       '\n\nWork on the vessel-studio branch. Read Docs/Studios/VESSEL_STUDIO_PLAN.md and Docs/Studios/VesselStudio/README.md first. ' +
       'Every number a studio shows comes from a shipped asset, named in the page.';
-    const done = () => { $('reqState').textContent = 'Copied. Paste it into a Claude Code session or Prisma’s AGENT page.'; };
+    const done = () => { $('reqState').textContent = 'Copied. Paste it into a Claude Code session or Amoebius’s AGENT page.'; };
     try { navigator.clipboard.writeText(prompt).then(done, () => fallback(prompt)); } catch (e) { fallback(prompt); }
   });
   function fallback(t) { const ta = $('reqText'); ta.value = t; ta.focus(); ta.select(); $('reqState').textContent = 'Selected the prompt: copy it with your keyboard or long-press.'; }

@@ -1,7 +1,7 @@
 # Parity harness (ROADMAP C1)
 
 Both engines play the same **replay** and write the same **channels**; `engine_parity` diffs
-Prisma's run against Unity's (the **goldens**) with the C9 tolerances.
+Amoebius's run against Unity's (the **goldens**) with the C9 tolerances.
 
 ```
 Port/parity/
@@ -41,7 +41,7 @@ A channel without a golden reports MISSING and does not fail; FAIL names the fir
 
 - Fixed step 1/60 s for `frames` ticks; `Random.InitState(seed)` before the first scene loads.
 - `do`: device-level steps in the engine's InputScript verbs (`click`, `key`, `hold`, `pad`,
-  and the inspector verbs `arcade`, `score` ...). Prisma plays these today.
+  and the inspector verbs `arcade`, `score` ...). Amoebius plays these today.
 - `status`: per-frame `IInputStatus` snapshots plus the `InputEvents` pressed/released that
   frame. The game's own `ReplayPlayer` plays these (below), in both engines.
 - `record`: frames FROM-TO every N captured as `frames/fNNNNN.png` (a window is needed).
@@ -63,8 +63,8 @@ The recorder/replayer must live in game code, because:
   and goldens need Unity to play the same replay.
 - The game is the only place that can inject input at `IInputStatus`, between the strategy's
   `ProcessInput()` and the vessel reading it (`InputController.Update`). Device-level input
-  differs between Unity's Input System and Prisma's, so it cannot replay reliably across engines.
-- `Port/CLAUDE.md`: gameplay code is a Unity PR; the engine compiles it live, so Prisma gets it
+  differs between Unity's Input System and Amoebius's, so it cannot replay reliably across engines.
+- `Port/CLAUDE.md`: gameplay code is a Unity PR; the engine compiles it live, so Amoebius gets it
   for free.
 
 What it adds:
@@ -96,10 +96,10 @@ the game, and the probe writes `fmod-stop` at each without touching the vendor p
 Do not take stops from the `STOPPED` callback: it also fires when a one-shot ends by itself.
 - Snapshots: none today. The FMOD project's snapshot list is empty (`GUIDs.txt`: 3 banks, 2 buses,
   61 events, 0 snapshots), and `Main_AudioMixer` has only its default snapshot, which no script
-  transitions to. A golden with no `fmod-snapshot` line therefore matches only a Prisma run with none.
+  transitions to. A golden with no `fmod-snapshot` line therefore matches only an Amoebius run with none.
 
 The FMOD kinds are compared only when the golden carries them, so a probe that cannot record
-`fmod-stop` still gets a starts-only comparison. Prisma runs parity with `COSMIC_SHORE_AUDIO=nrt`:
+`fmod-stop` still gets a starts-only comparison. Amoebius runs parity with `COSMIC_SHORE_AUDIO=nrt`:
 the FMOD runtime and the project's banks, non-real-time with no output, so `isOneshot` and the
 other event descriptions answer exactly as they do in Unity. Without the runtime the run's
 `run.json` says `"audio":"silent"` and `engine_parity` flags the FMOD channel as approximate.
@@ -117,4 +117,4 @@ reseed, `ModePreviewPlantingModel` reseeds and restores); 7 unseeded `System.Ran
 `SpawnableCord` when their seed is 0) take `DeterministicSession`'s seed; 10 `Guid.NewGuid` sites are
 identity only and must never reach a compared channel.
 
-Until it lands, Prisma plays the `do` stream and every Unity channel is MISSING.
+Until it lands, Amoebius plays the `do` stream and every Unity channel is MISSING.

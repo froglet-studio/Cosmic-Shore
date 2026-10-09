@@ -366,7 +366,7 @@ namespace CosmicShore.Launcher
             using (ct.Register(() => { try { p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } }))
                 await p.WaitForExitAsync(CancellationToken.None);
             bool ok = p.ExitCode == 0;
-            Log.Add(ok ? LogKind.Success : LogKind.Error, ok ? "UGS Relay works from Prisma." : "The UGS relay check failed; the [relay-check] lines above name the step.");
+            Log.Add(ok ? LogKind.Success : LogKind.Error, ok ? "UGS Relay works from Amoebius." : "The UGS relay check failed; the [relay-check] lines above name the step.");
             return ok;
         });
 

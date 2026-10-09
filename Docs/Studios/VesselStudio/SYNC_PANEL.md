@@ -5,7 +5,7 @@ button (bottom right of every page of the Vessel Studio artifact) brings the art
 shows what changed, merges branches (then offers to delete the merged one), and keeps a shared log of
 decisions.
 
-- Live: https://claude.ai/artifact/8YakjgME9H7kNuiVyNXGzc
+- Live: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa (the one Vessel Studio artifact)
 - Source: `Docs/Studios/VesselStudio/sync.js`. It is injected into the pages at publish time by
   `.claude/skills/vessel-studio/build_artifact.py`, and by Refresh. The studio pages in the repo do not
   carry it.
@@ -98,4 +98,4 @@ Everyone who can open the artifact reads `decisions` and `jobs`; Contributors an
 - A running Claude session is needed for Refresh, Compare, Merge and Delete. A job takes as long as
   the session needs: seconds for compare, a minute or so for refresh or merge.
 - A page can only message sessions of the person using it, so each person uses their own session.
-- Opened outside claude.ai (a file in a browser, Prisma's app window), the panel shows the console only.
+- Opened outside claude.ai (a file in a browser, Amoebius's app window), the panel shows the console only.
