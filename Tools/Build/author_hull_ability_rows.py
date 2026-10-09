@@ -28,7 +28,7 @@ What this writes:
            art to the Scarab's own placeholders. Bindings, gauges and tints are untouched.
 
 OPEN DESIGN SLOTS are bound as an entry with `icon: {fileID: 0}` - the Rhino's Charge and
-Space and the Serpent's Mass. That is the contract for a slot with no ability behind it: the
+Space (the Serpent's Mass was one until the Seed Wall, which serpent_add_slots adds). That is the contract for a slot with no ability behind it: the
 lockup draws a LOCKED card (AbilityLockupView.ResolveLockedHost), and keeping the entry makes
 the list four long so ValidateAbilityIconRow checks the ORDER instead of stopping at the count.
 No icon object is created for them, so nothing about an undesigned ability is invented
@@ -274,7 +274,11 @@ SERPENT_HUD_INSTANCE = 4033090122440962496       # Serpent.prefab's PrefabInstan
 SERPENT_VIEW = "5470374086122723936"              # SerpentVesselHUDView, added on Serpent.prefab
 SERPENT_TIME_ICON = "5867477772541908519"         # the shipped Time binding (stripped TimeIcon)
 SERPENT_BASE = 7710000000000002000
-SERPENT_ICONS = {CHARGE: "Serpent_SniperShot-PLACEHOLDER.png", SPACE: "Serpent_Scope-PLACEHOLDER.png"}
+SERPENT_ICONS = {CHARGE: "Serpent_SniperShot-PLACEHOLDER.png", MASS: "Serpent_SeedWall-PLACEHOLDER.png",
+                 SPACE: "Serpent_Scope-PLACEHOLDER.png"}
+# Elements the FIRST authoring pass wrote. The Mass slot (Seed Wall, SERPENT_SEED_WALL.md) was
+# designed later and is added by serpent_add_slots onto a row that already carries these.
+SERPENT_FIRST_PASS = (CHARGE, SPACE)
 # The Time host (Boost Button) is anchored bottom-right, pivot top-right, at (-28.7, 365), 150
 # square. New hosts share that frame and step left by the lockup's pitch per slot, so the row
 # reads charge -> mass -> space -> time before the lockup re-homes it.
@@ -286,9 +290,11 @@ def serpent_frame(element):
     return ((1, 0), (1, 0), (x, SERPENT_Y), (SERPENT_HOST, SERPENT_HOST), (1, 1))
 
 
-def serpent_variant(src):
+def serpent_variant(src, elements=None):
     blocks, icon_ids, added = [], {}, []
     for element, png in SERPENT_ICONS.items():
+        if elements is not None and element not in elements:
+            continue
         ids = slot_ids(SERPENT_BASE, element)
         blocks += host_blocks(ids, element, SERPENT_STRIPPED_ROOT, serpent_frame(element),
                               sprite_guid("Serpent", png))
@@ -323,6 +329,29 @@ MonoBehaviour:
   m_Name:{SP}
   m_EditorClassIdentifier:{SP}
 """
+
+
+def serpent_add_slots(var_src, ves_src, elements):
+    """Add slots designed after the first pass (today: Mass) to an already-authored row: their
+    hosts in the variant, their stripped Images in the vessel, and the four-entry binding list
+    rewritten to name them. The first pass's documents are left byte-identical."""
+    var_out, new_ids = serpent_variant(var_src, elements)
+
+    before = {TIME: SERPENT_TIME_ICON}
+    for el in SERPENT_FIRST_PASS:
+        before[el] = int(slot_ids(SERPENT_BASE, el)["icon_img"]) ^ SERPENT_HUD_INSTANCE
+    after = dict(before)
+    blocks = []
+    for el, fid in new_ids.items():
+        local, block = stripped_image(fid)
+        assert f"&{local}" not in ves_src, f"Serpent.prefab already has &{local}"
+        after[el] = local
+        blocks.append(block)
+
+    s, e = component_block(ves_src, SERPENT_VIEW)
+    view = replace_once(ves_src[s:e], bindings(before), bindings(after), "Serpent view abilityIcons")
+    ves_out = ves_src[:s] + view + ves_src[e:]
+    return var_out, ves_out.rstrip("\n") + "\n" + "".join(blocks)
 
 
 def serpent_vessel(src, variant_icon_ids):
@@ -414,6 +443,16 @@ def main() -> int:
     var_ids = {el: slot_ids(SERPENT_BASE, el)["icon_img"] for el in SERPENT_ICONS}
     var_done = f"&{var_ids[CHARGE]}\n" in var_have
     ves_done = f"&{var_ids[CHARGE] ^ SERPENT_HUD_INSTANCE} stripped" in ves_have
+    late = [el for el in SERPENT_ICONS if el not in SERPENT_FIRST_PASS
+            and f"&{var_ids[el]}\n" not in var_have]
+    if var_done and ves_done and late:
+        if CHECK:
+            print(f"DRIFT: {SERPENT_VARIANT} + {SERPENT_VESSEL} (slots {late} not authored)"); ok = False
+        else:
+            var_want, ves_want = serpent_add_slots(var_have, ves_have, late)
+            write(SERPENT_VARIANT, var_want); write(SERPENT_VESSEL, ves_want)
+            wrote += [SERPENT_VARIANT, SERPENT_VESSEL]
+            var_have, ves_have = var_want, ves_want
     if not var_done and not ves_done:
         var_want, var_ids = serpent_variant(var_have)
         ves_want, _ = serpent_vessel(ves_have, var_ids)
