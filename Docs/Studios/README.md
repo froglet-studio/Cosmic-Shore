@@ -5,6 +5,8 @@ decision is made by looking and playing rather than by reading numbers. It is a 
 shipped numbers, never their authority: every constant in it is copied from an asset or a class and
 named after it, and when the asset changes the page must follow (or say on screen that it differs).
 
+**Picking up this branch?** Start with `../STOAT_BRANCH_HANDOFF.md`: everything on `claude/peaceful-rubin-hhw49n` in one page.
+
 | Studio | Live page (decision log on) | Repo copy |
 |---|---|---|
 | **Vessel Studio** (hub: Squirrel Studio v1 + Stoat) | https://claude.ai/artifact/EJYgDToG9R2eLzupaQpLgN | `VesselStudio/` |

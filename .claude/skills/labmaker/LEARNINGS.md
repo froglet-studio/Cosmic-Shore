@@ -148,6 +148,66 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: verify_lab report on the aliased page.
 - Promoted: §3 (the contract list)
 
+### L-STU-15 — A harder course measures the AI's failures unless the AI learns the harder skill
+- Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the new intensity ladder grades turning (1 plain circle → 4 side-on and dive rings). The
+  round-12 AI was caught on only 3 of 15 slings at intensity 4, for two reasons: it steered for the ring
+  before the hole held it, and the pair is always laid along the wings, so a climb could not use it. The
+  ladder then measured an AI that couldn't fly it, not the course. Three changes fixed it:
+  - **bank to sling:** roll until the turn lies off one wing;
+  - **pass on the circle:** aim at the hold radius until caught;
+  - **release at the best heading:** let go when the nose stops closing on the ring.
+
+  Catches went to 19 of 19, and grip turn per race rose 766° → 1,382° → 2,420° → 2,209° across the levels.
+- Do instead: when a lab adds difficulty, check the AI's own success rate (here, catches per sling) per
+  level before reading any other column. Then teach the AI the skill the level demands.
+- Evidence: `aiInput` in `StoatFlightStudio.html` (the `bank` / `lay` phases, `aiAim`, `ai.prevOff`);
+  `STOAT_SIM_LAB_PLAN.md` §2 "The intensity ladder and the round-14 AI".
+- Promoted: no
+
+### L-STU-16 — Improving the AI moves every scorecard column; the rookie must keep the rookie's mistakes
+- Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the smarter catch logic also reached the rookie (`aiNoise`), so every style's rookie catch
+  rate became 100% and Anchor lost its column. Comet, now catching reliably, also overtook Flare on top
+  speed. The fix:
+  - the rookie keeps steering for the ring before the catch (its classic miss);
+  - Flare's buried boost rose from +2.1 to +3.1 (slider ceiling 3 → 5).
+- Do instead: re-run the whole scorecard after ANY change to the AI, not only the column it was meant for.
+  Model skill differences as specific mistakes the skilled pilot does not make.
+- Evidence: round-14 scorecard in `STOAT_SIM_LAB_PLAN.md`; `aiInput` `P.aiNoise < 0.5` gate.
+- Promoted: no
+
+### L-STU-17 — A lab's vessel can be in the game and still not run in Prisma: compile the engine before you call it portable
+- Lab: Stoat (game side) and Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the game on this branch did not compile in Prisma at all. Its black-hole code used:
+  - `UnityEngine.Jobs` transform jobs;
+  - URP's script-injected render-graph pass and `CommandBuffer`;
+  - `typeof(SerializeField)` (the engine called it `SerializeFieldAttribute`);
+  - a fully qualified `InputSystem.Controls.ButtonControl` (the engine had it one namespace up);
+  - and the engine had no GLSL port of a new shader-graph custom function.
+
+  All of it was filled as engine API. Engine 1,691/1,691, ported game tests 352/352.
+- Do instead: before saying "test it in Prisma", run `dotnet build Port/src/CosmicShore.Player` on the
+  branch. A Unity-only API in new game code fails there first. Fill gaps in the engine (`Port/src`),
+  never in `Assets/`.
+- Evidence: commit `84898d17a`; `Port/src/CosmicShore.Engine/Jobs/TransformAccess.cs`, `Rendering/RenderGraph.cs`.
+- Promoted: no
+
+### L-STU-18 — One-click "play the real thing" from a studio: a catalog field plus a player flag
+- Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: Prisma's STUDIOS page gained two buttons:
+  - **OPEN IN PRISMA**: Edge or Chrome app mode, opening the page as `#prisma` with its own window profile.
+  - **PLAY IN ENGINE**: `studios.json` `engineMode`. The player's `--arcade MODE` waits for `Menu_Main`,
+    opens that card and presses Start (`ArcadeAutoStart`, through the existing `arcade` input verb).
+
+  Headless, `--arcade Slingshot` reached the race at frame 258. Entering the race scene directly (`--scene`)
+  does NOT work: there is no Bootstrap camera rig or app services.
+- Do instead: reach a game mode through the menu path players use, driven by the same verbs the control
+  port uses. Never boot a gameplay scene directly to "save time". Put the per-studio fact (which mode) in
+  the catalog, not in launcher code.
+- Evidence: commit `30a890606`; `StudioCatalogTests.TheShippedCatalogsEngineModesAreGameModes`.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
