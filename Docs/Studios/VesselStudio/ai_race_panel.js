@@ -14,6 +14,10 @@
  *     levelNote: 'What Easy / Medium / Hard mean here, and where the numbers come from.',
  *     onChange: (key, value, state) => { ... },                              // after every user change
  *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D23); state.rivalStyles
+ *     players: { host: element, max: 4, domains: [{ key: 'jade', name: 'Jade', color: '#37e3a0' }, ...] },
+ *                           // optional (D25): a Players list in the studio's Game Config tab, + / - to add or remove
+ *                           // a player, each opening with Is AI, Domain, Difficulty, Play style, View and Camera.
+ *                           // It replaces the Your hull / seat rows; state.players, state.view; onChange('players' | 'view')
  *     sceneHost: element,   // optional: Course, Camera and Speed go here, the studio's Scene Config tab (D21);
  *                           // without it they stay in the panel
  *   });
@@ -70,6 +74,17 @@
     '.arp-check{display:flex;gap:8px;align-items:center;font-size:13px}',
     '.arp-check input:disabled+span{opacity:.45}',
     '.arp-note{font-size:12px;color:var(--muted,var(--dim,#8e95bf));margin:0}',
+    '.arp-phead{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted,var(--dim,#8e95bf))}',
+    '.arp-phead b{color:var(--fg,#e9ecff);font-size:13px;margin-right:auto}',
+    '.arp-pbtn{min-width:26px;height:24px;padding:0 7px;border:1px solid var(--line,#262b47);border-radius:5px;background:transparent;color:var(--fg,#e9ecff);font:700 13px/1 ui-monospace,monospace;cursor:pointer}',
+    '.arp-pbtn:disabled{opacity:.35;cursor:default}',
+    '.arp-pbtn[aria-pressed="true"]{color:var(--accent,var(--jade,#35e0b0));border-color:var(--accent,var(--jade,#35e0b0))}',
+    '.arp-player{border:1px solid var(--line,#262b47);border-radius:6px;padding:5px 8px;display:grid;gap:6px}',
+    '.arp-player>summary{cursor:pointer;font-size:12px;display:flex;gap:6px;align-items:center;list-style:none}',
+    '.arp-player>summary::-webkit-details-marker{display:none}',
+    '.arp-player>summary::after{content:"+";margin-left:auto;font:700 13px/1 ui-monospace,monospace;color:var(--muted,var(--dim,#8e95bf))}',
+    '.arp-player[open]>summary::after{content:"\u2212"}',
+    '.arp-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}',
     '.arp :focus-visible{outline:2px solid var(--accent,var(--jade,#35e0b0));outline-offset:1px}'
   ].join('\n');
 
@@ -144,12 +159,86 @@
       for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return (courses[i].label || String(val)) + (courses[i].note ? ' \u00b7 ' + courses[i].note : '');
       return String(val);
     }, { into: sceneRoot, tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
-    seg('you', 'Your hull', ['You'].concat(LEVELS), function (val) { return val === 'You' ? 'You fly' : 'AI ' + val; },
+    // ---- D25: the Players list (Game Config). Player 1 is your hull; every other player is an AI rival ----
+    var PL = cfg.players && cfg.players.host ? cfg.players : null;
+    var domains = PL && PL.domains && PL.domains.length ? PL.domains : DEFAULT_SEATS.map(function (x) { return { key: x.name.toLowerCase(), name: x.name, color: x.color }; });
+    var maxPlayers = PL ? Math.max(1, Math.min(8, PL.max || 4)) : 0, openCards = { 0: true };
+    function domainOf(key) { for (var i = 0; i < domains.length; i++) if (domains[i].key === key) return domains[i]; return domains[0]; }
+    function cleanPlayers(arr) {
+      var out = [];
+      (Array.isArray(arr) ? arr : []).slice(0, maxPlayers).forEach(function (p, i) {
+        p = p || {};
+        out.push({ ai: i === 0 ? !!p.ai : true, domain: domainOf(p.domain).key, level: LEVELS.indexOf(p.level) >= 0 ? p.level : 'Hard', style: styles && styles.indexOf(p.style) >= 0 ? p.style : (styles ? styles[0] : '') });
+      });
+      if (!out.length) out.push({ ai: false, domain: domains[0].key, level: 'Hard', style: styles ? styles[0] : '' });
+      return out;
+    }
+    function derive() {   // the older keys, kept in step for pages that still read them
+      var ps = state.players; state.you = ps[0].ai ? ps[0].level : 'You';
+      state.rivals = seats.map(function (_, k) { return ps[k + 1] ? ps[k + 1].level : 'Off'; });
+      if (styles) state.rivalStyles = seats.map(function (_, k) { return ps[k + 1] ? ps[k + 1].style : styles[0]; });
+    }
+    if (PL) {
+      var vp = v.players;
+      if (!Array.isArray(vp)) {   // build the list from the older keys
+        vp = [{ ai: state.you !== 'You', level: state.you === 'You' ? 'Hard' : state.you, domain: domains[0].key, style: styles ? styles[0] : '' }];
+        state.rivals.forEach(function (lv, k) { if (lv !== 'Off') vp.push({ ai: true, level: lv, domain: (domains[(k + 1) % domains.length] || domains[0]).key, style: state.rivalStyles ? state.rivalStyles[k] : '' }); });
+      }
+      state.players = cleanPlayers(vp); state.view = Math.max(0, Math.min(state.players.length - 1, +v.view || 0)); derive();
+    }
+    var playerBox = null, camSelects = [];
+    function buildPlayers() {
+      if (!PL) return;
+      if (!playerBox) { playerBox = el('div', 'arp'); playerBox.setAttribute('data-arp-players', ''); PL.host.textContent = ''; PL.host.appendChild(playerBox); }
+      playerBox.textContent = ''; camSelects = [];
+      var ps = state.players, head = el('div', 'arp-phead');
+      head.appendChild(el('b', null, 'Players ' + ps.length));
+      var minus = el('button', 'arp-pbtn', '\u2212'); minus.type = 'button'; minus.title = 'Remove the last player'; minus.disabled = ps.length <= 1;
+      var plus = el('button', 'arp-pbtn', '+'); plus.type = 'button'; plus.title = 'Add an AI player'; plus.disabled = ps.length >= maxPlayers;
+      minus.addEventListener('click', function () { set('players', ps.slice(0, -1)); });
+      plus.addEventListener('click', function () {
+        var used = ps.map(function (p) { return p.domain; }), d = domains.filter(function (x) { return used.indexOf(x.key) < 0; })[0] || domains[ps.length % domains.length];
+        openCards[ps.length] = true;
+        set('players', ps.concat([{ ai: true, domain: d.key, level: 'Hard', style: styles ? styles[ps.length % styles.length] : '' }]));
+      });
+      head.appendChild(minus); head.appendChild(plus); playerBox.appendChild(head);
+      ps.forEach(function (p, i) {
+        var d = domainOf(p.domain), card = el('details', 'arp-player'); card.open = !!openCards[i];
+        card.addEventListener('toggle', function () { openCards[i] = card.open; });
+        var sum = el('summary'), dot = el('span', 'arp-dot'); dot.style.background = d.color;
+        sum.appendChild(dot); sum.appendChild(el('span', null, 'Player ' + (i + 1) + (i === 0 ? ' (your hull)' : '') + ' \u00b7 ' + (p.ai ? 'AI ' + p.level : 'You fly') + ' \u00b7 ' + d.name + (p.style ? ' \u00b7 ' + p.style : '') + (state.view === i ? ' \u00b7 viewed' : '')));
+        card.appendChild(sum);
+        var edit = function (k, val) { var arr = state.players.map(function (x) { return Object.assign({}, x); }); arr[i][k] = val; set('players', arr); };
+        var row = function (label, node) { var r = el('div', 'arp-row'); r.appendChild(el('span', null, label)); r.appendChild(node); card.appendChild(r); };
+        var pick = function (label, list, cur, onPick, opts) {
+          var s = el('select', 'arp-seg'); s.setAttribute('aria-label', 'Player ' + (i + 1) + ' ' + label.toLowerCase());
+          list.forEach(function (x) { var o = el('option', null, x.name || x); o.value = x.key || x; s.appendChild(o); });
+          s.value = cur; if (opts && opts.lv) s.setAttribute('data-lv', cur);
+          if (opts && opts.off) { s.disabled = true; s.title = opts.off; }
+          s.addEventListener('change', function () { onPick(s.value); }); row(label, s); return s;
+        };
+        var ai = document.createElement('input'); ai.type = 'checkbox'; ai.checked = p.ai; ai.setAttribute('aria-label', 'Player ' + (i + 1) + ' is AI');
+        if (i > 0) { ai.disabled = true; ai.title = 'Only player 1 can be flown by you: every other player is an AI.'; }
+        ai.addEventListener('change', function () { edit('ai', ai.checked); });
+        var aiWrap = el('label', 'arp-check'); aiWrap.appendChild(ai); aiWrap.appendChild(el('span', null, i === 0 ? (p.ai ? 'the AI flies your hull' : 'you fly it') : 'always (one human per studio)'));
+        row('Is AI', aiWrap);
+        pick('Domain', domains, p.domain, function (x) { edit('domain', x); });
+        pick('Difficulty', LEVELS, p.level, function (x) { edit('level', x); }, { lv: true, off: p.ai ? null : 'You are flying this hull: the difficulty applies when the AI does.' });
+        if (styles) pick('Play style', styles, p.style, function (x) { edit('style', x); });
+        var view = el('button', 'arp-pbtn', state.view === i ? '\u25c9 Viewing' : '\u25cb View'); view.type = 'button'; view.setAttribute('aria-pressed', String(state.view === i));
+        view.title = 'The camera follows this player'; view.addEventListener('click', function () { set('view', i); });
+        var cam = el('select', 'arp-seg'); cam.setAttribute('aria-label', 'Camera'); CAMERAS.forEach(function (c) { var o = el('option', null, c); o.value = c; o.title = CAMERA_TIPS[c]; cam.appendChild(o); });
+        cam.value = state.camera; cam.addEventListener('change', function () { set('view', i); set('camera', cam.value); }); camSelects.push(cam);
+        var two = el('div', 'arp-pair'); two.appendChild(view); two.appendChild(cam); row('View', two);
+        playerBox.appendChild(card);
+      });
+    }
+    if (!PL) seg('you', 'Your hull', ['You'].concat(LEVELS), function (val) { return val === 'You' ? 'You fly' : 'AI ' + val; },
       { level: function (val) { return val === 'You' ? null : val; } });
     // one row per AI rival seat, each with its own level (D20)
     var rivalsOff = sup.rivals === true ? null : why(sup.rivals);
-    var seatBox = el('div', 'arp-seats'); seatBox.setAttribute('aria-label', 'AI rivals, each with its own level'); root.appendChild(seatBox);
-    seats.forEach(function (seat, k) {
+    var seatBox = el('div', 'arp-seats'); seatBox.setAttribute('aria-label', 'AI rivals, each with its own level'); if (!PL) root.appendChild(seatBox);
+    if (!PL) seats.forEach(function (seat, k) {
       var extra = null;
       if (styles) {   // D23: the seat's play style, beside its level
         extra = el('select', 'arp-seg'); extra.setAttribute('aria-label', 'AI ' + seat.name + ' play style');
@@ -180,26 +269,31 @@
         if (lv) box.setAttribute('data-lv', lv); else if (String(val) === 'Off') box.setAttribute('data-lv', 'Off'); else box.removeAttribute('data-lv');
       }
       ['course', 'you', 'camera', 'speed'].forEach(function (k) { if (groups[k]) press(groups[k], state[k]); });
-      seats.forEach(function (_, k) { press(groups['seat' + k], state.rivals[k]); if (styles) groups['style' + k].value = state.rivalStyles[k]; });
+      if (!PL) seats.forEach(function (_, k) { press(groups['seat' + k], state.rivals[k]); if (styles) groups['style' + k].value = state.rivalStyles[k]; });
+      buildPlayers();
       groups.thinking.checked = !!state.thinking; groups.autoRestart.checked = !!state.autoRestart;
     }
     function set(key, val, silent) {
       if (!(key in state)) return;
       if (key === 'course') { var c = null; for (var i = 0; i < courses.length; i++) if (String(courses[i].v) === String(val)) c = courses[i].v; if (c == null) return; val = c; }
       if (key === 'rivals') { if (!Array.isArray(val) || sup.rivals !== true) return; val = seatLevels(val); }
+      if (key === 'players') { if (!PL || !Array.isArray(val)) return; val = cleanPlayers(val); }
+      if (key === 'view') { if (!PL) return; val = Math.max(0, Math.min(state.players.length - 1, +val || 0)); }
       if (key === 'rivalStyles') { if (!styles || !Array.isArray(val)) return; val = seatStyles(val); }
       if (key === 'speed') { val = +val; if (SPEEDS.indexOf(val) < 0) return; }
       if (key === 'you' && ['You'].concat(LEVELS).indexOf(val) < 0) return;
       if (key === 'camera' && CAMERAS.indexOf(val) < 0) return;
       if (key === 'thinking' || key === 'autoRestart') val = !!val;
-      var arrKey = key === 'rivals' || key === 'rivalStyles';
-      var changed = arrKey ? state[key].join() !== val.join() : state[key] !== val;
-      state[key] = val; sync();
-      if (changed && !silent && typeof cfg.onChange === 'function') { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); if (styles) c.rivalStyles = state.rivalStyles.slice(); cfg.onChange(key, arrKey ? val.slice() : val, c); }
+      var arrKey = key === 'rivals' || key === 'rivalStyles' || key === 'players';
+      var changed = key === 'players' ? JSON.stringify(state.players) !== JSON.stringify(val) : arrKey ? state[key].join() !== val.join() : state[key] !== val;
+      state[key] = val;
+      if (key === 'players') { derive(); if (state.view >= val.length) state.view = 0; }
+      sync();
+      if (changed && !silent && typeof cfg.onChange === 'function') { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); if (styles) c.rivalStyles = state.rivalStyles.slice(); if (PL) c.players = JSON.parse(JSON.stringify(state.players)); cfg.onChange(key, key === 'players' ? JSON.parse(JSON.stringify(val)) : arrKey ? val.slice() : val, c); }
     }
     sync();
     return {
-      get state() { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); if (styles) c.rivalStyles = state.rivalStyles.slice(); return c; },
+      get state() { var c = Object.assign({}, state); c.rivals = state.rivals.slice(); if (styles) c.rivalStyles = state.rivalStyles.slice(); if (PL) c.players = JSON.parse(JSON.stringify(state.players)); return c; },
       set: set,
       refresh: sync,
       element: root

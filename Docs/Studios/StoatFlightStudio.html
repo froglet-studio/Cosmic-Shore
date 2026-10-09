@@ -344,6 +344,9 @@
         <p class="src" id="portalSrc"></p>
       </div>
 
+      <details class="card" id="grp-game" open><summary>Players <small>+ / &minus; to add or remove; open one to set it up</small></summary>
+        <div id="playersPanel"></div>
+        <p class="src">Player 1 is your hull: you fly it, or tick <b>Is AI</b> and the AI does. Every other player is an AI rival with its own domain, difficulty and play style. <b>View</b> puts the camera on that player (or press C).</p></details>
       <details class="card" id="grp-scene" open><summary>Scene <small>course, camera, speed</small></summary>
         <div id="scenePanel"></div></details>
       <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
@@ -704,7 +707,8 @@
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
   function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
-    rivals: typeof seatLv !== 'undefined' ? { lv: seatLv, st: seatStyle } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel }); }
+    rivals: typeof seatLv !== 'undefined' ? { lv: seatLv, st: seatStyle, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel,
+    youStyle: typeof youStyle !== 'undefined' ? youStyle : saved.youStyle }); }
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
@@ -1954,8 +1958,8 @@
   function nextCamera() {
     if (mode !== 'fly') return;
     const order = ['Chase', 'Follow', 'Free'], cur = CAM_BACK[camMode] || 'Chase';
-    if (cur === 'Follow' && watchIdx < rivals.length) { watchIdx++; snapCam = true; return; }
-    watchIdx = 0;
+    if (cur === 'Follow' && watchIdx < rivals.length) { watchIdx++; snapCam = true; if (racePanelRef) racePanelRef.set('view', watchIdx, true); return; }
+    watchIdx = 0; if (racePanelRef) racePanelRef.set('view', 0, true);
     const next = order[(order.indexOf(cur) + 1) % 3];
     if (racePanelRef) racePanelRef.set('camera', next); else { camMode = CAM_OF[next]; snapCam = true; }
   }
@@ -2315,6 +2319,14 @@
     Flare: { aiQ: 1, aiMinRing: 120, aiGiveUp: 2.5, aiTurn: 90, aiWarpQ: 1, aiNear: 25, aiLimeWait: 1.2 },
   };
   const STYLE_NAMES = Object.keys(STYLE_BRAIN);
+  // Your hull, AI-flown, flies its play style's brain over the sliders (the sliders stay as you set them)
+  const brainKeep = {};
+  function youAiInput(dt) {
+    const b = STYLE_BRAIN[youStyle]; if (!b || !Object.keys(b).length) return aiInput(dt);
+    for (const k in b) brainKeep[k] = P[k];
+    Object.assign(P, b);
+    try { return aiInput(dt); } finally { for (const k in b) P[k] = brainKeep[k]; }
+  }
   function pilotP(styleName, level) {   // what one rival flies with: the sliders, its style's brain, its level's judgement
     const b = Object.assign({}, BP, STYLE_BRAIN[styleName] || {}, { aiNoise: (AI_LEVELS[level] || AI_LEVELS.Hard).judge, aiSling: 1 });
     const w = {}; for (const st of STYLES) w[st.key] = st.name === styleName ? 1 : 0.5;
@@ -2329,6 +2341,10 @@
   const savedRivals = saved.rivals || {};
   let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Hard', 'Medium', 'Easy'];
   let seatStyle = Array.isArray(savedRivals.st) ? savedRivals.st.slice(0, 3) : ['Comet', 'Needle', 'Anchor'];
+  let seatDomain = Array.isArray(savedRivals.dm) ? savedRivals.dm.slice(0, 3) : ['ruby', 'gold', 'blue'];   // Game Config (D25)
+  let youStyle = STYLE_BRAIN[saved.youStyle] ? saved.youStyle : 'Balanced';
+  const domainName = (k) => k.charAt(0).toUpperCase() + k.slice(1);
+  function seatFor(k) { const d = DOMAIN[seatDomain[k]] != null ? seatDomain[k] : SEATS[k].name.toLowerCase(), c = DOMAIN[d] != null ? DOMAIN[d] : SEATS[k].color; return { name: domainName(d), color: c, css: '#' + c.toString(16).padStart(6, '0') }; }
   let youLevel = AI_LEVELS[saved.youLevel] ? saved.youLevel : 'Hard';
   ai.level = youLevel;
   let youFinishT = null, rivals = [], watchIdx = 0;
@@ -2374,7 +2390,7 @@
     m.traverse((o) => { if (o.isMesh && o.material === domainMat) o.material = mat; });
     const g = new THREE.Group(); g.rotation.y = Math.PI; g.scale.setScalar(1.6); g.add(m); root.add(g);
     const beacon = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), new THREE.MeshBasicMaterial({ color: seat.color })); beacon.position.y = 2.6; root.add(beacon);
-    root.visible = false; scene.add(root); return root;
+    root.userData = { mat, beacon }; root.visible = false; scene.add(root); return root;
   }
   function rivalLine(seat) {
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3()]), new THREE.LineBasicMaterial({ color: seat.color, transparent: true, opacity: 0.85 }));
@@ -2387,9 +2403,10 @@
     if (batching || mode !== 'fly') { for (const s of seatState) if (s.mesh) s.mesh.visible = false; return; }
     const g = gates[0];
     const side = new V3().crossVectors(g.n, Y); if (side.lengthSq() < 1e-4) side.set(1, 0, 0); side.normalize();
-    SEATS.forEach((seat, k) => {
-      const s = seatState[k], lv = seatLv[k];
+    SEATS.forEach((_, k) => {
+      const s = seatState[k], lv = seatLv[k], seat = seatFor(k);
       if (!s.mesh) { s.mesh = rivalMesh(seat); s.line = rivalLine(seat); }
+      s.mesh.userData.mat.color.setHex(seat.color); s.mesh.userData.mat.emissive.setHex(seat.color); s.mesh.userData.beacon.material.color.setHex(seat.color); s.line.material.color.setHex(seat.color);
       if (!AI_LEVELS[lv]) { s.mesh.visible = false; s.line.visible = false; return; }
       const fresh = newPilotState(k + 1);
       Object.assign(s, { speed: 0, stance: false, threaded: 0, slings: 0, throttleNow: 0.5, slingOrbit: null, lastOrbit: null, slingDipole: null, lastDipole: null,
@@ -4280,7 +4297,10 @@
     courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
     seats: SEATS.map((st) => ({ name: st.name, color: st.css })),
     styles: STYLE_NAMES,   // each rival seat flies one of the play styles (D23)
-    value: { course: intensity, you: aiOn ? youLevel : 'You', rivals: seatLv, rivalStyles: seatStyle, camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat },
+    // Game Config (D25): the Players list. Player 1 = your hull, players 2-4 = the rival seats, in order
+    players: { host: $('playersPanel'), max: 4, domains: Object.keys(DOMAIN).map((k) => ({ key: k, name: domainName(k), color: '#' + DOMAIN[k].toString(16).padStart(6, '0') })) },
+    value: { course: intensity, camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat, view: 0,
+      players: [{ ai: aiOn, domain: domainKey, level: youLevel, style: youStyle }].concat(seatLv.map((lv, k) => ({ lv, k })).filter((x) => AI_LEVELS[x.lv]).map((x) => ({ ai: true, domain: seatDomain[x.k], level: x.lv, style: seatStyle[x.k] }))) },
     supports: { rivals: true, thinking: true, autoRestart: true },
     levelNote: 'Easy, Medium and Hard are the Skim Race levels (SkimRaceDifficulty.asset) flown by the Stoat: Hard is the skilled pilot; Medium notices each new ring 0.25 s late on average and misjudges 4.5% of rings, Easy 0.5 s and 9.9%. A misjudged ring is believed two ring-widths off to one side: the AI flies there, misses, and turns back. Lab-only on top: the pair judgement (squeeze and let-go sloppiness 0 / 0.4 / 0.8), since the game ships no Stoat AI. Each rival flies its seat\'s play style. Show AI thinking: green = flying for the ring, amber = not noticed yet, red = misjudged, violet = working the pair. C picks which pilot the camera follows.',
     onChange: (key, v) => {
@@ -4291,12 +4311,32 @@
       } else if (key === 'rivals' || key === 'rivalStyles') {   // a new field of rivals is a new race
         if (key === 'rivals') seatLv = v.slice(); else seatStyle = v.slice();
         persist(); if (mode === 'fly') spawn();
-      } else if (key === 'camera') fire('camMode', 'value', CAM_OF[v]);
+      } else if (key === 'players') applyPlayers(v);
+      else if (key === 'view') { watchIdx = Math.min(v, rivals.length); snapCam = true; } else if (key === 'camera') fire('camMode', 'value', CAM_OF[v]);
       else if (key === 'speed') fire('simSpeed', 'value', String(v));
       else if (key === 'thinking') aiThinking = v;
       else if (key === 'autoRestart') aiRepeat = v;
     },
   }) : null;
+  // Player 1 sets your hull (who flies it, its domain, the AI's level and your play style); players 2-4 are the rival
+  // seats. A change to the rivals is a new race; a change to your hull applies at once.
+  function applyPlayers(ps) {
+    const before = JSON.stringify([seatLv, seatStyle, seatDomain]);
+    const p0 = ps[0];
+    if (p0.domain !== domainKey) fire('domain', 'value', p0.domain);
+    if (p0.style !== youStyle) {
+      youStyle = p0.style;
+      for (const st of STYLES) BP[st.key] = st.name === youStyle ? 1 : 0.5;   // your hull flies the style (Balanced = all 0.5)
+      recomputeP(); refreshAllOuts();
+    }
+    if (p0.level !== youLevel) { youLevel = p0.level; ai.level = youLevel; BP.aiNoise = AI_LEVELS[youLevel].judge; recomputeP(); refreshAllOuts(); }
+    if (p0.ai !== aiOn) fire('aiOn', 'checked', p0.ai);
+    seatLv = [0, 1, 2].map((k) => ps[k + 1] ? ps[k + 1].level : 'Off');
+    seatStyle = [0, 1, 2].map((k) => ps[k + 1] ? ps[k + 1].style : seatStyle[k]);
+    seatDomain = [0, 1, 2].map((k) => ps[k + 1] ? ps[k + 1].domain : seatDomain[k]);
+    persist();
+    if (JSON.stringify([seatLv, seatStyle, seatDomain]) !== before && mode === 'fly') spawn();
+  }
   if (racePanelRef) $('intensitySeg').hidden = true;   // the panel's Course dropdown is the one course picker in Scene Config (D21)
   for (const n of STYLE_NAMES) { const o = document.createElement('option'); o.value = n; o.textContent = n; $('levelStyle').appendChild(o); }
   $('levelBtn').addEventListener('click', () => {
@@ -4346,7 +4386,7 @@
   $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); markTypes(); });
   $('invertY').addEventListener('change', (e) => { invertY = e.target.checked; persist(); });
   $('newCourse').addEventListener('click', () => { seed = 1 + Math.floor(Math.random() * 9999); buildCourse(); spawn(); persist(); renderRuns(); });
-  $('domain').addEventListener('change', (e) => { domainKey = e.target.value; const c = DOMAIN[domainKey]; domainMat.color.setHex(c); domainMat.emissive.setHex(c); trailMat.color.setHex(c); trailMat.emissive.setHex(c); persist(); });
+  $('domain').addEventListener('change', (e) => { domainKey = e.target.value; if (typeof racePanelRef !== 'undefined' && racePanelRef) { const ps = racePanelRef.state.players; if (ps && ps[0].domain !== domainKey) { ps[0].domain = domainKey; racePanelRef.set('players', ps, true); } } const c = DOMAIN[domainKey]; domainMat.color.setHex(c); domainMat.emissive.setHex(c); trailMat.color.setHex(c); trailMat.emissive.setHex(c); persist(); });
 
   function courseKey(r) { return (r.courseKind || 'circuit') + '/' + r.seed + '/' + r.intensity + '/' + r.laps; }
   function bestFor(s) { const key = courseKey({ courseKind, seed, intensity, laps }); const t = runs.filter((r) => r.style === s && courseKey(r) === key).map((r) => r.time); return t.length ? Math.min.apply(null, t) : null; }
@@ -4507,7 +4547,7 @@
     resize();
     if (aiOn && mode === 'fly') {
       const n = Math.max(1, Math.round(simSpeed)), h = dt * simSpeed / n;
-      for (let i = 0; i < n; i++) simStep(h, aiInput(h), i === n - 1);
+      for (let i = 0; i < n; i++) simStep(h, youAiInput(h), i === n - 1);
     } else simStep(dt, pollInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
@@ -4523,7 +4563,7 @@
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
     // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['ai', 'AI Config', ['grp-ai']],
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
       ['others', 'Others', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
@@ -4627,7 +4667,7 @@
   buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? aiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
+  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? youAiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? youAiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, STYLE_BRAIN, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera, get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
   Object.assign(window.__stoatStudio, {
