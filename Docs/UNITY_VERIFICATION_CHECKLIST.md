@@ -251,6 +251,32 @@ all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRI
 `lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
 and `aheadHorizons` first.
 
+### 🔴 Butterfly collects elemental crystals again — always-on crystal catcher (`cece/dazzling-ramanujan-hz5caq`, 2026-10-09) — NOT EDITOR-VERIFIED
+
+**Landed** (`R_VesselActions/BUTTERFLY.md §3.1a`, generator `Tools/Build/author_butterfly_dust.py --check`):
+an elemental crystal is collected only by a SKIMMER contact, and the Butterfly's only skimmer (the
+dust capsule) is off outside Dust mode — so in Mass mode, the spawn mode, it collected nothing. New
+`Components/ButterflyCrystalSkimmer.prefab` (trigger sphere, 30 u, always on) is nested in
+`Butterfly.prefab` and wired as `_farFieldSkimmer`; its container
+`ButterflyCrystalSkimmerImpactorDataContainer` is EMPTY (it only gives the crystal a vessel to
+credit). Also wired the dust capsule's null `onSkimmerShipImpact` (NRE on every Dust-mode pilot bite).
+`ButterflyVesselSetup` mirrors both; `VesselSkimmerAudit` reports an optional far field with no prism
+effects as `OK (crystal pickup only)` instead of a fault. The nested-instance YAML was hand-generated
+(stripped fileIDs follow Unity's `instance XOR source` rule) — first open of the prefab is the real test.
+
+**Verify in editor**
+1. Open `Butterfly.prefab`: a `ButterflyCrystalSkimmer` child at the root, no missing-prefab /
+   broken-reference warnings; `VesselStatus` → Far Field Skimmer = its Skimmer.
+2. `FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers`: Butterfly far field `OK (crystal pickup only — no prism effects)`.
+3. Freestyle, Butterfly, **Mass mode** (don't press RT): fly through an elemental crystal — it is
+   snatched into the hull and the matching element's flower fills. Repeat in Dust mode.
+4. A crystal-scoring mode (e.g. Crystal Capture) with the Butterfly: pickups score.
+5. Console: no `[CrystalMorph] [HullFusion] … collected by a skimmer with no vessel` warning; no
+   `NullReferenceException` when the dust bites an AI pilot.
+6. Mass mode over own and opposing trails: no prism changes (the catcher must not dust).
+
+**First-pass tuning**: catcher diameter 30 u (`CRYSTAL_DIAMETER`; span at rest is 21.35 u), vacuum 80.
+
 ---
 
 ### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
