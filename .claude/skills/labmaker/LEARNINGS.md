@@ -180,6 +180,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: when a mechanic's trigger reads state the mechanic changes, measure it both ways (here `ftBoostInPath` 0/1) and put a pure-input control row in the scorecard ("steering only, not in path" must equal No sling). Leave the reading to the designer as **Decision needed**.
 - Evidence: README round 15 field scorecard and "Decision needed".
 - Promoted: no
+- Superseded (same day): the designer chose a boost that cannot touch the path (L-STU-18), so the 0/1 row is gone.
+
+### L-STU-18 — To make a boost that never changes the predicted path, warp the vessel's own clock
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the designer wanted the field trajectory's 3× to move the Stoat along the drawn path sooner without bending it, so the line "always shows where you go if you hold your inputs". Adding speed changes a field path, because the bend per unit length is acceleration over speed squared. Running the hull's whole flight (steering, engine spool, momentum fade, field substeps) at `ftMul` × the clock (`kdt` in `stepFly`) keeps the curve and only reparametrises time. The race clock, the pair's life and the squeeze stay on real time. Measured: a looping heading flown with no input at boost 1 and boost 3 stays 4.5 u and 3.6 u from the drawn loop, and the boosted run is 2.9× quicker. Outside the mode the warp is 1, and the dipole scorecard stays byte-identical.
+- Do instead: when a reward must not change what a prediction shows, scale the time the prediction is parametrised by, not a state the prediction reads. Then prove it with the same heading flown at both settings against the drawn path.
+- Evidence: `stepFly` (`inField`, `warp`, `kdt`); `stepFieldFlight(kdt, dt)`; README round 15 "Checked".
+- Promoted: no
 
 ---
 

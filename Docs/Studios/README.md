@@ -34,14 +34,22 @@ Everything in it is **lab-only**: the game has no such mode, and every `ft*` row
   annihilates. A new press replaces it.
 - **The line** is your path on your current inputs (throttle, the steering you hold × `ftSteer`), run with the flight's
   own step from the hull and drawn from `ftNose` ahead of the nose, for `ftLength` u. It is drawn on the HUD after the
-  lens, so the black hole does not bend or double it. Colours: cyan while open, and **lime** in two cases:
+  lens, so the black hole does not bend or double it. Colours: blue-grey while open, and **lime** in two cases:
   - it comes back within `ftMargin` of itself at least `ftMinLoop` u further on;
   - it goes **through the wormhole**: heading into the black hole, the path follows you out of the white hole the way
     the flight carries you (Portal tick on). It is point-reflected, keeps the gravity speed it had before the dive, and
     is drawn with a ring where you go in and a double ring where you come out.
 
-  While the line is lime the engine runs at `ftBoost` × (3). The boost arrives at `ftRise` /s and fades over `ftFade` s
-  once the line stops being lime.
+  While the line is lime you travel down it at `ftBoost` × (3). The boost arrives at `ftRise` /s and fades over `ftFade`
+  s once the line stops being lime.
+- **The boost moves you along the path; it does not change the path** (your direction, 2026-10-09). It is a time warp of
+  the hull's own flight: steering, engine spool, momentum fade and the field all run at `ftBoost` × the clock (`kdt` in
+  `stepFly`). So you reach each point of the drawn line sooner, and the line always shows where you go if you hold your
+  inputs. The race clock, the pair's life and the squeeze stay on the real clock. This replaces `ftBoostInPath` and the
+  earlier engine × 3, which bent the path that earned it.
+- **The Stoat turns at `ftTurnScale` × its shipped pitch and yaw in this mode** (0.4, so 48°/s against the prefab's
+  120°/s). A boosting circle now takes a big input, the pair does more of the turning, and the line moves less with
+  the stick. Roll is unchanged.
 - **Scan headings** (Field tab): the share of headings within ±60° of the black hole whose path closes, by squeeze and
   distance, with three controls that must read 0%. **Score the field** races the field against the dipole and against
   no sling, and opens the scorecard window.
@@ -50,8 +58,8 @@ Everything in it is **lab-only**: the game has no such mode, and every `ft*` row
 
 | Row | Default | Why |
 |---|---|---|
-| `ftBoostInPath` | 0: the path is flown at the engine speed | At 1 (the literal reading) the boost straightens the loop that earned it within about 2 frames. Lime then flickers: 3.8% of the race lime against 14%, with the most loop onsets per minute (37.8). |
-| `ftHole` | 1: a pass through the wormhole is lime | **Your decision applied** (2026-10-09): "heading into an attractor should launch you out the repulsor … boost you through it very quickly with a lime path". Flown straight at the black hole from 140–210 u, the line is lime for the whole approach, and you are through in 0.68 s (full squeeze) to 1.18 s (light squeeze) at a top speed of 242–355 u/s. You come out just outside the white hole's horizon. |
+| `ftTurnScale` | 0.4 × the shipped pitch & yaw | **Your direction applied.** With the held steering in the path and no pair, the share of full turn rate that closes a circle inside the 600 u path rises from 30% to 75%. On the dual-stick mix that is both sticks about 84% over (sum 1.68 of 2), against one stick (1.02) before. The far end of the line swings 129 u for a 5% change of turn rate, against 314 u at full rate. |
+| `ftHole` | 1: a pass through the wormhole is lime | **Your decision applied** (2026-10-09): "heading into an attractor should launch you out the repulsor … boost you through it very quickly with a lime path". Flown straight at the black hole from 140–210 u, the line is lime for the whole approach, and you are through in 0.40 s (full squeeze, from 116 u) to 1.10 s (light squeeze, from 208 u). You come out just outside the white hole's horizon. |
 | `ftGrip` | 0.5 /s | At 2 (the dipole's grip) a full squeeze swallows every heading from 300 u (0 loops). At 0 (pure gravity) a pass from far away loops only at the edge of capture. At 0.5 every squeeze has a looping band. |
 | `ftSteer` | 1: the held steering is in the path | As written. See **Decision needed**. |
 
@@ -71,21 +79,25 @@ alone 0%, the pair beyond the path's reach (920 u) 0%. So the request holds:
   close in.
 
 **Field scorecard** (Score the field; skilled AI at squeezes 0.5 and 1, rookie = sloppiness 0.8 on three seeds, course
-seed 7, intensity 2; 19.3 s headless). The AI only lays a pair on the side of the turn and flies for the ring. It never
-hunts for a loop or aims for the black hole.
+seed 7, intensity 2; 19.1 s headless). The AI only lays a pair on the side of the turn and flies for the ring. It never
+hunts for a loop, aims for the black hole, or uses the pair to turn.
 
 | | circuit 2 laps | hairpins 2 laps | avg speed | top | time lime | lime onsets / min | rookie |
 |---|---|---|---|---|---|---|---|
 | No sling | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
 | Dipole · Balanced | 1:44.3 | 1:50.7 | 81 | 160 | 0% | 0 | 1:38.4 |
-| Field · steering only (no pair) | 1:48.2 | 1:06.8 | 64 | 155 | 8% | 11.6 | — |
-| Field · steering only, not in path (control) | 2:06.7 | 1:22.1 | 54 | 60 | 0% | 0 | — |
-| **Field · pairs** | **1:28.3** | **1:02.1** | 80 | 303 | 18% | 18.7 | **1:37.8** |
-| Field · pairs, steering not in path | 1:39.8 | 1:19.8 | 71 | 347 | 6% | 3.3 | 1:55.7 |
-| Field · pairs, path at the boosted speed | 1:41.6 | 1:11.4 | 68 | 321 | 4% | 39.0 | 1:49.4 |
+| Field · steering only (no pair) | 1:55.6 | 1:16.7 | 60 | 130 | 3% | 8.7 | — |
+| Field · steering only, not in path (control) | 2:14.7 | 1:33.6 | 51 | 60 | 0% | 0 | — |
+| **Field · pairs** | 1:45.7 | 1:10.4 | 118 | 828 | 14% | 18.5 | 2:00.3 |
+| Field · pairs, steering not in path | 2:17.6 | 1:19.2 | 95 | 864 | 11% | 7.2 | 2:17.7 |
+| Field · pairs, full pitch & yaw | **1:21.3** | **0:54.8** | 96 | 875 | 13% | 21.8 | **1:33.9** |
 
-The control row equals No sling to the millisecond, as it must: no pair and no steering in the path, so nothing can
-turn lime.
+- **The control row reads 0% lime, as it must.** No pair and no steering in the path, so nothing can turn lime. It is
+  slower than No sling (2:14.7 against 2:06.7) only because the field mode turns at 0.4 ×.
+- **Top speeds of 830–875 u/s** are the warp at work in an orbit: 3 × (cruise + up to 240 u/s of gravity speed).
+- **Found: the reduced turn costs the AI 24 s on the circuit** (1:45.7 against 1:21.3 at full pitch & yaw). This AI
+  steers for the ring with the stick alone and lays pairs only for speed. A pilot that turns with the pair, which is
+  what this change asks of the Stoat, is the next AI to build before these times mean much.
 
 **Decision needed (designer).**
 
@@ -93,12 +105,10 @@ turn lime.
    own circle, about 180 u round at cruise. That is shorter than the 600 u path, so the line is lime and you fly at 3×.
    Measured: a held full yaw for 5 s was lime 100% of the time at 179 u/s with `ftSteer` 1 or 0.5, and 0% at 60 u/s with
    `ftSteer` 0. The "steering only" row above beats the dipole on the hairpins without ever laying a pair. Options:
-   take steering out of the path (`ftSteer` 0; the field rows then lose most of their lime: 4% against 14%), shorten
-   the path so only tight loops close (`ftLength`; at cruise a full-stick circle closes below about 180 u), or keep it
-   as a skill.
-2. **Is the path flown at the boosted speed?** (`ftBoostInPath`; the literal reading flickers, numbers above.)
-
-The wormhole question (`ftHole`) is decided: through the wormhole is lime.
+   take steering out of the path (`ftSteer` 0), shorten the path so only tight loops close (`ftLength`), or keep it as
+   a skill. Round 15's reduced turn (`ftTurnScale` 0.4) already moved it from one stick to both sticks about 84% over.
+Decided: through the wormhole is lime (`ftHole`), and the boost moves you along the path without changing it (the
+`ftBoostInPath` question is gone).
 
 **Checked** (headless Chromium, SwiftShader):
 
@@ -122,8 +132,13 @@ The wormhole question (`ftHole`) is decided: through the wormhole is lime.
   - the path ignored the engine still spooling up;
   - it was started 8 u ahead instead of drawn from 8 u ahead;
   - it checked the horizon only every 3 u, so a 3 u horizon slipped between two points.
+- **The boost leaves the path alone.** Run up with no boost, set the hull on the nearest looping heading, then fly it
+  with no input twice, at `ftBoost` 1 and at 3. Both trace the drawn loop: 4.5 u and 3.6 u from it at worst. The boosted
+  run covers the same 234 u in 1.22 s against 3.53 s (2.9×). On a through-the-wormhole heading the two runs stay 7.4 u
+  and 5.4 u from the line, and the boosted one is 2.75 s faster.
+- **The dipole scorecard is byte-identical** after the time warp went in (it is 1 outside the field mode).
 - **Through the wormhole.** For 3 squeezes, aim at the black hole and fly with no input. The line is lime 100% of the
-  approach, the flight jumps to the white hole within 0.68–1.18 s, and it comes out 2.2–6.3 u from the white hole's
+  approach, the flight jumps to the white hole within 0.40–1.10 s, and it comes out 2.2–6.3 u from the white hole's
   centre, against horizons of 2.1–6 u. The drawn line jumps there too.
 - All 16 Field-tab sliders have an illustrated tooltip, and none of the 32 previews is blank. There are no console
   errors.
