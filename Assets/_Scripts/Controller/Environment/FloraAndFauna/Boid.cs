@@ -76,6 +76,21 @@ namespace CosmicShore.Gameplay
                 forager = tuning.Forager == FaunaVariantTuning.TriState.On;
         }
 
+        /// <summary>
+        /// The genome's expression on a boid (Docs/EVOLUTION.md §2): pace scales the speed band, reach the graze
+        /// radius, cohesion the flock radius. Runs once, at lineage bind, AFTER the variant tuning has set the
+        /// authored numbers - so a gene of 0 leaves every one of them exactly as the element authored it. The base
+        /// has already scaled the stomach's upkeep (the cost of pace and reach).
+        /// </summary>
+        protected override void ApplyPhenotype(in LifeformPhenotype p)
+        {
+            base.ApplyPhenotype(p);
+            minSpeed *= p.Pace;
+            maxSpeed = Mathf.Max(maxSpeed * p.Pace, minSpeed);
+            trailBlockInteractionRadius *= p.Reach;
+            cohesionRadius *= p.Cohesion;
+        }
+
         public bool isKilled = false;
         bool isTraveling = false;
         bool isAttached = false;

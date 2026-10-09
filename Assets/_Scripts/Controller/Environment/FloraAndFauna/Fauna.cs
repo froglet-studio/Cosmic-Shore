@@ -247,7 +247,10 @@ namespace CosmicShore.Gameplay
         {
             float cap = stomachCapacity > 0f ? stomachCapacity : CellPhaseThresholds.NominalPrismVolume;
             _stomach = FaunaStomach.FromStarvationClock(starvationSeconds, cap);
-            _stomach.Fill(Time.time);   // born fed: the clock started at birth
+            // Born fed (the clock started at birth) - or, for an offspring whose parent leans r on the Fecundity
+            // locus, born PART fed (Docs/EVOLUTION.md §2). A provision of 1 is the shipped rule exactly.
+            if (_birthProvision < 1f) _stomach.FillFraction(Time.time, _birthProvision);
+            else _stomach.Fill(Time.time);
             _stomachLive = true;
         }
 
@@ -314,10 +317,33 @@ namespace CosmicShore.Gameplay
         /// it, which is the half of the identity that element alone does not name.</summary>
         public FaunaVariantTuning VariantTuningForReplication => _variantPick?.Tuning;
 
+        /// <summary>This individual's genome packed for the spawn payload (<see cref="LifeformGenome.Pack"/>);
+        /// 0 is the founder genome every creature carries while its biome's evolution is off.</summary>
+        public uint PackedGenomeForReplication => _variantPick?.Genome.Pack() ?? 0u;
+
         // This individual's rolled variant (element + the block expressing it). Passed to
         // offspring so a lineage breeds true instead of re-rolling per birth.
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
+
+        // What this individual's genome DOES to it (Docs/EVOLUTION.md §2), expressed once at lineage bind. Neutral
+        // (every multiplier 1) while the biome's evolution is off, so nothing below changes a shipped number.
+        LifeformPhenotype _phenotype = LifeformPhenotype.Neutral;
+        // This individual's row in the host cell's EvolutionLedger (0 = not recorded: evolution off, a puppet, or a
+        // creature with no lineage), and the row of the parent that bore it (0 = a founder).
+        uint _ledgerId, _parentLedgerId;
+        // Fraction of a full stomach this creature is born with: 1 (born full, the shipped rule) unless its parent
+        // leans r on the Fecundity locus. Set by the parent BEFORE Initialize; read by StartStomach.
+        float _birthProvision = 1f;
+
+        /// <summary>This individual's expressed phenotype (Neutral while its biome's evolution is off).</summary>
+        public LifeformPhenotype Phenotype => _phenotype;
+
+        /// <summary>This individual's genome - the founder value before <see cref="AssignLineage"/> has run.</summary>
+        public LifeformGenome Genome => _variantPick?.Genome ?? LifeformGenome.Founder;
+
+        /// <summary>This individual's row in its cell's <see cref="EvolutionLedger"/>, 0 when unrecorded.</summary>
+        public uint LedgerId => _ledgerId;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
 
@@ -385,12 +411,24 @@ namespace CosmicShore.Gameplay
                 if (HasBand) Goal = _goal;
 
                 var pick = config.RollVariant(inherit);
+                // The GENOME rides the same pick (Docs/EVOLUTION.md). A seeder spawn - no inherit - rolls its
+                // founder genes here; an OFFSPRING arrives with its parent's already-mutated genome inside
+                // `inherit` (SpawnOffspring), a replicated puppet with the wire's, and a worm split with its
+                // other half's. None of those three is re-rolled: the only place a genome is ever rolled is a
+                // founder, and the only place it ever changes is a birth.
+                if (!inherit.HasValue && host) pick = pick.WithGenome(host.GenomeForFounder());
                 _variantPick = pick;
 
                 if (pick.Element != Element.None)
                     ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
+
+                // The genome's expression comes AFTER the element's: the variant block sets the authored numbers
+                // and the phenotype scales them, so a gene of 0 is the element exactly. Neutral (a no-op) while
+                // the biome's evolution is off.
+                _phenotype = GenomeExpression.Express(pick.Genome, host ? host.Evolution : null);
+                ApplyPhenotype(_phenotype);
 
                 // RE-SIZE THE HEART LAST, and unconditionally. This is load-bearing and it is
                 // easy to delete by accident, because from here it looks redundant with
@@ -415,7 +453,56 @@ namespace CosmicShore.Gameplay
                 // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
                 // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
                 ApplyHeartSize(_heartWorldScale);
+
+                RecordInLedger(host, config, pick.Genome);
             }
+        }
+
+        /// <summary>
+        /// The genome's expression on every fauna (Docs/EVOLUTION.md §2): the metabolic COST of its pace and reach,
+        /// as a faster-draining stomach - the authored starvation clock divided by the upkeep multiplier. Subclasses
+        /// layer the motion numbers on top (<see cref="Boid"/>, <see cref="LightFauna"/>). Runs once at lineage
+        /// bind, after <see cref="ApplyVariantTuning"/>; with evolution off the phenotype is Neutral and this
+        /// changes nothing.
+        /// </summary>
+        protected virtual void ApplyPhenotype(in LifeformPhenotype p)
+        {
+            if (p.Upkeep == 1f) return;
+            starvationSeconds = GenomeExpression.StarvationSeconds(starvationSeconds, p);
+            if (_stomachLive) StartStomach();   // re-derive the upkeep (spawn-time: nothing has been eaten yet)
+        }
+
+        /// <summary>
+        /// Files this individual in the host cell's <see cref="EvolutionLedger"/>: a birth under its parent's row
+        /// when the parent set one, a founder otherwise. Only the ONE simulation records (a puppet's lineage is the
+        /// server's decision, already recorded there), and only while the biome's evolution is on.
+        /// </summary>
+        void RecordInLedger(Cell host, FaunaConfigurationSO config, in LifeformGenome genome)
+        {
+            if (_ledgerId != 0 || !host || !config || !IsSimAuthority || !host.EvolutionEnabled) return;
+            _ledgerId = _parentLedgerId != 0
+                ? host.RecordLifeformBirth(config.name, _parentLedgerId, genome)
+                : host.RecordLifeformFounder(config.name, genome);
+        }
+
+        /// <summary>
+        /// Closes this individual's ledger row with the cause the economy chose. Read off the state the death path
+        /// already stamps - the style, the prey flag, the killer name - so no caller has to name a cause.
+        /// </summary>
+        void RecordDeathInLedger(string killerName)
+        {
+            if (_ledgerId == 0) return;
+            uint id = _ledgerId;
+            _ledgerId = 0;
+            if (!hostCell || !IsSimAuthority) return;
+
+            LifeformDeathCause cause;
+            if (_deathStyle == LifeformDeathStyle.Jousted) cause = LifeformDeathCause.Joust;
+            else if (_consumedAsPrey) cause = LifeformDeathCause.Predation;
+            else if (killerName == StarvationKiller) cause = LifeformDeathCause.Starvation;
+            else if (_diedFromBodyLoss || !string.IsNullOrEmpty(killerName)) cause = LifeformDeathCause.Vessel;
+            else cause = LifeformDeathCause.Other;
+            hostCell.RecordLifeformDeath(id, cause);
         }
 
         /// <summary>
@@ -446,8 +533,10 @@ namespace CosmicShore.Gameplay
             // The cap is the CELL's, not the config's: a biome that scales its population
             // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the food web would be working to two different ceilings.
+            // The Fecundity locus divides the authored feeds-per-birth (Docs/EVOLUTION.md §2); a neutral
+            // phenotype returns the authored count exactly.
             if (!FaunaReproductionRules.ShouldBirth(
-                    _feedsSinceBirth, cfg.FeedsPerOffspring,
+                    _feedsSinceBirth, GenomeExpression.FeedsPerOffspring(cfg.FeedsPerOffspring, _phenotype),
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
                     host.GetLiveFaunaCount(cfg), host.ResolveFaunaCap(cfg)))
                 return;
@@ -476,11 +565,17 @@ namespace CosmicShore.Gameplay
             // and starts behavior; AssignLineage registers the species count and
             // passes heredity so the child can reproduce in turn. Predation
             // immunity (stamped in Awake) gives it time to disperse.
+            // Heredity (Docs/EVOLUTION.md): the child's pick is this parent's - its element and its
+            // genome - with the genome MUTATED on the way by the biome's settings (returned verbatim
+            // while evolution is off), so a lineage breeds true in element and drifts in its genes.
+            // In-world level-ups (the Shepherd joust) are NOT inherited: acquired growth is not
+            // heritable. The child is born as full as its parent's Fecundity lean provisions it (1 =
+            // born full, the shipped rule), and its ledger row hangs off this parent's.
+            var childPick = host.OffspringPick(_variantPick);
+            child._parentLedgerId = _ledgerId;
+            child._birthProvision = _phenotype.Provision;
             child.Initialize(host);
-            // Heredity: the child inherits this parent's variant pick - its element and the
-            // level it hatched at - rather than rolling a new identity. In-world level-ups
-            // (the Shepherd joust) are NOT inherited: acquired growth is not heritable.
-            child.AssignLineage(host, cfg, _variantPick);
+            child.AssignLineage(host, cfg, childPick);
             host.RegisterSpawnedObject(child.gameObject);
             // AFTER AssignLineage: the lineage bind is what settles this child's element, and
             // the spawn payload carries that identity to every peer.
@@ -489,6 +584,13 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnDestroy()
         {
+            // A creature destroyed WITHOUT dying (a cell reset or swap, a manager pulling the husk, a mode ending)
+            // leaves the ledger's living set as a Teardown - a bookkeeping exit the evidence never reads as
+            // selection. Skipped during scene unload, where the cell's own ledger is going too.
+            if (_ledgerId != 0 && hostCell && gameObject.scene.isLoaded)
+                hostCell.RecordLifeformDeath(_ledgerId, LifeformDeathCause.Teardown);
+            _ledgerId = 0;
+
             if (lineageRegistered && hostCell)
                 hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
@@ -952,12 +1054,16 @@ namespace CosmicShore.Gameplay
         /// takes exactly the code a server-side offspring takes; nothing is re-rolled.
         /// </summary>
         public void ApplyReplicatedIdentity(Cell host, FaunaConfigurationSO config,
-                                            FaunaConfigurationSO paletteSibling, Element element)
+                                            FaunaConfigurationSO paletteSibling, Element element,
+                                            uint packedGenome = 0u)
         {
             if (config)
             {
                 var tuning = paletteSibling ? paletteSibling.Variant : config.Variant;
-                AssignLineage(host, config, new LifeformVariantPick<FaunaVariantTuning>(element, tuning));
+                // The genome is the server's roll, carried on the wire; passing it as the inherit pick is what
+                // keeps AssignLineage from rolling a founder genome of its own on this peer.
+                AssignLineage(host, config, new LifeformVariantPick<FaunaVariantTuning>(
+                    element, tuning, LifeformGenome.Unpack(packedGenome)));
                 return;
             }
 
@@ -1108,6 +1214,7 @@ namespace CosmicShore.Gameplay
             else
                 StashHeart();
 
+            RecordDeathInLedger(killerName);
             ReportKill(killerName);
             OnDeath(killerName);
         }

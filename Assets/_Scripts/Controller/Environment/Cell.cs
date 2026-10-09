@@ -1400,6 +1400,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            ResetEvolution();
+
             if (_volumeSumPending)
             {
                 _volumeSumHandle.Complete();
@@ -1452,6 +1454,7 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            ResetEvolution();
             // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
             // outlives any individual plant by design - which means only the cell can retire it.
             // Left behind, the next world grown here inherits the dead one's sites and plants
@@ -1529,6 +1532,134 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<FaunaConfigurationSO, int> liveFaunaCounts = new();
         readonly List<Fauna> liveFauna = new();
+
+        // ---------------------------------------------------------------------
+        //  Evolution (Docs/EVOLUTION.md) - the cell is the one object every
+        //  producer already holds, so it is where a biome's heredity lives:
+        //  the random stream a founder's genes and a child's mutation draw from,
+        //  and the ledger that records what the economy then did with them.
+        //  Every member below is inert while the biome's switch is off.
+        // ---------------------------------------------------------------------
+
+        EvolutionLedger _evolutionLedger;
+        GenomeRng _evolutionRng;
+        Coroutine _evolutionCensus;
+
+        /// <summary>This biome's evolution knobs (null before a config is bound).</summary>
+        public EvolutionSettings Evolution => cellConfigData ? cellConfigData.Evolution : null;
+
+        /// <summary>True when this biome authors heredity on - the gate on every genome operation below.</summary>
+        public bool EvolutionEnabled => Evolution is { Enabled: true };
+
+        /// <summary>
+        /// This cell's trait ledger: lineages, births, deaths by cause and the census rows the Evolution Monitor
+        /// draws. Created on first use; empty (never null) in a biome with evolution off.
+        /// </summary>
+        public EvolutionLedger EvolutionLedger => _evolutionLedger ??= new EvolutionLedger();
+
+        /// <summary>
+        /// The stream every founder roll and every mutation in this cell draws from. Seeded from the cell's ID and
+        /// the session's UnityEngine.Random stream, so a deterministic session (a fixed Random.InitState) replays
+        /// the same lineages. Only the ONE simulation draws from it; peers receive genomes on the wire.
+        /// </summary>
+        public IGenomeRng EvolutionRng =>
+            _evolutionRng ??= new GenomeRng(unchecked((uint)(ID * 0x9E3779B1) ^ (uint)Random.Range(int.MinValue, int.MaxValue)));
+
+        /// <summary>A founder's genome (a lifeform the SEEDER spawns): the authored species, spread by the biome's
+        /// <see cref="EvolutionSettings.FounderSpread"/>. The founder value exactly while evolution is off.</summary>
+        public LifeformGenome GenomeForFounder() =>
+            EvolutionEnabled ? GenomeMutation.Founder(Evolution, EvolutionRng) : LifeformGenome.Founder;
+
+        /// <summary>A child's genome from its parent's: mutated by the biome's rate and sigma; the parent's exactly
+        /// while evolution is off.</summary>
+        public LifeformGenome GenomeForOffspring(in LifeformGenome parent) =>
+            EvolutionEnabled ? GenomeMutation.Mutate(parent, Evolution, EvolutionRng) : parent;
+
+        /// <summary>
+        /// A parent's variant pick as its offspring inherits it: the same element and tuning, the genome mutated
+        /// (<see cref="GenomeForOffspring"/>). Null stays null (a lifeform with no lineage has no pick to pass).
+        /// The one place a lineage's genome changes, for fauna and flora alike.
+        /// </summary>
+        public LifeformVariantPick<T>? OffspringPick<T>(LifeformVariantPick<T>? parent) where T : class =>
+            parent.HasValue ? parent.Value.WithGenome(GenomeForOffspring(parent.Value.Genome)) : parent;
+
+        /// <summary>Files a seeder-spawned individual in the ledger. Returns its row id, 0 when evolution is off.</summary>
+        public uint RecordLifeformFounder(string species, in LifeformGenome genome)
+        {
+            if (!EvolutionEnabled) return 0;
+            EnsureEvolutionCensus();
+            return EvolutionLedger.RecordFounder(species, genome, Time.time);
+        }
+
+        /// <summary>Files a birth under its parent's row. Returns the child's row id, 0 when evolution is off.</summary>
+        public uint RecordLifeformBirth(string species, uint parentId, in LifeformGenome genome)
+        {
+            if (!EvolutionEnabled) return 0;
+            EnsureEvolutionCensus();
+            return EvolutionLedger.RecordBirth(species, parentId, genome, Time.time);
+        }
+
+        /// <summary>Closes a row with the cause the economy chose (or Teardown for a bookkeeping exit).</summary>
+        public void RecordLifeformDeath(uint id, LifeformDeathCause cause)
+        {
+            if (id == 0 || _evolutionLedger == null) return;
+            _evolutionLedger.RecordDeath(id, cause, Time.time);
+        }
+
+        void EnsureEvolutionCensus()
+        {
+            if (_evolutionCensus == null && isActiveAndEnabled)
+                _evolutionCensus = StartCoroutine(EvolutionCensusLoop());
+        }
+
+        /// <summary>
+        /// The census: one trait snapshot per species every <see cref="EvolutionSettings.SnapshotIntervalSeconds"/>,
+        /// and one line per species on the Ecology channel (off by default) - a periodic fact about a population,
+        /// never a per-frame log. Starts with the first recorded lifeform, stops with the ledger.
+        /// </summary>
+        IEnumerator EvolutionCensusLoop()
+        {
+            while (true)
+            {
+                var settings = Evolution;
+                float wait = settings != null ? Mathf.Max(1f, settings.SnapshotIntervalSeconds) : 30f;
+                yield return new WaitForSeconds(wait);
+                if (_evolutionLedger == null) continue;
+
+                _evolutionLedger.MaxSnapshotsPerSpecies = settings != null ? settings.MaxSnapshotsPerSpecies : 2048;
+                _evolutionLedger.Snapshot(Time.time);
+
+                if (!CSDebug.IsVerbose(CSLogChannel.Ecology)) continue;
+                var species = _evolutionLedger.Species;
+                for (int i = 0; i < species.Count; i++)
+                {
+                    var rows = _evolutionLedger.SnapshotsOf(species[i]);
+                    if (rows.Count == 0) continue;
+                    var row = rows[rows.Count - 1];
+                    CSDebug.LogVerbose(CSLogChannel.Ecology,
+                        $"[Cell {ID}] evolution census {species[i]}: n={row.Population} " +
+                        $"gen={row.MeanGeneration:0.0}/{row.MaxGeneration} lineages={row.Lineages} " +
+                        $"tempo={row.Mean[0]:+0.00;-0.00}±{row.StdDev[0]:0.00} reach={row.Mean[1]:+0.00;-0.00}±{row.StdDev[1]:0.00} " +
+                        $"fecundity={row.Mean[2]:+0.00;-0.00}±{row.StdDev[2]:0.00} cohesion={row.Mean[3]:+0.00;-0.00}±{row.StdDev[3]:0.00} " +
+                        $"births={row.Births} starved={row.DeathsByCause[0]} eaten={row.DeathsByCause[1]} shot={row.DeathsByCause[2]}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// The next world grown here starts its own book: called from every registry reset - Initialize's fresh
+        /// pass, ResetCell, the swap's pre-drain and post-drain bookkeeping, OnDestroy - the same sites the colony
+        /// frontiers are retired from.
+        /// </summary>
+        void ResetEvolution()
+        {
+            if (_evolutionCensus != null)
+            {
+                StopCoroutine(_evolutionCensus);
+                _evolutionCensus = null;
+            }
+            _evolutionLedger?.Clear();
+        }
 
         /// <summary>Live population of the species defined by <paramref name="config"/> in this cell.</summary>
         public int GetLiveFaunaCount(FaunaConfigurationSO config) =>
@@ -1753,6 +1884,7 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            ResetEvolution();
             // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
             // outlives any individual plant by design - which means only the cell can retire it.
             // Left behind, the next world grown here inherits the dead one's sites and plants
@@ -2562,6 +2694,7 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            ResetEvolution();
             GyroidColonyFrontier.Clear(this);
             NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
@@ -2700,6 +2833,7 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            ResetEvolution();
             // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
             // outlives any individual plant by design - which means only the cell can retire it.
             // Left behind, the next world grown here inherits the dead one's sites and plants

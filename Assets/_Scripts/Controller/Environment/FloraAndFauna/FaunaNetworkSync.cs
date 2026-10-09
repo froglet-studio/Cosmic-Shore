@@ -63,6 +63,10 @@ namespace CosmicShore.Gameplay
             /// <summary>Index into that config's <c>ElementPalette</c>; -1 = the config's own Variant.</summary>
             public sbyte PaletteIndex;
             public byte Element;
+            /// <summary>The individual's genome, packed by <see cref="LifeformGenome.Pack"/> (one signed byte per
+            /// locus). 0 is the founder genome, which is what every creature carries while its biome's evolution
+            /// is off - so the payload grows by four bytes and the wire reads the same creature on every peer.</summary>
+            public uint Genome;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -70,11 +74,12 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref ConfigIndex);
                 serializer.SerializeValue(ref PaletteIndex);
                 serializer.SerializeValue(ref Element);
+                serializer.SerializeValue(ref Genome);
             }
 
             public bool Equals(FaunaIdentity other) =>
                 Domain == other.Domain && ConfigIndex == other.ConfigIndex &&
-                PaletteIndex == other.PaletteIndex && Element == other.Element;
+                PaletteIndex == other.PaletteIndex && Element == other.Element && Genome == other.Genome;
         }
 
         [SerializeField] Fauna fauna;
@@ -193,6 +198,7 @@ namespace CosmicShore.Gameplay
                 ConfigIndex = -1,
                 PaletteIndex = -1,
                 Element = (byte)fauna.Element,
+                Genome = fauna.PackedGenomeForReplication,
             };
 
             var cfg = fauna.SourceConfig;
@@ -388,7 +394,8 @@ namespace CosmicShore.Gameplay
             fauna.Initialize(host);
             fauna.ApplyReplicatedIdentity(host, ResolveConfig(host, identity),
                                           ResolvePaletteConfig(host, identity),
-                                          (Element)identity.Element);
+                                          (Element)identity.Element,
+                                          identity.Genome);
 
             // Joined mid-death: run the same local death path now (crystal + wither) so the husk
             // withers instead of popping out at the server's despawn.

@@ -796,7 +796,7 @@ namespace CosmicShore.Gameplay
             var child = CellLifeSpawnerBase.SpawnFlora(
                 host, cfg.FloraPrefab, excludedDomain: null, config: cfg,
                 spawnPosition: position, spawnUp: up, spawnRotation: rotation,
-                inherit: _variantPick, preInitialize: ConfigureOffspring, domainOverride: domain);
+                inherit: host.OffspringPick(_variantPick), preInitialize: ConfigureOffspring, domainOverride: domain);
 
             if (!child) return false;
             return true;

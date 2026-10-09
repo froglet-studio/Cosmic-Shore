@@ -93,6 +93,17 @@ namespace CosmicShore.Utility
         /// <summary>See the field's tooltip. Read by <c>Fauna.NotifyFed(float)</c>.</summary>
         public bool ConservedFaunaStomach => conservedFaunaStomach;
 
+        [Header("Evolution")]
+        [Tooltip("The heritable genome (Docs/EVOLUTION.md): OFF by default in every shipped biome, so nothing here " +
+                 "changes the ecology until a designer turns it on. ON = offspring inherit their parent's genome with " +
+                 "mutation, the genome scales pace / reach / fecundity / cohesion against their metabolic cost, and " +
+                 "the cell keeps a trait ledger (FrogletTools > Ecology > Evolution Monitor). Selection is never " +
+                 "scripted: the economy (starvation, predation, reproduction) decides who leaves descendants.")]
+        [SerializeField] EvolutionSettings evolution = new EvolutionSettings();
+
+        /// <summary>This biome's evolution knobs. Never null; <c>Enabled</c> is false unless authored on.</summary>
+        public EvolutionSettings Evolution => evolution ??= new EvolutionSettings();
+
         [Header("Phase Thresholds")]
         [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "
                + "The gap between Up and Down for each phase is the hysteresis band.")]

@@ -207,6 +207,11 @@ namespace CosmicShore.Gameplay
                 // and its element, and the element states everything - leaf, tempo, budget and
                 // the size of its heart (Docs/ECOSYSTEM.md §40).
                 var pick = config.RollVariant(inherit);
+                // The GENOME rides the same pick (Docs/EVOLUTION.md): a seeder planting rolls its founder genes
+                // here, an offspring arrives with its parent's mutated genome in `inherit`, a replicated slot
+                // with the wire's. A plant's genome is carried and inherited but not yet EXPRESSED - it is a
+                // neutral lineage marker until a plant trait with a real cost is chosen (Docs/EVOLUTION.md §8).
+                if (!inherit.HasValue) pick = pick.WithGenome(host.GenomeForFounder());
 
                 flora.ApplyElement(pick.Element);
                 if (pick.Tuning is { Enabled: true })
