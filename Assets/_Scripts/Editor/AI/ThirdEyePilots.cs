@@ -2,7 +2,9 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Editor.Froglet;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using UnityEditor;
 using UnityEngine;
 
 namespace CosmicShore.Editor.AI
@@ -189,14 +191,24 @@ namespace CosmicShore.Editor.AI
             return t;
         }
 
-        /// <summary>A domain's colour from the palette (Blue is the neutral sentinel).</summary>
+        const string GameColorSetPath = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset";
+        static SO_ColorSet s_gameColors;
+
+        /// <summary>
+        /// A domain's colour as the GAME shows it (the live <c>OriginalColorSetSO</c>'s signal colour, the
+        /// one the studios read through <c>studio-domains.js</c>), so a label matches the pilot's trail.
+        /// Game Ruby is magenta, not the editor palette's red. Falls back to the editor palette only if the
+        /// asset is missing.
+        /// </summary>
         public static Color DomainColor(ThirdEyePilot pilot)
         {
             if (pilot == null || !pilot.HasDomain) return FrogletEditorPalette.Muted;
+            if (!s_gameColors) s_gameColors = AssetDatabase.LoadAssetAtPath<SO_ColorSet>(GameColorSetPath);
+            if (s_gameColors) return s_gameColors.GetDomainSignalColor(pilot.Domain);
             return pilot.Domain switch
             {
                 Domains.Jade => FrogletEditorPalette.Jade,
-                Domains.Ruby => FrogletEditorPalette.Ruby,
+                Domains.Ruby => FrogletEditorPalette.Magenta,
                 Domains.Gold => FrogletEditorPalette.Gold,
                 _ => FrogletEditorPalette.Azure,
             };

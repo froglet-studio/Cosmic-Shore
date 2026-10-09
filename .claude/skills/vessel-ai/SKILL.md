@@ -171,6 +171,9 @@ below. Keep it a reader: no `GetOrAdd`, no writes, nothing per frame beyond read
 | Blue (`Azure`) | Platform autopilot seeking its objective |
 | Cyan ring | The target the AI is really after |
 
+Pilot labels and the info strip's stripe use the **game's** domain colour (`OriginalColorSetSO`'s signal colour,
+the same source as the studios' `studio-domains.js`): game Ruby is magenta, never the editor palette's red.
+
 ## 5. Traps
 
 - **The `AIPilot` getter adds a component** (§1.7). A reader that called it put autopilots on human ships.
