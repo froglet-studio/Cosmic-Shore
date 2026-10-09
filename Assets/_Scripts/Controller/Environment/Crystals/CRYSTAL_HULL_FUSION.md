@@ -495,5 +495,5 @@ INITIALISES collects the crystal. (b) is read off each prefab's `_nearFieldSkimm
 | Scarab | expected yes (runtime-solved), **not re-tested** | its procedural hull has no asset; the bake (on the hidden Sparrow model) always reads stale, and the runtime solves on the procedural body |
 | Termite, Falcon, Shrike | **no** | `_nearFieldSkimmer` is unset on all three, so no skimmer is ever initialised: crystals are collected with NO vessel - no fusion, and (pre-existing, not this branch) no score or element level. Their entries stay in the config for the day the skimmer is wired. |
 | Serpent | **no** | its only skimmer (`VacuumSkimmer`) is inactive, collider disabled, no impactor - it does not collect crystals at all (pre-existing) |
-| Butterfly | no entry | hull generated at runtime |
+| Butterfly | no entry | hull generated at runtime. Collects (generic capture) only since 2026-10-09: its one skimmer, the dust capsule, is off in Mass mode, so it took no elemental crystal until the always-on far-field crystal catcher landed (`BUTTERFLY.md §3.1a`) |
 

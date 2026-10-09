@@ -13,7 +13,7 @@
  *                                                                            // studio yet (the string says why)
  *     levelNote: 'What Easy / Medium / Hard mean here, and where the numbers come from.',
  *     onChange: (key, value, state) => { ... },                              // after every user change
- *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D22); state.rivalStyles
+ *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D23); state.rivalStyles
  *     sceneHost: element,   // optional: Course, Camera and Speed go here, the studio's Scene Config tab (D21);
  *                           // without it they stay in the panel
  *   });
@@ -151,7 +151,7 @@
     var seatBox = el('div', 'arp-seats'); seatBox.setAttribute('aria-label', 'AI rivals, each with its own level'); root.appendChild(seatBox);
     seats.forEach(function (seat, k) {
       var extra = null;
-      if (styles) {   // D22: the seat's play style, beside its level
+      if (styles) {   // D23: the seat's play style, beside its level
         extra = el('select', 'arp-seg'); extra.setAttribute('aria-label', 'AI ' + seat.name + ' play style');
         styles.forEach(function (n) { var o = el('option', null, n); o.value = n; extra.appendChild(o); });
         if (rivalsOff) { extra.disabled = true; extra.title = rivalsOff; }

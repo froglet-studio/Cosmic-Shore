@@ -116,6 +116,7 @@
   details.card > summary::-webkit-details-marker { display: none; }
   details.card > summary::after { content: "+"; color: var(--dim); }
   details.card[open] > summary::after { content: "–"; }
+  details.card.nested { margin: 8px 0 0; padding: 8px 10px; background: var(--panel-2, rgba(255,255,255,0.03)); }
   details.card > summary small { font-family: var(--font-body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); font-size: 0.78rem; }
   .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .stylebtn { text-align: left; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; font-family: var(--font-body); display: flex; flex-direction: column; gap: 2px; }
@@ -229,7 +230,6 @@
   .panebar { display: flex; justify-content: flex-end; gap: 6px; margin: -4px -2px -2px; }
   .panebar button, .fwin .fbar button { font: inherit; font-size: 0.75rem; color: var(--dim); background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; cursor: pointer; }
   .panebar button:hover, .fwin .fbar button:hover { color: var(--fg); border-color: var(--accent); }
-  .pane > details.card > summary { display: none; }
   .pane > .card, .fwin .pane > .card { border: 0; padding: 0; background: transparent; }
   .pane > .card + .card { border-top: 1px solid var(--line); padding-top: 8px; border-radius: 0; }
   .pane .lower-sec h2 { display: none; }
@@ -457,6 +457,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="ai_race_panel.js"></script>
+<script src="studio-ide.js"></script>
 <script>
 (function () {
   'use strict';
@@ -2322,7 +2323,7 @@
     return blendInto({}, b, w);
   }
 
-  // ================= AI rivals (/vessel-studio D20, D22) =================
+  // ================= AI rivals (/vessel-studio D20, D23) =================
   // Up to three more Stoats, each its own seat (Ruby, Gold, Blue) with its own level and play style. They fly the SAME
   // step as your hull: the rival block parks your hull's variables, loads a rival's, runs aiInput + stepFly, parks it
   // and loads yours back. Their pairs are real pairs in the one world: you can be carried through a rival's black hole.
@@ -4273,14 +4274,14 @@
   // ---- the universal AI race config panel (VesselStudio/ai_race_panel.js, /vessel-studio D17) ----
   // It drives the controls above (kept, hidden) so every existing path stays the one way in.
   // AI levels (AI_LEVELS): the Skim Race handicap (late notice, misjudged ring) plus the pair judgement (aiNoise).
-  // Each rival seat has its own level and play style (D20, D22).
+  // Each rival seat has its own level and play style (D20, D23).
   const CAM_OF = { Chase: 'chase', Follow: 'follow', Free: 'free' }, CAM_BACK = { chase: 'Chase', follow: 'Follow', free: 'Free' };
   const fire = (id, prop, v) => { const e = $(id); e[prop] = v; e.dispatchEvent(new Event('change')); };
   var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
     sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
     courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
     seats: SEATS.map((st) => ({ name: st.name, color: st.css })),
-    styles: STYLE_NAMES,   // each rival seat flies one of the play styles (D22)
+    styles: STYLE_NAMES,   // each rival seat flies one of the play styles (D23)
     value: { course: intensity, you: aiOn ? youLevel : 'You', rivals: seatLv, rivalStyles: seatStyle, camera: CAM_BACK[camMode], speed: simSpeed, thinking: aiThinking, autoRestart: aiRepeat },
     supports: { rivals: true, thinking: true, autoRestart: true },
     levelNote: 'Easy, Medium and Hard are the Skim Race levels (SkimRaceDifficulty.asset) flown by the Stoat: Hard is the skilled pilot; Medium notices each new ring 0.25 s late on average and misjudges 4.5% of rings, Easy 0.5 s and 9.9%. A misjudged ring is believed two ring-widths off to one side: the AI flies there, misses, and turns back. Lab-only on top: the pair judgement (squeeze and let-go sloppiness 0 / 0.4 / 0.8), since the game ships no Stoat AI. Each rival flies its seat\'s play style. Show AI thinking: green = flying for the ring, amber = not noticed yet, red = misjudged, violet = working the pair. C picks which pilot the camera follows.',
@@ -4524,11 +4525,12 @@
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
     // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['ai', 'AI Config', ['grp-ai']],
-      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-F', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
-      ['others', 'Others', ['grp-BH', 'grp-WH', 'grp-pair', 'grp-life', 'grp-lope', 'archive']]],
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F']], ['ai', 'AI Config', ['grp-ai']],
+      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
+      ['others', 'Others', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
+  const NESTED_IN = { F: ['grp-BH', 'grp-WH', 'grp-pair', 'grp-life'] };   // the user, 2026-10-09: black hole, white hole, pair life, birth & annihilation live inside Field trajectory
   const TAB = {};   // key -> { dock, title, btn, pane, win }
   let winZ = 60;
   function buildDocks() {
@@ -4542,6 +4544,8 @@
     const docks = { R: rail, B: document.createElement('div') };
     const els = { scoreWrap: sw };   // take every piece first: the rail is emptied below and some pieces live in it
     for (const d of ['R', 'B']) for (const [, , ids] of DOCK_TABS[d]) for (const id of ids) if (!els[id]) els[id] = $(id);
+    // The pair's own physics are subdivisions of the Field trajectory (Scene Config): each folds on its own (D22)
+    for (const id of NESTED_IN.F) { const el = $(id), host = els['grp-F']; if (!el || !host) continue; el.classList.add('nested'); if (window.VesselStudioIDE) VesselStudioIDE.collapsible(el, 'stoat-studio'); host.appendChild(el); }
     docks.B.className = 'dock'; docks.B.id = 'dockB'; docks.B.setAttribute('aria-label', 'Records');
     rail.classList.add('dock'); rail.id = 'dockR';
     for (const d of ['R', 'B']) {
@@ -4554,7 +4558,7 @@
         bar.innerHTML = '<button type="button" title="Open this tab in its own window">⧉ Pop out</button>';
         bar.firstChild.addEventListener('click', () => openWindow(key));
         pane.appendChild(bar);
-        for (const id of ids) { const el = els[id]; if (!el) continue; if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }
+        for (const id of ids) { const el = els[id]; if (!el) continue; if (window.VesselStudioIDE) VesselStudioIDE.collapsible(el, 'stoat-studio'); else if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }   // every section folds with - / + (D22)
         btn.addEventListener('click', () => { if (TAB[key].win) { raiseWindow(key); return; } selectTab(key); });
         tabs.appendChild(btn); panes.appendChild(pane);
         TAB[key] = { dock: d, title, btn, pane, panes, win: null };

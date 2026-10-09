@@ -80,7 +80,7 @@
         bar.innerHTML = '<button type="button" title="Open this tab in its own window">\u29c9 Pop out</button>';
         bar.firstChild.addEventListener('click', () => openWindow(key));
         pane.appendChild(bar);
-        for (const el of els) { if (!el) continue; if (el.tagName === 'DETAILS') el.open = true; pane.appendChild(el); }
+        for (const el of els) { if (!el) continue; collapsible(el, o.key); pane.appendChild(el); }
         btn.addEventListener('click', () => { if (TAB[key].win) { raise(key); return; } selectTab(key); });
         tabs.appendChild(btn); panes.appendChild(pane);
         TAB[key] = { dock: d, title, btn, pane, panes, win: null };
@@ -152,5 +152,47 @@
     return { openWindow, dockWindow, selectTab, state: st, tabs: TAB };
   }
 
-  window.VesselStudioIDE = { build };
+  // ---- every section in a tab folds: a - / + at its heading (the user, 2026-10-09; /vessel-studio D22) ----
+  // A <details> keeps its own <summary> as the heading; any other section folds on its first heading (h2-h4,
+  // or an element marked .vsc-head). Open by default; each section's state is remembered per studio and id.
+  const FOLD_CSS = [
+    'details.vsc > summary { display: flex !important; justify-content: space-between; align-items: baseline; gap: 8px; cursor: pointer; list-style: none; }',
+    'details.vsc > summary::-webkit-details-marker { display: none; }',
+    'details.vsc > summary::after { content: "\\2212"; font: 700 14px/1 ui-monospace, monospace; color: var(--muted, var(--dim, #8e95bf)); margin-left: auto; }',
+    'details.vsc:not([open]) > summary::after { content: "+"; }',
+    '.vsc-head { display: flex !important; align-items: center; gap: 8px; }',
+    '.vsc-btn { margin-left: auto; flex: none; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line, #262b47); border-radius: 5px; background: transparent; color: var(--muted, var(--dim, #8e95bf)); font: 700 14px/1 ui-monospace, monospace; cursor: pointer; }',
+    '.vsc-btn:hover { color: var(--fg, #e9ecff); border-color: var(--accent, #35e0b0); }',
+    '.vsc-closed > :not(.vsc-head) { display: none !important; }',
+  ].join('\n');
+  function foldStore(key) {
+    const k = (key || 'vessel-studio') + ':fold';
+    let m = {}; try { m = JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { m = {}; }
+    return {
+      get: (id) => !!(id && m[id]),
+      set: (id, closed) => { if (!id) return; if (closed) m[id] = 1; else delete m[id]; try { localStorage.setItem(k, JSON.stringify(m)); } catch (e) { /* storage blocked */ } },
+    };
+  }
+  const stores = {};
+  function collapsible(el, key) {
+    if (!el || el.dataset.vsc) return el;
+    if (!document.getElementById('vsc-css')) { const st = document.createElement('style'); st.id = 'vsc-css'; st.textContent = FOLD_CSS; (document.head || document.documentElement).appendChild(st); }
+    const store = stores[key] || (stores[key] = foldStore(key)), id = el.id;
+    el.dataset.vsc = '1';
+    if (el.tagName === 'DETAILS') {
+      el.classList.add('vsc'); el.open = !store.get(id);
+      el.addEventListener('toggle', () => store.set(id, !el.open));
+      return el;
+    }
+    const head = el.querySelector(':scope > h2, :scope > h3, :scope > h4, :scope > .vsc-head');
+    if (!head) return el;   // a section with no heading has nothing to fold on
+    head.classList.add('vsc-head');
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'vsc-btn';
+    const show = (closed) => { el.classList.toggle('vsc-closed', closed); btn.textContent = closed ? '+' : '\u2212'; btn.title = closed ? 'Expand' : 'Minimize'; btn.setAttribute('aria-expanded', String(!closed)); };
+    btn.addEventListener('click', (e) => { e.stopPropagation(); const closed = !el.classList.contains('vsc-closed'); show(closed); store.set(id, closed); });
+    head.appendChild(btn); show(store.get(id));
+    return el;
+  }
+
+  window.VesselStudioIDE = { build, collapsible };
 })();
