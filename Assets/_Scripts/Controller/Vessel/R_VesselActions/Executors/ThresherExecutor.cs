@@ -225,11 +225,13 @@ namespace CosmicShore.Gameplay
             _plantHeld = false;
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
+            ReleaseCamera();
             SetVisualsActive(false);
         }
 
         void OnDestroy()
         {
+            ReleaseCamera();
             _cts?.Dispose();
             _cts = null;
             DestroyVisuals();
@@ -294,6 +296,7 @@ namespace CosmicShore.Gameplay
             }
 
             UpdateVisuals();
+            UpdateCamera();
         }
 
         // ------------------------------------------------------------------ the ball
@@ -536,6 +539,133 @@ namespace CosmicShore.Gameplay
                 Time.fixedDeltaTime = baseFixedDelta;
                 s_timeScaleHitStopActive = false;
             }
+        }
+
+        // ------------------------------------------------------------------ camera
+
+        // The chase camera this hull is driving (null when it drives none), the distance it has
+        // eased it to, and the spectate vantage's frame while detached.
+        CustomCameraController _cam;
+        float _camDistance;
+        float _camWritten = float.NaN;   // the last distance this hull wrote (negative z)
+        bool _spectating;
+        Vector3 _spectateNormal, _spectateOutward, _spectateUp;
+        float _spectateRadius;
+
+        /// <summary>
+        /// The local pilot's camera, two jobs (<c>THRESHER.md</c> § Camera):
+        /// <list type="bullet">
+        /// <item><b>Keep the ball in frame.</b> The chase distance is pulled back as far as the
+        /// ball's gauge ring needs (<see cref="ThresherCameraFraming.RequiredDistance"/>), FAST, and
+        /// eased back toward the prefab's own distance SLOWLY — never nearer than it.</item>
+        /// <item><b>Spectate a fast spin.</b> Once a planted orbit circles faster than
+        /// <c>spectateSpinRate</c>, the camera blends to a still vantage over the orbit and watches
+        /// the ship spin rather than riding it; it re-attaches when the plant is released or the
+        /// spin falls back under the release fraction.</item>
+        /// </list>
+        /// Pose only, through <see cref="CustomCameraController.SetCameraDistance"/> and
+        /// <see cref="CustomCameraController.Spectate"/>; FOV belongs to the speed tunnel and is
+        /// only READ here. Remote replicas and AI hulls never touch a camera.
+        /// </summary>
+        void UpdateCamera()
+        {
+            if (!config || !config.CameraFraming || !_seeded || !IsLocalPilot()) { ReleaseCamera(); return; }
+
+            var cam = CameraManager.Instance != null
+                ? CameraManager.Instance.GetActiveController() as CustomCameraController
+                : null;
+            if (cam != _cam)
+            {
+                ReleaseCamera();
+                _cam = cam;
+                if (_cam) _camDistance = Mathf.Abs(_cam.GetCameraDistance());
+            }
+            if (!_cam || !_cam.Camera || _cam.PlacementAnchor.HasValue) return;
+
+            // Only while the camera is following THIS hull: a cinematic or end-of-match camera that
+            // has been pointed elsewhere is not ours to move.
+            Transform ship = _status.Transform;
+            Transform followed = _cam.FollowTarget;
+            if (!followed || (followed != ship && !followed.IsChildOf(ship))) { ReleaseCamera(); return; }
+
+            float dt = Time.unscaledDeltaTime;
+            float ringRadius = _settings.BallRadius * config.BallVisualScale * config.GaugeRadiusScale;
+            float halfFovV = 0.5f * _cam.Camera.fieldOfView * Mathf.Deg2Rad;
+            float halfFovH = Mathf.Atan(Mathf.Tan(halfFovV) * Mathf.Max(0.1f, _cam.Camera.aspect));
+
+            // Zoom. The prefab's distance is re-read every frame, so a settings change still owns it.
+            float neutral = Mathf.Abs(_cam.NeutralOffsetZ);
+            if (neutral <= 0f) neutral = _camDistance;
+            Vector3 ballLocal = ship.InverseTransformDirection(_solver.BallPosition - ship.position);
+            float need = ThresherCameraFraming.RequiredDistance(ballLocal, ringRadius, _cam.GetFollowOffset().y,
+                halfFovV, halfFovH, config.CameraFramingMargin, config.CameraMinAhead);
+            float target = Mathf.Clamp(need, neutral, Mathf.Max(neutral, config.CameraMaxDistance));
+            _camDistance = ThresherCameraFraming.Ease(_camDistance, target,
+                config.CameraZoomOutRate, config.CameraZoomInRate, dt);
+            _camWritten = -_camDistance;
+            _cam.SetCameraDistance(_camWritten);
+
+            // Spectate.
+            float spin = IsPivoting ? ThresherCameraFraming.SpinRate(_solver.LockSpeed, _solver.Length) : 0f;
+            if (!_spectating && IsPivoting && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate)
+                BeginSpectate(ship.position);
+            else if (_spectating && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction))
+                EndSpectate();
+
+            if (!_spectating) return;
+            Vector3 pivot = _solver.Pivot;
+            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ringRadius,
+                config.CameraZoomOutRate, config.CameraZoomInRate, dt);
+            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
+            _cam.Spectate = new CustomCameraController.SpectateView
+            {
+                Position = ThresherCameraFraming.SpectatePosition(pivot, _spectateNormal, _spectateOutward,
+                    _spectateRadius, Mathf.Min(halfFovV, halfFovH), config.SpectateTiltDegrees, config.CameraFramingMargin),
+                LookAt = pivot,
+                Up = _spectateUp,
+            };
+        }
+
+        /// <summary>Freeze the vantage's frame at the moment of detaching: the orbit's axis on the
+        /// camera's own side of the plane (so it never flips to watch from underneath), the side
+        /// the ship was on, and the screen's up = the way the camera was facing, laid into the
+        /// plane — the ship's heading stays "up" across the cut.</summary>
+        void BeginSpectate(Vector3 shipPosition)
+        {
+            Vector3 pivot = _solver.Pivot;
+            Vector3 outward = shipPosition - pivot;
+            Vector3 normal = Vector3.Cross(outward, _lastShipVelocity);
+            if (normal.sqrMagnitude < 1e-6f || outward.sqrMagnitude < 1e-6f) return;
+            normal.Normalize();
+            if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
+
+            Vector3 up = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            if (up.sqrMagnitude < 1e-6f) up = outward;
+
+            _spectateNormal = normal;
+            _spectateOutward = outward.normalized;
+            _spectateUp = up.normalized;
+            _spectateRadius = _solver.Length;
+            _spectating = true;
+        }
+
+        void EndSpectate()
+        {
+            if (_spectating && _cam) _cam.Spectate = null;
+            _spectating = false;
+        }
+
+        /// <summary>Hand the camera back: no vantage, and the prefab's own distance — unless
+        /// something else has written the distance since this hull last did (a vessel swap's
+        /// settings landing first), in which case that write stands.</summary>
+        void ReleaseCamera()
+        {
+            if (!_cam) { _cam = null; _spectating = false; _camWritten = float.NaN; return; }
+            EndSpectate();
+            float neutral = _cam.NeutralOffsetZ;
+            if (neutral < 0f && _cam.GetCameraDistance() == _camWritten) _cam.SetCameraDistance(neutral);
+            _cam = null;
+            _camWritten = float.NaN;
         }
 
         // ------------------------------------------------------------------ colours

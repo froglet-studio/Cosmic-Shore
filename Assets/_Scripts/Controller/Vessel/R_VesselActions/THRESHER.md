@@ -36,7 +36,7 @@ Left/Right Shift; one-thumb mouse: LMB/RMB. The triggers are read as press/relea
   so debris flies along the ball's path and shields behave exactly as for every other hull — a
   shielded prism pops on the first hit and dies on the next contact; a super-shield holds.
 - **The explosion** is the Grizzly's blast (`AOEGrizzlyExplosion.prefab`) spawned at the contact
-  through `ExplosionHelper`, 16 u diameter × the Charge scaling, `AffectSelfOverride` **on**
+  through `ExplosionHelper`, **45 u** diameter × the Charge scaling (×2 at full Charge), `AffectSelfOverride` **on**
   (all domains) unless Lit (then off — the fleet rule that domain-sparing lives in the EXPLOSION
   layer, never in `Prism.Damage`). At most one per `explosionMinInterval` (0.08 s), so a hot ball
   through a row makes a string of blasts rather than one per prism. Its container is knock-back only
@@ -92,8 +92,8 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 
 | Dial | Sandbox | Game | Meaning |
 |---|---|---|---|
-| `restLen` / `maxLen` | 120 / 340 | 22.1 / 62.6 u | chain reeled in / let out (× Space) |
-| `payOut` / `reelIn` | 520 / 1100 /s | 95.8 / 202.6 u/s | winch rates |
+| `restLen` / `maxLen` | 120 / 760 | 22.1 / 140.0 u | chain reeled in / let out (× Space, so 210 u at full Space) |
+| `payOut` / `reelIn` | 1000 / 1800 /s | 184.2 / 331.6 u/s | winch rates (full let-out 0.64 s, full reel 0.36 s) |
 | `reelSpinCap` | 1.6 | 1.6 | spin multiplier cap per change |
 | `ballDrag` / `ballMass` / `tug` | 0.35 / 0.4 / 0.2 | same | drag (1/s), mass (× Mass), ship's share of the yank |
 | `minShip` / `crack` | 0.6 / 0.6 | same | tug floor; crack share |
@@ -105,9 +105,10 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 | `lockSpin` / `lockMax` / `yank` | 220 /s² / 2.2 / 0.5 | 40.5 u/s² / 154 u/s / 0.5 | spin-up (× Time), cap (× Time), unlock yank |
 
 Measured feel (`Tools/Build/thresher_chain_harness`, 60 Hz, rest levels; peak ball speed × smash):
-steady turns reeled in 15/30/60/90/120 °/s → 0.62/0.74/0.94/1.09/1.21, let out → 0.66/0.89/1.27/1.55/0.39
-(at 120 °/s the turn circle, ~33 u, is tighter than the let-out chain and the ball falls slack).
-Wind up, turn at 120 °/s for T, snap back 0.1 s, release: T 0.3/0.5/0.8/1.2 s → 0.70/1.00/1.36/1.69.
+steady turns reeled in 15/30/60/90/120 °/s → 0.62/0.74/0.94/1.09/1.21, let out → 0.54/0.52/0.38/0.38/0.38
+(the 140 u chain is longer than the turn circle — 70/ω, 67 u at 60 °/s — so a let-out ball falls
+slack in a steady turn and only the reel cracks it).
+Wind up, turn at 120 °/s for T, snap back 0.1 s, release: T 0.3/0.5/0.8/1.2 s → 0.67/0.94/1.34/1.74.
 **The reel is the crack, not the snap** — the snap alone never reached smash in the grid swept.
 Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2.19 at 3 s.
 
@@ -128,7 +129,40 @@ Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2
   (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
   Charge card in the ball's colour and a **chain-out gauge** on the Space card that turns lime at
   READY. Petal bars are authored (transplanted from the Squirrel's variant).
-- **Camera**: `ThresherCameraSettingsSO` at `(0, 8, -55)` so the reeled-in ball is in front of the lens.
+- **Camera**: `ThresherCameraSettingsSO` at `(0, 8, -55)` so the reeled-in ball is in front of the
+  lens. Beyond that the executor drives the local pilot's camera (§5a).
+
+## 5a. Camera — the ball is always in frame, and a fast spin is watched, not ridden
+
+Local pilot only (`IsLocalPilot`: never a remote replica, never the autopilot); pose only — FOV is
+the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO` § Camera.
+
+- **Zoom to keep the ball in frame.** Every frame `ThresherCameraFraming.RequiredDistance` solves
+  (by bisection) the smallest chase distance at which the ball's gauge ring sits inside the view
+  shrunk by `cameraFramingMargin` 1.15 and at least `cameraMinAhead` 6 u in front of the lens, for
+  the camera as `CustomCameraController` actually poses it (behind and above, LOOKING AT the hull —
+  a level-camera closed form zoomed out on every pitch turn). The distance is clamped to [the
+  prefab's own 55 u, `cameraMaxDistance` 450 u] and eased **out at `cameraZoomOutRate` 12/s** (90%
+  in ~0.2 s) and **back in at `cameraZoomInRate` 0.7/s** (half-way in ~1 s), then written through
+  `SetCameraDistance`. Needed distances (harness): reeled in 41/30/13/57 u behind/abeam/ahead/
+  overhead — i.e. none; let out 164/163/15/294; at full Space 235/242/15/433.
+- **Spectate a fast spin.** Once a planted orbit circles at `spectateSpinRate` **1.8 rad/s
+  (~100 °/s)** or faster, the camera detaches: `CustomCameraController.Spectate` (a new, default-null
+  seam) blends over `spectateBlendSeconds` 0.6 s to a still vantage on the orbit's axis, tilted
+  `spectateTiltDegrees` 25° toward the side the ship was on, far enough that the whole orbit fits
+  the narrower FOV with margin, looking at the pivot; screen-up is the way the camera was facing,
+  laid into the orbit plane, so the ship's heading stays "up" across the cut. It watches the ship
+  spin. It re-attaches (blending back out) on releasing LT or when the spin falls under
+  `spectateReleaseFraction` 0.75 of the threshold. At the shipped dials planting reeled in at cruise
+  is already 3.2 rad/s (spectates at once); a fully let-out orbit at its cap is 1.1 rad/s (ridden),
+  1.9 at full Time (spectates).
+- **The camera seam** (`CustomCameraController.Spectate` / `SpectateBlendSeconds` /
+  `SpectateView`): applied as a BLEND over the settled follow pose, before shake and the portal
+  carry; the follow pose is kept separately while blended so the chase smoothing never chases the
+  vantage. Null (every other vessel, always) is a no-op: the blend stays 0 and no follow line runs
+  differently. Cleared on a follow-target change; a teleport cuts the blend.
+- **Hand-back**: `OnDisable` / `OnDestroy` / losing local pilot / disabling `cameraFraming` clear
+  the vantage and restore the prefab's distance.
 
 ## 6. Flight model hooks
 
@@ -164,7 +198,8 @@ frame of drift. Untested in MPPM.
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
 | `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 28 tests; offline runner + feel table |
+| `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null, §5a) |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 37 tests (solver + camera framing); offline runner + feel table |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -174,7 +209,12 @@ prefab, `DriftAudioController`, jets and tails.
 ## 9. Known weaknesses
 
 - A turn throws the ball outward, so hits land on the side away from the turn.
-- Circling with the chain out keeps the ball hot without much skill (1.27–1.55× smash at 60–90 °/s).
+- With the chain let out the ball falls slack in any steady turn (0.38–0.54× smash): only the reel
+  (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.
+- The chase camera can sit well back (up to ~240 u at full Space) whenever the chain is out and the
+  ball trails behind; the ball then sits low in the frame, between the lens and the hull.
+- The spectate vantage is frozen at the moment of detaching; tilting the orbit plane (a future
+  verb) would need it re-fitted.
 - READY underestimates during fast snaps (it projects the current spin through a full reel and
   ignores the snap crack).
 
@@ -196,10 +236,16 @@ prefab, `DriftAudioController`, jets and tails.
    slack and pops shields; Time — releasing a slow orbit still throws a red ball.
 7. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged.
 8. **MPPM two clients**: the guest sees the host's ball and chain; a host hit-stop does not freeze
-   the guest.
+   the guest, and the host's camera zoom/spectate never moves the guest's camera.
+9. **Camera**: let the chain out and swing it — the camera pulls back at once so the ball never
+   leaves the frame; reel in and it drifts back to its usual distance over a couple of seconds.
+   Plant reeled in — the camera lifts off to a still vantage over the orbit and you watch the ship
+   spin; release LT and it eases back behind the hull. Fly another vessel afterwards: its camera is
+   at its own distance and attached.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
-slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`.
+slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
+(when it detaches), then `cameraZoomInRate` (how lazily it comes home).
 
 ## Follow-ups
 

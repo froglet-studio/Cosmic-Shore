@@ -48,11 +48,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Chain length reeled fully in (sandbox units).")]
         [SerializeField] float restLen = 120f;
         [Tooltip("Chain length fully let out (sandbox units).")]
-        [SerializeField] float maxLen = 340f;
+        [SerializeField] float maxLen = 760f;
         [Tooltip("Let-out rate while the right trigger is held (sandbox units/s).")]
-        [SerializeField] float payOut = 520f;
+        [SerializeField] float payOut = 1000f;
         [Tooltip("Reel-in rate when the right trigger is up (sandbox units/s). Fast, because the reel IS the crack.")]
-        [SerializeField] float reelIn = 1100f;
+        [SerializeField] float reelIn = 1800f;
         [Tooltip("Cap on the spin multiplier per length change while reeling in (dimensionless).")]
         [SerializeField] float reelSpinCap = 1.6f;
 
@@ -622,6 +622,93 @@ namespace CosmicShore.Gameplay
             }
             Points[0] = hull;
             Points[n - 1] = ball;
+        }
+    }
+
+    /// <summary>
+    /// The camera arithmetic the Thresher needs, pure so it is tested rather than eyeballed: how
+    /// far back a chase camera must sit to keep the ball in frame, the asymmetric ease toward that
+    /// distance (out fast, back in slowly), and where to put a still camera that WATCHES a fast
+    /// planted orbit instead of riding it.
+    /// </summary>
+    public static class ThresherCameraFraming
+    {
+        /// <summary>
+        /// The smallest follow distance behind the hull that keeps a ball of radius
+        /// <paramref name="radius"/> at <paramref name="ballLocal"/> (in the HULL's frame: x right,
+        /// y up, z forward) inside the view. The camera is posed as <c>CustomCameraController</c>
+        /// poses it: at (0, <paramref name="height"/>, -d), LOOKING AT the hull (so it pitches down
+        /// by atan(height / d)), up = the hull's up. The ball must be at least
+        /// <paramref name="minAhead"/> in front of it and inside both half-angles shrunk by
+        /// <paramref name="margin"/>. Solved by bisection on <see cref="Frames"/> — the pitch makes
+        /// it non-linear in d, and a level-camera closed form zoomed out for a reeled-in ball
+        /// hanging low behind the hull, i.e. on every turn.
+        /// </summary>
+        public static float RequiredDistance(Vector3 ballLocal, float radius, float height,
+                                             float halfFovVerticalRad, float halfFovHorizontalRad,
+                                             float margin, float minAhead)
+        {
+            float tanV = Mathf.Max(0.05f, Mathf.Tan(halfFovVerticalRad));
+            float tanH = Mathf.Max(0.05f, Mathf.Tan(halfFovHorizontalRad));
+            float m = Mathf.Max(1f, margin);
+
+            float hi = 1f;
+            for (int i = 0; i < 24 && !Frames(ballLocal, radius, height, hi, tanV, tanH, m, minAhead); i++)
+                hi *= 2f;
+            float lo = 0f;
+            for (int i = 0; i < 24; i++)
+            {
+                float mid = 0.5f * (lo + hi);
+                if (Frames(ballLocal, radius, height, mid, tanV, tanH, m, minAhead)) hi = mid;
+                else lo = mid;
+            }
+            return hi;
+        }
+
+        /// <summary>Is the ball inside the margin-shrunk view of a chase camera
+        /// <paramref name="distance"/> behind the hull (see <see cref="RequiredDistance"/>)?</summary>
+        public static bool Frames(Vector3 ballLocal, float radius, float height, float distance,
+                                  float tanV, float tanH, float margin, float minAhead)
+        {
+            float len = Mathf.Sqrt(height * height + distance * distance);
+            if (len < 1e-4f) return false;
+            // Camera basis in the hull's frame: forward = (0, -h, d) / len, up = (0, d, h) / len.
+            float ry = ballLocal.y - height, rz = ballLocal.z + distance;
+            float depth = (-ry * height + rz * distance) / len;
+            float vertical = (ry * distance + rz * height) / len;
+            if (depth < minAhead + radius) return false;
+            return (Mathf.Abs(ballLocal.x) + radius) * margin <= tanH * depth &&
+                   (Mathf.Abs(vertical) + radius) * margin <= tanV * depth;
+        }
+
+        /// <summary>Exponential ease toward <paramref name="target"/> at <paramref name="outRate"/>
+        /// (1/s) when it is FARTHER than <paramref name="current"/> and <paramref name="inRate"/>
+        /// when it is nearer: zoom out as fast as the ability needs, come back gently.</summary>
+        public static float Ease(float current, float target, float outRate, float inRate, float dt)
+        {
+            float rate = target > current ? outRate : inRate;
+            return current + (target - current) * (1f - Mathf.Exp(-Mathf.Max(0f, rate) * Mathf.Max(0f, dt)));
+        }
+
+        /// <summary>Angular speed (rad/s) of a planted orbit.</summary>
+        public static float SpinRate(float orbitSpeed, float radius)
+            => radius > 1e-3f ? orbitSpeed / radius : 0f;
+
+        /// <summary>
+        /// A still vantage that frames a whole orbit of radius <paramref name="radius"/> round
+        /// <paramref name="pivot"/>: on the orbit plane's <paramref name="normal"/>, tilted by
+        /// <paramref name="tiltDegrees"/> toward <paramref name="outward"/> (a unit vector in the
+        /// plane), far enough that the circle fits the narrower half-angle with
+        /// <paramref name="margin"/> to spare.
+        /// </summary>
+        public static Vector3 SpectatePosition(Vector3 pivot, Vector3 normal, Vector3 outward, float radius,
+                                               float halfFovRad, float tiltDegrees, float margin)
+        {
+            float tan = Mathf.Max(0.05f, Mathf.Tan(halfFovRad));
+            float d = radius * Mathf.Max(1f, margin) / tan;
+            float a = tiltDegrees * Mathf.Deg2Rad;
+            Vector3 dir = normal.normalized * Mathf.Cos(a) + outward.normalized * Mathf.Sin(a);
+            return pivot + dir.normalized * d;
         }
     }
 }

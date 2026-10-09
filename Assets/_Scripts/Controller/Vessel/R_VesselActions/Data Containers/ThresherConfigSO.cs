@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
                  "domain (AffectSelfOverride false) - the fleet's domain-sparing-in-the-explosion-layer rule.")]
         [SerializeField] AOEExplosion[] smashExplosions;
         [Tooltip("Explosion DIAMETER at rest Charge (world units); x explosionSizeMultiplier.")]
-        [SerializeField, Min(0f)] float explosionDiameter = 16f;
+        [SerializeField, Min(0f)] float explosionDiameter = 45f;
         [Tooltip("At most one explosion per this many seconds, so a hot ball ploughing a row makes a " +
                  "string of blasts rather than one per prism.")]
         [SerializeField, Min(0f)] float explosionMinInterval = 0.08f;
@@ -83,6 +83,39 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lime flicker rate of the chain while READY (Hz). The lime is the palette's CTA colour.")]
         [SerializeField, Min(0f)] float readyFlickerHz = 14f;
 
+        [Header("Camera - keep the ball in frame (local pilot only)")]
+        [Tooltip("Pull the chase camera back whenever the ball would leave the frame, and ease it home after.")]
+        [SerializeField] bool cameraFraming = true;
+        [Tooltip("How fast the camera pulls BACK to keep the ball in frame (1/s, exponential). Fast: the " +
+                 "pilot should never lose sight of the ball.")]
+        [SerializeField, Min(0f)] float cameraZoomOutRate = 12f;
+        [Tooltip("How fast the camera eases back IN once the ball no longer needs the room (1/s, " +
+                 "exponential). Slow, so a reel-in does not yank the view.")]
+        [SerializeField, Min(0f)] float cameraZoomInRate = 0.7f;
+        [Tooltip("Framing margin: 1 = the ball's gauge ring just touches the frame edge; 1.15 keeps it " +
+                 "about 13% inside.")]
+        [SerializeField, Min(1f)] float cameraFramingMargin = 1.15f;
+        [Tooltip("The ball is kept at least this far in FRONT of the camera (world units), so a ball " +
+                 "trailing behind the hull pulls the camera back past it rather than through it.")]
+        [SerializeField, Min(0f)] float cameraMinAhead = 6f;
+        [Tooltip("The farthest the chase camera is ever pulled back (world units). The prefab's own " +
+                 "distance is always the near limit.")]
+        [SerializeField, Min(0f)] float cameraMaxDistance = 450f;
+
+        [Header("Camera - spectate a fast planted spin (local pilot only)")]
+        [Tooltip("Detach the camera and WATCH the planted orbit from a still vantage once the ship " +
+                 "circles the pivot at this rate or faster (radians/s; 1.8 is about 100 deg/s). Riding " +
+                 "a faster spin in a chase camera reads as dizzying.")]
+        [SerializeField, Min(0f)] float spectateSpinRate = 1.8f;
+        [Tooltip("Re-attach once the spin falls below this fraction of spectateSpinRate (or the plant " +
+                 "is released). Below 1 so a spin hovering at the threshold does not flap.")]
+        [SerializeField, Range(0f, 1f)] float spectateReleaseFraction = 0.75f;
+        [Tooltip("The vantage's tilt off straight-down-the-orbit-axis, leaning toward the side the ship " +
+                 "was on when it detached (degrees). 0 = a top-down plan view.")]
+        [SerializeField, Range(0f, 80f)] float spectateTiltDegrees = 25f;
+        [Tooltip("Seconds to ease into the vantage and back out to the chase camera.")]
+        [SerializeField, Min(0f)] float spectateBlendSeconds = 0.6f;
+
         [Header("Look")]
         [Tooltip("Rendered ball radius as a multiple of the physics radius.")]
         [SerializeField, Min(0.1f)] float ballVisualScale = 1.25f;
@@ -126,6 +159,16 @@ namespace CosmicShore.Gameplay
         public float ComboGraceSeconds => comboGraceSeconds;
         public float ReadyMargin => readyMargin;
         public float ReadyFlickerHz => readyFlickerHz;
+        public bool CameraFraming => cameraFraming;
+        public float CameraZoomOutRate => cameraZoomOutRate;
+        public float CameraZoomInRate => cameraZoomInRate;
+        public float CameraFramingMargin => cameraFramingMargin;
+        public float CameraMinAhead => cameraMinAhead;
+        public float CameraMaxDistance => cameraMaxDistance;
+        public float SpectateSpinRate => spectateSpinRate;
+        public float SpectateReleaseFraction => spectateReleaseFraction;
+        public float SpectateTiltDegrees => spectateTiltDegrees;
+        public float SpectateBlendSeconds => spectateBlendSeconds;
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
         public float ChainWidthFraction => chainWidthFraction;

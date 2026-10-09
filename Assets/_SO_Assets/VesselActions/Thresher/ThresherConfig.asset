@@ -16,9 +16,9 @@ MonoBehaviour:
     sandboxCruise: 380
     gameCruise: 70
     restLen: 120
-    maxLen: 340
-    payOut: 520
-    reelIn: 1100
+    maxLen: 760
+    payOut: 1000
+    reelIn: 1800
     reelSpinCap: 1.6
     ballDrag: 0.35
     ballMass: 0.4
@@ -73,7 +73,7 @@ MonoBehaviour:
     Floor: 0.5
   smashExplosions:
   - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
-  explosionDiameter: 16
+  explosionDiameter: 45
   explosionMinInterval: 0.08
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
@@ -90,6 +90,16 @@ MonoBehaviour:
   comboGraceSeconds: 0.4
   readyMargin: 1.05
   readyFlickerHz: 14
+  cameraFraming: 1
+  cameraZoomOutRate: 12
+  cameraZoomInRate: 0.7
+  cameraFramingMargin: 1.15
+  cameraMinAhead: 6
+  cameraMaxDistance: 450
+  spectateSpinRate: 1.8
+  spectateReleaseFraction: 0.75
+  spectateTiltDegrees: 25
+  spectateBlendSeconds: 0.6
   ballVisualScale: 1.25
   chainLinks: 12
   chainWidthFraction: 0.18

@@ -44,6 +44,10 @@ namespace UnityEngine
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
         public static float Cos(float v) => (float)Math.Cos(v);
         public static float Sin(float v) => (float)Math.Sin(v);
+        public static float Tan(float v) => (float)Math.Tan(v);
+        public static float Atan(float v) => (float)Math.Atan(v);
+        public static float Acos(float v) => (float)Math.Acos(v);
+        public static float SmoothStep(float a, float b, float t) { t = Clamp01(t); t = t * t * (3f - 2f * t); return a + (b - a) * t; }
         public static int RoundToInt(float v) => (int)Math.Round(v);
         public static float MoveTowards(float a, float b, float d) => Abs(b - a) <= d ? b : a + (b > a ? d : -d);
         public static bool Approximately(float a, float b) => Abs(b - a) < Max(1E-06f * Max(Abs(a), Abs(b)), 1.1E-44f * 8f);

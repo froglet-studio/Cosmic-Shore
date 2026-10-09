@@ -376,6 +376,111 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.35f, s.BallDrag, 1e-6f, "Drag is a rate (1/s) and must not be scaled.");
             Assert.AreEqual(2.2f * s.CruiseSpeed, s.LockMaxSpeed, 1e-4f);
         }
+
+        // ------------------------------------------------------------ camera framing
+
+        // The Thresher camera asset's follow offset (0, 8, -55) and a 60 deg vertical FOV at 16:9.
+        const float CamHeight = 8f, CamNeutral = 55f, Margin = 1.15f, MinAhead = 6f;
+        static readonly float HalfV = 30f * Mathf.Deg2Rad;
+        static readonly float HalfH = Mathf.Atan(Mathf.Tan(30f * Mathf.Deg2Rad) * 16f / 9f);
+
+        /// <summary>Does a ball of <paramref name="r"/> at <paramref name="b"/> (hull-local) sit
+        /// inside the margin-shrunk view of a camera <paramref name="d"/> behind the hull and
+        /// looking at it? Built from vectors (camera position, look-at basis), independently of the
+        /// closed-form basis <see cref="ThresherCameraFraming.Frames"/> uses.</summary>
+        static bool Framed(Vector3 b, float r, float d, float slack = 1e-3f)
+        {
+            Vector3 cam = new Vector3(0f, CamHeight, -d);
+            Vector3 fwd = (-cam).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, fwd).normalized;
+            Vector3 up = Vector3.Cross(fwd, right);
+            Vector3 rel = b - cam;
+            float depth = Vector3.Dot(rel, fwd);
+            if (depth < MinAhead + r - slack) return false;
+            bool side = (Mathf.Abs(Vector3.Dot(rel, right)) + r) * Margin <= Mathf.Tan(HalfH) * depth + slack;
+            bool vert = (Mathf.Abs(Vector3.Dot(rel, up)) + r) * Margin <= Mathf.Tan(HalfV) * depth + slack;
+            return side && vert;
+        }
+
+        [TestCase(140f, 0f, 0f)]     // let out, swung hard to the side
+        [TestCase(0f, 0f, -140f)]    // let out, trailing straight behind
+        [TestCase(0f, 0f, 140f)]     // let out, flung out ahead
+        [TestCase(0f, 120f, -60f)]   // high and behind
+        [TestCase(-90f, -60f, 30f)]  // low, left, ahead
+        public void Framing_RequiredDistanceIsTheSmallestThatKeepsTheBallInFrame(float x, float y, float z)
+        {
+            var b = new Vector3(x, y, z);
+            float r = 5.7f;
+            float d = ThresherCameraFraming.RequiredDistance(b, r, CamHeight, HalfV, HalfH, Margin, MinAhead);
+            Assert.IsTrue(Framed(b, r, d), $"ball {b} not framed at the required distance {d}");
+            Assert.IsFalse(Framed(b, r, d - 0.5f), $"ball {b} still framed nearer than {d}: the zoom is too generous");
+        }
+
+        [Test]
+        public void Framing_AReeledInBallBarelyZoomsTheCamera()
+        {
+            var s = Defaults();
+            float r = s.BallRadius * 1.25f * 1.45f;   // rendered ball x gauge ring, at the shipped look
+            for (int deg = 0; deg < 360; deg += 15)
+            {
+                float a = deg * Mathf.Deg2Rad;
+                // A YAW turn swings the ball in the hull's plane: no zoom at all.
+                float flat = ThresherCameraFraming.RequiredDistance(new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * s.RestLength,
+                    r, CamHeight, HalfV, HalfH, Margin, MinAhead);
+                Assert.LessOrEqual(flat, CamNeutral, $"reeled-in ball at yaw {deg} deg needs {flat}: the camera would breathe on every turn");
+                // A PITCH loop lifts it toward the camera's own height: a breath at most (the worst,
+                // just above-behind the hull, measures +9%).
+                float loop = ThresherCameraFraming.RequiredDistance(new Vector3(0f, Mathf.Sin(a), Mathf.Cos(a)) * s.RestLength,
+                    r, CamHeight, HalfV, HalfH, Margin, MinAhead);
+                Assert.LessOrEqual(loop, CamNeutral * 1.12f, $"reeled-in ball at pitch {deg} deg needs {loop}");
+            }
+            float full = ThresherCameraFraming.RequiredDistance(Vector3.right * s.MaxLength, r, CamHeight, HalfV, HalfH, Margin, MinAhead);
+            Assert.Greater(full, CamNeutral, "control: a let-out ball swung abeam must pull the camera back");
+        }
+
+        [Test]
+        public void Framing_ZoomsOutFastAndBackInSlowly_NeverOvershooting()
+        {
+            const float outRate = 12f, inRate = 0.7f;
+            float d = CamNeutral;
+            for (int i = 0; i < 15; i++) d = ThresherCameraFraming.Ease(d, 200f, outRate, inRate, Dt);   // 0.25 s
+            Assert.Greater(d, CamNeutral + 0.9f * (200f - CamNeutral), "zoom-out must cover 90% in a quarter second");
+            Assert.LessOrEqual(d, 200f);
+
+            float back = 200f;
+            for (int i = 0; i < 15; i++) back = ThresherCameraFraming.Ease(back, CamNeutral, outRate, inRate, Dt);
+            Assert.Greater(back, 200f - 0.2f * (200f - CamNeutral), "zoom-in must take its time: under 20% in a quarter second");
+            Assert.GreaterOrEqual(back, CamNeutral);
+
+            Assert.AreEqual(80f, ThresherCameraFraming.Ease(80f, 300f, outRate, inRate, 0f), 1e-6f, "dt 0 (a paused frame) must not move it");
+        }
+
+        [Test]
+        public void Spectate_VantageFramesTheOrbitFromTheTiltedAxis()
+        {
+            Vector3 pivot = new Vector3(10f, -4f, 30f);
+            Vector3 normal = Vector3.up, outward = Vector3.right;
+            float radius = 40f, tilt = 25f;
+            Vector3 p = ThresherCameraFraming.SpectatePosition(pivot, normal, outward, radius, HalfV, tilt, Margin);
+            Vector3 off = p - pivot;
+            Assert.AreEqual(radius * Margin / Mathf.Tan(HalfV), off.magnitude, 1e-3f, "the whole orbit circle fits the narrower FOV");
+            float fromAxis = Mathf.Acos(Mathf.Clamp(Vector3.Dot(off.normalized, normal), -1f, 1f)) / Mathf.Deg2Rad;
+            Assert.AreEqual(tilt, fromAxis, 1e-2f);
+            Assert.Greater(Vector3.Dot(off, outward), 0f, "it leans toward the side the ship detached on");
+        }
+
+        [Test]
+        public void Spectate_ShippedThresholdCatchesATightPlantButNotALongCruisingOne()
+        {
+            // spectateSpinRate ships at 1.8 rad/s (ThresherConfigSO); this pins what that means.
+            const float threshold = 1.8f;
+            var s = Defaults();
+            Assert.Greater(ThresherCameraFraming.SpinRate(s.CruiseSpeed, s.RestLength), threshold,
+                "planting reeled in at cruise is already a dizzying spin");
+            Assert.Less(ThresherCameraFraming.SpinRate(s.LockMaxSpeed, s.MaxLength), threshold,
+                "a fully let-out orbit at its cap is slow enough to ride");
+            Assert.AreEqual(0f, ThresherCameraFraming.SpinRate(50f, 0f), 0f);
+        }
     }
 }
 #endif

@@ -61,6 +61,18 @@ public static class Driver
         var (np, nq) = Snap(s, 0.6f, 120f);
         Console.WriteLine($"  same turn, NO snap (keep turning), release: {np / s.SmashSpeed:F2} / {nq / s.SmashSpeed:F2}");
 
+        Console.WriteLine("\ncamera (offset 0,8,-55; 60 deg vFOV 16:9; margin 1.15) — chase distance needed, ball at length L");
+        Console.WriteLine("  where        rest    max    max x1.5 (Space)");
+        float vh = 30f * Mathf.Deg2Rad, hh = Mathf.Atan(Mathf.Tan(vh) * 16f / 9f), rr = s.BallRadius * 1.25f * 1.45f;
+        foreach (var (label, dir) in new[] { ("behind", Vector3.back), ("abeam", Vector3.right), ("ahead", Vector3.forward), ("overhead", Vector3.up) })
+        {
+            float D(float l) => ThresherCameraFraming.RequiredDistance(dir * l, rr, 8f, vh, hh, 1.15f, 6f);
+            Console.WriteLine($"  {label,-10} {D(s.RestLength),6:F0} {D(s.MaxLength),6:F0} {D(s.MaxLength * 1.5f),8:F0}");
+        }
+        Console.WriteLine($"  spin rate (rad/s): plant reeled-in at cruise {ThresherCameraFraming.SpinRate(s.CruiseSpeed, s.RestLength):F2}, " +
+                          $"let-out at cap {ThresherCameraFraming.SpinRate(s.LockMaxSpeed, s.MaxLength):F2}, " +
+                          $"let-out at cap x1.75 (Time) {ThresherCameraFraming.SpinRate(s.LockMaxSpeed * 1.75f, s.MaxLength):F2}");
+
         Console.WriteLine("\nlock from cruise — orbit speed (x cruise) at t seconds, RT up / RT held");
         foreach (float t in new[] { 0.5f, 1f, 2f, 3f })
             Console.WriteLine($"  t={t:F1}  {Lock(s, t, false) / s.CruiseSpeed:F2} / {Lock(s, t, true) / s.CruiseSpeed:F2}");
