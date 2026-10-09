@@ -83,6 +83,30 @@ be reviewed as either one — and all three fail the same way: **a row with no m
 is worse than no row, because it becomes the next session's claim to disprove**, which is the
 exact failure this skill exists to answer.
 
+**Use the `/labmaker` skill to build, extend or graduate a LAB**: a prototype rig that lets a
+designer decide a mechanic by playing it before it is built in Unity. The four kinds are:
+
+- a single-file browser studio (the Stoat Flight Studio and the Vessel Studio hub, `Docs/Studios/`);
+- a research rig with a generated viewer (the NCA swarm labs in `Tools/NCA/` and the ecology
+  bestiary in `Tools/Ecology/`, both still on their `cece/*` branches);
+- a calibrated headless model (`Tools/ecosim/`);
+- an in-editor lab window (the Occlusion Dither Lab).
+
+The skill carries the lab contract (§2):
+
+- a READER of the shipped numbers, never their authority;
+- a test surface with a manual clock and a headless, seeded scorecard;
+- a decision log Claude reads back between rounds;
+- an honest on-screen "not modelled" list.
+
+It also carries the round protocol and a verifier, `.claude/skills/labmaker/verify_lab.cjs`, with
+its own `--self-test`.
+
+Labs are built on many branches by many contributors, so the skill keeps a `CATALOG.md` of every
+lab and an attributed, append-only `LEARNINGS.md`. **`/ship` §3.55 sends every branch that touched
+a lab back to update both.** `/ship-quick` keeps the minimum of that step, and `/ship-deep` D9
+audits a lab's `SHIPPED` block against the assets it names.
+
 ### Team Domains
 
 Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue (3)`, `Gold (4)`. **Blue is the "no team / not yet picked / neutral entity" sentinel** and is never present in `GameDataSO.ActiveDomains` (the playable set is `{Jade, Ruby, Gold}`, indices 0..2). Code that previously used `Domains.None` or `Domains.Unassigned` (both removed) now uses `Domains.Blue` for the same "no specific team" semantic — neutral mines, uncommitted crystals, the wildcard "any team" density-grid bucket, and players who haven't yet picked a domain.

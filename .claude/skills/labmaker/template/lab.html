@@ -1,0 +1,329 @@
+<!doctype html>
+<!--
+  LAB TEMPLATE — copy this file, rename it, and replace the three marked regions:
+    (1) LAB meta + SHIPPED  — every constant copied from a named asset/class field
+    (2) SPEC                — one row per slider (group, key, range, label, tooltip)
+    (3) THE MODEL           — reset / simStep / render / score
+  Everything else (the contract the /labmaker skill describes) is already wired:
+  manual clock + window.__lab hooks, seeded RNG, headless batch scoring, the shipped-vs-yours
+  diff, the decision log (artifact db with a browser fallback), PC/phone detection,
+  an editor-style layout with no page scroll. Verify with:
+    node .claude/skills/labmaker/verify_lab.cjs <this file>
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dipole Lab</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1f24; --muted: #5d6673; --line: #dde1e6;
+    --accent: #2f6fdb; --warn: #b4560b; --ok: #1f7a43; --stage: #0b0e14; --changed: #2f6fdb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216; --panel: #171b21; --ink: #e6e9ee; --muted: #98a2b0; --line: #2a313b;
+      --accent: #6ea0ff; --warn: #f0a050; --ok: #5cc98a; --stage: #05070a; --changed: #6ea0ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1216; --panel: #171b21; --ink: #e6e9ee; --muted: #98a2b0; --line: #2a313b;
+    --accent: #6ea0ff; --warn: #f0a050; --ok: #5cc98a; --stage: #05070a; --changed: #6ea0ff;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* outside the claude.ai viewer a component rule can beat [hidden] */
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  /* The editor layout: header / stage + right dock / bottom dock. Nothing scrolls the PAGE. */
+  #app { display: grid; height: 100vh; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 200px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; color: #cfd6e0; font: 12px/1.5 ui-monospace, monospace; pointer-events: none; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px ui-monospace, monospace; }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); }
+  .best { font-weight: 700; color: var(--ok); }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  /* Below 900 px the docks stack under the stage; the page may scroll there, the stage keeps a 16:10 box. */
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 16 / 10; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); }
+    header, #dock, #bottom { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="hud"></div></div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  // A lab is a READER of the shipped numbers, never their authority. Each entry names the
+  // asset or class field it was copied from; when the asset moves, this block follows (or the
+  // header says the page differs). Studio-only knobs (no game field yet) are marked "lab".
+  const LAB = { name: 'Dipole Lab', branch: 'claude/<branch>', round: 1, doc: 'Docs/<System>/<LAB>.md' };
+  const SHIPPED = {
+    pull: 400,        // ExampleConfigSO.pullStrength            (Assets/_SO_Assets/…/Example.asset)
+    push: 0.5,        // ExampleConfigSO.pushRatio               (× pull)
+    soften: 12,       // ExampleConfigSO.softening               (u)
+    gap: 160,         // lab: half-distance between the pair     (no game field yet)
+    damping: 0.4,     // ExampleConfigSO.damping                 (/s)
+    count: 160,       // lab: particles in the swarm
+  };
+
+  // ================= (2) SPEC: one row per slider =================
+  // [group, key, min, max, step, label, tooltip]. verify_lab.cjs asserts every key is in SHIPPED
+  // and every shipped value lies inside its range.
+  const SPEC = [
+    ['Pair',  'pull',    50, 1200, 10,  'Pull strength', 'How hard the attractor pulls. Lower: the swarm drifts; higher: it collapses onto the well.'],
+    ['Pair',  'push',    0,  2,    0.05,'Push (× pull)', 'The repulsor\'s push relative to the pull. 0 = a lone attractor.'],
+    ['Pair',  'soften',  2,  60,   1,   'Softening (u)', 'Plummer softening radius; stops the force blowing up at the centre.'],
+    ['Pair',  'gap',     40, 300,  5,   'Half gap (u)',  'Distance from the centre to each hole.'],
+    ['Swarm', 'damping', 0,  3,    0.05,'Damping (/s)',  'Velocity bleed. 0 = orbits forever; high = everything settles.'],
+    ['Swarm', 'count',   20, 600,  10,  'Particles',     'How many bodies the model steps. Re-seeds on change.'],
+  ];
+
+  // Saved base tuning (a per-viewer convenience — localStorage is never the record).
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];   // drop keys a later round retired
+
+  // ================= seeded RNG (every run reproducible from its seed) =================
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ================= (3) THE MODEL =================
+  // simStep never draws and never reads input devices directly, so the batch can run it
+  // thousands of times headless and the manual clock can step it frame by frame.
+  let world = null, seed = 7;
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    const rnd = mulberry32(seed), n = Math.round(P.count), bodies = [];
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * Math.PI * 2, r = 120 + rnd() * 260;
+      bodies.push({ x: Math.cos(a) * r, y: Math.sin(a) * r, vx: -Math.sin(a) * 30, vy: Math.cos(a) * 30, caught: false });
+    }
+    world = { t: 0, bodies, caught: 0 };
+  }
+  function simStep(dt) {
+    const A = { x: -P.gap, y: 0 }, R = { x: P.gap, y: 0 }, s2 = P.soften * P.soften, k = 1000;
+    for (const b of world.bodies) {
+      if (b.caught) continue;
+      let dx = A.x - b.x, dy = A.y - b.y, d2 = dx * dx + dy * dy + s2, f = k * P.pull / (d2 * Math.sqrt(d2));
+      let ax = dx * f, ay = dy * f;
+      dx = b.x - R.x; dy = b.y - R.y; d2 = dx * dx + dy * dy + s2; f = k * P.pull * P.push / (d2 * Math.sqrt(d2));
+      ax += dx * f; ay += dy * f;
+      const keep = Math.exp(-P.damping * dt);
+      b.vx = (b.vx + ax * dt) * keep; b.vy = (b.vy + ay * dt) * keep;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (Math.hypot(b.x - A.x, b.y - A.y) < P.soften) { b.caught = true; world.caught++; }
+    }
+    world.t += dt;
+  }
+  // One number per column the lab exists to decide. Keep it pure: same seed + same P = same score.
+  function score() { return { caughtPct: +(100 * world.caught / world.bodies.length).toFixed(1), t: +world.t.toFixed(2) }; }
+
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  function render() {
+    const w = canvas.width, h = canvas.height, sc = Math.min(w, h) / 900;
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--stage') || '#000'; ctx.fillRect(0, 0, w, h);
+    ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(sc, sc);
+    ctx.fillStyle = '#ffd36e'; ctx.beginPath(); ctx.arc(P.gap, 0, P.soften, 0, 7); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.strokeStyle = '#9fb6ff'; ctx.lineWidth = 2 / sc; ctx.beginPath(); ctx.arc(-P.gap, 0, P.soften, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#9fd0ff';
+    for (const b of world.bodies) if (!b.caught) ctx.fillRect(b.x - 2, b.y - 2, 4, 4);
+    ctx.restore();
+    const s = score();
+    $('hud').textContent = 'seed ' + seed + '  t ' + s.t.toFixed(1) + ' s  caught ' + s.caughtPct + '%' + (paused ? '  [paused]' : '');
+  }
+
+  // ================= headless batch: the scorecard =================
+  // Runs the model WITHOUT drawing across seeds × variants and returns rows. This is what turns
+  // "it feels better" into a table, and what the verifier replays to prove determinism.
+  const VARIANTS = [
+    { name: 'Shipped', v: {} },
+    { name: 'No push', v: { push: 0 } },
+    { name: 'Heavy',   v: { pull: 900 } },
+  ];
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3], seconds = opts.seconds || 20, dt = 1 / 60, saved = Object.assign({}, P), savedSeed = seed, rows = [];
+    for (const va of VARIANTS) {
+      Object.assign(P, saved, va.v); let sum = 0;
+      for (const s of seeds) { reset(s); for (let i = 0; i < seconds / dt; i++) simStep(dt); sum += score().caughtPct; }
+      rows.push({ variant: va.name, caughtPct: +(sum / seeds.length).toFixed(1) });
+    }
+    Object.assign(P, saved); reset(savedSeed);
+    return rows;
+  }
+
+  // ================= platform: shell + device, answered once =================
+  // A native host (Prisma) sets window.__labHost = { shell, device } before this script runs; the
+  // page never sniffs inside a native host. Touchscreen laptops keep a fine pointer → PC.
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = 'Running on ' + (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI: tabs, sliders, shipped-vs-yours =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function refreshDiff() {
+    const changed = Object.keys(SHIPPED).filter((k) => Math.abs(P[k] - SHIPPED[k]) > 1e-9);
+    $('diff').textContent = changed.length ? changed.length + ' setting' + (changed.length > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key]; }
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); if (key === 'count') reset(); refreshDiff(); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) {
+      for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+      body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name);
+    }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), 'lab:' + LAB.name + ':dock');
+
+  // ================= the decision log =================
+  // Shared log = the artifact's db collection "decisions" (Claude reads it with ArtifactData list).
+  // Outside the claude.ai viewer, or signed out, it falls back to this browser + Copy log.
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, seed, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic (e.g. Pair feel)"><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><table id="logTable"></table>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logChoice').value = 'Settings: ' + (Object.keys(diffOnly()).length ? JSON.stringify(diffOnly()) : 'shipped');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); navigator.clipboard && navigator.clipboard.writeText(t); };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score the variants</button> <span class="hint">headless, seeds 1–3, 20 s each</span></p><table id="scoreTable"></table>';
+    box.querySelector('#runBatch').onclick = () => {
+      const rows = runBatch(), best = Math.max(...rows.map((r) => r.caughtPct)), t = box.querySelector('#scoreTable');
+      t.innerHTML = '<tr><th>Variant</th><th>Caught %</th></tr>';
+      for (const r of rows) { const tr = document.createElement('tr'); tr.innerHTML = '<td></td><td></td>'; tr.children[0].textContent = r.variant; tr.children[1].textContent = r.caughtPct; if (r.caughtPct === best) tr.children[1].className = 'best'; t.appendChild(tr); }
+    };
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p></p><p class="hint">What this lab does NOT model: replace this line with the honest list.</p>';
+    box.firstChild.textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+  // ================= sizing + loop (with a manual clock for recorders) =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) { resize(); if (!paused) simStep(dt); render(); }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ================= the test surface =================
+  // Everything a recorder, the verifier or a future Claude needs, and nothing it must not touch.
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, record,
+    state: () => ({ t: world.t, seed, alive: world.bodies.filter((b) => !b.caught).length }),
+  };
+})();
+</script>
+</body>
+</html>
