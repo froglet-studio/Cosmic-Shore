@@ -417,8 +417,9 @@ and no NCA.
 In the director (`TandavaPhase.Chimera`, `ChimeraTurning`): when a banked Many-Headed Serpent would rise, it becomes the
 chimera instead (toast 152) for `ChimeraSeconds` (24 s), drifting slowly to where it will rise. Every
 `ChimeraFlipSeconds` (6 s) it turns from one shape to the other, and for `ChimeraTurnSeconds` (2.5 s) of each turn it
-holds its laying: it cannot heal while it changes, which is the pilots' window (the HUD reads "Turning - it cannot
-heal"). It does not feed. It can still be cut in two (§3.11); its whale end trails a thin fringe, so only a cut through
+holds its laying: it cannot heal while it changes (the HUD reads "Turning - it cannot heal"). It is BRITTLE while it
+turns, too: it shatters below `ChimeraShatterFraction` (50%) of its body instead of `ShatterFraction` (35%), so the
+pilots' play is to wear it down between turns and finish it mid-turn. It does not feed. It can still be cut in two (§3.11); its whale end trails a thin fringe, so only a cut through
 its middle takes a piece big enough to live. When its time is up it rises into the Dance where it drifted to.
 
 The chimera is not a rung of the ladder (form 5 of `tandava_plans`, like the Severed's form 4): a variant names it with
@@ -464,6 +465,7 @@ policies.
 | T29 | run down: it learns, and feels a pilot at 518 u that an unscarred creature (450 u) cannot |
 | T30 | the chimera: it becomes the chimera as the Many-Headed Serpent (40 s), wears both shapes and nothing else, turns 3 times whale/jelly in turn, lays nothing mid-turn, loses no members turning, rises 24.1 s later where it drifted to, and still completes unopposed in under 200 s (154 s, 167 s) |
 | T31 | cut while torn: a slice through its middle parts a piece (94 of 504) and the piece is the Severed; the chimera stays torn |
+| T32 | brittle as it turns: whittled to 43% between turns (226 of 525), it survives its turn when it is not brittle and shatters mid-turn (47 s) when it is |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
 collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..16 measure them.

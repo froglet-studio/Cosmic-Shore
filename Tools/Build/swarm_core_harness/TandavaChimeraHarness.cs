@@ -1,9 +1,9 @@
 // Headless proof of Tandava's WHALE-JELLY CHIMERA (Assets/_Scripts/Controller/Arcade/TANDAVA.md §3.13): before the
 // Many-Headed Serpent rises into the Dance it passes through a body the hybrid NCA grew - a whale spliced onto a jelly,
 // torn between the two. It drifts to where it will rise, turns from one shape to the other every few seconds (it cannot
-// heal mid-turn), and rises when its time is up. It can still be cut while it is torn.
+// heal mid-turn, and it is brittle: it shatters at a bigger body), and rises when its time is up. It can still be cut.
 //
-//   TANDAVA_ONLY=chimera bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans dir>   # T30-T31 only
+//   TANDAVA_ONLY=chimera bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans dir>   # T30-T32 only
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,6 +67,36 @@ static partial class TandavaHarness
                               $"{SeverStory(s)}; still torn after the cut: {stillTorn}");
             Check(cut && piece, "a slice through the torn body parts a piece, and the piece is the Severed");
             Check(stillTorn || s.RiseAt > 0f, "the body it left keeps on: still torn, or risen");
+        }
+
+        // ── T32: brittle as it turns - worn down between turns to a body that would survive, it shatters mid-turn
+        Console.WriteLine("T32 brittle as it turns");
+        {
+            (TandavaOutcome outcome, float at, int left, int plan) WearDown(bool brittle)
+            {
+                var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 31, x => { if (!brittle) x.ChimeraShatterFraction = x.ShatterFraction; });
+                s.Severing = false;   // whittled, not cut in two (T31 cuts it)
+                while (!s.D.InChimera && s.D.Outcome == TandavaOutcome.Running && s.Now < RunCap) Tick(s);
+                while (s.D.Phase != TandavaPhase.Chimera && s.D.Outcome == TandavaOutcome.Running) Tick(s);   // between turns
+                int plan = s.Forms[1].PlanCount, target = (int)(0.43f * plan);
+                // the pilots' work between turns: whittle it to 43% of its body (above the 35% that shatters a still body)
+                Tick(s, x => { for (int i = 0; i < x.C.Cap && Active(x.C) > target; i++) if (x.C.Active[i]) { x.C.Kill(i); x.Lost++; } });
+                int left = Active(s.C);
+                // and keep it there until its next turn ends (a pilot keeps striking what it lays)
+                int turns = s.Turns.Count;
+                bool turned = false;
+                while (s.D.Outcome == TandavaOutcome.Running && s.D.InChimera && !(turned && s.D.Phase == TandavaPhase.Chimera))
+                {
+                    Tick(s, x => { for (int i = 0; i < x.C.Cap && Active(x.C) > target; i++) if (x.C.Active[i]) { x.C.Kill(i); x.Lost++; } });
+                    turned |= s.Turns.Count > turns;
+                }
+                return (s.D.Outcome, s.Now, left, plan);
+            }
+            var still = WearDown(false); var brittleRun = WearDown(true);
+            Console.WriteLine($"    whittled to {brittleRun.left} of {brittleRun.plan} between turns: a chimera that is not brittle {still.outcome} " +
+                              $"through its turn; the brittle one {brittleRun.outcome} at {brittleRun.at:F0} s");
+            Check(still.outcome == TandavaOutcome.Running, "without the brittle turn, 43% of its body survives the turn");
+            Check(brittleRun.outcome == TandavaOutcome.Shattered, "brittle as it turns, the same body shatters mid-turn");
         }
     }
 }

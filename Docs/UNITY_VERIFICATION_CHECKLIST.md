@@ -5826,7 +5826,7 @@ hybrid NCA), `TandavaController` HUD and toast 152. Headless only: harness T30-T
 2. **It turns.** Every ~6 s it re-sorts between a whale wrapped in a jelly shell with a bell at the head, and a whale
    with a jelly stripe down its back. The re-sort must look like the same tadpoles moving, not members popping.
 3. **The window.** During each turn the mood reads "Turning - it cannot heal"; members cut then do not regrow until the
-   turn ends.
+   turn ends. Wear it to about half its body between turns: it must NOT shatter until it turns, then it shatters.
 4. **Cut it.** A pass through its middle parts a Severed; a pass through the thin tail does not.
 5. **It rises.** About 24 s after it began it rises into the Lord of the Dance where it drifted to, gold burst and all.
 

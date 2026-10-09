@@ -341,6 +341,9 @@ namespace CosmicShore.Gameplay
         public float ChimeraFlipSeconds = 6f;
         /// <summary>...and each turn leaves it unable to heal or swim well for this long - the window to strike.</summary>
         public float ChimeraTurnSeconds = 2.5f;
+        /// <summary>...and while it turns it is BRITTLE: it shatters below this share of its body, not ShatterFraction.
+        /// Wear it down between turns and finish it mid-turn ("strike it as it turns").</summary>
+        public float ChimeraShatterFraction = 0.5f;
         /// <summary>The chimera's speed and turn (the levers' scale): it staggers rather than swims.</summary>
         public float CruiseChimera = 0.7f;
         public float TurnChimera = 0.8f;
@@ -673,7 +676,8 @@ namespace CosmicShore.Gameplay
             if (form.Role != TandavaFormRole.Severed)
             {
                 if (!_armed && whole >= S.ArmFraction * form.PlanCount) _armed = true;
-                if (_armed && whole < S.ShatterFraction * form.PlanCount)
+                float shatter = Phase == TandavaPhase.ChimeraTurning ? MathF.Max(S.ShatterFraction, S.ChimeraShatterFraction) : S.ShatterFraction;
+                if (_armed && whole < shatter * form.PlanCount)
                 {
                     End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Shattered);
                     return;

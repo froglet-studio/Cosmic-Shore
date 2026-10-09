@@ -325,6 +325,7 @@ MonoBehaviour:
     ChimeraSeconds: 24
     ChimeraFlipSeconds: 6
     ChimeraTurnSeconds: 2.5
+    ChimeraShatterFraction: 0.5
     CruiseChimera: 0.7
     TurnChimera: 0.8
     DrumSeconds: 30
