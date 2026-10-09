@@ -143,7 +143,8 @@ Relay cost nothing extra for a Steam game. Re-check
 |---|---|---|
 | Netcode model (approval, scene sync, spawns, variables, RPCs, ownership, parenting, transforms, named messages, scene loads) | `Wire/NetDriver.cs` | Works. LAN parties and five-process harness runs pass |
 | Transports | `Wire/INetTransport.cs` | Froglet's UDP (`UdpTransport`, the default, §6.6) directly or through a relay (§6.7); TCP (`NetSocket`); an in-memory loopback for tests |
-| Relay | `Wire/Relay/` | Unity Relay's protocol client and Froglet's own relay server (§6.7). UGS's relay servers wait for sign-in (P7) |
+| Relay | `Wire/Relay/` | Unity Relay's protocol client and Froglet's own relay server (§6.7) |
+| UGS sign-in | `Wire/Ugs/UgsAuthentication.cs` | Anonymous sign-in and session-token resume over REST; feeds UGS Relay its bearer token (§6.8). Tested against local stand-ins; the live project waits for the owner |
 | Session service | `Wire/DirectoryMultiplayerService.cs` | One JSON file per session in `COSMIC_SHORE_NET_DIR` (the stand-in for UGS Lobby until P8); records an address and port, or a relay join code |
 | Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | 14/14 directly, on simulated 4G, and through the relay. No engine patches since Step 0 |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
@@ -161,6 +162,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | *(none)* | **Scenario harness as a tool**: `run.sh` without patches; MCP `net_scenario` | 0, 4 |
 | *(none, Unity's transport is fixed)* | **Our reliable-UDP transport** with reliable and unreliable channels | 5 |
 | Relay (UGS Relay through Unity Transport) | **`RelayLink`** under our UDP transport, speaking Unity Relay's protocol; **Froglet's relay server** (`--relay-server`) speaking it too. `COSMIC_SHORE_RELAY`, NET page RELAY, `net_players relay=local`, `PRISMA_RELAY=1` | 6 |
+| Authentication + Relay SDKs (sign in, allocate) | **`UgsAuthentication`** (REST) and `COSMIC_SHORE_RELAY=ugs`; **`--ugs-relay-check`** / NET page UGS RELAY CHECK proves the live path in one step | 7 |
 
 ### 6.1 Step 0: engine features that replace the harness's throwaway patches
 
@@ -419,19 +421,20 @@ case-insensitive). `/health` reports allocations, forwarded and refused counts.
 
 | Where | Switch |
 |---|---|
-| Any player | `COSMIC_SHORE_RELAY=<allocations URL>` (a relay server's HTTP address). Unset or `off` = direct. `ugs` waits for Step P7 (sign-in) |
+| Any player | `COSMIC_SHORE_RELAY=<allocations URL>` (a relay server's HTTP address), or `ugs` (UGS Relay, §6.8). Unset or `off` = direct. `COSMIC_SHORE_RELAY_REGION` picks a region; `COSMIC_SHORE_RELAY_SECRET` is our server's token |
 | Run our relay | `CosmicShore --relay-server [UDP] [HTTP] [HOST]`: 0 = any free port; HOST is the name players reach it by (default `127.0.0.1`). It prints `COSMIC_SHORE_RELAY=...` for the players |
-| Launcher NET page | Connection = **RELAY** starts our relay beside the players |
-| MCP | `net_players relay=local` (or a relay URL); `net_scenario relay=true` |
-| Party harness | `PRISMA_RELAY=1 bash Tools/Build/prisma_party_scenarios/run.sh` |
+| Launcher NET page | Connection = **RELAY** starts our relay beside the players; **UGS RELAY** sends them through UGS |
+| MCP | `net_players relay=local` (or a relay URL, or `ugs`); `net_scenario relay=true` |
+| Party harness | `PRISMA_RELAY=1 bash Tools/Build/prisma_party_scenarios/run.sh` (`PRISMA_RELAY=ugs`: through a local UGS sign-in stand-in, §6.8) |
 
 **Running ours on a server** (only if wanted; UGS Relay is the plan): run
 `CosmicShore --relay-server 7780 7781 relay.example.com`, open UDP 7780 and TCP 7781, and set
-`COSMIC_SHORE_RELAY=http://relay.example.com:7781` on the players. **Before that faces the public
-internet it needs two things it does not have**: the allocations endpoint has no authentication
-(anyone who reaches it can allocate), and it is plain HTTP, so allocation keys cross the network
-in the clear. Put it behind TLS and a token check first. Testing on a LAN or one machine needs
-neither.
+`COSMIC_SHORE_RELAY=http://relay.example.com:7781` on the players. Start it with
+`COSMIC_SHORE_RELAY_SECRET=<a long random value>` and give the players the same value: then only
+callers carrying it can allocate (401 otherwise; `/health` stays open). **Before it faces the public
+internet it still needs TLS**: the allocations endpoint is plain HTTP, so the secret and the
+allocation keys cross the network in the clear. Put it behind a TLS proxy first. Testing on a LAN
+or one machine needs neither.
 
 **Measured** (2026-10-09):
 
@@ -445,11 +448,65 @@ neither.
 | Engine suite | CosmicShore.Tests 1,891/1,891 |
 | MCP route | Through the MCP server over stdio: `net_players relay=nonsense` is refused before anything starts; `relay=local` started the relay and two headless players with its URL; they partied up through it (host 2/4, both names on both rosters); `net_players status` read `relay ... · 3 allocation(s) · 833 forwarded · 0 refused`, RTT 30 ms and 25.6 ms (direct on the same machine: 27.7 ms); `stop` left no relay process |
 | Five-player party harness, every pilot through the relay (`PRISMA_RELAY=1`) | **14/14** (T1, T5-accept, T2b, kick, leave, T2, T5-join, launch, T4, T3, T6, net, T7, T4-lobby). The relay ended the run with 22 allocations (every solo party and every host after a party change allocates), 21,227 datagrams forwarded, 0 refused, 22 of 22 binds accepted; no pilot logged a relay error or a re-bind. T7 (host killed): the survivors saw the dead host through the 10 s silence timeout, as on a direct connection |
+| The same, every pilot also on a simulated 4G line (`COSMIC_SHORE_NET_SIM=4g`) | **14/14**; the relay: 24 allocations, 32,426 forwarded, 0 refused, 24 of 24 binds. This run predates the boot line that logs the simulated line, so its 4G setting is the harness environment's, not logged per pilot; the UGS-path run below logs it |
 
-**Not proven yet.** Nothing here has talked to UGS's own relay servers: that needs a signed-in
-player's token (P7) and the owner's go-ahead, because it creates players in the live project
+**Not proven yet.** Nothing here has talked to UGS's own relay servers: the sign-in exists (§6.8),
+and the first live call waits for the owner, because it creates players in the live project
 (`Docs/MULTIPLAYER_START_HERE.md` §5.3). Only the plain `udp` endpoint is used; DTLS (`dtls`) and
 WebSocket (`ws`/`wss`) endpoints are not.
+
+### 6.8 Step 7: UGS sign-in, so the relay can be UGS's
+
+**What UGS Relay needs from a client.** Every Relay Allocations call carries
+`Authorization: Bearer <access token>`, and the token is the signed-in player's (read from Unity's
+relay client package: it sends the Authentication service's access token, nothing else). So the only
+piece Prisma lacked was the sign-in.
+
+**`UgsAuthentication`** (`Wire/Ugs/UgsAuthentication.cs`) is that sign-in, over the Player
+Authentication REST API (§8):
+
+| Call | When | Sends | Keeps |
+|---|---|---|---|
+| `POST https://player-auth.services.api.unity.com/v1/authentication/anonymous` | A profile's first sign-in | header `ProjectId` (and `UnityEnvironment` when one is named), body `{}` | `idToken` (the bearer), `expiresIn`, `userId`, `sessionToken` |
+| `POST .../v1/authentication/session-token` | Every later sign-in, and every refresh | the same headers, `{"sessionToken": ...}` | the same; the player stays the same |
+
+- The session token is stored per save profile (`ugs-session-token` in the profile's folder), so a
+  profile stays one UGS player across runs instead of creating one per launch. A token UGS refuses
+  (400, 401, 403, 404) falls back to a new anonymous player.
+- The `idToken` is reused until a minute before it expires, then the player signs in again with the
+  session token. Concurrent callers wait for one sign-in.
+- The project id comes from the Unity project (`cloudProjectId` in `ProjectSettings.asset`, this
+  game's is `3030fd69-28ab-433f-b4bd-22b9b93c5118`) unless `COSMIC_SHORE_UGS_PROJECT` names another.
+  No environment is sent unless `COSMIC_SHORE_UGS_ENVIRONMENT` names one, which matches the game:
+  its code sets none, so it uses the project's default environment.
+- Prisma's game-side identity (`AuthenticationService`) is still the local stand-in; only the relay
+  signs in to UGS. P8 (Lobby) is where the two must become the same player.
+
+**Using it:**
+
+| Where | Switch |
+|---|---|
+| Any player | `COSMIC_SHORE_RELAY=ugs` (sessions allocate on UGS Relay as this profile's UGS player); `COSMIC_SHORE_RELAY_REGION=<region id>` to pin a region |
+| One-step live check | `CosmicShore --ugs-relay-check [REGION]`, or NET page > **UGS RELAY CHECK**: two players (the same two every run: their session tokens stay in the `relaycheck` profile) sign in, allocate, join by code, connect through UGS Relay and time ten round trips. Each step logs a line; exit 0 = PASS |
+| Launcher NET page | Connection = **UGS RELAY** |
+| MCP | `net_players relay=ugs` |
+| Tests without UGS | `COSMIC_SHORE_UGS_AUTH_URL` / `COSMIC_SHORE_UGS_RELAY_URL` point the same code at stand-ins: `Tools/Build/prisma_party_scenarios/ugs_auth_standin.py` and our relay server. `PRISMA_RELAY=ugs` runs the party harness that way |
+
+**Measured** (2026-10-09, all against local stand-ins; nothing called UGS):
+
+| Check | Result |
+|---|---|
+| `UgsAuthenticationTests` | 13/13: anonymous first, with `ProjectId` and `UnityEnvironment`; no environment header when none is named; the token reused until a minute before expiry, then renewed as the same player; the session token outlives the process (a second instance of the same profile resumes, another profile is another player); a refused token falls back to a new player; eight concurrent callers share one sign-in; a wrong project is a `UgsServiceException` with status 400; the project id read from `ProjectSettings.asset`; the relay client sends the signed-in player's token (our relay with that token as its secret allocates for it and refuses no token or another one with 401); `RelayCheck` passes through our relay and names the failed step when it cannot |
+| `--ugs-relay-check` against the stand-ins | PASS: two anonymous sign-ins, allocate, join code, join, connected in 15 ms, ten round trips avg 8.3 ms. Run again: PASS, both players resumed by session token (no new players). A wrong project id: FAIL at 'sign in' with the service's 400 message |
+| Five-player party harness, `PRISMA_RELAY=ugs`, every pilot on simulated 4G | **14/14**. Each pilot's own boot lines (results.json `network`) read `[net] transport: udp`, `[relay] sessions go through UGS Relay`, `[netsim] starting on COSMIC_SHORE_NET_SIM=4g: latency=60 jitter=20 loss=1`. The sign-in stand-in saw 5 sign-ins (one per pilot) for 23 relay allocations: the token is reused, not fetched per call. The relay: 28,127 forwarded, 0 refused, 23 of 23 binds |
+| Engine suite | CosmicShore.Tests 1,913/1,913 |
+
+**What the owner's live check will show** (`Docs/MULTIPLAYER_START_HERE.md` §5.3): the region UGS
+picked, a join code, `connected through the relay`, and ten round trips whose average is about
+twice the round trip from this PC to that region's relay (both players are on this PC, so each frame
+goes out and back twice). A failure names its step: `sign in` (project id, network, or the project's
+Authentication settings), `allocate` / `join code` / `join` (Relay not enabled for the project, or
+rate limited: the status code says which), or `bind and connect` (UDP to the relay blocked).
 
 ## 7. Status
 
@@ -463,13 +520,17 @@ WebSocket (`ws`/`wss`) endpoints are not.
 | 4 | Launcher NET page, MCP `net_*` tools | Done 2026-10-08 | `MultiplayerRunTests` 7/7, Launcher tests 21/21; NET page screenshotted under xvfb (empty and with four player rows); the MCP server over stdio started 2 headless players (one on `4g` from launch), and `net_sim`, `net_fault`, `net_stats`, `net_players status`, `net_logs` and `stop` worked against them |
 | 5 | UDP transport, unreliable channel for opted-in transforms | Done 2026-10-08 | `UdpTransportTests` 6/6, `UnreliableChannelTests` 8/8, `UnreliableDeltasPrefabTests` 3/3; contract checks over `udp` and `sim-udp`; network suites stable over 5 repeats; CosmicShore.Tests 1862/1862; the five-player party harness **14/14 on UDP** |
 | 6 | Relay: Unity Relay's protocol under our UDP transport, Froglet's relay server, session integration, tool switches | Done 2026-10-09 | `RelayTests` 10/10; contract checks over `relay` and `sim-relay`; `MultiplayerRunTests` 16/16; Launcher tests 21/21; CosmicShore.Tests 1,891/1,891; two players partied up through `net_players relay=local`; the five-player party harness through the relay: 14/14 (§6.7) |
-| G2 | UGS backend (Auth P7, Lobby P8) | Next | Relay allocations are already the UGS REST shape; P7 adds the sign-in token |
+| 7 | UGS sign-in for the relay, `COSMIC_SHORE_RELAY=ugs`, the one-step UGS relay check, our relay's secret | Built 2026-10-09; the live check waits for the owner | `UgsAuthenticationTests` 13/13; `--ugs-relay-check` PASS against local stand-ins (twice, the second resuming both players); CosmicShore.Tests 1,913/1,913; party harness via the UGS path on 4G: 14/14 (§6.8) |
+| G2 | UGS Lobby (P8) | Next | The relay half of UGS is done; Lobby replaces the session folder |
 
 ## 8. Sources
 
 - Unity Relay message protocol (for alternative engines):
   <https://docs.unity.com/en-us/mps-sdk/advanced-config/relay-message-protocol>
-- Relay REST API (allocations, QoS): <https://docs.unity.com/en-us/mps-sdk/advanced-config/relay-rest-api>
+- Relay REST API (allocations, QoS): <https://docs.unity.com/en-us/mps-sdk/advanced-config/relay-rest-api>;
+  the Allocations reference: <https://docs.unity.com/legacy-services-docs/relay-allocations/v1/>
+- Player Authentication REST API (anonymous and session-token sign-in):
+  <https://docs.unity.com/legacy-services-docs/player-auth/v1/>
 - Unity Companion License: <https://unity.com/legal/licenses/unity-companion-license>
 - UGS pricing: <https://unity.com/products/gaming-services/pricing>
 - How Relay is priced: <https://support.unity.com/hc/en-us/articles/4410136449812-How-is-the-Relay-Service-Priced>

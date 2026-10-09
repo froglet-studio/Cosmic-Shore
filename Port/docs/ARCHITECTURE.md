@@ -249,7 +249,9 @@ and the host's endpoint, or its relay join code when `COSMIC_SHORE_RELAY` names 
 allocates before it starts listening; a joiner joins by code).
 
 **Services** are local stand-ins:
-- Authentication: an anonymous id persisted per install.
+- Authentication: an anonymous id persisted per install. Separately, with `COSMIC_SHORE_RELAY=ugs`
+  the relay signs in to UGS itself (`UgsAuthentication`, REST, one UGS player per save profile) to
+  get the bearer token UGS Relay needs (`MULTIPLAYER.md` §6.8).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
