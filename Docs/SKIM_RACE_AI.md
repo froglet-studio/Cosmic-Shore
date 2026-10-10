@@ -446,6 +446,8 @@ race median 153.1 s (172.1 s).
 | 2 AI seats, every seat finished | 5/40, race median 166.0 s | **39/40, race median 151.2 s** |
 | 2 AI seats, first finisher median (the editor-comparable number) | 148.5 s | **141.4 s** |
 | 2 AI seats, resets per race (largest causes) | pull 4.6, crossing 4.3, pickup ring 3.9, other rail 3.8 | pull 6.2, crossing 5.1, other rail 3.5, pickup ring 3.4 |
+| 3 AI seats (20 seeds), every seat finished | 2/20, race median 179.8 s | **14/20, race median 169.8 s** |
+| 3 AI seats, first finisher median | 146.2 s | **140.2 s** |
 
 The gain is robustness with a second seat and about 8 s alone; the policy takes a few more strikes
 per race and finishes anyway (lower `MinThrottle` 0.126, `LowBoostApproachScale` 0.559, lane step
