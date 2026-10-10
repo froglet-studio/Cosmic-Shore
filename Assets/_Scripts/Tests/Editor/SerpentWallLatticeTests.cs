@@ -175,6 +175,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void GrowthOrderPrefixIsStableSoTheWallCanGrowForever()
+        {
+            // The wall extends its order on demand; a reshuffled prefix would move bricks that
+            // already stand.
+            var small = SerpentWallLattice.GrowthOrder(40);
+            var large = SerpentWallLattice.GrowthOrder(400);
+            for (int k = 0; k < small.Count; k++) Assert.AreEqual(small[k], large[k], $"index {k}");
+            CollectionAssert.AllItemsAreUnique(large);
+            // And it is a disc: never a site further out before a nearer one.
+            for (int k = 1; k < large.Count; k++)
+                Assert.LessOrEqual(large[k - 1].sqrMagnitude, large[k].sqrMagnitude, $"index {k}");
+        }
+
+        [Test]
         public void GrowthOrderIsADiscAroundTheSeed()
         {
             List<Vector2Int> order = SerpentWallLattice.GrowthOrder(8);

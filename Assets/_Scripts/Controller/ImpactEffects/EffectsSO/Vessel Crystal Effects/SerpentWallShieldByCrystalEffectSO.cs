@@ -5,10 +5,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// An omni crystal collected by a Serpent re-shields its seed walls: the crystal morphs into
+    /// Any crystal (omni or elemental; the effect sits in all five lists of the Serpent's
+    /// container) collected by a Serpent re-shields its seed walls: the crystal morphs into
     /// beams, one to every live super-shielded seed the Serpent owns, and a shield ripples
-    /// through each wall from the seed outward. A Mass-5 wall also twists and seals its open
-    /// cells with danger panels (<see cref="SerpentWallAssembler"/>, SERPENT_SEED_WALL.md).
+    /// through each wall from the seed outward. With the Mass upgrade active, each wall also
+    /// twists and seals its open cells with danger panels (<see cref="SerpentWallAssembler"/>, SERPENT_SEED_WALL.md).
     ///
     /// Crystal effects are broadcast, so this runs on every peer against each peer's own copy of
     /// the walls, the same way the walls themselves are built.

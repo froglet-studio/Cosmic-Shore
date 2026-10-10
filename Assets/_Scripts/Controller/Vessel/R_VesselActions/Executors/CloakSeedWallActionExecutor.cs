@@ -43,6 +43,8 @@ namespace CosmicShore.Gameplay
         {
             public Prism Prism;
             public MaterialPropertyAnimator Animator;
+            // The pilot's own view: dimmed, not hidden (see CloakOnePrism).
+            public bool Shaded;
         }
 
         private readonly List<TrackedPrism> _cloakedPrisms = new();
@@ -50,13 +52,31 @@ namespace CosmicShore.Gameplay
 
         private readonly List<TrackedPrism> _spawnedDuringCloak = new();
 
-        private bool IsLocalUser => true;
+        // The seed this cloak laid: the illusion collapses into it when the cloak ends.
+        private Prism _seed;
+
+        // The pilot's own translucent hull: a runtime clone of the ghost material at
+        // PilotGhostAlpha, made once and destroyed with the executor.
+        private Material _pilotGhostMaterial;
+
+        /// <summary>
+        /// Is this vessel the one the person at THIS machine is flying? The cloak runs on every
+        /// peer (the press is replicated), and only that pilot should still see their hull and
+        /// trail. Was hard-wired to true, which gave every viewer the pilot's view and the pilot
+        /// the invisible one.
+        /// </summary>
+        private bool IsLocalUser => _status?.Player != null && _status.Player.IsLocalUser;
 
         // ---------------- Lifecycle ----------------
 
         void OnEnable()
         {
             if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
+
+        void OnDestroy()
+        {
+            if (_pilotGhostMaterial) Destroy(_pilotGhostMaterial);
         }
 
         void OnDisable()
@@ -92,6 +112,7 @@ namespace CosmicShore.Gameplay
             if (!seedAssembler.StartSeed(so.SeedWallSo, status))
                 return;
 
+            _seed = seedAssembler.ActiveSeedBlock;
             seedAssembler.BeginBonding();
 
             BeginCloakVisuals();      // ship ghost
@@ -119,6 +140,7 @@ namespace CosmicShore.Gameplay
             seedAssembler?.StopSeedCompletely();
 
             _activeSo  = null;
+            _seed      = null;
             _isRunning = false;
         }
 
@@ -143,16 +165,69 @@ namespace CosmicShore.Gameplay
                 // normal on End()
             }
 
+            // The illusion collapses into the seed rather than vanishing, while everything is
+            // still cloaked; then the hull, the trail and the seed come back together.
+            if (!ct.IsCancellationRequested)
+            {
+                try { await MorphIllusionIntoSeed(so, ct); }
+                catch (OperationCanceledException) { /* End() restores everything */ }
+            }
+
             _isRunning = false;
 
             RestoreShipImmediate();
             RestoreAllPrismsImmediate();
+            ReplaySeedBloom();
             seedAssembler?.StopSeedCompletely();
 
             _activeSo = null;
+            _seed = null;
 
             _runCts?.Dispose();
             _runCts = null;
+        }
+
+        /// <summary>
+        /// Carry the illusion onto the seed: it travels to the seed, turns to the seed's pose and
+        /// shrinks to the seed's size over <see cref="CloakSeedWallActionSO.IllusionMorphSeconds"/>
+        /// (smoothstep), so the decoy visibly becomes the prism. Nothing may vanish in place.
+        /// </summary>
+        private async UniTask MorphIllusionIntoSeed(CloakSeedWallActionSO so, CancellationToken ct)
+        {
+            var seed = _seed;
+            float seconds = so ? so.IllusionMorphSeconds : 0f;
+            if (!_serpentGhost || !seed || seed.destroyed || seconds <= 0f) return;
+
+            var t = _serpentGhost.transform;
+            Vector3 p0 = t.position;
+            Quaternion r0 = t.rotation;
+            Vector3 s0 = t.localScale;
+
+            float ghostSize = _serpentGhost.TryGetComponent(out MeshRenderer gr) ? gr.bounds.size.magnitude : 0f;
+            float seedSize = seed.transform.lossyScale.magnitude;
+            Vector3 s1 = ghostSize > 0.0001f ? s0 * (seedSize / ghostSize) : s0 * 0.1f;
+
+            float start = Time.time;
+            while (true)
+            {
+                if (!_serpentGhost || !seed || seed.destroyed) return;
+                float u = Mathf.Clamp01((Time.time - start) / seconds);
+                float e = u * u * (3f - 2f * u);
+                var st = seed.transform;
+                t.SetPositionAndRotation(Vector3.Lerp(p0, st.position, e), Quaternion.Slerp(r0, st.rotation, e));
+                t.localScale = Vector3.Lerp(s0, s1, e);
+                if (u >= 1f) return;
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+        }
+
+        /// <summary>The seed's stellation blooms again as the illusion lands in it: the moment
+        /// the decoy becomes a super-shielded prism, seen by everyone the cloak hid it from.</summary>
+        private void ReplaySeedBloom()
+        {
+            var seed = _seed;
+            if (!seed || seed.destroyed || seed.prismProperties is not { IsSuperShielded: true }) return;
+            seed.ActivateSuperShield();
         }
 
         // ---------------- Cloak visuals ----------------
@@ -166,7 +241,9 @@ namespace CosmicShore.Gameplay
 
             if (IsLocalUser)
             {
-                var ghostMat = _activeSo?.GhostShipMaterial;
+                // The pilot keeps a translucent hull to steer by: the ghost material is authored
+                // fully clear (alpha 0), which hid the ship from the person flying it.
+                var ghostMat = PilotGhostMaterial(_activeSo);
                 if (ghostMat) ApplySingleMaterialAcrossRenderer(shipRenderer, ghostMat);
                 shipRenderer.enabled = true;
             }
@@ -174,6 +251,25 @@ namespace CosmicShore.Gameplay
             {
                 shipRenderer.enabled = false;
             }
+        }
+
+        private static readonly int _BaseColorProp = Shader.PropertyToID("_BaseColor");
+        private static readonly int _ColorProp     = Shader.PropertyToID("_Color");
+
+        private Material PilotGhostMaterial(CloakSeedWallActionSO so)
+        {
+            var source = so ? so.GhostShipMaterial : null;
+            if (!source) return null;
+            if (!_pilotGhostMaterial) _pilotGhostMaterial = new Material(source) { name = source.name + " (Pilot)" };
+            float alpha = so.PilotGhostAlpha;
+            foreach (int id in new[] { _BaseColorProp, _ColorProp })
+            {
+                if (!_pilotGhostMaterial.HasProperty(id)) continue;
+                var c = source.GetColor(id);
+                c.a = alpha;
+                _pilotGhostMaterial.SetColor(id, c);
+            }
+            return _pilotGhostMaterial;
         }
 
         private void HandleBlockSpawned(Prism block)
@@ -287,7 +383,13 @@ namespace CosmicShore.Gameplay
         {
             foreach (var t in _cloakedPrisms)
             {
-                if (t?.Prism == null || t.Animator == null) continue;
+                if (t?.Prism == null) continue;
+                if (t.Shaded)
+                {
+                    t.Prism.SetColorShade(1f);
+                    continue;
+                }
+                if (t.Animator == null) continue;
 
                 // Next ValidateMaterials() should rebuild the team materials from ThemeManager
                 t.Animator.MarkMaterialsDirty();
@@ -372,6 +474,15 @@ namespace CosmicShore.Gameplay
         private void CloakOnePrism(Prism prism)
         {
             if (prism == null || _activeSo == null) return;
+
+            // The pilot sees their own trail DIMMED, so they know it is hidden from everyone else
+            // without losing it; every other viewer gets the cloak below.
+            if (IsLocalUser)
+            {
+                prism.SetColorShade(_activeSo.PilotTrailShade);
+                _cloakedPrisms.Add(new TrackedPrism { Prism = prism, Shaded = true });
+                return;
+            }
 
             var anim = prism.GetComponent<MaterialPropertyAnimator>();
             if (anim == null) return;

@@ -18,3 +18,6 @@ MonoBehaviour:
   prismCloakTransparent: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a,
     type: 2}
   prismCloakOpaque: {fileID: 0}
+  pilotGhostAlpha: 0.3
+  pilotTrailShade: 0.35
+  illusionMorphSeconds: 0.6

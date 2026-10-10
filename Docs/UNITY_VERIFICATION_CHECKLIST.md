@@ -91,10 +91,22 @@ rest), the twist is capped at 25 degrees (`MaxTwistDegrees`, the range that gap 
 and panels turn only through `SerpentWallLattice.BrickRotation` / `PanelRotation`, which edit-mode
 tests pin against the maths. Re-test steps 4 and 6.
 
+**Garrett's third playtest (2026-10-10):** spacing good, but with Mass upgraded a crystal brought no
+twist and no panels; walls stopped growing; the cloaked Serpent and its trail were invisible to
+their own pilot; the illusion vanished instead of becoming the seed; some wall prisms used an old
+model. Causes and fixes: Lockdown was snapshotted at placement and only omni crystals answered, so
+it is now read from the replicated Mass unlock bit at crystal time and every crystal (omni and all
+four elements) re-shields; growth was capped at 50 and stopped when the stance or cloak ended, so
+it now runs for the seed's whole life, retries empty sites and refills shot-out ones (stable
+`GrowthOrder` prefix); the cloak's `IsLocalUser` was hard-wired true, so the pilot now sees a
+translucent hull and a dimmed trail while others see neither; the illusion now collapses into the
+seed and the seed's stellation blooms; `Serpent Prism.prefab` and `Prism Interactive.prefab` were
+on the built-in cube and now use the 24-face prism mesh. Re-test steps 1, 2, 6 and 8.
+
 **Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
 result.
 
-**Verify in editor:** the seven steps in SERPENT_SEED_WALL.md § "Editor checks".
+**Verify in editor:** the eight steps in SERPENT_SEED_WALL.md § "Editor checks".
 
 **First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, claim every
 0.15 s, recruit radius 40, pull 20 / 6 u/s, ripple 0.08 s per ring, twist 15 degrees over 0.4 s,

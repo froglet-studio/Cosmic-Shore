@@ -10,22 +10,25 @@ namespace CosmicShore.Gameplay
     /// The Serpent's seed wall: the MASS ability (design: R_VesselActions/SERPENT_SEED_WALL.md).
     ///
     /// Lives on the SEED, a super-shielded trail prism left behind by the cloak or by the stopped
-    /// stance. While the seed bonds it claims lattice sites outward from itself
+    /// stance. For as long as the seed lives it claims lattice sites outward from itself
     /// (<see cref="SerpentWallLattice.GrowthOrder"/>) and pulls the nearest loose prism into each
-    /// one, reshaping it into a 2:1 brick. An opponent's prism is stolen when it lands, which is
-    /// the wall stealing along its edge. Destroying the seed ends the wall: a seed shot the moment
-    /// it is laid grows nothing.
+    /// one, reshaping it into a 2:1 brick. It never finishes: a site with nothing to pull is
+    /// tried again later, and a brick that is shot out frees its site to be refilled. Leaving the
+    /// stance or the cloak ending does not stop it. An opponent's prism is stolen when it lands,
+    /// which is the wall stealing along its edge. Destroying the seed ends the wall: a seed shot
+    /// the moment it is laid grows nothing.
     ///
-    /// <para><b>Everything about the wall's shape is snapshotted at placement</b>
-    /// (<see cref="Snapshot"/>): brick size and spacing from the Mass level, and whether the wall
-    /// carries the Mass-5 Lockdown. A wall keeps the shape it was born with even if the pilot's
-    /// Mass moves afterwards.</para>
+    /// <para><b>The wall's SIZE is snapshotted at placement</b> (<see cref="Snapshot"/>): brick
+    /// size and spacing from the Mass level. A wall keeps the size it was born with even if the
+    /// pilot's Mass moves afterwards.</para>
     ///
-    /// <para><b>Omni crystals</b> (<see cref="SerpentWallShieldByCrystalEffectSO"/>) draw a beam
-    /// from the crystal to every live super-shielded seed the collecting Serpent owns and ripple a
-    /// shield through each wall, ring by ring. A Lockdown wall also twists every brick clockwise
-    /// on its first crystal, which opens one parity of lattice cell and closes the other, and
-    /// seals the open cells with flat danger panels.</para>
+    /// <para><b>Crystals</b> (<see cref="SerpentWallShieldByCrystalEffectSO"/>, omni and every
+    /// element) draw a beam from the crystal to every live super-shielded seed the collecting
+    /// Serpent owns and ripple a shield through each wall, ring by ring. If the Serpent's Mass
+    /// upgrade (Lockdown) is active WHEN the crystal is collected, the wall also twists every brick
+    /// clockwise, which opens one parity of lattice cell and closes the other, and seals the open
+    /// cells with flat danger panels; cells the wall completes afterwards are sealed as they
+    /// close.</para>
     ///
     /// <para><b>Multiplayer.</b> Like the legacy wall and the Scarab switch, the wall is rebuilt
     /// independently on every peer from replicated inputs (the cloak and stance presses, the
@@ -35,7 +38,8 @@ namespace CosmicShore.Gameplay
     public sealed class SerpentWallAssembler : Assembler
     {
         /// <summary>The shape a wall is born with. Built by SeedAssemblerActionExecutor from the
-        /// placing vessel's elemental state, then never changed.</summary>
+        /// placing vessel's elemental state, then never changed. Lockdown is NOT part of it: it is
+        /// read from the owner's replicated unlock bit when a crystal arrives.</summary>
         public struct Snapshot
         {
             public SeedWallActionSO Config;
@@ -45,7 +49,6 @@ namespace CosmicShore.Gameplay
             public float ShortSide;
             public float Depth;
             public float MassMultiplier;
-            public bool Lockdown;
         }
 
         sealed class Member
@@ -76,8 +79,15 @@ namespace CosmicShore.Gameplay
         Vector3 _origin;
         Quaternion _frame;
 
-        List<Vector2Int> _order;
-        int _nextSite;
+        /// <summary>How many unfilled sites past the frontier are tried per claim.</summary>
+        const int ClaimWindow = 6;
+
+        // The growth order, extended on demand (the wall never runs out of sites), and each
+        // site's index in it, so a site freed behind the frontier pulls the frontier back.
+        readonly List<Vector2Int> _order = new();
+        readonly Dictionary<Vector2Int, int> _orderIndex = new();
+        int _frontier;
+        bool _panelsDirty;
         float _nextClaimAt;
         bool _growing;
 
@@ -98,14 +108,15 @@ namespace CosmicShore.Gameplay
         public Snapshot Shape => _shape;
 
         /// <summary>The seed is alive (not destroyed, not recycled by the pool) and still
-        /// super-shielded. Only an active wall grows and answers an omni crystal.</summary>
+        /// super-shielded. Only an active wall grows and answers a crystal.</summary>
         public bool IsActive => IsSeedAlive && Prism.prismProperties is { IsSuperShielded: true };
 
         bool IsSeedAlive =>
             Prism && !Prism.destroyed && Prism.gameObject.activeInHierarchy &&
             Prism.prismProperties != null && Mathf.Approximately(Prism.prismProperties.TimeCreated, _seedBornAt);
 
-        public override bool IsFullyBonded() => _order != null && _nextSite >= _order.Count;
+        /// <summary>Never: the wall grows for as long as its seed lives.</summary>
+        public override bool IsFullyBonded() => false;
 
         public override GrowthInfo GetGrowthInfo() => new GrowthInfo { CanGrow = false };
 
@@ -126,8 +137,10 @@ namespace CosmicShore.Gameplay
             _seedBornAt = Prism.prismProperties != null ? Prism.prismProperties.TimeCreated : 0f;
             _origin = Prism.transform.position;
             _frame = Prism.transform.rotation;
-            _order = SerpentWallLattice.GrowthOrder(Mathf.Max(0, Depth));
-            _nextSite = 0;
+            _order.Clear();
+            _orderIndex.Clear();
+            _frontier = 0;
+            _panelsDirty = false;
             _members.Clear();
             _panels.Clear();
             _twist = 0f;
@@ -149,9 +162,11 @@ namespace CosmicShore.Gameplay
             _nextClaimAt = Time.time;
         }
 
-        /// <summary>Stops GROWTH only. The wall keeps its bricks and still answers omni crystals
-        /// for as long as its seed lives - that is what makes old walls worth re-shielding.</summary>
-        public override void StopBonding() => _growing = false;
+        /// <summary>Deliberately nothing. The executor calls this when the stance is left or the
+        /// cloak ends, and the wall outlives both: it grows, and answers crystals, for as long as
+        /// its seed lives (Garrett, 2026-10-10: "prism walls should continue growing
+        /// indefinitely").</summary>
+        public override void StopBonding() { }
 
         void OnDisable() => Dissolve();
 
@@ -190,6 +205,14 @@ namespace CosmicShore.Gameplay
                 ClaimNextSite();
             }
 
+            // A Lockdown wall seals each open cell as soon as its four bricks stand, not only on
+            // the next crystal.
+            if (_panelsDirty && _locked && !_twisting)
+            {
+                _panelsDirty = false;
+                LayPanels();
+            }
+
             if (_twisting)
             {
                 float d = _shape.Config.LockTwistSeconds;
@@ -205,16 +228,26 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Growth ----------------
 
+        /// <summary>
+        /// Claim one site: the first unfilled one, from the frontier on, that has a loose prism in
+        /// reach. Sites with nothing in reach are left open and tried again on the next claim, so
+        /// the wall keeps growing as mass arrives instead of stopping.
+        /// </summary>
         void ClaimNextSite()
         {
-            if (_order == null) return;
-            while (_nextSite < _order.Count)
+            EnsureOrder(_frontier + ClaimWindow);
+            while (_frontier < _order.Count && IsFilled(_order[_frontier])) _frontier++;
+            EnsureOrder(_frontier + ClaimWindow);
+
+            int tried = 0;
+            for (int k = _frontier; k < _order.Count && tried < ClaimWindow; k++)
             {
-                var site = _order[_nextSite++];
-                if (_members.ContainsKey(site)) continue;
+                var site = _order[k];
+                if (IsFilled(site)) continue;
+                tried++;
 
                 var candidate = FindRecruit(SitePosition(site));
-                if (!candidate) continue;   // nothing loose near this site: move on, never stall
+                if (!candidate) continue;
 
                 s_claimed.Add(candidate);
                 var brick = SerpentWallLattice.BrickScale(_shape.ShortSide, _shape.Depth);
@@ -230,7 +263,27 @@ namespace CosmicShore.Gameplay
                 };
                 return;
             }
-            _growing = false;
+        }
+
+        bool IsFilled(Vector2Int site) => _members.TryGetValue(site, out var m) && m.Prism;
+
+        /// <summary>Grow the order to at least <paramref name="count"/> sites. GrowthOrder's
+        /// prefix is stable, so the sites already claimed keep their places.</summary>
+        void EnsureOrder(int count)
+        {
+            if (_order.Count >= count) return;
+            var order = SerpentWallLattice.GrowthOrder(Mathf.Max(count, _order.Count * 2, 24));
+            for (int k = _order.Count; k < order.Count; k++)
+            {
+                _orderIndex[order[k]] = k;
+                _order.Add(order[k]);
+            }
+        }
+
+        /// <summary>A brick was lost: its site is open again, so growth looks there first.</summary>
+        void FreeSite(Vector2Int site)
+        {
+            if (_orderIndex.TryGetValue(site, out int k) && k < _frontier) _frontier = k;
         }
 
         Prism FindRecruit(Vector3 site)
@@ -239,7 +292,7 @@ namespace CosmicShore.Gameplay
             if (index == null || !index.IsAvailable) return null;
 
             // The loose mass is the Serpent's own trail, which runs back from the SEED along the
-            // wall's normal, while the outer sites sit several shielded pitches (13.5 x Mass) out
+            // wall's normal, while the outer sites sit several shielded pitches (15 x Mass) out
             // in the wall's plane. A radius about the site alone would leave every site further
             // than that from the trail with nothing to pull and the wall would stop after one
             // ring, so the reach grows with the site's distance from the seed: anything a site
@@ -283,9 +336,12 @@ namespace CosmicShore.Gameplay
                 if (!m.Prism) continue;
                 if (!IsAlive(m.Prism, m.BornAt))
                 {
-                    // Shot out, or recycled by the pool into someone else's prism: let it go.
+                    // Shot out, or recycled by the pool into someone else's prism: let it go, and
+                    // reopen the site so the wall rebuilds it.
                     s_claimed.Remove(m.Prism);
                     m.Prism = null;
+                    m.Landed = false;
+                    FreeSite(m.Site);
                     continue;
                 }
 
@@ -313,12 +369,13 @@ namespace CosmicShore.Gameplay
                     t.SetPositionAndRotation(target, rot);
                     m.Landed = true;
                     if (!own) m.Prism.Steal(_shape.PlayerName, _shape.Domain, true);
+                    if (_locked) _panelsDirty = true;
                 }
                 m.Prism.NotifyPositionChanged();
             }
         }
 
-        // ---------------- Omni crystal ----------------
+        // ---------------- Crystals ----------------
 
         /// <summary>
         /// Every live, super-shielded wall seeded by <paramref name="owner"/> draws a beam from the
@@ -370,12 +427,21 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (_shape.Lockdown && IsActive)
+            if (LockdownActive() && IsActive)
             {
                 if (!_locked) yield return Twist();
                 LayPanels();
             }
             _ripple = null;
+        }
+
+        /// <summary>The owner's Mass upgrade (Lockdown), read from the REPLICATED unlock bit when
+        /// the crystal arrives, so every peer decides the same way and a wall laid before the
+        /// upgrade still locks on the next crystal after it.</summary>
+        bool LockdownActive()
+        {
+            var abilities = _shape.Owner?.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(Element.Mass);
         }
 
         IEnumerator Twist()

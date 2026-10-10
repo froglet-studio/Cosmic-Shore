@@ -173,11 +173,6 @@ namespace CosmicShore.Gameplay
                 atFull: so.MassSizeMultiplierAtFull,
                 minMul: so.MinMassSizeMultiplier);
 
-            // Outcome-affecting unlocks resolve through the REPLICATED unlock bit, never a raw
-            // local level read, so every peer builds the same kind of wall.
-            var abilities = status.ElementalAbilityHandler;
-            bool lockdown = abilities && abilities.IsUpgradeActive(Element.Mass);
-
             return new SerpentWallAssembler.Snapshot
             {
                 Config = so,
@@ -187,7 +182,6 @@ namespace CosmicShore.Gameplay
                 ShortSide = so.BrickShortSide * mass,
                 Depth = so.BrickDepth * mass,
                 MassMultiplier = mass,
-                Lockdown = lockdown,
             };
         }
 

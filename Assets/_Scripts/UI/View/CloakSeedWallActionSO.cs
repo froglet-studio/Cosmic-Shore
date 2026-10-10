@@ -24,10 +24,25 @@ namespace CosmicShore.UI
         public Material PrismCloakTransparent => prismCloakTransparent;
         public Material PrismCloakOpaque      => prismCloakOpaque;
 
+        [Header("Pilot's own view")]
+        [Tooltip("How visible the cloaked hull stays to the pilot FLYING it (the ghost material's " +
+                 "alpha on their screen only). Everyone else sees nothing. 0 hides it from the " +
+                 "pilot too, which leaves them nothing to steer by.")]
+        [SerializeField, Range(0f, 1f)] private float pilotGhostAlpha = 0.3f;
+        [Tooltip("Brightness the pilot sees their own cloaked trail at (Prism.SetColorShade), so " +
+                 "they can tell it is hidden from everyone else without losing it. Everyone else " +
+                 "sees the trail cloaked.")]
+        [SerializeField, Range(0f, 1f)] private float pilotTrailShade = 0.35f;
 
-        // NOTE:
-        // Prism cloak is now handled by MaterialPropertyAnimator on each Prism
-        // via Prism.SetTransparency(true/false). No prism cloak materials here.
+        [Header("Illusion")]
+        [Tooltip("Seconds the illusion left at the cloak point takes to collapse into the " +
+                 "super-shielded seed when the cloak ends, instead of vanishing.")]
+        [SerializeField, Min(0f)] private float illusionMorphSeconds = 0.6f;
+
+        public float PilotGhostAlpha => pilotGhostAlpha;
+        public float PilotTrailShade => pilotTrailShade;
+        public float IllusionMorphSeconds => illusionMorphSeconds;
+
 
         public float CooldownSeconds => cooldownSeconds;
 

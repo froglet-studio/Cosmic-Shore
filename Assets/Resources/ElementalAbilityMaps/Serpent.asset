@@ -35,21 +35,21 @@ MonoBehaviour:
     AbilityDescription: 'Stopping (the turret stance) or cloaking leaves a SUPER-SHIELDED seed
       prism that pulls loose prisms into a self-assembling wall around itself, stealing an
       opponent''s prisms as they land. The pattern is a symmetric herringbone of 2:1 bricks with
-      a square hole at every cell, spaced so that once shielded the octahedral bricks touch long
-      vertex to short vertex. Mass sets the SIZE and SPACING of the bricks together (SeedWallActionSO.massSizeMultiplierAtFull,
-      x1 at rest to x2 at Mass 10, floored at x0.5), snapshotted when the seed is placed. Kill
-      the seed and the wall stops growing. Every omni crystal you collect fires a beam at each
-      of your live seeds and ripples a shield through its wall.'
+      a square hole at every cell, spaced so that once shielded the octahedral bricks point long
+      vertex at short vertex with a gap between. Mass sets the SIZE and SPACING of the bricks together (SeedWallActionSO.massSizeMultiplierAtFull,
+      x1 at rest to x2 at Mass 10, floored at x0.5), snapshotted when the seed is placed. The
+      wall keeps growing for as long as the seed lives; kill the seed and it stops. Every crystal
+      you collect fires a beam at each of your live seeds and ripples a shield through its wall.'
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Lockdown
-    UpgradeDescription: 'A wall seeded at Mass 5 or above locks up on its first omni crystal:
-      every brick turns 15 degrees clockwise, which opens one checkerboard parity of hole and
-      closes the other, and each opened hole is sealed with a flat DANGER panel. Later crystals
-      re-shield the wall and replace any panel that was shot out. Decided when the seed is
-      placed, on the replicated unlock bit.'
+    UpgradeDescription: 'A crystal collected while Lockdown is active locks up every live wall
+      you own: every brick turns 15 degrees clockwise, which opens one checkerboard parity of
+      hole and closes the other, and each opened hole is sealed with a flat DANGER panel, as are
+      the holes the wall closes as it keeps growing. Later crystals re-shield the wall and replace
+      any panel that was shot out. Read from the replicated unlock bit when the crystal lands.'
   - Element: 3
     AbilityLabel: Scope
     AbilityDescription: 'Hold the left trigger and a magnified view down your own nose opens in
