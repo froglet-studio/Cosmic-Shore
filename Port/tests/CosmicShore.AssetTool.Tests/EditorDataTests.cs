@@ -354,7 +354,13 @@ namespace CosmicShore.AssetTool.Tests
                 var models = Path.Combine(root, "Assets", "Models");
                 Directory.CreateDirectory(models);
                 File.WriteAllText(models + ".meta", "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n");
-                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/MassCrystalExport1_8-21-25.fbx" })
+                // Donors are chosen so the majority is NOT what the base donor (the shortest meta
+                // of the newest importer version) or Orb.fbx.meta itself carries: Crystal and
+                // SpaceCrystal are isReadable 0, ChargeCrystal and Orb are 1. The previous third
+                // donor, MassCrystalExport1_8-21-25, was flipped to readable on 2026-10-08 (the
+                // crystal hull fusion reads its vertices), which made the majority 1 and this
+                // test red for every push after it.
+                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/SpaceCrystalExport1_7-17-25.fbx" })
                 {
                     File.Copy(Path.Combine(Root, donor), Path.Combine(models, Path.GetFileName(donor)));
                     File.Copy(Path.Combine(Root, donor + ".meta"), Path.Combine(models, Path.GetFileName(donor) + ".meta"));
@@ -371,7 +377,7 @@ namespace CosmicShore.AssetTool.Tests
                 var meta = File.ReadAllText(Path.Combine(root, path + ".meta"));
                 Assert.Contains("guid: " + guid, meta);
                 Assert.Contains("serializedVersion: 22200", meta);         // the newest importer version among the donors
-                Assert.Contains("isReadable: 0", meta);                    // the majority (2 of 3), not the cleanest donor's own 1
+                Assert.Contains("isReadable: 0", meta);                    // the majority (2 of 3), not Orb's own 1 nor the base donor's
                 Assert.Contains("internalIDToNameTable: []", meta);
                 Assert.Contains("clipAnimations: []", meta);
                 Assert.True(File.Exists(Path.Combine(root, "Assets/Imported.meta")) && File.Exists(Path.Combine(root, "Assets/Imported/Orbs.meta")), "new folders get metas");
