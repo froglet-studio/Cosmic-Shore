@@ -46,6 +46,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: this branch's ship commit.
 - Promoted: §9
 
+### L-GEN-4 — A baker that splices between markers must match the marker LINE, not the marker text
+- Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`) · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-10
+- What happened: `Tools/Build/omni_shepard_lab_assets.py` bakes the shipped meshes and material numbers between `// <assets>` and `// </assets>`. The page's header comment NAMED the markers in prose, `str.find` matched that first, and the splice deleted the whole `<head>`, style and body markup. The page then loaded as an empty document: no console error, no page error, only `window.__lab is missing` from the verifier.
+- Do instead: match a marker only when it is alone on its line (regex anchored `^\s*marker\s*$`), require exactly one of each, and plant "a marker named in prose" in the baker's `--self-test`. When a page shows nothing and logs nothing, check `document.body.innerHTML` before debugging the script.
+- Evidence: `omni_shepard_lab_assets.py:splice`, self-test "a marker mentioned in prose is left alone".
+- Promoted: no
+
 ---
 
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
@@ -147,6 +154,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: when putting an existing lab on the contract, expose those five members and give `runBatch` a no-argument default (the shipped batch). The verifier's `--self-test` now plants a throwing hook.
 - Evidence: verify_lab report on the aliased page.
 - Promoted: §3 (the contract list)
+
+### L-STU-15 — A look lab's scorecard is analytic, and its best column is "where does the eye first see it"
+- Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`) · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-10
+- What happened: the omni crystal's Shepard triangles have no randomness and no pilot, so the scorecard is computed straight from the meshes and the shader formula (seed only picks plates). The column that decided things was "seen from", the height where alpha first passes the clip, not the authored launch height: raising `_Start` from 1.0 to 1.6 tripled the launch height on paper (6.8 → 15.2 u) but the triangles were still first seen at 7.4 u, because the shader hard-codes `alpha = (1.05 − s)`. A "landing hidden by the body" column with a planted "lands short" control did the same for the far end (prefab scale 1.2 lands 2.2 u short: a visible pop).
+- Do instead: for a visual effect, score what the viewer perceives (first visible, hand-off hidden, seams) beside the authored numbers, and tag every slider with whether it ships as data, needs an asset, or needs a shader edit (`needs mesh` / `needs shader` chips on the row) so a designer never tunes a knob that cannot ship.
+- Evidence: `Docs/Studios/OMNI_SHEPARD_LAB.md` round 1 scorecard; `window.__lab.metrics`.
+- Promoted: no
 
 ---
 
