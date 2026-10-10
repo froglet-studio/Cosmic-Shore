@@ -23,7 +23,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 
 ## 1. The studio in its own window (OPEN IN AMOEBIUS)
 
-1. VESSEL STUDIO ▸ **STOAT** card ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
+1. VESSEL STUDIO ▸ pick **STOAT** ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
    - **Pass:** the top bar reads **Running on Amoebius · PC (mouse / trackpad)**.
    - With no Edge or Chrome installed, it opens in your default browser instead and reads **Web · PC**.
 2. **Layout.**
@@ -85,7 +85,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 
 ## 3. Phone
 
-1. Open the **WEB LINK** (the published Vessel Studio) in the phone's browser.
+1. Open the published Vessel Studio in the phone's browser (https://yskhan61.github.io/vessel-studio/, or the claude.ai artifact).
 2. Pick **Stoat**. It opens straight into the touch layout.
 3. Hold the phone sideways:
    - thumbs on the two sticks;
@@ -107,7 +107,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 | The game's edit-mode tests on Amoebius | 352 / 352 pass (before and after the merges) |
 | `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 (re-run after the merges: same) |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
-| VESSEL STUDIO page (screenshot) | Both cards. The Stoat card has OPEN IN AMOEBIUS · BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
+| VESSEL STUDIO page (screenshot) | One picker (SQUIRREL · STOAT · ALL STUDIOS) and one card with OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
 | `stoat.html#prisma` | Reads "Amoebius · PC", has the editor layout and the back link to the hub, no console errors |
 
 **Not checked here:** a real Windows PC. Edge's app window, a GPU, and a gamepad through the app window all

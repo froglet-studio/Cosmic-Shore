@@ -117,6 +117,24 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void Targets_AreEachVesselThenTheHub_AndPickFallsBackToTheFirst()
+        {
+            var c = StudioCatalog.Parse(Good);
+            var t = c.Targets();
+            Assert.Equal(new[] { "squirrel", "stoat", "hub" }, t.Select(x => x.Key));   // one picker: the vessels, then ALL STUDIOS
+            Assert.True(t[2].IsHub);
+            Assert.Equal(c.Hub, t[2].File);
+            Assert.Equal(StudioCatalog.PlanDoc, t[2].Docs);                               // the hub's DOCS is the plan
+            Assert.Equal("Docs/a.md", t[0].Docs);
+            Assert.Equal("stoat", c.Pick("stoat").Key);
+            Assert.Equal("squirrel", c.Pick("gone").Key);                                 // a vessel removed from the catalog
+            Assert.Equal("squirrel", c.Pick(null).Key);
+            Assert.True(new StudioCatalog().Pick(null).IsHub);                            // no catalog: the hub alone, never empty
+            Assert.Contains(StudioCatalog.PlanDoc, StudioCatalog.AgentPrompt(t[2]));
+            Assert.Contains("squirrel.html", StudioCatalog.AgentPrompt(t[0]));
+        }
+
+        [Fact]
         public void WebLinksWork_WithNoCatalog()
         {
             var none = new StudioCatalog { Error = "no checkout" };

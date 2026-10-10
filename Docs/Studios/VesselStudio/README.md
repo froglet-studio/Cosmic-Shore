@@ -23,7 +23,7 @@ browser, in a phone browser, from Amoebius's **VESSEL STUDIO** page on Windows, 
   `squirrel.html` / `stoat.html` by link in any browser, nothing to install, updated in place when it is
   republished (a minute or so; a browser that has the page cached may need a refresh). The features that need
   the claude.ai viewer say so there. A mirror, not a source: change the pages here, then republish.
-  Amoebius's VESSEL STUDIO page opens it with **OPEN LIVE IN BROWSER**.
+  Amoebius's VESSEL STUDIO page opens it with **OPEN IN BROWSER** (pick a vessel, or ALL STUDIOS for the hub).
 
 ## Rules for every studio page
 

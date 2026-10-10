@@ -82,6 +82,38 @@ namespace CosmicShore.Launcher
             return file == Hub ? root : root + Uri.EscapeDataString(file);
         }
 
+        /// <summary>The plan every studio follows: the hub's DOCS.</summary>
+        public const string PlanDoc = "Docs/Studios/VESSEL_STUDIO_PLAN.md";
+
+        /// <summary>
+        /// One thing the VESSEL STUDIO page acts on: a vessel's studio, or the hub (every studio at once). The page is ONE
+        /// picker over these and ONE action row for the picked one, never a row of buttons per vessel: every action exists
+        /// once, and a vessel added to studios.json gets all of them with no page change.
+        /// </summary>
+        public sealed record Target(string Key, string Label, string File, Studio? Studio)
+        {
+            public bool IsHub => Studio == null;
+            public string? Docs => IsHub ? PlanDoc : Studio!.Docs;
+            public string? EngineMode => Studio?.EngineMode;
+        }
+
+        /// <summary>The picker's items: each vessel's studio in catalog order, then the hub.</summary>
+        public IReadOnlyList<Target> Targets()
+        {
+            var list = new List<Target>();
+            foreach (var s in Studios) list.Add(new Target(s.Id, s.Name.ToUpperInvariant(), s.File, s));
+            list.Add(new Target("hub", "ALL STUDIOS", Hub, null));
+            return list;
+        }
+
+        /// <summary>The picked target by key; an unknown key (a vessel removed from the catalog) falls back to the first.</summary>
+        public Target Pick(string? key)
+        {
+            var all = Targets();
+            foreach (var t in all) if (t.Key == key) return t;
+            return all[0];
+        }
+
         /// <summary>The artifact link to open: the catalog's, else <see cref="DefaultWeb"/>.</summary>
         public string WebLink => Web ?? DefaultWeb;
 
@@ -154,6 +186,12 @@ namespace CosmicShore.Launcher
         /// <summary>The player arguments PLAY IN ENGINE adds: open the studio's arcade mode from the main menu.</summary>
         public static IReadOnlyList<string> EngineArgs(Studio s) =>
             string.IsNullOrWhiteSpace(s.EngineMode) ? Array.Empty<string>() : new[] { "--arcade", s.EngineMode! };
+
+        /// <summary>The prompt that opens an agent chat on a target: one studio, or the Vessel Studio as a whole.</summary>
+        public static string AgentPrompt(Target t) => t.Studio != null ? AgentPrompt(t.Studio) :
+            $"Work on the Vessel Studio ({RelativeDir}): the hub and the rules every studio shares.\n" +
+            $"Read {PlanDoc} and the /vessel-studio skill first (one artifact, the universal panel rules, the one look).\n" +
+            "Ask me what to change, or propose the next most useful improvement, and plan it before editing.";
 
         /// <summary>The prompt that opens an agent chat on one studio.</summary>
         public static string AgentPrompt(Studio s) =>

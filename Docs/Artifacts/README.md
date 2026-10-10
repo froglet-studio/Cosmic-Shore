@@ -42,4 +42,4 @@ The card appears within seconds of the import. Commit and push it so other machi
 
 Pages that use the claude.ai viewer's features (shared data, asking Claude, who is viewing) open in Amoebius
 with those features off (the Vessel Studio hub's agent says so and offers to copy a prompt instead). The
-card's **WEB LINK** opens the live artifact with everything on.
+library's **OPEN IN BROWSER** opens the live artifact with everything on.

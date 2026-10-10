@@ -34,7 +34,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Amoebius Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
-| **VESSEL STUDIO** | The Vessel Studio artifact inside Amoebius: one card per vessel studio (Squirrel, Stoat), each opening its page from the workspace, an **AGENT** chat on it, and its docs. **WEB LINK** is the same studio published on claude.ai, which a phone opens. Below it, **ARTIFACTS**: every claude.ai artifact brought into the repo, and the way to add one. Catalogs: `Docs/Studios/VesselStudio/studios.json` and `Docs/Artifacts/artifacts.json` (below). |
+| **VESSEL STUDIO** | The Vessel Studio inside Amoebius: pick a vessel (Squirrel, Stoat, or ALL STUDIOS for the hub), then one row of actions for it: **OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS**. Quiet links below: the claude.ai artifact, the folder, update from the artifact. Below it, **ARTIFACTS**: every claude.ai artifact brought into the repo, and the way to add one. Catalogs: `Docs/Studios/VesselStudio/studios.json` and `Docs/Artifacts/artifacts.json` (below). |
 | **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
 | **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
@@ -68,9 +68,17 @@ artifact library (docs screenshots).
 Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
 and element levels, and read what each number does. The pages are plain HTML in
 `Docs/Studios/VesselStudio/` (no build step), so the same files open here, in any desktop browser, and on a
-phone through **WEB LINK** (the published copy on claude.ai). Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
+phone through the live mirror or the claude.ai artifact. Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
 
-Each card has these buttons:
+**One picker, one action row** (2026-10-10, the user: no row of buttons per vessel). The page is a picker over
+`StudioCatalog.Targets()` (each vessel's studio, then ALL STUDIOS = the hub) and one card for the picked one, with
+the same five actions in the same order whatever is picked (`LauncherApp.StudioActions`). An action that does not
+apply stays visible, disabled, and its tooltip says why (the hub has no PLAY IN ENGINE). A vessel added to
+`studios.json` gets every action with no launcher change. The artifact library below uses the same picker, card
+(`PickedCard`) and action row (`ActionRow`). The pages are read from Amoebius's workspace when it has them, else
+from the checkout Unity opened Amoebius from (`StudioCatalog.PickRoot`), so nothing waits for the first START.
+
+The actions:
 
 - **OPEN IN AMOEBIUS**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
   - It has no tabs or address bar.
@@ -79,7 +87,7 @@ Each card has these buttons:
   - The page is opened with `#prisma`, so it reads "Running on Amoebius".
   - With neither browser installed it falls back to the default browser.
   - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenStudioWindow`.
-- **BROWSER**: the same page in the default browser.
+- **OPEN IN BROWSER**: the published page on the live mirror (`mirror` in the catalog, else `StudioCatalog.DefaultMirror`), in the default browser; the same link opens on a phone.
 - **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
   - Amoebius builds and starts the game as PLAY does.
   - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
@@ -94,7 +102,9 @@ Each card has these buttons:
   `engineMode` is a `GameModes` member. A branch without it shows why, and how to switch. Adding a studio
   is a page plus a catalog entry; no launcher change. Read by `StudioCatalog` (tested in
   `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
-- **AGENT** starts an Amoebius Agent chat on that studio, in plan mode, pointed at the plan and the studio's rules.
+- **AGENT** starts an Amoebius Agent chat on that studio (or on the Vessel Studio as a whole, for ALL STUDIOS), in plan mode.
+- **DOCS**: the vessel's doc (`docs` in the catalog); for ALL STUDIOS, the plan.
+- **Links under the card**: the claude.ai artifact (`web`, else `StudioCatalog.DefaultWeb`; Sync, Ask and shared decisions work there), the folder, and update from the artifact (an agent chat; needs the workspace).
 - **From Unity:** **FrogletTools > Vessels > Vessel Studio** opens Amoebius on this page (`--page studios`); the
   studio itself never runs inside Unity.
 - **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
@@ -115,9 +125,9 @@ seconds (`ArtifactLibrary.Load`), so an import shows at once.
   uncommitted in the workspace for the GIT page.
 - **IMPORT FILE**: one downloaded page plus its link, no agent (`ArtifactLibrary.ImportPage`, the same schema
   the script writes). BROWSE is the Windows file dialog; elsewhere type the path.
-- Each card: **OPEN IN AMOEBIUS** (its own window, as a studio), **BROWSER**, **WEB LINK** (the live artifact,
-  with the claude.ai viewer's features), **UPDATE** (an agent chat that re-imports it), **FOLDER**.
-- The Vessel Studio is entry `vessel-studio`; **UPDATE FROM ARTIFACT** above its cards checks the published
+- The same picker and one action row: **OPEN IN AMOEBIUS** (its own window), **OPEN IN BROWSER** (the live artifact on
+  claude.ai, with the viewer's features), **AGENT** (an agent chat that re-imports it).
+- The Vessel Studio is entry `vessel-studio`; **update from the artifact** under the studio card checks the published
   studio against the repo pages (normally every file `unchanged`) and the line under it names the version last
   matched.
 - Tests: `ArtifactLibraryTests` (parse, path safety, IMPORT FILE add/update, the repo's own library).

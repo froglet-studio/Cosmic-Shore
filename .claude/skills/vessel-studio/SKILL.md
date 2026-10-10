@@ -446,8 +446,8 @@ racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) 
    `web` is the one artifact (§0). `mirror` is its **live mirror**
    (https://yskhan61.github.io/vessel-studio/, repo `YsKhan61/vessel-studio`, GitHub Pages): the same
    `build_artifact.py --ref origin/Ys-bleeding-edge` output pushed as plain files, so the hub and every page open by
-   link in any browser and update in place when it is republished. Amoebius's STUDIOS page opens it with
-   **OPEN LIVE IN BROWSER** (the hub, and `<mirror>/<file>` per studio). It is a mirror, never a second source or a
+   link in any browser and update in place when it is republished. Amoebius's VESSEL STUDIO page opens it with
+   **OPEN IN BROWSER** (pick a vessel or ALL STUDIOS; one picker and one action row, never buttons per vessel). It is a mirror, never a second source or a
    second artifact (D12): publish it from the build, never edit it. The publisher runs on the maintainer's machine
    (it fetches the branch, rebuilds with that ref's own `build_artifact.py`, commits only when the studio files
    changed). Sync, Ask, Requests and shared decisions need the claude.ai viewer, so on the mirror they say so.
