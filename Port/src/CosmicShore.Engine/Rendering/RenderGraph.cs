@@ -182,6 +182,12 @@ namespace CosmicShore.Engine.Rendering
     {
         public void DrawRendererList(RenderGraphModule.RendererListHandle rendererList) { }
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex = 0, int shaderPass = -1) { }
+        // A procedural draw (the black hole lens's one full-screen triangle). Recorded like the other raster
+        // commands, not drawn: the lens shader has no translation yet (Port/docs/ROADMAP.md item 14).
+        public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount,
+            int instanceCount, MaterialPropertyBlock properties) { }
+        public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount,
+            int instanceCount = 1) { }
         public void SetGlobalFloat(int nameID, float value) { }
     }
 
