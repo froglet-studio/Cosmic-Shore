@@ -97,6 +97,17 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   with `cs-asset` (480 commands, round-trip byte-identical, serialization audit 0/0) and seen on
   screen in Prisma; the send goes through `FriendsServiceFacade.SendFriendRequestByNameAsync`
   behind the same 0.4 s anti-spam gate as Invite/Cancel/Kick.
+- **Recently played with** (R13 item 3): `RecentPlayersStore` remembers the other humans of every
+  completed multiplayer match (recorded from `GameDataSO.InvokeMiniGameEnd` on every peer; AI
+  seats and the local pilot excluded; de-duplicated by id, newest first, capped by
+  `Resources/RecentPlayersConfig.asset`, 20), as local JSON `recent_players.data`. The
+  `FriendsListPanel` gained a **RECENT** section between ADD FRIEND and REQUESTS on all four
+  scene-placed panels (`cs-asset`, round-trip byte-identical, serialization audit 0/0, no new
+  dangling refs): `RequestsInfo` rows in their new `RecentPlayer` shape, an add-friend button per
+  row through `FriendsServiceFacade.SendFriendRequestAsync(playerId)` behind the same gate and
+  status line, FRIENDS / REQUEST SENT shown instead of the button. The Online scroll view is now
+  210 tall and fraction-anchored. Edit-mode `RecentPlayersStoreTests` (20) cover the list shaping.
+  Seen on screen in Prisma with a seeded store.
 
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
@@ -140,6 +151,16 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
     the field clears, and the other account's REQUESTS row shows it. Offline: "Friends service
     isn't ready". Two presses inside 0.4 s play one `OptionClick`. Repeat the look on the Arena,
     Mission and Toybox copies (verified structurally only).
+11. Two signed-in accounts play one online match to the scoreboard (any mode; an AI seat or two as
+    well). Back in Menu_Main ▸ Arcade ▸ an empty party slot: the RECENT bar sits between ADD
+    FRIEND and REQUESTS on both machines, with exactly the OTHER human as a row ("PLAYED JUST
+    NOW", their name and avatar) and no AI and no self; `persistentDataPath/recent_players.data`
+    holds that one record. Press the row's green glyph: the status line reads "Friend request
+    sent to NAME.", the row flips to REQUEST SENT, and the other account's REQUESTS section shows
+    the request; after Accept both rows read FRIENDS. Play again with the same partner: still one
+    row, moved to the front. Nothing overlaps at 16:9 and 4:3 (Online now 210 tall, fraction
+    anchored; Recent and Requests show one row plus the top of the next and scroll). Repeat the
+    look on the Arena, Mission and Toybox copies. Edit-mode: `RecentPlayersStoreTests` green.
 
 ---
 

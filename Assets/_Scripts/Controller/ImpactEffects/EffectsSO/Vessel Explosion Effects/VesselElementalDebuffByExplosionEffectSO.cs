@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
 
@@ -75,13 +74,14 @@ namespace CosmicShore.Gameplay
                  "stack its debuff every trigger re-entry.")]
         [SerializeField] private float cooldown = 1f;
 
-        // Per-vessel anti-spam, keyed on the victim's ResourceSystem — the same shape the danger
-        // prism debuff uses, so the two share a mental model even though the tables are separate.
-        private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+        // Per-vessel anti-spam, keyed on the victim's ResourceSystem: one VesselEffectCooldowns
+        // per effect type (the debuff and overtake effects share the shape, not the table). The
+        // table prunes destroyed vessels on first sight of a new one, so it cannot grow by dead
+        // vessels across matches.
+        static readonly VesselEffectCooldowns _cooldowns = new();
 
-        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => _lastEffectTime.Clear();
+        static void ResetStatics() => _cooldowns.Clear();
 
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
         {
@@ -91,9 +91,8 @@ namespace CosmicShore.Gameplay
             if (rs == null) return;
 
             var now = Time.time;
-            if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
+            if (!_cooldowns.TryBegin(rs, now, cooldown))
                 return;
-            _lastEffectTime[rs] = now;
 
             if (elements == null) return;
 

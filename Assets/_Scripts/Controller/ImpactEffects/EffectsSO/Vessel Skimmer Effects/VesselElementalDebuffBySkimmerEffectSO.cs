@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
 
@@ -84,13 +83,14 @@ namespace CosmicShore.Gameplay
                  "is rate-limited by the reporter's latch window, which is what the score uses.")]
         [SerializeField, Min(0f)] float cooldown = 1f;
 
-        // Per-vessel anti-spam, keyed on the victim's ResourceSystem — the same shape the
-        // explosion and danger-prism debuffs use, so the three share a mental model.
-        static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+        // Per-vessel anti-spam, keyed on the victim's ResourceSystem: one VesselEffectCooldowns
+        // per effect type (the debuff and overtake effects share the shape, not the table). The
+        // table prunes destroyed vessels on first sight of a new one, so it cannot grow by dead
+        // vessels across matches.
+        static readonly VesselEffectCooldowns _cooldowns = new();
 
-        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => _lastEffectTime.Clear();
+        static void ResetStatics() => _cooldowns.Clear();
 
         /// <summary>
         /// NOTE the argument order, shared with every other skimmer effect and inverted from what
@@ -114,9 +114,8 @@ namespace CosmicShore.Gameplay
             if (rs == null) return;
 
             float now = Time.time;
-            if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
+            if (!_cooldowns.TryBegin(rs, now, cooldown))
                 return;
-            _lastEffectTime[rs] = now;
 
             // The PETALS are not taken here: see TakeFrom, which the reporter calls for an
             // admitted hit. This keeps only the sound every peer should hear.

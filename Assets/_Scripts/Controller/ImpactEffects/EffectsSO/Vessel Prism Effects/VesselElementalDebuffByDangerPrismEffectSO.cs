@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -85,12 +84,14 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
-        // Per-vessel anti-spam: last time a danger prism debuff was applied to a vessel.
-        private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+        // Per-vessel anti-spam, keyed on the victim's ResourceSystem: one VesselEffectCooldowns
+        // per effect type (the debuff and overtake effects share the shape, not the table). The
+        // table prunes destroyed vessels on first sight of a new one, so it cannot grow by dead
+        // vessels across matches.
+        static readonly VesselEffectCooldowns _cooldowns = new();
 
-        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => _lastEffectTime.Clear();
+        static void ResetStatics() => _cooldowns.Clear();
 
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
@@ -120,10 +121,9 @@ namespace CosmicShore.Gameplay
             var now = Time.time;
             if (InSpawnGrace(now, rs.SpawnedAt, spawnGraceSeconds)) return false;
 
-            // Cooldown check - anti-spam per debuffed vessel
-            if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
+            // Cooldown check - anti-spam per debuffed vessel (destroyed vessels are pruned on first sight)
+            if (!_cooldowns.TryBegin(rs, now, cooldown))
                 return false;
-            _lastEffectTime[rs] = now;
 
             // NOT A GATE. Both branches run for every vessel that touches the prism - the locked
             // friendly-fire rule is intact - and the prism's domain only chooses HOW the loss

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using UnityEngine;
@@ -103,12 +102,14 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        // Per-vessel anti-spam: last time an overtake effect was applied to a vessel.
-        private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+        // Per-vessel anti-spam, keyed on the victim's ResourceSystem: one VesselEffectCooldowns
+        // per effect type (the debuff and overtake effects share the shape, not the table). The
+        // table prunes destroyed vessels on first sight of a new one, so it cannot grow by dead
+        // vessels across matches.
+        static readonly VesselEffectCooldowns _cooldowns = new();
 
-        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => _lastEffectTime.Clear();
+        static void ResetStatics() => _cooldowns.Clear();
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
@@ -132,11 +133,10 @@ namespace CosmicShore.Gameplay
             var rs = overtakenStatus.ResourceSystem;
             if (rs == null) return;
 
-            // Cooldown check - anti-spam per overtaken vessel
+            // Cooldown check - anti-spam per overtaken vessel (destroyed vessels are pruned on first sight)
             var now = Time.time;
-            if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
+            if (!_cooldowns.TryBegin(rs, now, cooldown))
                 return;
-            _lastEffectTime[rs] = now;
 
             // Haptic feedback
             HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
