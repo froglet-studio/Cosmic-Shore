@@ -129,9 +129,11 @@
 
   // ---------- build info: what this artifact is showing ----------
   let build = null;
-  const buildP = fetch('build.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((b) => {
+  // build.json exists only in a build; a page opened from the checkout (Unity, Amoebius: file://) has none and must not
+  // ask for it (a browser logs a file:// fetch as an error)
+  const buildP = (location.protocol === 'file:' ? Promise.resolve(null) : fetch('build.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null)).then((b) => {
     build = b;
-    $('cur').textContent = b ? `Showing ${b.repo} @ ${b.branch} \u00b7 ${b.pathSha.slice(0, 7)} \u201c${b.subject}\u201d (${new Date(b.committedAt).toLocaleString()})` : 'No build.json: this page does not know which commit it shows.';
+    $('cur').textContent = b ? `Showing ${b.repo} @ ${b.branch} \u00b7 ${b.pathSha.slice(0, 7)} \u201c${b.subject}\u201d (${new Date(b.committedAt).toLocaleString()})` : 'Opened from a checkout (Unity, Amoebius) or a folder, not the published artifact: Refresh, Compare, Merge and Delete run from the claude.ai artifact, ' + ARTIFACT() + '.';
     $('src').value = ls.get('src', b ? b.branch : WATCH[0]);
     $('from').value = ls.get('from', WATCH[0]); $('to').value = ls.get('to', WATCH[1]);
     return b;

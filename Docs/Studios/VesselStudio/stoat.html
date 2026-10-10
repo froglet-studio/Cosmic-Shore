@@ -4523,7 +4523,7 @@
   (async function connect() {
     const status = $('logStatus');
     const c = window.claude;
-    if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it).'; status.className = 'hint status-warn'; renderLog(); return; }
+    if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it). The shared log is in the claude.ai artifact:'; if (window.VesselStudioTheme) status.appendChild(VesselStudioTheme.artifactLink()); status.className = 'hint status-warn'; renderLog(); return; }
     try { db = await c.use('db'); } catch (e) { db = null; }
     try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
     if (!db) { status.textContent = 'Kept in this browser (Copy log to send it).'; status.className = 'hint status-warn'; renderLog(); return; }
@@ -4728,6 +4728,7 @@
   window.__lab = window.__stoatStudio;
 })();
 </script>
+<script src="sync.js"></script>   <!-- the Sync panel, in the page itself: the same page wherever it opens (/vessel-studio section 0) -->
 
 </body>
 </html>

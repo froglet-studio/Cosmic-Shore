@@ -6,13 +6,14 @@
     python3 .claude/skills/vessel-studio/build_artifact.py --self-test
 
 What it writes into --out (and nothing anywhere else):
-  index.html + every studio page listed in studios.json, each with the sync panel
-  (<script src="sync.js"></script>) injected before its last </body>;
+  index.html + every studio page listed in studios.json, exactly as the repo has them: each page carries the sync
+  panel (<script src="sync.js"></script>) itself, so the published page is the page Unity and Amoebius open (an older
+  ref without the tag gets it injected before its last </body>);
   studios.json; sync.js (from the ref, else from this working tree); build.json, the record of
   which branch and commit the artifact shows (the panel's Refresh compares against it).
 
-The repo pages are never edited: the panel is added at publish time, here and by Refresh itself,
-so a studio branch merges without touching the panel. Then publish:
+The pages carry the panel tag themselves (one Vessel Studio: the same files on claude.ai, the mirror, Unity and Amoebius);
+the injection is only for older refs that lack it. Then publish:
   Artifact(file_path=<out>/index.html, files={each other file: <out>/<file>}, url=<the artifact>)
   with the capabilities listed in SKILL.md section 4 on the first publish.
 """
@@ -49,8 +50,11 @@ def build(ref, out, artifact=None, session=None):
     cat_text = git('show', f'{ref}:{DIR}/studios.json')
     cat = json.loads(cat_text)
     pages = ['index.html'] + [s['file'] for s in cat.get('studios', []) if s.get('file')]
+    changed = []   # pages the build had to add the Sync panel to: on a current branch, none (the page carries it)
     for f in pages:
         html = git('show', f'{ref}:{DIR}/{f}')
+        if inject(html) != html:
+            changed.append(f)
         with open(os.path.join(out, f), 'w', encoding='utf-8') as fh:
             fh.write(inject(html))
     with open(os.path.join(out, 'studios.json'), 'w', encoding='utf-8') as fh:
@@ -81,6 +85,9 @@ def build(ref, out, artifact=None, session=None):
     with open(os.path.join(out, 'build.json'), 'w', encoding='utf-8') as fh:
         json.dump(info, fh, indent=2)
     print(f'built {out}: {", ".join(pages)} from {info["branch"]} @ {path_sha[:7]} "{info["subject"]}"')
+    # One Vessel Studio (section 0): every page carries its own Sync panel tag, so the published page IS the repo page,
+    # the one Unity (FrogletTools > Vessels > Vessel Studio) and Amoebius open. An older ref without the tag still builds.
+    print('pages identical to the repo: ' + ('all' if not changed else 'all but ' + ', '.join(changed) + ' (the Sync panel was added; put <script src="sync.js"></script> in the page)'))
     return check(out)
 
 

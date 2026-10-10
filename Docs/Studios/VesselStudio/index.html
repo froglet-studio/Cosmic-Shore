@@ -87,7 +87,7 @@
   <header>
     <span class="eyebrow">Cosmic Shore · Froglet</span>
     <h1>Vessel <em>Studio</em></h1>
-    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open in this browser, in Amoebius on Windows, and in your phone's browser.</p>
+    <p class="lede">Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its play-style types and element levels, and read what every number does. The same pages open here, in Unity and Amoebius, and in your phone's browser.</p>
   </header>
 
   <section aria-labelledby="h-bays">
@@ -126,7 +126,7 @@
         <tbody>
           <tr><td>Web</td><td>This page. Share the link, or open the files in <code>Docs/Studios/VesselStudio/</code> in any browser.</td><td><span class="st ok">works</span></td></tr>
           <tr><td>Phone browser</td><td>Open this page on the phone and pick a studio: it opens straight into touch play. Turn the phone sideways.</td><td><span class="st ok">works</span></td></tr>
-          <tr><td>Amoebius on Windows</td><td><b>VESSEL STUDIO</b> page in Prisma.exe opens these pages from its workspace, beside every other artifact brought into Amoebius (<code>/amoebius-artifact</code>). From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Amoebius there.</td><td><span class="st part">first version</span></td></tr>
+          <tr><td>Unity and Amoebius</td><td>In Unity, <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens this same studio in its own window, from your checkout. Amoebius's <b>VESSEL STUDIO</b> page opens it too (beside every other artifact brought into Amoebius), and <b>PLAY IN ENGINE</b> flies the game's own vessel.</td><td><span class="st part">first version</span></td></tr>
           <tr><td>Amoebius on Android</td><td>The Amoebius player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
           <tr><td>iOS</td><td>After Android: the Amoebius <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
         </tbody>
@@ -222,9 +222,11 @@
       renderReqs(snap.docs.map((d) => Object.assign({ id: d.id }, d.data())));
     }, (err) => { $('reqState').textContent = 'The request list is unavailable (' + (err && err.code || 'error') + ').'; });
   })();
-  function offline() {
-    $('askBtn').disabled = true; $('askState').textContent = 'Asking works inside the claude.ai viewer.';
-    $('reqBtn').disabled = true; $('reqState').textContent = 'Outside the claude.ai viewer: copy the request as an agent prompt instead.'; renderReqs([]);
+  function offline() {   // opened from the checkout (Unity, Amoebius) or the mirror: the same options, the shared ones one click away
+    const link = () => (window.VesselStudioTheme ? VesselStudioTheme.artifactLink() : document.createTextNode(''));
+    $('askBtn').disabled = true; $('askState').textContent = 'Asking works in the claude.ai artifact:'; $('askState').appendChild(link());
+    $('reqBtn').disabled = true; $('reqState').textContent = 'Shared requests live in the claude.ai artifact (or copy this one as an agent prompt):'; $('reqState').appendChild(link());
+    renderReqs([]);
   }
   function renderReqs(list) {
     const box = $('reqList'); box.textContent = '';
@@ -277,3 +279,4 @@
   function fallback(t) { const ta = $('reqText'); ta.value = t; ta.focus(); ta.select(); $('reqState').textContent = 'Selected the prompt: copy it with your keyboard or long-press.'; }
 })();
 </script>
+<script src="sync.js"></script>

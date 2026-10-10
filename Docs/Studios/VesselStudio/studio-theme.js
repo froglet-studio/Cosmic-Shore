@@ -92,5 +92,15 @@
     var st = document.createElement('style'); st.id = 'vessel-studio-theme'; st.textContent = CSS; head.appendChild(st);
   }
   install();
-  window.VesselStudioTheme = { fonts: FONTS, css: CSS };
+  // ---- the one artifact (/vessel-studio section 0): every page is the same page wherever it is opened (claude.ai,
+  // the live mirror, Unity, Amoebius). What only claude.ai can do (Ask, Requests, the shared log, Sync) says so and
+  // links here, so no option is ever missing, only one click away.
+  var ARTIFACT = 'https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa';
+  var inClaude = !!(window.claude && typeof window.claude.use === 'function');
+  function artifactLink(label) {
+    var a = document.createElement('a'); a.href = ARTIFACT; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = label || 'open it in the claude.ai artifact'; a.style.marginLeft = '6px';
+    return a;
+  }
+  window.VesselStudioTheme = { fonts: FONTS, css: CSS, artifact: ARTIFACT, inClaude: inClaude, artifactLink: artifactLink };
 })();

@@ -117,21 +117,21 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
-        public void Targets_AreEachVesselThenTheHub_AndPickFallsBackToTheFirst()
+        public void Targets_AreTheHubThenEachVessel_AndPickFallsBackToTheHub()
         {
             var c = StudioCatalog.Parse(Good);
             var t = c.Targets();
-            Assert.Equal(new[] { "squirrel", "stoat", "hub" }, t.Select(x => x.Key));   // one picker: the vessels, then ALL STUDIOS
-            Assert.True(t[2].IsHub);
-            Assert.Equal(c.Hub, t[2].File);
-            Assert.Equal(StudioCatalog.PlanDoc, t[2].Docs);                               // the hub's DOCS is the plan
-            Assert.Equal("Docs/a.md", t[0].Docs);
+            Assert.Equal(new[] { "hub", "squirrel", "stoat" }, t.Select(x => x.Key));   // one picker: ALL STUDIOS (the whole studio), then the vessels
+            Assert.True(t[0].IsHub);
+            Assert.Equal(c.Hub, t[0].File);
+            Assert.Equal(StudioCatalog.PlanDoc, t[0].Docs);                               // the hub's DOCS is the plan
+            Assert.Equal("Docs/a.md", t[1].Docs);
             Assert.Equal("stoat", c.Pick("stoat").Key);
-            Assert.Equal("squirrel", c.Pick("gone").Key);                                 // a vessel removed from the catalog
-            Assert.Equal("squirrel", c.Pick(null).Key);
+            Assert.True(c.Pick("gone").IsHub);                                            // a vessel removed from the catalog
+            Assert.True(c.Pick(null).IsHub);                                              // opens on the whole Vessel Studio
             Assert.True(new StudioCatalog().Pick(null).IsHub);                            // no catalog: the hub alone, never empty
-            Assert.Contains(StudioCatalog.PlanDoc, StudioCatalog.AgentPrompt(t[2]));
-            Assert.Contains("squirrel.html", StudioCatalog.AgentPrompt(t[0]));
+            Assert.Contains(StudioCatalog.PlanDoc, StudioCatalog.AgentPrompt(t[0]));
+            Assert.Contains("squirrel.html", StudioCatalog.AgentPrompt(t[1]));
         }
 
         [Fact]

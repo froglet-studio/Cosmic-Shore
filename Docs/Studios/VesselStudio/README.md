@@ -2,7 +2,9 @@
 
 Pick a vessel, its studio opens. Plain HTML pages, no build step, so the same folder opens in a desktop
 browser, in a phone browser, from Amoebius's **VESSEL STUDIO** page on Windows, and from Unity through
-**FrogletTools ▸ Vessels ▸ Vessel Studio** (which opens Amoebius there). Plan: `../VESSEL_STUDIO_PLAN.md`.
+**FrogletTools ▸ Vessels ▸ Vessel Studio** (the hub itself, in its own window). These pages ARE the artifact: the build
+publishes them unchanged (each carries its own Sync panel), so claude.ai, the live mirror, Unity and Amoebius show the same
+thing; what only claude.ai can do (Ask, shared requests and log, Sync) says so and links to the artifact. Plan: `../VESSEL_STUDIO_PLAN.md`.
 
 | File | What |
 |---|---|

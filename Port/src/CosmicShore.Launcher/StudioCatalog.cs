@@ -97,16 +97,18 @@ namespace CosmicShore.Launcher
             public string? EngineMode => Studio?.EngineMode;
         }
 
-        /// <summary>The picker's items: each vessel's studio in catalog order, then the hub.</summary>
+        /// <summary>
+        /// The picker's items: ALL STUDIOS first (the hub: the whole Vessel Studio, exactly as the claude.ai artifact shows it),
+        /// then each vessel's studio in catalog order.
+        /// </summary>
         public IReadOnlyList<Target> Targets()
         {
-            var list = new List<Target>();
+            var list = new List<Target> { new Target("hub", "ALL STUDIOS", Hub, null) };
             foreach (var s in Studios) list.Add(new Target(s.Id, s.Name.ToUpperInvariant(), s.File, s));
-            list.Add(new Target("hub", "ALL STUDIOS", Hub, null));
             return list;
         }
 
-        /// <summary>The picked target by key; an unknown key (a vessel removed from the catalog) falls back to the first.</summary>
+        /// <summary>The picked target by key; none or an unknown key (a vessel removed from the catalog) falls back to ALL STUDIOS.</summary>
         public Target Pick(string? key)
         {
             var all = Targets();
