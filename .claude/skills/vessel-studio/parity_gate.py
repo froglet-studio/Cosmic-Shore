@@ -32,6 +32,9 @@ build_artifact.py --check runs the page checks on every build.
 """
 import argparse, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import studio_cards  # noqa: E402  the card model (/vessel-studio D34)
+
 DIR = 'Docs/Studios/VesselStudio'
 STOAT_SRC = 'Docs/Studios/StoatFlightStudio.html'
 LAUNCHER_STUDIOS = 'Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs'
@@ -153,6 +156,109 @@ def entry_checks(root):
         if re.search(r'Application\.OpenURL\([^)]*(file:|Docs/Studios)', t):
             errs.append(f'{UNITY_WINDOW}: opens a studio page as a file')
     return errs
+
+
+def card_checks(root, natives=True):
+    """The studio cards are the hub's everywhere (D34): studios.json carries the hub's card text, the baked previews
+    are current, and both native homes draw their cards from studios.json, never from their own copy."""
+    if not os.path.exists(os.path.join(root, DIR, 'studios.json')) or not os.path.exists(os.path.join(root, DIR, 'index.html')):
+        return []
+    errs = ['cards: ' + e for e in studio_cards.differences(root)]
+    if not natives:
+        return errs
+    cat = json.loads(read(os.path.join(root, DIR, 'studios.json')))
+    labels = [a.get('label') for a in cat.get('cardActions') or [] if a.get('label')] + ['OPEN STUDIO']
+    for rel, method, needles in ((LAUNCHER_STUDIOS, 'void DrawStudioCard(', ('CardActions', '.Chip', '.Spec', 'Preview')),
+                                 (UNITY_HOME, 'void DrawCard(', ('cardActions', '.chip', '.spec', 'preview'))):
+        p = os.path.join(root, rel)
+        if not os.path.exists(p):
+            continue
+        t = read(p)
+        card = region(t, method)
+        if card is None:
+            errs.append(f'{rel}: no {method.split("(")[0][5:]} (the hub\'s studio card, drawn from studios.json)'); continue
+        for n in needles:
+            if n not in card:
+                errs.append(f'{rel}: the studio card does not draw {n.strip(".")} from studios.json')
+        for lab in labels:
+            if '"' + lab in card:
+                errs.append(f'{rel}: the studio card spells "{lab}" itself: take the label from studios.json cardActions')
+        if not re.search(r'[Ff]leet', t):
+            errs.append(f'{rel}: no fleet list (studios.json "fleet")')
+    p = os.path.join(root, UNITY_WINDOW)
+    if os.path.exists(p):
+        m = re.search(r'Tuners\s*=\s*new\(\)\s*\{([^}]*)\}', read(p))
+        if m:
+            unity = set(re.findall(r'\["(\w+)"\]', m.group(1)))
+            listed = {x.get('id') for x in cat.get('studios', []) if x.get('tuner')}
+            if unity != listed:
+                errs.append(f'{UNITY_WINDOW}: Unity tunes {sorted(unity)}, studios.json marks {sorted(listed)} "tuner": TUNE IN UNITY must match')
+    return errs
+
+
+def cards_self_test():
+    """Plant each card defect in a throwaway tree; a clean one passes."""
+    bad = []
+    tmp = tempfile.mkdtemp(prefix='vs-cards-self-')
+    try:
+        def w(rel, text, binary=False):
+            p = os.path.join(tmp, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
+            with open(p, 'wb' if binary else 'w', **({} if binary else {'encoding': 'utf-8'})) as fh: fh.write(text)
+        hub = ('<style>:root { --jade: #13fff2; }</style><p class="lede">Pick a vessel.</p><div class="bays">'
+               '<a class="bay" href="a.html" style="--accent: var(--jade)"><canvas id="pvA"></canvas><div><div class="name"><b>Alpha</b>'
+               '<span class="chip">built · round 1</span></div><p>The first one.</p><div class="spec"><span>Speed</span><b>60 u/s</b></div></div>'
+               '<span class="open">Open studio &rarr;</span></a></div><div class="fleet"><span>Manta</span></div>'
+               '<p class="lede hint">No studio yet.</p><script>\n  // ---- bay previews: x ----\n  preview();\n  // ---- the studio agent ----\n</script>')
+        acts = [{'id': 'open', 'label': 'Open studio →', 'on': 'web,amoebius,unity'}, {'id': 'engine', 'label': 'PLAY IN ENGINE', 'on': 'amoebius,unity', 'needs': 'engineMode'},
+                {'id': 'tune', 'label': 'TUNE IN UNITY', 'on': 'unity', 'needs': 'tuner'}, {'id': 'live', 'label': 'OPEN LIVE IN BROWSER', 'on': 'amoebius,unity', 'needs': 'mirror'}]
+        cat = {'lede': 'Pick a vessel.', 'cardActions': acts, 'fleet': ['Manta'], 'fleetNote': 'No studio yet.',
+               'studios': [{'id': 'a', 'name': 'Alpha', 'file': 'a.html', 'chip': 'built · round 1', 'summary': 'The first one.',
+                            'spec': [{'k': 'Speed', 'v': '60 u/s'}], 'accent': 'jade', 'preview': 'previews/a.png', 'tuner': True}]}
+        w(f'{DIR}/index.html', hub)
+        w(f'{DIR}/studios.json', json.dumps(cat, ensure_ascii=False))
+        w(f'{DIR}/previews/a.png', b'png', binary=True)
+        w(f'{DIR}/previews/previews.json', json.dumps({'source': studio_cards.preview_hash(tmp)}))
+        good_amo = ('        void DrawStudioCard(StudioCatalog cat, StudioCatalog.Studio s)\n        {\n            Image(Preview(s)); Text(s.Chip); Rows(s.Spec);\n'
+                    '            foreach (var a in cat.CardActions) Button(a.Label);\n        }\n        void Fleet() { }\n')
+        good_unity = ('        void DrawCard(Rect r, StudioEntry s)\n        {\n            Tex(s.preview); Label(s.chip); Rows(s.spec);\n'
+                      '            foreach (var a in _catalog.cardActions) Button(a.label);\n        }\n        string[] _fleet;\n')
+        w(LAUNCHER_STUDIOS, good_amo)
+        w(UNITY_HOME, good_unity)
+        w(UNITY_WINDOW, 'static readonly Dictionary<string, X> Tuners = new() { ["a"] = Tabs };')
+        clean = card_checks(tmp)
+        if clean:
+            bad.append('a clean card tree failed: ' + '; '.join(clean))
+
+        def expect(name, rel, text, needle):
+            p = os.path.join(tmp, rel); orig = read(p)
+            w(rel, text)
+            got = card_checks(tmp)
+            if not any(needle in g for g in got):
+                bad.append(f'{name} was not caught (got: {got})')
+            w(rel, orig)
+        cj = f'{DIR}/studios.json'
+        def cat_with(**kw):
+            c = json.loads(json.dumps(cat)); c['studios'][0].update(kw.get('studio', {}))
+            for k, v in kw.items():
+                if k != 'studio': c[k] = v
+            return json.dumps(c, ensure_ascii=False)
+        expect('a summary that drifted from the hub', cj, cat_with(studio={'summary': 'Something else.'}), 'summary')
+        expect('a chip that drifted', cj, cat_with(studio={'chip': 'old'}), 'chip')
+        expect('a spec row that drifted', cj, cat_with(studio={'spec': [{'k': 'Speed', 'v': '70 u/s'}]}), 'spec rows')
+        expect('actions out of order', cj, cat_with(cardActions=[acts[1], acts[0], acts[2], acts[3]]), 'in that order')
+        expect('another open label', cj, cat_with(cardActions=[dict(acts[0], label='Open'), acts[1], acts[2], acts[3]]), 'open action')
+        expect('a fleet that drifted', cj, cat_with(fleet=['Manta', 'Rhino']), 'fleet')
+        expect('a missing preview', cj, cat_with(studio={'preview': 'previews/none.png'}), 'missing')
+        expect('a stale preview', f'{DIR}/previews/previews.json', json.dumps({'source': 'old'}), 're-bake' if False else 'baked')
+        expect('Amoebius spelling a label', LAUNCHER_STUDIOS, good_amo.replace('Button(a.Label);', 'Button(a.Label); Button("PLAY IN ENGINE");'), 'spells "PLAY IN ENGINE"')
+        expect('Amoebius without the chip', LAUNCHER_STUDIOS, good_amo.replace('Text(s.Chip); ', ''), 'Chip')
+        expect('Amoebius without a card', LAUNCHER_STUDIOS, 'void Other() { }\n', 'no DrawStudioCard')
+        expect('Unity spelling a label', UNITY_HOME, good_unity.replace('Button(a.label);', 'Button(a.label); Button("OPEN STUDIO ▸");'), 'spells "OPEN STUDIO"')
+        expect('Unity without the spec', UNITY_HOME, good_unity.replace('Rows(s.spec);', ''), 'spec')
+        expect('a tuner the catalog does not list', UNITY_WINDOW, 'static readonly Dictionary<string, X> Tuners = new() { ["a"] = Tabs, ["b"] = Tabs };', 'TUNE IN UNITY must match')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return bad
 
 
 def built_checks(root, built, ref='HEAD'):
@@ -365,6 +471,7 @@ def self_test():
             bad.append('a build that changed a page was not caught')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    bad += cards_self_test()
     print('self-test: ' + ('ok' if not bad else 'FAILED:\n  ' + '\n  '.join(bad)))
     return bad
 
@@ -390,6 +497,7 @@ def main():
     src = os.path.join(root, STOAT_SRC)
     if os.path.exists(src):
         errs += [e.replace('index.html', STOAT_SRC) for e in page_checks(os.path.dirname(src), pages=[os.path.basename(src)], shared=[], label='') if 'StoatFlightStudio' in e]
+    errs += card_checks(root, natives=not a.no_entry)
     if not a.no_entry:
         errs += entry_checks(root)
     if a.built:

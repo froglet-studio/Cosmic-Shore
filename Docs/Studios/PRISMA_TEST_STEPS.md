@@ -119,7 +119,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 | The game's edit-mode tests on Amoebius | 352 / 352 pass (before and after the merges) |
 | `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 (re-run after the merges: same) |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
-| VESSEL STUDIO page (screenshot) | One picker (SQUIRREL · STOAT · ALL STUDIOS) and one card with OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
+| VESSEL STUDIO page (screenshot) | Since D34: the hub's cards (preview, name, chip, summary, spec), each with Open studio → · PLAY IN ENGINE · TUNE IN UNITY (disabled: Unity only) · OPEN LIVE IN BROWSER, then the fleet without a studio. |
 | `stoat.html#prisma` (before D33) | Read "Amoebius · PC"; since D33 every surface reads "PC (...)", the page is served by Amoebius from the build |
 
 **Not checked here:** a real Windows PC. Edge's app window, a GPU, and a gamepad through the app window all
