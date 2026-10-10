@@ -14,13 +14,20 @@ namespace CosmicShore.Player
     /// checkpointed its (identical, evolved) population at a generation boundary to shed
     /// memory; it is restarted with --resume on that checkpoint. The run ends when every
     /// worker has exited cleanly (worker 0 marks it done; the rest follow).
+    ///
+    /// <para>Every worker also checkpoints at every generation boundary, so a run that died
+    /// (the OS killed a worker, the box rebooted) resumes with <c>--resume-run</c>: the same
+    /// command, which keeps the run directory, deletes the result files of the generation that
+    /// was in flight (a worker that had already written its slice would otherwise be merged
+    /// against the others' re-flown slices), and starts every worker from its own checkpoint.
+    /// Every worker needs one: the merge requires all of them in the same generation.</para>
     /// </summary>
     static class TrainingWorkers
     {
         public const int RecycleExitCode = 75;
         static readonly List<Process> s_live = new();
 
-        public static int Supervise(string[] args, int workers, string dir, int seed)
+        public static int Supervise(string[] args, int workers, string dir, int seed, bool resumeRun = false)
         {
             var procs = new Process[workers];
             var finished = new bool[workers];
@@ -31,7 +38,14 @@ namespace CosmicShore.Player
                     foreach (var p in s_live)
                         try { if (!p.HasExited && !p.WaitForExit(15000)) p.Kill(); } catch { }
             };
-            for (int w = 0; w < workers; w++) procs[w] = Start(args, w, dir, seed, resume: null);
+            string[] checkpoints = null;
+            if (resumeRun)
+            {
+                int generation = Prisma.Training.TrainingRunResume.Prepare(dir, workers, out checkpoints, out string refusal);
+                if (checkpoints == null) { Console.WriteLine("[train] cannot resume: " + refusal); return 2; }
+                Console.WriteLine($"[train] resuming the run in {dir} from generation {generation} ({workers} checkpoint(s))");
+            }
+            for (int w = 0; w < workers; w++) procs[w] = Start(args, w, dir, seed, checkpoints?[w]);
 
             while (true)
             {
@@ -80,6 +94,7 @@ namespace CosmicShore.Player
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] is "--seed" or "--worker" or "--train-dir" or "--resume") { i++; continue; }
+                if (args[i] is "--resume-run") continue; // the supervisor's own flag; a worker resumes through --resume
                 psi.ArgumentList.Add(args[i]);
             }
             psi.ArgumentList.Add("--worker"); psi.ArgumentList.Add(w.ToString());

@@ -49,6 +49,7 @@ dotnet ../binBE/CosmicShore.dll --train eval --genome a.json --genome b.json --f
 dotnet ../binBE/CosmicShore.dll --train eval --population out/KEY.state.json --genome control.json --flights 6 --seed 51 --quiet --train-out t1
 ```
 
+`--resume-run` (train mode) continues a run that was killed, from its checkpoints (see "Long runs").
 `--seed` makes a run reproducible (two runs with one seed are bit-identical). A train run always
 has one; its workers fly different matches (the gameplay seed is offset per worker) but evolve
 under the shared seed.
@@ -105,7 +106,16 @@ previous incarnation's tracks. Every worker still logs the identical merged gene
 recycles (checked); a recycled run is reproducible under its seed and limit, but it flies
 different tracks from an un-recycled one after the first recycle, by design.
 
-Why it is needed: the game leaks across scene reloads, and Unity retains the same references
+**A run that died resumes.** Every worker also checkpoints at every generation boundary, so when
+the OS kills a worker (measured 2026-10-10: the memory cgroup of a 16 GB box killed a 2.4 GB
+worker at generation 8 of 10, with three agents' players alongside the four workers) the same
+command plus `--resume-run` keeps the run directory, removes the in-flight generation's result
+files and starts every worker from its own checkpoint at the last completed generation; the
+generation and episode limits are the run's (`run/meta.txt`), as after a recycle. `--workers`
+must match the killed run (the merge needs every slot). Size `--workers x --recycle-mb` under
+the memory the box can actually give the run.
+
+Why recycling is needed: the game leaks across scene reloads, and Unity retains the same references
 (there its engine objects are near-empty shells; in the port they carry managed data).
 `COSMIC_SHORE_LEAKSCAN=1` attributes every destroyed prism still reachable to the first live
 holder on its reference chain. After 10 SkimRace matches, ~27,700 destroyed prisms:

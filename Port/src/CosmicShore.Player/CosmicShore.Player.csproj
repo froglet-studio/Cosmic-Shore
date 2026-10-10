@@ -34,6 +34,8 @@
   <ItemGroup>
     <!-- Shared screenshot encoder (no engine dependency). -->
     <Compile Include="../CosmicShore.Client/MiniPng.cs" Link="MiniPng.cs" />
+    <!-- Resuming a killed training run from its checkpoints (shared with the tests). -->
+    <Compile Include="../Shared/TrainingRunResume.cs" Link="Shared/TrainingRunResume.cs" />
   </ItemGroup>
 
   <!-- Same native-copy workaround as CosmicShore.Client (Silk's loader does not probe

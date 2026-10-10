@@ -61,6 +61,7 @@ namespace CosmicShore.Player
             int trainEpisodes = 0, trainRepeats = 1, seed = int.MinValue;
             int workers = 1, worker = -1, evals = 1, generations = 0;
             string trainDir = null, resume = null, evalPopulation = null;
+            bool resumeRun = false;
             int recycleMb = 2500, controlPort = 0;
             string sessionReport = null;
             string replay = null, parityOut = null, randomGolden = null, seedList = null;
@@ -102,6 +103,7 @@ namespace CosmicShore.Player
                     case "--generations" when i + 1 < args.Length: int.TryParse(args[++i], out generations); break;
                     case "--train-dir" when i + 1 < args.Length: trainDir = args[++i]; break;
                     case "--resume" when i + 1 < args.Length: resume = args[++i]; break;
+                    case "--resume-run": resumeRun = true; break;
                     case "--recycle-mb" when i + 1 < args.Length: int.TryParse(args[++i], out recycleMb); break;
                     case "--genome" when i + 1 < args.Length: evalGenomes.Add(args[++i]); break;
                     case "--flights" when i + 1 < args.Length: int.TryParse(args[++i], out flights); break;
@@ -194,9 +196,10 @@ namespace CosmicShore.Player
                         trainDir ??= System.IO.Path.Combine(trainOut ?? System.IO.Path.Combine(Environment.CurrentDirectory, "training"), "run");
                         if (worker < 0) // the launching process supervises; every worker is a child
                         {
-                            if (System.IO.Directory.Exists(trainDir)) System.IO.Directory.Delete(trainDir, recursive: true);
+                            // --resume-run keeps the run directory: its checkpoints are the run.
+                            if (!resumeRun && System.IO.Directory.Exists(trainDir)) System.IO.Directory.Delete(trainDir, recursive: true);
                             System.IO.Directory.CreateDirectory(trainDir);
-                            return TrainingWorkers.Supervise(args, Math.Max(1, workers), trainDir, evoSeed);
+                            return TrainingWorkers.Supervise(args, Math.Max(1, workers), trainDir, evoSeed, resumeRun);
                         }
                         train.ConfigureParallel(workers, worker, evals, generations, evoSeed, trainDir);
                         train.ConfigureLifecycle(resume, recycleMb);

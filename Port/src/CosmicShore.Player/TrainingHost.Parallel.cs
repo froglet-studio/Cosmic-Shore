@@ -284,14 +284,16 @@ namespace CosmicShore.Player
                 return;
             }
             Evolve();
+            // Every worker holds the identical evolved population here, so this worker's own
+            // state is the checkpoint: nothing to coordinate. It is written at EVERY generation
+            // boundary (47 KB), not only when recycling, so a run the OS kills mid-generation
+            // (measured 2026-10-10: the memory cgroup killed a 2.4 GB worker at generation 8 of
+            // 10 and the only checkpoints were the recycle's, four generations old) resumes from
+            // the last completed generation with --resume-run instead of starting over.
+            WriteCheckpoint();
             if (_recycleBytes > 0 && Environment.WorkingSet > _recycleBytes)
             {
-                // Every worker holds the identical evolved population here, so this worker's own
-                // state is the checkpoint: nothing to coordinate, the others simply wait for its
-                // next results as they would for any slow worker.
-                string json = JsonUtility.ToJson(_state);
-                File.WriteAllText(CheckpointPath + ".tmp", json);
-                File.Move(CheckpointPath + ".tmp", CheckpointPath, overwrite: true);
+                // The others simply wait for this worker's next results as for any slow worker.
                 Console.WriteLine($"[train] worker {_worker}: recycling at {Environment.WorkingSet >> 20} MB (limit {_recycleBytes >> 20} MB), " +
                                   $"checkpoint generation {Get(Get(_state, "Population"), "generation")}");
                 Recycle = true;
@@ -299,6 +301,14 @@ namespace CosmicShore.Player
                 return;
             }
             BeginGeneration();
+        }
+
+        /// <summary>This worker's state as the run's checkpoint for its slot, written atomically.</summary>
+        void WriteCheckpoint()
+        {
+            string json = JsonUtility.ToJson(_state);
+            File.WriteAllText(CheckpointPath + ".tmp", json);
+            File.Move(CheckpointPath + ".tmp", CheckpointPath, overwrite: true);
         }
 
         /// <summary>Wall time since the run began — across recycles, from when the run's meta file was written.</summary>
