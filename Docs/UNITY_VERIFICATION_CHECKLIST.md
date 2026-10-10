@@ -83,6 +83,11 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   `ToastService.OnEnable`.
 - `Tools/Build/audit_vessel_skimmers.py`, an offline twin of **FrogletTools ▸ Vessels ▸ Audit
   Vessel Skimmers**, reproduces QA's six hulls (DT-002) and names the fault per hull.
+- `FriendsListPanel` gained the **Add Friend** section (R13 item 1): a display-name field, a Send
+  button and a status line on all four scene-placed `FriendListPanel`s in `Menu_Main`, written
+  with `cs-asset` (480 commands, round-trip byte-identical, serialization audit 0/0) and seen on
+  screen in Prisma; the send goes through `FriendsServiceFacade.SendFriendRequestByNameAsync`
+  behind the same 0.4 s anti-spam gate as Invite/Cancel/Kick.
 
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
@@ -118,6 +123,14 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
 9. Skim Race intensity 4 with 2 and 3 AI seats (the §7 matrix): the AI seats now fly
    `skimrace-v2-i4`; expect ~141 s first-finisher medians and the second seat finishing far more
    often than before (sim: 5/40 → 39/40 every-seat-finished). 70 s is not expected.
+10. Menu_Main ▸ Arcade ▸ an empty party slot opens the friends panel: the ADD FRIEND bar sits
+    between ONLINE and REQUESTS with the field, the green add-friend glyph and an empty status
+    line, and nothing overlaps at 16:9 and 4:3 (the Online scroll view is now 280 tall). Type an
+    unknown name and press Send or Enter: one status line "Couldn't send to NAME: ..." and the
+    button comes back; a real display name of a second signed-in account: "Friend request sent",
+    the field clears, and the other account's REQUESTS row shows it. Offline: "Friends service
+    isn't ready". Two presses inside 0.4 s play one `OptionClick`. Repeat the look on the Arena,
+    Mission and Toybox copies (verified structurally only).
 
 ---
 

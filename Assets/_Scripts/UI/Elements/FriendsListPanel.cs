@@ -5,6 +5,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,12 +14,18 @@ namespace CosmicShore.UI
     /// <summary>
     /// Controller for the FriendListPanel in Menu_Main.
     ///
-    /// Both sections render simultaneously (no tab switching):
-    ///   • Online   - every online player in the presence lobby. Row background
-    ///                is the invite button; yellowish tint while the invite is
-    ///                pending.
-    ///   • Requests - incoming friend requests AND incoming party invites
-    ///                combined, with Accept/Decline buttons.
+    /// All sections render simultaneously (no tab switching):
+    ///   • Online     - every online player in the presence lobby. Row background
+    ///                  is the invite button; yellowish tint while the invite is
+    ///                  pending.
+    ///   • Add Friend - a TMP_InputField for a pilot's exact display name plus a
+    ///                  Send button. The only place a player can SEND a friend
+    ///                  request from inside the game; goes through
+    ///                  <see cref="FriendsServiceFacade.SendFriendRequestByNameAsync"/>
+    ///                  (the single writer of FriendsDataSO), behind the same
+    ///                  anti-spam cooldown the Online row's Invite/Cancel/Kick use.
+    ///   • Requests   - incoming friend requests AND incoming party invites
+    ///                  combined, with Accept/Decline buttons.
     ///
     /// Sound plays when a party invite is received.
     /// </summary>
@@ -40,9 +47,24 @@ namespace CosmicShore.UI
         [Header("Actions")]
         [SerializeField] private Button closeButton;
 
+        [Header("Add Friend (send a friend request by exact display name)")]
+        [Tooltip("Where the player types the exact display name of the pilot to befriend. The three " +
+                 "Add Friend fields are wired together or not at all: leave all three empty and the " +
+                 "panel simply has no send surface (Online + Requests still work); wire only some " +
+                 "of them and ValidateSceneWiring says so.")]
+        [SerializeField] private TMP_InputField addFriendNameInput;
+        [Tooltip("Sends the typed name through FriendsServiceFacade.SendFriendRequestByNameAsync, the " +
+                 "single writer of FriendsDataSO. Disabled while a send is in flight.")]
+        [SerializeField] private Button addFriendSendButton;
+        [Tooltip("One readable line about the last send: sent, or why it did not go. When unwired the " +
+                 "line goes to the toast instead, like the Accept/Decline feedback does.")]
+        [SerializeField] private TMP_Text addFriendStatusText;
+
         [Header("Audio")]
         [Tooltip("Category played when a party invite is received.")]
         [SerializeField] private MenuAudioCategory inviteReceivedAudio = MenuAudioCategory.Confirmed;
+        [Tooltip("Category played when a Send (friend request) press is accepted by the anti-spam gate.")]
+        [SerializeField] private MenuAudioCategory sendRequestAudio = MenuAudioCategory.OptionClick;
 
         [Header("Settings")]
         [Tooltip("Seconds before an incoming request auto-declines. 0 = no expiry.")]
@@ -55,6 +77,12 @@ namespace CosmicShore.UI
                  "plus any rate-limit backoff behind the moment the host sent it. 10s was the " +
                  "shipped value and left a cross-continent player only a few seconds to answer.")]
         [SerializeField] private float partyInviteExpirationSeconds = 60f;
+
+        [Header("Anti-Spam")]
+        [Tooltip("Minimum seconds between consecutive Send (friend request) presses: the same gate " +
+                 "OnlineInfoEntry puts on Invite / Cancel / Kick (actionCooldownSeconds), so every " +
+                 "social action throttles alike. Unscaled, so it still throttles while the menu is paused.")]
+        [SerializeField] private float sendRequestCooldownSeconds = 0.4f;
 
         [Inject] private FriendsServiceFacade friendsService;
 
@@ -70,17 +98,31 @@ namespace CosmicShore.UI
         /// <summary>Guards the one-frame deferred request-row reconcile after a list Clear.</summary>
         bool _requestsReconcilePending;
 
+        /// <summary>True from an accepted Send press until the facade call returns (success or not).</summary>
+        bool _sendRequestInFlight;
+
+        /// <summary>Unscaled time before which the next Send press is ignored (anti-spam gate).</summary>
+        float _nextSendAllowedTime;
+
         #region Unity Lifecycle
 
         void Awake()
         {
             if (closeButton)
                 closeButton.onClick.AddListener(Hide);
+
+            if (addFriendSendButton)
+                addFriendSendButton.onClick.AddListener(OnSendFriendRequestClicked);
+
+            // Enter in the name field sends too, so a keyboard player never has to reach for the button.
+            if (addFriendNameInput)
+                addFriendNameInput.onSubmit.AddListener(OnAddFriendNameSubmitted);
         }
 
         void OnEnable()
         {
             ValidateSceneWiring();
+            ResetAddFriendSection();
             RehydrateOutgoingInvitesFromService();
             RehydratePendingInviteFromService();
             SubscribeSoap();
@@ -128,6 +170,14 @@ namespace CosmicShore.UI
                 CSDebug.LogError($"[FriendsListPanel] onlineInfoPrefab is null on '{name}'.", this);
             if (requestInfoPrefab == null)
                 CSDebug.LogError($"[FriendsListPanel] requestInfoPrefab is null on '{name}'.", this);
+
+            // The Add Friend section is optional as a whole, never in part: a panel with an input
+            // and no button (or a button and no input) is a send surface that silently cannot send.
+            int addFriendWired = (addFriendNameInput ? 1 : 0) + (addFriendSendButton ? 1 : 0) + (addFriendStatusText ? 1 : 0);
+            if (addFriendWired != 0 && addFriendWired != 3)
+                CSDebug.LogWarning($"[FriendsListPanel] Add Friend section on '{name}' is only partly wired " +
+                                   $"({addFriendWired}/3 of addFriendNameInput, addFriendSendButton, addFriendStatusText). " +
+                                   "Wire all three or none.", this);
         }
 
         /// <summary>
@@ -859,6 +909,108 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Decline party invite failed: {e.Message}");
             }
+        }
+
+        #endregion
+
+        #region Add Friend Section
+
+        void OnAddFriendNameSubmitted(string _) => OnSendFriendRequestClicked();
+
+        /// <summary>
+        /// The Send button (or Enter in the name field): send a friend request to the pilot whose
+        /// exact display name is typed, through the facade. Anti-spam gate first (same discipline as
+        /// Invite/Cancel/Kick), then one request at a time - the button is disabled while the
+        /// facade call is in flight. Every outcome lands on the status line the player can read; the
+        /// facade's own await carries .AsMainThread(), so the continuation here is on the main thread.
+        /// </summary>
+        async void OnSendFriendRequestClicked()
+        {
+            if (_sendRequestInFlight) return;
+            if (!TryBeginSendAction()) return;
+
+            string pilotName = addFriendNameInput ? addFriendNameInput.text?.Trim() : null;
+            if (string.IsNullOrEmpty(pilotName))
+            {
+                ShowAddFriendStatus("Type a pilot's exact display name first.");
+                return;
+            }
+
+            AudioSystem.Instance?.PlayMenuAudio(sendRequestAudio);
+
+            if (friendsService == null || !friendsService.IsInitialized)
+            {
+                ShowAddFriendStatus("Friends service isn't ready. Check your connection and try again.");
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[FriendsListPanel] Friend request to '{pilotName}' refused: friends service not ready");
+                return;
+            }
+
+            _sendRequestInFlight = true;
+            SetSendButtonInteractable(false);
+            ShowAddFriendStatus($"Sending request to {pilotName}...");
+
+            try
+            {
+                await friendsService.SendFriendRequestByNameAsync(pilotName);
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Friend request sent to '{pilotName}'");
+
+                if (addFriendNameInput) addFriendNameInput.SetTextWithoutNotify(string.Empty);
+                ShowAddFriendStatus($"Friend request sent to {pilotName}.");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to send friend request to '{pilotName}': {e.Message}");
+                ShowAddFriendStatus($"Couldn't send to {pilotName}: {e.Message}");
+            }
+            finally
+            {
+                _sendRequestInFlight = false;
+                SetSendButtonInteractable(true);
+            }
+        }
+
+        /// <summary>
+        /// Anti-spam gate for the Send button, the twin of OnlineInfoEntry.TryBeginAction. Returns
+        /// false (and the press is ignored) within <see cref="sendRequestCooldownSeconds"/> of the
+        /// previous accepted press; otherwise arms the next window and returns true. Unscaled time.
+        /// </summary>
+        bool TryBeginSendAction()
+        {
+            if (Time.unscaledTime < _nextSendAllowedTime)
+                return false;
+            _nextSendAllowedTime = Time.unscaledTime + Mathf.Max(0f, sendRequestCooldownSeconds);
+            return true;
+        }
+
+        /// <summary>
+        /// On every open: a clean status line and a Send button that reflects whether a send is still
+        /// in flight from before the panel was hidden (the typed name is kept).
+        /// </summary>
+        void ResetAddFriendSection()
+        {
+            if (addFriendStatusText) addFriendStatusText.text = string.Empty;
+            SetSendButtonInteractable(!_sendRequestInFlight);
+        }
+
+        void SetSendButtonInteractable(bool interactable)
+        {
+            if (addFriendSendButton) addFriendSendButton.interactable = interactable;
+        }
+
+        /// <summary>
+        /// The one line of send feedback. The section's own label when it is wired; otherwise the
+        /// toast, which is how this panel already reports Accept/Decline outcomes.
+        /// </summary>
+        void ShowAddFriendStatus(string line)
+        {
+            if (addFriendStatusText)
+            {
+                addFriendStatusText.text = line;
+                return;
+            }
+
+            ToastNotificationAPI.Show(line);
         }
 
         #endregion
