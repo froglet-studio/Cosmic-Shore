@@ -102,7 +102,22 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
 5. Force a party join failure (accept an invite whose host has quit, or kill the host during the
    accept): after the bounce, the fresh Menu_Main shows the "Couldn't join" toast once.
 6. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers** and compare its six hulls and reasons with
-   `python3 Tools/Build/audit_vessel_skimmers.py`; a difference is a finding for DT-002.
+   `python3 Tools/Build/audit_vessel_skimmers.py`; a difference is a finding for DT-002. Same for
+   **Validation ▸ Validate Lifeform Crystals** against `audit_lifeform_crystals.py` (34 expected).
+7. Parity harness (`Assets/_Scripts/Utility/Replay`, `Editor/Parity`): edit-mode `ReplayFileTests`
+   (14) green; **FrogletTools ▸ Parity ▸ Capture Goldens** plays each `Port/parity/manifest.json`
+   case in Play mode and writes `Port/parity/goldens/<case>/{state,events,transforms}.jsonl` plus
+   `goldens/random/random_<seed>.json`; the `do` stream's `arcade SkimRace` / `start` / `ready`
+   verbs reach the match (the capture logs each verb on the `Parity` channel). A plain Play with
+   no replay and no env var must behave exactly as before (recorder, player and probe inert).
+8. Load Time Insights: arm **cold-boot** recording (the new toggle on the tab, or a dev build with
+   `-csmloadinsights-boot`), boot to the menu, and read `load_boot_*.txt`: every boot step named,
+   no large "Unattributed" remainder. Then one arcade launch: the connecting panel's dwell, the
+   arena-ready gate remainder and the peer wait appear as spans. A dev build with `-csmloadsweep`
+   produces `sweep_<stamp>.md` sorted worst-first (hand the full 124-cell run to H8).
+9. Skim Race intensity 4 with 2 and 3 AI seats (the §7 matrix): the AI seats now fly
+   `skimrace-v2-i4`; expect ~141 s first-finisher medians and the second seat finishing far more
+   often than before (sim: 5/40 → 39/40 every-seat-finished). 70 s is not expected.
 
 ---
 
