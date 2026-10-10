@@ -1,7 +1,7 @@
 # Vessel Studio (web) — the pages
 
 Pick a vessel, its studio opens. Plain HTML pages, no build step, so the same folder opens in a desktop
-browser, in a phone browser, from Amoebius's **STUDIOS** page on Windows, and from Unity through
+browser, in a phone browser, from Amoebius's **VESSEL STUDIO** page on Windows, and from Unity through
 **FrogletTools ▸ Vessels ▸ Vessel Studio** (which opens Amoebius there). Plan: `../VESSEL_STUDIO_PLAN.md`.
 
 | File | What |
@@ -68,7 +68,7 @@ costs it, and it recovers from a missed crystal in ~2 s where the game's pilot l
 
 ## In Amoebius
 
-STUDIOS ▸ **OPEN IN AMOEBIUS** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
+VESSEL STUDIO ▸ **OPEN IN AMOEBIUS** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
 the game itself. Step-by-step checks: `../PRISMA_TEST_STEPS.md`.
 
 ### Stoat AI levels, measured 2026-10-09 (field trajectory, Balanced, 2 laps; median of seeds 11/23/37/51/67, seconds)

@@ -34,7 +34,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Amoebius Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
-| **STUDIOS** | The Vessel Studio: one card per vessel studio (Squirrel, Stoat), each opening its page from the workspace in the browser, an **AGENT** chat on it, and its docs. **WEB LINK** is the same studio published on claude.ai, which a phone opens. Catalog: `Docs/Studios/VesselStudio/studios.json` (below). |
+| **VESSEL STUDIO** | The Vessel Studio artifact inside Amoebius: one card per vessel studio (Squirrel, Stoat), each opening its page from the workspace, an **AGENT** chat on it, and its docs. **WEB LINK** is the same studio published on claude.ai, which a phone opens. Below it, **ARTIFACTS**: every claude.ai artifact brought into the repo, and the way to add one. Catalogs: `Docs/Studios/VesselStudio/studios.json` and `Docs/Artifacts/artifacts.json` (below). |
 | **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
 | **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
@@ -57,7 +57,13 @@ bottom shows what is happening, a progress bar and CANCEL. The title bar shows t
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
 
-## STUDIOS - the Vessel Studio
+## VESSEL STUDIO - the Vessel Studio and every artifact
+
+The rail item was called STUDIOS until 2026-10-09; the page id is still `studios` (`--page studios`, which
+Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio** passes). `--page studios:artifacts` opens it scrolled to the
+artifact library (docs screenshots).
+
+![VESSEL STUDIO](architecture/launcher_vessel_studio.png)
 
 Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
 and element levels, and read what each number does. The pages are plain HTML in
@@ -93,6 +99,28 @@ Each card has these buttons:
   studio itself never runs inside Unity.
 - **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
   instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
+
+
+### ARTIFACTS - the artifact library
+
+Anything built as a claude.ai artifact, in any session, comes into Amoebius by its link
+(`Docs/Artifacts/README.md`). The library is `Docs/Artifacts/artifacts.json`; Amoebius reads it every few
+seconds (`ArtifactLibrary.Load`), so an import shows at once.
+
+![ARTIFACTS](architecture/launcher_artifacts.png)
+
+- **ADD WITH AGENT** (a pasted `https://claude.ai/artifact/...` link): an AGENT chat that runs
+  `/amoebius-artifact <url>` (`ArtifactLibrary.ImportPrompt`): it saves every file of the artifact with the
+  Artifact tool, imports them with `Tools/Build/amoebius_artifacts.py` and gates them. The change stays
+  uncommitted in the workspace for the GIT page.
+- **IMPORT FILE**: one downloaded page plus its link, no agent (`ArtifactLibrary.ImportPage`, the same schema
+  the script writes). BROWSE is the Windows file dialog; elsewhere type the path.
+- Each card: **OPEN IN AMOEBIUS** (its own window, as a studio), **BROWSER**, **WEB LINK** (the live artifact,
+  with the claude.ai viewer's features), **UPDATE** (an agent chat that re-imports it), **FOLDER**.
+- The Vessel Studio is entry `vessel-studio`; **UPDATE FROM ARTIFACT** above its cards checks the published
+  studio against the repo pages (normally every file `unchanged`) and the line under it names the version last
+  matched.
+- Tests: `ArtifactLibraryTests` (parse, path safety, IMPORT FILE add/update, the repo's own library).
 
 ## TIME - benchmarks
 

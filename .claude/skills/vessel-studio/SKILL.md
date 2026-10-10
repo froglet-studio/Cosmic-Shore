@@ -1,6 +1,6 @@
 ---
 name: vessel-studio
-description: The ONE skill for the Vessel Studio - the single claude.ai artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where every vessel and its AI are flown, tested and decided on, on phone or PC, before the game is changed. Use for ANYTHING about a vessel studio or vessel AI testing in a page - starting a studio for a new vessel, extending the Squirrel AI sim lab or the Stoat Flight Studio, the page recipe (SHIP constants, the dual-stick mix, input-only AI with difficulty levels, cameras, phone play, scorecard), the gate (check_studio.cjs), the catalog (studios.json, the hub, Amoebius STUDIOS, Unity FrogletTools > Vessels > Vessel Studio), building and publishing the artifact (build_artifact.py), the Sync panel and its jobs (sync_job.py), shared decisions and requests, and testing in the real game (PLAY IN ENGINE, the Vessel Test Range plan). Trigger on "vessel studio", "studio for <vessel>", "studio creator", "test the <vessel> AI visually", "AI sim lab", "publish / refresh the studio", "sync panel", "record a decision", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, Docs/Studios/StoatFlightStudio.html, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing. Also load it at the START of any vessel task (feel, AI, difficulty, play styles, cameras, a new vessel) to recommend the studio, and for the universal panel rules (section 1.5: Scene / Game / AI / Play Style Config, Input, Others; dropdowns; players + / -; domains; difficulty; intensity ladder; cameras). Never publish a second studio artifact.
+description: The ONE skill for the Vessel Studio - the single claude.ai artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where every vessel and its AI are flown, tested and decided on, on phone or PC, before the game is changed. Use for ANYTHING about a vessel studio or vessel AI testing in a page - starting a studio for a new vessel, extending the Squirrel AI sim lab or the Stoat Flight Studio, the page recipe (SHIP constants, the dual-stick mix, input-only AI with difficulty levels, cameras, phone play, scorecard), the gate (check_studio.cjs), the catalog (studios.json, the hub, Amoebius VESSEL STUDIO, Unity FrogletTools > Vessels > Vessel Studio), building and publishing the artifact (build_artifact.py), the Sync panel and its jobs (sync_job.py), shared decisions and requests, and testing in the real game (PLAY IN ENGINE, the Vessel Test Range plan). Trigger on "vessel studio", "studio for <vessel>", "studio creator", "test the <vessel> AI visually", "AI sim lab", "publish / refresh the studio", "sync panel", "record a decision", "Vessel Studio Sync job", Docs/Studios/VesselStudio/**, Docs/Studios/StoatFlightStudio.html, or before deciding anything about a studio's layout, AI, scorecard, platforms or publishing. Also load it at the START of any vessel task (feel, AI, difficulty, play styles, cameras, a new vessel) to recommend the studio, and for the universal panel rules (section 1.5: Scene / Game / AI / Play Style Config, Input, Others; dropdowns; players + / -; domains; difficulty; intensity ladder; cameras). Never publish a second studio artifact.
 ---
 
 # Vessel Studio: one artifact, one skill, every vessel
@@ -428,7 +428,9 @@ racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) 
    `engineMode` (a `GameModes` name with an arcade card) and `engineNote` once the game has the mode.
    `web` is the one artifact (§0).
 2. `index.html`: the vessel's bay and its `SPEC` string for the Ask box; take it off "no studio yet".
-3. **Amoebius** reads `studios.json` (`StudioCatalog.cs`): run `dotnet test Port/tests/CosmicShore.Launcher.Tests`.
+3. **Amoebius** reads `studios.json` (`StudioCatalog.cs`) on its VESSEL STUDIO page: run `dotnet test Port/tests/CosmicShore.Launcher.Tests`.
+   The page also lists Amoebius's artifact library (`Docs/Artifacts/artifacts.json`, entry `vessel-studio`): other
+   artifacts come in with `/amoebius-artifact`, never as a copy of a studio.
 4. **Unity**: `FrogletTools ▸ Vessels ▸ Vessel Studio` opens Amoebius on STUDIOS. Nothing to add.
 5. `VesselStudio/README.md` (the page's row, its scorecard) and `VESSEL_STUDIO_PLAN.md` (phase status).
 
@@ -458,7 +460,9 @@ Omit `capabilities` to keep them. If they must ever be restated, the full set is
                           "tools": ["send_message", "create_session", "list_environments"] } ] } }
 ```
 
-Then `ArtifactData list` of `decisions`, `jobs` and `requests`. Whenever the Stoat changed, regenerate
+Then `ArtifactData list` of `decisions`, `jobs` and `requests`. To record the published version in Amoebius's
+library, run `/amoebius-artifact` on this URL: it must report every file `unchanged` (a `changed` file means the
+repo and the artifact disagree). Whenever the Stoat changed, regenerate
 its hub copy before a build:
 - `python3 .claude/skills/vessel-studio/copy_stoat.py` writes it (back link, header, and
   `VesselStudio/x.js` → `x.js`);
@@ -527,8 +531,8 @@ Tell the user what ran, one line per job.
 
 | Tier | What flies | Where |
 |---|---|---|
-| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; Amoebius STUDIOS ▸ OPEN IN AMOEBIUS |
-| B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius STUDIOS (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
+| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; Amoebius VESSEL STUDIO ▸ OPEN IN AMOEBIUS |
+| B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius VESSEL STUDIO (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
 | C. Vessel Test Range | The real mode scenes with AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look | Unity + Amoebius; **plan only**: `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` |
 
 C is shared infrastructure: one dev-only harness for every vessel, installed into the real mode
