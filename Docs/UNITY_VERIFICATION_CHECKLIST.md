@@ -120,6 +120,12 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   its player pressed. Edit-mode `LobbySlotRowReadyTests` (5). `Docs/ArcadeLaunch/ARCHITECTURE.md`
   §5.1 rewritten.
 
+- Four fire-and-forget delays in the arcade controllers are bound to their owner's lifetime
+  (`SkimRaceController.SpawnTrackEarly` 1.5 s, `NetworkScoreTracker.DelayAndSendResults` 0.5 s,
+  `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s and
+  `ResetServerRoundAfterDelay` 0.1 s): a match torn down inside the wait no longer keeps the dead
+  controller reachable or fires an RPC from it, and a cancelled reload puts `IsReplayReload` back.
+
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
    Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
@@ -182,6 +188,9 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
     after pressing goes dark and the launch re-evaluates; closing the card and opening another
     starts every light dark. Edit-mode `LobbySlotRowReadyTests` green (5). Maelstrom's lobby
     count label is unchanged.
+14. Skim Race online, then Play Again: the fade, the reload and the fresh track still happen (the
+    bound delays are the same lengths); quit the match during the half-second fade: back in the
+    menu, the next launch is a normal start, not a replay reload (`GameData.IsReplayReload` false).
 
 ---
 

@@ -186,8 +186,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTaskVoid SpawnTrackEarly()
         {
-            // Small delay to ensure all clients have joined and intensity is synced
-            await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
+            // Small delay to ensure all clients have joined and intensity is synced. Bound to this
+            // controller: a watchdog-ended match tears the scene down inside the wait, and an
+            // unbound continuation kept the dead controller, its players and their trails
+            // reachable until the delay came due (Port/docs/AI_TRAINING.md, "Long runs").
+            if (await UniTask.Delay(1500, DelayType.UnscaledDeltaTime, cancellationToken: destroyCancellationToken)
+                             .SuppressCancellationThrow()) return;
             if (!IsServer || _trackSpawned) return;
 
             int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);

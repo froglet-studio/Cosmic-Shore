@@ -709,8 +709,15 @@ namespace CosmicShore.Gameplay
                 // Fade to black on all clients before scene reload
                 PrepareForSceneReload_ClientRpc();
 
-                // Wait for fade to complete
-                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+                // Wait for fade to complete. Bound to this controller: destroyed inside the wait
+                // (a quit, a host loss), the reload never happens, so the replay flag is put back
+                // rather than left set for the next session to read.
+                if (await UniTask.Delay(500, DelayType.UnscaledDeltaTime, cancellationToken: this.GetCancellationTokenOnDestroy())
+                                 .SuppressCancellationThrow())
+                {
+                    gameData.IsReplayReload = false;
+                    return;
+                }
 
                 foreach (var player in gameData.Players)
                 {
@@ -872,7 +879,7 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid ResetServerRoundAfterDelay()
         {
-            await UniTask.Delay(100); 
+            if (await UniTask.Delay(100, cancellationToken: this.GetCancellationTokenOnDestroy()).SuppressCancellationThrow()) return;
             SetupNewRound();
         }
 
