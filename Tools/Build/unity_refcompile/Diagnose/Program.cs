@@ -16,6 +16,10 @@
 //
 // Every compilation is named after its -out: file, as csc names it, so [InternalsVisibleTo] grants
 // (Assembly-CSharp -> Assembly-CSharp-Editor) apply here exactly as they do in csc.
+//
+// An error that is not itself an unresolved name (see Roots) is suffixed with the named error types its
+// expression involves: " [unresolved types: A, B]". `out var v` from an unknown TryGetValue -> CS0165,
+// `unknown.Count > 0` -> CS0019: the build files such a cascade with its root instead of gating it.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,6 +27,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 sealed class Loader : IAnalyzerAssemblyLoader
@@ -70,13 +75,77 @@ static class Program
         var comp = Build(args[0], sourceRefs, out var genDiags);
         foreach (var d in genDiags) Console.WriteLine(Format(d));
         int errors = 0;
+        var models = new Dictionary<SyntaxTree, SemanticModel>();
         foreach (var d in comp.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error)
                      .OrderBy(d => d.Location.SourceTree?.FilePath).ThenBy(d => d.Location.SourceSpan.Start))
         {
-            Console.WriteLine(Format(d));
+            Console.WriteLine(Format(d) + Unresolved(comp, models, d));
             errors++;
         }
         return errors == 0 && genDiags.Count == 0 ? 0 : 1;
+    }
+
+    // Diagnostics that ARE the unresolved name; every other error may be a cascade of one.
+    static readonly HashSet<string> Roots = new HashSet<string> { "CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538" };
+
+    static string Unresolved(Compilation comp, Dictionary<SyntaxTree, SemanticModel> models, Diagnostic d)
+    {
+        var tree = d.Location.SourceTree;
+        if (tree == null || Roots.Contains(d.Id)) return "";
+        if (!models.TryGetValue(tree, out var model)) models[tree] = model = comp.GetSemanticModel(tree);
+        var node = tree.GetRoot().FindNode(d.Location.SourceSpan, getInnermostNodeForTie: true);
+        var scopes = new List<SyntaxNode>();
+        if (d.Id == "CS0165" && model.GetSymbolInfo(node).Symbol is ILocalSymbol local)
+            // an unassigned local: what failed to assign it is the expression that declares it
+            // (`if (unknown.TryGetValue(k, out var v) && int.TryParse(v.Value, out int n)) use(n);`)
+            scopes.AddRange(local.DeclaringSyntaxReferences.Select(r => Outermost(r.GetSyntax())));
+        else
+            // `x.Missing`: the receiver is part of the error
+            scopes.Add(node is SimpleNameSyntax && node.Parent is MemberAccessExpressionSyntax ma && ma.Name == node ? ma : node);
+        var names = new SortedSet<string>(StringComparer.Ordinal);
+        var followed = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        for (int i = 0; i < scopes.Count; i++)
+            foreach (var e in scopes[i].DescendantNodesAndSelf().OfType<ExpressionSyntax>())
+            {
+                var info = model.GetTypeInfo(e);
+                // a `var` local inferred from an unresolved expression has an unnamed error type: its
+                // root is in the expression that declares it (`var c = unknown.Items; c.Count > 0`)
+                if ((Collect(info.Type, names) | Collect(info.ConvertedType, names)) &&
+                    model.GetSymbolInfo(e).Symbol is ILocalSymbol l && followed.Add(l))
+                    scopes.AddRange(l.DeclaringSyntaxReferences.Select(r => Outermost(r.GetSyntax())));
+            }
+        return names.Count == 0 ? "" : " [unresolved types: " + string.Join(", ", names) + "]";
+    }
+
+    // The largest expression around n that stays inside one statement or member declaration.
+    static SyntaxNode Outermost(SyntaxNode n)
+    {
+        var best = n;
+        for (var p = n.Parent; p != null && !(p is StatementSyntax) && !(p is MemberDeclarationSyntax); p = p.Parent)
+            if (p is ExpressionSyntax) best = p;
+        return best;
+    }
+
+    // Adds the named error types in t (type arguments and element types included); true when t holds
+    // an error type with no name of its own (`?`, or `var` that could not be inferred).
+    static bool Collect(ITypeSymbol t, ISet<string> names)
+    {
+        switch (t)
+        {
+            case IErrorTypeSymbol e:
+                bool unnamed = e.Name.Length == 0 || e.Name == "var";
+                if (!unnamed)
+                    names.Add(e.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() + "." + e.Name : e.Name);
+                return e.TypeArguments.Aggregate(unnamed, (u, a) => Collect(a, names) | u);
+            case INamedTypeSymbol n:
+                return n.TypeArguments.Aggregate(false, (u, a) => Collect(a, names) | u);
+            case IArrayTypeSymbol a:
+                return Collect(a.ElementType, names);
+            case IPointerTypeSymbol p:
+                return Collect(p.PointedAtType, names);
+            default:
+                return false;
+        }
     }
 
     // The compilation one .rsp describes, source generators applied; generator errors come back separately.

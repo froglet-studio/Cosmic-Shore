@@ -1067,10 +1067,17 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   directory. It is not missing the cache; it cannot find `csc.dll` under the system
   `DOTNET_ROOT`. Export both for the audit too (2026-10-08). Negative-control it the same way as
   the compile: misspell one key in a changed asset, confirm `[field] 1` names it, restore.
-- **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
-  files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
-  counted, not judged. Check your own files are not in that bucket (they would be unverified):
-  grep the run's `report.json` for each file you changed.
+- **Read the `ERRORS in project code:` line, not the total.** Five UGS packages (Multiplayer,
+  Friends, Leaderboards, Playmode, Widgets) are not on needle-mirror. fetch gets them from
+  packages.unity.com, and then they compile like everything else and the `unobtainable` bucket is
+  `(none)`, with 0 errors. Where that host is blocked, the bucket holds about 218 errors. Each of them
+  names a type those packages declare, or is a CS0165/CS0019 cascade of one.
+- **"Not reachable from this sandbox" in a tool's docs describes the sandbox that wrote it.** Re-probe
+  before you design around it (`curl -s -o /dev/null -w '%{http_code}' <url>`). `fetch.py` said
+  packages.unity.com was unreachable, and the bucket built on that claim held 218 errors from the
+  tool's first day.
+  On 2026-10-06 the host answered 200 and all five packages compiled cleanly against the reference
+  set, so the whole bucket turned out to be a fetch-source gap, not a Unity one.
 - **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
   referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
   runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
@@ -1099,17 +1106,22 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
   It is an `EDITOR_REFERENCE_GAPS` entry, so a typo such as `LogAsert` still fails the run. Do
   read the bucket, because everything ELSE in your test file was bound for real.
-- **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
-  gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
-  `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
-  in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
-  `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
-  on changed lines is the evidence; "the run was green" is not.
+- **Edits in files that `using` a UGS package gate now. Where packages.unity.com is blocked, only
+  their USE of UGS types is unverified.** `HostConnectionService`, the party services,
+  `MultiplayerSetup` and `GameDataSO` all `using Unity.Services.Multiplayer`. Until 2026-10-08 every
+  missing-name and cascade error in those files was bucketed, so a misspelt local there passed green.
+  Now, with the registry reachable, they compile against the real UGS source. With it blocked, only
+  errors naming a UGS type, or cascades of one, are bucketed. A wrong member on an `ISession` is still
+  invisible in that case, because the receiver itself is unresolved. To see whether that touches your
+  change, intersect the run's `buckets.json` with your diff's changed lines: parse `@@ +a,n @@` from
+  `git diff -U0 <base>...HEAD -- <file>` and look for any bucketed error at those line numbers.
 - **Negative-control both tools before quoting them**: plant a call to a missing member, or a
   misspelt name, in a file you changed. Until 2026-10-08 a missing NAME (`CS0103`, `CS0246`) never
   gated: three packages always fail, and missing-type errors were all bucketed while any had, so such
   a plant only moved the *unverified* count (the 2026-10-08 bug-hunt records describe exactly that).
-  Now only a name a failed package declares is bucketed; still read both numbers. The compile must
+  Now only a name a failed package declares is bucketed; still read both numbers. In files that
+  `using` a UGS package, nothing at all gated until the 2026-10-08 unobtainable fix; a planted typo
+  there now fails in either fetch mode. The compile must
   fail with that file tagged
   `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated

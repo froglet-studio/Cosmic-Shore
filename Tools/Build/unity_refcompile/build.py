@@ -31,6 +31,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -554,14 +555,19 @@ def fingerprint(items):
     return h.hexdigest()
 
 
-# Packages that are not reachable from this sandbox (no mirror): files that `using` them can only be
-# checked for errors that do not involve their types.
-UNOBTAINABLE_NAMESPACES = ["Unity.Services.Multiplayer", "Unity.Services.Friends", "Unity.Services.Leaderboards",
-                           "Unity.Multiplayer.Playmode", "Unity.Multiplayer.Widgets"]
+# Packages needle-mirror does not carry come from the Unity registry (fetch.py) where that host is
+# reachable, and are compiled like any other. Where it is not, such a package is ABSENT from the run:
+# an error that names a type it declares (or a cascade of one) is bucketed "unobtainable", not gated.
+# What each one declares is snapshotted from its real tarball at the locked version by
+# `build.py --write-declarations`, run where they ARE fetched; see README step 7.
+UNOBTAINABLE_SNAPSHOT = os.path.join(HERE, "unobtainable_declarations.tsv")
+REFRESH_HINT = "refresh it where packages.unity.com is reachable: run.sh --write-declarations"
 MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
-# In a file that uses an unobtainable package, these are cascades of its unresolved types too
-# (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
-UNOBTAINABLE_CASCADE_CODES = MISSING_CODES | {"CS0165", "CS0019", "CS1061"}
+# Errors that can be cascades of an unresolved type rather than a name of their own: `out var x` from an
+# unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, a member of a List<Unknown> -> CS1061.
+# Diagnose appends the named error types each one's expression involves: " [unresolved types: A, B]".
+CASCADE_CODES = {"CS0165", "CS0019", "CS1061"}
+UNRESOLVED_RE = re.compile(r" \[unresolved types: ([^\]]*)\]$")
 # Editor config: errors that are the 2021.1 UnityEditor reference (the newest non-publicized one
 # obtainable) or the unfetched test framework, not the code. Matched on the whole message, so a typo
 # on the same type still gates. Add an entry only for documented Unity API, naming where it came from.
@@ -576,6 +582,11 @@ EDITOR_REFERENCE_GAPS = [
     (r"name 'LogAssert' does not exist", "UnityEngine.TestTools.LogAssert, com.unity.test-framework (not fetched)"),
 ]
 _DECLARED_TYPE = re.compile(r"\b(?:class|struct|interface|enum|record)\s+(\w+)|\bdelegate\s+[^;{(=]*?\b(\w+)\s*(?:<[^>]*>)?\s*\(")
+# Comments and string/char literals, blanked before _DECLARED_TYPE reads a file: package docs say "the
+# class to ..." and "an interface for ...", and every such word would otherwise read as a declared type
+# (20 in the five registry-only packages: `instance`, `property`, `range`, `version`, ...; 14 in the three
+# that fail: `value`, `type`, `var`, ...), so a local misspelled as one of them was bucketed, not gated.
+_NOT_CODE = re.compile(r'//[^\n]*|/\*.*?\*/|@"(?:[^"]|"")*"|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])+\'', re.S)
 
 
 def declared_names(files):
@@ -584,7 +595,7 @@ def declared_names(files):
     types, namespaces = set(), set()
     for f in files:
         try:
-            txt = open(f, encoding="utf-8-sig", errors="replace").read()
+            txt = _NOT_CODE.sub(" ", open(f, encoding="utf-8-sig", errors="replace").read())
         except OSError:
             continue
         types.update(m.group(1) or m.group(2) for m in _DECLARED_TYPE.finditer(txt))
@@ -608,6 +619,123 @@ def names_failed_package(msg, failed, types, namespaces):
         return False
     name = re.sub(r"<.*", "", m.group(1))
     return name in namespaces or name.split(".")[-1] in types
+
+
+def names_absent_package(code, msg, asms, types, namespaces):
+    """names_failed_package for a package this run could not fetch (asms/types/namespaces: what it
+    declares, from the snapshot), plus its cascades: a CASCADE_CODES error stems from it only when one
+    of the unresolved types Diagnose found in its expression is a type it declares. With none (a real
+    unassigned local, a missing member of a known type) the error gates, like a misspelled name."""
+    m = UNRESOLVED_RE.search(msg)
+    if code in CASCADE_CODES:
+        return bool(m) and any(n.strip().split(".")[-1] in types for n in m.group(1).split(","))
+    return code in MISSING_CODES and names_failed_package(msg[:m.start()] if m else msg, asms, types, namespaces)
+
+
+def load_snapshot(path=UNOBTAINABLE_SNAPSHOT):
+    """unobtainable_declarations.tsv -> {package: {"version", "asms", "types", "namespaces"}}."""
+    snap, cur = {}, None
+    if not os.path.exists(path):
+        return snap
+    for line in open(path, encoding="utf-8"):
+        f = line.rstrip("\n").split("\t")
+        if f[0] == "P":
+            cur = snap[f[1]] = {"version": f[2], "asms": set(), "types": set(), "namespaces": set()}
+        elif f[0] in ("A", "T", "N"):
+            cur[{"A": "asms", "T": "types", "N": "namespaces"}[f[0]]].add(f[1])
+    return snap
+
+
+def write_snapshot(packages, path=UNOBTAINABLE_SNAPSHOT):
+    """packages: [(package, version, tarball sha1, {assembly: [source files]})]. Declared names come
+    from declared_names, the same reading a failed package gets."""
+    lines = ["# What the packages needle-mirror does not carry declare, for a run that cannot fetch them from",
+             "# packages.unity.com either: an Assets error goes to the \"unobtainable\" bucket only when it names",
+             "# one of these (README step 7). Written by `run.sh --write-declarations` from the real tarballs at",
+             "# their locked versions, for the assemblies Assets code references. Do not edit by hand.",
+             "# P package version tarball-sha1 | A assembly | T type | N namespace (with every prefix)"]
+    for pkg, ver, sha, asms in sorted(packages):
+        types, namespaces = declared_names([f for files in asms.values() for f in files])
+        lines.append("P\t%s\t%s\t%s" % (pkg, ver, sha))
+        lines += ["A\t" + a for a in sorted(asms)] + ["T\t" + t for t in sorted(types)] \
+            + ["N\t" + n for n in sorted(namespaces)]
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def self_test():
+    """Bucketing fixtures (no dotnet, no cache): an error goes to the unobtainable bucket only when it
+    names a type that a package this run could not fetch declares, or is a cascade of one; and the
+    committed snapshot matches packages-lock.json and declares what the project uses."""
+    asms = {"Unity.Services.Multiplayer"}
+    types = {"ISession", "ISessionInfo", "IReadOnlyPlayer", "MultiplayerService", "PlayerProperty"}
+    namespaces = {"Unity", "Unity.Services", "Unity.Services.Multiplayer"}
+    nf = "The type or namespace name '%s' could not be found (are you missing a using directive or an assembly reference?)"
+    no_ns = "The type or namespace name '%s' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)"
+    cases = [
+        # (expect bucketed, code, message)
+        (False, "CS0103", "The name 'otps' does not exist in the current context"),
+        (False, "CS0246", nf % "ISesion"),
+        (False, "CS0234", no_ns % "Multiplayr"),
+        (False, "CS0012", "The type 'Foo' is defined in an assembly that is not referenced. You must add a reference to assembly 'CosmicShore.Data, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'."),
+        (False, "CS1061", "'HostConnectionDataSO' does not contain a definition for 'NoSuchMember' and no accessible extension method 'NoSuchMember' accepting a first argument of type 'HostConnectionDataSO' could be found (are you missing a using directive or an assembly reference?)"),
+        (False, "CS0165", "Use of unassigned local variable 'plantUnset'"),
+        (False, "CS0165", "Use of unassigned local variable 'parsed' [unresolved types: Vectr3]"),
+        (False, "CS0019", "Operator '>' cannot be applied to operands of type 'int' and 'string'"),
+        (False, "CS0029", "Cannot implicitly convert type 'string' to 'int' [unresolved types: ISession]"),
+        (True, "CS0234", no_ns % "Multiplayer"),
+        (True, "CS0246", nf % "ISession"),
+        (True, "CS0246", nf % "Unity.Services.Multiplayer.ISession"),
+        (True, "CS0103", "The name 'MultiplayerService' does not exist in the current context"),
+        (True, "CS0012", "The type 'ISession' is defined in an assembly that is not referenced. You must add a reference to assembly 'Unity.Services.Multiplayer, Version=1.1.8.0, Culture=neutral, PublicKeyToken=null'."),
+        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer]"),
+        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer, Vectr3]"),
+        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: ISessionInfo]"),
+        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: Unity.Services.Multiplayer.ISessionInfo]"),
+        (True, "CS1061", "'List<ISession>' does not contain a definition for 'Lenght' and no accessible extension method 'Lenght' accepting a first argument of type 'List<ISession>' could be found [unresolved types: ISession]"),
+    ]
+    bad = [(want, code, msg) for want, code, msg in cases if names_absent_package(code, msg, asms, types, namespaces) != want]
+    bad += [(False, code, msg) for want, code, msg in cases if names_absent_package(code, msg, set(), set(), set())]
+    # the committed snapshot: matches the lock, and declares every name a run without packages.unity.com
+    # reports from the party services, the friends/leaderboards facades and MultiplayerSetup
+    snap = load_snapshot()
+    lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
+    for pkg, d in sorted(snap.items()):
+        if lock.get(pkg, {}).get("version") != d["version"]:
+            bad.append((True, "-", "%s@%s in unobtainable_declarations.tsv, %s in packages-lock.json: %s"
+                        % (pkg, d["version"], lock.get(pkg, {}).get("version", "absent"), REFRESH_HINT)))
+    if not snap:
+        bad.append((True, "-", "unobtainable_declarations.tsv is missing or empty: " + REFRESH_HINT))
+    s_asms, s_types, s_ns = (set().union(*(d[k] for d in snap.values())) if snap else set()
+                             for k in ("asms", "types", "namespaces"))
+    used = ["MultiplayerService", "VisibilityPropertyOptions", "FilterField", "FilterOperation", "ISession", "ISessionInfo",
+            "IReadOnlyPlayer", "PlayerProperty", "SessionProperty", "SessionOptions", "JoinSessionOptions",
+            "QuerySessionsOptions", "FilterOption", "SessionException", "SessionError", "PropertyIndex",
+            "IMultiplayerService", "FriendsService", "IFriendsService", "FriendsServiceException", "Availability",
+            "Relationship", "RelationshipType", "MemberRole", "IRelationshipAddedEvent", "IRelationshipDeletedEvent",
+            "IPresenceUpdatedEvent", "LeaderboardsService", "AddPlayerScoreOptions", "GetScoresOptions",
+            "GetScoresByPlayerIdsOptions", "CurrentPlayer"]
+    snap_cases = [(True, "CS0246", nf % n) for n in used]
+    snap_cases += [(True, "CS0234", no_ns % n) for n in ("Multiplayer", "Friends", "Leaderboards")]
+    snap_cases += [(True, "CS0234", "The type or namespace name 'Playmode' does not exist in the namespace 'Unity.Multiplayer' (are you missing an assembly reference?)"),
+                   (False, "CS0103", "The name 'otps' does not exist in the current context"),
+                   (False, "CS0246", nf % "ISesion")]
+    bad += [(want, code, msg) for want, code, msg in snap_cases if names_absent_package(code, msg, s_asms, s_types, s_ns) != want]
+    # declared_names reads code, not prose: a word after `class` in a comment or a string is not a type
+    with tempfile.NamedTemporaryFile("w", suffix=".cs", delete=False) as f:
+        f.write('// the class to call\n/* an interface for it */ var s = "class Fake"; var v = @"enum ""Junk""";\n'
+                "char q = '\"'; namespace N.M { public class Real {} enum E { X } delegate void D(int x); }\n")
+    got = declared_names([f.name])
+    os.remove(f.name)
+    if got != ({"Real", "E", "D"}, {"N", "N.M"}):
+        bad.append((True, "-", "declared_names read %s from a fixture declaring Real, E, D in N.M" % (got,)))
+    junk = sorted(s_types & {"to", "for", "is", "that", "instance", "property", "range", "version"})
+    if junk:
+        bad.append((True, "-", "unobtainable_declarations.tsv lists comment words as types: %s - %s" % (junk, REFRESH_HINT)))
+    for want, code, msg in bad:
+        print("[self-test] FAIL: expected %s: %s %s" % ("bucketed" if want else "project error", code, msg))
+    print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", len(cases) + len(snap_cases)))
+    return 1 if bad else 0
 
 LEARN_0507 = re.compile(r"overriding 'public' inherited member '([^']+)'")
 LEARN_0122 = re.compile(r"error CS0122: '([^']+)' is inaccessible due to its protection level")
@@ -738,7 +866,12 @@ def run_once():
     ap.add_argument("--max-errors", type=int, default=400)
     ap.add_argument("--changed-base", default="origin/bleeding-edge")
     ap.add_argument("--quiet-buckets", action="store_true", help="count, do not list, the unverifiable buckets")
+    ap.add_argument("--self-test", action="store_true", help="check the unobtainable bucketing on fixtures, then exit")
+    ap.add_argument("--write-declarations", action="store_true",
+                    help="rewrite unobtainable_declarations.tsv from the packages this cache got from packages.unity.com")
     args = ap.parse_args()
+    if args.self_test:
+        return self_test()
 
     if not os.path.exists(os.path.join(CACHE, "manifest.json")):
         print("ERROR: no reference cache at %s - run fetch.py first (needs network once)." % CACHE)
@@ -759,6 +892,11 @@ def run_once():
     os.makedirs(out, exist_ok=True)
     apply_source_patches()
     roots, versions = package_roots()
+    registry = {n: d for n, d in roots if os.path.exists(os.path.join(d, ".registry"))}
+    if args.write_declarations and not registry:
+        print("ERROR: --write-declarations: no package in %s came from packages.unity.com - run fetch.py where "
+              "that host is reachable." % CACHE)
+        return 2
     asms, by_guid, owners, sources, dlls = discover(defines, pkg_defines, versions, roots)
     eng, ugui = engine_refs()
 
@@ -1049,6 +1187,19 @@ def run_once():
 
     if relearn:
         return 3
+    if args.write_declarations:
+        # what Assets code can see of each registry-only package: the assemblies an Assets assembly
+        # references directly (auto-referenced ones included)
+        seen = {resolve(r).name for x in live.values() if x.origin in ("assets", "predefined") and x.name in need
+                for r in x.refs if resolve(r) is not None}
+        snap = []
+        for pkg, d in sorted(registry.items()):
+            url, ver, sha = open(os.path.join(d, ".registry")).read().split()
+            pa = {n: live[n].files for n in seen if n in live and live[n].origin == "package:" + pkg}
+            snap.append((pkg, ver, sha, pa))
+            print("[build] declarations of %s@%s: %s" % (pkg, ver, ", ".join(sorted(pa)) or "NO assembly Assets references"))
+        write_snapshot(snap)
+        print("[build] wrote %s" % os.path.relpath(UNOBTAINABLE_SNAPSHOT, ROOT))
     # report
     rep = {"config": args.config, "results": {k: {"status": v[0], "errors": v[1]} for k, v in results.items()},
            "missing_refs": missing}
@@ -1064,6 +1215,27 @@ def run_once():
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
     real, unobtainable, unverified, editor_context = [], [], [], []
     failed_types, failed_namespaces = declared_names([f for k in pkg_failed for f in live[k].files])
+    # packages this run could not fetch: what each declares comes from the committed snapshot
+    lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
+    snapshot = load_snapshot()
+    present = {n for n, _ in roots}
+    absent = {p: d for p, d in snapshot.items() if p not in present}
+    absent_asms, absent_types, absent_ns = (set().union(*(d[k] for d in absent.values())) if absent else set()
+                                            for k in ("asms", "types", "namespaces"))
+    for p, d in sorted(absent.items()):
+        if lock.get(p, {}).get("version") != d["version"]:
+            print("[build] WARNING: %s is absent and unobtainable_declarations.tsv describes %s, not the locked %s - %s"
+                  % (p, d["version"], lock.get(p, {}).get("version", "(not in the lock)"), REFRESH_HINT))
+    unavailable = [r[0] for r in load_json(os.path.join(CACHE, "manifest.json")).get("results", [])
+                   if str(r[2]).startswith("UNAVAILABLE") and r[0] not in snapshot and r[0] not in present]
+    if unavailable:
+        print("[build] WARNING: not fetched and not in unobtainable_declarations.tsv: %s - errors naming their "
+              "types are reported as project errors" % ", ".join(sorted(unavailable)))
+    for p, d in sorted(registry.items()):
+        ver = os.path.basename(d).split("@", 1)[1]
+        if snapshot.get(p, {}).get("version") != ver:
+            print("[build] NOTE: unobtainable_declarations.tsv does not describe %s@%s, which this cache got from "
+                  "packages.unity.com - rerun with --write-declarations to refresh it" % (p, ver))
     for k in failed:
         if k in pkg_failed:
             continue
@@ -1073,12 +1245,11 @@ def run_once():
                 real.append((k, e))
                 continue
             path, code = m.group(1), m.group(2)
-            src = open(path, encoding="utf-8-sig", errors="replace").read() if os.path.exists(path) else ""
             if path in editor_unchanged:
                 # compiled only so the changed Editor files bind; against UnityEditor 2021.1 and without
                 # the (unfetched) test framework, an unchanged one is not evidence either way
                 editor_context.append((k, e))
-            elif code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
+            elif names_absent_package(code, m.group(3), absent_asms, absent_types, absent_ns):
                 unobtainable.append((k, e))
             elif editor and code in ("CS0115", "CS0117", "CS1061") and re.search(r"'(OnValidate|Reset)'|\.(OnValidate|Reset)\(\)", m.group(3)):
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
@@ -1100,8 +1271,8 @@ def run_once():
         if len(rows) > limit:
             print("    ... %d more (report.json)" % (len(rows) - limit))
     show("ERRORS in project code", real, args.max_errors)
-    show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
-         unobtainable, 0 if args.quiet_buckets else args.max_errors)
+    show("unobtainable: types declared by a package this run could not fetch (%s), and their cascades"
+         % (", ".join(sorted(absent)) or "none"), unobtainable, 0 if args.quiet_buckets else args.max_errors)
     show("unverified: types a failed package declares, editor-only members absent from the player-build reference DLLs, "
          "or Unity 6 editor API / the test framework absent from the editor references (EDITOR_REFERENCE_GAPS)", unverified,
          0 if args.quiet_buckets else args.max_errors)
@@ -1115,7 +1286,7 @@ def run_once():
     unresolved = sorted({r for v in missing.values() for r in v})
     print("[build] unresolved asmdef references (Unity would also skip these): %s" % (", ".join(unresolved) or "none"))
     json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "editor_context": editor_context,
-               "package_failed": pkg_failed},
+               "package_failed": pkg_failed, "absent_packages": sorted(absent)},
               open(os.path.join(out, "buckets.json"), "w"), indent=1)
     if real:
         print("[build] RESULT: FAILED - %d error(s) in project code (%d in files changed since %s)"
