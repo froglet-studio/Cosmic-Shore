@@ -120,7 +120,7 @@ def check_prefabs(index: avs.AssetIndex) -> tuple[int, int, list[str]]:
         if not is_lifeform:
             continue
         checked += 1
-        rel = path.relative_to(ROOT)
+        rel = path.relative_to(index.root)
         crystals = [c for c in comps if avs.guid_of(c.value("m_Script")[0]) == crystal_guid]
         if not crystals:
             lines.append(f"  {rel}: lifeform has NO crystal - must carry one elemental crystal to drop on death")
@@ -168,7 +168,7 @@ def check_configs(index: avs.AssetIndex) -> tuple[int, int, list[str]]:
             if has_element:
                 continue
         checked += 1
-        rel = path.relative_to(ROOT)
+        rel = path.relative_to(index.root)
         vm = re.search(r"^  Variant:\n((?:    .*\n)*)", text, re.M)
         vblock = vm.group(1) if vm else ""
         enabled = re.search(r"^    Enabled: (\S+)", vblock, re.M)
@@ -186,10 +186,101 @@ def check_configs(index: avs.AssetIndex) -> tuple[int, int, list[str]]:
     return checked, issues, lines
 
 
+def self_test() -> int:
+    """Negative controls on a synthetic project: a lifeform prefab with no crystal, a config
+    with its Variant block removed, and a config that passes. The script metas are copied so the
+    guids resolve by file name exactly as they do on the live tree."""
+    import shutil
+    import tempfile
+    ok = True
+    live = avs.AssetIndex(ROOT)
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        def put(rel: str) -> Path:
+            dst = root / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(ROOT / rel, dst)
+            return dst
+        # Scripts the walk resolves by name: every lifeform class, the crystal, the configs.
+        names = subclasses("LifeForm") | {"LightFauna", "Crystal", "FaunaConfigurationSO", "FloraConfigurationSO"}
+        for g, path in live.by_guid.items():
+            if path.suffix == ".cs" and path.stem in names:
+                put(str(path.relative_to(ROOT)) + ".meta")
+        # A passing lifeform prefab: the first one on the live tree the prefab check passes.
+        lifeform_guids = script_guids(live, sorted(names - {"Crystal", "FaunaConfigurationSO", "FloraConfigurationSO"}))
+        crystal_guid = next(g for g, p in live.by_guid.items() if p.suffix == ".cs" and p.stem == "Crystal")
+        shark = None
+        for g, path in sorted(live.by_guid.items(), key=lambda kv: str(kv[1])):
+            if path.suffix != ".prefab" or "Qfish" in path.name:
+                continue
+            comps = all_components(live, g)
+            if not any(avs.guid_of(c.value("m_Script")[0]) in lifeform_guids for c in comps):
+                continue
+            crystals = [c for c in comps if avs.guid_of(c.value("m_Script")[0]) == crystal_guid]
+            if len(crystals) == 1 and crystal_element(crystals[0]) in ELEMENTAL:
+                shark = str(path.relative_to(ROOT))
+                break
+        put(shark); put(shark + ".meta")
+        # The prefab's nested crystal source must come along, or the walk cannot see the crystal.
+        import re
+        pending = [ROOT / shark]
+        seen = set()
+        while pending:
+            cur = pending.pop()
+            for g in set(re.findall(r"m_SourcePrefab: \{fileID: 100100000, guid: ([0-9a-f]{32})", cur.read_text(encoding="utf-8", errors="replace"))):
+                src = live.by_guid.get(g)
+                if src and g not in seen:
+                    seen.add(g)
+                    put(str(src.relative_to(ROOT))); put(str(src.relative_to(ROOT)) + ".meta")
+                    pending.append(src)
+        all_components.cache_clear()
+        cfg = "Assets/_SO_Assets/Threat Flora/Swarm Physarum Flora Space Config Data.asset"
+        put(cfg); put(cfg + ".meta")
+        # Its prefab reference must resolve to SOMETHING for the config to count; it is a guid
+        # reference, not a file read, so the meta alone is enough.
+        idx = avs.AssetIndex(root)
+        c1, i1, _ = check_prefabs(idx)
+        c2, i2, l2 = check_configs(idx)
+        ok &= _expect(f"a complete lifeform prefab passes ({shark.rsplit('/', 1)[-1]})", c1 >= 1 and i1 == 0)
+        ok &= _expect("a config with an enabled Variant and a HeartWorldScale passes", c2 == 1 and i2 == 0)
+
+        # Negative control 1: strip the Variant block from the config.
+        text = (root / cfg).read_text(encoding="utf-8")
+        stripped = re.sub(r"^  Variant:\n(?:    .*\n)*", "", text, flags=re.M)
+        (root / cfg).write_text(stripped, encoding="utf-8")
+        _c, i2b, l2b = check_configs(avs.AssetIndex(root))
+        ok &= _expect("a config with no Variant block is a finding", i2b == 1 and any("no Variant tuning" in l for l in l2b))
+
+        # Negative control 2: a lifeform prefab with every Crystal component removed by hand.
+        ptext = (root / shark).read_text(encoding="utf-8", errors="replace")
+        crystal_guid = next(g for g, p in live.by_guid.items() if p.suffix == ".cs" and p.stem == "Crystal")
+        without = re.sub(r"--- !u!114 &-?\d+( stripped)?\nMonoBehaviour:\n(?:(?!--- !u!).*\n)*?  m_Script: \{fileID: 11500000, guid: " + crystal_guid + r", type: 3\}\n(?:(?!--- !u!).*\n)*", "", ptext)
+        (root / shark).write_text(without, encoding="utf-8")
+        # Also drop the nested crystal source prefabs so no nested crystal survives.
+        for g in set(re.findall(r"m_SourcePrefab: \{fileID: 100100000, guid: ([0-9a-f]{32})", ptext)):
+            src = live.by_guid.get(g)
+            if src and "rystal" in src.name:
+                (root / src.relative_to(ROOT)).unlink(missing_ok=True)
+                (root / (str(src.relative_to(ROOT)) + ".meta")).unlink(missing_ok=True)
+        all_components.cache_clear()
+        _c, i1b, l1b = check_prefabs(avs.AssetIndex(root))
+        ok &= _expect("a lifeform prefab with no crystal is a finding", i1b >= 1 and any("NO crystal" in l for l in l1b))
+    print("self-test:", "OK" if ok else "FAILED")
+    return 0 if ok else 1
+
+
+def _expect(label: str, cond: bool) -> bool:
+    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
+    return cond
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
+    if args.self_test:
+        return self_test()
     index = avs.AssetIndex(ROOT)
     c1, i1, l1 = check_prefabs(index)
     c2, i2, l2 = check_configs(index)

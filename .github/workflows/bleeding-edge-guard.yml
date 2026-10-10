@@ -185,6 +185,9 @@ jobs:
           set -euo pipefail
           python3 Tools/Build/audit_vessel_skimmers.py --self-test
           python3 Tools/Build/audit_vessel_skimmers.py
+          # Same shape for Validate Lifeform Crystals (DT-002's 34): self-test gates, report prints.
+          python3 Tools/Build/audit_lifeform_crystals.py --self-test
+          python3 Tools/Build/audit_lifeform_crystals.py
 
       # The call-to-action badge surface is retired (F7). This fails if any of it comes
       # back - the components, the indicator objects, or the two prefabs.

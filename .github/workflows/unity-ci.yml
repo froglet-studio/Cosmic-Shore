@@ -237,6 +237,9 @@ jobs:
           set -euo pipefail
           python3 Tools/Build/audit_vessel_skimmers.py --self-test
           python3 Tools/Build/audit_vessel_skimmers.py
+          # Same shape for Validate Lifeform Crystals (DT-002's 34): self-test gates, report prints.
+          python3 Tools/Build/audit_lifeform_crystals.py --self-test
+          python3 Tools/Build/audit_lifeform_crystals.py
 
       - name: Check prism shader wiring
         run: |
