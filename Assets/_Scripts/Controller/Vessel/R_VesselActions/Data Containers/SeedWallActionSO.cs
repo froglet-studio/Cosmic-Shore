@@ -69,8 +69,9 @@ namespace CosmicShore.Gameplay
         [Header("Serpent lattice - Mass level 5: Lockdown")]
         [Tooltip("Degrees every brick turns clockwise (seen from the Serpent's seat) on the first " +
                  "omni crystal after a Mass-5 wall is placed. The twist opens one parity of cell " +
-                 "and closes the other; 15 opens the hole ~10% wider than at rest (20 is the peak).")]
-        [SerializeField, Range(1f, 40f)] private float lockTwistDegrees = 15f;
+                 "and closes the other; 15 opens the hole ~9% wider than at rest (about 20 is the peak). " +
+                 "Capped at SerpentWallLattice.MaxTwistDegrees, the most the shield gap is sized for.")]
+        [SerializeField, Range(1f, SerpentWallLattice.MaxTwistDegrees)] private float lockTwistDegrees = 15f;
         [Tooltip("Seconds the twist takes to play out.")]
         [SerializeField, Min(0f)] private float lockTwistSeconds = 0.4f;
         [Tooltip("Thickness of a danger panel along the wall normal.")]

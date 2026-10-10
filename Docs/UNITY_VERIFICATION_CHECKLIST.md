@@ -68,8 +68,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 ### 🔴 Serpent Mass: Seed Wall + Lockdown (`claude/serpent-mass-seed-wall`, 2026-10-09)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md`): the stance and cloak
-seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 4.5 x
-short so shielded octahedra - 3x the box's half-extents - touch long vertex to short vertex), Mass-scaled and snapshotted at
+seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 5 x
+short so shielded octahedra - 3x the box's half-extents - point long vertex at short vertex with half a short side of air), Mass-scaled and snapshotted at
 placement. Omni crystals beam to every live seed (`SerpentWallShieldByCrystalEffectSO`) and ripple a
 shield through each wall; a Mass-5 wall twists 15 degrees and seals its opened holes with danger
 panels. Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
@@ -80,6 +80,16 @@ the box, and the Serpent trail arrived pre-shielded, so every brick was an overs
 packed into one clump. Fixed: pitch fitted to the shield (13.5 at rest), trail no longer shielded
 (`Serpent.prefab` `shielded` 0), and a site's recruit reach grows with its distance from the seed
 so outer rings still find trail to pull. Re-test steps 1, 4 and 6.
+
+**Garrett's second playtest (2026-10-10):** spacing much better, but shielded bricks still touched a
+little, and the danger panels went into the holes that CLOSED. Causes: the pitch made shield
+vertices meet exactly (and the super-shielded seed's stellation, which covers the whole 3x box
+face-on, cut into its neighbours once twisted); and the assembler signed its twist independently of
+the lattice maths, so the bricks turned counter-clockwise while the maths that picks the panel
+cells assumed clockwise. Fixed: `SerpentWallLattice.ShieldGap` adds half a short side (pitch 15 at
+rest), the twist is capped at 25 degrees (`MaxTwistDegrees`, the range that gap clears), and bricks
+and panels turn only through `SerpentWallLattice.BrickRotation` / `PanelRotation`, which edit-mode
+tests pin against the maths. Re-test steps 4 and 6.
 
 **Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
 result.

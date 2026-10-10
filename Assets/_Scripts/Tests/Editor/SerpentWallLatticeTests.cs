@@ -7,8 +7,9 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Serpent seed wall's geometry (R_VesselActions/SERPENT_SEED_WALL.md): the spacing that
-    /// makes shielded bricks touch long vertex to short vertex, the symmetric holes, and the
-    /// Mass-5 twist that opens one parity of hole and closes the other.
+    /// leaves a gap between shielded bricks long vertex to short vertex, the symmetric holes, the
+    /// Mass-5 twist that opens one parity of hole and closes the other, and the rotations the
+    /// runtime lays with agreeing with those maths.
     /// </summary>
     public class SerpentWallLatticeTests
     {
@@ -17,10 +18,11 @@ namespace CosmicShore.Tests
         [Test]
         public void PitchIsTheShieldReachOfHalfLongPlusHalfShort()
         {
-            // The shield octahedron reaches 3x the box's half-extents, so shielded bricks touch
-            // at 3 x (6/2 + 3/2) = 13.5, not at the box's own 4.5 (which packed them into a clump).
+            // The shield octahedron reaches 3x the box's half-extents, so shielded vertices would
+            // meet at 3 x (6/2 + 3/2) = 13.5 (not the box's own 4.5, which packed them into a
+            // clump), and the pitch adds half a short side of air: 15.
             Assert.AreEqual(3f, SerpentWallLattice.ShieldReach, 1e-6f);
-            Assert.AreEqual(13.5f, SerpentWallLattice.Pitch(Short), 1e-5f);
+            Assert.AreEqual(15f, SerpentWallLattice.Pitch(Short), 1e-5f);
             Assert.AreEqual(new Vector3(3f, 6f, 0.5f), SerpentWallLattice.BrickScale(Short, 0.5f));
         }
 
@@ -35,7 +37,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ShieldedBricksTouchLongVertexToShortVertex()
+        public void ShieldedBricksPointLongVertexAtShortVertexWithAGap()
         {
             float pitch = SerpentWallLattice.Pitch(Short);
             var seed = new Vector2[4];
@@ -45,27 +47,35 @@ namespace CosmicShore.Tests
             SerpentWallLattice.Rhombus(1, 0, Short, pitch, 0f, right);   // long axis right
             SerpentWallLattice.Rhombus(0, 1, Short, pitch, 0f, above);   // long axis right
 
-            // Seed's SHORT vertex (+x) meets the right neighbour's LONG vertex (-x).
-            Assert.That(Vector2.Distance(seed[1], right[2]), Is.LessThan(1e-4f));
-            // Seed's LONG vertex (+y) meets the upper neighbour's SHORT vertex (-y).
-            Assert.That(Vector2.Distance(seed[0], above[3]), Is.LessThan(1e-4f));
+            // Seed's SHORT vertex (+x) faces the right neighbour's LONG vertex (-x) across the gap;
+            // touching shields read as one clump in play.
+            float gap = SerpentWallLattice.ShieldGap * Short;
+            Assert.AreEqual(gap, Vector2.Distance(seed[1], right[2]), 1e-4f);
+            // Seed's LONG vertex (+y) faces the upper neighbour's SHORT vertex (-y).
+            Assert.AreEqual(gap, Vector2.Distance(seed[0], above[3]), 1e-4f);
         }
 
         [Test]
         public void ShieldedNeighboursNeverInterpenetrate()
         {
-            // The regression: at the box pitch every shielded brick overlapped its neighbours.
-            // Rest pose and the Lockdown twist both must leave neighbouring diamonds at most
-            // touching.
+            // The regressions: at the box pitch every shielded brick overlapped its neighbours, and
+            // at the touching pitch they read as touching and the super-shielded seed's stellation
+            // cut into them once twisted. Every twist the config allows must leave clear air
+            // between neighbouring diamonds, and between the seed's whole 3x footprint and them.
             float pitch = SerpentWallLattice.Pitch(Short);
+            float air = 0.05f * Short;
             var a = new Vector2[4];
+            var seed = new Vector2[4];
             var b = new Vector2[4];
-            foreach (float twist in new[] { 0f, 15f })
-            foreach (var n in new[] { new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(-1, 1) })
+            for (float twist = 0f; twist <= SerpentWallLattice.MaxTwistDegrees; twist += 2.5f)
+            foreach (var n in new[] { new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(-1, 1),
+                                      new Vector2Int(-1, 0), new Vector2Int(0, -1), new Vector2Int(-1, -1), new Vector2Int(1, -1) })
             {
                 SerpentWallLattice.Rhombus(0, 0, Short, pitch, twist, a);
+                SerpentWallLattice.StellatedFootprint(0, 0, Short, pitch, twist, seed);
                 SerpentWallLattice.Rhombus(n.x, n.y, Short, pitch, twist, b);
-                Assert.IsFalse(Overlap(a, b, 1e-3f), $"seed and {n} overlap at twist {twist}");
+                Assert.IsFalse(Overlap(a, b, air), $"shielded seed and {n} come within {air} at twist {twist}");
+                Assert.IsFalse(Overlap(seed, b, air), $"super-shielded seed and {n} come within {air} at twist {twist}");
             }
         }
 
@@ -97,14 +107,12 @@ namespace CosmicShore.Tests
         [Test]
         public void AtRestEveryHoleIsTheSameSquare()
         {
-            // The holes are what make the pattern symmetric rather than a strict tiling. Their
-            // corners are the four contact points, so the hole is a square of side
-            // 3 x sqrt(0.5^2 + 1^2) x short = 3.354 x short (the shield's reach times the box's).
+            // The holes are what make the pattern symmetric rather than a strict tiling. With the
+            // gap the hole is 4 x short (the 3.354 x short it was with touching vertices, widened).
             var even = SerpentWallLattice.LargestClearSquare(0, 0, Short, 0f);
             var odd = SerpentWallLattice.LargestClearSquare(1, 0, Short, 0f);
-            float expected = SerpentWallLattice.ShieldReach * Mathf.Sqrt(1.25f) * Short;
-            Assert.AreEqual(expected, even.side, 0.05f);
-            Assert.AreEqual(expected, odd.side, 0.05f);
+            Assert.AreEqual(4f * Short, even.side, 0.05f);
+            Assert.AreEqual(even.side, odd.side, 0.05f);
         }
 
         [Test]
@@ -119,6 +127,51 @@ namespace CosmicShore.Tests
 
             int open = SerpentWallLattice.OpeningParity(Short, 15f);
             Assert.AreEqual(odd > even ? 1 : 0, open);
+        }
+
+        [Test]
+        public void ClockwiseTwistOpensTheOddCells()
+        {
+            // Pinned so the panels' parity is a known fact, not just self-consistent maths.
+            Assert.AreEqual(1, SerpentWallLattice.OpeningParity(Short, 15f));
+        }
+
+        [Test]
+        public void BrickRotationTurnsTheBrickWhereTheRhombusSaysItIs()
+        {
+            // The regression: the assembler signed its twist independently of these maths, turned
+            // the bricks the other way, and laid the danger panels in the cells that had CLOSED.
+            // Checked in an arbitrary frame so the frame's own rotation cannot hide a sign.
+            Quaternion frame = Quaternion.Euler(20f, -35f, 50f);
+            float pitch = SerpentWallLattice.Pitch(Short);
+            var r = new Vector2[4];
+            foreach (var site in new[] { new Vector2Int(0, 0), new Vector2Int(1, 0) })
+            foreach (float twist in new[] { 0f, 15f, SerpentWallLattice.MaxTwistDegrees })
+            {
+                SerpentWallLattice.Rhombus(site.x, site.y, Short, pitch, twist, r);
+                Vector2 c = SerpentWallLattice.SiteCenter(site.x, site.y, pitch);
+                Vector3 longAxis = SerpentWallLattice.BrickRotation(frame, site.x, site.y, twist) * Vector3.up;
+                Vector3 local = Quaternion.Inverse(frame) * longAxis;
+                Vector2 expected = (r[0] - c).normalized;
+                Assert.AreEqual(0f, local.z, 1e-4f, "the twist stays in the wall plane");
+                // An axis, not a direction: a long-axis-right brick's +y may face either way. A
+                // twist signed the wrong way is off by twice the twist and fails this.
+                float alignment = Mathf.Abs(Vector2.Dot(expected, new Vector2(local.x, local.y)));
+                Assert.AreEqual(1f, alignment, 1e-4f, $"site {site} twist {twist}");
+            }
+        }
+
+        [Test]
+        public void PanelRotationTurnsThePanelToTheClearSquaresAngle()
+        {
+            Quaternion frame = Quaternion.Euler(-10f, 70f, 25f);
+            foreach (float angle in new[] { 0f, 12f, 49f })
+            {
+                Vector3 local = Quaternion.Inverse(frame) * (SerpentWallLattice.PanelRotation(frame, angle) * Vector3.right);
+                float rad = angle * Mathf.Deg2Rad;
+                Assert.AreEqual(Mathf.Cos(rad), local.x, 1e-4f, $"angle {angle}");
+                Assert.AreEqual(Mathf.Sin(rad), local.y, 1e-4f, $"angle {angle}");
+            }
         }
 
         [Test]

@@ -18,24 +18,31 @@ namespace CosmicShore.Gameplay
     /// octahedron that CIRCUMSCRIBES its box, at <see cref="ShieldReach"/> (3) times the box's
     /// half-extents (<c>OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE</c>), so its cross-section in
     /// the wall plane is a rhombus whose vertices sit 3 x half the long side and 3 x half the short
-    /// side from the brick's centre. The pitch is chosen so each brick's LONG-axis vertex touches
-    /// the neighbouring brick's SHORT-axis vertex: <c>3 x (long/2 + short/2) = pitch</c>, which is
-    /// <c>4.5 x short</c> at aspect 2. So the wall is a lattice of touching diamonds once an omni
-    /// crystal shields it, and widely spaced plain bricks before. (The first cut used the BOX's
-    /// half-extents and packed the bricks three times too tight: shielded, they interpenetrated
-    /// into one clump. The super-shielded seed's stellation has its spike tips on the corners of
-    /// the same 3x box, which at this pitch meets its four neighbours' tips exactly.)</para>
+    /// side from the brick's centre. Each brick's LONG-axis vertex points at the neighbouring
+    /// brick's SHORT-axis vertex, and the pitch leaves <see cref="ShieldGap"/> of air between them:
+    /// <c>pitch = 3 x (long/2 + short/2) + gap</c>, which is <c>5 x short</c> at aspect 2. So the
+    /// wall is a lattice of diamonds that nearly touch once an omni crystal shields it, and widely
+    /// spaced plain bricks before. (The first cut used the BOX's half-extents and packed the bricks
+    /// three times too tight: shielded, they interpenetrated into one clump. The second made the
+    /// vertices meet exactly, and in play shielded bricks read as touching, and the super-shielded
+    /// seed, whose stellation reaches out to the corners of the 3x box, cut into its neighbours
+    /// once the Lockdown twist turned it.)</para>
     ///
     /// <para><b>The Mass-5 twist.</b> Turning every brick clockwise about its own centre by the
     /// same angle keeps each cell square (every cell has four-fold symmetry) but changes its size,
     /// and the two kinds of cell, which are mirror images, go opposite ways: one parity closes and
     /// the other opens. That is the checkerboard. The open cells are sealed with flat danger panels
-    /// sized here by <see cref="LargestClearSquare"/>.</para>
+    /// sized here by <see cref="LargestClearSquare"/>. The runtime turns bricks and panels ONLY
+    /// through <see cref="BrickRotation"/> and <see cref="PanelRotation"/>, which are where this
+    /// file's 2D angles meet Unity's quaternions: the first build signed them independently in the
+    /// assembler, twisted the bricks the opposite way to these maths, and so laid its panels in
+    /// the cells that had CLOSED.</para>
     ///
     /// Coordinates are wall-local: x along the seed's right, y along its up, in world units.
     /// Angles are in degrees; a positive twist is CLOCKWISE seen from the Serpent's seat (looking
-    /// along the seed's forward), which is a positive <c>Quaternion.AngleAxis</c> about forward in
-    /// Unity's left-handed frame and a negative angle in this file's 2D maths.
+    /// along the seed's forward), which is a NEGATIVE angle both in this file's counter-clockwise
+    /// 2D maths and for <c>Quaternion.AngleAxis</c> about forward: with x right and y up, a positive
+    /// AngleAxis about forward turns right toward up, which from the seat is counter-clockwise.
     /// </summary>
     public static class SerpentWallLattice
     {
@@ -46,9 +53,18 @@ namespace CosmicShore.Gameplay
         /// half-extents: the shield octahedron's semi-axes are this times the brick's.</summary>
         public const float ShieldReach = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
-        /// <summary>Lattice pitch at which shielded (rhombic) bricks touch long vertex to short
-        /// vertex: the shield's reach along half the long axis plus half the short axis.</summary>
-        public static float Pitch(float shortSide) => ShieldReach * (Aspect + 1f) * 0.5f * shortSide;
+        /// <summary>Air left between neighbouring shields, long vertex to short vertex, as a
+        /// multiple of the short side. Clears the super-shielded seed's stellation through the
+        /// whole <see cref="MaxTwistDegrees"/> range as well.</summary>
+        public const float ShieldGap = 0.5f;
+
+        /// <summary>Largest Lockdown twist the gap is sized for (the twist's authoring range).</summary>
+        public const float MaxTwistDegrees = 25f;
+
+        /// <summary>Lattice pitch: the shield's reach along half the long axis plus half the short
+        /// axis (where the two shields' vertices would meet), plus <see cref="ShieldGap"/>.</summary>
+        public static float Pitch(float shortSide) =>
+            (ShieldReach * (Aspect + 1f) * 0.5f + ShieldGap) * shortSide;
 
         /// <summary>Brick extents (x = short, y = long, z = depth) for a short side and depth.</summary>
         public static Vector3 BrickScale(float shortSide, float depth) =>
@@ -59,6 +75,23 @@ namespace CosmicShore.Gameplay
         public static bool IsLongAxisUp(int i, int j) => ((i + j) & 1) == 0;
 
         public static Vector2 SiteCenter(int i, int j, float pitch) => new Vector2(i * pitch, j * pitch);
+
+        /// <summary>
+        /// World rotation of brick (i, j) in a wall whose seed sits at <paramref name="frame"/>,
+        /// twisted CLOCKWISE (seen from the seat) by <paramref name="twistDegrees"/>. Local y is the
+        /// brick's long axis, so a long-axis-RIGHT site turns a quarter about forward. Agrees with
+        /// <see cref="Rhombus"/> by construction (SerpentWallLatticeTests pins it).
+        /// </summary>
+        public static Quaternion BrickRotation(Quaternion frame, int i, int j, float twistDegrees)
+        {
+            Quaternion local = IsLongAxisUp(i, j) ? Quaternion.identity : Quaternion.AngleAxis(90f, Vector3.forward);
+            return Quaternion.AngleAxis(-twistDegrees, frame * Vector3.forward) * (frame * local);
+        }
+
+        /// <summary>World rotation of a cell's panel at the in-plane angle
+        /// <see cref="LargestClearSquare"/> returned (counter-clockwise, this file's 2D maths).</summary>
+        public static Quaternion PanelRotation(Quaternion frame, float angleDegrees) =>
+            Quaternion.AngleAxis(angleDegrees, frame * Vector3.forward) * frame;
 
         /// <summary>A cell is the square hole whose lower-left brick is site (i, j).</summary>
         public static Vector2 CellCenter(int i, int j, float pitch) =>
@@ -93,6 +126,26 @@ namespace CosmicShore.Gameplay
 
             for (int k = 0; k < count && k < all.Count; k++) result.Add(all[k]);
             return result;
+        }
+
+        /// <summary>
+        /// The in-plane footprint of brick (i, j) SUPER-shielded: the stellation's spike tips sit on
+        /// the corners of the 3x box, so seen face-on it covers the whole 3x rectangle - a
+        /// conservative outline (at the wall plane itself the stellation is only the rhombus).
+        /// </summary>
+        public static void StellatedFootprint(int i, int j, float shortSide, float pitch, float twistDegrees,
+            Vector2[] into)
+        {
+            float halfLong = ShieldReach * shortSide * Aspect * 0.5f;
+            float halfShort = ShieldReach * shortSide * 0.5f;
+            bool up = IsLongAxisUp(i, j);
+            float hx = up ? halfShort : halfLong, hy = up ? halfLong : halfShort;
+            Vector2 c = SiteCenter(i, j, pitch);
+            float rad = -twistDegrees * Mathf.Deg2Rad;
+            into[0] = c + Rotate(new Vector2(hx, hy), rad);
+            into[1] = c + Rotate(new Vector2(-hx, hy), rad);
+            into[2] = c + Rotate(new Vector2(-hx, -hy), rad);
+            into[3] = c + Rotate(new Vector2(hx, -hy), rad);
         }
 
         /// <summary>Ring index used to stage the shield ripple: Chebyshev distance from the seed.</summary>

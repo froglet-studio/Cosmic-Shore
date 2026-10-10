@@ -447,11 +447,8 @@ namespace CosmicShore.Gameplay
         Prism LayPanel(PrismEventChannelWithReturnSO channel, Vector2Int cell)
         {
             Vector2 c = SerpentWallLattice.CellCenter(cell.x, cell.y, _pitch);
-            Vector3 fwd = _frame * Vector3.forward;
             Vector3 pos = _origin + _frame * new Vector3(c.x, c.y, 0f);
-            // The lattice maths is counter-clockwise-positive; Unity's AngleAxis about forward is
-            // clockwise-positive seen from the seat, hence the sign.
-            Quaternion rot = Quaternion.AngleAxis(-_panelAngle, fwd) * _frame;
+            Quaternion rot = SerpentWallLattice.PanelRotation(_frame, _panelAngle);
             // A hair under the clear size, so a panel seals the cell without grinding its corners.
             float side = _panelSide * 0.98f;
             var scale = new Vector3(side, side, _shape.Config.LockPanelThickness);
@@ -492,16 +489,8 @@ namespace CosmicShore.Gameplay
             return _origin + _frame * new Vector3(c.x, c.y, 0f);
         }
 
-        Quaternion SiteRotation(Vector2Int site)
-        {
-            // Local y is the brick's long axis. A long-axis-RIGHT site turns the seed's frame a
-            // quarter about its own forward.
-            Quaternion local = SerpentWallLattice.IsLongAxisUp(site.x, site.y)
-                ? Quaternion.identity
-                : Quaternion.AngleAxis(90f, Vector3.forward);
-            Vector3 fwd = _frame * Vector3.forward;
-            return Quaternion.AngleAxis(_twist, fwd) * (_frame * local);
-        }
+        Quaternion SiteRotation(Vector2Int site) =>
+            SerpentWallLattice.BrickRotation(_frame, site.x, site.y, _twist);
 
         static bool IsAlive(Prism p, float bornAt) =>
             p && !p.destroyed && p.gameObject.activeInHierarchy &&
