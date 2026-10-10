@@ -509,10 +509,18 @@ def register_class_list(text: str) -> str:
 
 # ----------------------------------------------------------------------------- registrations
 def container_entry() -> str:
-    return f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n"
+    # _shipPrefabs is a Transform[]: the entry must name the root TRANSFORM, not the root
+    # GameObject. A GameObject fileID in a Transform slot deserializes to a broken (fake-null)
+    # reference that throws MissingReferenceException on first touch and kills the spawn flow.
+    # (DefaultNetworkPrefabs' Prefab field IS a GameObject, so network_entry keeps ROOT_GO.)
+    return f"  - {{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}\n"
 
 
 def register_container(text: str) -> str:
+    # repair an entry written by the earlier, GameObject-keyed version of this script
+    stale = f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n"
+    if stale in text:
+        return text.replace(stale, container_entry())
     if PREFAB_GUID in text:
         return text
     m = re.search(r"  _shipPrefabs:\n((?:  - \{fileID: -?\d+, guid: [0-9a-f]{32}, type: 3\}\n)+)", text)

@@ -69,7 +69,36 @@ namespace CosmicShore.ScriptableObjects
                     continue;
                 }
 
-                if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
+                // A slot can also hold a BROKEN reference that passes the `== null` check above:
+                // Unity's null test only asks whether an object with that instance id exists, so a
+                // reference whose fileID names the wrong object (e.g. the prefab's root GameObject
+                // in this Transform[] slot) or an asset that failed to load reads as non-null and
+                // then throws MissingReferenceException on first touch (.gameObject inside
+                // TryGetComponent). That exception escaped the spawn flow's UniTask and left the
+                // host stuck in the menu with no vessel, for EVERY vessel type, because the loop
+                // visits every slot. Treat it like an empty slot: skip it and say which one.
+                IVesselStatus shipStatus;
+                bool hasStatus;
+                try
+                {
+                    hasStatus = prefab.TryGetComponent(out shipStatus);
+                }
+                catch (System.Exception e) when (e is MissingReferenceException
+                                                 || e is UnassignedReferenceException
+                                                 || e is System.NullReferenceException)
+                {
+                    emptySlots++;
+                    if (reportMissing)
+                        CSDebug.LogWarning(
+                            $"[VesselPrefabContainer] Slot {i} holds a BROKEN reference (it is not null, " +
+                            "but the object behind it cannot be read) - skipping. Usual causes: the slot " +
+                            "names the prefab's root GameObject instead of its root Transform, or the " +
+                            "prefab's .meta guid / root fileID changed. Re-drag the prefab into the slot. " +
+                            $"Looking for {vesselType}. ({e.GetType().Name})");
+                    continue;
+                }
+
+                if (!hasStatus)
                 {
                     if (reportMissing)
                         CSDebug.LogWarning($"[VesselPrefabContainer] Slot {i} ({prefab.name}) has no " +
@@ -91,7 +120,7 @@ namespace CosmicShore.ScriptableObjects
                 if (!reportMissing) return false;
                 CSDebug.LogError(
                     $"[VesselPrefabContainer] No prefab registered for vessel type {vesselType}. " +
-                    $"{_shipPrefabs.Length} slot(s), {emptySlots} empty, resolved types: " +
+                    $"{_shipPrefabs.Length} slot(s), {emptySlots} empty or broken, resolved types: " +
                     $"[{string.Join(", ", seen)}].");
                 return false;
             }

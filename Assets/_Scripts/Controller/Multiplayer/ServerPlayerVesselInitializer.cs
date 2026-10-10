@@ -938,15 +938,43 @@ namespace CosmicShore.Gameplay
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {
-            if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
+            // Resolution is guarded as a whole: this runs inside the fire-and-forget spawn
+            // UniTask, so an exception thrown by a broken prefab reference (MissingReference /
+            // UnassignedReference) used to escape as an "unobserved task exception", abort the
+            // whole spawn flow and leave the host stuck in the menu with no vessel. A bad prefab
+            // is a content fault: log it loudly, return null, and let the caller carry on exactly
+            // as it already does for a type with no registered prefab.
+            NetworkObject shipNetworkObject;
+            try
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for vessel type {vesselType}");
-                return null;
-            }
+                if (!vesselPrefabContainer)
+                {
+                    CSDebug.LogError("[ServerPlayerVesselInitializer] vesselPrefabContainer is not assigned " +
+                                     $"- cannot spawn {vesselType} for client {clientId}.");
+                    return null;
+                }
 
-            if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
+                if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform) ||
+                    !shipPrefabTransform)
+                {
+                    CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for vessel type {vesselType}");
+                    return null;
+                }
+
+                if (!shipPrefabTransform.TryGetComponent(out shipNetworkObject))
+                {
+                    CSDebug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                    return null;
+                }
+            }
+            catch (System.Exception e) when (e is MissingReferenceException
+                                             || e is UnassignedReferenceException
+                                             || e is System.NullReferenceException)
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] The prefab registered for {vesselType} " +
+                                 $"is a broken reference ({e.GetType().Name}: {e.Message}). Re-assign it in " +
+                                 "the Vessel Prefab Container asset. No vessel spawned for client " +
+                                 $"{clientId}.");
                 return null;
             }
 
