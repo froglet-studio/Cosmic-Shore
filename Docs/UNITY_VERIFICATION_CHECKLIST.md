@@ -4287,3 +4287,20 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 AI orbit — at most ONE lap around an objective (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+Reported: an AI sometimes circles its target four, five, six times before it gets out. Fleet-wide
+(`AIPilot` is every vessel's autopilot). Full write-up: `Assets/_Scripts/Controller/AI/AI_ORBIT_BREAK.md`
+§ "2026-10-10, third pass". No Unity editor in the authoring session; `OrbitDetector` was compiled
+and its tests run under Roslyn with a stub harness (the new eccentric-orbit test fails against the
+pre-fix file and passes after). The `AIPilot` edits were checked by reading only.
+
+**Verify (any crystal mode with AI, e.g. Hex Race / Crystal Capture):**
+1. Watch AI pilots near crystals for a few minutes. None may circle a crystal more than once — after
+   one lap it must fly out (break-off) and then go for a DIFFERENT crystal.
+2. With only one crystal in the cell, the AI must still break off after one lap and re-attack the
+   same crystal (it has nothing else to take) — never fly to the cell centre and loiter.
+3. No AI may peel away from a crystal it is flying straight at (final approach is untouched).
+4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
+   trip the detector).

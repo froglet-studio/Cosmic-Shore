@@ -364,7 +364,7 @@ MonoBehaviour:
   objectiveSwitchImprovement: 0.75
   preferApproachRunDistance: 0
   breakOffClosingCosine: 0.5
-  orbitSweepDegrees: 540
+  orbitSweepDegrees: 360
   orbitProgressFraction: 0.9
   orbitTargetJumpFraction: 1.6
   abilities: []
