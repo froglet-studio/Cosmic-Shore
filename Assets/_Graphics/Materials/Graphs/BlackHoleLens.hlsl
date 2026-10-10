@@ -135,6 +135,17 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
     BlackHoleLensTraceSigned(x0, d, lensR, maxSteps, 1.0, outDir, escaped);
 }
 
+// THE PHOTON RING — the Vessel Studio's warm edge (StoatFlightStudio.html lens pass): glow ·
+// exp(−((b − 1.03·b_c) / (width·b_c))²) in (1, 0.8, 0.55), b the ray's impact parameter in r_s and
+// b_c = 2.598 the capture radius. Added to what an ESCAPED ray shows; glow 0 = none (white holes, smooth wells).
+float3 BlackHolePhotonRing(float b, float glow, float width)
+{
+    if (!(glow > 0.0)) return float3(0.0, 0.0, 0.0);
+    const float bc = 2.598;
+    float x = (b - bc * 1.03) / (max(width, 0.005) * bc);
+    return float3(1.0, 0.8, 0.55) * glow * exp(-x * x);
+}
+
 // THE SMOOTH LENS — a smooth well's (Docs/CRYSTAL_WORMHOLE.md): no horizon, no ray trace, no shadow,
 // no ring. A ray from the eye (eyeRel = eye − centre, world units; d its unit direction) passing the
 // well at impact parameter b is turned TOWARD the centre by

@@ -37,7 +37,7 @@ MonoBehaviour:
   grip: 0.5
   gravitySpeedCeilingCruises: 4
   gravityFadeSeconds: 2
-  domainTintAmount: 0.7
+  domainTintAmount: 0
   crystalStripShare: 1
   faunaSwallowHorizons: 1.5
   pathLength: 600

@@ -26,6 +26,10 @@ namespace CosmicShore.Gameplay
         private float _neutralOffsetZ;
         private float _lookAhead;   // CameraSettingsSO.lookAheadDistance
         private float _lookLift;    // CameraSettingsSO.lookAheadLift
+        private float _chaseEase;   // CameraSettingsSO.chaseEaseRate (0 = hard-attached)
+        private float _framingFov;  // CameraSettingsSO.framingFieldOfView (0 = none)
+        private Vector3 _easedLook; // the eased look point while _chaseEase > 0
+        private bool _easedLookValid;
 
         /// <summary>
         /// Look behind: pose the camera at the MIRROR of its follow offset — the same distance
@@ -267,10 +271,29 @@ namespace CosmicShore.Gameplay
         /// (<c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4). A future cockpit would be a
         /// third case here, not a revival of a flag nothing was setting.</para>
         /// </summary>
-        private Vector3 EffectiveOffset =>
+        private Vector3 EffectiveOffset => AuthoredOffset * FramingScale;
+
+        /// <summary>The authored offset with the height scale and rear-view mirror, before <see cref="FramingScale"/>.</summary>
+        private Vector3 AuthoredOffset =>
             new(_followOffset.x,
                 _followOffset.y * _followHeightScale,
                 RearView && !PlacementAnchor.HasValue ? -_followOffset.z : _followOffset.z);
+
+        /// <summary>
+        /// How much nearer (below 1) or further the camera sits than authored, so the hull reads the size it was
+        /// framed at (<see cref="CameraSettingsSO.framingFieldOfView"/>) through the player's own field of view:
+        /// tan(framing / 2) / tan(current / 2). 1 when the settings name no framing field of view (every vessel
+        /// but the Stoat) or during a placement.
+        /// </summary>
+        private float FramingScale
+        {
+            get
+            {
+                if (!(_framingFov > 0f) || PlacementAnchor.HasValue || !Camera || Camera.orthographic) return 1f;
+                float now = Mathf.Clamp(Camera.fieldOfView, 1f, 179f);
+                return Mathf.Tan(_framingFov * 0.5f * Mathf.Deg2Rad) / Mathf.Tan(now * 0.5f * Mathf.Deg2Rad);
+            }
+        }
 
         /// <summary>
         /// The point the camera LOOKS AT: the framed point, moved <see cref="CameraSettingsSO.lookAheadDistance"/>
@@ -284,7 +307,28 @@ namespace CosmicShore.Gameplay
         {
             if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f)) return followPoint;
             float ahead = RearView ? -_lookAhead : _lookAhead;
-            return followPoint + (_followTarget.forward * ahead + _followTarget.up * (_lookLift * _followHeightScale)) * warp;
+            Vector3 lookLocal = new(0f, _lookLift * _followHeightScale, ahead);
+            float s = FramingScale;
+            if (!Mathf.Approximately(s, 1f)) lookLocal = FramedLook(AuthoredOffset, lookLocal, s);
+            return followPoint + _followTarget.rotation * (lookLocal * warp);
+        }
+
+        /// <summary>
+        /// The look point, in the hull's frame, that keeps the hull where it sat on screen at the framing field of
+        /// view once the camera has moved to <c>offset · s</c>: the angle between the hull and the view's centre
+        /// becomes atan(tan(angle) / s), in the same plane. Pure, so it is tested directly.
+        /// </summary>
+        public static Vector3 FramedLook(Vector3 offset, Vector3 lookLocal, float s)
+        {
+            Vector3 toHull = -offset, toLook = lookLocal - offset;
+            if (toHull.sqrMagnitude < 1e-8f || toLook.sqrMagnitude < 1e-8f || !(s > 1e-4f)) return lookLocal;
+            Vector3 h = toHull.normalized, v = toLook.normalized;
+            float angle = Mathf.Acos(Mathf.Clamp(Vector3.Dot(h, v), -1f, 1f));
+            Vector3 cam = offset * s;
+            if (angle < 1e-5f || angle > Mathf.PI * 0.5f - 1e-3f) return cam + v * toLook.magnitude * s;
+            Vector3 axis = Vector3.Cross(h, v).normalized;
+            float framed = Mathf.Atan(Mathf.Tan(angle) / s);
+            return cam + Quaternion.AngleAxis(framed * Mathf.Rad2Deg, axis) * h * (toLook.magnitude * s);
         }
 
         private bool _warpClipActive;
@@ -367,6 +411,28 @@ namespace CosmicShore.Gameplay
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
                 _lastTargetPos = followPoint;
+                _easedLook = LookPoint(followPoint, warp);
+                _easedLookValid = true;
+                return;
+            }
+
+            // An eased chase (the Vessel Studio's: position and look point each close on their target at
+            // chaseEaseRate per second, up tied to the hull's), so the hull swings in the frame through a turn
+            // instead of sitting nailed to one pixel. 0 on every vessel that does not set it.
+            if (_chaseEase > 0f)
+            {
+                float k = 1f - Mathf.Exp(-_chaseEase * Time.deltaTime);
+                Vector3 look = LookPoint(followPoint, warp);
+                if (!_easedLookValid) { _easedLook = look; _easedLookValid = true; }
+                transform.position = Vector3.Lerp(transform.position, desiredPos, k);
+                _easedLook = Vector3.Lerp(_easedLook, look, k);
+                _velocity = Vector3.zero;
+                if (SafeLookRotation.TryGet(_easedLook - transform.position, _followTarget.up, out var easedRot, this, logError: false))
+                    transform.rotation = easedRot;
+                _lastTargetPos = followPoint;
+                TickCarry(followPoint);
+                PublishCarryToCorridor();
+                ApplyShake();
                 return;
             }
 
@@ -455,6 +521,9 @@ namespace CosmicShore.Gameplay
             Camera.farClipPlane = _currentSettings.farClipPlane;
             _lookAhead = _currentSettings.lookAheadDistance;
             _lookLift = _currentSettings.lookAheadLift;
+            _chaseEase = Mathf.Max(0f, _currentSettings.chaseEaseRate);
+            _framingFov = Mathf.Max(0f, _currentSettings.framingFieldOfView);
+            _easedLookValid = false;
 
             if (flags.HasFlag(CameraMode.DynamicCamera))
             {
@@ -558,7 +627,9 @@ namespace CosmicShore.Gameplay
             Vector3 followPoint = FollowPoint;
             transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
 
-            if (SafeLookRotation.TryGet(LookPoint(followPoint, 1f) - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            _easedLook = LookPoint(followPoint, 1f);
+            _easedLookValid = true;
+            if (SafeLookRotation.TryGet(_easedLook - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = followPoint;

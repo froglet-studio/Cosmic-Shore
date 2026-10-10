@@ -87,8 +87,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.05f, 10f)] float gravityFadeSeconds = 2f;
 
         [Header("Domain colour")]
-        [Tooltip("How far the pair is drawn toward its owner's domain: the sink's shadow toward the DARK colour, the source's core toward the LIGHT.")]
-        [SerializeField, Range(0f, 1f)] float domainTintAmount = 0.7f;
+        [Tooltip("How far the pair is drawn toward its owner's domain: the sink's shadow toward the DARK colour, the source's core toward the LIGHT. " +
+                 "0 = the Vessel Studio's look (a black shadow, a white-hot core); at 0.7 the shadow read as jade, not black.")]
+        [SerializeField, Range(0f, 1f)] float domainTintAmount = 0f;
 
         [Header("What the sink takes")]
         [Tooltip("A share of every element a rival vessel holds that the sink strips when the vessel passes through it, left as crystals on the sink's side. 1 = everything.")]

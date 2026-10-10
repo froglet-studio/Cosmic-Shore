@@ -117,8 +117,15 @@ config edit — logged as a follow-up, not done here.
 
 **Camera.** The Stoat flies on its own `StoatCameraSettingsSO` (stage 5 of the generator): the studio's chase
 camera, 6.5 u up and 21 u behind (`followOffset (0, 6.5, -21)`), looking 40 u past the nose and 3 u up
-(`lookAheadDistance` / `lookAheadLift`, `CustomCameraController.LookPoint`). Until then it carried the
-Squirrel's (flat, 17 u straight behind, aimed at the hull). The field of view stays the player's setting.
+(`lookAheadDistance` / `lookAheadLift`, `CustomCameraController.LookPoint`), easing onto both at 7/s like the
+studio's (`chaseEaseRate`), framed for the studio's 68° (`framingFieldOfView`): the field of view stays the
+player's setting (90 by default), and the camera moves nearer (×0.67 at 90) and turns its look so the hull reads
+the same size and sits at the same height on screen as in the studio. Until 2026-10-10 it carried the
+Squirrel's camera (flat, 17 u straight behind, aimed at the hull).
+
+**The pair's look is the studio's.** `domainTintAmount` ships at **0**: the sink's shadow is black (at 0.7 it
+read as the owner's dark JADE) and the source's core white-hot. The lens draws the studio's warm photon ring at
+the shadow's edge (`BlackHoleConfig.photonRingGlow` 0.55, `photonRingWidth` 0.06).
 
 **The AI hands the hull back clean.** The lava lamp flies the menu Stoat on AI; its path-watching autopilot
 lays pairs there. When you click to fly, `StoatDipoleExecutor.HandBackAiHold` lets go of whatever the AI was

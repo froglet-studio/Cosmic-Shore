@@ -928,10 +928,18 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
    "the camera is off". Give the vessel its OWN `CameraSettingsSO` at the studio's chase framing:
    `followOffset` = the studio's chase offset with z negated (three.js forward is −z), and
    `lookAheadDistance` / `lookAheadLift` = the studio's look point (`hull + fwd·N + up·M`). Both are 0 on
-   every other vessel, which keeps the camera aimed at the hull exactly as before. **Do not port the
-   studio's FOV**: the game camera's field of view is the PLAYER's graphics setting
-   (`DisplayGraphicsSettings`, re-applied on every change), so the hull reads smaller in the game at FOV 90
-   than in a 68° studio. That is the player's choice, not a framing bug.
+   every other vessel, which keeps the camera aimed at the hull exactly as before. Port the studio's
+   **easing** too (`chaseEaseRate`: the studio's chase closes on its target at 7/s, so the hull swings in the
+   frame through a turn; a hard-attached camera reads as "off" beside it). **Never override the player's FOV**
+   (a graphics setting, `DisplayGraphicsSettings`, default 90, re-applied on every change). Instead set
+   `framingFieldOfView` to the studio's FOV (68): the camera moves nearer by tan(68°/2)/tan(fov/2) and turns
+   its look so the hull reads the same size AND sits at the same height on screen at whatever FOV the player
+   chose (`CustomCameraController.FramedLook`, `CameraLookAheadTests`). A per-vessel FOV was tried first and
+   reverted: `CameraSettingsApplier` re-applies the player's value on every settings change.
+4. **The studio's look has no owner tint.** A slung hole's `DomainTintAmount` filled the black hole's shadow
+   with the owner's dark domain colour (it read as JADE, not black). The studio draws a pure black shadow, a
+   warm photon ring and a white-hot core; the Stoat's config ships the tint at 0, and the lens draws the ring
+   (`BlackHoleConfig.photonRingGlow` / `photonRingWidth`, the studio's `bhRingGlow` / `bhRingWidth`).
 3. **An autopilot that PRESSES an input must RELEASE it when it hands the hull back.** The lava lamp flies
    the menu vessel on AI and hands it to you when you click. The Stoat's autopilot ran only while the AI
    flew, so a pair it was holding stayed pressed forever: the menu's pair stayed open and its field flung

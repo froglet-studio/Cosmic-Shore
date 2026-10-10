@@ -16,6 +16,8 @@ MonoBehaviour:
   followOffset: {x: 0, y: 6.5, z: -21}
   lookAheadDistance: 40
   lookAheadLift: 3
+  chaseEaseRate: 7
+  framingFieldOfView: 68
   dynamicMinDistance: 10
   dynamicMaxDistance: 40
   followSmoothTime: 0.2

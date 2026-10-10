@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Stoat's pair and camera look like the Vessel Studio's (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- The black hole's shadow is BLACK: `StoatDipoleConfig.domainTintAmount` 0 (was 0.7, which filled the shadow
+  with the owner's dark domain colour: jade). The white core is white.
+- The studio's photon ring: `BlackHolePhotonRing` (`BlackHoleLens.hlsl`), drawn by `BlackHoleLens.shader` on an
+  escaped ray, set through `_BHCore.zw` from `BlackHoleConfig.photonRingGlow` (0.55) / `photonRingWidth` (0.06).
+- The camera eases like the studio's chase (`CameraSettingsSO.chaseEaseRate` 7) and is framed for the studio's
+  68 degrees at the player's FOV (`framingFieldOfView` 68, `CustomCameraController.FramedLook`). Both 0 on every
+  other vessel. Amoebius: at FOV 90 the camera sits ~15 u back plus the eased lag, the hull low-centre.
+- Tests: `CameraLookAheadTests` (+3: identity, same height and size on screen, nearer at FOV 90).
+
+**Verify in editor**
+1. Run `CameraLookAheadTests`, `BlackHoleTests`.
+2. Fly the Stoat, squeeze a trigger: the black hole's shadow is pure black with a thin warm ring at its edge; the
+   white hole's core is white. No jade anywhere.
+3. Open the Vessel Studio's Stoat beside it (chase camera): the hull sits at the same height and reads the same
+   size; through a turn it swings in the frame and settles, as in the studio.
+4. Change FOV in the graphics settings: the hull keeps its size and place on screen.
+5. Fly any other vessel: its camera is unchanged (hard-attached, aimed at the hull).
+
 ### 🔴 The Stoat in the lava lamp: chase camera, AI hand-over, studio settings; black hole tools retired (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **What landed** (checked in Amoebius, which runs the real Menu_Main: the AI's 2 holes closed to 0 on hand-over,

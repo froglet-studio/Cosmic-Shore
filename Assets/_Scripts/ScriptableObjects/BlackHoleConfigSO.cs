@@ -206,6 +206,15 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 2f)]
         [SerializeField] float whiteCoreSkyMix = 0.8f;
 
+        [Tooltip("A BLACK hole's photon ring: a thin warm glow (1, 0.8, 0.55) hugging the shadow's edge, where light " +
+                 "skims the photon sphere. The Vessel Studio's look (bhRingGlow 0.55); 0 = only the traced bending.")]
+        [Range(0f, 2f)]
+        [SerializeField] float photonRingGlow = 0.55f;
+
+        [Tooltip("The photon ring's width as a share of the shadow's radius (the studio's bhRingWidth 0.06).")]
+        [Range(0.005f, 0.5f)]
+        [SerializeField] float photonRingWidth = 0.06f;
+
         [Header("Pair (a black hole and a white hole born together — Docs/BLACK_HOLE.md §11)")]
         [Tooltip("Each hole's distance from the pair's midpoint at birth, in horizon radii — the black hole " +
                  "to one side, the white hole to the other, on the camera's (the vessel's) own horizontal. " +
@@ -317,6 +326,8 @@ namespace CosmicShore.ScriptableObjects
         public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
         public float WhiteCoreBrightness => Mathf.Clamp(whiteCoreBrightness, 0f, 16f);
         public float WhiteCoreSkyMix => Mathf.Clamp(whiteCoreSkyMix, 0f, 2f);
+        public float PhotonRingGlow => Mathf.Clamp(photonRingGlow, 0f, 2f);
+        public float PhotonRingWidth => Mathf.Clamp(photonRingWidth, 0.005f, 0.5f);
         public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
         public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
         public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);

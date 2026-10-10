@@ -303,7 +303,10 @@ namespace CosmicShore.Gameplay
             _block.SetFloat(SmoothId, smooth ? 1f : 0f);
             // A white hole's horizon emits (§11): a white-hot core over its disc. A smooth well has no horizon.
             _block.SetFloat(WhiteId, _hole.IsSource && !smooth ? 1f : 0f);
-            _block.SetVector(CoreId, new Vector4(config.WhiteCoreBrightness, config.WhiteCoreSkyMix, 0f, 0f));
+            // z, w: a black hole's photon ring (the studio's warm edge glow); none on a white hole or a smooth well.
+            bool ring = !smooth && !_hole.IsSource;
+            _block.SetVector(CoreId, new Vector4(config.WhiteCoreBrightness, config.WhiteCoreSkyMix,
+                ring ? config.PhotonRingGlow : 0f, config.PhotonRingWidth));
             // An owned hole's domain tint (BlackHole.DomainTint): the shadow's dark, the core's light. 0 = untinted.
             var tint = _hole.DomainTint;
             _block.SetVector(TintId, new Vector4(tint.r, tint.g, tint.b, smooth ? 0f : _hole.DomainTintAmount));

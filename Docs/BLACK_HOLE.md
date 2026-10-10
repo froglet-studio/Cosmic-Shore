@@ -740,6 +740,16 @@ config can hold the mouth material (shown by name, edited on the asset). Tests: 
 the shared decision log, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) flies the Stoat on a
 gamepad through the game's own stick mix with either style, and compares them split-screen.
 
+## 13a. The studio's look (2026-10-10)
+
+The Vessel Studio's lens pass (`Docs/Studios/StoatFlightStudio.html`, `lensMat`) is the reference for how a
+pair looks: a pure black shadow at 2.6 r_s, the Einstein bending, a thin warm **photon ring** at the shadow's
+edge (`(1, 0.8, 0.55) · 0.55 · exp(−((b − 1.03 b_c) / (0.06 b_c))²)`), and on a white hole the same bending with
+the white-hot core (×4, sky mix 0.8). The Unity lens matched all of it but the ring, which it now draws
+(`BlackHolePhotonRing` in `BlackHoleLens.hlsl`, `_BHCore.zw` = `photonRingGlow`, `photonRingWidth`; black holes
+only), and an owned hole's domain tint (§14), which tinted the shadow jade; the Stoat ships it at 0. The ring is
+not an accretion disc (§10): it is a fixed thin glow at the photon sphere, nothing orbiting.
+
 ## 14. Owner rules on a hole (2026-10-09, the Stoat's field dipole)
 
 A hole can carry its OWNER's rules on top of the physics, set every frame by whoever spawned it

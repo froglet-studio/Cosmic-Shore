@@ -26,6 +26,18 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far above the vessel (along its up) the camera's look point sits, world units. 0 = the hull's " +
                  "own height. The Stoat's is 3, its studio's chase camera.")]
         public float lookAheadLift = 0f;
+
+        [Tooltip("Eased chase, per second: the camera's position and look point each close on their target at this " +
+                 "rate (k = 1 - e^(-rate*dt)), up tied to the hull's, so the hull swings in the frame through a turn. " +
+                 "0 (every vessel that does not set it) = hard-attached, as before. The Stoat's is 7, its studio's chase camera.")]
+        public float chaseEaseRate = 0f;
+
+        [Tooltip("The vertical field of view the offset and look-ahead above were framed at, degrees. The camera keeps " +
+                 "the player's own field of view (a graphics setting) and moves nearer or further so the hull reads the " +
+                 "same size and sits in the same place on screen as at this one. 0 (every vessel that does not set it) = " +
+                 "use the offsets as written. The Stoat's is 68, its studio's camera.")]
+        [Range(0f, 120f)]
+        public float framingFieldOfView = 0f;
         
         [Tooltip("This is a new name for the close cam distance value.")]
         public float dynamicMinDistance = 10f;

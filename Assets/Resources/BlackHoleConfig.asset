@@ -41,6 +41,8 @@ MonoBehaviour:
   lensSkyFacesPerFrame: 1
   whiteCoreBrightness: 4
   whiteCoreSkyMix: 0.8
+  photonRingGlow: 0.55
+  photonRingWidth: 0.06
   spawnStrength: 10
   spawnHorizonRadius: 0
   spawnAheadOfCamera: 1

@@ -616,7 +616,7 @@ def dipole_config_asset() -> str:
             "  grip: 0.5\n"
             "  gravitySpeedCeilingCruises: 4\n"
             "  gravityFadeSeconds: 2\n"
-            "  domainTintAmount: 0.7\n"
+            "  domainTintAmount: 0\n"   # the studio draws no tint: a black shadow, a white core
             "  crystalStripShare: 1\n"
             "  faunaSwallowHorizons: 1.5\n"
             "  pathLength: 600\n"
@@ -743,6 +743,8 @@ def camera_asset() -> str:
             "  followOffset: {x: 0, y: 6.5, z: -21}\n"
             "  lookAheadDistance: 40\n"
             "  lookAheadLift: 3\n"
+            "  chaseEaseRate: 7\n"
+            "  framingFieldOfView: 68\n"
             "  dynamicMinDistance: 10\n  dynamicMaxDistance: 40\n  followSmoothTime: 0.2\n  rotationSmoothTime: 5\n"
             "  disableSmoothing: 0\n  nearClipPlane: 0.3\n  farClipPlane: 12000\n  enableAdaptiveZoom: 0\n"
             "  adaptiveMaxDistance: 0\n  orthographicSize: 5\n")

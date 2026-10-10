@@ -44,7 +44,7 @@ Shader "CosmicShore/BlackHoleLens"
         _BHThroat ("Wormhole mouth radius at the centre (world units, 0 = none)", Float) = 0
         _BHSmooth ("Smooth well lens strength A, signed by polarity outside (0 = the black hole's ray trace)", Float) = 0
         _BHWhite ("1 = a WHITE hole: its horizon disc emits a white-hot core", Float) = 0
-        _BHCore ("White core (brightness HDR, sky mix, 0, 0)", Vector) = (4, 0.8, 0, 0)
+        _BHCore ("White core (brightness HDR, sky mix) and photon ring (glow, width in shadow radii)", Vector) = (4, 0.8, 0, 0.06)
         _BHTint ("Owner's domain tint: rgb = the domain's DARK colour on a sink's shadow, its LIGHT colour on a white core; a = how far (0 = the untinted look)", Vector) = (0, 0, 0, 0)
     }
 
@@ -266,7 +266,9 @@ Shader "CosmicShore/BlackHoleLens"
                         float behind = step(front, sampleEye);
                         scene = lerp(sky, BlackHoleSceneColour(uv), onScreen * behind);
                     }
-                    background = scene;
+                    // The photon ring: a thin warm glow hugging the shadow's edge (the Vessel Studio's look,
+                    // bhRingGlow / bhRingWidth), centred just outside the capture radius b_c = 2.598 r_s.
+                    background = scene + BlackHolePhotonRing(b, _BHCore.z, _BHCore.w);
                 }
                 else
                 {
