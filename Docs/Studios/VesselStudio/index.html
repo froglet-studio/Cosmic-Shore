@@ -1,6 +1,6 @@
 <title>Vessel Studio</title>
 <!-- Vessel Studio hub (Docs/Studios/VesselStudio/). Pick a vessel, its studio opens. The same folder is
-     what Amoebius's STUDIOS page opens on Windows, and what a phone browser opens. Plan:
+     what Amoebius's VESSEL STUDIO page opens on Windows, and what a phone browser opens. Plan:
      Docs/Studios/VESSEL_STUDIO_PLAN.md. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
     --line: #262b47;
     --fg: #e9ecff;
     --muted: #8e95bf;
-    --jade: #35e0b0;
+    --jade: #13fff2;   /* the game's Jade; studio-domains.js sets it from the palette */
     --stoat: #c48bff;
     --ok: #4be38f;
     --warn: #ffb454;
@@ -127,8 +127,8 @@
         <thead><tr><th>Platform</th><th>How to open it</th><th>Status</th></tr></thead>
         <tbody>
           <tr><td>Web</td><td>This page. Share the link, or open the files in <code>Docs/Studios/VesselStudio/</code> in any browser.</td><td><span class="st ok">works</span></td></tr>
-          <tr><td>Phone browser</td><td>Open this page on the phone, pick a studio, tap <b>Play on phone</b> and turn it sideways.</td><td><span class="st ok">works</span></td></tr>
-          <tr><td>Amoebius on Windows</td><td><b>STUDIOS</b> page in Prisma.exe opens these pages from its workspace. From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Amoebius there.</td><td><span class="st part">first version</span></td></tr>
+          <tr><td>Phone browser</td><td>Open this page on the phone and pick a studio: it opens straight into touch play. Turn the phone sideways.</td><td><span class="st ok">works</span></td></tr>
+          <tr><td>Amoebius on Windows</td><td><b>VESSEL STUDIO</b> page in Prisma.exe opens these pages from its workspace, beside every other artifact brought into Amoebius (<code>/amoebius-artifact</code>). From Unity: <b>FrogletTools ▸ Vessels ▸ Vessel Studio</b> opens Amoebius there.</td><td><span class="st part">first version</span></td></tr>
           <tr><td>Amoebius on Android</td><td>The Amoebius player APK with a studio scene (the game's own vessel, not a copy). Until then, the phone browser.</td><td><span class="st later">planned</span></td></tr>
           <tr><td>iOS</td><td>After Android: the Amoebius <code>.ipa</code> from GitHub.</td><td><span class="st later">later</span></td></tr>
         </tbody>
@@ -167,7 +167,9 @@
   <footer>Every studio is a reader of the game's shipped numbers, never their authority: each page names the asset it copied a value from. Plan and platform notes: <code>Docs/Studios/VESSEL_STUDIO_PLAN.md</code>.</footer>
 </div>
 
+<script src="studio-domains.js"></script>
 <script>
+  const DOM = (k) => VesselStudioDomains.get(k).color;   // the game's domain colours
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
@@ -182,14 +184,14 @@
   preview('pvSquirrel', (g, w, h, t) => {
     g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
     for (let lane = 0; lane < 2; lane++) { // rival trails
-      g.fillStyle = lane ? '#ffc247' : '#ff4f7b';
+      g.fillStyle = lane ? DOM('gold') : DOM('ruby');
       for (let i = 0; i < 40; i++) { const x = ((i * 34 - t * 140) % (w + 60) + w + 60) % (w + 60) - 30; const y = h * (0.38 + lane * 0.26) + Math.sin(i * 0.7 + lane) * 8; g.globalAlpha = 0.8; g.fillRect(x, y, 16, 4); }
     }
     g.globalAlpha = 1;
     const sx = w * 0.42, sy = h * 0.5 + Math.sin(t * 1.3) * h * 0.18;
-    g.strokeStyle = '#35e0b055'; g.beginPath(); g.arc(sx, sy, 34, 0, Math.PI * 2); g.stroke(); // skimmer
-    for (let i = 1; i < 14; i++) { g.fillStyle = 'rgba(53,224,176,' + (0.5 - i * 0.03) + ')'; g.fillRect(sx - i * 18, h * 0.5 + Math.sin((t - i * 0.12) * 1.3) * h * 0.18 - 2, 10, 4); }
-    g.fillStyle = '#35e0b0'; g.beginPath(); g.moveTo(sx + 18, sy); g.lineTo(sx - 10, sy - 9); g.lineTo(sx - 4, sy); g.lineTo(sx - 10, sy + 9); g.closePath(); g.fill();
+    g.strokeStyle = DOM('jade') + '55'; g.beginPath(); g.arc(sx, sy, 34, 0, Math.PI * 2); g.stroke(); // skimmer
+    for (let i = 1; i < 14; i++) { g.globalAlpha = 0.5 - i * 0.03; g.fillStyle = DOM('jade'); g.fillRect(sx - i * 18, h * 0.5 + Math.sin((t - i * 0.12) * 1.3) * h * 0.18 - 2, 10, 4); }
+    g.globalAlpha = 1; g.fillStyle = DOM('jade'); g.beginPath(); g.moveTo(sx + 18, sy); g.lineTo(sx - 10, sy - 9); g.lineTo(sx - 4, sy); g.lineTo(sx - 10, sy + 9); g.closePath(); g.fill();
     const rx = w * 0.82, ry = h * 0.5; g.strokeStyle = '#ff6a4d'; // a boost ring ahead
     for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t * 0.5; g.fillStyle = '#ff6a4d'; g.fillRect(rx + Math.cos(a) * 9 - 3, ry + Math.sin(a) * 28 - 3, 6, 6); }
   });

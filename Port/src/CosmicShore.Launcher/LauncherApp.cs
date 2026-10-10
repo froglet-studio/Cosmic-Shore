@@ -84,6 +84,7 @@ namespace CosmicShore.Launcher
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) { _projTab = tab; _edTab = tab; }
             if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
             if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios && pageArg[1] == "artifacts") _artScrollFrames = 10; // --page studios:artifacts
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -414,7 +415,7 @@ namespace CosmicShore.Launcher
                 (Page.Chat, "AGENT", Neon.IconChat),
                 (Page.Git, "GIT", IconBranch),
                 (Page.Editor, "EDITOR", IconCube),
-                (Page.Studios, "STUDIOS", IconStudio),
+                (Page.Studios, "VESSEL\nSTUDIO", IconStudio),
                 (Page.Time, "TIME", IconClock),
                 (Page.Net, "NET", IconNet),
                 (Page.Tracks, "TRACKS", IconTracks),
@@ -448,7 +449,7 @@ namespace CosmicShore.Launcher
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
                 ImGui.PopFont();
-                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 38), Neon.U(col), it.name);
+                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + (it.name.Contains('\n') ? 33 : 38)), Neon.U(col), it.name);   // a two-line name sits higher
                 int badge = RailBadge(it.page);
                 if (badge > 0 && !on)
                 {

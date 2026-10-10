@@ -1,20 +1,30 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using ImGuiNET;
 
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// STUDIOS: the Vessel Studio. Each card opens one vessel's studio page from Prisma's workspace in the
-    /// browser, or starts an agent chat on it. The same pages open on a phone from the web link. Catalog:
-    /// <see cref="StudioCatalog"/>; plan: Docs/Studios/VESSEL_STUDIO_PLAN.md.
+    /// VESSEL STUDIO (<see cref="Page.Studios"/>, still <c>--page studios</c>): the Vessel Studio artifact inside Amoebius,
+    /// then every other claude.ai artifact brought into the repo. Each studio card opens one vessel's studio page from
+    /// Amoebius's workspace, or starts an agent chat on it; the same pages open on a phone from the web link. Catalogs:
+    /// <see cref="StudioCatalog"/> (the studios) and <see cref="ArtifactLibrary"/> (every artifact, Docs/Artifacts/README.md);
+    /// plan: Docs/Studios/VESSEL_STUDIO_PLAN.md.
     /// </summary>
     public sealed partial class LauncherApp
     {
         StudioCatalog? _studios;
         DateTime _studiosRead;
+        ArtifactLibrary? _artLib;
+        DateTime _artRead;
+        string _artUrl = "", _artFile = "";
+        string? _artMsg;
+        bool _artMsgOk;
+        int _artScrollFrames;   // --page studios:artifacts opens scrolled to the library for a few frames (docs screenshots)
 
         static void IconStudio(ImDrawListPtr dl, Vector2 c, uint col)
         {
@@ -33,10 +43,21 @@ namespace CosmicShore.Launcher
             return _studios;
         }
 
+        ArtifactLibrary Library()
+        {
+            if (_artLib == null || (DateTime.UtcNow - _artRead).TotalSeconds > 5)   // an import by the agent shows within seconds
+            {
+                _artLib = _ws.Exists ? ArtifactLibrary.Load(_ws.Dir) : new ArtifactLibrary { Error = "Amoebius's workspace is not set up yet (PLAY page)." };
+                _artRead = DateTime.UtcNow;
+            }
+            return _artLib;
+        }
+
         void DrawStudios(Vector2 a, Vector2 b)
         {
             var cat = Studios();
-            PageHeader(a, "STUDIOS", "Vessel studios: pick a vessel, fly it, change it. OPEN IN AMOEBIUS gives it its own window; PLAY IN ENGINE flies the game's own vessel");
+            var lib = Library();
+            PageHeader(a, "VESSEL STUDIO", "Pick a vessel, fly it, change it; below it, every artifact brought into Amoebius. OPEN IN AMOEBIUS gives a page its own window");
             ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 76));
             ImGui.BeginChild("##studios", new Vector2(b.X - a.X, b.Y - a.Y - 80));
 
@@ -56,6 +77,13 @@ namespace CosmicShore.Launcher
                 Neon.Tooltip("The published studio on claude.ai. Open the same link on your phone, pick a studio and tap Play on phone.\n" + (cat.Web ?? "(none in the catalog)"));
                 ImGui.SameLine(0, 8);
                 if (SmallButton("FOLDER", 110, true)) OpenFolder(Path.Combine(_ws.Dir, StudioCatalog.RelativeDir));
+                ImGui.SameLine(0, 8);
+                var vs = lib.VesselStudio;
+                if (SmallButton("UPDATE FROM ARTIFACT", 220, vs != null)) ArtifactAgent(vs!.Url, vs.Id, vs.Title);
+                Neon.Tooltip("Has the agent bring back anything the published Vessel Studio has that this branch does not\n" +
+                             "(the /amoebius-artifact skill). The repo pages are the source, so usually it reports no changes.");
+                if (vs != null)
+                    ImGui.TextColored(Neon.Dim, vs.Version != null ? $"Last matched the published artifact: version {vs.Version}, {vs.ImportedAt}." : "Not yet matched against the published artifact.");
                 ImGui.Dummy(new Vector2(0, 10));
             }
 
@@ -65,7 +93,9 @@ namespace CosmicShore.Launcher
                 var top = ImGui.GetCursorScreenPos();
                 float w = ImGui.GetContentRegionAvail().X;
                 var dl = ImGui.GetWindowDrawList();
-                float cardH = s.EngineMode != null ? 176 : 150;
+                float sumH = ImGui.CalcTextSize(s.Summary, false, w - 36).Y;   // the buttons sit under the wrapped summary, however long
+                float btnY = 52 + Math.Max(sumH, 34) + 14;
+                float cardH = btnY + (s.EngineMode != null ? 76 : 50);
                 dl.AddRectFilled(top, top + new Vector2(w, cardH), Neon.U(Neon.Panel), 10);
                 dl.AddRect(top, top + new Vector2(w, cardH), Neon.U(Neon.Cyan, 0.35f), 10);
                 ImGui.SetCursorScreenPos(top + new Vector2(18, 14));
@@ -76,7 +106,7 @@ namespace CosmicShore.Launcher
                 ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + w - 36);   // a window-local x (the card's right edge less its padding), not a screen x
                 ImGui.TextColored(Neon.Ink, s.Summary);
                 ImGui.PopTextWrapPos();
-                ImGui.SetCursorScreenPos(top + new Vector2(18, 100));
+                ImGui.SetCursorScreenPos(top + new Vector2(18, btnY));
                 if (SmallButton("OPEN IN AMOEBIUS", 160, _ws.Exists)) OpenStudioWindow(StudioCatalog.PagePath(_ws.Dir, s.File));
                 Neon.Tooltip("Opens " + StudioCatalog.RelativeDir + "/" + s.File + " from Amoebius's workspace as its own window (no browser tabs),\n" +
                              "with Amoebius's layout remembered. Uses Edge or Chrome's app mode; without either it opens in your browser.");
@@ -101,7 +131,7 @@ namespace CosmicShore.Launcher
                 }
                 if (s.EngineMode != null)
                 {
-                    ImGui.SetCursorScreenPos(top + new Vector2(18, 140));
+                    ImGui.SetCursorScreenPos(top + new Vector2(18, btnY + 48));
                     ImGui.TextColored(Neon.Dim, "In engine: " + (s.EngineNote ?? s.EngineMode));
                 }
                 ImGui.SetCursorScreenPos(top + new Vector2(0, cardH + 12));
@@ -113,7 +143,111 @@ namespace CosmicShore.Launcher
             ImGui.TextColored(Neon.Dim,
                 "Phone: open the web link in the phone's browser (Android or iPhone). The Amoebius player APK with a studio scene, where the\n" +
                 "game's own vessel flies instead of the web copy, is next (BUILD page). Unity opens this page through FrogletTools > Vessels > Vessel Studio.");
+            DrawArtifactLibrary(lib);
             ImGui.EndChild();
+        }
+
+        /// <summary>
+        /// ARTIFACTS: add one (an artifact link for the agent, or a downloaded page), then a card per library entry.
+        /// The page reads the workspace, so an import shows here at once; the GIT page commits it for everyone else.
+        /// </summary>
+        void DrawArtifactLibrary(ArtifactLibrary lib)
+        {
+            ImGui.Dummy(new Vector2(0, 18));
+            if (_artScrollFrames > 0) { ImGui.SetScrollHereY(0); _artScrollFrames--; }   // --page studios:artifacts
+            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Cyan, "ARTIFACTS"); ImGui.PopFont();
+            ImGui.TextColored(Neon.Dim, "Anything you build as a claude.ai artifact, here or in another session, comes into Amoebius by its link.");
+            if (!_ws.Exists) return;
+
+            ImGui.Dummy(new Vector2(0, 6));
+            ImGui.PushItemWidth(Math.Min(560, ImGui.GetContentRegionAvail().X - 260));
+            ImGui.InputTextWithHint("##arturl", "https://claude.ai/artifact/...", ref _artUrl, 300);
+            ImGui.PopItemWidth();
+            bool urlOk = ArtifactLibrary.IsArtifactUrl(_artUrl);
+            ImGui.SameLine(0, 8);
+            if (SmallButton("ADD WITH AGENT", 180, urlOk)) { ArtifactAgent(_artUrl, null, null); _artUrl = ""; }
+            Neon.Tooltip("Opens an agent chat that saves every file of the artifact into Docs/Artifacts/<name>/ and lists it here\n" +
+                         "(the /amoebius-artifact skill; the agent needs claude.ai access). An artifact already here is updated in place.");
+
+            ImGui.PushItemWidth(Math.Min(560, ImGui.GetContentRegionAvail().X - 260));
+            ImGui.InputTextWithHint("##artfile", "or a downloaded page: C:\\...\\page.html", ref _artFile, 1024);
+            ImGui.PopItemWidth();
+            ImGui.SameLine(0, 8);
+            if (SmallButton("BROWSE", 90, OperatingSystem.IsWindows()))
+                Task.Run(() => { var picked = FilePicker.Open("Pick a downloaded artifact page", "Web pages|*.html;*.htm"); if (picked != null) _artFile = picked; });
+            ImGui.SameLine(0, 8);
+            bool fileOk = urlOk && File.Exists(_artFile.Trim().Trim('"'));
+            if (SmallButton("IMPORT FILE", 130, fileOk))
+            {
+                try
+                {
+                    var id = ArtifactLibrary.ImportPage(_ws.Dir, _artFile.Trim().Trim('"'), _artUrl);
+                    _artMsg = $"Imported into Docs/Artifacts/{id}. Commit it on the GIT page to share it.";
+                    _artMsgOk = true; _artFile = ""; _artUrl = ""; _artLib = null;
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or System.Text.Json.JsonException)
+                {
+                    _artMsg = "Not imported: " + e.Message; _artMsgOk = false;
+                }
+            }
+            Neon.Tooltip("One page saved from the artifact, with its link above, without a session. A page that loads other files\n" +
+                         "of its artifact (scripts, data) needs ADD WITH AGENT, which brings every file.");
+            if (_artMsg != null) ImGui.TextColored(_artMsgOk ? Neon.Lime : Neon.Amber, _artMsg);
+
+            if (lib.Error != null) { ImGui.TextColored(Neon.Dim, lib.Error + " The first import creates it."); return; }
+            foreach (var group in lib.Others)
+            {
+                ImGui.Dummy(new Vector2(0, 10));
+                ImGui.TextColored(Neon.Dim, group.Key.ToUpperInvariant());
+                foreach (var e in group) DrawArtifactCard(e);
+            }
+            if (!lib.Others.Any()) ImGui.TextColored(Neon.Dim, "No other artifacts yet: paste a link above.");
+        }
+
+        void DrawArtifactCard(ArtifactLibrary.Entry e)
+        {
+            ImGui.PushID("art" + e.Id);
+            var top = ImGui.GetCursorScreenPos();
+            string blurb = e.Summary.Length > 0 ? e.Summary : e.Dir + "/" + e.EntryPage;
+            float w = ImGui.GetContentRegionAvail().X, btnY = 46 + Math.Max(ImGui.CalcTextSize(blurb, false, w - 36).Y, 20) + 14, cardH = btnY + 52;
+            var dl = ImGui.GetWindowDrawList();
+            dl.AddRectFilled(top, top + new Vector2(w, cardH), Neon.U(Neon.Panel), 10);
+            dl.AddRect(top, top + new Vector2(w, cardH), Neon.U(Neon.Cyan, 0.2f), 10);
+            ImGui.SetCursorScreenPos(top + new Vector2(18, 12));
+            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, e.Title.ToUpperInvariant()); ImGui.PopFont();
+            ImGui.SameLine(0, 14);
+            ImGui.TextColored(Neon.Dim, (e.Version != null ? "version " + e.Version + ", " : "") + "imported " + (e.ImportedAt ?? "?"));
+            ImGui.SetCursorScreenPos(top + new Vector2(18, 46));
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + w - 36);
+            ImGui.TextColored(Neon.Ink, blurb);
+            ImGui.PopTextWrapPos();
+            ImGui.SetCursorScreenPos(top + new Vector2(18, btnY));
+            var page = ArtifactLibrary.PagePath(_ws.Dir, e);
+            bool here = File.Exists(page);
+            if (SmallButton("OPEN IN AMOEBIUS", 160, here)) OpenStudioWindow(page);
+            Neon.Tooltip("Opens " + e.Dir + "/" + e.EntryPage + " from Amoebius's workspace as its own window.\n" +
+                         "Features that need the claude.ai viewer (shared data, asking Claude) work on the web link.");
+            ImGui.SameLine(0, 8);
+            if (SmallButton("BROWSER", 100, here)) OpenUrl(page);
+            ImGui.SameLine(0, 8);
+            if (SmallButton("WEB LINK", 110, true)) OpenUrl(e.Url);
+            Neon.Tooltip(e.Url);
+            ImGui.SameLine(0, 8);
+            if (SmallButton("UPDATE", 100, true)) ArtifactAgent(e.Url, e.Id, e.Title);
+            Neon.Tooltip("Has the agent bring in the artifact's current version (the /amoebius-artifact skill).");
+            ImGui.SameLine(0, 8);
+            if (SmallButton("FOLDER", 100, Directory.Exists(Path.Combine(_ws.Dir, e.Dir)))) OpenFolder(Path.Combine(_ws.Dir, e.Dir));
+            ImGui.SetCursorScreenPos(top + new Vector2(0, cardH + 10));
+            ImGui.Dummy(new Vector2(w, 0));
+            ImGui.PopID();
+        }
+
+        void ArtifactAgent(string url, string? id, string? title)
+        {
+            var chat = _chats.New(ClaudeChat.Scope.Game);
+            chat.Title = "Artifact: " + (title ?? url.Trim());
+            _page = Page.Chat;
+            SendChat(ArtifactLibrary.ImportPrompt(url, id), ClaudeChat.Mode.Edit);
         }
 
         /// <summary>OPEN IN PRISMA: the page in an app-mode window of Edge or Chrome, or the default browser when neither is installed.</summary>

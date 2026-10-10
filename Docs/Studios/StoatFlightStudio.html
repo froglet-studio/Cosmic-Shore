@@ -249,6 +249,7 @@
     body.ide .split { display: none; }
     body.ide .dock { max-height: 70vh; }
   }
+  body.ide.play .viewport { height: auto; }   /* touch play is the whole screen: the narrow layout's 58vh must not hold it */
 </style>
 
 <div class="wrap">
@@ -344,10 +345,12 @@
         <p class="src" id="portalSrc"></p>
       </div>
 
+      <details class="card" id="grp-intensity" open><summary>Intensity <small>the course ladder, I1 to I4</small></summary>
+        <div id="intensityPanel"></div></details>
       <details class="card" id="grp-game" open><summary>Players <small>+ / &minus; to add or remove; open one to set it up</small></summary>
         <div id="playersPanel"></div>
         <p class="src">Player 1 is your hull: you fly it, or tick <b>Is AI</b> and the AI does. Every other player is an AI rival with its own domain, difficulty and play style. <b>View</b> puts the camera on that player (or press C).</p></details>
-      <details class="card" id="grp-scene" open><summary>Scene <small>course, camera, speed</small></summary>
+      <details class="card" id="grp-scene" open><summary>Scene <small>camera, speed</small></summary>
         <div id="scenePanel"></div></details>
       <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
         <div id="racePanel"></div>
@@ -457,6 +460,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="VesselStudio/studio-domains.js"></script>
 <script src="VesselStudio/ai_race_panel.js"></script>
 <script src="VesselStudio/studio-ide.js"></script>
 <script>
@@ -707,7 +711,7 @@
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
   function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
-    rivals: typeof seatLv !== 'undefined' ? { lv: seatLv, st: seatStyle, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel,
+    rivals: typeof seatLv !== 'undefined' ? { v: 2, lv: seatLv, st: seatStyle, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel,
     youStyle: typeof youStyle !== 'undefined' ? youStyle : saved.youStyle }); }
 
   // ================= renderer =================
@@ -760,7 +764,7 @@
   }
 
   // ================= the plated Stoat (round 2, Option 2), world scale ×1.6 =================
-  const DOMAIN = { jade: 0x37e3a0, ruby: 0xff4d6d, blue: 0x4da3ff, gold: 0xffc93c };
+  const DOMAIN = Object.fromEntries(VesselStudioDomains.list.map((d) => [d.key, d.hex]));   // the game's palette (studio-domains.js, /vessel-studio 1.5.5)
   const FUR = 0xa5682a, BELLY = 0xf1e6cf, TIP = 0x1a1410, EYE = 0x111111;
   const domainMat = new THREE.MeshStandardMaterial({ color: DOMAIN[domainKey], emissive: DOMAIN[domainKey], emissiveIntensity: 0.5, roughness: 0.4, flatShading: true });
   function makeStoat(o) {
@@ -2337,9 +2341,11 @@
   // Up to three more Stoats, each its own seat (Ruby, Gold, Blue) with its own level and play style. They fly the SAME
   // step as your hull: the rival block parks your hull's variables, loads a rival's, runs aiInput + stepFly, parks it
   // and loads yours back. Their pairs are real pairs in the one world: you can be carried through a rival's black hole.
-  const SEATS = [{ name: 'Ruby', color: 0xff4f7b, css: '#ff4f7b' }, { name: 'Gold', color: 0xffc247, css: '#ffc247' }, { name: 'Blue', color: 0x6aa8ff, css: '#6aa8ff' }];
-  const savedRivals = saved.rivals || {};
-  let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Hard', 'Medium', 'Easy'];
+  const SEATS = ['ruby', 'gold', 'blue'].map((k) => { const d = VesselStudioDomains.get(k); return { name: d.name, color: d.hex, css: d.color }; });   // the game's palette
+  // The race starts with your hull alone; you add each rival with + in Game Config (the user, 2026-10-09). A save from
+  // before that (no v: 2) held the old three-rival default, so it is dropped once.
+  const savedRivals = saved.rivals && saved.rivals.v === 2 ? saved.rivals : {};
+  let seatLv = Array.isArray(savedRivals.lv) ? savedRivals.lv.slice(0, 3) : ['Off', 'Off', 'Off'];
   let seatStyle = Array.isArray(savedRivals.st) ? savedRivals.st.slice(0, 3) : ['Comet', 'Needle', 'Anchor'];
   let seatDomain = Array.isArray(savedRivals.dm) ? savedRivals.dm.slice(0, 3) : ['ruby', 'gold', 'blue'];   // Game Config (D25)
   let youStyle = STYLE_BRAIN[saved.youStyle] ? saved.youStyle : 'Balanced';
@@ -4293,7 +4299,8 @@
   const CAM_OF = { Chase: 'chase', Follow: 'follow', Free: 'free' }, CAM_BACK = { chase: 'Chase', follow: 'Follow', free: 'Free' };
   const fire = (id, prop, v) => { const e = $(id); e[prop] = v; e.dispatchEvent(new Event('change')); };
   var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
-    sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
+    gameHost: $('intensityPanel'),   // the Intensity row lives in Game Config (D28)
+    sceneHost: $('scenePanel'),   // Camera and Speed live in the Scene Config tab (D21)
     courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
     seats: SEATS.map((st) => ({ name: st.name, color: st.css })),
     styles: STYLE_NAMES,   // each rival seat flies one of the play styles (D23)
@@ -4562,10 +4569,10 @@
   const ide = Object.assign({ R: 'scene', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
-    // the five universal settings tabs, same names and order in every studio (/vessel-studio D21)
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-game']], ['ai', 'AI Config', ['grp-ai']],
+    // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27)
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
-      ['others', 'Others', ['grp-lope', 'archive']]],
+      ['others', 'Vessel Config', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
@@ -4609,6 +4616,7 @@
     bindSplit(sv, 'railW', (x, r) => r.right - x, 280, 720);
     bindSplit(sh, 'dockH', (y, r) => r.bottom - y, 110, 620);
     document.body.classList.add('ide'); applyIdeSizes();
+    if (window.VesselStudioIDE && VesselStudioIDE.sectionPicker) VesselStudioIDE.sectionPicker($('pane-others'), 'stoat-studio', 'vessel');   // Vessel Config: one section at a time (D27)
     selectTab(ide.R); selectTab(ide.B);
     for (const k in ide.wins) if (ide.wins[k] && ide.wins[k].open && TAB[k]) openWindow(k);
     $('scoreShow').addEventListener('click', () => openWindow('score'));

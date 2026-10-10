@@ -1,6 +1,6 @@
 # Testing the Vessel Studio in Amoebius: step by step
 
-There are two ways to test, and Amoebius gives you both from one page (**STUDIOS**):
+There are two ways to test, and Amoebius gives you both from one page (**VESSEL STUDIO**, called STUDIOS before 2026-10-09):
 
 | Button | What opens | What it tests |
 |---|---|---|
@@ -15,15 +15,15 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 
 1. Pull `Ys-bleeding-edge` in GitHub Desktop.
 2. Open Amoebius by either route:
-   - In Unity: **FrogletTools ▸ Vessels ▸ Vessel Studio**. This opens Amoebius straight on STUDIOS, building it first if needed.
-   - Or start `Prisma.exe` and click **STUDIOS** in the left rail.
+   - In Unity: **FrogletTools ▸ Vessels ▸ Vessel Studio**. This opens Amoebius straight on VESSEL STUDIO, building it first if needed.
+   - Or start `Prisma.exe` and click **VESSEL STUDIO** in the left rail.
 3. The title bar shows the branch Amoebius plays. If it isn't `Ys-bleeding-edge`, pick it on the
-   **GIT** page (or click **FOLLOW UNITY**). Without the studio folder on its branch, the STUDIOS page says so
+   **GIT** page (or click **FOLLOW UNITY**). Without the studio folder on its branch, the VESSEL STUDIO page says so
    and names the branches that have it.
 
 ## 1. The studio in its own window (OPEN IN AMOEBIUS)
 
-1. STUDIOS ▸ **STOAT** card ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
+1. VESSEL STUDIO ▸ **STOAT** card ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
    - **Pass:** the top bar reads **Running on Amoebius · PC (mouse / trackpad)**.
    - With no Edge or Chrome installed, it opens in your default browser instead and reads **Web · PC**.
 2. **Layout.**
@@ -57,7 +57,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 
 ## 2. The game's own Stoat (PLAY IN ENGINE)
 
-1. STUDIOS ▸ STOAT card ▸ **PLAY IN ENGINE**.
+1. VESSEL STUDIO ▸ STOAT card ▸ **PLAY IN ENGINE**.
    - Amoebius builds the game (the first build takes a few minutes; the bar at the bottom shows progress) and starts it.
 2. A **new profile** answers three first-run prompts: birth year, the data-collection choice, then a username.
    - After that it goes on by itself.
@@ -107,7 +107,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 | The game's edit-mode tests on Amoebius | 352 / 352 pass (before and after the merges) |
 | `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 (re-run after the merges: same) |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
-| STUDIOS page (screenshot) | Both cards. The Stoat card has OPEN IN AMOEBIUS · BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
+| VESSEL STUDIO page (screenshot) | Both cards. The Stoat card has OPEN IN AMOEBIUS · BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
 | `stoat.html#prisma` | Reads "Amoebius · PC", has the editor layout and the back link to the hub, no console errors |
 
 **Not checked here:** a real Windows PC. Edge's app window, a GPU, and a gamepad through the app window all
