@@ -108,7 +108,12 @@ namespace CosmicShore.Gameplay.Audio
             if (instance.isValid())
             {
                 Detach(instance);
-                if (started) instance.stop(stopMode);
+                if (started)
+                {
+                    // Parity harness: every explicit stop is a "fmod-stop" line (Port/parity/README.md).
+                    CosmicShore.Utility.ParityProbe.NoteFmodStop(instance, stopMode);
+                    instance.stop(stopMode);
+                }
                 instance.release();
                 instance.clearHandle();
             }

@@ -387,6 +387,7 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | Ecology | Prism Animation ▸ **Occlusion Dither Lab** | The occlusion corridor's unit shape, live — kernel + scale dials driven as shader globals **while the game runs**, a preview that IS the shipped GPU code, a Measure button that runs the corridor's own |coverage − alpha| admission rule against the shipped baseline, and Bake to write the result back into `PrismOcclusionCorridor.hlsl`. Keeper (re-runnable), but it writes source, so it draws the ship panel. See `Docs/PRISM_ANIMATION.md` §4.7. |
 | Ecology | Measure Cell Environment Baselines | Per-cell prism baselines the phase thresholds ride on. |
 | Validation | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
+| Validation | **Parity ▸ Capture Goldens** | The Unity half of the engine parity harness (`Port/parity/README.md`): plays every manifest case in Play mode under the deterministic session and the replay, and writes `Port/parity/goldens/<case>/` plus the Random goldens that `engine_parity` diffs Prisma against. Reader-style: its output lands outside `Assets/`, so no ledger and no ship panel. `ParityCapture.CaptureAll()` is the CLI-ready entry. See `Assets/_Scripts/Utility/Replay/README.md`. |
 | Vessels | Audit Vessel Ability Rows / Elemental Morphs, Wire & Bake Petal Bars, Plan Rig Swap | Vessel HUD + model wiring. |
 | Vessels | **Bake Crystal Hull Fusions** | Solves, at edit time, where each elemental crystal's faces land on each vessel hull (`Resources/CrystalHullFusionConfig` entries) and bakes the answer into a `CrystalHullFusionBakeSO` per entry (plus one shared `<Element>_FusionTemplate.asset` mesh per element), so a pickup in game does no geometry. Skinned and static multi-part hulls alike; 12 hulls × 4 elements. Lists every entry CURRENT / MISSING / STALE / UNRESOLVABLE with the reason; Validate fails on anything not current. **Keeper** — re-run whenever a hull or crystal model, an entry's `tileFill`/`surfaceLift` or the solver changes (the game warns once and solves at runtime until it is). Doc: `Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §4. |
 | Performance | Performance Benchmark, Prism Grid Benchmark, Texture Memory, Scene Object Counter | Frame cost and memory. |
@@ -417,6 +418,7 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | git CLI wrapper (quoting-safe, no wildcards) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
 | Crystal hull fusion baker | `Assets/_Scripts/Editor/CrystalHullFusionBaker.cs` |
+| Parity goldens capture | `Assets/_Scripts/Editor/Parity/ParityCapture.cs` |
 | AI Training window | `Assets/_Scripts/Utility/AITraining/Editor/TrainingEditorWindow.cs` |
 | GameCanvas Unifier (window / engine) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifierWindow.cs`, `GameCanvasUnifier.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |

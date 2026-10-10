@@ -88,6 +88,8 @@ namespace CosmicShore.Gameplay.Audio
         /// </summary>
         static void RejectLoopingOneShot(EventReference reference, EventInstance instance)
         {
+            // Parity harness: an explicit stop, even of an instance that never started (Port/parity/README.md).
+            CosmicShore.Utility.ParityProbe.NoteFmodStop(instance, FMOD.Studio.STOP_MODE.IMMEDIATE);
             instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
             instance.release();
 

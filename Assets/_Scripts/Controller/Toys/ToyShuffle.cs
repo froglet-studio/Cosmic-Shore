@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static List<Pick> Plan(System.Random rng = null)
         {
-            rng ??= new System.Random();
+            rng ??= DeterministicSession.NewRandom(nameof(ToyShuffle));
             var picks = new List<Pick>();
             var surfaces = ToyShellRegistry.Surfaces;
 

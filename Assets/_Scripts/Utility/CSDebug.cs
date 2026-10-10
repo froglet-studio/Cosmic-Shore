@@ -316,6 +316,13 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[ButterflyBloom] omni-crystal bloom sweep and dust outcomes")]
         ButterflyBloom = 1 << 30,
+        /// <summary>
+        /// <c>[Parity]</c>: the parity harness (Assets/_Scripts/Utility/Replay): replay recorder
+        /// and player start/stop, the deterministic session's seed, the probe's channel files.
+        /// The last free bit of this int-backed enum; a 33rd channel widens it to long.
+        /// </summary>
+        [CSLogChannelLabel("[Parity] replay recorder/player, deterministic session, parity probe")]
+        Parity = 1 << 31,
         All = ~0
     }
 

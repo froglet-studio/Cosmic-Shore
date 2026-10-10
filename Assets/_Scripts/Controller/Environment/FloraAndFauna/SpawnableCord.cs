@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
             intensityLevel = intensity;
             trails.Clear();
 
-            rng = seed != 0 ? new System.Random(seed) : new System.Random();
+            rng = seed != 0 ? new System.Random(seed) : CosmicShore.Utility.DeterministicSession.NewRandom(nameof(SpawnableCord));
 
             container = new GameObject();
             container.name = "Cord_" + name;

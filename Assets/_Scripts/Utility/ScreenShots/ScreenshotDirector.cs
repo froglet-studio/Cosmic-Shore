@@ -56,7 +56,7 @@ namespace CosmicShore.Utility
         {
             base.Awake();
             if (Instance != this) return; // duplicate destroyed by base
-            _rng = new System.Random();
+            _rng = DeterministicSession.NewRandom(nameof(ScreenshotDirector));
         }
 
         void Update()

@@ -120,7 +120,7 @@ namespace CosmicShore.Gameplay
             if (_cacheValid && _cachedTrails != null && hash == _cachedHash)
                 return _cachedTrails;
 
-            rng = seed != 0 ? new System.Random(seed) : new System.Random();
+            rng = seed != 0 ? new System.Random(seed) : CosmicShore.Utility.DeterministicSession.NewRandom(nameof(SpawnableBase));
             _cachedTrails = GenerateTrailData();
             _cachedHash = hash;
             _cacheValid = true;

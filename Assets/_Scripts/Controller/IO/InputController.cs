@@ -130,6 +130,10 @@ namespace CosmicShore.Gameplay
 
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
+            // Parity harness (Assets/_Scripts/Utility/Replay): a recording snapshots the status
+            // the strategy just wrote, plus the InputEvents it raised this frame.
+            if (ReplayRecorder.Recording)
+                ReplayRecorder.Capture(InputStatus);
             orientationHandler.Update();
         }
 
@@ -249,6 +253,11 @@ namespace CosmicShore.Gameplay
 
         private IInputStrategy SelectStrategy()
         {
+            // Parity harness (Assets/_Scripts/Utility/Replay): a running replay owns the strategy
+            // slot, so the recorded IInputStatus frames reach the vessel where a device's would.
+            if (ReplayPlayer.Active)
+                return ReplayPlayer.Current.Bind(InputStatus);
+
             // A pad that is CONNECTED but IDLE must not lock out the keyboard and mouse. This used
             // to test Gamepad.current != null, which meant a controller left plugged in took every
             // frame forever - the ability chips correctly followed the player's keyboard while the

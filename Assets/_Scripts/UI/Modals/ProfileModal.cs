@@ -206,7 +206,7 @@ namespace CosmicShore.UI
 
         string GenerateRandomName()
         {
-            var random = new System.Random();
+            var random = DeterministicSession.NewRandom(nameof(ProfileModal));
             var adjective = NameAdjectives[random.Next(NameAdjectives.Length)];
             var noun = NameNouns[random.Next(NameNouns.Length)];
 

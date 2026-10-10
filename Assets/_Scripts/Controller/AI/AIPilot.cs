@@ -1180,7 +1180,7 @@ namespace CosmicShore.Gameplay
                 ShipClassType.Sparrow,
             };
 
-            var rand = new System.Random();
+            var rand = DeterministicSession.NewRandom(nameof(AIPilot));
 
             // Assume activeNode can't change.
             var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);

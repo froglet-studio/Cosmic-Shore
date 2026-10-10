@@ -389,7 +389,7 @@ namespace CosmicShore.Utility
 
         private string GenerateSalt()
         {
-            int salt = new System.Random().Next();
+            int salt = DeterministicSession.NewRandom(nameof(AnimationRecorder)).Next();
             return Convert.ToBase64String(BitConverter.GetBytes(salt)).TrimEnd('=');
 
         }
