@@ -500,17 +500,35 @@ had two consequences and neither was authored:
    **0.02–0.07** — a ghost, one hundredth above the graph's own 0.01 clip. Everything you could see
    of an omni crystal was the pulse.
 
-What ships is a body plus a three-shell tone chain and a stationary rim, authored by
+What ships is a body plus three BREATHING tone shells, authored by
 `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
 
-| slot | geometry | default / inactive material | band (s, falling) |
+| slot | geometry | default / inactive material | band (s) |
 |---|---|---|---|
 | 0 | **the whole omni model** (`OmniCrystalBody.prefab`); its 30 rhombi flip, the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
-| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`OmniShepardFresnelShader`) | 1.000 → 0.833 |
-| 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
-| 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
-| 4 | triangles only, **stationary** | `OmniShepardTrianglesRim` / `…RimInactive` | 1.03 → 0.98, unscaled |
+| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`OmniShepardFresnelShader`) | 1.0 ↔ 0.5, breathing, phase 0 |
+| 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 1.0 ↔ 0.5, breathing, phase 1/3 |
+| 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 1.0 ↔ 0.5, breathing, phase 2/3 |
 | child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | — |
+
+**The tone BREATHES (2026-10-10, the Omni Shepard Lab's pick).** Until then the three shells were
+contiguous falling bands (1.000 → 0.833 → 0.667 → 0.500, 3 s each) that landed on the body and
+jumped back out, with a stationary rim (slot 4) at the outer radius to hide each new shell's
+birth. The team found that look flat and picked "Breathe" in
+`Docs/Studios/OmniShepardLab.html` (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 4): each shell
+drifts in from s = 1 (twice the crystal) to the surface and back OUT over one 10.5 s round trip,
+the three shells a third of a trip apart. Every triangle is half its landed size at the far end
+and full size on the surface; the plates are 1.25× thick; the shading is face-forward (dark face
+centres front and back, bright edges only). That is four opt-in dials on `OmniShepardFresnelShader`:
+`_Breathe` (the band ping-pongs), `_PhaseOffset` (this layer's share of the clock),
+`_PlateScaleStart` and `_Thickness` (each plate sized and stretched about its OWN centre). The
+plate centre is baked per vertex into `OmniCrystalTriangles.asset`'s TEXCOORD2 by the generator.
+All four are inert at their defaults, so the Mass crystal's shells, which author none of them,
+draw exactly as before. Proved offline: `Tools/Build/omni_shepard_shader_parity.py` compiles the
+shipped shader's `vert()` with clang and shows (a) the defaults are `v · s` to 1e-7, with and
+without plate centres, and (b) the three shipped materials match the lab's model of the picked
+look to 3e-6 on the real mesh. `Tools/Build/omni_shepard_lab_parity.cjs` shows the lab's shipped
+page draws exactly what the designer exported.
 
 **Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
 signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the
@@ -565,7 +583,7 @@ skinned (720 of 2,880 split vertices), the still body never moves, the rest pose
 body's own family: the body's colour formula verbatim — `lerp(_BrightColor, _DarkColor, (1 + N·V)/2)`,
 dark where a face looks at you, bright toward the silhouette — on the body's own colour pair (each
 tone material is the body material moved onto the tone shader, nothing else changed), with
-ShepardGraph's motion and alpha transcribed. A falling triangle is therefore the body's triangle made
+ShepardGraph's motion and alpha transcribed. A triangle in flight is therefore the body's triangle made
 see-through; it cannot drift to a different lime than the plate it lands on. This retired the
 mismatch the first pass had: the triangles were on `ShepardGraph`, whose colour is
 `lerp(dull, bright, (1−N·V)⁴)` and which `Crystal.ApplyColorSetTint` repaints with the CTA pair at
@@ -578,30 +596,27 @@ crystals through `CrystalManager.ChangeDomain`, the Dolphin's `TeamCrystal`) swa
 `GetTeamCrystalMaterial(domain, slot)`, which `ThemeManager` builds by cloning the BASE set
 (`OriginalMaterialSet`) slot by slot. That set still pointed at the four Mass-era Shepard materials,
 so a team omni ran a Shepard band on its BODY (shrinking it toward the centre) and the old inward
-bands on its triangles — the "scaling issues". The base set now points at exactly the omni's five
+bands on its triangles — the "scaling issues". The base set now points at exactly the omni's
 per-slot materials, and `ThemeManager` paints each clone's `_BrightColor`/`_DarkColor` from the
 domain pair (`BrightCrystalColor`/`DullCrystalColor`). That mapping is one-to-one: Dull is authored
 black on Jade, Ruby and Gold, which is precisely the lime body's near-black face. Side effect, by
 design: `MazeCrystal` (one model, the omni mesh) also reads slot 0 when domain-owned, so it now wears
 the omni body in its domain colour instead of a Shepard band.
 
-**Five slots, and the fifth is real.** The rim is slot 4 so a team crystal paints it too:
-`SO_MaterialSet.CrystalMaterial4` (optional — `ThemeManager` skips it when a base set does not
-author it) and `GetTeamCrystalMaterial` case 4. Every slot explodes on `CrystalMaterial`, because the
-spent husk animates `CrystalGraph`'s `_velocity` and a tone material on a husk would play its band
-instead of bursting; the cost is one more pooled husk per collect.
-
-**The stationary rim is what hides the pop.** The Mass crystal's fourth shell never moves
-(`_ScaleDistance 0`) and holds alpha 0.02–0.07 at the full radius, so each new shell is born on a
-faint copy of itself instead of out of nothing. The omni carries the same shell at its tone's birth
-radius (s = 1, twice the crystal), with `ActiveMassCrystalMaterial 3`'s motion values on the tone
-shader.
+**Four slots; the rim was retired with the falling look.** Slot 4 was a stationary rim (the Mass
+crystal's fourth shell, `_ScaleDistance 0`, alpha 0.02–0.07 at the full radius) that hid each
+falling shell's birth. A breathing shell has no birth: it turns round at the far end at alpha 0.05,
+so the rim went (2026-10-10). `SO_MaterialSet.CrystalMaterial4` and `GetTeamCrystalMaterial` case 4
+stay (optional; nothing asks for index 4 now), and `OriginalMaterialSet.CrystalMaterial4` still
+points at `OmniShepardTrianglesRim`, which the generator keeps authoring so the lab's Classic style
+can draw it. Every slot explodes on `CrystalMaterial`, because the spent husk animates
+`CrystalGraph`'s `_velocity` and a tone material on a husk would play its band instead of bursting.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
 `crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
 vessel retirements (`CrystalMorphRunner.Adopt` — the Scarab's crystal→ball forge and the Squirrel's
 crystal→ring morph) build their morph mesh from slot 0 and fold every model drawing that same mesh.
-The triangle shells and rim are a different mesh, so they are OVERLAYS: they fade over
+The triangle shells are a different mesh, so they are OVERLAYS: they fade over
 `CrystalMorphConfig.overlayFadeFraction` of the geometry window while the cage opens (a verbose
 `CrystalMorph`-channel line names each one, not a warning: it is the design).
 
@@ -1080,9 +1095,9 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     husks (on `CrystalMaterial`) drift and a team omni's fade without moving. Fix is one of: keep
     `explodingMaterial` when the target material cannot drive a husk, or add CrystalGraph's
     `n · dot(_velocity, n)` push to `OmniCrystalFresnelShader`. A fix, not a report.
-  - **Five husks per omni collect** (one per `crystalModels` entry, `Crystal.Explode`), up from
-    four, since the rim became slot 4 — all on `CrystalMaterial`, so they overlap as one. Measure
-    the pooled-husk cost before deciding whether `Explode` should spawn one husk per crystal.
+  - **Four husks per omni collect** (one per `crystalModels` entry, `Crystal.Explode`), back down
+    from five since the rim was retired (2026-10-10) — all on `CrystalMaterial`, so they overlap as
+    one. Measure the pooled-husk cost before deciding whether `Explode` should spawn one husk per crystal.
   - **The omni shader transcribes `SpreadFresnelShader`** (displacement + colour, verbatim) rather
     than including it — deliberate on the test branch, so the elemental crystals were untouched.
     Once verified in the editor, fold both onto one `SpreadFresnelCore.hlsl` (the refactor was

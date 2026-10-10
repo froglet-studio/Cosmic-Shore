@@ -11,7 +11,9 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Shipped numbers + meshes:** baked in by `Tools/Build/omni_shepard_lab_assets.py`
   (`--check` fails when the assets move and the page has not been rebaked; `--self-test`)
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniShepardLab.html`
-- **Round-to-round parity at the shipped settings:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html>`
+- **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--new-style classic]`
+- **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
+- **What ships (since round 4):** "Breathe", see Round 4 below and `Docs/PALETTE.md` §2.10
 
 ## How the effect works (measured from the assets)
 
@@ -35,6 +37,67 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 4 (2026-10-10): Breathe ships
+
+The designer exported this recipe from the lab and pasted it back. That is the decision:
+
+```
+{"period":3.5,"direction":2,"sizeStart":0.5,"thickness":1.25,"faceForward":1,"rimShell":0}
+```
+
+**What changed in the game** (all through `Tools/Build/author_omni_crystal_triangles.py`, `--check` clean):
+- `OmniShepardFresnelShader` gained four opt-in dials, each inert at its default: `_Breathe` (the
+  band ping-pongs), `_PhaseOffset` (this layer's share of the clock), `_PlateScaleStart` and
+  `_Thickness` (each plate sized and stretched about its own centre).
+- `OmniCrystalTriangles.asset` carries each vertex's plate centre in TEXCOORD2 (stride 48 → 60).
+- The six `OmniShepardTriangles*` materials now span the whole trip, 1.0 ↔ 0.5, breathing over
+  10.5 s (3 shells × 3.5 s), at phases 0, ⅓ and ⅔, with `_PlateScaleStart` 0.5, `_Thickness` 1.25
+  and `_FaceForward` 1.
+- `Crystal.prefab` lost slot 4, the stationary rim. A breathing shell turns round at alpha 0.05, so
+  there is no birth pop left to hide.
+- Docs: `Docs/PALETTE.md` §2.10, `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the comments and
+  tooltips that described the rim.
+
+**What changed in the lab**
+- It reads the new materials: Shipped is now "Shipped (Breathe)".
+- The old look is the **Classic** style. The 17 library styles are built on Classic, so they look
+  exactly as they did in round 3.
+- Direction, plate size and thickness now read *material values*. The Ship-it tab writes the
+  generator's constants, which closes the loop: at the shipped settings it reproduces the six
+  materials on disk.
+- A new control, "Fade line 1.3", makes a breathing shell pop at the far end.
+
+**Checked**
+
+| Proof | Tool | Result |
+|---|---|---|
+| The assets encode the exported recipe | `omni_shepard_lab_parity.cjs round3.html new.html --old-set <recipe>` | ≤ 4 of ~66k lit pixels over 2/255, at 5 times |
+| Classic is round 3's shipped look | `omni_shepard_lab_parity.cjs round3.html new.html --new-style classic` | 0 pixels over 2/255 |
+| Negative control: shipped moved | `omni_shepard_lab_parity.cjs round3.html new.html` | 62k–65k of 82k–90k pixels differ |
+| The shader's dials are inert at defaults (Mass crystal unchanged) | `omni_shepard_shader_parity.py` (clang++ `-Wall`, real mesh) | `v · s` to 1.0e-7 with plate centres, 6.3e-8 without |
+| The shipped materials draw the lab's Breathe | same, vs `__lab.vertexAt`, 3 layers × 7 times × 360 vertices | max 3.2e-6 units (mesh radius 1.6) |
+| Negative controls | same | `_Thickness` 1.25 not inert (8.7e-3); `_Breathe` off does not match (0.37) |
+| Gates | `verify_lab.cjs`; `omni_shepard_lab_assets.py --check` / `--self-test`; `author_omni_crystal_triangles.py --check` | PASS; OK / 7 of 7; OK |
+
+**Not verified:** no Unity editor or `unity` CLI was available, so `/verify-unity` did NOT run. Only
+the vertex stage was compiled (by clang); Unity has not compiled the ShaderLab wrapper or the
+fragment stage. Filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Two more gaps:
+- **Draw order:** the three shells keep fixed queues 2999/3000/3001 while they breathe through each
+  other. The lab sorts by radius each frame, so overlaps may layer differently in game.
+- **Prisma:** the port's hand-translated `OmniShepardFresnelShader.glsl` still draws the falling look
+  until an engine session ports the four dials. `Port/` is outside this branch's scope.
+
+**Found**
+1. **A lab's export is a build ticket only if it names the build.** Round 3's export pointed at "the
+   shader extension the lab prototypes". Round 4's points at the generator's constants, because the
+   generator owns these materials and a hand edit to a `.mat` would be reverted by its `--check`.
+2. **Moving the shipped look moves every style that was a diff from it.** The library styles were
+   stored as diffs from SHIPPED, so shipping Breathe would have quietly changed all 17. They are now
+   pinned to a named base (Classic), and saved or liked looks store every knob.
+3. **The round-3 parity tool shipped without its `require('playwright')` line.** I assembled it from a
+   scratch copy with `sed '1,0d'`, which deleted line 1, and then ran the scratch copy instead of the
+   committed file. Fixed, and this round ran the committed file.
 
 ## Round 3 (2026-10-10): many more looks
 

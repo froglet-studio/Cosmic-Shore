@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
     ///
     /// ── What makes it seamless at both ends ───────────────────────────────────────────────────
     /// • <b>It draws the crystal's own renderers.</b> Mesh, shared materials and property block are
-    ///   copied off the live crystal, so frame 0 IS the crystal — body, falling tone triangles and
+    ///   copied off the live crystal, so frame 0 IS the crystal — body, breathing tone triangles and
     ///   tint. A rebuilt look-alike would pop on the one frame that has to be free.
     /// • <b>It ends ON the real ball.</b> The target is read from the ball's own shipped hull mesh
     ///   at its own radius, so there is no second authority to drift from: retune the ball's

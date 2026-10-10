@@ -52,7 +52,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Overlays")]
         [Tooltip("Fraction of the GEOMETRY half over which the crystal's OVERLAYS fade out — the " +
-                 "omni's falling Shepard-tone triangles and their stationary rim (Docs/PALETTE.md " +
+                 "omni's breathing Shepard-tone triangles (Docs/PALETTE.md " +
                  "§2.10). They are a different mesh from the body, so they cannot fold with it; " +
                  "they leave as the cage opens instead of vanishing on the pickup frame.")]
         [Range(0.05f, 1f)] public float overlayFadeFraction = 0.3f;

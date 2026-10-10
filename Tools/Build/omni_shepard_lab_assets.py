@@ -75,6 +75,9 @@ def shepard_layer(path):
         "start": f["_Start"], "stop": f["_Stop"], "period": f["_Period"], "opacity": f.get("_Opacity", 1.0),
         "scaleDistance": f.get("_ScaleDistance", 1.0), "rimPower": f.get("_RimPower", 1.0),
         "faceForward": f.get("_FaceForward", 0.0), "bright": c["_BrightColor"], "dark": c["_DarkColor"],
+        # OmniShepardFresnelShader's opt-in dials (round 4); absent = the shader default = inert
+        "breathe": f.get("_Breathe", 0.0), "phaseOffset": f.get("_PhaseOffset", 0.0),
+        "plateScaleStart": f.get("_PlateScaleStart", 1.0), "thickness": f.get("_Thickness", 1.0),
     }
 
 
@@ -109,11 +112,20 @@ def tri_mesh():
     vd = bytes.fromhex(re.search(r"_typelessdata: ([0-9a-f]+)", t).group(1))
     n = int(re.search(r"m_VertexCount: (\d+)", t).group(1))
     stride = len(vd) // n
+    # The channel table, by index (0 position, 1 normal, 6 uv2 = TEXCOORD2 = the plate centre).
+    chans = re.findall(r"- stream: (\d+)\n\s+offset: (\d+)\n\s+format: (\d+)\n\s+dimension: (\d+)",
+                       t.split("m_Channels:")[1].split("m_DataSize")[0])
+    chans = [tuple(int(x) for x in c) for c in chans]
+    for ch in (0, 1):
+        if chans[ch][0] != 0 or chans[ch][2] != 0 or chans[ch][3] != 3:
+            raise SystemExit(f"OmniCrystalTriangles.asset channel {ch} is not float3 on stream 0")
+    has_centre = len(chans) > 6 and chans[6][3] == 3 and chans[6][2] == 0
     idx = list(struct.unpack("<%dH" % (len(ib) // 2), ib))
-    pos, nrm = [], []
+    pos, nrm, cen = [], [], []
     for i in range(n):
-        pos.append(struct.unpack_from("<3f", vd, i * stride))
-        nrm.append(struct.unpack_from("<3f", vd, i * stride + 12))
+        pos.append(struct.unpack_from("<3f", vd, i * stride + chans[0][1]))
+        nrm.append(struct.unpack_from("<3f", vd, i * stride + chans[1][1]))
+        cen.append(struct.unpack_from("<3f", vd, i * stride + chans[6][1]) if has_centre else (0.0, 0.0, 0.0))
     # Plates: connected components over shared vertex POSITIONS (the mesh is split per face).
     key = lambda p: tuple(round(c, 4) for c in p)
     parent = list(range(n))
@@ -137,7 +149,7 @@ def tri_mesh():
     for a in range(0, len(idx), 3):
         plates.setdefault(find(idx[a]), []).extend(idx[a:a + 3])
     plate_list = sorted(plates.values(), key=lambda tri: min(tri))
-    return pos, nrm, plate_list
+    return pos, nrm, plate_list, cen if has_centre else None
 
 
 def body_mesh():
@@ -183,7 +195,14 @@ def build():
     tri_scale = float(re.search(r"m_LocalScale: \{x: ([0-9.]+)", read(TRI_PREFAB)).group(1))
     _, body_c, _ = mat_props(os.path.join(MATS, "OmniCrystalBody.mat"))
     _, body_ic, _ = mat_props(os.path.join(MATS, "OmniCrystalBodyInactive.mat"))
-    pos, nrm, plates = tri_mesh()
+    pos, nrm, plates, cen = tri_mesh()
+    # The retired stationary rim (slot 4 until round 4): still authored, so the lab's Classic style can draw it.
+    rim_path = os.path.join(MATS, "OmniShepardTrianglesRim.mat")
+    rim_retired = shepard_layer(rim_path) if os.path.exists(rim_path) else None
+    if rim_retired:
+        rim_retired["material"] = "OmniShepardTrianglesRim"
+        ri = shepard_layer(os.path.join(MATS, "OmniShepardTrianglesRimInactive.mat"))
+        rim_retired["inactiveBright"], rim_retired["inactiveDark"] = ri["bright"], ri["dark"]
     bpos, btris, bnrm = body_mesh()
     r6 = lambda v: round(v, 6)
     r5 = lambda v: round(v, 5)
@@ -193,12 +212,14 @@ def build():
         "triScale": r6(tri_scale),
         "layers": [{k: (r6(v) if isinstance(v, float) else v) for k, v in L.items()} for L in moving],
         "rims": [{k: (r6(v) if isinstance(v, float) else v) for k, v in L.items()} for L in rims],
+        "rimRetired": {k: (r6(v) if isinstance(v, float) else v) for k, v in rim_retired.items()} if rim_retired else None,
         "body": {"bright": body_c["_BrightColor"], "dark": body_c["_DarkColor"],
                  "inactiveBright": body_ic["_BrightColor"], "inactiveDark": body_ic["_DarkColor"]},
         "triMesh": {
             "p": [r5(c) for p in pos for c in p],
             "n": [round(c, 4) for q in nrm for c in q],
             "plates": plates,
+            "c": [r5(x) for q in cen for x in q] if cen else None,
         },
         "bodyMesh": {"p": [r5(c) for p in bpos for c in p], "i": btris, "n": [round(c, 4) for c in bnrm]},
     }
@@ -221,7 +242,8 @@ def splice(html, data):
 
 def summary(d):
     L = d["layers"]
-    return (f"{len(L)} moving layers " + ", ".join(f"{x['material']} {x['start']}->{x['stop']} / {x['period']}s" for x in L)
+    return (f"{len(L)} moving layers " + ", ".join(f"{x['material']} {x['start']}->{x['stop']} / {x['period']}s"
+                                                   + (f" breathe phase {x['phaseOffset']}" if x['breathe'] else "") for x in L)
             + f"; {len(d['rims'])} rim; triScale {d['triScale']}; root {d['rootScale']}; "
             f"{len(d['triMesh']['plates'])} plates; body {len(d['bodyMesh']['i']) // 3} tris")
 
@@ -234,9 +256,18 @@ def self_test():
         nonlocal ok
         print(("PASS  " if cond else "FAIL  ") + name)
         ok = ok and cond
-    check("three moving layers read from Crystal.prefab", len(d["layers"]) == 3)
-    check("bands are contiguous (layer i _Stop == layer i+1 _Start)",
-          all(abs(d["layers"][i]["stop"] - d["layers"][i + 1]["start"]) < 1e-5 for i in range(len(d["layers"]) - 1)))
+    L = d["layers"]
+    check("three moving layers read from Crystal.prefab", len(L) == 3)
+    if L[0]["breathe"]:
+        check("breathing layers share one band and sit 1/N of a trip apart",
+              all(abs(x["start"] - L[0]["start"]) < 1e-6 and abs(x["stop"] - L[0]["stop"]) < 1e-6
+                  and abs(x["phaseOffset"] - i / len(L)) < 1e-5 for i, x in enumerate(L)))
+    else:
+        check("bands are contiguous (layer i _Stop == layer i+1 _Start)",
+              all(abs(L[i]["stop"] - L[i + 1]["start"]) < 1e-5 for i in range(len(L) - 1)))
+    check("the triangle mesh carries a plate centre per vertex, shared by every vertex of a plate",
+          d["triMesh"]["c"] is not None and all(
+              len({tuple(d["triMesh"]["c"][3 * v:3 * v + 3]) for v in plate}) == 1 for plate in d["triMesh"]["plates"]))
     check("20 plates of 8 triangles", len(d["triMesh"]["plates"]) == 20 and all(len(p) == 24 for p in d["triMesh"]["plates"]))
     # Negative control: a stale block must be reported by --check's comparison.
     html = "names `" + BEGIN + "` in prose\n  " + BEGIN + "\n  stale\n  " + END + "\ntail"

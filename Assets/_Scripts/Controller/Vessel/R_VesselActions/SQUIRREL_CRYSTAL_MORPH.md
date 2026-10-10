@@ -70,8 +70,8 @@ corners off a target corner).
 
 1. **It draws the crystal's own renderers.** Body and overlays are copied off the live crystal —
    mesh, shared materials, property block — so frame 0 IS the crystal, tint and all.
-2. **The overlays leave, they do not pop.** The falling Shepard-tone triangles (slots 1–3) and
-   their rim (slot 4) are a different mesh and cannot fold, so they fade over
+2. **The overlays leave, they do not pop.** The breathing Shepard-tone triangles (slots 1–3) are
+   a different mesh and cannot fold, so they fade over
    `overlayFadeFraction` of the geometry window while the cage opens.
 3. **It ends ON the real prisms.** Targets come from the ring `BoostRingBuilder` actually laid
    (`BoostRingBuilder.RingLaid`): each prism's own shield semi-axes
@@ -196,7 +196,7 @@ Inspection: set `duration` to 9 (20×) on the asset; every other timing is a fra
 
 1. **Any mode with a Squirrel and omni crystals** (Skim Race, freestyle). Fly through a crystal.
    Expect: **no husk spray**; the cage opens and its plates fly to the ring ahead of the nose; the
-   falling tone triangles fade as it opens; the ring appears exactly where the plates land, at full
+   breathing tone triangles fade as it opens; the ring appears exactly where the plates land, at full
    size, with no grow-in after it; total ≈ 0.44 s. Set `duration` to 9 to watch it slowly.
 2. **Skim the ring mid-morph.** Fly straight through the ring the instant it forms: boost must
    register while the crystal is still landing (the ring is live mass from frame 0).

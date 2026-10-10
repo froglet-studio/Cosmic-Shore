@@ -95,11 +95,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Breathe: 1
+    - _FaceForward: 1
     - _Opacity: 1
-    - _Period: 3
+    - _Period: 10.5
+    - _PhaseOffset: 0.333333
+    - _PlateScaleStart: 0.5
     - _ScaleDistance: 1
-    - _Start: 0.833333
-    - _Stop: 0.666667
+    - _Start: 1.0
+    - _Stop: 0.5
+    - _Thickness: 1.25
     - _AlphaClip: 0
     - _Blend: 0
     - _BumpScale: 1

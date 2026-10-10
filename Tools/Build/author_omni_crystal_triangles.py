@@ -21,10 +21,18 @@ ghost. What ships now is a BODY, THREE tone shells and a stationary RIM:
     slot 1..3   the Shepard chain, on the TRIANGLES ONLY, falling from outside the
                 crystal onto its surface (MassCrystalExport3ExpandedTri, baked), on
                 OmniShepardFresnelShader - the body's colour formula and colour pair
-    slot 4      the stationary rim at the tone's birth radius (hides the pop)
 
-and OriginalMaterialSet's CrystalMaterial..CrystalMaterial4 point at those five
+and OriginalMaterialSet's CrystalMaterial..CrystalMaterial3 point at those four
 per-slot materials, so a TEAM crystal is the same crystal in its domain colours.
+
+THE LOOK is "Breathe" (Omni Shepard Lab round 4, Docs/Studios/OMNI_SHEPARD_LAB.md): each
+shell flies in from s = 1 to the surface and back OUT again over one round trip (TONE_TRIP),
+the three shells a third of a trip apart (_PhaseOffset 0, 1/3, 2/3); every triangle is half
+size at the far end and full size on the surface (PLATE_SCALE_START), plates are 1.25x thick
+(PLATE_THICKNESS), and the shading is face-forward. The far end sits at alpha 0.05, so a
+breathing shell needs no rim to hide its turn: the stationary rim (once slot 4) was retired
+with this look. Its two materials are still authored, because OriginalMaterialSet's
+CrystalMaterial4 keeps pointing at the rim material and nothing reads index 4 any more.
 
 Charge owns the PENTAGONS, and its signature is the charge crystal's EDGE DISCHARGE
 (plasma crackling vertex to vertex along the crease edges). A sixth child,
@@ -38,9 +46,9 @@ material so a team crystal's bolts wear its domain colour. Its arc dials are clo
 ChargeCrystalMaterial (one look for one element - retune the charge crystal and --check
 names this material as drifted), its _BrightColor and _Spread from OmniCrystalBody.
 
-Five slots, and the fifth is real: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
-answers indices 0..4 (SO_MaterialSet.CrystalMaterial4 was added for the rim), so a
-team crystal paints every slot. Past 4 it still warns and reuses slot 0's material.
+Four slots: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial` answers indices 0..4
+(SO_MaterialSet.CrystalMaterial4 was added for the rim), so a team crystal paints every
+slot. Past 4 it still warns and reuses slot 0's material.
 
 WHAT THIS SCRIPT OWNS - the things that must not be typed by hand (the body and
 tone materials too; see the materials block below):
@@ -132,18 +140,27 @@ MAT_BODY_EXPLODING = "383f21e8586fd7243a19e1d0f26110d0"  # CrystalMaterial: the 
 # triangles fall in from outside the crystal and land on its surface, brightening as they arrive
 # (alpha 0.05 at the outer edge, 1.05 - 1/OUTER_REACH at the surface).
 OUTER_REACH = 2.0
-SHEPARD_PERIOD = 3                       # the Mass crystal's period
+SHEPARD_PERIOD = 3                       # the Mass crystal's period (the retired rim keeps it)
 SHEPARD_QUEUES = [2999, 3000, 3001]      # the Mass shells' draw order, outermost band first
+
+# THE LOOK - "Breathe", picked in the Omni Shepard Lab (round 4). OmniShepardFresnelShader's opt-in
+# _Breathe / _PhaseOffset / _PlateScaleStart / _Thickness; the lab's recipe was
+# {period 3.5, direction breathe, sizeStart 0.5, thickness 1.25, faceForward 1, rimShell 0}.
+TONE_SHELLS = 3
+TONE_TRIP = 10.5                         # s, one round trip in and out (3 shells x the lab's 3.5 s)
+PLATE_SCALE_START = 0.5                  # a triangle's size at the far end, x its landed size
+PLATE_THICKNESS = 1.25                   # plates stretched along their outward direction
+FACE_FORWARD = 1                         # dark face centres front and back, bright edges only
 
 def mat_guid(name):
     return hashlib.md5(f"CosmicShore/OmniCrystal/{name}.mat".encode()).hexdigest()
 
 
 def shepard_bands():
-    """(start, stop) per shell: three contiguous falling bands from s = 1 down to 1/OUTER_REACH."""
-    lo = 1.0 / OUTER_REACH
-    edges = [1.0 - (1.0 - lo) * k / 3 for k in range(4)]
-    return [(round(edges[k], 6), round(edges[k + 1], 6)) for k in range(3)]
+    """(start, stop, phase) per shell. Breathing, every shell spans the WHOLE trip, from s = 1 to
+    1/OUTER_REACH and back, and the shells differ only in their clock: a third of a trip apart."""
+    lo = round(1.0 / OUTER_REACH, 6)
+    return [(1.0, lo, round(k / TONE_SHELLS, 6)) for k in range(TONE_SHELLS)]
 
 
 MAT_BODY = mat_guid("OmniCrystalBody")
@@ -199,15 +216,22 @@ def _sub1(text, pattern, repl, label):
     return out
 
 
-def _tone_material(name, body_name, body_text, start, stop, scale_distance, queue):
-    """A tone-shell material: the body material (same colours) moved onto the tone shader."""
+def _tone_material(name, body_name, body_text, start, stop, scale_distance, queue, look=None):
+    """A tone-shell material: the body material (same colours) moved onto the tone shader.
+    `look` (the breathing shells) adds the shader's opt-in motion/shape dials and their period."""
     t = _sub1(body_text, rf"^  m_Name: {re.escape(body_name)}$", f"  m_Name: {name}", name + " m_Name")
     t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
               f"  m_Shader: {{fileID: 4800000, guid: {TONE_SHADER_GUID}, type: 3}}", name + " m_Shader")
     t = _sub1(t, r"^  m_CustomRenderQueue: .*$", f"  m_CustomRenderQueue: {queue}", name + " queue")
     t = _sub1(t, r"^  stringTagMap: \{\}$", "  stringTagMap:\n    RenderType: Transparent", name + " tags")
-    floats = (f"    - _Opacity: 1\n    - _Period: {SHEPARD_PERIOD}\n"
-              f"    - _ScaleDistance: {scale_distance}\n    - _Start: {start}\n    - _Stop: {stop}\n")
+    if look is None:
+        floats = (f"    - _Opacity: 1\n    - _Period: {SHEPARD_PERIOD}\n"
+                  f"    - _ScaleDistance: {scale_distance}\n    - _Start: {start}\n    - _Stop: {stop}\n")
+    else:
+        floats = (f"    - _Breathe: 1\n    - _FaceForward: {FACE_FORWARD}\n    - _Opacity: 1\n"
+                  f"    - _Period: {TONE_TRIP}\n    - _PhaseOffset: {look}\n"
+                  f"    - _PlateScaleStart: {PLATE_SCALE_START}\n    - _ScaleDistance: {scale_distance}\n"
+                  f"    - _Start: {start}\n    - _Stop: {stop}\n    - _Thickness: {PLATE_THICKNESS}\n")
     return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
 
 
@@ -219,11 +243,11 @@ def material_texts():
                   f"  m_Shader: {{fileID: 4800000, guid: {OMNI_SHADER_GUID}, type: 3}}", name + " m_Shader")
         out[name] = t
     body, body_inactive = out["OmniCrystalBody"], out["OmniCrystalBodyInactive"]
-    for i, (start, stop) in enumerate(shepard_bands()):
+    for i, (start, stop, phase) in enumerate(shepard_bands()):
         out[f"OmniShepardTriangles {i}"] = _tone_material(
-            f"OmniShepardTriangles {i}", "OmniCrystalBody", body, start, stop, 1, SHEPARD_QUEUES[i])
+            f"OmniShepardTriangles {i}", "OmniCrystalBody", body, start, stop, 1, SHEPARD_QUEUES[i], phase)
         out[f"OmniShepardTrianglesInactive {i}"] = _tone_material(
-            f"OmniShepardTrianglesInactive {i}", "OmniCrystalBodyInactive", body_inactive, start, stop, 1, SHEPARD_QUEUES[i])
+            f"OmniShepardTrianglesInactive {i}", "OmniCrystalBodyInactive", body_inactive, start, stop, 1, SHEPARD_QUEUES[i], phase)
     out[RIM_NAME] = _tone_material(RIM_NAME, "OmniCrystalBody", body, *RIM_BAND, 0, RIM_QUEUE)
     out[RIM_NAME + "Inactive"] = _tone_material(RIM_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive, *RIM_BAND, 0, RIM_QUEUE)
     out[CHARGE_MAT_NAME] = charge_material_text(body)
@@ -284,9 +308,8 @@ SLOTS = [
     (693643822389642704,  492451356381860680,  2907786364588143348, "OmniShepardTriangles"),
     (3428511433788108504, 2369276566672717888, 1039871714678528508, "OmniShepardTriangles (1)"),
     (5888802945109814545, 6831084959271910281, 8089558117201123893, "OmniShepardTriangles (2)"),
-    # The stationary rim is slot 4, a real model, so a team crystal paints it in its domain like
-    # every other slot: SO_MaterialSet.CrystalMaterial4 / GetTeamCrystalMaterial case 4.
-    (3086241560104200021, 3086241560104200022, 3086241560104200023, RIM_NAME),
+    # Slot 4, the stationary rim (3086241560104200021/22/23), was retired with the Breathe look:
+    # a breathing shell turns round at alpha 0.05 and has no pop for a rim to hide.
 ]
 
 # The charge-edges overlay: a sixth child of Crystal.prefab that is deliberately NOT a crystalModels
@@ -297,10 +320,9 @@ CHARGE_GO, CHARGE_TR, CHARGE_MF, CHARGE_MR, CHARGE_ARCS, CHARGE_TINT = (
     3086241560104200034, 3086241560104200035, 3086241560104200036)
 CHARGE_CHILD = (3086241560104200041, 3086241560104200042, 3086241560104200043, "OmniCrystalChargeEdges")
 
-# Per slot: (default, inactive). Slot 0 is the body; 1..3 the falling tone; 4 the rim.
+# Per slot: (default, inactive). Slot 0 is the body; 1..3 the breathing tone shells.
 SLOT_MATERIALS = ([(MAT_BODY, MAT_BODY_INACTIVE)]
-                  + list(zip(MAT_SHEPARD, MAT_SHEPARD_INACTIVE))
-                  + [(MAT_RIM, MAT_RIM_INACTIVE)])
+                  + list(zip(MAT_SHEPARD, MAT_SHEPARD_INACTIVE)))
 
 
 # ── measurement ──────────────────────────────────────────────────────────────
@@ -415,6 +437,34 @@ def bake_tri_mesh():
     normals, n_index = _layer(geo, "LayerElementNormal", "Normals", "NormalsIndex")
     uvs, uv_index = _layer(geo, "LayerElementUV", "UV", "UVIndex")
 
+    # Each plate's centre: the plates are disjoint prisms, so a plate is a connected component of
+    # control points, and its centre the mean of its DISTINCT corners (in Unity's space, x negated).
+    parent = list(range(len(flat) // 3))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    cur = []
+    for raw in pvi:
+        cp = -raw - 1 if raw < 0 else raw
+        if cur:
+            parent[find(cp)] = find(cur[0])
+        cur.append(cp)
+        if raw < 0:
+            cur = []
+    members = defaultdict(list)
+    for cp in range(len(parent)):
+        members[find(cp)].append(cp)
+    centre = {}
+    for group in members.values():
+        c = [sum(flat[3 * cp + k] for cp in group) / len(group) for k in range(3)]
+        for cp in group:
+            centre[cp] = (-c[0], c[1], c[2])
+    assert len(members) == 20 and all(len(g) == 6 for g in members.values()), \
+        f"expected 20 triangular prisms of 6 corners, got {sorted(len(g) for g in members.values())}"
+
     verts, indices, corner, poly = [], [], 0, []
     for raw in pvi:
         last = raw < 0
@@ -429,7 +479,7 @@ def bake_tri_mesh():
             nx, ny, nz = normals[3 * n: 3 * n + 3]
             u = uv_index[c]
             # Right-handed FBX -> left-handed Unity: negate x (positions AND normals).
-            verts.append([(-x, y, z), (-nx, ny, nz), (uvs[2 * u], uvs[2 * u + 1])])
+            verts.append([(-x, y, z), (-nx, ny, nz), (uvs[2 * u], uvs[2 * u + 1]), centre[cp]])
         # Fan-triangulate (every polygon here is a convex tri or quad), and reverse
         # the winding, because the handedness flip mirrored it.
         for k in range(1, len(poly) - 1):
@@ -440,7 +490,7 @@ def bake_tri_mesh():
     tangents = [None] * len(verts)
     for t in range(0, len(indices), 3):
         i0, i1, i2 = indices[t:t + 3]
-        (p0, n0, w0), (p1, _, w1), (p2, _, w2) = verts[i0], verts[i1], verts[i2]
+        (p0, n0, w0, _), (p1, _, w1, _), (p2, _, w2, _) = verts[i0], verts[i1], verts[i2]
         e1 = [p1[k] - p0[k] for k in range(3)]
         e2 = [p2[k] - p0[k] for k in range(3)]
         du1, dv1, du2, dv2 = w1[0] - w0[0], w1[1] - w0[1], w2[0] - w0[0], w2[1] - w0[1]
@@ -462,8 +512,9 @@ def bake_tri_mesh():
 def tri_mesh_text():
     verts, tangents, indices = bake_tri_mesh()
     vbuf = bytearray()
-    for (p, n, uv), t in zip(verts, tangents):
-        vbuf += struct.pack("<3f3f4f2f", *p, *n, *t, *uv)        # stride 48, Prism.asset layout
+    for (p, n, uv, c), t in zip(verts, tangents):
+        # stride 60: Prism.asset's layout, then the plate centre in TEXCOORD2 (OmniShepardFresnelShader)
+        vbuf += struct.pack("<3f3f4f2f3f", *p, *n, *t, *uv, *c)
     ibuf = struct.pack("<%dH" % len(indices), *indices)
     lo = [min(v[0][k] for v in verts) for k in range(3)]
     hi = [max(v[0][k] for v in verts) for k in range(3)]
@@ -474,7 +525,8 @@ def tri_mesh_text():
         return "{x: %s, y: %s, z: %s}" % tuple(repr(float(struct.unpack("<f", struct.pack("<f", c))[0])) for c in a)
 
     # Channel table: position, normal, tangent, colour, uv0..7, blend weights, blend indices.
-    used = {0: (0, 3), 1: (12, 3), 2: (24, 4), 4: (40, 2)}
+    # Channel 6 is uv2 = TEXCOORD2, the plate centre.
+    used = {0: (0, 3), 1: (12, 3), 2: (24, 4), 4: (40, 2), 6: (48, 3)}
     channels = "".join(
         "    - stream: 0\n      offset: %d\n      format: 0\n      dimension: %d\n"
         % used.get(i, (0, 0)) for i in range(14))
@@ -908,7 +960,7 @@ GameObject:
 
 
 def crystal_children_text():
-    """Crystal.prefab's child PrefabInstances: the five crystalModels slots in order, then the
+    """Crystal.prefab's child PrefabInstances: the four crystalModels slots in order, then the
     charge-edges overlay (a child, not a slot)."""
     out = []
     for i, (inst, stripped_tr, stripped_go, name) in enumerate(SLOTS):
@@ -926,7 +978,7 @@ def crystal_children_text():
 
 
 def crystal_models_text():
-    """The Crystal component's crystalModels list - the body, the three tone shells, the rim.
+    """The Crystal component's crystalModels list - the body and the three breathing tone shells.
 
     Every slot explodes on CrystalMaterial: the spent husk animates CrystalGraph's _velocity, which
     neither Fresnel shader carries, and a tone material on a husk would play its band, not burst."""
@@ -1002,7 +1054,7 @@ def main():
     print(f"omni triangles -> triangle model: uniform scale {scale:.9f} "
           f"(max residual {residual:.3e})")
     print(f"shell localScale: {shell_scale}  (s = 1 is {OUTER_REACH}x the crystal's triangles)")
-    print(f"tone bands (start -> stop): {shepard_bands()}")
+    print(f"tone shells (start, stop, phase), breathing over {TONE_TRIP} s: {shepard_bands()}")
 
     want = {
         TRI_MESH_ASSET: tri_mesh_text(),

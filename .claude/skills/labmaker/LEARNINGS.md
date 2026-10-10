@@ -53,6 +53,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `omni_shepard_lab_assets.py:splice`, self-test "a marker mentioned in prose is left alone".
 - Promoted: no
 
+### L-GEN-5 — Run the COMMITTED tool, not the scratch copy you built it from
+- Lab: Omni Shepard Lab · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-10
+- What happened: round 3's pixel-parity tool was assembled as "a header heredoc + `sed '1,0d' scratch.cjs`". `1,0d` deletes line 1, which was `const { chromium } = require('playwright')`. The scratch copy kept passing, and its result went into the write-up, but the committed `Tools/Build/omni_shepard_lab_parity.cjs` could not run at all. It was found in round 4, the first time anyone ran the committed file.
+- Do instead: after copying a tool into the repo, run it from its repo path once before quoting its output. Never splice files with `sed` line ranges; write the file whole.
+- Evidence: round-3 commit vs round-4 fix of `omni_shepard_lab_parity.cjs`.
+- Promoted: no
+
 ---
 
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
@@ -174,6 +181,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: after round 2 the feedback was "people don't like it, give me many more options", with an empty decision log. More sliders on the one shipped look would not have helped. Round 3 generalised the effect model (per-plate clock, path, spin, size), shipped 18 named styles plus a seeded `randomStyle(n)` generator, a 3×3 compare grid that draws nine parameter sets in one WebGL canvas with scissored viewports, and shared `votes` / `styles` collections with a Most-liked ranking. Two proofs kept it honest. (1) A pixel parity harness against the previous round's page from git, at the shipped settings, with a negative control. (2) The scorecard's seamless-loop columns, which caught two of the new styles popping before anyone saw them.
 - Do instead: when a look is rejected, widen the space (named styles + seeded random + side-by-side compare) and let the team vote in the page. Tag every option with what it costs to ship. When you generalise a model, diff its pixels against the old round at the shipped settings before claiming "shipped is unchanged".
 - Evidence: `Tools/Build/omni_shepard_lab_parity.cjs`; `OMNI_SHEPARD_LAB.md` "Round 3".
+- Promoted: no
+
+### L-STU-18 — Graduating a lab pick: route it through the asset's generator, then prove the assets encode the recipe, by pixels AND by the compiled shader
+- Lab: Omni Shepard Lab, round 4 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-10
+- What happened: the designer pasted back the lab's export (Breathe). Graduation took three things. (1) The asset already had a generator (`author_omni_crystal_triangles.py`) owning the materials, mesh and prefab slots, so the change went there (constants + four opt-in shader dials + a baked per-vertex plate centre), never into the `.mat` files. (2) Proof the shipped assets encode the pick: the PREVIOUS round's page with the exported recipe applied, pixel-diffed against the NEW round's shipped page (≤ 4 px), plus a negative control. (3) Proof the real shader draws it: the shipped HLSL `vert()` compiled with clang (/asset-surgery 4.5c) and run on the real mesh against the lab's JS vertex twin (3e-6), with defaults-are-inert and two negative controls. Shipping the pick also changed SHIPPED, which would have silently restyled every library style stored as a diff from it, so the styles were pinned to a named base (Classic).
+- Do instead: before graduating, find the asset's generator (`grep -l <material name> Tools/Build`) and change THAT. Make the export name the generator's constants. Store styles against a named base, never as diffs from SHIPPED. Ship with the three proofs above.
+- Evidence: `Tools/Build/omni_shepard_shader_parity.py`, `Tools/Build/omni_shepard_lab_parity.cjs --old-set/--new-style`, `OMNI_SHEPARD_LAB.md` "Round 4".
 - Promoted: no
 
 ---

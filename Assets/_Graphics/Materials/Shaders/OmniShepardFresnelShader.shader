@@ -21,6 +21,20 @@
 //                face, bright only edge-on, front and back alike. The Mass crystal turns both on
 //                (Tools/Build/author_mass_crystal_look.py).
 //
+// Four OPT-IN motion/shape controls (Omni Shepard Lab round 4), all inert at their defaults, so
+// every material that does not author them (the Mass crystal's shells) draws exactly as before:
+//   _Breathe        the band PING-PONGS: s runs _Start -> _Stop -> _Start once per _Period
+//                   instead of sweeping once and jumping back. With breathing on, _Start/_Stop are
+//                   the WHOLE trip and _Period the whole round trip; layers share it and differ only
+//                   in _PhaseOffset.
+//   _PhaseOffset    a fraction of _Period added to this layer's clock (layer k of N: k / N).
+//   _PlateScaleStart  each plate's own size multiplier at _Start, easing to 1 at _Stop (about the
+//                   plate's own centre, so it changes how big a triangle is, not where it flies).
+//   _Thickness      each plate stretched along its outward direction about its own centre.
+// The last two need every vertex's PLATE CENTRE, which Tools/Build/author_omni_crystal_triangles.py
+// bakes into OmniCrystalTriangles.asset's TEXCOORD2. A mesh without it reads (0,0,0), which is
+// harmless at the defaults: c * s + (v - c) * s == v * s.
+//
 // Like the body, it does NOT read FadeIn's lowercase _opacity: the omni appears at once on respawn
 // (see OmniCrystalFresnelShader for why).
 Shader "Custom/OmniShepardFresnelShader"
@@ -36,6 +50,10 @@ Shader "Custom/OmniShepardFresnelShader"
         _Opacity ("Opacity", Range(0, 1)) = 1
         _RimPower ("Rim Power", Range(0.25, 8)) = 1
         [ToggleUI] _FaceForward ("Face Forward (see-through contrast)", Float) = 0
+        [ToggleUI] _Breathe ("Breathe (ping-pong the band)", Float) = 0
+        _PhaseOffset ("Phase Offset (fraction of a period)", Float) = 0
+        _PlateScaleStart ("Plate Scale at Start", Range(0.1, 3)) = 1
+        _Thickness ("Plate Thickness", Range(0.2, 3)) = 1
     }
 
     SubShader
@@ -71,11 +89,16 @@ Shader "Custom/OmniShepardFresnelShader"
             float _Opacity;
             float _RimPower;
             float _FaceForward;
+            float _Breathe;
+            float _PhaseOffset;
+            float _PlateScaleStart;
+            float _Thickness;
 
             struct appdata
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
+                float3 plateCentre : TEXCOORD2;   // baked per vertex; (0,0,0) on meshes without it
             };
 
             struct v2f
@@ -87,14 +110,34 @@ Shader "Custom/OmniShepardFresnelShader"
             };
 
             // ShepardGraph's band position: Comparison(Start < Stop) picks a rising sweep,
-            // otherwise a falling one, over (Time mod Period) / Period.
+            // otherwise a falling one, over (Time mod Period) / Period. _PhaseOffset shifts this
+            // layer's clock (frac of a value already in [0, 1) is that value, so 0 changes nothing);
+            // _Breathe folds the sweep into a there-and-back.
             float ShepardBand()
             {
                 float lo = min(_Start, _Stop);
                 float hi = max(_Start, _Stop);
                 float period = max(_Period, 1e-4);
-                float t = fmod(_Time.y, period) / period;
+                float t = frac(fmod(_Time.y, period) / period + _PhaseOffset);
+                if (_Breathe > 0.5) t = 1.0 - abs(1.0 - 2.0 * t);
                 return _Start < _Stop ? lo + (hi - lo) * t : hi - (hi - lo) * t;
+            }
+
+            // The shell scaled by s about the crystal centre, each plate sized and thickened about
+            // its OWN centre c. u is how far along the band this layer is (0 at _Start, 1 at _Stop).
+            // At _PlateScaleStart 1 and _Thickness 1 this is v * s exactly (c * s + (v - c) * s).
+            float3 ShepardShellPosition(float3 v, float3 c, float s)
+            {
+                float span = _Stop - _Start;
+                float u = abs(span) > 1e-5 ? saturate((s - _Start) / span) : 1.0;
+                float3 local = v - c;
+                float cl = length(c);
+                if (cl > 1e-5)
+                {
+                    float3 dir = c / cl;
+                    local += dir * dot(local, dir) * (_Thickness - 1.0);
+                }
+                return c * s + local * (s * lerp(_PlateScaleStart, 1.0, u));
             }
 
             v2f vert (appdata v)
@@ -102,7 +145,7 @@ Shader "Custom/OmniShepardFresnelShader"
                 v2f o;
                 float s = ShepardBand();
                 if (_ScaleDistance > 0.5)
-                    v.vertex.xyz *= s;
+                    v.vertex.xyz = ShepardShellPosition(v.vertex.xyz, v.plateCentre, s);
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, v.normal));
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
