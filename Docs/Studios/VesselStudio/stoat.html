@@ -257,7 +257,7 @@
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
     <span class="round">Round 15 · field trajectory</span>
-    <p class="platchip" id="platChip"><span>Running on <b id="platName">web</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
+    <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
@@ -721,7 +721,8 @@
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  // without WebGL the stage says so and every tab and panel still loads (VesselStudioTheme.renderer, D33)
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(68, 16 / 10, 0.5, 9000);
@@ -2046,15 +2047,15 @@
   }
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && playMode && !document.webkitFullscreenElement) { /* left real fullscreen: keep the fixed layout */ } lastW = lastH = 0; resize(); });
   // ================= platform =================
-  // Two questions: which HOST runs the studio (shell) and on what DEVICE. Today the shell is always 'web'; a native
-  // host — the Amoebius light studio — sets window.__studioHost = { shell: 'prisma', device: 'pc' | 'phone' } before this
-  // page's script runs, and the same switch below shapes the interface. The device decides the controls: a PC flies
+  // Two questions: which HOST runs the studio (shell: 'web' or 'amoebius') and on what DEVICE. A native
+  // host (Amoebius, which serves this page with #amoebius, or one that sets window.__studioHost = { shell, device }) is read by
+  // the one shared helper, VesselStudioTheme.host() (D33); only the DEVICE shapes the interface, nothing visible names the host. The device decides the controls: a PC flies
   // with a gamepad or keyboard, a phone (or tablet) with the touch sticks and trigger handles. The Layout select
   // overrides the guess for this browser (e.g. to preview the phone layout on a PC).
   const PLAT_KEY = 'stoat-studio-layout';
   function detectPlatform() {
-    // A host may also say it by the page's hash: Amoebius's STUDIOS page opens stoat.html#prisma (a file page cannot be handed a variable).
-    const host = window.__studioHost || (/^#prisma\b/.test(location.hash) ? { shell: 'prisma' } : {});
+    // The host is read by the one shared helper (VesselStudioTheme.host(), D33): Amoebius serves this page with #amoebius.
+    const host = VesselStudioTheme.host();
     const ua = navigator.userAgent || '', mq = (q) => { try { return window.matchMedia(q).matches; } catch (e) { return false; } };
     const uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile === true) || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(ua)
       || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS reports itself as a Mac
@@ -2067,7 +2068,7 @@
   function applyPlatform(first) {
     layout = layoutPref === 'pc' || layoutPref === 'phone' ? layoutPref : PLATFORM.device;
     document.body.classList.toggle('dev-pc', layout === 'pc'); document.body.classList.toggle('dev-phone', layout === 'phone');
-    $('platName').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell === 'prisma' ? 'Amoebius' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'phone' : 'PC') + ' (' + PLATFORM.why + ')' + (layout !== PLATFORM.device ? ' — showing the ' + layout + ' layout' : '');
+    $('platName').textContent = (PLATFORM.device === 'phone' ? 'phone' : 'PC') + ' (' + PLATFORM.why + ')' + (layout !== PLATFORM.device ? ' — showing the ' + layout + ' layout' : '');
     $('platLayout').value = layoutPref;
     $('playBtn').textContent = '📱 Fly with touch';
     if (layout === 'phone' && first) setPlayMode(true);          // a phone opens straight into the touch layout
@@ -4547,7 +4548,7 @@
   (async function connect() {
     const status = $('logStatus');
     const c = window.claude;
-    if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it). The shared log is in the claude.ai artifact:'; if (window.VesselStudioTheme) status.appendChild(VesselStudioTheme.artifactLink()); status.className = 'hint status-warn'; renderLog(); return; }
+    if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it). The shared log is in the claude.ai artifact and in Amoebius (OPEN IN AMOEBIUS):'; if (window.VesselStudioTheme) status.appendChild(VesselStudioTheme.artifactLink()); status.className = 'hint status-warn'; renderLog(); return; }
     try { db = await c.use('db'); } catch (e) { db = null; }
     try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
     if (!db) { status.textContent = 'Kept in this browser (Copy log to send it).'; status.className = 'hint status-warn'; renderLog(); return; }

@@ -129,11 +129,11 @@
 
   // ---------- build info: what this artifact is showing ----------
   let build = null;
-  // build.json exists only in a build; a page opened from the checkout (Unity, Amoebius: file://) has none and must not
+  // build.json exists only in a build (claude.ai, the mirror, Amoebius's studio server); a page opened as a file has none and must not
   // ask for it (a browser logs a file:// fetch as an error)
   const buildP = (location.protocol === 'file:' ? Promise.resolve(null) : fetch('build.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null)).then((b) => {
     build = b;
-    $('cur').textContent = b ? `Showing ${b.repo} @ ${b.branch} \u00b7 ${b.pathSha.slice(0, 7)} \u201c${b.subject}\u201d (${new Date(b.committedAt).toLocaleString()})` : 'Opened from a checkout (Unity, Amoebius) or a folder, not the published artifact: Refresh, Compare, Merge and Delete run from the claude.ai artifact, ' + ARTIFACT() + '.';
+    $('cur').textContent = b ? `Showing ${b.repo} @ ${b.branch} \u00b7 ${b.pathSha.slice(0, 7)} \u201c${b.subject}\u201d (${new Date(b.committedAt).toLocaleString()})` : 'Opened as a file, not a build: Refresh, Compare, Merge and Delete run in the claude.ai artifact (' + ARTIFACT() + ') and in Amoebius (OPEN IN AMOEBIUS).';
     $('src').value = ls.get('src', b ? b.branch : WATCH[0]);
     $('from').value = ls.get('from', WATCH[0]); $('to').value = ls.get('to', WATCH[1]);
     return b;
@@ -175,7 +175,7 @@
   const PROMPT = () => `You handle Vessel Studio Sync jobs for the artifact ${ARTIFACT()}. Load the /vessel-studio skill (it is on branch ${TOOLS_REF}: check that branch out) and follow its section 5 for every job message you receive. Do nothing else until a job arrives.`;
   async function startSession() {
     const mcp = await caps.mcp;
-    if (!mcp) { log('starting a session needs the artifact opened in claude.ai, signed in', 'err'); return null; }
+    if (!mcp) { log('starting a session needs the artifact opened in claude.ai (signed in) or the studio opened in Amoebius', 'err'); return null; }
     try {
       log('starting a Claude session for sync jobs\u2026');
       const envs = await mcp.callTool(CCR, 'list_environments', { limit: 20 });
@@ -196,7 +196,7 @@
   const live = new Map();
   async function dispatch(kind, args, onDone) {
     const db = await caps.db, mcp = await caps.mcp;
-    if (!db || !mcp) { log('this needs the artifact opened in claude.ai, signed in (it uses the shared database and your Claude sessions)', 'err'); return; }
+    if (!db || !mcp) { log('this needs the artifact opened in claude.ai (signed in) or the studio opened in Amoebius (OPEN IN AMOEBIUS): it uses their database and a Claude session', 'err'); return; }
     let sid = $('sess').value.trim() || await loadSession();
     if (!sid) { log('no Claude session set: press Start session (or paste a session id)', 'warn'); return; }
     if (!myId) { const u = await caps.user; if (u) myId = await u.id(); }
@@ -325,7 +325,7 @@
   let me = null, userNs = null;
   async function record(text, kind, quiet) {
     const db = await caps.db;
-    if (!db) { if (!quiet) $('decNote').textContent = 'Decisions need the artifact opened in claude.ai, signed in.'; return; }
+    if (!db) { if (!quiet) $('decNote').textContent = 'Decisions need the artifact opened in claude.ai (signed in) or the studio opened in Amoebius.'; return; }
     try {
       if (!me && userNs) me = await userNs.id();
       await db.collection('decisions').add({ text, kind, by: me || '', at: new Date().toISOString(), branch: build ? build.branch : '', sha: build ? build.pathSha : '' });
@@ -339,7 +339,7 @@
   (async () => {
     userNs = await caps.user;
     const db = await caps.db;
-    if (!db) { $('decNote').textContent = 'Shared decisions are available on the hub page in claude.ai.'; $('record').disabled = true; return; }
+    if (!db) { $('decNote').textContent = 'Decisions are recorded in the claude.ai artifact and in Amoebius (OPEN IN AMOEBIUS).'; $('record').disabled = true; return; }
     db.collection('decisions').orderBy('at', 'desc').limit(60).onSnapshot(async (snap) => {
       const docs = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
       const ids = [...new Set(docs.map((d) => d.by).filter(Boolean))];

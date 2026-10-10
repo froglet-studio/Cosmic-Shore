@@ -4,6 +4,7 @@
     python3 .claude/skills/vessel-studio/build_artifact.py --ref origin/cece/magical-carson-9bdq8z --out <dir>
     python3 .claude/skills/vessel-studio/build_artifact.py --check <dir>
     python3 .claude/skills/vessel-studio/build_artifact.py --self-test
+    python3 .claude/skills/vessel-studio/parity_gate.py [--built <dir>]   (every surface opens this output, D33)
 
 What it writes into --out (and nothing anywhere else):
   index.html + every studio page listed in studios.json, exactly as the repo has them: each page carries the sync
@@ -128,6 +129,13 @@ def check(out):
                 errs.append(f'{f}: non-ASCII bytes (a page served without a charset garbles them; escape as \\uXXXX)')
         except OSError:
             errs.append(f'{f}: missing')
+    # one Vessel Studio everywhere (D33): nothing visible names the host, one host helper, the stage survives no WebGL
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import parity_gate
+        errs += parity_gate.page_checks(out, basic=False)   # (the tag and theme checks are above)
+    except ImportError:
+        pass
     for e in errs:
         print('FAIL', e)
     if not errs:

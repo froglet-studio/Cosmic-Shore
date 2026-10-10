@@ -16,7 +16,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 1. Pull `Ys-bleeding-edge` in GitHub Desktop.
 2. Open Amoebius by either route:
    - In Unity: **FrogletTools ▸ Amoebius ▸ Vessel Studio Page**. This opens Amoebius straight on VESSEL STUDIO, building it first if needed.
-     (**FrogletTools ▸ Vessels ▸ Vessel Studio** opens the studio home in Unity; a card opens its studio page, without Amoebius.)
+     (**FrogletTools ▸ Vessels ▸ Vessel Studio** opens the studio home in Unity; a card's OPEN STUDIO opens that studio served by Amoebius, built from Unity's branch, with Sync, Ask and Decisions working.)
    - Or start `Prisma.exe` and click **VESSEL STUDIO** in the left rail.
 3. The title bar shows the branch Amoebius plays. If it isn't `Ys-bleeding-edge`, pick it on the
    **GIT** page (or click **FOLLOW UNITY**). Without the studio folder on its branch, the VESSEL STUDIO page says so
@@ -25,8 +25,19 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 ## 1. The studio in its own window (OPEN IN AMOEBIUS)
 
 1. VESSEL STUDIO ▸ pick **STOAT** ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
-   - **Pass:** the top bar reads **Running on Amoebius · PC (mouse / trackpad)**.
-   - With no Edge or Chrome installed, it opens in your default browser instead and reads **Web · PC**.
+   - **Pass:** its address (hover the window title or press Ctrl+L in a browser) is `http://127.0.0.1:<port>/<token>/stoat.html#amoebius`,
+     and the line under the card says **Serving <branch> @ <commit>**. The top bar reads **Running on PC (mouse / trackpad)**,
+     exactly as on claude.ai and the live mirror (no host label, /vessel-studio D33).
+   - With no Edge or Chrome installed, it opens in your default browser instead (same address).
+1b. **Sync, Ask, Decisions work here** (D33).
+   - **Sync** (bottom right) ▸ the top line reads **Showing froglet-studio/cosmic-shore @ <branch> · <commit>**; the session box
+     already holds `amoebius-local`. Under Merge, From `vessel-studio`, Into `Ys-bleeding-edge`, **Compare**. **Pass:** the
+     console prints "a vs b: N ahead, M behind" and the commits (needs Python 3). Merge into `Ys-bleeding-edge` is refused
+     (a shared base branch); never test Merge or Delete on a branch you care about.
+   - **Decisions**: type a line, **Record decision**. **Pass:** it appears in the list at once with your name; it is still
+     there after closing and reopening the window (stored under Amoebius's data folder, `studio/db/decisions.json`).
+   - Hub (ALL STUDIOS ▸ OPEN IN AMOEBIUS) ▸ **Ask the studio agent**: ask a question. **Pass:** the answer streams in
+     (needs Claude Code signed in on Amoebius's AGENT page). **File it as a request**: it shows in the list below.
 2. **Layout.**
    - The stage fills the middle.
    - The right dock has tabs: Sling, Dipole, Sim lab, Styles, Black hole, White hole, Life, Course, Lope, Archive.
@@ -108,8 +119,8 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 | The game's edit-mode tests on Amoebius | 352 / 352 pass (before and after the merges) |
 | `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 (re-run after the merges: same) |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
-| VESSEL STUDIO page (screenshot) | One picker (SQUIRREL · STOAT · ALL STUDIOS) and one card with OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS and its engine note. |
-| `stoat.html#prisma` | Reads "Amoebius · PC", has the editor layout and the back link to the hub, no console errors |
+| VESSEL STUDIO page (screenshot) | Since D34: the hub's cards (preview, name, chip, summary, spec), each with Open studio → · PLAY IN ENGINE · TUNE IN UNITY (disabled: Unity only) · OPEN LIVE IN BROWSER, then the fleet without a studio. |
+| `stoat.html#prisma` (before D33) | Read "Amoebius · PC"; since D33 every surface reads "PC (...)", the page is served by Amoebius from the build |
 
 **Not checked here:** a real Windows PC. Edge's app window, a GPU, and a gamepad through the app window all
 need your first run.
