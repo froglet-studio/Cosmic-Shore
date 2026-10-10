@@ -73,6 +73,9 @@ levels — and Space widens the slung pair, so it lands on the mode's axis).
 
 ## 4. AI
 
+**2026-10-10:** Slingshot offers the lobby AI difficulty, and the Stoat's autopilot watches its path. Both are
+described in `WARPLINE.md` §3, and both apply here the same way.
+
 An AI Stoat flies the course on the platform's gate approach (commit 160 / lead 180 / through
 120 u) and **slings**: `StoatSlingExecutor.AutopilotSling` presses the trigger on the side of its
 target whenever the target is at least 30° off the nose and 120 u away (at most every 3 s), HOLDS for
