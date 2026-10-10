@@ -157,7 +157,7 @@ namespace CosmicShore.Launcher
                 Neon.Heading = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 24);
                 Neon.Title = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 30);
                 Neon.Hero = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 46);
-                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15);
+                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15, null, ranges);   // the studio cards' spec rows: – × ·
                 unsafe { io.NativePtr->FontDefault = Neon.Body.NativePtr; }
             });
             Neon.ApplyStyle();
