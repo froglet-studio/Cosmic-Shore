@@ -50,6 +50,11 @@ dotnet ../binBE/CosmicShore.dll --train eval --population out/KEY.state.json --g
 ```
 
 `--resume-run` (train mode) continues a run that was killed, from its checkpoints (see "Long runs").
+`--train export --genome FILE --fitness F [--note TEXT] --train-out DIR` deploys a genome file
+(a tournament's `eval_best.json`) into the archive without flying anything: the scenario's entry
+is upserted with the genome, the fitness you name (the tournament mean, not the in-training
+number) and the genome's own generation, and `KEY.Archive.asset` + `KEY.archive.json` are
+written, the same drop-ins the trainer writes for its hall of fame.
 `--seed` makes a run reproducible (two runs with one seed are bit-identical). A train run always
 has one; its workers fly different matches (the gameplay seed is offset per worker) but evolve
 under the shared seed.
@@ -211,6 +216,67 @@ configuration, and Unity's own run has the same one (its deployed best flies wor
 typical genome). The port's contribution is that both the diagnosis and the cure are now
 cheap: a tournament of 600 flights costs ~12 minutes, and `--evals` can go to 8+ per genome
 per generation (a Unity-editor generation at that budget is 64 matches, ~2.2 hours; here ~2.5 minutes on 4 cores).
+
+### Result: 7 generations at 8 flights per genome, seat-shuffled slices (2026-10-10)
+
+The cure above, applied: `--train train --workers 4 --evals 8 --generations 10 --seed 2026`
+(Release build, this branch at 48d84486f, worker slices shuffled so every flight lands in a random
+seat against random opponents). The memory cgroup of the 16 GB box killed a worker at generation
+8 (four 2.4 GB workers beside three agents' players), so the run stands at **7 generations, 1,344
+flights, 55 minutes wall** under heavy shared load; `--resume-run` now exists for the next one.
+
+| generation | flights | mean flight | best genome mean (8 flights) | hall of fame (one flight) | wall s |
+|---|---|---|---|---|---|
+| 1 | 192 | -49.9 | 39.6 | 277.1 | 469 |
+| 2 | 192 | -40.6 | 52.1 | 277.1 | 307 |
+| 3 | 192 | 5.3 | 138.1 | 280.0 | 409 |
+| 4 | 192 | 42.8 | 163.1 | 380.0 | 417 |
+| 5 | 192 | 58.4 | 185.4 | 380.0 | 452 |
+| 6 | 192 | 69.8 | 227.1 | 680.0 | 690 |
+| 7 | 192 | 91.7 | 250.6 | 680.0 | 519 |
+
+The population mean (192 flights a generation, the least noisy number in the table) climbs every
+generation, -50 to +92; the best 8-flight mean climbs 40 to 251. Then the **seat-balanced
+tournament**: every genome of the generation-7 population plus the deployed control (the archive's
+genome, `Exports/SkimRace_Squirrel_I4.json`, Unity's hall of fame), 8 flights per genome in each of
+three processes (seeds 51, 52, 53), pooled to 24 flights per genome, 1,800 flights in 36 minutes
+on three cores:
+
+| genome | flights | mean | s.e. | crystals / flight |
+|---|---|---|---|---|
+| pop13 (gen 7) | 24 | **221.4** | 29.1 | **3.46** |
+| pop18 (gen 7) | 24 | 208.9 | 37.4 | 3.33 |
+| pop01 (gen 5) | 24 | 208.9 | 37.8 | 3.33 |
+| pop14 | 24 | 197.9 | 26.1 | 3.21 |
+| pop15 | 24 | 188.1 | 32.8 | 3.12 |
+| ... 15 more trained genomes between 177 and 59 ... | | | | |
+| **deployed control** (Unity hall of fame) | 24 | **47.2** | 30.5 | **1.67** |
+| pop09, pop03, pop10, pop07 | 24 | 38 to 21 | | 1.5 to 1.6 |
+
+**What it says.** With 8 flights per genome and shuffled seats the trainer's selection is no
+longer noise: 20 of the 24 trained genomes beat the deployed genome, and the top five sit four
+standard errors above it (221 against 47, pooled s.e. about 42), collecting twice the crystals per
+flight. This is the first run on this harness that produced a genome measurably better than the
+one Unity deployed, and the difference between it and the 12-generation run above is the
+evaluation budget, not the algorithm: 8 flights per genome per generation instead of 3, and a
+random seat for every flight. The in-training hall of fame (one 680 flight) is still a poor pick:
+its genome is not in the tournament's top five. Deploy from the tournament (`eval_best.json`,
+pop13), never from the hall of fame.
+
+**Cost.** 1,344 training flights plus 1,800 tournament flights, about 95 minutes of wall time on
+four shared cores; the editor would need about 26 hours for the same flights at real time.
+
+**Deployed 2026-10-10** with `--train export` (fitness 221.4, the tournament note): the project's
+`Archive.asset` entry for Squirrel_SkimRace_I4 is now pop13 (born generation 7), replacing the
+hall-of-fame genome that scored 47.2 in the same tournament; `SessionState.asset` is the
+generation-7 population, so the editor's Learn continues from generation 8; and
+`Exports/SkimRace_Squirrel_I4.json` is pop13 for a manual Import JSON. Both assets parse and
+re-write losslessly (`cs-asset roundtrip`, `serialization-audit` 0 dropped, 0 extra). What this
+changes in play: nothing in Skim Race itself yet, because `SkimRaceAIDeployment.Claims` hands
+Skim Race and Regatta seats to the rule-based Skim Race pilot while its config's
+`DeployInNormalPlay` is on, and `TrainingDeploymentService` stands down for a claimed seat; the
+archive entry is what deploys the moment that flag is off, and a head-to-head of the two pilots is
+the next measurement worth taking.
 
 ## Seats: what the trainer was actually selecting
 

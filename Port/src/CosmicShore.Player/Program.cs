@@ -67,7 +67,8 @@ namespace CosmicShore.Player
             string replay = null, parityOut = null, randomGolden = null, seedList = null;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
-            string trainOut = null, trainScenario = null;
+            string trainOut = null, trainScenario = null, exportNote = null;
+            float exportFitness = float.NaN;
             ApplyProjectQuality();
             CosmicShore.Render.RenderQuality.FromEnvironment();
             for (int i = 0; i < args.Length; i++)
@@ -89,6 +90,7 @@ namespace CosmicShore.Player
                             {
                                 "replay" => TrainingHost.Mode.Replay,
                                 "eval" => TrainingHost.Mode.Eval,
+                                "export" => TrainingHost.Mode.Export,
                                 _ => TrainingHost.Mode.Train,
                             };
                         break;
@@ -108,6 +110,9 @@ namespace CosmicShore.Player
                     case "--genome" when i + 1 < args.Length: evalGenomes.Add(args[++i]); break;
                     case "--flights" when i + 1 < args.Length: int.TryParse(args[++i], out flights); break;
                     case "--population" when i + 1 < args.Length: evalPopulation = args[++i]; break;
+                    case "--fitness" when i + 1 < args.Length:
+                        float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out exportFitness); break;
+                    case "--note" when i + 1 < args.Length: exportNote = args[++i]; break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
@@ -191,6 +196,15 @@ namespace CosmicShore.Player
                 {
                     train = new TrainingHost(trainMode, trainEpisodes, trainOut, trainScenario, trainRepeats);
                     if (trainMode == TrainingHost.Mode.Eval) train.ConfigureEval(evalGenomes, flights, evalPopulation);
+                    if (trainMode == TrainingHost.Mode.Export)
+                    {
+                        if (evalGenomes.Count != 1 || float.IsNaN(exportFitness))
+                        {
+                            Console.WriteLine("[train] export needs exactly one --genome FILE and --fitness F (the tournament mean to record); --note TEXT is optional");
+                            return 2;
+                        }
+                        train.ConfigureExport(evalGenomes[0], exportFitness, exportNote);
+                    }
                     if (trainMode == TrainingHost.Mode.Train)
                     {
                         trainDir ??= System.IO.Path.Combine(trainOut ?? System.IO.Path.Combine(Environment.CurrentDirectory, "training"), "run");

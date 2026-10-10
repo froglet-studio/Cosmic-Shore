@@ -139,6 +139,13 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   Prisma player build 0 errors, `check_console_logging.py` 0 problems, `validate_project.py`
   PASSED.
 
+- The AI Training assets carry a Prisma-trained result: `Archive.asset`'s Squirrel_SkimRace_I4
+  entry is the winner of a 1,800-flight seat-balanced tournament (pop13, 221.4 against the old
+  entry's 47.2 in the same races, `Port/docs/AI_TRAINING.md` "Result: 7 generations"),
+  `SessionState.asset` is the generation-7 population, `Exports/SkimRace_Squirrel_I4.json` the
+  same genome. Written by the engine's UnityYamlWriter (`--train export`), never by hand. Skim
+  Race seats stay with the rule-based pilot while `DeployInNormalPlay` is on.
+
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
    Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
@@ -220,6 +227,13 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
     process while the client is in the match: the client gets the same black, menu and the same
     wording (never "Host disconnected"). In the client's friends panel the host's row offers
     Spectate while the host is still in the match and Join once the host is back in the menu.
+17. The AI Training assets import clean (no console error on `Archive.asset`, `SessionState.asset`):
+    FrogletTools > AI Training window shows the archive entry for Squirrel / Skim Race / intensity 4
+    with fitness 221.4, generation 7 and the "Port tournament 2026-10-10" note, and the session
+    state at generation 7 with 24 genomes; pressing Learn on the Skim Race scenario starts
+    generation 8, not 0. With `SkimRaceAIConfig_I4.DeployInNormalPlay` turned OFF for the test, an
+    arcade Skim Race at intensity 4 flies the archive genome on the AI seat (one `TrainingPilot`,
+    `AIPilot` disabled) and still collects crystals; turn the flag back on afterwards.
 
 ---
 

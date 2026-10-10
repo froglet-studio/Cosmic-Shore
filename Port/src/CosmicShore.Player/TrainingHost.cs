@@ -37,7 +37,7 @@ namespace CosmicShore.Player
     /// </summary>
     public sealed partial class TrainingHost
     {
-        public enum Mode { Train, Replay, Eval }
+        public enum Mode { Train, Replay, Eval, Export }
 
         const string ControlPath = "Assets/_SO_Assets/AI Training/TrainingControl.asset";
         const string Ns = "CosmicShore.Utility.AITraining.";
@@ -104,6 +104,7 @@ namespace CosmicShore.Player
             var scenario = Get(_control, "Scenario");
             Console.WriteLine($"[train] scenario {Get(scenario, "Key")} · mode {_mode} · state '{Name(_state)}' · archive '{Name(_archive)}'");
 
+            if (_mode == Mode.Export) { ExportGenome(scenario); return; } // writes the archive files and is done; nothing flies
             if (_mode == Mode.Replay) PrepareReplay(scenario);
             else if (_mode == Mode.Eval) InstallEval(scenario);
             else InstallTrain(scenario);
@@ -121,6 +122,52 @@ namespace CosmicShore.Player
             Set(launcher, "_appState", FindFirstAsset(runtime, "ApplicationStateDataVariable"));
             go.SetActive(true);
             _wallStart = Seconds;
+        }
+
+        string _exportGenomeFile, _exportNote;
+        float _exportFitness;
+
+        /// <summary>Export mode: the genome file to deploy, the fitness to record for it (a tournament mean), a note.</summary>
+        public void ConfigureExport(string genomeFile, float fitness, string note)
+        {
+            _exportGenomeFile = genomeFile;
+            _exportFitness = fitness;
+            _exportNote = note ?? "";
+        }
+
+        /// <summary>
+        /// Deploys a genome file into the archive without flying anything: the archive entry for
+        /// the scenario (vessel, mode, trained intensity) is upserted with the genome, the given
+        /// fitness and the genome's own GenerationBorn, then KEY.Archive.asset (the drop-in for the
+        /// project's Archive.asset) and KEY.archive.json are written. The trainer's own export
+        /// records the hall of fame, which is one lucky flight; the pick a tournament names
+        /// (eval_best.json, a mean over many flights) is what the doc says to deploy, and this is
+        /// how it gets into the asset on a machine with no editor.
+        /// </summary>
+        void ExportGenome(object scenario)
+        {
+            if (string.IsNullOrEmpty(_outDir)) throw new InvalidOperationException("export needs --train-out DIR");
+            if (_archive == null) throw new InvalidOperationException("the control asset references no archive");
+            var genomeJson = _game.GetType(Ns + "GenomeJson") ?? throw new InvalidOperationException("no GenomeJson in this build");
+            var genome = genomeJson.GetMethod("LoadFromFile")!.Invoke(null, new object[] { _exportGenomeFile })
+                         ?? throw new InvalidOperationException($"could not read a genome from {_exportGenomeFile}");
+            int trained = (int)(_game.GetType(Ns + "ArchiveDeployment")?.GetField("TrainedIntensity")?.GetValue(null) ?? 4);
+            int generation = (int)Get(genome, "GenerationBorn");
+            _archive.GetType().GetMethod("Upsert")!.Invoke(_archive, new object[]
+            {
+                Get(scenario, "Vessel"), Get(scenario, "GameMode"), trained, genome, _exportFitness, generation, _exportNote,
+            });
+            Directory.CreateDirectory(_outDir);
+            string key = (string)Get(scenario, "Key");
+            var sb = new StringBuilder();
+            sb.AppendLine($"[train] export: {Path.GetFileName(_exportGenomeFile)} (born generation {generation}) -> archive entry {key} at fitness {_exportFitness:0.0}{(_exportNote.Length > 0 ? ": " + _exportNote : "")}");
+            ExportAsset(sb, _archive, _archivePath, key + ".Archive.asset");
+            string archivePath = Path.Combine(_outDir, key + ".archive.json");
+            File.WriteAllText(archivePath, JsonUtility.ToJson(_archive, true));
+            sb.AppendLine($"[train] wrote {archivePath}");
+            Done = true;
+            Summary = sb.ToString();
+            Console.Write(Summary);
         }
 
         /// <summary>
