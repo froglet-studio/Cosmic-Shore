@@ -109,6 +109,17 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   210 tall and fraction-anchored. Edit-mode `RecentPlayersStoreTests` (20) cover the list shaping.
   Seen on screen in Prisma with a seeded store.
 
+- The four vessel debuff/overtake effects' static per-vessel cooldown tables
+  (`Dictionary<ResourceSystem, float>`, never pruned) now share `VesselEffectCooldowns`, which
+  drops destroyed vessels the first time a new vessel is seen. Prisma's leak scan had measured the
+  overtake table alone holding 11,874 destroyed prisms after 10 Skim Race matches (each dead key
+  keeps its vessel and trail reachable). Edit-mode `VesselEffectCooldownsTests` (4).
+- Ready lights are an identity (R13 item 5): `ArcadeConfigSyncManager.SyncReady_ClientRpc` carries
+  the ready SET (owner client ids) with the expected head-count, every peer mirrors it
+  (`ReadyClients`, `OnReadySetChanged`), and `LobbySlotRow.SeatIsReady` lights a seat exactly when
+  its player pressed. Edit-mode `LobbySlotRowReadyTests` (5). `Docs/ArcadeLaunch/ARCHITECTURE.md`
+  §5.1 rewritten.
+
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
    Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
@@ -161,6 +172,16 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
     row, moved to the front. Nothing overlaps at 16:9 and 4:3 (Online now 210 tall, fraction
     anchored; Recent and Requests show one row plus the top of the next and scroll). Repeat the
     look on the Arena, Mission and Toybox copies. Edit-mode: `RecentPlayersStoreTests` green.
+12. Edit-mode `VesselEffectCooldownsTests` green (4 tests). Then a joust or a danger-prism debuff
+    still throttles at its asset's cooldown (one overtake buff per second on the same vessel) and
+    fires again after the window; a second match in the same editor session behaves the same (the
+    first match's vessels no longer gate anything).
+13. Ready identity, two or more players (MPPM or two machines): host opens a card with the
+    party in it; when the GUEST presses Ready, the guest's seat lights on every screen while the
+    host's own stays dark until the host presses, whatever the roster order; a guest who leaves
+    after pressing goes dark and the launch re-evaluates; closing the card and opening another
+    starts every light dark. Edit-mode `LobbySlotRowReadyTests` green (5). Maelstrom's lobby
+    count label is unchanged.
 
 ---
 
