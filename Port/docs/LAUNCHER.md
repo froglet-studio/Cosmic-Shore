@@ -71,12 +71,18 @@ and element levels, and read what each number does. The pages live in `Docs/Stud
 surface opens is their **build** (`build_artifact.py`'s output), so the studio here is byte for byte the one on
 claude.ai and the live mirror (/vessel-studio D33, below). Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
 
-**One picker, one action row** (2026-10-10, the user: no row of buttons per vessel). The page is a picker over
-`StudioCatalog.Targets()` (each vessel's studio, then ALL STUDIOS = the hub) and one card for the picked one, with
-the same five actions in the same order whatever is picked (`LauncherApp.StudioActions`). An action that does not
-apply stays visible, disabled, and its tooltip says why (the hub has no PLAY IN ENGINE). A vessel added to
-`studios.json` gets every action with no launcher change. The artifact library below uses the same picker, card
-(`PickedCard`) and action row (`ActionRow`). The studio is built from **the checkout Unity opened Amoebius from**
+**The hub's cards** (/vessel-studio D34, 2026-10-10, the user: "look like the cards in the artifact / web hub"; it replaces
+the picker). The page is the web hub's front page natively: the hub's lede, the hub's own row (OPEN THE HUB, OPEN IN
+BROWSER, AGENT, DOCS), then one card per studio in a grid, exactly as `index.html` draws its bays: the preview (the
+hub's live canvas, baked to `previews/<id>.png` by `bake_previews.cjs`), the name in the card's accent, the chip, the
+summary, the spec rows. Each card's buttons come from `studios.json` `cardActions`, in the same order on every card
+and in Unity's home: **Open studio →** (served, its own window) · **PLAY IN ENGINE** · **TUNE IN UNITY** (disabled
+here: it lives in Unity) · **OPEN LIVE IN BROWSER**; a button that does not apply stays in its place, disabled, and its
+tooltip says why (`StudioCatalog.Applies`). Under them, the quiet per-studio links: in browser · agent · docs. Then
+the fleet without a studio. Nothing on the page spells a studio's text or a card label (`DrawStudioCard`), so a studio
+added to `studios.json` and the hub shows up with no launcher change; `StudioCatalogTests.TheShippedCatalogsCards_AreTheHubs`
+and `parity_gate.py` hold the catalog to the hub. The artifact library below keeps the picker, card (`PickedCard`) and
+action row (`ActionRow`). The studio is built from **the checkout Unity opened Amoebius from**
 when Unity started it (`--clone`: Unity's branch), else from Amoebius's workspace when it has the studio, else from
 that checkout (`StudioCatalog.PickRoot`), so nothing waits for the first START.
 

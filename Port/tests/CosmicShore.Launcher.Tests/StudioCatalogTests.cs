@@ -227,6 +227,130 @@ namespace CosmicShore.Launcher.Tests
                     Assert.True(System.Text.RegularExpressions.Regex.IsMatch(src, @"\b" + s.EngineMode + @"\s*="), s.Id + ": " + s.EngineMode + " is not a GameModes member");
         }
 
+        const string Cards = @"{
+          ""mirror"": ""https://example.org/vs/"",
+          ""lede"": ""Pick a vessel."",
+          ""cardActions"": [
+            { ""id"": ""open"", ""label"": ""Open studio \u2192"", ""on"": ""web,amoebius,unity"" },
+            { ""id"": ""engine"", ""label"": ""PLAY IN ENGINE"", ""on"": ""amoebius,unity"", ""needs"": ""engineMode"" },
+            { ""id"": ""tune"", ""label"": ""TUNE IN UNITY"", ""on"": ""unity"", ""needs"": ""tuner"" },
+            { ""id"": ""live"", ""label"": ""OPEN LIVE IN BROWSER"", ""on"": ""amoebius,unity"", ""needs"": ""mirror"" }
+          ],
+          ""studios"": [
+            { ""id"": ""a"", ""name"": ""Alpha"", ""file"": ""a.html"", ""kind"": ""built"", ""chip"": ""built \u00b7 round 1"", ""summary"": ""s"",
+              ""spec"": [ { ""k"": ""Cruise"", ""v"": ""60 u/s"" }, { ""k"": ""bad"" } ], ""preview"": ""previews/a.png"", ""accent"": ""jade"", ""engineMode"": ""SkimRace"" },
+            { ""id"": ""b"", ""name"": ""Beta"", ""file"": ""b.html"", ""kind"": ""design"", ""tuner"": true }
+          ],
+          ""fleet"": [ ""Manta"", ""Rhino"" ],
+          ""fleetNote"": ""No studio yet.""
+        }";
+
+        [Fact]
+        public void Parse_ReadsTheHubsCard()
+        {
+            var c = StudioCatalog.Parse(Cards);
+            Assert.Equal("Pick a vessel.", c.Lede);
+            Assert.Equal(new[] { "open", "engine", "tune", "live" }, c.CardActions.Select(a => a.Id));
+            Assert.Equal("Open studio →", c.CardActions[0].Label);
+            Assert.Equal(new[] { "Manta", "Rhino" }, c.Fleet);
+            Assert.Equal("No studio yet.", c.FleetNote);
+            var a = c.Studios[0];
+            Assert.Equal("built · round 1", a.Chip);
+            Assert.Equal(new StudioCatalog.SpecRow("Cruise", "60 u/s"), Assert.Single(a.Spec));   // a row without its value is skipped
+            Assert.Equal("previews/a.png", a.Preview);
+            Assert.Equal("jade", a.Accent);
+            Assert.False(a.Tuner);
+            Assert.Equal("design", c.Studios[1].Chip);   // no chip: the kind
+            Assert.True(c.Studios[1].Tuner);
+        }
+
+        [Fact]
+        public void Parse_WithoutCards_GivesTheD34Buttons()
+        {
+            var c = StudioCatalog.Parse(Good);
+            Assert.Equal(new[] { "open", "engine", "tune", "live" }, c.CardActions.Select(a => a.Id));
+            Assert.Empty(c.Fleet);
+        }
+
+        [Fact]
+        public void Applies_KeepsEveryButton_AndSaysWhyNot()
+        {
+            var c = StudioCatalog.Parse(Cards);
+            var (a, b) = (c.Studios[0], c.Studios[1]);
+            var act = c.CardActions.ToDictionary(x => x.Id);
+            Assert.True(c.Applies(act["open"], a, "amoebius").ok);
+            Assert.True(c.Applies(act["engine"], a, "amoebius").ok);
+            var noMode = c.Applies(act["engine"], b, "amoebius");
+            Assert.False(noMode.ok); Assert.Contains("no game mode", noMode.why);
+            var tune = c.Applies(act["tune"], b, "amoebius");
+            Assert.False(tune.ok); Assert.Contains("Unity", tune.why);   // Unity only: in its place, disabled, saying where
+            Assert.True(c.Applies(act["tune"], b, "unity").ok);
+            Assert.False(c.Applies(act["tune"], a, "unity").ok);         // no tuner for this vessel
+            Assert.True(c.Applies(act["live"], a, "amoebius").ok);
+            Assert.False(StudioCatalog.Parse(Good).Applies(act["live"], a, "amoebius").ok);   // no mirror
+            Assert.False(c.Applies(act["engine"], a, "web").ok);
+        }
+
+        [Fact]
+        public void ParseDomains_ReadsTheGeneratedColours()
+        {
+            var d = StudioCatalog.ParseDomains("[{ key: 'jade', name: 'Jade', color: '#13fff2' }, { key: 'ruby', color: '#ff2e63' }]");
+            Assert.Equal("#13fff2", d["jade"]);
+            Assert.Equal("#ff2e63", d["ruby"]);
+        }
+
+        [Fact]
+        public void PreviewPath_StaysInTheStudioFolder()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "vs-prev-" + System.Guid.NewGuid().ToString("N"));
+            var dir = Path.Combine(root, StudioCatalog.RelativeDir, "previews");
+            Directory.CreateDirectory(dir);
+            File.WriteAllBytes(Path.Combine(dir, "a.png"), new byte[] { 1 });
+            try
+            {
+                var s = StudioCatalog.Parse(Cards).Studios[0];
+                Assert.Equal(Path.Combine(dir, "a.png"), StudioCatalog.PreviewPath(root, s));
+                Assert.Null(StudioCatalog.PreviewPath(root, s with { Preview = "../../x.png" }));
+                Assert.Null(StudioCatalog.PreviewPath(root, s with { Preview = "previews/none.png" }));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+
+        /// <summary>
+        /// The shipped catalog's cards ARE the hub's (D34): the same studios in the same order, with the hub card's name, chip,
+        /// summary, spec rows and open label, every preview baked, and the fleet. The page draws only the catalog, so this
+        /// holds it to the hub (parity_gate.py checks the same from Python).
+        /// </summary>
+        [Fact]
+        public void TheShippedCatalogsCards_AreTheHubs()
+        {
+            var d = new DirectoryInfo(Directory.GetCurrentDirectory());
+            while (d != null && !Directory.Exists(Path.Combine(d.FullName, StudioCatalog.RelativeDir))) d = d.Parent;
+            if (d == null) return;
+            var dir = Path.Combine(d.FullName, StudioCatalog.RelativeDir);
+            var json = File.ReadAllText(Path.Combine(dir, StudioCatalog.FileName));
+            if (!json.Contains("\"cardActions\"")) return;   // a branch from before the card fields (/vessel-studio D34)
+            var cat = StudioCatalog.Load(d.FullName);
+            string html = File.ReadAllText(Path.Combine(dir, "index.html"));
+            static string Text(string s) => System.Text.RegularExpressions.Regex.Replace(System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(s, "<[^>]+>", "")), @"\s+", " ").Trim();
+            var bays = System.Text.RegularExpressions.Regex.Matches(html, @"<a class=""bay"" href=""([^""]+)""[^>]*>(.*?)</a>", System.Text.RegularExpressions.RegexOptions.Singleline);
+            Assert.Equal(bays.Select(m => m.Groups[1].Value), cat.Studios.Select(s => s.File));
+            foreach (var (m, s) in bays.Zip(cat.Studios))
+            {
+                string bay = m.Groups[2].Value;
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<div class=""name""><b>(.*?)</b>").Groups[1].Value), s.Name);
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<span class=""chip""[^>]*>(.*?)</span>").Groups[1].Value), s.Chip);
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<p>(.*?)</p>", System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value), s.Summary);
+                var spec = System.Text.RegularExpressions.Regex.Matches(System.Text.RegularExpressions.Regex.Match(bay, @"<div class=""spec"">(.*?)</div>").Groups[1].Value, @"<span>(.*?)</span><b>(.*?)</b>")
+                    .Select(r => new StudioCatalog.SpecRow(Text(r.Groups[1].Value), Text(r.Groups[2].Value)));
+                Assert.Equal(spec, s.Spec);
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<span class=""open"">(.*?)</span>").Groups[1].Value), cat.CardActions[0].Label);
+                Assert.NotNull(StudioCatalog.PreviewPath(d.FullName, s));
+            }
+            var fleet = System.Text.RegularExpressions.Regex.Match(html, @"<div class=""fleet""[^>]*>(.*?)</div>", System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value;
+            Assert.Equal(System.Text.RegularExpressions.Regex.Matches(fleet, @"<span>([^<]+)</span>").Select(x => x.Groups[1].Value.Trim()), cat.Fleet);
+        }
+
         [Fact]
         public void AgentPrompt_PointsAtThePlanAndTheStudio()
         {
