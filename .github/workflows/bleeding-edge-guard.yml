@@ -189,6 +189,15 @@ jobs:
           python3 Tools/Build/audit_lifeform_crystals.py --self-test
           python3 Tools/Build/audit_lifeform_crystals.py
 
+      # The input-only contract for every AI pilot and the parity replay (LOCKED: a pilot or a
+      # replay that writes pose, course, speed, crystal or score records a result the vessel never
+      # flew). check_ai_no_state_writes.py --self-test gates; --check scans the four trees.
+      - name: Check the AI and replay trees never write vessel state
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_ai_no_state_writes.py --self-test
+          python3 Tools/Build/check_ai_no_state_writes.py --check
+
       # Every asset generator must still match what it authored. CLAUDE.md records the failure
       # class this closes: a generator that owns an asset's content is a second place every schema
       # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six
