@@ -162,6 +162,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/OMNI_SHEPARD_LAB.md` round 1 scorecard; `window.__lab.metrics`.
 - Promoted: no
 
+### L-STU-16 — Chromium reports a WebGL program that failed to link as a WARNING, so a lab can pass with its main pass missing
+- Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`), round 1 → 2 · Branch: `cece/eager-rubin-km7qyn` · Found by: the designer, on the live page · Date: 2026-10-10
+- What happened: the shell fragment shader declared `uniform float uS` at `mediump` while the vertex shader had it at the `highp` default. WebGL refuses that link, and every shell draw was dropped as `WebGL: INVALID_OPERATION: useProgram: program not valid`. That message is a console *warning*, so `verify_lab.cjs` (errors only) passed. The screenshot I "read" showed the body alone and I took it for the effect. A second bug in the same page: re-deriving the body's normals and "flipping them outward" by a centroid test scrambled a hollow, bevelled mesh (inner faces point in on purpose, and walls point sideways, where the sign is noise).
+- Do instead: (1) `precision highp float` in every fragment shader that shares a uniform with its vertex shader. (2) Check `LINK_STATUS` and `console.error` on failure. (3) Use a mesh's AUTHORED normals; never re-derive or "fix" their orientation. (4) Read a WebGL screenshot against a concrete expectation ("three translucent shells larger than the body"), not "something rendered". `verify_lab.cjs` now fails on WebGL `INVALID_*` / link warnings, with a planted defect in `--self-test`.
+- Evidence: `git show <round-1 commit>:Docs/Studios/OmniShepardLab.html` fails the updated gate. `OMNI_SHEPARD_LAB.md` "Round 2".
+- Promoted: §3 (verify_lab now checks it)
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

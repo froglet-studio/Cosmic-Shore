@@ -14,7 +14,7 @@ calls "shipped" comes from here:
   OmniCrystalBody{,Inactive}.mat      the body's colours
   OmniCrystalTriangles.prefab         the shells' local scale (0.892...)
   OmniCrystalTriangles.asset          the 20-plate triangle mesh (positions, normals, indices)
-  OmniCrystalExport1_8-21-25.fbx      the body mesh (UnitScaleFactor 100 + useFileScale -> scale 1;
+  OmniCrystalExport1_8-21-25.fbx      the body mesh and its authored normals (UnitScaleFactor 100 + useFileScale -> scale 1;
                                       its frame matches the triangle mesh: at _Stop 0.5 every plate
                                       lands within 0.01 local units of the body face behind it)
 
@@ -154,17 +154,26 @@ def body_mesh():
     g = geos[0]
     V = g.first("Vertices").props[0][1]
     I = g.first("PolygonVertexIndex").props[0][1]
+    # The AUTHORED normals, which is what Unity imports (normalImportMode 0). The plates are hollow
+    # bevelled shells: their inner faces point at the centre and their walls point sideways, so a
+    # normal re-derived from winding or "flipped outward" draws them wrong.
+    ln = g.first("LayerElementNormal")
+    if ln.first("MappingInformationType").props[0][1] != b"ByPolygonVertex":
+        raise SystemExit("body FBX normals are not ByPolygonVertex; the baker reads only that mapping")
+    N = ln.first("Normals").props[0][1]
+    ref = ln.first("ReferenceInformationType").props[0][1]
+    NI = ln.first("NormalsIndex").props[0][1] if ref == b"IndexToDirect" else list(range(len(I)))
     pts = [tuple(V[i:i + 3]) for i in range(0, len(V), 3)]
-    tris, cur = [], []
-    for x in I:
+    tris, nrm, cur = [], [], []
+    for j, x in enumerate(I):
+        cur.append((~x if x < 0 else x, NI[j]))
         if x < 0:
-            cur.append(~x)
             for k in range(1, len(cur) - 1):
-                tris += [cur[0], cur[k], cur[k + 1]]
+                for v, n in (cur[0], cur[k], cur[k + 1]):
+                    tris.append(v)
+                    nrm += N[3 * n:3 * n + 3]
             cur = []
-        else:
-            cur.append(x)
-    return pts, tris
+    return pts, tris, nrm
 
 
 def build():
@@ -175,7 +184,7 @@ def build():
     _, body_c, _ = mat_props(os.path.join(MATS, "OmniCrystalBody.mat"))
     _, body_ic, _ = mat_props(os.path.join(MATS, "OmniCrystalBodyInactive.mat"))
     pos, nrm, plates = tri_mesh()
-    bpos, btris = body_mesh()
+    bpos, btris, bnrm = body_mesh()
     r6 = lambda v: round(v, 6)
     r5 = lambda v: round(v, 5)
     return {
@@ -191,7 +200,7 @@ def build():
             "n": [round(c, 4) for q in nrm for c in q],
             "plates": plates,
         },
-        "bodyMesh": {"p": [r5(c) for p in bpos for c in p], "i": btris},
+        "bodyMesh": {"p": [r5(c) for p in bpos for c in p], "i": btris, "n": [round(c, 4) for c in bnrm]},
     }
 
 

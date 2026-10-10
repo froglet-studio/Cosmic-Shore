@@ -34,6 +34,39 @@ opaque body hides it.
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
 
+## Round 2 (2026-10-10): the shells were never drawn
+
+Reported by the designer on the live page: "zero shells, just the main crystal, and weird
+artifacts in the center from misdrawn vertices". Both were lab bugs; the game was not involved.
+
+**Found**
+1. **No shell ever rendered in round 1.** The shell shader declared `uS` in both stages, at
+   `highp` in the vertex shader (the GLSL ES default) and `mediump` in the fragment shader. WebGL
+   refuses to link a program whose shared uniform precisions differ, so every shell draw was
+   skipped. Chromium reports that as a console WARNING, and `verify_lab.cjs` failed only on errors,
+   so round 1 passed. Its "both screenshots were read" check was also wrong: the crystal in them was
+   the body alone. Fix: `precision highp float` in both fragment shaders, and `program()` now throws
+   on a failed link, which the page logs as a console error.
+2. **The body's centre drew wrong.** The page derived its own face normals and flipped each one
+   "outward" by testing it against the face centroid. The body is 30 hollow, bevelled rhombus plates:
+   122 inner faces point at the centre and 480 wall faces point sideways (measured from the FBX). The
+   flip turned the inner faces around, and on the walls the sign of a near-zero dot product picked
+   bright or dark at random. Fix: the baker now carries the FBX's authored per-corner normals
+   (`LayerElementNormal`, `ByPolygonVertex` / `IndexToDirect`; Unity imports them because
+   `normalImportMode: 0`), and the page uses them as they are.
+
+**Checked**
+- `verify_lab.cjs` now fails on WebGL `INVALID_*` / link warnings. Its `--self-test` has a fifth
+  plant (a draw with an unlinked program), and all five plants are named.
+- Negative controls on this lab: the round-1 page from git now FAILS the gate ("program not linked").
+  The fixed page with only the shell precision reverted fails with "Precisions of uniform 'uS'
+  differ". The fixed page PASSES.
+- Screenshots read at 30 u (shells streaming in around the body), with the body hidden (shells
+  only), and at 16 u with the shells off (body plates, walls and gaps clean; no stray triangles).
+- `omni_shepard_lab_assets.py --check` OK, and `--self-test` 6/6.
+- The round-1 scorecard is unchanged. It is computed from the meshes and the formula and never
+  depended on the draw.
+
 ## Round 1 (2026-10-10)
 
 **What changed:** the lab exists. Sliders (Shells / Motion / Look / View tabs), six presets, a live
