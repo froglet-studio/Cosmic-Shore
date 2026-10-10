@@ -5,6 +5,6 @@
     "pageSha": "9393e9026",
     "decisionsThrough": "2026-10-09T21:35:00.000Z",
     "clonedAt": "2026-10-10",
-    "result": "33 mapped parameters match the artifact (studio_to_unity.py --check); the shared log held no settings snapshot yet"
+    "result": "37 mapped parameters match the artifact (studio_to_unity.py --check); the shared log held no settings snapshot yet"
   }
 }

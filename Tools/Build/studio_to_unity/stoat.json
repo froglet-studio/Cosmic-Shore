@@ -35,6 +35,10 @@
     {"key": "whCoreBrightness", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteCoreBrightness"},
     {"key": "whCoreSkyMix", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteCoreSkyMix"},
     {"key": "bhLensReach", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "lensRadiusMultiplier"},
-    {"key": "bhLensFade", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "lensFadeStart"}
+    {"key": "bhLensFade", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "lensFadeStart"},
+    {"key": "bhShadow", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "shadowSize"},
+    {"key": "bhLensStrength", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "lensStrength"},
+    {"key": "whCoreSize", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteCoreSize"},
+    {"key": "whLensStrength", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteLensStrength"}
   ]
 }

@@ -225,17 +225,17 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// The lens draws a WHITE hole (§11) with the same trace — the horizon emits instead of
-        /// swallowing — so the shader carries the switch and the core's dials.
+        /// The lens draws a WHITE hole (§11) the way the Vessel Studio does: the same bending as a black hole, and
+        /// the white-hot core where a black hole draws its shadow.
         /// </summary>
         [Test]
         public void Lens_DrawsTheWhiteHolesCore()
         {
-            string shader = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
-            Assert.IsTrue(shader.Contains("float _BHWhite;") && shader.Contains("float4 _BHCore;"),
-                "the lens shader lost the white hole's switch or core dials.");
-            Assert.IsTrue(shader.Contains("escaped < 0.5 && _BHWhite > 0.5"),
-                "a white hole's core must be drawn where the black hole draws its shadow (a ray that fell through the horizon).");
+            string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
+            Assert.IsTrue(hlsl.Contains("void BlackHoleLensWell(") && hlsl.Contains("coreGlow = g;"),
+                "the lens lost the white hole's core.");
+            Assert.IsTrue(hlsl.Contains("if (core > 0.5) col = col * coreMix + coreColour * coreGlow;"),
+                "the white core must be laid over the bent scene, as the studio's `col * coreMix + glow` does.");
         }
 
         [Test]
@@ -269,20 +269,22 @@ namespace CosmicShore.Tests
 
             string shader = File.ReadAllText(shaderPath);
             Assert.IsTrue(shader.Contains("Shader \"CosmicShore/BlackHoleLens\""), "the lens shader was renamed.");
-            Assert.IsTrue(shader.Contains("#include \"BlackHoleLens.hlsl\""), "the lens shader no longer includes the traced HLSL.");
+            Assert.IsTrue(shader.Contains("#include \"BlackHoleLens.hlsl\""), "the lens shader no longer includes the studio's lens HLSL.");
             Assert.IsTrue(shader.Contains("DeclareDepthTexture.hlsl") && shader.Contains("_BlackHoleSceneColor"),
                 "the lens shader no longer reads the depth texture and BlackHoleLensPass's scene copy.");
             Assert.IsTrue(shader.Contains($"\"LightMode\" = \"{BlackHoleLensPass.LightModeName}\""),
-                "the lens pass must carry LightMode BlackHoleLens — drawn by BlackHoleLensPass AFTER the transparents, " +
-                "so the shards and particles behind the hole are in what it bends (URP's own passes would draw it before them).");
+                "the lens pass must carry LightMode BlackHoleLens, so URP's own passes never draw it.");
             Assert.IsFalse(shader.Contains("SampleSceneColor") || shader.Contains("DeclareOpaqueTexture"),
                 "the lens reads URP's opaque copy again — taken before the transparents, it has no shards in it.");
-            Assert.IsTrue(shader.Contains("Cull Front") && shader.Contains("ZTest Always"),
-                "the lens draws the FAR side of its sphere with its own depth test — a camera-facing quad or a " +
-                "hardware depth test cuts the lens off up close and loses it from inside.");
+            Assert.IsTrue(shader.Contains("GetFullScreenTriangleVertexPosition") && shader.Contains("BlackHoleLensWell("),
+                "the lens must draw every hole in ONE full-screen pass, as the studio does — one sphere per hole let the " +
+                "last-drawn hole paint over its partner.");
 
             string hlsl = File.ReadAllText(lensHlslPath);
-            Assert.IsTrue(hlsl.Contains("void BlackHoleLensTrace("), "BlackHoleLens.hlsl lost its trace entry point.");
+            var maxWells = Regex.Match(hlsl, @"#define BLACK_HOLE_LENS_MAX_WELLS (\d+)");
+            Assert.IsTrue(maxWells.Success, "BlackHoleLens.hlsl lost BLACK_HOLE_LENS_MAX_WELLS.");
+            Assert.AreEqual(BlackHoleLens.MaxWells, int.Parse(maxWells.Groups[1].Value),
+                "BlackHoleLens.MaxWells and the shader's BLACK_HOLE_LENS_MAX_WELLS disagree — the tail of the bank is never read.");
 
             // The material the lens loads at runtime must point at THIS shader, from Resources (so a
             // player build includes both).
@@ -311,38 +313,67 @@ namespace CosmicShore.Tests
             Assert.IsTrue(BlackHoleLens.IsDrawable(material, out string reason), reason);
         }
 
+        /// <summary>Unity's view matrix for a camera at <paramref name="eye"/> with <paramref name="rotation"/>.</summary>
+        static Matrix4x4 WorldToCamera(Vector3 eye, Quaternion rotation) =>
+            Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * Matrix4x4.TRS(eye, rotation, Vector3.one).inverse;
+
         /// <summary>
-        /// The lens mesh covers every ray through the lens and draws exactly its far side: every
-        /// face lies at or outside the unit-diameter sphere (the lens scale is its diameter) and is
-        /// wound outward, so the shader's Cull Front keeps the far side from outside AND inside.
+        /// A hole as the camera sees it is the studio's <c>setLensUniforms</c>: centre f·(x, y)/z, horizon
+        /// f·tan asin(r_s/D), Einstein term (f·tan √(2 r_s/D))² × strength, reach f·tan atan(reach·r_s/D), margin
+        /// 2.6 r_s, f = 0.5/tan(fov/2). Tools/Shaders/verify_black_hole_lens.py checks the same numbers against the
+        /// page's own JavaScript; this pins them in the Editor.
         /// </summary>
         [Test]
-        public void Lens_SphereCircumscribesTheLensAndFacesOutward()
+        public void ScreenWell_IsTheStudiosSetLensUniforms()
         {
-            var mesh = BlackHoleLens.LensSphere();
-            var vertices = mesh.vertices;
-            var triangles = mesh.triangles;
-            Assert.Greater(triangles.Length, 0, "the lens sphere has no triangles.");
-            for (int i = 0; i < triangles.Length; i += 3)
-            {
-                Vector3 a = vertices[triangles[i]], b = vertices[triangles[i + 1]], c = vertices[triangles[i + 2]];
-                var normal = Vector3.Cross(b - a, c - a).normalized;
-                Assert.Greater(Vector3.Dot(normal, a + b + c), 0f,
-                    $"lens face {i / 3} is wound inward — Cull Front would draw the near side.");
-                Assert.GreaterOrEqual(Vector3.Dot(normal, a), 0.5f - 1e-5f,
-                    $"lens face {i / 3} cuts inside the lens sphere — rays through that corner are never lensed.");
-            }
+            var eye = new Vector3(5f, -3f, 2f);
+            var rotation = Quaternion.Euler(10f, 35f, 0f);
+            var view = WorldToCamera(eye, rotation);
+            var world = eye + rotation * new Vector3(12f, 7f, 150f);
+            var well = new BlackHoleLens.Well { Position = world, Radius = 3f, Kind = BlackHoleLens.KindBlackHole, LensStrength = 1.5f };
+            Assert.IsTrue(BlackHoleLens.ScreenWell(well, view, eye, 60f, 0.3f, 30f, out var c, out var p, out var m));
+
+            float f = 0.5f / Mathf.Tan(30f * Mathf.Deg2Rad);
+            float d = Vector3.Distance(eye, world);
+            Assert.AreEqual(f * 12f / 150f, c.x, 1e-5f, "screen x");
+            Assert.AreEqual(f * 7f / 150f, c.y, 1e-5f, "screen y");
+            Assert.AreEqual(150f, c.z, 1e-3f, "depth along the view axis");
+            Assert.AreEqual(BlackHoleLens.KindBlackHole, p.x);
+            Assert.AreEqual(f * Mathf.Tan(Mathf.Asin(3f / d)), p.y, 1e-6f, "horizon's angular radius");
+            float einstein = f * Mathf.Tan(Mathf.Sqrt(6f / d));
+            Assert.AreEqual(einstein * einstein * 1.5f, p.w, 1e-6f, "Einstein term");
+            Assert.AreEqual(f * 90f / d, m.x, 1e-5f, "lens reach");
+            Assert.AreEqual(2.6f * 3f, m.w, 1e-5f, "foreground margin");
+
+            var smooth = new BlackHoleLens.Well { Position = world, Radius = 3f, Kind = BlackHoleLens.KindSmoothRepulsor, LensStrength = 2f };
+            Assert.IsTrue(BlackHoleLens.ScreenWell(smooth, view, eye, 60f, 0.3f, 30f, out _, out p, out m));
+            Assert.AreEqual(0.95f, p.z, 1e-6f, "a smooth well's A is capped below 1, so its image never folds.");
+            Assert.AreEqual(3f, m.w, 1e-6f);
+        }
+
+        [Test]
+        public void ScreenWell_SkipsAHoleBehindTheCameraOrAtItsNearPlane()
+        {
+            var view = WorldToCamera(Vector3.zero, Quaternion.identity);
+            var behind = new BlackHoleLens.Well { Position = new Vector3(0f, 0f, -50f), Radius = 2f, Kind = BlackHoleLens.KindBlackHole };
+            Assert.IsFalse(BlackHoleLens.ScreenWell(behind, view, Vector3.zero, 60f, 0.3f, 30f, out _, out _, out _));
+            var atNear = new BlackHoleLens.Well { Position = new Vector3(0f, 0f, 1.2f), Radius = 2f, Kind = BlackHoleLens.KindWhiteHole };
+            Assert.IsFalse(BlackHoleLens.ScreenWell(atNear, view, Vector3.zero, 60f, 0.3f, 30f, out _, out _, out _),
+                "the studio skips a hole within a unit of the near plane.");
         }
 
         [Test]
         public void Config_LensEnclosesTheShadowAndFadesBeforeItsEdge()
         {
             var config = LoadConfig();
-            // The shadow is the photon-capture cross-section, b_c = (3√3/2) r_s ≈ 2.6 r_s; the bend
-            // must still be exact (inside the fade start) well outside it.
-            Assert.Greater(config.LensRadiusMultiplier * config.LensFadeStart, 2.6f * 2f,
+            // The bend is full strength out to the fade start; that must be well outside the shadow and its ring.
+            Assert.Greater(config.LensRadiusMultiplier * config.LensFadeStart, config.ShadowSize * 2f,
                 "the lens fades its bend out too close to the shadow — the Einstein ring would be flattened.");
-            Assert.Less(config.LensFadeStart, 1f, "the bend must fade out before the lens edge, or the edge is a seam.");
+            Assert.Less(config.LensFadeStart, 1f, "the bend must fade out before its reach, or the reach is a seam.");
+            Assert.That(config.ShadowSize, Is.InRange(1f, 4f));
+            Assert.That(config.WhiteCoreSize, Is.InRange(1f, 4f));
+            Assert.GreaterOrEqual(config.LensStrength, 0f);
+            Assert.GreaterOrEqual(config.WhiteLensStrength, 0f);
         }
 
         /// <summary>
@@ -360,52 +391,20 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// A ray bent off the screen shows the scene's OWN skybox (BlackHoleSky), never URP's baked
-        /// environment reflection — which is Unity's default sky until a scene's lighting is generated,
-        /// and was drawn warped around a HyperSea hole, seamed against the real sky at the lens's rim.
+        /// The lens never swaps in a sky (2026-10-10): the old per-hole sphere replaced every bent ray that landed on
+        /// something in front of the hole with the skybox, and in lava lamp that drew a large disc round the hole.
+        /// A ray bent off the screen shows the screen mirrored at its edge, as in the studio.
         /// </summary>
         [Test]
-        public void Lens_SkyIsTheScenesOwnSkyboxNotTheBakedReflection()
+        public void Lens_NeverSwapsInTheSky()
         {
             string shader = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
             string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
-            Assert.IsFalse(shader.Contains("_GlossyEnvironmentCubeMap") || shader.Contains("unity_SpecCube0"),
-                "the lens samples URP's baked environment reflection again — the default sky until lighting is generated.");
-            Assert.IsTrue(shader.Contains("_BlackHoleSky") && shader.Contains("BlackHoleSkyFaceUV"),
-                "the lens no longer samples the sky BlackHoleSky renders.");
-            Assert.IsTrue(hlsl.Contains("float2 BlackHoleSkyFaceUV("), "BlackHoleLens.hlsl lost the sky's face lookup.");
-        }
-
-        /// <summary>
-        /// Each sky face is a real camera view (Unity's worldToCameraMatrix for a camera at the origin
-        /// looking along the face's axis with its up vector) — not a mirror image — and the cube it
-        /// draws the skybox on faces its centre. The face table itself is checked against the shader's
-        /// sampling by Tools/Shaders/verify_black_hole_lens.py.
-        /// </summary>
-        [Test]
-        public void Sky_FacesAreCameraViewsAndTheCubeFacesItsCentre()
-        {
-            for (int face = 0; face < BlackHoleSky.FaceCount; face++)
-            {
-                var rotation = Quaternion.LookRotation(BlackHoleSky.FaceForward[face], BlackHoleSky.FaceUp[face]);
-                var unity = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one).inverse;
-                var ours = BlackHoleSky.FaceView(face);
-                for (int i = 0; i < 16; i++)
-                    Assert.AreEqual(unity[i], ours[i], 1e-5f, $"sky face {face}'s view is not Unity's camera view along its axis (element {i}).");
-                Assert.AreEqual(1f, Vector3.Dot(Vector3.Cross(BlackHoleSky.FaceUp[face], BlackHoleSky.FaceForward[face]),
-                    Vector3.Cross(BlackHoleSky.FaceUp[face], BlackHoleSky.FaceForward[face])), 1e-5f, $"sky face {face}'s basis is not orthonormal.");
-            }
-
-            var cube = BlackHoleSky.Cube();
-            var vertices = cube.vertices;
-            var triangles = cube.triangles;
-            Assert.AreEqual(36, triangles.Length, "the sky cube is not 12 triangles.");
-            for (int t = 0; t < triangles.Length; t += 3)
-            {
-                Vector3 a = vertices[triangles[t]], b = vertices[triangles[t + 1]], c = vertices[triangles[t + 2]];
-                Assert.Less(Vector3.Dot(Vector3.Cross(b - a, c - a), a + b + c), 0f,
-                    $"sky cube triangle {t / 3} faces outward — a back-face-culling skybox would not draw from inside it.");
-            }
+            Assert.IsFalse(shader.Contains("_GlossyEnvironmentCubeMap") || shader.Contains("unity_SpecCube0") ||
+                           shader.Contains("_BlackHoleSky"),
+                "the lens samples a sky again — the old sphere's sky swap drew a disc round every hole.");
+            Assert.IsTrue(hlsl.Contains("return 1.0 - abs(1.0 - abs(suv));"),
+                "a ray bent off the screen must show the screen mirrored, as in the studio.");
         }
     }
 }

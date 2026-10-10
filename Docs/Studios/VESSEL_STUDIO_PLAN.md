@@ -57,7 +57,7 @@ has NO tuning tabs of its own: the "Vessel Studio (in Unity)" tuner, whose hand-
 artifact's, was removed. Everything is made and decided in the artifact (a value becomes a decision when someone
 presses **Record** in the studio's decision log), then cloned into the game with **`/artifact-to-unity`**:
 `Tools/Build/studio_to_unity.py` writes the artifact's numbers into the vessel's config assets through a per-vessel
-map (`Tools/Build/studio_to_unity/<vessel>.json`; the Stoat's has 33 rows, all matching on 2026-10-10), and new
+map (`Tools/Build/studio_to_unity/<vessel>.json`; the Stoat's has 37 rows, all matching on 2026-10-10), and new
 features are ported line for line into C# with tests whose golden numbers come from the page itself.
 
 ## 3. Platforms

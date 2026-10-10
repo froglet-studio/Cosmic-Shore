@@ -140,12 +140,11 @@ which read as "a black hole spawned in the centre, the camera off the vessel".
 
 ## 3b. The pair as the studio draws it, the key squeeze, the 3D path (2026-10-10)
 
-**Both poles always show.** Each hole draws its own lens sphere (30 horizons in radius, ~105 u for 3.5 u poles)
-from a copy of the scene taken before any lens. The poles sit 60-200 u apart, so the spheres overlap, and the one
-drawn last erased its partner: "the white hole hidden by the black hole, or the reverse". Every horizon hole is now
-published to `_BHHoleBank` (`BlackHoleLens.PublishHorizonHoles`), and each lens draws the others its ray meets before
-or after its own bend: a black hole's shadow and photon ring, a white hole's core (`BlackHoleLens.shader`,
-`BlackHoleOtherHoles`). The studio sums every well in one pass; this is that, per sphere.
+**Both poles always show.** The lens is the studio's own (`Docs/BLACK_HOLE.md` §5.1, 2026-10-10): every hole is drawn in
+ONE screen pass that sums their bends and samples the scene once, so neither pole can paint over the other, and nothing
+is swapped for the skybox, so no disc shows round a hole in lava lamp. (Each hole used to draw its own 30-horizon lens
+sphere; the poles sit 60-200 u apart, so the spheres overlapped and the one drawn last erased its partner.) Where the two
+holes overlap on screen, the black shadow is drawn over the white core, exactly as in the studio.
 
 **Where the poles go is the studio's**, checked line for line: laid `aheadDistance` ahead in the frame of the press,
 sideways = the triggers' difference (the black hole on the deeper side), lengthways = their sum (the black hole

@@ -23,10 +23,10 @@ namespace CosmicShore.Gameplay
     /// registry; a hand-placed component registers itself at <c>OnEnable</c> with its serialized
     /// strength, so a scene can author one too.
     ///
-    /// What the player SEES is the <see cref="BlackHoleLens"/> (Docs/BLACK_HOLE.md §5.1): a
-    /// per-pixel ray trace of the scene behind the hole bent through Schwarzschild spacetime —
-    /// the background distorted into arcs and an Einstein ring, and the shadow (~2.6× the
-    /// horizon). There is no painted accretion disc: what orbits and spirals in is the real mass
+    /// What the player SEES is the <see cref="BlackHoleLens"/> (Docs/BLACK_HOLE.md §5.1): the
+    /// Vessel Studio's lens, every hole in one screen pass — the background pulled into arcs and an
+    /// Einstein ring, the shadow (2.6× the horizon) with its photon ring, a white hole's white-hot
+    /// core. There is no painted accretion disc: what orbits and spirals in is the real mass
     /// the gravity field moves. If the lens shader cannot load, the hole falls back to a plain
     /// black sphere — never an invisible hole.
     /// </summary>
@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
                  "not a black hole at all: its gravity is Plummer-softened (−GM·r / (r² + ε²)^1.5, finite and " +
                  "smooth everywhere, zero at the centre), it drags no frame, its tides are softened by the same " +
                  "core, and its lens is a smooth graded bulge (see Lens Strength) with no horizon, shadow or ring. " +
-                 "0 = the black hole: Paczynski-Wiita, Lense-Thirring, the Schwarzschild ray trace.")]
+                 "0 = the black hole: Paczynski-Wiita, Lense-Thirring, the shadow and Einstein lens.")]
         [Min(0f)]
         [SerializeField] float softening = 0f;
 

@@ -80,8 +80,11 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 14. **What the Amoebius studio needs from the renderer** (`VESSEL_STUDIO_PLAN.md` §4a, measured 2026-10-10 on the
     Stoat): `Graphics.RenderMeshInstanced` is RECORDED but never drawn (`Graphics.InstancedSubmissions` has no
     consumer), so the Stoat's 3D path dots and the capsule membrane are invisible; and `CosmicShore/BlackHoleLens`
-    has no translation, so a black hole or white hole draws as a flat white disc instead of the ray-traced lens. Both
-    must land before the studio can be judged by eye in Amoebius.
+    has no translation, so the holes draw nothing like the game. Since 2026-10-10 that shader IS the Vessel Studio's
+    lens (one full-screen pass for every hole, `Docs/BLACK_HOLE.md` §5.1): `BlackHoleLensPass` records a colour copy
+    and one `RasterCommandBuffer.DrawProcedural` (recorded, not drawn, here), so the translation is the studio's own
+    GLSL (`lensMat` in `Docs/Studios/StoatFlightStudio.html`) fed by `BlackHoleLens.ScreenWells`. Both must land
+    before the studio can be judged by eye in Amoebius.
 
 ## External factors (and what each one changes)
 

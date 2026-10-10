@@ -158,40 +158,41 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float warpEaseSeconds = 0.5f;
 
         [Header("Lens (photons only — what the player sees of the hole, Docs/BLACK_HOLE.md §5.1)")]
-        [Tooltip("Master switch for the gravitational-lens visual. Off draws the plain black sphere " +
-                 "instead. The lens bends the opaque scene behind the hole, so while it is on the " +
-                 "main camera's opaque and depth textures are switched on (only while a hole is live).")]
+        [Tooltip("Master switch for the lens (the Vessel Studio's: shadow, Einstein bending, photon ring, white core). " +
+                 "Off draws a plain black sphere instead. While a hole is live every game camera's depth texture is " +
+                 "switched on, so a vessel in front of the hole is not bent.")]
         [SerializeField] bool lensEnabled = true;
 
-        [Tooltip("How far around the hole the bending is drawn, in horizon radii. Light passing at b " +
-                 "is really deflected by ~2/b — it never reaches zero — so the bend is faded out over " +
-                 "the outer part of this radius (Lens Fade Start). Larger reaches farther, costs more " +
-                 "screen pixels.")]
-        [Range(6f, 120f)]
+        [Tooltip("The black hole's shadow radius, in horizons (the studio's bhShadow). 2.6 is the physical value: light " +
+                 "passing closer than b_c = 2.598 r_s falls in.")]
+        [Range(1f, 4f)]
+        [SerializeField] float shadowSize = 2.6f;
+
+        [Tooltip("How strongly a black hole bends what is behind it, × the physical Einstein bending (the studio's " +
+                 "bhLensStrength). A point straight behind the hole becomes a ring of radius θ_E = √(2 r_s / D).")]
+        [Range(0f, 4f)]
+        [SerializeField] float lensStrength = 1f;
+
+        [Tooltip("How far around the hole the bending is drawn, in horizon radii (the studio's bhLensReach). Light " +
+                 "passing at b is really bent by ~2/b at any distance, so the bend is faded out over the outer part " +
+                 "of this reach (Lens Fade Start) and never ends at an edge.")]
+        [Range(5f, 120f)]
         [SerializeField] float lensRadiusMultiplier = 30f;
 
-        [Tooltip("Where the bend starts fading back to the straight ray, as a fraction of the lens " +
-                 "radius. Inside it the ray trace is exact.")]
+        [Tooltip("Where the bend starts fading out, as a fraction of the reach (the studio's bhLensFade).")]
         [Range(0.1f, 0.95f)]
         [SerializeField] float lensFadeStart = 0.55f;
 
-        [Tooltip("Ray-march step budget per pixel. Rays near the photon sphere (1.5 horizon radii) " +
-                 "need the most; 128 traces one full loop around it.")]
-        [Range(16, 192)]
-        [SerializeField] int lensSteps = 128;
+        [Tooltip("A WHITE hole's lens: how strongly it bends what is behind it, × the physical Einstein bending (the " +
+                 "studio's whLensStrength). It bends the same way a black hole does — outside its horizon its " +
+                 "spacetime is a black hole's.")]
+        [Range(0f, 4f)]
+        [SerializeField] float whiteLensStrength = 1f;
 
-        [Tooltip("Resolution of each of the six faces of the SKY the lens bends — the scene's own skybox " +
-                 "(Lighting > Environment > Skybox Material), rendered for rays bent off the screen. " +
-                 "Higher is sharper stars at the lens's outer edge; each face costs one skybox draw of " +
-                 "this size.")]
-        [Range(128, 2048)]
-        [SerializeField] int lensSkyResolution = 1024;
-
-        [Tooltip("How many of the sky's six faces are re-rendered each frame, round-robin, so an animated " +
-                 "skybox stays in step with the real one. 0 = render once (and again whenever the skybox " +
-                 "material or the resolution changes).")]
-        [Range(0, 6)]
-        [SerializeField] int lensSkyFacesPerFrame = 1;
+        [Tooltip("A WHITE hole's glowing core radius, in horizons (the studio's whCoreSize; 2.6 matches the black " +
+                 "hole's shadow).")]
+        [Range(1f, 4f)]
+        [SerializeField] float whiteCoreSize = 2.6f;
 
         [Tooltip("A WHITE hole's core (Docs/BLACK_HOLE.md §11): how bright the white at its centre is, in HDR " +
                  "units (the project has no tonemapper, so anything above 1 clips to pure white). The glow " +
@@ -200,14 +201,14 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 16f)]
         [SerializeField] float whiteCoreBrightness = 4f;
 
-        [Tooltip("How much of the EMITTED light shows in a white hole's core: the sky that fell into its " +
-                 "paired black hole, coming out the far side (the backward-traced ray continues through the " +
-                 "tunnel into the sky). 0 = a pure white core, 1 = the sky at full strength under the glow.")]
+        [Tooltip("How much of the scene shows through a white hole's core under its glow (the studio's whCoreSkyMix): " +
+                 "the bent scene × this, plus the white-hot glow. 0 = a pure white core, 1 = the scene at full " +
+                 "strength under the glow.")]
         [Range(0f, 2f)]
         [SerializeField] float whiteCoreSkyMix = 0.8f;
 
         [Tooltip("A BLACK hole's photon ring: a thin warm glow (1, 0.8, 0.55) hugging the shadow's edge, where light " +
-                 "skims the photon sphere. The Vessel Studio's look (bhRingGlow 0.55); 0 = only the traced bending.")]
+                 "skims the photon sphere. The Vessel Studio's look (bhRingGlow 0.55); 0 = no ring.")]
         [Range(0f, 2f)]
         [SerializeField] float photonRingGlow = 0.55f;
 
@@ -319,11 +320,12 @@ namespace CosmicShore.ScriptableObjects
 
 
         public bool LensEnabled => lensEnabled;
-        public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
+        public float ShadowSize => Mathf.Clamp(shadowSize, 1f, 4f);
+        public float LensStrength => Mathf.Clamp(lensStrength, 0f, 4f);
+        public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 5f, 120f);
         public float LensFadeStart => Mathf.Clamp(lensFadeStart, 0.1f, 0.95f);
-        public int LensSteps => Mathf.Clamp(lensSteps, 16, 192);
-        public int LensSkyResolution => Mathf.Clamp(lensSkyResolution, 128, 2048);
-        public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
+        public float WhiteLensStrength => Mathf.Clamp(whiteLensStrength, 0f, 4f);
+        public float WhiteCoreSize => Mathf.Clamp(whiteCoreSize, 1f, 4f);
         public float WhiteCoreBrightness => Mathf.Clamp(whiteCoreBrightness, 0f, 16f);
         public float WhiteCoreSkyMix => Mathf.Clamp(whiteCoreSkyMix, 0f, 2f);
         public float PhotonRingGlow => Mathf.Clamp(photonRingGlow, 0f, 2f);
