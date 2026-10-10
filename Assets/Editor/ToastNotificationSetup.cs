@@ -9,9 +9,13 @@ namespace CosmicShore.Editor
 {
     public static class ToastNotificationSetup
     {
-        private const string PrefabFolder = "Assets/_Prefabs/UI Elements";
-        private const string SOFolder = "Assets/_SO_Assets";
+        // Everything lives in Resources so the runtime-auto-created manager
+        // (ToastNotificationAPI) can resolve settings, channel, and prefab.
+        private const string ResourcesFolder = "Assets/Resources";
         private const string ChannelFolder = "Assets/Resources/Channels";
+        private const string PrefabPath = ResourcesFolder + "/ToastNotificationItem.prefab";
+        private const string SettingsPath = ResourcesFolder + "/ToastNotificationSettings.asset";
+        private const string ChannelPath = ChannelFolder + "/ToastNotificationChannel.asset";
 
         [MenuItem("FrogletTools/Interface/Toast Notification/Create All Assets", priority = 0)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
@@ -23,55 +27,51 @@ namespace CosmicShore.Editor
             CreatePrefab();
             CreateManagerInScene();
 
-            Debug.Log("[ToastNotification] All assets created. Customize the prefab at " +
-                      PrefabFolder + "/ToastNotificationItem.prefab");
+            Debug.Log("[ToastNotification] All assets created. Customize the prefab at " + PrefabPath);
         }
 
         [MenuItem("FrogletTools/Interface/Toast Notification/Create Settings Asset")]
         public static void CreateSettingsAsset()
         {
-            var path = SOFolder + "/ToastNotificationSettings.asset";
-            if (AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(path) != null)
+            if (AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(SettingsPath) != null)
             {
-                Debug.Log("[ToastNotification] Settings asset already exists at " + path);
+                Debug.Log("[ToastNotification] Settings asset already exists at " + SettingsPath);
                 return;
             }
 
-            EnsureFolder(SOFolder);
+            EnsureFolder(ResourcesFolder);
             var settings = ScriptableObject.CreateInstance<ToastNotificationSettingsSO>();
-            AssetDatabase.CreateAsset(settings, path);
+            AssetDatabase.CreateAsset(settings, SettingsPath);
             AssetDatabase.SaveAssets();
-            Debug.Log("[ToastNotification] Created settings at " + path);
+            Debug.Log("[ToastNotification] Created settings at " + SettingsPath);
         }
 
         [MenuItem("FrogletTools/Interface/Toast Notification/Create Channel Asset")]
         public static void CreateChannelAsset()
         {
-            var path = ChannelFolder + "/ToastNotificationChannel.asset";
-            if (AssetDatabase.LoadAssetAtPath<ToastNotificationChannel>(path) != null)
+            if (AssetDatabase.LoadAssetAtPath<ToastNotificationChannel>(ChannelPath) != null)
             {
-                Debug.Log("[ToastNotification] Channel asset already exists at " + path);
+                Debug.Log("[ToastNotification] Channel asset already exists at " + ChannelPath);
                 return;
             }
 
             EnsureFolder(ChannelFolder);
             var channel = ScriptableObject.CreateInstance<ToastNotificationChannel>();
-            AssetDatabase.CreateAsset(channel, path);
+            AssetDatabase.CreateAsset(channel, ChannelPath);
             AssetDatabase.SaveAssets();
-            Debug.Log("[ToastNotification] Created channel at " + path);
+            Debug.Log("[ToastNotification] Created channel at " + ChannelPath);
         }
 
         [MenuItem("FrogletTools/Interface/Toast Notification/Create Prefab")]
         public static void CreatePrefab()
         {
-            var path = PrefabFolder + "/ToastNotificationItem.prefab";
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null)
             {
-                Debug.Log("[ToastNotification] Prefab already exists at " + path);
+                Debug.Log("[ToastNotification] Prefab already exists at " + PrefabPath);
                 return;
             }
 
-            EnsureFolder(PrefabFolder);
+            EnsureFolder(ResourcesFolder);
 
             // Root object
             var root = new GameObject("ToastNotificationItem");
@@ -108,20 +108,16 @@ namespace CosmicShore.Editor
             tmp.overflowMode = TextOverflowModes.Ellipsis;
             tmp.raycastTarget = false;
 
-            // Add the toast item component
+            // Add the toast item component and wire the messageText field
             var item = root.AddComponent<ToastNotificationItem>();
-
-            // Wire the messageText field
-            var field = typeof(ToastNotificationItem).GetField("messageText",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field?.SetValue(item, tmp);
+            SetObjectReference(item, "messageText", tmp);
 
             // Save as prefab
-            var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
 
             EditorGUIUtility.PingObject(prefab);
-            Debug.Log("[ToastNotification] Created prefab at " + path +
+            Debug.Log("[ToastNotification] Created prefab at " + PrefabPath +
                       " - customize visuals here (background, font, size, etc.)");
         }
 
@@ -137,39 +133,14 @@ namespace CosmicShore.Editor
             var go = new GameObject("ToastNotificationManager");
             var mgr = go.AddComponent<ToastNotificationManager>();
 
-            // Wire settings
-            var settings = AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(
-                "Assets/Resources/ToastNotificationSettings.asset");
-            if (settings != null)
-            {
-                var settingsField = typeof(ToastNotificationManager).GetField("settings",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                settingsField?.SetValue(mgr, settings);
-            }
+            SetObjectReference(mgr, "settings",
+                AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(SettingsPath));
+            SetObjectReference(mgr, "channel",
+                AssetDatabase.LoadAssetAtPath<ToastNotificationChannel>(ChannelPath));
 
-            // Wire channel
-            var channel = AssetDatabase.LoadAssetAtPath<ToastNotificationChannel>(
-                ChannelFolder + "/ToastNotificationChannel.asset");
-            if (channel != null)
-            {
-                var channelField = typeof(ToastNotificationManager).GetField("channel",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                channelField?.SetValue(mgr, channel);
-            }
-
-            // Wire prefab
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                PrefabFolder + "/ToastNotificationItem.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             if (prefab != null)
-            {
-                var item = prefab.GetComponent<ToastNotificationItem>();
-                if (item != null)
-                {
-                    var prefabField = typeof(ToastNotificationManager).GetField("toastPrefab",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    prefabField?.SetValue(mgr, item);
-                }
-            }
+                SetObjectReference(mgr, "toastPrefab", prefab.GetComponent<ToastNotificationItem>());
 
             Undo.RegisterCreatedObjectUndo(go, "Create ToastNotificationManager");
             Selection.activeGameObject = go;
@@ -177,6 +148,22 @@ namespace CosmicShore.Editor
         }
 
         #region Helpers
+
+        private static void SetObjectReference(Object target, string propertyName, Object value)
+        {
+            if (value == null) return;
+
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(propertyName);
+            if (prop == null)
+            {
+                Debug.LogWarning($"[ToastNotification] Property '{propertyName}' not found on {target.GetType().Name}.");
+                return;
+            }
+
+            prop.objectReferenceValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
 
         private static GameObject CreateChild(string name, Transform parent)
         {
