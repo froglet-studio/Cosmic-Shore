@@ -76,6 +76,11 @@ namespace CosmicShore.Launcher
                 if (SmallButton("WEB LINK", 130, cat.Web != null)) OpenUrl(cat.Web!);
                 Neon.Tooltip("The published studio on claude.ai. Open the same link on your phone, pick a studio and tap Play on phone.\n" + (cat.Web ?? "(none in the catalog)"));
                 ImGui.SameLine(0, 8);
+                if (SmallButton("OPEN LIVE IN BROWSER", 220, cat.Mirror != null)) OpenUrl(cat.MirrorUrl(cat.Hub)!);
+                Neon.Tooltip("The live mirror of the published studio: the same build on a plain web page, in your default browser.\n" +
+                             "Opens by link anywhere (a phone too) and updates in place when it is republished. Sync, Ask and shared\n" +
+                             "decisions need the claude.ai viewer (WEB LINK).\n" + (cat.Mirror ?? "(no \"mirror\" in the catalog)"));
+                ImGui.SameLine(0, 8);
                 if (SmallButton("FOLDER", 110, true)) OpenFolder(Path.Combine(_ws.Dir, StudioCatalog.RelativeDir));
                 ImGui.SameLine(0, 8);
                 var vs = lib.VesselStudio;
@@ -113,6 +118,10 @@ namespace CosmicShore.Launcher
                 ImGui.SameLine(0, 8);
                 if (SmallButton("BROWSER", 100, _ws.Exists)) OpenUrl(StudioCatalog.PagePath(_ws.Dir, s.File));
                 Neon.Tooltip("The same page in your default browser.");
+                ImGui.SameLine(0, 8);
+                var live = cat.MirrorUrl(s.File);
+                if (SmallButton("OPEN LIVE IN BROWSER", 220, live != null)) OpenUrl(live!);
+                Neon.Tooltip("This studio on the live mirror, in your default browser: the published build, updated in place.\n" + (live ?? "(no \"mirror\" in the catalog)"));
                 ImGui.SameLine(0, 8);
                 if (s.EngineMode != null)
                 {
