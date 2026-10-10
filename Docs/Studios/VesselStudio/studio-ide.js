@@ -55,6 +55,8 @@
     '  .vside-split { display: none; }',
     '  .vside-dock { max-height: 70vh; }',
     '}',
+    // touch play (body.play) puts the stage full screen: the dock's stage height must not hold it to 58vh on a phone
+    'body.play .vside-main > .vside-stage { height: auto !important; }',
   ].join('\n');
 
   function build(o) {
@@ -194,5 +196,48 @@
     return el;
   }
 
-  window.VesselStudioIDE = { build, collapsible };
+  // ---- the platform, answered once at load (/vessel-studio D9, D26) ----
+  // A studio never asks "play on phone?": it detects the device and opens that device's interface only.
+  // A host (Amoebius) may say it: window.__studioHost = { shell, device } or the page hash #amoebius / #prisma.
+  // Phone = a mobile browser (UA, userAgentData, iPadOS posing as a Mac) or a touch-only screen; a touchscreen
+  // laptop still has a fine pointer, so it is a PC. Sets body.dev-pc / body.dev-phone for CSS.
+  function platform() {
+    const host = window.__studioHost || (/(^|[#&])(amoebius|prisma)\b/i.test(location.hash) ? { shell: 'amoebius' } : {});
+    const ua = navigator.userAgent || '', mq = (q) => { try { return window.matchMedia(q).matches; } catch (e) { return false; } };
+    const uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile === true) || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(ua)
+      || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const touchOnly = mq('(pointer: coarse)') && !mq('(any-pointer: fine)');
+    const device = host.device === 'pc' || host.device === 'phone' ? host.device : uaMobile || touchOnly ? 'phone' : 'pc';
+    document.body.classList.toggle('dev-pc', device === 'pc'); document.body.classList.toggle('dev-phone', device === 'phone');
+    return { shell: host.shell || 'web', device, why: host.device ? 'host' : uaMobile ? 'mobile browser' : touchOnly ? 'touch-only screen' : 'mouse / trackpad' };
+  }
+
+  // ---- one section at a time: a dropdown picks which section of a tab shows (/vessel-studio D27) ----
+  // For a tab of many unrelated sections (Vessel Config): the tab stays clean, one section visible, the rest a pick
+  // away. The choice is remembered per studio and tab. A pane's own bar (pop-out) is left alone.
+  function sectionPicker(pane, key, tab) {
+    if (!pane || pane.dataset.vsp) return null;
+    const secs = [...pane.children].filter((el) => !el.matches('.vside-bar, .panebar, .vsp'));
+    if (!secs.length) return null;
+    pane.dataset.vsp = '1';
+    const label = (el) => {
+      const h = el.querySelector(':scope > summary, :scope > h2, :scope > h3, :scope > h4, :scope > .vsc-head');
+      const c = (h || el).cloneNode(true); c.querySelectorAll('button, .vsc-btn').forEach((b) => b.remove());
+      return (c.textContent || el.id || 'Section').replace(/\s+/g, ' ').trim().slice(0, 48);
+    };
+    const k = (key || 'vessel-studio') + ':pick:' + (tab || pane.id || 'tab');
+    let cur = 0; try { cur = Math.max(0, Math.min(secs.length - 1, +localStorage.getItem(k) || 0)); } catch (e) { cur = 0; }
+    const row = document.createElement('label'); row.className = 'vsp';
+    row.style.cssText = 'display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px;font-size:12px;color:var(--muted,#8e95bf)';
+    const sel = document.createElement('select'); sel.setAttribute('aria-label', 'Section');
+    sel.style.cssText = 'width:100%;min-width:0;background:var(--panel-2,#181c30);color:var(--fg,#e9ecff);border:1px solid var(--line,#262b47);border-radius:6px;padding:5px 6px;font:inherit;font-size:12px';
+    secs.forEach((el, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = label(el); sel.appendChild(o); });
+    const show = (i) => { secs.forEach((el, j) => { el.hidden = j !== i; if (j === i && el.tagName === 'DETAILS') el.open = true; }); sel.value = String(i); };
+    sel.addEventListener('change', () => { const i = +sel.value; show(i); try { localStorage.setItem(k, String(i)); } catch (e) { /* storage blocked */ } });
+    row.appendChild(document.createTextNode('Section')); row.appendChild(sel);
+    pane.insertBefore(row, secs[0]); show(cur);
+    return { select: sel, show };
+  }
+
+  window.VesselStudioIDE = { build, collapsible, platform, sectionPicker };
 })();

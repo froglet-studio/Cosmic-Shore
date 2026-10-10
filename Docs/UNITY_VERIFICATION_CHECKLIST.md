@@ -65,6 +65,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
+
+**What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **FrogletTools > AI > Third Eye**
+(`Assets/_Scripts/Editor/AI/ThirdEye*.cs`). A hidden camera of its own renders into the window while you play
+in the Game view. Pick any pilot, then Chase / Follow / Free (Fly or Orbit), the Vessel Studio's cameras.
+*AI thinking* draws each AI's aim (Skim Race pilot: green racing, amber not noticed, red misjudged, violet
+recovering; any other autopilot: blue seeking, violet breaking orbit) and a cyan ring on its real crystal.
+Editor-only reader: no runtime code changed, no asset written.
+
+**Verified without the editor:** `unity_refcompile --config editor` 0 errors with all five files gated, and a
+planted error in `ThirdEyeWindow.cs` is caught (negative control). `ThirdEyeRigTests` 10/10 on .NET against
+Amoebius's engine math; a mutation that smooths the chase POSITION instead of the offset fails 2 of them.
+Logging, conditional-compilation and using-directive gates pass. `/verify-unity` not available (no editor).
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `ThirdEyeRigTests` (10) pass.
+2. Open **FrogletTools > AI > Third Eye** and dock it beside the Game view. Out of Play mode it says so.
+3. Arcade ▸ Skim Race, I2, Medium, 1 AI. Play the race yourself in the Game view. Expect the Third Eye to show
+   the match from behind YOUR hull (Chase) with the look of the game (bloom, tonemapping, same sky), and the
+   Game view to be unaffected (same frame rate feel, same camera).
+4. `>` (or Tab): it watches the AI Squirrel. A coloured line runs from its hull to where it steers, a cyan ring
+   sits on its crystal; the bottom strip reads its state, heading error, recoveries and "reaction 0.25 s,
+   mistake chance 4.5%". On Medium, expect amber flashes after each new crystal and an occasional red one.
+5. C cycles Chase → Follow → Free. Free ▸ Fly: drag to look, I J K L / W A S D move, U O / Q E down / up, Shift
+   fast, wheel changes speed. Free ▸ Orbit: drag round the pilot, wheel zooms. F frames the pilot.
+6. Press the editor's Pause: the Third Eye keeps drawing and the Free camera still flies round the frozen frame.
+7. Exit Play mode: no "Third Eye Camera" object is left behind (Hierarchy, with hidden objects shown via the
+   Debug inspector if needed) and the Console is clean. Re-enter Play: it works again.
+8. Menu_Main freestyle (lava-lamp): the autopilot hull shows a blue "Seeking" line to its target.
+9. Cost: Profiler with the window open vs closed; if the second render is expensive, Settings ▸ Resolution 0.5.
+
+**First-pass tuning** (`UserSettings/ThirdEyeSettings.asset`, per machine): Chase 30 u behind, 8 u up, looking
+40 u ahead, smoothing 8/s; Follow 90 u / 35 u, smoothing 3/s; Free fly 120 u/s (×4 Shift); orbit 80 u; FOV 70.
+
+---
+
 ### 🔴 The game's Burst jobs compile again: no `MathF` externs in Burst code; `burst` reads Burst's refusal from the log (`perf/performance-optimization`, 2026-10-08)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0k): `SubstrateKernel` (SubstrateAgentJob) and `SwarmBodyPose.PoseMatrix`
