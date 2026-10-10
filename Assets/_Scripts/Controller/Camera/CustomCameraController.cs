@@ -354,7 +354,6 @@ namespace CosmicShore.Gameplay
 
         private void Awake()
         {
-            Camera = GetComponent<Camera>();
             Camera.useOcclusionCulling = false;
         }
 
@@ -647,7 +646,10 @@ namespace CosmicShore.Gameplay
 
         public void Deactivate() => gameObject.SetActive(false);
 
-        public Camera Camera { get; private set; }
+        /// <summary>The camera this controller drives, resolved on first use. Not only in Awake: in edit mode (the
+        /// edit-mode camera tests) AddComponent does not run Awake, and ApplySettings then read a null camera.</summary>
+        public Camera Camera => _camera ? _camera : (_camera = GetComponent<Camera>());
+        private Camera _camera;
 
         /// <summary>
         /// Sets the distance (Z) behind the target. Always negative.

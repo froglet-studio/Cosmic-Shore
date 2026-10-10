@@ -205,7 +205,10 @@ namespace CosmicShore.Tests
             Assert.GreaterOrEqual(config.InfluenceRadius(20f), config.InfluenceRadius(10f));
             Assert.Greater(config.InfluenceRadius(10f), config.HorizonRadius(10f),
                 "the influence radius must enclose the horizon, or nothing can ever be admitted.");
-            Assert.LessOrEqual(config.InfluenceRadius(100000f), config.MaxInfluenceRadius,
+            // The cap is on the PULL's reach: a typo'd strength on a hole of ordinary size. (A strength-derived
+            // horizon grows with the typo too, and the influence must always enclose the horizon - 1.5 r_s - so
+            // InfluenceRadius(100000) alone is 300 000 u by design and says nothing about the cap.)
+            Assert.LessOrEqual(config.InfluenceRadius(100000f, config.HorizonRadius(10f)), config.MaxInfluenceRadius,
                 "the influence radius is not capped — an operator's typo would query the whole arena every frame.");
         }
 
