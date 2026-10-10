@@ -424,7 +424,7 @@ namespace CosmicShore.Tests
                 "one frame of stick turns the heading by stick x pivotSteer x dt");
             Assert.AreEqual(plain.magnitude, steered.magnitude, 1e-3f, "steering costs no orbit speed");
             Assert.Greater(Vector3.Dot(steered - plain, across) * Mathf.Sign(stick), 0f, "it turns the way the stick points");
-            Assert.Less(s.PivotSteerRate / Mathf.Deg2Rad, 45f, "pivotSteer ships well under free flight's 120 deg/s");
+            Assert.LessOrEqual(s.PivotSteerRate / Mathf.Deg2Rad, 60f, "pivotSteer ships at or under half of free flight's 120 deg/s");
         }
 
         [Test]

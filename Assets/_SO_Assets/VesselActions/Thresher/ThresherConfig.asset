@@ -89,7 +89,7 @@ MonoBehaviour:
   debrisSpeedLimit: 200
   comboGraceSeconds: 0.4
   readyMargin: 1.05
-  readyFlickerHz: 14
+  colorBlendRate: 15
   cameraFraming: 1
   cameraZoomOutRate: 12
   cameraZoomInRate: 0.7

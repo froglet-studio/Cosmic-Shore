@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// 0) so the solver owns the velocity outright, and the hull is turned to face the orbit's
     /// tangent so that on release you fly off along it — not along wherever the nose last
     /// pointed. The sticks keep a LOW-sensitivity say (<see cref="PivotSteer"/>): they lean the
-    /// orbit's plane at a quarter of the free-flight turn rate, so you aim the release without
+    /// orbit's plane at under half the free-flight turn rate, so you aim the release without
     /// fighting the spin.</item>
     /// </list>
     ///
@@ -97,7 +97,7 @@ namespace CosmicShore.Gameplay
         /// The sticks while planted, as the world direction the NOSE would move under them in free
         /// flight (yaw right = +right, pitch = −up, the base <c>Yaw</c>/<c>Pitch</c> sign
         /// convention), magnitude clamped to 1. The solver turns only its across-the-orbit part
-        /// into a slow tilt of the orbit plane (<c>pivotSteer</c>, 30°/s at full stick against free
+        /// into a slow tilt of the orbit plane (<c>pivotSteer</c>, 45°/s at full stick against free
         /// flight's 120°/s): the spin stays the ship's, the stick leans it. Zero while towing — the
         /// base rotation already flies the hull then.
         /// </summary>

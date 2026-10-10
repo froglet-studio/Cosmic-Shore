@@ -80,8 +80,10 @@ namespace CosmicShore.Gameplay
         [Header("READY cue")]
         [Tooltip("READY shows while the predicted reel-in crack is at least this multiple of smash speed.")]
         [SerializeField, Min(0f)] float readyMargin = 1.05f;
-        [Tooltip("Lime flicker rate of the chain while READY (Hz). The lime is the palette's CTA colour.")]
-        [SerializeField, Min(0f)] float readyFlickerHz = 14f;
+        [Tooltip("How fast the ball and chain ease to a new state's colour (1/s, exponential): domain -> red at " +
+                 "smash speed, slack -> taut, -> READY lime. 15 = 95% in 0.2 s - a quick, visible change, never a " +
+                 "cut or a flicker. The HUD gauges ease at their own matching rate.")]
+        [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
         [Header("Camera - keep the ball in frame (local pilot only)")]
         [Tooltip("Pull the chase camera back whenever the ball would leave the frame, and ease it home after.")]
@@ -150,7 +152,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float chainRimSlack = 0.35f;
         [Tooltip("Rim brightness while the chain is TAUT - the state in which it cuts.")]
         [SerializeField, Range(0f, 1f)] float chainRimTaut = 0.75f;
-        [Tooltip("Rim brightness of the lime READY flicker.")]
+        [Tooltip("Rim brightness of the READY lime.")]
         [SerializeField, Range(0f, 1f)] float chainRimReady = 0.95f;
 
         [Header("Look")]
@@ -191,7 +193,7 @@ namespace CosmicShore.Gameplay
         public float DebrisSpeedLimit => debrisSpeedLimit;
         public float ComboGraceSeconds => comboGraceSeconds;
         public float ReadyMargin => readyMargin;
-        public float ReadyFlickerHz => readyFlickerHz;
+        public float ColorBlendRate => colorBlendRate;
         public bool CameraFraming => cameraFraming;
         public float CameraZoomOutRate => cameraZoomOutRate;
         public float CameraZoomInRate => cameraZoomInRate;

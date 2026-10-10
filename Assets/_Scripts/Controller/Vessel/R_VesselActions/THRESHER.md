@@ -16,8 +16,8 @@ in the sandbox's units and scaled to this game by one factor (§4), so the two r
 |---|---|---|---|
 | Sticks | — | — | Normal flight, exactly a Squirrel's (vector flight model, 120°/s pitch/yaw). Turn one way and snap back to whip; pitch and yaw snaps both work. |
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
-| **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain flickers **lime** (the palette's CTA colour) while releasing now would reach smash speed (READY). |
-| **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 30 °/s (a quarter of free flight), never the spin. |
+| **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain turns **lime** (the palette's CTA colour, a quick ease, never a flicker) while releasing now would reach smash speed (READY). |
+| **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 45 °/s (under half of free flight's 120), never the spin. |
 | **LT release** | | | Fly off along the orbit's tangent; the ball is yanked after you (`yank`). |
 
 The bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
@@ -86,7 +86,7 @@ off. `element_ability_table.py Thresher` reads 4/4 / 4/4 / 4/4 with only the Thr
   up by `lockSpin` to `lockMax × cruise`. `Release()` yanks the ball at `yank ×` the ship's velocity.
 - **Steering while planted** (`SteerPivot`): the stick, mapped through the hull as the way the nose
   would move, turns the ship's heading about the CHAIN — the only turn a taut chain allows — by at
-  most `pivotSteer` (30 °/s) × dt; its in-plane part is ignored. Held, it bends the orbit off its
+  most `pivotSteer` (45 °/s) × dt; its in-plane part is ignored. Held, it bends the orbit off its
   plane the way turning bends a path on a globe (the ship steers over the sphere round the ball).
   Speed, radius and spin are untouched, and it is ignored while towing, where the sticks fly the
   hull directly.
@@ -109,7 +109,7 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 | `ballR` / `maxBall` | 17 / 2600 | 3.13 u / 478.9 u/s | swept radius (× ∛Mass); speed cap |
 | `skid` / `skidSeconds` / `lockKeep` | 7 / 0.3 s / 1 | same | plant brake, duration, speed kept |
 | `lockSpin` / `lockMax` / `yank` | 220 /s² / 2.2 / 0.5 | 40.5 u/s² / 154 u/s / 0.5 | spin-up (× Time), cap (× Time), unlock yank |
-| `pivotSteer` | 30 °/s | 30 °/s | full-stick steering while planted (a rate, unscaled; 0 = sticks ignored) |
+| `pivotSteer` | 45 °/s | 45 °/s | full-stick steering while planted (a rate, unscaled; 0 = sticks ignored) |
 
 Measured feel (`Tools/Build/thresher_chain_harness`, 60 Hz, rest levels; peak ball speed × smash):
 steady turns reeled in 15/30/60/90/120 °/s → 0.62/0.74/0.94/1.09/1.21, let out → 0.54/0.52/0.38/0.38/0.38
@@ -149,8 +149,12 @@ Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2
   the chain is a few pixels wide at chase distance, so the rim has to cover most of it to read). It
   is drawn at the width that CUTS (`2 × chainCutRadius`). Iron body (`chainColor`, under the bloom
   threshold); the rim takes the ball's hue, `chainRimSlack` 0.35 while slack and `chainRimTaut`
-  0.75 while taut (the state in which it slices), flickering to CTA lime (`chainRimReady` 0.95) at
-  READY. The skid trail keeps `lineMaterial` (vertex colour).
+  0.75 while taut (the state in which it slices), CTA lime (`chainRimReady` 0.95) at READY.
+- **Every state change is a quick EASE to the new colour, never a cut or a flicker**
+  (`colorBlendRate` 15/s: 95% in 0.2 s, on unscaled time so a smash's turn to red lands inside its
+  hit-stop): ball domain → red / lit at smash speed, chain slack → taut → READY lime, and the HUD's
+  chain-out gauge (its own matching `colorBlendRate`). A strobing READY flicker was tried and read
+  as noise; the change itself is the signal. The skid trail keeps `lineMaterial` (vertex colour).
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
   `VesselHUDPrefab`): the four-icon row Wrecking Ball · Heavy Iron · Winch · Plant
   (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
@@ -272,14 +276,14 @@ prefab, `DriftAudioController`, jets and tails.
    front of the camera; the HUD shows the four Thresher icons and petal bars. Console clean.
 2. **Slow ball**: tow gently into a RIVAL trail — prisms are destroyed, no explosion, the ball is in
    your domain colour. Into your OWN older trail — the ball bounces off, nothing breaks.
-3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. The chain flickers lime first;
+3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. The chain eases to lime first;
    on release the ball goes red, destroys everything including your own trail, each hit a blast
    (string, not per prism), first hit with a hit-stop, debris along its path, `x2, x3…` counter.
 4. **Chain**: fly so the taut chain sweeps through rival prisms — they are sliced; your own are not;
    shielded rival prisms are skipped.
 5. **Plant**: hold LT — skid (trail), orbit, spin-up; RT up winds in. Release: fly off on the tangent,
    ball yanked after you. Planting straight at the ball still orbits. While planted, the sticks
-   gently steer the orbit (a quarter of normal turn rate) without changing its speed.
+   steer the orbit (45 °/s, under half the normal turn rate) without changing its speed.
 6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge — hot ball lit, blasts spare
    your trail, bounces off it; Mass — a hot ball keeps its speed through a row; Space — chain cuts
    slack and pops shields; Time — releasing a slow orbit still throws a red ball.
@@ -296,8 +300,8 @@ prefab, `DriftAudioController`, jets and tails.
 10. **Ball and chain look**: the ball is a dark body with a bright rim in your domain colour (no
     ring round it); its studs flash as it rolls, and stay legible (no backwards strobe) when white
     hot; it brightens toward smash speed, turns red and blooms when hot, lit-blue with Charge L5.
-    The chain reads as a round iron tube with a domain-coloured rim, brighter while taut, lime
-    flicker at READY.
+    The chain reads as a round iron tube with a domain-coloured rim, brighter while taut, easing to
+    lime at READY — no colour ever flickers; each change is a quick blend.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`

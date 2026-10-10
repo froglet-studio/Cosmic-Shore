@@ -16,7 +16,8 @@ namespace CosmicShore.UI
     /// ball in the world always agree.</item>
     /// <item><b>Chain out</b> (space) — how far the winch has let the chain out; it turns the
     /// palette's lime while releasing the right trigger NOW would crack the ball past smash speed
-    /// (READY), the same cue the chain itself flickers.</item>
+    /// (READY), the same cue the chain itself gives. Its colour EASES to lime and back
+    /// (<c>colorBlendRate</c>), the same quick blend as the chain's — never a flicker.</item>
     /// </list>
     /// Mass and Time are passive/held states with nothing a pilot waits on, so they get no gauge.
     /// Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this view only
@@ -35,6 +36,9 @@ namespace CosmicShore.UI
 
         [Tooltip("Chain-out gauge colour when not READY.")]
         [SerializeField] Color chainColor = new(0.75f, 0.75f, 0.78f, 1f);
+        [Tooltip("How fast the chain-out gauge eases to lime at READY and back (1/s, exponential). Matches " +
+                 "ThresherConfigSO.colorBlendRate, so the card and the chain in the world change together.")]
+        [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
         /// <summary>Seat every readout at rest. Idempotent: it re-runs on a vessel swap.</summary>
         public override void Initialize()
@@ -56,7 +60,9 @@ namespace CosmicShore.UI
         {
             if (!chainOutGauge) return;
             chainOutGauge.fillAmount = Mathf.Clamp01(out01);
-            chainOutGauge.color = ready ? readyColor : chainColor;
+            Color target = ready ? readyColor : chainColor;
+            float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
+            chainOutGauge.color = Color.Lerp(chainOutGauge.color, target, k);
         }
 
         /// <summary>

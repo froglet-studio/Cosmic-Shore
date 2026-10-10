@@ -106,10 +106,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] float lockMax = 2.2f;
         [Tooltip("On unlock the ball gets this fraction of the ship's velocity.")]
         [SerializeField] float yank = 0.5f;
-        [Tooltip("While planted, full stick tilts the orbit's plane at this rate (degrees/s) - a quarter " +
-                 "of the hull's free-flight 120 deg/s, so the spin stays the ship's and the stick only " +
-                 "leans it. 0 = sticks ignored while planted. A rate, so not scaled.")]
-        [SerializeField] float pivotSteer = 30f;
+        [Tooltip("While planted, full stick tilts the orbit's plane at this rate (degrees/s) - under half " +
+                 "the hull's free-flight 120 deg/s, so the spin stays the ship's and the stick steers it. " +
+                 "0 = sticks ignored while planted. A rate, so not scaled.")]
+        [SerializeField] float pivotSteer = 45f;
 
         /// <summary>Sandbox → game length/speed factor.</summary>
         public float Scale => sandboxCruise > 0f ? gameCruise / sandboxCruise : 1f;

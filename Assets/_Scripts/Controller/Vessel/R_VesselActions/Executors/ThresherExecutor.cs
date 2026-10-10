@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
         public float Spin01 => IsPivoting && _settings.LockMaxSpeed > 0f ? Mathf.Clamp01(_solver.LockSpeed / _settings.LockMaxSpeed) : 0f;
         public int Combo => _combo;
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
-        public Color BallColorNow => config && _solver != null ? BallColor(out _) : Color.white;
+        public Color BallColorNow => _shownValid ? _shownHue : config && _solver != null ? BallColor(out _) : Color.white;
         /// <summary>The READY lime (LINEAR).</summary>
         public Color ReadyColorNow => config ? ReadyColor() : Color.green;
 
@@ -795,17 +795,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The chain tube's two colours: an iron body (<c>chainColor</c>), and a rim in the
         /// ball's hue — dim while slack, brighter while taut (the state in which it cuts) — that
-        /// flickers to the palette's CTA lime while READY.</summary>
+        /// turns the palette's CTA lime while READY. A target: the drawn colour eases to it.</summary>
         void ChainShade(out Color body, out Color rim)
         {
             body = config.ChainColor;
             body.a = 1f;
+            if (IsReady)
+            {
+                rim = WithMaxChannel(ReadyColor(), config.ChainRimReady);
+                return;
+            }
             bool taut = _solver.Mode == ThresherMode.Pivot || _solver.IsTaut;
             rim = WithMaxChannel(BallColor(out _), taut ? config.ChainRimTaut : config.ChainRimSlack);
-            if (!IsReady) return;
-            Color lime = WithMaxChannel(ReadyColor(), config.ChainRimReady);
-            bool on = Mathf.Repeat(Time.time * config.ReadyFlickerHz, 1f) < 0.5f;
-            rim = on ? lime : Color.Lerp(rim, lime, 0.35f);
         }
 
         static Color WithMaxChannel(Color c, float max)
@@ -828,6 +829,12 @@ namespace CosmicShore.Gameplay
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
         MaterialPropertyBlock _chainMpb;
+
+        // The colours actually DRAWN. Every state change (domain -> red at smash, slack -> taut,
+        // -> READY lime) is a quick ease to the new colour (colorBlendRate), never a cut or a
+        // flicker: the change is the signal, and a strobe read as noise.
+        bool _shownValid;
+        Color _shownHue, _shownBody, _shownRim, _shownChainRim;
         float _comboShownScale;
         int _comboShown;
 
@@ -930,6 +937,7 @@ namespace CosmicShore.Gameplay
 
         void SetVisualsActive(bool active)
         {
+            if (!active) _shownValid = false;   // re-shown at the live colours, not eased from stale ones
             if (_root) _root.SetActive(active);
         }
 
@@ -967,8 +975,26 @@ namespace CosmicShore.Gameplay
                     _ball.rotation = Quaternion.AngleAxis(rollDegPerSec * dt, axis.normalized) * _ball.rotation;
             }
 
-            Color ballColor = BallColor(out float emission);
-            BallShade(out Color body, out Color rim);
+            Color targetHue = BallColor(out float emission);
+            BallShade(out Color targetBody, out Color targetRim);
+            ChainShade(out Color chainBody, out Color targetChainRim);
+            if (!_shownValid)
+            {
+                (_shownHue, _shownBody, _shownRim, _shownChainRim) = (targetHue, targetBody, targetRim, targetChainRim);
+                _shownValid = true;
+            }
+            else
+            {
+                // Unscaled: the smash's hit-stop slows time exactly when the ball turns red, and the
+                // turn to red should land inside it.
+                float k = 1f - Mathf.Exp(-config.ColorBlendRate * Time.unscaledDeltaTime);
+                _shownHue = Color.Lerp(_shownHue, targetHue, k);
+                _shownBody = Color.Lerp(_shownBody, targetBody, k);
+                _shownRim = Color.Lerp(_shownRim, targetRim, k);
+                _shownChainRim = Color.Lerp(_shownChainRim, targetChainRim, k);
+            }
+            Color ballColor = _shownHue;
+            Color body = _shownBody, rim = _shownRim, chainRim = _shownChainRim;
             _mpb.Clear();
             _mpb.SetColor(DarkColorId, body);
             _mpb.SetColor(BrightColorId, rim);
@@ -980,10 +1006,8 @@ namespace CosmicShore.Gameplay
                 if (_ballRenderers[i]) _ballRenderers[i].SetPropertyBlock(_mpb);
 
             // Chain: the gameplay links, drawn as a fresnel tube at the width that CUTS. Iron body;
-            // the rim takes the ball's hue, brighter while taut (it is slicing), lime-flickering at
-            // READY.
+            // the rim takes the ball's hue, brighter while taut (it is slicing), lime at READY.
             _chain.startWidth = _chain.endWidth = 2f * config.ChainCutRadius;
-            ChainShade(out Color chainBody, out Color chainRim);
             _chainMpb.Clear();
             _chainMpb.SetColor(DarkColorId, chainBody);
             _chainMpb.SetColor(BrightColorId, chainRim);
