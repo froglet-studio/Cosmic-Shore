@@ -6,6 +6,15 @@
 > into dev tasks. New unverified work does **not** get a section here — record it in the
 > PR body's *Verification status* section and the scan will pick it up.
 
+> ### ✅ Absorbed 2026-10-10: the `/qa-backlog` run for board item R2 read every open section here
+>
+> The full `/qa-backlog` refresh on `cece/nice-brahmagupta-ojclij` (scan covers `48d84486f`)
+> swept this file as the skill prescribes: all 29 open sections dated 2026-10-05 or later that had
+> no item, and the 25 older never-absorbed sections the 2026-09-11 count below describes, are now
+> items in `Docs/QA/QA_BACKLOG.md` (52 added that day, each `**Source:**` line naming its PR or
+> this file's section). The sections below stay as the detail record a tester may need; the
+> backlog is the list QA runs. A section here is closed by its item passing, not by hand.
+
 > ### ⚠ The supersession is not finished — corrected 2026-09-11 (doc-drift sweep, item **R8**)
 >
 > **This banner used to say "the two entries below are kept until they are run." That was wrong,
