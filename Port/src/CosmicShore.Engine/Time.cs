@@ -42,6 +42,12 @@ namespace CosmicShore.Engine
         /// </summary>
         public static float maximumDeltaTime { get; set; } = float.PositiveInfinity;
         public static float timeScale { get; set; } = 1f;
+        /// <summary>
+        /// Original contract: a non-zero value makes every frame advance 1/value s regardless of
+        /// wall time. The engine's fixed-step loops already tick at 1/60; the value is kept so the
+        /// game's DeterministicSession compiles and reads back what it set.
+        /// </summary>
+        public static int captureFramerate { get; set; }
         public static int frameCount { get; private set; }
         public static bool inFixedTimeStep => _inFixedPhase;
 

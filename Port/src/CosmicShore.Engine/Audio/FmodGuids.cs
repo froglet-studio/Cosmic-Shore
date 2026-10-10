@@ -13,6 +13,7 @@ namespace CosmicShore.Engine.Audio.Fmod
     public static class FmodGuids
     {
         static readonly Dictionary<GUID, string> s_paths = new();
+        static readonly Dictionary<string, GUID> s_guids = new();
 
         public static int Count => s_paths.Count;
 
@@ -22,13 +23,19 @@ namespace CosmicShore.Engine.Audio.Fmod
             if (string.IsNullOrEmpty(file) || !File.Exists(file)) return 0;
             int n = 0;
             foreach (var line in File.ReadLines(file))
-                if (TryParse(line, out var guid, out var path)) { s_paths[guid] = path; n++; }
+                if (TryParse(line, out var guid, out var path)) { s_paths[guid] = path; s_guids[path] = guid; n++; }
             return n;
         }
 
         public static string PathOf(GUID guid) => !guid.IsNull && s_paths.TryGetValue(guid, out var p) ? p : null;
 
-        public static void Clear() => s_paths.Clear();
+        /// <summary>The GUID listed for <paramref name="path"/>, or default when the file does not name it.</summary>
+        public static GUID GuidOf(string path) => path != null && s_guids.TryGetValue(path, out var g) ? g : default;
+
+        /// <summary>Every path the loaded file names (banks, buses, events, snapshots).</summary>
+        public static IEnumerable<string> Paths => s_paths.Values;
+
+        public static void Clear() { s_paths.Clear(); s_guids.Clear(); }
 
         internal static bool TryParse(string line, out GUID guid, out string path)
         {
