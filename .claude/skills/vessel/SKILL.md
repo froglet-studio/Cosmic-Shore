@@ -951,6 +951,14 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
    camera off the vessel"). Any executor whose autopilot holds a replicated press needs a hand-back path
    (`StoatDipoleExecutor.HandBackAiHold`): on the frame `AutoPilotEnabled` goes false with the AI's press
    still held, stop it through the same replicated path it was pressed with.
+5. **Port a studio's LOOK the way the studio draws it, and prove it against the page's own code.** The black and
+   white hole lens was first rebuilt in Unity a different way (one ray-traced lens sphere per hole); two faults
+   came from that design and no tuning could reach them: the pair's overlapping spheres painted over each other,
+   and the sphere's skybox swap drew a disc round every hole in lava lamp. The fix was the studio's own structure
+   (`lensMat`: ONE screen pass summing every hole), ported line for line (`BlackHoleLens.shader`,
+   `BlackHoleLens.ScreenWells`). `Tools/Shaders/verify_black_hole_lens.py` extracts the page's GLSL and
+   `setLensUniforms` JavaScript and runs them beside the shipped HLSL and C# — copy that shape (extract, translate
+   mechanically, compare, plus a negative control) for any studio visual you port.
 
 Prove the port in Amoebius before handing it over (the `/prisma` loop; `Port/CLAUDE.md`): set the menu hull
 to the vessel (`Menu_Main.unity` `menuVesselClass`, reverted after), wait for the AI to use its ability,

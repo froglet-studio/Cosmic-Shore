@@ -438,13 +438,10 @@ namespace CosmicShore.Gameplay
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
             BlackHoleWarp.Flush(_warpHoles, config);
-            BlackHoleLens.PublishSmoothWells(_warpHoles);
-            BlackHoleLens.PublishHorizonHoles(_warpHoles);
-            // The lens reads the camera's opaque + depth copies; keep them on for EVERY enabled game
-            // camera while any lens is live (a vessel spawn, the death or end camera switch cameras).
+            // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
+            // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
+            // holes itself (BlackHoleLens.ScreenWells).
             BlackHoleLens.CameraSupport.Maintain();
-            // ...and the sky a ray bent off-screen sees: the scene's own skybox, kept current.
-            BlackHoleSky.Maintain(config);
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {

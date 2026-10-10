@@ -34,11 +34,12 @@ MonoBehaviour:
   warpReachMultiplier: 6
   warpEaseSeconds: 0.5
   lensEnabled: 1
+  shadowSize: 2.6
+  lensStrength: 1
   lensRadiusMultiplier: 30
   lensFadeStart: 0.55
-  lensSteps: 128
-  lensSkyResolution: 1024
-  lensSkyFacesPerFrame: 1
+  whiteLensStrength: 1
+  whiteCoreSize: 2.6
   whiteCoreBrightness: 4
   whiteCoreSkyMix: 0.8
   photonRingGlow: 0.55

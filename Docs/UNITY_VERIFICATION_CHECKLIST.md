@@ -65,12 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The black and white hole lens is the Vessel Studio's, one pass for every hole (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**What landed:** `BlackHoleLens.shader` / `.hlsl` rewritten as the studio's lens pass (`StoatFlightStudio.html`,
+`lensMat`): one full-screen triangle per camera, drawn by `BlackHoleLensPass` after the transparents, summing every hole's
+bend (black shadow 2.6 r_s, Einstein bending, photon ring, white-hot core, smooth wells' graded lens) and sampling the
+scene copy once. `BlackHoleLens` is now a per-hole marker; `BlackHoleLens.ScreenWells` is the studio's `setLensUniforms`
+(the nearest 8 holes per camera, in a `MaterialPropertyBlock` with the draw). Retired: the per-hole lens sphere,
+`BlackHoleSky.cs`, the ray trace, `lensSteps`, `lensSkyResolution`, `lensSkyFacesPerFrame`, the `_BHHoleBank` patch below.
+New `BlackHoleConfig` rows (also in the Vessel Studio (in Unity) window): `shadowSize` 2.6, `lensStrength` 1,
+`whiteLensStrength` 1, `whiteCoreSize` 2.6. Offline proof: `Tools/Shaders/verify_black_hole_lens.py` (the studio's GLSL
+vs the shipped lens on 108k pixels to 1.2e-7; DXC against the real URP library for D3D11/Vulkan/Metal; the C# against the
+page's JavaScript; three negative controls). **Not compiled or run by Unity** (no `/verify-unity` in this session); the
+C# was not compiled either.
+
+**Verify in editor:**
+1. The project compiles; `BlackHoleTests` and `CrystalWormholeTests` pass (`Lens_ShaderCompilesAndTheLensIsDrawable`
+   first — a red there means every hole falls back to a black sphere, with the compiler's error in a warning).
+2. Lava lamp, Stoat, squeeze both triggers: the black hole is a black disc with a thin warm ring, the white hole a
+   white-hot core, the scene bent round both. **Neither pole hides the other**; where they overlap on screen only the
+   black shadow covers the core (the studio does the same). **No disc or circle edge** round either hole at any
+   distance, flying through the lens included.
+3. Fly so the vessel is between the camera and a hole: the vessel is drawn unbent over it.
+4. Turn so a hole is near the screen's edge: the bent scene near the edge is the screen mirrored, no black or sky band.
+5. Scene view while a hole is live: the lens draws there too; a 2D (orthographic) Scene view draws none.
+6. Frame Debugger: one "BlackHole scene copy" and one "BlackHole lens" per camera that sees a hole, none in a camera
+   that sees none.
+7. Crystal Wormhole cell: the attractor magnifies, the repulsor shrinks, no seam where they overlap.
+
 ### 🔴 Stoat pair never hides a pole, studio key squeeze, 3D path dots, the Vessel Studio in Unity (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **What landed:**
-- `_BHHoleBank` (`BlackHoleLens.PublishHorizonHoles`) + `BlackHoleOtherHoles` in `BlackHoleLens.shader`: each lens
-  draws the other holes its ray meets, so a pair's overlapping lens spheres no longer erase one pole. Compiled with
-  glslang (SPIR-V) against the shipped `BlackHoleLens.hlsl`, with a negative control; not compiled by Unity.
+- ~~`_BHHoleBank` (`BlackHoleLens.PublishHorizonHoles`) + `BlackHoleOtherHoles` in `BlackHoleLens.shader`~~ —
+  superseded the same day by the studio's one-pass lens (section above).
 - `StoatDipoleConfig.keySqueeze` 0.5 (the studio's `dpKeySqueeze`): a key opens the poles at once, 70 u sideways.
 - `StoatPathfinderWorldDots`: the path as dots in the scene (`dotsInWorld`, 3 u apart, 0.7 u, >= 2.5 px).
 - `VesselStudioWindow` (FrogletTools ▸ Vessels ▸ Vessel Studio ▸ the Stoat card ▸ TUNE IN UNITY) + `VesselStudioWindowTests`;
