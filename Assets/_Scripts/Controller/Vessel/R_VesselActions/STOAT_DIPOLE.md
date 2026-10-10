@@ -45,6 +45,16 @@ within 8 u of itself (at least 60 u on) ends there — the loop that would cross
 poles to turn, a held full turn draws a circle the pathfinder does not call warped, and the line is
 not twitchy on screen. **X** still holds the hull still (the Sparrow's stop), outside the four abilities.
 
+**The autopilot circles its sink at most ONCE** (2026-10-10). The path-watching hold keeps the poles open
+while they warp the predicted path — and a hull ORBITING its own sink keeps that path warped every frame,
+so the hold never dried out and ended only at `autopilotMaxHoldSeconds` (15 s): reported in play as the AI
+going round inside the black hole's shadow four, five, six times before it got out. The executor now sums
+the angle the hull sweeps round its sink (`StoatDipoleMath.SweptAround`, skipping a frame that went through
+the wormhole) and lets go at `autopilotMaxOrbitDegrees` (**360** = one lap, 0 = no cap), in either hold
+mode; after a capped let-go it waits the full `autopilotIntervalSeconds` rather than the 0.25 s relay, so
+the next pair is not laid while the hull is still turning out of the last one. A pass by the sink sweeps
+under 180°, so the cap never cuts one short (`StoatDipoleTests.OrbitCap_*`).
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |

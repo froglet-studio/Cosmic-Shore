@@ -7266,13 +7266,24 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
-## 🔴 AI orbit — at most ONE lap around an objective (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+## 🔴 AI orbit — at most ONE lap round a black hole (Stoat) or an objective (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 Reported: an AI sometimes circles its target four, five, six times before it gets out. Fleet-wide
 (`AIPilot` is every vessel's autopilot). Full write-up: `Assets/_Scripts/Controller/AI/AI_ORBIT_BREAK.md`
 § "2026-10-10, third pass". No Unity editor in the authoring session; `OrbitDetector` was compiled
 and its tests run under Roslyn with a stub harness (the new eccentric-orbit test fails against the
 pre-fix file and passes after). The `AIPilot` edits were checked by reading only.
+
+**The STOAT (the reported vessel) — Slingshot / Warpline, or any mode seating an AI Stoat.** Its triggers are
+the dipole, and the path-watching autopilot held its poles while the hull circled its own sink — up to
+15 s, i.e. four to six laps inside the black hole's shadow. It now lets go after ONE lap
+(`StoatDipoleConfigSO.autopilotMaxOrbitDegrees` = 360) and waits the 2 s interval before the next pair.
+`STOAT_DIPOLE.md` §1. `SweptAround`/`OrbitCapReached` compiled and their tests run under Roslyn; the
+executor edit was checked by reading only.
+1. Watch an AI Stoat in the Third Eye (FrogletTools > AI > Third Eye). When it falls into orbit round its
+   own black hole it must come out after at most one lap.
+2. It must still dive THROUGH the sink to the source (a wormhole pass is not counted as orbiting).
+3. Race times should not get worse than the studio's (Hard 49-59 s); if they do, raise the cap to 540.
 
 **Verify (any crystal mode with AI, e.g. Hex Race / Crystal Capture):**
 1. Watch AI pilots near crystals for a few minutes. None may circle a crystal more than once — after

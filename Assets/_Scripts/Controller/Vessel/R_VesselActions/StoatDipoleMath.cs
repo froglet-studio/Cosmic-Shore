@@ -294,6 +294,22 @@ namespace CosmicShore.Gameplay
         /// shoots the hull at the target and the warp boosts it; otherwise the trigger on the target's
         /// side, so the sink sits that way and the field turns the nose toward it.
         /// </summary>
+        /// <summary>
+        /// Degrees the hull has swept round <paramref name="centre"/> between two positions (unsigned). Summed
+        /// over a hold it is how far the autopilot has circled its sink — the orbit cap's measure
+        /// (<see cref="StoatDipoleConfigSO.AutopilotMaxOrbitDegrees"/>). 0 when either position sits on the centre.
+        /// </summary>
+        public static float SweptAround(Vector3 centre, Vector3 from, Vector3 to)
+        {
+            var a = from - centre;
+            var b = to - centre;
+            if (a.sqrMagnitude < 1e-6f || b.sqrMagnitude < 1e-6f) return 0f;
+            return Vector3.Angle(a, b);
+        }
+
+        /// <summary>True once the autopilot has circled its sink as far as it may: <paramref name="maxDegrees"/> ≤ 0 is no cap.</summary>
+        public static bool OrbitCapReached(float sweptDegrees, float maxDegrees) => maxDegrees > 0f && sweptDegrees >= maxDegrees;
+
         public static bool AutopilotTriggers(Vector3 localTarget, float minDistance, float straightDegrees, float maxDegrees,
             out bool left, out bool right)
         {
