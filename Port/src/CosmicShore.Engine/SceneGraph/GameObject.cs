@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace CosmicShore.Engine
 {
@@ -267,13 +270,20 @@ namespace CosmicShore.Engine
         /// <summary>Original contract: adding a component first adds whatever its [RequireComponent]s name.</summary>
         [ThreadStatic] static HashSet<Type> t_adding;
 
+        // The [RequireComponent]s of a type never change: resolved once (an attribute lookup per
+        // AddComponent was a measurable share of prefab cloning in a grown arena, C7).
+        static readonly ConcurrentDictionary<Type, RequireComponentAttribute[]> s_required = new();
+
         void AddRequiredComponents(Type componentType)
         {
+            var required = s_required.GetOrAdd(componentType,
+                static t => (RequireComponentAttribute[])t.GetCustomAttributes(typeof(RequireComponentAttribute), inherit: true));
+            if (required.Length == 0) return;
             t_adding ??= new HashSet<Type>();
             if (!t_adding.Add(componentType)) return; // mutual requirement: the outer add supplies it
             try
             {
-            foreach (RequireComponentAttribute req in componentType.GetCustomAttributes(typeof(RequireComponentAttribute), inherit: true))
+            foreach (RequireComponentAttribute req in required)
                 foreach (var t in new[] { req.m_Type0, req.m_Type1, req.m_Type2 })
                 {
                     if (t == null || t.IsAbstract || t.IsInterface || !typeof(Component).IsAssignableFrom(t)) continue;
@@ -301,7 +311,7 @@ namespace CosmicShore.Engine
             {
                 if (componentType == typeof(Transform)) return transform;
                 if (componentType.IsInstanceOfType(transform)) return transform; // already converted
-                var replacement = (Transform)Activator.CreateInstance(componentType, nonPublic: true);
+                var replacement = (Transform)Construct(componentType);
                 replacement.gameObject = this;
                 replacement.AdoptHierarchyFrom(transform);
                 _components[_components.IndexOf(transform)] = replacement;
@@ -309,7 +319,7 @@ namespace CosmicShore.Engine
                 return replacement;
             }
 
-            var component = (Component)Activator.CreateInstance(componentType, nonPublic: true);
+            var component = (Component)Construct(componentType);
             component.gameObject = this;
             SerializedFieldDefaults.Fill(component); // before Awake: the serializer's non-null guarantee
             _components.Add(component);
@@ -333,6 +343,27 @@ namespace CosmicShore.Engine
                 mb.HandleAttached();
             }
             return component;
+        }
+
+        // One compiled parameterless constructor per component type (C7, 2026-10-10).
+        // Activator.CreateInstance(type, nonPublic: true) binds through the reflection binder on
+        // every call (BindToMethod, CreateInstanceImpl: ~9 us and garbage per component, and the
+        // Bloomrush intensity-4 replay adds ~170,000 components while its reef grows). A type
+        // with no parameterless constructor, an abstract type, or a runtime without dynamic code
+        // (iOS AOT) keeps the Activator path and its exceptions.
+        static readonly ConcurrentDictionary<Type, Func<object>> s_constructors = new();
+
+        static object Construct(Type componentType) => s_constructors.GetOrAdd(componentType, static t => BuildConstructor(t))();
+
+        static Func<object> BuildConstructor(Type type)
+        {
+            if (!type.IsAbstract && System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported
+                && type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null) is { } ctor)
+            {
+                try { return Expression.Lambda<Func<object>>(Expression.New(ctor)).Compile(); }
+                catch (Exception) { /* fall through to the Activator path */ }
+            }
+            return () => Activator.CreateInstance(type, nonPublic: true);
         }
 
         public Component GetComponent(Type type)

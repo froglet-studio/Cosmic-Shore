@@ -212,6 +212,87 @@ Next items, by on-screen use (rank with `render.shaders` from each mode's report
 **C7 - Performance**
 > Profile the heaviest mode at intensity 4 from its session report (cpu.phaseAvgMs, memory.phaseAvgKB, steady GC) and dotnet-trace; add GPU timer queries to the report on desktop GL. Rank the top 5 costs against the GTX 1060 budget (16.6 ms). Fix the largest one per session, proving each with before/after numbers from the same replay. Known leads: the async `tasks` phase allocates 279-728 KB/frame in Menu_Main (steady GC up to 1.9 ms/frame); loading allocates ~2.5 GB.
 
+**C7 session 2026-10-10 - Bloomrush at intensity 4: the profile and the first fix**
+
+Method (CLAUDE.md "profile first"): the Release player (`dotnet build src/CosmicShore.Player -c Release`),
+headless, `--replay Port/parity/replays/bloomrush-i4.json` (4,800 frames: Bootstrap, Menu_Main,
+`MinigameBloomrush` from frame 1651 - Rampage's cactus reef, ~19,000 prisms and 177,345 live
+behaviours by the end), `--session-report`, `COSMIC_SHORE_NET=off COSMIC_SHORE_AUDIO=off`, no
+`--parity-out` (row 7 says why). The hot path: `dotnet-trace collect --profile
+dotnet-sampled-thread-time` attached for 25 s once the scene loaded (about 2,800 of its 3,149
+frames), ranked on the loop thread with `Port/tools/speedscope_top.py` (`--under GameLoop.Tick`
+keeps the game's frame, `--callers` / `--children` walk it). This container has 4 cores and
+carried a load average of 10-24 from other agents' builds and a training run during every
+measurement, so wall figures move +-15% between identical runs; the proof below is three
+INTERLEAVED pairs (HEAD binary, fixed binary) on the same replay plus the counters that do not
+depend on load (allocation per frame, GC count, exception count, trace shares).
+
+Before, steady window of `MinigameBloomrush` (3,119 frames; the report's `steady[]`, median of
+the three HEAD runs): simulation tick 8.1 ms/frame of which `coroutines` 3.10, `fixed` 2.32
+(`triggers` 2.3: `trig.live` 1.04, `trig.shapes` 0.82, `trig.sweep` 0.32), `update` 0.94, `tasks`
+0.68, `late` 0.67; scene frames p50 5.0 ms, p95 18.4 ms, 52 of 3,149 over 33 ms; allocation
+`coroutines` 155 KB/frame, `tasks` 83, `update` 18, `late` 15; 1.6 gen0 per 100 frames, 0.4-0.9 ms
+of GC pause per frame, a gen2 every ~6 s on a 1.25 GB heap; 4,683 exceptions per run. Headless,
+so the 16.6 ms GTX 1060 budget here is the CPU half only: the average tick fits, the over-33 ms
+frames are the gen1/gen2 collections and the growth bursts.
+
+| # | Cost (loop thread, share of `GameLoop.Tick` in the 25 s trace) | Where | Owner |
+|---|---|---|---|
+| 1 | **Prefab instantiation 21.6%** (3.84 s): `CloneGameObject` - `AddComponent` through `Activator.CreateInstance(type, nonPublic: true)` (the reflection binder per component, ~9 us and garbage each), `GetFields` per base type per clone, `FieldInfo.GetValue/SetValue` boxing every float, int, Vector3 and enum it copies, the remap pass re-walking the fields; plus 1.3 s of the 3.0 s of GC pauses inside Tick. The flora's `Grow` coroutines mint ~19,000 prisms (~170,000 components) while the reef grows | `Compat/EngineCompat.cs`, `SceneGraph/GameObject.cs` | ENGINE - fixed below |
+| 2 | **Trigger pass 18.4%** (3.27 s): `SnapshotLive` 9.2% - `isActiveAndEnabled` re-walks `ChainActive` for ~5,000 enabled colliders every fixed step because every `SetActive` (each clone's included) bumps the ONE global hierarchy epoch; `BuildShapes` 5.9% - `ShapeMath.TryBuild` + `Transform.ValidateWorld` for ~4,000 live colliders per step, nearly all static prisms; sweep 2.2% | `SceneGraph/TriggerPass*.cs`, `GameObject.ChainActive` | ENGINE - next |
+| 3 | **GC pauses 17.0%** (3.02 s) on the loop thread: 155 + 83 + 18 + 15 KB of garbage per frame (rows 1, 5, 6 and the game) | allocation sites in rows 1, 5, 6 | ENGINE + GAME |
+| 4 | **Coroutine stepping 20.6% self** (`CoroutineRunner.RunFrame` 11.5%, `Step` 7.2%, `List.RemoveAll` 1.9%): ~0.4 us per step, but 2,000-2,800 steps per frame (600k-850k per 300 frames in the `CS_PORT_TRACE_CO=1` census, ~3,000 live coroutines) because every growing prism's `CreateBlockCoroutine` polls the per-frame creation budget in a `while (true)` loop | engine `SceneGraph/Coroutines.cs`; game `Assets/_Scripts/Controller/Vessel/Prism.cs:1044` | ENGINE (per-step cost) / GAME proposal: let the budget gate wake waiting prisms from a queue instead of each prism polling every frame |
+| 5 | **UniTask continuations 8.2%** (`GameTaskScheduler.RunFrame` -> `UniTaskSource.Run`, `YieldCore`: `GenericPoolManager.BufferMaintenanceAsync` / `RefillAsync` -> `InstantiateAsync`, `VesselPrismController.SpawnLoopAsync`), 83 KB/frame | `Tasks/`, Compat UniTask; the game's pools | mostly GAME |
+| 6 | Game `Update`/`LateUpdate` bodies 8.7%, of which `CrystalFlipWave.LateUpdate` 4.6%: `Instantiate(Mesh)` was an unsupported type in the engine, so `RhombusSkinBaker` failed in `Awake`, the component stayed enabled half-built and threw a `NullReferenceException` every frame (1.5 per frame, 4,683 per run, each caught and formatted by `InvokeGuarded`); the rest is `FlipWaveRig.Apply` on the Time crystals, never culled headless because the engine's `Renderer.isVisible` is "enabled and active" | engine gap - fixed below; `isVisible` fidelity | ENGINE gap + GAME |
+| 7 | Not the game: with `--parity-out`, `ParityRun.AfterTick` is **28.5% of the loop thread** outside Tick - `HookLoadedGameData` -> `FindGameData` -> `FindObjectsByType` over all 177k behaviours EVERY frame (16.5%), `WriteState` every 30 frames (11.4%). Every `engine_parity` run pays ~2.3 ms/frame for it | `Player/ParityRun.cs` | ENGINE (player harness) - next |
+
+The fix (row 1, with row 6's gap), all in the engine, `Port/tests/CosmicShore.Tests/InstantiateClonePlanTests.cs`:
+- `ObjectUtilities.ClonePlan` (`Compat/EngineCompat.cs`): the field set Instantiate copies and remaps is
+  resolved ONCE per type - the candidate fields, the initonly ones (reflection still writes those),
+  the reference-typed subset the remap pass walks - and copied through a compiled expression (one
+  `ldfld`/`stfld` pair per field, no boxing). Without dynamic code (iOS AOT) or on a field shape
+  expressions refuse, the copier is the same reflection loop as before. Same fields, same order,
+  value types by value, references by reference; `object.MemberwiseClone` is called through an
+  open delegate instead of `MethodInfo.Invoke`.
+- `GameObject.AddComponent`: one compiled parameterless constructor per component type instead of
+  `Activator.CreateInstance(type, nonPublic: true)` on every call, and the `[RequireComponent]`
+  lookup cached per type. A type with no parameterless constructor, an abstract type or an AOT
+  runtime keeps the Activator path and its exceptions.
+- `Instantiate(Mesh)` clones a mesh by value through `Mesh.CopyTo` (which now also carries the wide
+  UV channels and topologies), as the original engine does; the omni crystals' flip wave runs.
+
+After, same replay, same Release flags, interleaved with the HEAD binary (B = HEAD, A = fixed; the
+steady `MinigameBloomrush` window; ms are wall time per frame under the load above):
+
+| Run | tick sum | `coroutines` | `fixed` | `tasks` | `late` | KB/frame co / tasks / update / late | gen0 per 100 f | GC pause ms/f | over 33 ms | run MB allocated | gen0/1/2 | exceptions |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| B1 | 8.46 | 3.10 | 2.69 | 0.73 | 0.67 | 155 / 83 / 18 / 14 | 1.6 | 0.62 | 63 | 3,835 | 194/116/17 | 4,683 |
+| A1 | 7.01 | 2.57 | 2.20 | 0.60 | 0.43 | 89 / 61 / 11 / 0.2 | 1.0 | 0.45 | 49 | 3,353 | 161/113/13 | 1 |
+| B2 | 7.43 | 2.61 | 2.31 | 0.66 | 0.61 | 155 / 83 / 18 / 15 | 1.6 | 0.44 | 52 | 3,841 | 188/114/11 | 4,683 |
+| A2 | 7.26 | 2.56 | 2.35 | 0.65 | 0.46 | 89 / 61 / 11 / 0.2 | 1.0 | 0.37 | 38 | 3,354 | 161/114/13 | 1 |
+| B3 | 8.11 | 3.17 | 2.32 | 0.68 | 0.67 | 155 / 83 / 18 / 15 | 1.6 | 0.95 | 53 | 3,842 | 189/114/13 | 4,683 |
+| A3 | 8.00 | 2.65 | 2.41 | 1.17 | 0.49 | 89 / 61 / 11 / 0.2 | 1.0 | 0.84 | 54 | 3,353 | 159/111/13 | 1 |
+
+Medians: `coroutines` 3.10 -> 2.57 ms/frame (-17%), `late` 0.67 -> 0.46 (-31%, the exception flood),
+tick sum 8.11 -> 7.26 (-10%); garbage 109 KB/frame less (155 -> 89, 83 -> 61, 18 -> 11, 15 -> 0.2),
+gen0 collections 1.6 -> 1.0 per 100 frames, the whole run 3,841 -> 3,353 MB (-13%), exceptions
+4,683 -> 1 (the remaining one is `PortSquadView` on an empty profile). The after trace (same 25 s
+window) puts the clone path at 10.8% of Tick (was 21.6%) and GC inside Tick at 13.2% (was 17.0%);
+`CopyFields` is 47 ms of the window (was ~1 s across `SerializedFieldCandidates`,
+`FieldAccessor.Get/SetValue` and the boxing GC). The `fixed`/`update` columns are unchanged, as they
+should be - what moves between the B rows is the machine. Not touched: the GTX 1060 WINDOW figures
+against Unity, the GPU timer comparison and the SustainedLowLatency A/B (the instruments landed
+2026-10-08).
+
+Next, in order of the table: (2) the trigger pass - a per-subtree activity version instead of the
+global epoch so a pool's `SetActive` stops invalidating every collider's `ChainActive`, and a
+world-matrix stamp so `BuildShapes` keeps a static prism's shape; (7) the parity harness - hook
+`GameDataSO` on scene load and asset load only, and give `WriteState` an index instead of a
+177k-behaviour scan; (1b) the container constructors the remap pass still makes through the
+binder (`CloneDictionaryValue`, `CloneHashSetValue`: 2% of Tick); (4) the coroutine runner's
+per-step cost, after the game-side proposal above; the game's `Renderer.isVisible` culling for
+`CrystalFlipWave`.
+
 **C8 - Platforms**
 > Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. For gate G6, compare a thin RHI with a Metal backend against wgpu-native: what the renderer's GL calls map to, what changes in shaders, the effort, and the new dependency.
 
@@ -242,3 +323,4 @@ Next items, by on-screen use (rank with `render.shaders` from each mode's report
 | M0 - runs the real game, builds, tooling, Claude bridge | done | 2026-10-05 | PR #959 |
 | C0 - foundations (architecture review) | done | 2026-10-06 | `ARCHITECTURE_REVIEW_2026-10-06.md` |
 | C1 - parity harness | in progress | 2026-10-10 | Engine side done and the Unity half (board T-3) has landed on this branch (`1a397c3e3`, `646d599e0`: ReplayFile/Recorder/Player, DeterministicSession, ParityProbe, ParityCapture). The engine now hands `--replay` to the game's ReplayPlayer and DeterministicSession (`ParityRun.BeginSession`), hooks `GameDataSO` at asset load (the menu's `OnLaunchGame` reached events.jsonl), refuses an FMOD event no loaded bank carries (strings-bank GUID index; GUIDs.txt is stale, the Bootstrap music IS in the bank) and plays every case as a fixed returning-user profile (`Port/parity/profile`). `skimrace-status` (600 status frames) flies the vessel through the game's ReplayPlayer; `engine_parity {against: self}`: 15 PASS, 1 FAIL (bloomrush-i4 on the Authentication load-time drift, B-1), 5 MISSING. Still owed: the editor capture run (`FrogletTools > Parity > Capture Goldens`, as the `parity` player) for the goldens, and CI's first GitHub run |
+| C7 - performance parity | in progress | 2026-10-10 | Bloomrush intensity 4 profiled headless in Release (session report + dotnet-trace): prefab instantiation was 21.6% of the loop thread's frame; fixed (per-type clone plan, cached constructors, `Instantiate(Mesh)`), proven on three interleaved A/B pairs of the same replay - 109 KB/frame less garbage, gen0 1.6 -> 1.0 per 100 frames, exceptions 4,683 -> 1, `coroutines` 3.10 -> 2.57 ms. Table and the next four items under "C7 session 2026-10-10" above |

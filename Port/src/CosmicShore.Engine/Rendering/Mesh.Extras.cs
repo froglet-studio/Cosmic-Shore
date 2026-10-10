@@ -17,6 +17,17 @@ namespace CosmicShore.Engine
         /// <summary>Components authored for a UV channel (2 unless a Vector3/Vector4 set was used).</summary>
         public int GetUVDimension(int channel) => _uvDims.TryGetValue(channel, out var d) ? d : 2;
 
+        /// <summary>The wide UV channels and topologies, for <see cref="CopyTo"/> (a clone keeps a shield mesh's face centroids).</summary>
+        void CopyExtrasTo(Mesh destination)
+        {
+            destination._uvFull.Clear();
+            foreach (var kv in _uvFull) destination._uvFull[kv.Key] = (Vector4[])kv.Value.Clone();
+            destination._uvDims.Clear();
+            foreach (var kv in _uvDims) destination._uvDims[kv.Key] = kv.Value;
+            destination._topology.Clear();
+            foreach (var kv in _topology) destination._topology[kv.Key] = kv.Value;
+        }
+
         /// <summary>Render backend: channel 1's full-width values when they were authored wider than 2 (the shield meshes' face centroids), else null. Zero-copy.</summary>
         public Vector4[] RenderUv1Wide => _uvFull.TryGetValue(1, out var f) && f.Length == vertexCount ? f : null;
 

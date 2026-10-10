@@ -392,6 +392,7 @@ namespace CosmicShore.Engine
             foreach (var sub in _submeshes) destination._submeshes.Add(Copy(sub));
             destination._bounds = _bounds;
             destination.indexFormat = indexFormat;
+            CopyExtrasTo(destination);
         }
 
         static T[] Copy<T>(T[] source)

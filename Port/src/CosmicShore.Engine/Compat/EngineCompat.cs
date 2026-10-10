@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 
@@ -699,6 +701,18 @@ namespace CosmicShore.Engine
                     if (component.gameObject.activeSelf) pendingActivation = cloned;
                     return cloned.GetComponent(component.GetType()) as T;
                 }
+                case Mesh mesh:
+                {
+                    // A Mesh clones by value (every buffer, submesh, bounds and blend shape), as
+                    // the original engine's Instantiate(Mesh) does: RhombusSkinBaker twins the
+                    // omni crystal's body this way in CrystalFlipWave.Awake. Found by the C7
+                    // profile: the unsupported-type throw here left every omni crystal's
+                    // CrystalFlipWave half-built, and it threw a NullReferenceException from
+                    // LateUpdate on every frame after (4,680 exceptions in one Bloomrush replay).
+                    var clone = new Mesh { name = mesh.name + "(Clone)" };
+                    mesh.CopyTo(clone);
+                    return clone as T;
+                }
                 default:
                     throw new InvalidOperationException($"Instantiate: unsupported type {original.GetType().Name}");
             }
@@ -707,7 +721,17 @@ namespace CosmicShore.Engine
         static readonly MethodInfo MemberwiseCloneMethod =
             typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        static object CloneViaMemberwise(object source) => MemberwiseCloneMethod.Invoke(source, null);
+        // An open-instance delegate over object.MemberwiseClone: a direct call instead of
+        // MethodInfo.Invoke's argument binding on every plain-object and ScriptableObject clone.
+        static readonly Func<object, object> MemberwiseCloneFast = BindMemberwiseClone();
+
+        static Func<object, object> BindMemberwiseClone()
+        {
+            try { return (Func<object, object>)Delegate.CreateDelegate(typeof(Func<object, object>), MemberwiseCloneMethod); }
+            catch (Exception) { return source => MemberwiseCloneMethod.Invoke(source, null); }
+        }
+
+        static object CloneViaMemberwise(object source) => MemberwiseCloneFast(source);
 
         /// <summary>
         /// E16: prefab-faithful clone. Structural copy first (building old→new maps for
@@ -794,8 +818,85 @@ namespace CosmicShore.Engine
 
         static void CopyFields(object source, object target)
         {
-            foreach (var field in SerializedFieldCandidates(source.GetType()))
-                field.SetValue(target, field.GetValue(source));
+            var plan = ClonePlan.For(source.GetType());
+            plan.Copy(source, target);
+            foreach (var field in plan.ReadOnlyFields)
+                field.SetValue(target, field.GetValue(source)); // initonly: reflection may write it, an expression may not
+        }
+
+        /// <summary>
+        /// What Instantiate copies and remaps on one component type, resolved once per type
+        /// (C7, 2026-10-10). Before this, every clone of every component walked
+        /// <see cref="SerializedFieldCandidates"/> twice — GetFields per base type, the
+        /// iterator, then FieldInfo.GetValue/SetValue per field, which BOXES every float,
+        /// int, Vector3 and enum it copies — and the Bloomrush intensity-4 replay mints
+        /// ~19,000 prisms (~170,000 components) while its reef grows: the clone path was
+        /// 15% of the loop thread and the largest GC driver in the arena. The plan holds the
+        /// field arrays and a compiled copier (one ldfld/stfld pair per field, no boxing);
+        /// where dynamic code is unavailable (iOS AOT) or a field refuses an expression, the
+        /// copier is the same reflection loop as before. Semantics are unchanged: the same
+        /// fields in the same order, value types by value, references by reference.
+        /// </summary>
+        sealed class ClonePlan
+        {
+            static readonly ConcurrentDictionary<Type, ClonePlan> s_plans = new();
+
+            public static ClonePlan For(Type type) => s_plans.GetOrAdd(type, static t => new ClonePlan(t));
+
+            /// <summary>Every field Instantiate copies, in declaration order (derived type first), except the initonly ones.</summary>
+            public readonly FieldInfo[] Fields;
+
+            /// <summary>The initonly fields, copied by reflection (an expression cannot assign them).</summary>
+            public readonly FieldInfo[] ReadOnlyFields;
+
+            /// <summary>The fields that can hold a reference into the cloned tree (the remap pass walks only these).</summary>
+            public readonly FieldInfo[] ReferenceFields;
+
+            /// <summary>(source, target): copies <see cref="Fields"/>.</summary>
+            public readonly Action<object, object> Copy;
+
+            ClonePlan(Type type)
+            {
+                var fields = new List<FieldInfo>();
+                var readOnly = new List<FieldInfo>();
+                var references = new List<FieldInfo>();
+                foreach (var field in SerializedFieldCandidates(type))
+                {
+                    (field.IsInitOnly ? readOnly : fields).Add(field);
+                    if (!field.FieldType.IsValueType) references.Add(field);
+                }
+                Fields = fields.ToArray();
+                ReadOnlyFields = readOnly.ToArray();
+                ReferenceFields = references.ToArray();
+                Copy = CompileCopier(type, Fields) ?? ReflectionCopier(Fields);
+            }
+
+            static Action<object, object> CompileCopier(Type type, FieldInfo[] fields)
+            {
+                if (fields.Length == 0) return static (_, _) => { };
+                if (!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported) return null; // the interpreter would be slower than reflection
+                try
+                {
+                    var source = Expression.Parameter(typeof(object), "source");
+                    var target = Expression.Parameter(typeof(object), "target");
+                    var s = Expression.Variable(type, "s");
+                    var t = Expression.Variable(type, "t");
+                    var body = new List<Expression>(fields.Length + 2)
+                    {
+                        Expression.Assign(s, Expression.Convert(source, type)),
+                        Expression.Assign(t, Expression.Convert(target, type)),
+                    };
+                    foreach (var field in fields)
+                        body.Add(Expression.Assign(Expression.Field(t, field), Expression.Field(s, field)));
+                    return Expression.Lambda<Action<object, object>>(Expression.Block(new[] { s, t }, body), source, target).Compile();
+                }
+                catch (Exception) { return null; } // a field shape expressions refuse (a pointer, say): reflection copies the type
+            }
+
+            static Action<object, object> ReflectionCopier(FieldInfo[] fields) => (source, target) =>
+            {
+                foreach (var field in fields) field.SetValue(target, field.GetValue(source));
+            };
         }
 
         /// <summary>
@@ -820,7 +921,7 @@ namespace CosmicShore.Engine
             foreach (var cloned in map.Values)
             {
                 if (cloned is not Component component || component is Transform) continue;
-                foreach (var field in SerializedFieldCandidates(component.GetType()))
+                foreach (var field in ClonePlan.For(component.GetType()).ReferenceFields)
                     RemapField(component, field, map);
             }
         }
