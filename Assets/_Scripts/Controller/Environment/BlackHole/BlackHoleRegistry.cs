@@ -140,6 +140,36 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Make room for <paramref name="needed"/> more holes by ending the OLDEST live holes that
+        /// <paramref name="evictable"/> lets go — each with its partner (its <see cref="BlackHole.Throat"/>, and
+        /// any registry <see cref="Pair"/> it belongs to) — until they fit. True when they fit now (also when
+        /// they already did, with nothing touched). The budget is the warp bank's four slots
+        /// (<see cref="BlackHoleWarp.Slots"/>), i.e. two pairs for EVERY vessel together, so with three Stoats
+        /// slinging a pilot's press is otherwise refused whenever two others hold theirs. The caller decides
+        /// whose holes may give way (the Stoat: a human pilot's press reclaims an autopilot's pair).
+        /// </summary>
+        public static bool TryReclaim(int needed, System.Predicate<BlackHole> evictable)
+        {
+            if (CanSpawn(needed)) return true;
+            if (evictable == null) return false;
+            for (int i = 0; i < _holes.Count;)
+            {
+                var hole = _holes[i];
+                if (hole == null || hole.IsDespawning || !evictable(hole)) { i++; continue; }
+                CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                    $"[BlackHole] #{hole.Id} reclaimed for a new pair ({_holes.Count} holes live, budget {Config.MaxBlackHoles})");
+                var pair = PairOf(hole);
+                if (pair != null) Annihilate(pair);
+                var partner = hole.Throat;
+                if (!hole.IsDespawning) hole.BeginDespawn();
+                if (partner != null && !partner.IsDespawning) partner.BeginDespawn();
+                if (CanSpawn(needed)) return true;   // Prune drops the despawning ones from _holes
+                i = 0;                               // _holes changed under us: rescan from the oldest
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Room for <paramref name="needed"/> more holes under the budget, with a sane config. Logs
         /// the refusal: the shader bank and the job's well list are both sized to the budget.
         /// </summary>

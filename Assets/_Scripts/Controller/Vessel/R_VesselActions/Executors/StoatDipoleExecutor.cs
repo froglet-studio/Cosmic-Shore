@@ -183,7 +183,7 @@ namespace CosmicShore.Gameplay
 
         bool Spawn(Vector3 sinkAt, Vector3 sourceAt)
         {
-            if (!BlackHoleRegistry.CanSpawn(2))
+            if (!HasRoomForPair())
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
                     $"[Stoat] dipole refused — needs two free of {BlackHoleRegistry.Config.MaxBlackHoles} holes ({BlackHoleRegistry.Count} live).");
@@ -207,6 +207,32 @@ namespace CosmicShore.Gameplay
             _age = 0f;
             ApplyOwnerRules();
             return true;
+        }
+
+        /// <summary>
+        /// Room for this hull's two poles. The hole budget is SHARED by every vessel (four holes: the warp
+        /// bank, <see cref="BlackHoleWarp.Slots"/>), and a path-watching autopilot keeps its pair open as much
+        /// of the race as it can (relaying a new one 0.25 s after the last), so in Slingshot against two AIs
+        /// their four poles fill the budget nearly all the time and a human's press was refused silently —
+        /// "sometimes the trigger lays nothing". A HUMAN pilot's pair therefore reclaims the oldest
+        /// autopilot-owned pair when the budget is full; an autopilot never reclaims, it waits for room.
+        /// Runs on every machine that lays a copy, so the host and the peers make the same call.
+        /// </summary>
+        bool HasRoomForPair()
+        {
+            if (BlackHoleRegistry.CanSpawn(2)) return true;
+            if (_status == null || _status.AutoPilotEnabled) return false;
+            return BlackHoleRegistry.TryReclaim(2, _reclaimable ??= IsReclaimable);
+        }
+
+        System.Predicate<BlackHole> _reclaimable;
+
+        /// <summary>A hole another hull laid while flying on autopilot.</summary>
+        bool IsReclaimable(BlackHole hole)
+        {
+            var owner = hole != null ? hole.OwnerVessel : null;
+            if (owner == null || owner == OwnerTransform()) return false;
+            return owner.TryGetComponent<IVesselStatus>(out var other) && other.AutoPilotEnabled;
         }
 
         void Close(bool annihilate)

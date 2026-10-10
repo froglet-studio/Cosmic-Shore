@@ -42,7 +42,11 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>One pair per Stoat.</b> A new press ends this hull's last pair (and slings it out of an
     /// orbit still running, so chaining triggers chains turns); other hulls' and the tool's pairs are
-    /// left alone.</para>
+    /// left alone — with one exception. The hole budget is shared by every hull (four holes, two pairs:
+    /// the shader's warp bank, <see cref="BlackHoleWarp.Slots"/>), so in a race against two autopilots
+    /// a human's press would be refused whenever both AIs were holding a pair. A HUMAN's press therefore
+    /// reclaims the oldest autopilot-owned holes when the budget is full
+    /// (<see cref="BlackHoleRegistry.TryReclaim"/>); an autopilot never reclaims, it waits.</para>
     /// </summary>
     public sealed class StoatSlingExecutor : ShipActionExecutorBase
     {
@@ -69,6 +73,8 @@ namespace CosmicShore.Gameplay
         readonly List<ShipActionSO> _bindScratch = new();
         float _aiLastSlingTime = float.NegativeInfinity;
         float _aiReleaseAt = float.PositiveInfinity;
+        Side _aiSide;
+        System.Predicate<BlackHole> _reclaimable;
 
         // The orbit in flight (drift pair).
         bool _orbiting;
@@ -96,6 +102,7 @@ namespace CosmicShore.Gameplay
             _holds[0] = default;
             _holds[1] = default;
             _orbiting = false;
+            _reclaimable = IsReclaimable;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatSlingExecutor has no StoatSlingConfig — the triggers will sling nothing. " +
@@ -155,7 +162,7 @@ namespace CosmicShore.Gameplay
             if (_orbiting) Slingshot(boost: true);
             EndLastPair();
             var bh = BlackHoleRegistry.Config;
-            if (!BlackHoleRegistry.CanSpawn(2))
+            if (!HasRoomForPair())
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
                     $"[Stoat] orbit refused — needs two free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
@@ -251,6 +258,23 @@ namespace CosmicShore.Gameplay
             if (_crystal && !_crystal.IsGone && !_crystal.IsAnnihilating) _crystal.Annihilate(BlackHoleRegistry.Config.CrystalReplaceSeconds);
         }
 
+        /// <summary>Room for this hull's two holes: free budget, or — for a human pilot only — the budget an
+        /// autopilot's oldest pair gives back. An autopilot's press never ends anyone else's pair.</summary>
+        bool HasRoomForPair()
+        {
+            if (BlackHoleRegistry.CanSpawn(2)) return true;
+            if (_status == null || _status.AutoPilotEnabled) return false;
+            return BlackHoleRegistry.TryReclaim(2, _reclaimable ??= IsReclaimable);
+        }
+
+        /// <summary>A hole another hull laid while flying on autopilot.</summary>
+        bool IsReclaimable(BlackHole hole)
+        {
+            var owner = hole != null ? hole.OwnerVessel : null;
+            if (owner == null || owner == OwnerTransform()) return false;
+            return owner.TryGetComponent<IVesselStatus>(out var other) && other.AutoPilotEnabled;
+        }
+
         // ------------------------------------------------------------------ the crystal style
 
         void SlingCrystal(Side side, float hold01)
@@ -265,7 +289,7 @@ namespace CosmicShore.Gameplay
             var axis = StoatSlingMath.PairAxis(side == Side.Left, hull.right);
 
             EndLastPair();
-            if (!BlackHoleRegistry.CanSpawn(2))
+            if (!HasRoomForPair())
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
                     $"[Stoat] sling refused — needs two free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
@@ -314,13 +338,17 @@ namespace CosmicShore.Gameplay
         {
             var handler = _status.ActionHandler;
             if (!handler) return;
-            if (_orbiting)
+            // A hold in progress: let go at the planned time — EVEN IF the orbit already ended under it (the
+            // press refused for budget, the pair reclaimed by a human pilot, or let go at its lifetime). An
+            // unreleased trigger stays Holding, and BeginHold swallows every later press on that side.
+            if (!float.IsPositiveInfinity(_aiReleaseAt))
             {
                 if (Time.time < _aiReleaseAt) return;
                 _aiReleaseAt = float.PositiveInfinity;
-                if (ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
+                if (ResolveBoundInput(_aiSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
                 return;
             }
+            if (_orbiting) return;
             if (config.AiSlingMinTurnDegrees <= 0f) return;
             if (Time.time - _aiLastSlingTime < config.AiSlingIntervalSeconds) return;
             var ai = _status.AIPilot;
@@ -339,6 +367,7 @@ namespace CosmicShore.Gameplay
                 handler.StopShipControllerActionsReplicated(ie);      // the sling
                 return;
             }
+            _aiSide = side;
             _aiReleaseAt = Time.time + StoatSlingMath.AutopilotHoldSeconds(turn, OrbitSpeed(), RadiusFor(config.AutopilotHold01));
             handler.PerformShipControllerActionsReplicated(ie);       // the squeeze: the orbit begins
         }
