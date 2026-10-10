@@ -323,16 +323,12 @@ namespace CosmicShore.Launcher
             dl.AddRect(p, p + size, hover ? Neon.U(accent, 0.9f) : Neon.U(new Vector4(0.149f, 0.169f, 0.278f, 1f)), 12, ImDrawFlags.None, 1.2f);
             float x = p.X + CardPad, inner = size.X - 2 * CardPad, y = p.Y + CardPad;
 
-            // the preview: the hub's canvas, baked (previews/<id>.png), cropped to the card like the hub's canvas
+            // the preview: the hub's canvas, baked (previews/<id>.png), drawn the way the hub's CSS draws it
             var pv0 = new Vector2(x, y); var pv1 = new Vector2(x + inner, y + PreviewH);
             dl.AddRectFilled(pv0, pv1, Neon.U(new Vector4(0.020f, 0.024f, 0.047f, 1f)), 8);
             if (root != null && StudioCatalog.PreviewPath(root, s) is { } png && PreviewTexture(png) is { } t)
             {
-                float want = inner / PreviewH, have = t.size.X / t.size.Y;
-                Vector2 uv0 = Vector2.Zero, uv1 = Vector2.One;
-                if (have > want) { float k = want / have; uv0.X = (1 - k) / 2; uv1.X = 1 - uv0.X; }
-                else { float k = have / want; uv0.Y = (1 - k) / 2; uv1.Y = 1 - uv0.Y; }
-                dl.AddImageRounded((IntPtr)t.tex, pv0, pv1, uv0, uv1, 0xFFFFFFFF, 8);
+                dl.AddImageRounded((IntPtr)t.tex, pv0, pv1, Vector2.Zero, Vector2.One, 0xFFFFFFFF, 8);   // stretched, as the hub's canvas (width 100%, height 150px)
             }
             y += PreviewH + 12;
 
@@ -393,16 +389,18 @@ namespace CosmicShore.Launcher
         /// <summary>The card's buttons in the accent, wrapping when the card is narrow; the first one (Open studio) is the card's own.</summary>
         static void CardActionRow(IReadOnlyList<PageAction> actions, float width, Vector4 accent)
         {
-            float x = 0;
+            var origin = ImGui.GetCursorScreenPos();   // placed by hand: an ImGui new line would start at the window's edge, not the card's
+            float x = 0, y = 0;
             for (int i = 0; i < actions.Count; i++)
             {
                 var act = actions[i];
                 float bw = ButtonW(act.Label);
                 if (i > 0)
                 {
-                    if (x + 8 + bw <= width) { ImGui.SameLine(0, 8); x += 8; }
-                    else x = 0;
+                    if (x + 8 + bw <= width) x += 8;
+                    else { x = 0; y += 46; }
                 }
+                ImGui.SetCursorScreenPos(origin + new Vector2(x, y));
                 if (Neon.Button("cb" + act.Label, act.Label, new Vector2(bw, 38), accent, Neon.Small, 15, act.Enabled)) act.Run();
                 Neon.Tooltip(act.Tip);
                 x += bw;
