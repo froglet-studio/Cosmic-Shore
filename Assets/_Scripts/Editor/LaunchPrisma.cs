@@ -21,8 +21,8 @@ namespace CosmicShore.Editor
     /// .NET 10 SDK on the machine it falls back to <c>Port/dist/Prisma-Windows.zip</c>, and Prisma
     /// installs its own SDK the first time START is pressed, after which builds work. Prisma is told
     /// which clone opened it, so its PLAY page follows the branch Unity has checked out. FrogletTools > Amoebius > Vessel
-    /// Studio Page opens it on its VESSEL STUDIO page (<c>--page studios</c>); FrogletTools > Vessels > Vessel Studio opens the
-    /// studio pages themselves (the artifact's own files) in an app window.
+    /// Studio Page opens it on its VESSEL STUDIO page (<c>--page studios</c>); FrogletTools > Vessels > Vessel Studio opens it
+    /// with <c>--page studios:hub</c>: the studio built from this checkout's branch, served by Amoebius, in its own window.
     /// READER: writes only under the gitignored <c>Library/</c>, never assets - no ship panel.
     /// </summary>
     public static class LaunchPrisma
@@ -74,20 +74,21 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
-            Description = "Opens the Vessel Studio itself (the same pages as the claude.ai artifact: every studio, tab and option) in its own window, from this checkout. No build, no Amoebius needed.",
+            Description = "Opens the Vessel Studio (every studio, tab and option, the same build as the claude.ai artifact) in its own window, " +
+                          "built from this checkout's branch and served by Amoebius, where Sync, Ask and Decisions work.",
             DocPath = "Docs/Studios/VESSEL_STUDIO_PLAN.md")]
         public static void OpenVesselStudio()
         {
-            // The Vessel Studio is ONE thing (/vessel-studio section 0): the pages in Docs/Studios/VesselStudio are the
-            // artifact's own files, so opening the hub from the checkout shows exactly what claude.ai shows. What only
-            // claude.ai can do (Ask, shared requests and log, Sync) says so on the page and links to the artifact.
-            string hub = Path.Combine(Root, "Docs", "Studios", "VesselStudio", "index.html");
-            if (!File.Exists(hub))
+            // One build on every surface (/vessel-studio D31): Unity never opens the repo pages as files. Amoebius builds this
+            // checkout's branch (--clone), serves it on 127.0.0.1 with the artifact's backend, and opens the hub in its own
+            // window (--page studios:hub).
+            if (!File.Exists(Path.Combine(Root, "Docs/Studios/VesselStudio/studios.json")))   // the catalog, read by Amoebius; never a page opened here
             {
-                EditorUtility.DisplayDialog("Vessel Studio", "This checkout has no Docs/Studios/VesselStudio. Switch to Ys-bleeding-edge.", "OK");
+                EditorUtility.DisplayDialog("Vessel Studio", "This checkout has no Vessel Studio. Switch to Ys-bleeding-edge.", "OK");
                 return;
             }
-            OpenStudioWindow(hub);
+            _openPage = "studios:hub";
+            Launch();
         }
 
         [MenuItem("FrogletTools/Amoebius/Vessel Studio Page", false, 3)]
@@ -98,47 +99,6 @@ namespace CosmicShore.Editor
         {
             _openPage = "studios";
             Launch();
-        }
-
-        /// <summary>
-        /// A studio page as its own app window (Edge, always on Windows 10/11, or Chrome: <c>--app</c>, no tabs or address
-        /// bar), with a window profile under <c>Library/</c> so the studio's layout is remembered; the default browser
-        /// when neither is installed. Amoebius's OPEN IN AMOEBIUS does the same (StudioCatalog.AppWindowArgs).
-        /// </summary>
-        static void OpenStudioWindow(string pagePath)
-        {
-            string url = new Uri(Path.GetFullPath(pagePath)).AbsoluteUri;
-            string profile = Path.Combine(Root, "Library", "VesselStudioWindow");
-            foreach (var exe in AppBrowserCandidates())
-            {
-                if (!File.Exists(exe)) continue;
-                try
-                {
-                    Process.Start(new ProcessStartInfo(exe,
-                        $"--app=\"{url}\" --user-data-dir=\"{profile}\" --window-size=1600,960 --no-first-run --no-default-browser-check")
-                        { UseShellExecute = false });
-                    return;
-                }
-                catch (Exception) { /* try the next browser */ }
-            }
-            Application.OpenURL(url);
-        }
-
-        static string[] AppBrowserCandidates()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                var roots = new[] { Environment.GetEnvironmentVariable("ProgramFiles(x86)"), Environment.GetEnvironmentVariable("ProgramFiles"), Environment.GetEnvironmentVariable("LOCALAPPDATA") }
-                    .Where(r => !string.IsNullOrEmpty(r));
-                return roots.SelectMany(r => new[]
-                {
-                    Path.Combine(r, "Microsoft", "Edge", "Application", "msedge.exe"),
-                    Path.Combine(r, "Google", "Chrome", "Application", "chrome.exe"),
-                }).ToArray();
-            }
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return new[] { "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" };
-            return new[] { "/usr/bin/microsoft-edge", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser" };
         }
 
         [MenuItem("FrogletTools/Amoebius/Rebuild Amoebius", false, 1)]
@@ -354,7 +314,7 @@ namespace CosmicShore.Editor
             try
             {
                 // --clone: Prisma's PLAY follows the branch this checkout is on (and says when it plays another).
-                // --page: a menu item that opens a particular page (Vessel Studio -> STUDIOS) asks for it once.
+                // --page: a menu item that opens a particular page asks for it once (Vessel Studio -> studios:hub opens the hub too).
                 string args = $"--clone \"{Root}\"" + (_openPage != null ? $" --page {_openPage}" : "");
                 _openPage = null;
                 Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });

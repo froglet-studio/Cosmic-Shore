@@ -32,7 +32,7 @@ namespace CosmicShore.Editor.Studios
     /// </summary>
     public sealed class VesselStudioWindow : EditorWindow
     {
-        const string ToolName = "Vessel Studio (Unity)";
+        const string ToolName = "Vessel Studio (in-editor tuner)";
         const string StudioUrl = "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa";
         const string StoatStudioFile = "Docs/Studios/StoatFlightStudio.html";
         const string DipoleConfigPath = "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset";
@@ -154,7 +154,7 @@ namespace CosmicShore.Editor.Studios
         Vector2 _scroll;
         FrogletToolShipContext _ship;
 
-        [MenuItem("FrogletTools/Vessels/Vessel Studio (in Unity)", false, 1)]
+        [MenuItem("FrogletTools/Vessels/Vessel Studio (in-editor tuner)", false, 1)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 5,
             Description = "The Vessel Studio's six tabs over the vessel's real assets: tune while you play, every number live " +
                           "and the project's the moment it moves, with the web studio's value beside each row.",
@@ -162,7 +162,7 @@ namespace CosmicShore.Editor.Studios
         public static void Open()
         {
             var w = GetWindow<VesselStudioWindow>();
-            w.titleContent = new GUIContent("Vessel Studio");
+            w.titleContent = new GUIContent("Vessel Studio tuner");
             w.minSize = new Vector2(420f, 360f);
             w.Show();
         }
