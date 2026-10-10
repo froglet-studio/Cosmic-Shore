@@ -1996,7 +1996,7 @@ MonoBehaviour:
   minBlockScale: 1
   maxBlockScale: 4
   waitTillOutsideSkimmer: 0
-  shielded: 1
+  shielded: 0
   offset: 0
   Gap: 1
   MinimumGap: 1

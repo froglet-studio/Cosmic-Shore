@@ -238,7 +238,14 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return null;
 
-            float radius = _shape.Config.RecruitRadius * _shape.MassMultiplier;
+            // The loose mass is the Serpent's own trail, which runs back from the SEED along the
+            // wall's normal, while the outer sites sit several shielded pitches (13.5 x Mass) out
+            // in the wall's plane. A radius about the site alone would leave every site further
+            // than that from the trail with nothing to pull and the wall would stop after one
+            // ring, so the reach grows with the site's distance from the seed: anything a site
+            // could reach, the seed's own neighbourhood included, is a candidate.
+            float radius = _shape.Config.RecruitRadius * _shape.MassMultiplier
+                           + Vector3.Distance(site, _origin);
             int n = index.QuerySphere(site, radius, s_scratch);
             Prism best = null;
             float bestSqr = float.MaxValue;

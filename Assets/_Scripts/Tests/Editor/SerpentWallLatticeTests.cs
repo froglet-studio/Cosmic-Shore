@@ -15,9 +15,12 @@ namespace CosmicShore.Tests
         const float Short = 3f;   // the Serpent trail's BaseScale short side
 
         [Test]
-        public void PitchIsHalfLongPlusHalfShort()
+        public void PitchIsTheShieldReachOfHalfLongPlusHalfShort()
         {
-            Assert.AreEqual(4.5f, SerpentWallLattice.Pitch(Short), 1e-5f);
+            // The shield octahedron reaches 3x the box's half-extents, so shielded bricks touch
+            // at 3 x (6/2 + 3/2) = 13.5, not at the box's own 4.5 (which packed them into a clump).
+            Assert.AreEqual(3f, SerpentWallLattice.ShieldReach, 1e-6f);
+            Assert.AreEqual(13.5f, SerpentWallLattice.Pitch(Short), 1e-5f);
             Assert.AreEqual(new Vector3(3f, 6f, 0.5f), SerpentWallLattice.BrickScale(Short, 0.5f));
         }
 
@@ -49,6 +52,40 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShieldedNeighboursNeverInterpenetrate()
+        {
+            // The regression: at the box pitch every shielded brick overlapped its neighbours.
+            // Rest pose and the Lockdown twist both must leave neighbouring diamonds at most
+            // touching.
+            float pitch = SerpentWallLattice.Pitch(Short);
+            var a = new Vector2[4];
+            var b = new Vector2[4];
+            foreach (float twist in new[] { 0f, 15f })
+            foreach (var n in new[] { new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(-1, 1) })
+            {
+                SerpentWallLattice.Rhombus(0, 0, Short, pitch, twist, a);
+                SerpentWallLattice.Rhombus(n.x, n.y, Short, pitch, twist, b);
+                Assert.IsFalse(Overlap(a, b, 1e-3f), $"seed and {n} overlap at twist {twist}");
+            }
+        }
+
+        static bool Overlap(Vector2[] a, Vector2[] b, float eps) => !Separated(a, a, b, eps) && !Separated(b, a, b, eps);
+
+        static bool Separated(Vector2[] edges, Vector2[] a, Vector2[] b, float eps)
+        {
+            for (int e = 0; e < edges.Length; e++)
+            {
+                Vector2 d = edges[(e + 1) % edges.Length] - edges[e];
+                var axis = new Vector2(-d.y, d.x).normalized;
+                float aMin = float.MaxValue, aMax = float.MinValue, bMin = float.MaxValue, bMax = float.MinValue;
+                foreach (var p in a) { float v = Vector2.Dot(p, axis); aMin = Mathf.Min(aMin, v); aMax = Mathf.Max(aMax, v); }
+                foreach (var p in b) { float v = Vector2.Dot(p, axis); bMin = Mathf.Min(bMin, v); bMax = Mathf.Max(bMax, v); }
+                if (aMax <= bMin + eps || bMax <= aMin + eps) return true;
+            }
+            return false;
+        }
+
+        [Test]
         public void SitesAlternateOrientationLikeACheckerboard()
         {
             Assert.IsTrue(SerpentWallLattice.IsLongAxisUp(0, 0));
@@ -62,10 +99,10 @@ namespace CosmicShore.Tests
         {
             // The holes are what make the pattern symmetric rather than a strict tiling. Their
             // corners are the four contact points, so the hole is a square of side
-            // sqrt(0.5^2 + 1^2) x short = 1.118 x short.
+            // 3 x sqrt(0.5^2 + 1^2) x short = 3.354 x short (the shield's reach times the box's).
             var even = SerpentWallLattice.LargestClearSquare(0, 0, Short, 0f);
             var odd = SerpentWallLattice.LargestClearSquare(1, 0, Short, 0f);
-            float expected = Mathf.Sqrt(1.25f) * Short;
+            float expected = SerpentWallLattice.ShieldReach * Mathf.Sqrt(1.25f) * Short;
             Assert.AreEqual(expected, even.side, 0.05f);
             Assert.AreEqual(expected, odd.side, 0.05f);
         }

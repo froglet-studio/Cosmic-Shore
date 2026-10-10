@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -13,12 +14,17 @@ namespace CosmicShore.Gameplay
     /// and long-axis-RIGHT when it is odd. It reads as a herringbone, but it is symmetric rather
     /// than a strict tiling: a square hole is left at every lattice cell.</para>
     ///
-    /// <para><b>The spacing is set by the SHIELDED shape.</b> A shielded prism draws as an
-    /// octahedron, whose cross-section in the wall plane is a rhombus with its vertices on the
-    /// brick's long and short axes. The pitch is chosen so each brick's LONG-axis vertex touches
-    /// the neighbouring brick's SHORT-axis vertex: <c>long/2 + short/2 = pitch</c>, which is
-    /// <c>1.5 x short</c> at aspect 2. So the wall is a lattice of touching diamonds once an omni
-    /// crystal shields it, and plain bricks with clearance before.</para>
+    /// <para><b>The spacing is set by the SHIELDED shape.</b> A shielded prism draws as the
+    /// octahedron that CIRCUMSCRIBES its box, at <see cref="ShieldReach"/> (3) times the box's
+    /// half-extents (<c>OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE</c>), so its cross-section in
+    /// the wall plane is a rhombus whose vertices sit 3 x half the long side and 3 x half the short
+    /// side from the brick's centre. The pitch is chosen so each brick's LONG-axis vertex touches
+    /// the neighbouring brick's SHORT-axis vertex: <c>3 x (long/2 + short/2) = pitch</c>, which is
+    /// <c>4.5 x short</c> at aspect 2. So the wall is a lattice of touching diamonds once an omni
+    /// crystal shields it, and widely spaced plain bricks before. (The first cut used the BOX's
+    /// half-extents and packed the bricks three times too tight: shielded, they interpenetrated
+    /// into one clump. The super-shielded seed's stellation has its spike tips on the corners of
+    /// the same 3x box, which at this pitch meets its four neighbours' tips exactly.)</para>
     ///
     /// <para><b>The Mass-5 twist.</b> Turning every brick clockwise about its own centre by the
     /// same angle keeps each cell square (every cell has four-fold symmetry) but changes its size,
@@ -36,9 +42,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The fixed brick aspect (long / short). The pitch formula assumes it.</summary>
         public const float Aspect = 2f;
 
+        /// <summary>How far a shield reaches past its box, as a multiple of the box's
+        /// half-extents: the shield octahedron's semi-axes are this times the brick's.</summary>
+        public const float ShieldReach = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
+
         /// <summary>Lattice pitch at which shielded (rhombic) bricks touch long vertex to short
-        /// vertex: half the long axis plus half the short axis.</summary>
-        public static float Pitch(float shortSide) => (Aspect + 1f) * 0.5f * shortSide;
+        /// vertex: the shield's reach along half the long axis plus half the short axis.</summary>
+        public static float Pitch(float shortSide) => ShieldReach * (Aspect + 1f) * 0.5f * shortSide;
 
         /// <summary>Brick extents (x = short, y = long, z = depth) for a short side and depth.</summary>
         public static Vector3 BrickScale(float shortSide, float depth) =>
@@ -90,12 +100,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The shielded cross-section of brick (i, j): a rhombus with vertices on the long and short
-        /// axes, turned clockwise by <paramref name="twistDegrees"/> about its own centre.
+        /// axes at the shield's reach, turned clockwise by <paramref name="twistDegrees"/> about its
+        /// own centre.
         /// </summary>
         public static void Rhombus(int i, int j, float shortSide, float pitch, float twistDegrees,
             Vector2[] into)
         {
-            float halfLong = shortSide * Aspect * 0.5f, halfShort = shortSide * 0.5f;
+            float halfLong = ShieldReach * shortSide * Aspect * 0.5f;
+            float halfShort = ShieldReach * shortSide * 0.5f;
             bool up = IsLongAxisUp(i, j);
             Vector2 a = up ? new Vector2(0f, halfLong) : new Vector2(halfLong, 0f);
             Vector2 b = up ? new Vector2(halfShort, 0f) : new Vector2(0f, halfShort);
@@ -132,7 +144,7 @@ namespace CosmicShore.Gameplay
             float step = Mathf.Max(0.1f, angleStepDegrees);
             for (float deg = 0f; deg < 90f; deg += step)
             {
-                float lo = 0f, hi = 3f * shortSide;
+                float lo = 0f, hi = 3f * ShieldReach * shortSide;
                 for (int iter = 0; iter < 32; iter++)
                 {
                     float mid = 0.5f * (lo + hi);

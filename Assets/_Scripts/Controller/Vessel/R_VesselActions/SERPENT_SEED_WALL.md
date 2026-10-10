@@ -22,14 +22,16 @@ or an energized Rhino blade) grows nothing.
 
 ## The wall
 
+The Serpent's trail is laid UNSHIELDED (Garrett, 2026-10-10; `Serpent.prefab` `VesselPrismController.shielded` 1 -> 0). Shielding is what an omni crystal gives the wall, so a trail that arrived shielded showed every brick as an oversized octahedron before any crystal was collected.
+
 | | |
 |---|---|
 | Assembler | `SerpentWallAssembler` on the seed (`SeedWallActionSO.assemblerType: SerpentLattice`). The legacy `WallAssembler` is untouched and still serves flora. |
 | Geometry | `SerpentWallLattice` (pure, tested by `SerpentWallLatticeTests`). |
 | Bricks | Aspect 2: short side x long side 2x short x depth. At rest 3 x 6 x 0.5, the Serpent trail's own `BaseScale`. |
 | Pattern | Checkerboard of orientations: site (i, j) is long-axis-up when i + j is even (the seed is (0, 0) and keeps its own up), long-axis-right when odd. A herringbone that is symmetric, with a square hole at every lattice cell, rather than a strict tiling. |
-| Spacing | Pitch = 1.5 x short. A shielded prism draws as an octahedron, whose cross-section in the wall plane is a rhombus; at this pitch each brick's LONG-axis vertex touches its neighbour's SHORT-axis vertex. The hole is a square of side 1.118 x short. |
-| Growth | Every `siteClaimInterval` (0.15 s) while bonding, the next site outward from the seed (a disc, by distance then angle) pulls the nearest loose prism within `recruitRadius` (40 x Mass multiplier) into place and reshapes it. Up to `bondingDepth` (50) bricks. A site with nothing near it is skipped, never waited on. |
+| Spacing | Pitch = 4.5 x short (13.5 at rest). A shielded prism draws as the octahedron that circumscribes its box at 3x the box's half-extents (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`), whose cross-section in the wall plane is a rhombus; at this pitch each brick's LONG-axis vertex touches its neighbour's SHORT-axis vertex, and the super-shielded seed's spike tips meet its neighbours' tips. The hole is a square of side 3.354 x short. Unshielded, the bricks stand well apart: that gap is the room the shield needs. (The first cut spaced them by the BOX, 1.5 x short, and shielded bricks interpenetrated into one clump.) |
+| Growth | Every `siteClaimInterval` (0.15 s) while bonding, the next site outward from the seed (a disc, by distance then angle) pulls the nearest loose prism within `recruitRadius` (40 x Mass multiplier) PLUS the site's distance from the seed into place and reshapes it. The loose mass is the trail running back from the seed, so a radius about the site alone would starve every site past the first ring. Up to `bondingDepth` (50) bricks. A site with nothing near it is skipped, never waited on. |
 | Stealing | The Serpent's own prisms fly in at `ownPullSpeed` (20 u/s), an opponent's at `opponentPullSpeed` (6 u/s), and an opponent's prism is stolen when it lands. Super-shielded prisms, other seeds and creature bodies (`HealthPrism`) are never recruited. |
 | Ends | Growth stops when the cloak ends or the Serpent flies again. The wall stops answering crystals, and lets its bricks go as ordinary prisms, when the seed is destroyed or loses its super-shield. |
 
@@ -59,8 +61,9 @@ A wall seeded at Mass 5 or above locks up on its first omni crystal:
 1. Every brick turns `lockTwistDegrees` (15) clockwise as seen from the Serpent's seat, over
    `lockTwistSeconds` (0.4 s). Every lattice cell keeps four-fold symmetry, so it stays square,
    but the two mirror-image kinds of cell go opposite ways: one parity closes and the other opens.
-   That is the checkerboard. At 15 degrees the open hole grows from 3.35 to 3.65 (short = 3) and
-   the closed one shrinks to 2.6; the opening peaks around 20 degrees.
+   That is the checkerboard. At 15 degrees the open hole grows from 10.06 to 10.95 (short = 3) and
+   the closed one shrinks to 7.83; the opening peaks around 20 degrees. Neighbouring shielded
+   bricks never interpenetrate at any twist up to 40 degrees (`SerpentWallLatticeTests`).
 2. Each open cell whose four corner bricks are standing is sealed with a flat DANGER panel
    (`lockPanelThickness` 0.15), the largest square that fits between the twisted bricks
    (`SerpentWallLattice.LargestClearSquare`), laid through `EventOnSpawnPrismAndReturn` in the
