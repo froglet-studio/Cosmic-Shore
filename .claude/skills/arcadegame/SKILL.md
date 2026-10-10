@@ -181,7 +181,7 @@ generator, the HULL's numbers (ability config, chase camera, AI tuning) through 
 (`/vessel` §4.ad). The studio's AI levels are the lobby's `AIDifficulty` (Skim Race levels via
 `SkimRaceDifficultySO`; a gate race applies them with `GateRaceHandicap`). Two studio behaviours the mode
 must keep: an AI that presses an input releases it on hand-back (`/vessel` §4.ad.3), and a hull nobody is
-flying still heads for its next target (the studio's idle takeover, `/vessel-studio` D30; in the game a
+flying still heads for its next target (the studio's idle takeover, `/vessel-studio` D31; in the game a
 human seat with no input simply flies straight, so a mode that can leave a seat unattended needs an AI
 backfill, not a drifting hull).
 

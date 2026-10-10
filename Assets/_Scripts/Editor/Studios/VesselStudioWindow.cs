@@ -13,7 +13,7 @@ using UnityEngine;
 namespace CosmicShore.Editor.Studios
 {
     /// <summary>
-    /// The Vessel Studio in Unity (<c>Docs/Studios/VESSEL_STUDIO_PLAN.md</c>, <c>/vessel-studio</c> D21 and D31).
+    /// The Vessel Studio in Unity (<c>Docs/Studios/VESSEL_STUDIO_PLAN.md</c>, <c>/vessel-studio</c> D21 and D32).
     ///
     /// <para><b>Home</b> (what FrogletTools ▸ Vessels ▸ Vessel Studio opens): the web hub's front page, the "Vessel
     /// Studio" heading and one card per studio in <c>Docs/Studios/VesselStudio/studios.json</c>, each with the hub's
