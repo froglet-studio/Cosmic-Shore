@@ -111,6 +111,7 @@ export STEAM_APPID=<appid> STEAM_DEPOTID=<depotid> STEAM_USER=<builder-account>
 ```
 
 Branches: `internal` (team) → `beta` (playtesters, used for E7) → `default` (players).
+Under the Playtest model there are **two apps** and the invite channel is the Playtest app's `default`, not the base app's `beta` — `./Tools/Steam/upload.sh --target playtest …`; branch model in `Docs/STEAM_PLAYTEST_RUNBOOK.md`.
 Publishing to `default` requires both `--set-live` and typing the app id back. Every other upload
 lands in Steamworks unpublished, which is the normal path.
 
