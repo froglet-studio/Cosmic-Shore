@@ -65,6 +65,47 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI pilots, the join-failure notice, and the skimmer audit (`cece/nice-brahmagupta-ojclij`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**Landed** (each compile-proved with `Tools/Build/unity_refcompile`, player and editor configs, 0
+project errors; the Prisma live compile and its 1691-test engine suite green; no editor in the session):
+
+- `GameDataSO.IsGeneticTrainingSession` is the genetic trainer's own flag. `IsTraining` is practice
+  mode again (`Arcade.LaunchTrainingGame`, reached from the Hangar's training modal and the daily
+  challenge), and it no longer stands down `TrainingDeploymentService`, `TrainingAIDeploymentBridge`
+  or `SkimRaceAIDeployment.Claims` — every Hangar practice game used to suppress the Skim Race pilot
+  and the archive deployment by accident.
+- `PrismSensor` (the genome pilot's prism neighbourhood) reads `PrismSpatialIndex.QuerySphere`
+  instead of `Physics.OverlapSphereNonAlloc`, so it sees a prism during the 0.6 s its collider is
+  still off and is no longer truncated to 64 colliders.
+- `ToastChannel.ShowPrefixOrHold`: a failed party join's "Couldn't join - returned to your menu."
+  is parked on the channel asset across the Menu_Main reload and drained by the fresh scene's
+  `ToastService.OnEnable`.
+- `Tools/Build/audit_vessel_skimmers.py`, an offline twin of **FrogletTools ▸ Vessels ▸ Audit
+  Vessel Skimmers**, reproduces QA's six hulls (DT-002) and names the fault per hull.
+
+**Verify in editor:**
+1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
+   Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
+   or simply: it collects crystals along the track). Before this branch it kept the legacy
+   `AIPilot`.
+2. FrogletTools ▸ AI Training ▸ Learn on `Scenario_HexRace`: the rollout runs (`IsGeneticTrainingSession`
+   true on `GameData.asset` while in Play), no second pilot is installed on an AI seat (one
+   `TrainingPilot`, `AIPilot` disabled), and leaving Play clears the flag (the play-mode hook).
+   `IsTraining` stays false throughout.
+3. Edit-mode: `AITrainingCoreTests`, `InputOnlyContractTests`, `SkimRaceAITests`
+   (`Deployment_ClaimsOnlyNormalSkimRaceAndRegatta` now also asserts a practice game claims the
+   pilot) and the new `ToastChannelHoldTests` — all green.
+4. A Learn rollout in a dense cell: `TrainingPilot`'s obstacle avoidance and skim policies react
+   to freshly laid trail (the pilot steers around a rail laid in front of it within a second of the
+   lay, which the collider-based scan could not see).
+5. Force a party join failure (accept an invite whose host has quit, or kill the host during the
+   accept): after the bounce, the fresh Menu_Main shows the "Couldn't join" toast once.
+6. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers** and compare its six hulls and reasons with
+   `python3 Tools/Build/audit_vessel_skimmers.py`; a difference is a finding for DT-002.
+
+---
+
 ### 🔴 PvP is petals only: one gate for scored hits and petal theft (`claude/pvp-petals-only`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **Landed** (rule: `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md` § "PvP is petals only"): every combat-hit
