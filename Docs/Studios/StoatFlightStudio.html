@@ -354,6 +354,7 @@
         <div id="scenePanel"></div></details>
       <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
         <div id="racePanel"></div>
+        <label class="check" title="With Is AI off and no key, stick, trigger or touch for 3 s, the AI flies your hull to its next ring; any input hands it back (D31). Off: an idle hull keeps its heading."><input type="checkbox" id="idleTakeover"> <span><b>AI holds my idle hull</b> — after 3 s with no input it flies to the next ring; touch any control to take it back</span></label>
         <div hidden>
         <label class="check"><input type="checkbox" id="aiOn"> <span><b>AI flies the Stoat</b> — races, then starts again; change any setting and watch the next lap</span></label>
         <div class="rowsel">
@@ -710,9 +711,10 @@
   const portal = Object.assign({ A: true, B: true }, saved.portal || {});
   let mode = 'fly';
   let invertY = !!saved.invertY;
+  let idleTakeover = saved.idleTakeover !== false;   // D31: on unless switched off
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
+  function persist() { lsSet(LS_KEY, { P: BP, liveStyles, style, slingMode, portal, invertY, idleTakeover, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
     rivals: typeof seatLv !== 'undefined' ? { v: 2, lv: seatLv, st: seatStyle, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel,
     youStyle: typeof youStyle !== 'undefined' ? youStyle : saved.youStyle }); }
 
@@ -4289,6 +4291,8 @@
   document.querySelectorAll('[data-sling]').forEach((b) => b.addEventListener('click', () => setSlingMode(b.dataset.sling)));
   document.querySelectorAll('[data-sling]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.sling === slingMode ? 'true' : 'false'));
   $('portal').addEventListener('change', (e) => { portal[style] = e.target.checked; persist(); });
+  $('idleTakeover').checked = idleTakeover;
+  $('idleTakeover').addEventListener('change', (e) => { idleTakeover = e.target.checked; idleFor = 0; persist(); });
   document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
   function setMode(m) {
     mode = m;
@@ -4598,7 +4602,7 @@
   // Your hull's input this step: yours, or (Is AI ticked, or nobody on the controls for IDLE_TAKEOVER_S) the AI's.
   function pilotInput(dt) {
     if (aiOn) return youAiInput(dt);
-    if (mode === 'fly' && race !== 'ready') { if (humanOnControls()) idleFor = 0; else idleFor += dt; } else idleFor = 0;   // racing, and after the finish too
+    if (idleTakeover && mode === 'fly' && race !== 'ready') { if (humanOnControls()) idleFor = 0; else idleFor += dt; } else idleFor = 0;   // racing, and after the finish too
     const idleAi = idleFor >= IDLE_TAKEOVER_S;
     if (idleAi !== wasIdleAi) { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); }   // a pair is never handed over
     wasIdleAi = idleAi;
@@ -4732,7 +4736,7 @@
   buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
+  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, get idleTakeover() { return idleTakeover; }, set idleTakeover(v) { idleTakeover = !!v; idleFor = 0; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, STYLE_BRAIN, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera, get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
   Object.assign(window.__stoatStudio, {

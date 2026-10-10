@@ -85,6 +85,53 @@ of rows over its own assets.
   load size). Until it exists, the web studios are the browser path. To be scoped as a `Port/docs/ROADMAP.md`
   milestone before any work starts.
 
+## 4a. The Amoebius studio: the artifact's studio with the game's own graphics (decided 2026-10-10)
+
+**The owner's decisions (2026-10-10):** the web studio stays (the JavaScript studio: the artifact, whose files ARE
+`Docs/Studios/VesselStudio/`, D30); the in-game studio becomes the final check; parameters and mechanics are tied
+between them; the Unity window stays for live tuning until the Amoebius studio replaces it. Amoebius in WebAssembly
+is a future to-do (`Port/docs/ROADMAP.md` item 13).
+
+**What "a clone of the artifact inside Amoebius" means.** The artifact's JavaScript cannot draw the game's graphics:
+the graphics are the game's scenes, prefabs and shaders. So the clone is the studio REBUILT AS GAME CONTENT: the same
+six tabs, the same rows, the same players list, cameras, intensity ladder and AI levels, but flying the real vessel
+in a real scene through the game's own C#. Being game content (a scene plus a runtime panel under `Assets/`),
+Amoebius runs it unchanged with the real graphics, and Unity runs the very same scene.
+
+**The loop it gives:** tune in Amoebius → the panel writes the vessel's assets → Amoebius's GIT page commits and pushes
+→ Unity pulls and flies the same numbers. No Unity window needed once it works.
+
+### Steps, in order
+
+1. **Tie the parameters (no new UI).** A script exports every vessel's tuning assets to
+   `Docs/Studios/VesselStudio/<vessel>.params.json`; the web studio loads its defaults from that file instead of its own
+   `SHIPPED` copy; a gate fails when the two disagree. (Today the Unity window shows the web studio's value per row.)
+2. **Tie the mechanics.** Parity tests feed identical inputs to the JavaScript and the C#: the dipole step
+   (`fieldSubstep` vs `StoatDipoleMath.Step`), the path prediction (`fieldPath` vs `PredictPath`), the AI's lay /
+   let-go rules. Node runs the page's functions, a dotnet harness runs the C#; a difference fails.
+3. **Close the renderer gaps** (`Port/docs/ROADMAP.md` item 14): Amoebius must draw `Graphics.RenderMeshInstanced`
+   (the 3D path dots) and translate `CosmicShore/BlackHoleLens` (today a white disc). Without them the studio cannot be
+   judged by eye.
+4. **The studio scene.** `Assets/_Scenes/Studios/VesselStudio.unity`, dev-only, built from the Stoat's gate-race scene
+   (Slingshot / Warpline already lay the I1-I4 course ladder): the real vessel, AI seats through
+   `ServerPlayerVesselInitializerWithAI` driven by the Players list (domain, difficulty, play style), the three cameras
+   (the Third Eye rig's pose maths moved to runtime), simulation speed, auto-restart, and the idle takeover (D31) as an
+   AI Config switch.
+5. **The studio panel (runtime, dev-only).** The six tabs over the vessel's real assets, declared as DATA: a
+   `VesselStudioProfileSO` per vessel listing its rows (asset, field, label, studio key), which is what
+   `VesselStudioWindow` hard-codes today. Every row writes the live asset, so the next frame flies it. Built in uGUI with
+   the game's look, so it renders in Unity and Amoebius alike.
+6. **Saving.** In the Unity editor a Save writes through `AssetDatabase`; in Amoebius it writes the asset YAML through
+   the engine's asset tool (`cs-asset set`, what EDITOR ▸ DATA already uses). Then Amoebius's GIT page commits and pushes
+   only those files.
+7. **Launch.** Amoebius's VESSEL STUDIO page gains PLAY IN STUDIO: `--scene VesselStudio --studio-vessel Stoat`. Unity
+   opens the same scene from FrogletTools ▸ Vessels.
+8. **Retire the Unity window** (`VesselStudioWindow`) once steps 4-7 work: the studio scene is then the one tuning
+   surface for both engines.
+
+Rules that hold throughout: the AI stays input-only; difficulty edits belief, never the stick; the studio scene and
+panel are development-only and never ship; the web studio remains the sketchpad, the Amoebius studio the final check.
+
 ## 5. The studio agent
 
 | Where | How |

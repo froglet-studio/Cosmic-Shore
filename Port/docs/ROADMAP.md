@@ -71,6 +71,17 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 12. **Editor.** Everything in M2, scoped by the 2026-10-08 decision below: FrogletTools, data
     sets and models first; scene and hierarchy editing stay with the agent. The launcher's Dear
     ImGui shell (its EDITOR page) is where it grows.
+13. **Amoebius in the browser (WebAssembly) — FUTURE TO-DO, not scheduled** (the owner, 2026-10-10). .NET compiles to
+    WebAssembly and OpenGL ES 3.0 maps onto WebGL 2, so the real game (its C#, its assets, its graphics) could run in a
+    browser tab, and the web Vessel Studio would then run the SAME code as the game instead of a JavaScript model of
+    it. Large: file access, threads, audio, input and load size each need work. Scope it as its own milestone before
+    any work starts. Until then the JavaScript studio is the browser path, kept honest by parameter export and
+    mechanics parity tests (`Docs/Studios/VESSEL_STUDIO_PLAN.md` §4a).
+14. **What the Amoebius studio needs from the renderer** (`VESSEL_STUDIO_PLAN.md` §4a, measured 2026-10-10 on the
+    Stoat): `Graphics.RenderMeshInstanced` is RECORDED but never drawn (`Graphics.InstancedSubmissions` has no
+    consumer), so the Stoat's 3D path dots and the capsule membrane are invisible; and `CosmicShore/BlackHoleLens`
+    has no translation, so a black hole or white hole draws as a flat white disc instead of the ray-traced lens. Both
+    must land before the studio can be judged by eye in Amoebius.
 
 ## External factors (and what each one changes)
 
