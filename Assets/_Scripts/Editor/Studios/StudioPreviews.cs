@@ -13,6 +13,9 @@ namespace CosmicShore.Editor.Studios
     {
         static readonly Rgba Night = Rgba.Hex("#05060c");
 
+        /// <summary>Whether Unity has a line-for-line port of this studio's hub preview (else the home shows its baked thumbnail).</summary>
+        public static bool Has(string id) => id is "squirrel" or "stoat";
+
         /// <summary>Draws studio <paramref name="id"/> at <paramref name="t"/> seconds. <paramref name="domain"/> is the game's domain colours (studio-domains.js).</summary>
         public static void Draw(string id, StudioPreviewCanvas g, float t, Func<string, Rgba> domain, Rgba accent)
         {
