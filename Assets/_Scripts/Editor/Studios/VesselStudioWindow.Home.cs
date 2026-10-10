@@ -157,7 +157,7 @@ namespace CosmicShore.Editor.Studios
                 EditorUtility.DisplayDialog("Vessel Studio", $"{StudioDir}/{file} is not in this checkout. Pull Ys-bleeding-edge.", "OK");
                 return;
             }
-            LaunchPrisma.OpenStudioWindow(path);
+            LaunchPrisma.OpenStudio(file);   // the build of this checkout, served by Amoebius (/vessel-studio D33)
         }
 
         /// <summary>Keeps the previews moving: a repaint at most 30 times a second, and only on the home page.</summary>
@@ -197,7 +197,7 @@ namespace CosmicShore.Editor.Studios
             y += lh + 12f;
 
             float bx = x;
-            if (Button(ref bx, y, "OPEN THE HUB", Look.Accent, true, "The web hub itself (index.html from this checkout) in its own window"))
+            if (Button(ref bx, y, "OPEN THE HUB", Look.Accent, true, "The web hub itself, built from this checkout and served by Amoebius, in its own window"))
                 OpenPage(_catalog?.hub ?? "index.html");
             if (Button(ref bx, y, "CLAUDE.AI ARTIFACT", Look.Accent, false, "The one Vessel Studio artifact: Ask, shared requests, the decision log and Sync live there"))
                 Application.OpenURL(_catalog?.web ?? StudioUrl);
@@ -285,7 +285,7 @@ namespace CosmicShore.Editor.Studios
 
             // the actions sit on the card's floor, so cards in a row line up
             float by = r.yMax - Pad - 26f, bx = x;
-            if (Button(ref bx, by, "OPEN STUDIO ▸", accent, true, $"Open the {s.name} studio (the artifact's own page, from this checkout) in its own window"))
+            if (Button(ref bx, by, "OPEN STUDIO ▸", accent, true, $"Open the {s.name} studio (built from this checkout and served by Amoebius: Sync, Ask and Decisions work) in its own window"))
                 OpenPage(s.file);
             if (Tuners.ContainsKey(s.id) &&
                 Button(ref bx, by, "TUNE IN UNITY", accent, false, $"The {s.name} studio's six tabs over the vessel's real assets, live while you play"))

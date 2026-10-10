@@ -17,9 +17,9 @@ namespace CosmicShore.Editor.Studios
     ///
     /// <para><b>Home</b> (what FrogletTools ▸ Vessels ▸ Vessel Studio opens): the web hub's front page, the "Vessel
     /// Studio" heading and one card per studio in <c>Docs/Studios/VesselStudio/studios.json</c>, each with the hub's
-    /// own looping preview (<see cref="StudioPreviews"/>). A card opens THAT studio's page from this checkout in its own
-    /// app window (<see cref="LaunchPrisma.OpenStudioWindow"/>): the artifact's own files, so it looks and plays exactly
-    /// as on claude.ai. Unity has no web view, so the studio itself is a browser app window, never an IMGUI copy.</para>
+    /// own looping preview (<see cref="StudioPreviews"/>). A card opens THAT studio built from this checkout and served by
+    /// Amoebius (<see cref="LaunchPrisma.OpenStudio"/>, /vessel-studio D33): the artifact's own build, so it looks and plays
+    /// exactly as on claude.ai, with Sync, Ask and Decisions working. Unity has no web view, so the studio itself is a browser app window, never an IMGUI copy.</para>
     ///
     /// <para><b>Tune in Unity</b> (a card's second button, for a vessel that has a page here): the web studio's six
     /// settings tabs, Scene Config · Game Config · AI Config · Play Style Config · Input · Vessel Config, over the
