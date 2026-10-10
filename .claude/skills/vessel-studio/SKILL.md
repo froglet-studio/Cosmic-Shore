@@ -442,7 +442,14 @@ racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) 
 
 1. `Docs/Studios/VesselStudio/studios.json`: `id`, `name`, `file`, `kind`, `summary`, `docs`, plus
    `engineMode` (a `GameModes` name with an arcade card) and `engineNote` once the game has the mode.
-   `web` is the one artifact (§0).
+   `web` is the one artifact (§0). `mirror` is its **live mirror**
+   (https://yskhan61.github.io/vessel-studio/, repo `YsKhan61/vessel-studio`, GitHub Pages): the same
+   `build_artifact.py --ref origin/Ys-bleeding-edge` output pushed as plain files, so the hub and every page open by
+   link in any browser and update in place when it is republished. Amoebius's STUDIOS page opens it with
+   **OPEN LIVE IN BROWSER** (the hub, and `<mirror>/<file>` per studio). It is a mirror, never a second source or a
+   second artifact (D12): publish it from the build, never edit it. The publisher runs on the maintainer's machine
+   (it fetches the branch, rebuilds with that ref's own `build_artifact.py`, commits only when the studio files
+   changed). Sync, Ask, Requests and shared decisions need the claude.ai viewer, so on the mirror they say so.
 2. `index.html`: the vessel's bay and its `SPEC` string for the Ask box; take it off "no studio yet".
 3. **Amoebius** reads `studios.json` (`StudioCatalog.cs`) on its VESSEL STUDIO page: run `dotnet test Port/tests/CosmicShore.Launcher.Tests`.
    The page also lists Amoebius's artifact library (`Docs/Artifacts/artifacts.json`, entry `vessel-studio`): other
@@ -547,7 +554,7 @@ Tell the user what ran, one line per job.
 
 | Tier | What flies | Where |
 |---|---|---|
-| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; Amoebius VESSEL STUDIO ▸ OPEN IN AMOEBIUS |
+| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; its live mirror (`mirror`, §3.5); Amoebius VESSEL STUDIO ▸ OPEN IN AMOEBIUS / OPEN LIVE IN BROWSER |
 | B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius VESSEL STUDIO (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
 | A2. **Third Eye** (Unity) | The game itself, watched from a second camera while you play: the studio's Chase / Follow / Free cameras and its AI-thinking colours on the game's own AI | `FrogletTools > AI > Third Eye`; `/vessel-ai` §4 |
 | C. Vessel Test Range | The real mode scenes with AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look | Unity + Amoebius; **plan only**: `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` |
