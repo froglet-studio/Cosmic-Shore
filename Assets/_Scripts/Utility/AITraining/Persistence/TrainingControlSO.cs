@@ -55,7 +55,7 @@ namespace CosmicShore.Utility.AITraining
         public float WatchdogSeconds = 180f;
 
         [Tooltip("Set by Play against trained AI. The launcher starts a normal match: " +
-                 "the host stays human, IsTraining stays off, and the deployment service " +
+                 "the host stays human, IsGeneticTrainingSession stays off, and the deployment service " +
                  "installs TrainingPilot on the AI seats.")]
         public bool HumanPlaysThisLaunch;
 

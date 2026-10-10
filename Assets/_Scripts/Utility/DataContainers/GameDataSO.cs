@@ -84,7 +84,24 @@ namespace CosmicShore.Utility
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
         public bool IsWeeklyChallenge;
+        /// <summary>
+        /// PRACTICE mode: a Hangar training-games launch or a daily challenge
+        /// (<c>Arcade.LaunchTrainingGame</c>). Nothing about AI pilots reads it.
+        /// </summary>
         public bool IsTraining;
+        /// <summary>
+        /// A genetic-training (Learn) play session is in progress: the
+        /// <c>TrainingSessionRunner</c> owns every AI seat for the whole session,
+        /// including the scene reload between rollouts, so every other pilot
+        /// installer (<c>TrainingDeploymentService</c>, <c>TrainingAIDeploymentBridge</c>,
+        /// <c>SkimRaceAIDeployment</c>) stands down while it is set. Set by the
+        /// runner and the auto-launcher, cleared by Stop, by a halt, and by
+        /// <c>TrainingPlayModeHook</c> on leaving Play. Serialized on purpose: it
+        /// has to survive the domain reload a scene load can trigger. Distinct
+        /// from <see cref="IsTraining"/>, which is practice mode and used to
+        /// suppress these installers in every Hangar practice game by accident.
+        /// </summary>
+        public bool IsGeneticTrainingSession;
         public bool IsMission;
         public bool IsMultiplayerMode;
 

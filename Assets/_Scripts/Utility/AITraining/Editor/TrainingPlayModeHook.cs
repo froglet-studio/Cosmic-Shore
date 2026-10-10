@@ -90,9 +90,9 @@ namespace CosmicShore.Utility.AITraining.Editor
         }
 
         /// <summary>
-        /// GameDataSO.IsTraining is a serialized field. The runner sets it true
-        /// for the play session so the deployment service stands down. Rest it
-        /// after play so a later match is not stuck in training mode.
+        /// GameDataSO.IsGeneticTrainingSession is a serialized field. The runner
+        /// sets it true for the play session so every other pilot installer stands
+        /// down. Rest it after play so a later match is not stuck in training mode.
         /// </summary>
         static void ClearTrainingFlag()
         {
@@ -102,8 +102,8 @@ namespace CosmicShore.Utility.AITraining.Editor
             for (int i = 0; i < guids.Length; i++)
             {
                 var data = AssetDatabase.LoadAssetAtPath<GameDataSO>(AssetDatabase.GUIDToAssetPath(guids[i]));
-                if (data == null || !data.IsTraining) continue;
-                data.IsTraining = false;
+                if (data == null || !data.IsGeneticTrainingSession) continue;
+                data.IsGeneticTrainingSession = false;
                 EditorUtility.SetDirty(data);
                 cleared = true;
             }

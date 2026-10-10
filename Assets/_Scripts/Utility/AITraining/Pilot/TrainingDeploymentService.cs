@@ -92,12 +92,13 @@ namespace CosmicShore.Utility.AITraining
         void HandlePlayerPairInitialized(ulong clientId)
         {
             // Cheap pre-check: deployment is opt-in via the control asset, and only
-            // happens outside of training. The runner sets gameData.IsTraining = true
-            // when it's running, so we won't double-install.
+            // happens outside a genetic-training session. The runner sets
+            // gameData.IsGeneticTrainingSession while it runs, so we won't
+            // double-install. Practice mode (IsTraining) is a normal match here.
             if (_control == null || !_control.DeployArchiveInNormalPlay) return;
             if (_control.Archive == null) return;
             if (_gameData == null) return;
-            if (_gameData.IsTraining) return;
+            if (_gameData.IsGeneticTrainingSession) return;
 
             StartCoroutine(InstallAfterFrame(clientId));
         }

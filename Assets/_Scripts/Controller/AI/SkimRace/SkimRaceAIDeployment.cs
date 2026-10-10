@@ -12,17 +12,18 @@ namespace CosmicShore.Gameplay
     /// bot (and every hull an AI inherits mid-match) is configured — so the pilot is present in
     /// the normal arcade flow with no scene wiring, and an AI seat in any other mode is untouched.
     ///
-    /// Skipped while <c>GameDataSO.IsTraining</c> is set (the genetic trainer owns the seats then)
+    /// Skipped while <c>GameDataSO.IsGeneticTrainingSession</c> is set (the genetic trainer owns
+    /// the seats then; a Hangar PRACTICE game, <c>IsTraining</c>, is a normal match and gets the pilot)
     /// and when <see cref="SkimRaceAIConfigSO.DeployInNormalPlay"/> is off, in which case the seat
     /// keeps the platform <see cref="AIPilot"/>.
     /// </summary>
     public static class SkimRaceAIDeployment
     {
         /// <summary>True when this match's Squirrel AI seats belong to <see cref="SkimRacePilot"/>:
-        /// a mode with a racing objective (<see cref="SkimRaceObjective.For"/>), outside training.</summary>
+        /// a mode with a racing objective (<see cref="SkimRaceObjective.For"/>), outside a genetic-training session.</summary>
         public static bool Claims(GameDataSO gameData)
         {
-            if (gameData == null || gameData.IsTraining) return false;
+            if (gameData == null || gameData.IsGeneticTrainingSession) return false;
             if (gameData.GameMode is not (GameModes.SkimRace or GameModes.Regatta)) return false;
             var cfg = SkimRaceAIConfigSO.LoadDefault();
             return cfg != null && cfg.DeployInNormalPlay;

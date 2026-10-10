@@ -419,6 +419,19 @@ open. Item 3 stays a dedicated flag; the runner uses the existing
 `IsTraining` stand-down. Item 10's edit-mode run is 20 passed, 0 failed
 (2026-09-29 11:25:22Z).
 
+**Item 3 closed 2026-10-10.** `GameDataSO.IsGeneticTrainingSession` is the
+GA session's own serialized flag: the runner and the auto-launcher set it,
+Stop, a halt, a failed handoff and `TrainingPlayModeHook` clear it, and the
+three installers that stood down on `IsTraining` (`TrainingDeploymentService`,
+`TrainingAIDeploymentBridge`, `SkimRaceAIDeployment.Claims`) read it instead.
+`IsTraining` goes back to meaning practice mode only (`Arcade.LaunchTrainingGame`,
+reached from `HangarTrainingModal` and the daily challenge), which until now
+suppressed every one of those installers in every Hangar practice game by
+accident (risk register row 11). `SkimRaceAITests.Deployment_ClaimsOnlyNormalSkimRaceAndRegatta`
+carries the negative control (practice mode still claims). A GA launch also
+clears a stale practice flag. Proved by `unity_refcompile`; the edit-mode
+suite was not re-run here (no editor).
+
 **Item 6 closed 2026-10-10.** `PrismSensor.Sample` reads
 `PrismSpatialIndex.Instance.QuerySphere` (the same call
 `SkimRacePilot.GatherLaidMass` makes), so the genome pilot sees a prism the

@@ -189,7 +189,7 @@ From that point on, an editor play-mode hook spawns a
   would for a normal launch.
 - When `OnClientReady` fires in a menu scene, configures `GameDataSO`
   for an all-AI HexRace match (3 racers, intensity 4), sets
-  `IsTraining`, and calls `gameData.InvokeGameLaunch()` — the same
+  `IsGeneticTrainingSession`, and calls `gameData.InvokeGameLaunch()` — the same
   entry point the arcade configure modal uses, so the rest of the
   pipeline runs unchanged (host start, AI backfill, scene load,
   controller spawn). `ApplicationState.MainMenu` is only a 12 s
@@ -258,8 +258,8 @@ substitute for these steps.
    `[Training] Halt abandoned the in-flight rollout.` Generation and
    Episodes Completed stay at the post-match-3 values. The in-flight
    pilots are not recorded.
-6. Exit Play. `AutoStartOnPlay` is off. `GameDataSO.IsTraining` is
-   false again (the play-mode hook clears it on entering edit mode).
+6. Exit Play. `AutoStartOnPlay` is off. `GameDataSO.IsGeneticTrainingSession`
+   is false again (the play-mode hook clears it on entering edit mode).
    Press **Learn**, not a bare Play. The next `Rollout start` log
    shows the same generation, not 0.
 
@@ -320,7 +320,9 @@ When the user later plays a mode normally (not in training mode),
 `TrainingDeploymentService` installs the archive on AI seats:
 
 - Listens to `gameData.OnPlayerPairInitialized`.
-- Skips when `gameData.IsTraining` is true (the runner owns those vessels).
+- Skips when `gameData.IsGeneticTrainingSession` is true (the runner owns
+  those vessels). `IsTraining` is the Hangar's practice-mode flag and does
+  not stand the service down.
 - Skips the human seat.
 - Installs only when the archive has an entry. A missing entry leaves
   `AIPilot` in control. A registry-default genome is not an entry.

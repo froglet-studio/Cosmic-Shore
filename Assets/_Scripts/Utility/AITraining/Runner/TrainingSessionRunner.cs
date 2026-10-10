@@ -126,9 +126,10 @@ namespace CosmicShore.Utility.AITraining
             PolicyBootstrap.EnsureInitialized();
             EnsureStateInitialized();
             state.EpisodesRequested = targetEpisodes;
-            // Stands TrainingDeploymentService and any prefab bridge down for
-            // the whole play session, including the scene reload between matches.
-            gameData.IsTraining = true;
+            // Stands TrainingDeploymentService, any prefab bridge and the Skim
+            // Race pilot down for the whole play session, including the scene
+            // reload between matches. Not IsTraining: that is practice mode.
+            gameData.IsGeneticTrainingSession = true;
 
             _running = true;
             _waitingToStartEpisode = false;
@@ -176,7 +177,7 @@ namespace CosmicShore.Utility.AITraining
                 Trace("[Training] Halt abandoned the in-flight rollout. Completed evaluations stay on the session asset.");
             }
 
-            if (gameData != null) gameData.IsTraining = false;
+            if (gameData != null) gameData.IsGeneticTrainingSession = false;
 
             UnhookGameDataEvents();
             PersistState(forceSave: true);
@@ -242,7 +243,7 @@ namespace CosmicShore.Utility.AITraining
         {
             // Serialize the commit before Unity snapshots the domain. A replay
             // handoff already wrote the finished episode; stopping it here would
-            // clear IsTraining while the next scene is still coming up.
+            // clear IsGeneticTrainingSession while the next scene is still coming up.
             if (_replayHandoff) return;
             StopSession();
         }
@@ -276,7 +277,7 @@ namespace CosmicShore.Utility.AITraining
             UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
 #endif
             // Scene reload destroys this runner after a completed rollout has
-            // already been recorded. StopSession would clear IsTraining before
+            // already been recorded. StopSession would clear IsGeneticTrainingSession before
             // the new scene's pilots spawn, and the deployment service would
             // install archive genomes on top of the next checkout.
             if (_replayHandoff)
@@ -758,7 +759,7 @@ namespace CosmicShore.Utility.AITraining
                 _replayHandoff = false;
                 Debug.LogError("[Training] No auto-launcher. The schedule cursor is saved. " +
                                "Press Learn the queue to resume this slot.");
-                if (gameData != null) gameData.IsTraining = false;
+                if (gameData != null) gameData.IsGeneticTrainingSession = false;
                 return;
             }
             launcher.Relaunch();

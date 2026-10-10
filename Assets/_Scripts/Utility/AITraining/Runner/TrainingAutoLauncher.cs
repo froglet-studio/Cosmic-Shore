@@ -329,7 +329,11 @@ namespace CosmicShore.Utility.AITraining
             bool humanMatch = Control != null && Control.HumanPlaysThisLaunch;
             _gameData.GameMode = Scenario.GameMode;
             _gameData.SceneName = ResolveSceneName(Scenario.GameMode);
-            _gameData.IsTraining = !humanMatch;
+            // A Learn launch is a genetic-training session; a "play against the
+            // trained AI" launch is a normal match. Neither is practice mode, so a
+            // stale practice flag from an earlier Hangar launch is cleared too.
+            _gameData.IsGeneticTrainingSession = !humanMatch;
+            _gameData.IsTraining = false;
             _gameData.IsMultiplayerMode = IsNetworked(Scenario.GameMode);
 
             if (_gameData.selectedVesselClass != null) _gameData.selectedVesselClass.Value = Scenario.Vessel;

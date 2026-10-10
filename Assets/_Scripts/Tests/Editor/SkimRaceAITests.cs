@@ -391,10 +391,15 @@ namespace CosmicShore.Tests
             try
             {
                 gd.GameMode = GameModes.SkimRace;
-                gd.IsTraining = false;
+                gd.IsGeneticTrainingSession = false;
                 Assert.IsTrue(SkimRaceAIDeployment.Claims(gd));
+                gd.IsGeneticTrainingSession = true;
+                Assert.IsFalse(SkimRaceAIDeployment.Claims(gd), "the genetic trainer owns the seats while a Learn session runs");
+                gd.IsGeneticTrainingSession = false;
+                // Practice mode is a normal match: until 2026-10-10 the Hangar's
+                // training-games flag suppressed the pilot by accident.
                 gd.IsTraining = true;
-                Assert.IsFalse(SkimRaceAIDeployment.Claims(gd), "the genetic trainer owns the seats while training");
+                Assert.IsTrue(SkimRaceAIDeployment.Claims(gd), "a Hangar practice game is a normal match and gets the pilot");
                 gd.IsTraining = false;
                 gd.GameMode = GameModes.Regatta;
                 Assert.IsTrue(SkimRaceAIDeployment.Claims(gd), "Regatta's Squirrels fly the same pilot at rings");

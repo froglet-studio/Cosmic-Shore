@@ -47,7 +47,7 @@ namespace CosmicShore.Utility.AITraining
         {
             // The session runner owns genomes while a GA match is in progress.
             // An archive bridge on the vessel prefab would install a second pilot.
-            if (gameData != null && gameData.IsTraining) return;
+            if (gameData != null && gameData.IsGeneticTrainingSession) return;
             if (archive == null) return;
             // The deployment service may already have taken this seat.
             if (GetComponent<TrainingPilot>() != null) return;

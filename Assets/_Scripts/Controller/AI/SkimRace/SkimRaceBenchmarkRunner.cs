@@ -214,6 +214,7 @@ namespace CosmicShore.Gameplay
                 _gameData.IsMultiplayerMode = true;
             }
             _gameData.IsTraining = false;
+            _gameData.IsGeneticTrainingSession = false;
             if (_gameData.selectedVesselClass != null) _gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
             if (_gameData.SelectedIntensity != null) _gameData.SelectedIntensity.Value = Mathf.Clamp(_s.Intensity, 1, 4);
             _gameData.ConfigurePlayerCounts(Mathf.Max(1, _s.TotalPlayers), 1);

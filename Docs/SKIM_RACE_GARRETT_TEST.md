@@ -24,7 +24,7 @@ run did not finish a race. Your matches are the first time this archive is
 asked to race under normal rules, with a human in the host seat and no
 episode cap from the trainer.
 
-A normal HexRace does not set `IsTraining`. With **Use archive in normal
+A normal HexRace does not set `IsGeneticTrainingSession`. With **Use archive in normal
 play** on, AI seats install `TrainingPilot` from this entry and stop
 `AIPilot` first. Intensity 4 flies the stored genome with no dither. The
 host seat stays on player input.
