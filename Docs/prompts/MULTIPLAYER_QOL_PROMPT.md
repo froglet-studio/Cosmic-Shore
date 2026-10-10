@@ -22,7 +22,7 @@ Read `Docs/PartySystem/UI.md` first — it is the inventory of this surface — 
 
 ## Measured 10 Sep 2026 — re-verify each before acting
 
-### 1 · A player cannot send a friend request · **severe**
+### 1 · A player cannot send a friend request · **severe** · ✅ landed 2026-10-10 (Add Friend section, commit d70061b42; not yet opened in Unity)
 
 `FriendsServiceFacade` exposes `SendFriendRequestByNameAsync(name)` and
 `SendFriendRequestAsync(playerId)`. Grepping all of `Assets/_Scripts` for either, excluding the
@@ -51,7 +51,7 @@ four-player match with a stranger has **no path to friending them**, which combi
 the social graph cannot grow from play at all. For a party game this is the natural place friend
 requests come from.
 
-### 4 · The join-failure message is best-effort · **medium**
+### 4 · The join-failure message is best-effort · **medium** · ✅ landed 2026-10-10 (`ToastChannel.ShowPrefixOrHold`; not yet opened in Unity)
 
 `PartyInviteController`'s toast field is documented as *"Optional. Best-effort toast shown when a
 join fails and the client bounces back to its own menu. **May be suppressed during the scene
@@ -62,7 +62,7 @@ So the most common failure an invite cohort will hit can present as: you press A
 changes, and you are back in your own menu with no explanation. That reads as the game being
 broken rather than as a join that did not land.
 
-### 5 · Ready lights are a count, not an identity · **medium**
+### 5 · Ready lights are a count, not an identity · **medium** · ✅ landed 2026-10-10 (`SyncReady_ClientRpc` carries the ready set; `LobbySlotRow.SeatIsReady`; not yet opened in Unity)
 
 `ArcadeGameConfigureModal` tracks `_readyCount` and `HandleReadyCountChanged(readyCount, totalExpected)`.
 `Docs/ArcadeLaunch/ARCHITECTURE.md` §5.1 states it directly: *"Ready lights are a COUNT, not an

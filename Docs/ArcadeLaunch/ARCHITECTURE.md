@@ -472,15 +472,21 @@ the open handler) lands them in its config and redraws — placed bots on their 
 no ✕ (kicking is the host's), the balanced remainder recomputed over the same replicated player
 data the host used.
 
-### 5.1 Ready lights are a COUNT, not an identity
+### 5.1 Ready lights are an identity (since 2026-10-10)
 
-`ArcadeConfigSyncManager` replicates **how many** humans have confirmed, not **which**. So seats
-light in roster order as that count climbs — with the local player's own seat exact, since that
-one is known locally without the wire. Ordering the local seat first would reshuffle the row as
-players join, so it keeps its place and simply reads true.
+`ArcadeConfigSyncManager` replicates the **set** of clients that have confirmed, with the expected
+head-count, in one `SyncReady_ClientRpc` (an array of owner client ids; it used to carry the count
+alone). Every peer keeps a mirror (`ReadyClients`) and raises `OnReadySetChanged` right after the
+older `OnPlayerReadyCountChanged`, which Maelstrom still consumes. The modal redraws the roster on
+the set, and `LobbySlotRow.SeatIsReady` lights a human seat exactly when the set names its player's
+`OwnerClientId`, so a four-seat lobby shows **who** is holding up the launch (R13 item 5). The
+local seat is still read locally: exact, and lit the moment the player confirms, without waiting
+for the round trip. A roster drawn before the set has landed falls back to the older reading, the
+first N seats in roster order from the count. Ordering the local seat first would reshuffle the
+row as players join, so it keeps its place and simply reads true.
 
-Per-seat identity needs the sync manager to replicate the ready SET. Until it does this is the
-honest reading, and it is right in the case players actually watch (their own).
+The mirror clears with the lobby (commit, close, and on a client when the replicated lobby
+closes), so a stale press from the previous card never lights a seat in the next one.
 
 ### 5.2 Every domain is unlocked
 
@@ -752,8 +758,8 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
 - **Not verified in the Editor.** The UI these components attach to was authored in parallel
   with them; nothing here has been through play mode. Everything in §1–§7 is reasoned from the
   code it sits on, not observed.
-- **Ready lights are a count** (§5.1). Per-seat identity needs the sync manager to replicate the
-  ready set.
+- **Ready lights are an identity** (§5.1): the sync manager replicates the ready SET, and a seat
+  lights exactly when its player confirmed.
 - **`SO_ArcadeGame.Tips` is empty on every card.** The briefing then shows the description and
   never rotates — the correct resting state, not a degraded one — so the panel is right but says
   less than it could until tips are written.

@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
     /// whole answer: every peer holds the current lobby, a late joiner receives it with the
     /// spawn and applies it in <see cref="OnNetworkSpawn"/>, and the C# events this class has
     /// always raised are now DERIVED by diffing the previous value against the new one, so the
-    /// modal did not have to change. The ready-up count stays an RPC - it is a transient
+    /// modal did not have to change. The ready-up set (which clients confirmed, with the expected head-count) stays an RPC - it is a transient
     /// acknowledgement, not a fact a late joiner needs to catch up on.
     /// </para>
     /// </summary>
@@ -223,6 +223,18 @@ namespace CosmicShore.Gameplay
         readonly HashSet<ulong> _readyClients = new();
 
         /// <summary>
+        /// Every peer's copy of WHICH clients have confirmed, replicated with the count so the lobby
+        /// row lights the seat of the player who pressed Ready rather than the next seat in roster
+        /// order. The server's <see cref="_readyClients"/> is the truth; this mirror is what the last
+        /// SyncReady_ClientRpc delivered (the host receives its own ClientRpc, so the two agree
+        /// there too). Cleared with the lobby.
+        /// </summary>
+        readonly HashSet<ulong> _readyMirror = new();
+
+        /// <summary>Clients that have confirmed ready, as last replicated. Empty outside a lobby.</summary>
+        public IReadOnlyCollection<ulong> ReadyClients => _readyMirror;
+
+        /// <summary>
         /// The human head-count the host committed with. The LIVE expectation is
         /// <see cref="ExpectedHumanCount"/>: a guest who joins the party after the host opened
         /// the card is a human whose ready press the launch must wait for, and one who leaves
@@ -264,6 +276,13 @@ namespace CosmicShore.Gameplay
         /// Args: readyCount, totalExpected
         /// </summary>
         public event System.Action<int, int> OnPlayerReadyCountChanged;
+
+        /// <summary>
+        /// Raised on all instances, right after <see cref="OnPlayerReadyCountChanged"/>, with the
+        /// SET of ready clients and the expected head-count, so a roster can light exactly the
+        /// seats that confirmed. A consumer that only needs the number keeps the count event.
+        /// </summary>
+        public event System.Action<IReadOnlyCollection<ulong>, int> OnReadySetChanged;
 
         /// <summary>
         /// Raised on all instances when every human player has confirmed ready.
@@ -443,7 +462,7 @@ namespace CosmicShore.Gameplay
             if (_isCommitted && (_readyClients.Remove(clientId) || _lobby.Value.IsOpen))
             {
                 RepublishHumanCount();
-                SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
+                SyncReady_ClientRpc(ReadySnapshot(), ExpectedHumanCount);
 
                 // ...and the gate is then RE-DECIDED. This used to only re-announce the count, on
                 // the reasoning that "a launch is something a PRESS causes, never a departure" -
@@ -487,7 +506,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer || !_isCommitted) return;
             RepublishHumanCount();
-            SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
+            SyncReady_ClientRpc(ReadySnapshot(), ExpectedHumanCount);
         }
 
         /// <summary>
@@ -568,6 +587,7 @@ namespace CosmicShore.Gameplay
             _isCommitted = true;
 
             _readyClients.Clear();
+            _readyMirror.Clear();
             _committedHumanCount = humanCount;
 
             if (gameData != null)
@@ -612,6 +632,7 @@ namespace CosmicShore.Gameplay
             if (!IsServer) return;
             _isCommitted = false;
             _readyClients.Clear();
+            _readyMirror.Clear();
 
             var snapshot = _lobby.Value;
             if (!snapshot.IsOpen) return;
@@ -643,7 +664,11 @@ namespace CosmicShore.Gameplay
 
             if (!next.IsOpen)
             {
-                if (previous.IsOpen) OnConfigClosedOnClient?.Invoke();
+                if (previous.IsOpen)
+                {
+                    _readyMirror.Clear();
+                    OnConfigClosedOnClient?.Invoke();
+                }
                 return;
             }
 
@@ -773,16 +798,34 @@ namespace CosmicShore.Gameplay
             int expected = ExpectedHumanCount;
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ArcadeConfigSync] Player {clientId} confirmed ready ({_readyClients.Count}/{expected})");
 
-            // Notify all clients of the updated ready count
-            SyncReadyCount_ClientRpc(_readyClients.Count, expected);
+            // Notify all clients of the updated ready set (and its count)
+            SyncReady_ClientRpc(ReadySnapshot(), expected);
 
             EvaluateLobbyReadyGate($"client {clientId} pressed Ready");
         }
 
-        [ClientRpc]
-        void SyncReadyCount_ClientRpc(int readyCount, int totalExpected)
+        /// <summary>The server's ready set as an array for the wire (an unmanaged array is an RPC-serializable parameter).</summary>
+        ulong[] ReadySnapshot()
         {
-            OnPlayerReadyCountChanged?.Invoke(readyCount, totalExpected);
+            var ids = new ulong[_readyClients.Count];
+            _readyClients.CopyTo(ids);
+            return ids;
+        }
+
+        /// <summary>
+        /// The ready SET and the expected head-count, to every peer. The count used to travel alone,
+        /// which left the roster lighting seats in roster order as it climbed: in a four-seat lobby
+        /// nobody could see WHO was holding up the launch (R13 item 5). The set is small (one id
+        /// per human) and changes only on a press, a join or a departure.
+        /// </summary>
+        [ClientRpc]
+        void SyncReady_ClientRpc(ulong[] readyClients, int totalExpected)
+        {
+            _readyMirror.Clear();
+            if (readyClients != null)
+                foreach (var id in readyClients) _readyMirror.Add(id);
+            OnPlayerReadyCountChanged?.Invoke(_readyMirror.Count, totalExpected);
+            OnReadySetChanged?.Invoke(_readyMirror, totalExpected);
         }
 
         [ClientRpc]

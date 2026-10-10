@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -25,12 +26,12 @@ namespace CosmicShore.UI
     /// exactly what the player means and the only representation that cannot go out of step with
     /// what spawns.</para>
     ///
-    /// <para><b>Ready lights are a COUNT, not an identity.</b> <c>ArcadeConfigSyncManager</c>
-    /// replicates how many humans have confirmed, not which ones, so seats light in roster order as
-    /// that count climbs — with the local player's own seat lit the moment they confirm, since that
-    /// one IS known locally. Per-seat identity needs the sync manager to replicate the ready SET;
-    /// until it does, this is the honest reading and it is right in the case players actually
-    /// watch (their own).</para>
+    /// <para><b>Ready lights are an identity.</b> <c>ArcadeConfigSyncManager</c> replicates the
+    /// SET of clients that have confirmed (with the expected head-count), so each human seat lights
+    /// exactly when ITS player pressed Ready, and a four-seat lobby shows who is holding up the
+    /// launch. The local seat is still read locally (exact, and lit the moment the player
+    /// confirms). A roster drawn before the set has landed falls back to the older reading, the
+    /// first N seats in roster order from the count (<see cref="SeatIsReady"/>).</para>
     /// </summary>
     public class LobbySlotRow : MonoBehaviour
     {
@@ -85,6 +86,21 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Whether a human seat draws lit. The local seat is known exactly. Any other seat is lit when
+        /// the replicated ready SET names its player's owner client id; a roster drawn before the set
+        /// has landed (<paramref name="readyClients"/> null) falls back to lighting the first
+        /// <paramref name="lit"/> seats in roster order, the pre-identity reading. A seat with no
+        /// player yet is never lit by the set.
+        /// </summary>
+        public static bool SeatIsReady(bool isLocal, bool localReady, ulong? ownerClientId,
+                                       IReadOnlyCollection<ulong> readyClients, int seat, int lit)
+        {
+            if (isLocal) return localReady;
+            if (readyClients == null) return seat < lit;
+            return ownerClientId.HasValue && readyClients.Contains(ownerClientId.Value);
+        }
+
+        /// <summary>
         /// Draw the roster.
         /// </summary>
         /// <param name="gameData">Source of the live human players. Null draws generic seats.</param>
@@ -94,12 +110,15 @@ namespace CosmicShore.UI
         /// domain's signal colour. Null or short (a client before the host's roster lands) means
         /// the remaining seats draw EMPTY.</param>
         /// <param name="readyCount">How many humans have confirmed.</param>
+        /// <param name="readyClients">WHICH clients have confirmed (owner client ids), as last
+        /// replicated. Null means not yet known: seats then light in roster order from the count.</param>
         /// <param name="localReady">Whether the LOCAL player has confirmed — known exactly.</param>
         /// <param name="isHost">Only the host may kick or place AI.</param>
         /// <param name="addAiArmed">Whether Add AI placement mode is armed (host only).</param>
         public void Refresh(GameDataSO gameData, int totalPlayers, int humanCount,
                             IReadOnlyList<Domains> aiDomains,
-                            int readyCount, bool localReady, bool isHost, bool addAiArmed)
+                            int readyCount, IReadOnlyCollection<ulong> readyClients,
+                            bool localReady, bool isHost, bool addAiArmed)
         {
             totalPlayers = Mathf.Max(1, totalPlayers);
             humanCount = Mathf.Clamp(humanCount, 0, totalPlayers);
@@ -121,10 +140,10 @@ namespace CosmicShore.UI
                 var player = seat < humans.Count ? humans[seat] : null;
                 bool isLocal = player != null && player.OwnerClientId == localId;
 
-                // The local seat's state is known exactly; the rest fill in roster order from the
-                // replicated count. Ordering the local seat first would reshuffle the row as
-                // players join, so instead it keeps its place and simply reads true.
-                bool ready = isLocal ? localReady : seat < lit;
+                // The local seat's state is known exactly; every other seat lights when the
+                // replicated ready set names its player. Ordering the local seat first would
+                // reshuffle the row as players join, so it keeps its place and simply reads true.
+                bool ready = SeatIsReady(isLocal, localReady, player?.OwnerClientId, readyClients, seat, lit);
 
                 Sprite avatar = player != null && dataService != null
                     ? dataService.GetAvatarSprite(player.NetAvatarId.Value)

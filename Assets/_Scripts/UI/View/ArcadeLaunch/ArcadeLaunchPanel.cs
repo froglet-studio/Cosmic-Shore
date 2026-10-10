@@ -226,11 +226,12 @@ namespace CosmicShore.UI
         /// <summary>Redraw the roster. A panel with no <see cref="lobbyRow"/> ignores this.</summary>
         public virtual void RefreshRoster(GameDataSO gameData, int totalPlayers, int humanCount,
                                           System.Collections.Generic.IReadOnlyList<CosmicShore.Data.Domains> aiDomains,
-                                          int readyCount, bool localReady, bool isHost, bool addAiArmed)
+                                          int readyCount, System.Collections.Generic.IReadOnlyCollection<ulong> readyClients,
+                                          bool localReady, bool isHost, bool addAiArmed)
         {
             if (lobbyRow)
                 lobbyRow.Refresh(gameData, totalPlayers, humanCount, aiDomains,
-                                 readyCount, localReady, isHost, addAiArmed);
+                                 readyCount, readyClients, localReady, isHost, addAiArmed);
 
             // The PANEL-level Add AI toggle is host-only too. The row hides its own copy inside
             // Refresh, but the one-panel layout wires the toggle HERE, beside the domain tiles -

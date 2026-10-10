@@ -130,6 +130,9 @@ namespace CosmicShore.UI
         bool _localPlayerReady;
         int _readyCount;
 
+        /// <summary>WHICH clients have confirmed, as the sync manager last replicated; lights the exact seats.</summary>
+        readonly HashSet<ulong> _readyClientIds = new();
+
         /// <summary>
         /// True when this instance actually draws cards. It is not a layout choice any more - the
         /// legacy configure-then-pick-a-vessel pair of screens is gone and a panel is the only
@@ -250,6 +253,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested += HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
+                arcadeConfigSyncManager.OnReadySetChanged += HandleReadySetChanged;
 
                 // The lobby is replicated state, so a modal that subscribes AFTER the host's open
                 // landed (re-enabled mid-lobby) asks for it back rather than waiting for the next
@@ -289,6 +293,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested -= HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
+                arcadeConfigSyncManager.OnReadySetChanged -= HandleReadySetChanged;
             }
 
             // Drop NetDomain / NetAvatarId subscriptions if the modal is being
@@ -524,6 +529,7 @@ namespace CosmicShore.UI
 
             _localPlayerReady = false;
             _readyCount = 0;
+            _readyClientIds.Clear();
             _vesselConfirmed = false;
             ReleaseArenaHullClaim();
 
@@ -1069,7 +1075,7 @@ namespace CosmicShore.UI
             // client's roster shows the synced seat count with the AI seats drawn EMPTY - honest,
             // since the client cannot see who the host placed where.
             _activePanel.RefreshRoster(gameData, total, humans, config.AIDomains,
-                                       _readyCount, _localPlayerReady, !IsClientMode,
+                                       _readyCount, _readyClientIds, _localPlayerReady, !IsClientMode,
                                        _addAiArmed && !IsClientMode && !_weeklyChallengeLocked);
 
             RefreshAIPreviewChips(total - humans);
@@ -1086,9 +1092,19 @@ namespace CosmicShore.UI
             CloseAndNotifyClients();
         }
 
+        /// <summary>
+        /// The count lands first and the set right after (one RPC raises both); the redraw waits for
+        /// the set so the roster never lights seats from a count the set then contradicts.
+        /// </summary>
         void HandleReadyCountChanged(int readyCount, int totalExpected)
         {
             _readyCount = readyCount;
+        }
+
+        void HandleReadySetChanged(IReadOnlyCollection<ulong> readyClients, int totalExpected)
+        {
+            _readyClientIds.Clear();
+            foreach (var id in readyClients) _readyClientIds.Add(id);
             RefreshRoster();
         }
 
@@ -2664,6 +2680,7 @@ namespace CosmicShore.UI
 
             _localPlayerReady = false;
             _readyCount = 0;
+            _readyClientIds.Clear();
             _vesselConfirmed = false;
             ReleaseArenaHullClaim();
 
@@ -3325,6 +3342,7 @@ namespace CosmicShore.UI
         {
             _localPlayerReady = false;
             _readyCount = 0;
+            _readyClientIds.Clear();
             if (ActiveStartButton)
                 ActiveStartButton.gameObject.SetActive(true);
             if (ActiveWaitingLabel)
