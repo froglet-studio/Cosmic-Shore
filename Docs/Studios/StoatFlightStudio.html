@@ -345,10 +345,12 @@
         <p class="src" id="portalSrc"></p>
       </div>
 
+      <details class="card" id="grp-intensity" open><summary>Intensity <small>the course ladder, I1 to I4</small></summary>
+        <div id="intensityPanel"></div></details>
       <details class="card" id="grp-game" open><summary>Players <small>+ / &minus; to add or remove; open one to set it up</small></summary>
         <div id="playersPanel"></div>
         <p class="src">Player 1 is your hull: you fly it, or tick <b>Is AI</b> and the AI does. Every other player is an AI rival with its own domain, difficulty and play style. <b>View</b> puts the camera on that player (or press C).</p></details>
-      <details class="card" id="grp-scene" open><summary>Scene <small>course, camera, speed</small></summary>
+      <details class="card" id="grp-scene" open><summary>Scene <small>camera, speed</small></summary>
         <div id="scenePanel"></div></details>
       <details class="card" id="grp-ai" open><summary>Sim lab <small>an AI flies; you tweak and watch</small></summary>
         <div id="racePanel"></div>
@@ -4297,7 +4299,8 @@
   const CAM_OF = { Chase: 'chase', Follow: 'follow', Free: 'free' }, CAM_BACK = { chase: 'Chase', follow: 'Follow', free: 'Free' };
   const fire = (id, prop, v) => { const e = $(id); e[prop] = v; e.dispatchEvent(new Event('change')); };
   var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
-    sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
+    gameHost: $('intensityPanel'),   // the Intensity row lives in Game Config (D28)
+    sceneHost: $('scenePanel'),   // Camera and Speed live in the Scene Config tab (D21)
     courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
     seats: SEATS.map((st) => ({ name: st.name, color: st.css })),
     styles: STYLE_NAMES,   // each rival seat flies one of the play styles (D23)
@@ -4567,7 +4570,7 @@
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
     // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27)
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-game']], ['ai', 'AI Config', ['grp-ai']],
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
       ['others', 'Vessel Config', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],

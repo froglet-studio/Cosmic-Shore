@@ -217,6 +217,11 @@
       </div>
 
       <div class="panel lab">
+        <h3>Intensity</h3>
+        <div id="intensityPanel"></div>
+      </div>
+
+      <div class="panel lab">
         <h3>AI race</h3>
         <div id="racePanel"></div>
         <p class="note">Easy and Medium are the Hard pilot plus the game's deliberate mistakes (<code>SkimRaceDifficulty.asset</code>): Easy notices a new crystal 0.5 s late on average and misjudges 9.9% of crystals; Medium 0.25 s and 4.5%.</p>
@@ -796,7 +801,8 @@
   const raceKey = { course: 'course', you: 'you', rivals: 'ai', camera: 'cam', speed: 'speed', thinking: 'thinking', autoRestart: 'autoRestart' };
   const REBUILD = { course: 1, you: 1, rivals: 1 };
   const racePanel = StudioRacePanel.mount($('racePanel'), {
-    sceneHost: $('scenePanel'),   // Course, Camera and Speed live in the Scene Config tab (D21)
+    gameHost: $('intensityPanel'),   // the Intensity row lives in Game Config (D28)
+    sceneHost: $('scenePanel'),   // Camera and Speed live in the Scene Config tab (D21)
     courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: COURSE_INFO[v] })),
     seats: [1, 2, 3].map((k) => ({ name: DOMAINS[k].name, color: DOMAINS[k].css })),
     value: { course: S.course, you: S.you, rivals: S.ai, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
@@ -930,7 +936,7 @@
   const IDE = VesselStudioIDE.build({
     // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D27)
     key: 'squirrel-studio-ide-v2', host: document.querySelector('.layout'), stage: $('viewport'),
-    right: [['scene', 'Scene Config', [panelBy('Scene')]], ['ai', 'AI Config', [panelBy('AI race'), document.querySelector('.afternote')]],
+    right: [['scene', 'Scene Config', [panelBy('Scene')]], ['game', 'Game Config', [panelBy('Intensity')]], ['ai', 'AI Config', [panelBy('AI race'), document.querySelector('.afternote')]],
       ['style', 'Play Style Config', [panelBy('Play-style type'), panelBy('Element levels')]], ['input', 'Input', [panelBy('Controls'), panelBy('Drift feel')]],
       ['others', 'Vessel Config', [panelBy('Ability row'), panelBy('Live numbers')]]],
     bottom: [['score', 'Scorecard', [panelBy('Scorecard')]], ['runs', 'Runs', [panelBy('Runs')]], ['about', 'About', [document.querySelector('header .sub'), panelBy('Where the numbers')]]],

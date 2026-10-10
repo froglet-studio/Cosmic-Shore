@@ -73,6 +73,7 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D25 | **Game Config: a Players list, a settings tab beside Scene Config** (the user, 2026-10-09). The right dock is Scene Config · **Game Config** · AI Config · Play Style Config · Input · Vessel Config. Game Config holds **Players N** with **+ / −**. **The race starts with player 1 alone; you add each player with +** (the user, 2026-10-09: no fixed four). The cap is the studio's sim (the Stoat: you + 3 rival seats, `max: 4`). Each player opens with **Is AI** (player 1 is your hull: you fly it or the AI does; every other player is always an AI), **Domain**, **Difficulty** (Easy / Medium / Hard, D24), **Play style** (D23), and **View**: the camera follows that player, with the camera mode beside it. The panel builds it: `StudioRacePanel.mount(…, { players: { host, max, domains } })` replaces the Your hull and seat rows; its state is `players` (`[{ ai, domain, level, style }]`) and `view` | Who is racing is the game's setup, not the AI's tuning: one list says who is in the race and lets you watch any of them | Not yet (Race panel seats) | `applyPlayers`: player 1 drives `aiOn`, `domainKey`, `youLevel`, `youStyle`; players 2 to 4 are the rival seats (`seatLv`, `seatStyle`, `seatDomain`). A change to the rivals starts a new race |
 | D26 | **The platform is detected, never asked** (the user, 2026-10-09: no Play-on-phone button; each device opens its own interface only). `VesselStudioIDE.platform()` (shared `studio-ide.js`) answers once at load from the host (`window.__studioHost`, `#amoebius`), the mobile UA / iPadOS, or a touch-only screen, and sets `body.dev-pc` / `body.dev-phone`. A phone opens straight into touch play (fullscreen on its first touch); a PC never sees a touch button (`.phone-only` hidden). On a phone, leaving touch play shows one **Back to flying** button. A layout override, if any, is a setting, not a stage button | A button that asks what the page can tell is clutter, and on a PC it is a control that does nothing useful | Moved onto `platform()` 2026-10-09: Play on phone removed | Its own `detectPlatform` (the original), the same rule; the Layout select is the override |
 | D27 | **Vessel Config, one section at a time** (the user, 2026-10-09: rename Others to Vessel Config; dropdowns and clean UI, no clutter). The sixth settings tab is **Vessel Config** (tab key stays `others` so saved layouts survive). A **Section** dropdown at its top (`VesselStudioIDE.sectionPicker`) shows one of its sections; the choice is remembered per studio. AI Config stays its own tab | A tab of unrelated vessel sections reads as clutter; one picked section reads as a settings page | Ability row · Live numbers | Lope · Archive |
+| D28 | **Intensity is chosen in Game Config** (the user, 2026-10-10: a universal Vessel Studio rule). The race panel's course ladder (I1-I4, D7) renders as an **Intensity** dropdown in Game Config when the studio passes `gameHost` (its own sibling section, above Players); Scene Config keeps Camera and Speed. Every studio has a Game Config tab, even before it has a Players list | Which intensity you race is part of setting up the game, beside who is racing | `gameHost: $('intensityPanel')`, a Game Config tab holding the Intensity panel | `grp-intensity` above `grp-game` in Game Config |
 
 ## 1.5 The universal studio kit: how every studio's panels are built
 
@@ -153,15 +154,15 @@ next.
 
 | Row | Values | Rule |
 |---|---|---|
-| **Course / intensity** | the mode's **4-step intensity ladder**, `I1`-`I4` (D7) | Generated from the game's data, never retyped (Skim Race: `skimrace_track_fingerprint.py --emit-track`). Each course is `{ v, label, note }`, with the note saying what it is ("tilted spline, 3 laps"). A new arcade-mode studio passes ITS mode's ladder, from its four `CellConfigDataSO`s (`/arcadegame`) |
+| **Intensity** (in **Game Config**, D28) | the mode's **4-step intensity ladder**, `I1`-`I4` (D7) | Generated from the game's data, never retyped (Skim Race: `skimrace_track_fingerprint.py --emit-track`). Each course is `{ v, label, note }`, with the note saying what it is ("tilted spline, 3 laps"). A new arcade-mode studio passes ITS mode's ladder, from its four `CellConfigDataSO`s (`/arcadegame`) |
 | **Camera** | Chase · Follow · Free (D16) | See 1.5.9 |
 | **Speed** | 1× · 2× · 4× | Simulation speed. The physics step stays the same; more steps run per frame |
 | then the world's own sections | sliders | Flight & course, the field, the holes, and so on: siblings, foldable |
 
-Mount the race panel with `sceneHost: <element in Scene Config>`, so Course, Camera and Speed render
-here while the rest of the panel stays in Game Config or AI Config. It is one panel, one state.
+Mount the race panel with `gameHost: <element in Game Config>` (the Intensity row, D28) and `sceneHost: <element in
+Scene Config>` (Camera and Speed); the rest of the panel stays in Game Config or AI Config. It is one panel, one state.
 
-### 1.5.5 Game Config: who is in the race (players, add / remove, domain, difficulty, view)
+### 1.5.5 Game Config: which intensity, and who is in the race (D28 Intensity first; then players, add / remove, domain, difficulty, view)
 
 The Players list (D25), drawn by the panel when you pass `players: { host, max, domains }`:
 

@@ -18,6 +18,7 @@
  *                           // optional (D25): a Players list in the studio's Game Config tab, + / - to add or remove
  *                           // a player, each opening with Is AI, Domain, Difficulty, Play style, View and Camera.
  *                           // It replaces the Your hull / seat rows; state.players, state.view; onChange('players' | 'view')
+ *     gameHost: element,    // optional: the Intensity row (the course ladder) goes here, the studio's Game Config tab (D28)
  *     sceneHost: element,   // optional: Course, Camera and Speed go here, the studio's Scene Config tab (D21);
  *                           // without it they stay in the panel
  *   });
@@ -126,6 +127,9 @@
     var root = el('div', 'arp'); root.setAttribute('data-arp', '');
     // D21: Course, Camera and Speed describe the scene, so a studio can show them in its Scene Config tab
     var sceneRoot = cfg.sceneHost ? el('div', 'arp') : root;
+    // D28: the intensity is part of the game you set up, so it renders in Game Config when the studio gives gameHost
+    var gameRoot = cfg.gameHost ? el('div', 'arp') : sceneRoot;
+    if (cfg.gameHost) gameRoot.setAttribute('data-arp-game', '');
     if (cfg.sceneHost) sceneRoot.setAttribute('data-arp-scene', '');
     var groups = {};
     function seg(key, label, values, text, opts) {
@@ -157,10 +161,10 @@
       lab.appendChild(inp); lab.appendChild(txt); root.appendChild(lab); groups[key] = inp;
     }
 
-    seg('course', 'Course', courses.map(function (c) { return c.v; }), function (val) {
+    seg('course', cfg.gameHost ? 'Intensity' : 'Course', courses.map(function (c) { return c.v; }), function (val) {
       for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return (courses[i].label || String(val)) + (courses[i].note ? ' \u00b7 ' + courses[i].note : '');
       return String(val);
-    }, { into: sceneRoot, tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
+    }, { into: gameRoot, tip: function (val) { for (var i = 0; i < courses.length; i++) if (courses[i].v === val) return courses[i].note || ''; return ''; } });
     // ---- D25: the Players list (Game Config). Player 1 is your hull; every other player is an AI rival ----
     var PL = cfg.players && cfg.players.host ? cfg.players : null;
     var domains = PL && PL.domains && PL.domains.length ? PL.domains : GAME_DOMAINS.map(function (x) { return { key: x.key, name: x.name, color: x.color }; });
@@ -263,6 +267,7 @@
 
     host.textContent = ''; host.appendChild(root);
     if (cfg.sceneHost) { cfg.sceneHost.textContent = ''; cfg.sceneHost.appendChild(sceneRoot); }
+    if (cfg.gameHost) { cfg.gameHost.textContent = ''; cfg.gameHost.appendChild(gameRoot); }
 
     function sync() {
       function press(box, val) {   // select the option and colour the dropdown by its level
