@@ -99,7 +99,8 @@ gamepad works).
 **Amoebius:** `Docs/Studios/PRISMA_TEST_STEPS.md`, step by step.
 
 - In short: Unity ▸ **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ the STOAT card ▸ **OPEN STUDIO** (the studio),
-  **TUNE IN UNITY** (its six tabs over the real assets) or **PLAY IN ENGINE** (Amoebius: the game's own Stoat in Slingshot).
+  or **PLAY IN ENGINE** (Amoebius: the game's own Stoat in Slingshot). Its numbers come from the artifact through
+  `/artifact-to-unity`.
 
 **Headless, from a cloud session** (what the previous sessions ran):
 

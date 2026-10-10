@@ -1,0 +1,10 @@
+{
+  "comment": "What /artifact-to-unity last cloned into the game, per vessel. pageSha: the commit of the studio page the clone read; decisionsThrough: the newest artifact decision (createdAt / at) already applied. The next clone starts from here.",
+  "Stoat": {
+    "artifactVersion": "v25 (1791599841-30fe)",
+    "pageSha": "9393e9026",
+    "decisionsThrough": "2026-10-09T21:35:00.000Z",
+    "clonedAt": "2026-10-10",
+    "result": "33 mapped parameters match the artifact (studio_to_unity.py --check); the shared log held no settings snapshot yet"
+  }
+}

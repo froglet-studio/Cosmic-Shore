@@ -158,7 +158,9 @@ than the studio's 2D line) along the 3D path, `worldDotSize` 0.7 u, never under 
 instanced draw on `Sprites/Default` (always included in builds). They recede, pass behind prisms and bend through
 the lens. `dotsInWorld` off brings back the studio's flat screen dots.
 
-**Tune it in Unity:** FrogletTools ▸ Vessels ▸ Vessel Studio ▸ the Stoat card ▸ TUNE IN UNITY (`VESSEL_STUDIO_PLAN.md` §2).
+**Tune it in the artifact, then clone it:** the Vessel Studio artifact's Stoat page is the one source of truth for these
+numbers; `/artifact-to-unity` writes them into `StoatDipoleConfig` and `BlackHoleConfig` (`Tools/Build/studio_to_unity.py`,
+map `Tools/Build/studio_to_unity/stoat.json`).
 
 ## 4. Files
 
