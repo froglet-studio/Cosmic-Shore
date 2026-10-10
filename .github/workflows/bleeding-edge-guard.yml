@@ -189,6 +189,20 @@ jobs:
           python3 Tools/Build/audit_lifeform_crystals.py --self-test
           python3 Tools/Build/audit_lifeform_crystals.py
 
+      # Every asset generator must still match what it authored. CLAUDE.md records the failure
+      # class this closes: a generator that owns an asset's content is a second place every schema
+      # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six
+      # of eight mode generators were red and nobody was reading them. The whole family runs in
+      # about a minute. A generator that cannot --check is a bug in the generator.
+      - name: Check every asset generator against disk
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/arcade_mode_lib.py --self-test
+          for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do
+            echo "== $f"
+            python3 "$f" --check
+          done
+
       # The call-to-action badge surface is retired (F7). This fails if any of it comes
       # back - the components, the indicator objects, or the two prefabs.
       - name: Check the call-to-action surface stays retired
