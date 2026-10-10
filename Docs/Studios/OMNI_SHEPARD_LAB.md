@@ -1,15 +1,17 @@
 # Omni Shepard Lab
 
-A browser lab for tuning the omni crystal's **Shepard triangles**: the shells of triangle plates that
+A browser lab for designing the omni crystal's **Shepard triangles**: the shells of triangle plates that
 stream in toward the crystal and land on its body, forever. Sliders for how many shells are in
 flight, how many triangles each carries, where they launch, where they land, how fast they travel,
-and how they are coloured. A trip chart, a scorecard and an export of the material values go with it.
+and how they are coloured. Round 3 added 18 alternative styles, a random style generator, a
+compare grid and shared likes. A trip chart, a scorecard and a "what it takes to ship" export go with it.
 
 - **Page (source):** `Docs/Studios/OmniShepardLab.html` (open it in Chrome, or use the live page)
 - **Live page:** https://claude.ai/artifact/NqWi3Ej4vxU3poSjp2HqG9 (private until shared from its Share menu; decisions recorded there land in its `decisions` log)
 - **Shipped numbers + meshes:** baked in by `Tools/Build/omni_shepard_lab_assets.py`
   (`--check` fails when the assets move and the page has not been rebaked; `--self-test`)
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniShepardLab.html`
+- **Round-to-round parity at the shipped settings:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html>`
 
 ## How the effect works (measured from the assets)
 
@@ -33,6 +35,75 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 3 (2026-10-10): many more looks
+
+Feedback: "people don't like it, give me many more options". The decision log was empty, so this
+round widens the space instead of tuning one look: a new effect model, 18 named styles, an endless
+seeded random supply, a 3 × 3 compare grid, and shared likes and saves so the team can converge.
+
+**What changed**
+- **One generalised model.** Every shell copy loops over the whole trip and each triangle plate
+  gets its own clock, path, spin and size. At the shipped knobs it collapses to exactly the three
+  staggered material bands the game draws. Pixel parity against round 2: at most 10 of ~85k lit
+  pixels differ by more than 2/255 (`omni_shepard_lab_parity.cjs`). The negative control (Swirl
+  270°) changes 26k–80k pixels.
+- **About 20 new knobs** in Stream / Motion / Shape / Light: direction (in / out / breathe), hover
+  before the dive, stagger and its pattern (random, pole wave, sweep, spiral), swirl, tumble,
+  scatter, shrink-with-distance, size at launch, thickness, fade style, blend (glass / glow),
+  brightness, hue drift, landing flash, body pulse, trails.
+- **Every knob says what it costs to ship:** a chip on each slider and each style reads
+  *material values* (edit .mat / .prefab), *needs mesh*, or *needs shader*. The **Ship it** tab
+  writes the material values, or the recipe plus what would have to be built.
+- **Styles tab:** 18 styles, *Compare 1–9* / *10–18* / *9 random* / *Surprise me*, *Like*
+  (shared through the page's `votes` collection), *Save to team gallery* (`styles` collection), and
+  a *Most liked* ranking. Click a compare cell to open it in the editor.
+
+**Scorecard** (seed 7, from `runBatch()`; "hidden" = that end of the loop cannot be seen to pop):
+
+| Style | Ships as | Shells | Tris drawn | Trip (s) | Launch (u) | Seen from (u) | Speed in → land (u/s) | Visible tris (avg) | Launch hidden | Landing hidden |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Shipped | material | 3 | 480 | 9 | 6.8 | 6.8 | 0.77 → 0.77 | 57.5 | yes | yes |
+| Swirl | shader | 4 | 640 | 9 | 6.8 | 6.8 | 1.14 → 0.34 | 71.7 | yes | yes |
+| Tumbling shards | shader | 3 | 480 | 7.5 | 6.8 | 6.8 | 0.93 → 0.93 | 57.3 | yes | yes |
+| Meteor rain | shader | 2 | 1280 | 2.4 | 6.8 | 6.78 | 2.9 → 2.9 | 38.1 | yes | yes |
+| Pole wave | shader | 2 | 320 | 5 | 6.8 | 6.8 | 1.39 → 1.39 | 38.2 | yes | yes |
+| Lighthouse | shader | 1 | 160 | 4 | 6.8 | 6.8 | 1.74 → 1.74 | 19.2 | yes | yes |
+| Breathe | shader | 2 | 320 | 8 | 6.8 | 6.76 | 2.16 → 2.16 | 38.3 | yes | yes |
+| Emitter | shader | 4 | 640 | 6 | 6.8 | 6.8 | 1.16 → 1.16 | 76.7 | yes | yes |
+| Implosion | shader | 1 | 160 | 3.5 | 11.68 | 11.68 | 7.52 → 7.52 | 19.6 | yes | yes |
+| Glow stream | shader | 5 | 800 | 8 | 6.8 | 6.8 | 0.87 → 0.87 | 95.4 | yes | yes |
+| Sparkle | shader | 4 | 192 | 4 | 6.8 | 6.76 | 1.74 → 1.74 | 22.8 | yes | yes |
+| Assemble | shader | 2 | 320 | 6 | 10.98 | 10.98 | 2.79 → 0.93 | 37.5 | yes | yes |
+| Heartbeat | shader | 2 | 320 | 2.8 | 6.8 | 6.8 | 6.49 → 1.81 | 37.5 | yes | yes |
+| Petals | shader | 3 | 480 | 10.5 | 6.8 | 6.76 | 0.66 → 0.66 | 57.1 | yes | yes |
+| Vortex | shader | 3 | 1920 | 3.6 | 6.8 | 6.8 | 1.94 → 1.94 | 57.5 | yes | yes |
+| Slabs | shader | 4 | 640 | 8 | 6.8 | 6.8 | 0.87 → 0.87 | 76.7 | yes | yes |
+| Dense stream | material | 6 | 960 | 9 | 6.8 | 6.8 | 0.77 → 0.77 | 115 | yes | yes |
+| Glass contrast | material | 3 | 480 | 9 | 6.8 | 6.8 | 0.77 → 0.77 | 57.5 | yes | yes |
+| One shell (baseline) | material | 1 | 160 | 9 | 6.8 | 6.8 | 0.77 → 0.77 | 19.2 | yes | yes |
+| Lands short (control) | material | 3 | 480 | 9 | 6.8 | 6.8 | 0.62 → 0.62 | 60 | yes | **no** |
+
+**Found**
+1. **Only three of the 18 looks ship as material values** (Shipped, Dense stream, Glass contrast).
+   Everything that moves triangles independently (stagger, swirl, tumble, scatter, hover, glow,
+   trails) needs an `OmniShepardFresnelShader` extension. That extension would ALSO collapse the
+   crystal's three layer materials into one material with a copy index.
+2. **The scorecard caught two of my own styles popping.** Breathe faded in but never out, so it
+   vanished at full opacity at the far point (fixed: the envelope now fades at both ends for
+   breathe). Implosion's halo was born at alpha 0.10 (fixed: fade line 1.40, birth alpha 0.05).
+   All 18 now hide both ends.
+3. Additive "Glow" styles brighten wherever triangles overlap the body. Without bloom the lab
+   understates how they would read in game.
+
+**Decision needed (designer / team):** open the page, use Compare, and Like what you would ship.
+The next round starts from the *Most liked* list and the decision log. If the winner needs the
+shader, that is the build ticket. If not, the Ship it tab has the material values.
+
+**Checked:** `verify_lab.cjs` PASS (desktop + phone); `omni_shepard_lab_assets.py --check` OK;
+pixel parity with round 2 at the shipped settings, plus its negative control; compare grids of
+styles 1–9, 10–18 and random 1–9 read as screenshots; the scorecard's *Lands short* control still
+fails.
 
 ## Round 2 (2026-10-10): the shells were never drawn
 

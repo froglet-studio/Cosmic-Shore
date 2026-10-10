@@ -169,6 +169,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `git show <round-1 commit>:Docs/Studios/OmniShepardLab.html` fails the updated gate. `OMNI_SHEPARD_LAB.md` "Round 2".
 - Promoted: §3 (verify_lab now checks it)
 
+### L-STU-17 — "People don't like it" is answered with BREADTH and a vote, and a new model must still draw the old look to the pixel
+- Lab: Omni Shepard Lab, round 3 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-10
+- What happened: after round 2 the feedback was "people don't like it, give me many more options", with an empty decision log. More sliders on the one shipped look would not have helped. Round 3 generalised the effect model (per-plate clock, path, spin, size), shipped 18 named styles plus a seeded `randomStyle(n)` generator, a 3×3 compare grid that draws nine parameter sets in one WebGL canvas with scissored viewports, and shared `votes` / `styles` collections with a Most-liked ranking. Two proofs kept it honest. (1) A pixel parity harness against the previous round's page from git, at the shipped settings, with a negative control. (2) The scorecard's seamless-loop columns, which caught two of the new styles popping before anyone saw them.
+- Do instead: when a look is rejected, widen the space (named styles + seeded random + side-by-side compare) and let the team vote in the page. Tag every option with what it costs to ship. When you generalise a model, diff its pixels against the old round at the shipped settings before claiming "shipped is unchanged".
+- Evidence: `Tools/Build/omni_shepard_lab_parity.cjs`; `OMNI_SHEPARD_LAB.md` "Round 3".
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
