@@ -47,7 +47,11 @@ FOLD_RETIRED_KEYS = ("gateExitClearance", "portalWindowFadeSeconds")
 FOLD_ADDED_DEFAULTS = (("portalWindowFadeBand", "600"), ("panoramaFaceSize", "256"))
 # The rival toll's tuning: anchored after gateSettleSeconds (the order FoldActionSO declares them),
 # and like the pair above only ADDED when absent, so a designer's retune is never overwritten.
-FOLD_TOLL_DEFAULTS = (("rivalTollPetalsPerElement", "15"), ("rivalTollShedSpeed", "25"))
+# The toll is a scored hit for the Butterfly (PvP is petals only, 2026-10-10): Debuff class, on
+# Event_CombatHitStats.
+COMBAT_HIT_EVENT = "{fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}"
+FOLD_TOLL_DEFAULTS = (("rivalTollPetalsPerElement", "15"), ("rivalTollShedSpeed", "25"),
+                      ("tollHitClass", "2"), ("onTollHitLanded", COMBAT_HIT_EVENT))
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 
 
@@ -260,7 +264,7 @@ def fold_problems(text):
     for k in sorted(keys - want):
         problems.append(f"ButterflyFoldAction.asset key '{k}' is not a field of FoldActionSO")
     for k in ("wormholeMaterial", "portalWindowFadeBand", "panoramaFaceSize",
-              "rivalTollPetalsPerElement", "rivalTollShedSpeed"):
+              "rivalTollPetalsPerElement", "rivalTollShedSpeed", "tollHitClass", "onTollHitLanded"):
         if k not in keys:
             problems.append(f"ButterflyFoldAction.asset does not author '{k}'")
     return problems

@@ -122,13 +122,18 @@ mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_
   admitted, never by the take's own `Execute`, so the score and the steal share one cooldown and
   one contact rule. A contact reporter with no take sibling falls back to the fleet price
   (`CombatHitDrain.ApplyPriced`).
+- **Two takes that are not weapons score too.** The Grizzly's charged blast carries
+  `VesselCombatHitByGrizzlyBlast` (MissileBlast class, ejects petals; the blast still moves only the
+  Grizzly). The Butterfly's wormhole toll (`WormholeMouth.LevyToll`) raises a Debuff hit for the
+  Butterfly once per paid transit, on its owner's machine, through the same `TryAdmit` and
+  `WormholeToll` ward as the take.
 - **Arena effects are not PvP.** Prism contact (danger prisms, slows, bounces, the Seed Wall's
   panels) acts on whoever flies into the prism, whoever laid it. What is forbidden is aiming one
-  of those at a pilot: the Rhino sword's danger dome and the Squirrel joust's danger ring were
-  removed for that reason.
+  of those at a pilot: the Rhino sword's danger dome was removed for that reason. The Squirrel
+  joust's danger ring stays: it is danger prisms on the arena, and it hits whoever flies into it.
 - **Retired 2026-10-10:** `VesselImpulseByExplosionEffectSO`'s knockback on other vessels (it is
   self-launch only), `VesselShrinkSkimmerEffectSO` (deleted; orphaned), the Rhino's
-  `VesselDangerBlockFormationBySkimmerEffectSO` (deleted), the joust's `AOEDangerRingSpawner`, the
+  `VesselDangerBlockFormationBySkimmerEffectSO` (deleted), the
   explosion reporter's opt-in `requireDebuffableVictim` flag (now unconditional), and the
   Butterfly dust's decaying debuff (now a steal).
 

@@ -72,20 +72,21 @@ reporter admits through `CombatHitDrain.TryAdmit`, which refuses a victim warded
 class, so a ward blocks the score exactly when it blocks the petals (missiles used to score through
 a ward). Contact weapons take their petals through the reporter (`IContactPetalTake`), so a scored
 joust / sword / dusting and its steal are one event. The Serpent's sniper strip now scores
-(Debuff class). The Butterfly's dust is a steal instead of a 4 s debuff. Removed: Grizzly blast
-knockback on other vessels (self-launch kept), the orphaned shrink effect, the Rhino sword's danger
-dome, the joust's danger ring.
+(Debuff class), and so does the Butterfly's wormhole toll. The Butterfly's dust is a steal instead of a 4 s debuff. Removed: Grizzly blast
+knockback on other vessels (self-launch kept; the blast now scores a MissileBlast hit and ejects petals instead), the orphaned shrink effect, the Rhino sword's danger
+dome. The joust's danger ring stays (arena danger prisms).
 
 **Not opened in Unity** (no editor in the session). Reference compile: see the PR.
 
 **Verify in editor:**
 1. Serpent stops (weave stance); a Sparrow rockets it and a Squirrel jousts it: no score, no petals lost.
 2. A Sparrow at Time 5 boosting takes a rocket: no score (was scored before).
-3. Squirrel joust on an opponent: one Strike scored and petals stolen per joust, no danger ring behind.
+3. Squirrel joust on an opponent: one Strike scored and petals stolen per joust; the danger ring still spawns.
 4. Rhino sword at speed: score and steal together; no danger dome on the victim.
 5. Butterfly dust on an opponent: petals move to the Butterfly permanently; bite sound still plays.
 6. Serpent sniper through an opponent: crystals eject and a Debuff hit scores (Broadside, Bends).
-7. Grizzly bomb next to an opponent: the opponent is not shoved; the Grizzly still self-launches.
+7. Grizzly bomb next to an opponent: the opponent is not shoved, a MissileBlast hit scores for the Grizzly and the opponent ejects petals; the Grizzly still self-launches.
+8. A rival threads a Butterfly's wormhole: petals spill at the entry mouth and one Debuff hit scores for the Butterfly (once in a networked match, not once per peer); a Sparrow with an All ward rides free and unscored.
 
 ---
 
