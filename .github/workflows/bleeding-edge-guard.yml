@@ -175,6 +175,17 @@ jobs:
       - name: Check HUD elements resolve on-screen
         run: python3 Tools/Build/check_hud_onscreen.py
 
+      # The offline twin of FrogletTools > Vessels > Audit Vessel Skimmers (DT-002). The
+      # self-test gates (negative controls on a synthetic hull); the fleet report is printed so
+      # a hull that starts failing is visible in the log. It does not --check yet: six hulls are
+      # standing exceptions until DT-002 is resolved, and a per-hull allow list would hide a
+      # new fault on a listed hull.
+      - name: Audit vessel skimmers (offline)
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/audit_vessel_skimmers.py --self-test
+          python3 Tools/Build/audit_vessel_skimmers.py
+
       # The call-to-action badge surface is retired (F7). This fails if any of it comes
       # back - the components, the indicator objects, or the two prefabs.
       - name: Check the call-to-action surface stays retired

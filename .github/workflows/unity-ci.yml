@@ -231,6 +231,13 @@ jobs:
           python3 Tools/Build/check_junie_skills.py --self-test
           python3 Tools/Build/check_junie_skills.py
 
+      # Offline twin of the editor's vessel skimmer audit (DT-002): self-test gates, report prints.
+      - name: Audit vessel skimmers (offline)
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/audit_vessel_skimmers.py --self-test
+          python3 Tools/Build/audit_vessel_skimmers.py
+
       - name: Check prism shader wiring
         run: |
           set -euo pipefail

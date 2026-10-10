@@ -338,7 +338,9 @@ below 762.
 cheap, asset-only check that encodes a contract; several have never been run.
 
 Run each and paste its report into your results file:
-1. **Vessels ▸ Audit Vessel Skimmers**
+1. **Vessels ▸ Audit Vessel Skimmers** — compare with `python3 Tools/Build/audit_vessel_skimmers.py`,
+   its offline twin (DT-002 carries the per-hull classification of the current six); a hull the
+   editor names that the offline run does not is the finding to paste
 2. **Vessels ▸ Audit Vessel Ability Rows**
 3. **Vessels ▸ Audit Vessel Elemental Morphs**
 4. **Vessels ▸ Validate Speed Tunnel Law**
