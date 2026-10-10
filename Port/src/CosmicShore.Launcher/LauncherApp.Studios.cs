@@ -35,10 +35,57 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// Where the studio and artifact pages are read from (<see cref="StudioCatalog.PickRoot"/>): Amoebius's workspace,
-        /// else the checkout Unity opened Amoebius from. Opening a studio never waits for a workspace or a build.
+        /// Which checkout the studio is built from (<see cref="StudioCatalog.PickRoot"/>): started from Unity, the Unity
+        /// checkout (its branch); else Amoebius's workspace, else the checkout Unity last opened Amoebius from.
+        /// Opening a studio never waits for a workspace or an engine build (the studio build takes a second).
         /// </summary>
-        string? StudioRoot => StudioCatalog.PickRoot(_ws.Dir, _ws.Exists, ClonePath);
+        string? StudioRoot => StudioCatalog.PickRoot(_ws.Dir, _ws.Exists, ClonePath, preferClone: !string.IsNullOrWhiteSpace(_args.ClonePathArg));
+
+        // ---------------------------------------------------------------- the studio server (/vessel-studio D33)
+        //
+        // Every way into the Vessel Studio opens the BUILD (build_artifact.py's output, StudioBuild) served over
+        // http://127.0.0.1 by StudioServer, which also plays the claude.ai viewer's backend: Sync, Ask, Requests and
+        // Decisions work here. Never a raw repo page, never file://.
+
+        StudioServer? _studioSrv;
+        readonly object _studioSrvLock = new();
+        volatile string? _studioMsg;
+        volatile bool _studioBusy;
+        /// <summary><c>--page studios:&lt;id|file|hub&gt;</c> (Unity's Vessel Studio home, OPEN STUDIO): open that studio once the page is up.</summary>
+        string? _studioOpenAtStart;
+
+        StudioServer StudioSrv()
+        {
+            lock (_studioSrvLock)
+                return _studioSrv ??= new StudioServer(new StudioServer.Options(
+                    Path.Combine(LauncherSettings.DataDir, "studio"),
+                    _tools.Git ?? "git",
+                    () => StudioRoot,
+                    Ask: (prompt, onText, ct) => StudioAsk.Run(_chats.Cli.Cli ?? _chats.Cli.Detect(), prompt, StudioRoot ?? _ws.Dir,
+                        _s.ClaudeModel, _s.AnthropicApiKey, onText, ct),
+                    Log: line => _jobs.Log.Add(LogKind.Info, line))).Start();
+        }
+
+        /// <summary>Builds the studio from the checkout (if it changed) and opens <paramref name="file"/>: its own window, or the default browser.</summary>
+        void OpenServedStudio(string file, bool window)
+        {
+            if (_studioBusy) return;
+            _studioBusy = true;
+            _studioMsg = "Building the Vessel Studio from the checkout...";
+            Task.Run(() =>
+            {
+                try
+                {
+                    var srv = StudioSrv();
+                    var info = srv.EnsureBuilt();
+                    var url = srv.PageUrl(file);
+                    if (window) OpenStudioWindow(url); else OpenUrl(url);
+                    _studioMsg = $"Serving {info.Branch} @ {info.PathSha[..7]} \"{info.Subject}\" on 127.0.0.1:{srv.Port} (Sync, Ask and Decisions run in Amoebius).";
+                }
+                catch (Exception e) { _studioMsg = "Could not open the studio: " + e.Message; }
+                finally { _studioBusy = false; }
+            });
+        }
         bool StudioFromClone => StudioRoot is { } r && !(_ws.Exists && string.Equals(Path.GetFullPath(r), Path.GetFullPath(_ws.Dir), StringComparison.OrdinalIgnoreCase));
 
         const string NoCheckout = "No checkout to read the studios from yet: open Amoebius from Unity (FrogletTools > Amoebius > Launch Amoebius), " +
@@ -94,6 +141,13 @@ namespace CosmicShore.Launcher
             }
 
             var targets = cat.Targets();
+            if (_studioOpenAtStart != null && cat.Error == null && root != null)
+            {
+                var want = cat.Find(_studioOpenAtStart);
+                _studioPick = want.Key;
+                _studioOpenAtStart = null;
+                OpenServedStudio(want.File, window: true);
+            }
             var pick = cat.Pick(_studioPick);
             Picker("studio", targets.Select(t => t.Label).ToArray(), targets.ToList().FindIndex(t => t.Key == pick.Key), i => _studioPick = targets[i].Key);
             ImGui.Dummy(new Vector2(0, 8));
@@ -107,8 +161,12 @@ namespace CosmicShore.Launcher
 
             // the quiet links: the published artifact, the folder, matching the artifact, and where the pages are read from
             ImGui.Dummy(new Vector2(0, 2));
-            if (Link("claude.ai artifact", true, "The published Vessel Studio on claude.ai, where Sync, Ask and shared decisions work. Phones open it in touch play.\n" + cat.WebLink))
+            if (_studioMsg is { } sm) { ImGui.TextColored(sm.StartsWith("Could not", StringComparison.Ordinal) ? Neon.Amber : Neon.Dim, sm); ImGui.Dummy(new Vector2(0, 2)); }
+            if (Link("claude.ai artifact", true, "The published Vessel Studio on claude.ai (its decisions and requests are shared with everyone who opens it). Phones open it in touch play.\n" + cat.WebLink))
                 OpenUrl(cat.WebLink);
+            ImGui.SameLine(0, 18);
+            if (Link("live mirror", true, "The published build on a plain web page (GitHub Pages), updated in place when it is republished.\n" + cat.LiveUrl(cat.Hub)))
+                OpenUrl(cat.LiveUrl(cat.Hub));
             ImGui.SameLine(0, 18);
             var folder = root != null ? Path.Combine(root, StudioCatalog.RelativeDir) : null;
             if (Link("folder", folder != null && Directory.Exists(folder), folder ?? "No checkout yet.")) OpenFolder(folder!);
@@ -134,14 +192,18 @@ namespace CosmicShore.Launcher
             bool local = page != null && File.Exists(page);
             var live = cat.LiveUrl(t.File);
             var docs = root != null && t.Docs != null ? Path.Combine(root, t.Docs) : null;
+            const string Served = "The studio BUILT from this checkout's branch (the same files as the claude.ai artifact and the live mirror), served by Amoebius\n" +
+                                  "on 127.0.0.1; Sync, Ask, Requests and Decisions run here, kept on this computer.";
             return new List<PageAction>
             {
-                new("OPEN IN AMOEBIUS", local,
-                    local ? "Opens it as its own window (Edge or Chrome app mode; your browser without either), layout remembered.\n" + page
+                new("OPEN IN AMOEBIUS", local && !_studioBusy,
+                    local ? "Its own window (Edge or Chrome app mode; your browser without either), layout remembered.\n" + Served + "\nFrom: " + root
                           : "The page is not in this checkout: switch to Ys-bleeding-edge.",
-                    () => OpenStudioWindow(page!)),
-                new("OPEN IN BROWSER", true, "The published page in your default browser, updated in place when it is republished. Works on a phone too.\n" + live,
-                    () => OpenUrl(live)),
+                    () => OpenServedStudio(t.File, window: true)),
+                new("OPEN IN BROWSER", !_studioBusy,
+                    local ? "The same, in your default browser.\n" + Served
+                          : "No checkout with the studio: opens the live mirror (the published build) instead.\n" + live,
+                    () => { if (local) OpenServedStudio(t.File, window: false); else OpenUrl(live); }),
                 new("PLAY IN ENGINE", t.EngineMode != null && !_jobs.Busy,
                     t.EngineMode == null ? (t.IsHub ? "Pick a vessel to play its mode in the engine." : "This vessel has no game mode in the engine yet.")
                     : "Builds and starts the game in Amoebius, opens the " + t.EngineMode + " card and presses Start: the game's own vessel.",
@@ -305,7 +367,7 @@ namespace CosmicShore.Launcher
                 e.Summary.Length > 0 ? e.Summary : e.Dir + "/" + e.EntryPage, null,
                 new List<PageAction>
                 {
-                    new("OPEN IN AMOEBIUS", here, here ? "Opens " + e.Dir + "/" + e.EntryPage + " as its own window." : "Not in this checkout.", () => OpenStudioWindow(page)),
+                    new("OPEN IN AMOEBIUS", here, here ? "Opens " + e.Dir + "/" + e.EntryPage + " as its own window." : "Not in this checkout.", () => OpenStudioWindow(StudioCatalog.PageUri(page))),
                     new("OPEN IN BROWSER", true, "The published artifact on claude.ai (shared data and asking Claude work there).\n" + e.Url, () => OpenUrl(e.Url)),
                     new("AGENT", _ws.Exists, _ws.Exists ? "Has the agent bring in the artifact's current version (the /amoebius-artifact skill)." : "Needs Amoebius's workspace: press START on PLAY once.",
                         () => ArtifactAgent(e.Url, e.Id, e.Title)),
@@ -320,8 +382,8 @@ namespace CosmicShore.Launcher
             SendChat(ArtifactLibrary.ImportPrompt(url, id), ClaudeChat.Mode.Edit);
         }
 
-        /// <summary>OPEN IN PRISMA: the page in an app-mode window of Edge or Chrome, or the default browser when neither is installed.</summary>
-        static void OpenStudioWindow(string pagePath)
+        /// <summary>OPEN IN AMOEBIUS: <paramref name="url"/> in an app-mode window of Edge or Chrome, or the default browser when neither is installed.</summary>
+        static void OpenStudioWindow(string url)
         {
             string profile = Path.Combine(LauncherSettings.DataDir, "studio-window");
             foreach (var exe in StudioCatalog.AppBrowserCandidates())
@@ -330,13 +392,13 @@ namespace CosmicShore.Launcher
                 try
                 {
                     var psi = new ProcessStartInfo(exe) { UseShellExecute = false };
-                    foreach (var arg in StudioCatalog.AppWindowArgs(pagePath, profile)) psi.ArgumentList.Add(arg);
+                    foreach (var arg in StudioCatalog.AppWindowArgs(url, profile)) psi.ArgumentList.Add(arg);
                     Process.Start(psi);
                     return;
                 }
                 catch (Exception) { /* try the next one */ }
             }
-            OpenUrl(pagePath);
+            OpenUrl(url);
         }
 
         void StudioAgent(StudioCatalog.Target t)

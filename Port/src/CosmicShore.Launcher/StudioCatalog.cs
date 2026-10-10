@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -108,6 +109,17 @@ namespace CosmicShore.Launcher
             return list;
         }
 
+        /// <summary>
+        /// <c>--page studios:&lt;x&gt;</c>: the target whose key or page file is <paramref name="keyOrFile"/> ("hub", "stoat",
+        /// "stoat.html", "index.html"), any case; anything else is the hub.
+        /// </summary>
+        public Target Find(string? keyOrFile)
+        {
+            var all = Targets();
+            return all.FirstOrDefault(t => string.Equals(t.Key, keyOrFile, StringComparison.OrdinalIgnoreCase)
+                                           || string.Equals(t.File, keyOrFile, StringComparison.OrdinalIgnoreCase)) ?? all[0];
+        }
+
         /// <summary>The picked target by key; none or an unknown key (a vessel removed from the catalog) falls back to ALL STUDIOS.</summary>
         public Target Pick(string? key)
         {
@@ -123,13 +135,15 @@ namespace CosmicShore.Launcher
         public string LiveUrl(string file) => MirrorUrl(file) ?? (file == Hub ? DefaultMirror : DefaultMirror + Uri.EscapeDataString(file));
 
         /// <summary>
-        /// Where the studio pages are read from. The pages are plain files, so they need no build and no workspace:
-        /// Amoebius's workspace when it carries the catalog, else the user's own checkout (the one Unity opened Amoebius
-        /// from), else whichever of the two exists. Null when there is neither.
+        /// Which checkout the studio is built from (/vessel-studio D33). Started from Unity (<paramref name="preferClone"/>:
+        /// FrogletTools passes <c>--clone</c>), the Unity checkout, so the studio shows the branch Unity has open. Otherwise
+        /// Amoebius's workspace when it carries the catalog, else the user's own checkout, else whichever of the two exists.
+        /// Null when there is neither.
         /// </summary>
-        public static string? PickRoot(string? workspaceDir, bool workspaceExists, string? cloneDir)
+        public static string? PickRoot(string? workspaceDir, bool workspaceExists, string? cloneDir, bool preferClone = false)
         {
             bool Has(string? d) => d != null && System.IO.File.Exists(Path.Combine(d, RelativeDir, FileName));
+            if (preferClone && Has(cloneDir)) return cloneDir;
             if (workspaceExists && Has(workspaceDir)) return workspaceDir;
             if (Has(cloneDir)) return cloneDir;
             return workspaceExists ? workspaceDir : cloneDir;
@@ -142,9 +156,10 @@ namespace CosmicShore.Launcher
         public static string PagePath(string workspaceDir, string file) => Path.Combine(workspaceDir, RelativeDir, file);
 
         /// <summary>
-        /// OPEN IN PRISMA: the studio as its own window, with no browser tabs or address bar. Chromium-based browsers
-        /// have an app mode (<c>--app=URL</c>); a profile of Prisma's own keeps that window separate from the user's
-        /// browser and its layout remembered between opens. The page gets <c>#prisma</c>, so it says it runs in Prisma.
+        /// OPEN IN AMOEBIUS: the studio as its own window, with no browser tabs or address bar. Chromium-based browsers
+        /// have an app mode (<c>--app=URL</c>); a profile of Amoebius's own keeps that window separate from the user's
+        /// browser and its layout remembered between opens. The URL is the studio server's (<see cref="StudioServer.PageUrl"/>:
+        /// the build over http, with <c>#amoebius</c>), never a file.
         /// The candidates are where Edge (always on Windows 10/11) and Chrome install; none found means the plain browser.
         /// </summary>
         public static IEnumerable<string> AppBrowserCandidates()
@@ -172,18 +187,27 @@ namespace CosmicShore.Launcher
             }
         }
 
-        /// <summary>The app-mode arguments for <paramref name="pagePath"/>, with a window profile under <paramref name="profileDir"/>.</summary>
-        public static List<string> AppWindowArgs(string pagePath, string profileDir) => new()
+        /// <summary>
+        /// The app-mode arguments for <paramref name="url"/>, with a window profile under <paramref name="profileDir"/>.
+        /// <c>PRISMA_STUDIO_BROWSER_ARGS</c> adds flags (a GPU-less test machine: <c>--use-gl=swiftshader --enable-unsafe-swiftshader</c>).
+        /// </summary>
+        public static List<string> AppWindowArgs(string url, string profileDir)
         {
-            "--app=" + PageUri(pagePath),
-            "--user-data-dir=" + profileDir,
-            "--window-size=1600,960",
-            "--no-first-run",
-            "--no-default-browser-check",
-        };
+            var list = new List<string>
+            {
+                "--app=" + url,
+                "--user-data-dir=" + profileDir,
+                "--window-size=1600,960",
+                "--no-first-run",
+                "--no-default-browser-check",
+            };
+            var extra = Environment.GetEnvironmentVariable("PRISMA_STUDIO_BROWSER_ARGS");
+            if (!string.IsNullOrWhiteSpace(extra)) list.AddRange(extra.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            return list;
+        }
 
-        /// <summary>The page as a file URI that tells it it is running in Prisma (<c>#prisma</c>).</summary>
-        public static string PageUri(string pagePath) => new Uri(Path.GetFullPath(pagePath)).AbsoluteUri + "#prisma";
+        /// <summary>A page file as a file URI: only for the OTHER artifacts of the library; the Vessel Studio is always served (D33).</summary>
+        public static string PageUri(string pagePath) => new Uri(Path.GetFullPath(pagePath)).AbsoluteUri;
 
         /// <summary>The player arguments PLAY IN ENGINE adds: open the studio's arcade mode from the main menu.</summary>
         public static IReadOnlyList<string> EngineArgs(Studio s) =>

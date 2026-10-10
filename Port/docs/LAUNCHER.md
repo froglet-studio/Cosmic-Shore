@@ -61,33 +61,38 @@ The first start shows a one-minute tour of every page; **?** replays it.
 
 The rail item was called STUDIOS until 2026-10-09; the page id is still `studios` (`--page studios`, which
 Unity's **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** passes). `--page studios:artifacts` opens it scrolled to the
-artifact library (docs screenshots).
+artifact library (docs screenshots). `--page studios:hub` (or `studios:stoat`, any catalog id) also opens that studio
+in its window as soon as the page is up: Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio** passes `studios:hub`.
 
 ![VESSEL STUDIO](architecture/launcher_vessel_studio.png)
 
 Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
-and element levels, and read what each number does. The pages are plain HTML in
-`Docs/Studios/VesselStudio/` (no build step), so the same files open here, in any desktop browser, and on a
-phone through the live mirror or the claude.ai artifact. Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
+and element levels, and read what each number does. The pages live in `Docs/Studios/VesselStudio/`; what every
+surface opens is their **build** (`build_artifact.py`'s output), so the studio here is byte for byte the one on
+claude.ai and the live mirror (/vessel-studio D33, below). Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
 
 **One picker, one action row** (2026-10-10, the user: no row of buttons per vessel). The page is a picker over
 `StudioCatalog.Targets()` (each vessel's studio, then ALL STUDIOS = the hub) and one card for the picked one, with
 the same five actions in the same order whatever is picked (`LauncherApp.StudioActions`). An action that does not
 apply stays visible, disabled, and its tooltip says why (the hub has no PLAY IN ENGINE). A vessel added to
 `studios.json` gets every action with no launcher change. The artifact library below uses the same picker, card
-(`PickedCard`) and action row (`ActionRow`). The pages are read from Amoebius's workspace when it has them, else
-from the checkout Unity opened Amoebius from (`StudioCatalog.PickRoot`), so nothing waits for the first START.
+(`PickedCard`) and action row (`ActionRow`). The studio is built from **the checkout Unity opened Amoebius from**
+when Unity started it (`--clone`: Unity's branch), else from Amoebius's workspace when it has the studio, else from
+that checkout (`StudioCatalog.PickRoot`), so nothing waits for the first START.
 
 The actions:
 
-- **OPEN IN AMOEBIUS**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
+- **OPEN IN AMOEBIUS**: the studio, built from the checkout and served by Amoebius (below), as its own window in the
+  app mode of Edge (always on Windows 10/11) or Chrome.
   - It has no tabs or address bar.
   - It uses a window profile under Amoebius's data folder (`studio-window`), so the studio's layout and pop-out
     windows are remembered.
-  - The page is opened with `#prisma`, so it reads "Running on Amoebius".
+  - The URL ends in `#amoebius`: the pages' one host helper (`VesselStudioTheme.host()`) reads it; nothing visible changes.
   - With neither browser installed it falls back to the default browser.
-  - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenStudioWindow`.
-- **OPEN IN BROWSER**: the published page on the live mirror (`mirror` in the catalog, else `StudioCatalog.DefaultMirror`), in the default browser; the same link opens on a phone.
+  - `PRISMA_STUDIO_BROWSER_ARGS` adds browser flags (a GPU-less test box: `--use-gl=swiftshader --enable-unsafe-swiftshader`).
+  - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenServedStudio` / `OpenStudioWindow`.
+- **OPEN IN BROWSER**: the same served studio in the default browser. With no checkout yet it opens the live mirror
+  (`mirror` in the catalog, else `StudioCatalog.DefaultMirror`), which is also a quiet link under the card.
 - **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
   - Amoebius builds and starts the game as PLAY does.
   - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
@@ -104,9 +109,43 @@ The actions:
   `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
 - **AGENT** starts an Amoebius Agent chat on that studio (or on the Vessel Studio as a whole, for ALL STUDIOS), in plan mode.
 - **DOCS**: the vessel's doc (`docs` in the catalog); for ALL STUDIOS, the plan.
-- **Links under the card**: the claude.ai artifact (`web`, else `StudioCatalog.DefaultWeb`; Sync, Ask and shared decisions work there), the folder, and update from the artifact (an agent chat; needs the workspace).
-- **From Unity:** **FrogletTools > Amoebius > Vessel Studio Page** opens Amoebius on this page (`--page studios`);
-  **FrogletTools > Vessels > Vessel Studio** opens the studio home in Unity; a card opens its studio page in an app window (no Amoebius).
+- **Links under the card**: the claude.ai artifact (`web`, else `StudioCatalog.DefaultWeb`; its decisions and requests are shared with everyone), the live mirror, the folder, and update from the artifact (an agent chat; needs the workspace). The line above them says what is being served (branch @ commit, port).
+- **From Unity:** **FrogletTools > Vessels > Vessel Studio** opens the studio home in Unity (/vessel-studio D32); a card's
+  **OPEN STUDIO** opens that studio SERVED by Amoebius (D33): the server of an Amoebius already running on Unity's checkout
+  (`<data>/studio/server.json`), else Amoebius started with `--clone <checkout> --page studios:<file>`. Built from Unity's
+  checkout and branch. **FrogletTools > Amoebius > Vessel Studio Page** opens this page (`--page studios`).
+
+### The studio server: one build, and the artifact's backend (/vessel-studio D33)
+
+`Port/src/CosmicShore.Launcher/Studio/`. Started the first time a studio opens; lives as long as Amoebius.
+
+- **Build** (`StudioBuild`): the C# twin of `.claude/skills/vessel-studio/build_artifact.py`: the pages, studios.json,
+  sync.js, the shared files and build.json from the checkout's branch (`git show`, so committed work: commit to see a
+  change), into `<data>/studio/build/<time>-<sha>/`. Rebuilt only when the branch's commit changed. A test builds this
+  repo both ways and compares every byte (`StudioBuildTests`).
+- **Serve** (`StudioServer`): `http://127.0.0.1:<random port>/<random per-launch token>/<page>#amoebius`. Only
+  127.0.0.1, only that Host header (no DNS rebinding), any other Origin or a cross-site fetch refused (403), the API
+  only with our Origin, no CORS headers, `Referrer-Policy: no-referrer` (the token never reaches the font or three.js
+  CDNs), `Cache-Control: no-store`. The one byte difference from the published build: a `<script src=".amoebius/bridge.js">`
+  first in `<head>` (`StudioServer.WithBridge`), which `parity_gate.py` allows and nothing else.
+- **Backend** (`Assets/studio-bridge.js` + `StudioServer.Api`): the same `window.claude.use()` the claude.ai viewer gives,
+  so the pages do not know which host they are on beyond what is enabled:
+  - `db`: `StudioStore`, one JSON file per collection under `<data>/studio/db/` (`decisions`, `jobs`, `requests`,
+    `data/users/<id>`), add / doc get-set-update-delete / orderBy-limit, live queries polled. Firestore's rule that
+    orderBy leaves out documents without the field holds. Kept on this computer, not shared with the artifact's store.
+  - `user`: one local user per data folder (`<data>/studio/user.json`).
+  - `sample` (Ask): `StudioAsk`, one read-only run of Amoebius's Claude Code CLI (plan mode, no Bash/Edit/Write/Web),
+    the answer streamed back; the AGENT page's sign-in, model and API key.
+  - `mcp` "Claude Code Remote": the session is Amoebius (`amoebius-local`, named in build.json so Sync needs no Start
+    session). `send_message` naming a job runs it.
+- **Sync jobs** (`StudioJobs`): what SKILL.md section 5 has a session do, done here: `sync_job.py` (needs Python 3)
+  in the studio checkout, its log and result written into the job. The skill's limits, checked before Python runs
+  and again by sync_job.py: never merge into or delete `bleeding-edge`, `Ys-bleeding-edge`, `main`, `master`;
+  never delete the tools branch or the checkout's branch; branch names by `StudioJobs.BranchRe`; no force-push; one job
+  at a time, 5 minutes each, `GIT_TERMINAL_PROMPT=0`. **Refresh** rebuilds the served studio from `origin/<branch>` and
+  the page reloads onto it (OPEN IN AMOEBIUS goes back to the checkout's branch).
+- Tests: `StudioServerTests.cs` (token, origin, db API, the session connector, sample, the job limits, the build).
+
 - **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
   instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
 

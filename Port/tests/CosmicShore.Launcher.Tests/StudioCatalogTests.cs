@@ -162,6 +162,9 @@ namespace CosmicShore.Launcher.Tests
                 Catalog(ws);
                 Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, clone));              // the workspace once it carries the studio
                 Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, null));
+                // started from Unity (--clone): Unity's checkout and branch win over Amoebius's workspace (D33)
+                Assert.Equal(clone, StudioCatalog.PickRoot(ws, true, clone, preferClone: true));
+                Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, null, preferClone: true));
             }
             finally { try { Directory.Delete(tmp, true); } catch (IOException) { } }
         }
@@ -180,14 +183,33 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
-        public void AppWindowArgs_OpenThePageAsAnAppThatKnowsItIsInPrisma()
+        public void AppWindowArgs_OpenTheServedStudioAsAnApp_NeverAFile()
         {
-            string page = Path.Combine(Path.GetTempPath(), "VesselStudio", "stoat.html"), profile = Path.Combine(Path.GetTempPath(), "studio-window");
-            var args = StudioCatalog.AppWindowArgs(page, profile);
-            var app = args.Single(a => a.StartsWith("--app="));
-            Assert.StartsWith("--app=file:///", app);
-            Assert.EndsWith("stoat.html#prisma", app);
+            string url = "http://127.0.0.1:5123/abc/stoat.html#amoebius", profile = Path.Combine(Path.GetTempPath(), "studio-window");
+            var args = StudioCatalog.AppWindowArgs(url, profile);
+            Assert.Equal("--app=" + url, args.Single(a => a.StartsWith("--app=")));
             Assert.Contains("--user-data-dir=" + profile, args);
+            Assert.DoesNotContain(args, a => a.Contains("file://"));
+        }
+
+        [Fact]
+        public void Find_TakesAKeyOrAPageFile_ElseTheHub()
+        {
+            var c = StudioCatalog.Parse(Good);
+            Assert.Equal("stoat", c.Find("STOAT").Key);
+            Assert.Equal("stoat", c.Find("stoat.html").Key);
+            Assert.True(c.Find("index.html").IsHub);
+            Assert.True(c.Find("hub").IsHub);
+            Assert.True(c.Find("nope").IsHub);
+            Assert.True(c.Find(null).IsHub);
+        }
+
+        [Fact]
+        public void PageUri_IsAPlainFileUri_ForTheOtherArtifactsOnly()
+        {
+            var u = StudioCatalog.PageUri(Path.Combine(Path.GetTempPath(), "Docs", "Artifacts", "x", "index.html"));
+            Assert.StartsWith("file:///", u);
+            Assert.DoesNotContain("#", u);   // no host flag: the Vessel Studio is served (D33), never opened as a file
         }
 
         [Fact]
