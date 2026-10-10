@@ -168,20 +168,24 @@ def card_checks(root, natives=True):
         return errs
     cat = json.loads(read(os.path.join(root, DIR, 'studios.json')))
     labels = [a.get('label') for a in cat.get('cardActions') or [] if a.get('label')] + ['OPEN STUDIO']
-    for rel, method, needles in ((LAUNCHER_STUDIOS, 'void DrawStudioCard(', ('CardActions', '.Chip', '.Spec', 'Preview')),
-                                 (UNITY_HOME, 'void DrawCard(', ('cardActions', '.chip', '.spec', 'preview'))):
+    code = lambda t: re.sub(r'//[^\n]*', '', t or '')   # comments do not count as drawing anything
+    homes = ((LAUNCHER_STUDIOS, 'void DrawStudioCard(', 'List<PageAction> CardButtons(', 'CardActions', ('.Chip', '.Spec', 'Preview')),
+             (UNITY_HOME, 'void DrawCard(', 'static List<CardButton> CardButtons(', 'cardActions', ('.chip', '.spec', 'preview')))
+    for rel, method, buttons, field, needles in homes:
         p = os.path.join(root, rel)
         if not os.path.exists(p):
             continue
         t = read(p)
-        card = region(t, method)
-        if card is None:
-            errs.append(f'{rel}: no {method.split("(")[0][5:]} (the hub\'s studio card, drawn from studios.json)'); continue
+        card, btn = code(region(t, method)), code(region(t, buttons))
+        if not card:
+            errs.append(f'{rel}: no {method.split("(")[0].split()[-1]} (the hub\'s studio card, drawn from studios.json)'); continue
+        if not btn or 'CardButtons(' not in card or field not in btn:
+            errs.append(f'{rel}: the studio card does not take its buttons from studios.json {field} ({buttons.split("(")[0].split()[-1]})')
         for n in needles:
             if n not in card:
                 errs.append(f'{rel}: the studio card does not draw {n.strip(".")} from studios.json')
         for lab in labels:
-            if '"' + lab in card:
+            if '"' + lab in card + btn:
                 errs.append(f'{rel}: the studio card spells "{lab}" itself: take the label from studios.json cardActions')
         if not re.search(r'[Ff]leet', t):
             errs.append(f'{rel}: no fleet list (studios.json "fleet")')
@@ -218,10 +222,12 @@ def cards_self_test():
         w(f'{DIR}/studios.json', json.dumps(cat, ensure_ascii=False))
         w(f'{DIR}/previews/a.png', b'png', binary=True)
         w(f'{DIR}/previews/previews.json', json.dumps({'source': studio_cards.preview_hash(tmp)}))
-        good_amo = ('        void DrawStudioCard(StudioCatalog cat, StudioCatalog.Studio s)\n        {\n            Image(Preview(s)); Text(s.Chip); Rows(s.Spec);\n'
-                    '            foreach (var a in cat.CardActions) Button(a.Label);\n        }\n        void Fleet() { }\n')
-        good_unity = ('        void DrawCard(Rect r, StudioEntry s)\n        {\n            Tex(s.preview); Label(s.chip); Rows(s.spec);\n'
-                      '            foreach (var a in _catalog.cardActions) Button(a.label);\n        }\n        string[] _fleet;\n')
+        good_amo = ('        List<PageAction> CardButtons(StudioCatalog cat, StudioCatalog.Studio s)\n        {\n            foreach (var a in cat.CardActions) list.Add(a.Label);\n        }\n'
+                    '        void DrawStudioCard(StudioCatalog cat, StudioCatalog.Studio s)\n        {\n            Image(Preview(s)); Text(s.Chip); Rows(s.Spec);\n'
+                    '            foreach (var b in CardButtons(cat, s)) Button(b.Label);\n        }\n        void Fleet() { }\n')
+        good_unity = ('        public static List<CardButton> CardButtons(Catalog cat, StudioEntry s)\n        {\n            foreach (var a in cat.cardActions) list.Add(a.label);\n        }\n'
+                      '        void DrawCard(Rect r, StudioEntry s)\n        {\n            Tex(s.preview); Label(s.chip); Rows(s.spec);\n'
+                      '            foreach (var b in CardButtons(_catalog, s)) Button(b.Label);\n        }\n        string[] _fleet;\n')
         w(LAUNCHER_STUDIOS, good_amo)
         w(UNITY_HOME, good_unity)
         w(UNITY_WINDOW, 'static readonly Dictionary<string, X> Tuners = new() { ["a"] = Tabs };')
@@ -250,10 +256,12 @@ def cards_self_test():
         expect('a fleet that drifted', cj, cat_with(fleet=['Manta', 'Rhino']), 'fleet')
         expect('a missing preview', cj, cat_with(studio={'preview': 'previews/none.png'}), 'missing')
         expect('a stale preview', f'{DIR}/previews/previews.json', json.dumps({'source': 'old'}), 're-bake' if False else 'baked')
-        expect('Amoebius spelling a label', LAUNCHER_STUDIOS, good_amo.replace('Button(a.Label);', 'Button(a.Label); Button("PLAY IN ENGINE");'), 'spells "PLAY IN ENGINE"')
+        expect('Amoebius spelling a label', LAUNCHER_STUDIOS, good_amo.replace('list.Add(a.Label);', 'list.Add(a.Label); list.Add("PLAY IN ENGINE");'), 'spells "PLAY IN ENGINE"')
         expect('Amoebius without the chip', LAUNCHER_STUDIOS, good_amo.replace('Text(s.Chip); ', ''), 'Chip')
         expect('Amoebius without a card', LAUNCHER_STUDIOS, 'void Other() { }\n', 'no DrawStudioCard')
-        expect('Unity spelling a label', UNITY_HOME, good_unity.replace('Button(a.label);', 'Button(a.label); Button("OPEN STUDIO ▸");'), 'spells "OPEN STUDIO"')
+        expect('Amoebius buttons of its own', LAUNCHER_STUDIOS, good_amo.replace('cat.CardActions', 'MyButtons'), 'does not take its buttons')
+        expect('Unity buttons only named in a comment', UNITY_HOME, good_unity.replace('foreach (var a in cat.cardActions)', '// cardActions\n            foreach (var a in Mine)'), 'does not take its buttons')
+        expect('Unity spelling a label', UNITY_HOME, good_unity.replace('Button(b.Label);', 'Button(b.Label); Button("OPEN STUDIO ▸");'), 'spells "OPEN STUDIO"')
         expect('Unity without the spec', UNITY_HOME, good_unity.replace('Rows(s.spec);', ''), 'spec')
         expect('a tuner the catalog does not list', UNITY_WINDOW, 'static readonly Dictionary<string, X> Tuners = new() { ["a"] = Tabs, ["b"] = Tabs };', 'TUNE IN UNITY must match')
     finally:
