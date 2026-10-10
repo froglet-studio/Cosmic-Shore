@@ -773,6 +773,9 @@ namespace CosmicShore.Utility
         public void InvokeMiniGameEnd()
         {
             FlightClock.EndGame();
+            // Every peer raises this, so every machine remembers the other humans of the match
+            // (the friends panel's RECENT section). Solo and AI-only games record nobody.
+            RecentPlayersStore.RecordMatchEnd(Players);
             OnMiniGameEnd?.Raise();
         }
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();

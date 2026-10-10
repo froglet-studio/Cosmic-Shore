@@ -16,7 +16,7 @@ All components live in `Assets/_Scripts/UI/Elements/` unless noted
 
 There are two on-screen surfaces — the **party panel** (`ArcadeLobbyList`, the
 4 slots) and the **combined social panel** (`FriendsListPanel`, Online + Add
-Friend + Requests). They share the same component family:
+Friend + Recent + Requests). They share the same component family:
 
 | Component | Purpose |
 |---|---|
@@ -24,9 +24,9 @@ Friend + Requests). They share the same component family:
 | `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. Also **ensures its own `PartySlotDomainGlow`** at `Awake` (see "Seating"). |
 | `PartyRoster` | Pure static. THE party seating order, and the only place it is decided. No Unity, UGS or Netcode types — the caller supplies the client-id lookup, which is what makes it edit-mode testable (`PartyRosterTests`). |
 | `PartySlotDomainGlow` | The animated halo behind a slot's avatar, tinted with that pilot's live domain. Generated (GameObject, sprite and rect) rather than authored, so it needs no scene wiring and no party surface can ship without it. |
-| `FriendsListPanel` | Combined social panel — **no tabs; all three sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade`. There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
+| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade`. There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
 | `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. A third button, **Join** (`joinButton` + `joinButtonIcon`), is one control with two faces resolved by `FriendsListPanel.ResolveJoinMode`: a blue doorway icon that walks you into that player's party with no invite (drawn disabled when the party is full), or — while the player is IN A MATCH — an amber eye icon that is the row's ONLY enabled button and **spectates** the match (`SPECTATOR.md`). On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
-| `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
+| `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite, RecentPlayer }` — one row type serves all three (delegates to `FriendsServiceFacade` / `PartyInviteController`); in its `RecentPlayer` shape (`PopulateRecentPlayer`) the Accept glyph is the add-friend button, Decline is hidden, the label is the resolved state and nothing expires. Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
 | `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
 
 **Live identity (names/avatars) in these panels.** Rows and slots render
@@ -166,10 +166,11 @@ as a spectator with no Player object (`SpectateAsync`). Record: `SPECTATOR.md`.
 ### Add Friend section (the send half, 2026-10-10)
 
 **Friend requests are sent from the `FriendsListPanel`'s Add Friend section**, the third
-section between Online and Requests. It is by exact display name, which is what the retired
-`AddFriendPanel` did and what the facade's by-name method supports; a recently-played-with
-list (QoL item 3) would be the better source and is a separate decision. The by-ID method
-`.SendFriendRequestAsync(playerId)` is still a live single-writer entry point with no caller.
+section between Online and Recent. It is by exact display name, which is what the retired
+`AddFriendPanel` did and what the facade's by-name method supports; the RECENT section below
+is the other source (a pilot you just played with, sent by id through
+`.SendFriendRequestAsync(playerId)`), and the two share the gate, the in-flight lock and the
+status line.
 
 - **Objects** (children of each `FriendListPanel`, scene-authored, not a prefab):
   `AddFriendHeader` (the ONLINE / REQUESTS header bar and text treatment, reading ADD FRIEND),
@@ -203,6 +204,63 @@ list (QoL item 3) would be the better source and is a separate decision. The by-
   first editor pass should open Menu_Main, confirm the four panels show the section, and send a
   real request between two signed-in accounts.
 
+### Recent section (recently played with, 2026-10-10)
+
+**The RECENT section is the path from a good match with a stranger to a friend request.** It
+lists the other humans of the local player's completed multiplayer matches, newest first, with an
+add-friend button per row. Nothing recorded this before, so the social graph could not grow from
+play at all.
+
+- **Store**: `RecentPlayersStore` (`_Scripts/System/`, static, like the preference stores). One
+  `RecentPlayerRecord` per pilot (UGS player id, display name, avatar id, last-played UTC ticks),
+  de-duplicated by id (a pilot met again moves to the front with fresh facts) and capped. Local
+  JSON through `DataAccessor` (`recent_players.data` under `persistentDataPath`): a memory of who
+  you met, not a relationship, so it is not Cloud Save data. **Config**: `RecentPlayersConfigSO`
+  at `Resources/RecentPlayersConfig.asset` holds the cap (20) and the file name; a missing asset
+  falls back to the same defaults.
+- **Recording**: `GameDataSO.InvokeMiniGameEnd` calls `RecentPlayersStore.RecordMatchEnd(Players)`
+  next to `FlightClock.EndGame()`. Every peer raises that (the modes sync results through a
+  ClientRpc first), so every machine remembers the match. Only seats with a UGS id are kept; AI
+  seats (flagged, no id) and the local pilot (by flag AND by id, so a stale second object for the
+  same account cannot record "you played with yourself") are dropped, and a solo or AI-only game
+  records nobody. The pure list shaping (`SelectOthers`, `Merge`, `FormatLastPlayed`) is covered
+  by `RecentPlayersStoreTests` (cap, de-dup, newest first, local and AI excluded).
+- **Objects** (children of each `FriendListPanel`, scene-authored with `cs-asset`): `RecentHeader`
+  (the header bar treatment, reading RECENT), `Recent Scroll View` (the Requests scroll view's
+  shape: `Image` + `ScrollRect` > `Viewport` (`Image` + `Mask`) > `Content`
+  (`VerticalLayoutGroup`)) and, over the viewport, `RecentEmptyText` (a `TextMeshProUGUI` line
+  the panel shows while the list is empty). To make room the Online scroll view is now 210 tall
+  (two rows) and anchored by fraction like the other two, the Add Friend trio moved up and the
+  Requests header, refresh icon and scroll view moved down; the Recent and Requests lists each
+  show one row and the top of the next and scroll.
+- **Wiring**: `FriendsListPanel.recentContent` (the Content `RectTransform`) and
+  `recentEmptyText`. Both optional: no `recentContent` means no RECENT section; an empty-state
+  line without a content is reported by `ValidateSceneWiring`. Rows are `requestInfoPrefab`
+  (`RequestsInfo`) in its `RecentPlayer` shape, so no new row prefab exists.
+- **Row state** (read from `FriendsDataSO`, the UI never touches the SDK): already in `Friends`
+  reads FRIENDS, already in `OutgoingRequests` reads REQUEST SENT, both without a button; in
+  `IncomingRequests` reads SENT YOU A REQUEST with the button (the facade's add on an incoming
+  request is the accept that makes it mutual); otherwise PLAYED 5 MIN AGO / 3 HR AGO / 2 DAYS AGO
+  with the button. Any change to those three lists re-renders the rows next frame (coalesced,
+  since the facade rebuilds each list as Clear() + Add() per sync).
+- **Flow**: add press -> the row disables its own button -> `TryBeginSendAction` (the Add Friend
+  gate, `sendRequestCooldownSeconds`) and the shared `_sendRequestInFlight` lock -> facade not
+  ready is refused on the status line -> `FriendsServiceFacade.SendFriendRequestAsync(playerId)`
+  with the Add Friend send button disabled meanwhile -> "Friend request sent to NAME." or
+  "Couldn't send to NAME: <reason>" on the same status line (toast when it is unwired) -> the
+  rows are rebuilt, so the row now reads REQUEST SENT (or gets its button back after a refusal or
+  a failure). Traces on the `Party` channel.
+- **Seen in Prisma** (xvfb, `COSMIC_SHORE_NET=off`, the store file seeded with two pilots): the
+  section renders between ADD FRIEND and REQUESTS with both rows (name, avatar, "PLAYED 1 HR AGO"
+  and the green glyph); an add press reports "Friend request sent to Kestrel." on the status line
+  and the row rebuilds as REQUEST SENT (the in-engine Friends stand-in records the outgoing
+  request). Two Prisma engine quirks needed harness nudges and are not scene defects: the first
+  layout pass after `Instantiate` under the `VerticalLayoutGroup` placed the rows 227 units low
+  (any relayout puts them at the authored positions, and the authored Content block is identical
+  to the Requests one), and the nested `AcceptRequest` / `AvatarIcon` composed with a non-zero
+  `anchoredPosition` (the prefab authors 0,0). **Not yet opened in the Unity Editor**: first
+  pass is a real online match on two accounts, then the panel on both.
+
 ## Scene wiring checklist (Menu_Main)
 
 1. **Persistent GameObjects** (Bootstrap scene, `DontDestroyOnLoad`):
@@ -212,11 +270,12 @@ list (QoL item 3) would be the better source and is a separate decision. The by-
    `hostConnectionData`.
 3. **Menu_Main UI:**
    - `ArcadeLobbyList` (party panel) as child of the Arcade screen; empty slots' "+" opens `FriendsListPanel`.
-   - `FriendsListPanel` (Online + Add Friend + Requests) as child of the party area (start inactive); auto-opens on an incoming invite.
+   - `FriendsListPanel` (Online + Add Friend + Recent + Requests) as child of the party area (start inactive); auto-opens on an incoming invite.
    - Wire `HostConnectionData.asset` into `ArcadeLobbyList` and `FriendsListPanel`.
    - Wire `FriendsData.asset` into `FriendsListPanel`.
    - Wire the `OnlineInfoEntry` (`OnlineFriendsInfo Variant`) and `RequestInfoEntry` (`RequestsInfo`) row prefabs into `FriendsListPanel` (`onlineInfoPrefab` + `requestInfoPrefab` — the only two row prefabs it spawns).
    - Wire the Add Friend trio into `FriendsListPanel`: `addFriendNameInput` (the `TMP_InputField` on `AddFriendInput`), `addFriendSendButton` (the `Button` on `AddFriendSendButton`), `addFriendStatusText` (the `TextMeshProUGUI` on `AddFriendStatus`). All three or none; every FriendListPanel copy in the scene (Arcade, Arena, Mission, Toybox) carries them.
+   - Wire the Recent pair into `FriendsListPanel`: `recentContent` (the `Content` `RectTransform` under `Recent Scroll View/Viewport`) and `recentEmptyText` (the `TextMeshProUGUI` on `Recent Scroll View/RecentEmptyText`). Every FriendListPanel copy in the scene (Arcade, Arena, Mission, Toybox) carries them. The store needs no scene wiring: `Resources/RecentPlayersConfig.asset` is loaded by name.
    - Wire `SO_ProfileIconList` into `ArcadeLobbyList` / `FriendsListPanel` for avatars.
 
 Prefabs live in `_Prefabs/UI Elements/Panels/Party/`. SO assets

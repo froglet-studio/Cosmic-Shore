@@ -24,6 +24,13 @@ namespace CosmicShore.UI
     ///                  <see cref="FriendsServiceFacade.SendFriendRequestByNameAsync"/>
     ///                  (the single writer of FriendsDataSO), behind the same
     ///                  anti-spam cooldown the Online row's Invite/Cancel/Kick use.
+    ///   • Recent     - the other humans of your last online matches
+    ///                  (<see cref="RecentPlayersStore"/>), newest first, each with an
+    ///                  add-friend button that goes through
+    ///                  <see cref="FriendsServiceFacade.SendFriendRequestAsync"/> behind
+    ///                  the same anti-spam gate and status line as Add Friend. A pilot
+    ///                  who is already a friend, or already asked, shows that state
+    ///                  instead of the button (read from FriendsDataSO).
     ///   • Requests   - incoming friend requests AND incoming party invites
     ///                  combined, with Accept/Decline buttons.
     ///
@@ -60,6 +67,15 @@ namespace CosmicShore.UI
                  "line goes to the toast instead, like the Accept/Decline feedback does.")]
         [SerializeField] private TMP_Text addFriendStatusText;
 
+        [Header("Recent (pilots from your last online matches)")]
+        [Tooltip("Content RectTransform of the Recent scroll view (ScrollRect > Viewport > Content). Rows " +
+                 "are requestInfoPrefab in its RecentPlayer shape: the Accept glyph is the add-friend " +
+                 "button, Decline is hidden. Leave empty and the panel simply has no RECENT section.")]
+        [SerializeField] private Transform recentContent;
+        [Tooltip("Optional line shown in place of rows while the list is empty (nobody met online yet). " +
+                 "Toggled by the panel; hidden the moment the first match is recorded.")]
+        [SerializeField] private TMP_Text recentEmptyText;
+
         [Header("Audio")]
         [Tooltip("Category played when a party invite is received.")]
         [SerializeField] private MenuAudioCategory inviteReceivedAudio = MenuAudioCategory.Confirmed;
@@ -88,6 +104,7 @@ namespace CosmicShore.UI
 
         readonly List<GameObject> _spawnedOnline = new();
         readonly List<GameObject> _spawnedRequests = new();
+        readonly List<GameObject> _spawnedRecent = new();
 
         /// <summary>Currently-pending party invites keyed by sender PlayerId.</summary>
         readonly Dictionary<string, PartyInviteData> _pendingPartyInvites = new();
@@ -97,6 +114,9 @@ namespace CosmicShore.UI
 
         /// <summary>Guards the one-frame deferred request-row reconcile after a list Clear.</summary>
         bool _requestsReconcilePending;
+
+        /// <summary>Guards the one-frame deferred RECENT re-render after a relationship change.</summary>
+        bool _recentRefreshPending;
 
         /// <summary>True from an accepted Send press until the facade call returns (success or not).</summary>
         bool _sendRequestInFlight;
@@ -178,6 +198,11 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[FriendsListPanel] Add Friend section on '{name}' is only partly wired " +
                                    $"({addFriendWired}/3 of addFriendNameInput, addFriendSendButton, addFriendStatusText). " +
                                    "Wire all three or none.", this);
+
+            // The empty-state line is meaningless without the list it stands in for.
+            if (recentEmptyText && !recentContent)
+                CSDebug.LogWarning($"[FriendsListPanel] recentEmptyText is wired on '{name}' but recentContent is not: " +
+                                   "the RECENT section needs its Content RectTransform to render rows.", this);
         }
 
         /// <summary>
@@ -208,6 +233,7 @@ namespace CosmicShore.UI
             // the next OnCleared after re-enable can schedule a fresh one. (OnEnable
             // repopulates everything from scratch anyway.)
             _requestsReconcilePending = false;
+            _recentRefreshPending = false;
         }
 
         void SubscribeServiceEvents()
@@ -269,6 +295,32 @@ namespace CosmicShore.UI
                 friendsData.IncomingRequests.OnItemRemoved += HandleIncomingFriendRequestRemoved;
                 friendsData.IncomingRequests.OnCleared += HandleIncomingFriendRequestsCleared;
             }
+
+            // The RECENT rows show the relationship state (FRIENDS / REQUEST SENT / SENT YOU A
+            // REQUEST), so any of the three lists changing re-renders them. The facade rebuilds
+            // each list as Clear() + Add() per sync; the refresh is coalesced to one frame.
+            if (friendsData)
+            {
+                SubscribeRecentRefresh(friendsData.Friends);
+                SubscribeRecentRefresh(friendsData.OutgoingRequests);
+                SubscribeRecentRefresh(friendsData.IncomingRequests);
+            }
+        }
+
+        void SubscribeRecentRefresh(ScriptableListFriendData list)
+        {
+            if (list == null) return;
+            list.OnItemAdded += HandleRelationshipChangedForRecent;
+            list.OnItemRemoved += HandleRelationshipChangedForRecent;
+            list.OnCleared += HandleRelationshipsClearedForRecent;
+        }
+
+        void UnsubscribeRecentRefresh(ScriptableListFriendData list)
+        {
+            if (list == null) return;
+            list.OnItemAdded -= HandleRelationshipChangedForRecent;
+            list.OnItemRemoved -= HandleRelationshipChangedForRecent;
+            list.OnCleared -= HandleRelationshipsClearedForRecent;
         }
 
         void UnsubscribeSoap()
@@ -302,6 +354,13 @@ namespace CosmicShore.UI
                 friendsData.IncomingRequests.OnItemRemoved -= HandleIncomingFriendRequestRemoved;
                 friendsData.IncomingRequests.OnCleared -= HandleIncomingFriendRequestsCleared;
             }
+
+            if (friendsData)
+            {
+                UnsubscribeRecentRefresh(friendsData.Friends);
+                UnsubscribeRecentRefresh(friendsData.OutgoingRequests);
+                UnsubscribeRecentRefresh(friendsData.IncomingRequests);
+            }
         }
 
         #endregion
@@ -331,6 +390,7 @@ namespace CosmicShore.UI
         void PopulateAll()
         {
             PopulateOnlineSection();
+            PopulateRecentSection();
             PopulateRequestsSection();
         }
 
@@ -1011,6 +1071,167 @@ namespace CosmicShore.UI
             }
 
             ToastNotificationAPI.Show(line);
+        }
+
+        #endregion
+
+        #region Recent Section
+
+        /// <summary>
+        /// Rebuilds the RECENT rows from <see cref="RecentPlayersStore.Entries"/> (newest first).
+        /// Each row's label and button follow the pilot's relationship state in FriendsDataSO.
+        /// </summary>
+        void PopulateRecentSection()
+        {
+            ClearSpawned(_spawnedRecent);
+            if (!recentContent || !requestInfoPrefab)
+            {
+                if (recentEmptyText) recentEmptyText.gameObject.SetActive(false);
+                return;
+            }
+
+            var entries = RecentPlayersStore.Entries;
+            if (recentEmptyText) recentEmptyText.gameObject.SetActive(entries.Count == 0);
+
+            var nowUtc = DateTime.UtcNow;
+            foreach (var record in entries)
+                SpawnRecentEntry(record, nowUtc);
+        }
+
+        void SpawnRecentEntry(RecentPlayerRecord record, DateTime nowUtc)
+        {
+            var entry = Instantiate(requestInfoPrefab, recentContent);
+            _spawnedRecent.Add(entry.gameObject);
+
+            string label = ResolveRecentLabel(record, nowUtc, out bool addable);
+            entry.PopulateRecentPlayer(
+                record.PlayerId,
+                record.DisplayName,
+                ResolveAvatar(record.AvatarId),
+                label,
+                addable ? OnAddRecentPlayerClicked : null);
+        }
+
+        /// <summary>
+        /// What a RECENT row says about this pilot, and whether it still offers the add-friend
+        /// button. Settled relationships (already friends, request already out) show the state and
+        /// no button; a pilot who asked US first keeps the button, since the facade's add on an
+        /// incoming request is the accept that makes the friendship mutual.
+        /// </summary>
+        string ResolveRecentLabel(RecentPlayerRecord record, DateTime nowUtc, out bool addable)
+        {
+            if (ListHasPlayer(friendsData ? friendsData.Friends : null, record.PlayerId))
+            {
+                addable = false;
+                return "FRIENDS";
+            }
+
+            if (ListHasPlayer(friendsData ? friendsData.OutgoingRequests : null, record.PlayerId))
+            {
+                addable = false;
+                return "REQUEST SENT";
+            }
+
+            addable = true;
+            if (ListHasPlayer(friendsData ? friendsData.IncomingRequests : null, record.PlayerId))
+                return "SENT YOU A REQUEST";
+
+            return "PLAYED " + RecentPlayersStore.FormatLastPlayed(record.GetLastPlayedUtc(), nowUtc);
+        }
+
+        static bool ListHasPlayer(ScriptableListFriendData list, string playerId)
+        {
+            if (list == null || string.IsNullOrEmpty(playerId)) return false;
+
+            foreach (var friend in list)
+                if (friend.PlayerId == playerId) return true;
+
+            return false;
+        }
+
+        string FindRecentDisplayName(string playerId)
+        {
+            foreach (var record in RecentPlayersStore.Entries)
+                if (record.PlayerId == playerId) return record.DisplayName;
+
+            return "that pilot";
+        }
+
+        /// <summary>
+        /// A RECENT row's add-friend button: send a friend request to that pilot by id through the
+        /// facade. The same gate, in-flight lock and status line as the Add Friend send, so every
+        /// social action throttles and reports alike. The row disabled its own button on the
+        /// press; the section is re-rendered afterwards so the row shows REQUEST SENT, or gets
+        /// its button back when the press was refused or the send failed.
+        /// </summary>
+        async void OnAddRecentPlayerClicked(string playerId)
+        {
+            if (_sendRequestInFlight || !TryBeginSendAction())
+            {
+                PopulateRecentSection();
+                return;
+            }
+
+            string pilotName = FindRecentDisplayName(playerId);
+            AudioSystem.Instance?.PlayMenuAudio(sendRequestAudio);
+
+            if (friendsService == null || !friendsService.IsInitialized)
+            {
+                ShowAddFriendStatus("Friends service isn't ready. Check your connection and try again.");
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[FriendsListPanel] Friend request to recent pilot '{pilotName}' refused: friends service not ready");
+                PopulateRecentSection();
+                return;
+            }
+
+            _sendRequestInFlight = true;
+            SetSendButtonInteractable(false);
+            ShowAddFriendStatus($"Sending request to {pilotName}...");
+
+            try
+            {
+                await friendsService.SendFriendRequestAsync(playerId);
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[FriendsListPanel] Friend request sent to recent pilot '{pilotName}' ({playerId})");
+                ShowAddFriendStatus($"Friend request sent to {pilotName}.");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to send friend request to recent pilot '{pilotName}': {e.Message}");
+                ShowAddFriendStatus($"Couldn't send to {pilotName}: {e.Message}");
+            }
+            finally
+            {
+                _sendRequestInFlight = false;
+                SetSendButtonInteractable(true);
+
+                // The facade synced FriendsDataSO before returning (its await carries .AsMainThread()),
+                // so the rows can be rebuilt here, on the main thread, in their new state.
+                if (gameObject.activeInHierarchy)
+                    PopulateRecentSection();
+            }
+        }
+
+        void HandleRelationshipChangedForRecent(FriendData _) => ScheduleRecentRefresh();
+
+        void HandleRelationshipsClearedForRecent() => ScheduleRecentRefresh();
+
+        /// <summary>
+        /// One re-render of the RECENT rows next frame, however many list events arrive this frame
+        /// (the facade's sync is a Clear() followed by one Add() per relationship).
+        /// </summary>
+        void ScheduleRecentRefresh()
+        {
+            if (_recentRefreshPending || !recentContent || !gameObject.activeInHierarchy) return;
+            _recentRefreshPending = true;
+            StartCoroutine(RefreshRecentNextFrame());
+        }
+
+        System.Collections.IEnumerator RefreshRecentNextFrame()
+        {
+            yield return null;
+            _recentRefreshPending = false;
+            PopulateRecentSection();
         }
 
         #endregion

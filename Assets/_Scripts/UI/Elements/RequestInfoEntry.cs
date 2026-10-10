@@ -11,10 +11,15 @@ namespace CosmicShore.UI
     /// Handles both friend requests and incoming party invites.
     /// Shows avatar, name, status label (e.g. "PARTY INVITE" / "FRIEND REQUEST"),
     /// and Accept/Decline buttons.
+    ///
+    /// <para>The same prefab also serves the RECENT section (<see cref="Kind.RecentPlayer"/>,
+    /// <see cref="PopulateRecentPlayer"/>): the Accept glyph becomes the row's add-friend button,
+    /// Decline is hidden, the label is whatever the panel resolved for that pilot ("PLAYED 5 MIN
+    /// AGO", "FRIENDS", "REQUEST SENT") and there is no expiry.</para>
     /// </summary>
     public class RequestInfoEntry : MonoBehaviour
     {
-        public enum Kind { FriendRequest, PartyInvite }
+        public enum Kind { FriendRequest = 0, PartyInvite = 1, RecentPlayer = 2 }
 
         [Header("Display")]
         [SerializeField] private Image avatarIcon;
@@ -29,6 +34,10 @@ namespace CosmicShore.UI
         [SerializeField] private Color friendRequestColor = Color.white;
         [SerializeField] private Color partyInviteColor = new(1f, 0.85f, 0.2f, 1f);
         [SerializeField] private Color expiringSoonColor = new(0.9f, 0.3f, 0.2f, 1f);
+        [Tooltip("Label colour on a RECENT row that still offers the add-friend button (\"PLAYED ... AGO\").")]
+        [SerializeField] private Color recentPlayerColor = new(0.4f, 0.8f, 1f, 1f);
+        [Tooltip("Label colour on a RECENT row whose relationship is settled and shows no button (\"FRIENDS\", \"REQUEST SENT\").")]
+        [SerializeField] private Color recentSettledColor = new(0.6f, 0.9f, 0.6f, 1f);
 
         [Header("Entry Animation")]
         [Tooltip("Seconds to fade in on spawn (uses CanvasGroup if present).")]
@@ -47,6 +56,7 @@ namespace CosmicShore.UI
         Action<string> _onAccept;
         Action<string> _onDecline;
         bool _responded;
+        string _recentLabel;
 
         /// <summary>The player ID this request is from.</summary>
         public string PlayerId => _playerId;
@@ -109,6 +119,60 @@ namespace CosmicShore.UI
             UpdateStatusLabel();
         }
 
+        /// <summary>
+        /// Populates the row for the RECENT section: a pilot from a past online match. The Accept
+        /// glyph is the add-friend button and is shown only when <paramref name="onAddFriend"/> is
+        /// given (a pilot who is already a friend, or already asked, shows the state in the label
+        /// instead); Decline is hidden; nothing expires.
+        /// </summary>
+        /// <param name="playerId">The pilot's UGS player id (what the friend request goes to).</param>
+        /// <param name="displayName">The name they flew under.</param>
+        /// <param name="avatar">Avatar sprite (may be null).</param>
+        /// <param name="label">The resolved status: "PLAYED 5 MIN AGO", "FRIENDS", "REQUEST SENT".</param>
+        /// <param name="onAddFriend">Add-friend callback, or null for a settled row with no button.</param>
+        public void PopulateRecentPlayer(
+            string playerId,
+            string displayName,
+            Sprite avatar,
+            string label,
+            Action<string> onAddFriend)
+        {
+            _playerId = playerId;
+            _kind = Kind.RecentPlayer;
+            _receivedTime = Time.unscaledTime;
+            _expirationSeconds = 0f;
+            _onAccept = onAddFriend;
+            _onDecline = null;
+            _responded = false;
+            _recentLabel = label ?? string.Empty;
+
+            if (usernameText)
+                usernameText.text = displayName ?? "Unknown";
+
+            if (avatarIcon)
+            {
+                avatarIcon.sprite = avatar;
+                avatarIcon.enabled = avatar != null;
+            }
+
+            if (acceptButton)
+            {
+                acceptButton.gameObject.SetActive(onAddFriend != null);
+                acceptButton.interactable = onAddFriend != null;
+                acceptButton.onClick.RemoveAllListeners();
+                if (onAddFriend != null)
+                    acceptButton.onClick.AddListener(HandleAcceptClicked);
+            }
+
+            if (declineButton)
+            {
+                declineButton.onClick.RemoveAllListeners();
+                declineButton.gameObject.SetActive(false);
+            }
+
+            UpdateStatusLabel();
+        }
+
         void Update()
         {
             if (_responded) return;
@@ -136,6 +200,13 @@ namespace CosmicShore.UI
         void UpdateStatusLabel()
         {
             if (!labelText) return;
+
+            if (_kind == Kind.RecentPlayer)
+            {
+                labelText.text = _recentLabel;
+                labelText.color = _onAccept != null ? recentPlayerColor : recentSettledColor;
+                return;
+            }
 
             string label = _kind == Kind.PartyInvite ? "PARTY INVITE" : "FRIEND REQUEST";
             Color baseColor = _kind == Kind.PartyInvite ? partyInviteColor : friendRequestColor;
