@@ -92,15 +92,43 @@
     var st = document.createElement('style'); st.id = 'vessel-studio-theme'; st.textContent = CSS; head.appendChild(st);
   }
   install();
-  // ---- the one artifact (/vessel-studio section 0): every page is the same page wherever it is opened (claude.ai,
-  // the live mirror, Unity, Amoebius). What only claude.ai can do (Ask, Requests, the shared log, Sync) says so and
-  // links here, so no option is ever missing, only one click away.
+  // ---- the one artifact (/vessel-studio section 0, D33): every page is the same page wherever it is opened (claude.ai,
+  // the live mirror, Amoebius, Unity through Amoebius). Sync, Ask, Requests and the shared log work where a backend
+  // gives window.claude (the claude.ai viewer, or Amoebius's studio server); elsewhere (the mirror, a file) they say so
+  // and link to the artifact, so no option is ever missing, only one click away.
   var ARTIFACT = 'https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa';
-  var inClaude = !!(window.claude && typeof window.claude.use === 'function');
+  var inClaude = !!(window.claude && typeof window.claude.use === 'function');   // a backend is here (claude.ai or Amoebius)
   function artifactLink(label) {
     var a = document.createElement('a'); a.href = ARTIFACT; a.target = '_blank'; a.rel = 'noopener';
     a.textContent = label || 'open it in the claude.ai artifact'; a.style.marginLeft = '6px';
     return a;
   }
-  window.VesselStudioTheme = { fonts: FONTS, css: CSS, artifact: ARTIFACT, inClaude: inClaude, artifactLink: artifactLink };
+  // ---- the host, answered ONCE for every page (D33): { shell: 'web' | 'amoebius' | <what a host sets>, device? }.
+  // A host may say it with window.__studioHost = { shell, device } or the page hash #amoebius (#prisma: the old name).
+  // Only behaviour may depend on it (the device decides the controls); nothing visible names the host.
+  function host() {
+    var h = window.__studioHost;
+    if (h && typeof h === 'object') return { shell: h.shell === 'prisma' ? 'amoebius' : (h.shell || 'web'), device: h.device };
+    return /(^|[#&])(amoebius|prisma)\b/i.test(location.hash) ? { shell: 'amoebius' } : { shell: 'web' };
+  }
+  // ---- the 3D stage without WebGL (D33): a machine with hardware acceleration off (or none) still gets every tab, panel
+  // and setting; the stage says why it is dark. Returns THREE's renderer, or a stand-in whose calls do nothing.
+  function renderer(THREE, opts) {
+    try { return new THREE.WebGLRenderer(opts); }
+    catch (e) {
+      var canvas = opts && opts.canvas;
+      var note = document.createElement('div');
+      note.className = 'vs-nogl'; note.setAttribute('role', 'status');
+      note.textContent = 'The 3D stage needs WebGL, which this browser could not start (hardware acceleration off?). Every tab, panel and setting still works.';
+      note.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;' +
+        'font:600 14px/1.45 var(--font-body, system-ui, sans-serif);color:var(--dim, #9aa6d6);background:var(--panel-2, #0e1531);z-index:2;pointer-events:none';
+      var holder = canvas && canvas.parentElement;
+      if (holder) { if (getComputedStyle(holder).position === 'static') holder.style.position = 'relative'; holder.appendChild(note); }
+      if (window.console) console.warn('[Vessel Studio] no WebGL: ' + (e && e.message));
+      var stub = { domElement: canvas || document.createElement('canvas'), noWebGL: true, capabilities: {}, info: { render: {}, memory: {} },
+        getPixelRatio: function () { return 1; }, getContext: function () { return null; } };
+      return new Proxy(stub, { get: function (t, k) { return k in t ? t[k] : function () {}; }, set: function (t, k, v) { t[k] = v; return true; } });
+    }
+  }
+  window.VesselStudioTheme = { fonts: FONTS, css: CSS, artifact: ARTIFACT, inClaude: inClaude, artifactLink: artifactLink, host: host, renderer: renderer };
 })();

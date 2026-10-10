@@ -1,10 +1,11 @@
 # Vessel Studio (web) — the pages
 
-Pick a vessel, its studio opens. Plain HTML pages, no build step, so the same folder opens in a desktop
-browser, in a phone browser, from Amoebius's **VESSEL STUDIO** page on Windows, and from Unity through
-**FrogletTools ▸ Vessels ▸ Vessel Studio** (the studio home in Unity: the hub's cards and previews; a card opens its page in its own window). These pages ARE the artifact: the build
-publishes them unchanged (each carries its own Sync panel), so claude.ai, the live mirror, Unity and Amoebius show the same
-thing; what only claude.ai can do (Ask, shared requests and log, Sync) says so and links to the artifact. Plan: `../VESSEL_STUDIO_PLAN.md`.
+Pick a vessel, its studio opens. Plain HTML pages. These pages ARE the artifact: the build (`build_artifact.py`)
+publishes them unchanged (each carries its own Sync panel), and **every surface opens that build** (/vessel-studio D33):
+claude.ai, the live mirror, Amoebius's **VESSEL STUDIO** page (the checkout's branch built and served on 127.0.0.1) and
+Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio** (the studio home in Unity; a card opens its studio through Amoebius, from Unity's checkout and branch). Sync, Ask,
+Requests and the decision log work in claude.ai and in Amoebius (its own backend, kept on that computer); on the mirror
+they say so and link to the artifact. Plan: `../VESSEL_STUDIO_PLAN.md`.
 
 | File | What |
 |---|---|
@@ -13,7 +14,7 @@ thing; what only claude.ai can do (Ask, shared requests and log, Sync) says so a
 | `studio-look.js` | **The Vessel Studio look** (`/vessel-studio` D19): the Stoat's sky, stars, lights and drifting prism field, the crystal and the screen marker, as one file every studio loads. Listed under `shared` in `studios.json`. |
 | `studio-ide.js` | **The Vessel Studio editor layout** (`/vessel-studio` D8): the game view in the middle, every panel a tab in the right or bottom dock, pop-out windows, splitters, no page scroll. Listed under `shared` in `studios.json`. |
 | `ai_race_panel.js` | The **universal AI race config panel** (`StudioRacePanel.mount`): Course · Your hull (You / AI Easy / Medium / Hard) · one row per AI rival seat with its own level (Off / Easy / Medium / Hard, D20) · Camera (Chase / Follow / Free) · Speed · Show AI thinking · Auto-restart. The Squirrel and the Stoat both mount it, and every arcade-game studio after them does too (`/vessel-studio` D17, §3.4). Listed under `shared` in `studios.json`. |
-| `sync.js` | The **Sync panel** (Refresh, console, merge then delete, shared decisions; a Claude session does the git work as jobs). Not referenced by the pages in the repo: `.claude/skills/vessel-studio/build_artifact.py` and Refresh inject it at publish time. User doc: `SYNC_PANEL.md`. Live in the one artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa |
+| `sync.js` | The **Sync panel** (Refresh, console, merge then delete, shared decisions; a Claude session does the git work as jobs). Every page carries its tag (D30). It talks to `window.claude`, which the claude.ai viewer or Amoebius's studio server gives (D33). User doc: `SYNC_PANEL.md`. Live in the one artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa |
 | `stoat.html` | The **Stoat Flight Studio** (AI levels and rivals, 2026-10-09: Easy / Medium / Hard as the Skim Race levels, up to three rival Stoats each with its own level and play style, the **Score AI levels** scorecard; round 15: the field trajectory; round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
 
 ## Where it is published
@@ -24,8 +25,14 @@ thing; what only claude.ai can do (Ask, shared requests and log, Sync) says so a
   repo `YsKhan61/vessel-studio`). The same `build_artifact.py` output as plain files: open the hub or
   `squirrel.html` / `stoat.html` by link in any browser, nothing to install, updated in place when it is
   republished (a minute or so; a browser that has the page cached may need a refresh). The features that need
-  the claude.ai viewer say so there. A mirror, not a source: change the pages here, then republish.
-  Amoebius's VESSEL STUDIO page opens it with **OPEN IN BROWSER** (pick a vessel, or ALL STUDIOS for the hub).
+  claude.ai or Amoebius say so there (the public page never calls a local Amoebius). A mirror, not a source: change the
+  pages here, then republish. Amoebius's VESSEL STUDIO page links it under the card (**live mirror**).
+- **Amoebius** (OPEN IN AMOEBIUS / OPEN IN BROWSER): the same build, made from the checkout's branch by Amoebius
+  (`StudioBuild`, byte-identical to `build_artifact.py`), served on `http://127.0.0.1:<port>/<token>/` with the
+  artifact's backend: Sync jobs run locally (`sync_job.py`, Python 3, the skill's branch limits), Ask goes to Amoebius's
+  Claude Code, decisions and requests are stored on that computer. `Port/docs/LAUNCHER.md` has the details.
+- **Parity**: `python3 .claude/skills/vessel-studio/parity_gate.py` fails when a page or an entry point would make one
+  surface differ (a visible host label, a page reading the host itself, a raw WebGL renderer, a file:// entry point).
 
 ## Rules for every studio page
 
@@ -36,7 +43,10 @@ thing; what only claude.ai can do (Ask, shared requests and log, Sync) says so a
 - **Phone first:** a **Play on phone** mode with two thumb sticks and two trigger handles that feed the
   game's own dual-stick mix (`InputController`), the same as a gamepad.
 - **Works outside the claude.ai viewer.** Pages carry their own `[hidden]` rule and keep state in
-  `localStorage` only as a convenience. The studio agent needs the viewer (see below).
+  `localStorage` only as a convenience. The studio agent needs a backend (claude.ai or Amoebius).
+- **The same everywhere (D33).** Nothing on a page names the host; read it only with `VesselStudioTheme.host()`.
+  Create the 3D renderer with `VesselStudioTheme.renderer(THREE, opts)`: without WebGL the stage says so and every tab
+  and panel still loads.
 - **Same look:** the dark cockpit palette and the Saira Condensed / IBM Plex faces in `index.html`.
 
 ## The studio agent
@@ -81,7 +91,8 @@ costs it, and it recovers from a missed crystal in ~2 s where the game's pilot l
 
 ## In Amoebius
 
-VESSEL STUDIO ▸ **OPEN IN AMOEBIUS** opens a page as its own window. **PLAY IN ENGINE** runs a studio's `engineMode` in
+VESSEL STUDIO ▸ **OPEN IN AMOEBIUS** builds the checkout's branch and opens the served page as its own window (Sync,
+Ask, Requests and Decisions work there). **PLAY IN ENGINE** runs a studio's `engineMode` in
 the game itself. Step-by-step checks: `../PRISMA_TEST_STEPS.md`.
 
 ### Stoat AI levels, measured 2026-10-09 (field trajectory, Balanced, 2 laps; median of seeds 11/23/37/51/67, seconds)

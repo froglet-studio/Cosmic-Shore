@@ -44,7 +44,7 @@ function parseArgs(argv) {
 
 async function verify(file, outDir, browser) {
   const failures = [], notes = [];
-  const url = 'file://' + path.resolve(file);
+  const url = /^https?:\/\//.test(file) ? file : 'file://' + path.resolve(file);   // a lab file, or the same page served
   fs.mkdirSync(outDir, { recursive: true });
 
   async function open(ctxOpts, label) {
@@ -133,7 +133,7 @@ async function verify(file, outDir, browser) {
   await p.page.screenshot({ path: path.join(outDir, 'phone.png'), fullPage: true });
   await p.ctx.close();
 
-  const report = { file: path.resolve(file), ok: failures.length === 0, failures, notes, screenshots: ['desktop.png', 'phone.png'] };
+  const report = { file: /^https?:\/\//.test(file) ? file : path.resolve(file), ok: failures.length === 0, failures, notes, screenshots: ['desktop.png', 'phone.png'] };
   fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(report, null, 2));
   return report;
 }
@@ -168,7 +168,7 @@ async function selfTest(browser, outRoot) {
 (async () => {
   const a = parseArgs(process.argv.slice(2));
   if (!a.selfTest && !a.file) { console.error('usage: verify_lab.cjs <lab.html> [--out dir] | --self-test'); process.exit(2); }
-  if (a.file && !fs.existsSync(a.file)) { console.error('verify_lab: no such file ' + a.file); process.exit(2); }
+  if (a.file && !/^https?:\/\//.test(a.file) && !fs.existsSync(a.file)) { console.error('verify_lab: no such file ' + a.file); process.exit(2); }
   const out = a.out || fs.mkdtempSync(path.join(os.tmpdir(), 'verify_lab-'));
   let browser;
   try { browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] }); }

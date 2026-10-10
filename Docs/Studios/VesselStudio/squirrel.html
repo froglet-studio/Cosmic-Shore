@@ -39,7 +39,6 @@
   h1 span { color: inherit; }   /* the studio title reads like the Stoat's: one colour (D29) */
   .round { font: 600 12px/1 var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
   .sub { color: var(--muted); max-width: 78ch; margin: 0; }
-  .host { font: 600 11px/1 var(--mono); color: var(--accent); }
 
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
   .layout > section { min-width: 0; }
@@ -160,7 +159,6 @@
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1><span>Squirrel</span> Studio</h1>
     <span class="round">Round 2 · AI sim lab</span>
-    <span class="host" id="hostTag" hidden>Running on Amoebius</span>
     <p class="sub">Race the Squirrel on the game's four Skim Race courses, against AI Squirrels at Easy, Medium or Hard, or hand your own hull to the AI and watch. Chase, follow or free camera, 1–4× speed, and a scorecard that races every difficulty on every course in a few seconds.</p>
   </header>
 
@@ -303,7 +301,6 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  if (/(^|[#&])(amoebius|prisma)\b/i.test(location.hash) || window.__studioHost) $('hostTag').hidden = false;
 
   // ================= shipped numbers =================
   const SHIP = {
@@ -595,7 +592,7 @@
 
   // ================= rendering =================
   const canvas = $('c');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: true });   // no WebGL: the stage says so, the rest loads (D33)
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 9000);

@@ -59,7 +59,7 @@ function headlessShell() {
 
 async function check(browser, file, hook, out, three) {
   const fails = [];
-  const url = 'file://' + path.resolve(file);
+  const url = /^https?:\/\//.test(file) ? file : 'file://' + path.resolve(file);   // a page, or a served build (Amoebius, the mirror)
   fs.mkdirSync(out, { recursive: true });
   // Phones are emulated as phones (touch, mobile, an Android UA): a studio that detects its platform
   // shows the touch controls only to a phone, so a desktop browser shrunk to 844 px would hide them.

@@ -77,8 +77,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - **Vessel Studio home (2026-10-10, not opened in Unity yet: compiled against the Unity reference assemblies only).**
   FrogletTools ▸ Vessels ▸ Vessel Studio opens on the HOME, not the Stoat: "VESSEL STUDIO" heading, a SQUIRREL card
   (jade) and a STOAT card (violet) whose previews MOVE (rival trails and the jade hull; the black hole with the orbiting
-  dot), the "no studio yet" fleet chips. Click a card: that studio opens in an Edge/Chrome app window looking exactly
-  like the artifact. TUNE IN UNITY on the Stoat card opens the six tabs; ◂ Studios goes back. No console errors while
+  dot), the "no studio yet" fleet chips. Click a card: that studio opens through Amoebius (a running one, else Amoebius starts) in its own window,
+  served from this checkout, looking exactly like the artifact. TUNE IN UNITY on the Stoat card opens the six tabs; ◂ Studios goes back. No console errors while
   the home animates; there is only ONE "Vessel Studio" item under FrogletTools ▸ Vessels.
   `author_stoat_assets.py` now seeds the tuning assets once.
 
