@@ -28,6 +28,7 @@
     "studio-look.js",
     "studio-ide.js",
     "ai_race_panel.js",
-    "studio-domains.js"
+    "studio-domains.js",
+    "studio-theme.js"
   ]
 }

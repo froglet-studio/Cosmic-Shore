@@ -2,9 +2,6 @@
 <!-- Vessel Studio hub (Docs/Studios/VesselStudio/). Pick a vessel, its studio opens. The same folder is
      what Amoebius's VESSEL STUDIO page opens on Windows, and what a phone browser opens. Plan:
      Docs/Studios/VESSEL_STUDIO_PLAN.md. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   /* Layout: a hangar wall. Vessel bays across the top (the thing you came for), then where the studio
      runs, then the studio agent. One dark world shared with every studio page. */
@@ -34,8 +31,8 @@
   .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 34px; }
   header { display: grid; gap: 8px; }
   .eyebrow { font: 600 13px/1 var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-  h1 { margin: 0; font: 800 clamp(40px, 7vw, 76px)/.92 var(--display); text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
-  h1 em { font-style: normal; color: var(--jade); }
+  header > h1 { margin: 0; font: 700 clamp(40px, 7vw, 76px)/.92 var(--display); text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--accent); }
   .lede { margin: 0; color: var(--muted); max-width: 64ch; }
   h2 { margin: 0 0 12px; font: 700 22px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
 
@@ -84,6 +81,7 @@
   code { font-family: var(--mono); font-size: .9em; }
   footer { color: var(--muted); font-size: 13px; }
 </style>
+<script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29) -->
 
 <div class="wrap">
   <header>

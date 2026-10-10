@@ -99,6 +99,11 @@ def check(out):
         n = html.count('src="sync.js"')
         if n != 1:
             errs.append(f'{f}: sync panel tag {n} times (want 1)')
+        if 'studio-theme.js' in cat.get('shared', []):   # one look for every page (/vessel-studio D29)
+            if 'studio-theme.js"' not in html:
+                errs.append(f'{f}: does not load studio-theme.js (every studio page wears the one Vessel Studio look)')
+            if 'fonts.googleapis.com' in html:
+                errs.append(f'{f}: loads its own Google Fonts (studio-theme.js loads the studio fonts; a page font is drift)')
         for js in LOCAL_SCRIPT.findall(html):   # list a shared script under `shared` in studios.json, or the page breaks
             if not os.path.exists(os.path.join(out, js)):
                 errs.append(f'{f}: loads {js}, which the build does not carry')
@@ -137,14 +142,14 @@ def self_test():
         bad.append('inject: injected twice')
     with tempfile.TemporaryDirectory() as d:
         w = lambda f, t: open(os.path.join(d, f), 'w', encoding='utf-8').write(t)
-        w('studios.json', json.dumps({'studios': [{'file': 'a.html'}, {'file': 'b.html'}], 'shared': ['look.js']}))   # planted: look.js missing
-        w('index.html', '<body>' + TAG + '</body>')
-        w('a.html', '<body><script src="gone.js"></script></body>')   # planted: also loads a script the build lacks                                   # planted: no panel
+        w('studios.json', json.dumps({'studios': [{'file': 'a.html'}, {'file': 'b.html'}], 'shared': ['look.js', 'studio-theme.js']}))   # planted: look.js missing
+        w('index.html', '<script src="studio-theme.js"></script><body>' + TAG + '</body>')
+        w('a.html', '<link href="https://fonts.googleapis.com/x"><script src="studio-theme.js"></script><body><script src="gone.js"></script></body>')   # planted: its own fonts   # planted: also loads a script the build lacks                                   # planted: no panel
         w('b.html', '<body>' + TAG + TAG + '</body>')                  # planted: panel twice
         w('build.json', json.dumps({'repo': 'r', 'branch': 'b', 'sha': 's', 'pathSha': '', 'subject': 's', 'committedAt': 't'}))  # planted: no pathSha
         open(os.path.join(d, 'sync.js'), 'wb').write('// ⇄\n'.encode('utf-8'))  # planted: non-ASCII
         got = ' | '.join(check(d))
-        for want in ('look.js: missing', 'a.html: loads gone.js', 'a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII'):
+        for want in ('look.js: missing', 'a.html: loads gone.js', 'a.html: sync panel tag 0', 'b.html: sync panel tag 2', 'build.json: no pathSha', 'sync.js: non-ASCII', 'b.html: does not load studio-theme.js', 'a.html: loads its own Google Fonts'):
             if want not in got:
                 bad.append('check did not name: ' + want)
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))

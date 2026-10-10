@@ -74,6 +74,7 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D26 | **The platform is detected, never asked** (the user, 2026-10-09: no Play-on-phone button; each device opens its own interface only). `VesselStudioIDE.platform()` (shared `studio-ide.js`) answers once at load from the host (`window.__studioHost`, `#amoebius`), the mobile UA / iPadOS, or a touch-only screen, and sets `body.dev-pc` / `body.dev-phone`. A phone opens straight into touch play (fullscreen on its first touch); a PC never sees a touch button (`.phone-only` hidden). On a phone, leaving touch play shows one **Back to flying** button. A layout override, if any, is a setting, not a stage button | A button that asks what the page can tell is clutter, and on a PC it is a control that does nothing useful | Moved onto `platform()` 2026-10-09: Play on phone removed | Its own `detectPlatform` (the original), the same rule; the Layout select is the override |
 | D27 | **Vessel Config, one section at a time** (the user, 2026-10-09: rename Others to Vessel Config; dropdowns and clean UI, no clutter). The sixth settings tab is **Vessel Config** (tab key stays `others` so saved layouts survive). A **Section** dropdown at its top (`VesselStudioIDE.sectionPicker`) shows one of its sections; the choice is remembered per studio. AI Config stays its own tab | A tab of unrelated vessel sections reads as clutter; one picked section reads as a settings page | Ability row · Live numbers | Lope · Archive |
 | D28 | **Intensity is chosen in Game Config** (the user, 2026-10-10: a universal Vessel Studio rule). The race panel's course ladder (I1-I4, D7) renders as an **Intensity** dropdown in Game Config when the studio passes `gameHost` (its own sibling section, above Players); Scene Config keeps Camera and Speed. Every studio has a Game Config tab, even before it has a Players list | Which intensity you race is part of setting up the game, beside who is racing | `gameHost: $('intensityPanel')`, a Game Config tab holding the Intensity panel | `grp-intensity` above `grp-game` in Game Config |
+| D29 | **One look: every studio wears the Stoat's typography and chrome** (the user, 2026-10-10: same fonts, spacing, line heights and sizes, so it reads as one vessel studio). `Docs/Studios/VesselStudio/studio-theme.js` (shared) carries the Stoat's values once: **Chakra Petch** for headings, labels, tabs and numbers; **Atkinson Hyperlegible** for reading text; body 15px / 1.45; title 1.5rem (1.05rem in the editor layout); section titles 0.9rem bold uppercase, 0.04em; cards 8px radius, 10px 12px padding; controls 0.9rem, 6px radius, 5px 7px; buttons 0.85rem bold; the transport bar bottom-left on the stage; the start card's night box; the Stoat's colour tokens with their light-theme twins; `--accent` = the Stoat amber in every studio (domain colours are for hulls and players, never chrome). A page loads it in `<head>` AFTER its own `<style>`, never loads its own Google Fonts, and keeps only its layout and vessel widgets. `build_artifact.py --check` fails a page that skips the theme or brings its own fonts | Two studios had two type systems (Saira + IBM Plex vs Chakra Petch + Atkinson) and different sizes everywhere; a shared file is the only way they stay alike | Moved onto the theme 2026-10-10: its own fonts and jade chrome gone; transport moved to the Stoat's place | The reference; loads the theme too, so a theme change reaches it |
 
 ## 1.5 The universal studio kit: how every studio's panels are built
 
@@ -110,6 +111,16 @@ next.
 - **Below 900 px** the docks stack under the stage and the page scrolls. On a phone, touch play takes
   the whole screen (D9).
 
+### 1.5.1b The look (D29)
+
+Load `studio-theme.js` in `<head>` after the page `<style>` (a source one folder up: `VesselStudio/studio-theme.js`), and
+write no font link, no font family and no chrome colour of your own: use `var(--font-display)` / `var(--font-body)`
+(aliases `--display`, `--body`, `--mono`), `var(--fg)`, `var(--dim)` (alias `--muted`), `var(--panel)`, `var(--panel-2)`,
+`var(--line)`, `var(--accent)`. Name things the way the theme styles them: `.card` / `.panel` with an `h3` or a
+`details.card > summary`, `.btn` / `button.pick` (+ `.primary`), `.transport`, `.overlay > .card` (or `.box`) for the
+start card, `.hud` for anything over the stage. Compare a new page with the Stoat's computed styles (body, title, tab,
+section title, dropdown, row label, button, transport) before publishing; they must be identical.
+
 ### 1.5.2 How a panel is made
 
 1. **A panel is a section with an id**: a `<details class="card" id="grp-...">` with a `<summary>`, or a
@@ -127,7 +138,9 @@ next.
    script under `Docs/Studios/VesselStudio/` (listed under `shared` in `studios.json`):
    - `ai_race_panel.js`: course, camera, speed, players, seats, levels, styles, thinking, auto-restart;
    - `studio-ide.js`: docks, tabs, pop-outs, folds;
-   - `studio-look.js`: sky, prism field, crystals, marker.
+   - `studio-look.js`: sky, prism field, crystals, marker;
+  - `studio-theme.js`: the fonts, sizes, spacing and chrome colours (D29);
+  - `studio-domains.js`: the game's domain colours.
 
    Then every studio gets the change.
 7. **Every panel and popup closes** with ×, a press outside it, and Escape (D15).
