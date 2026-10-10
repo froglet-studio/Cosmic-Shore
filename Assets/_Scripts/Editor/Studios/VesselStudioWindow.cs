@@ -13,12 +13,20 @@ using UnityEngine;
 namespace CosmicShore.Editor.Studios
 {
     /// <summary>
-    /// The Vessel Studio INSIDE Unity (<c>Docs/Studios/VESSEL_STUDIO_PLAN.md</c>, <c>/vessel-studio</c> D21): the web
-    /// studio's six settings tabs, Scene Config · Game Config · AI Config · Play Style Config · Input · Vessel Config,
-    /// over the vessel's REAL assets, so a number is tuned while the game runs and is the project's the moment it
-    /// moves. No inspector: every row is a slider with the field's own tooltip, and a STUDIO column beside it shows
-    /// the web studio's value for that row (read from the studio's own file, <c>StoatFlightStudio.html</c>'s
-    /// <c>SHIPPED</c> block) with one click to adopt it.
+    /// The Vessel Studio in Unity (<c>Docs/Studios/VESSEL_STUDIO_PLAN.md</c>, <c>/vessel-studio</c> D21 and D32).
+    ///
+    /// <para><b>Home</b> (what FrogletTools ▸ Vessels ▸ Vessel Studio opens): the web hub's front page, the "Vessel
+    /// Studio" heading and one card per studio in <c>Docs/Studios/VesselStudio/studios.json</c>, each with the hub's
+    /// own looping preview (<see cref="StudioPreviews"/>). A card opens THAT studio's page from this checkout in its own
+    /// app window (<see cref="LaunchPrisma.OpenStudioWindow"/>): the artifact's own files, so it looks and plays exactly
+    /// as on claude.ai. Unity has no web view, so the studio itself is a browser app window, never an IMGUI copy.</para>
+    ///
+    /// <para><b>Tune in Unity</b> (a card's second button, for a vessel that has a page here): the web studio's six
+    /// settings tabs, Scene Config · Game Config · AI Config · Play Style Config · Input · Vessel Config, over the
+    /// vessel's REAL assets, so a number is tuned while the game runs and is the project's the moment it moves. No
+    /// inspector: every row is a slider with the field's own tooltip, and a STUDIO column beside it shows the web
+    /// studio's value for that row (read from the studio's own file, <c>StoatFlightStudio.html</c>'s <c>SHIPPED</c>
+    /// block) with one click to adopt it.</para>
     ///
     /// <para><b>Live.</b> The dipole config and the black-hole config are read every frame by the game, so an edit
     /// lands on the next frame. The camera asset is applied when a vessel spawns; the window re-applies it to every
@@ -30,7 +38,7 @@ namespace CosmicShore.Editor.Studios
     /// (<c>Tools/Build/author_stoat_assets.py</c>) seeds these assets once and then leaves their numbers to this
     /// window.</para>
     /// </summary>
-    public sealed class VesselStudioWindow : EditorWindow
+    public sealed partial class VesselStudioWindow : EditorWindow
     {
         const string ToolName = "Vessel Studio (Unity)";
         const string StudioUrl = "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa";
@@ -147,6 +155,9 @@ namespace CosmicShore.Editor.Studios
             },
         };
 
+        /// <summary>The studios with a Tune in Unity page, by studios.json id.</summary>
+        static readonly Dictionary<string, Dictionary<int, Section[]>> Tuners = new() { ["stoat"] = StoatTabs };
+
         readonly Dictionary<string, SerializedObject> _assets = new();
         Dictionary<string, float> _studio = new();
         string _studioError;
@@ -154,17 +165,26 @@ namespace CosmicShore.Editor.Studios
         Vector2 _scroll;
         FrogletToolShipContext _ship;
 
-        [MenuItem("FrogletTools/Vessels/Vessel Studio (in Unity)", false, 1)]
+        /// <summary>Null = the home page; otherwise the studios.json id whose Tune in Unity page is open.</summary>
+        [SerializeField] string _view;
+
+        [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 5,
-            Description = "The Vessel Studio's six tabs over the vessel's real assets: tune while you play, every number live " +
-                          "and the project's the moment it moves, with the web studio's value beside each row.",
+            Description = "The Vessel Studio home: every studio as a card with its live preview, as on the web hub. A card " +
+                          "opens that studio (the artifact's own pages, from this checkout) in its own window; Tune in Unity " +
+                          "puts the studio's six tabs over the vessel's real assets, live while you play.",
             DocPath = "Docs/Studios/VESSEL_STUDIO_PLAN.md")]
-        public static void Open()
+        public static void Open() => OpenOn(null);
+
+        /// <summary>Opens the window on the home page (<paramref name="tuner"/> null) or on a studio's Tune in Unity page.</summary>
+        static void OpenOn(string tuner)
         {
             var w = GetWindow<VesselStudioWindow>();
             w.titleContent = new GUIContent("Vessel Studio");
             w.minSize = new Vector2(420f, 360f);
+            w._view = tuner;
             w.Show();
+            w.Focus();
         }
 
         void OnEnable()
@@ -176,12 +196,23 @@ namespace CosmicShore.Editor.Studios
                 CommitScope = "stoat",
                 Validate = Validate,
             };
+            wantsMouseMove = true;
             LoadStudio();
+            LoadHome();
+            EditorApplication.update += Animate;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.update -= Animate;
+            foreach (var tex in _previewTex.Values)
+                if (tex) DestroyImmediate(tex);
+            _previewTex.Clear();
         }
 
         void OnInspectorUpdate()
         {
-            if (EditorApplication.isPlaying) Repaint();
+            if (EditorApplication.isPlaying && !string.IsNullOrEmpty(_view)) Repaint();
         }
 
         SerializedObject Asset(string path)
@@ -195,13 +226,15 @@ namespace CosmicShore.Editor.Studios
 
         void OnGUI()
         {
+            if (_view == null || !Tuners.TryGetValue(_view, out var tabs)) { _view = null; DrawHome(); return; }
+
             DrawBanner();
             int tab = GUILayout.Toolbar(_tab, Tabs, GUILayout.Height(24f));
             if (tab != _tab) { _tab = tab; EditorPrefs.SetInt(TabPref, tab); }
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             if (_tab == 1) DrawSession();
-            if (StoatTabs.TryGetValue(_tab, out var sections))
+            if (tabs.TryGetValue(_tab, out var sections))
                 foreach (var s in sections) DrawSection(s);
             EditorGUILayout.EndScrollView();
 
@@ -214,12 +247,19 @@ namespace CosmicShore.Editor.Studios
             var r = EditorGUILayout.GetControlRect(false, 46f);
             FrogletEditorPalette.DrawCard(r, FrogletEditorPalette.SurfaceRaised, FrogletEditorPalette.Violet.WithAlpha(0.6f));
             FrogletEditorPalette.DrawAccentStripe(r, FrogletEditorPalette.Violet);
-            GUI.Label(new Rect(r.x + 10f, r.y + 4f, r.width - 220f, 20f), "VESSEL STUDIO · STOAT", FrogletEditorPalette.Title);
+            if (FrogletEditorPalette.ColorButton(new Rect(r.x + 10f, r.y + 11f, 84f, 24f), "◂ Studios", FrogletEditorPalette.Slate,
+                    "Back to the Vessel Studio home"))
+            {
+                _view = null;
+                GUIUtility.ExitGUI();
+            }
+            string name = StudioName(_view).ToUpperInvariant();
+            GUI.Label(new Rect(r.x + 104f, r.y + 4f, r.width - 330f, 20f), $"VESSEL STUDIO · {name} · TUNE IN UNITY", FrogletEditorPalette.Title);
             string state = EditorApplication.isPlaying ? "LIVE: edits land next frame" : "Edit mode: edits land on the assets";
-            GUI.Label(new Rect(r.x + 10f, r.y + 24f, r.width - 220f, 18f), state, FrogletEditorPalette.Subtitle);
-            if (FrogletEditorPalette.ColorButton(new Rect(r.xMax - 206f, r.y + 11f, 96f, 24f), "Web studio", FrogletEditorPalette.Azure,
-                    "Open the Vessel Studio artifact (the web studio this window mirrors)"))
-                Application.OpenURL(StudioUrl);
+            GUI.Label(new Rect(r.x + 104f, r.y + 24f, r.width - 330f, 18f), state, FrogletEditorPalette.Subtitle);
+            if (FrogletEditorPalette.ColorButton(new Rect(r.xMax - 206f, r.y + 11f, 96f, 24f), "Open studio", FrogletEditorPalette.Azure,
+                    "Open this vessel's studio page (the artifact's own page, from this checkout) in its own window"))
+                OpenStudio(_view);
             if (FrogletEditorPalette.ColorButton(new Rect(r.xMax - 104f, r.y + 11f, 96f, 24f), "Reload studio", FrogletEditorPalette.Slate,
                     "Re-read the web studio's numbers from " + StoatStudioFile))
                 LoadStudio();
