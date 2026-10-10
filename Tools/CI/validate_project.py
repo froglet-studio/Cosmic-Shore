@@ -55,6 +55,12 @@ EXCLUDED_PREFIXES = (
     "Assets/TextMesh Pro/",
     "Assets/Unity Assests/",   # sic: vendored Unity sample assets
     "Assets/StreamingAssets/",
+    # Prisma, the .NET port of the game, is its own solution with its own CI
+    # (prisma-parity-ci.yml). Nothing under it reaches a Unity player build,
+    # and its Shader Graph reader legitimately carries the serialized type
+    # names ("UnityEditor.ShaderGraph.GraphData") as DATA. Scanning it turned
+    # the bleeding-edge guard red for two days (2026-10-08 .. 10) on a string.
+    "Port/",
 )
 
 # Severity decides whether a check can block a promotion. Only breaks-the-build
@@ -71,6 +77,11 @@ META_EXEMPT_SUFFIXES = (".meta", ".DS_Store")
 UNITY_IGNORED_PREFIXES = (".", "~")
 
 EDITOR_TOKEN = re.compile(r"\bUnityEditor\b")
+# A string literal is data, not a reference: a serialized type name such as
+# "UnityEditor.ShaderGraph.GraphData" compiles in a player. Strip ordinary and
+# verbatim single-line literals before looking for the token. A char literal
+# cannot hold the word, so it is left alone.
+STRING_LITERAL = re.compile(r'@?"(?:\\.|[^"\\])*"')
 # A MonoBehaviour/ScriptableObject declaration. Unity's file-name rule applies
 # to MonoBehaviour only, but catching both is cheap and the message differs.
 TYPE_DECL = re.compile(
@@ -183,9 +194,11 @@ def check_editor_in_runtime(root: Path, files: list[str]) -> list[Finding]:
 
         visible = player_visible_lines(text)
         for n, line in enumerate(text.splitlines(), start=1):
-            if n not in visible or not EDITOR_TOKEN.search(line):
+            if n not in visible:
                 continue
             if line.strip().startswith("//"):
+                continue
+            if not EDITOR_TOKEN.search(STRING_LITERAL.sub('""', line)):
                 continue
             out.append(Finding(
                 "editor-in-runtime", rel,

@@ -52,6 +52,29 @@ EDITOR_CASES = [
      "// using UnityEditor;\n", False),
     ("unrelated platform guard",
      "#if UNITY_ANDROID\nusing UnityEditor;\n#endif\n", True),
+    # A Shader Graph reader in Port/ carried the serialized type name as data
+    # and turned the bleeding-edge guard red (2026-10-08). A literal is not a
+    # reference; the token must survive stripping the literals to count.
+    ("inside a string literal",
+     'string t = "UnityEditor.ShaderGraph.GraphData";\n', False),
+    ("inside a verbatim string literal",
+     'string t = @"UnityEditor.ShaderGraph.GraphData";\n', False),
+    ("escaped quote inside the literal",
+     'string t = "say \\"UnityEditor\\" here";\n', False),
+    ("a literal beside a real reference",
+     'var w = UnityEditor.EditorWindow.focusedWindow; string t = "UnityEditor";\n', True),
+]
+
+# (relative path, should be skipped by collect)
+EXCLUDED_PATH_CASES = [
+    ("Assets/_Scripts/Thing.cs", False),
+    ("Assets/Plugins/FMOD/src/fmod.cs", True),
+    # Prisma is its own solution and CI; never part of a Unity player build.
+    ("Port/src/CosmicShore.Content/Shaders/ShaderGraphAsset.cs", True),
+    ("Port/tests/CosmicShore.Tests/ShaderGraphCompilerTests.cs", True),
+    # Only the top-level Port/ is the port; a folder merely NAMED Port under
+    # Assets is still player code.
+    ("Assets/_Scripts/Port/Thing.cs", False),
 ]
 
 MONO_CASES = [
@@ -95,7 +118,14 @@ def main() -> int:
         failures += not ok
         print(f"  {'PASS' if ok else 'FAIL'}  {name:34} flagged={got} expected={expected}")
 
-    total = len(EDITOR_CASES) + len(MONO_CASES)
+    print("\nexcluded paths")
+    for rel, expected in EXCLUDED_PATH_CASES:
+        got = v.is_excluded(rel)
+        ok = got == expected
+        failures += not ok
+        print(f"  {'PASS' if ok else 'FAIL'}  {rel:58} excluded={got} expected={expected}")
+
+    total = len(EDITOR_CASES) + len(MONO_CASES) + len(EXCLUDED_PATH_CASES)
     print(f"\n{total - failures}/{total} passed")
     return 1 if failures else 0
 
