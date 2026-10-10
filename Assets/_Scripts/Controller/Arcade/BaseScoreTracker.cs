@@ -44,6 +44,21 @@ namespace CosmicShore.Gameplay
         }
         #endregion
 
+        /// <summary>
+        /// A tracker destroyed without a turn end (a watchdog-ended training match, a quit or a
+        /// host-loss bounce from a game scene) still owned live scorers: TimePlayedScoring's loop
+        /// kept adding time score to the shared round stats every quarter second from the menu,
+        /// and its pending delay held the dead tracker, the vessel and its trail (12,053 destroyed
+        /// prisms reachable after 12 headless matches, Port/docs/AI_TRAINING.md "Long runs").
+        /// Every scorer is unsubscribed here, whatever path destroyed the tracker; a turn end
+        /// before it has already done so and the second call is a no-op.
+        /// </summary>
+        public override void OnDestroy()
+        {
+            ForceUnsubscribeAll();
+            base.OnDestroy();
+        }
+
         #region Core Logic
         protected void OnTurnStarted()
         {

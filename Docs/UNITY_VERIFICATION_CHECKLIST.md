@@ -146,6 +146,12 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   same genome. Written by the engine's UnityYamlWriter (`--train export`), never by hand. Skim
   Race seats stay with the rule-based pilot while `DeployInNormalPlay` is on.
 
+- `BaseScoreTracker.OnDestroy` unsubscribes every scorer. A tracker destroyed without a turn end
+  (a quit, a host-loss bounce, a watchdog-ended training match) left `TimePlayedScoring`'s loop
+  running: it kept adding time score to the shared round stats every quarter second from the
+  menu, and its pending delay pinned the dead vessel and its trail (Prisma's leak scan: 12,623 ->
+  570 destroyed prisms reachable after 12 matches).
+
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
    Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
@@ -234,6 +240,10 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
     generation 8, not 0. With `SkimRaceAIConfig_I4.DeployInNormalPlay` turned OFF for the test, an
     arcade Skim Race at intensity 4 flies the archive genome on the AI seat (one `TrainingPilot`,
     `AIPilot` disabled) and still collects crystals; turn the flag back on afterwards.
+18. A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu
+    mid-turn through the pause menu, then watch `GameData.asset`'s RoundStatsList in the inspector
+    for ten seconds: no Score moves. Before this branch the time score kept climbing in the menu.
+    A normal turn end still stops the scorers (the end-of-game total is unchanged).
 
 ---
 
