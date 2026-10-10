@@ -18,6 +18,8 @@ Key interfaces: `IImpactor` / `IImpactCollider`
 
 **ONE BLAST PAYS A VICTIM ONCE, and the per-blast ledger is what enforces it.** `VesselCombatHitLatch` dedupes by `(shooter, victim, class)` over a window sized for the gap between two separate SHOTS — 0.5 s on all three missile reporters — while a blast is a trigger that keeps GROWING for its whole life (`AOEExplosion.ExplosionDuration` 3 s). So a pilot swept up by a detonation, thrown clear, and turning back into it re-enters the SAME explosion, raises `OnTriggerEnter` again past the latch, and used to be paid and drained a second time for one shot. `ExplosionImpactor._vesselsHit` — already there as the tally behind the Dolphin's `BlastTally` — now **gates** the vessel-effect dispatch as well as counting it. The three missile TIERS are a different question and are a separate blast instance each: the latch folds them onto one key and pays only the closest (`CombatHitScoring.Credit` subtracts the superseded tier's price; `CombatHitDrain.Apply` nets the drain the same way), so a rocket whose shockwave, blast and direct hit all reach one pilot pays **30 and 3 petals**, never 60 and 6. General rule: **a dedupe window sized for the gap between two EVENTS cannot dedupe one event that outlives the window** — ask how long the thing being deduped lives, and prefer a per-instance ledger that GATES over one that only counts. `SPARROW_SKYBURST_BAY.md`.
 
+**A blast with `affectsPrisms` OFF reaches prisms only through `ExplosionImpactor.SweepPrismEffects`.** Such a blast never starts the Burst prism pass and its trigger declines prisms, so before 2026-10 its container's `explosionPrismEffects` could never run. The sweep (spherical frames only) queries `PrismSpatialIndex.QuerySphere` over each frame's wavefront, hands each prism ONCE to the container's `explosionPrismEffects` and to every `IExplosionPrismPayload` component on the blast prefab, at most 48 per frame, draining the rest after the visual with a `TimeCreated` identity check. A blast that DOES affect prisms is not swept (the batch pass already decided its mass), and the Burst batch path still never runs `explosionPrismEffects`. First user: the Butterfly's omni-crystal bloom (`ButterflyBloomDust`, `R_VesselActions/BUTTERFLY.md §3.3a`), which applies the Dust-mode capsule's own `SkimmerScaleDustPrismEffectSO.Apply`. `ExplosionImpactor.PrismEffectsReached` / `PrismEffectsDispatched` separate "found nothing" from "found prisms, ran nothing".
+
 **A vessel and its own skimmer never impact each other.** `SkimmerImpactor` and `VesselImpactor` carry mirrored self-guards on their vessel<->skimmer dispatch — required because the Rhino's sword capsule permanently overlaps its own hull, which otherwise ran the full victim-effect chain against the pilot (when that was written, muting their own `RightStickAction` via `VesselDamageBySkimmerEffect`, since removed with the control-theft tier; impact-SFX spam, still). The guard's reason is the OVERLAP, so it outlives whichever effects the container happens to carry. Skimmer-vs-own-PRISM handling is separate and stays flag-controlled (`Skimmer.AffectSelf`). See `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
 
 **A pilot does not interact with their own trail while they are MAKING it** — `SelfTrailContactConfigSO` (`Resources/SelfTrailContactConfig`), asked by both `VesselImpactor` and `SkimmerImpactor` at the top of their prism branch. A trail prism is laid a fixed offset behind the vessel and the spawner assumes the vessel then leaves it; a **drift** slides the hull sideways across the ribbon it is extruding, **MASS scaling** stretches the prism further back than the clearance delay was sized for, and a **skimmer sphere** (15–30 u on the Squirrel) outlasts the hull by a long way. So a Squirrel fed itself skim energy off the ribbon it was laying, a Dolphin *rammed* its own fresh trail and lost **half its banked skim energy and half its charged boost** (`VesselChangeResourceByPrismEffectSO` / `VesselChangeBoostByPrismEffectSO`, neither of which carries a self-guard). **The gate is OWNER-scoped and TIME-boxed, deliberately not domain-scoped**: `Skimmer.AffectSelf` compares DOMAINS (so switching it off also blinds a vessel to its teammates' trails) and is evaluated AFTER the skimmer effect loop, where it gates only the skim bookkeeping — it changes nothing for effects. The test is `prism.ownerID == vessel.PlayerName` within the grace since `prismProperties.TimeCreated`, using `ownerID` (which records who LAID it and survives a steal) rather than `PlayerName`, and excluding `IsEnvironmentOwned` mass outright. Consequently **another player's trail — and a teammate's — is skimmable from the frame it appears**, so a trailing Squirrel still farms an opposing ribbon all the way into joust range, and a pilot's own older trail is ordinary mass again. Both guards sit ABOVE the shell-ownership check so the Squirrel's MASS-5 shielded drift armour is covered on the analytic tier too. Nothing is culled, decayed, or hidden — the mass is live for the whole world from the frame it is laid; one vessel declines to act on it, so conserved mass is intact. Its companion fix: `VesselPrismController.CreateBlock`'s `waitTillOutsideSkimmer` delay measured `TrailZScale` (= `BaseScale.z`), which omits BOTH `ZScaler` and the MASS volume multiplier applied a few lines above it, so an upgraded vessel's collider came on while the prism was still inside the ship — it now measures the length actually being laid (`scale.z`), which is identical for un-upgraded vessels and only ever lengthens. That delay hides the prism from EVERYONE, which is exactly why it can never be the lever for an owner-scoped rule. Full record: `_Scripts/Controller/ImpactEffects/SELF_TRAIL_CONTACT.md`.
@@ -40,8 +42,8 @@ gauge that moves a tenth of its range per skim reads as nothing — so "I feel n
 not evidence about the wiring in either direction. **The crackle is meant to be a vessel's ONLY
 skim visual**: the beam is the effect it replaced, so a container holding both draws a beam to
 every prism in the sphere *on top of* the crackle. The Dolphin ran both for three hours of
-branch history and now wires the crackle alone; the Squirrel still carries both, which is the
-open item, not the reference. The forcefield crackle needs **three** pieces to be
+branch history and now wires the crackle alone; the Squirrel's beam was retired too (2026-10-06,
+owner's call), so no live container holds the beam. The forcefield crackle needs **three** pieces to be
 present or `SkimmerForcefieldCracklePrismEffectSO.Execute` returns silently: the effect in the
 container, a `ForcefieldCrackleController` on the impactor's own GameObject, and an overlay
 `MeshRenderer` assigned to it (vessels whose skimmer IS `Skimmer.prefab` get the last two free;
@@ -99,6 +101,41 @@ the Burst resolve and the Physics-trigger fallback (`ExecuteCommonPrismCommands`
 mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_INDEX.md` § "Impulse".
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
+
+### PvP is petals only (LOCKED, Garrett 2026-10-10)
+
+> "there should always be a one to one relationship between scored hits and petal theft so immunity
+> from one is the same as the other. knockback and shrink should no longer be an effect that vessels
+> can do to each other. we should only be affecting petals to score points. no other pvp in the game"
+
+- **The only thing one pilot's vessel, weapon or ability may do to another pilot's vessel is move
+  their petals (element levels), and every such move is a scored combat hit.** No knockback, shrink,
+  spin, slow, stun, input mute, or structure laid in their path. (The older form of this rule,
+  "a vessel may not move an opposing vessel", is in `Tools/Build/author_broadside_assets.py`.)
+- **One gate: `CombatHitDrain.TryAdmit`.** Every reporter (projectile, blast, contact, the Serpent's
+  sniper strip) admits through it with the SAME `ElementalDebuffSources` class its petals are taken
+  under, so a ward that keeps a pilot's petals also keeps the attacker from scoring, and the latch
+  window is claimed only for a hit that landed. A missile no longer scores through a ward.
+- **Contact weapons take through the reporter.** A skimmer weapon's authored take
+  (`IContactPetalTake`: the overtake steal on the Squirrel and the Rhino, the dust on the
+  Butterfly) is called by the container's `VesselCombatHitBySkimmerEffectSO` for the hit it just
+  admitted, never by the take's own `Execute`, so the score and the steal share one cooldown and
+  one contact rule. A contact reporter with no take sibling falls back to the fleet price
+  (`CombatHitDrain.ApplyPriced`).
+- **Two takes that are not weapons score too.** The Grizzly's charged blast carries
+  `VesselCombatHitByGrizzlyBlast` (MissileBlast class, ejects petals; the blast still moves only the
+  Grizzly). The Butterfly's wormhole toll (`WormholeMouth.LevyToll`) raises a Debuff hit for the
+  Butterfly once per paid transit, on its owner's machine, through the same `TryAdmit` and
+  `WormholeToll` ward as the take.
+- **Arena effects are not PvP.** Prism contact (danger prisms, slows, bounces, the Seed Wall's
+  panels) acts on whoever flies into the prism, whoever laid it. What is forbidden is aiming one
+  of those at a pilot: the Rhino sword's danger dome was removed for that reason. The Squirrel
+  joust's danger ring stays: it is danger prisms on the arena, and it hits whoever flies into it.
+- **Retired 2026-10-10:** `VesselImpulseByExplosionEffectSO`'s knockback on other vessels (it is
+  self-launch only), `VesselShrinkSkimmerEffectSO` (deleted; orphaned), the Rhino's
+  `VesselDangerBlockFormationBySkimmerEffectSO` (deleted), the
+  explosion reporter's opt-in `requireDebuffableVictim` flag (now unconditional), and the
+  Butterfly dust's decaying debuff (now a steal).
 
 ### Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
 

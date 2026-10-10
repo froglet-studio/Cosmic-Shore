@@ -12,7 +12,7 @@ the vessel through the same input channels a human uses. Code:
 | Scene | `MinigameSkimRace` (`GameModes.SkimRace = 33`), launched through the normal arcade path (`SyncFromArcadeGame` + `ConfigurePlayerCounts` + `InvokeGameLaunch`) |
 | Field | 2 seats: the host (human seat, left idle on its own domain) + one AI backfill seat. The AI is alone on its domain, so the domain target is the AI's own work |
 | Vessel | Squirrel (the card is Squirrel-only) |
-| Required crystals | `CrystalTargetCount` = waypoints x laps: I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 27x2 = 54 |
+| Required crystals | `CrystalTargetCount` = crystals per lap x laps (crystals per lap = `SpawnableWaypointTrack.crystalsPerLap`, else the waypoint count): I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 26x2 = 52 (Relativity, 2026-10-08; was 27x2 = 54 on the old 3D polyline) |
 | Crystal placement | Each player has ONE crystal in their domain; on pickup the manager moves it to the next authored anchor plus a random point on a 35 u sphere (`CrystalManager.GetSpawnPointAroundAnchor`). Randomisation is preserved; nothing is seeded for the AI |
 | Timer | The game's own race clock: `SkimRaceScoreTracker` accumulates from `OnMiniGameTurnStarted`; `SkimRaceController` writes it into the winners' `Score` when the domain reaches the target |
 | Success | The AI's domain wins, its collected count reaches the target, and the authoritative finish time is <= the intensity's limit (`SkimRaceRaceRecorder.Evaluate`) |
@@ -25,7 +25,7 @@ Geometry that bounds what is possible (route = anchor-to-anchor, top speed 300 u
 | 1 flat octagon | 24 | ~12,400 u | 41 s |
 | 2 tilted spline loop | 30 | ~15,200 u | 51 s |
 | 3 dumbbell | 56 | ~37,000 u | **124 s — 70 s is physically impossible for one pilot** |
-| 4 3D polyline | 54 | ~15,800 u | 53 s |
+| 4 Relativity knot (2026-10-08) | 52 | ~23,500 u (crystal chords; ribbon 24,700 u) | 78 s chords / 82 s on the ribbon |
 
 ## 2. The Squirrel, measured
 
@@ -59,8 +59,9 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it |
-| `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats |
+| `SkimRaceObjective` | WHAT the pilot races for — the only mode-aware part. `CrystalTrackObjective` (Skim Race: the waypoint track's ribbon, this domain's crystal, crystals collected — the pilot's original behaviour, moved verbatim) and `RegattaRingObjective` (Regatta: this domain's rail, the pilot's next ring via `GateRaceController.TryGetNextGate` at 0.7 × the mouth, gates threaded). `SkimRaceObjective.For(gameData)` picks by mode |
+| `SkimRaceTargetTracker` | Skim Race's target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis |
 | `SkimRaceCourse` / `SkimRaceCourseSource` | The racing line: the track prisms the game actually laid, in lay order, with each prism's pose and contact shell |
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
 | `SkimRaceDriver` | The decision core (pure C#): racing line, crystal pass planning, lag-compensated steering, throttle, recovery |
@@ -83,8 +84,15 @@ no longer has a time-scale option, and the recorder fails any race during which 
 left 1.
 
 The pilot writes `IInputStatus.XSum` (yaw), `YSum` (pitch), `YDiff` (roll), `XDiff` (throttle) —
-the same channels the dual-stick strategies write — and presses the hull's own bound controls
-through `PerformShipControllerActions` (drift, Boost Ring; both off in the shipped policy). It reads
+the same channels the dual-stick strategies write — plus `LeftTriggerAnalog`, held at full pull
+while its drift is held (the drift's DEPTH on a pad device; `SkimRacePilot.DriftTriggerPull`), and
+presses the hull's own bound controls through `PerformShipControllerActions` (drift, Boost Ring;
+both off in the shipped policy). The controls are asked for by ability type at every press, and
+`R_VesselActionHandler.TryGetInputForAction` answers for the hull's ACTIVE device: the Squirrel binds
+both abilities only in its touch and pad override maps. **Until 2026-10-06 neither could fire on a
+PC** — the lookup handed out the touch controls, which a PC device refuses — so `UseDrift` /
+`UseLaunchRing` being off has never been measured against a working drift or ring (the simulator
+does not model drift either). See `SQUIRREL_DRIFT.md` §10. It reads
 pose, speed, boost, the transformer's commanded rotation (new read-only `CommandedRotation`), the
 visible track and the live crystal. It never writes a transform, speed, course, crystal, score or
 timer, and grants itself nothing a human pilot does not have.
@@ -383,6 +391,41 @@ anyway because it beats v1-i2 by ~21 s and 0/40 -> 30-31/40. The remaining reset
 gain is. Tuned values the code does not read under these switches (`Level*`, `CaptureMargin`,
 `TerminalChordClearance`, `TrackGuardMargin`) are left at their defaults in the asset.
 
+### 6.12 Intensity 4 replaced by Relativity (2026-10-08)
+
+I4's course is now **Relativity** (`SKIMRACE.md` §5a): five lobes of different reach and turn
+radius (215-405 u apex turns) joined by five chords that cross the nucleus cage 130-185 u from
+the centre, one of them (pass 4) bowing 110 u against the lap's turn, the ribbon rolling onto each
+lobe's plane through the passes (authored per-waypoint normals), 26 crystals/lap x 2 = 52, anchors
+ON the ribbon with one on every core pass, and the 2x marker blocks ONLY at the 26 anchors
+(`markedWaypoints`). Everything in §6.2 and §6.7-6.8 about I4 describes the OLD 3D polyline. The
+simulator lays the new course from the scene - normals, crystals per lap and the marker list
+included (`run.sh` exports `waypointUps`, `crystalsPerLap` and `markedWaypoints`; `Sim.cs`
+interpolates the normals exactly as `ResolveBlockPose` does and gives only marked waypoints the
+2x contact shell).
+
+Measured, shipped `skimrace-v1-i4` policy (tuned on the old polyline, unchanged), calibrated
+physics `ph.Dt=0.026 ph.DtJitter=0.5`, `limit=120`, 40 fresh seeds (`seedbase=99000`), a race cut
+at 180 s:
+
+| Course | 1 AI seat | 2 AI seats |
+|---|---|---|
+| **final** (five varied lobes, snake pass, markers at crystals only) | 39/40, median 145.8 s | every seat finished in 12/40; first finisher median 145.2 s |
+| second (five varied lobes, every waypoint marked) | 40/40, median 151.2 s | 4/40; first finisher median 149.0 s |
+| first (six symmetric lobes, rejected in review) | 40/40, median 150.4 s | 7/40; first finisher median 150.7 s |
+
+Marking only the crystals took the 2x marker shells off ~150 waypoints and cut track-crossing
+strikes from 3.7 to 1.9 per race (1 seat), which is most of the gain. On the first course a
+16-generation CEM re-tune reached 39/40 at median 145.7 s - within noise, one race lost - and
+anchors lifted 0/12/24 u off the ribbon gave 146/150/161 s, so neither shipped and neither was
+repeated. With two seats the second seat's other-rail (3.4) and pickup-ring (3.0) strikes are what
+leave it unfinished inside 180 s.
+
+The 70 s limit is out of reach on Relativity: two laps of crystal-to-crystal chords are
+~23,500 u, **78 s at 300 u/s** with zero time lost to any turn, and the ribbon itself is 24,700 u
+(82 s). Same situation as I3; re-baselining the I4 limit is a product decision (as I2's was,
+§6.11) and has not been made.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop
@@ -634,6 +677,13 @@ Runs excluded, and why (all disclosed, none are AI results):
 
 ## 9. Status and known limits
 
+- **Regatta (2026-10-06, NOT editor-verified).** Regatta's opponent Squirrels fly this pilot with
+  `RegattaRingObjective`: crystals swapped for rings, the waypoint ribbon for the domain's rail.
+  Before this they flew the platform `AIPilot` steered at ring waypoints and threaded none. The
+  policy is Skim Race's per-intensity config, untuned for a rail; the rail lanes sit 22 u off the
+  ring spine and the mouths are 54–110 u, so the skim line passes well inside each mouth. A pilot
+  whose hull a human swaps into stands down (no input writes) until the AI gets it back.
+
 **Limits: I1 70 s, I2 80 s (re-baselined, §6.11), I4 70 s. Met on I1 (editor, winner); I2 80 s is met
 with `skimrace-v2-i2` at normal frame rates: the last 5 consecutive hand-played races 67.4-76.6 s
 (median 69.6 s, §8.0d), background benchmark median 72.6 s (§8.0b). Below ~8 fps (127 ms frames) it is
@@ -652,12 +702,19 @@ not (90-128 s, §8.0c).**
   The strike-free ceiling is 66-70 s, so 70 s needs essentially zero strikes; the pilot takes ~15-30
   per race and no lever or tune tried reduces that without losing more time (§6.8).
 - **I4: not met, and not reachable with this approach.** Even with every hull contact switched off
-  the simulator needs ~124 s for one AI seat (§6.7).
+  the simulator needs ~124 s for one AI seat (§6.7, old polyline). On Relativity (§6.12) the
+  shipped policy completes in ~146 s median and 70 s is below the ~78-82 s physical floor.
 - **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
   Squirrel tops out at 300 u/s).
 - **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +
   tracking-MPC strike term + no terminal chord); strike-free ceilings 69.9 s (2 AI) and 85-127 s
   (3 AI). Stop condition met; no policy change shipped.
+- **Owed: drift and Boost Ring have never been measured working.** `UseDrift` and `UseLaunchRing` are
+  off in every shipped policy, but neither could fire on a PC until 2026-10-06 (the autopilot lookup
+  handed out the touch controls; `SQUIRREL_DRIFT.md` §10), and the simulator models neither, so the
+  "off" is the C# default rather than a result. Owed: an in-editor A/B per intensity with each on
+  (drift at full depth, `SkimRacePilot.DriftTriggerPull`), and the simulator taught the drift before
+  any tune relies on it.
 - **Owed:** the in-editor matrix for the current pilot code (§8.0) - I2 at players 3 and 4 against
   80 s, I1 at players 3 against 70 s - and an editor compile/test pass for the §6.10/§6.11 code (the
   editor was in a play session during both passes).

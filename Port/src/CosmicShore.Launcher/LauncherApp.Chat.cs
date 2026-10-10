@@ -52,7 +52,10 @@ namespace CosmicShore.Launcher
             string arg = parts.Length > 1 ? parts[1].Trim() : "";
             switch (parts[0].ToLowerInvariant())
             {
-                case "/clear": case "/new": _chat.NewChat(); return true;
+                case "/clear": if (!_chat.Busy) _chat.NewChat(); return true;
+                case "/new": _chats.New(); return true;
+                case "/usage": case "/context": case "/cost": _usageOpen = true; return true;
+                case "/rename" when arg.Length > 0: _chat.Title = arg; _chat.Save(); return true;
                 case "/plan": _s.ChatMode = 0; _dirty = true; return true;
                 case "/edit": _s.ChatMode = 1; _dirty = true; return true;
                 case "/auto": _s.ChatMode = 2; _dirty = true; return true;
@@ -86,6 +89,8 @@ namespace CosmicShore.Launcher
                 (ClaudeChat.Mode)_s.ChatMode, LauncherJobs.SessionsDir);
         }
 
+        bool _usageOpen;
+
         void DrawChat(Vector2 a, Vector2 b)
         {
             var dl = ImGui.GetWindowDrawList();
@@ -93,23 +98,27 @@ namespace CosmicShore.Launcher
             {
                 _chatDetected = true;
                 Task.Run(() => { _chat.Detect(); _chat.RefreshAuth(); });
-                _chat.ReplyFinished += t => { if (_s.VoiceReplies) _voice?.Speak(t); };
             }
+            if (_chat.Cli == null)
+            {
+                PageHeader(a, "PRISMA AGENT", "Works on Cosmic Shore  ·  powered by Claude");
+                DrawChatInstall(dl, a, b);
+                return;
+            }
+            // Conversations down the left, the way Claude Code keeps sessions: each its own transcript and context.
+            const float listW = 250;
+            DrawChatList(a, new Vector2(a.X + listW, b.Y));
+            a = new Vector2(a.X + listW + 18, a.Y);
+
             bool milestone = _chat.CurrentScope == ClaudeChat.Scope.Milestone;
             PageHeader(a, milestone ? "MILESTONE " + _chat.Milestone : "PRISMA AGENT",
                 milestone ? $"{_chat.MilestoneTitle}  ·  engine work on Prisma (Port/)  ·  powered by Claude"
-                          : "Works on Cosmic Shore with the memory of every run  ·  powered by Claude");
-            if (milestone)
-            {
-                ImGui.SetCursorScreenPos(a + new Vector2(0, 64));
-                if (SmallButton("< BACK TO THE GAME AGENT", 230, !_chat.Busy)) _chat.SetScope(ClaudeChat.Scope.Game);
-            }
-            if (_chat.Cli == null) { DrawChatInstall(dl, a, b); return; }
+                          : "Works on Cosmic Shore  ·  powered by Claude");
 
             DrawChatBar(a, b);
 
             float inputH = 84, chipsH = 38, statusH = 24;
-            var ta = new Vector2(a.X, a.Y + (milestone ? 106 : 64));
+            var ta = new Vector2(a.X, a.Y + 112);
             var tb = new Vector2(b.X, b.Y - inputH - chipsH - statusH - 20);
             Neon.ChamferFill(dl, ta, tb, 10, Neon.U(Neon.Space0, 0.74f));
             ImGui.SetCursorScreenPos(ta + new Vector2(20, 14));
@@ -123,20 +132,134 @@ namespace CosmicShore.Launcher
             if (_chatSnap.Count != _chatSeen || _chat.Busy != _chatBusyWas) { ImGui.SetScrollHereY(1f); _chatSeen = _chatSnap.Count; _chatBusyWas = _chat.Busy; }
             ImGui.EndChild();
 
-            DrawChatStatus(new Vector2(a.X + 4, tb.Y + 6));
+            DrawChatStatus(new Vector2(a.X + 4, tb.Y + 6), b.X);
             DrawChips(new Vector2(a.X, tb.Y + statusH + 6));
             DrawChatInput(a, b, inputH);
+            if (_usageOpen) DrawUsage(a, b);
+        }
+
+        /// <summary>The chat list: NEW CHAT, then every conversation, running ones first, each with its scope and when it was last used.</summary>
+        void DrawChatList(Vector2 a, Vector2 b)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            Neon.ChamferFill(dl, a, b, 10, Neon.U(Neon.Space0, 0.6f));
+            ImGui.SetCursorScreenPos(a + new Vector2(12, 12));
+            if (SmallButton("+  NEW CHAT", b.X - a.X - 24, true)) _chats.New();
+            Neon.Tooltip("A new conversation. The others keep their history and can keep working.");
+            ImGui.SetCursorScreenPos(a + new Vector2(6, 60));
+            ImGui.BeginChild("##chatlist", new Vector2(b.X - a.X - 12, b.Y - a.Y - 66));
+            ClaudeChat? delete = null;
+            float w = b.X - a.X - 14;
+            foreach (var c in _chats.All)
+            {
+                if (c.Empty && !ReferenceEquals(c, _chat)) continue;
+                var p = ImGui.GetCursorScreenPos();
+                ImGui.PushID(c.Id);
+                bool active = ReferenceEquals(c, _chat);
+                if (ImGui.InvisibleButton("row", new Vector2(w, 50))) _chats.Show(c);
+                bool hov = ImGui.IsItemHovered();
+                var d = ImGui.GetWindowDrawList();
+                if (active || hov) d.AddRectFilled(p, p + new Vector2(w, 50), Neon.U(active ? Neon.Cyan : Neon.Ink, active ? 0.10f : 0.05f), 8);
+                if (active) d.AddRectFilled(p + new Vector2(0, 10), p + new Vector2(3, 40), Neon.U(Neon.Cyan), 2);
+                if (c.Busy) d.AddCircleFilled(p + new Vector2(12, 17), 3.5f, Neon.U(Neon.Amber, 0.55f + 0.45f * MathF.Sin(Neon.Time * 6)));
+                string title = c.Title.Length > 0 ? c.Title : "New chat";
+                d.AddText(Neon.Small, 15, p + new Vector2(c.Busy ? 22 : 12, 7), Neon.U(active ? Neon.Ink : Neon.Mix(Neon.Ink, Neon.Dim, 0.3f)), Trim(Glyphs(title), (int)(w / 8.2f)));
+                string tag = c.CurrentScope == ClaudeChat.Scope.Milestone ? "ENGINE " + c.Milestone : "GAME";
+                d.AddText(Neon.Small, 12, p + new Vector2(12, 29), Neon.U(c.CurrentScope == ClaudeChat.Scope.Milestone ? Neon.Violet : Neon.Dim),
+                    c.Busy ? $"{tag}  ·  working" : $"{tag}  ·  {Ago(c.Updated)}");
+                if (hov && !c.Busy)
+                {
+                    var xa = p + new Vector2(w - 26, 14);
+                    bool xh = ImGui.IsMouseHoveringRect(xa, xa + new Vector2(20, 20));
+                    d.AddLine(xa + new Vector2(5, 5), xa + new Vector2(15, 15), Neon.U(xh ? Neon.Red : Neon.Dim), 1.6f);
+                    d.AddLine(xa + new Vector2(15, 5), xa + new Vector2(5, 15), Neon.U(xh ? Neon.Red : Neon.Dim), 1.6f);
+                    if (xh) { ImGui.SetTooltip("Delete this chat"); if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) delete = c; }
+                }
+                ImGui.PopID();
+                ImGui.SetCursorScreenPos(p + new Vector2(0, 54));
+            }
+            ImGui.Dummy(Vector2.Zero);
+            ImGui.EndChild();
+            if (delete != null) _chats.Delete(delete);
+        }
+
+        static string Ago(DateTime t)
+        {
+            var d = DateTime.Now - t;
+            return d.TotalMinutes < 1 ? "just now" : d.TotalHours < 1 ? $"{(int)d.TotalMinutes} min ago" : d.TotalDays < 1 ? $"{(int)d.TotalHours} h ago"
+                : d.TotalDays < 7 ? t.ToString("ddd HH:mm") : t.ToString("MMM d");
+        }
+
+        static string Resets(DateTimeOffset? at)
+        {
+            if (at is not { } r) return "";
+            var local = r.ToLocalTime();
+            return "Resets " + (local.Date == DateTime.Today ? local.ToString("h:mmtt").ToLowerInvariant() : local.ToString("MMM d, h:mmtt").Replace("AM", "am").Replace("PM", "pm"));
+        }
+
+        /// <summary>
+        /// Claude Code's /usage and /context in one card: this chat's context window, the plan's
+        /// session and weekly limits with when each resets, and what the chat cost on an API key.
+        /// </summary>
+        void DrawUsage(Vector2 a, Vector2 b)
+        {
+            var size = new Vector2(520, 0);
+            var cli = _chats.Cli;
+            var windows = cli.Windows;
+            float h = 120 + Math.Max(1, windows.Count) * 58 + 56;
+            var pa = new Vector2(b.X - size.X - 10, b.Y - h - 190);
+            var pb = pa + new Vector2(size.X, h);
+            var fg = ImGui.GetForegroundDrawList();
+            Neon.ChamferFill(fg, pa, pb, 12, Neon.U(Neon.Space0, 0.97f));
+            Neon.ChamferFill(fg, pa, pb, 12, Neon.U(Neon.Panel));
+            Neon.ChamferGlow(fg, pa, pb, 12, Neon.Cyan, 0.5f);
+            fg.AddText(Neon.Strong, 17, pa + new Vector2(22, 16), Neon.U(Neon.Ink), "USAGE");
+            fg.AddText(Neon.Small, 13, pa + new Vector2(90, 19), Neon.U(Neon.Dim), "as Claude Code's /usage and /context show it");
+            void Bar(float y, string label, double frac, string right, string under)
+            {
+                fg.AddText(Neon.Small, 14, new Vector2(pa.X + 22, y), Neon.U(Neon.Ink), label);
+                var ra = new Vector2(pa.X + 22, y + 22); var rb = new Vector2(pb.X - 110, y + 32);
+                fg.AddRectFilled(ra, rb, Neon.U(Neon.Ink, 0.08f), 5);
+                float f = (float)Math.Clamp(frac, 0, 1);
+                if (f > 0) fg.AddRectFilled(ra, new Vector2(ra.X + (rb.X - ra.X) * f, rb.Y), Neon.U(f > 0.9f ? Neon.Red : f > 0.7f ? Neon.Amber : Neon.Cyan), 5);
+                fg.AddText(Neon.Small, 14, new Vector2(rb.X + 12, y + 18), Neon.U(Neon.Ink), right);
+                if (under.Length > 0) fg.AddText(Neon.Small, 12, new Vector2(pa.X + 22, y + 36), Neon.U(Neon.Dim), under);
+            }
+            float y0 = pa.Y + 54;
+            long win = _chat.ContextWindow > 0 ? _chat.ContextWindow : 200_000;
+            Bar(y0, "Context  ·  " + (_chat.Title.Length > 0 ? Trim(Glyphs(_chat.Title), 44) : "this chat"), (double)_chat.ContextTokens / win,
+                $"{(double)_chat.ContextTokens / win:0%}", $"{_chat.ContextTokens / 1000.0:0.0}k of {win / 1000}k tokens  ·  {_chat.Turns} turns" + (_chat.ContextWindow > 0 ? "" : "  ·  window assumed until the first reply"));
+            float y = y0 + 64;
+            if (windows.Count == 0)
+            {
+                fg.AddText(Neon.Small, 14, new Vector2(pa.X + 22, y), Neon.U(Neon.Dim),
+                    string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? "Plan limits appear after the first reply (Claude reports them with every run)." : "On an API key there are no plan limits; you pay per token.");
+                y += 58;
+            }
+            foreach (var w in windows)
+            {
+                Bar(y, w.Label, w.Utilization, $"{w.Utilization:0%} used", Resets(w.ResetsAt));
+                y += 58;
+            }
+            double total = _chats.All.Sum(c => c.CostUsd);
+            string foot = $"This chat ${_chat.CostUsd:0.00}  ·  all chats ${total:0.00}" + (string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? "  (list price; a plan is not billed per token)" : "");
+            if (cli.UsageAt != default) foot += $"\nLimits as of {cli.UsageAt:HH:mm}" + (cli.UsageStatus == "rejected" ? "  ·  AT THE LIMIT" : cli.UsageStatus == "allowed_warning" ? "  ·  close to the limit" : "");
+            fg.AddText(Neon.Small, 13, new Vector2(pa.X + 22, y + 4), Neon.U(Neon.Dim), foot);
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsMouseHoveringRect(pa, pb)) _usageOpen = false;
+            if (ImGui.IsKeyPressed(ImGuiKey.Escape)) _usageOpen = false;
         }
 
         void DrawChatBar(Vector2 a, Vector2 b)
         {
+            // Its own row under the title, so it fits beside the chat list at any window width.
+            ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 64));
             if (_chat.SignedIn == false && string.IsNullOrWhiteSpace(_s.AnthropicApiKey))
             {
-                ImGui.SetCursorScreenPos(new Vector2(b.X - 820, a.Y + 4));
                 if (SmallButton("SIGN IN", 110, true)) _chat.SignIn();
                 Neon.Tooltip("Sign in with your Claude account to use your Pro/Max plan.");
+                ImGui.SameLine(0, 12);
             }
-            ImGui.SetCursorScreenPos(new Vector2(b.X - 690, a.Y + 8));
+            ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new Vector2(0, 4));
             ImGui.PushItemWidth(120);
             int model = Math.Max(0, Array.IndexOf(ClaudeChat.Models, string.IsNullOrWhiteSpace(_s.ClaudeModel) ? "default" : _s.ClaudeModel.Trim()));
             if (model < 0) model = 0;
@@ -153,7 +276,8 @@ namespace CosmicShore.Launcher
                          "EDIT: may edit engine files.\nAUTO: may also run any command.\n" +
                          "In every mode Assets/, Packages/ and ProjectSettings/ are off limits.");
             ImGui.SameLine(0, 12);
-            if (SmallButton("NEW", 70, !_chat.Busy)) _chat.NewChat();
+            if (SmallButton("CLEAR", 80, !_chat.Busy)) _chat.NewChat();
+            Neon.Tooltip("Start this chat over (Claude Code's /clear). + NEW CHAT keeps it and opens another.");
         }
 
         void DrawChatWelcome()
@@ -164,12 +288,13 @@ namespace CosmicShore.Launcher
             foreach (var l in new[]
             {
                 _chat.CurrentScope == ClaudeChat.Scope.Game
-                    ? "Works on the game (Assets/) and starts from what your last runs recorded in TRACKS."
+                    ? "Works on the game (Assets/) - only on what you ask. Ask about a bug or a run and it reads TRACKS."
                     : "Engine work on Prisma (Port/) for this checkpoint. The game in Assets/ is read-only here.",
                 "It can run the tests, start the game, look at it and drive it, and suggest bugs and tasks for your BOARD.",
                 "PLAN proposes before touching anything; approve the plan to let it build.",
                 "Chips below run tests, a smoke test, or analyse your last play session.",
-                "Commands: /clear  /plan  /edit  /auto  /model NAME  /effort LEVEL  /test  /smoke  /session",
+                "Its edits stay in Prisma's workspace until you save them on the GIT page.",
+                "Commands: /new  /clear  /rename TITLE  /usage  /plan  /edit  /auto  /model NAME  /effort LEVEL  /test  /smoke  /session",
             }) ImGui.TextColored(Neon.Dim, l);
             ImGui.PopFont();
         }
@@ -378,16 +503,35 @@ namespace CosmicShore.Launcher
             ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, $"{secs}s  ·  STOP to interrupt"); ImGui.PopFont();
         }
 
-        void DrawChatStatus(Vector2 at)
+        /// <summary>Claude Code's status line: model, mode, how full the context is, the plan's session and week; click for the full card.</summary>
+        void DrawChatStatus(Vector2 at, float right)
         {
             var dl = ImGui.GetWindowDrawList();
             string model = _chat.ActiveModel ?? (string.IsNullOrWhiteSpace(_s.ClaudeModel) ? "default model" : _s.ClaudeModel);
             string mode = _s.ChatMode switch { 0 => "plan mode", 1 => "accept edits", _ => "auto" };
-            string ctx = _chat.ContextTokens > 0 ? $"  ·  {_chat.ContextTokens / 1000.0:0.0}k context" : "";
-            string cost = _chat.CostUsd > 0 ? $"  ·  ${_chat.CostUsd:0.00}" : "";
-            string signed = _chat.SignedIn == true ? (string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? "  ·  Claude plan" : "  ·  API key") : "";
+            long win = _chat.ContextWindow > 0 ? _chat.ContextWindow : 200_000;
+            string ctx = _chat.ContextTokens > 0 ? $"  ·  context {(double)_chat.ContextTokens / win:0%}" : "";
+            bool api = !string.IsNullOrWhiteSpace(_s.AnthropicApiKey);
+            string plan = "";
+            foreach (var w in _chats.Cli.Windows.Where(w => w.Key is "five_hour" or "seven_day"))
+                plan += $"  ·  {(w.Key == "five_hour" ? "session" : "week")} {w.Utilization:0%}";
+            string cost = api && _chat.CostUsd > 0 ? $"  ·  ${_chat.CostUsd:0.00}" : "";
+            string signed = _chat.SignedIn == true ? (api ? "  ·  API key" : "  ·  Claude plan") : "";
+            string others = _chats.Running - (_chat.Busy ? 1 : 0) is var n and > 0 ? $"  ·  {n} other chat{(n == 1 ? "" : "s")} working" : "";
+            string text = $"{model}  ·  {mode}{ctx}{plan}{cost}{signed}{others}";
             dl.AddCircleFilled(at + new Vector2(4, 9), 3.5f, Neon.U(_chat.Busy ? Neon.Amber : Neon.Lime));
-            dl.AddText(Neon.Small, 15, at + new Vector2(14, 1), Neon.U(Neon.Dim), $"{model}  ·  {mode}{ctx}{cost}{signed}");
+            ImGui.PushFont(Neon.Small);
+            float tw = ImGui.CalcTextSize(text).X * 15f / Neon.Small.FontSize;
+            ImGui.PopFont();
+            var ta = at + new Vector2(14, 1);
+            bool hov = ImGui.IsMouseHoveringRect(ta, ta + new Vector2(tw, 18));
+            dl.AddText(Neon.Small, 15, ta, Neon.U(hov ? Neon.Ink : Neon.Dim), text);
+            if (hov)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                ImGui.SetTooltip("Usage: context, session and weekly limits (/usage)");
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) _usageOpen = !_usageOpen;
+            }
         }
 
         void DrawChips(Vector2 at)

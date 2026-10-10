@@ -138,6 +138,11 @@ it samples an authored `EnvironmentPrefab` — pure generation math, no prisms. 
   existed for editor preview — via `ModePreviewTrackModel.BuildWaypointLays`, with domains
   cycling the playable triad per waypoint segment (matching `SegmentSpawner`'s live painting).
   **If the scene's track is retuned, re-bake the prefab and re-run the author script.**
+  Intensity 4 ("Relativity") is the exception that needs no hand re-bake:
+  `Tools/Build/author_skimrace_relativity_track.py` writes the scene's track AND this bake in one
+  pass (ribbon normals, crystals per lap and marked waypoints included) and refuses to write if the
+  two component bodies would differ; `GetPreviewBlocks` honours all three fields, so the card's
+  model shows the rolled ribbon and only the crystal markers.
 
 Two knock-on rules the track added:
 
@@ -543,7 +548,7 @@ Joust(34), Scurry = Scurry(35)**.
 | Group | Modes | Arena source |
 |---|---|---|
 | Full arenas | Rampage, Cleave, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
-| Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
+| Barren-cell modes | Joust, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
 | Later arcade modes | Tollway, Wrecking Ball, Undertow, Regatta, Salvo, Hijack, Skein, Bloomrush | The mode's own cell configs, four per intensity where the scene is IntensityWise (Hijack's Switchyard and Skein's knot are authored `EnvironmentPrefab`s, so their scale models show the rails; Salvo and Bloomrush reference the Boneyard and the Rampage forest exactly as the modes do) |
 | Gate races | Switchback, Headlong, Redline, Breakwater, Skein, Regatta, Waystation | The LOOKING phase shows the cell (and Skein's knot / Regatta's rails as scale models). The FLIGHT phase stands the mode's own rings: `ModePreviewGateCourse` builds them from the same `RaceCourseSource` the match controller does (`RaceCourseSource.For(mode)`, shipped defaults, held equal to every scene's knobs by `RaceCourseSourceTests`), on `ModePreviewPlantingModel.StableSeed(mode name)` - the card-art seed, so at intensity 2 you fly the rings on the card. Crossings are counted LOCALLY (`ModePreviewGateCourse.Threaded`, fed to the runner as a metric override) because `RoundStats.SwitchesThreaded` is the match's replicated scoring token. A finished race loops. The pilot is parked on the race's own start line (`RaceCourseSource.TryStartLine`, backed off by `StartLineStandoff`, facing gate 0), and a mode whose course has structure stands it from `ModePreviewDefinitionSO.CourseStructurePrefab` through the same `RaceCourseSource.PoseCourseStructure` the controller uses (Breakwater's stations), retired with the arena. See `TRAINING_PLAN.md` §10.3 |
 

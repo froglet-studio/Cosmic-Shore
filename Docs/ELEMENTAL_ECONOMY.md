@@ -12,7 +12,7 @@ exactly one of three places:
 | Form | Who gets the petals | Which verbs | Conserves? |
 |---|---|---|---|
 | **Steal** | the attacker, immediately | contact — the Squirrel's joust, the Rhino's sword | yes |
-| **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle | yes |
+| **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle; and a rival threading a Butterfly's wormhole (the toll, left on the mouth's surface — `Docs/WORMHOLES.md` §5) | yes |
 | **Burn** | nobody, ever — destroyed | a **hostile danger prism**, and nothing else | **no — this is the sink** |
 
 So elements circulate. Inside a match, lifeform reproduction and spawning are the only **source**,
@@ -215,10 +215,25 @@ species, 3 pilot styles × 6 seeds × 3 min, starting at 20 petals.
 - **Tuned spares skill.** A skilled pilot loses 0.22 petals/min. A careless one still loses 3.25.
 - **Most burns were readable either way:** 92-93% were telegraphed. A strike counts as telegraphed
   when the striker showed intent > 0.5 for ≥ 0.25 s before contact.
-- **The lab recommends Tuned.** Garrett has not chosen yet, so the shipped value stays and only the
-  demo cell plays Tuned.
+- **The lab recommends Tuned.** ~~Garrett has not chosen yet, so the shipped value stays and only the
+  demo cell plays Tuned.~~ **Decided 2026-10-08: Tuned everywhere.** `CellConfigDataSO.PetalBurnRule`
+  defaults to Tuned, so every cell plays 1 petal per element per contact, and so does a scene with no live
+  cell. Shipped stays available per cell. `check_elemental_economy.py` §5 requires every cell on Tuned.
 
 QA: `QA-SWARM-ROUND11-7` (Docs/QA/QA_BACKLOG.md).
+
+**Fair burns (Oct 2026).** Two fixes from the lab's fair-burns pass (lab `Tools/Ecology/DISCOVERIES.md`, "Fair
+burns", 2026-10-05) took the unread burns left to zero there. Both work the same under Shipped and Tuned.
+- **1 s spawn grace.** A danger contact in the first second after a vessel spawns does nothing (no burn, no
+  sting, no cooldown started). The clock is `ResourceSystem.SpawnedAt`, stamped by `ResetForPlay` and by the go of
+  `StartVessel`. Tune it on the effect asset: `Spawn Grace Seconds` (0 = off).
+- **0.4 s wind-up.** A pack hunter's bite, and a pufferfish's puff, lands only after its own intent has shown for
+  0.4 s, so a strike never lands in the same moment as its telegraph. Substrate pack:
+  `SubstrateSpeciesParams.StrikeWindupS` (Docs/SUBSTRATE_FAUNA.md §9.1). Swarm pack hunter and pufferfish:
+  `SwarmFaunaConfigSO.HuntWindupSeconds` / `PuffWindupSeconds`. It composes with the pack's ring hold (6 s,
+  decided 2026-10-08): held hunters wind up together after the release.
+
+QA: `QA-FAIR-BURNS-1` (Docs/QA/QA_BACKLOG.md).
 
 ## 5. Every hull can now fight for it
 
@@ -285,7 +300,53 @@ still gets their comeback bonus on top.
 - **Ejected crystals are per-peer local objects**, exactly as the food web's crystals are per-peer
   unless a species sets `NetworkSynced`. Two peers can disagree about who collected one. That is
   the platform's existing stance rather than a new compromise; `FloraNetworkSync` is the precedent
-  if a mode ever needs them authoritative.
+  if a mode ever needs them authoritative. **How many** crystals a combat hit ejects is now agreed,
+  though. See the next bullet.
+- **A combat hit's take is settled once, on the victim's owner (Oct 2026).** Element levels are
+  owner state (`NetElementLevels` is owner-write). Every peer replays a combat contact: a human's
+  press is replicated, and an AI's guns fire on the server only. So `CombatHitDrain.Apply` routes
+  through `ElementalTransfer.ApplyAllAuthoritative`. The machine that owns the SHOOTER (the one
+  `StatsManager` scores the hit for) relays the take through `NetworkVesselImpactor` to the
+  victim's owner. The owner settles it with `AccrueElementalLoss`, mints the crystals and
+  publishes the settled count so every other peer mints the same number. Every other replay moves
+  nothing. The route table is `ElementalTransfer.RouteFor` (harness T9,
+  `ElementalTransferRouteTests`). Before this, a client shot by an AI kept every petal (the AI's
+  rounds never exist on a client), and a human shot by a human lost petals only when their own
+  replay of the shot connected.
+- **Every anti-vessel transfer is now authoritative, and a steal is paid on the thief's owner (Oct
+  2026, follow-up).** The three callers the first pass left settling per peer now go through
+  `ElementalTransfer.ApplyAuthoritative` and pass the attacker:
+
+  | Caller | Form | Attacker passed | Elements |
+  |---|---|---|---|
+  | `SniperShotActionExecutor.StripVessels` | Eject | the Serpent (`_status`); it used to pass none, which routed Local | all four |
+  | `VesselElementalDebuffByExplosionEffectSO` | Eject | the blast's `SourceVessel`; an anonymous blast still settles where it ran | the authored list, as a mask (`ElementalTransfer.MaskOf`): the Manta bomb is Mass + Space |
+  | `VesselOvertakeBySkimmerEffectSO` (joust, sword) | **Steal** | the thief (the skimmer's vessel) | all four |
+
+  A steal takes two hops, because levels are owner state on BOTH sides. The thief's owner decides
+  and relays the take to the victim's owner (`IElementalLossRelay.RelayTakeToOwner`, naming itself
+  as the payee). The victim's owner settles it (`ElementalTransfer.SettleTake`: ward, clamp, whole
+  petals, masked elements only). It then sends the packed count to the thief's owner
+  (`RelayGrantToOwner`), which grants exactly that (`GrantSettled`). No crystals are minted, so
+  nothing is published. If the payee despawned in flight, the take ejects instead, so the petals
+  stay in play. The one case that does not conserve is an ownership swap (Hijack's pilot swap)
+  landing inside that round trip: the grant arrives at a machine that no longer owns the thief and
+  is dropped. Before this, every peer took from its own copy of the victim and paid its own copy
+  of the thief. Only the victim owner's take and only the thief owner's pay counted, and they were
+  decided independently, so a joust could take a petal nobody received or pay one nobody lost.
+  **The per-victim anti-spam cooldowns** (`cooldown` on the blast debuff and the overtake) are now
+  enforced on the deciding machine, which is the attacker's owner. Two different attackers on two
+  machines can therefore each land one inside the same second, where before the victim's own copy
+  would have refused the second. The danger-prism burn stays local, and that is correct: prisms sit
+  in the same place on every peer, a burn has no attacker, and only the owner's copy of the victim
+  counts. Proof: harness T10 (route, payee, mask, grant, offline), with four negative controls
+  (steal routed Local again, mask ignored, every replay deciding, a NotOurs replay settling). Each
+  one fails T10.
+- **The score is decided on the same machine as the drain (Oct 2026).** The three combat-hit
+  reporters (`VesselCombatHitByProjectileEffectSO`, `…ByExplosionEffectSO`, `…BySkimmerEffectSO`)
+  return early unless `ElementalTransfer.IsDecidedHere(shooter)`. That is the predicate the route
+  reads, so a replay of somebody else's shot neither drains nor scores. This closed a real double
+  score: see `Assets/_Scripts/Controller/Arcade/DOGFIGHT.md` § Multiplayer.
 - **The ally buff stays temporary.** A buff is not a transfer — there is no victim to take it from
   — so making the Squirrel's mirrored overtake buff permanent would mint petals out of nothing and
   break "lifeforms are the only source". Jousting an enemy *moves* material; jousting a friend only
@@ -295,7 +356,7 @@ still gets their comeback bonus on top.
 
 | What | How |
 |---|---|
-| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 8 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
+| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 10 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. T9 is the networked eject's route table and petal packing (§7). T10 drives the real `ApplyAuthoritative` against fake hulls carrying a fake relay: the steal's route and payee, the element mask, the owner's settle and the thief's grant, and the offline path. The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
 | The economy's five invariants | `python3 Tools/Build/check_elemental_economy.py` (`--self-test`: twelve controls, all fire). §5 is the petal-burn switch. |
 | The switch's asset half | `python3 Tools/Build/author_petal_burn_rule.py --check` (effect asset) · `python3 Tools/Build/author_swarm_fauna.py --check` (the Swarm cell's `PetalBurnRule: 1`) |
 | The drain magnitudes | `python3 Tools/Build/author_combat_debuff_magnitudes.py --check` |
@@ -332,6 +393,11 @@ with flora to graze (Rampage, Wrecking Ball, Bloomrush, The Bends). What a human
    crystals leave their hull.
 6. **MPPM two-client**: confirm both peers agree on the flower levels after a joust, and note
    whether they agree on who collected an ejected crystal (they may not — §6).
+7. **MPPM host + client, combat (§7, "settled once").** Run Dog Fight with the client's pilot
+   holding petals. (a) Let an AI shoot the client: the CLIENT's own flowers step down, and both
+   windows show the same number of crystals leave the hull. (b) Host shoots client, then client
+   shoots host: in each case the victim's flowers step down on BOTH windows, and only on hits the
+   shooter's window scored.
 
 ---
 
@@ -402,7 +468,7 @@ reach them, so they were flagged as a separate decision and then removed on the 
 | `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrank a **Rhino's** skimmer to 0.7× for 3 s (`vesselTypesToImpact` was Rhino-only) — i.e. its blade |
 | `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | muted the victim's `RightStickAction` for 5 s and cancelled the action it was driving |
 | `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | froze the victim's trail spawner for 10 s |
-| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's sword crystal burst and vessel crystal blast, and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
+| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's vessel crystal blast (the sword crystal burst stopped spawning a blast 2026-10-08), and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
 
 `ShieldSkimmerScaleConfigSO.ApplyMaxSizeDebuff` is deleted with them (the first row was its only
 caller), along with the `_maxScaleMultiplier` / `_isMaxSizeDebuffed` runtime state it wrote, so

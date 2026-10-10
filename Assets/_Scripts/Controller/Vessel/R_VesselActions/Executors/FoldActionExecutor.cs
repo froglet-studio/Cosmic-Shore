@@ -47,13 +47,17 @@ namespace CosmicShore.Gameplay
     /// teleport costs the camera no motion at all: it is already there, looking the right way, and
     /// the ship blooms in ahead of it.</para>
     ///
-    /// <para><b>Every fold leaves a PAIR OF GATES standing</b> — one where the vessel left, one
-    /// where it arrived (<see cref="FoldGate"/>). They are domain switches: any vessel of the
-    /// Butterfly's domain threads either and is at the other, as often as it likes. They stand
-    /// until this Butterfly folds again and the new pair replaces the old one, which is an ACTIVE
-    /// player act and never a clock — there is no lifespan here and there must never be one.
-    /// The Butterfly cannot out-fly anybody; what it can do is leave a shortcut its whole team
-    /// keeps.</para>
+    /// <para><b>Every fold leaves a WORMHOLE standing</b> — two sphere mouths with one shared
+    /// interior, one where the vessel left and one where it arrived (<see cref="WormholeMouth"/>;
+    /// they replaced the original ring gates, <c>BUTTERFLY_FOLD.md</c> § "The gates became
+    /// wormholes"). ANY vessel flies into either and comes out of the other, as often as it
+    /// likes, and everyone sees the far side through it. The pair is DOMAIN-TOLLED: a pilot not
+    /// of the Butterfly's domain has petals stripped at the mouth they enter, left on its surface
+    /// as crystals (<see cref="WormholeMouth.LevyToll"/>, § "Anyone rides; rivals pay a toll").
+    /// Both rims wear the domain's hue — whose road it is, and who rides it free. The pair stands until this Butterfly
+    /// folds again and the new pair replaces the old one, which is an ACTIVE player act and never
+    /// a clock — there is no lifespan here and there must never be one. The Butterfly cannot
+    /// out-fly anybody; what it can do is leave a shortcut its whole team keeps.</para>
     ///
     /// <para><b>The pair is laid when the ARRIVAL completes, from two positions every peer already
     /// agrees on</b> — the vessel's pre-fold pose (it has been stopped and replicated for the whole
@@ -101,12 +105,12 @@ namespace CosmicShore.Gameplay
                  "Every peer, at the destination. Leave empty for silence.")]
         [SerializeField] FMODUnity.EventReference foldArriveEvent;
 
-        [Tooltip("FMOD event when this fold's PAIR of gates opens (origin + destination). Played " +
-                 "once, at the destination gate. Leave empty for silence.")]
+        [Tooltip("FMOD event when this fold's wormhole opens (origin + destination mouths). Played " +
+                 "once, at the destination mouth. Leave empty for silence.")]
         [SerializeField] FMODUnity.EventReference gatesOpenEvent;
 
-        [Tooltip("FMOD event when a pilot THREADS one of this Butterfly's gates and comes out of " +
-                 "the other. Handed to each gate at build; played on the threading pilot's own " +
+        [Tooltip("FMOD event when a pilot flies into one of this Butterfly's wormhole mouths and comes " +
+                 "out of the other. Handed to each mouth at build; played on the pilot's own " +
                  "machine (only the owner decides a transit), at the exit. Leave empty for " +
                  "silence.")]
         [SerializeField] FMODUnity.EventReference gateThreadEvent;
@@ -142,12 +146,11 @@ namespace CosmicShore.Gameplay
         float _arriveTimer;
         bool  _stopped;                // did WE stop the vessel? only then may we un-stop it
 
-        // Gates. The pair this Butterfly currently has standing, plus the pose the last fold left
-        // from — held from the commit until the arrival lands, because the origin gate goes where
-        // the vessel WAS and by then the vessel is somewhere else.
-        FoldGate _gateA, _gateB;
+        // The wormhole. The pair this Butterfly currently has standing, plus the pose the last fold
+        // left from — held from the commit until the arrival lands, because the origin mouth goes
+        // where the vessel WAS and by then the vessel is somewhere else.
+        WormholeMouth _gateA, _gateB;
         Vector3 _gateOrigin;
-        Vector3 _gateAxis = Vector3.forward;
         bool _awaitingGates;
         float _gateSettleDeadline;
         bool _warnedNoGameData;
@@ -281,13 +284,11 @@ namespace CosmicShore.Gameplay
                 _departing = true;
                 _arriveTimer = 0f;
 
-                // Where the ORIGIN gate goes. Captured now because the pose write is a few
-                // frames away and by then this position is not the vessel's any more. Both
-                // readings are replicated state on every peer: the hull has been stopped for the
-                // whole hold, so no machine disagrees about where it stood or which way it faced.
-                Transform hull = _status.Transform;
-                _gateOrigin = hull.position;
-                _gateAxis = hull.forward;
+                // Where the ORIGIN mouth goes. Captured now because the pose write is a few
+                // frames away and by then this position is not the vessel's any more. It is
+                // replicated state on every peer: the hull has been stopped for the whole hold,
+                // so no machine disagrees about where it stood.
+                _gateOrigin = _status.Transform.position;
                 PlayCue(foldDepartEvent, _gateOrigin);
             }
             else
@@ -498,28 +499,34 @@ namespace CosmicShore.Gameplay
         {
             if (_gameData == null)
             {
-                // A gate with no roster tests nothing and a gate with no theme wears no domain
-                // material - both of which read on screen as "the ability did not happen". Say so
-                // once, by name, rather than standing a pair of inert rings in the world.
+                // A mouth with no roster carries nothing and one with no theme wears no domain
+                // colour - both of which read on screen as "the ability did not happen". Say so
+                // once, by name, rather than standing a pair of inert spheres in the world.
                 if (!_warnedNoGameData)
                 {
                     _warnedNoGameData = true;
-                    CSDebug.LogWarning("[FoldGate] No GameDataSO injected on this vessel - fold " +
-                                       "gates cannot be placed. A runtime-created vessel must go " +
-                                       "through GameObjectInjector.InjectRecursive.");
+                    CSDebug.LogWarning("[FoldGate] No GameDataSO injected on this vessel - the " +
+                                       "fold's wormhole cannot be placed. A runtime-created vessel " +
+                                       "must go through GameObjectInjector.InjectRecursive.");
                 }
                 return;
             }
 
             // Retired BEFORE the new pair is built, so the two never share a frame and a pilot can
-            // never be looking at four rings wondering which two are live. This removal is caused
+            // never be looking at four mouths wondering which two are live. This removal is caused
             // by THIS fold - a player pressing a button - which is the only thing that closes a
-            // gate.
+            // wormhole.
             RetireGates(so.GateBloomSeconds);
 
-            _gateA = BuildGate(so, $"FoldGate::{_status.PlayerName}::A", _gateOrigin);
-            _gateB = BuildGate(so, $"FoldGate::{_status.PlayerName}::B", destination);
-            FoldGate.Pair(_gateA, _gateB);
+            // Both mouths are centred where the vessel WAS and where it IS - exactly the ring
+            // gates' placement, so the pair's translation is the fold itself. The Butterfly
+            // therefore arrives inside the destination mouth's ball: that is the shared interior,
+            // seen through the mouth from outside (WormholeView draws a carriable vessel in either
+            // ball on the far side), and it flies out without being taken back because a mouth
+            // only takes a step that STARTS outside it - the geometric arming the gates had.
+            _gateA = BuildGate(so, $"FoldWormhole::{_status.PlayerName}::A", _gateOrigin);
+            _gateB = BuildGate(so, $"FoldWormhole::{_status.PlayerName}::B", destination);
+            WormholeMouth.Pair(_gateA, _gateB);
             PlayCue(gatesOpenEvent, destination);
 
             CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
@@ -527,16 +534,37 @@ namespace CosmicShore.Gameplay
                 $"{Vector3.Distance(_gateOrigin, destination):F0}u apart.");
         }
 
-        FoldGate BuildGate(FoldActionSO so, string name, Vector3 centre)
+        WormholeMouth BuildGate(FoldActionSO so, string name, Vector3 centre)
         {
             var go = new GameObject(name);
-            var gate = go.AddComponent<FoldGate>();
-            gate.Build(_status, _gameData.Players, centre, _gateAxis, so.GateRadius,
-                       so.GateExitClearance, so.GateBloomSeconds, _gameData.ThemeManagerData,
-                       so.PortalWindowRange, so.PortalWindowFadeSeconds,
-                       so.PortalWindowRenderScale);
-            gate.ThreadEvent = gateThreadEvent;
-            return gate;
+            go.transform.position = centre;
+            var mouth = go.AddComponent<WormholeMouth>();
+            var domain = _status.Domain;
+            mouth.Build(new WormholeMouth.Settings
+            {
+                SurfaceMaterial = so.WormholeMaterial,
+                BloomSeconds = so.GateBloomSeconds,
+                ExactRange = so.PortalWindowRange,
+                ExactFadeBand = so.PortalWindowFadeBand,
+                ExactRenderScale = so.PortalWindowRenderScale,
+                PanoramaFaceSize = so.PanoramaFaceSize,
+                TransitEvent = gateThreadEvent,
+                // The rim wears the placer's domain: the colour says who rides it free.
+                RimTint = ToyFactory.DomainAccentColor(_gameData.ThemeManagerData, domain),
+                // Anyone may thread it; a pilot of another domain pays in petals, left on the
+                // mouth's surface as crystals (WormholeMouth.LevyToll).
+                DomainTolled = true,
+                TollPetalsPerElement = so.RivalTollPetalsPerElement,
+                TollShedSpeed = so.RivalTollShedSpeed,
+                TollHitClass = so.TollHitClass,
+                TollHitLanded = so.OnTollHitLanded,
+                Domain = domain,
+                // The pair follows THIS Butterfly: it always rides free, and the toll (and the
+                // rim's hue) track its domain live.
+                Owner = _status,
+                Theme = _gameData.ThemeManagerData,
+            }, _gameData.Players, so.GateRadius);
+            return mouth;
         }
 
         /// <summary>

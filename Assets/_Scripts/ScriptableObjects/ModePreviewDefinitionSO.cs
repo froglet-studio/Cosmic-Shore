@@ -143,6 +143,15 @@ namespace CosmicShore.ScriptableObjects
                  "radius, for a cell whose nucleus is small or absent.")]
         [Min(0f)] public float SpawnRingRadiusFloor;
 
+        [Tooltip("Mirrors ServerPlayerVesselInitializer.spawnRingRadiusFloorByIntensity - " +
+                 "element 0 is intensity 1. Empty (or a 0 entry) falls back to Spawn Ring Radius " +
+                 "Floor, and an intensity past the end clamps to the last entry, the same rule the " +
+                 "server uses, so every preview whose scene authors no list is unchanged. Cleave " +
+                 "needs it: its four intensities are four arenas of two sizes (2,160 and 720 " +
+                 "radius), so one floor either opens the preview inside the big arenas or 3,000 " +
+                 "units from the small ones.")]
+        public List<float> SpawnRingRadiusFloorByIntensity = new();
+
         [Tooltip("Mirrors ServerPlayerVesselInitializer.spawnFormation. Symmetric spreads over a " +
                  "sphere; EquatorialRing puts everyone on one great circle, which is what an " +
                  "arena with a meaningful 'up' or a pole feature authors.")]
@@ -165,8 +174,13 @@ namespace CosmicShore.ScriptableObjects
         /// preview always built a one-player Symmetric ring at an independently-authored standoff,
         /// so Skim Race - which starts you 728u out on a track, facing down it - opened 70u from
         /// a core, pointing at nothing.</para>
+        ///
+        /// <para><paramref name="intensity"/> picks the ring floor for a mode whose scene sizes
+        /// it per intensity (<see cref="ResolveSpawnRingRadiusFloor"/>); every other mode ignores
+        /// it.</para>
         /// </summary>
-        public Pose ResolveSpawnPose(Vector3 cellCentre, float nucleusRadius, int seat = 0)
+        public Pose ResolveSpawnPose(Vector3 cellCentre, float nucleusRadius, int seat = 0,
+                                     int intensity = 1)
         {
             if (!SpawnFromCellRing && SpawnPoints is { Count: > 0 })
             {
@@ -184,7 +198,7 @@ namespace CosmicShore.ScriptableObjects
             }
 
             float radius = Mathf.Max(nucleusRadius + Mathf.Max(0f, SpawnDistanceOutsideNucleus),
-                                     SpawnRingRadiusFloor);
+                                     ResolveSpawnRingRadiusFloor(intensity));
 
             // Seat 0 of the HOUSE MATCH SIZE, not of a one-player formation. Symmetric changes
             // shape with the count (1 player = +Z, 4 = a tetrahedron vertex), so Build(1) computed
@@ -196,6 +210,26 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>The house match size - what the fill-with-AI toggle seats a lobby to.</summary>
         const int MatchSeats = 4;
+
+        /// <summary>
+        /// The spawn-ring floor for an intensity: the <see cref="SpawnRingRadiusFloorByIntensity"/>
+        /// entry when one is authored and positive, else the scalar <see cref="SpawnRingRadiusFloor"/>.
+        ///
+        /// <para>The same rule as <c>ServerPlayerVesselInitializer.ResolveSpawnRingRadiusFloor</c>,
+        /// clamp and 0-means-defer included, because the preview's job is to open where the match
+        /// does. A preview that mirrored only the scalar stood Cleave's pilot at 3,150 units on all
+        /// four rungs, about three times further out than a match puts them on the 720-radius rungs
+        /// 3 and 4.</para>
+        /// </summary>
+        public float ResolveSpawnRingRadiusFloor(int intensity)
+        {
+            if (SpawnRingRadiusFloorByIntensity == null || SpawnRingRadiusFloorByIntensity.Count == 0)
+                return SpawnRingRadiusFloor;
+
+            int index = Mathf.Clamp(Mathf.Max(1, intensity) - 1, 0, SpawnRingRadiusFloorByIntensity.Count - 1);
+            float floor = SpawnRingRadiusFloorByIntensity[index];
+            return floor > 0f ? floor : SpawnRingRadiusFloor;
+        }
 
         /// <summary>
         /// True when this definition can actually be flown. A definition with no cell has
@@ -272,6 +306,13 @@ namespace CosmicShore.ScriptableObjects
             if (intensityA == intensityB) return false;
             if (ResolveCell(intensityA) != ResolveCell(intensityB)) return true;
             if (ResolveTrackSpawnable(intensityA) != ResolveTrackSpawnable(intensityB)) return true;
+
+            // Where the vessel arrives is part of the preview too. The arena latches its
+            // intensity when it stands, so a floor that differs must rebuild, or the vessel
+            // would keep the old rung's ring.
+            if (SpawnFromCellRing &&
+                !Mathf.Approximately(ResolveSpawnRingRadiusFloor(intensityA),
+                                     ResolveSpawnRingRadiusFloor(intensityB))) return true;
 
             // One spawnable serving several intensities differs when it is intensity-aware.
             return ResolveTrackSpawnable(intensityA) is SpawnableWaypointTrack;

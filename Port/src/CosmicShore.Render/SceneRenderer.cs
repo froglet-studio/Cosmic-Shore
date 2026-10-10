@@ -803,6 +803,10 @@ void main(){
             public ExtProp[] Layout;        // which properties the block carries (prism clock, or the slice stamps)
             public Vector4 SliceP0, SliceP1, SliceP2, SliceP3; // PrismSlice material constants
             public Color SliceHot;
+            public GraphProgramCache.Entry Graph; // a compiled Shader Graph draws this material (null = the scene program)
+            public int AlphaMode;                 // compiled graph: 0 alpha, 1 premultiply, 2 additive, 3 multiply
+            public bool GraphAlphaClip;           // compiled graph: clip against the graph's AlphaClipThreshold
+            public string Route;                  // family | compiled | fallback (ShaderDrawStats)
         }
 
         // The clock / animation properties the prism graphs read beyond the vertex attributes,
@@ -860,6 +864,7 @@ void main(){
         readonly GL _gl;
         readonly TextureCache _textures;
         readonly GlProgram _program;
+        readonly GraphProgramCache _graphs;
         readonly uint _instanceVbo;
         readonly ConditionalWeakTable<Mesh, MeshEntry> _meshes = new();
         readonly List<Renderer> _renderers = new();
@@ -1001,6 +1006,7 @@ void main(){
             _gl = gl;
             _textures = textures;
             _program = new GlProgram(gl, Vert, Frag, "scene");
+            _graphs = new GraphProgramCache(gl, textures);
             _instanceVbo = gl.GenBuffer();
         }
 
@@ -1049,6 +1055,8 @@ void main(){
             SetVec3("uCamPos", camPos);
             SetLighting();
             SetFog();
+            BeginGraphFrame(camera, view, proj, viewProj, camPos, width, height);
+            _program.Use();
             _program.Set("uTex", 0);
             _program.Set("uExt", 1);
             var occTarget = Shader.GetGlobalVector(IdOccTarget);
@@ -1074,6 +1082,7 @@ void main(){
             _gl.FrontFace(FrontFaceDirection.CW);
 
             // Opaque: instanced batches, front-to-back by queue.
+            GpuPass?.Invoke(0);
             _gl.Disable(EnableCap.Blend);
             foreach (var kv in _batches) { kv.Value.Clear(); _batchPool.Add(kv.Value); }
             _batches.Clear();
@@ -1096,6 +1105,7 @@ void main(){
             _run.Clear();
 
             // Transparent: back to front, one at a time.
+            GpuPass?.Invoke(1);
             _gl.Enable(EnableCap.Blend);
             // Transparent: grouped by render state (queue, mesh, submesh, material), each group
             // back to front, groups ordered by queue then by their farthest member. A group draws
@@ -1148,7 +1158,30 @@ void main(){
             }
         }
 
+        /// <summary>The camera, time, light and fog every compiled graph reads this frame.</summary>
+        void BeginGraphFrame(Camera camera, EMatrix view, EMatrix proj, EMatrix viewProj, EVector3 camPos, int width, int height)
+        {
+            var v = ToNumerics(view);
+            System.Numerics.Matrix4x4.Invert(v, out var inv);
+            var fwd = camera.transform.forward;
+            _camRight = camera.transform.right; _camUp = camera.transform.up; _camFwd = fwd;
+            _graphs.BeginFrame(new GraphFrame
+            {
+                View = v, InvView = inv, Proj = ToNumerics(proj), ViewProj = ToNumerics(viewProj),
+                CamPos = camPos, CamDir = fwd,
+                Time = Time.time, DeltaTime = Time.deltaTime,
+                Width = width, Height = height, Near = camera.nearClipPlane, Far = camera.farClipPlane,
+                Orthographic = camera.orthographic, OrthoSize = camera.orthographicSize, Aspect = height > 0 ? (float)width / height : 1f,
+                LightDir = _lightDir, LightColor = _lightColor, Ambient = _ambient,
+                FogColor = _fogColor, Fog = _fog,
+            });
+            ShaderDrawStats.BeginFrame(SceneManager.GetActiveScene().name);
+        }
+
         static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
+
+        /// <summary>Diagnostics: told when the opaque (0) and transparent (1) draws start, so a GPU timer can split them.</summary>
+        public Action<int> GpuPass;
         long _writeTicks, _instTicks, _extTicks;
 
         void Collect(int mask, EVector3 camPos)
@@ -1162,6 +1195,7 @@ void main(){
             long tm0 = System.Diagnostics.Stopwatch.GetTimestamp();
             if (s_slowCollect) CollectAllRenderers(mask, camPos);
             else CollectSlotted(mask, camPos);
+            CollectProceduralLines(mask, camPos);
             if (s_census && _frame % 30 == 0) { Renderer.CollectLive(_renderers); RendererCensus(); }
             long te = System.Diagnostics.Stopwatch.GetTimestamp();
             _cLoop = te - tm0;
@@ -1189,6 +1223,11 @@ void main(){
             if (r is TrailRenderer || r is LineRenderer)
             {
                 CollectRibbon(r, mask, camPos);
+                return;
+            }
+            if (r is ParticleSystemRenderer psr)
+            {
+                CollectParticles(psr, mask, camPos);
                 return;
             }
             if (r is not MeshRenderer && r is not SkinnedMeshRenderer) return;
@@ -1340,7 +1379,7 @@ void main(){
         byte ClassifySlot(Renderer r, out Mesh mesh)
         {
             mesh = null;
-            if (r is TrailRenderer || r is LineRenderer || r is SkinnedMeshRenderer) return SlotAlways;
+            if (r is TrailRenderer || r is LineRenderer || r is SkinnedMeshRenderer || r is ParticleSystemRenderer) return SlotAlways;
             if (r is not MeshRenderer) return SlotIgnore;
             mesh = r.GetComponent<MeshFilter>()?.sharedMesh;
             if (mesh == null) return SlotIgnore; // assigning a mesh marks the renderer dirty
@@ -1521,30 +1560,31 @@ void main(){
             return st;
         }
 
-        static MatState Classify(Material m)
+        MatState Classify(Material m)
         {
-            var st = new MatState { Revision = m.Revision, FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue, Alpha = 1f };
-            string graph = m.shader?.name ?? "";
-            if (graph == "Shader Graphs/SnowGraph")
+            var st = new MatState { Revision = m.Revision, FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue, Alpha = 1f, Route = "family" };
+            // Hand-tuned families are keyed by the shader asset's guid (a renamed graph keeps its family).
+            var family = MaterialFamilies.For(m.shader);
+            if (family == MaterialFamilies.Kind.Snow)
             {
                 st.Family = 3; st.DarkId = st.BrightId = IdColor;
                 st.Alpha = m.GetFloat("_Opacity");
                 var v = m.HasStoredProperty("_Vector3") ? m.GetVector("_Vector3") : new Vector4(0, 0, 0.65f, 0);
                 st.Param = v;
             }
-            else if (graph == "Shader Graphs/CageGraph")
+            else if (family == MaterialFamilies.Kind.Cage)
             {
                 st.Family = 4; st.DarkId = st.BrightId = Shader.PropertyToID("_Straight_Color");
                 st.Alpha = m.GetFloat("_alpha");
                 st.Param = new Vector4(1.91f, 0, 0, 0);
                 st.ColorC = new Color(0.1086654f, 0.5329778f, 1.0504318f, 1f); // the graph's rim ColorNode
             }
-            else if (graph == "Shader Graphs/SpindleGraph")
+            else if (family == MaterialFamilies.Kind.Spindle)
             {
                 st.Family = 5; st.DarkId = IdDullColor; st.BrightId = IdBright;
                 st.Param = new Vector4(m.GetFloat("_CellDensity"), m.GetFloat("_Distance"), m.GetFloat("_Phase"), 0);
             }
-            else if (graph == "CosmicShore/PrismSlice")
+            else if (family == MaterialFamilies.Kind.PrismSlice)
             {
                 st.Family = 8; st.DarkId = IdDark; st.BrightId = IdBright;
                 var mt = m.GetVector("_SliceMotionTimes");
@@ -1555,15 +1595,15 @@ void main(){
                 st.SliceP3 = new Vector4(m.GetFloat("_DissolveNoise"), m.GetFloat("_EmberBand"), m.GetFloat("_EmberGlow"), m.GetFloat("_EmberWhite"));
                 st.SliceHot = m.GetColor("_CutHotColor");
             }
-            else if (graph == "Shader Graphs/ForcefieldCrackle")
+            else if (family == MaterialFamilies.Kind.Forcefield)
             {
                 st.Family = 7; // hand-written: Blend One One, ZWrite Off, Cull Off (see the fix-up below)
             }
-            else if (graph == "Shader Graphs/CrystalGraph")
+            else if (family == MaterialFamilies.Kind.Crystal)
             {
                 st.Family = 6; st.DarkId = IdDull; st.BrightId = IdBrightCrystal;
             }
-            else if (graph == "Shader Graphs/VesselGraph")
+            else if (family == MaterialFamilies.Kind.Vessel)
             {
                 // Base = lerp(Color1, Color2, dot(N,N)) = Color2, times _ColorMultiplier.
                 st.Family = 0; st.DarkId = st.BrightId = IdColor2;
@@ -1579,12 +1619,15 @@ void main(){
             else if (m.HasStoredProperty(IdDull) && m.HasStoredProperty(IdBrightCrystal)) { st.Family = 2; st.DarkId = IdDull; st.BrightId = IdBrightCrystal; }
             else if (m.HasStoredProperty(IdDullColor) && m.HasStoredProperty(IdBright)) { st.Family = 2; st.DarkId = IdDullColor; st.BrightId = IdBright; }
             else if (m.HasStoredProperty(IdColor1) && m.HasStoredProperty(IdColor2)) { st.Family = 2; st.DarkId = IdColor1; st.BrightId = IdColor2; st.FresPow = 2f; }
+            else if (TryCompiledGraph(m, st, out var why)) { }
             else
             {
                 string sh = m.shader?.name ?? "";
                 st.Family = sh.Contains("Lit") && !sh.Contains("Unlit") || sh == "Standard" || sh.StartsWith("Legacy Shaders/Diffuse") ? 1 : 0;
                 st.DarkId = m.HasStoredProperty(IdBaseColor) ? IdBaseColor : m.HasStoredProperty(IdColor) ? IdColor : 0;
                 st.BrightId = st.DarkId;
+                st.Route = "fallback";
+                MaterialFamilies.WarnUntranslated(m.shader, st.Family == 1 ? "Lit (base colour x texture, N.L)" : "Unlit (base colour x texture)", why);
             }
 
             st.Dark = st.DarkId != 0 ? m.GetColor(st.DarkId) : Color.white;
@@ -1627,7 +1670,9 @@ void main(){
                 st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
                 st.ZWrite = false; st.Cull = 0; st.Cutoff = -1f;
             }
-            st.PrismGraph = graph == "Shader Graphs/BlockGraph" ? 1 : graph == "Shader Graphs/ExplodingBlockGraph" ? 2 : 0;
+            if (st.Graph != null) ApplyGraphState(m, st);
+            else if (family == MaterialFamilies.Kind.None && st.Route == "family") st.Route = "heuristic"; // matched by its property names, not its guid
+            st.PrismGraph = family == MaterialFamilies.Kind.BlockGraph ? 1 : family == MaterialFamilies.Kind.ExplodingBlockGraph ? 2 : 0;
             if (st.PrismGraph != 0)
             {
                 st.ExplosiveRotation = m.GetFloat("_ExplosiveRotation");
@@ -1641,6 +1686,52 @@ void main(){
                 for (int k = 0; k < p.Count; k++) st.Ext[p.Offset + k] = Comp(v, k);
             }
             return st;
+        }
+
+        static readonly int IdBlendMode = Shader.PropertyToID("_Blend");
+
+        /// <summary>
+        /// The Shader Graph compiler's route: a material whose shader is a graph no family covers
+        /// draws with that graph compiled to GLSL. <paramref name="why"/> says why it could not.
+        /// </summary>
+        bool TryCompiledGraph(Material m, MatState st, out string why)
+        {
+            why = null;
+            var g = m.shader?.GraphProgram;
+            if (g == null) { why = m.shader?.AssetPath is { } p && !p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase) ? "hand-written shader" : null; return false; }
+            if (!g.Ok) { why = "graph did not compile: " + g.Error; return false; }
+            var e = _graphs.Get(g);
+            if (e == null) { why = "graph GLSL did not link"; return false; }
+            st.Graph = e;
+            st.Family = g.Lit ? 1 : 0;
+            st.Route = g.AssetPath != null && g.AssetPath.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) ? "hand" : "compiled";
+            return true;
+        }
+
+        /// <summary>A compiled graph's render state: the graph target's, or the material's where the target allows overrides.</summary>
+        static void ApplyGraphState(Material m, MatState st)
+        {
+            var g = st.Graph.Graph;
+            bool over = g.AllowMaterialOverride;
+            bool transparent = over && m.HasStoredProperty(IdSurface) ? m.GetFloat(IdSurface) >= 0.5f : g.Transparent;
+            int alphaMode = over && m.HasStoredProperty(IdBlendMode) ? (int)m.GetFloat(IdBlendMode) : g.AlphaMode;
+            st.Transparent = transparent;
+            st.AlphaMode = transparent ? alphaMode : 0;
+            (st.Src, st.Dst) = !transparent ? (BlendingFactor.One, BlendingFactor.Zero)
+                : g.BlendSrc >= 0 && g.BlendDst >= 0 && !(over && m.HasStoredProperty(IdBlendMode)) ? (Blend(g.BlendSrc), Blend(g.BlendDst))
+                : alphaMode switch
+            {
+                1 => (BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha),
+                2 => (BlendingFactor.SrcAlpha, BlendingFactor.One),
+                3 => (BlendingFactor.DstColor, BlendingFactor.Zero),
+                _ => (BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha),
+            };
+            st.Cull = over && m.HasStoredProperty(IdCull) ? (int)m.GetFloat(IdCull) : g.Cull;
+            st.ZWrite = over && m.HasStoredProperty(IdZWrite) ? m.GetFloat(IdZWrite) >= 0.5f : g.ZWrite >= 0 ? g.ZWrite == 1 : !transparent;
+            st.GraphAlphaClip = over && m.HasStoredProperty(IdAlphaClip) ? m.GetFloat(IdAlphaClip) >= 0.5f : g.AlphaClip;
+            st.Cutoff = -1f; // the graph clips against its own threshold
+            // A material saved with the shader's queue (-1) loads as 2000: take the queue the graph implies.
+            if (m.renderQueue == 2000) st.Queue = g.Queue >= 0 ? g.Queue : transparent ? 3000 : st.GraphAlphaClip ? 2450 : 2000;
         }
 
         static Color Mul(Color c, float k) => new(c.r * k, c.g * k, c.b * k, c.a);
@@ -1676,11 +1767,14 @@ void main(){
                 WriteInstance(items[i], i * InstanceFloats);
             long tx = System.Diagnostics.Stopwatch.GetTimestamp();
             _instTicks += tx - tw;
-            if (_extData.Length < n * ExtFloats) _extData = new float[Math.Max(n, _extData.Length / ExtFloats * 2) * ExtFloats];
-            for (int i = 0; i < n; i++)
-                WriteExt(items[i], i * ExtFloats);
-            _extTicks += System.Diagnostics.Stopwatch.GetTimestamp() - tx;
-            UploadExt(n);
+            if (st.Graph == null)
+            {
+                if (_extData.Length < n * ExtFloats) _extData = new float[Math.Max(n, _extData.Length / ExtFloats * 2) * ExtFloats];
+                for (int i = 0; i < n; i++)
+                    WriteExt(items[i], i * ExtFloats);
+                _extTicks += System.Diagnostics.Stopwatch.GetTimestamp() - tx;
+                UploadExt(n);
+            }
 
             _gl.BindVertexArray(entry.Vao);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _instanceVbo);
@@ -1694,6 +1788,9 @@ void main(){
                 _gl.BufferSubData(BufferTargetARB.ArrayBuffer, 0, (nuint)bytes, p);
             BindInstanceAttributes();
             _writeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - tw;
+            ShaderDrawStats.Count(first.Material.shader, st.Route ?? "family", n);
+
+            if (st.Graph != null) { DrawGraphBatch(items, entry, st); return; }
 
             if (st.Family == 7 && first.Renderer != null) SetCrackleUniforms(first);
             if (st.Family == 8)
@@ -1704,7 +1801,7 @@ void main(){
                 _program.Set("uSliceP3", st.SliceP3.x, st.SliceP3.y, st.SliceP3.z, st.SliceP3.w);
                 _program.Set("uSliceHot", st.SliceHot.r, st.SliceHot.g, st.SliceHot.b, st.SliceHot.a);
             }
-            SetSkinUniforms(first, entry);
+            SetSkinUniforms(first, entry, _program);
             _program.Set("uFamily", st.Family);
             _program.Set("uPrismGraph", st.PrismGraph);
             _program.Set("uVesselVision", st.VesselVision ? 1 : 0);
@@ -1735,6 +1832,55 @@ void main(){
                 (void*)(entry.SubmeshStart[first.Submesh] * sizeof(uint)), (uint)n);
             DrawCalls++;
             Instances += n;
+        }
+
+        /// <summary>
+        /// A batch drawn by a compiled Shader Graph: its own program, the material's values bound
+        /// as uniforms. Renderers carrying a property block draw one at a time with the block's
+        /// values (an instanced draw shares one uniform set).
+        /// </summary>
+        unsafe void DrawGraphBatch(List<Item> items, MeshEntry entry, MatState st)
+        {
+            var e = st.Graph;
+            var first = items[0];
+            _graphs.Use(e);
+            SetSkinUniforms(first, entry, e.Program);
+            e.Program.Set("uVertexColor", entry.HasColors ? 1 : 0);
+            if (st.Cull == 0) _gl.Disable(EnableCap.CullFace);
+            else
+            {
+                _gl.Enable(EnableCap.CullFace);
+                _gl.CullFace(st.Cull == 1 ? TriangleFace.Front : TriangleFace.Back);
+            }
+            _gl.DepthMask(st.ZWrite);
+            if (st.Transparent) _gl.BlendFunc(st.Src, st.Dst);
+
+            uint count = (uint)entry.SubmeshCount[first.Submesh];
+            void* offset = (void*)(entry.SubmeshStart[first.Submesh] * sizeof(uint));
+            bool perItem = false;
+            foreach (var it in items)
+                if (it.Renderer != null && it.Renderer.HasPropertyBlock()) { perItem = true; break; }
+            if (!perItem)
+            {
+                _graphs.Bind(e, first.Material, null, st.Transparent, st.GraphAlphaClip, st.AlphaMode);
+                _gl.DrawElementsInstanced(GlPrimitive.Triangles, count, DrawElementsType.UnsignedInt, offset, (uint)items.Count);
+                DrawCalls++;
+            }
+            else
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var it = items[i];
+                    var block = it.Renderer != null && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
+                    _graphs.Bind(e, it.Material, block, st.Transparent, st.GraphAlphaClip, st.AlphaMode);
+                    BindInstanceAttributes(i);
+                    _gl.DrawElementsInstanced(GlPrimitive.Triangles, count, DrawElementsType.UnsignedInt, offset, 1);
+                    DrawCalls++;
+                }
+                BindInstanceAttributes();
+            }
+            Instances += items.Count;
+            _program.Use();
         }
 
         static readonly int IdImpactPos = Shader.PropertyToID("_ImpactPositions"), IdImpactParams = Shader.PropertyToID("_ImpactParams"), IdImpactCount = Shader.PropertyToID("_ImpactCount");
@@ -1863,6 +2009,157 @@ void main(){
             _transparent.Add(item);
         }
 
+        // ── Particles: camera-facing quads rebuilt each frame from the simulation ──
+
+        EVector3 _camRight = EVector3.right, _camUp = EVector3.up, _camFwd = EVector3.forward;
+        readonly ConditionalWeakTable<Renderer, Mesh> _particleMeshes = new();
+        ParticleSystem.RenderParticle[] _particleScratch = new ParticleSystem.RenderParticle[64];
+
+        /// <summary>
+        /// A ParticleSystemRenderer's live particles as one world-space mesh of quads: Billboard faces
+        /// the camera, Stretch lies along the velocity (length scale plus velocity scale),
+        /// Horizontal lies flat, Vertical stays upright; Mesh mode draws billboards (no per-particle
+        /// meshes yet). Vertex colour carries each particle's colour; the material draws it.
+        /// </summary>
+        void CollectParticles(ParticleSystemRenderer r, int mask, EVector3 camPos)
+        {
+            var go = r.gameObject;
+            if ((mask & (1 << go.layer)) == 0 || !go.activeInHierarchy || go.isPrefabAsset) return;
+            if (r.renderMode == ParticleSystemRenderMode.None) return;
+            if (!r.TryGetComponent<ParticleSystem>(out var ps)) return;
+            int n = ps.GetRenderParticles(ref _particleScratch);
+            if (n == 0) return;
+            _cShown++;
+            var verts = new EVector3[n * 4];
+            var cols = new Color[n * 4];
+            var uvs = new Vector2[n * 4];
+            var tris = new int[n * 6];
+            for (int i = 0; i < n; i++)
+            {
+                ref var p = ref _particleScratch[i];
+                float hx = p.Size.x * 0.5f, hy = p.Size.y * 0.5f;
+                EVector3 right, up;
+                switch (r.renderMode)
+                {
+                    case ParticleSystemRenderMode.Stretch:
+                    {
+                        var v = p.Velocity - _camFwd * EVector3.Dot(p.Velocity, _camFwd);
+                        float speed = p.Velocity.magnitude;
+                        up = v.sqrMagnitude > 1e-8f ? v.normalized : _camUp;
+                        right = EVector3.Cross(up, _camFwd).normalized;
+                        hy = 0.5f * (p.Size.y * r.lengthScale + speed * r.velocityScale);
+                        break;
+                    }
+                    case ParticleSystemRenderMode.HorizontalBillboard:
+                        right = EVector3.right; up = EVector3.forward; break;
+                    case ParticleSystemRenderMode.VerticalBillboard:
+                    {
+                        var f = new EVector3(_camFwd.x, 0f, _camFwd.z);
+                        right = f.sqrMagnitude > 1e-8f ? EVector3.Cross(EVector3.up, f.normalized) : _camRight;
+                        up = EVector3.up;
+                        break;
+                    }
+                    default:
+                        right = _camRight; up = _camUp; break;
+                }
+                if (p.Rotation != 0f && r.renderMode != ParticleSystemRenderMode.Stretch)
+                {
+                    float c = MathF.Cos(-p.Rotation), sn = MathF.Sin(-p.Rotation);
+                    var r2 = right * c + up * sn;
+                    up = up * c - right * sn;
+                    right = r2;
+                }
+                var a = right * hx; var b = up * hy;
+                int o = i * 4;
+                verts[o] = p.Position - a - b; verts[o + 1] = p.Position + a - b;
+                verts[o + 2] = p.Position + a + b; verts[o + 3] = p.Position - a + b;
+                cols[o] = cols[o + 1] = cols[o + 2] = cols[o + 3] = p.Color;
+                uvs[o] = new Vector2(0f, 0f); uvs[o + 1] = new Vector2(1f, 0f); uvs[o + 2] = new Vector2(1f, 1f); uvs[o + 3] = new Vector2(0f, 1f);
+                int t = i * 6;
+                tris[t] = o; tris[t + 1] = o + 2; tris[t + 2] = o + 1;
+                tris[t + 3] = o; tris[t + 4] = o + 3; tris[t + 5] = o + 2;
+            }
+            var mesh = _particleMeshes.GetValue(r, _ => new Mesh { name = "particles" });
+            mesh.Clear();
+            mesh.vertices = verts;
+            mesh.colors = cols;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+
+            var mats = r.sharedMaterials;
+            var m = mats is { Length: > 0 } && mats[0] != null ? mats[0] : BuiltinMaterials.DefaultParticle;
+            if (!_ribbonMats.TryGetValue(m, out var st) || st.Revision != m.Revision)
+            {
+                st = Classify(m);
+                // Particles are translucent quads whatever the material queue says; cull nothing.
+                if (!st.Transparent) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; }
+                st.Cull = 0;
+                _ribbonMats[m] = st;
+            }
+            _transparent.Add(new Item { Renderer = r, Mesh = mesh, Submesh = 0, Material = m, State = st, WorldSpace = true,
+                                        Distance = (r.transform.position - camPos).sqrMagnitude });
+        }
+
+        // ── Code-drawn ribbons (ProceduralLines: the approximate VFX Graphs) ──
+
+        readonly List<Mesh> _procMeshes = new();
+        static Material s_additiveLine;
+        static Material AdditiveLineMaterial => s_additiveLine ??= new Material(Shader.Find("Legacy Shaders/Particles/Additive")) { name = "Procedural-Additive", renderQueue = 3000 };
+
+        void CollectProceduralLines(int mask, EVector3 camPos)
+        {
+            var lines = ProceduralLines.Current;
+            for (int li = 0; li < lines.Count; li++)
+            {
+                var line = lines[li];
+                if ((mask & (1 << line.Layer)) == 0) continue;
+                var pts = line.Points;
+                int n = pts.Length;
+                var verts = new EVector3[n * 2];
+                var cols = new Color[n * 2];
+                var uvs = new Vector2[n * 2];
+                var tris = new int[(n - 1) * 6];
+                float halfWidth = line.Width * 0.5f;
+                for (int i = 0; i < n; i++)
+                {
+                    var p = pts[i];
+                    var tangent = pts[Math.Min(i + 1, n - 1)] - pts[Math.Max(i - 1, 0)];
+                    var side = EVector3.Cross(tangent, camPos - p);
+                    float len = side.magnitude;
+                    side = len > 1e-6f ? side / len : EVector3.up;
+                    verts[i * 2] = p - side * halfWidth;
+                    verts[i * 2 + 1] = p + side * halfWidth;
+                    cols[i * 2] = cols[i * 2 + 1] = line.Color;
+                    float u = (float)i / (n - 1);
+                    uvs[i * 2] = new Vector2(u, 0f); uvs[i * 2 + 1] = new Vector2(u, 1f);
+                    if (i < n - 1)
+                    {
+                        int o = i * 6, a = i * 2;
+                        tris[o] = a; tris[o + 1] = a + 2; tris[o + 2] = a + 1;
+                        tris[o + 3] = a + 1; tris[o + 4] = a + 2; tris[o + 5] = a + 3;
+                    }
+                }
+                while (_procMeshes.Count <= li) _procMeshes.Add(new Mesh { name = "procedural-line" });
+                var mesh = _procMeshes[li];
+                mesh.Clear();
+                mesh.vertices = verts;
+                mesh.colors = cols;
+                mesh.uv = uvs;
+                mesh.triangles = tris;
+                var m = line.Additive ? AdditiveLineMaterial : DefaultLineMaterial;
+                if (!_ribbonMats.TryGetValue(m, out var st) || st.Revision != m.Revision)
+                {
+                    st = Classify(m);
+                    if (line.Additive) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.One; st.ZWrite = false; }
+                    else if (!st.Transparent) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; }
+                    st.Cull = 0;
+                    _ribbonMats[m] = st;
+                }
+                _transparent.Add(new Item { Renderer = null, Mesh = mesh, Submesh = 0, Material = m, State = st, WorldSpace = true,
+                                            Distance = (pts[n / 2] - camPos).sqrMagnitude });
+            }
+        }
+
         sealed class MorphState { public Mesh Clone; public Mesh Source; public float[] Weights = Array.Empty<float>(); }
         readonly ConditionalWeakTable<SkinnedMeshRenderer, MorphState> _morphs = new();
         readonly ConditionalWeakTable<Mesh, Dictionary<(int, int), (EVector3[] V, EVector3[] N)>> _deltas = new();
@@ -1934,11 +2231,11 @@ void main(){
                 for (int i = 0; i < n.Length && i < d.N.Length; i++) n[i] += d.N[i] * k;
         }
 
-        unsafe void SetSkinUniforms(in Item it, MeshEntry entry)
+        unsafe void SetSkinUniforms(in Item it, MeshEntry entry, GlProgram program)
         {
             if (!it.Skinned || !entry.HasSkin || it.Renderer is not SkinnedMeshRenderer smr)
             {
-                _program.Set("uSkinned", 0);
+                program.Set("uSkinned", 0);
                 return;
             }
             var bones = smr.bones;
@@ -1953,10 +2250,10 @@ void main(){
                 _boneData[o + 8] = m.m02; _boneData[o + 9] = m.m12; _boneData[o + 10] = m.m22; _boneData[o + 11] = m.m32;
                 _boneData[o + 12] = m.m03; _boneData[o + 13] = m.m13; _boneData[o + 14] = m.m23; _boneData[o + 15] = m.m33;
             }
-            fixed (float* p = _boneData) _gl.UniformMatrix4(_program.Loc("uBones"), (uint)bones.Length, false, p);
-            _program.Set("uSkinned", 1);
+            fixed (float* p = _boneData) _gl.UniformMatrix4(program.Loc("uBones"), (uint)bones.Length, false, p);
+            program.Set("uSkinned", 1);
             var origin = smr.transform.position;
-            _gl.Uniform3(_program.Loc("uSkinOrigin"), origin.x, origin.y, origin.z);
+            _gl.Uniform3(program.Loc("uSkinOrigin"), origin.x, origin.y, origin.z);
         }
 
         void WriteInstance(in Item it, int o)
@@ -1984,7 +2281,7 @@ void main(){
                 if (_entities.TryGet(ent, SlotGrowStart, out var gs)) growStart = gs.x;
                 if (_entities.TryGet(ent, SlotGrowFrac, out var gf)) frac = gf;
             }
-            else if (it.Renderer.HasPropertyBlock())
+            else if (it.Renderer != null && it.Renderer.HasPropertyBlock())
             {
                 var b = it.Renderer.PropertyBlockFor(it.Submesh);
                 if (b != null)
@@ -2002,7 +2299,7 @@ void main(){
             {
                 // _VesselVisionTint (a per-material-index property block, VesselVisionShading.Stamp);
                 // alpha 0 = nobody stamped this object, so the law leaves it alone.
-                var tb = ent < 0 && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
+                var tb = ent < 0 && it.Renderer != null && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
                 bright = tb != null && tb.HasColor(IdVisionTint) ? tb.GetColor(IdVisionTint) : new Color(0, 0, 0, 0);
             }
             d[o + 16] = dark.r; d[o + 17] = dark.g; d[o + 18] = dark.b; d[o + 19] = dark.a;
@@ -2024,13 +2321,15 @@ void main(){
                     for (int k = 0; k < p.Count; k++) e[o + p.Offset + k] = Comp(v, k);
         }
 
-        unsafe void BindInstanceAttributes()
+        /// <summary>Points the per-instance attributes at the instance buffer, starting at instance <paramref name="first"/>.</summary>
+        unsafe void BindInstanceAttributes(int first = 0)
         {
             uint stride = InstanceFloats * sizeof(float);
+            long baseOffset = (long)first * stride;
             for (uint i = 0; i < 8; i++)
             {
                 _gl.EnableVertexAttribArray(4 + i);
-                _gl.VertexAttribPointer(4 + i, 4, VertexAttribPointerType.Float, false, stride, (void*)(i * 4 * sizeof(float)));
+                _gl.VertexAttribPointer(4 + i, 4, VertexAttribPointerType.Float, false, stride, (void*)(baseOffset + i * 4 * sizeof(float)));
                 _gl.VertexAttribDivisor(4 + i, 1);
             }
         }
@@ -2160,19 +2459,27 @@ void main(){
             EVector3 toLight = sun != null ? -sun.transform.forward : new EVector3(0.3f, 0.8f, -0.5f).normalized;
             var lc = sun != null ? sun.color : Color.white;
             float li = sun != null ? sun.intensity : 1f;
-            _gl.Uniform3(_program.Loc("uLightDir"), toLight.x, toLight.y, toLight.z);
-            _gl.Uniform3(_program.Loc("uLightColor"), ColorSpace.ToLinear(lc.r) * li, ColorSpace.ToLinear(lc.g) * li, ColorSpace.ToLinear(lc.b) * li);
+            _lightDir = toLight;
+            _lightColor = new EVector3(ColorSpace.ToLinear(lc.r) * li, ColorSpace.ToLinear(lc.g) * li, ColorSpace.ToLinear(lc.b) * li);
             var a = RenderSettings.ambientSkyColor;
             float ai = RenderSettings.ambientMode == CosmicShore.Engine.Rendering.AmbientMode.Skybox ? 0.15f : 1f;
-            _gl.Uniform3(_program.Loc("uAmbient"), ColorSpace.ToLinear(a.r) * ai + 0.02f, ColorSpace.ToLinear(a.g) * ai + 0.02f, ColorSpace.ToLinear(a.b) * ai + 0.03f);
+            _ambient = new EVector3(ColorSpace.ToLinear(a.r) * ai + 0.02f, ColorSpace.ToLinear(a.g) * ai + 0.02f, ColorSpace.ToLinear(a.b) * ai + 0.03f);
+            _gl.Uniform3(_program.Loc("uLightDir"), _lightDir.x, _lightDir.y, _lightDir.z);
+            _gl.Uniform3(_program.Loc("uLightColor"), _lightColor.x, _lightColor.y, _lightColor.z);
+            _gl.Uniform3(_program.Loc("uAmbient"), _ambient.x, _ambient.y, _ambient.z);
         }
+
+        EVector3 _lightDir, _lightColor, _ambient;
+        Vector4 _fogColor, _fog;
 
         void SetFog()
         {
             var c = RenderSettings.fogColor;
-            _program.Set("uFogColor", ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), 1f);
-            _program.Set("uFog", RenderSettings.fog ? (float)RenderSettings.fogMode : 0f, RenderSettings.fogDensity,
+            _fogColor = new Vector4(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), 1f);
+            _fog = new Vector4(RenderSettings.fog ? (float)RenderSettings.fogMode : 0f, RenderSettings.fogDensity,
                 RenderSettings.fogStartDistance, RenderSettings.fogEndDistance);
+            _program.Set("uFogColor", _fogColor.x, _fogColor.y, _fogColor.z, _fogColor.w);
+            _program.Set("uFog", _fog.x, _fog.y, _fog.z, _fog.w);
         }
 
         void SetVec3(string name, EVector3 v) => _gl.Uniform3(_program.Loc(name), v.x, v.y, v.z);
@@ -2187,6 +2494,7 @@ void main(){
         public void Dispose()
         {
             _program.Dispose();
+            _graphs.Dispose();
             _gl.DeleteBuffer(_instanceVbo);
         }
     }

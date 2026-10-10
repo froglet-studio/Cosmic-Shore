@@ -63,6 +63,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Where the arena was parked.</summary>
         public Vector3 Origin { get; private set; }
 
+        /// <summary>The intensity the standing flight arena was built for. <see cref="SpawnPose"/>
+        /// reads it so a mode whose spawn ring is sized per intensity (Cleave) seats the vessel
+        /// on that rung's ring.</summary>
+        public int Intensity { get; private set; } = 1;
+
         /// <summary>True once the cell exists and has a config (its world may still be growing).</summary>
         public bool IsStanding => Cell && Cell.HasConfigAssigned;
 
@@ -99,6 +104,7 @@ namespace CosmicShore.Gameplay
             }
 
             Origin = origin;
+            Intensity = Mathf.Max(1, intensity);
 
             // Instantiated under an INACTIVE root so the cell's OnEnable does not run before it
             // has been handed its own runtime data. OnEnable clears runtime.Config, and the
@@ -973,9 +979,11 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>The resolution lives on the definition, which carries the mode's own scene data -
         /// the ring flag, radius, floor and formation for a mode that computes its ring, and the
-        /// scene's hand-placed poses for a mode that does not.</para>
+        /// scene's hand-placed poses for a mode that does not. The floor is the one for the
+        /// intensity this arena stood at.</para>
         /// </summary>
         public Pose SpawnPose(ModePreviewDefinitionSO definition, int seat = 0)
-            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f, seat);
+            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f, seat,
+                                           Intensity);
     }
 }

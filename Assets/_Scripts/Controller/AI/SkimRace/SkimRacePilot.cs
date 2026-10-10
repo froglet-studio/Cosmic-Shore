@@ -7,8 +7,10 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Skim Race AI on one vessel: lifecycle, sensing, and actuation around a
-    /// <see cref="SkimRaceDriver"/>.
+    /// The racing AI on one vessel: lifecycle, sensing, and actuation around a
+    /// <see cref="SkimRaceDriver"/>. Built for Skim Race and named for it; WHAT it races for -
+    /// the course, the target, the progress count - is a <see cref="SkimRaceObjective"/>, so the
+    /// same pilot flies Skim Race's crystals and Regatta's rings.
     ///
     /// <b>Lifecycle.</b> Bound once per AI vessel (<see cref="Bind"/>, by
     /// <see cref="SkimRaceAIDeployment"/>). It holds neutral input and does nothing until the
@@ -19,8 +21,9 @@ namespace CosmicShore.Gameplay
     /// turn that restarts without a reload.
     ///
     /// <b>Input-only contract (do not relax).</b> Actuation is the vessel's <c>IInputStatus</c>
-    /// sticks — the same four channels every dual-stick input strategy writes — and the hull's own
-    /// bound drift control through <c>PerformShipControllerActions</c>. It reads the vessel's
+    /// sticks — the same four channels every dual-stick input strategy writes — its left trigger
+    /// (the drift's depth, see <see cref="DriftTriggerPull"/>) and the hull's own bound drift and
+    /// Boost Ring controls through <c>PerformShipControllerActions</c>. It reads the vessel's
     /// pose, speed, boost, the commanded rotation and the authoritative crystal registry; it never
     /// writes a transform, speed, course, rigidbody, crystal, score or timer.
     ///
@@ -38,6 +41,7 @@ namespace CosmicShore.Gameplay
         SkimRaceAIConfigSO _config;
         SkimRaceDriver _driver;
         SkimRaceCourse _course;
+        SkimRaceObjective _objective;
         AIPilot _aiPilot;
 
         bool _bound;
@@ -56,22 +60,35 @@ namespace CosmicShore.Gameplay
         SkimRaceAction _held;
 
         // drift actuation
-        bool _driftResolved;
-        bool _hasDriftInput;
-        InputEvents _driftInput;
+        InputEvents _driftInput;   // the control the held drift was pressed on - released on the same one
         bool _driftHeld;
+
+        /// <summary>
+        /// How far the pilot pulls the left trigger while its drift is held: all the way. A
+        /// deliberate choice, and the only one that does not make the race depend on the host's
+        /// hardware. On a PAD device the Squirrel's drift is analog -
+        /// <c>VesselTransformer.GetTriggerSum</c> scales it by <c>LeftTriggerAnalog</c> - while on
+        /// every other device (keyboard, mouse, touch) a started drift is simply full depth. An AI
+        /// has no physical trigger, so before this the same pilot drifted at depth 0 (inert, but
+        /// still reporting <c>IsDrifting</c>) on a PC with a controller plugged in and at full
+        /// depth on one without. Full pull is the depth every device agrees on, it is what the
+        /// driver's on/off drift decision means (enter at a sharp heading error, leave once
+        /// straightened), and it is a human's buried trigger - inside the input-only contract.
+        /// Not a config field for the same reason: a partial pull would only take effect on a pad.
+        /// </summary>
+        const float DriftTriggerPull = 1f;
 
         // sensing state
         Vector3 _lastForward;
         float _lastCollectionTime;
         int _lastCollected;
-        Crystal _target;
 
         public bool IsBound => _bound;
         public bool RaceActive => _raceActive;
         public SkimRaceAIConfigSO Config => _config;
         public SkimRaceDriver Driver => _driver;
         public SkimRaceCourse Course => _course;
+        public SkimRaceObjective Objective => _objective;
         public SkimRaceObservation LastObservation { get; private set; }
         public SkimRaceAction LastAction => _held;
         public IVessel Vessel => _vessel;
@@ -79,13 +96,19 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised on the frame the race starts for this pilot (race time 0).</summary>
         public event System.Action<SkimRacePilot> RaceStarted;
 
-        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config)
+        /// <summary>Bind to <paramref name="vessel"/>. <paramref name="objective"/> null = this
+        /// match's mode objective (<see cref="SkimRaceObjective.For"/>), which is Skim Race's
+        /// crystals when no mode claims it.</summary>
+        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config,
+                         SkimRaceObjective objective = null)
         {
             _vessel = vessel;
             _status = vessel?.VesselStatus;
             _gameData = gameData;
             _config = config != null ? config : SkimRaceAIConfigSO.LoadDefault();
             _driver = new SkimRaceDriver(_config);
+            _objective = objective ?? SkimRaceObjective.For(gameData) ?? new CrystalTrackObjective(gameData);
+            _course = null;
             _aiPilot = _status?.AIPilot;
             _bound = _vessel != null && _status != null && _gameData != null;
             SuppressOtherPilots();
@@ -122,7 +145,7 @@ namespace CosmicShore.Gameplay
             _held = SkimRaceAction.Neutral;
             _lastCollected = 0;
             _lastCollectionTime = 0f;
-            _target = null;
+            _objective?.Reset();
             ReleaseDrift();
             WriteNeutral();
         }
@@ -131,6 +154,14 @@ namespace CosmicShore.Gameplay
         {
             if (!_bound) return;
             if (_vessel == null || _status == null || _status.InputStatus == null) { _bound = false; return; }
+
+            // A human took this hull (arena pilot swap): the sticks are theirs now. Stand down
+            // without writing anything; the departed-pilot path re-binds when the AI gets it back.
+            if (_status.Player != null && !_status.Player.IsInitializedAsAI)
+            {
+                if (_raceActive) { _raceActive = false; ReleaseDrift(); if (_ringPressed) ReleaseRing(); }
+                return;
+            }
 
             SuppressOtherPilots();
 
@@ -183,6 +214,7 @@ namespace CosmicShore.Gameplay
         void EnsureEditorRaceRecorder()
         {
             if (!Application.isEditor || SkimRaceBenchmarkRunner.Active != null) return;
+            if (_objective == null || !_objective.RecordsManualRaces) return;
             if (FindAnyObjectByType<SkimRaceRaceRecorder>() != null) return;
             int intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
             s_manualSession ??= System.DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
@@ -274,32 +306,30 @@ namespace CosmicShore.Gameplay
             o.AngularVelocity = axis.sqrMagnitude > 1e-10f ? axis.normalized * (ang / dt) : Vector3.zero;
             _lastForward = o.Forward;
 
-            // Race bookkeeping off the authoritative round stats.
-            var stats = _status.Player?.RoundStats;
-            int collected = stats != null ? stats.CrystalsCollected : 0;
+            // Race bookkeeping off the authoritative round stats (crystals or gates - the objective's).
+            int collected = _objective.OwnProgress(_status);
             if (collected != _lastCollected)
             {
                 _lastCollected = collected;
                 _lastCollectionTime = now;
             }
-            o.Collected = SumDomainCrystals(_status.Domain);
-            o.Remaining = Mathf.Max(0, _gameData.CrystalTargetCount - o.Collected);
+            o.Collected = _objective.SharedProgress(_status);
+            o.Remaining = _objective.Remaining(_status);
             o.TimeSinceCollection = now - _lastCollectionTime;
             o.TimeSinceProgress = _driver.TimeSinceProgress;
 
-            // Target: the authoritative active crystal for this domain.
-            _target = SkimRaceTargetTracker.Select(_status.Domain, o.Position, _target);
-            if (_target != null)
+            // Target: the objective's (this domain's crystal, or this pilot's next ring).
+            if (_objective.TryGetTarget(_status, o.Position, out var target))
             {
                 o.HasTarget = true;
-                o.TargetId = _target.GetInstanceID();
-                o.TargetPosition = _target.transform.position;
+                o.TargetId = target.Id;
+                o.TargetPosition = target.Position;
                 o.ToTarget = o.TargetPosition - o.Position;
                 o.TargetDistance = o.ToTarget.magnitude;
                 Vector3 dir = o.TargetDistance > 1e-3f ? o.ToTarget / o.TargetDistance : o.Forward;
                 o.TargetLocalDirection = t.InverseTransformDirection(dir);
                 o.TargetAlignment = Vector3.Dot(o.Forward, dir);
-                o.TargetRadius = CaptureRadius(_target);
+                o.TargetRadius = target.Radius;
             }
 
             if (_course != null)
@@ -325,37 +355,11 @@ namespace CosmicShore.Gameplay
             return o;
         }
 
-        Crystal _radiusOf;
-        float _radius;
-
-        /// <summary>World radius of the crystal's pickup sphere — what the hull has to touch.</summary>
-        float CaptureRadius(Crystal c)
-        {
-            if (c == _radiusOf) return _radius;
-            _radiusOf = c;
-            _radius = 0f;
-            if (c != null && c.TryGetComponent(out SphereCollider sc))
-            {
-                var s = sc.transform.lossyScale;
-                _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
-            }
-            return _radius;
-        }
-
-        int SumDomainCrystals(Domains domain)
-        {
-            int sum = 0;
-            var list = _gameData.RoundStatsList;
-            for (int i = 0; i < list.Count; i++)
-                if (list[i] != null && list[i].Domain == domain) sum += list[i].CrystalsCollected;
-            return sum;
-        }
-
         void EnsureCourse()
         {
             if (_course != null || Time.unscaledTime < _nextCourseAttempt) return;
             _nextCourseAttempt = Time.unscaledTime + 0.5f;
-            if (SkimRaceCourseSource.TryBuildFromScene(out var course))
+            if (_objective.TryBuildCourse(_status, out var course))
             {
                 _course = course;
                 _courseHint = -1;
@@ -380,6 +384,9 @@ namespace CosmicShore.Gameplay
 
             if (a.Drift && !_driftHeld) PressDrift();
             else if (!a.Drift && _driftHeld) ReleaseDrift();
+            // Written every frame like the sticks, so a neutral frame (a stationary hull) cannot
+            // leave a held drift at depth 0 when flight resumes.
+            input.LeftTriggerAnalog = _driftHeld ? DriftTriggerPull : 0f;
 
             if (_ringPressed) { ReleaseRing(); }
             if (a.Ring) PressRing();
@@ -393,34 +400,31 @@ namespace CosmicShore.Gameplay
             input.YSum = 0f;
             input.YDiff = 0f;
             input.XDiff = 0f;
+            input.LeftTriggerAnalog = 0f;
         }
+
+        // The drift and the Boost Ring are asked for by ability TYPE at every press, never cached:
+        // the handler answers for the device the hull is being driven by (on the Squirrel both
+        // abilities live only in the touch and gamepad override maps, on different controls), and
+        // the answer is only good for that device. A press is a handful of dictionary probes at
+        // decision rate, and each release goes to the control its own press used.
 
         void PressDrift()
         {
-            if (!_driftResolved)
-            {
-                _driftResolved = true;
-                var handler = _status.ActionHandler;
-                _hasDriftInput = handler != null && handler.TryGetInputForAction<DriftActionSO>(out _driftInput);
-            }
-            if (!_hasDriftInput) return;
+            var handler = _status.ActionHandler;
+            if (handler == null || !handler.TryGetInputForAction<DriftActionSO>(out _driftInput)) return;
             _vessel.PerformShipControllerActions(_driftInput);
             _driftHeld = true;
         }
 
-        bool _ringResolved, _hasRingInput, _ringPressed;
+        bool _ringPressed;
         InputEvents _ringInput;
 
         /// <summary>The Boost Ring through the hull's own bound control (press now, release next frame).</summary>
         void PressRing()
         {
-            if (!_ringResolved)
-            {
-                _ringResolved = true;
-                var handler = _status.ActionHandler;
-                _hasRingInput = handler != null && handler.TryGetInputForAction<SquirrelTubeActionSO>(out _ringInput);
-            }
-            if (!_hasRingInput) return;
+            var handler = _status.ActionHandler;
+            if (handler == null || !handler.TryGetInputForAction<SquirrelTubeActionSO>(out _ringInput)) return;
             _vessel.PerformShipControllerActions(_ringInput);
             _ringPressed = true;
         }
@@ -428,14 +432,14 @@ namespace CosmicShore.Gameplay
         void ReleaseRing()
         {
             _ringPressed = false;
-            if (_vessel != null && _hasRingInput) _vessel.StopShipControllerActions(_ringInput);
+            if (_vessel != null) _vessel.StopShipControllerActions(_ringInput);
         }
 
         void ReleaseDrift()
         {
             if (!_driftHeld) return;
             _driftHeld = false;
-            if (_vessel != null && _hasDriftInput)
+            if (_vessel != null)
                 _vessel.StopShipControllerActions(_driftInput);
         }
 

@@ -119,8 +119,8 @@ g.text_meta("Assets/_Scripts/Controller/Arcade/UNDERTOW.md")
 
 # ── 2. The two effects the plate gains ──────────────────────────────────────
 # 2a. "an opposing pilot was caught in this plate" - hitClass 2 = CombatHitClass.Debuff, the
-# same script The Bends stamped for the Dolphin's cone. requireDebuffableVictim: the score must
-# follow the effect (a warded pilot takes no drain, so pays no point). requireOwningMachine: the
+# same script The Bends stamped for the Dolphin's cone. The score follows the drain (a warded
+# pilot takes no drain, so pays no point) through CombatHitDrain.TryAdmit. requireOwningMachine: the
 # plate exists on exactly one machine today (the local pilot's, or the host's for an AI), so this
 # is belt-and-braces rather than a live fix - but it is what stops a future replay of the blast
 # onto a second machine from double-crediting, which is precisely how the Dolphin's cone bit.
@@ -130,7 +130,6 @@ g.emit_asset("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHit
              f"""  hitClass: 2
   onCombatHitLanded: {{fileID: 11400000, guid: {EXISTING['Event_CombatHitStats']}, type: 2}}
   sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
-  requireDebuffableVictim: 1
   requireOwningMachine: 1
 """)
 # 2b. "a creature's heart was in this plate" - the Sparrow warhead's kill, authored the same way:

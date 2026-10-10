@@ -533,10 +533,17 @@ namespace CosmicShore.Gameplay
 
             scorer.RoundStats.GoalsScored++; // NetworkVariable - replicates to every peer
 
-            AnnounceGoal_ClientRpc(new FixedString64Bytes(scorer.Name), (int)scorer.Domain);
-
             bool goldenGoal = phase == MatchPhase.Overtime;
             bool mercy = rule.IsObjectiveReached(gameData, out _);
+
+            // The domain tally travels WITH the announcement rather than being read off the
+            // NetworkVariable on arrival, because the RPC can land before the delta does.
+            int domainGoals = rule.DomainValue(gameData, scorer.Domain);
+            int goalLimit = n_GoalTarget.Value;
+            bool matchPoint = !goldenGoal && !mercy && goalLimit > 1 && domainGoals == goalLimit - 1;
+
+            AnnounceGoal_ClientRpc(new FixedString64Bytes(scorer.Name), (int)scorer.Domain,
+                domainGoals, goalLimit, matchPoint);
 
             if (goldenGoal || mercy)
                 FinishMatchAsync(rule.ResolveWinner(gameData)).Forget();
@@ -1005,8 +1012,18 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain) =>
+        void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain,
+                                    int domainGoals, int goalLimit, bool matchPoint)
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
+
+            var d = (Domains)scoringDomain;
+            CosmicShore.UI.GameToastAPI.Post(GameToastSituation.AstroLeagueGoal, d,
+                scorerName.ToString(), domainGoals.ToString(), goalLimit.ToString());
+            if (matchPoint)
+                CosmicShore.UI.GameToastAPI.Post(GameToastSituation.AstroLeagueMatchPoint, d,
+                    d.ToString(), domainGoals.ToString(), goalLimit.ToString());
+        }
 
         [ClientRpc]
         void Celebrate_ClientRpc(int scoringDomain)
@@ -1112,14 +1129,19 @@ namespace CosmicShore.Gameplay
             {
                 // Restore to known constants, not captured values - the ball's hitstop can
                 // interleave with this window and a stale capture would re-apply its timescale.
-                Time.timeScale = 1f;
+                // A pause opened during the window owns timeScale (0): restoring 1 here un-froze the
+                // whole match behind the open pause menu - AI, ball, clock - in a solo game.
+                Time.timeScale = CosmicShore.Core.PauseSystem.Paused ? 0f : 1f;
                 Time.fixedDeltaTime = baseFixedDelta;
             }
         }
 
         [ClientRpc]
-        void AnnounceOvertime_ClientRpc() =>
+        void AnnounceOvertime_ClientRpc()
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ComebackCharge);
+            CosmicShore.UI.GameToastAPI.Post(GameToastSituation.AstroLeagueGoldenGoal);
+        }
 
         [ClientRpc]
         void AnnounceMatchFinished_ClientRpc(int winnerDomain)

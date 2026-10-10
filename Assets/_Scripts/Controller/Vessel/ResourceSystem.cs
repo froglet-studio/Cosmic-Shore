@@ -73,6 +73,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>When this vessel last spawned (<see cref="Time.time"/>): ResetForPlay and StartVessel stamp it.
+        /// The danger-prism burn reads it for its spawn grace (VesselElementalDebuffByDangerPrismEffectSO).
+        /// Never spawned = negative infinity, so no grace.</summary>
+        public float SpawnedAt { get; private set; } = float.NegativeInfinity;
+
+        public void MarkSpawned() => SpawnedAt = Time.time;
+
         public void Reset()
         {
             for (int i = 0; i < Resources.Count; i++)
@@ -240,7 +247,18 @@ namespace CosmicShore.Gameplay
         }
 
         public int GetLevel(Element element)
-            => Mathf.FloorToInt(GetEffectiveLevel(element) * LevelScale);
+            => ToLevel(GetEffectiveLevel(element));
+
+        /// <summary>
+        /// Normalized level to integer petals. The epsilon is far below a petal (0.1) and above
+        /// float32 drift: crystal gains (<c>+= 0.1f</c>) drift UP and were always safe, but petal
+        /// LOSS subtracts from an exact value (1.0f after an overcharge drains, an authored 0.7f)
+        /// and drifts DOWN - 1.0f minus 0.1f twice is 0.79999995f, which floored to 7 not 8. That
+        /// showed one petal fewer on the HUD, published the wrong level to peers, and relocked the
+        /// level-5 upgrade (RelockBelowLevel 4) one petal early.
+        /// </summary>
+        public static int ToLevel(float normalized)
+            => Mathf.FloorToInt(normalized * LevelScale + 1e-4f);
 
         public float GetNormalizedLevel(Element element)
             => GetEffectiveLevel(element);
@@ -293,8 +311,8 @@ namespace CosmicShore.Gameplay
         // bottoms out at empty; only a decaying effect can push a pilot below it.
         //
         // The immunity gate is honoured here exactly as it is in ApplyElementalEffect, so a warded
-        // pilot loses nothing AND yields nothing - which is what keeps the scoring effects that ask
-        // `requireDebuffableVictim` agreeing with what actually happened.
+        // pilot loses nothing AND yields nothing - which is what keeps every scoring effect, which
+        // admits through CombatHitDrain.TryAdmit on the same ward, agreeing with what happened.
         readonly Dictionary<Element, float> _pendingLoss = new();
 
         /// <summary>

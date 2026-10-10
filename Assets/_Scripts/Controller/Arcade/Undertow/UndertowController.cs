@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// cavitation container already carried the debuff (a pilot in the plate has been bent in
     /// every mode since the hull shipped) and NO scoring report and NO lifeform-crystal effect.
     /// Both are added: a <c>VesselCombatHitByExplosionEffectSO</c> stamped Debuff-class with
-    /// <c>requireDebuffableVictim</c> (the score follows the effect, The Bends' rule) and an
+    /// the score following the effect (<c>CombatHitDrain.TryAdmit</c>, now every reporter's rule) and an
     /// <c>ExplosionWitherLifeformByCrystalEffectSO</c> (the Sparrow warhead's creature kill, on a
     /// plate). Both land platform-wide - the plate now kills wildlife in Scramble and Tollway too,
     /// where it was already shredding their bodies - and only this mode's rule PAYS for either.</para>
@@ -340,7 +340,10 @@ namespace CosmicShore.Gameplay
 
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s != null && s.Domain == winningDomain)
-                .OrderByDescending(s => s.CombatPoints + s.LifeformsKilled)
+                // Weighted exactly as the rule folds the domain (bends + kills x killPoints), so the
+                // banner names the pilot who actually contributed most; an unweighted sum picked the
+                // wrong teammate whenever killPoints != 1.
+                .OrderByDescending(s => s.CombatPoints + KillPointsForRep() * s.LifeformsKilled)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal)
                 .FirstOrDefault();
             if (winnerRep == null) return;
@@ -356,6 +359,8 @@ namespace CosmicShore.Gameplay
             DisarmHunters();
             SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
+
+        int KillPointsForRep() => rule is UndertowScoringRuleSO undertow ? undertow.KillPoints : 1;
 
         protected override void SetupNewRound()
         {

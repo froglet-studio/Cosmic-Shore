@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using Unity.Profiling;
 using UnityEngine;
@@ -89,6 +90,17 @@ namespace CosmicShore.Game
         [SerializeField] int bakeFps = 5;
 
         Matrix4x4[] matrices;
+
+        /// <summary>
+        /// Capsules actually drawn: all of them, unless the device tier caps the subdivision level
+        /// (<c>PlatformProfileSO.MembraneMaxSubdivisions</c>). The icosphere generator only ever
+        /// APPENDS midpoint vertices, and the jitter is drawn per vertex in index order, so the
+        /// first 10*4^s+2 capsules are exactly the layout a membrane authored at level s would have,
+        /// and the baked animation indexes them the same way. Drawing a prefix is therefore a
+        /// lower-subdivision membrane with no re-bake, at the same radius.
+        /// </summary>
+        int _drawCount;
+
         RenderParams renderParams;
         Mesh meshToRender;
         bool playbackMode;
@@ -157,6 +169,8 @@ namespace CosmicShore.Game
                 matrices = new Matrix4x4[baseDirections.Length];
             }
 
+            _drawCount = TierCappedCount(matrices.Length);
+
             renderParams = new RenderParams(membraneMaterial)
             {
                 worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f)),
@@ -194,7 +208,22 @@ namespace CosmicShore.Game
                 renderParams.worldBounds = new Bounds(center, Vector3.one * (radius * 2.5f));
             }
             using (s_submit.Auto())
-                Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
+                Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices, _drawCount);
+        }
+
+        /// <summary>Vertices of an icosphere at <paramref name="level"/> subdivisions: 12, 42, 162, 642, 2562.</summary>
+        public static int IcosphereVertexCount(int level) => 10 * (1 << (2 * level)) + 2;
+
+        /// <summary>
+        /// <paramref name="total"/> capsules, or the prefix the device tier allows. A cap at or above
+        /// this membrane's own level changes nothing.
+        /// </summary>
+        int TierCappedCount(int total)
+        {
+            var profile = PlatformProfile.Current;
+            int cap = profile ? profile.MembraneMaxSubdivisions : -1;
+            if (cap < 0 || cap >= subdivisions) return total;
+            return Mathf.Min(total, IcosphereVertexCount(cap));
         }
 
         void UpdateMatrices()
@@ -209,7 +238,7 @@ namespace CosmicShore.Game
         /// </summary>
         void UpdateMatricesFromPreset()
         {
-            int count = presetCount;
+            int count = presetCount;   // the bake's stride: frame-major, every capsule per frame
             int frames = presetFrameCount;
             float dur = presetLoopDuration;
 
@@ -224,7 +253,7 @@ namespace CosmicShore.Game
             int baseA = f0 * count;
             int baseB = f1 * count;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < _drawCount; i++)
             {
                 Quaternion rot = Quaternion.Lerp(presetRotations[baseA + i], presetRotations[baseB + i], blend);
                 matrices[i] = Matrix4x4.TRS(center + presetOffsets[i], rot, capsuleScale);
@@ -240,9 +269,8 @@ namespace CosmicShore.Game
         {
             Vector3 center = transform.position;
             float time = Time.time * pulseSpeed;
-            int count = baseDirections.Length;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < _drawCount; i++)
             {
                 Vector3 nc = noiseCoords[i];
                 // Sample Perlin noise at the capsule's sphere-surface coordinate + animated

@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349cc0c9402590262de23356775d43cc, type: 3}
+  m_Script: {fileID: 11500000, guid: 57061d1fb4eaf62ae0c2737b9230a242, type: 3}
   m_Name: RegattaScoringRule
   m_EditorClassIdentifier:
   metric: 9
-  golfRules: 1
+  golfRules: 0

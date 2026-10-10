@@ -142,7 +142,8 @@ namespace CosmicShore.Utility
         /// <summary>
         /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
         /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
-        /// hand-off to the real object.
+        /// hand-off to the real object. Also an elemental crystal FUSING onto a hull
+        /// (<c>CrystalHullFusion</c>): the pair, the plate count, the plate size.
         ///
         /// It exists because a morph's dependencies are invisible to it — the thing it lands on
         /// is minted by somebody else — and every way that can fail produces the SAME symptom on
@@ -150,7 +151,7 @@ namespace CosmicShore.Utility
         /// "the retirement never ran" from "the target never arrived" from "the target arrived
         /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
         /// </summary>
-        [CSLogChannelLabel("[CrystalMorph] omni-crystal retirement steps")]
+        [CSLogChannelLabel("[CrystalMorph] crystal morphs: omni retirements and hull fusions")]
         CrystalMorph = 1 << 11,
         /// <summary>
         /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a
@@ -287,15 +288,14 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[FTUE] tutorial step flow")]
         FTUE = 1 << 27,
         /// <summary>
-        /// <c>[FoldGate]</c> — the Butterfly's standing portal pair: where a fold laid its gates,
-        /// who threaded one, and when a pair was replaced.
+        /// <c>[FoldGate]</c> — the Butterfly's standing wormhole pair (it began as a pair of ring
+        /// gates, hence the tag): where a fold laid it and when a pair was replaced.
         ///
-        /// It exists because a gate's failure modes all read the same on screen ("it did
-        /// nothing"): no pair was placed at all, a pair was placed too short to keep, the pilot's
-        /// domain does not match, or the transit fired on a machine that does not own that
-        /// vessel. One line separates them.
+        /// It exists because a pair's failure modes all read the same on screen ("it did
+        /// nothing"): no pair was placed at all, or a pair was placed too short to keep. One line
+        /// separates them.
         /// </summary>
-        [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
+        [CSLogChannelLabel("[FoldGate] Butterfly fold wormhole placement")]
         ButterflyFold = 1 << 28,
         /// <summary>
         /// <c>[Training]</c> — overnight GA bring-up: launch, rollout start, a recorded
@@ -305,6 +305,17 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[Training] overnight GA bring-up")]
         AITraining = 1 << 29,
+        /// <summary>
+        /// <c>[ButterflyBloom]</c> — one line per omni-crystal bloom as it retires: how many
+        /// prisms its sweep reached and what the dust did to them, by outcome.
+        ///
+        /// It exists because the bloom's failure mode reads as "it did nothing", which is the
+        /// same report whether the sweep found no prisms, found prisms and dispatched nothing, or
+        /// dispatched outcomes too subtle to see at the Butterfly's camera range. The tally
+        /// separates the three.
+        /// </summary>
+        [CSLogChannelLabel("[ButterflyBloom] omni-crystal bloom sweep and dust outcomes")]
+        ButterflyBloom = 1 << 30,
         All = ~0
     }
 

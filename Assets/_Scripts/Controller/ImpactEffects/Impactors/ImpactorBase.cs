@@ -96,7 +96,10 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError(
                     $"[{GetType().Name}] '{(container ? container.name : "<missing container>")}'." +
                     $"{field}[{index}] is empty — that slot dispatches nothing and the rest of the " +
-                    "list still runs. Assign the effect asset, or remove the slot.", container);
+                    "list still runs. Assign the effect asset, or remove the slot. If the container " +
+                    "already names an asset there, that asset FAILED TO LOAD: select it, and if it " +
+                    "reports a script that cannot be loaded, Reimport it (an asset imported before " +
+                    "its new script compiled stays broken until it is).", container);
             }
             return true;
         }

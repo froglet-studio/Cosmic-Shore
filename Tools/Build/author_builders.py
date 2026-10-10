@@ -367,6 +367,15 @@ def verify(out):
             problems.append(f"BuilderColonyConfigSO.{k} defaults to {f.get(k)}, the research's value is {v}")
     if float(f["LadenSpeed"]) * 2 != float(f["ThiefSpeed"]):
         problems.append("a laden thief flies at HALF its free speed (the counterplay)")
+    # own colour is the STARVATION fallback (Docs/BUILDERS_AND_THIEVES.md §2.1): desperate sits clearly below hungry, or
+    # a merely hungry member would graze its own colour as readily as the opposing team's (the core clamps it there too)
+    for who in ("Worker", "Thief", "Wearer"):
+        for s in SPECIES:
+            own = float(s["overrides"].get(f"{who}OwnDomainBelow", f[f"{who}OwnDomainBelow"]))
+            hungry = float(s["overrides"].get(f"{who}HungryBelow", f[f"{who}HungryBelow"]))
+            if not 0.0 < own < hungry:
+                problems.append(f"{s['config']}: {who}OwnDomainBelow {own} must sit in (0, {who}HungryBelow {hungry}) - "
+                                f"own colour is food only for a desperate member")
     for p in (SWARM_PREFAB, MEMBER_SHADER):
         if not os.path.exists(p + ".meta") or swarm_guid(rel(p)) not in read(p + ".meta"):
             problems.append(f"{rel(p)}: not the guid author_swarm_fauna.py mints (the member look is the swarm's)")

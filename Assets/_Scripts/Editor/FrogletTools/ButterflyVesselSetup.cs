@@ -64,6 +64,11 @@ namespace CosmicShore.Editor
         // which also owns every dust effect asset's NUMBERS — this tool only wires them.
         const string DustSkimmerPrefabPath =
             "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab";
+        // The CRYSTAL CATCHER: an always-on sphere in the far-field slot whose only job is to be
+        // the skimmer an elemental crystal collects against — the dust capsule is off in Mass mode,
+        // the mode the hull spawns in. Authored by the same generator; its container is EMPTY.
+        const string CrystalSkimmerPrefabPath =
+            "Assets/_Prefabs/Spacevessels/Components/ButterflyCrystalSkimmer.prefab";
         const string BloomPrefabPath = "Assets/_Prefabs/Projectile/AOEButterflyBloom.prefab";
         const string HudBasePrefabPath = "Assets/_Prefabs/UI Elements/VesselHUD/VesselHUDPrefab.prefab";
         const string HudVariantPath = "Assets/_Prefabs/UI Elements/VesselHUD/ButterflyHUDVariant.prefab";
@@ -227,6 +232,7 @@ namespace CosmicShore.Editor
         {
             public VesselImpactorDataContainerSO Vessel;
             public SkimmerImpactorDataContainerSO Dust;
+            public SkimmerImpactorDataContainerSO Crystal;
         }
 
         Containers BuildContainers(Effects e)
@@ -256,6 +262,18 @@ namespace CosmicShore.Editor
                     SetArray(so, "skimmerPrismEffectsSO", new[] { e.DustPrism });
                     SetArray(so, "vesselSkimmerEffectsSO", new[] { e.DustDebuff, e.CombatHit });
                     SetArray(so, "skimmerLifeformCrystalEffectsSO", new[] { e.DustWither, e.DustNourish });
+                });
+
+            // EMPTY by design: the catcher is always on, so any effect here would also fire in Mass
+            // mode. Collection itself is the crystal's side (ElementalCrystalImpactor.CollectBy).
+            c.Crystal = CreateOrUpdate<SkimmerImpactorDataContainerSO>(
+                $"{EffectDir}/Effect Containers/SkimmerContainers/ButterflyCrystalSkimmerImpactorDataContainer.asset",
+                so =>
+                {
+                    SetArray(so, "vesselSkimmerEffectsSO", Array.Empty<UnityEngine.Object>());
+                    SetArray(so, "skimmerPrismEffectsSO", Array.Empty<UnityEngine.Object>());
+                    SetArray(so, "skimmerCrystalEffectsSO", Array.Empty<UnityEngine.Object>());
+                    SetArray(so, "skimmerLifeformCrystalEffectsSO", Array.Empty<UnityEngine.Object>());
                 });
 
             return c;
@@ -441,6 +459,9 @@ namespace CosmicShore.Editor
                 var dust = InstantiateDustSkimmer(root.transform, containers.Dust);
                 Set(spreadExec, "dustField", dust ? dust.GetComponentInChildren<ButterflyDustField>(true) : null);
 
+                // ---- the crystal catcher (always on; collects elemental crystals in both modes) ----
+                var crystalSkimmer = InstantiateCrystalSkimmer(root.transform, containers.Crystal);
+
                 // ---- HUD ----
                 Transform hudContainer = null;
                 if (hudVariant)
@@ -469,7 +490,7 @@ namespace CosmicShore.Editor
                 AdoptSharedAssetReferences(root, SquirrelPrefabPath);
                 Set(root.GetComponent<AIPilot>(), "actionExecutorRegistry", registry);
 
-                WireStatus(status, controller, hud, dust);
+                WireStatus(status, controller, hud, dust, crystalSkimmer);
                 WireController(controller);
                 Set(cameraCustomizer, "settings", camera);
                 Set(impactor, "vesselImpactorDataContainerSO", containers.Vessel);
@@ -511,8 +532,27 @@ namespace CosmicShore.Editor
             return go;
         }
 
+        GameObject InstantiateCrystalSkimmer(Transform parent, SkimmerImpactorDataContainerSO container)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CrystalSkimmerPrefabPath);
+            if (!prefab)
+            {
+                Unwired("ButterflyCrystalSkimmer", CrystalSkimmerPrefabPath +
+                        " — run Tools/Build/author_butterfly_dust.py first");
+                return null;
+            }
+
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            go.name = "ButterflyCrystalSkimmer";
+
+            var skimmerImpactor = go.GetComponentInChildren<SkimmerImpactor>(true);
+            if (skimmerImpactor) Set(skimmerImpactor, "skimmerImpactorDataContainer", container);
+            else Unwired("ButterflyCrystalSkimmer.SkimmerImpactor", "not found on the catcher prefab");
+            return go;
+        }
+
         void WireStatus(VesselStatus status, VesselController controller,
-                        MonoBehaviour hud, GameObject dust)
+                        MonoBehaviour hud, GameObject dust, GameObject crystalSkimmer)
         {
             Set(status, "vesselType", (int)VesselClassType.Butterfly);
             Set(status, "_name", VesselName);
@@ -520,9 +560,12 @@ namespace CosmicShore.Editor
             Set(status, "vesselHUDController", hud);
             // VesselController.Initialize initializes ONLY these two references — a skimmer the
             // status does not point at is permanently inert dead weight, silently (the Dolphin
-            // shipped that way for its whole life). ONE skimmer: the far field is empty.
+            // shipped that way for its whole life). Near = the dust capsule (Dust mode only);
+            // far = the crystal catcher, without which a Mass-mode Butterfly collects no
+            // elemental crystal at all (ElementalCrystalImpactor takes only a skimmer contact).
             if (dust) Set(status, "_nearFieldSkimmer", dust.GetComponentInChildren<Skimmer>(true));
-            Set(status, "_farFieldSkimmer", (UnityEngine.Object)null);
+            Set(status, "_farFieldSkimmer",
+                crystalSkimmer ? crystalSkimmer.GetComponentInChildren<Skimmer>(true) : null);
         }
 
         void WireController(VesselController controller) =>

@@ -1,3 +1,5 @@
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -84,6 +86,22 @@ namespace CosmicShore.Gameplay
                  "has to author the launch instead.")]
         [SerializeField, Min(0f)] private float vesselEjectSpeed = 45f;
 
+        [Header("Scoring (a strip IS a scored hit)")]
+        [Tooltip("Which class a strip counts as on the scoreboard. A scored hit and a petal theft " +
+                 "are one event (2026-10-10): every pilot this round strips is reported, and a " +
+                 "pilot it cannot strip (warded) is not. Debuff: a class whose take is authored " +
+                 "per weapon (vesselStripPerElement above), so CombatHitDrain adds nothing to it.")]
+        [SerializeField] private CombatHitClass hitClass = CombatHitClass.Debuff;
+
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. " +
+                 "Fail-loud: a missing reference throws rather than silently un-scoring the strip.")]
+        [SerializeField] private ScriptableEventCombatHitStats onCombatHitLanded;
+
+        [Tooltip("Seconds before the same Serpent can score (and strip) the same victim again " +
+                 "with this class. The rifle's own cooldown is far longer; this only collapses a " +
+                 "replayed press.")]
+        [SerializeField, Min(0f)] private float sameVictimCooldownSeconds = 0.5f;
+
         [Header("Impact")]
         [Tooltip("Debris speed the destroyed prism's pieces carry, in world units/second - the " +
                  "TRUE velocity, on the proportional-debris contract, not a legacy inertia gain.")]
@@ -126,6 +144,9 @@ namespace CosmicShore.Gameplay
         public int PierceCount => pierceCount;
         public float VesselStripPerElement => vesselStripPerElement;
         public float VesselEjectSpeed => vesselEjectSpeed;
+        public CombatHitClass HitClass => hitClass;
+        public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
+        public float SameVictimCooldownSeconds => sameVictimCooldownSeconds;
         public float DebrisSpeed => debrisSpeed;
         public float DebrisSpeedLimit => debrisSpeedLimit;
         public float BeamSeconds => beamSeconds;

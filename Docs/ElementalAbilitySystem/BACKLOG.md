@@ -224,14 +224,15 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 
 ## Skim-visual follow-ups (opened by `claude/dolphin-skim-effect-7sd2w1`)
 
-21. **The Squirrel still runs BOTH skim visuals.** `SquirrelSkimmerImpactorDataContainer` holds
-    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam) *and*
-    `SkimmerForcefieldCracklePrismEffect` (its replacement) — the same doubled state the Dolphin
-    was just cleaned out of. It was left alone deliberately: the Dolphin's removal was a
-    playtest call on one vessel, and the Squirrel's beam may be reading as intentional on a
-    vessel whose whole loop is trail-riding. Decide it explicitly — either retire the beam
-    fleet-wide and delete `SkimmerFXPrismEffectSO` with it, or state in the SO's summary that
-    the two are meant to compose and drop the `[Obsolete]`. Do not leave it as an accident.
+21. ~~**The Squirrel still runs BOTH skim visuals.**~~ **Decided 2026-10-06 (project owner): the
+    beam is retired.** `SquirrelSkimmerImpactorDataContainer` no longer holds
+    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam); the forcefield crackle is the
+    Squirrel's only skim visual, as on the Dolphin (branch `claude/serene-edison-lfv24f`, Step 6
+    of `Docs/PLATFORM_UNIFICATION.md`; Garrett's Android strip had already run it that way). No
+    live container references the beam now. Left for a cleanup pass: deleting
+    `SkimmerFXPrismEffectSO` and its asset — `SkimFxRunner` stays, `VesselFXPrismEffectSO` uses
+    it — which wants item 22's dead Dolphin override swept first, since that override is the
+    asset's last reference.
 22. **The Dolphin prefab carries three DEAD prefab-instance overrides** on its inactive nested
     legacy `Skimmer.prefab` instance (`m_IsActive: 0`), writing
     `skimmerPrismEffectsSO.Array.{size,data[0..2]}` — a field that is **commented out** on
@@ -424,7 +425,8 @@ measurement attached is worse than no row.
 
 - **`SlowExplosionImpactorDataContainer` is now EMPTY, so three abilities have no vessel-facing
   effect.** Measured: `vesselExplosionEffects: []` and `explosionPrismEffects: []`, referenced by
-  `AOESlowExplosion.prefab` (the Rhino's sword crystal burst + the Rhino's vessel crystal blast)
+  `AOESlowExplosion.prefab` (the Rhino's vessel crystal blast; the sword crystal burst no longer
+  spawns one, 2026-10-08)
   and `AOEShieldedRingSpawner.prefab` (the Squirrel's vessel crystal blast). It held exactly one
   effect (`VesselChangeSpeedByExplosionEffect`, an input mute) and that effect broke the
   control-theft law, so emptying it was correct — but a blast that reaches a pilot and does nothing
@@ -456,7 +458,9 @@ measurement attached is worse than no row.
   the surviving `vesselSkimmerEffectsSO.data[0]` points at the haptics effect, which IS live — via
   the CONTAINER, not via this override. Removing them is a prefab-YAML edit with no behaviour to
   change, and the real fix is to finish the container migration the comments describe.
-- **Two mode generators are red and were red before this branch** — proven by running both at
+- ~~**Two mode generators are red and were red before this branch**~~ [Edit 2026-10-06: both are
+  green - #969 stopped Dog Fight emitting the retired key and #967 guarded Wildlife Liberation's
+  spent clone; all 25 `author_*_assets.py --check` pass. Kept for the record:] proven by running both at
   `origin/bleeding-edge`: `author_dogfight_assets.py --check` fails its asset-key validation on
   `CallToActionTargetType` (a field the call-to-action retirement deleted from `SO_ArcadeGame`, so
   re-running it would re-introduce a retired key), and `author_wildlife_liberation_assets.py`
@@ -525,3 +529,110 @@ measurement attached is worse than no row.
   text onto the omni card at runtime, keeping its font and material — but the authored position is
   now a lie a reader will believe. Either author it under a `BlastTallyButton` host at the view
   root, or leave it and say so in the wirer's comment. No prefab was edited on this branch.
+
+## From the Butterfly omni-crystal bloom branch (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+
+- **`ExplosionImpactorDataContainerSO.explosionPrismEffects` has no producer.** Measured:
+  `grep -rl explosionPrismEffects Assets --include=*.asset` → 8 containers, all `explosionPrismEffects: []`;
+  no concrete `ExplosionPrismEffectSO` subclass exists after this branch retired its only one. Its
+  consumers are the Physics fallback in `ExplosionImpactor.AcceptImpactee`, the new
+  `SweepPrismEffects` (affectsPrisms-OFF blasts), and a never-assigned private field on
+  `PrismImpactor` (`PrismImpactor.cs:16`). The Burst batch path never runs it at all, so an
+  affectsPrisms-ON blast that authored one would run it only when the spatial index is down.
+  DEBT this branch WALKED PAST (and widened: the sweep is a second consumer). Decide: either keep
+  it as the container half of `IExplosionPrismPayload` and make the batch path honour it, or
+  retire the field and the dead `PrismImpactor` copy. *Shape (`/refactor` §3): a consumer with no
+  producer, read by two paths that disagree about when it runs.*
+
+- **Why the Butterfly bloom's `ExplosionScaleDustPrismEffectSO` asset loaded as null is UNKNOWN.**
+  Three playtests, every repo-side cause ruled out, a forced re-import did not help; the fix routed
+  around it (`BUTTERFLY.md §3.3a`). The next new SO type authored by a generator may hit it again.
+  To measure: author a throwaway new SO type + asset by script, have a human pull it and select the
+  asset before entering play mode, and record what the inspector says. *Report, not a fix.*
+
+- **Two pre-existing orphaned doc comments** (a `/// </summary>` immediately followed by
+  `/// <summary>`, both present at merge base `2cf25d8e`): `ExplosionImpactor.cs` above
+  `SweptCylinder` (the `SweepCrystals` doc stacked on the narrowphase struct's) and `CSDebug.cs:40`
+  (the `CSLogChannel` usage note stacked on `CSLogChannelLabelAttribute`'s). Move each down onto
+  its member or delete it. *Shape: a member inserted between a doc and its declaration.*
+
+---
+
+## From the cross-peer press branch (`claude/relaxed-heisenberg-t7utre`, 2026-10-08)
+
+Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
+
+- **[inconsistency, one-line fix] `R_VesselActionHandler.PerformShipControllerActionsReplicated`'s
+  summary says "`AIPilot` is the only one today".** Measured 2026-10-08 (`grep -rln
+  "PerformShipControllerActionsReplicated(" Assets/_Scripts --include=*.cs`): seven callers —
+  `AIPilot`, `UrchinAutopilotDriver`, `ButterflyAutopilotModeDriver`, `WaystationController`,
+  `BroadsideController`, `TollwayController`, `GrizzlyTriggerBombExecutor`. The rest of that summary
+  (the replicate-when-the-output-is-photons rule) is still right; only the census is stale. Fix by
+  dropping the census rather than updating it — a count in a doc comment is the shape that rotted.
+- **[report, needs a decision] The handler's `TODO - Unnecessary events added. OnInputEventStarted,
+  OnInputEventStopped … Use _onButtonPressed and _onButtonReleased` is probably WRONG about its own
+  premise.** One subscriber (`VesselHUDController`, `+=` at :139-140). The two events are not
+  copies of the SOAP channels: `OnInputEventStarted` fires only after `OnButtonPressed`'s autopilot /
+  suppressed / muted filters, and `OnInputEventStopped` also fires from `ReleaseHeldInputs` (a pause
+  or pilot handover) where no SOAP release is ever raised. Moving the HUD to the raw channels would
+  light ability chips for presses the handler refused and leave them lit across a pause. Before
+  acting, decide which semantics the HUD wants; if it is the filtered one, delete the TODO instead.
+
+## From the crystal hull fusion branch (`cece/nice-babbage-j6sejq`, 2026-10-08)
+
+Rows only, opened by the ship pass; nothing here was changed on that branch except where a row says so.
+The census command for the first three is one script over each vessel prefab's `_nearFieldSkimmer`
+and the `SkimmerImpactor` whose `skimmer:` field points at it (recorded in
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §13).
+
+- **[inconsistency, prefab wiring] Termite, Falcon and Shrike initialise NO skimmer.** Measured:
+  `grep -n "_nearFieldSkimmer\|_farFieldSkimmer" Assets/_Prefabs/Spacevessels/{Termite,Falcon,Shrike}.prefab`
+  → `{fileID: 0}` for both on all three. `VesselController.Initialize` only initialises those two, and
+  `SkimmerImpactor.isInitialized => skimmer != null && skimmer.IsInitialized`, so every skimmer on
+  these hulls is inert: no prism skim effects, and an elemental crystal is collected with NO vessel
+  (`ElementalCrystalImpactor.CollectBy` → `skimmer.VesselStatus == null`) — no score
+  (`OnCrystalCollected` is skipped), no element level, no hull fusion. The fix is to point
+  `_nearFieldSkimmer` at each hull's nested Skimmer (the Manta's is the stripped
+  `874579554510349383`); confirm first that these three hulls are meant to be flyable.
+- **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
+  GameObject with `m_IsActive: 0`, its SphereCollider `m_Enabled: 0`, and no `SkimmerImpactor` or
+  `ImpactCollider` at all, so nothing on the Serpent can take an elemental crystal (play-tested
+  2026-10-08: crystals hit the hull and are not collected). Whether the Serpent SHOULD collect by
+  skimming is a design question; wiring it is a prefab change.
+- **[cleanup] The Grizzly's nested `Skimmer.prefab` instance (x30) is never initialised.** It used to
+  take every crystal the Grizzly touched with no vessel (no score, no element level) — fixed on this
+  branch by `ElementalCrystalImpactor.DefersToItsVesselsSkimmer`, which makes it stand aside for the
+  initialised `DummySkimmer`. The instance itself is now dead weight on the prefab; delete it or list
+  it as the far-field skimmer.
+- **[inconsistency] `GrizzlyImpactorDataContainer.vesselCrystalEffects` holds a dangling reference**
+  (`guid: dcf9d69a52b65c1438af3861b7c89e07`, no `.meta` anywhere on `origin/bleeding-edge`; the probe
+  was controlled against `Skimmer.cs.meta`, which it finds). Every omni-crystal impact on a Grizzly
+  walks a null slot. Also: `vesselElementalCrystalEffects` is a serialized key on the Grizzly and
+  Sparrow containers that no C# reads (`git grep -n vesselElementalCrystalEffects -- '*.cs'` → empty).
+
+## From the Grizzly trigger-bomb cruise branch (`cece/funny-lamport-bkzvtc`, 2026-10-08)
+
+Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
+
+- **[report, needs a look decision] Every `DangerProjectileMaterial` body renders one world unit
+  fatter than its authored scale.** Measured 2026-10-08: `grep -c _Spread
+  Assets/_Graphics/Materials/DangerProjectileMaterial.mat` → 0, so `Custom/SpreadFresnelShader` uses
+  its property default `(1,1,1)` and pushes every vertex a constant world unit along its normal; no
+  projectile code writes `_Spread` (`grep -rn '"_Spread"\|SpreadId' Assets/_Scripts/Controller/Projectiles`
+  → nothing). Seven prefabs/assets wear that material (`grep -rl 4109669bc21cfa844bd19bbbb8697e6f
+  Assets --include=*.prefab --include=*.asset`), among them every Grizzly round. The trigger bomb's
+  size table (2.5–5) is therefore 4.5–7 on screen. Nothing chose this; whether to author `_Spread: 0`
+  on the material (shrinks every round that wears it) or keep the look is a design call. If zeroed,
+  the bomb's spike crown still works — its radial normals are only REQUIRED while the push exists
+  (vessel skill rule 41).
+- **[debt created] `GrizzlyTriggerBombExecutor.NominalFlightSeconds` exists only because
+  `Gun.FireGun` demands a lifetime, and `Projectile.Cruises` must be set AFTER the fire call** (the
+  move loop's first step runs inside it). One user today (`grep -rn "Cruises = true" Assets/_Scripts`
+  → 1). If a second cruising round appears, give `FireGun` a `cruise` argument so `Initialize` sets
+  the flag before the first step, and retire both the constant and the ordering rule.
+- **[report, needs MPPM] The hull stop is decided per peer.** `Projectile.VesselStruck` is raised by
+  each peer's own sweep of its own bomb copy against its own (replicated, lagged) hull copies, so a
+  bomb that only GRAZES a rival can stop on one peer and fly on on another; nothing replicates the
+  stop. Unmeasured — what to measure: two MPPM clients, fire bombs past a rival at decreasing miss
+  distances, and record the distance below which the peers disagree. If that band is wide enough to
+  see, route the stop through the owner (an RPC carrying the stop position, as the press replay does).

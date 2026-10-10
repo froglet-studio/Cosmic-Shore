@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "scene": "Bootstrap",
+  "seed": 1337,
+  "frames": 4200,
+  "checkpointEvery": 30,
+  "record": "2400-4200:300",
+  "do": ["1500:arcade SkimRace", "1620:arcade start", "2100:arcade ready", "2280:hold W 600", "2900:hold A 120", "3100:hold W 900"],
+  "status": []
+}

@@ -95,7 +95,7 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
         public, so a variable, a committed file or a log line would show the link to everyone.
      2. Change `Tools/iOS/ipa-build-request.txt` (any edit) and push it to a **feature** branch.
         The push starts the **iOS unsigned ipa** workflow. Pushes to `bleeding-edge`,
-        `development`, `main` and `build/**` are ignored on purpose, so a merge or a weekly
+        `development`, `main`, `build/**` and agent `claude/**` branches are ignored on purpose, so a merge or a weekly
         promotion does not start a build nobody asked for. Once the workflow is on
         `bleeding-edge`, use the Actions tab's **Run workflow** button there instead.
      3. When the run is green, download the **CosmicShore-dev-ipa** artifact from the run page.

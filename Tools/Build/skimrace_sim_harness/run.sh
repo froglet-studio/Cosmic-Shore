@@ -45,10 +45,27 @@ spl = re.search(r"useSplinePerIntensity: ([0-9a-f]+)", track).group(1)
 spline = [int(spl[i*8:i*8+2], 16) for i in range(len(spl)//8)]
 laps_hex = re.search(r"lapsPerIntensity: ([0-9a-f]+)", mon).group(1)
 laps = [int.from_bytes(bytes.fromhex(laps_hex[i*8:i*8+8]), "little") for i in range(len(laps_hex)//8)]
+# Optional ribbon normals (parallel to the waypoints; empty = world up) and crystals per lap
+# (<= 0 = the waypoint count) - SpawnableWaypointTrack.waypointUps / crystalsPerLap.
+ups = sets(track, "waypointUps:", "crystalsPerLap") if "waypointUps:" in track else [[] for _ in wps]
+m = re.search(r"crystalsPerLap: ([0-9a-f]+)", track)
+per_lap = [int.from_bytes(bytes.fromhex(m.group(1)[i*8:i*8+8]), "little", signed=True)
+           for i in range(len(m.group(1))//8)] if m else []
+# Optional marked-waypoint lists (SpawnableWaypointTrack.markedWaypoints; empty = every waypoint).
+mk = re.search(r"markedWaypoints:\n((?:  - indices: .*\n)*)", track)
+marked = []
+if mk:
+    for h in re.findall(r"  - indices: (.*)", mk.group(1)):
+        h = h.strip()
+        marked.append([] if h in ("", "[]") else
+                      [int.from_bytes(bytes.fromhex(h[i*8:i*8+8]), "little") for i in range(len(h)//8)])
 with open(out, "w") as fh:
     for i in range(4):
         fmt = lambda pts: ";".join(",".join(p) for p in pts)
-        fh.write(f"{i+1}|{spline[i]}|{laps[i]}|{fmt(wps[i])}|{fmt(anchors[i])}\n")
+        pl = per_lap[i] if i < len(per_lap) else 0
+        up = ups[i] if i < len(ups) else []
+        mks = ",".join(map(str, marked[i])) if i < len(marked) else ""
+        fh.write(f"{i+1}|{spline[i]}|{laps[i]}|{fmt(wps[i])}|{fmt(anchors[i])}|{fmt(up)}|{pl}|{mks}\n")
 PY
 
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"

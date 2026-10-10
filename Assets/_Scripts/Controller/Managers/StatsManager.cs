@@ -144,33 +144,16 @@ namespace CosmicShore.Gameplay
             _allowRecord = false;
         }
 
-        public void LifeformCreated(int cellID)
-        {
-            if (!_allowRecord || cellData == null) return;
+        // LifeFormsInCell has ONE writer: Cell.UpdateCellStats sets it from spawnedLifeForms.Count
+        // whenever a lifeform registers or unregisters. These two handlers (wired to
+        // onLifeFormCreated / onLifeFormDestroyed in StatsManager.prefab) also ++/-- the same field,
+        // so a flora death - LifeForm.Die unregisters (correct count), then DieCoroutine raises
+        // onLifeFormDestroyed - took a second one off: two plants, kill one, the count read 0 and
+        // AllLifeFormsDestroyedTurnMonitor ended the turn with a plant still alive. Kept as no-ops so
+        // the prefab's UnityEvent wiring still resolves.
+        public void LifeformCreated(int cellID) { }
 
-            var cellStatsList = cellData.CellStatsList;
-
-            if (!cellStatsList.ContainsKey(cellID))
-                cellStatsList[cellID] = new CellStats();
-
-            var cs = cellStatsList[cellID];
-            cs.LifeFormsInCell++;
-            cellStatsList[cellID] = cs;
-        }
-
-        public void LifeformDestroyed(int cellID)
-        {
-            if (!_allowRecord || cellData == null) return;
-
-            var cellStatsList = cellData.CellStatsList;
-
-            if (!cellStatsList.ContainsKey(cellID))
-                cellStatsList[cellID] = new CellStats();
-
-            var cs = cellStatsList[cellID];
-            cs.LifeFormsInCell--;
-            cellStatsList[cellID] = cs;
-        }
+        public void LifeformDestroyed(int cellID) { }
 
         /// <summary>
         /// A fauna died to an attributed force - credit the killer. Raised on
@@ -240,21 +223,27 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A vessel landed a shot on an opposing vessel - credit the SHOOTER. Raised on
-        /// <see cref="GameDataSO.OnCombatHitLanded"/> by the two combat-hit impact effects,
+        /// <see cref="GameDataSO.OnCombatHitLanded"/> by the three combat-hit impact effects,
         /// already deduplicated per (shooter, victim, class) by <c>VesselCombatHitLatch</c>.
         ///
         /// LIKE the fauna path and UNLIKE every prism stat, this one has a CLIENT branch, and
         /// for the same underlying reason: <b>projectiles are not networked</b>. A bullet or a
         /// skyburst is a pooled local object spawned by whichever machine's gun fired it - it
-        /// has no NetworkObject and no RPCs - so a shot a client just landed does not exist on
-        /// the server at all. Recorded server-only, only the host could ever score in a
-        /// dogfight.
+        /// has no NetworkObject and no RPCs. A human's PRESS is replicated, so every peer flies
+        /// its own copy of the round from its own lagged picture of the shooter, and the copies
+        /// hit or miss independently.
         ///
-        /// So the machine that SIMULATED the shot reports it. Ownership decides who that is:
-        /// the server records directly (covering the host's own guns and every AI's, since AI
-        /// players are server-owned), and a client forwards ONLY its own shot through the
-        /// Player object it owns. If an AI's gun happens to fire on a client too, that client
-        /// sees the name mismatch and drops it - the server's copy is the one that counts.
+        /// So exactly one machine reports a hit: the one that OWNS the shooter. The effects
+        /// enforce it before they raise (<see cref="ElementalTransfer.IsDecidedHere"/>), which is
+        /// also the machine that settles the hit's petal drain. On the server that is the host's
+        /// own guns and every AI's (AI players are server-owned), recorded directly here; on a
+        /// client it is ONLY its own shot, forwarded through the Player object it owns. Until
+        /// Oct 2026 the effects raised on every copy and this method was the only filter: a
+        /// client dropped a replay by name, but the server credited its replay of a client's
+        /// round directly, so one client hit was scored twice (or scored on a hit only the
+        /// host's copy landed). Both branches below keep a second line behind the gate: the
+        /// server credits only shooters it simulates (<see cref="OwnsAttacker"/>), and a client
+        /// forwards only its own name.
         ///
         /// IDENTITY COMES FROM RPC OWNERSHIP, NOT FROM THE NAME STRING: the server credits the
         /// RoundStats of the Player object <see cref="Player.ReportCombatHit_ServerRpc"/>
@@ -266,6 +255,13 @@ namespace CosmicShore.Gameplay
 
             if (_allowRecord)
             {
+                // The server credits only shooters it simulates. A remote client's hit arrives on
+                // ReportCombatHit_ServerRpc instead, which credits without coming through here, so
+                // crediting the server's own replay of that client's round as well would score it
+                // twice. The reporters already refuse to raise for a shooter owned elsewhere
+                // (ElementalTransfer.IsDecidedHere); this is the same rule, OwnsAttacker's form,
+                // kept here so a reporter that forgets the gate cannot reopen the double score.
+                if (!OwnsAttacker(hit.ShooterName)) return;
                 if (gameData.TryGetRoundStats(hit.ShooterName, out IRoundStats shooterStats))
                     CombatHitScoring.Credit(shooterStats, hit.HitClass, gameData.ScoringRule, hit.SupersededRank);
                 return;
@@ -450,6 +446,10 @@ namespace CosmicShore.Gameplay
         /// it saw a remote player make, a client would score for destroying trees it never flew
         /// near while the ones it actually shredded scored nothing - and it would double-count
         /// against the client's own report. So each machine credits only the players it simulates.
+        ///
+        /// <see cref="CombatHitLanded"/> asks the same question for the same reason: a human's
+        /// press is replicated, so the server flies its own copy of a client's round, and only the
+        /// client's copy (forwarded by RPC) may be credited.
         /// </summary>
         bool OwnsAttacker(string attackerName)
         {
@@ -500,7 +500,9 @@ namespace CosmicShore.Gameplay
 
             var local = gameData.LocalPlayer;
             if (local is Player netPlayer && local.IsLocalUser && local.Name == prismStats.OwnName)
-                netPlayer.ReportPrismStolen_ServerRpc(prismStats.Volume);
+                netPlayer.ReportPrismStolen_ServerRpc(
+                    prismStats.Volume,
+                    new Unity.Collections.FixedString64Bytes(prismStats.AttackerName ?? string.Empty));
         }
 
         public void PrismRestored(PrismStats prismStats)
@@ -546,6 +548,20 @@ namespace CosmicShore.Gameplay
             thief.VolumeRemaining += volume;
         }
 
+        /// <summary>
+        /// SERVER: debit one stolen prism from its victim - the other half of
+        /// <see cref="CreditPrismSteal"/>, shared the same way so the client round-trip and the
+        /// server's own detection cannot drift. Before it existed the client path carried only
+        /// the thief's half, so a remote client's steal inflated the victim's
+        /// PrismsRemaining/VolumeRemaining (URCHIN_BACKLOG U2, Docs/ScoringSystem/BUGS.md B19).
+        /// </summary>
+        internal static void DebitPrismSteal(IRoundStats victim, float volume)
+        {
+            if (victim == null) return;
+            victim.PrismsRemaining--;
+            victim.VolumeRemaining -= volume;
+        }
+
         public void PrismStolen(PrismStats prismStats)
         {
             // CLIENT: the server never saw this steal - Prism.Steal is entirely local, exactly
@@ -567,17 +583,16 @@ namespace CosmicShore.Gameplay
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
 
-            stealingPlayerStats.PrismStolen++;
-            stealingPlayerStats.PrismsRemaining++;
-            stealingPlayerStats.VolumeStolen += prismStats.Volume;
-            stealingPlayerStats.VolumeRemaining += prismStats.Volume;
+            CreditPrismSteal(stealingPlayerStats, prismStats.Volume);
 
+            // A REMOTE player's steal returned at the OwnsAttacker gate above, so its victim is
+            // debited where the credit lands: Player.ReportPrismStolen_ServerRpc, which carries
+            // the victim's name for exactly this. Each steal is debited once on either path.
             var victimPlayerName = prismStats.AttackerName;
             if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
                 return;
 
-            victimPlayerStats.PrismsRemaining--;
-            victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+            DebitPrismSteal(victimPlayerStats, prismStats.Volume);
         }
 
         public void RegisterAbilityExecuted(AbilityStats abilityStats)

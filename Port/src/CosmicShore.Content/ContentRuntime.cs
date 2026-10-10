@@ -79,10 +79,16 @@ namespace CosmicShore.Content
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
             Shader.PropertyCatalog = ShaderProperties.For;
+            ShaderGraphs = new Shaders.ShaderGraphCatalog(Db);
+            Shader.GraphCompiler = ShaderGraphs.For;
+            Shader.TextureByGuid = guid => Assets.Load<Texture>(new ObjRef(2800000, guid, 3));
         }
 
         /// <summary>The shaders' declared properties (what Material.HasProperty and unset-property reads answer from).</summary>
         public Shaders.ShaderPropertyCatalog ShaderProperties { get; }
+
+        /// <summary>The project's Shader Graphs compiled to GLSL (what the renderer draws an untranslated graph with).</summary>
+        public Shaders.ShaderGraphCatalog ShaderGraphs { get; }
 
         /// <summary>Adds an importer for <paramref name="type"/> in front of any already registered (first non-null wins).</summary>
         public void ChainImporter(Type type, Func<ObjRef, EngineObject> importer)
@@ -149,7 +155,7 @@ namespace CosmicShore.Content
             if (TryFloat(body["m_TimeScale"], out float scale) && scale >= 0f) Time.timeScale = scale;
         }
 
-        /// <summary>ProjectSettings/DynamicsManager.asset: gravity, and which transform poses and triggers a query sees.</summary>
+        /// <summary>ProjectSettings/DynamicsManager.asset: gravity, which transform poses and triggers a query sees, and the contact pass's bounce threshold and layer matrix.</summary>
         void ReadPhysicsSettings()
         {
             var body = ReadSettingsBody("DynamicsManager.asset");
@@ -157,6 +163,8 @@ namespace CosmicShore.Content
             if (body["m_QueriesHitTriggers"] != null) Physics.queriesHitTriggers = body.Bool("m_QueriesHitTriggers");
             if (body["m_AutoSyncTransforms"] != null) Physics.autoSyncTransforms = body.Bool("m_AutoSyncTransforms");
             if (body["m_Gravity"] is YMap g) Physics.gravity = new Vector3(g.Float("x"), g.Float("y"), g.Float("z"));
+            if (TryFloat(body["m_BounceThreshold"], out float bounce) && bounce >= 0f) Physics.bounceThreshold = bounce;
+            Physics.SetLayerCollisionMatrix(body.Str("m_LayerCollisionMatrix"));
         }
 
         YNode ReadSettingsBody(string file)

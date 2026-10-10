@@ -110,7 +110,7 @@ namespace CosmicShore.Gameplay
         static readonly Vector3 RetiredScale = new(0.02f, 0.02f, 0.02f);
         const float WitherSeconds = 0.8f;
 
-        /// <summary>Trail prisms recycled per tick. <see cref="Trail.RemoveOldest"/> re-indexes
+        /// <summary>Trail prisms recycled per tick. <see cref="Trail.RemoveOldest()"/> re-indexes
         /// the whole ribbon, so an unbounded drain is quadratic — this spreads a cell's worth
         /// over a few seconds, far faster than any vessel lays.</summary>
         const int TrailRecycleBudget = 64;
@@ -821,7 +821,7 @@ namespace CosmicShore.Gameplay
         /// per corridor advance, consumed one per cell retirement — the corridor retires cells
         /// in the order it stood them, so the two queues stay paired with no index arithmetic.
         ///
-        /// A mark is the HEAD PRISM, not a count: <see cref="Trail.RemoveOldest"/> shifts every
+        /// A mark is the HEAD PRISM, not a count: <see cref="Trail.RemoveOldest()"/> shifts every
         /// survivor toward the head, so any recorded index or length goes stale the moment a
         /// roll runs. A prism reference does not.
         /// </summary>

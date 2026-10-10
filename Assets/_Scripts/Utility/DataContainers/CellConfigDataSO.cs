@@ -62,8 +62,9 @@ namespace CosmicShore.Utility
         [Tooltip("How big a danger-prism contact bites in this cell (VesselElementalDebuffByDangerPrismEffectSO). " +
                  "Shipped = the effect asset's debuffMagnitude (-0.5 = 5 petals per element); Tuned = its " +
                  "tunedDebuffMagnitude (-0.1 = 1 petal). Applies to the hostile burn and the own-domain " +
-                 "temporary debuff alike. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
-        public PetalBurnRule PetalBurnRule = PetalBurnRule.Shipped;
+                 "temporary debuff alike. Tuned is the default in every cell (Garrett, 2026-10-08); Shipped " +
+                 "stays available per cell. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
+        public PetalBurnRule PetalBurnRule = PetalBurnRule.Tuned;
 
         [Tooltip("Who controls this cell before anybody has claimed it - i.e. the colour its fauna " +
                  "spawn in while the cell's own prism-count leader (the nucleus claim, or the " +

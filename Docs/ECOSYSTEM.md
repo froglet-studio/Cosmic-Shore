@@ -44,7 +44,9 @@ rule set and everything follows it: game scenes, Menu_Main's lava-lamp/freestyle
 tools and test scenes. There is **no "cosmetic," "menu-only," or "perf special
 case" exemption** — the menu autopilot vessel *is* the freestyle gameplay vessel
 (lava lamp == freestyle; see CLAUDE.md → "Lava-Lamp Mode"), so any removal
-mechanism attached to it is gameplay decay.
+mechanism attached to it is gameplay decay. The two signed-off exceptions below
+(the Wanderway tether, and the phone race cap — the only perf special case ever
+granted) are fenced and recorded; neither licenses another.
 
 > **Rejected cheat (reverted): the menu trail cap.** Commit `64d8f0c8` added a
 > per-trail ring-buffer cap (`VesselPrismController.maxTrailBlocks` +
@@ -72,9 +74,11 @@ mechanism attached to it is gameplay decay.
 >
 > Its scope is the fence — do not widen it, and do not "fix" it by reverting:
 >
-> - **Live-run only.** `WanderwayRun.RollTether` is the sole caller of
->   `Trail.RemoveOldest`. Outside a run — everywhere else in freestyle, every game
->   mode, the menu lava lamp — the trail is untouched and §0 holds in full.
+> - **Live-run only.** The tether's removal (`WanderwayRun.RollTether` →
+>   `Trail.RemoveOldest`) runs only inside a run. Outside a run — everywhere else in
+>   freestyle, every game mode, the menu lava lamp — the tether never touches the
+>   trail and §0 holds in full (the one other recycling exception, the phone race
+>   cap below, is fenced the same way to its own two modes and one device tier).
 > - **No length limit on the trail itself.** `VesselPrismController` grew no
 >   `maxTrailBlocks` field; nothing about laying a prism consults a cap. The run
 >   reaches in from outside and only while it exists.
@@ -86,6 +90,41 @@ mechanism attached to it is gameplay decay.
 >   pool only once it has shrunk away. Nothing pops.
 >
 > Detail: `Docs/ToySystem/ARCHITECTURE.md` § "The run".
+
+> **AUTHORIZED EXCEPTION (2026-10-05): the Skim Race / Joust trail cap on low-end
+> phones.** The second sanctioned place trail mass is recycled, granted by the project
+> owner for the `MobileLow` device tier only (`Docs/PLATFORM_UNIFICATION.md` §3.6). A
+> 4 GB Android phone cannot carry a 12-seat race's unbounded trail, and Garrett's
+> Android strip shipped exactly this cap; the owner asked for his numbers on phones.
+> In those two races, on that tier, every vessel keeps its share of a race-wide trail
+> budget (Skim Race 6,000 shared, 800–2,000 per vessel — at least one lap, two when
+> the grid is small; Joust 4,000 shared, 400–1,200), and past it the OLDEST prism
+> withers and returns to its pool. It is mechanically the reverted menu cap again, and
+> it is here **because it was asked for**, not as a precedent: the protocol still
+> stands, and the next one needs its own sign-off.
+>
+> The fence:
+>
+> - **One tier, two modes.** Only a `PlatformProfileSO` that sets a race budget turns
+>   it on, and only `MobileLow` does. Desktop and `MobileHigh` (so every PC and every
+>   iPhone that tiers High) carry no budget and never add the component.
+> - **Feature-owned, no knob on the shared system.** `RaceTrailCap` is added by
+>   `SkimRaceController` and `JoustController` (`OnNetworkSpawn`, through
+>   `RaceTrailCap.Attach`) and dies with the race scene. `VesselPrismController` grew
+>   no cap field; nothing about laying a prism consults one.
+> - **Recycle, not decay; continuity NOT waived.** The tether's recipe: detach the
+>   oldest (`Trail.RemoveOldest`, both ribbons), wither it on the grow clock, return it
+>   to the pool once it has shrunk away. A prism the food web already took is only
+>   unlinked — never withered or pool-returned out from under its consumer.
+> - **Per device, so a mixed match is asymmetric.** Trail prisms are local to each peer,
+>   so on a phone every ribbon ends a lap or two back while a PC in the same match still
+>   draws the whole trail (and can skim mass the phone no longer has). Accepted with the
+>   exception; it is the cost of not networking trail mass.
+>
+> The menu half of the phone tier is NOT an exception and needs none: the lava lamp lays
+> no trail and freestyle trail waits while the cell is over 10,000 prisms
+> (`VesselPrismController.SetTierHold`) — pausing the spawner, the sanctioned lever named
+> in the rejected-cheat note above. Nothing already laid is removed.
 
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
@@ -2141,7 +2180,7 @@ SpawnableHesperides.BuildEnvironment()
                           │
 Cell.BuildEnvironmentNow() ─ AdoptPlantingSites()   copy, seeded shuffle, bucket by kind
                           │
-RandomLifeSpawner.PlantOne()
+CellLifeSpawnerBase.PlantFlora()
   └─ Cell.TryTakePlantingSite(cfg.PreferredSites, out pos, out up)   per-kind round-robin, WRAPS
         └─ CellLifeSpawnerBase.SpawnFlora(..., pos, up)
               └─ Flora.SetPlantPositionOverride(pos, up)   →  Flora.GrowthUp
@@ -2550,7 +2589,9 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   `Cell.CurrentFaunaSpawnPeriod` the colony grows exactly ONE member — a head if it has
   none, else a tail if it has none, else a body segment blooming in behind the head.
   Body growth is gated on the colony being FED, so length still only accrues while the
-  kaiju is eating; a mouth is not, because a headless colony cannot feed.
+  kaiju is eating; a mouth is not, because a headless colony cannot feed. At full
+  length a fed colony reproduces instead — it splits itself in two at mid-chain, under
+  the species cap (**fission**, §23.10).
 - **Starvation digests the colony tail-first** (one segment per
   `StarvationShedIntervalSeconds`): deny the kaiju food and it shrinks; keep denying and
   it dies. Population bounded by consumption, never a lifespan. A starving worm also
@@ -3098,6 +3139,47 @@ Machine-validated only: the changed C# type-checks clean under the Roslyn stub h
 6. **Budget**: in Wildlife Liberation, watch the worm count and length after a few minutes —
    this is the cell where the 441 number lands.
 
+### 23.10 The colony reproduces by FISSION (Oct 2026)
+
+The rule from the game owner: *every life form must have a way to complete its lifecycle — feed
+and reproduce — before dying.* The worm fed and grew, but every config authors
+`FeedsPerOffspring: 0`, so `Fauna.TryReproduce` never fires for it and a new colony appeared only
+when a **player** cut one. A worm left alone grew to 16 and then sat there.
+
+**Fission.** When a colony's production cycle (§23.9) comes round and it is already at
+`MaxSegmentsPerWorm`, a **fed** colony (`!IsStarving`) produces a whole new colony instead of a
+segment: `WormFauna.TryFission` splits the chain at the middle (`count / 2` — a 16-chain becomes
+8 + 8) and hands the rear half to **`SpawnSplitColony`, the exact path a player's mid-body cut
+runs**, minus the dead member. So nothing pops in and nothing is bespoke: the daughter is a clone
+of the parent brain that adopts segments already swimming in place, inherits the lineage config
+and the variant pick (breeds true), every member keeps its own heart (§23.8 — no heart drops,
+because nothing died), segment totals are conserved, both halves feel separation immediately and
+shoulder apart, and each regrows its missing end on its own next cycle (front half a tail, rear
+half a head — head regrowth is ungated, §23.9). Wither and starvation are untouched.
+
+**Gates** (refusal is silent — the colony just holds at full length until the next cycle):
+
+- **The cycle is stamped first.** `TickProduction` stamps `_lastProductionTime` when the period
+  elapses, before the cap test, so a refused fission still costs the cycle and a colony at the
+  species cap cannot bank time and fission instantly when a slot opens (the ecology trap).
+- **Species cap** — `Cell.IsFaunaAtCap(SourceConfig)`, the same comparison `Fauna.TryReproduce`
+  makes. Unlike a player cut (which ignores `MaxLivePopulation`, §23.9), fission never pushes the
+  colony count over the cell's cap.
+- **`ReproductionCooldownSeconds`** from the species config, per colony (10 s on the Lifeforms
+  configs, 60 s on Wildlife Liberation's). In practice a daughter needs ~8 cycles to regrow to 16,
+  so the cooldown rarely binds; it is honoured because it is the platform's reproduction rule.
+- **Lineage + authority** — a colony with no `SourceConfig` (no species cap to respect) never
+  fissions, and only the sim authority decides (as for every birth).
+- **A complete parent and viable halves** — the chain must be Head…Tail and each half at least
+  2 members (one capital end plus one body), so after one regrowth each daughter is at least the
+  3-member colony `BuildChain` spawns. Binds only for a config with `MaxSegmentsPerWorm` under 4.
+
+**Budget.** Fission adds no segments and respects the cap, so the §23.9 worst case is unchanged:
+`MaxLivePopulation × 49` colliders (**441** in Wildlife Liberation, 147 for the cap-3 Lifeforms
+configs). What changes is that it is now reached **without a fight** — an unmolested, fed colony
+walks to 16, fissions, and both halves walk back to 16 until the cell is at cap. Cut-born
+colonies can still exceed the cap as before.
+
 ---
 
 ---
@@ -3490,12 +3572,12 @@ force that did the killing, read back at the moment the body comes apart.
 |  | **Joust** (a vessel took the heart) | **Starvation** (nobody took it) |
 |---|---|---|
 | Heart | freed **first**, at the strike, and **auto-collected** by the jouster | freed **last**, when the wither reaches the core — then collectable by **any** vessel |
-| Spindles | wither **nearest-the-heart first**, unravelling **outward** around the hole | wither **farthest-from-the-heart first**, spending the extremities **inward** |
+| Spindles | wither **from the missing crystal to the leaves** along the spindle tree, unravelling **outward** around the hole — the one sanctioned exception to §26.10 | wither **outside-in** along the spindle tree (deepest limb first), spending the extremities **inward** |
 | Body prisms | left standing as a **skeleton** | left standing as a **skeleton** |
 | Detonation | none | none |
 
-They are the same operation sorted the other way: order the spindles by distance from the heart,
-ascending for a joust, descending for starvation. A shark's fins and a brittlestar's arms still go
+They are the same operation sorted the other way — since §26.10, by depth in the spindle TREE
+(distance from the heart breaks ties): shallowest first for a joust, deepest first for starvation. A shark's fins and a brittlestar's arms still go
 before the core body on the starvation death — emergent from geometry, with nothing authored per
 prefab — and on a joust the same geometry runs backwards.
 
@@ -3525,7 +3607,8 @@ as ordinary cell mass:
 detached **before** any spindle withers — evaporating a spindle first destroys the very mass the
 skeleton is conserving. The wither **pacing** is stamped once as per-spindle start-time offsets
 (`ForceWither(i * interval)` after a one-time distance sort — `Docs/PRISM_ANIMATION.md` §5 C11);
-the visual is still extremity-first (starvation) / heart-outward (joust). Heart release still
+the visual is outside-in (starvation, `Spindle.OrderOutsideIn`) / heart-outward (joust,
+`Spindle.OrderHeartOutward`), both along the spindle tree (§26.10). Heart release still
 waits until the wither has reached the core (`count × interval`). Continuity of existence is
 the fade itself, not a snap.
 
@@ -3597,7 +3680,7 @@ which is the starvation behaviour and therefore never a lost crystal.
 - **Fauna**: `LightFauna` (the spindled creatures — shark, brittlestar, clawfish) gets both
   directions plus the deferred heart. `Boid` (the tadpole) has no spindle rings to order, so it
   leaves its skeleton and fades the empty husk out.
-- **Flora**: `LifeForm.Jousted` withers heart-outward and leaves a skeleton. **Every other flora
+- **Flora**: `LifeForm.Jousted` withers heart-outward along the spindle tree and leaves a skeleton. **Every other flora
   death keeps the existing destruction** (`DamageAll` + `ForceWitherAll`) — a plant grazed down to
   its lethal threshold has been actively eaten, and the prompter's ask was specifically about the
   joust.
@@ -3668,6 +3751,78 @@ speed.
 3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
    a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
    (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.
+
+### 26.10 Every standing limb connects to its crystal — except in the crystal joust (Oct 2026)
+
+> *"I killed some Borromean plant but the spindles near the crystal were dying off before the rest
+> of the spindles. This should not be possible. Spindles and prisms should always have a spindle
+> path that connects to the lifeform crystal."* — and, on review: *"the crystal joust which uses
+> the wither effect should still be able to evoke an exception where the spindles wither from the
+> missing crystal to the leaves."*
+
+**The invariant.** Every spindle and every prism still belonging to a lifeform has an unbroken path
+of standing spindles back to its crystal — while it grows, while it is grazed or shot, and through
+every death. It is the growth law (`/flora` §2: crystal first, spindles from the crystal, prisms
+from spindles) held in both directions: a lifeform grows outward from its heart and is spent back
+INTO it. Skeleton prisms are outside it because they no longer belong to the lifeform —
+`LeaveAsSkeleton` hands them to the cell before any limb withers.
+
+**The one sanctioned exception: the crystal joust.** A joust (`LifeformDeathStyle.Jousted` —
+the vessel, skimmer and explosion `…WitherLifeformByCrystalEffectSO`s) takes the heart at the
+strike, and the body unravels FROM THE MISSING CRYSTAL TO THE LEAVES around the hole it left
+(`Spindle.OrderHeartOutward`). That outer limbs briefly stand without their path to the heart is
+the joust's signature, not a defect. Nothing else may do it: starvation, every other ordered wither
+(`Spindle.OrderOutsideIn`) and grazing all spend a lifeform outside-in.
+
+**The defect that was NOT the joust.** `BorromeanFlora` and the Mandelbulb family posed each limb
+on its bond as a FLAT SIBLING under the plant root (`LifeForm.AddSpindle()`), so `Spindle.Start`
+found no parent spindle and no limb knew anything grew from it. `Spindle.CheckForLife` keeps a limb
+only while it carries a prism or a child spindle, so grazing or shooting an inner plate evaporated
+its limb at once while every limb beyond it stood on, rooted at nothing — on a LIVING plant, with
+no joust involved. The "the limb is left standing when its plate is eaten" claim in both classes'
+docs was false in code. **Fix:** `Spindle.AttachToParent` links each limb to the limb of the site
+it grows out of (Borromean: `_table.Parents[site]`; Mandelbulb: the nearest STANDING ancestor,
+re-linked on every re-pose) without touching the transform hierarchy. A limb now stands while
+anything hangs off it, a bare leaf limb withers, and its parent follows if that leaves it bare.
+`BranchingFlora`, `PhyllotacticFlora`, `AssembledFlora` and `NestedGyroidFlora` (§58) already nest
+each spindle under its parent in the hierarchy, which `Spindle.Start` turns into the same link — which
+is why only the two bond-posed species showed it. **A new species that poses its limbs on bonds must
+do one or the other**: nest each limb under its parent limb, or call `AttachToParent`.
+
+**Both orders are read off the spindle TREE now, not distance.** The old sorts were Euclidean
+distance from the heart. On a surface that wraps back past its own crystal (the Borromean membrane
+is genus 1 over three loops) a limb five hops out can sit nearer the crystal than its own
+grandparent, so a distance sort can spend a parent before its child in EITHER direction — an
+outside-in starvation that orphans a limb, or a joust whose unravel skips around the plant instead
+of running out along it. Tree depth is the order the plant actually grew in; distance only breaks
+ties. A lifeform whose limbs form no tree at all (every depth 0) sorts exactly as before.
+`OrderHeartOutward` is defined as the exact reverse of `OrderOutsideIn`, so the two can never drift.
+
+**Follow-ups found while doing this (rows, not done here):**
+
+1. **Three copies of the limb-stretch code.** `StretchToBond` exists in `BorromeanFlora`,
+   `MandelbulbFlora` and `NestedGyroidFlora`, and branch-reach measurement in three shapes
+   (`BorromeanFlora.ResolveBranchReach`, `NestedGyroidFlora.ResolveBranchReach`,
+   `MandelbulbFlora.ResolveBranchGeometry`, each with its own static cache). Measured with
+   `grep -rln "void StretchToBond" Assets/_Scripts` (3 hits) on 2026-10-07. Inconsistency, so a
+   fix: one shared limb helper. The blocking question is that Mandelbulb writes an ABSOLUTE z
+   scale (its limbs are re-posed) while the other two multiply, so the helper must take the
+   absolute form.
+2. **A bare limb can now hold its parent up.** When `EnvironmentPrismPool.Get` returns null after
+   `BorromeanFlora.LayAt` created a limb, that limb carries no plate, is never asked
+   `CheckForLife`, and — since §26.10 linked it — keeps its parent limb standing. It is re-used on
+   the next tick, so it is a transient, not a leak, unless the pool stays empty. Unmeasured: count
+   bare limbs (no prism, no child) on a grown plant with the pool starved.
+3. **Two ordered-wither stampers.** `LifeForm.WitherToSkeleton` and `LightFauna.WitherCoroutine`
+   both order, isolate, skeletonise and stamp `ForceWither(i * interval)`. They differ in heart
+   release and husk teardown, so the shared part is the order-isolate-stamp core, and the
+   `PrismSpindleDeathClockTests` string gates that pin the literal stamp expressions in both files
+   would have to move with it.
+
+**Verification.** `SpindleOutsideInOrderTests`: outside-in never spends a parent before any of its
+descendants and heart-outward never spends a child before its parent, both on a tree whose geometry
+folds back past the heart; the negative controls are the two retired distance sorts, each of which
+fails that tree. Nothing here was run in the Editor — see `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ---
 
@@ -4046,6 +4201,17 @@ Fixed with three pieces that only work together:
 Fail-safe by construction: if the broadcast never arrives, the cell warns on every attempt and
 never silently starts a spawner on the wrong arena.
 
+**And the second pass must not undo the first (2026-10-08).** When the first crystal lands inside
+`InitDelayMs` (OnClientReady fires there; ~20 scenes spawn on it), `InitilizePostFirstCellItem`
+completes the WHOLE bootstrap - lazy `Initialize()`, cytoplasm, spawner - a second before
+`OnInitializeGame` runs `Initialize()` again. That second pass used to clear `spawnedLifeForms`,
+`trackedBlocks`, the live flora/fauna counts, the colony frontiers and every cell binding under a
+spawner that was already planting, so the cell forgot its first wave. `Initialize()` now returns
+after rebinding the runtime and refreshing stats once `postInitilized` is set (the config is sticky
+and the visuals and grids already exist). A destroyed cell also retires its six static colony books
+in `OnDestroy` (they could never be cleared after the unload, because every `Clear(cell)` returns
+at its `!cell` guard).
+
 **Rule for any future per-intensity cell:** a choice that is sticky AND derived from replicated
 state must be gated on that state having replicated. `Cell.IntensityIndex` also floors at 1 and
 warns when the selected intensity exceeds the authored config count — a mode offering four
@@ -4277,7 +4443,10 @@ Three rules came out of it and generalize:
 Everything above describes the shared retirement, and it is what every crystal does unless the
 thing that spent it says otherwise. A vessel may replace the husk burst with its own animation that
 carries the crystal's **own body** onto whatever the pickup made — the Scarab's crystal closing
-into the ball its skimmer forged (`R_VesselActions/SCARAB_CRYSTAL_MORPH.md`). Two retirements
+into the ball its skimmer forged (`R_VesselActions/SCARAB_CRYSTAL_MORPH.md`), and the Squirrel's
+crystal becoming the eight shielded prisms of its boost ring, panel for face
+(`R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`, authored per hull in
+`VesselImpactorDataContainerSO.OmniCrystalRetirement`). Two retirements
 drawing the same body would overlap, so the collector suppresses the spray through
 `Crystal.ExplodeParams.SuppressHusk`.
 
@@ -11012,3 +11181,282 @@ selector at it would fix all three at once and is not done here.
 **Nothing has been run in the editor**: the prism counts, volumes and extents above are the
 offline model's — the Mandelbulb sixteen measured by growing the shipped C# growth rule, the
 Borromean four read out of `BorromeanSurfaceData.cs` — and the cell has never been loaded.
+
+## 58. THE NESTED GYROID — a 3D prismscape, and the stack the Urchin could not ride (Oct 2026)
+
+`NestedGyroidFlora` grows a stack of **N nested gyroid sheets** G = t_i (t_i evenly spaced on
+[−tMax, +tMax], defaults N = 7, tMax = 1.2) woven together by **fibers** traced along ∇G. The plain
+Gyroid flora (§32, §34) tiles the single sheet G = 0, a 2D prismscape; this is the first flora that is a
+**Volume** in `PrismscapeDimension`'s sense. **A plant is ONE octagon tile of the gyroid flora's tiling on
+every sheet, hung off its crystal by spindles, and the species spreads as a COLONY of such tiles through the
+triply periodic structure** (§58.3, §58.9) — exactly the gyroid flora's model, a layer deeper. Files: the rule
+`NestedGyroidLattice.cs` (pure C#, System.Numerics, no UnityEngine), the population book `NestedGyroidColony.cs`,
+the plant `NestedGyroidFlora.cs`, the config `NestedGyroidConfigSO`
+(`Assets/_SO_Assets/Lifeforms/NestedGyroidConfig.asset`), the prefab `NestedGyroidFlora.prefab`, the
+gates `Tools/Build/nested_gyroid_harness/run.sh` and `NestedGyroidLatticeTests`.
+
+### 58.1 Why tMax < √2 is the whole licence
+
+G = sin x cos y + sin y cos z + sin z cos x has critical values only at ±√2 and ±1.5, so inside
+|t| < √2 the gradient never vanishes: the level sets never touch and every gradient line crosses each one
+exactly once. That single fact is what makes "N sheets plus fibers that cross every sheet once" a
+well-defined object rather than a hope. `NestedGyroidSettings.TMaxCeiling` = 1.40 enforces it
+(`Sanitized`, and the config's `[Range]`). Measured |∇G| per level: t = 0 → 1.41–1.73, t = 0.8 →
+1.15–1.48, t = 1.2 → 0.70–1.08 — so the outer layers are up to **2.3×** deeper than the inner ones.
+
+### 58.2 The rule, and what each step is for
+
+The builder grows ONE PERIOD of the whole stack — every tile, every sheet, every strut — as a periodic structure
+(minimum-image distances throughout), and a plant is cut out of it (§58.3). Building the period, not a plant, is what
+makes neighbouring plants of a colony clear each other exactly: the fit already saw them side by side.
+
+1. **The base sheet is the GYROID FLORA's own tiling** (§58.7): `NestedGyroidTemplate`, 576 sites per period
+   measured off its bond table, Newton-snapped onto G = 0. Each site keeps the flora's frame (+z flipped where needed
+   so it points UP G, +y its own) and its block type, and each site's 4 nearest periodic neighbours are its MATES —
+   the in-sheet bonds.
+2. **Every sheet is that tiling carried along the gradient lines.** Each site is traced by RK4 along ±∇G/|∇G| to
+   every grown level G = t_i; its crossing IS its plate on that sheet. So every layer has the gyroid flora's loop
+   subdivisions and its octagon rings, and the gradient line through a site is literally its COLUMN through the
+   stack. No plate within `HeartClearance` of any octagon centre (any crystal's seat).
+3. **Fibers (the warp).** A subset of the columns carries struts, laid between consecutive images, kept a clearance
+   off both plates. The subset is **one anchor per octagon tile** (a random site of its patch, never its ring),
+   then a periodic Poisson fill at `FiberSeedSpacing` around the anchors — so every PLANT carries struts whatever
+   the spacing (without the anchors 4 of the 24 tiles drew none: plants that were a stack of plates on a crystal).
+   Every prism's local **+z points UP G**.
+4. **Orientation.** The template's frames ride along (projected onto each sheet's tangent plane). The
+   helicoidal-plywood twist is a config field but **defaults to 0**: turning the plates crosses each one over its
+   loop neighbours (measured at 25°/sheet: 52–66 plates per element lost to the fit, against 0–15 at 0°).
+5. **Sizing — the element's proportions, carried.** A plate wears the element's leaf (the gyroid flora's
+   `Variant.LeafSize`, scaled by `CellSize / 120`) times the template's local IN-PLANE STRETCH (its distance to its
+   mates' images over the base's: 0.82–1.49 at the defaults — x and y together, so the aspect is exact on every
+   plate the fit leaves alone). Thickness follows the layer: leaf z × (local gap / the t = 0 layer's median gap),
+   capped at 2× the leaf's own thickness and at 45% of the gap — a plate stays a plate.
+6. **The fit — periodic.** Exact OBB separating-axis test on minimum-image pairs, margin = half the clearance. Plates
+   shrink 0.88×/pass in their footprint, then (footprint at its 35% floor) in their thickness. **Struts never give
+   way** — the plates beside a strut give way instead.
+
+**Default period (Time leaf): 4,235 prisms, 0 overlaps after the fit (3,160 pairs before it, 1 plate dropped),
+sliced at 2 ms into ~85–95 slices (worst slice ~2.5 ms, best of three builds), ~0.2–0.4 s total; measured by `nested_gyroid_harness/run.sh`, re-run it rather than trusting these figures.** It is built ONCE per
+settings key and cached: every later plant of that config and element — every colony daughter — only cuts its tile.
+Near √2 the outer levels have much less AREA than the base (the gradient lines converge on G's maxima), so the fit
+drops what no longer fits: at tMax 1.35–1.38, 336 plates a period, and a plant's outermost sheet keeps 2–4 of its 8
+ring plates.
+
+### 58.3 The plant — one octagon, one crystal, one spindle tree
+
+**A plant is one octagon tile on every sheet**, the gyroid flora's "24 prisms a lifeform" (§32.7) carried through
+the stack: `NestedGyroidPeriod.Plant(octagon)` takes the 23–25 template sites the octagon OWNS (§58.7), their plates on
+every grown sheet, and the struts of their strutted columns — **167–187 prisms at the defaults (161–175 plates, 6–18
+struts), reaching ~76 units from its crystal on a 240-unit period.** The plant's origin is the octagon's centre on the
+t = 0 level: **its CRYSTAL**.
+
+**Every prism hangs off the crystal through spindles.** The plan is one tree rooted at the crystal: limbs out of the
+crystal to its own ring's eight images on the heart's sheet (or both central sheets, even N), then a ring-layered
+breadth-first growth along the plant's bonds — the template mates within the tile, each column's chain of struts, and
+the column itself between adjacent sheets where it carries no strut. `Parent[i] < i`, the parent chain of every
+prism ends at the crystal (counted, not assumed: `Stats.RootedPrisms`), and `NestedGyroidFlora.LayAt` gives EVERY
+prism a limb on the bond to its parent, rooted at the parent, stretched to span it (`StretchToBond`, the Borromean's
+measured stretch) and parented under the parent's own limb — so the plant is one spindle hierarchy out of its heart and
+a prism is never parented to a prism (a non-uniform scale above a rotated child is a shear, §37.9). A grazed prism's limb
+stays and is reused when it regrows; a prism whose parent is grazed waits for it. Limbs are 4.8–25.6 long at the
+defaults — the skeleton, not the rider's path, so their length against the rider's reach is reported, not gated
+(rideability is a COLONY property, §58.9).
+
+`PrismSizeFixedByGrowthRule` is true (every size is fitted); resizing is `FloraVariantTuning.LatticeScale`, a uniform
+similarity of every length. Sizes ride the `_pendingPrismScale` stamp `MandelbulbFlora` established. Counts are logged
+once per built period on the **Ecology** channel (`FrogletTools > Toolbox > Logging`); a broken guarantee or a budget
+cut is a warning. `PrismBudget` (400) is PER PLANT: over it the growth order is cut — still one tree on the crystal,
+outer sheets incomplete. At full growth, with the channel on, a physics spot-check runs `OverlapBox` on 64 sampled
+prisms and reports cross-layer hits (and how many it skipped for an LOD-culled collider).
+
+**Element geometry is the gyroid flora's** (§58.6). A Charge plant's shields (1.5 × leaf octahedra) are not fitted
+against the layer gap — exactly as on the gyroid flora, whose Charge plate was fitted to its own shields on ONE sheet.
+No cell adopts the species — it is reachable from the Spawn Matrix toy (§58.6), and the prefab is `autoInitialize` and
+roots where it is placed when it has no cell, which is the test-scene path.
+
+### 58.4 The Urchin could not ride a stack — and the change that lets it
+
+`BlockscapeFollower` takes the **nearest prism centre** as its ground and never consults adjacency. On a
+shell that is the shell. In this stack the layers lie 8.8–20 apart while plates lie ~20 apart in-plane,
+so the nearest centre is often on the NEXT layer, and a rider coasting between plates on a convex sheet
+drifts toward it. **Measured on the ride model: an in-sheet roll under the old rule visited sheets
+3, 2, 4, 5, 1**; pitching in or out was a random walk with 6–9 reversals. A geometric fix cannot work —
+weighting the off-plane distance was tried first and still leaked (3, 4, 2, 1), because how far apart two
+layers are is not something a prism's position says. So the structure says it:
+
+* **`ILayeredPrismscape.TryGetStackCoordinate`** — sheet i is 2i, a strut between i and i+1 is 2i+1 — and
+  **`LayerSpace`**, the frame those numbers are measured in. A nested gyroid's layer space is its COLONY: every plant
+  of one colony shares one lattice frame, so sheet 3 of one plant is sheet 3 of its neighbour, and the ride treats the
+  whole colony as one stack (it holds its sheet across a plant boundary instead of letting the neighbour's other
+  layers in). A structure that shares its frame with nothing returns itself. `NestedGyroidFlora` implements it; `PrismscapeTopology.LayeredOwnerOf` resolves it through
+  `HealthPrism.LifeForm` (Unity-null-checked), and `DimensionOf` returns **Volume** for it rather than
+  running the census, which near the outer skin sees half the stack and would say Surface.
+* **Layered ground rule** (only while the ground's owner declares a stack — every other prismscape rides
+  exactly as before): a candidate of the same STACK (same layer space) is eligible only on the SAME layer, or, while the
+  pilot pitches past `layerClimbDeadzone` (0.35), on the next strut or sheet in that direction (±1/±2).
+  Candidates are scored to their **hover point** (centre + hoverHeight along their normal), so a climb
+  hands over halfway between riding heights. A prism of another structure stays eligible as it always was.
+* **Layered climb**: the aim's out-of-plane component (past the deadzone) carries the rider along the
+  normal at `layerClimbFraction` (0.6) of crawl speed, and the hover spring **lets go** while a layer
+  exists ahead — the spring's equilibrium (climb speed / 5) otherwise stalls short of a deep outer gap.
+  Pitching out of the outermost skin finds no layer ahead, so the spring holds and the skin stays ridden.
+
+**Measured on the ride model (harness, Urchin defaults, 60 u/s) across a grown 42-plant colony:** an in-sheet roll
+crosses 20 plates on 4 different plants and stays on sheet 3; pitching up the stack visits 3 > 4 > 5 > 6 and stops on
+the skin; pitching down visits 3 > 2 > 1 > 0; zero reversals. The legacy nearest-centre rule (negative control) roams
+all seven sheets. The model is a transcription of `BlockscapeFollower` (the shipped file is a
+MonoBehaviour); `RideModel.cs` names the method each block mirrors and must move with it.
+
+### 58.5 The look — danger prisms, never a lit one
+
+Colour is a team (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`), and the stack reads in the domain's OWN prism
+states: **plain and DANGER**, exactly as the gyroid flora does. The template's four danger block types (DE, EG, GEs,
+EsD — its octagon rings) are danger prisms on every sheet, and every fiber strut is a danger prism. The
+through-thickness grade is a DARKENING of the domain colour only — `Prism.SetColorShade(gain)`, clamped to [0, 1],
+re-applied after every material sync (so a danger prism keeps its sheet's grade), reset on pooled `Initialize`:
+`GradedByLevel` (0.55 on the −tMax sheet → unshaded on +tMax) or `AlternatingSheets` (odd sheets 0.6). The first
+cut of this species brightened the +t half (gain up to 1.25) and whitened the struts; that "lit" look read as a
+state the game does not have and is gone — the API no longer has a whiten term and cannot brighten. A plate's
+danger flag is stated true OR false before its team stamp, because a pooled prism keeps its previous life's
+`IsDangerous` (`Prism.Initialize` does not clear it). Danger is also gameplay: an opposing vessel that touches one
+takes the danger debuff, on this species as on the gyroid. Charge's shield regeneration overwrites danger over
+time, also exactly as on the gyroid.
+
+### 58.6 Four elements, in the Spawn Matrix
+
+`Tools/Build/author_nested_gyroid_flora_assets.py` (`--check` / `--write`) owns the four canonical configs
+`_SO_Assets/Lifeforms/Nested Gyroid Flora {Charge, Mass, Space, Time}.asset` and the **Nested Gyroid** row
+of `Toy_SpawnMatrix.asset`'s flora kingdom. GUIDs are `md5("cosmicshore/nestedgyroid/<asset>")`.
+
+* **What the four elements are: the gyroid flora's four.** Each config QUOTES `Variant.LeafSize` and
+  `Variant.LatticeScale` out of `Gyroid Flora <Element>.asset` (Time 9 × 3.4 × 1.5; Mass 7 × 4.5 × 3.5; Space
+  40 × 1 × 1 on a 3.19× lattice; Charge 4.28 × 1.62 × 0.71), so the template's proportions cannot drift from the
+  original plant. On top, the platform's laws: **Time** grows fastest, **Charge** is armoured (`ShieldPeriod 1`,
+  gated by `author_charge_flora_shields.py`), each drops its own element's heart. (The first cut sized each grow
+  tick from the element-SCALED period, which cancelled the tempo law exactly — every element grew at one speed.
+  The tick is now sized from the authored period.)
+* **The heart is PINNED at `HEART_MAX` (4.6), not sized.** `author_lifeform_heart_sizes.py` solves K so the
+  largest body lands on `HEART_MAX`; its flora body model (a disc of N × footprint, N capped at 400) would
+  measure this species at ~270 against today's largest (Nerve, 158) and so **re-price every heart in the game
+  downward** — a balance change, because heart scale is the collect reward. The species is therefore
+  deliberately absent from that tool's `FLORA_PREFABS`, and the generator reads `HEART_MAX` out of it (and
+  asserts the absence), so the pin cannot drift from the band. It is the biggest lifeform in the project; the
+  top of the band is honest for it and re-prices nobody.
+* **Population: a colony** (§58.9), on the GYROID FLORA's own numbers: InitialSpawnCount 1, seed floor 4 (extra
+  seeds JOIN the living colony's frame, never found a rival), cap **42 plants** per element. Cost at the cap: ~7,400
+  prisms and as many limbs per element (7× the gyroid's 42 × 24, because a plant is its octagon on seven sheets), 168
+  heart colliders across the four; the cell's Frenzy COUNT backstop freezes growth first. And `GrowthPerOffspring 0` ON PURPOSE: the colony births on the population clock through
+  `Flora.TrySpawnOneOffspring`, and a per-plant quota would add a second, uncoordinated birth path that scatters
+  daughters off the lattice. `OffspringSpread` is unread for the same reason — a daughter's place is its tile.
+* **The row goes immediately BEFORE Borromean**, because `author_borromean_flora_assets.py` deletes its own
+  row and re-appends it at the END of the list; after it, that tool's `--check` would report drift. Verified:
+  the Borromean, Mandelbulb, charge-shield and heart-size `--check`s are all green with the row in.
+* **The icon.** The matrix builds each species' icon synchronously from `TryPreviewGrowth(220)`: ONE PLANT — the
+  same tile a planted one grows — cut from a three-sheet period (71 prisms, 24 danger-ring plates, 2 struts; the
+  three-sheet period builds in ~28 ms and is cached). Never a coarsened copy: the template's subdivision is the point.
+* **At the bench.** A release roots its founder's crystal AT the station (a pinned plant founds its own colony
+  frame there), and the colony then wanders out tile by tile up to its cap, ~76 units a plant from each crystal —
+  wider than the 90-unit station spacing once it spreads, which is the prismscape working, not a bug.
+
+### 58.7 The template: the gyroid flora, measured as one period
+
+`Tools/Build/measure_nested_gyroid_template.py` (`--check` / `--write`) emits `NestedGyroidTemplate.cs`. It walks
+the gyroid flora's 48-entry bond table exactly as `measure_gyroid_octagons.py` does and finds, without assuming
+it:
+
+* the lattice's **translation symmetry is body-centred cubic** — three orthogonal translations of **120.00** and
+  the body diagonals at 103.9 = 120·√3/2, the gyroid's own space-group lattice. So the gyroid flora IS a gyroid of
+  period 120 at bond spacing 3 (LatticeScale 1);
+* fitted (a PROPER rotation only — a reflection would mirror every prism) onto G = 0 of the standard gyroid, the
+  walked prisms sit at |G| mean 0.032 / max 0.108 — about half a world unit off the surface — and their local +z is
+  the surface normal to |cos| ≥ 0.978. That is why the Urchin's ride kernel already worked on the gyroid flora;
+* one period holds **576 sites, exactly 48 of each of the 12 block types**, stable across dedupe tolerances 1.5–3.5;
+  the four danger types are **192 sites = 24 octagon rings**. Each site is the mean of its ~8.7 periodic images
+  (chained rotations drift a little per hop).
+
+It then cuts the period into the gyroid flora's **plants**: each of the 24 octagon rings OWNS the sites nearest it
+**along the bond graph** (multi-source Dijkstra from the ring's eight sites over the 4-mate bonds) — 23–25 sites each,
+every tile connected through its own bonds, exactly four neighbouring tiles each, symmetric. The table ships as
+`OctagonCenter`, `SiteOwner`, `SiteShift` (the whole-period shift that puts a site's image beside its owner) and
+`NeighborOctagon` / `NeighborShift`. **Euclidean nearest-centre ownership was tried first and gave 17 of the 24 tiles a
+disconnected fragment** — a site across a channel of the surface is near in space and far along it; geodesic
+ownership has none.
+
+Its structure gates fail loudly; `NestedGyroidLatticeTests.Template_IsTheMeasuredGyroidFloraCell` and
+`Template_TilesThePeriodIntoTwentyFourOctagons` re-prove the shipped table in the editor.
+
+### 58.8 Three latent defects the rebuild exposed (all fixed)
+
+* **Half the stack lost its stitch.** Cross-sheet links were an inner→next MAP; a t = 0 plate starts two chains (up
+  and down the stack), so whichever was laid second overwrote the first. The Poisson build escaped it by insertion
+  order; the template build lost three sheets to pruning. Chains are now sequences.
+* **`Step` could stall.** It checked its budget before doing any work, so a budget below one chunk advanced
+  nothing, forever. It now always runs at least one chunk.
+* **The Time law was cancelled** (§58.6).
+
+### 58.9 The colony — a population through the triply periodic structure
+
+The first cut of this species grew a whole bounding CUBE of the stack as one plant (~4,200 prisms, one live plant per
+element). That is not how the gyroid flora lives: its plants are octagons, and its population wanders through the
+lattice as a colony (§32.7). This species now does the same, with the same rules:
+
+* **One frame per (cell, species).** `NestedGyroidColony` holds the colony's lattice origin, rotation and period and
+  the book of claimed tiles. Because the lattice is an exact periodic table, a tile has an INTEGER address — period cell
+  (x, y, z) and octagon — so a claim is a set lookup; none of the gyroid book's float dedupe or misalignment gates.
+* **The founder** (a seeded plant with no living colony, or any PINNED plant — the Spawn Matrix station) lays the frame
+  so a random octagon's crystal lands exactly where it was planted, at a random rotation.
+* **A complete plant offers its four neighbouring tiles**; **once per cycle the population births ONE plant at a
+  uniformly random open tile** — the cycle is the gyroid's: the cell's fauna-wave period scaled by the element's
+  reproduction rate (Time breeds fastest), stagger 0.35. Production gates (planting enabled, the cell's cap) are checked
+  before the pop, so a capped colony burns no frontier; a birth the spawner refuses is requeued. The daughter is handed
+  her tile in `ConfigureOffspring` (before `Initialize`), and her `Plant()` roots her on it.
+* **Only a control-zone NUCLEUS bounds where it goes** (`NestedGyroidFlora.ClearOfNucleus`): a tile whose crystal lies
+  inside one leaves the book for good. The planting band is where a SEED lands, not a fence for the colony; the cap is
+  what bounds it. **The first cut gated every birth on the band (0.25–0.5 of the membrane) and the colony did not
+  grow** — every Spawn Matrix station sits outside the membrane, so all four neighbours of the founder were refused
+  and discarded, and the population stopped at one plant (reported from play; the harness now reproduces it as a
+  negative control). The gyroid colony has no gate at all, which is why it kept spreading beside it.
+* **Maturity is "every prism of the tile has stood once"**, not "is standing now", so grazing a plant never withholds
+  its neighbours from the colony.
+* **A second SEED joins, it does not found.** `TryAnyOpenTile` returns a frontier tile, or — while the founder is still
+  growing and has offered nothing — a random free neighbour of a member, so two seeds never lay rival frames on top of
+  each other.
+* **Death frees the tile** (`Die`, `OnDestroy`): it is re-offered if a living member borders it. Only the owner can
+  free it. `Cell`'s world resets clear the cell's colonies at the same four sites that clear the gyroid's book.
+
+**Measured (harness, the SHIPPED `NestedGyroidColony.cs` run against stubs):** 8 colonies of 60 plants — no tile
+claimed twice, every birth beside a living plant, 8 different shapes, each spanning 2–3 periods a side and filling
+**14%** of that box (a cube-filling population fills 100%). A colony grown to the cap from a founder three periods outside its cell's band reaches **42 plants** (the retired band
+gate: 1). A grown 42-plant colony at the defaults: **7,417 prisms, 0 overlapping pairs within or BETWEEN plants
+(brute-force OBB over every pair), 0 duplicates, every prism with a neighbour inside the rider's reach, the whole colony
+ONE reach component** (39,432 reach links between plants; at 0.4× the reach it falls into 1,422 pieces — the negative
+control). Mass, Space (766-unit period) and Charge: the same, all
+green. The sweep (N ∈ {2,3,5,7,9} × tMax ∈ {0.6, 1.2, 1.3, 1.35, 1.38}, maxSheets 3) passes every plant and period gate;
+colony RIDEABILITY is gated on the shipped configs only and reported for the sweep, because a sparse stack (N ≤ 3:
+layer gaps far beyond the reach) or a near-critical one (tMax ≥ 1.3, outer sheets whose area collapses) leaves
+outer-sheet fragments the rider cannot bridge (largest component 83–99%).
+
+### 58.10 Open items (recorded at ship, each with its evidence)
+
+* **Never opened in the Editor.** Everything above is headless (harness, generator `--check`s, a stub type-check of
+  the glue and the edit-mode tests). `Docs/UNITY_VERIFICATION_CHECKLIST.md` (nested gyroid entry) is the gate.
+* **The period cache key includes `PrismBudget`, which does not shape the period** (`NestedGyroidSettings.Key()`,
+  `NestedGyroidLattice.cs` ~:100; the budget is only read by `Plant`, ~:330). A per-cell budget scale therefore
+  builds and caches a second, identical period. Harmless today (no cell adopts the species); fix by keying the
+  period on everything BUT the budget and cutting plants per budget. *Inconsistency → a fix.*
+* **Every Spawn Matrix release is its own colony and its own cap.** `SpawnMatrixToy.SpawnFloraVariant` clones the
+  config per release (`Instantiate(config)`, ~:873), and both the colony book and `Cell.IsFloraAtCap` key on that
+  clone — so four releases grow up to 4 × 42 plants (~30,000 prisms). Bench semantics, shared with every species;
+  the Frenzy count backstop is what stops it. *A report, not a fix — say if the bench should share one cap.*
+* **One limb per prism doubles the object count** (~7,400 prisms + ~7,400 spindles per element at the cap). That is
+  the asked-for design (every prism hangs off the crystal); if the Profiler disagrees, the lever is the cap, not the
+  limbs. *Report.*
+* **Rideability holds on the shipped stack only** (N 7, tMax 1.2): sparse (N ≤ 3) or near-critical (tMax ≥ 1.3)
+  stacks leave outer-sheet fragments beyond the rider's reach (§58.9). *Incompleteness — a design call if those
+  configs are ever wanted.*
+* **`GlueStubs.cs` copies real signatures by hand**; it cannot see a signature that changes after it was copied.
+  `Tools/Build/unity_refcompile` would replace it with a real bind. *Report.*
+* **Unrelated, pre-existing:** `Tools/Build/author_flora_populations.py --check` exits 1 on `Tollway Anchor Flora
+  Gyroid` (no recorded pre-conversion budget in `LATTICE_SOURCE_BUDGET`), identically on a clean `bleeding-edge`
+  worktree (A/B'd at ship). Needs the number only that conversion's author has.
+

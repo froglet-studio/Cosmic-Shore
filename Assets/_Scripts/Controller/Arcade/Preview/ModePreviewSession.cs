@@ -126,6 +126,16 @@ namespace CosmicShore.Gameplay
         /// <summary>True once the player has tapped in and is flying the arena themselves.</summary>
         public bool IsFlying => _state == State.Live;
 
+        /// <summary>True while the scene's preview session is anywhere but Idle. Read by the
+        /// device-tier trail policy (MenuCrystalClickHandler): a preview shows a mode as it plays,
+        /// trail included, so the menu's trail hold stands down for it.</summary>
+        public static bool AnyActive => s_session && s_session.IsActive;
+        static ModePreviewSession s_session;
+
+        // Enter Play Mode runs without a domain reload: last session's object must not answer.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_session = null;
+
         [Header("Arena view")]
         [SerializeField, Tooltip("Radius the scale model is fitted to. Arbitrary units - the camera " +
                                  "frames this same number, so it only decides the model's own " +
@@ -156,10 +166,15 @@ namespace CosmicShore.Gameplay
         // ── Lifecycle ────────────────────────────────────────────────────────
 
         // Start, not OnEnable: [Inject] fields land after Awake and before Start.
-        void Start() => Subscribe();
+        void Start()
+        {
+            s_session = this;
+            Subscribe();
+        }
 
         void OnDestroy()
         {
+            if (s_session == this) s_session = null;
             Unsubscribe();
             Detach();
             // Before AbortHard, which early-returns when already Idle. Forfeited, not restored:
@@ -890,7 +905,8 @@ namespace CosmicShore.Gameplay
                 $"(cell-relative), ring={definition.SpawnFromCellRing}, " +
                 $"nucleus={( _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : -1f):0.#}, " +
                 $"dist={definition.SpawnDistanceOutsideNucleus:0.#}, " +
-                $"floor={definition.SpawnRingRadiusFloor:0.#}, formation={definition.SpawnFormation}.");
+                $"floor={definition.ResolveSpawnRingRadiusFloor(_arena.Intensity):0.#} " +
+                $"(intensity {_arena.Intensity}), formation={definition.SpawnFormation}.");
         }
 
         void ReturnVesselHome()
