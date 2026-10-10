@@ -92,6 +92,23 @@ async function check(browser, file, hook, out, three) {
         return { t0, t1: st() };
       }, hook);
       if (!r.skipped && r.t1 !== null && !(r.t1 > (r.t0 || 0))) fails.push('desktop: startRace() did not advance state.t (' + JSON.stringify(r) + ')');
+      // Stop (D18) ends the run and STAYS stopped until Play: the race clock must not run again on its own
+      // (the Stoat's AI-flown hull restarted itself 0.6 s after Stop, artifact comment 2026-10-10).
+      {
+        const st = await d.page.evaluate(async (h) => {
+          const b = document.getElementById('tpStop'); if (!b) return { skipped: true };
+          const s = window[h], t = () => { const v = typeof s.state === 'function' ? s.state() : s.state; return v && typeof v.t === 'number' ? v.t : null; };
+          const race = () => { const v = typeof s.state === 'function' ? s.state() : s.state; return typeof s.race === 'string' ? s.race : v && typeof v.race === 'string' ? v.race : null; };
+          // with the AI flying your hull: the case that restarted itself (the AI starts a ready race on its own)
+          try { if ('aiOn' in s) s.aiOn = true; else if (typeof s.set === 'function') s.set('you', 'Hard'); } catch (e) { /* the hook cannot hand over the hull */ }
+          if (typeof s.startRace === 'function' && race() !== 'running') { s.startRace(); await new Promise((res) => setTimeout(res, 800)); }
+          if (b.disabled) return { skipped: true };
+          b.click(); await new Promise((res) => setTimeout(res, 300)); const a = t();
+          await new Promise((res) => setTimeout(res, 4000)); return { a, b: t(), race: race() };
+        }, hook);
+        // a hook that names its race state is judged by it (a page's state.t may be a world clock); otherwise by state.t
+        if (!st.skipped && (st.race != null ? st.race === 'running' : st.b !== null && st.b > (st.a || 0) + 0.05)) fails.push('desktop: the race ran again on its own after Stop (' + JSON.stringify(st) + ')');
+      }
     }
   }
   // Read the stage from a real screenshot: a WebGL canvas without preserveDrawingBuffer reads back
@@ -155,6 +172,7 @@ async function selfTest(browser, three) {
     ['blank stage', PLAIN('', hookJs + 'x.fillStyle="#222";x.fillRect(0,0,300,200);'), /stage is blank/],
     ['asks instead of detecting', PLAIN('<script>document.body.className="no-detect"</script>', hookJs), /did not open touch play by itself/],
     ['stage short in touch play', PLAIN('<style>body.play canvas{height:200px}</style>', hookJs), /does not fill the screen/],
+    ['restarts after Stop', PLAIN('<button id="tpStop" style="position:fixed;left:-99px">Stop</button>', 'let run=false;window.__s={get state(){return{t}},startRace(){run=true}};document.getElementById("tpStop").onclick=()=>{t=0;setTimeout(()=>{},0)};'), /ran again on its own after Stop/],
     ['touch button on a PC', PLAIN('<button id="playBtn">Play on phone</button>', hookJs), /touch-play button is shown on a PC/],
   ];
   let bad = 0;

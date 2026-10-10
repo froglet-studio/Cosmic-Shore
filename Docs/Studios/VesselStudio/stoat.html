@@ -1244,7 +1244,17 @@
     resetRivals();
     if (!batching) showOverlay(); showStopBtn();
   }
+  // Stop (/vessel-studio D18): end the run and go back to the start, and STAY there until Play. spawn() alone only
+  // moved the hull home while the race ran on, and an AI-flown hull started itself again 0.6 s later (artifact
+  // comment, 2026-10-10: "it stops, then starts again automatically").
+  let stopHeld = false;
+  function stopRace() {
+    if (batching) return;
+    spawn(); race = 'ready'; stopped = false; stopHeld = true; aiRestartT = 0;
+    showStopBtn(); showOverlay();
+  }
   function startRace() {
+    stopHeld = false;
     if (stopped) { setStopped(false); return; }
     if (mode !== 'fly' || race === 'running') return;
     if (race === 'finished') spawn();
@@ -1955,7 +1965,7 @@
     keys.add(e.code);
     if (e.code === 'Enter') startRace();
     if (e.code === 'Space') stance = !stance && race === 'running';
-    if (e.code === 'KeyR') spawn();
+    if (e.code === 'KeyR') stopRace();
     if (e.code === 'KeyP') setStopped(!stopped);
     if (e.code === 'KeyC') nextCamera();
   });
@@ -1971,7 +1981,7 @@
   window.addEventListener('keyup', (e) => { keys.delete(e.code); });
   const playPause = () => { if (race === 'running' && !stopped) setStopped(true); else startRace(); };   // startRace resumes a paused run
   $('tpPlay').addEventListener('click', playPause);
-  $('tpStop').addEventListener('click', () => spawn());
+  $('tpStop').addEventListener('click', () => stopRace());
   window.addEventListener('blur', () => keys.clear());
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
   canvas.addEventListener('focus', () => { armed = true; });
@@ -2072,7 +2082,7 @@
   $('playBtn').addEventListener('click', () => setPlayMode(true));
   $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', playPause);
-  $('tBack').addEventListener('click', () => spawn());
+  $('tBack').addEventListener('click', () => stopRace());
   function syncTouchBar() {
     if (!playMode) return;
     $('tStart').textContent = race === 'running' && !stopped ? '❚❚ Pause' : '▶ Play';   // the studio transport (/vessel-studio D18)
@@ -2092,7 +2102,7 @@
       const e = [];
       for (let i = 0; i < 10; i++) { const b = !!(g.buttons[i] && g.buttons[i].pressed); e[i] = b && !prevBtn[i]; prevBtn[i] = b; }
       if (e[0] || e[9]) startRace();
-      if ((e[1] || e[8]) && mode === 'fly') spawn();
+      if ((e[1] || e[8]) && mode === 'fly') stopRace();
       if (e[2]) stance = !stance && race === 'running';
     }
     const k = (c) => keys.has(c) ? 1 : 0;
@@ -2151,7 +2161,7 @@
   function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
   function aiInput(dt) {
     const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
-    if (!curPilot && mode === 'fly' && race === 'ready' && !batching) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
+    if (!curPilot && mode === 'fly' && race === 'ready' && !batching && !stopHeld) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
     if (!curPilot && mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
     if (race !== 'running' || stopped) { lastInput = inp; trackHold('L', 0, true, dt); trackHold('R', 0, true, dt); return inp; }
     basis();

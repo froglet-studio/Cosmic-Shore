@@ -548,6 +548,10 @@ the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` 
 ## 7. Traps these studios paid for
 
 **AI and flight**
+- **Stop must END the run and hold** (2026-10-10). The Stoat's Stop only moved the hull home (`spawn()`), so the
+  race ran on, and with the AI flying it the ready-state auto-start fired 0.6 s later. Stop sets the race back to
+  ready and holds it there until Play (`stopRace()` / `stopHeld`); `check_studio.cjs` hands your hull to the AI
+  (the case that restarted), clicks Stop, and fails a race that runs again within 4 s; the old Stoat fails it.
 - **An AI that chases the crystal leaves the line and loses every skim.** Aiming straight at crystals
   320 u away gave boost 1.1–2.1× and 2–3× the game's times. Stay on the line and lean out only as far
   as capture reach needs.
