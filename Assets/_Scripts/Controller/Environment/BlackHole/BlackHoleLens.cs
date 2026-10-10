@@ -52,6 +52,13 @@ namespace CosmicShore.Gameplay
         static readonly int SmoothCountId = Shader.PropertyToID("_SmoothWellCount");
         static readonly Vector4[] s_smoothCentre = new Vector4[4];
         static readonly Vector4[] s_smoothStrength = new Vector4[4];
+
+        // The horizon holes, for each lens to draw the OTHERS its rays meet (a pair's two lens spheres overlap).
+        static readonly int HoleBankId = Shader.PropertyToID("_BHHoleBank");
+        static readonly int HoleCountId = Shader.PropertyToID("_BHHoleCount");
+        static readonly int RingParamsId = Shader.PropertyToID("_BHRingParams");
+        static readonly Vector4[] s_holeBank = new Vector4[4];
+        static int s_publishedHoles;
         static int s_publishedSmooth;
 
         /// <summary>
@@ -82,6 +89,36 @@ namespace CosmicShore.Gameplay
             Shader.SetGlobalVectorArray(SmoothStrengthId, s_smoothStrength);
             Shader.SetGlobalFloat(SmoothCountId, count);
             s_publishedSmooth = count;
+        }
+
+        /// <summary>
+        /// Publish every HORIZON hole (xyz = centre, w = its eased horizon radius, NEGATIVE for a white hole) once
+        /// a frame. Each hole draws its own lens sphere from a copy of the scene taken before any lens, so where
+        /// two spheres overlap (a Stoat pair's poles sit 60-200 u apart inside 105 u lenses) the sphere drawn last
+        /// used to erase the other hole: the white hole hidden by the black hole's lens, or the reverse. With the
+        /// bank, every lens draws the other holes its ray meets, before or after its own bend: a black hole's
+        /// shadow and photon ring, a white hole's core (BlackHoleLens.shader, BlackHoleOtherHoles). The Vessel
+        /// Studio sums every well in one pass; this is that, per sphere.
+        /// </summary>
+        internal static void PublishHorizonHoles(IReadOnlyList<BlackHole> holes)
+        {
+            int count = 0;
+            for (int i = 0; i < holes.Count && count < s_holeBank.Length; i++)
+            {
+                var h = holes[i];
+                if (h == null || h.IsSmooth) continue;
+                float rs = h.HorizonRadius * h.WarpWeight;
+                if (!(rs > 1e-4f)) continue;
+                var p = h.transform.position;
+                s_holeBank[count++] = new Vector4(p.x, p.y, p.z, h.IsSource ? -rs : rs);
+            }
+            if (count == 0 && s_publishedHoles == 0) return;
+            for (int i = count; i < s_holeBank.Length; i++) s_holeBank[i] = Vector4.zero;
+            Shader.SetGlobalVectorArray(HoleBankId, s_holeBank);
+            Shader.SetGlobalFloat(HoleCountId, count);
+            var config = BlackHoleRegistry.Config;
+            Shader.SetGlobalVector(RingParamsId, new Vector4(config.PhotonRingGlow, config.PhotonRingWidth, 0f, 0f));
+            s_publishedHoles = count;
         }
 
         /// <summary>Icosahedron subdivisions of <see cref="LensSphere"/> (2 = 320 triangles).</summary>

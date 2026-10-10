@@ -93,6 +93,44 @@ Shader "CosmicShore/BlackHoleLens"
             // copied by BlackHoleLensPass.cs (sampler_LinearClamp comes with URP's Core.hlsl).
             // The SMOOTH WELLS, every one (BlackHoleLens.PublishSmoothWells, per frame): xyz centre, w core
             // width; strength.x the signed, amplitude-scaled lens strength. Summed by every smooth lens.
+            // Every horizon hole (BlackHoleLens.PublishHorizonHoles): xyz centre, w horizon (negative = white).
+            float4 _BHHoleBank[4];
+            float _BHHoleCount;
+            float4 _BHRingParams;   // x photon-ring glow, y width (BlackHoleConfig), for the OTHER holes a ray meets
+
+            // The other holes a ray meets between t0 and t1 along o + dir·t (this lens's own hole skipped): a black
+            // hole's shadow (shadowed = 1) and photon ring, a white hole's white-hot core. A pair's two lens
+            // spheres overlap and each draws from a scene copy taken before any lens, so without this the sphere
+            // drawn last erased its partner. Approximate (the other hole's own bending is not traced here; its
+            // sphere traces it where it is drawn on top), and the Vessel Studio's one-pass sum of every well is
+            // the reference for what a pair looks like.
+            void BlackHoleOtherHoles(float3 o, float3 dir, float t0, float t1, float3 self, inout float3 col, inout float shadowed)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    if (k >= (int)_BHHoleCount) break;
+                    float4 h = _BHHoleBank[k];
+                    float rsK = abs(h.w);
+                    if (!(rsK > 1e-4)) continue;
+                    float3 toSelf = h.xyz - self;
+                    if (dot(toSelf, toSelf) < 1e-4) continue;
+                    float3 v = h.xyz - o;
+                    float t = dot(v, dir);
+                    if (t <= t0 || t >= t1) continue;
+                    float bK = length(v - dir * t) / rsK;
+                    if (h.w > 0.0)
+                    {
+                        if (bK < 2.598) shadowed = 1.0;
+                        else col += BlackHolePhotonRing(bK, _BHRingParams.x, _BHRingParams.y);
+                    }
+                    else if (bK < 2.598)
+                    {
+                        float tc = bK / 2.598;
+                        col = col * _BHCore.y + _BHCore.x * (1.0 - tc) * (1.0 - tc);
+                    }
+                }
+            }
+
             float4 _SmoothWellCentre[4];
             float4 _SmoothWellStrength[4];
             float _SmoothWellCount;
@@ -225,6 +263,8 @@ Shader "CosmicShore/BlackHoleLens"
                 }
 
                 float3 background = float3(0.0, 0.0, 0.0);
+                float otherShadow = 0.0;
+                float tSelf = dot(centre - eye, d);
                 if (escaped < 0.5 && _BHWhite > 0.5)
                 {
                     // A WHITE hole (Docs/BLACK_HOLE.md §11): light comes OUT of the horizon. Outside
@@ -269,6 +309,9 @@ Shader "CosmicShore/BlackHoleLens"
                     // The photon ring: a thin warm glow hugging the shadow's edge (the Vessel Studio's look,
                     // bhRingGlow / bhRingWidth), centred just outside the capture radius b_c = 2.598 r_s.
                     background = scene + BlackHolePhotonRing(b, _BHCore.z, _BHCore.w);
+                    // after this hole's bend: the partner pole the bent ray goes on to meet
+                    if (_BHSmooth <= 0.0)
+                        BlackHoleOtherHoles(eye + d * tSelf, normalize(dirOut), 0.0, 1e7, centre, background, otherShadow);
                 }
                 else
                 {
@@ -277,6 +320,11 @@ Shader "CosmicShore/BlackHoleLens"
                 }
 
                 // The bent scene, the shadow's black (a sink only), or a white hole's core.
+                // before it: a hole nearer the eye on this line of sight shows in front of this one
+                if (_BHSmooth <= 0.0)
+                    BlackHoleOtherHoles(eye, d, 0.0, tSelf, centre, background, otherShadow);
+                if (otherShadow > 0.5) background = float3(0.0, 0.0, 0.0);
+
                 return half4(background, 1.0);
             }
             ENDHLSL

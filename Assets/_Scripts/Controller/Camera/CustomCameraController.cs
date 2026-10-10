@@ -104,6 +104,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The transform this camera follows (the vessel's camera follow target).</summary>
         public Transform FollowTarget => _followTarget;
 
+        /// <summary>The settings asset last applied (the Vessel Studio window re-applies it live after an edit).</summary>
+        public CameraSettingsSO CurrentSettings => _currentSettings;
+
         // --- Portal carry ---------------------------------------------------------------------
         //
         // A wormhole moves the SHIP the instant it enters, but a chase camera is tens to hundreds

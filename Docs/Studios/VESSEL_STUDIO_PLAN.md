@@ -45,6 +45,16 @@ Testing in the REAL game (AI on any seat, free-fly camera, the intensity maps, a
 
 Both stay. A decision made in a web studio lands in the game; the game studio then tests what landed.
 
+**The Vessel Studio in Unity (2026-10-10):** **FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity)**
+(`Assets/_Scripts/Editor/Studios/VesselStudioWindow.cs`) is the web studio's six tabs (Scene Config · Game Config ·
+AI Config · Play Style Config · Input · Vessel Config) over the vessel's REAL assets: a slider per field with its own
+tooltip, live while the game plays (the configs are read every frame; the camera asset is re-applied to the cameras
+flying with it), and a **studio** button beside each row that shows the web studio's value (read from the studio's
+own `SHIPPED` block) and adopts it in one click: green when Unity matches, amber when not. No inspector. Its edits are
+recorded on the change ledger and shipped by the ship panel at the bottom (Validate & Push). The generator seeds the
+tuning assets once and leaves their numbers to this window. The Stoat's page is the first; a vessel adds its own page
+of rows over its own assets.
+
 ## 3. Platforms
 
 | Platform | Now | Next |

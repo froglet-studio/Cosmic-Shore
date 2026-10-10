@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   holdExponent: 1.5
   holdRampSeconds: 1.5
+  keySqueeze: 0.5
   aheadDistance: 250
   sidewaysMax: 200
   lengthwaysMax: 120
@@ -58,6 +59,10 @@ MonoBehaviour:
   boostFadeSeconds: 0.6
   dotPixels: 4
   dotGap: 10
+  dotsInWorld: 1
+  worldDotSize: 0.7
+  worldDotSpacing: 3
+  worldDotMinPixels: 2.5
   openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
   warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
   autopilotHold01: 1

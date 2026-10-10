@@ -750,6 +750,13 @@ the white-hot core (×4, sky mix 0.8). The Unity lens matched all of it but the 
 only), and an owned hole's domain tint (§14), which tinted the shadow jade; the Stoat ships it at 0. The ring is
 not an accretion disc (§10): it is a fixed thin glow at the photon sphere, nothing orbiting.
 
+**Overlapping lenses (2026-10-10).** A pair's two lens spheres overlap and each draws from the scene copy taken
+before any lens, so the sphere drawn last erased its partner. `BlackHoleLens.PublishHorizonHoles` publishes every
+horizon hole (`_BHHoleBank`: centre, horizon, negative for a white hole) and each lens draws the others its ray meets,
+on the incoming ray before its own hole and on the bent ray after it (`BlackHoleOtherHoles` in the shader): a black
+hole's shadow and ring, a white hole's core. The other hole's own BENDING is not traced inside this lens; its own
+sphere traces it wherever that sphere is on top.
+
 ## 14. Owner rules on a hole (2026-10-09, the Stoat's field dipole)
 
 A hole can carry its OWNER's rules on top of the physics, set every frame by whoever spawned it

@@ -133,6 +133,28 @@ pressing (through the replicated stop), so the AI's pair closes. Before it the p
 the pair laid in the menu stayed open and its field flung your hull from the first frame of freestyle,
 which read as "a black hole spawned in the centre, the camera off the vessel".
 
+## 3b. The pair as the studio draws it, the key squeeze, the 3D path (2026-10-10)
+
+**Both poles always show.** Each hole draws its own lens sphere (30 horizons in radius, ~105 u for 3.5 u poles)
+from a copy of the scene taken before any lens. The poles sit 60-200 u apart, so the spheres overlap, and the one
+drawn last erased its partner: "the white hole hidden by the black hole, or the reverse". Every horizon hole is now
+published to `_BHHoleBank` (`BlackHoleLens.PublishHorizonHoles`), and each lens draws the others its ray meets before
+or after its own bend: a black hole's shadow and photon ring, a white hole's core (`BlackHoleLens.shader`,
+`BlackHoleOtherHoles`). The studio sums every well in one pass; this is that, per sphere.
+
+**Where the poles go is the studio's**, checked line for line: laid `aheadDistance` ahead in the frame of the press,
+sideways = the triggers' difference (the black hole on the deeper side), lengthways = their sum (the black hole
+nearer), mirrored about the laid middle. What differed was a KEY: the studio squeezes a key to 0.5 at once
+(`dpKeySqueeze`), Unity ramped it 0 → 1 over 1.5 s, so on keys the poles sat on top of each other first and then
+opened wider than the studio's (200 u, not 70). `keySqueeze` 0.5 is the studio's.
+
+**The path is in the scene.** `StoatPathfinderWorldDots`: camera-facing discs every `worldDotSpacing` (3 u: denser
+than the studio's 2D line) along the 3D path, `worldDotSize` 0.7 u, never under `worldDotMinPixels` 2.5 px, one
+instanced draw on `Sprites/Default` (always included in builds). They recede, pass behind prisms and bend through
+the lens. `dotsInWorld` off brings back the studio's flat screen dots.
+
+**Tune it in Unity:** FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity) (`VESSEL_STUDIO_PLAN.md` §2).
+
 ## 4. Files
 
 | | |

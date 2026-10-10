@@ -600,6 +600,7 @@ def dipole_config_asset() -> str:
     return (so_header(DIPOLE_CONFIG_SCRIPT, "StoatDipoleConfig") +
             "  holdExponent: 1.5\n"
             "  holdRampSeconds: 1.5\n"
+            "  keySqueeze: 0.5\n"   # the studio's dpKeySqueeze
             "  aheadDistance: 250\n"
             "  sidewaysMax: 200\n"
             "  lengthwaysMax: 120\n"
@@ -630,6 +631,10 @@ def dipole_config_asset() -> str:
             "  boostFadeSeconds: 0.6\n"
             "  dotPixels: 4\n"
             "  dotGap: 10\n"
+            "  dotsInWorld: 1\n"          # the path in the scene, denser than the studio's 2D line (the user, 2026-10-10)
+            "  worldDotSize: 0.7\n"
+            "  worldDotSpacing: 3\n"
+            "  worldDotMinPixels: 2.5\n"
             f"  openColor: {color(150 / 255, 166 / 255, 194 / 255)}\n"
             f"  warpedColor: {color(157 / 255, 1, 46 / 255)}\n"
             "  autopilotHold01: 1\n"
@@ -762,6 +767,14 @@ def apply_camera(text: str) -> str:
                         "VesselCameraCustomizer settings (the Squirrel's camera asset)")
 
 
+def seeded_assets() -> "dict[str, str]":
+    """The TUNING assets: {absolute path: the script guid they must carry}. This generator SEEDS them (writes them only
+    when absent) and then checks only that they exist with the right script. Their numbers belong to the Vessel Studio
+    window in Unity (FrogletTools > Vessels > Vessel Studio (in Unity), Assets/_Scripts/Editor/Studios/), where they are
+    tuned live and committed by its ship panel; asserting them here made every tweak fail this gate."""
+    return {os.path.join(ACTIONS, "StoatDipoleConfig.asset"): DIPOLE_CONFIG_SCRIPT, CAMERA_ASSET: CAMERA_SCRIPT}
+
+
 def dipole_files() -> "dict[str, str]":
     """Every non-prefab file stage 4 owns, {absolute path: content}."""
     out = {}
@@ -877,10 +890,18 @@ def check(files: "dict[str, str]") -> "list[str]":
             errors.append(f"{rel_map}: Space must be the Field Dipole on the triggers (Input 2)")
         if "    AbilityLabel: Pathfinder\n" not in mp:
             errors.append(f"{rel_map}: Time must be the Pathfinder")
+    seeded = seeded_assets()
     for path, want_text in dipole_files().items():
         rel = os.path.relpath(path, ROOT)
         if not os.path.exists(path[:-5]) and path.endswith(".cs.meta"):
             errors.append(f"{rel[:-5]} is missing (its .meta is authored here)")
+        if path in seeded:
+            text = files.get(rel)
+            if text is None:
+                errors.append(f"{rel} is missing - run without --check to seed it")
+            elif f"m_Script: {{fileID: 11500000, guid: {seeded[path]}, type: 3}}" not in text:
+                errors.append(f"{rel} does not carry its script (guid {seeded[path]})")
+            continue
         if files.get(rel) != want_text:
             errors.append(f"{rel} is missing or not as authored - run without --check")
     rel_class = os.path.relpath(CLASS_ASSET, ROOT)
@@ -946,13 +967,19 @@ def self_test() -> int:
     fires("pathfinder dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n", "", 1)))
     fires("turn rates reverted", lambda f: f.__setitem__(rel, f[rel].replace("  PitchScaler: 48\n", "  PitchScaler: 120\n", 1)))
     cfg = os.path.relpath(os.path.join(ACTIONS, "StoatDipoleConfig.asset"), ROOT)
-    fires("dipole config retuned by hand", lambda f: f.__setitem__(cfg, f.get(cfg, "").replace("  aheadDistance: 250\n", "  aheadDistance: 200\n")))
+    fires("dipole config's script swapped", lambda f: f.__setitem__(cfg, f.get(cfg, "").replace(DIPOLE_CONFIG_SCRIPT, "0" * 32)))
+    fires("dipole config deleted", lambda f: f.pop(cfg, None))
     fires("container entry missing", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), "")))
     fires("network entry missing", lambda f: f.__setitem__(os.path.relpath(NETWORK_PREFABS, ROOT), f[os.path.relpath(NETWORK_PREFABS, ROOT)].replace(network_entry(), "")))
     fires("map lost the dipole's input", lambda f: f.__setitem__(os.path.relpath(MAP, ROOT), f[os.path.relpath(MAP, ROOT)].replace("    Input: 2\n", "    Input: 0\n")))
     fires("camera back on the Squirrel's", lambda f: f.__setitem__(rel, f[rel].replace(camera_reference(CAMERA_GUID), camera_reference(SQUIRREL_CAMERA_GUID))))
     cam = os.path.relpath(CAMERA_ASSET, ROOT)
-    fires("chase camera retuned by hand", lambda f: f.__setitem__(cam, f.get(cam, "").replace("  lookAheadDistance: 40\n", "  lookAheadDistance: 0\n")))
+    fires("chase camera's script swapped", lambda f: f.__setitem__(cam, f.get(cam, "").replace(CAMERA_SCRIPT, "0" * 32)))
+    # a tuned number is NOT a finding: the Vessel Studio window owns it
+    tuned = dict(files); tuned[cfg] = tuned[cfg].replace("  aheadDistance: 250\n", "  aheadDistance: 200\n")
+    ok_tuned = not check(tuned)
+    print(f"  a number tuned in the Vessel Studio window passes: {'yes' if ok_tuned else 'NO'}")
+    ok &= ok_tuned
     fires("container entry is the GameObject", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n")))
     fires("hull dropped", lambda f: f.__setitem__(rel, f[rel].replace(hull_blocks(), "")))
     fires("paint left on the Squirrel mesh", lambda f: f.__setitem__(rel, f[rel].replace(
@@ -1007,6 +1034,8 @@ def main(argv) -> int:
             if os.path.exists(path):
                 with open(path, encoding="utf-8", newline="") as f:
                     old = f.read().replace("\r\n", "\n")
+            if path in seeded_assets() and old is not None:
+                continue   # a tuning asset: seeded once, its numbers are the Vessel Studio window's
             if old != text:
                 write(path, text)
                 print(f"stage 4: wrote {os.path.relpath(path, ROOT)}")

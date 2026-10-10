@@ -914,7 +914,11 @@ server re-broadcasts to everyone else), so a hook there fires once per machine.
 The studio (`/vessel-studio`) is where a vessel's numbers are decided; the Unity port is a COPY of them, and
 the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. Do all three, every port:
 
-1. **Every studio number lands in the vessel's config SO through the vessel's GENERATOR, never by hand.**
+1. **Every studio number lands in the vessel's config SO, then the Unity Vessel Studio owns it.** The generator
+   SEEDS the tuning assets once (and checks they exist with the right script); from then on their numbers are tuned in
+   **FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity)**, live in Play mode, with the web studio's value beside every
+   row, and shipped by that window's ship panel. (Asserting the numbers in the generator made every live tweak fail
+   its gate.) Before that seeding existed the rule read:
    The Stoat's is `Tools/Build/author_stoat_assets.py` (its "vessel creation tool": the prefab, the class
    asset, the registrations, the dipole config and the camera asset, each `--check`ed). An asset edited
    by hand drifts from the generator, and the next re-run silently puts the old numbers back. Map each studio

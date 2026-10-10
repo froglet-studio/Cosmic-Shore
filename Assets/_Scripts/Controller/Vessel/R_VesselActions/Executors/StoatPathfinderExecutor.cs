@@ -41,6 +41,7 @@ namespace CosmicShore.Gameplay
         float _boost = 1f;
         bool _wasWarped;
         StoatPathfinderDots _dots;
+        StoatPathfinderWorldDots _worldDots;
 
         /// <summary>The boost multiplier on the hull's flight clock this frame (1 = none).</summary>
         public float BoostMultiplier => _boost;
@@ -126,6 +127,15 @@ namespace CosmicShore.Gameplay
         {
             var cam = ResolveCamera();
             if (!cam) { HideDots(); return; }
+            if (config.DotsInWorld)
+            {
+                if (_dots) _dots.Hide();
+                _worldDots ??= new StoatPathfinderWorldDots();
+                _worldDots.Draw(cam, _points, _path.Count, _jumps, _path.JumpCount,
+                    _path.Warped ? config.WarpedColor : config.OpenColor,
+                    config.WorldDotSize, config.WorldDotSpacing, config.WorldDotMinPixels);
+                return;
+            }
             if (!_dots) _dots = StoatPathfinderDots.Create(name);
             if (!_dots) return;
             var color = _path.Warped ? config.WarpedColor : config.OpenColor;
@@ -171,6 +181,8 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_dots) Destroy(_dots.transform.root.gameObject);
+            _worldDots?.Dispose();
+            _worldDots = null;
         }
     }
 }
