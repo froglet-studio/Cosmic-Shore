@@ -439,6 +439,7 @@ namespace CosmicShore.Gameplay
             BlackHoleVesselPull.Tick(_holes, config, dt);
             BlackHoleWarp.Flush(_warpHoles, config);
             BlackHoleLens.PublishSmoothWells(_warpHoles);
+            BlackHoleLens.PublishHorizonHoles(_warpHoles);
             // The lens reads the camera's opaque + depth copies; keep them on for EVERY enabled game
             // camera while any lens is live (a vessel spawn, the death or end camera switch cameras).
             BlackHoleLens.CameraSupport.Maintain();

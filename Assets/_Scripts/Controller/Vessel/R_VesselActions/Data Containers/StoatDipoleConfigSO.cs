@@ -34,6 +34,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Keyboard / mouse / touch have no analog trigger: seconds of hold that count as a full squeeze.")]
         [SerializeField, Range(0.1f, 5f)] float holdRampSeconds = 1.5f;
 
+        [Tooltip("A KEY (no analog trigger) squeezes this far the moment it is pressed, and holds it (the studio's " +
+                 "dpKeySqueeze). One key: the poles 70 u apart sideways at once, as in the studio. 0 = the old ramp " +
+                 "over Hold Ramp Seconds, which left the two poles on top of each other for the first half second.")]
+        [SerializeField, Range(0f, 1f)] float keySqueeze = 0.5f;
+
         [Header("Placement (Space)")]
         [Tooltip("How far in front of the hull the pair's middle is laid, world units (the studio's ftAhead).")]
         [SerializeField, Min(0f)] float aheadDistance = 250f;
@@ -133,6 +138,19 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Space between two dots, in dot diameters (ftDotGap).")]
         [SerializeField, Range(0f, 40f)] float dotGap = 10f;
 
+        [Tooltip("Draw the path as dots placed IN THE SCENE along the 3D path (they recede with depth, pass behind " +
+                 "prisms and bend through the lens). Off = the flat screen overlay (Dot Pixels, Dot Gap), the studio's 2D line.")]
+        [SerializeField] bool dotsInWorld = true;
+
+        [Tooltip("A 3D dot's diameter, world units (the hull is 4 u long).")]
+        [SerializeField, Range(0.05f, 5f)] float worldDotSize = 0.7f;
+
+        [Tooltip("World units of path between two 3D dots: smaller = denser. The 600 u path at 3 u carries 200 dots.")]
+        [SerializeField, Range(0.5f, 40f)] float worldDotSpacing = 3f;
+
+        [Tooltip("The smallest a far 3D dot may get on screen, pixels, so the far end of the path stays readable.")]
+        [SerializeField, Range(0f, 10f)] float worldDotMinPixels = 2.5f;
+
         [Tooltip("The path's colour while it is open (blue-grey).")]
         [SerializeField] Color openColor = new(150f / 255f, 166f / 255f, 194f / 255f, 1f);
 
@@ -195,6 +213,7 @@ namespace CosmicShore.ScriptableObjects
 
         public float HoldExponent => holdExponent;
         public float HoldRampSeconds => holdRampSeconds;
+        public float KeySqueeze => keySqueeze;
         public float AheadDistance => aheadDistance;
         public float SidewaysMax => sidewaysMax;
         public float LengthwaysMax => lengthwaysMax;
@@ -225,6 +244,10 @@ namespace CosmicShore.ScriptableObjects
         public float BoostFadeSeconds => boostFadeSeconds;
         public float DotPixels => dotPixels;
         public float DotGap => dotGap;
+        public bool DotsInWorld => dotsInWorld;
+        public float WorldDotSize => worldDotSize;
+        public float WorldDotSpacing => worldDotSpacing;
+        public float WorldDotMinPixels => worldDotMinPixels;
         public Color OpenColor => openColor;
         public Color WarpedColor => warpedColor;
         public float AutopilotHold01 => autopilotHold01;

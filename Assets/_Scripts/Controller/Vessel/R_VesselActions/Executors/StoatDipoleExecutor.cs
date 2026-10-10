@@ -353,8 +353,11 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += dt;
-            _holds[i].Live = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot,
-                config.AutopilotHold01);
+            // A key squeezes to the studio's fixed depth at once (keySqueeze); a trigger is its own analog depth.
+            _holds[i].Live = !analog && !autopilot && config.KeySqueeze > 0f
+                ? config.KeySqueeze
+                : StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot,
+                    config.AutopilotHold01);
         }
 
         /// <summary>A peer's copy: lay, follow and close the pair exactly as the owner publishes it.</summary>

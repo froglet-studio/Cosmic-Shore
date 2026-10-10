@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat pair never hides a pole, studio key squeeze, 3D path dots, the Vessel Studio in Unity (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `_BHHoleBank` (`BlackHoleLens.PublishHorizonHoles`) + `BlackHoleOtherHoles` in `BlackHoleLens.shader`: each lens
+  draws the other holes its ray meets, so a pair's overlapping lens spheres no longer erase one pole. Compiled with
+  glslang (SPIR-V) against the shipped `BlackHoleLens.hlsl`, with a negative control; not compiled by Unity.
+- `StoatDipoleConfig.keySqueeze` 0.5 (the studio's `dpKeySqueeze`): a key opens the poles at once, 70 u sideways.
+- `StoatPathfinderWorldDots`: the path as dots in the scene (`dotsInWorld`, 3 u apart, 0.7 u, >= 2.5 px).
+- `VesselStudioWindow` (FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity)) + `VesselStudioWindowTests`;
+  `author_stoat_assets.py` now seeds the tuning assets once.
+
+**Verify in editor**
+1. Compile; run `VesselStudioWindowTests`, `CameraLookAheadTests`, `BlackHoleTests`.
+2. Fly the Stoat: one key or trigger, then both, then let go. The black hole and the white hole are both visible
+   the whole time, the black hole on the pressed side and nearer; neither is cut out by the other's lens.
+3. The path shows as dots in the scene ahead of the nose (receding with depth), lime when warped.
+4. Open the Vessel Studio window while playing: drag Laid ahead / Sideways / Look ahead; the game changes on the
+   next frame. A row's studio button turns green when it matches the web studio. Validate & Push ships the edits.
+
 ### 🔴 The Stoat's pair and camera look like the Vessel Studio's (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **What landed:**
