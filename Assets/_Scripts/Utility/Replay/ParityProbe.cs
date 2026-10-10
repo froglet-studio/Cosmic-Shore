@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using CosmicShore.Gameplay;
 using CosmicShore.Gameplay.Audio;
@@ -55,7 +54,18 @@ namespace CosmicShore.Utility
         };
 
         static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+        /// <summary>
+        /// The same eleven events as public fields, in <see cref="GameEvents"/> order. Direct reads,
+        /// not reflection: the input-only gate (Tools/Build/check_ai_no_state_writes.py) refuses
+        /// reflection in this tree because it can write anything, and a probe must only read.
+        /// </summary>
+        static readonly Func<GameDataSO, ScriptableEventNoParam>[] GameEventFields =
+        {
+            gd => gd.OnLaunchGame, gd => gd.OnSessionStarted, gd => gd.OnInitializeGame, gd => gd.OnMiniGameRoundStarted,
+            gd => gd.OnMiniGameTurnStarted, gd => gd.OnMiniGameTurnEnd, gd => gd.OnMiniGameRoundEnd, gd => gd.OnMiniGameEnd,
+            gd => gd.OnWinnerCalculated, gd => gd.OnResetForReplay, gd => gd.OnSessionEnded,
+        };
 
         static readonly object s_lock = new();
         static readonly List<(string kind, string name)> s_pendingAudio = new();
@@ -156,34 +166,44 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Every loaded GameDataSO plus the one the scene's controller holds. The asset is loaded
-        /// with the Bootstrap container, before any controller exists, so the menu's OnLaunchGame
-        /// is heard as well as the match's events.
+        /// Every loaded GameDataSO. The asset is loaded with the Bootstrap container, before any
+        /// controller exists, so the menu's OnLaunchGame is heard as well as the match's events;
+        /// a controller's injected reference is that same asset, so nothing else needs finding.
+        /// Re-run every frame by the driver so an asset loaded later is hooked too.
         /// </summary>
         static void HookGameDataSources()
         {
             foreach (var gd in Resources.FindObjectsOfTypeAll<GameDataSO>()) HookGameData(gd);
-            HookGameData(FindGameData());
+        }
+
+        /// <summary>
+        /// The match's GameDataSO: the one loaded asset (there is exactly one in the project and
+        /// every controller is injected with it), reported only while a controller exists, which
+        /// is the moment the engine's ParityRun starts reading stats too. No reflection.
+        /// </summary>
+        static GameDataSO MatchGameData()
+        {
+            if (UnityEngine.Object.FindObjectsByType<MiniGameControllerBase>(FindObjectsSortMode.None).Length == 0)
+                return null;
+            GameDataSO best = null;
+            foreach (var gd in Resources.FindObjectsOfTypeAll<GameDataSO>())
+                if (gd != null && (best == null || string.CompareOrdinal(gd.name, best.name) < 0))
+                    best = gd;
+            return best;
         }
 
         static void HookGameData(GameDataSO gd)
         {
             if (gd == null || !s_hookedGameData.Add(gd)) return;
-            foreach (var name in GameEvents)
+            for (int i = 0; i < GameEvents.Length; i++)
             {
-                if (typeof(GameDataSO).GetField(name, Any)?.GetValue(gd) is not ScriptableEventNoParam evt) continue;
-                string captured = name;
+                var evt = GameEventFields[i](gd);
+                if (evt == null) continue;
+                string captured = GameEvents[i];
                 Action handler = () => { if (Active) WriteEvent("game", captured); };
                 evt.OnRaised += handler;
                 s_gameSubscriptions.Add((evt, handler));
             }
-        }
-
-        static GameDataSO FindGameData()
-        {
-            var controllers = UnityEngine.Object.FindObjectsByType<MiniGameControllerBase>(FindObjectsSortMode.None);
-            if (controllers.Length == 0) return null;
-            return typeof(MiniGameControllerBase).GetField("gameData", Any)?.GetValue(controllers[0]) as GameDataSO;
         }
 
         /// <summary>A relay per vessel collider, per dynamic Rigidbody and per Object-Destroy emitter; new ones are picked up every frame.</summary>
@@ -468,7 +488,7 @@ namespace CosmicShore.Utility
             sb.Append("{\"frame\":").Append(frame.ToString(Inv))
               .Append(",\"t\":").Append(Math.Round((double)Time.time, 4).ToString("R", Inv))
               .Append(",\"scene\":").Append(Json(SceneManager.GetActiveScene().name));
-            var gd = FindGameData();
+            var gd = MatchGameData();
             if (gd != null)
             {
                 var stats = new List<(string name, string body)>();

@@ -18,6 +18,13 @@ Everything is inert by default. `ReplayRecorder.Recording`, `ReplayPlayer.Active
 gameplay code are the two lines in `InputController` and the two `NoteFmodStop` calls at the
 stop seams, all of which return immediately when nothing is running.
 
+This folder is inside the input-only gate, `python3 Tools/Build/check_ai_no_state_writes.py
+--check`, with the pilots: a replay that wrote a pose, a course, a speed, a crystal or a score,
+or reached any of them through reflection, would record a result the vessel never flew. The
+probe therefore reads the eleven `GameDataSO` events through a direct accessor table rather than
+`GetField`, and finds the asset with `Resources.FindObjectsOfTypeAll` (a controller's injected
+reference is that same asset).
+
 ## Recording and playing in Unity
 
 ```csharp

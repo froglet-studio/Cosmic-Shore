@@ -38,6 +38,11 @@ SCOPES = [
     "Assets/_Scripts/Controller/AI/SkimRace",
     "Assets/_Scripts/Utility/AITraining",
     "Assets/_Scripts/Editor/AI",
+    # The parity harness's replay player writes IInputStatus and raises InputEvents, and its
+    # probe only READS pose and score into channel files (Port/parity/README.md). Both must
+    # obey the same input-only contract as a pilot: a replay that teleported a vessel would
+    # record a result the vessel never flew.
+    "Assets/_Scripts/Utility/Replay",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.
