@@ -9,9 +9,10 @@ namespace CosmicShore.Gameplay
     /// sibling of <see cref="VesselCombatHitByProjectileEffectSO"/> and
     /// <c>VesselCombatHitByExplosionEffectSO</c>.
     ///
-    /// Like both of those it carries no gameplay consequence of its own: the damage, the spin
-    /// and the joust explosion are separate effects already sitting in the same container, and
-    /// this one exists only to publish the fact that the contact happened. That separation is
+    /// It is the ONE place a contact hit is decided: it admits the hit
+    /// (<see cref="CombatHitDrain.TryAdmit"/>), takes its petals through the weapon's own
+    /// <see cref="IContactPetalTake"/> sibling in the same container, and publishes the score.
+    /// A scored hit and a petal theft are one event (Garrett, 2026-10-10). That separation is
     /// what lets a mode score a blade without the Rhino, the Squirrel or their skimmers knowing
     /// which mode they are in - the two hulls it arms were landing real, felt hits long before
     /// anything counted them.
@@ -89,35 +90,49 @@ namespace CosmicShore.Gameplay
 
             if (requireFasterThanVictim && shooterStatus.Speed <= victimStatus.Speed) return;
 
-            string shooterName = shooterStatus.PlayerName;
-            string victimName = victimStatus.PlayerName;
-
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass,
-                                               sameVictimCooldownSeconds, out int supersededRank))
+            // One gate for the score and the petals: a warded victim is neither scored on nor
+            // robbed (CombatHitDrain.TryAdmit). Contact is the VesselContact class, the same one
+            // the overtake's steal is warded by.
+            if (!CombatHitDrain.TryAdmit(victimStatus, shooterStatus, hitClass, sameVictimCooldownSeconds,
+                                         ElementalDebuffSources.VesselContact, out int supersededRank))
                 return;
 
-            // Routed through the same seam as every other reported hit, so the rule "a hit bites
-            // what it is priced at" is structural rather than remembered. It is a NO-OP for the
-            // Strike class shipped here - a contact strike's drain is authored per weapon (the
-            // Squirrel's overtake mirrors it as an ally buff), so CombatHitDrain declines it.
-            // A Strike is the fleet's CONTACT verb, so ElementalTransfer.FormFor sends its petals
-            // straight to the attacker rather than into the arena - you flew into them and took
-            // it off them. The velocity is therefore unused for this class and passed anyway, so
-            // the call reads the same at all three reporters and a future ejecting skimmer verb
-            // needs no new argument. Note Strike is one of the two classes CombatHitDrain declines
-            // (its size is authored per weapon), so on the Squirrel this is a no-op and the
-            // overtake asset does the work; on the Rhino's sword it is the only path there is.
-            CombatHitDrain.Apply(victimStatus, shooterStatus, hitClass, supersededRank,
-                                 shooterStatus.Course * shooterStatus.Speed,
-                                 ElementalDebuffSources.VesselContact);
+            // THE TAKE. A contact weapon's petals are authored per weapon, on a sibling in this same
+            // container that implements IContactPetalTake (the overtake steal on the Squirrel and
+            // the Rhino, the dust on the Butterfly). It runs HERE and only here, for the hit just
+            // admitted, so a scored contact and a petal theft are one event: same gate, same
+            // cooldown, same machine. A Strike with no authored take falls back to its fleet
+            // price (CombatHitDrain.ApplyPriced), so no container can score a contact that takes
+            // nothing.
+            if (!TakeThroughSiblings(victimStatus, shooterStatus, impactor, impactee))
+                CombatHitDrain.ApplyPriced(victimStatus, shooterStatus, hitClass, supersededRank,
+                                           shooterStatus.Course * shooterStatus.Speed,
+                                           ElementalDebuffSources.VesselContact);
 
             onCombatHitLanded.Raise(new CombatHitStats
             {
-                ShooterName = shooterName,
-                VictimName = victimName,
+                ShooterName = shooterStatus.PlayerName,
+                VictimName = victimStatus.PlayerName,
                 HitClass = hitClass,
                 SupersededRank = supersededRank,
             });
+        }
+
+        bool TakeThroughSiblings(IVesselStatus victim, IVesselStatus attacker,
+                                 VesselImpactor impactor, SkimmerImpactor impactee)
+        {
+            var container = impactee ? impactee.EffectContainer : null;
+            var siblings = container ? container.VesselSkimmerEffects : null;
+            if (siblings == null) return false;
+
+            bool took = false;
+            for (int i = 0; i < siblings.Length; i++)
+            {
+                if (siblings[i] is not IContactPetalTake take) continue;
+                take.TakeFrom(victim, attacker, impactor, impactee);
+                took = true;
+            }
+            return took;
         }
     }
 }

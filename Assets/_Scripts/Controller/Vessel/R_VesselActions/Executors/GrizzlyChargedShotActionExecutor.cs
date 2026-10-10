@@ -336,8 +336,8 @@ namespace CosmicShore.Gameplay
                     Anonymous           = false,
                     OverrideMaterial    = _status?.AOEExplosionMaterial,
                     DIContainer         = shot.GetComponent<ProjectileImpactor>()?.DIContainer,
-                    // The shooter must always ride its own blast; ally sparing at Space 5
-                    // is handled inside VesselImpulseByExplosionEffectSO instead.
+                    // The shooter must always ride its own blast. No other vessel is moved
+                    // by it (VesselImpulseByExplosionEffectSO is self-launch only).
                     AffectSelfOverride  = true
                 });
             }

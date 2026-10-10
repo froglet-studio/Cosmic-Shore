@@ -311,8 +311,8 @@ namespace CosmicShore.Gameplay
         // bottoms out at empty; only a decaying effect can push a pilot below it.
         //
         // The immunity gate is honoured here exactly as it is in ApplyElementalEffect, so a warded
-        // pilot loses nothing AND yields nothing - which is what keeps the scoring effects that ask
-        // `requireDebuffableVictim` agreeing with what actually happened.
+        // pilot loses nothing AND yields nothing - which is what keeps every scoring effect, which
+        // admits through CombatHitDrain.TryAdmit on the same ward, agreeing with what happened.
         readonly Dictionary<Element, float> _pendingLoss = new();
 
         /// <summary>

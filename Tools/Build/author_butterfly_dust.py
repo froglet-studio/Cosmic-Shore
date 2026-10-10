@@ -102,7 +102,7 @@ RETIRED_BLOOM_DUST = [
 ]
 BLOOM_DEBUFF = f"{FX}/Vessel Explosion Effects/ButterflyBloomDebuffByExplosionEffect.asset"
 # Shared with the Dolphin's crystal cone (authored by author_bends_assets.py): Debuff class,
-# requireDebuffableVictim + requireOwningMachine -- the bloom is replayed on server AND owner too.
+# requireOwningMachine -- the bloom is replayed on server AND owner too.
 CRYSTAL_BLAST_HIT = f"{FX}/Vessel Explosion Effects/VesselCombatHitByCrystalBlast.asset"
 BLOOM_EFFECT = f"{FX}/Vessel Crystal Effects/ButterflyVesselExplosionByCrystalEffect.asset"
 VESSEL_CONT = f"{FX}/Effect Containers/VesselContainers/ButterflyImpactorDataContainer.asset"

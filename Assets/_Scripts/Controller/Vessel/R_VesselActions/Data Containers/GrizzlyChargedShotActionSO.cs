@@ -13,8 +13,9 @@ namespace CosmicShore.Gameplay
     ///   release → detonate it where it hangs
     ///
     /// Element link: Space scales explosion size; at Space 5 blasts spare the
-    /// shooter's own domain (self-propulsion is preserved — see
-    /// VesselImpulseByExplosionEffectSO).
+    /// shooter's own domain's prisms. The blast moves only the shooter
+    /// (self-propulsion, VesselImpulseByExplosionEffectSO); it no longer moves any
+    /// other vessel.
     /// </summary>
     [CreateAssetMenu(fileName = "GrizzlyChargedShotAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Charged Shot")]
     public class GrizzlyChargedShotActionSO : ShipActionSO

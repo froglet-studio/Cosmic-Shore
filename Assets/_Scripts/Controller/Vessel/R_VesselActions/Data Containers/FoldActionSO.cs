@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -129,6 +130,17 @@ namespace CosmicShore.Gameplay
                  "Floored at 12 so a toll always visibly expels.")]
         [SerializeField, Min(0f)] float rivalTollShedSpeed = 25f;
 
+        [Tooltip("The combat-hit class a toll scores as, for this Butterfly, against the rival who " +
+                 "paid it. PvP is petals only and every petal taken is a scored hit (Docs/claude/" +
+                 "IMPACT_EFFECTS_AND_AUDIO.md § \"PvP is petals only\"), so a transit that takes the " +
+                 "toll scores exactly once, and a pilot warded against WormholeToll neither pays nor " +
+                 "is scored on. Debuff: it strips element levels and fires nothing.")]
+        [SerializeField] CombatHitClass tollHitClass = CombatHitClass.Debuff;
+
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. Fail-loud: " +
+                 "a missing reference throws rather than silently un-scoring the toll.")]
+        [SerializeField] ScriptableEventCombatHitStats onTollHitLanded;
+
         [Header("Feel")]
         [Tooltip("World units per second the ghost eases toward its commanded position. It " +
                  "starts ON the vessel and TRAVELS, so the pilot watches it go rather than " +
@@ -161,6 +173,8 @@ namespace CosmicShore.Gameplay
         public float PortalWindowRenderScale => portalWindowRenderScale;
         public int RivalTollPetalsPerElement => Mathf.Max(0, rivalTollPetalsPerElement);
         public float RivalTollShedSpeed => rivalTollShedSpeed;
+        public CombatHitClass TollHitClass => tollHitClass;
+        public ScriptableEventCombatHitStats OnTollHitLanded => onTollHitLanded;
 
         /// <summary>
         /// The recharge this vessel actually pays, at its live TIME level. Read at USE time, never

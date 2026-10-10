@@ -76,6 +76,13 @@ namespace CosmicShore.Gameplay
             if (impacteeVessel.VesselStatus.Domain == impactorVessel.VesselStatus.Domain)
                 return;
 
+            // A joust point is a scored hit, and a scored hit is a petal theft (2026-10-10): a
+            // pilot warded against contact (the stopped Serpent, a boosting Sparrow at Time 5)
+            // yields no petals to the overtake, so it yields no joust point either. The same ward
+            // CombatHitDrain.TryAdmit asks about for the overtake's own steal.
+            if (impactorVessel.VesselStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.VesselContact))
+                return;
+
             var impacteeVesselImpactor = impacteeVessel.Transform.GetComponent<VesselImpactor>();
             if (impacteeVesselImpactor == null)
                 return;

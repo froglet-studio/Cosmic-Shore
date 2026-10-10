@@ -121,7 +121,33 @@ namespace CosmicShore.Gameplay
         };
 
         /// <summary>
-        /// Drain the victim for the hit that was just ADMITTED by the latch.
+        /// THE ONE GATE EVERY SCORED HIT PASSES. A scored hit and a petal theft are one event
+        /// (Garrett, 2026-10-10: "there should always be a one to one relationship between scored
+        /// hits and petal theft so immunity from one is the same as the other"), so a victim warded
+        /// against <paramref name="source"/> is neither scored on nor robbed, and the latch window
+        /// is not claimed for a hit that did not land.
+        ///
+        /// <para>Every reporter (projectile, blast, contact) asks this before it raises a score,
+        /// with the SAME source it hands <see cref="Apply"/> (or that its per-weapon sibling hands
+        /// <see cref="ElementalTransfer"/>), so the ward the score honours and the ward
+        /// <c>ResourceSystem.AccrueElementalLoss</c> honours on the victim's owner are one ward.
+        /// Before this a missile scored through a ward ("a rocket that hits you hit you") while the
+        /// victim kept every petal, and the stopped Serpent could be farmed for points it never
+        /// paid.</para>
+        /// </summary>
+        public static bool TryAdmit(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
+                                    float cooldownSeconds, ElementalDebuffSources source,
+                                    out int supersededRank)
+        {
+            supersededRank = 0;
+            if (victim == null || attacker == null) return false;
+            if (victim.IsImmuneToElementalDebuff(source)) return false;
+            return VesselCombatHitLatch.TryAdmit(attacker.PlayerName, victim.PlayerName, hitClass,
+                                                 cooldownSeconds, out supersededRank);
+        }
+
+        /// <summary>
+        /// Drain the victim for the hit that was just ADMITTED by <see cref="TryAdmit"/>.
         /// </summary>
         /// <param name="supersededRank">
         /// The latch's own report of what this admission replaces (0 = a fresh hit). A rocket
@@ -146,10 +172,26 @@ namespace CosmicShore.Gameplay
         public static int Apply(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
                                 int supersededRank, Vector3 impactVelocity,
                                 ElementalDebuffSources source)
+            => Take(victim, attacker, hitClass, PerElementFor(hitClass), supersededRank, impactVelocity, source);
+
+        /// <summary>
+        /// <see cref="Apply"/> for a class whose take is normally authored per weapon, when the
+        /// weapon authored none: the hit is taken at its fleet price (ten points to the petal)
+        /// instead of nothing. A contact reporter with no <see cref="IContactPetalTake"/> sibling
+        /// falls back to this, because a scored hit that takes no petals breaks the one-to-one
+        /// rule this class exists to keep.
+        /// </summary>
+        public static int ApplyPriced(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
+                                      int supersededRank, Vector3 impactVelocity,
+                                      ElementalDebuffSources source)
+            => Take(victim, attacker, hitClass, -PointsFor(hitClass) / PointsPerLevel * NormalizedPerLevel,
+                    supersededRank, impactVelocity, source);
+
+        static int Take(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
+                        float magnitude, int supersededRank, Vector3 impactVelocity,
+                        ElementalDebuffSources source)
         {
             if (victim == null) return 0;
-
-            float magnitude = PerElementFor(hitClass);
             if (magnitude >= 0f) return 0;                 // per-weapon class, or an unpriced one
 
             if (supersededRank > 0)

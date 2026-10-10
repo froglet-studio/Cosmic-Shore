@@ -102,6 +102,41 @@ mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
 
+### PvP is petals only (LOCKED, Garrett 2026-10-10)
+
+> "there should always be a one to one relationship between scored hits and petal theft so immunity
+> from one is the same as the other. knockback and shrink should no longer be an effect that vessels
+> can do to each other. we should only be affecting petals to score points. no other pvp in the game"
+
+- **The only thing one pilot's vessel, weapon or ability may do to another pilot's vessel is move
+  their petals (element levels), and every such move is a scored combat hit.** No knockback, shrink,
+  spin, slow, stun, input mute, or structure laid in their path. (The older form of this rule,
+  "a vessel may not move an opposing vessel", is in `Tools/Build/author_broadside_assets.py`.)
+- **One gate: `CombatHitDrain.TryAdmit`.** Every reporter (projectile, blast, contact, the Serpent's
+  sniper strip) admits through it with the SAME `ElementalDebuffSources` class its petals are taken
+  under, so a ward that keeps a pilot's petals also keeps the attacker from scoring, and the latch
+  window is claimed only for a hit that landed. A missile no longer scores through a ward.
+- **Contact weapons take through the reporter.** A skimmer weapon's authored take
+  (`IContactPetalTake`: the overtake steal on the Squirrel and the Rhino, the dust on the
+  Butterfly) is called by the container's `VesselCombatHitBySkimmerEffectSO` for the hit it just
+  admitted, never by the take's own `Execute`, so the score and the steal share one cooldown and
+  one contact rule. A contact reporter with no take sibling falls back to the fleet price
+  (`CombatHitDrain.ApplyPriced`).
+- **Two takes that are not weapons score too.** The Grizzly's charged blast carries
+  `VesselCombatHitByGrizzlyBlast` (MissileBlast class, ejects petals; the blast still moves only the
+  Grizzly). The Butterfly's wormhole toll (`WormholeMouth.LevyToll`) raises a Debuff hit for the
+  Butterfly once per paid transit, on its owner's machine, through the same `TryAdmit` and
+  `WormholeToll` ward as the take.
+- **Arena effects are not PvP.** Prism contact (danger prisms, slows, bounces, the Seed Wall's
+  panels) acts on whoever flies into the prism, whoever laid it. What is forbidden is aiming one
+  of those at a pilot: the Rhino sword's danger dome was removed for that reason. The Squirrel
+  joust's danger ring stays: it is danger prisms on the arena, and it hits whoever flies into it.
+- **Retired 2026-10-10:** `VesselImpulseByExplosionEffectSO`'s knockback on other vessels (it is
+  self-launch only), `VesselShrinkSkimmerEffectSO` (deleted; orphaned), the Rhino's
+  `VesselDangerBlockFormationBySkimmerEffectSO` (deleted), the
+  explosion reporter's opt-in `requireDebuffableVictim` flag (now unconditional), and the
+  Butterfly dust's decaying debuff (now a steal).
+
 ### Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
 
 FMOD Studio is the audio middleware (`FMODUnity`, `Assets/Plugins/FMOD`). The rule below is not a

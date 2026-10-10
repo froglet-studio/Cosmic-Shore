@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 22cfb97278f955c7cfdfaf0ec3e9fef2, type: 3}
-  m_Name: VesselCombatHitByCavitation
+  m_Name: VesselCombatHitByGrizzlyBlast
   m_EditorClassIdentifier:
-  hitClass: 2
+  hitClass: 3
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
-  sameVictimCooldownSeconds: 1
+  sameVictimCooldownSeconds: 0.5
   requireOwningMachine: 1

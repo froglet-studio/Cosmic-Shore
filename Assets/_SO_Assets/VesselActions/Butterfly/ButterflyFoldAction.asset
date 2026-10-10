@@ -24,6 +24,8 @@ MonoBehaviour:
   gateSettleSeconds: 0.75
   rivalTollPetalsPerElement: 15
   rivalTollShedSpeed: 25
+  tollHitClass: 2
+  onTollHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   portalWindowRange: 2500
   portalWindowRenderScale: 0.75
   portalWindowFadeBand: 600
