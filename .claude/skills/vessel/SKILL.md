@@ -667,6 +667,25 @@ applies to new abilities, new resources on the meter list, and anything that add
       `unity_refcompile`) reports them. To tell inherited findings from introduced ones, commit an
       untouched copy of the source in a base worktree, audit it, and diff the two finding lists.
 
+43. **The fleet's chase camera is HARD-ATTACHED, so any hull rotation faster than a stick can make
+    is a camera whip.** Every vessel camera asset ships `CameraMode.FixedCamera`, which sets
+    `_disableRotationLerp`: the camera's pose is the hull's rotation × the offset, the same frame.
+    A mechanic that rotates the hull itself — snapping onto an orbit tangent, a tug that turns the
+    nose, a fling that faces the velocity — therefore swings the WORLD on screen. The Thresher's
+    plant (2026-10-09) turned the hull up to **91° in one frame** and read as the camera "getting
+    whipped around"; the rope's own tug, the suspect, peaked at only 85–131 °/s. Two lessons:
+    - **Measure the hull's per-frame turn before guessing.** Copy the transformer's velocity→nose
+      logic into a scratch driver over the pure solver (the Thresher harness's stubs compile it in
+      seconds) and record max degrees/frame per scenario. The answer pointed at a different line
+      than intuition did.
+    - **Cap the camera's FOLLOW FRAME, not the hull.** `CustomCameraController.MaxFollowTurnRate`
+      (default 0 = hard-attached) `RotateTowards`s the frame at most N °/s. Set it above every
+      stick rate (the Thresher uses 240) and ordinary flying is bit-for-bit unchanged; only snaps
+      are spread. Slowing the hull instead changes gameplay — a fling bends by exactly the nose's
+      lag. `RearViewLawTests` counts `rotation * EffectiveOffset` pose sites in the camera SOURCE
+      (exactly two), so keep the follow-frame local named `rotation` and keep the teleport path
+      from adding a third site.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

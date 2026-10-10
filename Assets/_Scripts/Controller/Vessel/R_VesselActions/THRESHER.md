@@ -309,6 +309,42 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 
 ## Follow-ups
 
+### Refactor rows (2026-10-10 ship pass — rows only, nothing here was changed)
+
+Each row carries its measurement; none blocks building on this branch.
+
+- **Stale overrides inherited from the Squirrel (debt CREATED by cloning).** `check_generated_assets.py`
+  (after `unity_refcompile`) reports **68** findings, all on `Thresher.prefab`, of which 29 are
+  modifications on its nested `Skimmer.prefab` instance naming fields `Skimmer` no longer has
+  (`NotifyNearbyBlockCount`, `alignWithTrail`, `blockImpactEffects.Array.data[0]`, …). A/B'd on
+  2026-10-08 against an untouched Squirrel copy: identical list, so they are the Squirrel's too.
+  Fix both hulls together through `PrefabDriftFixer` (never by hand-editing YAML); blocking question:
+  is any of those overrides still load-bearing on the Squirrel after its field renames?
+- **`lineMaterial` now serves only the skid trail (debt CREATED).** Since the chain got its own
+  `chainMaterial` (round 5), `ThresherExecutor.lineMaterial` is the skid trail's material and the
+  chain's fallback; the name and tooltip describe its old job. Rename to `skidMaterial` with
+  `[FormerlySerializedAs("lineMaterial")]`. Inconsistency → a fix, not a report.
+- **Two colour-blend rates for one cue (debt CREATED).** `ThresherConfigSO.colorBlendRate` drives the
+  world colours and `ThresherHUDView.colorBlendRate` the HUD gauge; both are 15 and must be tuned
+  together (the HUD view also keeps its own `chainColor`). Pass the rate through
+  `ThresherHUDController` from the config instead. Measure first: `grep -n colorBlendRate` → exactly
+  two serialized definitions today.
+- **The hook-on is a 91° velocity snap in the SOLVER (debt MADE VISIBLE).** The camera cap (§5a)
+  hides it from the camera, but the hull still turns onto the orbit's tangent within a few frames
+  (`pivotFacingRate` 25/s), and a ship flying radially away from the ball has its heading replaced
+  outright. Whether hooking on should instead blend the velocity over ~0.2 s is a DESIGN call (it
+  changes where the orbit starts), not a cleanup. Measured by the scratch driver described in vessel
+  rule 43: 91.4°/frame reeled in, 67.3° let out.
+- **`ThresherCameraFraming` lives in `ThresherChainSolver.cs` (minor).** It is there so the
+  harness compiles it from its shipped path with no new wiring; 9 call sites, all in the executor.
+  Split it into its own file only together with a `run.sh` change.
+- **Other hard-attached hulls with hull-driven snaps (debt WALKED PAST, unmeasured).** Every vessel
+  camera is `FixedCamera`; any transformer that rotates the hull itself (a facing snap, a tug, a
+  dash) whips the camera the same way. Not measured here — the measurement is the vessel rule 43
+  scratch driver per transformer that overrides `RotateShip`
+  (`grep -ln "override void RotateShip" -r Assets/_Scripts --include=*.cs`: 3 on 2026-10-10 —
+  Thresher, SingleStick, Command), and `MaxFollowTurnRate` is the fix.
+
 - **Art and sound**: real ball/chain art and icons; the six FMOD events.
 - **Hull**: its own model, skimmer and jets (still the Squirrel's).
 - **Virtual (swarm) prisms** are not swept by the ball or chain.
