@@ -50,8 +50,13 @@ while they warp the predicted path — and a hull ORBITING its own sink keeps th
 so the hold never dried out and ended only at `autopilotMaxHoldSeconds` (15 s): reported in play as the AI
 going round inside the black hole's shadow four, five, six times before it got out. The executor now sums
 the angle the hull sweeps round its sink (`StoatDipoleMath.SweptAround`, skipping a frame that went through
-the wormhole) and lets go at `autopilotMaxOrbitDegrees` (**360** = one lap, 0 = no cap), in either hold
-mode; after a capped let-go it waits the full `autopilotIntervalSeconds` rather than the 0.25 s relay, so
+the wormhole) and lets go so the lap ENDS at `autopilotMaxOrbitDegrees` (**360** = one lap, 0 = no cap), in
+either hold mode. "Ends" matters: the poles keep pulling until they close (`FollowRate`), and letting go AT
+360 left the hull another half lap round the closing pair, so the sweep still to come
+(`ClosingSeconds` × the smoothed orbit rate) is counted at the moment of the decision (`OrbitCapReached`).
+Measured in the Stoat Flight Studio (same AI, same closing law, Hard, one race per intensity): the most a
+pair was circled went **7.43 → 0.66 laps** at I2 and **3.23 → 0.60** at I3 (I1 and I4 never orbited: 0.55,
+0.77), race times unchanged within a second (58.5 → 59.6 s, 51.8 → 51.5 s). After a capped let-go it waits the full `autopilotIntervalSeconds` rather than the 0.25 s relay, so
 the next pair is not laid while the hull is still turning out of the last one. A pass by the sink sweeps
 under 180°, so the cap never cuts one short (`StoatDipoleTests.OrbitCap_*`).
 

@@ -7340,7 +7340,7 @@ pre-fix file and passes after). The `AIPilot` edits were checked by reading only
 
 **The STOAT (the reported vessel) — Slingshot / Warpline, or any mode seating an AI Stoat.** Its triggers are
 the dipole, and the path-watching autopilot held its poles while the hull circled its own sink — up to
-15 s, i.e. four to six laps inside the black hole's shadow. It now lets go after ONE lap
+15 s, i.e. four to six laps inside the black hole's shadow (the studio measured 7.4 on one pair). It now lets go so its orbit, closing pair included, ends within ONE lap (the studio measures at most 0.77)
 (`StoatDipoleConfigSO.autopilotMaxOrbitDegrees` = 360) and waits the 2 s interval before the next pair.
 `STOAT_DIPOLE.md` §1. `SweptAround`/`OrbitCapReached` compiled and their tests run under Roslyn; the
 executor edit was checked by reading only.

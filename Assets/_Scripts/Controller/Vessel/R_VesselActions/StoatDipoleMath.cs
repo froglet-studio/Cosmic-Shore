@@ -307,8 +307,26 @@ namespace CosmicShore.Gameplay
             return Vector3.Angle(a, b);
         }
 
-        /// <summary>True once the autopilot has circled its sink as far as it may: <paramref name="maxDegrees"/> ≤ 0 is no cap.</summary>
-        public static bool OrbitCapReached(float sweptDegrees, float maxDegrees) => maxDegrees > 0f && sweptDegrees >= maxDegrees;
+        /// <summary>
+        /// Seconds the poles take to meet once both triggers are let go: the separation decays at
+        /// <paramref name="followRate"/> (<see cref="Follow"/>) until <see cref="ShouldAnnihilate"/>'s threshold.
+        /// The pair keeps pulling all that time, so a hull circling the sink keeps circling.
+        /// </summary>
+        public static float ClosingSeconds(float separation, float sinkHorizon, float sourceHorizon, float followRate)
+        {
+            float threshold = Mathf.Max(1f, 0.5f * (sinkHorizon + sourceHorizon));
+            return separation > threshold ? Mathf.Log(separation / threshold) / Mathf.Max(0.1f, followRate) : 0f;
+        }
+
+        /// <summary>
+        /// True once the autopilot must let go for its orbit to END at <paramref name="maxDegrees"/>: what it has
+        /// swept round its sink plus what it will still sweep at <paramref name="sweepRateDegreesPerSecond"/> while
+        /// the poles close (<paramref name="closingSeconds"/>). Letting go AT the cap left the hull another half lap
+        /// round the closing pair (measured in the Stoat Flight Studio). <paramref name="maxDegrees"/> ≤ 0 is no cap.
+        /// </summary>
+        public static bool OrbitCapReached(float sweptDegrees, float maxDegrees, float sweepRateDegreesPerSecond = 0f,
+            float closingSeconds = 0f) =>
+            maxDegrees > 0f && sweptDegrees + Mathf.Max(0f, sweepRateDegreesPerSecond) * Mathf.Max(0f, closingSeconds) >= maxDegrees;
 
         public static bool AutopilotTriggers(Vector3 localTarget, float minDistance, float straightDegrees, float maxDegrees,
             out bool left, out bool right)

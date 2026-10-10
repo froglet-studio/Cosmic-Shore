@@ -90,6 +90,7 @@ namespace CosmicShore.Gameplay
         bool _aiHoldingLeft, _aiHoldingRight;
         float _aiHoldStart, _aiDry;          // watching the path: when this pair was laid; how long its path has been unwarped
         float _aiOrbitSwept;                 // degrees the hull has circled this pair's sink (the orbit cap)
+        float _aiOrbitRate;                  // ...and how fast, degrees/s (smoothed): the sweep still to come while the poles close
         Vector3 _aiLastHullPos;
         int _aiLastTeleport;                 // a pass through the wormhole is a jump, not a sweep
         bool _aiOrbitCapped;                 // the last let-go was the orbit cap: wait the full interval, not the relay
@@ -526,11 +527,20 @@ namespace CosmicShore.Gameplay
                 // Max Hold Seconds - four to six laps round the hole before the AI got out.
                 var hullPos = _status.Transform.position;
                 int teleports = _status.VesselTransformer ? _status.VesselTransformer.TeleportCount : 0;
-                if (IsOpen && teleports == _aiLastTeleport)
-                    _aiOrbitSwept += StoatDipoleMath.SweptAround(_sink.transform.position, _aiLastHullPos, hullPos);
+                float dt = Time.deltaTime;
+                if (IsOpen && teleports == _aiLastTeleport && dt > 0f)
+                {
+                    float swept = StoatDipoleMath.SweptAround(_sink.transform.position, _aiLastHullPos, hullPos);
+                    _aiOrbitSwept += swept;
+                    _aiOrbitRate += (swept / dt - _aiOrbitRate) * Mathf.Min(1f, dt * 8f);
+                }
                 _aiLastHullPos = hullPos;
                 _aiLastTeleport = teleports;
-                bool capped = StoatDipoleMath.OrbitCapReached(_aiOrbitSwept, config.AutopilotMaxOrbitDegrees);
+                // Let go so the lap ENDS at the cap: the poles keep pulling until they close.
+                float closing = IsOpen
+                    ? StoatDipoleMath.ClosingSeconds(_separation.Magnitude, _sink.HorizonRadius, _source.HorizonRadius, config.FollowRate)
+                    : 0f;
+                bool capped = StoatDipoleMath.OrbitCapReached(_aiOrbitSwept, config.AutopilotMaxOrbitDegrees, _aiOrbitRate, closing);
                 if (capped) _aiReleaseAt = 0f;
                 else if (watch)
                 {
@@ -573,6 +583,7 @@ namespace CosmicShore.Gameplay
             _aiHoldStart = Time.time;
             _aiDry = 0f;
             _aiOrbitSwept = 0f;
+            _aiOrbitRate = 0f;
             _aiOrbitCapped = false;
             _aiLastHullPos = hull.position;
             _aiLastTeleport = _status.VesselTransformer ? _status.VesselTransformer.TeleportCount : 0;

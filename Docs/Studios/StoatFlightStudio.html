@@ -498,7 +498,7 @@
     styleComet: 0.5, styleNeedle: 0.5, styleAnchor: 0.5, styleMaelstrom: 0.5, styleFlare: 0.5,
     styleStep: 0.15, styleDrift: 0.04, needleStep: 0.1, needleCone: 20,
     // the AI pilot (sim lab)
-    aiQ: 0.6, aiCone: 12, aiGiveUp: 3.5, aiMinRing: 200, aiTurn: 70, aiSling: 1, aiTau: 0.3, aiNoise: 0, aiWarp: 1, aiWarpQ: 1, aiNear: 60, aiLimeWait: 0.5,
+    aiQ: 0.6, aiCone: 12, aiGiveUp: 3.5, aiMinRing: 200, aiTurn: 70, aiSling: 1, aiTau: 0.3, aiNoise: 0, aiWarp: 1, aiWarpQ: 1, aiNear: 60, aiLimeWait: 0.5, aiMaxOrbit: 360, aiOrbitRest: 2,
     // birth & annihilation (the dipole pair)
     bornS: 0.9, whInS: 1.1, whInFrom: 700, dieS: 0.7, whOutSpeed: 450, whOutFade: 1.6, shellBend: 6,
     gwAmp: 12, gwSpeed: 120, gwPeriod: 0.35, gwRingdown: 1.0, gwPrism: 0.6, gwShake: 1, gwGlow: 1,
@@ -524,6 +524,8 @@
     ['ai', 'aiWarpQ', 'Field AI squeeze (measured best: 1)', 0.05, 1, 0.05],
     ['ai', 'aiNear', 'Field AI lets go this close to the ring (u)', 0, 300, 5],
     ['ai', 'aiLimeWait', 'Field AI lets go once the path has not warped for (s)', 0.1, 3, 0.05],
+    ['ai', 'aiMaxOrbit', 'Field AI lets go after circling its black hole this far (°, 360 = one lap, 0 = no cap; game: StoatDipoleConfigSO.autopilotMaxOrbitDegrees)', 0, 1080, 30],
+    ['ai', 'aiOrbitRest', '…and waits this long before the next pair (s; game: autopilotIntervalSeconds)', 0, 5, 0.1],
     ['style', 'styleComet', 'Comet · velocity', 0, 1, 0.01],
     ['style', 'styleNeedle', 'Needle · precision', 0, 1, 0.01],
     ['style', 'styleAnchor', 'Anchor · control', 0, 1, 0.01],
@@ -2128,7 +2130,7 @@
   // The AI's state. level = Easy | Medium | Hard (AI_LEVELS); tracking .. off = its BELIEF about the next ring (aiBelief)
   function newAi(seed, level) {
     return { phase: 'cruise', side: 'R', t: 0, q: 0, cone: 12, wait: 0, seed: seed || 1, prevOff: null, fHold: 0, aimPt: new THREE.Vector3(), aimSet: false,
-      wHeld: -1, wDry: 0, wNear: 60, wWait: 0.5,
+      wHeld: -1, wDry: 0, wNear: 60, wWait: 0.5, wSwept: 0, wRate: 0, wLast: new THREE.Vector3(), wRest: 0,
       level: level || 'Hard', tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new THREE.Vector3(), unnoticed: false, mistakes: 0, think: 'ring' };
   }
   let ai = newAi(1);   // per pilot
@@ -2205,18 +2207,36 @@
       let trig = 0;
       if (standing && ai.wHeld >= 0) {
         ai.wHeld += dt; ai.wDry = ftLive.lime ? 0 : (ai.wDry || 0) + dt;
-        const letGo = blind || d < ai.wNear || (ai.wHeld > 0.8 && ai.wDry > ai.wWait);
-        if (letGo) ai.wHeld = -1; else trig = ai.q;
+        // At most one lap round the black hole. Circling the sink keeps the path lime every frame, so the hold never
+        // dried out and only ended near the ring: up to seven laps at the loop boost. Sum the angle swept round the sink
+        // (a jump through the wormhole is not a sweep) and let go so that the lap ENDS at aiMaxOrbit - the poles keep
+        // pulling until they close (ftSepFollow), so the sweep still to come while they close is counted now. The game's
+        // autopilotMaxOrbitDegrees, StoatDipoleMath.OrbitCapReached.
+        const step = hull.position.distanceTo(ai.wLast);
+        if (step < 4 * standing.rs + 50 && dt > 0) {
+          aiOff.subVectors(ai.wLast, standing.att); aiAim.subVectors(hull.position, standing.att);
+          if (aiOff.lengthSq() > 1e-6 && aiAim.lengthSq() > 1e-6) {
+            const sw = aiOff.angleTo(aiAim) * 180 / Math.PI;
+            ai.wSwept += sw; ai.wRate += (sw / dt - ai.wRate) * Math.min(1, dt * 8);
+          }
+        }
+        ai.wLast.copy(hull.position);
+        const closeThr = Math.max(1, 0.5 * (standing.rs + standing.rsR));
+        const closing = standing.sep > closeThr ? Math.log(standing.sep / closeThr) / Math.max(0.1, P.ftSepFollow) : 0;
+        const orbited = P.aiMaxOrbit > 0 && ai.wSwept + Math.max(0, ai.wRate) * closing >= P.aiMaxOrbit;
+        const letGo = blind || orbited || d < ai.wNear || (ai.wHeld > 0.8 && ai.wDry > ai.wWait);
+        if (letGo) { ai.wHeld = -1; if (orbited) { ai.wRest = P.aiOrbitRest; if (raceStats) raceStats.orbitCaps = (raceStats.orbitCaps || 0) + 1; } } else trig = ai.q;
       } else if (!standing) {
         ai.wHeld = -1;
-        if (!blind && P.aiSling > 0.5 && d > P.aiNear * 1.5) {
+        if (ai.wRest > 0) ai.wRest -= dt;   // after an orbit-capped let-go: fly out before laying the next pair
+        else if (!blind && P.aiSling > 0.5 && d > P.aiNear * 1.5) {
           if (ai.wait <= 0) ai.wait = 0.001 + n * aiRand() * 1.2;   // a rookie lays a beat late
           ai.wait -= dt;
           if (ai.wait <= 0) {
             ai.wait = 0; ai.side = Math.abs(phi) < Math.PI / 2 ? 'R' : 'L';
             ai.q = Math.max(0.05, Math.min(1, P.aiWarpQ - n * aiRand() * 0.7));   // a rookie squeezes short of full
             ai.wNear = Math.max(0, P.aiNear * (1 + n * (aiRand() - 0.5) * 1.6)); ai.wWait = Math.max(0.05, P.aiLimeWait * (1 + n * (aiRand() - 0.5) * 2));
-            ai.wHeld = 0; ai.wDry = 0; trig = ai.q;
+            ai.wHeld = 0; ai.wDry = 0; ai.wSwept = 0; ai.wRate = 0; ai.wLast.copy(hull.position); trig = ai.q;
           }
         }
       }

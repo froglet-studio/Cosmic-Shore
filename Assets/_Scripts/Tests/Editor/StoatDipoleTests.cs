@@ -235,5 +235,18 @@ namespace CosmicShore.Tests
             Assert.IsFalse(StoatDipoleMath.OrbitCapReached(10000f, 0f), "0 = no cap");
             Assert.AreEqual(0f, StoatDipoleMath.SweptAround(centre, centre, Vector3.one), "a position on the centre sweeps nothing");
         }
+
+        [Test]
+        public void OrbitCap_LetsGoEarlyEnoughThatTheClosingPairEndsTheLap()
+        {
+            // Letting go AT 360 left the hull another half lap round the pair while its poles closed (the studio
+            // measured 1.5 laps). The cap counts the sweep still to come: 200 degrees swept at 160 deg/s with a second
+            // of closing left ends at 360, so it lets go now.
+            float closing = StoatDipoleMath.ClosingSeconds(separation: 2.718282f * 10f, sinkHorizon: 10f, sourceHorizon: 10f, followRate: 1f);
+            Assert.AreEqual(1f, closing, 1e-3f, "e x the threshold at rate 1 closes in one second");
+            Assert.IsTrue(StoatDipoleMath.OrbitCapReached(200f, 360f, 160f, closing));
+            Assert.IsFalse(StoatDipoleMath.OrbitCapReached(150f, 360f, 160f, closing), "a lap that would end at 310 holds on");
+            Assert.AreEqual(0f, StoatDipoleMath.ClosingSeconds(5f, 10f, 10f, 1f), "poles already inside the threshold close at once");
+        }
     }
 }
