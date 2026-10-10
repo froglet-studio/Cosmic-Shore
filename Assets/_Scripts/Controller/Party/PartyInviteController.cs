@@ -37,7 +37,8 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
 
-        [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
+        [Tooltip("Optional. Toast shown when a join fails and the client bounces back to its own menu. " +
+                 "Raised with a hold, so it survives the Menu_Main reload and lands on the fresh menu's ToastService.")]
         [SerializeField] private ToastChannel bounceToastChannel;
 
         [Header("Timing")]
@@ -604,13 +605,15 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
             await RecoverFromFailedTransitionAsync();
-            // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
-            // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by
-            // the Menu_Main reload - and is absent entirely in a game scene. A toast raised
-            // before recovery is therefore silently dropped (the channel event has no
-            // subscriber). Raising it here lands on the fresh menu's live ToastService.
+            // Show the notice AFTER recovery, and HELD. ToastService is a scene-bound
+            // MonoBehaviour (it subscribes to the channel in OnEnable), so it is destroyed +
+            // recreated by the Menu_Main reload - and is absent entirely in a game scene. A
+            // plain ShowPrefix raised in the gap had no subscriber and was silently dropped,
+            // which is how a failed join read as "the game put me back in my menu for no
+            // reason". ShowPrefixOrHold parks the line on the channel asset (which outlives
+            // the scene) until the fresh menu's ToastService subscribes and drains it.
             // See Docs/PartySystem/BUGS.md B10.
-            bounceToastChannel?.ShowPrefix(toastMessage);
+            bounceToastChannel?.ShowPrefixOrHold(toastMessage);
         }
 
         /// <summary>

@@ -128,6 +128,22 @@ Recipient's refresh loop detects invite
           └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
 ```
 
+### When the join fails: the notice survives the reload (2026-10-10)
+
+Every failure arm of the accept flow ends in
+`PartyInviteController.BounceToSoloMenuAsync`, which restarts the client's own solo host
+(`RecoverFromFailedTransitionAsync`) and then raises "Couldn't join - returned to your menu."
+on the `bounceToastChannel`. That notice used to be best-effort: `ToastService` is a
+scene-bound MonoBehaviour that subscribes to the channel in `OnEnable`, so a line raised in
+the gap around the Menu_Main reload had no subscriber and vanished, and the player saw the
+menu come back with no explanation. The controller now raises it with
+`ToastChannel.ShowPrefixOrHold`: delivered at once when a service is listening, otherwise
+parked on the channel asset (which outlives the scene) for up to 45 s and drained by the
+next `ToastService.OnEnable`. The hold is a mailbox, not a queue: a later held line replaces
+an earlier one, and the plain `ShowPrefix` keeps its drop-when-unheard contract for gameplay
+toasts. Pinned by `ToastChannelHoldTests`. Not yet seen in an editor: force a join failure
+(accept an invite whose host has quit) and watch for the line on the fresh menu.
+
 ## Friend requests vs. party invites
 
 Two separate systems — don't conflate them:
