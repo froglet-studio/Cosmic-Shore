@@ -74,7 +74,7 @@ namespace CosmicShore.Editor.Studios
                     a.needs == "engineMode" && string.IsNullOrEmpty(s.engineMode) ? "This vessel has no game mode in the engine yet." :
                     a.needs == "tuner" && !(s.tuner && hasTuner) ? "No Unity tuning page for this vessel yet." :
                     a.needs == "mirror" && string.IsNullOrEmpty(cat.mirror) ? "No live mirror in the catalog." : null;
-                list.Add(new CardButton(a.id, a.label, why == null, why ?? a.tip ?? ""));
+                list.Add(new CardButton(a.id, a.label.ToUpperInvariant(), why == null, why ?? a.tip ?? ""));   // capitals, as the hub's CSS shows them
             }
             return list;
         }
