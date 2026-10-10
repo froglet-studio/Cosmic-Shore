@@ -21,8 +21,9 @@ namespace CosmicShore.Editor
     /// .NET 10 SDK on the machine it falls back to <c>Port/dist/Prisma-Windows.zip</c>, and Prisma
     /// installs its own SDK the first time START is pressed, after which builds work. Prisma is told
     /// which clone opened it, so its PLAY page follows the branch Unity has checked out. FrogletTools > Amoebius > Vessel
-    /// Studio Page opens it on its VESSEL STUDIO page (<c>--page studios</c>); FrogletTools > Vessels > Vessel Studio opens the
-    /// studio pages themselves (the artifact's own files) in an app window.
+    /// Studio Page opens it on its VESSEL STUDIO page (<c>--page studios</c>); FrogletTools > Vessels > Vessel Studio
+    /// (<c>Studios/VesselStudioWindow</c>, the studio home) opens the studio pages themselves (the artifact's own files)
+    /// in an app window through <see cref="OpenStudioWindow"/>.
     /// READER: writes only under the gitignored <c>Library/</c>, never assets - no ship panel.
     /// </summary>
     public static class LaunchPrisma
@@ -72,24 +73,6 @@ namespace CosmicShore.Editor
         /// <summary>The Prisma page the next start opens (<c>--page</c>), then cleared. Null = Prisma's own default.</summary>
         static string _openPage;
 
-        [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)]
-        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
-            Description = "Opens the Vessel Studio itself (the same pages as the claude.ai artifact: every studio, tab and option) in its own window, from this checkout. No build, no Amoebius needed.",
-            DocPath = "Docs/Studios/VESSEL_STUDIO_PLAN.md")]
-        public static void OpenVesselStudio()
-        {
-            // The Vessel Studio is ONE thing (/vessel-studio section 0): the pages in Docs/Studios/VesselStudio are the
-            // artifact's own files, so opening the hub from the checkout shows exactly what claude.ai shows. What only
-            // claude.ai can do (Ask, shared requests and log, Sync) says so on the page and links to the artifact.
-            string hub = Path.Combine(Root, "Docs", "Studios", "VesselStudio", "index.html");
-            if (!File.Exists(hub))
-            {
-                EditorUtility.DisplayDialog("Vessel Studio", "This checkout has no Docs/Studios/VesselStudio. Switch to Ys-bleeding-edge.", "OK");
-                return;
-            }
-            OpenStudioWindow(hub);
-        }
-
         [MenuItem("FrogletTools/Amoebius/Vessel Studio Page", false, 3)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Opens Amoebius on its VESSEL STUDIO page (pick a vessel; PLAY IN ENGINE runs the game's own vessel in Amoebius).",
@@ -103,9 +86,10 @@ namespace CosmicShore.Editor
         /// <summary>
         /// A studio page as its own app window (Edge, always on Windows 10/11, or Chrome: <c>--app</c>, no tabs or address
         /// bar), with a window profile under <c>Library/</c> so the studio's layout is remembered; the default browser
-        /// when neither is installed. Amoebius's OPEN IN AMOEBIUS does the same (StudioCatalog.AppWindowArgs).
+        /// when neither is installed. The Vessel Studio home's cards and OPEN THE HUB use it; Amoebius's OPEN IN AMOEBIUS
+        /// does the same (StudioCatalog.AppWindowArgs).
         /// </summary>
-        static void OpenStudioWindow(string pagePath)
+        internal static void OpenStudioWindow(string pagePath)
         {
             string url = new Uri(Path.GetFullPath(pagePath)).AbsoluteUri;
             string profile = Path.Combine(Root, "Library", "VesselStudioWindow");

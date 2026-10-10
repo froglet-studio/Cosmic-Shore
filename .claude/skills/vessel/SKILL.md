@@ -916,7 +916,7 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
 
 1. **Every studio number lands in the vessel's config SO, then the Unity Vessel Studio owns it.** The generator
    SEEDS the tuning assets once (and checks they exist with the right script); from then on their numbers are tuned in
-   **FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity)**, live in Play mode, with the web studio's value beside every
+   **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ the vessel's card ▸ **TUNE IN UNITY**, live in Play mode, with the web studio's value beside every
    row, and shipped by that window's ship panel. (Asserting the numbers in the generator made every live tweak fail
    its gate.) Before that seeding existed the rule read:
    The Stoat's is `Tools/Build/author_stoat_assets.py` (its "vessel creation tool": the prefab, the class

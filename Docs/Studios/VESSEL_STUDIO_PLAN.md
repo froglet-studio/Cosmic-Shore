@@ -25,7 +25,7 @@ https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa is the only studio artifact.
 | **Studio agent** | `index.html` § Studio agent | **Ask** (Claude answers with the vessel's spec, through the claude.ai viewer) and **Development requests** (stored in the artifact's database, collection `requests`; a Claude Code session reads them with `ArtifactData`). **Copy as agent prompt** for Amoebius's AGENT page. |
 | **Amoebius VESSEL STUDIO page** (STUDIOS until 2026-10-09) | `Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs`, `StudioCatalog.cs`, `ArtifactLibrary.cs`; doc `Port/docs/LAUNCHER.md` § VESSEL STUDIO | **Works** (built and screenshotted headless). One card per studio from `studios.json`: OPEN (browser), AGENT (an Amoebius Agent chat on that studio), DOCS; plus OPEN HUB, WEB LINK, FOLDER, UPDATE FROM ARTIFACT. Below the studios, the ARTIFACTS library (`Docs/Artifacts/`, `/amoebius-artifact`). |
 | **OPEN IN AMOEBIUS / PLAY IN ENGINE** (2026-10-09, `claude/peaceful-rubin-hhw49n`) | `LauncherApp.Studios.cs`, `StudioCatalog.cs`, `CosmicShore.Player/ArcadeAutoStart.cs` | **Built and checked on Linux** (`PRISMA_TEST_STEPS.md`). The studio opens as its own app window that knows it is in Amoebius (`#prisma`). The Stoat's PLAY IN ENGINE boots the game and opens Slingshot by itself (`--arcade Slingshot`); the real Stoat flies and slings in Amoebius. The engine gained what this branch's black-hole code needed to compile there (transform jobs, render-graph and `CommandBuffer` API, `Controls.ButtonControl`, `SerializeField`, a GLSL `PrismGravityWarpDeform`). The lens pass is compiled, not drawn. |
-| **Unity entry** | `Assets/_Scripts/Editor/LaunchPrisma.cs` | **FrogletTools ▸ Vessels ▸ Vessel Studio** opens the Vessel Studio itself (the hub, `index.html`, from the checkout) in its own app window: the same pages, tabs and options as the claude.ai artifact, with no build. **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** opens Amoebius on its VESSEL STUDIO page (PLAY IN ENGINE). Editor-only, owned by the port. |
+| **Unity entry** | `Assets/_Scripts/Editor/LaunchPrisma.cs` | **FrogletTools ▸ Vessels ▸ Vessel Studio** opens the Vessel Studio HOME in Unity (`Studios/VesselStudioWindow`: the hub's heading and one card per `studios.json` studio with the hub's own looping preview); a card opens that studio from the checkout in its own app window (`LaunchPrisma.OpenStudioWindow`): the same pages, tabs and options as the claude.ai artifact, with no build. **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** opens Amoebius on its VESSEL STUDIO page (PLAY IN ENGINE). Editor-only, owned by the port. |
 | Amoebius phone player | `Port/src/CosmicShore.Mobile` | Runs the game itself on Android/iOS; touch feeds the game's own `TouchInputStrategy`. **No device run yet** (`Port/docs/milestones.json` C8). |
 | Amoebius web build | — | **Does not exist.** Amoebius's player is .NET + OpenGL; a browser build is an engine milestone (§4). |
 
@@ -45,8 +45,14 @@ Testing in the REAL game (AI on any seat, free-fly camera, the intensity maps, a
 
 Both stay. A decision made in a web studio lands in the game; the game studio then tests what landed.
 
-**The Vessel Studio in Unity (2026-10-10):** **FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity)**
-(`Assets/_Scripts/Editor/Studios/VesselStudioWindow.cs`) is the web studio's six tabs (Scene Config · Game Config ·
+**The Vessel Studio in Unity (2026-10-10):** **FrogletTools ▸ Vessels ▸ Vessel Studio** opens the studio HOME, the web hub's
+front page drawn in Unity (`VesselStudioWindow.Home.cs`): the "Vessel Studio" heading, one card per studio in
+`studios.json` with the hub's looping preview (`StudioPreviews.cs`, line for line the hub's canvas code, drawn on the CPU
+in well under a millisecond), and the fleet without a studio yet. **OPEN STUDIO** (or a click anywhere on the card)
+opens that studio's page from the checkout in its own Edge/Chrome app window: the artifact's own files, so it looks and
+plays exactly as on claude.ai (Unity has no web view, so the studio is never an IMGUI copy). **TUNE IN UNITY**, on a
+studio that has a Unity page, opens
+(`Assets/_Scripts/Editor/Studios/VesselStudioWindow.cs`) the web studio's six tabs (Scene Config · Game Config ·
 AI Config · Play Style Config · Input · Vessel Config) over the vessel's REAL assets: a slider per field with its own
 tooltip, live while the game plays (the configs are read every frame; the camera asset is re-applied to the cameras
 flying with it), and a **studio** button beside each row that shows the web studio's value (read from the studio's
@@ -61,7 +67,7 @@ of rows over its own assets.
 |---|---|---|
 | **Web** (desktop browser) | The published Vessel Studio, or the files opened directly | — |
 | **Android** | The same link in the phone browser; **Play on phone** (two thumb sticks, two trigger handles that work like a gamepad) | The Amoebius player APK with a `VesselStudio` scene: the game's own Squirrel on touch. Built from Amoebius's BUILD page, then a cloud Android build so no PC is needed at all |
-| **Windows** | Prisma.exe ▸ **STUDIOS** (opens the pages; AGENT chat per studio). From Unity: **FrogletTools ▸ Vessels ▸ Vessel Studio** (the studio itself) | STUDIOS gains **PLAY IN ENGINE** for the game studio (`--scene VesselStudio --studio-vessel Squirrel`) |
+| **Windows** | Prisma.exe ▸ **STUDIOS** (opens the pages; AGENT chat per studio). From Unity: **FrogletTools ▸ Vessels ▸ Vessel Studio** (the studio home; a card opens the studio) | STUDIOS gains **PLAY IN ENGINE** for the game studio (`--scene VesselStudio --studio-vessel Squirrel`) |
 | **iOS** | The same link in Safari works today | The Amoebius `.ipa` from GitHub (`prisma-ios.yml`), installed with Sideloadly (needs a PC weekly) or TestFlight ($99/yr) |
 | **Multiplayer** | Not in studios | Web studios can share a session later (the artifact `room` capability); the game studio follows Amoebius's netcode |
 

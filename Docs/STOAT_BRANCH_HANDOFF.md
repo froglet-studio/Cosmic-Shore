@@ -98,8 +98,8 @@ gamepad works).
 
 **Amoebius:** `Docs/Studios/PRISMA_TEST_STEPS.md`, step by step.
 
-- In short: Unity ▸ **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ STOAT ▸ **OPEN IN AMOEBIUS** (the studio)
-  or **PLAY IN ENGINE** (the game's own Stoat in Slingshot).
+- In short: Unity ▸ **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ the STOAT card ▸ **OPEN STUDIO** (the studio),
+  **TUNE IN UNITY** (its six tabs over the real assets) or **PLAY IN ENGINE** (Amoebius: the game's own Stoat in Slingshot).
 
 **Headless, from a cloud session** (what the previous sessions ran):
 

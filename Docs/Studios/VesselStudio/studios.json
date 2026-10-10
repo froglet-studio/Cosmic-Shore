@@ -1,5 +1,5 @@
 {
-  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source.",
+  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional accent: the card colour on the hub and the Unity home, a domain key from studio-domains.js (jade, ruby, gold, blue) or a #hex. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source.",
   "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
   "mirror": "https://yskhan61.github.io/vessel-studio/",
   "hub": "index.html",
@@ -10,6 +10,7 @@
       "file": "squirrel.html",
       "kind": "built vessel - studio round 2 (AI sim lab)",
       "summary": "The racer on its shipped numbers, with an AI sim lab: AI Squirrels at Easy, Medium or Hard on the game's four Skim Race courses, chase/follow/free cameras, 1-4x speed and a scorecard. Six play-style types over its four element levels.",
+      "accent": "jade",
       "docs": "Docs/SKIM_RACE_AI.md",
       "engineNote": "The game's own Squirrel in Skim Race, against the shipped AI (pick intensity and AI difficulty on the card).",
       "engineMode": "SkimRace"
@@ -20,6 +21,7 @@
       "file": "stoat.html",
       "kind": "design studio - round 15",
       "summary": "The slinger: squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races and scores every style, and (round 15) the field trajectory: the trigger pulls a black-white hole dipole apart, and a predicted path boosts you 3x down it whenever the poles warp it.",
+      "accent": "#c48bff",
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"

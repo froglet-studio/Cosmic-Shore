@@ -73,7 +73,13 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   glslang (SPIR-V) against the shipped `BlackHoleLens.hlsl`, with a negative control; not compiled by Unity.
 - `StoatDipoleConfig.keySqueeze` 0.5 (the studio's `dpKeySqueeze`): a key opens the poles at once, 70 u sideways.
 - `StoatPathfinderWorldDots`: the path as dots in the scene (`dotsInWorld`, 3 u apart, 0.7 u, >= 2.5 px).
-- `VesselStudioWindow` (FrogletTools ▸ Vessels ▸ Vessel Studio (in Unity)) + `VesselStudioWindowTests`;
+- `VesselStudioWindow` (FrogletTools ▸ Vessels ▸ Vessel Studio ▸ the Stoat card ▸ TUNE IN UNITY) + `VesselStudioWindowTests`;
+- **Vessel Studio home (2026-10-10, not opened in Unity yet: compiled against the Unity reference assemblies only).**
+  FrogletTools ▸ Vessels ▸ Vessel Studio opens on the HOME, not the Stoat: "VESSEL STUDIO" heading, a SQUIRREL card
+  (jade) and a STOAT card (violet) whose previews MOVE (rival trails and the jade hull; the black hole with the orbiting
+  dot), the "no studio yet" fleet chips. Click a card: that studio opens in an Edge/Chrome app window looking exactly
+  like the artifact. TUNE IN UNITY on the Stoat card opens the six tabs; ◂ Studios goes back. No console errors while
+  the home animates; there is only ONE "Vessel Studio" item under FrogletTools ▸ Vessels.
   `author_stoat_assets.py` now seeds the tuning assets once.
 
 **Verify in editor**

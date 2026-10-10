@@ -106,7 +106,7 @@ The actions:
 - **DOCS**: the vessel's doc (`docs` in the catalog); for ALL STUDIOS, the plan.
 - **Links under the card**: the claude.ai artifact (`web`, else `StudioCatalog.DefaultWeb`; Sync, Ask and shared decisions work there), the folder, and update from the artifact (an agent chat; needs the workspace).
 - **From Unity:** **FrogletTools > Amoebius > Vessel Studio Page** opens Amoebius on this page (`--page studios`);
-  **FrogletTools > Vessels > Vessel Studio** opens the studio pages themselves in an app window (no Amoebius).
+  **FrogletTools > Vessels > Vessel Studio** opens the studio home in Unity; a card opens its studio page in an app window (no Amoebius).
 - **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
   instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
 

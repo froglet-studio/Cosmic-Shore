@@ -16,7 +16,7 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 1. Pull `Ys-bleeding-edge` in GitHub Desktop.
 2. Open Amoebius by either route:
    - In Unity: **FrogletTools ▸ Amoebius ▸ Vessel Studio Page**. This opens Amoebius straight on VESSEL STUDIO, building it first if needed.
-     (**FrogletTools ▸ Vessels ▸ Vessel Studio** opens the studio pages themselves, without Amoebius.)
+     (**FrogletTools ▸ Vessels ▸ Vessel Studio** opens the studio home in Unity; a card opens its studio page, without Amoebius.)
    - Or start `Prisma.exe` and click **VESSEL STUDIO** in the left rail.
 3. The title bar shows the branch Amoebius plays. If it isn't `Ys-bleeding-edge`, pick it on the
    **GIT** page (or click **FOLLOW UNITY**). Without the studio folder on its branch, the VESSEL STUDIO page says so

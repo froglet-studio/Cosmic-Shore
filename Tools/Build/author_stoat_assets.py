@@ -770,7 +770,7 @@ def apply_camera(text: str) -> str:
 def seeded_assets() -> "dict[str, str]":
     """The TUNING assets: {absolute path: the script guid they must carry}. This generator SEEDS them (writes them only
     when absent) and then checks only that they exist with the right script. Their numbers belong to the Vessel Studio
-    window in Unity (FrogletTools > Vessels > Vessel Studio (in Unity), Assets/_Scripts/Editor/Studios/), where they are
+    window in Unity (FrogletTools > Vessels > Vessel Studio > the Stoat card > TUNE IN UNITY, Assets/_Scripts/Editor/Studios/), where they are
     tuned live and committed by its ship panel; asserting them here made every tweak fail this gate."""
     return {os.path.join(ACTIONS, "StoatDipoleConfig.asset"): DIPOLE_CONFIG_SCRIPT, CAMERA_ASSET: CAMERA_SCRIPT}
 
