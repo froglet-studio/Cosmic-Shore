@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +26,77 @@ namespace CosmicShore.Launcher
 
         /// <param name="EngineMode">An arcade mode (a <c>GameModes</c> name) PLAY IN ENGINE opens in the Prisma player: the game's own vessel.</param>
         /// <param name="EngineNote">What that engine run is, in a line (it may differ from the studio's design).</param>
-        public sealed record Studio(string Id, string Name, string File, string Kind, string Summary, string? Docs, string? EngineMode = null, string? EngineNote = null);
+        public sealed record Studio(string Id, string Name, string File, string Kind, string Summary, string? Docs, string? EngineMode = null, string? EngineNote = null)
+        {
+            /// <summary>The hub card's chip (<c>chip</c>, the hub's text exactly; /vessel-studio D34). Falls back to <see cref="Kind"/>.</summary>
+            public string Chip { get; init; } = "";
+            /// <summary>The rows under the summary on the hub card (<c>spec</c>: key, value).</summary>
+            public IReadOnlyList<SpecRow> Spec { get; init; } = Array.Empty<SpecRow>();
+            /// <summary>The card's preview thumbnail, relative to the studio folder (<c>preview</c>, baked from the hub's canvas).</summary>
+            public string? Preview { get; init; }
+            /// <summary>The card colour: a domain key (studio-domains.js) or a #hex.</summary>
+            public string? Accent { get; init; }
+            /// <summary>Unity has a TUNE IN UNITY page for it (<c>tuner</c>).</summary>
+            public bool Tuner { get; init; }
+        }
+
+        public sealed record SpecRow(string Key, string Value);
+
+        /// <summary>
+        /// One button of the studio card (<c>cardActions</c>, D34): the same buttons in the same order on every native card.
+        /// <paramref name="On"/> is the hosts it works on (web, amoebius, unity); <paramref name="Needs"/> what the studio
+        /// must have (engineMode, tuner, mirror).
+        /// </summary>
+        public sealed record CardAction(string Id, string Label, IReadOnlySet<string> On, string? Needs, string? Tip);
+
+        /// <summary>The card's buttons when the catalog predates D34: the hub's open link and the native ones, in the D34 order.</summary>
+        public static readonly IReadOnlyList<CardAction> DefaultCardActions = new[]
+        {
+            new CardAction("open", "Open studio →", new HashSet<string> { "web", "amoebius", "unity" }, null, null),
+            new CardAction("engine", "PLAY IN ENGINE", new HashSet<string> { "amoebius", "unity" }, "engineMode", null),
+            new CardAction("tune", "TUNE IN UNITY", new HashSet<string> { "unity" }, "tuner", null),
+            new CardAction("live", "OPEN LIVE IN BROWSER", new HashSet<string> { "amoebius", "unity" }, "mirror", null),
+        };
+
+        /// <summary>The hub's lede, the vessels without a studio, the line under them, and the card's buttons.</summary>
+        public string? Lede { get; init; }
+        public IReadOnlyList<string> Fleet { get; init; } = Array.Empty<string>();
+        public string? FleetNote { get; init; }
+        public IReadOnlyList<CardAction> CardActions { get; init; } = DefaultCardActions;
+
+        /// <summary>
+        /// Whether card button <paramref name="a"/> works for <paramref name="s"/> on <paramref name="host"/>, and if not, why:
+        /// a button that does not apply stays in its place, disabled, saying so (D34). Pure: the same answer on every host.
+        /// </summary>
+        public (bool ok, string? why) Applies(CardAction a, Studio s, string host)
+        {
+            if (!a.On.Contains(host))
+                return (false, a.Id == "tune" ? "In Unity: FrogletTools > Vessels > Vessel Studio, this card." : "Not on " + host + ".");
+            return a.Needs switch
+            {
+                "engineMode" when string.IsNullOrEmpty(s.EngineMode) => (false, "This vessel has no game mode in the engine yet."),
+                "tuner" when !s.Tuner => (false, "No Unity tuning page for this vessel yet."),
+                "mirror" when Mirror == null => (false, "No live mirror in the catalog."),
+                _ => (true, null),
+            };
+        }
+
+        /// <summary>A studio's preview thumbnail under <paramref name="root"/>, or null when it has none on this branch.</summary>
+        public static string? PreviewPath(string root, Studio s)
+        {
+            if (string.IsNullOrEmpty(s.Preview) || s.Preview.Contains("..") || Path.IsPathRooted(s.Preview)) return null;
+            var p = Path.Combine(root, RelativeDir, s.Preview);
+            return System.IO.File.Exists(p) ? p : null;
+        }
+
+        /// <summary>The game's domain colours by key (<c>studio-domains.js</c>, generated from the palette): #rrggbb.</summary>
+        public static Dictionary<string, string> ParseDomains(string js)
+        {
+            var d = new Dictionary<string, string>();
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(js, @"key:\s*'(\w+)'[^}]*?color:\s*'(#[0-9a-fA-F]{6})'"))
+                d[m.Groups[1].Value] = m.Groups[2].Value;
+            return d;
+        }
 
         public string? Web { get; init; }
         /// <summary>
@@ -63,10 +134,32 @@ namespace CosmicShore.Launcher
                         string? id = Str(s, "id"), name = Str(s, "name"), file = Str(s, "file");
                         if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(file)) continue;
                         if (file.Contains("..") || Path.IsPathRooted(file)) continue;   // a page inside the studio folder only
-                        list.Add(new Studio(id, name, file, Str(s, "kind") ?? "", Str(s, "summary") ?? "", Str(s, "docs"), Str(s, "engineMode"), Str(s, "engineNote")));
+                        var spec = new List<SpecRow>();
+                        if (s.TryGetProperty("spec", out var sp) && sp.ValueKind == JsonValueKind.Array)
+                            foreach (var r in sp.EnumerateArray())
+                                if (Str(r, "k") is { } k && Str(r, "v") is { } v) spec.Add(new SpecRow(k, v));
+                        list.Add(new Studio(id, name, file, Str(s, "kind") ?? "", Str(s, "summary") ?? "", Str(s, "docs"), Str(s, "engineMode"), Str(s, "engineNote"))
+                        {
+                            Chip = Str(s, "chip") ?? Str(s, "kind") ?? "", Spec = spec, Preview = Str(s, "preview"), Accent = Str(s, "accent"),
+                            Tuner = s.TryGetProperty("tuner", out var tu) && tu.ValueKind == JsonValueKind.True,
+                        });
                     }
                 }
-                return new StudioCatalog { Web = Str(root, "web"), Mirror = HttpUrl(Str(root, "mirror")), Hub = Str(root, "hub") ?? "index.html", Studios = list };
+                var actions = new List<CardAction>();
+                if (root.TryGetProperty("cardActions", out var ca) && ca.ValueKind == JsonValueKind.Array)
+                    foreach (var a in ca.EnumerateArray())
+                        if (Str(a, "id") is { } aid && Str(a, "label") is { } lab)
+                            actions.Add(new CardAction(aid, lab, new HashSet<string>((Str(a, "on") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)),
+                                Str(a, "needs"), Str(a, "tip")));
+                var fleet = new List<string>();
+                if (root.TryGetProperty("fleet", out var fl) && fl.ValueKind == JsonValueKind.Array)
+                    foreach (var f in fl.EnumerateArray()) if (f.ValueKind == JsonValueKind.String) fleet.Add(f.GetString()!);
+                return new StudioCatalog
+                {
+                    Web = Str(root, "web"), Mirror = HttpUrl(Str(root, "mirror")), Hub = Str(root, "hub") ?? "index.html", Studios = list,
+                    Lede = Str(root, "lede"), Fleet = fleet, FleetNote = Str(root, "fleetNote"),
+                    CardActions = actions.Count > 0 ? actions : DefaultCardActions,
+                };
             }
             catch (JsonException e) { return new StudioCatalog { Error = "The catalog is not valid JSON: " + e.Message }; }
         }
@@ -108,6 +201,17 @@ namespace CosmicShore.Launcher
             return list;
         }
 
+        /// <summary>
+        /// <c>--page studios:&lt;x&gt;</c>: the target whose key or page file is <paramref name="keyOrFile"/> ("hub", "stoat",
+        /// "stoat.html", "index.html"), any case; anything else is the hub.
+        /// </summary>
+        public Target Find(string? keyOrFile)
+        {
+            var all = Targets();
+            return all.FirstOrDefault(t => string.Equals(t.Key, keyOrFile, StringComparison.OrdinalIgnoreCase)
+                                           || string.Equals(t.File, keyOrFile, StringComparison.OrdinalIgnoreCase)) ?? all[0];
+        }
+
         /// <summary>The picked target by key; none or an unknown key (a vessel removed from the catalog) falls back to ALL STUDIOS.</summary>
         public Target Pick(string? key)
         {
@@ -123,13 +227,15 @@ namespace CosmicShore.Launcher
         public string LiveUrl(string file) => MirrorUrl(file) ?? (file == Hub ? DefaultMirror : DefaultMirror + Uri.EscapeDataString(file));
 
         /// <summary>
-        /// Where the studio pages are read from. The pages are plain files, so they need no build and no workspace:
-        /// Amoebius's workspace when it carries the catalog, else the user's own checkout (the one Unity opened Amoebius
-        /// from), else whichever of the two exists. Null when there is neither.
+        /// Which checkout the studio is built from (/vessel-studio D33). Started from Unity (<paramref name="preferClone"/>:
+        /// FrogletTools passes <c>--clone</c>), the Unity checkout, so the studio shows the branch Unity has open. Otherwise
+        /// Amoebius's workspace when it carries the catalog, else the user's own checkout, else whichever of the two exists.
+        /// Null when there is neither.
         /// </summary>
-        public static string? PickRoot(string? workspaceDir, bool workspaceExists, string? cloneDir)
+        public static string? PickRoot(string? workspaceDir, bool workspaceExists, string? cloneDir, bool preferClone = false)
         {
             bool Has(string? d) => d != null && System.IO.File.Exists(Path.Combine(d, RelativeDir, FileName));
+            if (preferClone && Has(cloneDir)) return cloneDir;
             if (workspaceExists && Has(workspaceDir)) return workspaceDir;
             if (Has(cloneDir)) return cloneDir;
             return workspaceExists ? workspaceDir : cloneDir;
@@ -142,9 +248,10 @@ namespace CosmicShore.Launcher
         public static string PagePath(string workspaceDir, string file) => Path.Combine(workspaceDir, RelativeDir, file);
 
         /// <summary>
-        /// OPEN IN PRISMA: the studio as its own window, with no browser tabs or address bar. Chromium-based browsers
-        /// have an app mode (<c>--app=URL</c>); a profile of Prisma's own keeps that window separate from the user's
-        /// browser and its layout remembered between opens. The page gets <c>#prisma</c>, so it says it runs in Prisma.
+        /// OPEN IN AMOEBIUS: the studio as its own window, with no browser tabs or address bar. Chromium-based browsers
+        /// have an app mode (<c>--app=URL</c>); a profile of Amoebius's own keeps that window separate from the user's
+        /// browser and its layout remembered between opens. The URL is the studio server's (<see cref="StudioServer.PageUrl"/>:
+        /// the build over http, with <c>#amoebius</c>), never a file.
         /// The candidates are where Edge (always on Windows 10/11) and Chrome install; none found means the plain browser.
         /// </summary>
         public static IEnumerable<string> AppBrowserCandidates()
@@ -172,18 +279,27 @@ namespace CosmicShore.Launcher
             }
         }
 
-        /// <summary>The app-mode arguments for <paramref name="pagePath"/>, with a window profile under <paramref name="profileDir"/>.</summary>
-        public static List<string> AppWindowArgs(string pagePath, string profileDir) => new()
+        /// <summary>
+        /// The app-mode arguments for <paramref name="url"/>, with a window profile under <paramref name="profileDir"/>.
+        /// <c>PRISMA_STUDIO_BROWSER_ARGS</c> adds flags (a GPU-less test machine: <c>--use-gl=swiftshader --enable-unsafe-swiftshader</c>).
+        /// </summary>
+        public static List<string> AppWindowArgs(string url, string profileDir)
         {
-            "--app=" + PageUri(pagePath),
-            "--user-data-dir=" + profileDir,
-            "--window-size=1600,960",
-            "--no-first-run",
-            "--no-default-browser-check",
-        };
+            var list = new List<string>
+            {
+                "--app=" + url,
+                "--user-data-dir=" + profileDir,
+                "--window-size=1600,960",
+                "--no-first-run",
+                "--no-default-browser-check",
+            };
+            var extra = Environment.GetEnvironmentVariable("PRISMA_STUDIO_BROWSER_ARGS");
+            if (!string.IsNullOrWhiteSpace(extra)) list.AddRange(extra.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            return list;
+        }
 
-        /// <summary>The page as a file URI that tells it it is running in Prisma (<c>#prisma</c>).</summary>
-        public static string PageUri(string pagePath) => new Uri(Path.GetFullPath(pagePath)).AbsoluteUri + "#prisma";
+        /// <summary>A page file as a file URI: only for the OTHER artifacts of the library; the Vessel Studio is always served (D33).</summary>
+        public static string PageUri(string pagePath) => new Uri(Path.GetFullPath(pagePath)).AbsoluteUri;
 
         /// <summary>The player arguments PLAY IN ENGINE adds: open the studio's arcade mode from the main menu.</summary>
         public static IReadOnlyList<string> EngineArgs(Studio s) =>

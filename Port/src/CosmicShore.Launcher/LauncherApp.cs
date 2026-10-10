@@ -85,6 +85,7 @@ namespace CosmicShore.Launcher
             if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
             if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
             else if (pageArg is { Length: > 1 } && _page == Page.Studios && pageArg[1] == "artifacts") _artScrollFrames = 10; // --page studios:artifacts
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios) _studioOpenAtStart = pageArg[1]; // --page studios:hub|stoat (Unity's Vessel Studio)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -156,7 +157,7 @@ namespace CosmicShore.Launcher
                 Neon.Heading = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 24);
                 Neon.Title = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 30);
                 Neon.Hero = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 46);
-                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15);
+                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15, null, ranges);   // the studio cards' spec rows: – × ·
                 unsafe { io.NativePtr->FontDefault = Neon.Body.NativePtr; }
             });
             Neon.ApplyStyle();
