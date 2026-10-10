@@ -458,6 +458,36 @@ by `Tools/Build/author_skimrace_ai_config.py` (`--check` passes); the asset is
 the in-editor I4 matrix (§7, 2 and 3 AI seats) is owed, and the simulator's calibration (§6.1) is
 the only reason to expect the editor to agree.
 
+### 6.14 Intensity 1 tuned with three AI seats (2026-10-10): NOT shipped
+
+The §6.13 every-seat objective worked for I4 with two seats, so the same tuner was pointed at the
+shipped I1 policy (`skimrace-v4-i1`) with THREE AI seats: CEM over the same 36 parameters, 24
+candidates x 6 seeds x 16 iterations, calibrated physics, seedbase 20000. Tuner score 143.7 ->
+127.9 on its own seeds. **Validation on fresh seeds** (seedbase 50000, 40 races per cell, limit 70
+s, both policies in the same build):
+
+| Cell | shipped v4-i1 | 3-seat tune |
+|---|---|---|
+| 1 AI seat, finished <= 70 s | **34/40, median 60.2 s** | 28/40, median 65.0 s |
+| 2 AI seats, every seat <= 70 s | **14/40**, race median 74.8 s, worst 109.6 s | 11/40, race median 75.4 s, worst 87.7 s |
+| 2 AI seats, first finisher | **38/40 <= 70 s, median 61.0 s** | 32/40, median 63.0 s |
+| 3 AI seats, finished at all | 38/40, race median 85.7 s | **40/40, race median 81.3 s**, worst 95.8 s |
+| 3 AI seats, every seat <= 70 s | **4/40** | 1/40 |
+| 3 AI seats, first finisher | **37/40 <= 70 s, median 62.3 s** | 34/40, median 65.7 s |
+
+What the tuner bought is the tail: with three seats every race finishes and the worst race is 14 s
+shorter, because the candidate yields more (lower `MinThrottle` 0.105, `PassMargin` 0.58, a
+`DirectBoostHysteresis` of 0.84 that holds a direct line longer). What it paid is the head: alone or
+first to the line it is 3 to 5 s slower, and the 70 s target is met less often in every cell. The
+I1 config is one asset for every seat count and the solo race is the common case, so the tuned
+policy is **not authored**; the best candidate is kept in this section for the record
+(`LookaheadSeconds 0.844, LookaheadMin 51.2, LookaheadMax 348, CrystalBumpHalfWidth 280,
+LeadGain 2.76, MaxLeadDegrees 22.8, MinThrottle 0.105, PassMargin 0.579, LowBoostApproachScale
+0.83, LowBoostFull 2.41, DirectBoost 2.87, DirectBoostHysteresis 0.835, CrossingSlowDistance
+109, LaneHeightStep 2.94`, the rest within 10% of v4-i1). Lesson for the next pass: an every-seat
+objective at I1 should score the first finisher too, or tune per seat count and let
+`SkimRaceAIDeployment` pick by seat count, which the config does not support today.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop
