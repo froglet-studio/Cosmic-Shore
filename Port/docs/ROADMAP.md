@@ -239,7 +239,7 @@ frames are the gen1/gen2 collections and the growth bursts.
 | # | Cost (loop thread, share of `GameLoop.Tick` in the 25 s trace) | Where | Owner |
 |---|---|---|---|
 | 1 | **Prefab instantiation 21.6%** (3.84 s): `CloneGameObject` - `AddComponent` through `Activator.CreateInstance(type, nonPublic: true)` (the reflection binder per component, ~9 us and garbage each), `GetFields` per base type per clone, `FieldInfo.GetValue/SetValue` boxing every float, int, Vector3 and enum it copies, the remap pass re-walking the fields; plus 1.3 s of the 3.0 s of GC pauses inside Tick. The flora's `Grow` coroutines mint ~19,000 prisms (~170,000 components) while the reef grows | `Compat/EngineCompat.cs`, `SceneGraph/GameObject.cs` | ENGINE - fixed below |
-| 2 | **Trigger pass 18.4%** (3.27 s): `SnapshotLive` 9.2% - `isActiveAndEnabled` re-walks `ChainActive` for ~5,000 enabled colliders every fixed step because every `SetActive` (each clone's included) bumps the ONE global hierarchy epoch; `BuildShapes` 5.9% - `ShapeMath.TryBuild` + `Transform.ValidateWorld` for ~4,000 live colliders per step, nearly all static prisms; sweep 2.2% | `SceneGraph/TriggerPass*.cs`, `GameObject.ChainActive` | ENGINE - next |
+| 2 | **Trigger pass 18.4%** (3.27 s): `SnapshotLive` 9.2% - `isActiveAndEnabled` re-walks `ChainActive` for ~5,000 enabled colliders every fixed step because every `SetActive` (each clone's included) bumps the ONE global hierarchy epoch; `BuildShapes` 5.9% - `ShapeMath.TryBuild` + `Transform.ValidateWorld` for ~4,000 live colliders per step, nearly all static prisms; sweep 2.2% | `SceneGraph/TriggerPass*.cs`, `GameObject.ChainActive` | ENGINE - fixed in session 2, below |
 | 3 | **GC pauses 17.0%** (3.02 s) on the loop thread: 155 + 83 + 18 + 15 KB of garbage per frame (rows 1, 5, 6 and the game) | allocation sites in rows 1, 5, 6 | ENGINE + GAME |
 | 4 | **Coroutine stepping 20.6% self** (`CoroutineRunner.RunFrame` 11.5%, `Step` 7.2%, `List.RemoveAll` 1.9%): ~0.4 us per step, but 2,000-2,800 steps per frame (600k-850k per 300 frames in the `CS_PORT_TRACE_CO=1` census, ~3,000 live coroutines) because every growing prism's `CreateBlockCoroutine` polls the per-frame creation budget in a `while (true)` loop | engine `SceneGraph/Coroutines.cs`; game `Assets/_Scripts/Controller/Vessel/Prism.cs:1044` | ENGINE (per-step cost) / GAME proposal: let the budget gate wake waiting prisms from a queue instead of each prism polling every frame |
 | 5 | **UniTask continuations 8.2%** (`GameTaskScheduler.RunFrame` -> `UniTaskSource.Run`, `YieldCore`: `GenericPoolManager.BufferMaintenanceAsync` / `RefillAsync` -> `InstantiateAsync`, `VesselPrismController.SpawnLoopAsync`), 83 KB/frame | `Tasks/`, Compat UniTask; the game's pools | mostly GAME |
@@ -293,6 +293,97 @@ binder (`CloneDictionaryValue`, `CloneHashSetValue`: 2% of Tick); (4) the corout
 per-step cost, after the game-side proposal above; the game's `Renderer.isVisible` culling for
 `CrystalFlipWave`.
 
+**C7 session 2 (2026-10-10) - the trigger pass**
+
+Same method as session 1 (Release player, `bloomrush-i4.json` headless with `--session-report`,
+HEAD binary against the fixed binary in INTERLEAVED pairs, the load-independent counters as the
+evidence), with one addition: this working tree is shared with an agent editing `Assets/_Scripts`
+during the session, so BOTH binaries were built against a frozen `git archive HEAD` copy of the game
+scripts (`-p:LiveAssetsDir=... -p:LiveSrcDir=obj/live-src-frozen`, the switch
+`SyncUnitySources.targets` provides) - an A/B whose two sides compiled different game code proves
+nothing. Scratch evidence: `scratchpad/c7b/` (reports `ab2B*`/`ab2A*`, parity `parB`/`parA`,
+`verifyA`, `traceA`).
+
+Before (HEAD = 1ea3d23b5, session 1's fix; steady `MinigameBloomrush` window, 3,119 frames, median of
+the three B runs): `fixed` 1.98 ms/frame of which `triggers` 1.95 - `trig.live` 0.893, `trig.shapes`
+0.768, `trig.sweep` 0.270; the trigger pass was 24.7% of the loop thread's `GameLoop.Tick` in session
+1's after-trace (`SnapshotLive` 11.2%, of it `GameObject.ChainActive` 4.1% + 5.5% self walking the
+enabled set; `BuildShapes` 8.9%, of it `ShapeMath.TryBuild` 5.2% with `Transform.ValidateWorld` 3.4%;
+`SweepCandidates` 2.8%). Three causes, all engine: (1) `activeInHierarchy` was memoised against ONE
+global epoch that every `SetActive` bumped - each pooled clone's, each prism's - so every step
+re-walked the chain of all ~5,000 enabled colliders; (2) `SnapshotLive` asked every enabled collider
+`isActiveAndEnabled` every step - two cache misses each (the collider, its object) to learn nothing
+had changed; (3) `BuildShapes` rebuilt every live collider's world shape every step - five
+parent-chain pose reads and the oriented-box axis maths per collider, ~4,000 of them static prisms.
+
+The fix (`SceneGraph/GameObject.cs`, `Transform.cs`, `TriggerPass*.cs`, `Compat/EngineCompat.cs`,
+`UI/PackageComponents.cs`, `Physics/ShapeMath.cs`; tests
+`tests/CosmicShore.Tests/TriggerPassActivityAndShapeCacheTests.cs`, 7 facts):
+- **`activeInHierarchy` is a field**, brought up to date by the only places it can change -
+  `SetActive`, `ActivateSceneRoots`, `Transform.SetParent`, the destroy detach (the RectTransform
+  conversion keeps every object and parent, so nothing to do). A change costs the subtree whose
+  effective state flips (`PropagateHierarchyActive`, iterative) - the subtree
+  `NotifyHierarchyActiveChanged` walks right after it anyway - and a read is a field. The global epoch
+  and `ChainActive` are gone; `WalkActiveInHierarchy` keeps the chain walk as the reference.
+- **The live set is maintained by events**, not rebuilt: `TriggerPass.NoteLiveness(collider)` from
+  `Register`, `SetEnabled` and the activity flip (`GameObject.NoteCollidersLiveness` on every object
+  whose field flips), `RemoveLive` from `Unregister`. `SnapshotLive` sorts a parallel list of
+  sequence numbers and places the colliders - it touches no collider until it is placed. Arrivals
+  (`NoteArrived`, the query scene) are untouched.
+- **A collider caches its world shape** (`Collider.TryGetShape`) with the `Transform.WorldStamp`
+  it was built at - the stamp changes exactly when the composed pose was recomputed, bitwise - and a
+  bitwise copy of the fields `ShapeMath.TryBuild` reads (`isTrigger`; box center/size; sphere
+  center/radius; capsule center/radius/height/direction; mesh reference and its `bounds`). A hit is
+  what a fresh `TryBuild` would compute, bit for bit; `BuildShapes` runs inside
+  `Transform.BeginReadOnlyPass` so a pose that did change is validated once per transform with
+  ancestors shared, not once per read per collider.
+- `COSMIC_SHORE_VERIFY_TRIGGERS=1` now also checks, every 30 frames, every registered object's
+  field against the chain walk and every live collider's cached shape against a fresh build.
+
+After, interleaved pairs on the frozen-script binaries (B = HEAD, A = fixed; ms are wall time per
+frame on this 4-core container at load average 5-13; the `KB/frame`, gen0, exception and
+steady-frame columns are load-independent and must not move):
+
+| Run | tick sum | `fixed` | `triggers` | `trig.live` | `trig.shapes` | `trig.sweep` | `coroutines` | `update` | `tasks` | `late` | KB/frame co / tasks / update / fixed | gen0 per 100 f | over 33 ms | p50 / p95 ms | run MB | exceptions |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| B1 | 5.46 | 1.98 | 1.95 | 0.893 | 0.753 | 0.268 | 1.80 | 0.66 | 0.45 | 0.35 | 89 / 61 / 11 / 0.6 | 0.9 | 28 | 3.7 / 12.7 | 3,351 | 1 |
+| A1 | 6.53 | 1.36 | 1.34 | 0.201 | 0.756 | 0.339 | 2.77 | 1.04 | 0.60 | 0.48 | 90 / 61 / 11 / 0.6 | 0.9 | 48 | 4.7 / 17.2 | 3,358 | 1 |
+| B2 | 5.32 | 1.97 | 1.94 | 0.861 | 0.768 | 0.270 | 1.67 | 0.67 | 0.46 | 0.34 | 89 / 61 / 11 / 0.6 | 0.9 | 27 | 3.4 / 12.4 | 3,352 | 1 |
+| A2 | 4.17 | 0.85 | 0.82 | 0.113 | 0.448 | 0.228 | 1.77 | 0.62 | 0.45 | 0.30 | 90 / 61 / 11 / 0.6 | 0.9 | 31 | 3.2 / 9.9 | 3,356 | 1 |
+| B3 | 7.00 | 2.20 | 2.16 | 0.979 | 0.839 | 0.298 | 2.60 | 0.87 | 0.58 | 0.43 | 89 / 61 / 11 / 0.6 | 0.9 | 44 | 4.5 / 17.3 | 3,354 | 1 |
+| A3 | 4.84 | 1.05 | 1.03 | 0.145 | 0.570 | 0.278 | 2.03 | 0.69 | 0.47 | 0.35 | 90 / 61 / 11 / 0.6 | 0.9 | 33 | 3.3 / 12.1 | 3,355 | 1 |
+
+Medians: `triggers` 1.95 -> 1.03 ms/frame (-47%), `trig.live` 0.893 -> 0.145 (-84%), `trig.shapes`
+0.768 -> 0.570 (-26%; A1 ran at load 8.7 and is the outlier), `fixed` 1.98 -> 1.05, tick sum
+5.46 -> 4.84. The `coroutines`/`update`/`tasks`/`late` columns move with the machine, not the change
+(A1 is the slowest run of the six on every one of them); allocation per frame, gen0 per 100 frames,
+the run's MB and the exception count are identical on both sides. An intermediate pair set (eager
+field + shape cache, before the maintained live set; `scratchpad/c7b/abB*`/`abA*`) measured
+`trig.live` 0.912 -> 0.334 and `trig.shapes` 0.793 -> 0.538: the field removed the chain walk, the
+maintained set removed the remaining per-collider touch. The after-trace (15 s of the scene, the
+loop thread) puts the trigger pass at 14.6% of `GameLoop.Tick` (was 24.7%): `SnapshotLive` 1.9%
+(was 11.2%), `BuildShapes` 7.3% (was 8.9%; 5.8% of it is its own body - the stamp validation and
+the shape copy per collider, see Next), `SweepCandidates` 3.3%.
+
+Contact identity, same two binaries with `--parity-out` (what `engine_parity {against: self}`
+diffs): `events.jsonl` 1,507 lines on both sides - `contact` 98 = 98 identical in order, `fmod`
+1,394 identical, `collision` 0, `game` 10 identical bar one `t` (`scene:Authentication` at 0.767 vs
+0.800 s, the Authentication load-time drift `parity/README.md` documents; it is the only line of the
+1,507 whose `t` differs); `state.jsonl` 160 lines identical; `transforms.jsonl` 60 identical. The
+verify run (`COSMIC_SHORE_VERIFY_TRIGGERS=1`, fixed binary, 158 checks over the 4,800 frames): zero
+DIFFERENT; at frame 4,800, 4,024 live colliders equal to the 4,024 the walk finds in identical
+order, the field equal to the chain walk on all 19,465 registered colliders' objects, every cached
+shape equal to its fresh build.
+
+Next for the pass: `BuildShapes`' remaining 5.8% is one `WorldStamp` validation (collider ->
+object -> transform -> parent, cache misses on static prisms) plus a 100-byte shape copy per live
+collider per step; a push-based invalidation (a moved-flag written down the subtree from
+`MarkMoved`, so a static collider is never touched) would remove it, and is a change to the world
+cache's comparison contract, so it gets its own session. Then, in the table's order: (3) GC pauses
+on the loop thread (`PollGCWorker` 30.8% of Tick in the after-trace: the 90 + 61 + 11 KB/frame of
+`coroutines`/`tasks`/`update` garbage), (7) the parity harness's per-frame `FindObjectsByType`,
+(1b) the container constructors still on the binder, (4) the coroutine runner's per-step cost.
+
 **C8 - Platforms**
 > Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. For gate G6, compare a thin RHI with a Metal backend against wgpu-native: what the renderer's GL calls map to, what changes in shaders, the effort, and the new dependency.
 
@@ -323,4 +414,4 @@ per-step cost, after the game-side proposal above; the game's `Renderer.isVisibl
 | M0 - runs the real game, builds, tooling, Claude bridge | done | 2026-10-05 | PR #959 |
 | C0 - foundations (architecture review) | done | 2026-10-06 | `ARCHITECTURE_REVIEW_2026-10-06.md` |
 | C1 - parity harness | in progress | 2026-10-10 | Engine side done and the Unity half (board T-3) has landed on this branch (`1a397c3e3`, `646d599e0`: ReplayFile/Recorder/Player, DeterministicSession, ParityProbe, ParityCapture). The engine now hands `--replay` to the game's ReplayPlayer and DeterministicSession (`ParityRun.BeginSession`), hooks `GameDataSO` at asset load (the menu's `OnLaunchGame` reached events.jsonl), refuses an FMOD event no loaded bank carries (strings-bank GUID index; GUIDs.txt is stale, the Bootstrap music IS in the bank) and plays every case as a fixed returning-user profile (`Port/parity/profile`). `skimrace-status` (600 status frames) flies the vessel through the game's ReplayPlayer; `engine_parity {against: self}`: 15 PASS, 1 FAIL (bloomrush-i4 on the Authentication load-time drift, B-1), 5 MISSING. Still owed: the editor capture run (`FrogletTools > Parity > Capture Goldens`, as the `parity` player) for the goldens, and CI's first GitHub run |
-| C7 - performance parity | in progress | 2026-10-10 | Bloomrush intensity 4 profiled headless in Release (session report + dotnet-trace): prefab instantiation was 21.6% of the loop thread's frame; fixed (per-type clone plan, cached constructors, `Instantiate(Mesh)`), proven on three interleaved A/B pairs of the same replay - 109 KB/frame less garbage, gen0 1.6 -> 1.0 per 100 frames, exceptions 4,683 -> 1, `coroutines` 3.10 -> 2.57 ms. Table and the next four items under "C7 session 2026-10-10" above |
+| C7 - performance parity | in progress | 2026-10-10 | Bloomrush intensity 4 profiled headless in Release (session report + dotnet-trace): prefab instantiation was 21.6% of the loop thread's frame; fixed (per-type clone plan, cached constructors, `Instantiate(Mesh)`), proven on three interleaved A/B pairs of the same replay - 109 KB/frame less garbage, gen0 1.6 -> 1.0 per 100 frames, exceptions 4,683 -> 1, `coroutines` 3.10 -> 2.57 ms. Session 2 the same day: the trigger pass (24.7% of the frame after session 1) - `activeInHierarchy` an eagerly maintained field instead of a global-epoch memo, the live collider set maintained by events, each collider's world shape cached on its transform stamp - `triggers` 1.95 -> 1.03 ms/frame on three interleaved pairs, contact/state/transform channels identical. Tables under "C7 session 2026-10-10" and "C7 session 2 (2026-10-10)" above |

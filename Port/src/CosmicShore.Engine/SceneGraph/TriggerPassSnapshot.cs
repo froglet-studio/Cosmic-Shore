@@ -68,27 +68,19 @@ namespace CosmicShore.Engine
             CommitQuerySnapshot(SortShapesByMinX());
         }
 
-        /// <summary>Live participants in registration order.</summary>
+        /// <summary>Live participants in registration order (the maintained live set, sorted; see TriggerPass._liveCols).</summary>
         void SnapshotLive()
         {
             _live.Clear();
-            int n = 0;
-            if (_keys.Length < _enabled.Count) _keys = new long[Math.Max(_enabled.Count, _keys.Length * 2)];
-            var scratch = _liveScratch;
-            scratch.Clear();
-            foreach (var collider in _enabled)
-            {
-                if (!collider.isActiveAndEnabled) continue;
-                // Registration sequence in the high word, position in the low: a primitive
-                // sort with no delegate and no dictionary lookup per comparison.
-                _keys[n] = (collider.TriggerSeq << 32) | (uint)n;
-                scratch.Add(collider);
-                n++;
-            }
+            int n = _liveCols.Count;
+            if (_keys.Length < n) _keys = new long[Math.Max(n, _keys.Length * 2)];
+            // Registration sequence in the high word, position in the low: a primitive sort
+            // with no delegate and no dictionary lookup per comparison, over the parallel
+            // sequence list - no collider is touched until it is placed.
+            for (int i = 0; i < n; i++) _keys[i] = (_liveSeqs[i] << 32) | (uint)i;
             Array.Sort(_keys, 0, n);
-            for (int k = 0; k < n; k++) _live.Add(scratch[(int)(_keys[k] & 0xFFFFFFFF)]);
+            for (int k = 0; k < n; k++) _live.Add(_liveCols[(int)(_keys[k] & 0xFFFFFFFF)]);
         }
-        readonly List<Collider> _liveScratch = new();
 
         /// <summary>
         /// _order[0..m) = the shaped live indices by (min-x, index) — the order the sweep and the

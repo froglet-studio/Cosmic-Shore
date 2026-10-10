@@ -608,18 +608,99 @@ namespace CosmicShore.Engine
             GameLoop.Current?.Triggers.Unregister(this);
             base.DestroyComponentNow();
         }
+
+        // ── The cached physics shape (C7 session 2) ──────────────────
+        // ShapeMath.TryBuild resolves the collider to world space through five parent-chain pose
+        // reads and the oriented-box axis maths, and the trigger pass did that for every live
+        // collider every step - ~4,000 in a grown arena, nearly all of them prisms that never
+        // move (BuildShapes 5.9-8.9% of the frame). The shape is kept with the inputs it was
+        // built from: the transform's world stamp (Transform.WorldStamp changes exactly when the
+        // composed pose changed bitwise) and the collider's own fields, compared bitwise. A hit
+        // returns what a fresh TryBuild would compute, bit for bit; a miss is a fresh TryBuild.
+
+        /// <summary>Everything besides the world pose that <see cref="ShapeMath.TryBuild"/> reads.</summary>
+        internal struct ShapeInputs
+        {
+            public bool Trigger;
+            public Vector3 Center, Size, BoundsCenter, BoundsExtents;
+            public float Radius, Height;
+            public int Direction;
+            public Mesh Mesh;
+
+            public bool SameAs(in ShapeInputs o)
+                => Trigger == o.Trigger && Direction == o.Direction && ReferenceEquals(Mesh, o.Mesh)
+                && Same(Center, o.Center) && Same(Size, o.Size) && Same(BoundsCenter, o.BoundsCenter) && Same(BoundsExtents, o.BoundsExtents)
+                && Same(Radius, o.Radius) && Same(Height, o.Height);
+
+            static bool Same(float a, float b) => BitConverter.SingleToInt32Bits(a) == BitConverter.SingleToInt32Bits(b);
+            static bool Same(in Vector3 a, in Vector3 b) => Same(a.x, b.x) && Same(a.y, b.y) && Same(a.z, b.z);
+        }
+
+        long _shapeStamp = -1;
+        bool _shapeBuilt;
+        PhysicsShape _shape;
+        ShapeInputs _shapeInputs;
+
+        /// <summary>The fields this collider's shape is built from (each subclass adds its own).</summary>
+        internal virtual void CaptureShapeInputs(ref ShapeInputs inputs) => inputs.Trigger = isTrigger;
+
+        /// <summary>
+        /// This collider's world shape, as <see cref="ShapeMath.TryBuild"/> computes it, rebuilt only
+        /// when the transform's world pose or one of the collider's fields changed since the last
+        /// call. Same result and return value as TryBuild, bit for bit.
+        /// </summary>
+        internal bool TryGetShape(out PhysicsShape shape)
+        {
+            long stamp = transform.WorldStamp;
+            ShapeInputs inputs = default;
+            CaptureShapeInputs(ref inputs);
+            if (stamp != _shapeStamp || !inputs.SameAs(in _shapeInputs))
+            {
+                _shapeBuilt = ShapeMath.TryBuild(this, out _shape);
+                _shapeStamp = stamp;
+                _shapeInputs = inputs;
+            }
+            shape = _shape;
+            return _shapeBuilt;
+        }
+
+        /// <summary>Diagnostics (COSMIC_SHORE_VERIFY_TRIGGERS, tests): whether the next TryGetShape would reuse the cached shape.</summary>
+        internal bool ShapeCacheHolds
+        {
+            get
+            {
+                if (transform.WorldStamp != _shapeStamp) return false;
+                ShapeInputs inputs = default;
+                CaptureShapeInputs(ref inputs);
+                return inputs.SameAs(in _shapeInputs);
+            }
+        }
     }
 
     public class BoxCollider : Collider
     {
         public Vector3 center = Vector3.zero;
         public Vector3 size = Vector3.one;
+
+        internal override void CaptureShapeInputs(ref ShapeInputs inputs)
+        {
+            base.CaptureShapeInputs(ref inputs);
+            inputs.Center = center;
+            inputs.Size = size;
+        }
     }
 
     public class SphereCollider : Collider
     {
         public Vector3 center = Vector3.zero;
         public float radius = 0.5f;
+
+        internal override void CaptureShapeInputs(ref ShapeInputs inputs)
+        {
+            base.CaptureShapeInputs(ref inputs);
+            inputs.Center = center;
+            inputs.Radius = radius;
+        }
     }
 
     /// <summary>
@@ -636,6 +717,17 @@ namespace CosmicShore.Engine
     {
         public Mesh sharedMesh;
         public bool convex;
+
+        internal override void CaptureShapeInputs(ref ShapeInputs inputs)
+        {
+            base.CaptureShapeInputs(ref inputs);
+            var mesh = sharedMesh;
+            if (mesh is null || mesh.IsDestroyed) return; // TryBuild has no shape for it: a null Mesh input
+            inputs.Mesh = mesh;
+            var bounds = mesh.bounds;
+            inputs.BoundsCenter = bounds.center;
+            inputs.BoundsExtents = bounds.extents;
+        }
     }
 
     // E7/E8: Object statics that ported code calls.

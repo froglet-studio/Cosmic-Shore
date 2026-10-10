@@ -91,50 +91,82 @@ namespace CosmicShore.Engine
 
         public override string name { get => base.name; set => base.name = value; }
 
-        public bool activeInHierarchy => !destroyedFlag && ChainActive();
+        public bool activeInHierarchy => !destroyedFlag && _activeInHierarchy;
 
-        // ── activeInHierarchy cache ───────────────────────────────────
-        // The chain answer (every ancestor's activeSelf) is memoised per object against a
-        // global epoch that any activeSelf or parent change bumps. It was a parent walk on
-        // every call, and every isActiveAndEnabled goes through it: in a grown arena that is
-        // tens of thousands of walks down deep flora hierarchies per frame. After a bump an
-        // object recomputes through its parent's (memoised) answer, so siblings share one
-        // walk. Semantics are unchanged: a cached value is only ever read at the epoch it
-        // was computed at, and nothing the chain depends on can change without a bump.
-        static long s_hierarchyEpoch;
-        long _chainEpoch = -1;
-        bool _chainActive;
-        static readonly List<GameObject> s_chainScratch = new();
+        // ── activeInHierarchy ─────────────────────────────────────────
+        // The effective state (every ancestor's activeSelf and this object's own) is a field,
+        // brought up to date at the few places it can change: SetActive, a scene load's root
+        // activation and a reparent (Transform.SetParent, the destroy detach, the RectTransform
+        // conversion). It was memoised against ONE global epoch that every activeSelf or parent
+        // change bumped, so a single pooled clone's SetActive made the next physics step re-walk
+        // the chain of every live collider (~5,000 in a grown arena: SnapshotLive was 9-11% of
+        // the frame, C7 session 2). A change now costs the subtree whose effective state flips -
+        // the same subtree NotifyHierarchyActiveChanged walks right after it - and a read is a
+        // field. Semantics are unchanged: the field always equals activeSelf && the parent's
+        // effective state (destroyedFlag aside, which activeInHierarchy adds), as the walk
+        // computed it, and nothing it depends on can change without passing through
+        // RefreshHierarchyActive. The flip is also where the trigger pass learns that an
+        // object's colliders joined or left its live set (TriggerPass.NoteLiveness).
+        bool _activeInHierarchy = true; // a new GameObject is an active root
+        static readonly List<GameObject> s_activeScratch = new();
 
-        /// <summary>Invalidate every cached activeInHierarchy answer (an activeSelf or parent changed).</summary>
-        internal static void BumpHierarchyEpoch() => s_hierarchyEpoch++;
-
-        bool ChainActive()
+        /// <summary>
+        /// Recomputes this object's effective activity from its parent and activeSelf; when it
+        /// changed, writes the new value through the subtree (a child whose activeSelf is false
+        /// heads a subtree that is already inactive and stays so). True when it changed.
+        /// </summary>
+        internal bool RefreshHierarchyActive()
         {
-            long epoch = s_hierarchyEpoch;
-            if (_chainEpoch == epoch) return _chainActive;
+            var parent = transform?.parent;
+            bool value = activeSelf && (parent is null || parent.gameObject._activeInHierarchy);
+            if (_activeInHierarchy == value) return false;
+            PropagateHierarchyActive(value);
+            return true;
+        }
 
-            // Walk up to the first ancestor with a current answer (or the root), then fill
-            // the answers back down. Iterative: flora and worm chains can be deep.
-            var path = s_chainScratch;
-            int baseCount = path.Count; // reentrancy-safe: never happens, but never corrupts
-            bool above = true;
-            for (GameObject go = this; go is not null; )
+        void PropagateHierarchyActive(bool value)
+        {
+            // Iterative: flora and worm chains can be deep. The scratch list is a stack; a
+            // nested call (never happens: nothing here runs game code) would drain its own
+            // pushes above baseCount before returning.
+            var stack = s_activeScratch;
+            int baseCount = stack.Count;
+            stack.Add(this);
+            while (stack.Count > baseCount)
             {
-                if (go._chainEpoch == epoch) { above = go._chainActive; break; }
-                path.Add(go);
-                var parent = go.transform?.parent;
-                go = parent?.gameObject;
+                var go = stack[^1];
+                stack.RemoveAt(stack.Count - 1);
+                go._activeInHierarchy = value;
+                go.NoteCollidersLiveness();
+                var children = go.transform?.Children;
+                if (children is null) continue;
+                for (int i = 0; i < children.Count; i++)
+                {
+                    var child = children[i].gameObject;
+                    if (child is not null && child.activeSelf && child._activeInHierarchy != value) stack.Add(child);
+                }
             }
-            for (int i = path.Count - 1; i >= baseCount; i--)
-            {
-                var go = path[i];
-                above = above && go.activeSelf;
-                go._chainActive = above;
-                go._chainEpoch = epoch;
-            }
-            path.RemoveRange(baseCount, path.Count - baseCount);
-            return _chainActive;
+        }
+
+        /// <summary>This object's effective activity flipped: its registered colliders join or leave the trigger pass's live set.</summary>
+        void NoteCollidersLiveness()
+        {
+            var triggers = GameLoop.Current?.Triggers;
+            if (triggers is null) return;
+            var components = _components;
+            for (int i = 0; i < components.Count; i++)
+                if (components[i] is Collider { TriggerSeq: > 0 } collider) triggers.NoteLiveness(collider);
+        }
+
+        /// <summary>
+        /// Diagnostics (COSMIC_SHORE_VERIFY_TRIGGERS, tests): the effective activity computed
+        /// the way the field is defined, by walking the parent chain.
+        /// </summary>
+        internal bool WalkActiveInHierarchy()
+        {
+            for (GameObject go = this; go is not null; go = go.transform?.parent?.gameObject)
+                if (!go.activeSelf) return false;
+            return true;
         }
 
         /// <summary>Diagnostics: CS_PORT_TRACE_ACTIVE=&lt;exact GameObject name&gt; prints a stack for each activation change of that object.</summary>
@@ -148,7 +180,7 @@ namespace CosmicShore.Engine
 
             bool parentActive = transform.parent is null || transform.parent.gameObject.activeInHierarchy;
             activeSelf = value;
-            BumpHierarchyEpoch();
+            RefreshHierarchyActive();
 
             // Effective state only changes when every ancestor is active.
             if (parentActive) NotifyHierarchyActiveChanged(value);
@@ -171,9 +203,9 @@ namespace CosmicShore.Engine
             {
                 if (root is null || root.destroyedFlag || root.activeSelf || root.transform.parent is not null) continue;
                 root.activeSelf = true;
+                root.RefreshHierarchyActive();
                 activated.Add(root);
             }
-            BumpHierarchyEpoch();
 
             beforeLifecycle?.Invoke();
 

@@ -70,7 +70,13 @@ namespace CosmicShore.Engine
         /// <summary>End the read-only pass begun by <see cref="BeginReadOnlyPass"/>.</summary>
         public static void EndReadOnlyPass() => s_passEpoch = 0;
 
-        /// <summary>Brings the cached world pose up to date and returns its stamp.</summary>
+        /// <summary>
+        /// Brings the cached world pose up to date and returns its stamp (public as
+        /// <see cref="WorldStamp"/>): it changes exactly when the composed pose was recomputed - a
+        /// bitwise change in this transform's local values or any ancestor's - so two reads with
+        /// the same stamp saw bit-identical position, rotation and lossyScale. A collider keys its
+        /// cached physics shape on it (Collider.TryGetShape).
+        /// </summary>
         long EnsureWorld()
         {
             long pass = s_passEpoch;

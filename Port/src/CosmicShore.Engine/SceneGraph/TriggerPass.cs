@@ -57,12 +57,19 @@ namespace CosmicShore.Engine
         readonly List<(Collider a, Collider b)> _discovered = new();
         readonly HashSet<(Collider a, Collider b)> _current = new();
 
-        // Colliders whose own enabled flag is set: the only ones a frame can find live. A grown
-        // arena registers ~50k colliders of which ~1.3k are live (a prism's collider stays off
-        // until its creation completes), and walking all of them every frame to find those
-        // was most of the pass. Registration order is kept by sequence number and restored by
-        // sorting the (small) live set, so discovery order is unchanged.
-        readonly HashSet<Collider> _enabled = new(ReferenceEqualityComparer.Instance);
+        // The live set - every registered collider that is enabled on an active object - kept
+        // by the events that change it: registration and destruction, the collider's enabled
+        // flag (SetEnabled) and its object's effective activity (GameObject.PropagateHierarchyActive
+        // calls NoteLiveness for the colliders of every object whose activeInHierarchy flips).
+        // The step then only sorts it into registration order. It was the set of ENABLED
+        // colliders, each asked isActiveAndEnabled every step: a grown arena has ~5,000 of them
+        // and the answer touches the collider and its object, so the step paid ~0.3 ms of cache
+        // misses to learn nothing had changed (C7 session 2); before that it walked all ~50k
+        // registered. Registration order is kept by sequence number and restored by sorting the
+        // live set, so discovery order is unchanged.
+        readonly List<Collider> _liveCols = new();                      // unordered; _liveSeqs[i] is _liveCols[i].TriggerSeq
+        readonly List<long> _liveSeqs = new();
+        readonly Dictionary<Collider, int> _liveIndex = new(ReferenceEqualityComparer.Instance);
         // Registration order lives on Component.TriggerSeq: Instantiate's field copy stops at the
         // engine base classes, so a clone keeps its OWN place in line (a field declared on
         // Collider would be copied from the source after the clone registered).
@@ -75,36 +82,100 @@ namespace CosmicShore.Engine
             if (_colliders.Contains(collider)) return;
             collider.TriggerSeq = ++_nextSeq;
             _colliders.Add(collider);
-            if (collider.enabled) { _enabled.Add(collider); NoteArrived(collider); }
+            NoteLiveness(collider);
+            if (collider.enabled) NoteArrived(collider);
         }
 
         internal void Unregister(Collider collider)
         {
             _colliders.Remove(collider);
-            _enabled.Remove(collider);
+            RemoveLive(collider);
             collider.TriggerSeq = 0;
         }
 
+        /// <summary>
+        /// Something a registered collider's liveness depends on changed (its enabled flag, its
+        /// object's effective activity, its registration): put it in or out of the live set
+        /// accordingly. Idempotent; an unregistered or destroyed collider is never live.
+        /// </summary>
+        internal void NoteLiveness(Collider collider)
+        {
+            if (collider.TriggerSeq > 0 && collider.isActiveAndEnabled) AddLive(collider);
+            else RemoveLive(collider);
+        }
+
+        void AddLive(Collider collider)
+        {
+            if (_liveIndex.ContainsKey(collider)) return;
+            _liveIndex[collider] = _liveCols.Count;
+            _liveCols.Add(collider);
+            _liveSeqs.Add(collider.TriggerSeq);
+        }
+
+        void RemoveLive(Collider collider)
+        {
+            if (!_liveIndex.Remove(collider, out int i)) return;
+            int last = _liveCols.Count - 1;
+            if (i != last)
+            {
+                var moved = _liveCols[last];
+                _liveCols[i] = moved;
+                _liveSeqs[i] = _liveSeqs[last];
+                _liveIndex[moved] = i;
+            }
+            _liveCols.RemoveAt(last);
+            _liveSeqs.RemoveAt(last);
+        }
+
+        /// <summary>Diagnostics (COSMIC_SHORE_VERIFY_TRIGGERS, tests): the live set, sorted, against a walk of every registered collider.</summary>
+        internal bool LiveSetMatchesWalk(out int live, out int walked)
+        {
+            SnapshotLive();
+            _verifyLive.Clear();
+            foreach (var c in _colliders) if (c.isActiveAndEnabled) _verifyLive.Add(c);
+            live = _live.Count; walked = _verifyLive.Count;
+            if (live != walked) return false;
+            for (int i = 0; i < live; i++) if (!ReferenceEquals(_verifyLive[i], _live[i])) return false;
+            return true;
+        }
+
         // COSMIC_SHORE_VERIFY_TRIGGERS=1: every 30 frames, rebuild the live set by walking every
-        // registered collider (the former way) and report any difference, in order.
+        // registered collider (the former way) and report any difference, in order; check every
+        // registered collider's activeInHierarchy field against a walk of its parent chain; and
+        // (VerifyShapes) every live collider's cached shape against a fresh build, bit for bit.
         static readonly bool s_verify = Environment.GetEnvironmentVariable("COSMIC_SHORE_VERIFY_TRIGGERS") == "1";
         readonly List<Collider> _verifyLive = new();
 
         void VerifyLive()
         {
-            _verifyLive.Clear();
-            foreach (var c in _colliders) if (c.isActiveAndEnabled) _verifyLive.Add(c);
-            bool same = _verifyLive.Count == _live.Count;
-            for (int i = 0; same && i < _live.Count; i++) same = ReferenceEquals(_verifyLive[i], _live[i]);
-            Console.WriteLine($"[verify-triggers] frame {Time.frameCount}: {_live.Count} live vs {_verifyLive.Count} walked, {(same ? "identical order" : "DIFFERENT")}");
+            bool same = LiveSetMatchesWalk(out int live, out int walked);
+            int activityMismatches = 0;
+            foreach (var c in _colliders)
+            {
+                var go = c.gameObject;
+                if (go is not null && go.activeInHierarchy != (!go.destroyedFlag && go.WalkActiveInHierarchy())) activityMismatches++;
+            }
+            Console.WriteLine($"[verify-triggers] frame {Time.frameCount}: {live} live vs {walked} walked, {(same ? "identical order" : "DIFFERENT")}; activeInHierarchy vs chain walk over {_colliders.Count} registered: {(activityMismatches == 0 ? "identical" : $"{activityMismatches} DIFFERENT")}");
+        }
+
+        void VerifyShapes()
+        {
+            int mismatches = 0;
+            for (int i = 0; i < _live.Count; i++)
+            {
+                bool built = ShapeMath.TryBuild(_live[i], out var fresh);
+                if (!built) fresh.Kind = ShapeKind.None;
+                if (!ShapeMath.Same(in fresh, in _shapes[i])) mismatches++;
+            }
+            Console.WriteLine($"[verify-triggers] frame {Time.frameCount}: cached shapes vs fresh builds over {_live.Count} live: {(mismatches == 0 ? "identical" : $"{mismatches} DIFFERENT")}");
         }
 
         /// <summary>A registered collider's enabled flag changed.</summary>
         internal void SetEnabled(Collider collider, bool enabled)
         {
             if (!_colliders.Contains(collider)) return;
-            if (enabled) { _enabled.Add(collider); NoteArrived(collider); }
-            else _enabled.Remove(collider);
+            NoteLiveness(collider);
+            if (enabled) NoteArrived(collider);
         }
 
 
@@ -140,7 +211,7 @@ namespace CosmicShore.Engine
 
         internal void RunFrame()
         {
-            if (_enabled.Count == 0 && _activePairs.Count == 0 && _contactPairs.Count == 0) return;
+            if (_liveCols.Count == 0 && _activePairs.Count == 0 && _contactPairs.Count == 0) return;
 
             // 1. Snapshot live participants in registration order. Colliders added by
             //    callbacks during this pass join next frame.
@@ -180,7 +251,7 @@ namespace CosmicShore.Engine
             GameLoop.AddPhase("  trig.sweep", t3 - t2);
             GameLoop.AddPhase("  trig.pairs", t4 - t3);
             if (GameLoop.PhaseTiming && Time.frameCount % 30 == 0)
-                Console.WriteLine($"[triggers] {_colliders.Count} registered, {_enabled.Count} enabled, {_live.Count} live, {_candidates.Count} candidates, {_activePairs.Count} active pairs");
+                Console.WriteLine($"[triggers] {_colliders.Count} registered, {_live.Count} live, {_candidates.Count} candidates, {_activePairs.Count} active pairs");
 
             // 3. Exits first: previously-active pairs that separated, disabled, or died.
             if (_activePairs.Count > 0)
@@ -253,13 +324,25 @@ namespace CosmicShore.Engine
         readonly List<int> _sweepActive = new();
         readonly List<long> _candidates = new();
 
-        /// <summary>Resolves every live collider to its world shape for this step (see <see cref="ShapeMath.TryBuild"/>).</summary>
+        /// <summary>
+        /// Resolves every live collider to its world shape for this step: each collider's cached
+        /// shape (<see cref="Collider.TryGetShape"/>, a fresh <see cref="ShapeMath.TryBuild"/> only
+        /// when its pose or fields changed), inside a read-only transform pass so a pose that did
+        /// change is validated once per transform with its ancestors shared, not once per read per
+        /// collider. Nothing in here writes a transform.
+        /// </summary>
         void BuildShapes()
         {
             int n = _live.Count;
             if (_shapes.Length < n) { _shapes = new PhysicsShape[Math.Max(n, _shapes.Length * 2)]; _order = new int[_shapes.Length]; }
-            for (int i = 0; i < n; i++)
-                if (!ShapeMath.TryBuild(_live[i], out _shapes[i])) _shapes[i].Kind = ShapeKind.None; // no shape (a mesh collider without a mesh)
+            Transform.BeginReadOnlyPass();
+            try
+            {
+                for (int i = 0; i < n; i++)
+                    if (!_live[i].TryGetShape(out _shapes[i])) _shapes[i].Kind = ShapeKind.None; // no shape (a mesh collider without a mesh)
+            }
+            finally { Transform.EndReadOnlyPass(); }
+            if (s_verify && Time.frameCount % 30 == 0) VerifyShapes();
             if (_hasBody.Length < _shapes.Length) _hasBody = new sbyte[_shapes.Length];
             Array.Clear(_hasBody, 0, n);
             ClassifyBodies();
@@ -419,7 +502,7 @@ namespace CosmicShore.Engine
         /// </summary>
         internal Collider[] OverlapSphere(Vector3 position, float radius, int layerMask)
         {
-            var buffer = new Collider[Math.Max(16, _enabled.Count)];
+            var buffer = new Collider[Math.Max(16, _liveCols.Count)];
             int n = OverlapSphereNonAlloc(position, radius, buffer, layerMask, QueryTriggerInteraction.Collide);
             Array.Resize(ref buffer, n);
             return buffer;

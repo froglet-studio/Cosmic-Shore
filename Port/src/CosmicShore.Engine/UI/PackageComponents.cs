@@ -39,6 +39,15 @@ namespace CosmicShore.Engine
         public float radius = 0.5f;
         public float height = 2f;
         public int direction = 1;
+
+        internal override void CaptureShapeInputs(ref ShapeInputs inputs)
+        {
+            base.CaptureShapeInputs(ref inputs);
+            inputs.Center = center;
+            inputs.Radius = radius;
+            inputs.Height = height;
+            inputs.Direction = direction;
+        }
     }
 }
 

@@ -257,7 +257,7 @@ namespace CosmicShore.Engine
             if (parent is null) gameObject.scene?.RemoveRoot(gameObject);
 
             _parent = newParent;
-            GameObject.BumpHierarchyEpoch();
+            gameObject.RefreshHierarchyActive();
             MarkMoved();
 
             if (newParent is not null) newParent._children.Add(this);
@@ -288,7 +288,7 @@ namespace CosmicShore.Engine
             parent?._children.Remove(this);
             _parent = null;
             ReleaseWorldCacheForDestroy();
-            GameObject.BumpHierarchyEpoch();
+            gameObject.RefreshHierarchyActive();
             MarkMoved();
         }
 
@@ -324,7 +324,9 @@ namespace CosmicShore.Engine
             }
             old._children.Clear();
             old._parent = null;
-            GameObject.BumpHierarchyEpoch();
+            // The GameObject, its parent and its children's objects are the same before and
+            // after: every effective activity is unchanged (and the GameObject still points at
+            // the OLD transform here, so it must not be recomputed through it).
             MarkMoved();
 
             localRotation = oldLocalRotation;

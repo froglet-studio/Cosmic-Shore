@@ -29,6 +29,16 @@ namespace CosmicShore.Engine
     /// </summary>
     internal static class ShapeMath
     {
+        /// <summary>Bitwise equality of two shapes (diagnostics and tests: a cached shape against a fresh build).</summary>
+        public static bool Same(in PhysicsShape a, in PhysicsShape b)
+            => a.Kind == b.Kind && a.Trigger == b.Trigger
+            && Same(a.Center, b.Center) && Same(a.Extents, b.Extents) && Same(a.HalfSize, b.HalfSize)
+            && Same(a.P0, b.P0) && Same(a.P1, b.P1) && Same(a.Radius, b.Radius)
+            && Same(a.Rotation.x, b.Rotation.x) && Same(a.Rotation.y, b.Rotation.y) && Same(a.Rotation.z, b.Rotation.z) && Same(a.Rotation.w, b.Rotation.w);
+
+        static bool Same(float a, float b) => BitConverter.SingleToInt32Bits(a) == BitConverter.SingleToInt32Bits(b);
+        static bool Same(in Vector3 a, in Vector3 b) => Same(a.x, b.x) && Same(a.y, b.y) && Same(a.z, b.z);
+
         public static bool TryBuild(Collider c, out PhysicsShape sh)
         {
             sh = default;
