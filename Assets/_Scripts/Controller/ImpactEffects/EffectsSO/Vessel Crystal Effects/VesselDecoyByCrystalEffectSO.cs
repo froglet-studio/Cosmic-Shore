@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using CosmicShore.Gameplay;
@@ -11,7 +10,12 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] private GameObject minePrefab;
 
-        private static readonly Dictionary<Crystal, float> NextAllowedAt = new();
+        // Per-crystal debounce. A static table keyed by the crystal object: ObjectCooldowns prunes
+        // destroyed crystals on first sight of a new one, so a session's dead crystals do not pile up.
+        private static readonly ObjectCooldowns<Crystal> _cooldowns = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _cooldowns.Clear();
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
@@ -23,8 +27,7 @@ namespace CosmicShore.Gameplay
             var crystal = impactee.Crystal;
             if (!crystal) return;
 
-            if (NextAllowedAt.TryGetValue(crystal, out var t) && Time.time < t) return;
-            NextAllowedAt[crystal] = Time.time + debounceSeconds;
+            if (!_cooldowns.TryBegin(crystal, Time.time, debounceSeconds)) return;
             
             var models = crystal.CrystalModels;
             if (models != null)

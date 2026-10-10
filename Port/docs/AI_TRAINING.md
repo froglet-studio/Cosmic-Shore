@@ -128,8 +128,8 @@ holder on its reference chain. After 10 SkimRace matches, ~27,700 destroyed pris
 | holder | destroyed prisms | status |
 |---|---|---|
 | `SquirrelVesselTelemetry` in `SkimmerStealPrismEffectSO.OnSkimmerStolenPrism` (turn hooks released only at a turn end a watchdog-ended match never raises) | found first | **fixed** in `VesselTelemetry` (base owns the hook pairing; releases on disable) |
-| `VesselOvertakeBySkimmerEffectSO._lastEffectTime` — a static dictionary keyed by `ResourceSystem`, never pruned; each dead key holds its vessel and trail | 11,874 | open (game code) |
-| a pending uncancelled `Delay` continuation in the SkimRace score tracker's async method | 10,268 | transient: released when the delay comes due |
+| `VesselOvertakeBySkimmerEffectSO._lastEffectTime` — a static dictionary keyed by `ResourceSystem`, never pruned; each dead key holds its vessel and trail (its danger-prism, skimmer and explosion debuff twins had the same shape: the danger-prism table held 16,886 of the 27,587 destroyed prisms reachable after 10 matches, the overtake table 2,581) | 11,874 | **fixed** 2026-10-10 (game code: the four tables share `VesselEffectCooldowns`, which prunes destroyed vessels on first sight of a new one; measured on this scan, 12 matches of the deployed genome: 27,587 -> 12,623 destroyed prisms reachable, the two tables gone from the growers, live heap at sample 12 1,190 -> 1,145 MB; the remaining holder is the engine's `GameLoop.Current`) |
+| a pending uncancelled `Delay` continuation in the SkimRace score tracker's async method | 10,268 | transient: released when the delay comes due; the four unbound arcade delays now take their controller's destroy token (2026-10-10) |
 | the port's scene-load history | 5,549 | bounded to the current load |
 
 The port's own leaks the same investigation found are fixed (`LongRunMemoryTests`): the renderer
