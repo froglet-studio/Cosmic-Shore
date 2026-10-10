@@ -31,6 +31,13 @@ namespace CosmicShore.Engine.Audio.Fmod
         bool? IsOneshot(string path) => null;
         bool? IsSnapshot(string path) => null;
         int? GetLength(string path) => null;
+
+        /// <summary>
+        /// Whether a loaded bank carries the event, resolved as FMOD's RuntimeManager does: by GUID
+        /// when the reference has one, else by path. Null when this backend cannot say (the silent
+        /// model then asks the build's strings bank, FmodGuids.BankCarries).
+        /// </summary>
+        bool? HasEvent(EventReference reference) => null;
     }
 
     public static class FmodBackend

@@ -8,7 +8,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
-| Subsystems | 0 | 26 | 6 |
+| Subsystems | 0 | 27 | 5 |
 | Shaders | 0 | 63 | 18 |
 
 ## Subsystems
@@ -23,7 +23,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Core | Reflex dependency injection | Approximate | no parity channel covers it yet | InjectionTests | - |
 | Core | SOAP events and variables (GameDataSO match events as events kind game) | Approximate | no Unity golden yet | SoapTests, SoapListenerTests | skimrace-fly/events (missing) |
 | Input | Input System devices and strategies to IInputStatus | Approximate | no Unity golden yet | InputStatusTests, InputStrategyTests | skimrace-fly/transforms (missing) |
-| Input | Input replay at IInputStatus (game-side ReplayPlayer, Unity PR) | Missing | not implemented | - | - |
+| Input | Input replay at IInputStatus: the engine hands --replay to the game's ReplayPlayer and DeterministicSession (ParityRun.BeginSession) | Approximate | no Unity golden yet | ReplayHandoffTests | skimrace-status/transforms (no result), skimrace-status/state (no result) |
 | Gameplay | Scores, crystals, round stats, match result | Approximate | no Unity golden yet | ScoringArcadeTests, ScoringFamilyTests, RoundStatsTests, TurnMonitorTests | skimrace-fly/state (missing) |
 | Gameplay | Vessel transforms in flight | Approximate | no Unity golden yet | VesselTransformerTests | skimrace-fly/transforms (missing) |
 | Gameplay | Cells, flora, fauna | Approximate | no parity channel covers it yet | CellTests, CellEcologyTests, LifeFormFamilyTests, BoidChainTests | - |
@@ -34,7 +34,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Animation | Animation Rigging constraints | Missing | not implemented | - | - |
 | Animation | Timeline playback | Missing | not implemented | - | - |
 | Animation | DOTween | Approximate | no parity channel covers it yet | DOTweenShimTests | - |
-| Audio | FMOD event sequence: starts and restarts, stops, FMOD and Unity mixer snapshots (order, count, timing; C4) | Approximate | no Unity golden yet | FmodBackendTests, FmodParityEventsTests, AudioSystemTests | boot-menu/events (missing), skimrace-fly/events (missing) |
+| Audio | FMOD event sequence: starts and restarts, stops, FMOD and Unity mixer snapshots (order, count, timing; C4) | Approximate | no Unity golden yet | FmodBackendTests, FmodParityEventsTests, FmodBankGateTests, AudioSystemTests | boot-menu/events (missing), skimrace-fly/events (missing) |
 | Audio | Bus and VCA levels at snapshot changes (within 1 dB) | Approximate | no parity channel covers it yet | FmodBackendTests | - |
 | Rendering | Scene renderer, materials, lighting | Approximate | partly implemented | RenderBoundaryTests, RenderChangeTrackingTests, MaterialRevisionTests | boot-menu/frames (missing), skimrace-fly/frames (missing) |
 | Rendering | Post stack (ACES, bloom, Panini) | Approximate | partly implemented | VolumeStackTests | skimrace-fly/frames (missing) |

@@ -170,6 +170,18 @@ namespace CosmicShore.Engine.Audio.Fmod
             return d;
         }
 
+        /// <summary>The banks' own answer (FMOD_Studio_System_GetEventByID, or GetEvent for a path-only reference).</summary>
+        public bool? HasEvent(EventReference reference)
+        {
+            if (_system == IntPtr.Zero) return null;
+            if (!reference.Guid.IsNull)
+            {
+                var g = new Guid16 { d1 = reference.Guid.Data1, d2 = reference.Guid.Data2, d3 = reference.Guid.Data3, d4 = reference.Guid.Data4 };
+                return N.FMOD_Studio_System_GetEventByID(_system, ref g, out var byId) == 0 && byId != IntPtr.Zero;
+            }
+            return !string.IsNullOrEmpty(reference.Path) && Description(reference) != IntPtr.Zero;
+        }
+
         public void Create(EventInstanceState state, EventReference reference)
         {
             var d = Description(reference);

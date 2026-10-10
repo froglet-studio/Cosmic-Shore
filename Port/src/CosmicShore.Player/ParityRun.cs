@@ -15,7 +15,12 @@ namespace CosmicShore.Player
     /// The engine half of the parity harness (ROADMAP C1, format in Port/parity/README.md).
     ///
     ///   --replay FILE          seed, start scene, frame count, checkpoint interval and the input
-    ///                          stream ("do": InputScript verbs) from a replay file
+    ///                          stream from a replay file, read with the game's own ReplayFile
+    ///                          (Assets/_Scripts/Utility/Replay, compiled live). The "do" steps are
+    ///                          InputScript verbs the engine plays; the file is then handed to the
+    ///                          game (<see cref="BeginSession"/>): DeterministicSession.Begin(seed)
+    ///                          always, and ReplayPlayer.Start(file) when it carries "status" frames,
+    ///                          so those reach IInputStatus through InputController as in Unity
     ///   --parity-out DIR       write the run's channels: state.jsonl (gameplay state at each
     ///                          checkpoint), events.jsonl (in order: "fmod" event starts and
     ///                          restarts, "fmod-stop" stop() calls, "fmod-snapshot" mixer snapshots, "game"
@@ -23,11 +28,14 @@ namespace CosmicShore.Player
     ///                          "contact" starts involving a vessel, sorted by name within a frame),
     ///                          transforms.jsonl (vessels during the first 10 s of each scene;
     ///                          "t" there is seconds since the scene was entered) and run.json
-    ///                          (how the run was made: "audio" native or silent)
+    ///                          (how the run was made: "audio" native or silent, the replay's
+    ///                          seed and which player drove it)
     ///   --random-golden DIR    write random_SEED.json for every --seeds S1,S2,... and exit
     ///
     /// The Unity side writes the same files from the same replay (ParityCapture), and
-    /// <c>engine_parity</c> diffs the two with the C9 tolerances.
+    /// <c>engine_parity</c> diffs the two with the C9 tolerances. In a Prisma run THIS is the
+    /// writer: the game's own ParityProbe stays inert unless COSMIC_SHORE_PARITY_OUT is set, and
+    /// <see cref="EnvironmentClash"/> refuses a run where both would write one directory.
     /// </summary>
     public static class ParityRun
     {
@@ -55,19 +63,102 @@ namespace CosmicShore.Player
 
         public static bool Active => s_state != null;
 
-        /// <summary>Applies a replay file: its seed, scene, length and input. Returns the record spec ("FROM-TO:EVERY") or null.</summary>
+        /// <summary>The replay as the game reads it, or null when the run has none.</summary>
+        public static CosmicShore.Utility.ReplayFile Replay { get; private set; }
+
+        /// <summary>Full path of the loaded replay file, or null.</summary>
+        public static string ReplayPath { get; private set; }
+
+        /// <summary>
+        /// Applies a replay file: its seed, scene, length and "do" input. Returns the record spec
+        /// ("FROM-TO:EVERY") or null. Parsed by the game's ReplayFile so both engines read one
+        /// format (a version other than 1 is loud here as it is in Unity); the status stream is
+        /// kept for <see cref="BeginSession"/>.
+        /// </summary>
         public static string LoadReplay(string path, InputScript script, ref string scene, ref int seed, ref int frames)
         {
-            var r = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
-            if (r["scene"] is JsonValue sc) scene = sc.GetValue<string>();
-            if (r["seed"] is JsonValue sd) seed = sd.GetValue<int>();
-            if (r["frames"] is JsonValue fr) frames = fr.GetValue<int>();
-            if (r["checkpointEvery"] is JsonValue ce) s_every = Math.Max(1, ce.GetValue<int>());
-            if (r["do"] is JsonArray steps)
-                foreach (var s in steps) script.Add(s!.GetValue<string>());
-            if (r["status"] is JsonArray { Count: > 0 })
-                Console.WriteLine("[parity] replay carries IInputStatus snapshots: the game's ReplayPlayer (Assets/_Scripts/Utility/Replay) plays them; the engine plays only the 'do' stream");
-            return r["record"] is JsonValue rec ? rec.GetValue<string>() : null;
+            var r = CosmicShore.Utility.ReplayFile.Load(path);
+            Replay = r;
+            ReplayPath = Path.GetFullPath(path);
+            if (!string.IsNullOrEmpty(r.scene)) scene = r.scene;
+            seed = r.seed;
+            if (r.frames > 0) frames = r.frames;
+            s_every = Math.Max(1, r.checkpointEvery);
+            foreach (var s in r.Do) script.Add(s);
+            Console.WriteLine(r.Status.Length > 0
+                ? $"[parity] replay {path}: scene {scene}, seed {r.seed}, {r.frames} frames, {r.Do.Length} do step(s), {r.Status.Length} status frame(s) for the game's ReplayPlayer"
+                : $"[parity] replay {path}: scene {scene}, seed {r.seed}, {r.frames} frames, {r.Do.Length} do step(s), no status frames (the do stream drives the device strategies)");
+            return r.HasRecordSpec ? r.record : null;
+        }
+
+        /// <summary>
+        /// Hands the loaded replay to the game, exactly what a Unity player build's
+        /// COSMIC_SHORE_REPLAY hook does: DeterministicSession.Begin(seed) (Random.InitState, the
+        /// seven seeded System.Random sites, captureFramerate) and, when the file carries status
+        /// frames, ReplayPlayer.Start(file), after which InputController hands the strategy slot to
+        /// the replay. PlayerBoot calls this right before the game's BeforeSceneLoad hooks, the
+        /// phase that hook runs in, so the seed lands at the same point in both engines. A run with
+        /// no replay has nothing to do.
+        /// </summary>
+        public static void BeginSession()
+        {
+            if (Replay == null) return;
+            CosmicShore.Utility.DeterministicSession.Begin(Replay.seed);
+            if (Replay.Status.Length > 0) CosmicShore.Utility.ReplayPlayer.Start(Replay);
+            Console.WriteLine($"[parity] session begun with seed {Replay.seed}; input: {(CosmicShore.Utility.ReplayPlayer.Active ? "the game's ReplayPlayer" : "device strategies (do stream)")}");
+        }
+
+        /// <summary>
+        /// The game's own hooks must not double up on this run: COSMIC_SHORE_PARITY_OUT would start
+        /// the ParityProbe (a second writer of the same channel files) and COSMIC_SHORE_REPLAY a
+        /// second replay. Returns the clash to print, or null when the environment is consistent
+        /// with the arguments: the probe may write a DIFFERENT directory (that is how the two
+        /// writers are compared), and the variable may name the same replay file.
+        /// </summary>
+        public static string EnvironmentClash(string replayPath, string parityOut)
+        {
+            string probeOut = Environment.GetEnvironmentVariable(CosmicShore.Utility.DeterministicSession.ParityOutEnvironmentVariable);
+            if (parityOut != null && !string.IsNullOrEmpty(probeOut) && SamePath(probeOut, parityOut))
+                return $"{CosmicShore.Utility.DeterministicSession.ParityOutEnvironmentVariable} names the --parity-out directory '{parityOut}': the game's ParityProbe and the engine's ParityRun would write the same files; unset one or point them at different directories";
+            string envReplay = Environment.GetEnvironmentVariable(CosmicShore.Utility.DeterministicSession.ReplayEnvironmentVariable);
+            if (replayPath != null && !string.IsNullOrEmpty(envReplay) && !SamePath(envReplay, replayPath))
+                return $"{CosmicShore.Utility.DeterministicSession.ReplayEnvironmentVariable} names '{envReplay}' but --replay is '{replayPath}': the game's hook would start a second replay; unset the variable";
+            return null;
+        }
+
+        /// <summary>
+        /// The returning-user profile a parity run plays as: a fresh copy of Port/parity/profile
+        /// (prefs with the consent and age prompts answered, a player named "parity", nothing
+        /// earned) under <paramref name="parityOut"/> (or the temp folder), made the persistent
+        /// data path for this process. Two things make this necessary: a first-time profile stops
+        /// in the Authentication scene at the username prompt and never reaches the menu the
+        /// replays press, and the display name is the key of the state channel's stats, so every
+        /// run, and the Unity capture, must play as the same name. Without the template the
+        /// machine's profile (COSMIC_SHORE_PROFILE) stays in charge, with a line saying so.
+        /// </summary>
+        public static void PrepareProfile(string parityOut)
+        {
+            if (Replay == null) return;
+            string root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
+            string template = root == null ? null : Path.Combine(root, "Port", "parity", "profile");
+            if (template == null || !Directory.Exists(template))
+            {
+                Console.WriteLine("[parity] no Port/parity/profile template; the machine's profile plays (a first-time one stops at the username prompt)");
+                return;
+            }
+            string dir = Path.Combine(parityOut ?? Path.Combine(Path.GetTempPath(), "cosmic-shore-parity"), "profile");
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+            Directory.CreateDirectory(dir);
+            foreach (var file in Directory.GetFiles(template))
+                File.Copy(file, Path.Combine(dir, Path.GetFileName(file)));
+            Application.persistentDataPathOverride = dir;
+            Console.WriteLine($"[parity] profile: fresh copy of {Path.GetRelativePath(root, template)} at {dir}");
+        }
+
+        static bool SamePath(string a, string b)
+        {
+            try { return string.Equals(Path.GetFullPath(a).TrimEnd('/', '\\'), Path.GetFullPath(b).TrimEnd('/', '\\'), StringComparison.Ordinal); }
+            catch (Exception) { return string.Equals(a, b, StringComparison.Ordinal); }
         }
 
         public static void Begin(string dir)
@@ -81,12 +172,17 @@ namespace CosmicShore.Player
             SceneManager.sceneLoaded += OnSceneLoaded;
             TriggerPass.ContactStarted = OnContact;
             TriggerPass.CollisionStarted = OnCollision;
+            HookLoadedGameData();
         }
 
         static void WriteEvent(string kind, string name)
             => s_events.WriteLine($"{{\"t\":{F(Time.time)},\"kind\":\"{kind}\",\"name\":{JsonSerializer.Serialize(name)}}}");
 
-        static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => WriteEvent("game", "scene:" + scene.name);
+        static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            WriteEvent("game", "scene:" + scene.name);
+            HookLoadedGameData();
+        }
 
         /// <summary>
         /// A trigger contact that starts with a vessel on either side. Buffered and written sorted at
@@ -125,7 +221,21 @@ namespace CosmicShore.Player
             pending.Clear();
         }
 
-        /// <summary>Hooks the match events of a GameDataSO the first time a controller exposes it.</summary>
+        /// <summary>
+        /// Every loaded GameDataSO, the way the game's ParityProbe hooks it: the asset loads with the
+        /// Bootstrap container before any controller exists, so the menu's OnLaunchGame is heard as
+        /// well as the match's events (hooking only through a controller missed it, and the two
+        /// channels disagreed). Run at Begin, on every scene load, every tick until something is
+        /// hooked and then at each checkpoint for an asset loaded later; a controller's injected
+        /// reference is that same asset, so the controller lookup only matters for the state channel.
+        /// </summary>
+        static void HookLoadedGameData()
+        {
+            foreach (var gd in Resources.FindObjectsOfTypeAll<CosmicShore.Utility.GameDataSO>()) HookGameData(gd);
+            HookGameData(FindGameData());
+        }
+
+        /// <summary>Hooks the match events of a GameDataSO the first time it is seen.</summary>
         static void HookGameData(CosmicShore.Utility.GameDataSO gd)
         {
             if (gd == null || !s_hooked.Add(gd)) return;
@@ -139,8 +249,7 @@ namespace CosmicShore.Player
         {
             if (!Active) return;
             FlushContacts();
-            // The controller can appear any tick after a scene load; search until hooked, then per checkpoint.
-            if (s_hooked.Count == 0 || frame % s_every == 0) HookGameData(FindGameData());
+            if (s_hooked.Count == 0 || frame % s_every == 0) HookLoadedGameData();
             // C9 compares paths for a replay's first 10 s; the clock restarts in every scene
             // entered (boot, menu, match), so a match's opening is compared, not just the boot's.
             var scene = SceneManager.GetActiveScene().name;
@@ -162,7 +271,16 @@ namespace CosmicShore.Player
             s_state.Dispose(); s_events.Dispose(); s_transforms.Dispose();
             s_state = s_events = s_transforms = null;
             // Written last: the audio runtime comes up after Begin, with the boot.
-            File.WriteAllText(Path.Combine(s_dir, "run.json"), new JsonObject { ["audio"] = PlayerAudio.Mode }.ToJsonString() + "\n");
+            var run = new JsonObject { ["engine"] = "prisma", ["audio"] = PlayerAudio.Mode };
+            if (Replay != null)
+                run["replay"] = new JsonObject
+                {
+                    ["file"] = Path.GetFileName(ReplayPath),
+                    ["seed"] = Replay.seed,
+                    ["statusFrames"] = Replay.Status.Length,
+                    ["input"] = Replay.Status.Length > 0 ? "ReplayPlayer" : "do",
+                };
+            File.WriteAllText(Path.Combine(s_dir, "run.json"), run.ToJsonString() + "\n");
         }
 
         static string F(double v) => v.ToString("R", Inv);

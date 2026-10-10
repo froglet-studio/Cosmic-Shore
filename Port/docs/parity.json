@@ -11,8 +11,8 @@
   "summary": {
     "subsystems": {
       "Faithful": 0,
-      "Approximate": 26,
-      "Missing": 6
+      "Approximate": 27,
+      "Missing": 5
     },
     "shaders": {
       "Faithful": 0,
@@ -149,11 +149,22 @@
     {
       "id": "replay",
       "area": "Input",
-      "name": "Input replay at IInputStatus (game-side ReplayPlayer, Unity PR)",
-      "status": "Missing",
-      "why": "not implemented",
-      "tests": [],
-      "parity": []
+      "name": "Input replay at IInputStatus: the engine hands --replay to the game's ReplayPlayer and DeterministicSession (ParityRun.BeginSession)",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "ReplayHandoffTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-status/transforms",
+          "result": "no result"
+        },
+        {
+          "channel": "skimrace-status/state",
+          "result": "no result"
+        }
+      ]
     },
     {
       "id": "gameplay-state",
@@ -304,6 +315,7 @@
       "tests": [
         "FmodBackendTests",
         "FmodParityEventsTests",
+        "FmodBankGateTests",
         "AudioSystemTests"
       ],
       "parity": [

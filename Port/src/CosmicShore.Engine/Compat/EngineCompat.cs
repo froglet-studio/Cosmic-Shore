@@ -235,14 +235,16 @@ namespace CosmicShore.Engine
     public static partial class Resources
     {
         static readonly List<ScriptableObject> Registry = new();
+        static readonly HashSet<ScriptableObject> Registered = new();
         static readonly Dictionary<string, Object> PathRegistry = new();
 
-        public static void Register(ScriptableObject asset) { if (!Registry.Contains(asset)) Registry.Add(asset); }
+        /// <summary>Adds a loaded asset to "all loaded objects" (the content bridge registers every ScriptableObject it reads). Idempotent, O(1).</summary>
+        public static void Register(ScriptableObject asset) { if (asset != null && Registered.Add(asset)) Registry.Add(asset); }
 
         /// <summary>Registers an asset at a Resources-relative path for <see cref="Load{T}"/>.</summary>
         public static void Register(string path, Object asset) => PathRegistry[path] = asset;
 
-        public static void Clear() { Registry.Clear(); PathRegistry.Clear(); }
+        public static void Clear() { Registry.Clear(); Registered.Clear(); PathRegistry.Clear(); }
 
         /// <summary>
         /// Original contract: the engine's built-in resources. The one a player script can ask

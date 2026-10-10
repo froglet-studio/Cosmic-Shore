@@ -198,6 +198,11 @@ namespace CosmicShore.Content
                     catch (Exception) { return null; }
                     so.name = doc.Body.Str("m_Name") ?? type.Name;
                     _cache[(r.Guid, r.FileId)] = so; // before reading: cycles resolve to this instance
+                    // A loaded asset is one of "all loaded objects": Resources.FindObjectsOfTypeAll
+                    // answers it, as the original does for an asset a scene or prefab pulled in
+                    // (the game's ParityProbe and QuestPlayRecorder find GameDataSO this way, the
+                    // cloud data service its SO_VesselList).
+                    Resources.Register(so);
                     _reader.ReadInto(so, doc.Body, file);
                     InvokeLoadHooks(so);
                     return so;

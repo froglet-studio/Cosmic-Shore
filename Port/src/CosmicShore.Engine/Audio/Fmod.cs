@@ -241,6 +241,30 @@ namespace CosmicShore.Engine.Audio.Fmod
     }
 
     /// <summary>
+    /// Thrown by <see cref="RuntimeManager.CreateInstance(EventReference)"/> and
+    /// <see cref="RuntimeManager.GetEventDescription(EventReference)"/> for an event no loaded bank
+    /// carries (original contract: FMODUnity.EventNotFoundException, the same three constructors
+    /// and fields, the same message). The game's FmodSafe.TryCreateInstance catches it, reports
+    /// the reference once and plays nothing.
+    /// </summary>
+    public class EventNotFoundException : System.Exception
+    {
+        public GUID Guid;
+        public string Path;
+
+        public EventNotFoundException(string path) : base("[FMOD] Event not found: '" + path + "'") { Path = path; }
+
+        public EventNotFoundException(GUID guid) : base("[FMOD] Event not found: " + FmodGuids.ToSystem(guid).ToString("B")) { Guid = guid; }
+
+        public EventNotFoundException(EventReference reference)
+            : base("[FMOD] Event not found: " + FmodGuids.ToSystem(reference.Guid).ToString("B") + " (" + (reference.Path ?? "") + ")")
+        {
+            Guid = reference.Guid;
+            Path = reference.Path;
+        }
+    }
+
+    /// <summary>
     /// The FMOD runtime entry point (original contract: FMODUnity.RuntimeManager
     /// — the CreateInstance / GetBus / AttachInstanceToGameObject subset the
     /// ported audio unit uses).
@@ -272,11 +296,48 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (reference.IsNull)
                 throw new System.ArgumentException("EventReference is null.", nameof(reference));
-            string path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) : reference.Path;
+            string path = ResolveLoadedPath(reference);
             AudioStats.Created(path ?? reference.ToString());
             var state = new EventInstanceState { Path = path };
             FmodBackend.Current?.Create(state, reference);
             return new EventInstance { State = state };
+        }
+
+        /// <summary>
+        /// The path an instance of <paramref name="reference"/> is keyed by, after the check FMOD's
+        /// RuntimeManager makes first: a reference with a GUID resolves by GUID (its serialized path
+        /// is the editor's label and can be stale), a path-only one by path, and an event no loaded
+        /// bank carries throws <see cref="EventNotFoundException"/>, so a stale reference is silent
+        /// here exactly as in Unity (where FmodSafe.TryCreateInstance catches it) and never reaches
+        /// start(), the parity channel or the started-event log. The loaded banks answer through the
+        /// vendor runtime when it is up (<see cref="IFmodBackend.HasEvent"/>); without it, through
+        /// the GUID index of the build's strings bank (<see cref="FmodGuids.BankCarries"/>). With
+        /// neither (no project, tests) nothing is refused and the path is the reference's own.
+        /// </summary>
+        static string ResolveLoadedPath(EventReference reference)
+        {
+            string path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) : reference.Path;
+            bool? carried = FmodBackend.Current?.HasEvent(reference) ?? FmodGuids.BankCarries(reference);
+            if (carried != false) return path;
+            ReportMissing(reference, path);
+            throw new EventNotFoundException(reference);
+        }
+
+        // One warning per missing GUID (or per path for a path-only reference): a controller that
+        // retries creation every frame must not turn one stale reference into a line per frame.
+        static readonly HashSet<string> s_reportedMissing = new();
+
+        static void ReportMissing(EventReference reference, string path)
+        {
+            string shown = path ?? reference.Path ?? "(unnamed)";
+            lock (AudioStats.Missing) AudioStats.Missing.Add(shown);
+            string key = reference.Guid.IsNull ? "path:" + reference.Path : FmodGuids.ToSystem(reference.Guid).ToString("B");
+            if (!s_reportedMissing.Add(key)) return;
+            string banks = FmodBackend.Current != null ? "the loaded banks"
+                : FmodGuids.StringsBankLoaded ? $"{System.IO.Path.GetFileName(FmodGuids.StringsBankFile)} ({FmodGuids.StringsBankCount} GUIDs)" : "no bank";
+            Debug.LogWarning(reference.Guid.IsNull
+                ? $"[fmod] no loaded bank carries an event at '{reference.Path}' ({banks}): not started"
+                : $"[fmod] no loaded bank carries event {key} ({banks}): its serialized path '{shown}' is stale; not started, no parity line");
         }
 
         public static Bus GetBus(string path)
@@ -370,8 +431,9 @@ namespace CosmicShore.Engine.Audio.Fmod
             return new VCA { State = state };
         }
 
+        /// <summary>The event's description; throws <see cref="EventNotFoundException"/> when no loaded bank carries it, as the original does.</summary>
         public static EventDescription GetEventDescription(EventReference reference)
-            => new() { Path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) ?? string.Empty : reference.Path };
+            => new() { Path = ResolveLoadedPath(reference) ?? string.Empty };
         public static EventDescription GetEventDescription(string path) => new() { Path = path };
 
         /// <summary>Studio system (global parameters, bus/VCA lookups).</summary>
@@ -470,6 +532,7 @@ namespace CosmicShore.Engine.Audio.Fmod
             StartedByPath.Clear();
             StartedTotal = 0;
             Attached.Clear();
+            s_reportedMissing.Clear();
             FailBusResolution = false;
         }
     }

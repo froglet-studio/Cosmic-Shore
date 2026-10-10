@@ -31,10 +31,35 @@ namespace CosmicShore.Player
 
         public static FmodNativeBackend Start(string projectRoot, bool headless)
         {
-            FmodGuids.Load(Path.Combine(Path.GetDirectoryName(BankDirectory(projectRoot)) ?? string.Empty, "GUIDs.txt"));
+            string banks = BankDirectory(projectRoot);
+            FmodGuids.Load(Path.Combine(Path.GetDirectoryName(banks) ?? string.Empty, "GUIDs.txt"));
+            LoadStringsBank(banks);
             var backend = StartRuntime(projectRoot, headless);
             Mode = backend == null ? "silent" : "native";
             return backend;
+        }
+
+        /// <summary>
+        /// The strings bank's GUID index is what the loaded banks carry (FmodGuids.BankCarries):
+        /// read in every mode, so the silent model refuses a stale EventReference as the runtime
+        /// would. GUIDs.txt is the cross-check: an index that misses most of the file's entries
+        /// was not read correctly (a format change) and is dropped, with a line saying so, rather
+        /// than silencing the game.
+        /// </summary>
+        static void LoadStringsBank(string bankDirectory)
+        {
+            if (!Directory.Exists(bankDirectory)) return;
+            foreach (var file in Directory.GetFiles(bankDirectory, "*.strings.bank"))
+            {
+                if (FmodGuids.LoadStringsBank(file) == 0) { Console.Error.WriteLine($"[fmod] no GUID index found in {Path.GetFileName(file)}; stale event references are not detected"); continue; }
+                var (listed, carried) = FmodGuids.StringsBankCoverage();
+                if (listed > 0 && carried * 2 < listed)
+                {
+                    Console.Error.WriteLine($"[fmod] {Path.GetFileName(file)} indexes {carried} of GUIDs.txt's {listed} entries; the index was not read correctly and is ignored");
+                    FmodGuids.ClearStringsBank();
+                }
+                return;
+            }
         }
 
         static FmodNativeBackend StartRuntime(string projectRoot, bool headless)

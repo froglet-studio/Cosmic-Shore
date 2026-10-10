@@ -169,6 +169,9 @@ namespace CosmicShore.Player
                 if (record != null && parityOut != null && !headless && !FrameRecorder.TryAdd(System.IO.Path.Combine(parityOut, "frames") + ":" + record))
                     Console.WriteLine($"[parity] bad record spec '{record}'");
             }
+            string clash = ParityRun.EnvironmentClash(replay, parityOut);
+            if (clash != null) { Console.WriteLine("[parity] " + clash); return 2; }
+            ParityRun.PrepareProfile(parityOut);
             if (parityOut != null) ParityRun.Begin(parityOut);
 
             CosmicShore.Render.RenderQuality.Clamp();

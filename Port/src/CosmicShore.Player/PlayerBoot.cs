@@ -99,6 +99,10 @@ namespace CosmicShore.Player
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.SubsystemRegistration);
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.AfterAssembliesLoaded);
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.BeforeSplashScreen);
+            // A --replay run hands its file to the game here, where a Unity player build's own
+            // COSMIC_SHORE_REPLAY hook (DeterministicSession, BeforeSceneLoad) seeds and starts
+            // the ReplayPlayer, so the seed lands at the same point in both engines.
+            ParityRun.BeginSession();
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.BeforeSceneLoad);
 
             Runtime.BootRootScopes();

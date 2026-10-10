@@ -11,6 +11,7 @@ Port/parity/
   goldens/random/random_<seed>.json      written by the Unity capture
   goldens/<case>/{state,events,transforms}.jsonl, frames/*.png
   results/latest.json  the last full engine_parity run against the goldens (feeds the scoreboard)
+  profile/             the returning-user profile every engine replay run starts from (player "parity")
   subsystems.json      the scoreboard catalogue (Port/tools/gen_parity_scoreboard.py)
 ```
 
@@ -23,6 +24,7 @@ Port/parity/
 | Against a hand-made golden (a planted difference) | `engine_parity {"golden_dir":"..."}` |
 | With frames | `engine_parity {"frames":true}` (a window; xvfb-run on a display-less Linux) |
 | One replay by hand | `CosmicShore --headless --replay Port/parity/replays/X.json --parity-out DIR` |
+| The status-frame case by hand | `CosmicShore --headless --replay Port/parity/replays/skimrace-status.json --parity-out DIR` (run.json says `"input":"ReplayPlayer"`) |
 | Random goldens by hand | `CosmicShore --random-golden DIR --seeds 0,1,42` |
 | Scoreboard | `python3 Port/tools/gen_parity_scoreboard.py` (`--check` in CI) |
 
@@ -43,7 +45,8 @@ A channel without a golden reports MISSING and does not fail; FAIL names the fir
 - `do`: device-level steps in the engine's InputScript verbs (`click`, `key`, `hold`, `pad`,
   and the inspector verbs `arcade`, `score` ...). Prisma plays these today.
 - `status`: per-frame `IInputStatus` snapshots plus the `InputEvents` pressed/released that
-  frame. The game's own `ReplayPlayer` plays these (below), in both engines.
+  frame. The game's own `ReplayPlayer` plays these, in both engines: Unity through the
+  `COSMIC_SHORE_REPLAY` hook, Prisma through `ParityRun.BeginSession` (below).
 - `record`: frames FROM-TO every N captured as `frames/fNNNNN.png` (a window is needed).
 
 **Channels**, JSON Lines:
@@ -117,4 +120,80 @@ reseed, `ModePreviewPlantingModel` reseeds and restores); 7 unseeded `System.Ran
 `SpawnableCord` when their seed is 0) take `DeterministicSession`'s seed; 10 `Guid.NewGuid` sites are
 identity only and must never reach a compared channel.
 
-Until it lands, Prisma plays the `do` stream and every Unity channel is MISSING.
+The PR landed on this branch (`1a397c3e3`, the probe's reflection-free read in `646d599e0`). What
+is still owed for goldens is the editor capture run (`FrogletTools > Parity > Capture Goldens`):
+until `Port/parity/goldens/` exists every Unity channel is MISSING and `engine_parity` passes
+vacuously; the determinism check (`against: self`) is the one that bites today.
+
+## How Prisma plays a replay (the engine side, 2026-10-10)
+
+`--replay FILE` is read with the game's own `ReplayFile` (compiled live), so both engines parse
+one format and a version other than 1 is loud in both. The engine plays the `do` steps itself
+(InputScript verbs) and then HANDS THE FILE TO THE GAME in `ParityRun.BeginSession`, called by
+`PlayerBoot` right before the game's `BeforeSceneLoad` hooks, the phase in which a Unity player
+build's `COSMIC_SHORE_REPLAY` hook runs, so the seed lands at the same point in both engines:
+
+- `DeterministicSession.Begin(seed)` always: `Random.InitState`, the seven seeded
+  `System.Random` sites, `Time.captureFramerate`.
+- `ReplayPlayer.Start(file)` when the file carries `status` frames; `InputController.SelectStrategy`
+  then hands the strategy slot to the replay and the frames reach `IInputStatus` where a device's
+  would. A file with an empty `status` (boot-menu, skimrace-fly, astroleague-strike, bloomrush-i4)
+  is driven by its `do` stream through the device strategies, exactly as before.
+
+**One writer per directory.** In a Prisma run the engine's `ParityRun` writes `--parity-out`; the
+game's `ParityProbe` stays inert unless `COSMIC_SHORE_PARITY_OUT` is set. The two must never write
+the same files: `CosmicShore` refuses to start (exit 2) when `COSMIC_SHORE_PARITY_OUT` names the
+`--parity-out` directory, and when `COSMIC_SHORE_REPLAY` names a file other than `--replay` (the
+game's hook would start a second replay). Pointing the probe at a DIFFERENT directory is allowed:
+that is how the two writers are compared on one run. `run.json` records which writer made a
+directory (`"engine":"prisma"` / `"unity"`), the audio mode, and for a replay its seed, status-frame
+count and `"input":"ReplayPlayer"` or `"do"`.
+
+**The profile a run plays as.** Every `--replay` run starts from a fresh copy of
+`Port/parity/profile/` (`prefs.json` with the age and consent prompts answered, `ugs-cloudsave.json`
+with a player named `parity`, a fixed `ugs-player-id`), placed under `--parity-out/profile` and
+made the process's persistent data path (`ParityRun.PrepareProfile`). Two reasons: a first-time
+profile stops in the Authentication scene at the username prompt and never reaches the menu the
+replays press (measured: `engine_parity`'s `COSMIC_SHORE_PROFILE=parity` was such a profile, so
+every case ended with 3 events and 0 transforms), and the display name is the KEY of the state
+channel's `stats`, so every run, and the Unity capture, must play as the same name. **The Unity
+capture therefore has to run as a returning user named `parity`**, or `state.jsonl` differs on the
+first checkpoint of every match. Without the template the machine's profile plays, with a line
+saying so.
+
+**`game` events are hooked at asset load**, as the probe hooks them: every loaded `GameDataSO`
+(`Resources.FindObjectsOfTypeAll`, which the engine's content bridge now answers for every
+ScriptableObject it reads, as Unity does), re-scanned on each scene load and checkpoint. Measured on
+skimrace-fly: the menu's `OnInitializeGame` (t 1.57 s) and the Start press's `OnLaunchGame`
+(t 27.0 s) joined the engine's `events.jsonl`; nothing else changed.
+
+**FMOD: an event no loaded bank carries does not start.** `RuntimeManager.CreateInstance` and
+`GetEventDescription` resolve an `EventReference` by GUID (the serialized path is the editor's
+label) and throw `EventNotFoundException` for a GUID the banks do not carry, which the game's
+`FmodSafe.TryCreateInstance` catches: nothing starts, no `fmod` line, one engine warning per GUID
+naming the stale path. With the vendor runtime up (`COSMIC_SHORE_AUDIO=nrt`) the banks answer;
+without it the engine reads the GUID index of `Cosmic Shore/Build/Desktop/Master.strings.bank`
+(`FmodGuids.LoadStringsBank`), not `GUIDs.txt`: the file is only as current as the last manual
+File > Export GUIDs, the bank is rebuilt on every Build. Measured 2026-10-10: GUIDs.txt lists 75
+entries, the strings bank 89; the Bootstrap music `{03de9ea9-9b51-400a-b0cb-8bcc12a12697}`
+(`event:/Music/Music`) and seven other serialized references (Rhino's `event:/Engine`, the Drift,
+Goal, Mass, Time and Gameplay loops) are in the bank and NOT in the file, and `Mass brittle star` is
+in the file and not in the bank. So the music plays in Unity and in Prisma, and the boot-menu
+`events.jsonl` is identical before and after the gate (bar the Authentication load-time drift,
+board B-1); the gate's effect is proved by `FmodBankGateTests`, not by a shipped reference. A
+path-only reference is refused only through a GUID the table knows; the index is cross-checked
+against GUIDs.txt at load and dropped (with a line on stderr) if it misses most of the file.
+
+**The status-frame case `skimrace-status`** (seed 2026, 2760 frames): the skimrace-fly `do` steps
+with `arcade ready` at frame 1800, then 600 status frames shaped as a keyboard writes them: XDiff
+0.5 (cruise, the dual-stick speed term at rest) with XSum sweeps (-1 to 1 and back, a held 0.6
+bank), a full-speed stretch (XDiff 1 with the E key, Throttle 1, frames 300 to 449), a YSum pitch,
+one `Button1Action` press/release, and a neutral last frame (the player holds it). Authoring
+note: **XDiff is the speed term** (`VesselTransformer.ThrottleAxis`), so a frame with XDiff 0 is a
+full stop, not neutral; the first draft of this case carried XDiff 0 and the vessel yawed with the
+sweep without moving a metre. The turn starts 3.6 s after `ready`; with `ready` at 2100
+(skimrace-fly) that is 11.1 s after the scene loads, outside the 10 s transforms window, which is
+why skimrace-fly's transforms show the parked vessel only. The game's `ParityCapture` plays this
+case through the same `COSMIC_SHORE_REPLAY` hook, so a Unity golden for it is a straight
+`engine_parity` diff of the replayed flight.
+
