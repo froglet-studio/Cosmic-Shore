@@ -50,42 +50,31 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when the host kicks a remote player from the party.")]
         public ScriptableEventPartyPlayerData OnPartyMemberKicked;
 
-        [Header("Max Slots")]
-        [Tooltip("Maximum number of party slots (including the local player).")]
-        // Capacity, NOT the UI's party size. The lobby panel still shows four slots; this is
-        // the ceiling that HasOpenSlots and the Relay allocation are sized from. At exactly 4 a
-        // four-player party has ZERO headroom, so one transient double-count in the polled
-        // member list - which is reconciled from UGS and is known to flicker on join/leave - is
-        // enough to throw the fourth invite out with "Party is full" before it reaches the wire,
-        // or to make the join return session-full (not a transient exception, so it propagates
-        // straight to a bounce). One spare Relay slot removes that whole class.
-        [SerializeField] private int maxPartySlots = 6;
+        [Header("Party Size")]
+        [Tooltip("How many people can be in one party, the local player included. Also the seat count of the " +
+                 "party's UGS session, so the service itself refuses anyone past it. Always 4.")]
+        // ONE number. It used to be two - a 6-seat transport capacity under a 4-seat displayed size -
+        // and that left nothing enforcing four: every "party is full" check ran on the joining
+        // client against polled data, so two Joins on a 3/4 party inside one refresh seated a fifth
+        // (Docs/PartySystem/BUGS.md B25). The party session is now created with exactly this many
+        // seats, so UGS rejects a fifth join itself. The roster flicker the spare seats used to
+        // absorb is handled where it happens: HasOpenSlots counts DISTINCT player ids.
+        [SerializeField] private int maxPartySlots = 4;
 
+        /// <summary>The party size (4): players who can be in one party, and the party session's seats.</summary>
         public int MaxPartySlots => maxPartySlots;
 
-        [Tooltip("The party size PLAYERS SEE - the slot count the lobby draws and the number " +
-                 "published to other peers as 'N/M'. Deliberately SEPARATE from maxPartySlots, " +
-                 "which is transport capacity carrying one spare slot of anti-flicker headroom.")]
-        // Capacity leaked into the UI once already: MaxPartySlots (6, a Relay/transport number
-        // with deliberate headroom) was what the lobby rendered and what PARTY_MAX_KEY published,
-        // so every peer read "1/6" for a four-player game and the LOBBY FULL badge waited for a
-        // fifth and sixth member that the design never seats. The two numbers answer different
-        // questions - "how many can the session physically hold" vs "how big is a party" - and a
-        // property named for the transport will keep being read as the game rule until they are
-        // separate fields. Clamped to the capacity so display can never promise a seat the
-        // session cannot hold.
-        [SerializeField] private int partyDisplaySlots = 4;
-
-        /// <summary>Party size as PLAYERS see it (4). Never the transport capacity.</summary>
-        public int PartyDisplaySlots => Mathf.Clamp(partyDisplaySlots, 1, maxPartySlots);
-
-        /// <summary>
-        /// Whether the party has room for another member BY THE GAME'S RULE (the displayed size),
-        /// which is what an invite affordance must gate on. <see cref="HasOpenSlots"/> is the
-        /// transport question and stays deliberately looser by one seat of headroom.
-        /// </summary>
-        public bool HasOpenDisplaySlots =>
-            PartyMembers == null || PartyMembers.Count < PartyDisplaySlots;
+        // ─────────────────────────────────────────────────────
+        // UGS request policy
+        // ─────────────────────────────────────────────────────
+        [Header("UGS Request Policy")]
+        [Tooltip("Back-off, jitter and retry-budget tunables for every UGS (Lobby / Sessions / Relay) call the " +
+                 "party, presence and match layers make. Read once at bootstrap into the shared UgsRequestPolicy " +
+                 "(AppManager DI) - retune here, never in code. See " +
+                 "Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4.")]
+        [SerializeField] private UgsRequestPolicySettings ugsRequestPolicy = new UgsRequestPolicySettings();
+        /// <summary>Tunables for <see cref="Utility.UgsRequestPolicy"/>. Never null after deserialization.</summary>
+        public UgsRequestPolicySettings UgsRequestPolicySettings => ugsRequestPolicy;
 
         // ─────────────────────────────────────────────────────────────────────
         // Invites
@@ -171,7 +160,30 @@ namespace CosmicShore.Utility
         // Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
-        public bool HasOpenSlots => PartyMembers == null || PartyMembers.Count < maxPartySlots;
+        /// <summary>
+        /// Whether the party can take another member: fewer DISTINCT players than
+        /// <see cref="MaxPartySlots"/>. Distinct, because the polled roster is reconciled from UGS and
+        /// can briefly carry one player twice on a join or leave - that must not read as a full party.
+        /// </summary>
+        public bool HasOpenSlots => DistinctPartyMemberCount < maxPartySlots;
+
+        /// <summary>Members in <see cref="PartyMembers"/> counted once per player id (no allocation).</summary>
+        public int DistinctPartyMemberCount
+        {
+            get
+            {
+                if (PartyMembers == null) return 0;
+                int distinct = 0;
+                for (int i = 0; i < PartyMembers.Count; i++)
+                {
+                    string id = PartyMembers[i].PlayerId;
+                    bool seen = false;
+                    for (int j = 0; j < i && !seen; j++) seen = PartyMembers[j].PlayerId == id;
+                    if (!seen) distinct++;
+                }
+                return distinct;
+            }
+        }
 
         /// <summary>
         /// Number of remote (non-local) human players in the party.

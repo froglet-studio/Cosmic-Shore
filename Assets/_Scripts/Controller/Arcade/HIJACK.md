@@ -284,6 +284,25 @@ With `ram: 1`, an AI whose course is on target (which a rider always is) grinds 
 
 It is AI-only, so it changes nothing for a human pilot in any mode.
 
+**The spike and Slip presses go through the shared Urchin driver** (`UrchinAutopilotDriver`,
+`_Scripts/Controller/AI/Urchin/`), the same one Skein flies its strands with. It finds each control
+by CAPABILITY on the vessel's own bindings (`TryGetBoundAction<UrchinSpikeActionSO>` /
+`<UrchinSlipActionSO>`) rather than by a named trigger, and gates a tap on the spike ability's own
+`AmmoIndex` / `AmmoCost` - the two numbers the executor's `CanPay` checks - on top of this mode's
+`aiMinSpikeAmmo` floor, so a re-bound or retuned Urchin cannot leave the raider pressing a trigger
+that no-ops. The cadence and floor are still this controller's authored fields. Since #986 the
+driver's own ride logic (Skein, Regatta) spikes only CONVERTIBLE hostile mass -
+`UrchinAutopilotDriver.IsConvertible` skips super-shielded prisms, which `PrismTeamManager.Steal`
+always refuses, so a volley there would only spend the meter. Hijack does not route through that
+gate: it calls `TrySpike` directly after its own hostile test (`IsHostileUnderfoot`, read from the
+replicated yard table), and the yard's rails and burrs are never super-shielded (a Mass-5 shield
+is an ordinary shield, which a steal drops rather than flips), so the rule changes nothing here
+today. If the yard ever authors super-shielded mass, add `IsConvertible` to that test. The driver's rail
+CHOICE (ride / reverse / leave) is not used here: this yard's rails are 20 degree arcs chosen by
+`ChooseRail`, and the RIDE state already rides each one to its end. Its Track Projector is not
+used here either, deliberately: the yard is under 1,850 u across, and a projected track's 360 u/s
+launch overshoots the 80 u approach-commit window every rail approach depends on.
+
 ---
 
 ## 7. Budget and collider impact
@@ -318,6 +337,7 @@ extent against the spawn ring and membrane, and the painting balance.
 | scoring rule | `_Scripts/Controller/Arcade/Scoring/HijackScoringRuleSO.cs` |
 | turn monitor | `_Scripts/Controller/Arcade/TurnMonitors/HijackStealTurnMonitor.cs` |
 | objective arrow | `_Scripts/Controller/Arcade/HijackObjectiveProvider.cs` |
+| replicated prism ownership | `_Scripts/Controller/Arcade/HijackOwnershipLedger.cs` (RPCs on `HijackController`) |
 | arena generator | `_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwitchyard.cs` |
 | the arena's map of itself | `_Scripts/Controller/Environment/MiniGameObjects/HijackYard.cs` |
 | budget + geometry proofs | `Tools/Build/hijack_budget.py` |
@@ -352,9 +372,26 @@ item is a real check a human has to perform, in this order (load-bearing first).
 8. **Comeback.** Fall ~375 behind: the trailing pilots' element flowers fill ~3 levels; at Time 5
    they ride hostile rails at full speed.
 9. **Regression.** The Urchin still flies correctly in freestyle (the `ram` change is AI-only).
-10. **HOST-SIDE FIRST, then a client.** Prism ownership does not replicate (§10), so the two
-    machines will disagree about which rail thirds are fast and which burrs still hold loot. The
-    SCORE should agree; the arena will not. Confirm the score does.
+10. **OWNERSHIP AGREES ACROSS MACHINES (host + one client, ideally MPPM or two builds).**
+    a. On the CLIENT, grind a hostile rail third and spike a burr. On the HOST, the same prisms
+       turn the client's colour within ~0.1s, and the host's own ride over them is fast.
+    b. On the HOST, steal a burr. On the CLIENT the burr flips, and the client's arrow moves off
+       it to the next cluster that still holds loot.
+    c. Watch a remote pilot grind a hostile rail on your screen: its prisms flip as it passes and
+       STAY flipped (no flicker back). If a flip snaps back after about half a second, the
+       owner's report is not reaching the server — check the console for RPC errors.
+    d. AI raiders (host-run) stop targeting a burr a CLIENT emptied: empty one, then watch which
+       rail the AI picks next.
+    e. **Late join:** start a match host-only, steal a burr or two, then join a client mid-match.
+       Its yard must show those burrs in the host's colour once laid, not their painted colour.
+    f. Score still agrees on both machines (unchanged path).
+    g. **Shields agree.** Give the CLIENT pilot Mass 5 and ride one of its own rail thirds: the
+       prisms come up shielded on the client and, within ~0.1s, on the HOST. Now ride a host AI
+       (or the host pilot) over that third: the first pass only breaks the shields (prisms stay
+       the client's colour, on both screens), the second pass flips them. Repeat with roles
+       swapped (host Mass 5, client steals).
+    h. **Late join keeps shields:** with some Mass-5 armour laid, join a second client - its yard
+       shows the same prisms shielded.
 
 ---
 
@@ -393,41 +430,106 @@ merge without a conflict in that file. Do not edit it on this branch for that re
 
 ## 10. Known limitations
 
-- **PRISM OWNERSHIP DOES NOT REPLICATE, and this mode is the first whose whole subject is
-  ownership.** `PrismTeamManager` is a plain `MonoBehaviour`: `ChangeTeam` / `Steal` mutate a
-  local field and raise a SOAP event, with no NetworkVariable and no RPC anywhere. Every peer
-  builds a byte-identical yard (the generator is closed form) and then diverges from the first
-  steal. **The SCORE is correct on every peer** — that rides the owner-detects / server-records
-  round trip and was traced end to end — but three reads are per-machine:
-  ride speed (`TrailFollower.GetTerrainAwareBlockSpeed`, so two pilots disagree about which
-  thirds are fast), the objective arrow (`HijackYard.HasHostileMass` walks the local trail), and
-  the AI's rail choice — which runs server-side and never sees a client's steals, so AI raiders
-  keep attacking burrs a human client already emptied. This is a platform gap rather than
-  something the mode introduced (`CLAUDE.md` records the destruction half of it), but Hijack is
-  where it stops being academic. **Play-test it host-side first.**
-- **The Urchin has no HUD prefab.** There is no `UrchinHUDVariant.prefab` and the vessel wires
-  none, so an Urchin-only mode ships with no ability lockup row, no elemental petal bars, no
-  control chips and **no ammo gauge** — while the pilot's only weapon is gated on exactly that
-  meter. It is also noisy: `VesselStatus.VesselHUDController` logs an error whenever the field
-  does not implement the interface, which includes null, and it is read on every vessel spawn and
-  every HUD hide/show. Latent and not reachable from this mode: four call sites in
-  `VesselController` dereference the same getter unguarded, so any mode that calls `ChangePlayer`
-  on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
-  uncontrollable.
-- **`ram: 1` is a FLEET-WIDE AI change made for one mode.** `Urchin.prefab` is shared, so every
-  AI Urchin in every context — the menu lava-lamp autopilot, the Spawn Matrix's vessel hangar,
-  any future mode that does not lock its hull — now flies at full throttle whenever it is lined
-  up on its objective, not just here. It has the Rhino's precedent and it is AI-only, so no human
-  pilot is affected; if it ever needs to be narrower, the honest lever is a per-mode setter rather
-  than a prefab field.
+- **Prism ownership replicates for the YARD only, and the trust unit is a domain, not a pilot.**
+  Fixed 2026-10 (`HijackOwnershipLedger`, §11). Platform ownership (`PrismTeamManager`) is still
+  local everywhere else — this mode did not change it — so anything outside the Switchyard's 42
+  trails (an Urchin's own trail, if it ever lays one here) still diverges per peer. Within the
+  yard, a peer believes a flip into a domain it simulates a pilot of, so a peer also believes its
+  PROXY of a remote teammate; that can make a teammate's steal land early, never hand a prism to
+  the wrong team. Shield state rides the same table since 2026-10 (§11), with the same trust unit:
+  a peer that simulates any rival of a prism's owner believes a proxy's break of that owner's
+  shield. The SCORE path is unchanged and was already correct on every peer.
+- **The Urchin HUD is placeholder art.** Since #973 (2026-10) `Urchin.prefab` wires
+  `VesselStatus.vesselHUDController` to an `UrchinVesselHUDController` driving a nested
+  `UrchinHUDVariant.prefab` (a Prefab Variant of `VesselHUDPrefab`, authored by
+  `Tools/Build/author_urchin_hud.py`): the four-icon row Chain Spikes / Trail Rider / Track
+  Projector / Slip with RT / LT / B chips, the elemental petal bars, the **ammo gauge** on the
+  Charge card (the meter this mode's only weapon spends), the riding indicator on Mass and the
+  Track Projector's recharge veil on Space. The four icons are white placeholder silhouettes
+  awaiting the art pass, and the Chain Spikes hold-to-charge has no gauge yet (the executor does
+  not expose charge progress). The old "no HUD" state also logged `VesselHUDController is null`
+  on every spawn; that is gone with the wiring.
+- **`ram: 1` is a fleet-wide AI field, and it was audited (2026-10) rather than narrowed.**
+  `Urchin.prefab` is shared, so every AI Urchin flies at full throttle whenever it is lined up on
+  its objective. Every context one flies in WANTS that: Skein and Regatta both aim an attached AI
+  down its own rail precisely so `LookingAtCrystal` holds and `ram` keeps the grind at full speed
+  (without it the ride runs at the authored `defaultThrottle 0.8` = +0.6 signed, 180 u/s on a
+  friendly rail); Broadside's opponent lock lands a hit by ARRIVING; and the menu / hangar
+  autopilot only chases crystals, where full speed is merely faster (the orbit break handles the
+  wider turning circle). No mode was found where it hurts, so a per-mode setter would add a
+  second authority for no behaviour change. If one is ever needed, it belongs in `AIPilot` as a
+  runtime override, not as a second prefab.
 - **750 is unmeasured**, and so is the intensity ladder's effect on match length. It was halved
   from 1,500 for pace without re-measuring either, so the intended length is now roughly half of
   the original 3–5 minute estimate — which is itself an estimate. The target is one editor field.
 - **Mass-5 armour on rail prisms** is the one uncapped collider source — see §7.
-- **No `ModePreview_Hijack.asset`**, so the arcade card shows "LEVEL PREVIEW NOT AVAILABLE".
-  Salvo ships the same way, so this is a gap rather than a regression.
+- **The mode preview exists**: `ModePreview_Hijack.asset` (authored by
+  `Tools/Build/author_mode_previews.py`). The Switchyard is an authored EnvironmentPrefab per
+  intensity, so the scale model shows the rings and burrs, and the flight preview lets the Urchin
+  grind a rail and launch into a burr.
 - **Not suppressed while riding: `AIPilot`'s orbit-break.** `UpdateOrbitBreak` exempts drifting
   but not attachment, and `breakOrbits` defaults on. If it ever fires mid-grind it drops
   `LookingAtCrystal` (and with it `ram`, so 150 → 90 or 10 → 6) and swings the nose off-rail.
   A 20° arc supplies nowhere near the 540° of sweep the detector wants, so it is very unlikely to
   trip — but it is unproven rather than ruled out, and the cheap guard is one clause.
+
+## 11. Replicated prism ownership
+
+The mode's subject is who owns each prism, and ownership was local — every peer built the same
+yard and diverged from the first steal, so ride speed, the arrow and the AI's rail choice all
+disagreed between machines. `HijackOwnershipLedger` (plain C#) plus four RPCs on
+`HijackController` (the mode's only `NetworkBehaviour`, so no scene change) make it
+server-authoritative for the yard's 42 trails. Nothing about how a prism changes hands elsewhere
+moved.
+
+- **Addressing.** A prism is `(slot, index)`: slot = burrs in `HijackYard.Burrs` order then rails
+  in `HijackYard.Rails` order; index = position in that trail's append-only `TrailList`, laid in
+  the same order on every peer. One packed `int` per change: `state << 24 | slot << 16 | index`,
+  where the state byte is `domain` (bits 0-3) `| shield << 4` (bits 4-5: 0 none, 1 shielded,
+  2 super-shielded) `| via-break << 6` (client reports only, below). An unshielded entry is
+  bit-identical to the original `domain << 24 | …` layout, and bit 31 is never set.
+- **Who is believed.** A flip is authoritative on the machine that simulates a pilot of the NEW
+  domain (server: host pilot + every AI; client: its own pilot) — `StatsManager.OwnsAttacker`'s
+  rule, applied to the prism. The server writes its own straight into the table; a client reports
+  its own (`ReportOwnership_ServerRpc`) and the server accepts only entries in the SENDER's
+  domain, taken from its own copy of the sender's `Player`. A rejected entry is answered with the
+  table's value so the sender converges.
+- **Shield state is in the word.** `PrismTeamManager.Steal` drops a shield instead of flipping a
+  shielded prism and refuses a super-shielded one, so a shield that existed on one machine only
+  used to make the same pass a steal there and a shield-break elsewhere. The ledger now carries
+  each prism's armour with its owner, and applies both (owner first, then `ActivateShield` /
+  `ActivateSuperShield` / `DeactivateShields`) wherever it applies a state. Who is believed
+  follows who could have caused the change: a shield GAINED with no flip is the owner's (the
+  Mass-5 "Reinforced Wake" armours only your own mass), and a shield DROPPED with no flip is a
+  rival's (a steal that met it). The server accepts a client's shield only on the sender's own
+  mass and a client's break only of a rival's.
+- **The steal-against-shield race is settled on the TABLE.** A client can flip a prism before it
+  hears the owner shielded it. The server applies `Steal`'s own rule to its table: a reported flip
+  of a table-shielded prism lands as a break (owner kept, shield gone), a flip of a
+  super-shielded prism is refused, and the sender is answered with what landed, so it converges.
+  A client that did see the shield and broke it before taking the prism sets the via-break bit,
+  so a break-then-steal that coalesced into one flush is not mistaken for the race.
+- **Shield changes are swept, not evented.** A flip raises `OnTeamChanged`; a shield raises
+  nothing, and `PrismStateManager` is shared platform code this mode does not change. The ledger
+  checks `shieldSweepBudget` (4,096) discovered prisms a frame, round-robin, two bool reads each:
+  a peak 9,930-prism yard is covered every ~3 frames, well inside the 0.1s flush the change then
+  waits for. Profiled under `HijackOwnershipLedger.SweepShields`.
+- **Everything else is provisional.** A remote pilot's proxy grinding a rail on this machine
+  still flips prisms locally (the ride code is shared and untouched); those flips stay on screen
+  for `ownershipGraceSeconds` (0.5s) so the owner's real change can arrive, then are put back to
+  the table. A confirmed steal therefore never flickers; a phantom one lasts half a second.
+- **Bandwidth.** No per-frame traffic. Changes are coalesced per prism and flushed every
+  `ownershipFlushSeconds` (0.1s), 4 bytes each, chunked at 512 per RPC — a 100-prism cascade is
+  one ~400-byte message. Server → clients: `SyncOwnership_ClientRpc`.
+- **Late join.** Every client sends `RequestOwnershipSnapshot_ServerRpc` on spawn; the server
+  answers (to that client only) with every prism that has EVER changed hands or armour. Everything else is
+  still the colour the closed-form generator painted, which the joiner's own yard already shows.
+  A key that names a prism the joiner has not laid yet waits in its table and applies the moment
+  the prism appears.
+- **Readers.** `HijackYard.HostileMassAt` / `HasHostileMass` / `NearestHostileBurr` /
+  `OwnFractionOfRail` / `DomainOf` read the table (loot excludes a super-shielded prism, which no
+  steal can take; a shielded one still counts, since the first pass breaks it), so the arrow and the AI's rail choice and
+  "hostile underfoot" test agree on every peer. Ride speed (`TrailFollower`, vessel code) still
+  reads the prism, and agrees because the ledger keeps every yard prism showing the table's
+  value (immediately for a replicated change; within the grace window for a provisional one).
+

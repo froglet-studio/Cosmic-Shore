@@ -13,9 +13,11 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 | **Punish thud** (mistake) | Short (~200 ms), heavy, **low**-frequency thud — the deliberate opposite of the bright skim. | The vessel **body** slamming a prism |
 | **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | Cleave's progress-milestone rungs (25% / 50% of the win target) — **nothing else** |
 | **Bind grind** (state) | Short (~80 ms) **low**-frequency (0.15) grind carried by the LOW motor with a little high-motor grit, no transient, repeated every ~100 ms. Heavy like the thud, repeating like the spray. | The Rhino's NON-energized blade held inside a super-shielded prism it cannot cut (`RHINO_ENERGY_SWORD.md` § "Binding") — the entry is a punish thud, this is the texture after it. **Nothing else** |
+| **Drift rumble** (state) | Short (~90 ms) smooth, **low-mid** frequency (0.3) swell-and-fade, low motor leading but lighter than the bind, no transient. Repeats every ~100 ms while drifting; strength scales from 0.3 to 1.0 with drift depth. | Drifting on the local human pilot's vessel (`DriftAudioController`, Haptics header). **Nothing else** |
+| **Drift press / let-go** (event) | Two one-shots. Press: a firm ~60 ms mid-frequency (0.6) tap on both motors. Let-go: a softer ~90 ms low-frequency (0.2) bump, low-motor led. Each sets a short busy window so the drift rumble can't cut it short. | The drift trigger engaging / releasing on the local human pilot's vessel (`DriftAudioController`). **Nothing else** |
 | **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays, and holding flat once the cone reaches its sustainable cap — both channels are at their ceiling there, so a longer hold has nothing worse left to say. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
 
-**Priority, top to bottom: alert > punish > skim > spray = bind.** The two textures share the
+**Priority, top to bottom: alert > punish > skim > drift press/let-go > spray = bind = drift.** The textures share the
 bottom rung and neither sets a busy window, so neither can suppress anything. The spray is the game's only
 *continuous* feel and therefore the only one that sits below skim: everything suppresses it and
 it suppresses nothing. Being interruptible costs it nothing (the next pulse is milliseconds
@@ -143,7 +145,7 @@ about two frames of one.
 ## Everything else is silent
 
 Every other haptic call site in the codebase routes through the legacy
-`HapticController.PlayHaptic(HapticType)` / `PlayConstant(...)` entry points (UI button press, drift,
+`HapticController.PlayHaptic(HapticType)` / `PlayConstant(...)` entry points (UI button press,
 boost, overtake, elemental debuffs, AstroLeague collisions, …). Both are now **no-ops**. There are no
 `HapticSource` / `HapticReceiver` components placed in any scene or prefab, so those two methods plus the
 four `Play*` feels above are the *only* haptic pathways. To silence a category, you don't need to touch
@@ -154,6 +156,11 @@ its call site — it's already silent.
 - **Do not** add a further feel or re-enable a legacy category without a deliberate decision — the whole
   point is that the set stays legible. If you must, route it through a new dedicated method on
   `HapticController` (never through the silenced `PlayHaptic`/`PlayConstant`) and extend the gate.
+- **The drift rumble** (requested 2026-10-06) is the fourth exercise and the third texture:
+  `HapticController.PlayDrift(strength01)`, driven by `DriftAudioController` every
+  `driftHapticInterval` (0.1 s, above the 90 ms clip) while `IsDrifting`, local human pilot only.
+  Strength follows drift depth. Same fence as spray/bind: bottom priority, no busy window, so a
+  skim landed mid-drift still cuts through.
 - **The bind grind** (requested for the Rhino, 2026-09-25) is the third exercise and the second
   texture: `HapticController.PlayBind(strength01)`, driven by `ShieldSkimmerScaleDriver` every
   `bindHapticIntervalSeconds` (0.1 s, above the 80 ms clip — the cadence floor below) while the
@@ -211,7 +218,7 @@ its call site — it's already silent.
    skim's bright ticks and the punish's heavy thud.
 5. **Spray yields, never suppresses**: while holding fire, ram a prism with the hull — the punish
    thud must cut cleanly through the buzz rather than being drowned by it.
-6. **Silence**: confirm UI taps, boost, drift, jousts, and explosions produce **no** haptics.
+6. **Silence**: confirm UI taps, boost, jousts, and explosions produce **no** haptics.
 7. **Setting**: toggle Haptics off (and slide Haptics level) in Settings — every feel stops / scales.
 7b. **Motors always stop**: while a feel is playing, exit play mode / alt-tab away / return to the main
    menu — the pad must go quiet immediately and stay quiet. Then unplug the pad mid-alert and re-plug it:

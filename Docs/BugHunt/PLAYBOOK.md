@@ -122,7 +122,8 @@ has one.
 
 **Fix:** emit or rewrite the string as a single-quoted scalar (`'` … `'`, with `''` for an
 apostrophe), the way Unity serializes long strings. Keep the line breaks; folding makes the
-loaded text identical.
+loaded text identical. Mode generators should call `arcade_mode_lib.wrap_yaml_scalar` (same
+helper as `rampage_intensity.py::_wrap_yaml_scalar`).
 
 **Strict-parse every asset.** There is no checker in `Tools/` yet. This snippet (`pip install
 pyyaml`) strips Unity's headers and parses each file:
@@ -152,7 +153,7 @@ for f in files:
 
 **Shows up as:** an NRE or `MissingReferenceException` from a coroutine, scheduled callback or
 event handler, usually right before a scene switch or play-mode exit. Example: `Crystal.ActivateCrystal`
-reading `cellData.Cell.transform` from `LightFauna.WitherCoroutine` (open, see FIX_LOG).
+reading `cellData.Cell.transform` from `LightFauna.WitherCoroutine` (fixed as BH-5.1).
 
 **Why it happens:** the object the callback uses (a cell, a player, a manager) was destroyed
 first. Coroutines on a still-active object and timer callbacks keep running during teardown, and
@@ -325,5 +326,106 @@ the locked section. Fire-and-forget work started inside the section takes the lo
 
 ---
 
+## 14. A caller's transition must exist in the state table
+
+**Shows up as:** `[AppState] Invalid transition: A → B` in the console, with the state mirror
+staying on `A` while the app is already doing the `B` work (BH-2.4).
+
+**Why:** `ApplicationStateMachine` only allows the edges listed in `ValidTransitions`. A new code
+path that calls `TransitionTo` from a state nobody planned for is refused, and the caller ignores the
+`false` return, so the failure is only a warning.
+
+**Fix pattern:** decide whether the path is legitimate. If it is, add the edge to the table, to the
+class summary, and add a test in `ApplicationStateMachineTests`. If it is not, fix the caller instead
+of loosening the table.
+
+---
+
+## 15. Subscribe to a one-shot event before any wait, not after
+
+**Shows up as:** a screen, spinner or flag that never clears, but only sometimes, and only when the
+machine was fast (BH-3.1: black screen after Play Again).
+
+**Why:** a handler added after `await UniTask.Delay(...)` misses an event that fired during the
+delay. Events such as `OnClientReady` are raised once and not replayed.
+
+**Fix pattern:** subscribe in `OnNetworkSpawn` / `OnEnable`, before any wait. Make the handler
+unsubscribe itself, and unsubscribe again on despawn so an armed handler cannot leak into the next
+scene.
+
+---
+
+## 16. Validate client-sent numbers with the form that rejects NaN
+
+**Shows up as:** a total that becomes NaN and stays NaN, or a result that changes after the game
+has ended (BH-4.2/4.3).
+
+**Why:** every comparison with NaN is false, so `if (volume < 0f) return;` lets NaN through. A
+server RPC that credits stats also has to ignore reports that arrive when no turn is running.
+
+**Fix pattern:** write the check as the thing you accept, `if (!(value >= 0f)) return;`, and gate
+owner-reported stat RPCs on `gameData.IsTurnRunning` (`Player.TurnAcceptsStatReports`).
+
+---
+
+## 17. Rank only domains that fielded players
+
+**Shows up as:** a round that never ends, or restarts, when a team that was never in the match
+"wins" a zero-score tie (BH-4.1).
+
+**Why:** walking a fixed domain list (Jade → Ruby → Gold) on a 0-0-0 picks the first slot even when
+nobody played it. The controller then fails to find a player for that domain and never latches the
+end-of-round flag.
+
+**Fix pattern:** build the candidate set from `RoundStatsList` (who actually fielded), and only then
+apply the enum-order tie-break. `ResolvePlacementOrder` already does this; `ResolveWinner` must match.
+
+---
+
+## 18. Never put `Random.Range` in a for-condition
+
+**Shows up as:** a loop that runs the wrong number of times, or never stops (BH-4.4).
+
+**Why:** the condition is re-evaluated every iteration, so the upper bound drifts.
+
+**Fix pattern:** roll once into a local, then loop over that value.
+
+---
+
+## 19. Prefer `Touchscreen.current` over `Input.touches`
+
+**Shows up as:** touch UI that never responds under the new Input System (BH-4.6).
+
+**Why:** with the Input System package active, the legacy `Input.touches` array stays empty.
+
+**Fix pattern:** count in-progress touches on `Touchscreen.current.touches`, matching
+`InputDeviceActuation` and `InputController`.
+
+---
+
+## 20. Index cancelable work by owner, don't scan a flat list
+
+**Shows up as:** a hitch when many objects die or return to pool in one frame (BH-4.7).
+
+**Why:** `RemoveAt` in a reverse scan is O(N) per cancel; mass cancels become O(N²).
+
+**Fix pattern:** `Dictionary<owner, List<entry>>` (or similar). Cancel drops the owner's bucket;
+Update iterates a copied key list so callbacks can schedule again.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
+
+## 13. Settings actions that need a scene not in player builds
+
+**Shows up as:** a Settings button (e.g. Run Benchmark) that loads a scene missing from
+`EditorBuildSettings`, so a player build fails the load while the Editor works.
+
+**Fix pattern (BH-5.3):** hide and unwire the button outside `#if UNITY_EDITOR` (same shape as
+the desktop-only quit button in `GameSettingsPanelController.BindQuitButton`), and guard the
+launcher method the same way. Do **not** add the scene to Build Settings unless product wants it
+shipped.
+
+**Verify:** Editor still launches the scene from Settings; a player build has no visible button.
+

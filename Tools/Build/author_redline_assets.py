@@ -39,6 +39,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -219,7 +221,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset",
     of winding the Soar back up. Laps, until somebody stops lifting.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Redline')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameRedline
   Vessels:
@@ -239,13 +241,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset.meta",
 
 
 # ── 4. Scene: clone MinigameHeadlong, swap the controller ────────────────────
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity")
-
-# 4a. controller script swap
-scene, n = re.subn(EXISTING["HeadlongController"], G_SCRIPT["RedlineController"], scene)
-assert n == 1, f"controller guid appeared {n} times in the donor scene"
-
-# 4b. its serialized field block: the rule asset, the AI numbers and the speed clamp move; the
+# 4b. the controller's serialized field block: the rule asset, the AI numbers and the speed clamp move; the
 # shell, the lap count and the course seed stay.
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['HeadlongScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}}
@@ -279,8 +275,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RedlineScoringRule'
   maxPlausibleSpeed: {MAX_PLAUSIBLE_SPEED}
   reportResyncSeconds: 3
 """
-assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['RedlineController']}, type: 3}}\n"
 
 # 4c. Everything ELSE the donor authored is already what this mode wants, stated rather than
 # left as an absence:
@@ -290,9 +285,32 @@ scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 #   - (the comeback source is no longer authored: it reads the scoring rule, 2026-09)
 #   - the AI roster's vesselClass is irrelevant: the card's Vessels list clamps every AI to the
 #     Manta (ServerPlayerVesselInitializerWithAI -> GameDataSO.ClampVesselToGame).
-for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring"),
-                   (r"^  cellTypeChoiceOptions: 0$", "single race cell")):
-    assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+INHERITED_PROBES = ((r"^  spawnFormation: 1$", "equatorial spawn ring"),
+                    (r"^  cellTypeChoiceOptions: 0$", "single race cell"))
+
+
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity")
+    # 4a. controller script swap
+    scene, n = re.subn(EXISTING["HeadlongController"], G_SCRIPT["RedlineController"], scene)
+    assert n == 1, f"controller guid appeared {n} times in the donor scene"
+    assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+    for probe, why in INHERITED_PROBES:
+        assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+    return scene
+
+
+# The clone is a one-shot: once MinigameRedline.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, and a re-clone would revert them to Headlong's. The
+# committed scene is adopted, the blocks this script authors must still be in it, and the donor
+# asserts STAND DOWN when Headlong moves on (CLAUDE.md "spent one-shot"). See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity", clone_scene,
+    authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_FIELDS))
+# What the mode INHERITED from the donor is still what it needs - checked on the scene it ships.
+_scene_errors += [f"MinigameRedline.unity no longer provides: {why}"
+                  for probe, why in INHERITED_PROBES if not re.search(probe, scene, re.M)]
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity.meta",
@@ -362,7 +380,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 if 0.25 * GATE_TARGET * COMEBACK_RATE < 1.0:
     errors.append(
@@ -432,6 +450,10 @@ for name, g in EXISTING.items():
 for k, p in SCRIPT_PATHS.items():
     if not os.path.exists(os.path.join(ROOT, p)):
         errors.append(f"script {p} does not exist")
+
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
 
 if errors:
     print("VALIDATION FAILED:")

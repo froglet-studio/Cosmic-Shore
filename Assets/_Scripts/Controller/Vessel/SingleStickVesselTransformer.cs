@@ -81,9 +81,13 @@ namespace CosmicShore.Gameplay
             if (toggleManualThrottle && !IsDriftSpeedHeld)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
+            // Warp field: see VesselTransformer.MoveShipScalar.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            effectiveSpeed *= warp;
+
             VesselStatus.Speed = effectiveSpeed;
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift * warp) * Time.deltaTime;
         }
     }
 }

@@ -43,6 +43,7 @@ public interface IScreen
 - Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
 - Notifies `IScreen` implementors on navigation transitions
 - Supports gamepad left/right trigger navigation
+- On a device tier that sets `PlatformProfileSO.DeactivateMenuWhileFlying` (MobileLow phones only), DEACTIVATES the active non-HOME screen roots and the nav bar once the enter-freestyle blend settles, and reactivates exactly those at the start of the exit (`HandleFreestyleSettled` / `RestoreMenuAfterFlying`). HOME stays active: the party-invite popup and `HomeScreen`'s profile subscription must keep listening in flight. Anything under a screen root that subscribes in `Start` and unsubscribes in `OnDisable` breaks under this - subscribe in `OnEnable`. Every other tier hides them by CanvasGroup alone, as before. `Docs/PLATFORM_UNIFICATION.md` §3.6
 
 **Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.
 
@@ -62,7 +63,7 @@ public interface IScreen
 
 ### Lava-Lamp Mode (Menu Freestyle Merge)
 
-**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
+**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its multiplayer sibling `MultiplayerFreestyle (28)` was the prototype that grew into the lava lamp, freestyle, toybox and lobby; it was removed 2026-10-08 (scene, controller, card, preview) and 28 stays reserved. Online Duel for the Cell (29) went the same day; Brood Rush replaced it.
 
 Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 
@@ -212,7 +213,7 @@ The scored shape-drawing minigame (`ShapeDrawingManager` + `ShapeDrawingCrystalM
 
 **The painting toy is the successor** — scoreless connect-the-dots in the toybox (`PaintingToy` / `ShapeDefinition` via `PaintingDefinitionSO.sourceShape`).
 
-**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert — **never Raise them**; they dump every listener to `Prism.ReturnToPool`).
+**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP event ASSETS `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` are kept but **nothing listens to them any more**: the `EventListenerNoParam` pairs that wired them to `Prism.ReturnToPool` on 8 prism prefabs were stripped (2026-09) because every lattice-flora growth step paid for serializing their UnityEvent lists in `Instantiate.Copy` (`Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6). Raising them is now a no-op; re-adding a listener to a PRISM prefab is re-adding that cost to every prism laid.
 
 #### Phase 3: Scoring & PlayerScoreCards (Deferred)
 
@@ -247,6 +248,6 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Never author a panel of vessel/world/lifeform cards in a scene** — the roster goes stale the day a vessel ships and nothing says so. Hull selection is the Vessel Changer toy, reachable both by flying it and from the menu Toy Box; both read `ToyVesselRoster`
-- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner. That is exactly what MobileLow phones do: the lava lamp lays no trail and freestyle trail waits above 10,000 cell prisms, through a creation-side hold (`VesselPrismController.SetTierHold`, driven by `MenuCrystalClickHandler`; a mode preview and a Wanderway run are exempt) — nothing laid is removed (`Docs/PLATFORM_UNIFICATION.md` §3.6)
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 3 panels start inactive** — PlayerScoreCards are dynamically instantiated only when turns are active. The scored Phase 2 HUD (`EndShapeDetailHUD`) was deleted with C15.

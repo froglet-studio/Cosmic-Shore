@@ -79,9 +79,9 @@ namespace CosmicShore.Launcher
             float h = 0;
             var la = c + new Vector2(0, 40);
             ImGui.PushFont(Neon.Hero);
-            var ws = ImGui.CalcTextSize("PRISMA");
+            var ws = ImGui.CalcTextSize("AMOEBIUS");
             ImGui.PopFont();
-            Neon.GlowText(dl, Neon.Hero, 46, new Vector2(c.X - ws.X * 0.5f, la.Y), Neon.Mix(Neon.Space0, Neon.Ink, logoIn * outA), "PRISMA", 0.8f * logoIn * outA);
+            Neon.GlowText(dl, Neon.Hero, 46, new Vector2(c.X - ws.X * 0.5f, la.Y), Neon.Mix(Neon.Space0, Neon.Ink, logoIn * outA), "AMOEBIUS", 0.8f * logoIn * outA);
 
             float textIn = Math.Clamp((t - 0.35f) / 0.4f, 0, 1) * outA;
             string line = _args.UpdatedFrom != null ? $"UPDATED   {_args.UpdatedFrom}  ->  {LauncherUpdater.Short}" : "FROGLET'S ENGINE FOR COSMIC SHORE";
@@ -103,6 +103,8 @@ namespace CosmicShore.Launcher
         {
             var fg = ImGui.GetForegroundDrawList();
             if (_updater.Installing || _updater.Done) { DrawInstall(size, dt); return; }
+            // An open Prisma keeps checking now and then, so UPDATE shows up without a restart.
+            if (!_args.Offline && !_updater.Checking && _updater.CheckedAt != default && (DateTime.Now - _updater.CheckedAt).TotalMinutes > 30) _ = _updater.Check();
 
             // the rail badge: pulses while a newer launcher waits on the branch
             if (_updater.Available != null)
@@ -236,9 +238,9 @@ namespace CosmicShore.Launcher
                     ImGui.SameLine(0, 10);
                 }
                 ImGui.PushFont(Neon.Small);
-                ImGui.TextColored(_updater.Available != null ? Neon.Lime : Neon.Dim,
+                ImGui.TextColored(_updater.Available != null ? Neon.Lime : _updater.CheckError != null ? Neon.Amber : Neon.Dim,
                     _updater.Available != null ? $"newer: {_updater.Available.Short} ({_updater.Available.Date})"
-                    : _updater.CheckedAt == default ? "not checked yet" : "up to date");
+                    : _updater.CheckError != null ? Trim(_updater.CheckError, 90) : _updater.CheckedAt == default ? "not checked yet" : "up to date");
                 ImGui.PopFont();
             });
             Row("Install version", () =>

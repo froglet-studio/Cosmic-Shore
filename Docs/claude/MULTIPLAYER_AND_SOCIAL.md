@@ -2,9 +2,24 @@
 
 > Moved verbatim from the root `CLAUDE.md`, which indexes every topic file. Paths in this file are relative to the repository root.
 
+> **Doing multiplayer work? Read `Docs/MULTIPLAYER_START_HERE.md` first:** the owner's goals and
+> rules, current state, the hand-test list and the ordered next steps, for Unity and Amoebius alike.
+
 ### Multiplayer / Netcode
 
-The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.13.3; the pinned versions live in `Packages/manifest.json`) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+
+**Bump the protocol version with every change to what goes over the wire (rule, 2026-10-05).** Two
+builds that disagree about a replicated payload's layout - a `NetworkVariable` struct such as
+`ArcadeConfigSyncManager.LobbySnapshot`, the order or count of a behaviour's `NetworkVariable`s, an RPC
+signature - cannot play together, and with `EnsureNetworkVariableLengthSafety` off (the
+`NetworkManager` prefab's setting) a mismatch does not fail where it happens: the joiner reads the
+host's bytes out of step and the join dies later, silently - a party invite that "just does not get you
+into the lobby". So whoever changes a payload also raises `NetworkConfig.ProtocolVersion` in
+`Assets/_Prefabs/CORE/NetworkManager.prefab` (no scene overrides it; nothing sets it at runtime). Netcode
+then refuses a mismatched build at the connection request, and the HOST's console names it -
+`NetworkConfig mismatch`. History: **9** (2026-10-05) - `LobbySnapshot.AIDifficulty`, the lobby's AI
+difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
@@ -36,7 +51,7 @@ ClientPlayerVesselInitializer (NetworkBehaviour)
 └── Used by all ServerPlayerVesselInitializer variants
 
 PlayerSpawner / VesselSpawner (single-player, non-networked path)
-└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter, VolumeTestPlayerSpawnerAdapter
+└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter
 ```
 
 **Player (`NetworkBehaviour`) NetworkVariables:**
@@ -61,6 +76,22 @@ knows it.** `NetArenaReady`, `NetRematchVote` and the six stat-report RPCs on `P
 the server records, everyone reads. Reach for it whenever a peer
 knows something the server cannot see — and prefer replicated STATE over an announcement whenever a
 peer that looks LATER still needs the answer.
+
+**Every `InputStatus` field is owner-write state — including `ActiveInputDevice`, since 2026-10.**
+`InputStatus` lives on the Player, and every peer runs `InputController.Initialize` for every
+player, which picks a strategy from THAT machine's hardware. So a field that stays local describes
+the watching machine, not the pilot: until the device replicated, a phone treated a PC pilot as
+Touch and a PC treated a phone pilot as Keyboard, and every replica-side reader of it (the per-device
+ability maps, the Manta's trigger-turn trail, trigger depth in `VesselTransformer`) simulated the
+wrong device.
+
+**Ability presses replicate by RE-EXECUTION, and a press carries what it was resolved against.**
+`R_VesselActionHandler` sends owner → server → every peer which INPUT was pressed, and each peer
+resolves it to actions itself — so whatever that resolution depends on must arrive WITH the press,
+not via separately replicated state: a NetworkVariable and an RPC are not ordered against each other.
+The press and release RPCs carry the device as one byte; a release resolves with its press's device.
+`Tools/Build/peer_press_harness/run.py` runs the shipped handler as two machines over every shipped
+vessel's maps (`R_VesselActions/SQUIRREL_DRIFT.md` §11).
 
 **`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used today only by the `BenchmarkStressTest` scene) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 
@@ -363,6 +394,9 @@ shared conventions are in `Docs/README.md`). Route by task:
 | Log / triage a bug | `Docs/PartySystem/BUGS.md` (B2/B3/B5/B7) · `Docs/PresenceSystem/BUGS.md` (B1/B4/B6) |
 | Pick up refactor work | `Docs/PartySystem/REFACTOR.md` · `Docs/PresenceSystem/REFACTOR.md` |
 | Read what was already tried (session history) | `Docs/PartySystem/MPPM_SESSION_LOG.md` |
+| Make or change ANY UGS call (lobby, session, relay, friends) | `Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md` (the 2026-10-06 review of invite/join, request discipline and disconnect resilience; Phases 0-1 landed 2026-10-07). Every UGS call goes through `UgsRequestPolicy.ExecuteAsync` - ONE failure classifier, request counters (`UgsRequestTelemetry`), no second retry filter (`UgsRequestPolicyTests`, `JoinTargetValidatorTests`). The PENDING acceptance handshake is deleted (`REFACTOR.md` D1); a join target is validated before the local host is torn down; transport timeouts nest inside the party join wait |
+| Bump or read the multiplayer package versions | `Packages/manifest.json` (NGO 2.13.3, Sessions 2.3.3, Transport 2.7.4, MPPM 2.0.2, Friends 1.3.0; `com.unity.multiplayer.widgets` removed). Any wire-format change bumps `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` (§ Multiplayer / Netcode) |
+| The Skim Race card's AI difficulty row (host-only, replicated) | `LobbySnapshot.AIDifficulty`, `AIDifficultyRules`, `Docs/SKIM_RACE_AI.md` §10; the AI seats themselves: § Player Count & AI Backfill Pipeline below and `Docs/SKIM_RACE_AI.md` §13 |
 
 **Locked design (do not relitigate):** EAGER per-user Relay — every player
 hosts their own Relay-backed party session on entering `Menu_Main`. **Do not
@@ -681,7 +715,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### Race Rules
 
-- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: `EndConditionOverridesSO` (FrogletTools > Game Modes > End Game Conditions; SkimRace entry non-zero) > `SpawnableWaypointTrack` waypoints × laps > default 39. Laps are per-intensity (`lapsPerIntensity`, a `List<int>` matched to the waypoint sets by index, falling back to the scalar `optionalLaps`) — SkimRace runs 3/3/2/2 so the long high-intensity tracks don't demand as many laps as the short ones. There is no per-scene `CrystalCollisions` field (removed on purpose — see the `/EndGameConditions` skill). Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
+- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: `EndConditionOverridesSO` (FrogletTools > Game Modes > End Game Conditions; SkimRace entry non-zero) > the `SpawnableWaypointTrack`'s crystals per lap (`crystalsPerLap[intensity]` when authored, else its waypoint count) × laps > default 39. Intensity 4 is **Relativity** (five distinct lobes, five chords crossing the nucleus at different places, one snaking pass, 26 crystals/lap with marker blocks only at the crystals — `SKIMRACE.md` §5a, authored by `Tools/Build/author_skimrace_relativity_track.py`). Laps are per-intensity (`lapsPerIntensity`, a `List<int>` matched to the waypoint sets by index, falling back to the scalar `optionalLaps`) — SkimRace runs 3/3/2/2 so the long high-intensity tracks don't demand as many laps as the short ones. There is no per-scene `CrystalCollisions` field (removed on purpose — see the `/EndGameConditions` skill). Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
 - **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected (`ScoringMetrics.SumByDomain`) reaches the target, so AI and human teammates finish the race together
 - **Winner detection (domain-aggregated)**: Server-authoritative via `SkimRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
 - **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better

@@ -100,7 +100,7 @@ namespace CosmicShore.Tests
             HintBinding[] keyboardControls =
             {
                 HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
-                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ,
+                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ, HintBinding.KeyE,
             };
 
             foreach (var control in keyboardControls)
@@ -141,12 +141,29 @@ namespace CosmicShore.Tests
 
             foreach (var input in new[] { InputEvents.Button1Action, InputEvents.Button2Action,
                                           InputEvents.Button3Action, InputEvents.LeftStickAction,
-                                          InputEvents.RightStickAction })
+                                          InputEvents.RightStickAction, InputEvents.FlipAction })
             {
                 var binding = InputHintBindingMap.BindingFor(input, keyboard: true);
                 Assert.Contains(binding, cluster,
                     $"{input} is bound to {binding}, outside the QWER + Space cluster the " +
                     "desktop schemes are built around.");
+            }
+        }
+
+        [Test]
+        public void GrizzlyMovedAbilitiesDrawAChipOnBothDevices()
+        {
+            // The Grizzly's triggers became its bombs (the pump, then the trigger bombs), so its fire moved to X / Q and its
+            // weapon cycle to RB / E. Both must draw a chip on pad AND keyboard, from one row.
+            var set = LoadSet();
+            foreach (var input in new[] { InputEvents.Button3Action, InputEvents.FlipAction })
+            {
+                var pad = set.For(InputHintBindingMap.BindingFor(input, keyboard: false));
+                var key = set.For(InputHintBindingMap.BindingFor(input, keyboard: true));
+                Assert.IsNotNull(pad, $"{input} has no pad glyph entry.");
+                Assert.IsNotNull(pad.padGlyph, $"{input} has no pad artwork.");
+                Assert.AreSame(pad, key, $"{input} resolves to two different glyph entries.");
+                Assert.IsFalse(string.IsNullOrEmpty(key.keyboardLabel), $"{input} has no keyboard label.");
             }
         }
 

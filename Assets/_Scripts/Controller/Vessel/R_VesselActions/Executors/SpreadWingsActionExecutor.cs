@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
     /// (<see cref="SpreadWingsActionSO.MassModeWidth"/> → <c>ReplicatedLevel</c>) — so this is the
     /// one elemental trail dial in the fleet that does not diverge across peers
     /// (<c>trailVolume</c> still does).</para>
+    ///
+    /// <para><b>The camera follows the mode.</b> Mass mode drops the follow camera to directly
+    /// behind the hull (<see cref="SpreadWingsActionSO.MassModeCameraHeight"/>, 0 by default);
+    /// Dust mode keeps the authored height. Eased on the same blend as the HUD's Mass card, and
+    /// written only to the player rig while it is framing THIS vessel — the one place this
+    /// executor does something on a single machine, because a camera is presentation.</para>
     /// </summary>
     public sealed class SpreadWingsActionExecutor : ShipActionExecutorBase
     {
@@ -38,6 +44,16 @@ namespace CosmicShore.Gameplay
                  "unwired, and reported once by name if there is none.")]
         [SerializeField] ButterflyDustField dustField;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event when the right trigger switches INTO Mass mode — wings open, the wide " +
+                 "wake. Played on every peer, at the hull. Leave empty for silence - never point " +
+                 "it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference massModeEvent;
+
+        [Tooltip("FMOD event when the right trigger switches INTO Dust mode — wings shut, the dust " +
+                 "capsule on. Played on every peer, at the hull. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustModeEvent;
+
         IVesselStatus _status;
         SpreadWingsActionSO _activeSo;
         ButterflyAnimation _animation;
@@ -46,6 +62,7 @@ namespace CosmicShore.Gameplay
         float _width = 1f;
         float _massBlend = 1f;
         bool _warnedNoDust;
+        CustomCameraController _camera;
 
         /// <summary>True while the dust capsule is live.</summary>
         public bool IsDustMode => _dustMode;
@@ -93,6 +110,7 @@ namespace CosmicShore.Gameplay
                 prisms.ForceShielded = false;
             }
             if (dustField) dustField.SetActive(false);
+            if (IsFramedBy(_camera)) _camera.FollowHeightScale = 1f;
         }
 
         public void Press(SpreadWingsActionSO so, IVesselStatus status)
@@ -101,18 +119,37 @@ namespace CosmicShore.Gameplay
             _activeSo = so;
             if (_status == null) _status = status;
 
+            bool was = _dustMode;
             _dustMode = so.InputStyle == SpreadWingsActionSO.ModeInputStyle.HoldForDust
                 ? true
                 : !_dustMode;
             ApplyMode();
+            if (_dustMode != was) PlayModeCue();
         }
 
         public void Release(SpreadWingsActionSO so, IVesselStatus status)
         {
             if (!so) return;
             if (so.InputStyle != SpreadWingsActionSO.ModeInputStyle.HoldForDust) return;
+            bool was = _dustMode;
             _dustMode = false;
             ApplyMode();
+            if (was) PlayModeCue();
+        }
+
+        /// <summary>
+        /// The switch's own voice — only on a press or release that actually CHANGED the mode,
+        /// never from <see cref="Initialize"/> or a teardown, which reset the mode without the
+        /// pilot doing anything. Empty slots are a clean no-op (the FMOD exposed-field law).
+        /// </summary>
+        void PlayModeCue()
+        {
+            var reference = _dustMode ? dustModeEvent : massModeEvent;
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (!audio) return;
+            var root = _status?.Vessel != null ? _status.Vessel.Transform : transform;
+            audio.PlaySFXEvent(reference, root.position);
         }
 
         void ApplyMode()
@@ -146,6 +183,35 @@ namespace CosmicShore.Gameplay
 
             prisms.WidthMultiplier = _width;
             prisms.ForceShielded = !_dustMode && so.ShieldsInMassMode(_status);
+
+            var cam = PlayerCamera();
+            if (IsFramedBy(cam))
+                cam.FollowHeightScale = Mathf.Lerp(1f, so.MassModeCameraHeight, _massBlend);
+        }
+
+        /// <summary>
+        /// The player's follow rig, resolved once. Null without a <c>CameraManager</c> (tool
+        /// scenes) — a designed state, the camera simply keeps its authored height.
+        /// </summary>
+        CustomCameraController PlayerCamera()
+        {
+            if (_camera) return _camera;
+            var rig = CameraManager.Instance ? CameraManager.Instance.GetCloseCamera() : null;
+            if (rig) rig.TryGetComponent(out _camera);
+            return _camera;
+        }
+
+        /// <summary>
+        /// True while <paramref name="cam"/> is following THIS vessel — the local pilot's own
+        /// Butterfly, or one being spectated or previewed. Any other vessel's Butterfly must not
+        /// move the camera, and a rig that has moved on was already reset by its own
+        /// <c>SetFollowTarget</c>.
+        /// </summary>
+        bool IsFramedBy(CustomCameraController cam)
+        {
+            if (!cam || _status == null) return false;
+            var target = _status.CameraFollowTarget;   // VesselController.Initialize always sets it
+            return target && cam.FollowTarget == target;
         }
     }
 }

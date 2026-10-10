@@ -300,6 +300,40 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 
 ---
 
+## DiagnosticsHUD console commands
+
+Type into the HUD's command row (F7 → the input at the bottom) and press **Run**. The answer
+prints in the Console row of the overlay. Full reference and when to use each:
+`Docs/PERFORMANCE_OPTIMIZATION.md` §4.6.
+
+| Command | Does |
+|---|---|
+| `fps uncap` / `fps restore` | Remove / restore the vsync + target-frame-rate cap — a capped frame cannot show a change smaller than its idle time |
+| `diag [label] [seconds] [m=A,B]` | Timed, **tagged** recording → `diag_<scene>_<label>_*.json` + `.txt`. Holds averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, renderer census), the frame's **p50 / p95 / p99**, **per-system timings** (`markers`) and the **run environment** (`environment`). The timings are ~23 named markers timed with `ProfilerRecorder`: avg / p50 / p95 / max main-thread ms per frame, how often each ran, calls per frame. They work in a **Development build with no Profiler attached**. `m=` adds markers to the default list, and a name the build does not have reports `found: false`. The environment block records Editor or build, backend, Burst, whether the Profiler was recording, focus, resolution and quality. The first 3 frames are discarded |
+| `renderers` | Renderer census: enabled / disabled / visible, by type, top 8 materials |
+| `renderers hide <prefix>` / `renderers hide *<text>` / `renderers show` | Switch off every renderer whose material name starts with `<prefix>` — or, with a leading `*`, CONTAINS `<text>` — then exactly those back on. Use `*Spindle` for the spindle family: the lattice species wear `GyroidSpindleMaterial`, `AssemblySpindleMaterial` and `QuasicrystalSpindleMaterial`, which the prefix `Spindle` misses |
+| `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
+| `prisms <n>` / `prisms off` | Render-only stress cloud of `n` prism entities |
+| `grid …` / `lab …` / `bench` | `PrismGridExplosionTest` scene only: real prism lattice, mixed populations, explosion benchmark |
+| `freeze on` / `freeze off` | Hold ecology PRODUCTION in every cell: no plant grows, is planted or reproduces, no creature is seeded, born or grown. Removes nothing — grazing, predation and starvation go on, so a frozen world can only lose mass. Released automatically on any scene change. `diag` reports record whether it was on |
+| `cells [label]` | A snapshot of every active cell's ECOLOGY state, written as `cells_<scene>[_<label>]_*.json`: which config it chose, whether its bootstrap ran or is deferred, which life spawner is running, the phase and its thresholds, live and environment volume, prism count, whether planting and fauna seeding are on, and per species the live count, initial batch, seed floor, cap and at-cap flag. It also counts every `Flora` and `Fauna` object in the scene, so a lifeform no cell is counting shows up as a gap. `notes` names the first fingerprint it finds (a satellite cell, a deferred bootstrap, planting OFF by phase, the `freeze` hold, or a running spawner with nothing alive). Read-only. Use it the moment a cell looks empty or frozen: five different causes look identical on screen |
+| `ab "<A>" "<B>" [seconds] [rounds]` | Run two commands as the two arms of one A/B: counterbalanced rounds (A B, B A, A B …), 3 s settle after each command, a recording per arm, then ONE line of paired deltas (`ab: CPU busy B-A = … ±s.e. · GPU … · frame … · draws … · GC/f … (N rounds, frozen: yes\|no)`) and one `ab_*.json` + `.txt` holding every recording. Defaults 10 s × 3 rounds. The world is left in arm **B**'s state, so put the "put it back" command second. `ab stop` cancels |
+| `prof [label] [frames] [root=<name>] [sort=total\|self\|gc\|calls] [min=<ms>] [mingc=<KB>] [depth=<n>] [top=<n>]` | **Editor only.** Records `frames` Profiler frames (default 180; Record is switched on for the capture and put back after), reads them back and writes `prof_*.json` + `.txt`: the main-thread tree **averaged per captured frame** (`root=` starts it at a named sample, e.g. `root=UpdateScene`; `min`/`mingc` prune rows under both thresholds; `depth` cuts it; siblings sorted by `sort`), the top `top` samples by **self time** summed across every path, the top allocators by **self** GC (the Profiler's GC column is inclusive — ranking it names `PlayerLoop`, not the caller), a busy/wait split for every other thread (worker jobs, render thread), and two whole frames verbatim: the **typical** one (median) and the **spike** (slowest), both picked by `PlayerLoop` time so an Editor repaint cannot be chosen. Editor-only rows are flagged `editorOnly`. `prof stop` cancels. Refuses while `diag`/`ab` run and cannot be an `ab` arm |
+
+**How to read an `ab` line.** `B-A` is the mean of the per-round differences; `±` is its standard
+error (the rounds are the replicates — frames inside one recording are not independent). A delta
+inside two standard errors is printed with `(noise)`. With one round there is no error bar. Loud
+warnings are appended when the world was not frozen, when the SAME arm's prism-entity or
+enabled-renderer count moved more than 5% (between arms they may differ — that is often the
+treatment itself), and when a recording's frame was capped, idle or stalled
+(`FrameBoundness`) — in which case frame time means nothing, though busy CPU still does.
+
+**Prefer text over screenshots when reporting a measurement**: the Runtime Capture tab's
+**Copy error log** and the `diag` `.txt` are both plain text with averages, where a HUD
+screenshot is one frame.
+
+---
+
 ## Key files
 
 | Role | File |
@@ -316,6 +350,16 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 | Spike marker attribution (editor-only) | `SpikeAnalyzer.cs` |
 | Score + rule-based hint engine | `BenchmarkAnalysis.cs` |
 | Shared CPU/GPU bound classification (busy CPU, fps-cap detection) | `FrameBoundness.cs` |
+| `ab` console command: parsing, schedule, paired statistics, drift/cap warnings (pure) | `ABComparison.cs` |
+| `freeze` console command (drives `Cell.DiagnosticProductionHold`) | `EcologyFreezeSwitch.cs` |
+| Renderer census + `renderers hide/show` | `RendererCensus.cs` |
+| `prof` console command: parsing, per-frame averaging, self-time / self-GC ranking, typical + spike frame pick, report text (pure) | `ProfilerCapture.cs` |
+| `prof`: reads recorded Profiler frames into `ProfilerCapture`, plus the shared finish + save step (editor-only) | `ProfilerFrameReader.cs` |
+| Export the Profiler window's frames (Play mode, a connected Development build, a loaded `.data` file) as `prof_*.json` — FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON | `Editor/ProfilerJsonExporterWindow.cs` |
+| `cells` console command: per-cell ecology state (bootstrap, spawner, phase, per-species counts vs caps) as JSON | `CellStateReport.cs` |
+| `diag` per-system timings: default marker list, `m=` parsing, per-marker avg / p50 / p95 / max (pure, tested) | `MarkerBudget.cs` |
+| `diag` per-system timings: one `ProfilerRecorder` per marker, names resolved via `ProfilerRecorderHandle.GetAvailable` | `MarkerBudgetRecorder.cs` |
+| The conditions a `diag` run was taken under (Editor vs build, Burst, Profiler, focus, resolution, quality, hardware) | `RunEnvironment.cs` |
 | Customizable hint rules (SO) | `BenchmarkHintRulesSO.cs` |
 | Netcode (NGO) markers + counters | `NetMarkers.cs` |
 | Game-load counters (prisms/VFX/vessels) | `GameLoadSampler.cs` |
@@ -355,3 +399,18 @@ initializers, `INetworkSerializable` structs).
   The recorder is inert unless armed AND the runtime host exists (Editor / Development builds).
 - **Cross-source runs** (Editor vs DevBuild, or different platforms) aren't comparable on absolute
   numbers — only same-source before/after deltas are meaningful (Compare warns).
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| "Start Benchmark" button is grayed out | Enter Play Mode first |
+| No config slot visible | Create a `BenchmarkConfigSO` asset and assign it |
+| History shows 0 snapshots | Check that the output folder matches your config. Click "Rebuild Index" |
+| Rendering stats are all zero | Enable "Capture Rendering Stats" in the config. Some stats may not be available on all platforms |
+| GC Allocations look wrong | The tool uses `ProfilerRecorder("GC Allocated In Frame")` which requires Unity 2021+. Verify your Unity version |
+| Physics stats missing | Enable "Capture Physics Stats" in the config. The recorder uses `"Active Dynamic Bodies"` which requires Unity's physics profiler module |
+| Reports not saving | Check that `Application.persistentDataPath` is writable. Look in the Console for `[Benchmark]` log messages |
+| Profiler counters not visible | Open Unity Profiler, look under the "Scripts" module. Counters only update while a benchmark is actively running |

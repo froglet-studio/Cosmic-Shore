@@ -147,10 +147,21 @@ stick is* — full inside `aiBoostStickBand` (0.35), fading linearly to nothing 
 deflection. That mirrors the human trade rather than inventing a policy (a pilot buries both
 triggers on a straight and eases off to turn), it needs no knowledge of the course, and it is
 gated on the pilot being an AUTOPILOT rather than on the player being an AI, so the menu's
-lava-lamp Manta and a released companion fly the same kit a human does. No Yastri for the bot —
-no net trigger — so its steering is the stick's 30 + 0.2v yaw, which is exactly the curve the
-course is cut to. The AI approach numbers in the scene (commit 420 / lead 480 / through 320) are
-sized to the 237 u circle rather than inherited from Switchback's Dolphin.
+lava-lamp Manta and a released companion fly the same kit a human does.
+
+**The bot pivots, too.** Past `aiYastriStickBand` (0.75) of YAW stick the drive adds a net
+trigger on the turn's side: the inner trigger stays at the boost intent and the outer one rises
+by the excess deflection, rescaled over the band's remainder, so a full yaw stick is one trigger
+flat and the other released — the 82 u pivot of §1. The overlap (the boost) is the same at every
+stick as it was before the pivot, and below the band the two triggers stay equal, so a straight
+or an ordinary corner flies exactly as it did; the pivot only adds yaw where the bot is already
+asking for more turn than the stick's 30 + 0.2v gives. It reads the yaw axis alone, so a pitch
+haul never pivots, and the bot lays the Yastri turn trail a human would while it does. Still no
+knowledge of the course, so a level-4 hairpin (99 u) is now within the bot's reach rather than
+one it must overshoot (unflown — see §9). The pure shape is
+`MantaAnalogTurnBoostExecutor.AutopilotTriggers`, asserted by
+`Tests/Editor/MantaAutopilotDriveTests.cs`. The AI approach numbers in the scene (commit 420 /
+lead 480 / through 320) are sized to the 237 u circle rather than inherited from Switchback's Dolphin.
 
 ## 6. Numbers, and where they are authored
 
@@ -164,7 +175,8 @@ sized to the 237 u circle rather than inherited from Switchback's Dolphin.
 | absolute safety floor / mouth / present cap | same, per intensity | 178–90 u; 110–88–72–**44**; 50–80 |
 | AI commit / lead / through | scene → `GateRaceController` | 420 / 480 / 320 |
 | detection clamp | scene → `maxPlausibleSpeed` | **1400** (a Time-10 Manta's 30 fps step is 31 u; the inherited 400 rejected it within a unit) |
-| autopilot boost band | `Manta.prefab` → `MantaAnalogTurnBoostExecutor.aiBoostStickBand` | 0.35 |
+| autopilot boost band | `MantaAnalogTurnBoostExecutor.aiBoostStickBand` (code default; not stored on `Manta.prefab` until it is next saved) | 0.35 |
+| autopilot Yastri band | `MantaAnalogTurnBoostExecutor.aiYastriStickBand` (code default; the prefab has no entry until it is next saved) | 0.75 |
 | comeback rate | `ArcadeGameRedline.asset` | **0.35** (six gates behind buys 2.1 levels — and a Time level IS speed on this hull) |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
 
@@ -200,7 +212,10 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
    you near cruise) and a third you can *just* hold flat out on a clean line — feeding in more
    stick than it needs should visibly not be enough, and easing a trigger should save it.
 6. **AI.** Add an AI Manta and watch it **Soar on the straights and lift in the corners** — the
-   drive of §5 — and complete more than one lap.
+   drive of §5 — and complete more than one lap. At intensity 4 it should take the two hairpins
+   with a visible **pivot** (one Yastri turn trail flaring on the outer lane) instead of running
+   wide and re-attacking, and it should not weave on the straights. A human Manta on gamepad or
+   keyboard must feel exactly as before: the pivot is inside the autopilot branch only.
 7. **MPPM two clients.** Both peers see the same circuit; a client's gate reports are credited
    and neither peer is credited twice for one crossing. Confirm a fast Manta's crossings are
    never dropped as "implausible" (the 400 → 1400 clamp).
@@ -211,12 +226,18 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
 
 - **Not editor-verified.** Asserted by a real out-of-editor compile of the course + tests
   against Unity-semantics stubs and a 1,600-circuit run of the shipped solver; nobody has
-  flown it. See `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  flown it, and there is no Redline entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` yet, so the
+  first-flight check is still unrecorded.
 - **The autopilot drive is new to the whole fleet's AI Manta**, not just this mode — a
   lava-lamp Manta now Soars on straights. If the menu reads too fast, the dial is
-  `aiBoostStickBand` on `Manta.prefab` (0 disables the drive).
+  `aiBoostStickBand` on the Manta's `MantaAnalogTurnBoostExecutor` (0 disables the drive), and the pivot's is
+  `aiYastriStickBand` (1 disables it).
 - **Level 4's third corner is a knife-edge by design** (§4). If play-test wants three
   unambiguous hairpins, the lever is a NINTH gate per lap (27-gate race), not the profile.
-- **The AI never uses Yastri**, so it cannot fly the 82 u pivot; its tightest is the stick's
-  156 u at cruise. A level-4 hairpin (99 u) it will overshoot and re-attack via the orbit
-  break — slower, but never stuck.
+- **The AI's Yastri pivot is unflown.** It is keyed on a saturated yaw stick, and AIPilot's
+  stick (a clamp of heading-angle-in-degrees × cross product) can saturate well short of a
+  hairpin, so if play-test shows the bot pivoting on corners it could Soar through (or weaving
+  on a straight), raise `aiYastriStickBand` toward 1
+  (1 disables the pivot and restores the band-only drive exactly). If it still overshoots the
+  level-4 hairpins, lower it toward `aiBoostStickBand`. Either way it is a vessel dial, so it
+  reaches every AI Manta, not just Redline's — the same fleet-wide scope as the drive itself.

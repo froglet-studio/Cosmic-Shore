@@ -678,23 +678,34 @@ repository-weight problem rather than a build-size one, but it is the one worth 
 The sweep reported 110.7 MB of video as shipping. **It is not**, and the reason is worth more than
 the number.
 
-40 `SO_ArcadeGame` assets still carry a serialized **`PreviewClip:`** key pointing at a
-`*Preview_Prefab.prefab`. **`SO_ArcadeGame` no longer declares that field** — it declares
-`PreviewVideo` — and `SO_Game.PreviewClip` was
+At the time of the sweep, 40 `SO_ArcadeGame` assets carried a serialized **`PreviewClip:`** key
+pointing at a `*Preview_Prefab.prefab`. **`SO_ArcadeGame` no longer declares that field** — it
+declares `PreviewVideo` — and `SO_Game.PreviewClip` was
 deleted when the arcade preview became a live satellite arena (`Docs/ModePreview/ARCHITECTURE.md`,
 which states the window *"must never fall back to a video"*). Unity never prunes an unresolvable
-serialized key, so the YAML still names the guid and a text-based sweep still follows it.
+serialized key, so the YAML still named the guid and a text-based sweep still followed it.
+
+**The key is now RETIRED (2026-10, PR #1011).** `Tools/Build/retire_preview_clip.py` stripped it
+from the last 32 `SO_Game` cards (31 `SO_ArcadeGame` + `SO_Mission_Protect`), resolving each card
+by its `m_Script` owning type so `SO_VesselAbility`'s live field is untouched. Its `--check`
+(also run by `retire_call_to_action.py --check` in the bleeding-edge guard) fails if
+`PreviewClip` or `CallToActionTargetType` reappears on any card; `--self-test` is its negative
+control. The preview prefabs and videos the key pointed at were **left in place**: with the key
+gone, nothing on a card reaches them, but whether to delete them is still the `salvage-first`
+decision below.
 
 What is actually live: **one** card (`ArcadeGameMaelstrom`) wires a non-null `PreviewVideo`, read by
 the single consumer `MaelstromLaunchPanel`. The other 39 `PreviewVideo` fields are null. A separate
 path — `SO_VesselAbility.PreviewClip`, a **`VideoPlayer`** reference read by `HangarAbilitiesView` —
 covers the per-ability videos and is **not** verified here: **24 `SO_VesselAbility` assets carry a
-live one** (plus 1 `SO_Mission` asset whose type declares neither, a third dead key). So the field
+live one** (plus 1 `SO_Mission` asset whose type declares neither, a third dead key — since
+stripped with the rest). So the field
 NAME is not dead anywhere in the project — only its use on `SO_ArcadeGame` is, which is why the
 check has to be *which type owns the asset*, not *does this identifier exist*.
 
 **Verdict `salvage-first`.** Establish which clips the Hangar path still needs, keep those and the
-Maelstrom clip, and remove the rest along with the dead `PreviewClip:` keys. General rule:
+Maelstrom clip, and remove the rest (the dead `PreviewClip:` keys are already gone — see
+`retire_preview_clip.py` above — so this is now only the prefab/video deletion). General rule:
 **a retired serialized field is invisible to the compiler, invisible to the inspector, and still
 visible to every text-based tool** — including this index's own sweep.
 

@@ -23,6 +23,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Second line: progress, state, "you are already here". Optional.</summary>
         public string Detail = "";
 
+        /// <summary>
+        /// What this option IS, in a sentence or two - shown in the window's description panel
+        /// while the row is selected, and while the player is inside the layer it opened. Optional;
+        /// empty falls back to the toy's own codex copy. The Spawn Matrix sets it for every species,
+        /// so a name like "Lurker" or "Watershed" says what distinguishes it.
+        /// </summary>
+        public string Description = "";
+
         /// <summary>The colour the station wears in the world.</summary>
         public Color Accent = Color.white;
 
@@ -58,6 +66,14 @@ namespace CosmicShore.Gameplay
         /// the option DOES, and a menu that decided it per toy would be a second opinion about it.</para>
         /// </summary>
         public bool AppliesOnSelect;
+
+        /// <summary>
+        /// True when the commit stays armed after it fires, so pressing it again does it again - a
+        /// Spawn, where each press releases more of the same variant. False (the default) spends
+        /// the button: the row is deselected after a commit that made something, because a second
+        /// press of Switch or Start on the same row would only redo what just happened.
+        /// </summary>
+        public bool Repeatable;
 
         /// <summary>Do the thing. Null on a branch.</summary>
         public Action Apply;

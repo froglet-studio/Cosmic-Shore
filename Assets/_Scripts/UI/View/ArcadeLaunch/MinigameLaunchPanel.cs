@@ -40,8 +40,21 @@ namespace CosmicShore.UI
                                  "IN-GAME toast feed uses. Optional.")]
         PreviewMicroToast microToast;
 
+        [Header("AI difficulty row")]
+        [SerializeField, Tooltip("Canvas pixels between the bottom of the AI difficulty row and the " +
+                                 "top of the controls block while the row is shown. The block's " +
+                                 "top is otherwise exactly where it was authored.")]
+        float controlsGapUnderDifficultyRow = 10f;
+
         Sprite _metricIcon;
         int _objectiveCount;
+
+        // The controls block's AUTHORED top edge (RectTransform.offsetMax.y), captured the first
+        // time the difficulty row is shown, so hiding the row puts the block back where the
+        // prefab has it rather than where the last Skim Race card left it.
+        float _controlsAuthoredTop;
+        bool _controlsTopCaptured;
+        static readonly Vector3[] RowCorners = new Vector3[4];
 
         public override ModePreviewWindow PreviewWindow => previewWindow;
 
@@ -51,6 +64,45 @@ namespace CosmicShore.UI
         /// </summary>
         public override bool Handles(SO_ArcadeGame game)
             => game != null && game.Mode != GameModes.Maelstrom;
+
+        /// <summary>
+        /// The difficulty row sits directly under the intensity row, which is where the controls
+        /// block starts - so while the row is shown the block's top moves down to clear it, and it
+        /// goes back the moment a card without the row opens. The block is a scroll view, so the
+        /// only cost is a shorter viewport on the cards that offer difficulty.
+        /// </summary>
+        public override void SetAIDifficultyAvailable(bool available)
+        {
+            base.SetAIDifficultyAvailable(available);
+            FitControlsUnderDifficultyRow(available);
+        }
+
+        void FitControlsUnderDifficultyRow(bool rowShown)
+        {
+            if (!controlsPanel || !aiDifficultyPicker) return;
+            if (controlsPanel.transform is not RectTransform block) return;
+            if (block.parent is not RectTransform parent) return;
+
+            if (!_controlsTopCaptured)
+            {
+                _controlsAuthoredTop = block.offsetMax.y;
+                _controlsTopCaptured = true;
+            }
+
+            float top = _controlsAuthoredTop;
+            if (rowShown && aiDifficultyPicker.transform is RectTransform row)
+            {
+                // Measured, not authored as a number: the row's bottom edge in the block's own
+                // parent space, so moving or resizing the row in the prefab needs no second edit
+                // here. offsetMax is relative to the block's top anchor.
+                row.GetWorldCorners(RowCorners);
+                float rowBottom = parent.InverseTransformPoint(RowCorners[0]).y;
+                float anchorTop = parent.rect.yMin + block.anchorMax.y * parent.rect.height;
+                top = Mathf.Min(_controlsAuthoredTop, rowBottom - controlsGapUnderDifficultyRow - anchorTop);
+            }
+
+            block.offsetMax = new Vector2(block.offsetMax.x, top);
+        }
 
         public override void Bind(SO_ArcadeGame game, int intensity)
         {

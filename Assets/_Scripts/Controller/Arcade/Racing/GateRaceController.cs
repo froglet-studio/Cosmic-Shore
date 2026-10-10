@@ -299,6 +299,13 @@ namespace CosmicShore.Gameplay
         bool _warnedCourseMissing;
         int _litGate = -1;
 
+        // The race beats as toasts (halfway, lead change, home stretch, final lap). A local
+        // poll over the replicated gate counts, run on every peer - see DomainRaceToasts.
+        DomainRaceToasts _raceToasts;
+
+        /// <summary>Gates from home at which the leading domain's HOME STRETCH beat fires.</summary>
+        const int HomeStretchGates = 3;
+
         /// <summary>Per-pilot detection state, on the machine that simulates that pilot.</summary>
         class PilotRun
         {
@@ -676,6 +683,30 @@ namespace CosmicShore.Gameplay
             _litGate = next;
         }
 
+        /// <summary>
+        /// True for a mode whose domain score is the SUM of its pilots' gates (Regatta) rather
+        /// than its lead runner's: the race beats then measure a team against its own pilots'
+        /// combined courses instead of one pilot's (see <see cref="DomainRaceToasts"/>). False
+        /// for every other gate race, whose arithmetic is unchanged.
+        /// </summary>
+        protected virtual bool RaceToastsSumTeams => false;
+
+        /// <summary>
+        /// Feed the race beats. The FINAL LAP threshold is where the last lap's first gate
+        /// falls - the race length of a course one lap shorter - so it means the same thing on
+        /// a plain circuit (Headlong, Redline) and behind a lead-in (Breakwater), and an open
+        /// chain (Switchback, Skein) simply never has one.
+        /// </summary>
+        void TickRaceToasts()
+        {
+            _raceToasts ??= new DomainRaceToasts(rule,
+                RaceToastsSumTeams ? DomainRaceToasts.CountPilots : null);
+            int finalLapAt = LapsPerRace > 1
+                ? RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace - 1)
+                : 0;
+            _raceToasts.Tick(gameData, HomeStretchGates, finalLapAt);
+        }
+
         // ── Detection ─────────────────────────────────────────────────────
 
         /// <summary>
@@ -719,6 +750,7 @@ namespace CosmicShore.Gameplay
             }
 
             LightLocalNextGate();
+            TickRaceToasts();
 
             float maxStep = maxPlausibleSpeed * Time.deltaTime * 2f + 5f;
             float maxStepSqr = maxStep * maxStep;
@@ -876,6 +908,13 @@ namespace CosmicShore.Gameplay
         {
             Vector3 centre = ResolveCellCentre();
 
+            // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
+            // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+            // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
+            var handicapLevel = AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+                ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+                : default;
+
             foreach (var p in gameData.Players)
             {
                 if (p == null || !p.IsInitializedAsAI) continue;
@@ -887,6 +926,9 @@ namespace CosmicShore.Gameplay
                 float side = 1f;
                 float nextCrystalScan = 0f;
                 Crystal detour = null;
+                // Seeded per seat and per race, so each AI errs differently every race.
+                var handicap = handicapLevel.IsNone ? null
+                    : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
 
                 pilot.SetExternalTargetProvider(() =>
                 {
@@ -907,6 +949,16 @@ namespace CosmicShore.Gameplay
                     // arriving at the same ring on the next lap IS a new leg.
                     var gate = _course[RingIndexFor(index)];
                     Vector3 self = selfTf.position;
+
+                    // What this pilot BELIEVES about its ring (GateRaceHandicap): nothing yet (it flies
+                    // straight on), or the mouth off to one side (it flies there and turns back).
+                    Vector3 ringAt = gate.Position;
+                    if (handicap != null)
+                    {
+                        var belief = handicap.Believe(index, gate.Position, gate.Axis, gate.Radius, self, selfTf.forward, Time.time);
+                        if (belief.Unnoticed) return self + selfTf.forward * 200f;
+                        ringAt = belief.Point;
+                    }
 
                     if (index != lockedIndex)
                     {
@@ -940,9 +992,9 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    return (gate.Position - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
-                        ? gate.Position + gate.Axis * (side * aiApproachLead)
-                        : gate.Position - gate.Axis * (side * aiThroughDistance);
+                    return (ringAt - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
+                        ? ringAt + gate.Axis * (side * aiApproachLead)
+                        : ringAt - gate.Axis * (side * aiThroughDistance);
                 });
             }
         }

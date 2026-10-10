@@ -77,6 +77,7 @@ namespace CosmicShore.Gameplay
         [Header("Spawner Control")]
         [SerializeField] bool spawnerEnabled = true;
         bool trailPenUp; // painting pen-up - independent of spawnerEnabled (see SetSpawnerPaused)
+        bool tierHold;   // device-tier creation hold - independent of both (see SetTierHold)
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 
@@ -231,6 +232,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
 
+        /// <summary>
+        /// Device-tier creation hold: a THIRD independent axis beside <see cref="spawnerEnabled"/>
+        /// and the pen, owned only by <c>MenuCrystalClickHandler</c>'s tier trail policy (on
+        /// MobileLow the menu backdrop lays no trail, and freestyle trail waits while the cell is
+        /// over its prism budget - Docs/PLATFORM_UNIFICATION.md §3.6). Creation-side only: a
+        /// spawner that waits, which is the sanctioned lever - it never removes a prism. Its own
+        /// bool so it can neither release a pen a fold, painting or cell swap is holding, nor be
+        /// released by one of them.
+        /// </summary>
+        public void SetTierHold(bool held) => tierHold = held;
+
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
@@ -279,7 +291,12 @@ namespace CosmicShore.Gameplay
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
+                // The warp field's local length scale here (Docs/WARP_FIELD.md; exactly 1 with no
+                // field). Speed arrives already multiplied by it, so the gate and the wavelength
+                // are measured in the same shrunken lengths and the lay RATE is unchanged.
+                float warp = WarpFieldRuntime.ScaleAt(transform.position);
+
+                if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
@@ -292,7 +309,7 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                float raw = vesselStatus.Speed > 0f ? wavelength / vesselStatus.Speed : defaultWaitTime;
+                float raw = vesselStatus.Speed > 0f ? wavelength * warp / vesselStatus.Speed : defaultWaitTime;
                 float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
@@ -403,9 +420,20 @@ namespace CosmicShore.Gameplay
                 && turnFlareMaxScale > 1f)
                 scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
 
+            // Warp field (Docs/WARP_FIELD.md): every length of the lay — the prism, the lane gap,
+            // the offset behind the hull — shrinks with the vessel, so a shrunken vessel lays a
+            // trail that looks exactly like its own to itself. Exactly 1 with no field.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            bool warped = !Mathf.Approximately(warp, 1f);
+            if (warped)
+            {
+                scale *= warp;
+                halfGap *= warp;
+            }
+
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset
+            Vector3 pos = transform.position - vesselStatus.Course * (offset * warp)
                         + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
@@ -454,7 +482,7 @@ namespace CosmicShore.Gameplay
             // wait and say so once, by vessel, so the next hull authored without it loses a
             // clearance delay instead of its whole trail.
             prism.waitTime = waitTillOutsideSkimmer && skimmer
-                ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
+                ? Mathf.Min((skimmer.transform.localScale.z * warp + scale.z) /
                             Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
                             MaxClearanceWaitSeconds)
                 : waitTime;
@@ -503,7 +531,9 @@ namespace CosmicShore.Gameplay
             // window AFTER Initialize (whose ResetState restores and re-clamps that window), or
             // everything past x = 40 is trimmed with no error. Un-widened lays are untouched, so
             // every vessel that never writes WidthMultiplier is byte-identical.
-            if (widened)
+            // A WARPED prism is a stated size too, and usually far BELOW the pool's window (the
+            // trail's 0.5 floor would otherwise turn a 1% vessel's prisms into boulders).
+            if (widened || warped)
             {
                 prism.AdmitTargetScale(scale);
                 prism.TargetScale = scale;

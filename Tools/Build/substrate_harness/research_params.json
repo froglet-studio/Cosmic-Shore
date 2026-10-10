@@ -44,6 +44,7 @@
   "mobber.roost_r": 260.0,
   "mobber.slow": 100.0,
   "mobber.steer": 500.0,
+  "pack.WINDUP": 0.4,
   "stampede.BULL_R": 260.0,
   "stampede.HEAD_DOWN": 0.9,
   "stampede.bull_every": 4.0,

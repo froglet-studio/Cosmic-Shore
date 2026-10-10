@@ -46,7 +46,10 @@ namespace CosmicShore.Engine.SceneManagement
 
         /// <summary>Announce a completed scene load to all subscribers.</summary>
         public static void NotifySceneLoaded(Scene scene, LoadSceneMode mode = LoadSceneMode.Single)
-            => sceneLoaded?.Invoke(scene, mode);
+        {
+            if (mode == LoadSceneMode.Single) CosmicShore.Engine.Time.MarkLevelLoaded();
+            sceneLoaded?.Invoke(scene, mode);
+        }
 
         /// <summary>Announce a completed scene load by name (constructs the Scene handle).</summary>
         public static void NotifySceneLoaded(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)

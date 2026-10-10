@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -13,9 +14,17 @@ namespace CosmicShore.Core
     /// The pixel term is not cosmetic. A machine's capability score says nothing about its display,
     /// and the two are wildly decoupled: a Retina MacBook and a 1080p desktop can score identically
     /// while the Mac is asked to render ~4x the pixels every frame. Since the rendering frontier on
-    /// this title is transparent-prism overdraw (Docs/PERFORMANCE_OPTIMIZATION.md §0, capture #4),
+    /// this title was suspected to be transparent-prism overdraw (Docs/archive/PERFORMANCE_LOG_2026.md §0.6, capture #4; never confirmed),
     /// pixel count is a first-order framerate term - so the recommendation budgets it explicitly
     /// via render scale and MSAA rather than pretending every display is 1080p.
+    ///
+    /// <para><b>Device tiers.</b> The capability score is desktop-shaped: it counts CORES, and a
+    /// budget Android phone has more of them (8 slow) than an iPhone (2 fast + 4 efficiency), so it
+    /// ranked a 4 GB Samsung above an iPhone. <see cref="RecommendSettings"/> therefore asks the
+    /// device's <see cref="PlatformProfileSO"/> first (<c>PlatformProfile.Current</c>): a profile that
+    /// keeps <c>useCapabilityHeuristic</c> (Desktop, MobileHigh) gets exactly the heuristic below, and
+    /// one that turns it off (MobileLow) gets its own authored recommendation
+    /// (<see cref="RecommendFromProfile"/>). <c>Docs/PLATFORM_UNIFICATION.md</c> §1.3, §3.</para>
     /// </summary>
     public static class SettingsAutoDetector
     {
@@ -104,15 +113,21 @@ namespace CosmicShore.Core
         /// framerate but never supersample uninvited. A pixel count of 0 (no display) means
         /// "unknown", which yields 100 rather than a guess.
         /// </summary>
-        public static int RecommendRenderScalePercent(QualityPresetSetting preset, long nativePixels)
+        public static int RecommendRenderScalePercent(QualityPresetSetting preset, long nativePixels) =>
+            RecommendRenderScalePercent(PixelBudgetFor(preset), nativePixels, MinRenderScalePercent);
+
+        /// <summary>
+        /// Render scale (percent) that brings <paramref name="nativePixels"/> down to
+        /// <paramref name="pixelBudget"/>, clamped to [<paramref name="minPercent"/>, 100]. The
+        /// tier-agnostic core of <see cref="RecommendRenderScalePercent(QualityPresetSetting, long)"/>.
+        /// </summary>
+        public static int RecommendRenderScalePercent(long pixelBudget, long nativePixels, int minPercent)
         {
             if (nativePixels <= 0) return 100;
+            if (nativePixels <= pixelBudget) return 100;
 
-            long budget = PixelBudgetFor(preset);
-            if (nativePixels <= budget) return 100;
-
-            int percent = Mathf.RoundToInt(Mathf.Sqrt((float)budget / nativePixels) * 100f);
-            return Mathf.Clamp(percent, MinRenderScalePercent, 100);
+            int percent = Mathf.RoundToInt(Mathf.Sqrt((float)pixelBudget / nativePixels) * 100f);
+            return Mathf.Clamp(percent, minPercent, 100);
         }
 
         /// <summary>
@@ -131,8 +146,63 @@ namespace CosmicShore.Core
             return AntiAliasingSetting.MSAA4x;
         }
 
-        /// <summary>Full recommended snapshot: preset + native display + a refresh-rate-aware cap + CPU knobs.</summary>
+        /// <summary>
+        /// Full recommended snapshot for THIS device: the device tier's authored recommendation when
+        /// its profile has one, otherwise the capability heuristic (<see cref="RecommendByCapability"/>,
+        /// which is also what every device got before tiers existed, and what Desktop and MobileHigh
+        /// still get).
+        /// </summary>
         public static GraphicsSettingsData RecommendSettings()
+        {
+            var profile = PlatformProfile.Current;
+            if (!profile) return RecommendByCapability();
+
+            var auto = profile.AutoDetect;
+            return auto.UseCapabilityHeuristic
+                ? RecommendByCapability()
+                : RecommendFromProfile(auto, NativePixelCount(), MonitorRefreshHz(), SystemInfo.processorCount);
+        }
+
+        /// <summary>
+        /// A profile's authored recommendation: its preset, AA and frame cap, and a render scale that
+        /// fits <paramref name="nativePixels"/> into its pixel budget, upscaled with the profile's
+        /// filter when scaled. Display and CPU knobs follow the same rules as the heuristic.
+        /// </summary>
+        public static GraphicsSettingsData RecommendFromProfile(in PlatformAutoDetect auto, long nativePixels,
+                                                                int monitorHz, int cores)
+        {
+            var d = new GraphicsSettingsData
+            {
+                QualityPreset = auto.Preset,
+                DisplayMode = DisplayModeSetting.Borderless,
+                VSync = VSyncSetting.On,
+                ResolutionWidth = 0,   // native
+                ResolutionHeight = 0,
+                RefreshRateHz = 0,     // native
+                AntiAliasing = auto.AntiAliasing,
+            };
+
+            int cap = Mathf.Max(1, auto.MaxTargetFrameRate);
+            d.TargetFrameRate = monitorHz > 0 ? Mathf.Min(monitorHz, cap) : Mathf.Min(60, cap);
+
+            ApplyCpuKnobs(d, cores);
+
+            d.RenderScalePercent = RecommendRenderScalePercent(auto.PixelBudget, nativePixels,
+                auto.MinRenderScalePercent);
+            d.Upscaling = d.RenderScalePercent < 100 ? auto.UpscalingWhenScaled : UpscalingSetting.Auto;
+            return d;
+        }
+
+        /// <summary>The display's refresh rate in Hz, or 0 when unknown.</summary>
+        static int MonitorRefreshHz() =>
+            Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
+
+        /// <summary>
+        /// The capability-score heuristic: preset + native display + a refresh-rate-aware cap + CPU
+        /// knobs. Every device's recommendation before tiers existed; still Desktop's and
+        /// MobileHigh's (their profiles keep <c>useCapabilityHeuristic</c>).
+        /// </summary>
+        public static GraphicsSettingsData RecommendByCapability()
         {
             var d = new GraphicsSettingsData
             {
@@ -145,11 +215,29 @@ namespace CosmicShore.Core
             };
 
             // Frame cap follows the monitor (clamped to a sane 120 ceiling for a CPU-bound title).
-            int monitorHz = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
+            int monitorHz = MonitorRefreshHz();
             d.TargetFrameRate = monitorHz > 0 ? Mathf.Min(monitorHz, 120) : 60;
 
-            // CPU knobs scale with core count - the real lever on this engine.
-            int cores = SystemInfo.processorCount;
+            ApplyCpuKnobs(d, SystemInfo.processorCount);
+
+            // Pixel budget: a high-DPI panel (any Retina Mac, any 4K monitor) renders far more
+            // pixels than the capability score knows about. Scale down to the tier's budget and
+            // pick an upscaler when we do, so the display still gets a full-resolution image.
+            long nativePixels = NativePixelCount();
+            d.RenderScalePercent = RecommendRenderScalePercent(d.QualityPreset, nativePixels);
+            d.Upscaling = d.RenderScalePercent < 100 ? UpscalingSetting.FSR : UpscalingSetting.Auto;
+
+            // Match AA to what we will actually be resolving, not to the tier in the abstract.
+            long scale = d.RenderScalePercent;
+            long effectivePixels = nativePixels > 0 ? nativePixels * scale * scale / 10_000L : 0L;
+            d.AntiAliasing = RecommendAntiAliasing(d.QualityPreset, effectivePixels);
+
+            return d;
+        }
+
+        /// <summary>CPU knobs scale with core count - the real lever on this engine.</summary>
+        static void ApplyCpuKnobs(GraphicsSettingsData d, int cores)
+        {
             if (cores >= 8)
             {
                 d.EcosystemDensity = EcosystemDensitySetting.Lush;
@@ -171,20 +259,6 @@ namespace CosmicShore.Core
                 d.AiCrowdSize = 1;
                 d.AdaptivePerformance = AdaptivePerformanceSetting.Aggressive;
             }
-
-            // Pixel budget: a high-DPI panel (any Retina Mac, any 4K monitor) renders far more
-            // pixels than the capability score knows about. Scale down to the tier's budget and
-            // pick an upscaler when we do, so the display still gets a full-resolution image.
-            long nativePixels = NativePixelCount();
-            d.RenderScalePercent = RecommendRenderScalePercent(d.QualityPreset, nativePixels);
-            d.Upscaling = d.RenderScalePercent < 100 ? UpscalingSetting.FSR : UpscalingSetting.Auto;
-
-            // Match AA to what we will actually be resolving, not to the tier in the abstract.
-            long scale = d.RenderScalePercent;
-            long effectivePixels = nativePixels > 0 ? nativePixels * scale * scale / 10_000L : 0L;
-            d.AntiAliasing = RecommendAntiAliasing(d.QualityPreset, effectivePixels);
-
-            return d;
         }
     }
 }

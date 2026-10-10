@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "scene": "Bootstrap",
+  "seed": 20261006,
+  "frames": 6000,
+  "checkpointEvery": 30,
+  "record": "2400-6000:300",
+  "do": ["1500:arcade AstroLeague", "1620:arcade start", "2100:arcade ready", "2280:hold W 900", "3200:hold D 90", "3300:hold W 1200", "4600:hold A 120", "4750:hold W 1200"],
+  "status": []
+}

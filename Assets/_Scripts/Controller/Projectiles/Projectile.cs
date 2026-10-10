@@ -292,6 +292,31 @@ namespace CosmicShore.Gameplay
         public bool SpareOwnDomain { get; private set; }
 
         /// <summary>
+        /// Per-flight: the round CRUISES - it flies at its launch velocity for as long as it is
+        /// alive, with no <c>cos(pi t / 2T)</c> ease-out and no lifetime, so its range is
+        /// unbounded. It ends only when its owner stops it (<see cref="Freeze"/>) or retires it
+        /// (<see cref="ReturnToFactory"/>), or when something else ends the flight (a proximity
+        /// fuze, a stopping impact). The Grizzly trigger bomb is the one user: it flies until the
+        /// trigger or another vessel stops it, and goes off only on the trigger.
+        /// Read every frame by the move loop and cleared by <see cref="Initialize"/>, so set it
+        /// AFTER the gun fires - the loop's first step runs inside the fire call, and a cruise
+        /// step and an eased step are identical there (<c>cos 0 = 1</c>).
+        /// </summary>
+        public bool Cruises { get; set; }
+
+        /// <summary>
+        /// Raised for every HULL this flight touches - the shooter's own included: the domain
+        /// rule in <c>ProjectileImpactor</c> decides what the round's EFFECTS may hit, not what a
+        /// listener may hear about, so a listener filters for itself. Fired before the effects
+        /// run, once per hull per dispatch. Per-FLIGHT, cleared by <see cref="Initialize"/>.
+        /// A listener may <see cref="Freeze"/> the round from inside the handler: the sweep then
+        /// leaves it at the contact point rather than at the end of the frame's step.
+        /// </summary>
+        public event Action<Projectile, VesselImpactor> VesselStruck;
+
+        internal void RaiseVesselStruck(VesselImpactor vessel) => VesselStruck?.Invoke(this, vessel);
+
+        /// <summary>
         /// What THIS flight is carrying. Reset to <see cref="ProjectilePayload.Default"/> by
         /// <see cref="Initialize"/>, so a pooled reissue can never inherit the previous shot's
         /// payload and a caller that says nothing gets the prefab's own authoring.
@@ -555,10 +580,13 @@ namespace CosmicShore.Gameplay
             StopOnFirstPrismImpact = stopOnFirstPrismImpact;
             SpareOwnDomain = spareOwnDomain;
             IsCarriedByHost = carriedByHost;
+            Cruises = false;
+            _frozen = false;
 
             // Per-flight: a pooled reissue must not inherit the previous shooter's
             // end-of-flight handler, and the once-only latches must re-arm.
             FlightEnded = null;
+            VesselStruck = null;
             _flightEndRaised = false;
             IsDetonating = false;
 
@@ -674,6 +702,7 @@ namespace CosmicShore.Gameplay
             }
 
             FlightGeneration++;
+            _frozen = false;   // a new flight is never frozen, whatever the last one ended as
             if (audioSystem)
                 audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
@@ -798,6 +827,18 @@ namespace CosmicShore.Gameplay
         bool _embedded;
 
         /// <summary>
+        /// The sweep loops' one exit test. A FROZEN round (<see cref="Freeze"/>, possibly from
+        /// inside a <see cref="VesselStruck"/> handler mid-sweep) has stopped too, and must stay at
+        /// the point it was stopped rather than step on to the segment's end. An EMBEDDED round
+        /// has stopped where it struck but has not raised <c>FlightEnded</c> yet (<see cref="EmbedAndRetire"/> defers that by the
+        /// dwell), so <c>_flightEndRaised</c> alone let a spike that had visibly stopped keep
+        /// dispatching the rest of that frame's hits - stealing and chain-firing from inside the
+        /// prism it stuck in - then step on to the segment's end and run the fuze test
+        /// (URCHIN_BACKLOG U4).
+        /// </summary>
+        bool FlightHalted => _flightEndRaised || _embedded || _frozen;
+
+        /// <summary>
         /// Halts this round where it struck and leaves it standing in the prism for
         /// <paramref name="dwellSeconds"/>, then fades it out and returns it to the pool.
         /// This is the modern <c>TrailBlockImpactEffects.Stop</c> — the Urchin spike sticking
@@ -870,6 +911,15 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
+        // The per-frame flight step, split into its named parts so a Profiler capture can say
+        // which one a heavy gunfight is paying for (PERFORMANCE_OPTIMIZATION.md §1, S5). The
+        // step itself runs as a UniTask continuation, which the Profiler otherwise reports only
+        // as the self time of UniTaskLoopRunnerPreLateUpdate.
+        static readonly Unity.Profiling.ProfilerMarker s_GrowthMarker = new("Projectile.Growth");
+        static readonly Unity.Profiling.ProfilerMarker s_SweepVesselsMarker = new("Projectile.SweepVessels");
+        static readonly Unity.Profiling.ProfilerMarker s_SweepPrismsMarker = new("Projectile.SweepPrisms");
+        static readonly Unity.Profiling.ProfilerMarker s_FuzeMarker = new("Projectile.Fuze");
+
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
@@ -879,10 +929,13 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                while (elapsedTime < projectileTime && !token.IsCancellationRequested)
+                // A CRUISING round (Cruises) has no lifetime and no ease-out: it holds its
+                // launch velocity until its owner freezes or retires it. Read per frame, because
+                // the owner sets it after the first step has already run inside the fire call.
+                while ((Cruises || elapsedTime < projectileTime) && !token.IsCancellationRequested)
                 {
                     float deltaTime = Time.deltaTime;
-                    float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+                    float factor = Cruises ? 1f : Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
 
                     // Grow BEFORE the step is swept, so this frame's hit volume is the size the
                     // round has actually reached rather than the one it left the muzzle at.
@@ -890,7 +943,10 @@ namespace CosmicShore.Gameplay
                     // change again, and re-writing that transform every frame for the rest of
                     // the flight would dirty its hierarchy for nothing.
                     if (_flightGrowthFactor != 1f && !_flightGrowthSettled)
-                        ApplyFlightGrowth(elapsedTime / projectileTime);
+                    {
+                        using (s_GrowthMarker.Auto())
+                            ApplyFlightGrowth(Mathf.Min(1f, elapsedTime / projectileTime));
+                    }
 
                     Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
@@ -907,8 +963,11 @@ namespace CosmicShore.Gameplay
                     // them would mean putting one of those populations in the other's store.
                     if (sweptVesselDetection)
                     {
-                        SweepVesselsAlong(sweepFrom, t.position);
-                        if (_flightEndRaised) return;
+                        using (s_SweepVesselsMarker.Auto())
+                            SweepVesselsAlong(sweepFrom, t.position);
+                        // FlightHalted, not _flightEndRaised: it also covers _embedded, so a
+                        // projectile that lodged mid-sweep stops sweeping too.
+                        if (FlightHalted) return;
                     }
 
                     if (!sweptPrismDetection && HasVirtualPrisms())
@@ -917,18 +976,20 @@ namespace CosmicShore.Gameplay
                         // creature that is only data, Docs/SWARM_FAUNA.md §19) has no collider, so the index's own
                         // virtual entries are swept for (and join the same dispatch) explicitly
                         SweepPrismsAlong(sweepFrom, t.position, virtualOnly: true);
-                        if (_flightEndRaised) return;
+                        if (FlightHalted) return;
                     }
 
                     if (sweptPrismDetection)
                     {
-                        SweepPrismsAlong(sweepFrom, t.position);
+                        using (s_SweepPrismsMarker.Auto())
+                            SweepPrismsAlong(sweepFrom, t.position);
 
                         // A stopping impact has already run the whole end-of-flight path
                         // (RaiseFlightEnded + ReturnToFactory). Returning rather than
                         // breaking is deliberate: the loop's tail would otherwise fire the
                         // end effects a second time on an instance already back in the pool.
-                        if (_flightEndRaised)
+                        // An embedded round has stopped too, and owns its own retirement.
+                        if (FlightHalted)
                             return;
                     }
 
@@ -939,13 +1000,19 @@ namespace CosmicShore.Gameplay
                     // tests, so the light and the trigger are one number - a fuze that armed at a
                     // radius the light did not draw would be worse than no light. The bank fades
                     // it out by itself when the round is retired or detonates.
-                    PublishFuzeLit(t.position);
+                    bool fuzeTripped;
+                    using (s_FuzeMarker.Auto())
+                    {
+                        PublishFuzeLit(t.position);
 
-                    // The PROXIMITY FUZE. Checked after the step so it reads the position the
-                    // round actually reached this frame, and after the swept prism dispatch so a
-                    // direct hit - which ends the flight from inside that call - always wins.
-                    if (FuzeRadiusMultiplier > 0f && !IsDetonating
-                        && ProximityFuzeTripped(t.position))
+                        // The PROXIMITY FUZE. Checked after the step so it reads the position the
+                        // round actually reached this frame, and after the swept prism dispatch so a
+                        // direct hit - which ends the flight from inside that call - always wins.
+                        fuzeTripped = FuzeRadiusMultiplier > 0f && !IsDetonating
+                            && ProximityFuzeTripped(t.position);
+                    }
+
+                    if (fuzeTripped)
                     {
                         // The round stops here, and its DIRECT-hit collider goes with it: the
                         // detonation's return delay leaves this object parked and live for a
@@ -1872,8 +1939,8 @@ namespace CosmicShore.Gameplay
                 projectileImpactor.AcceptImpacteeFromSweep(impactor);
 
                 // A stopping impact ran the whole end-of-flight path from inside that call;
-                // the shot rests here.
-                if (_flightEndRaised) return;
+                // the shot rests here. So does one that EMBEDDED in this prism.
+                if (FlightHalted) return;
             }
 
             // Pierced everything it met — finish the frame's step.
@@ -2000,7 +2067,7 @@ namespace CosmicShore.Gameplay
 
                     // A vessel impact can end the flight (the skyburst detonates on its direct
                     // hit); the shot rests where it landed.
-                    if (_flightEndRaised) return;
+                    if (FlightHalted) return;
                 }
 
                 transform.position = to;
@@ -2018,5 +2085,21 @@ namespace CosmicShore.Gameplay
             _moveCts.Dispose();
             _moveCts = null;
         }
+
+        /// <summary>
+        /// Halts the projectile in place while keeping it alive, rendered, and detonatable
+        /// (the cancelled move loop skips FlightEnded / end effects / pool return).
+        /// Velocity is zeroed so a later FaceExitVelocity detonation cannot read stale motion.
+        /// Latched until the next <see cref="Initialize"/>, so a freeze issued from inside this
+        /// frame's sweep (a <see cref="VesselStruck"/> handler) halts the rest of that sweep too.
+        /// </summary>
+        public void Freeze()
+        {
+            _frozen = true;
+            Stop();
+            Velocity = Vector3.zero;
+        }
+
+        bool _frozen;
     }
 }

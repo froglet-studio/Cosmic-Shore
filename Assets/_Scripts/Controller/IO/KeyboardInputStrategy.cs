@@ -37,6 +37,28 @@ namespace CosmicShore.Gameplay
         private bool prevLeftTriggerActive;
         private bool prevRightTriggerActive;
 
+        // Face-button held state, edge-detected from isPressed rather than the frame flags
+        // (SingleStickMouseInputStrategy's shape). wasReleasedThisFrame is only seen while this
+        // strategy runs: a button held as the player switched devices, or released while the
+        // window was unfocused (InputController skips unfocused frames), never sent its release,
+        // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
+        private bool prevButton1, prevButton2, prevButton3, prevFlip;
+
+        private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
+        {
+            if (isPressed && !prev) inputStatus.OnButtonPressed.Raise(evt);
+            if (!isPressed && prev) inputStatus.OnButtonReleased.Raise(evt);
+            prev = isPressed;
+        }
+
+        private void ReleaseHeldButtons()
+        {
+            EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
+            EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevFlip, InputEvents.FlipAction);
+        }
+
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
@@ -53,6 +75,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnStrategyDeactivated()
         {
+            ReleaseHeldButtons();
             ReleaseHeldTriggers();
             ReleaseSpeedEffects();
             ResetInput();
@@ -100,10 +123,7 @@ namespace CosmicShore.Gameplay
 
         private void ProcessButtonInput(Keyboard keyboard)
         {
-            if (keyboard.spaceKey.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
-            if (keyboard.spaceKey.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
+            EdgeFire(keyboard.spaceKey.isPressed, ref prevButton1, InputEvents.Button1Action);
 
             // R / Q rather than the historical B / N: both desktop schemes must raise the SAME
             // key per control, because ControlGlyphSetSO authors ONE keyboardLabel each and a
@@ -111,20 +131,9 @@ namespace CosmicShore.Gameplay
             // SingleStickMouseInputStrategy needs its action keys inside QWER + Space (one
             // resting left hand, never leaving the mouse), and R / Q sit directly above this
             // scheme's own WASD left stick, so the move suits both hands.
-            if (keyboard.rKey.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
-            if (keyboard.rKey.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
-
-            if (keyboard.qKey.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
-            if (keyboard.qKey.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
-
-            if (keyboard.eKey.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
-            if (keyboard.eKey.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
+            EdgeFire(keyboard.rKey.isPressed, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(keyboard.qKey.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(keyboard.eKey.isPressed, ref prevFlip, InputEvents.FlipAction);
 
             inputStatus.Throttle = keyboard.eKey.isPressed ? 1f : 0f;
 

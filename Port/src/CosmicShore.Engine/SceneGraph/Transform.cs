@@ -3,6 +3,18 @@ using System.Collections.Generic;
 
 namespace CosmicShore.Engine
 {
+    /// <summary>A transform's local → world point mapping, captured once (<see cref="Transform.PointToWorld"/>).</summary>
+    public readonly struct PointToWorldMap
+    {
+        readonly Vector3 _position, _scale;
+        readonly Quaternion _rotation;
+
+        internal PointToWorldMap(Vector3 position, Quaternion rotation, Vector3 scale)
+            => (_position, _rotation, _scale) = (position, rotation, scale);
+
+        public Vector3 Apply(Vector3 point) => _position + _rotation * Vector3.Scale(_scale, point);
+    }
+
     public enum Space
     {
         World = 0,
@@ -151,8 +163,15 @@ namespace CosmicShore.Engine
         public Transform root => parent is null ? this : parent.root;
 
         /// <summary>Local point → world point (includes scale).</summary>
-        public Vector3 TransformPoint(Vector3 point)
-            => position + rotation * Vector3.Scale(lossyScale, point);
+        public Vector3 TransformPoint(Vector3 point) => PointToWorld.Apply(point);
+
+        /// <summary>
+        /// Port engine extension: <see cref="TransformPoint"/> with the world pose read once, for
+        /// mapping many points (a UI mesh's vertices). Each pose read re-validates the parent chain,
+        /// and a RectTransform's re-derives its anchored position, so per point that was three chain
+        /// walks. Bit-identical to calling TransformPoint per point while the pose holds.
+        /// </summary>
+        public PointToWorldMap PointToWorld => new(position, rotation, lossyScale);
 
         /// <summary>World point → local point.</summary>
         public Vector3 InverseTransformPoint(Vector3 point)

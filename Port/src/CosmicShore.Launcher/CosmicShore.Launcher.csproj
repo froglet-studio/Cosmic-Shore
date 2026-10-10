@@ -39,6 +39,7 @@
   </Target>
   <ItemGroup>
     <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
+    <Compile Include="../Shared/DccLocator.cs" Link="Shared/DccLocator.cs" />
   </ItemGroup>
 
   <!-- Upgrade path from before the engine was named Prisma: a launcher built then looks for
@@ -61,7 +62,20 @@
           ConsoleToMSBuild="true" ContinueOnError="true" StandardOutputImportance="low" IgnoreExitCode="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="LauncherDate" />
     </Exec>
+    <!-- Its source trees too (launcher, Shared, Directory.Build.props): a shallow clone can compare
+         those with a branch without the history that finding the last commit needs. -->
+    <Exec Condition="'$(LauncherTree)' == ''" Command="git rev-parse HEAD:./ HEAD:../Shared HEAD:../../Directory.Build.props"
+          ConsoleToMSBuild="true" ContinueOnError="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LauncherTree" />
+    </Exec>
+    <PropertyGroup>
+      <LauncherTree>$(LauncherTree.Replace(';', '-'))</LauncherTree>
+    </PropertyGroup>
     <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>LauncherTree</_Parameter1>
+        <_Parameter2>$(LauncherTree)</_Parameter2>
+      </AssemblyAttribute>
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
         <_Parameter1>LauncherCommit</_Parameter1>
         <_Parameter2>$(LauncherCommit)</_Parameter2>
@@ -75,5 +89,7 @@
   <ItemGroup>
     <Compile Include="../Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
     <Compile Include="../Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
+    <Compile Include="../Shared/MultiplayerRun.cs" Link="Shared/MultiplayerRun.cs" />
+    <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

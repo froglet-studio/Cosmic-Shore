@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Bench Swarm Sort Time Fauna Config Data
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 4174204561870355101, guid: dba51f6ae2c167ee689fa855305270f7, type: 3}
+  InitialSpawnCount: 1
+  PopulationSize: 1
+  SpawnProbability: 1
+  NetworkSynced: 0
+  FeedsPerOffspring: 0
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 1
+  ReleaseTier: 0
+  BandInnerRadius: 690
+  BandOuterRadius: 840
+  CenterFocusBias: 0
+  Element: 4
+  Variant:
+    Enabled: 0
+  SpreadElements: 0
+  ElementPalette: []

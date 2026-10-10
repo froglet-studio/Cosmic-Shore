@@ -14,6 +14,12 @@ permanently-latched init race, a gauge bound to a meter that never raises events
 drift within the branch itself. This skill exists so that never happens again. Follow it
 exactly.
 
+> **See it before you change it: the Vessel Studio.** If the task changes how a vessel FLIES or FEELS, its AI, its
+> difficulty, its play styles or its cameras, recommend the Vessel Studio first
+> (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) and load **`/vessel-studio`**. The team decides those questions
+> by playing and watching there, then ports the settled numbers here once (its D13). A vessel with no studio yet
+> gets one by `/vessel-studio` §2. This skill stays the contract for the Unity side.
+
 ## 1. The contract (what every vessel is)
 
 > **Four abilities, each mapped to one of the four elements, each with a level-5 upgrade, each
@@ -192,6 +198,31 @@ applies to new abilities, new resources on the meter list, and anything that add
     (trigger sphere, kinematic rigidbody, `ImpactCollider`, container, layer 7) and skim nothing,
     silently, because the reference points at a disabled twin. Run **Audit Vessel Skimmers**
     first; never conclude from the prefab looking right.
+    **The CRYSTAL side never asked** (until 2026-10-08): `ElementalCrystalImpactor.AcceptImpactee`
+    took a crystal from ANY `SkimmerImpactor`, initialised or not, so an uninitialised skimmer
+    collected it with `VesselStatus == null` — no score, no element level, no hull fusion, and on
+    screen just "the old capture". The Grizzly's nested x30 `Skimmer.prefab` beat its initialised
+    `DummySkimmer` to every crystal that way; `DefersToItsVesselsSkimmer` now makes such a skimmer
+    stand aside when its vessel HAS an initialised one. The Termite, Falcon and Shrike list NO
+    near-field skimmer at all (`_nearFieldSkimmer: {fileID: 0}`), so they still collect crediting
+    nobody — `Docs/ElementalAbilitySystem/BACKLOG.md`. A pickup "with no vessel" is now a one-time
+    `[CrystalMorph] [HullFusion]` warning, which is how this was found after four rounds of reading
+    the prefabs had not found it.
+    **A skimmer that is SWITCHED OFF is no skimmer either.** The Butterfly's only skimmer was its
+    Dust-mode capsule, which `ButterflyDustField` disables in Mass mode — the spawn mode — so it
+    collected no elemental crystal at all while every audit read clean (the slot was assigned). A hull
+    whose skimmer is mode-gated needs an always-on crystal catcher: an initialised far-field sphere
+    with an EMPTY container (`ButterflyCrystalSkimmer`, `BUTTERFLY.md §3.1a`). Collection is the
+    crystal's side, so the catcher needs no effect, and empty lists make it inert to prisms and pilots.
+11b. **A skinned renderer's TRANSFORM is not its bind space — never size or aim anything off it.**
+    `lossyScale`, `InverseTransformPoint` and `position` on a `SkinnedMeshRenderer` describe a node
+    the bones may not agree with: the Sparrow model carries a node moved 185 units, the Manta family
+    a 100x node scale folded into its bind poses (its bind-pose mesh is 0.011 units across). Bones
+    are right by construction, so read world sizes and directions off points pinned THROUGH them
+    (`bone.localToWorldMatrix × bindpose × p`). A hull fusion that used the renderer transform drew
+    its faces off-screen on the Sparrow while the identical code worked on the Squirrel — and a
+    solver with absolute tolerances landed 6% of its points on the 0.011-unit Manta mesh until it
+    solved at unit size (`CRYSTAL_HULL_FUSION.md` §12).
 12. **Before removing a "redundant" writer, enumerate ALL writers of that meter.** A resource can
     be fed by both `ResourceSystem`'s per-second `resourceGainRate` and an action executor, and
     an executor's own cooldown can block its path entirely — so deleting the passive trickle
@@ -476,6 +507,16 @@ applies to new abilities, new resources on the meter list, and anything that add
     time-to-target figure, read the movement loop for a shaping factor** — and when you write a
     new one, write the derivation next to it so the next sweep can check it in one line rather
     than re-deriving it from the integral.
+    **Corollary — a pilot reports this ease-out as FRICTION.** *"The bombs are stopping due to a
+    friction of some sort"* was this loop: every round in the fleet decelerates to rest, so a
+    projectile meant to coast reads as dragged. The opt-out is per flight, `Projectile.Cruises`
+    (constant velocity, no lifetime — set it AFTER `Gun.FireGun`, because the loop's first step
+    runs inside the fire call). Nothing else may be expected to stop a cruising round, so its
+    owner must own every retirement path (turn end, disable, re-init) — the Grizzly trigger bomb
+    is the reference (`GRIZZLY_TRIGGER_BOMBS.md`). To STOP a round on a hull rather than hit it,
+    listen to `Projectile.VesselStruck` and `Freeze()` it from the handler: `Freeze` latches
+    `FlightHalted`, so the sweep that raised the event halts at the contact instead of finishing
+    the frame's step past it. (Grizzly trigger bombs, 2026-10-08.)
 
 35. **A derivation that collapses two facts into one is a statement about the cases that existed
     when it was written — and it goes on compiling after you add the case that separates them.**
@@ -597,6 +638,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
     the whole set by asking which lists name a vessel, not by reading the list of lists somebody
     wrote down last time.** (Butterfly, 2026-09-22.)
+
+41. **`Custom/SpreadFresnelShader` MOVES your geometry — one WORLD unit along every normal.** Its
+    `_Spread` property defaults to `(1,1,1)` and `DangerProjectileMaterial` (every Grizzly round,
+    `ExplodableProjectile`, `ProjectileFX`) authors no value, so the vertex stage pushes each vertex
+    `normal × _Spread / objectScale` — a constant world unit whatever the object's scale. Two
+    consequences. **A visible size is the authored scale + 2**: the trigger bomb's doc table said
+    2.5–5 and the screen showed 4.5–7 (rule 4b again — nothing chose that number). And **any
+    geometry you add on this material must carry RADIAL normals**, or the push tears it: flat-shaded
+    faces separate along their own normals, and true cone normals bloat a spike sideways by a full
+    unit. The bomb's spike crown uses the sphere's own normal at each vertex, so the whole spike rides
+    the sphere's push and stays seated (`GrizzlyBombVisual.SpikeMesh`, `GrizzlyBombSpikeMeshTests`).
+    Before sizing anything against a fresnel-shaded body, read the material's `_Spread`; absent means
+    one unit. (Grizzly trigger bombs, 2026-10-08.)
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
@@ -800,6 +854,61 @@ Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arc
 `Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
 is now a different mode, and the doc's measured ladder is the first thing to go stale.
 
+### 4.ab2 "Make it N× stronger" — find the CLAMP before you touch the multiplier
+
+Every displacement a vessel takes through `VesselTransformer.ModifyVelocity` is summed and then
+**clamped to one shared ceiling** (`velocityModifierMax`, 100 u/s). A shove that already reaches
+that ceiling is not made stronger by a bigger multiplier — it is made LONGER at the same speed,
+which a pilot cannot feel. The Grizzly's bomb launch (2026-10-08, "launch 3× more") was sitting on
+the 100 for its whole second at full squeeze, so `selfLaunchMultiplier` 1.5 -> 4.5 alone would have
+shipped a change that changed nothing. Two rules:
+
+- **Compute the shove's peak against the clamp first** (`impulse × 1.5` — the cosine ease's
+  birth weight — vs. the ceiling). If it saturates, the knob that matters is the ceiling.
+- **Never raise the shared ceiling for one ability** — it also lifts every knock-back, Rush and
+  kick that vessel takes. Use the per-modifier form, `ModifyVelocity(amount, duration,
+  ignoresTranslationRestriction, ceiling)` (`ShipVelocityModifier.ceiling`): a live modifier may
+  RAISE the cap for its own lifetime, never lower it, and 0 means "the vessel's own".
+
+And then §4.ab applies: a stronger shove is a faster vessel, so any mode cut against that
+vessel's curve has to be re-cut (Grizzly Time went 14 gates on 560 u -> 8 on 800 u).
+
+### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
+
+Some placed objects look different to different pilots: the Butterfly's fold wormhole first
+showed a view through only to its own domain, and to a rival a sealed, domain-coloured outline
+(`WormholeView`, `BUTTERFLY_FOLD.md` § "The gates became wormholes" — since replaced by a TOLL:
+anyone rides and sees through, and a rival pays petals, `WormholeMouth.OwesToll`, which keeps
+both rules below). The first cut decided
+"rival" whenever the VIEWER's domain could not be resolved (no follow target, a camera rig that
+is not a `CustomCameraController`) and compared against a domain CAPTURED at placement — so the
+pilot's own pair rendered sealed, and the first playtest reported "the Butterfly made no
+wormholes; the switches lost their portal view". Two rules fell out:
+
+- **Restrict on positive evidence only.** Hide/seal/deny for a resolved viewer who is provably
+  not entitled; an unresolvable viewer gets the full presentation. Gameplay access (who is
+  CARRIED) is a separate, per-vessel check and is the one that must be strict.
+- **Give the object its OWNER, not a snapshot of the owner's state.** `WormholeMouth.Settings.Owner`
+  is the placer's `IVesselStatus`: the owner is always carried and always sees through, and the
+  lock reads the owner's LIVE domain, so a pilot who changes domain keeps a working object.
+
+And one playtest rule: **when a replacement's degraded state looks like the thing it replaced**
+(a sealed sphere reads head-on as a ring), a report of "nothing changed" is ambiguous between
+"new code misbehaving" and "old code still running". Give the replacement a distinguishable
+GameObject name (`FoldWormhole::<pilot>::A`, the old gates were `FoldGate::…`) and tell the
+tester to check the Hierarchy — one look separates the two.
+
+
+**A consequence of a TELEPORT that changes shared state must run where EVERY peer sees the jump,
+not where the owner decides it.** A wormhole's `Transit` (and any owner-side detector like it) runs
+only on the machine that owns the vessel; the pose then replicates through `SetPose`, and
+`VesselTransformer.SetPose` -> `TeleportContinuity.OnTeleported` is the one place every machine
+sees that jump, already resolving WHICH mouth it went through (`WormholeMouth.TryResolveTransit`).
+Elemental levels are simulated per peer, so the rival toll (`WormholeMouth.LevyToll`, 2026-10-08)
+is levied there: putting it in `Transit` would have stripped petals on the owner only and desynced
+every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
+server re-broadcasts to everyone else), so a hook there fires once per machine.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - **Run the out-of-editor gates FIRST, and name what each one covers.** In particular
@@ -811,6 +920,14 @@ is now a different mode, and the doc's measured ladder is the first thing to go 
   classes — it is not a compile.** Everything needing a symbol table (a member that does not
   exist, an override whose signature drifted, an argument mismatch) is still editor-only, so say
   so when you hand back rather than reporting "all checks pass".
+- **Two gates go past syntax; a change to the ability PRESS path runs both.**
+  `bash Tools/Build/unity_refcompile/run.sh` binds all of `Assembly-CSharp` against real Unity
+  references and the locked package sources (Netcode included), so for runtime code the
+  symbol-table classes above are no longer editor-only (asset-surgery §4 has the setup and its
+  limits). `python3 Tools/Build/peer_press_harness/run.py --self-test` runs the shipped
+  `R_VesselActionHandler` as an owner copy and a peer copy over every shipped vessel's maps — the
+  only check short of two real devices that a press runs the same actions on every machine
+  (CONTRACT.md §2; `R_VesselActions/SQUIRREL_DRIFT.md` §11 is what it caught).
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
   **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (which measures shape MAGNITUDE,
   not labels), **Audit Vessel Construction** (guid ownership · nested-instance reachability ·

@@ -1,0 +1,168 @@
+# Prisma parity CI (Port/docs/ROADMAP.md C1, item 4).
+#
+# On every bleeding-edge push: compile the port against the new Assets/ (the live compile of
+# Assets/_Scripts), run the engine's unit tests, then smoke-run EVERY enabled build scene headless
+# with the same `engine_smoke` the MCP server gives an agent (prisma-mcp --call). A Unity-side
+# change that breaks the port fails here instead of being found by hand.
+#
+# Scenes are entered directly (no Bootstrap), as Unity's play-from-scene does, so the AppManager's
+# "not found at injection time" errors are expected in every scene except Bootstrap and are passed
+# as ignored; Bootstrap itself boots the whole chain and must be clean.
+#
+# The engine_parity job diffs every replay in Port/parity/manifest.json against the Unity goldens
+# in Port/parity/goldens; a channel without a golden reports MISSING and does not fail.
+#
+# This only builds and runs Port/. It never imports or changes the Unity project.
+
+name: Prisma parity CI
+
+on:
+  push:
+    branches: [ 'bleeding-edge' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prisma-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  COSMIC_SHORE_NET: 'off'
+  COSMIC_SHORE_AUDIO: 'off'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      scenes: ${{ steps.scenes.outputs.scenes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build the player (live compile of Assets/_Scripts) and the MCP server
+        run: |
+          dotnet build Port/src/CosmicShore.Player -nologo -v q
+          dotnet build Port/src/CosmicShore.Mcp -nologo -v q
+
+      - name: Engine unit tests
+        run: dotnet test Port/tests/CosmicShore.Tests -nologo -v q
+
+      # C2: every project graph links on a real GL driver (Mesa llvmpipe under xvfb) as GLSL 3.30
+      # and GLSL ES 3.00 - a graph the compiler cannot link is a real failure.
+      - name: Every Shader Graph links
+        run: |
+          set -o pipefail
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          xvfb-run -a -s "-screen 0 1280x720x24" Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore --check-shaders | grep shader-check
+
+      # The coverage file and the scoreboard are generated from Assets/: a Unity-side change (a new
+      # .shader, a new graph) makes them stale without anything being broken. That is a WARNING on
+      # the run, never a red X on someone's Unity push; refresh them on a Port branch.
+      - name: Shader census and parity scoreboard are current (warning only)
+        run: |
+          dotnet build Port/src/CosmicShore.AssetTool -nologo -v q
+          dotnet Port/src/CosmicShore.AssetTool/bin/Debug/net10.0/cs-asset.dll shadergraph-census --json /tmp/shaders.json > /dev/null
+          if ! diff -q Port/parity/shaders.json /tmp/shaders.json > /dev/null; then
+            echo "::warning title=Prisma shader census is stale::Assets/ shaders changed since Port/parity/shaders.json was written. Refresh: cs-asset shadergraph-census, then python3 Port/tools/gen_parity_scoreboard.py"
+            diff -u Port/parity/shaders.json /tmp/shaders.json | head -60 || true
+          fi
+          if ! python3 Port/tools/gen_parity_scoreboard.py --check; then
+            echo "::warning title=Prisma parity scoreboard is stale::Refresh: python3 Port/tools/gen_parity_scoreboard.py"
+          fi
+
+      - name: List the enabled build scenes
+        id: scenes
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, re
+          text = open('ProjectSettings/EditorBuildSettings.asset', encoding='utf-8').read()
+          scenes = [m.group(2).rsplit('/', 1)[-1][:-len('.unity')]
+                    for m in re.finditer(r'- enabled: (\d)\s+path: (\S.*?\.unity)', text) if m.group(1) == '1']
+          print('scenes=' + json.dumps(scenes))
+          EOF
+
+      - name: Upload the built port
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-port-bin
+          path: |
+            Port/src/CosmicShore.Player/bin/Debug/net10.0/
+            Port/src/CosmicShore.Mcp/bin/Debug/net10.0/
+          retention-days: 2
+
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        scene: ${{ fromJson(needs.build.outputs.scenes) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: prisma-port-bin
+          path: Port/src
+      - name: engine_smoke ${{ matrix.scene }}
+        run: |
+          chmod +x Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore Port/src/CosmicShore.Mcp/bin/Debug/net10.0/prisma-mcp
+          # Entered directly, a scene lacks Bootstrap's singletons, as in Unity's play-from-scene: the
+          # DI misses, the captains Squad reads (Menu_Main) and ThemeManager's team materials (Joust,
+          # Scurry). Bootstrap boots the real chain and must stay clean.
+          if [ "${{ matrix.scene }}" = "Bootstrap" ]; then IGNORE=""; else IGNORE="not found at injection time|CosmicShore.Core.Squad..ctor|GameModeProgressionService.Start|ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial"; fi
+          Port/src/CosmicShore.Mcp/bin/Debug/net10.0/prisma-mcp --repo . --call engine_smoke \
+            "{\"scene\":\"${{ matrix.scene }}\",\"frames\":900,\"build\":false,\"ignore\":\"$IGNORE\"}" | tee smoke.txt
+          status=${PIPESTATUS[0]}
+          { echo "### ${{ matrix.scene }}"; echo '```'; head -40 smoke.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+  parity:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: prisma-port-bin
+          path: Port/src
+      - name: engine_parity (engine vs Unity goldens)
+        run: |
+          chmod +x Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore Port/src/CosmicShore.Mcp/bin/Debug/net10.0/prisma-mcp
+          Port/src/CosmicShore.Mcp/bin/Debug/net10.0/prisma-mcp --repo . --call engine_parity '{"build":false}' | tee parity.txt
+          status=${PIPESTATUS[0]}
+          echo '```' >> "$GITHUB_STEP_SUMMARY"; cat parity.txt >> "$GITHUB_STEP_SUMMARY"; echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: Upload the parity results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-parity-results
+          path: Port/parity/results/latest.json
+          retention-days: 14
+          if-no-files-found: ignore

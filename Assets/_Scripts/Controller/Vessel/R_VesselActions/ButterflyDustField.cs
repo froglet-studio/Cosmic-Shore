@@ -63,6 +63,40 @@ namespace CosmicShore.Gameplay
         [Tooltip("Motes drift slowly downward, as dust falls off a wing.")]
         [SerializeField] float fallSpeed = 6f;
 
+        [Header("Audio")]
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust BITES an opposing pilot (the " +
+                 "all-element debuff lands). Played on every peer that resolves the bite, at the " +
+                 "victim. Already rate-limited per victim by the debuff's own cooldown. Leave " +
+                 "empty for silence - never point it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference scaleDustBiteEvent;
+
+        [Tooltip("DUST REACH (Space) - FMOD event when the dust TENDS the pilot's own mass (a " +
+                 "prism grows, turns dangerous, shields or super-shields). At the prism. Leave " +
+                 "empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustTendEvent;
+
+        [Tooltip("DUST REACH (Space) - FMOD event when the dust BLIGHTS opposing mass (a prism is " +
+                 "destroyed, shrunk or stolen). At the prism. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustBlightEvent;
+
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust WITHERS an opposing creature " +
+                 "(its heart passed through the capsule and it began to die). At the heart. " +
+                 "Played by SkimmerWitherLifeformByCrystalEffectSO only when the kill actually " +
+                 "landed. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference heartWitherEvent;
+
+        [Tooltip("DUST (ally lifeform) - FMOD event when the dust NOURISHES a lifeform of the " +
+                 "pilot's own domain (a creature's starvation clock resets, a plant's growth " +
+                 "advances). At the heart. Played by SkimmerNourishLifeformByCrystalEffectSO only " +
+                 "when the refresh actually landed. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference heartNourishEvent;
+
+        [Tooltip("Minimum seconds between two Dust Reach one-shots of the SAME kind. The capsule " +
+                 "sweeps a whole wall of prisms in a few frames, and one voice per prism would be " +
+                 "a hundred one-shots stacked on one frame. The heart wither / nourish voices share " +
+                 "this interval, each on its own clock.")]
+        [SerializeField, Min(0f)] float dustReachSoundInterval = 0.08f;
+
         // The palette. Injected: the dust skimmer is a child of the vessel prefab, and vessels are
         // GameObjectInjector.InjectRecursive'd on every spawn path.
         [Inject] GameDataSO _gameData;
@@ -77,6 +111,10 @@ namespace CosmicShore.Gameplay
         bool _active;
         bool _built;
         static bool s_warnedNoMaterial;
+        float _nextTendSoundTime;
+        float _nextBlightSoundTime;
+        float _nextWitherSoundTime;
+        float _nextNourishSoundTime;
 
         /// <summary>True while the dust is live.</summary>
         public bool IsActive => _active;
@@ -120,6 +158,56 @@ namespace CosmicShore.Gameplay
                 // lives and fade out — continuity of existence.
                 _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             }
+        }
+
+        // ── audio — called by the dust's effect SOs, which find this component on the skimmer ──
+
+        /// <summary>Scale Dust bit an opposing pilot. Empty slot = silence.</summary>
+        public void PlayScaleDustBite(Vector3 position) => Play(scaleDustBiteEvent, position);
+
+        /// <summary>Dust Reach touched a prism: <paramref name="ownMass"/> = tended (own domain),
+        /// otherwise blighted. Throttled per kind; empty slot = silence.</summary>
+        public void PlayDustReach(bool ownMass, Vector3 position)
+        {
+            float now = Time.time;
+            if (ownMass)
+            {
+                if (dustTendEvent.IsNull || now < _nextTendSoundTime) return;
+                _nextTendSoundTime = now + dustReachSoundInterval;
+                Play(dustTendEvent, position);
+            }
+            else
+            {
+                if (dustBlightEvent.IsNull || now < _nextBlightSoundTime) return;
+                _nextBlightSoundTime = now + dustReachSoundInterval;
+                Play(dustBlightEvent, position);
+            }
+        }
+
+        /// <summary>Scale Dust withered an opposing lifeform. Throttled by
+        /// <c>dustReachSoundInterval</c>; empty slot = silence.</summary>
+        public void PlayHeartWither(Vector3 position)
+            => PlayThrottled(heartWitherEvent, ref _nextWitherSoundTime, position);
+
+        /// <summary>The dust nourished an ally lifeform. Throttled by
+        /// <c>dustReachSoundInterval</c>; empty slot = silence.</summary>
+        public void PlayHeartNourish(Vector3 position)
+            => PlayThrottled(heartNourishEvent, ref _nextNourishSoundTime, position);
+
+        void PlayThrottled(FMODUnity.EventReference reference, ref float nextTime, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            float now = Time.time;
+            if (now < nextTime) return;
+            nextTime = now + dustReachSoundInterval;
+            Play(reference, position);
+        }
+
+        static void Play(FMODUnity.EventReference reference, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(reference, position);
         }
 
         void ApplyColliderState(bool active)
@@ -170,14 +258,22 @@ namespace CosmicShore.Gameplay
         /// point of light: the base is the darker half of the pair and reads as dim smoke.
         /// Blue (no team) and a missing palette fall back to the authored dust colour.
         /// </summary>
-        Color ResolveMoteColour(Domains domain)
+        Color ResolveMoteColour(Domains domain) => ResolveMoteColour(_gameData, domain, dustColor);
+
+        /// <summary>
+        /// The one mote colour rule, shared with the omni-crystal bloom's dust
+        /// (<see cref="ButterflyBloomDust"/>) so the two read as the same dust: the shielded rim of
+        /// <paramref name="domain"/>, at <paramref name="fallback"/>'s alpha; Blue or no palette
+        /// returns <paramref name="fallback"/>.
+        /// </summary>
+        internal static Color ResolveMoteColour(GameDataSO gameData, Domains domain, Color fallback)
         {
-            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
             if (domain == Domains.Blue || colorSet == null ||
                 !colorSet.TryGetPrismKindColors(domain, PrismKind.Shielded, out var rim, out _))
-                return dustColor;
+                return fallback;
 
-            rim.a = dustColor.a;
+            rim.a = fallback.a;
             return rim;
         }
 

@@ -87,11 +87,19 @@
   <!-- The desktop player's core, shared verbatim: boot, the frame, the window passes, input, audio. -->
   <ItemGroup>
     <Compile Include="../CosmicShore.Player/PlayerWindow.cs" Link="Player/PlayerWindow.cs" />
+    <Compile Include="../CosmicShore.Player/ShaderCheck.cs" Link="Player/ShaderCheck.cs" />
+    <Compile Include="../CosmicShore.Player/ShaderGallery.cs" Link="Player/ShaderGallery.cs" />
+    <Compile Include="../CosmicShore.Player/ModelViewer.cs" Link="Player/ModelViewer.cs" />
+    <Compile Include="../CosmicShore.Player/ModelViewer.Ui.cs" Link="Player/ModelViewer.Ui.cs" />
+    <Compile Include="../CosmicShore.Player/UiSweep.cs" Link="Player/UiSweep.cs" />
     <Compile Include="../CosmicShore.Player/PlayerBoot.cs" Link="Player/PlayerBoot.cs" />
+    <Compile Include="../CosmicShore.Player/UgsSetup.cs" Link="Player/UgsSetup.cs" />
     <Compile Include="../CosmicShore.Player/PlayerAudio.cs" Link="Player/PlayerAudio.cs" />
     <Compile Include="../CosmicShore.Player/SilkInputBridge.cs" Link="Player/SilkInputBridge.cs" />
     <Compile Include="../CosmicShore.Player/InputScript.cs" Link="Player/InputScript.cs" />
+    <Compile Include="../CosmicShore.Player/ArcadeAutoStart.cs" Link="Player/ArcadeAutoStart.cs" />
     <Compile Include="../CosmicShore.Player/FrameRecorder.cs" Link="Player/FrameRecorder.cs" />
+    <Compile Include="../CosmicShore.Player/ParityRun.cs" Link="Player/ParityRun.cs" />
     <Compile Include="../CosmicShore.Player/Inspector.cs" Link="Player/Inspector.cs" />
     <Compile Include="../CosmicShore.Player/ScriptTicker.cs" Link="Player/ScriptTicker.cs" />
     <!-- PlayerWindow's control port and run report: on phones nothing starts them, so they stay inert. -->

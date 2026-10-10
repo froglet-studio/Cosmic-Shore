@@ -60,6 +60,7 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `BendLanded` (82) | `StatToastDriver` (DebuffHitsLanded rose) | same four |
 | `PrismsDestroyedMilestone` (83) | `StatToastDriver` (HostilePrismsDestroyed crossed a multiple of `everyN`) | same four |
 | `LifeformKilled` (84) | `StatToastDriver` (LifeformsKilled rose) | same four |
+| `PrismsStolenMilestone` (85) | `StatToastDriver` (PrismStolen crossed a multiple of `everyN`) | same four |
 | `WreckingBallLeadChanged` (92) | `WreckingBallController` | `{0}` domain, `{1}` prisms, `{2}` target |
 | `WreckingBallForgeHint` (93) / `WreckingBallDashHint` (94) | controller config (idle hints) | — |
 | `UndertowQuarter` (95) / `UndertowHalf` (96) / `UndertowLeadChanged` (97) | `UndertowController` | `{0}` domain, `{1}` points, `{2}` target |
@@ -74,10 +75,30 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `TapestryPaintHint` (124) / `TapestryRaidHint` (125) | controller config (idle hints) | — |
 | `SiroccoLeadChanged` (126) | `SiroccoController` (after 20% of the target) | `{0}` domain, `{1}` prisms, `{2}` target |
 | `SiroccoDustHint` (127) | controller config (idle hint) | — |
+| `DomainRaceQuarter` (128) / `DomainRaceHalf` (129) / `DomainRaceLeadChanged` (130) / `DomainRaceHomeStretch` (131) / `DomainRaceFinalLap` (132) | `DomainRaceToasts`, ticked by `GateRaceController` (every gate race) and by `RampageController` / `SalvoController` / `HijackController` | `{0}` leading domain, `{1}` its score, `{2}` target, `{3}` its best single pilot |
+| `AstroLeagueGoal` (133) / `AstroLeagueMatchPoint` (134) | `AstroLeagueController.AnnounceGoal_ClientRpc` | goal: `{0}` scorer, `{1}` their domain's goals, `{2}` goal limit; match point: `{0}` domain, same `{1}` `{2}` |
+| `AstroLeagueGoldenGoal` (135) | `AstroLeagueController.AnnounceOvertime_ClientRpc` | — |
+| `SalvoWingReload` (136) | `SalvoController.RefuelDomainMissiles_ClientRpc`, only when the domain fields 2+ pilots | `{0}` collector, `{1}` domain |
+| `WildlifeCoreBreached` (56) | `WildlifeLiberationController` (server samples vessel positions; first pilot inside the 200u core cage, once a match) | `{0}` pilot, `{1}` domain |
 
-The Dog Fight (57-59), Bends (60-62), Cleave (50-52) and Wildlife Liberation (53-56)
-milestone situations are posted by their controllers; only Dog Fight and The Bends author them
-today (the other two modes post into nothing until a config is added).
+The Dog Fight (57-59), Bends (60-62), Cleave (50-52) and Wildlife Liberation (53-55)
+milestone situations are posted by their controllers (`{0}` is the leading DOMAIN in all of them),
+and every one of those four modes now authors them.
+
+**`DomainRaceToasts` — the shared race beats.** A plain class a controller ticks every frame
+(it throttles itself to 0.5 s). It folds the mode's own `ScoringRuleSO.DomainValue` per active
+domain — the SUM in a summed race, the LEAD RUNNER in a gate race — against `TargetFor`, so it
+needs no per-mode code. It is a LOCAL poll over replicated RoundStats on every peer (the
+`StatToastDriver` shape), so it adds no RPC. The first poll of a turn seeds silently; a tie at
+the top has no leader; a lead change is announced only once the leader is past the quarter beat
+and at most every 8 s. `GateRaceController` passes a 3-gate home stretch and, on a lapped
+course, the first gate of the last lap (`RaceLengthFor(rings, leadIn, laps - 1)`). This is the
+gate-threaded hook Waystation's config once said the platform lacked — Regatta and Waystation
+post these beats too, and their generators author them (Regatta 129-132, Waystation 129-131).
+**Regatta's beats read the TEAM SUM** (`RegattaScoringRuleSO.DomainValue`) against one pilot's
+course length, so with two or more pilots on a team the halfway / home-stretch / final-lap beats
+fire before any one pilot is there; its templates say "{1}/{2} gates" rather than "gate {1}/{2}"
+for that reason.
 
 Joust points are read from `RoundStatsList` at display time (StatsManager has already
 recorded the joust locally when the post arrives, so the count includes the new point).
@@ -94,13 +115,21 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Bends` | Bends (42) | `{0} bent a rival! ({1}/{3})` (every debuff landed), the quarter / half / lead-change milestones, `Comeback system is on` |
 | `GameToastConfig_BroodRush` | BroodRush (38) | `{0} brood hatched - {1}/{2}` |
 | `GameToastConfig_WreckingBall` | WreckingBall (54) | `{0} has wrecked {1} prisms` (`everyN` 250), the lead-change beat, two idle hints (forge a ball / dash beside the forest), `Comeback system is on` — authored by `author_wrecking_ball_assets.py` |
-| `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on` — authored by `author_regatta_assets.py` |
+| `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on`, and the shared race beats halfway / lead change / home stretch / final lap (129-132, `{1}/{2} gates` — a team tally) — authored by `author_regatta_assets.py` |
 | `GameToastConfig_Broadside` | Broadside (57) | `{0} landed a hit!` (every hit), the quarter / half / lead-change milestones, two idle hints that name the VERB rather than the hull (seven hulls share four verbs, and a hint per hull is seven hints nobody reads), `Comeback system is on` — authored by `author_broadside_assets.py` |
-| `GameToastConfig_Waystation` | Waystation (58) | TWO IDLE HINTS AND NOTHING ELSE (thread every ring around you; hold the fold and aim at the next cluster). The absence is the decision: the gate-race platform has NO gate-threaded hook, so a milestone or lead-change situation would have no poster — and an enum member nothing raises reads exactly like a feature. An idle hint needs no poster at all, which is why Regatta authored only hints too. Authored by `author_waystation_assets.py` |
+| `GameToastConfig_Waystation` | Waystation (58) | two idle hints (thread every ring around you; hold the fold and aim at the next cluster) and the shared race beats halfway / lead change / home stretch (129-131, `ring {1}/{2}`, Skein's voice). No final lap: one pass of clusters, so `DomainRaceFinalLap` never fires here. It shipped with hints only while the gate-race platform had no gate-threaded hook; `DomainRaceToasts` is that hook. Authored by `author_waystation_assets.py` |
 | `GameToastConfig_Dustup` | Dustup (59) | the quarter / half / lead-change milestones, one idle hint (get ABOVE a rival — the dust hangs below you) |
 | `GameToastConfig_Tapestry` | Tapestry (60) | the lead-change beat, two idle hints (Mass mode paints a wide wake that is score; behind? Dust mode raids their painting) |
 | `GameToastConfig_Sirocco` | Sirocco (61) | `{0} has eroded {1} prisms` (`everyN` 100), the lead-change beat, one idle hint (Dust mode, low and long over the forest) |
 | `GameToastConfig_Undertow` | Undertow (55) | `{0} dragged a rival through the undertow!` (every bend), `{0} has drowned {1} creatures` (`everyN` 3), the quarter / half / lead-change milestones, an idle dash hint, `Comeback system is on` — authored by `author_undertow_assets.py` |
+| `GameToastConfig_Rampage` | Rampage (2) | `{0} has smashed {1} prisms` (`everyN` 250), the quarter / half / lead-change race beats, `Comeback system is on` |
+| `GameToastConfig_Cleave` | Cleave (39) | `{0} has cut {1} prisms` (`everyN` 200), the quarter / half / lead-change milestones the controller posts (50-52), `Comeback system is on` |
+| `GameToastConfig_Salvo` | Salvo (44) | `{0} has levelled {1} prisms` (`everyN` 100), `{0} reloaded the wing` (the wingman reload, 2+ pilot domains only), the quarter / half / lead-change race beats, `Comeback system is on` |
+| `GameToastConfig_Hijack` | Hijack (46) | `{0} has stolen {1} prisms` (`everyN` 100), the quarter / half / lead-change race beats, `Comeback system is on` |
+| `GameToastConfig_WildlifeLiberation` | WildlifeLiberation (40) | `{0} has hunted {1} creatures` (`everyN` 5), the quarter / half / lead-change milestones (53-55), `{0} broke into the core!` (56), `Comeback system is on` |
+| `GameToastConfig_Switchback` / `_Skein` | Switchback (45) / Skein (51) | halfway / lead change / home stretch (`gate` / `ring`), `Comeback system is on` — open chains, so no final lap |
+| `GameToastConfig_Headlong` / `_Redline` / `_Breakwater` | Headlong (49) / Redline (53) / Breakwater (50) | halfway / lead change / home stretch (`gate` / `gate` / `station`) + `{0} is on the final lap`, `Comeback system is on` |
+| `GameToastConfig_AstroLeague` | AstroLeague (37) | `{0} scores! {1}/{2}`, `MATCH POINT - {0} needs one more goal`, `Golden goal - the next one wins`, `Comeback system is on` |
 | `GameToastLibrary` | — | shared + every mode config above |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |
 

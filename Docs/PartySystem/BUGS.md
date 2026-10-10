@@ -27,11 +27,16 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
 | B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
 | B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
-| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed | 🟡 |
-| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed | 🟡 |
+| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed; the lobby half did not work and was re-fixed 2026-10-08; both halves passed on Amoebius (5 processes) | 🟡 |
+| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed; passed on Amoebius 2026-10-08 | 🟡 |
 | B22 | The Scoreboard's client exit and rematch caption were never wired (`{fileID: 0}`), so B18's propagated fix was a no-op here | Root-caused & fixed | 🟡 |
 | B23 | The arcade card lobby does not follow the host: a flying guest is never pulled in, a guest who missed it once never gets it, a host who changes card cannot move the party, and guests draw phantom AI | Root-caused & fixed | 🟡 |
 | B24 | A rate-limited (HTTP 429) session create/join matched NEITHER retry filter, so the retry budget never ran: the guest bounced to its own solo menu and the host fell back to an OFFLINE session, which then correctly hid the online-only party panel | Root-caused & fixed 2026-10-06 from the first MPPM run | 🟡 |
+| B25 | Nothing enforced the four-player party size: two simultaneous Joins on a 3/4 party seated a fifth | Fixed 2026-10-08 (one size, 4, enforced by the session's own seats); passed on Amoebius 2026-10-08 | 🟡 |
+| B26 | A late online success could still build a Relay session over a live OFFLINE host: the §4.2 invariant was checked only at entry | Fixed 2026-10-08 (re-checked under the mutex and after the shutdown); L1 test + negative control | 🟡 |
+| B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
+| B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
+| B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1044,6 +1049,8 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 > — so without the explicit clear the stale value would persist until the next
 > join/leave.
 
+**Re-run on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T7: with a party of host + member + spectator in a match, the host was `kill -9`ed. The member and the spectator each became a solo host at 1/4 on Menu_Main within 2.3 s wall. TCP sees the dead peer at once; UTP waits out its 10 s disconnect timeout, so the real figure is about 10 s more. Amoebius, not Unity.
+
 ---
 
 ## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 🟢 (CLOSED 2026-09-11 — the symptom was B16; the recycle stays reverted)
@@ -1571,6 +1578,8 @@ disagrees (`EvaluateLobbyReadyGate`).
 the turn/launch should proceed within a tick. Also: press Ready twice quickly → the match
 must NOT start until everyone has pressed.
 
+**Run on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08). The match half held; the LOBBY half did not, until fixed.** T4 (match): three pilots clicked the HUD's Ready button and the fourth left. The host's gate logged `3/4`, then `(client N disconnected): 3/3`, and the countdown started. The gate re-counts inside the disconnect callback, and NGO 2.13.3 removes the id from `ConnectedClientIds` before invoking it (`NetworkConnectionManager.cs` 1537 → 1567, read from the package), so the count is right on real NGO too. **T4-lobby (the arcade card lobby) FAILED on run 2:** three pressed Start, the fourth (unready) left, and the lobby sat at 3/4 forever. `ExpectedHumanCount` is `Max(_committedHumanCount, connected)`. The departure lowered `connected` but never the commit-time floor (4), so the re-decide this entry added compared 3 with 4 and returned, with no log. The fix in `ArcadeConfigSyncManager.HandleClientDisconnected` clamps the floor to the humans still connected; the floor exists for members still connecting, not for ones who left. The lobby gate now also logs each re-decision, as the match gate does. Run 6, after the fix: T4-lobby passed (`All players ready (client 3 left) - launching game`, and the three loaded the match). Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+
 ---
 
 ## B21 — A pilot who leaves mid-match takes their ship AND their score out of the arena 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
@@ -1614,6 +1623,7 @@ separately a hard kill). Expect: the ship keeps flying under AI, a toast names t
 pilot, the scoreboard still shows their score, and their domain's total still includes it.
 Watch that the host's roster does not double-count them.
 
+**Passed on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T3: a guest left mid-race. The host logged `left mid-match - handing '<name>' to the AI`; that vessel's owner flipped to the server and its position kept changing; the leaver's RoundStats row was still on the host. Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
 
 ---
 
@@ -1846,3 +1856,170 @@ card with one guest flying and one guest cold-joining, host backs out and picks 
 - `RepublishHumanCount` reads the connected clients inside `OnClientDisconnectCallback` and so
   inherits whatever that callback's ordering guarantees are — the same dependency
   `ExpectedHumanCount` already had. A transient over-count costs one AI chip for a tick.
+
+## B25 — Nothing enforces the four-player party size: two simultaneous Joins on a 3/4 party seat a fifth 🟡 (diagnosed + fixed 2026-10-08; needs the MPPM retest)
+
+**Shape.** A party has two sizes (`HostConnectionDataSO`): `partyDisplaySlots` = **4**, the size
+players see and the game's rule, and `maxPartySlots` = **6**, the transport capacity with spare
+seats so a flickering double-count in the polled roster cannot refuse the fourth member (the
+header comment on the field). Every check of the GAME's size runs on the **joining or inviting
+client**, against **published, polled** data:
+
+| Where | What it checks | Against |
+|---|---|---|
+| `FriendsListPanel` (Invite button) | `HasOpenDisplaySlots` (4) | the local roster |
+| `JoinTargetValidator` (Accept / Join / Spectate pre-flight, review Phase 1c) | target's `partyCount >= partyMax` | the target's **presence-lobby properties**, refreshed on the presence poll (seconds old) |
+| `HostConnectionService.SendInviteAsync` backstop (`:639`) | `HasOpenSlots` | **6**, the transport size |
+| The party session itself | `CreateAsync(connectionData.MaxPartySlots)` | **6** |
+
+Nothing on the **host** compares the live member count with `PartyDisplaySlots` after a join.
+
+**Failure.** Party at 3/4. Two players press **Join** on it within one presence-refresh window.
+Both pre-flights read `3/4` and pass; both `JoinSessionByIdAsync` calls succeed because the
+session holds 6; the party is 5/4. What follows is unspecified: the arcade lobby draws four slots,
+`PARTY_MAX_KEY` publishes 4 while the count says 5, and a 4-seat card launches with five humans.
+The same window lets an invite to a full party out of the host (`:639` checks 6), though there the
+acceptor's pre-flight usually catches it with "…party is full".
+
+**Why it has not been seen.** It needs two joins inside one refresh interval on a party that is
+exactly one short; MPPM runs so far have used two or three instances. The hardening plan's L1 test
+"two guests join-direct simultaneously → both seated" (HARDENING_PLAN_STEAM_LAUNCH.md §5.1 #2) is
+written for a party with room for both, and **passes on exactly the case that breaks**.
+
+**Fix (applied 2026-10-08, the owner's call: "only four players, no six anywhere").** One party
+size, 4. `partyDisplaySlots` / `PartyDisplaySlots` / `HasOpenDisplaySlots` are gone;
+`maxPartySlots` is 4 in code and in `HostConnectionData.asset`, and the party session is created
+with 4 seats, so **UGS itself refuses the fifth join** - the authority the client checks lacked.
+The loser of the race gets "That party is full." (`PartyInviteController` catches the policy's
+`Full` class and bounces to its own menu with that toast, instead of a red error and a silent
+bounce). `SendInviteAsync`'s backstop now checks 4. `HasOpenSlots` counts distinct player ids,
+which is what the spare seats used to absorb. A spectator also takes a seat, so a full party
+can no longer be spectated; `JoinTargetValidator` refuses that before teardown.
+
+**Options considered before that call** (kept for the record):
+1. Host-authoritative admission: when the host's reconcile sees `PartyMembers.Count >
+   PartyDisplaySlots`, it removes the most recent joiner(s) (`RemovePlayerAsync`, the kick path at
+   `HostConnectionService.cs:1090`) with a "party is full" reason the joiner's bounce path already
+   toasts. Keeps the transport headroom for flicker; makes 4 a rule instead of a hint.
+2. `SendInviteAsync`'s backstop gates on `HasOpenDisplaySlots`, the property its own doc comment
+   names as the one "an invite affordance must gate on".
+3. L1 tests: "party at 3/4, two guests join simultaneously → exactly one seated, the other toasted
+   'party is full' and back in its own menu"; and the existing 4/4 variant.
+
+**Evidence.** Read from code on `Ys-bleeding-edge` 280c0475: the call-site table above
+(`grep -rn 'HasOpenSlots\|HasOpenDisplaySlots\|PartyDisplaySlots\|MaxPartySlots' Assets/_Scripts`).
+The capacity split was pinned by `PartyInviteSystemTests.FourMembers_PartyIsFullByTheGameRule_TransportKeepsHeadroom`,
+deleted with the split; the one size is pinned by `HostConnectionDataSOTests.MaxPartySlots_IsFour` /
+`HasOpenSlots_CountsEachPlayerOnce` and `JoinTargetValidatorTests.Spectate_FullParty_IsPartyFull`.
+
+**Passed on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T2b: two players pressed Join on a 3/4 party, the presses < 1 ms apart. Both passed the pre-flight; the session's 4 seats refused one (`Session is full.`), which `UgsRequestPolicy` classified `Full`; it bounced with "That party is full." and came back as a solo host at 1/4. The host ended at members 4/4, conns 4. **Found by the run:** that loser also logged a red `[HostConnectionService] JoinPartyDirect error`. The Phases 0–1 checklist promised a warning, so the three join catch sites now share `LogJoinFailure`, which keeps the error for real faults only. Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+
+---
+
+## B26 — A late online success could still build a Relay session over a live OFFLINE host 🟡 (found by reading + fixed 2026-10-08; L1-tested)
+
+**Shape.** `HostConnectionService.EnsurePartySessionAsync` stands down while `IsOfflineSession`
+is up, which is how it honours HARDENING_PLAN §4.2: a late online success must never tear down a
+live offline host. But it checked the flag once, at entry. `OfflineModeService` raises the flag
+only after a party-layer reset and a profile load that can take seconds. So a call that had passed
+the entry check could still be queued on the session-creation mutex, or inside its NetworkManager
+shutdown, when the offline host came up, and would then go on to `CreateAsync` over it. The callers
+that can be in flight at that moment:
+- the boot gate's retry;
+- a late sign-in's init;
+- the invite controller's recovery.
+
+**Fix.** The flag is re-checked at two points:
+- **Under the mutex,** with no await between that check and the shutdown, so the shutdown can never
+  land on a live loopback host.
+- **After the shutdown,** so no session is built over one. That path returns the state machine to
+  `Disconnected`, where the offline reset left it.
+
+**Evidence.**
+- `OfflineSessionTests.ALateOnlineSuccess_NeverBuildsASessionOnTopOfALiveOfflineHost` raises the
+  flag while the call's shutdown is pending, then completes the shutdown. It passes with the fix,
+  and fails without it (`CreateAsync` is called).
+- Found by a code read during Block 4's mapping (2026-10-08). It has never been seen in a play
+  session.
+
+---
+
+## B27 — A late sign-in re-joined the presence lobby of an OFFLINE session 🟡 (found by reading + fixed 2026-10-08; L1-tested)
+
+**Shape.** Auth can succeed after the boot gate has fallen back to offline, while Relay keeps
+failing. `HandleSignedInEvent` → `EnsureInitializedAsync` had no offline guard. It even checked the
+flag a few lines later, to skip the presence rejoin, but it still re-joined the presence lobby and
+moved the party state to `InPresenceLobby`. That undid step 1 of `OfflineModeService` and restarted
+UGS traffic under a player who had been told they were offline.
+
+**Fix.** `EnsureInitializedAsync` stands down while the flag is up. Coming back online is
+`ReconnectService`'s re-boot, which lowers the flag first.
+
+**Evidence.** `OfflineSessionTests.Case5_OfflineSession_ALateSignIn_DoesNotRejoinThePresenceLobby`
+passes with the fix and fails without it.
+
+---
+
+## B28 — The boot gate's in-attempt retry was unbounded 🟡 (found by reading + fixed 2026-10-08)
+
+**Shape.** `AuthenticationSceneController.LoadMainMenuNetworkedAsync` gives each Relay attempt a
+timeout, then on failure awaits `HostConnectionService.EnsurePartySessionAsync()` with no timeout
+and no token. When UGS is reachable but not answering, a hung create held the gate as long as it
+liked. "Three attempts, then offline" was therefore a minimum, not a maximum.
+
+**Fix.** The retry is bounded by the same per-attempt timeout (`AttachExternalCancellation`).
+Abandoning the wait is safe: the call keeps running, and B26's re-checks stop it from touching an
+offline host.
+
+**Evidence.** Compile only (`unity_refcompile`). This path needs a hanging UGS, which no harness
+here can produce. QA: boot with UGS blocked at the firewall but the NIC up. The offline notice
+must arrive within five attempt timeouts: three Relay waits plus two bounded retries, 75 s at the 15 s floor.
+
+---
+
+## B29 — The Join/Accept pre-flight refuses on stale presence 🟡 (found by the five-process runs 2026-10-08; Session case fixed 2026-10-09, Count case open)
+
+**Shape.** `JoinTargetValidator`, the zero-request pre-flight from review Phase 1c, decides from
+the target's **polled presence**. A host publishes `partyCount` and `partySession` on its own
+refresh tick, and a guest reads them on its tick. The guest's view can therefore be up to two
+refresh intervals old. A refusal made on it is a false refusal, and a person sees it as a toast
+for a party they could have joined:
+
+- **Count.** Right after a kick and a leave, B's party was really 2/4. A's row still read 4/4, and
+  A's Join was refused with "PilotB's party is full." (instrumented run, T2.)
+- **Session.** Right after a host drop, the new host's invite carried its new session id. Its
+  presence still carried the old one, and the guest's Accept was refused with "…party is no
+  longer available." (runs 3 and 4, `SessionChanged`.)
+
+**Why it is not simply relaxed.** A refusal here is what saves a player's own session from a
+doomed teardown. The validator cannot tell "the invite is stale" from "presence is stale" without
+a fresher source. Its count check is advisory anyway: since B25 the session's own seat count is
+the authority, so a false "full" costs the player a retry and nothing else.
+
+**Cure.** Block 5 (push instead of poll) shrinks the window this rides on. Until then the
+scenarios wait until each racer's row shows the host's real count before pressing Join
+(`wait_joinable`), as a person reads the row.
+
+**The Session case is fixed (2026-10-09).** For an Accept there *is* a fresher source, and it was
+being published out of order:
+- `SendInviteAsync` saved the invite lines alone.
+- The sender's `partySession` advertisement went out only on its next presence tick
+  (`PublishPartyState`).
+- A guest's poll that landed in between read a brand-new invite next to the sender's previous
+  session, and refused it.
+
+Now `PublishInvitePayloadsToCurrentPlayer` stages both properties for the same save
+(`HostConnectionService.InvitePublicationProperties`). No poll can read an invite without the
+session it names, so an Accept is refused only when the session really moved.
+
+This was "defect 5" of the Block 3 runs, mislabelled as "the new host's invite expired on send".
+The expiry in the host's log is a symptom: an unaccepted invite outlives its 60 s lifetime during
+the harness's 240 s wait. The cause was on the invitee's side:
+`Join pre-flight refused (SessionChanged) … PilotC's party is no longer available.`
+- **Reproduced** on Amoebius's five-player harness with every player on a simulated 4G line
+  (`COSMIC_SHORE_NET_SIM=4g`, `Port/docs/MULTIPLAYER.md`).
+- **Tests:** `JoinTargetValidatorTests` pins the failure shape and the one-save rule.
+- **Harness:** the T4-lobby classifier now reads the invitee's log first.
+- **Direct Join** (no invite) compares the row's own session with itself, so it never had this
+  case.
+

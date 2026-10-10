@@ -1,29 +1,72 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-**Generated:** 2026-10-05 · **Scan covers:** merges up to `50b563f7` for the
-project at large (PRs #583–#710 plus the direct branch merges: Dog Fight, Wildlife
-Liberation, Astro League improvements, Cleave scoring, game-data JSON schema,
-profile/ads, quit button, menu camera, pause-menu perf, display-name validation,
-Windows build failures), **plus a multiplayer-only refresh up to `dda806d52`**
-(the party/presence lifecycle work B18–B23, the Join + Spectate entry path, the
-arcade card lobby, the multiplayer SDK upgrade, offline mode).
+**Generated:** 2026-10-05 (arcade/arena matrix pass), **refreshed 2026-10-06** for PRs #971–#976,
+**refreshed 2026-10-08** for the party cards and the round-3 PRs
+· **Scan covers:** PR bodies for merges up to `3ba8ea1d2` (PRs #583–#956, the 2026-10-05 refresh
+in PR #961), plus a full sweep of every launchable Arcade and Arena card, its mode doc's
+verification section, and the per-vessel entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
+against `bleeding-edge` at `bf0015838`; **plus** PRs #971–#976 at `71d67ba9b` (six new Block P
+items); **plus**, at `1a437696a`, Block J (the two party cards, never tracked before) and
+Block Q (seven items from merged PRs #998, #1001, #1002, #1004, #1005 and #1007, read from each PR's
+"Needs Editor verification" section). PRs #964–#970, #980, #983, #985–#996, #999, #1006, #1009 and
+#1010 are merged too but are **not** itemised yet: the "Known, do not fail on" lines that round 3
+made untrue are corrected below, and their own checks wait for the next full `/qa-backlog` scan.
+**Plus** a multiplayer-only refresh up to `dda806d52` — the party/presence lifecycle work
+**B18–B24**, the Join + Spectate entry path, the arcade card lobby, the multiplayer SDK upgrade
+and offline mode (the `QA-NET-*` items).
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
-> ⚠ **The general rescan is still outstanding.** ~380 merges landed between
-> `50b563f7` and `bf0015838`; the 2026-10-05 pass read only the multiplayer ones. The
-> **swarm / substrate / builder** items below came in separately, written by the branches
-> that authored that work. Everything else merged after `50b563f7` — vessel, UI,
-> tooling, the rest of ecology — is **not yet on this list**. Run `/qa-backlog scan`
-> before treating the list as complete.
+> **The 11 parallel PRs from the same 2026-10-05 audit have all merged (#964–#976, 2026-10-06).**
+> Six of them now have their own items in **Block P** at the end of Priority 0: the Urchin HUD,
+> hull ability rows, Urchin AI, the fleet AI boost, Hijack replication and toasts. The mode items
+> above Block P no longer excuse those gaps: a missing Urchin ability row, a missing pop-up
+> message where a mode now has one, or a missing objective arrow is now a real failure.
+
+> **Merged 2026-10-06 on `Ys-bleeding-edge`:** this file carried two headers — the general
+> matrix pass above and the multiplayer-only refresh. Both bodies are kept; run `/qa-backlog scan`
+> on the integrated branch before treating the list as complete.
+
+**Why this list is laid out in blocks.** The audit found that of 31 launchable arcade/arena
+cards, **16 had never been opened in Unity** and **11 more had only a partial pass** (one rung,
+one playtest, or a UI-only pass); only Skim Race, Joust, Scurry and Astro League count as
+played. The previous list covered six of those modes. Every never-run or partly-run mode now
+has its own item, and each hull's open vessel checks sit next to the modes that hull flies, so
+**one Editor session clears one block**. Blocks are ordered by how many players reach them:
+
+| Block | What | Why here | Items |
+|---|---|---|---|
+| 0 | Gates + the whole-roster smoke test | If these fail, nothing below can be judged | 11 |
+| A | Scarab hull + Scarab Scramble, Tollway, Wrecking Ball, Undertow | Unlocked for every player (`isLocked: 0`) | 5 |
+| B | Butterfly hull (fold feel) + Waystation, Dustup, Tapestry, Sirocco | Unlocked for every player; never opened at all | 5 |
+| C | Arena: Regatta, Broadside, Brood Rush, Astro League rework, pilot swap | Every card seats the starter Squirrel | 5 |
+| D | Maelstrom tournament | Starter hull; strings blocks A–C together | 1 |
+| E | Sparrow hull (13 red entries) + Dog Fight, Salvo, Breakwater, Wildlife Liberation | On 11 cards, the most in the fleet | 14 |
+| F | Dolphin hull (10 red entries) + Rampage rungs 1–3, The Bends, Switchback | 7 cards; its forest is shared by four modes | 9 |
+| G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
+| H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
+| I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
+| J | Two-player setup (shared by Block Q); both party cards retired 2026-10-08 | No items | 0 |
+| P | The parallel PRs' own Editor checks (#971–#976) | Merged 2026-10-06, never opened in Unity | 6 |
+| Q | The round-3 PRs' own Editor checks (#998, #1001, #1002, #1004, #1005, #1007) | Merged 2026-10-08, never opened in Unity; three need two players | 7 |
+
+Priority 1 and 2 (platform, ecology, toys, UI, the other vessels) follow unchanged.
 
 Every item below landed on a shared branch **without ever being opened in Unity**
-by its author (or was play-tested only in part). Work top-down: P0 first.
+by its author (or was play-tested only in part). Work top-down: Block 0 first, then the blocks
+in order.
 
-**How to report:** copy `RESULTS/TEMPLATE.md` → `RESULTS/<date>-<tester>.md`,
-fill the table, commit. Full workflow: `Docs/QA/README.md`.
+**How to report:** use **FrogletTools ▸ QA ▸ QA Session** in Unity (or copy
+`RESULTS/TEMPLATE.md` → `RESULTS/<date>-<tester>.md`), fill the table, submit. Full workflow:
+`Docs/QA/README.md`.
 
 **Status key:** ⬜ never run · 🟡 partially confirmed · 🔴 failed, awaiting fix
 · ⛔ blocked. Items that PASS leave this file (→ `ARCHIVE.md`).
+
+**Words used in many items:** the *Arcade screen* and *Arena screen* are the two game-picker
+screens off the main menu; *intensity* is the 1–4 row on a card's launch panel; *Multiplayer
+Play Mode* is **Window ▸ Multiplayer ▸ Multiplayer Play Mode**, which opens a second player
+window; *toasts* are the short pop-up messages a mode shows during play; the *objective arrow*
+is the on-screen arrow pointing at what to do next.
 
 **Standing preconditions for every item** (do these once per session):
 - Get the build being tested (branch + commit), then let Unity **finish importing
@@ -38,7 +81,49 @@ fill the table, commit. Full workflow: `Docs/QA/README.md`.
 
 ---
 
-## Priority 0 — gates. Nothing below matters if these fail.
+## Priority 0 — Block 0: gates. Run these first; nothing below matters if they fail.
+
+One Editor session for everything except the two **player builds** (Windows, iOS), which need a
+build machine and can run in parallel. QA-ARCADE-ROSTER-SMOKE is the cheapest check on the whole
+list — run it first in every session that will touch a mode block, on the build you are testing.
+
+### QA-ARCADE-ROSTER-SMOKE ⬜ — every Arcade and Arena card opens, launches and forces the right ship
+**Source:** the arcade/arena audit of 2026-10-05 (29 cards on the two live rosters; 16 say
+in their own docs they were never opened in Unity, 11 more were played only in part). This
+is the cheapest possible check across the whole roster and it runs before every mode block
+below: a card that fails here makes its block unrunnable, so report it and skip that block.
+Rosters: `_SO_Assets/Games/GameLists/ArcadeGames.asset` (25) and `ArenaGames.asset` (4).
+
+1. Open `Menu_Main` and press Play. Wait for the main menu.
+2. Open the **Arcade** screen. Count the cards, scrolling to the very bottom. There must be
+   **24 cards in the grid** plus the wide **Maelstrom banner** (Maelstrom is not a grid card). Scroll to the
+   last card and click it.
+3. For each Arcade card, open it, set **intensity 1**, launch with the default lobby (you +
+   AI), and wait until the countdown ends and you can fly. Look at your own ship, then
+   press **Esc** and return to the menu. Write down any card that does not reach "fly".
+   The ship must be: **Squirrel** for Skim Race and Joust; the ship you picked (Sparrow, Manta
+   or Squirrel) for Scurry; **Dolphin** for Rampage, The Bends and Switchback; **Rhino** for
+   Cleave and Headlong; **Sparrow** for Wildlife Liberation, Dog Fight, Salvo and Breakwater;
+   **Scarab** for Scarab Scramble, Tollway, Wrecking Ball and Undertow; **Urchin** for Hijack
+   and Skein; **Manta** for Bloomrush and Redline; **Butterfly** for Waystation, Dustup,
+   Tapestry and Sirocco.
+4. Open the **Arena** screen. There must be **4 cards**: Astro League, Brood Rush, Regatta,
+   Broadside. For each: open it, step through the ship picker, pick one ship, press the
+   select button under the ship picture, launch at intensity 1, fly for a moment, return.
+5. Back on the Arcade screen, click the **Maelstrom banner** and confirm its lobby scene loads (the full run is
+   QA-MAELSTROM-RUN).
+6. Keep the Console open throughout and copy any red error that names a card or a scene.
+
+**PASS:** 24 Arcade cards are drawn and the last one opens; every card reaches "fly" with
+the ship listed for it in step 3; the Arena screen shows 4 cards and each launches with the
+ship you picked; the Maelstrom lobby loads; no red Console error names a mode, controller
+or scene.
+**FAIL:** a card missing from either grid · a card that does nothing when clicked · a
+launch that hangs on the connecting panel or the countdown · the wrong ship spawning · a
+red error naming a mode, controller, scene or `Missing (Mono Script)`.
+**Known, do not fail on:** the Butterfly, Manta, Urchin, Scarab and Serpent are silent or nearly
+silent. (The Urchin now HAS ability icons, and the modes now have their pop-up messages and
+arrows - those are checked in Block P and the mode items, not here.)
 
 ### QA-NET-SDK-UPGRADE ⬜ — the game still compiles and reaches the menu on the new multiplayer packages
 **Source:** `Packages/manifest.json` @ `114df89ec`. Five multiplayer packages moved at
@@ -100,6 +185,22 @@ game Ids` (Unity Ads was removed in #694) and no `GetComponent` crash frame unde
 **FAIL:** a build that dies in the linker · a player that closes on reaching the menu
 · any managed exception in `Player.log` that does not appear in the Editor. Attach the
 last 100 lines of `Player.log` for any failure.
+
+### QA-IOS-BUILD ⬜ — an iOS build compiles and reaches the main menu
+**Source:** PR #946 (Cosmic Shore bundle ids, a free unsigned-ipa build, the first iOS
+compile fix). **Why a gate, and why separate from the Windows build:** iOS is a fresh
+IL2CPP target that has never produced a running build; a platform-only compile error is
+invisible in the Editor and on the Windows player.
+1. Produce an **iOS build** (or take the unsigned ipa this branch's CI produced). Record
+   whether the build itself completes.
+2. Install and launch on an iOS device. Sign in and reach `Menu_Main`.
+3. Read the device log afterwards.
+
+**PASS:** the build completes; the app launches, signs in and reaches `Menu_Main`; no
+managed exception in the device log that does not also appear in the Editor.
+**FAIL:** a build that fails to compile or link for iOS · an app that closes before the
+menu · an iOS-only managed exception. Attach the build log / device log for any failure.
+**BLOCKED is fine** if no iOS device or signing path is available — say so.
 
 ### QA-MENU-CAMERA-RIG ⬜ — Menu_Main's camera is no longer Cinemachine
 **Source:** PR #671 (`4245cf8f` — 335 lines of vCam orchestration deleted, replaced by
@@ -231,6 +332,885 @@ else in the game snaps.
 lifeforms), errors continuing every frame, or the errors accompanied by prisms that
 never appear at all.
 
+### QA-SHELL-COLLISION ⬜ — shape-precise shielded-prism collision (Burst shell tier)
+**Source:** PR #627. Reference: `Docs/SPATIAL_INDEX.md` § "Shell view — in-editor
+verification". Touches every skim and every shield pop in the game.
+
+1. **Squirrel on Skim Race:** skim the super-shielded track lining along its length,
+   including grazing passes at the spike tips and passes aimed at the gaps *between*
+   spikes.
+2. **Rhino:** swipe a shielded prism and note at what distance the shield pops.
+3. Fly a dense trail while crystals auto-shield prisms around you.
+4. Profile a SkimRace round: watch `ShellContact.Build` / `ShellContact.Query` and
+   `Physics.SendEvents`.
+5. Toggle the runtime A/B switch off and back on.
+
+**PASS:** skims register at the **stella surface** (≈3× the box), spike-tip grazes
+hit, aimed-at-the-gap passes do **not**; boost is granted per shell touch; the Rhino
+pops at octahedron reach rather than point-blank; no prism becomes untouchable and no
+double-fire (pop *and* destroy in one contact); the two markers stay sub-ms and
+`Physics.SendEvents` is flat vs. the previous build; the A/B toggle reverts cleanly.
+**FAIL:** skims only at the box · gap false-positives · pop-then-destroy · any prism
+that cannot be hit at all · marker spikes or a rising `Physics.SendEvents` train.
+
+### QA-EDITMODE-TESTS ⬜ — run the test suites that were written but never executed
+**Source:** PRs #659, #639, #627, #641, #668, #651, #673 + **#688/#690** (all 61 NUnit
+files were **moved under `Editor/` folders** so they stop shipping into the player, and
+`Assembly-CSharp-Editor` was given `InternalsVisibleTo`). That move touched 105 files
+and has never been run — a suite that silently stops compiling now looks like "no
+failures".
+
+1. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.**
+2. Record the **total test count** as well as pass/fail. The move preserved 762 `[Test]`
+   methods — a total far below that means suites are missing, not passing.
+3. Record every failing test by name and assertion message.
+4. Specifically confirm these suites are present and green: `CellSpawnFormationTests`,
+   `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`,
+   `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`,
+   `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `DisplayNameValidatorTests`,
+   `ShipModifierTests`.
+
+**PASS:** all EditMode tests green, the total is ≈762, and all eleven suites appear.
+**FAIL:** any red test (record the name + assertion message), a suite that does not
+appear at all (it did not compile into the editor assembly), or a total materially
+below 762.
+
+### QA-AUDIT-TOOLS 🔴 — run every FrogletTools auditor and record its verdict
+**Last QA:** FAIL on `88478a6d` (2026-10-09, akouroshm) — Auditors ran without throwing, but several report beyond the known exceptions. Audit Vessel Skimmers: **6 faults** (known exception is Serpent only). Validate Lifeform Crystals: **34 warnings**. Measure Cell Environment Baselines: **1 warning**. Game Mode Prefab Kit Validate: **75 warnings**. Pending Tool Changes: **~11 uncommitted files**. Ability Rows / Elemental Morphs / Speed Tunnel / Corridor Radii / Cell-Owned Visuals / Occlusion Corridor: ran clean. NOTE: the item's step 10 is STALE — End Game Conditions correctly shows Wildlife Liberation **30** (the mode was re-targeted 250 to 30) and Dog Fight 120; 30 is right, so that line is a doc bug in this item, not a tool fault (fixed in the item body).
+
+**Source:** PRs #637, #641, #653, #659, #661, #668, #646, #650, #702. Each auditor is a
+cheap, asset-only check that encodes a contract; several have never been run.
+
+Run each and paste its report into your results file:
+1. **Vessels ▸ Audit Vessel Skimmers**
+2. **Vessels ▸ Audit Vessel Ability Rows**
+3. **Vessels ▸ Audit Vessel Elemental Morphs**
+4. **Vessels ▸ Validate Speed Tunnel Law**
+5. **Vessels ▸ Audit Corridor Vessel Radii** *(new — re-run after the skimmer-exclusion
+   fix; every hull radius must read ship-sized)*
+6. **Ecology ▸ Audit Cell-Owned Visuals**
+7. **Ecology ▸ Validate Lifeform Crystals**
+8. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
+9. **Ecology ▸ Measure Cell Environment Baselines**
+10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **30**
+    and Dog Fight **120** (Wildlife Liberation was re-targeted 250 → 30; 30 is correct)
+11. **Game Modes ▸ Game Mode Prefab Kit ▸ Validate**
+12. **Build ▸ Pending Tool Changes** (should list nothing unexpected)
+
+**PASS:** every tool runs without throwing, and each reports either clean or *only*
+the known exceptions: Serpent fails the skimmer audit; Manta/Rhino/Serpent are listed
+as design-blocked in the ability-row audit; Dolphin/Urchin/Rhino/Grizzly lack elemental
+morphs; `SkyboxModel` entries listed under OK in the cell-visual audit.
+**FAIL:** any tool that throws, or any *new* failure beyond the known exceptions above
+— especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty, or a
+corridor radius that is not ship-sized.
+
+## Priority 0 — Block A: the Scarab (unlocked for every player) — the hull and its four modes
+
+The Scarab is unlocked for every player (`isLocked: 0`) and carries four Arcade cards. One
+session: the vessel item first (if the Scarab will not spawn, the four modes cannot run).
+
+### QA-SCARAB-VESSEL ⬜ — the Scarab hull, its moves, and its ring, from the ground up
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Scarab vessel foundation" (new
+`VesselClassType 12`, prefab cloned outside the editor), 🔴 "Scarab hull + puppetry +
+elemental morphs", 🔴 "Scarab analog juke + mirrored cavitation plate" (three mechanics
+retired: grapple, reverse modifier, phase grab), 🔴 "Scarab switch — interior fill removed".
+The Scarab is unlocked for every new player and carries four modes, so this is the
+highest-impact vessel item. Reference: `_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md`.
+
+1. Start `Menu_Main`. Use the **Vessel Changer** toy and pick the Scarab. If it shows as a
+   plain sphere and nothing spawns, stop: open `_SO_Assets/Vessel Prefab Container.asset`,
+   look at slot 7, and report whether it reads `None (Transform)`.
+2. Enter freestyle (click the centre of the screen, or press **Y** on a gamepad). Look at the
+   ship from the side while it sits still.
+3. Fly hard turns left and right, speed up, slow down.
+4. Push the **right stick** sharply to one side (the juke dash). Then fly a hard turn
+   immediately after it.
+5. Hold the **left trigger** fully down (on keyboard: the drift key) and fly normally for
+   10 s. Nudge the right stick partway while holding it.
+6. Hold **B** on a gamepad (or **R** on keyboard) and bump a ball in Scarab Scramble or
+   freestyle if one is near.
+7. Press the Mass ability (place a ring). Look through the ring's middle.
+8. Use the Element Charger toy (or crystals) to raise one element from 0 to 10, then
+   another. Watch the hull.
+9. Open `Scarab.prefab` in the Project window and read the Inspector top to bottom.
+10. If you can run two players (Multiplayer Play Mode, 2 players), fly a Scarab on each and
+    juke near each other.
+
+**PASS:** the Scarab spawns and reads as a beetle — domed shell with a seam, a forward horn,
+six legs — with the team colour on the shell and horn, not the belly; side-on at rest the
+belly closes with the shell (no gap of daylight, no parts poking through); turning opens the
+wing cases (wider on the outside of the turn), legs tuck at speed and splay when slow, the
+horn swings against the nose, antennae lag and settle; the juke spins the whole visible ship
+360° and the bank into turns comes back straight after; holding the left trigger changes
+nothing (no twitch, no flipped plate) and a partial right-stick nudge works as normal;
+holding B/R does nothing special to a ball (an ordinary bounce); the ring blooms with an
+empty middle and reads larger than before; each element glides the hull into a new shape
+over about a second (never a snap) while the puppetry keeps moving; the prefab shows no
+`Missing (Mono Script)`; a remote Scarab's drift pose and juke look the same on both
+machines.
+**FAIL:** a sphere or nothing in the Vessel Changer · the Sparrow's model visible under the
+beetle · team colour on the underside · a visible gap between belly and shell · a rigid
+hull that never animates · a juke that does not spin, or a bank that never comes back ·
+any visible effect from holding the left trigger or B/R · a disc of prisms filling the ring
+· a morph that snaps · a missing-script row.
+**Known, do not fail on:** the silhouette is a placeholder ("a low-poly scarab, not a
+floating-parts spaceship") — do not file the look itself. The Scarab's four ability icons are
+white **placeholder** outlines (a blast, a ring, a ball, a dial) waiting for final art; they
+must NOT be the Sparrow's missiles/bullet/boost pictures any more (QA-HULL-ABILITY-ROWS). The juke has no sound (`jukeWhooshEvent` is
+empty on purpose). Raising Mass to 5 does nothing visible to the ring ("Armored Switch" has
+no new home yet).
+**Report a number:** select the Scarab's hull object (`SparrowModel1`) and write down its
+**world scale** from the Inspector — the blast plate is sized from it.
+
+### QA-SCARAB-SCRAMBLE-MODE ⬜ — "Scarab Scramble" has never been opened
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Scarab Scramble — the Scarab-only
+hoop-court party mode" (`claude/scarab-party-game-pxe569`). `GameModes.ScarabScramble = 43`.
+The forge gate is now installed by nobody (unverified). AI Scarabs juke since PR #1002 (checked in
+QA-SCARAB-SCRAMBLE-AI-JUKES). Reference: `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`
+§ In-editor verification.
+
+1. Open `MinigameScarabScramble.unity`. Select the `Game` object and confirm it carries
+   `ScarabScrambleController` and `ScarabScrambleGoalTurnMonitor` with no
+   `Missing (Mono Script)`.
+2. Launch from the Arcade card at intensity 1, you plus AI. Watch the start: a court sphere
+   about 480 across blooms in the middle, **four rings** bloom in facing the centre,
+   crystals appear inside the court.
+3. Fly your ship's front sphere (the skimmer) through a **bright white** crystal. It must
+   turn into a ball of your colour, where it was, at rest. Then fly through a **coloured**
+   (elemental) crystal: it must be collected normally, not turned into a ball.
+4. Push your ball through any ring, from either side.
+5. Push an **enemy's** ball through a ring. Then touch it yourself and push it through again.
+6. Juke (right stick, sharply) into an enemy ball. Then bump one without juking.
+7. Bank a ball off two or more walls into a ring.
+8. Get four or more balls loose in the court at once.
+9. Play to the end (first team to **10**). Press Play Again.
+10. With two players (Multiplayer Play Mode), repeat steps 3, 4 and 6 from the second
+    player's window.
+11. Stay in a match long enough for trail to pile up in the court and watch the court edge.
+
+**PASS:** the scene opens clean; the court, four rings and crystals appear; a white crystal
+becomes your ball and a coloured one does not; the objective arrow points at your ball; a
+ball through a ring flares the ring, detonates the ball, shows `{name} rings one home -
+n/10`, and moves your team's score; an enemy ball scores nothing until its owner touches it
+again; a juke converts an enemy ball to your colour and a plain bump never does; a bank shot
+shows `BANK x{n}`; a fourth loose ball detonates **all** balls at once with a court-wide
+message on every machine; the match ends at 10 with a winner banner and Play Again reloads;
+the second player sees balls at the right size and colour, their goals count on both
+machines, and their juke steals; creatures pour over the court wall and graze once enough
+trail piles up.
+**FAIL:** missing scripts · no rings or no crystals · an elemental crystal turning into a
+ball · an enemy ball scoring for you · a plain bump stealing · balls at the wrong size on the
+second machine · a match that never ends or Play Again that does nothing.
+**Known, do not fail on:** intensity changes nothing in this arena (single cell by design).
+**Report:** whether AI Scarabs juke-steal balls in a real match (PR #1002 added it; the ratio of
+steals to plate knocks is the number QA-SCARAB-SCRAMBLE-AI-JUKES asks for).
+
+### QA-TOLLWAY-MODE ⬜ — "Tollway" has never been played end to end (GameModes 48)
+**Source:** PR #848 + the replicated-press and plant-anchoring passes. Scarab-only toll race:
+plant your ring on a plant, then drive a ball through it. **The first playtest found the
+human could not plant a single ring** (the AI could) — the plant-snap rework that followed
+is unplayed. First shipped user of `FloraNetworkSync`. Reference:
+`_Scripts/Controller/Arcade/TOLLWAY.md` § In-editor verification (18 steps; this is the
+short form).
+
+1. Open `MinigameTollway.unity`. The `Game` object carries `TollwayController` and
+   `TollwayTollTurnMonitor`, and the controller's `settings`, `rule`, `arenaCell` and
+   `cellData` fields are all filled.
+2. Launch at intensity 1 with AI. Find the plants inside the court: there should be **14**,
+   each with a visible coloured crystal, inside the court wall and clear of the middle.
+3. Relaunch at intensities 2, 3 and 4 and look at the plants each time.
+4. Back at intensity 1: press the place-ring button (**A** on a gamepad) in open space, away
+   from any plant.
+5. Fly at a plant and press it — once from close, once from about 150 units, once from about
+   200 units. Approach the same plant from two directions.
+6. Press again at the same plant.
+7. Watch the Mass ability icon after a successful press for one minute. Press during that
+   minute.
+8. When it is ready, plant a second ring on a different plant. Watch the first ring.
+9. Fly through a bright white crystal to make a ball, then push the ball through **your**
+   ring. Then knock a ball through an **enemy** ring.
+10. Watch an AI team for two minutes.
+11. Play to the end (first team to **4** tolls).
+12. With two players (Multiplayer Play Mode): compare where the 14 plants are on both
+    windows, plant a ring from the second player, and score a toll from each.
+13. Regression: in freestyle and in Scarab Scramble, place a ring in open space.
+
+**PASS:** 14 plants inside the court at every intensity, and the species visibly changes
+between intensities (a pillar, a plate colony, a squat cactus, a needle cage); pressing in
+open space does nothing, spends nothing, and shows "No plant on this line — fly at one and
+plant your ring"; a press at a plant from all three distances plants a ring centred on the
+plant's crystal and facing the way **you** flew; a second press on the same plant is
+refused; a radial veil covers the Mass icon and empties over 60 s, and presses during it do
+nothing; planting a second ring shrinks the first away; a ball through your ring makes the
+ring vanish, a scarab-wing platform rise, shows `{name} collects a toll - n/4`, moves your
+score and refills your meter instantly; a ball through an enemy ring scores for **them**;
+the ball flies on after a toll; the AI plants and escorts balls and can reach 4 on its own;
+the plants sit in the same places on both machines; freestyle and Scarab Scramble still
+place a ring in open space.
+**FAIL:** fewer than 14 plants, plants outside the court wall, or the same species at every
+intensity (a grown-nothing plant means a broken flora reference) · being unable to plant
+from any distance · a ring planted off the plant · two of your rings standing at once · a
+toll scoring for the wrong team · plants in different places on the two machines (if this
+fails, the rest of the multiplayer steps are meaningless — stop) · freestyle ring placement
+broken.
+**Known, do not fail on:** the cell's flora families cover only 3 of 5 growth families (a
+generator check that fails offline; not visible in play).
+
+### QA-WRECKING-BALL-MODE ⬜ — "Wrecking Ball" has been played once but never measured
+**Source:** PR #879. Scarab bowling through a forest; compiled and played once by its
+author ("an excellent start"). The volume ladder and target (**1500** prisms) are estimates.
+Reference: `_Scripts/Controller/Arcade/WRECKING_BALL.md` § Verification.
+
+1. Launch Wrecking Ball at intensity 1 with one AI. Look around before moving.
+2. Fly through a bright white crystal to make a ball, then bowl it into a stand of trees.
+   Watch your score row.
+3. Hit a ball an **AI** made into the trees.
+4. Flick the right stick beside the forest (the cavitation plate).
+5. Watch the AI for a minute.
+6. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines** and write down the
+   intensity-1 volume.
+7. Play a full round at intensity 1 and time it. Then launch intensities 2, 3 and 4 briefly.
+8. Regression: in Astro League and Scarab Scramble, a ball still bounces, scores and can be
+   stolen.
+
+**PASS:** a court about 720 across with the forest standing **inside** it and crystals inside
+the court, pilots starting on a ring just outside; your ball's kills raise your score, and
+kills by a ball an AI made credit **you** when you hit it; the plate raises the score; the
+AI fetches crystals, bowls and dashes near the forest; the forest's peak creature frenzy does
+not start immediately on boot; the round ends at 1500; the three regression modes behave
+as before.
+**FAIL:** a forest outside the court wall · ball kills scoring for nobody · an AI-made ball
+crediting the AI after you hit it · frenzy on the first frame · a round that cannot reach
+1500.
+**Report numbers:** the intensity-1 baseline volume (the model expects about **396,000**; far
+off means the ladder needs re-deriving) and the round time at intensity 1. Say whether the
+forest reads too sparse or too dense.
+
+### QA-UNDERTOW-MODE ⬜ — "Undertow" has been played once but never measured
+**Source:** PR #879. Scarab dash duel in Wildlife Liberation's cages; compiled and played once
+by its author. The AI's dash ranges come from geometry and were never measured; the
+per-player score card shows bends only. Reference: `_Scripts/Controller/Arcade/UNDERTOW.md`
+§ Verification.
+
+1. Launch Undertow, two seats, one AI. Look around before moving.
+2. Dash (right stick, sharply) beside the AI so the blast catches it. Watch its element
+   flowers and your team's score row.
+3. Dash through a swarm of creatures.
+4. Watch the AI for a minute.
+5. Play to the end (**12** points).
+6. Regression: in Scarab Scramble, dash through the cleanup creatures.
+
+**PASS:** Wildlife Liberation's cages and swarm around you, pilots on a ring about 1150 out,
+crystals inside about 480; a dash that catches the AI drops its petals **and** adds **3**
+to your team; each creature killed by a dash adds **1** (its heart is freed and the body
+unravels); the AI chases you and dashes when close; the round ends at 12 with a winner; in
+Scarab Scramble a dash now kills creatures (scoring nothing there).
+**FAIL:** a dash that debuffs but does not score (or the reverse) · creatures scoring per
+prism instead of per creature · an AI that never dashes · a round that never ends.
+**Known, do not fail on:** your own score card counts bends only, not creature kills (the
+team total is correct).
+
+## Priority 0 — Block B: the Butterfly (unlocked for every player) — the hull and its four modes
+
+Also unlocked for every player, and the newest hull: nothing in this block has ever been opened.
+One session: the vessel item first.
+
+### QA-BUTTERFLY-VESSEL ⬜ — the Butterfly, a whole new vessel, has never been flown
+**Source:** PR #916 (+ #925 fold gates, the 2026-09-25 "one reach" fold and the
+2026-09-28 seamless-transit pass). A brand-new hull, unlocked for every player, with a two-mode right
+trigger, a fold ability, and four games. Authored headless — **never compiled or flown**; the
+fold's look and feel is explicitly "NOT verified". References:
+`_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md` § 8 and `BUTTERFLY_FOLD.md`.
+
+1. Let the project compile; watch the Console on first load of `Menu_Main`.
+2. Freestyle as the **Butterfly**. Pull the right trigger once: exactly **one** mode flip.
+   Mass mode lays a **wide wake**; Dust mode shows **falling motes in your domain's
+   shielded colour** under the hull.
+3. Change your domain with the Domain Changer toy — the motes must recolour.
+4. In Dust mode, pass over **your own** mass vs **opposing** mass.
+5. **Hold the left trigger** (the fold): the ship stops, the wings close and a ghost of the
+   ship appears ahead along your heading. Hold for 5 s. Release.
+6. Press the fold again immediately, and watch the Time ability icon.
+7. Look at the two rings the fold leaves behind. Look **through** one before flying it.
+   Fly through it.
+8. Fly outside the cell's outer wall and fold.
+9. With a second player (Multiplayer Play Mode, 2 players), fold on one machine and watch
+   it on the other; then have the second player fly through your gate.
+
+**PASS:** compiles; one trigger pull = one mode flip; Mass lays a wide wake and Dust shows
+motes in your team's shielded colour that recolour on a domain change; Dust grows/arms/
+shields your own mass and destroys/shrinks/steals opposing mass; holding the fold stops the
+ship and shows a ghost ahead, nothing piles up where you stopped, and release moves you to
+the ghost at your previous speed; a second press during the veil does nothing; the fold
+leaves two linked rings, each ring shows the world on the **other** side, and flying through
+carries you out of the other with no visible jump or camera cut; outside the wall the ghost
+reaches further the longer you hold; the other machine sees the ship stop with its wings
+shut and arrive at the same place, and the guest's transit through a gate works.
+**FAIL:** a compile error · more than one flip per pull · motes in the wrong colour or not
+recolouring · Dust treating own and opposing mass the same · no ghost, or prisms piling up
+during a hold · a fold that teleports you straight back · a ring that shows the world behind
+it, or a one-frame jump on transit · a guest not teleporting.
+**Known, do not fail on:** pressing **A** on the gamepad in menu freestyle makes the camera
+stop following the vessel (logged, unresolved — a separate bug). The Butterfly makes **no
+sounds** (its sound slots exist since PRs #966 and #1001 but are all empty). Its ship icons are placeholders and its class icon
+is empty. The ghost is an opaque copy of the hull (a translucent one is intended later).
+**Report the feel — this is the point of the item:** say whether the fold's stop, the ghost's
+bloom, the wither/re-appear and the gate transit read well or feel slow, and whether
+teammates being carried off by a gate they flew into by accident is a problem.
+
+### QA-WAYSTATION-MODE ⬜ — "Waystation" (the Butterfly's race) has never been opened
+**Source:** PR #916. `GameModes.Waystation = 58`, ring clusters laid a fold apart. The course
+C# was compiled and run offline and agrees with the model gate for gate; the controller, the
+AI fold drive and the scene have had **no type check**. Reference:
+`_Scripts/Controller/Arcade/WAYSTATION.md`.
+
+1. Launch Waystation from the Arcade card at intensity 1, you plus AI.
+2. Fly the first cluster of rings (a coil), in order. Watch the score row and the lime
+   next-ring highlight.
+3. Line up on the cluster's last ring (the exit gate, which faces the next cluster), thread
+   it, then fold (hold and release the left trigger) toward the next cluster.
+4. Fold **across** a ring you have not threaded.
+5. Watch an AI Butterfly through two clusters.
+6. Play to the end (**24** rings). Then launch intensity 4 and compare.
+
+**PASS:** rings come in coils with a separate exit gate per cluster; threading in order
+counts and moves the lime highlight; threading the exit gate well lines you up to fold onto
+the next cluster; a fold that passes through a ring does **not** count it; AI Butterflies
+progress through clusters on their own; the race ends at 24 with a winner; intensity 4's
+course is visibly harder.
+**FAIL:** a course that does not build · a ring counted by a fold passing through it · AI
+that never leaves the first cluster · a race that never ends.
+**Known, do not fail on:** silence (the Butterfly has no sounds); the preview window on the
+card shows an empty shell; there are only two pop-up message types (no milestones).
+**Report:** whether AI Butterflies fold at sensible moments (the fold drive is untuned).
+
+### QA-DUSTUP-MODE ⬜ — "Dustup" (the Butterfly's dust duel) has never been opened
+**Source:** PR #927. `GameModes.Dustup = 59`, in Dog Fight's Boneyard. Authored headless — **no
+type check** on the controller, rule or the shared `ButterflyAutopilotModeDriver`. Target
+(**10** dustings) is unmeasured. Reference: `_Scripts/Controller/Arcade/DUSTUP.md`.
+
+1. Launch Dustup at intensity 2 with at least one AI rival.
+2. Watch the AI Butterflies for 20 s after the countdown.
+3. Flip to Dust mode (right trigger), get **above** a rival and fly through them with the
+   motes under your hull. Then hover over them without breaking off.
+4. Fly **at** a rival nose-first in Dust mode, so your body (not the motes) meets them.
+5. Dust a **teammate** (2v2).
+6. Play to the end and time the match.
+
+**PASS:** AI Butterflies switch into Dust mode on their own and hunt from above; one pass
+through a rival scores **1** and drains their element flowers for a few seconds; hovering
+scores only the pass that caught them; a nose-first hit scores nothing; a teammate is never
+dusted or scored; the match ends at 10 with a winner.
+**FAIL:** AI that never enter Dust mode · a pass that does not score · hovering scoring
+repeatedly · a teammate scored · a match that never ends.
+**Known, do not fail on:** an AI that spawns stopped does not switch modes until it moves;
+silence; the card's preview window has no rivals to score on.
+**Report:** match length, and whether the AI's height above its target looks right.
+
+### QA-TAPESTRY-MODE ⬜ — "Tapestry" (the Butterfly's painting war) has never been opened
+**Source:** PR #927. `GameModes.Tapestry = 60`, a **timed** (150 s) mode scored on standing
+prism volume (the new `VolumeRemaining` metric). Barren cell, no creatures. Authored
+headless, no type check. Reference: `_Scripts/Controller/Arcade/TAPESTRY.md`.
+
+1. Launch Tapestry at intensity 1 with AI. Count the crystals at the start roughly.
+2. Fly broad arcs in Mass mode for 20 s. Watch your score.
+3. Collect a Mass crystal and fly again — compare the wake's width.
+4. Flip to Dust mode and fly over a rival's painting. Watch both scores.
+5. Fly Dust mode over **your own** painting.
+6. Let the clock run out. Read the final scores.
+7. Launch intensity 4 and count crystals again.
+
+**PASS:** your score rises while you paint and the wake widens after a Mass crystal; raiding
+a rival lowers their score and (on a steal) raises yours; dust on your own paint grows or
+shields it rather than destroying it; the round ends at 150 s and the highest standing
+volume wins; intensity 1 has about 24 crystals and intensity 4 about 6; no creatures appear.
+**FAIL:** a score that never moves · a raid that does not lower the rival · own paint
+destroyed by your own dust · a round that does not end on the clock · creatures in the cell.
+**Known, do not fail on:** ties resolve in team order; silence.
+**Report:** whether six-figure scores fit in the score columns or get cut off.
+
+### QA-SIROCCO-MODE ⬜ — "Sirocco" (the Butterfly's erosion race) has never been opened
+**Source:** PR #927. `GameModes.Sirocco = 61`, in Rampage's cactus forest; first team to
+destroy **600** hostile prisms. Authored headless, no type check; 600 is a guess. Reference:
+`_Scripts/Controller/Arcade/SIROCCO.md`.
+
+1. Launch Sirocco at intensity 1 with AI.
+2. Flip to Dust mode and skim low over a stand of a **rival** colour. Watch your score.
+3. Pass back over the same stand twice more.
+4. Skim over a stand of **your own** colour.
+5. Reach a rival plant's heart with the dust. Watch your element flowers.
+6. Watch the AI for a minute.
+7. Play to the end and time the match. Note how much forest is left.
+
+**PASS:** passing over rival mass destroys some prisms (score rises), shrinks or steals others;
+repeat passes erode a stand further; your own colour grows, arms or shields and never scores;
+reaching a heart withers the plant and collects the heart for you; AI fly erosion runs over
+dense rival mass; the match ends at 600 with forest still standing.
+**FAIL:** dust that never scores · own-colour mass scoring or being destroyed · a heart that
+is not collected · AI that never dust · a match that strips the forest bare before ending.
+**Known, do not fail on:** silence. (Sirocco now HAS an objective arrow, added 2026-10-06: it
+points at the densest standing forest of another team's colour, never at the crystal. A missing
+arrow, or one pointing at the crystal, is a failure.)
+**Report:** match length at intensity 1 (600 is unmeasured).
+
+## Priority 0 — Block C: the Arena screen — four multi-hull cards and the pilot swap
+
+Every Arena card seats the Squirrel (unlocked from the start), so these are reachable by every
+player. One session; Multiplayer Play Mode with 2 players helps for the replication checks.
+
+### QA-REGATTA-ARENA ⬜ — Regatta, the first ARENA mode, has never been run as a race
+**Source:** PR #880 (+ the `/arenagame` surface). An **arena** race any hull can enter — a new
+launch screen and a new roster. Never run in the Editor apart from two **UI-only** playtests
+on 2026-09-15 (which fixed the carousel offering two hulls, the Scarab wearing the Sparrow's
+icon, the select button sitting on Play, and the Urchin drawing as a white square). The pure
+course code was compiled and run for real; the controller and the starting-element plumbing
+were only inspected. Reference: `_Scripts/Controller/Arcade/REGATTA.md` § 8.
+
+1. Compile; run the edit-mode tests (`RegattaCourseTests`, `VesselStartingElementsTests`,
+   `ArenaRosterTests`) from **Window ▸ General ▸ Test Runner**.
+2. Open the **Arena** screen (not the Arcade screen) and pick **Regatta**. Step through the
+   ship picker: **all eight hulls** with correct pictures (check the Scarab and the Urchin
+   in particular). The select button sits under the ship picture, not over Play; Start
+   stays disabled until it is pressed.
+3. Launch at intensity 1: **three team-coloured rails braided through eight rings**.
+4. Fly an **Urchin**: grind your own colour's rail (it should latch and run at about 300).
+   Then fly a **Squirrel** along a rail and watch its boost gauge fill.
+5. Look at the element flowers on screen: a Manta (handicapped) shows **fire** petals, a
+   Sparrow (helped) shows **white** petals.
+6. With a party guest (Multiplayer Play Mode), compare one hull's element levels on both
+   machines.
+7. Race to the end (**24** rings). Return to `Menu_Main` and watch the menu ship.
+8. Relaunch at intensities 2, 3 and 4 and look at the course.
+
+**PASS:** the tests pass; all eight hulls in the picker with correct pictures; the select
+button is under the ship and Start waits for it; the braided course builds at every
+intensity; the Urchin grinds its own rail and the Squirrel's gauge fills on one; flowers show
+the seeded handicap/help; host and guest agree on levels; the race ends with a winner and the
+menu ship starts at rest.
+**FAIL:** a failing test · a hull missing or drawn as a white square · the select button
+over Play · a course that does not build · flowers that ignore the seeded levels · host and
+guest disagreeing.
+**Known, do not fail on:** hull speeds still spread about 5–6× even with the seeded elements.
+(AI Sparrows, Serpents, Dolphins and Scarabs now boost on the straights - QA-AI-BOOST-POLICIES
+checks that and records lap times; the Urchin now shows its ability icons.)
+
+### QA-BROADSIDE-ARENA ⬜ — "Broadside", the seven-hull brawl, has never been opened
+**Source:** `GameModes.Broadside = 57`, in Dog Fight's Boneyard. Authored headless with **one
+playtest fed back**; every hit is priced by its verb (Round 1, Strike 8, Debuff 12, Rocket
+10/20/30). Three hull weapons were newly wired to report hits (Rhino sword, Squirrel joust,
+Urchin spikes). First to **100 points per pilot** on the team wins. Reference:
+`_Scripts/Controller/Arcade/BROADSIDE.md`.
+
+1. Open the **Arena** screen, pick **Broadside**. Confirm the picker offers **seven** hulls
+   (Sparrow, Urchin, Rhino, Squirrel, Dolphin, Scarab, Manta) and **not** the Serpent.
+2. Launch at intensity 1 against AI. For each hull you can, land its weapon on a rival and
+   watch your team's score:
+   - **Sparrow:** guns (+1 per hit), a rocket (+10, +20 or +30).
+   - **Urchin:** tap the spike trigger at a rival (+1, and the rival spins).
+   - **Rhino:** energise the sword and fly the blade through a rival (+8).
+   - **Squirrel:** joust a rival by overtaking them (+8).
+   - **Dolphin:** collect a crystal and catch a rival in the cone (+12).
+   - **Scarab:** dash beside a rival (+12).
+   - **Manta:** catch a rival in a bloom (+12).
+3. Hold the Rhino's blade on one rival for a whole pass.
+4. Watch the AI for two minutes: who lands hits, and who never does.
+5. Play to the end.
+
+**PASS:** seven hulls, no Serpent; every hull's weapon scores its verb's price exactly once
+per landed hit; a blade held through a rival scores once per about 1.4 s, not every frame;
+the AI of every hull lands at least some hits; the round ends on the team target with a
+winner.
+**FAIL:** a hull whose weapon passes through a rival and scores nothing · any hit scoring a
+different price than listed · a Rhino blade scoring every frame · the Serpent offered.
+**Known, do not fail on:** the Dolphin is the weakest seat (its cone needs a crystal); the
+Rhino's sword drains no elements.
+**Report:** which hulls feel strongest and weakest, and whether each AI's weapon reads as a
+real attack (the Urchin's spike tap in particular).
+
+### QA-BROODRUSH-ARENA ⬜ — "Brood Rush" has no recorded test pass
+**Source:** `GameModes.BroodRush = 38`, the nucleus-control arena mode where creature waves are
+the score clock. Its doc gives **no status line**, and it moved to six arena seats (one pilot
+per hull) on the cell-relative spawn ring. Creature waves are local to each machine. Reference:
+`_Scripts/Controller/Arcade/BROODRUSH.md`.
+
+1. Open the **Arena** screen, pick **Brood Rush**. Confirm the picker offers six hulls
+   (Squirrel, Manta, Dolphin, Rhino, Serpent, Sparrow).
+2. Launch 1v1 (you + AI) and watch the spawn: everyone on a ring around the cell, nobody
+   overlapping.
+3. Fly through the cell's core (the nucleus) and lay trail inside it. Leave the AI alone.
+4. Wait for the first wave (about **30 s** after the countdown). Watch the score and the
+   pop-up message.
+5. Let the AI out-lay you inside the core, and wait for the next wave.
+6. Leave the core empty of trail for one wave.
+7. Play to the end (first team to **3** broods). Then try a 3v3.
+8. With two players (Multiplayer Play Mode), compare the score at each wave on both windows.
+
+**PASS:** six seats spawn on the ring without overlap; a wave hatches about every 30 s in the
+colour of whoever holds the core and scores **1** brood for them with a "brood hatched — n/3"
+message; out-laying flips the core; an empty core scores nobody; the match ends at 3 (roughly
+1.5–2.5 minutes); the score agrees on both machines.
+**FAIL:** a wave that never scores · a wave scoring for a team that holds nothing · the
+first wave arriving before the countdown ends · a 3v3 that spawns pilots inside each other ·
+scores that disagree between machines.
+**Known, do not fail on:** the creatures themselves may differ slightly between machines (they are local) — only the score must agree;
+the card's preview window may show a stale layout.
+
+### QA-ASTROLEAGUE-REWORK ⬜ — blade strikes, the fauna pen, the smaller court, the settling ball
+**Source:** PRs #704 and #706 (#706 is a playtest follow-up to #704, itself unflown). The mode
+is now an **arena** card (Rhino, Scarab, Squirrel), and its doc still says "Rhino-only" (stale).
+Reference: `_Scripts/Controller/Arcade/ASTROLEAGUE.md`, `Docs/ECOSYSTEM.md`.
+1. Play **Astro League** from the Arena screen as the Rhino. Judge the court size first —
+   #706 cut it **40 %** linearly.
+2. **Strike the ball with a swung sword tip**, then with a **parked** sword at the same
+   closing speed.
+3. Strike the ball hard and let it run. Time roughly how long until it comes to rest.
+4. Bounce the ball off a **wall** repeatedly and watch the carom lose energy.
+5. Fly the pitch and watch the **fauna**: the nucleus is play geometry here, not a
+   control zone, so creatures must be edible inside it.
+6. Check the **sphere cage cover** renders on every intensity.
+7. Score a goal and watch the replay (also covered by QA-SPEED-TUNNEL step 4).
+8. Watch/listen for the new strike feedback: pop, shake, burst.
+9. Play one match each as the **Scarab** and the **Squirrel**.
+
+**PASS:** a swung tip sends the ball dramatically harder than a parked sword's deflect;
+a struck ball loses roughly 65 % of its speed in ~3 s and genuinely reaches **rest**
+rather than creeping; wall bounces cost energy while a vessel strike stays fully
+elastic; fauna are eaten inside the court (no arena-wide sanctuary); the cage renders at
+every intensity; strike feedback fires on contact; the Scarab and Squirrel can both move
+the ball and score.
+**FAIL:** a parked sword firing the ball · a ball that never settles or that stops dead
+· fauna untouchable anywhere on the pitch · a missing cage at some intensity · no strike
+feedback · a hull that cannot move the ball.
+**Known, do not fail on:** the card
+preview's objective text reads "Crush Ballz , bruh." (copy drift, logged); the match has no
+authored goal target row (it ends on its own rule).
+**Judgement calls to report (each a one-field edit on `AstroLeagueSettings.asset`):**
+`ballDrag = 0.35` (sluggish → drop toward 0.2; won't die → push toward 0.5),
+`wallRestitution = 0.72` (a billiards-ish guess), and the 40 % court cut (if it now
+reads too cramped, say so).
+
+### QA-ARENA-PILOT-SWAP ⬜ — six arena seats and the D-pad swap into an AI teammate's hull
+**Source:** PR #915. Arena seats up to six (2v2v2), one pilot per hull, with a live D-pad
+swap into an AI teammate's hull. Playtested by the author but reported "has issues" with
+no specifics — treat as playtest-pending.
+1. Launch **Regatta 2v2v2** as the **Urchin** with a **Serpent** AI ally.
+2. Press **D-pad right**: you should now fly the **Serpent** — camera on it, your input
+   live — while the AI takes over the Urchin. Press again to swap back.
+3. Watch the Console for `[PilotSwap]` warnings; a failed takeover names what did not land.
+4. Repeat the swap in **Broadside** and **Astro League**, and with a remote guest doing
+   the swapping.
+5. Build a 3v3 by hand in the lobby: no AI should change team on its own.
+6. Two guests press SELECT VESSEL on the **same** hull: exactly one gets it.
+
+**PASS:** D-pad swaps you into the ally hull with camera + input following, and back; no
+`[PilotSwap]` warnings; the swap works in every listed mode and for a guest; no AI
+self-reassigns team; a contested hull pick resolves to exactly one player.
+**FAIL:** a swap that moves the camera but not input (or vice versa) · a `[PilotSwap]`
+warning · an AI changing team on its own · both guests getting the same hull · a swap
+that throws.
+**Known, do not fail on:** a swap gives no toast — the camera move is the only feedback.
+(Swapping into the Urchin now shows its four-icon ability row; a missing row is a failure.)
+
+## Priority 0 — Block D: Maelstrom — the tournament across the modes above
+
+Reachable with the Squirrel from the Arcade banner. Run it after blocks A–C so a failure inside
+one pooled mode is already known and is not mistaken for a tournament bug.
+
+### QA-MAELSTROM-RUN ⬜ — a full Maelstrom tournament has no QA entry
+**Source:** `Docs/MaelstromSystem/ARCHITECTURE.md` (status: "implemented end-to-end"; the full
+QA matrix is listed as **deferred**) and `MAELSTROM_UX_HANDOFF.md` § 7. The meta-mode strings
+the domain games into one tournament, race to **6** placement points. The audit measured the
+same hull repeating in back-to-back rounds **26.7 %** of the time at intensity 1. Many of the
+pooled modes are themselves untested (blocks above), so run this **after** blocks A–C.
+
+1. On the Arcade screen click the **Maelstrom banner**. Start solo (AI fill the other seats).
+2. After the first game, press **Continue** and read the between-games screen.
+3. Keep going until a team reaches 6. Write down each game played and its ship.
+4. On the final summary, press **Play Again** twice quickly. Then, in a second run, press
+   **Main Menu** on the summary.
+5. With 2–4 players (Multiplayer Play Mode), run a short tournament. On a client, look for
+   buttons on the per-game scoreboard and the final summary; press Main Menu on a client.
+6. After a tournament, launch an ordinary Arcade game.
+7. Run the edit-mode tests `MaelstromStandingsFormatterTests` and `MaelstromDataSOTests`.
+
+**PASS:** each Continue shows a readable (~2 s) screen with the header, "Up next: <mode> ·
+Intensity N", per-team rows and "(You)" on your team; the final summary shows "MAELSTROM
+RESULTS", final standings with "(You)", and per-game blocks; Play Again / Main Menu are
+host-only and fire once even when pressed twice; Main Menu covers the screen immediately;
+on clients "(You)" sits on their own team, there are no per-game buttons and no Play Again,
+Main Menu on a client leaves only that client; standings match on every machine; a normal
+game afterwards shows the normal buttons; both tests pass.
+**FAIL:** a game that never loads the next · a blank between-games screen · a double
+Play Again · standings that differ between machines · tournament buttons leaking into a
+normal game.
+**Known, do not fail on:** no rewards, share screen or host migration (deferred); the card
+has no preview window or Test Flight.
+**Report:** how often the same ship came up twice in a row.
+
+## Priority 0 — Block E: the Sparrow — the most-carded hull (11 cards) and its four modes
+
+The Sparrow vessel has the most open checks in the fleet (13 red checklist entries, folded here
+into nine items). Two sessions if needed: vessel items, then modes. Dog Fight is the best
+scene for the vessel items (it has rivals to shoot).
+
+### QA-SPARROW-HEAT-GUNS ⬜ — the Sparrow's guns: heat, the six-stage cone, fixed range
+**Source:** PR #924 (heat model, "Round 8") on top of the never-verified spread passes:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow — the spread cone becomes a four-stage
+curve", 🔴 "Sparrow spray accuracy — fire rate, decaying-accuracy cone, escalating haptic".
+The current numbers live in `FullAutoAction.asset` (onset 5 s, plateaus 5 s, collapse to
+~37.5°, cooling ×5, range to 25 % at full spread) and supersede the older checklist's
+numbers. The Sparrow sits on the most cards in the fleet (11). Reference:
+`R_VesselActions/SPARROW_SPRAY_ACCURACY.md` § In-editor verification.
+
+1. Select `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`. The **Accuracy** foldout
+   shows Firing Rate **90**, onset **5**, plateau **5**, collapse plateau **5**, cooling
+   **5**, range at full spread **0.25**. Open `Sparrow.prefab`: a **GunSprayAccuracy** child
+   under `VesselActions`, script resolved.
+2. Launch **Dog Fight** as the Sparrow. From a cold gun, fire short taps at open space and
+   note where tracers die (about 258). Collect Space crystals and repeat.
+3. Hold fire on a distant wall for 30 s and watch the circle of impacts and the heat gauge on
+   the guns ability icon.
+4. Hold for about 10 s, release for 1 s, fire again. Then release for 2 s instead.
+5. With the cone open, enter Turret Stance (input 6) **without releasing the trigger**.
+6. Stopped in Turret Stance, hold fire and look at the prisms.
+7. Set the Game view to 30 fps (or `Application.targetFrameRate = 30`) and fire again.
+8. With a gamepad: hold fire and feel the buzz; ram a prism mid-spray.
+9. Hold 10+ s in both fire modes with the Profiler open. Keep the Console visible.
+
+**PASS:** the asset and prefab show the listed values with no missing scripts; tracer reach
+is the same with and without Space; a pull of up to 5 s from cold is a tight line; the cone
+runs point (to 5 s) → growing (to 10 s) → static (to 15 s) → growing faster (to 20 s) →
+static (to 25 s) → fast collapse to a huge spray by 30 s; reach barely moves until the
+collapse and then pulls in to about a quarter; the gauge crosses five evenly spaced marks
+in step with the stages; releasing **cools** rather than resets (1 s release → near the edge
+of accuracy, 2 s → dead-on); a stance flip keeps the open cone and the heat; turret prisms
+scatter in a volume, each pointing along its own flight; the stream looks equally dense at
+30 fps; the buzz climbs then goes flat, and a ram's thud cuts through it; no hitch, no gun
+errors in the Console.
+**FAIL:** a field showing a different value (the key did not import) · reach changing with
+Space · accuracy reset by a release or a stance flip · a stream that halves at 30 fps · a
+missing script · `[FullAutoActionExecutor]` / `[FullAutoBlockShoot]` errors.
+**Report the feel:** whether the heat phases make the weapon fun or frustrating, and whether
+Dog Fight's 90-point and Salvo's 700-prism targets still feel right with these guns.
+
+### QA-SPARROW-ROUNDS ⬜ — rounds grow in flight, the see-through charge shell, Mass-5 shields
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow rounds grow as they fly + MASS-5
+shield restore", 🔴 "Sparrow round growth — model fixed + charge shell", 🔴 "Sparrow charge
+shell round 5 — one stroke per round". **Highest risk: a hand-written instanced shader
+(`ProjectileChargeField.shader`) never imported by Unity** — magenta means it failed.
+
+1. Open `SparrowProjectile.prefab`. Both the dart and its `ChargeField` child must render
+   (not magenta). Select `ProjectileChargeFieldMaterial`: **Enable GPU Instancing** is ticked.
+2. Freestyle or Dog Fight as the Sparrow. Fire at empty space and follow one round from the
+   muzzle to the end of its life.
+3. Fire at a wall of prisms. Compare the hole a round makes with the shell you can see.
+4. Collect Mass crystals up to 10 and fire again. Then drain Mass and fire again.
+5. Hold full-auto and watch the two streams side by side.
+6. Below Mass 5, enter Turret Stance and fire prisms. Repeat at Mass 5 or higher. Then
+   raise **Space** to 5 with Mass below 5 and fire.
+7. Fire a Manta round and a Sparrow rocket for comparison.
+
+**PASS:** no magenta, instancing ticked; the dart is a thin pale-blue needle that stays the
+same size the whole flight at every Mass level; around it a see-through shell starts close
+and ends roughly 6× wider at Mass 10, and you can see the arena through it; the hole matches
+the shell's size at that moment; each round shows **one** short bolt at its own angle, the
+two muzzles never mirror each other, and a sustained burst reads as occasional sparks, not a
+continuous lightning rope; arcs read blue with red cores; turret prisms arrive shielded only
+at Mass 5+; Space 5 makes shots pierce but does not shield; other projectiles unchanged.
+**FAIL:** a magenta shell (do **not** patch it live — report and attach the Console) · the
+dart swelling into a lozenge · a shell you cannot see through · identical strokes on every
+round · a bright lightning rope · Space 5 shielding prisms.
+**Report:** if the shell reads too bright or too solid, say so — the knobs are documented
+(`_ArcIntensity`, `_FresnelRimIntensity`).
+
+### QA-SPARROW-ROCKETS ⬜ — two rockets out of one bay, one pull = one rocket, gunfire refills
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow — TWO rockets out of one bay",
+🔴 "Sparrow follow-up + the fleet's drain rule" (both `cece/sweet-noether-trw75r`,
+2026-09-22), 🔴 "Skyburst — the missile grows 20× in the first fifth of its flight". The
+"one pull fires one rocket" fix is **fleet-wide** (a doubled input subscription). Nothing has
+run in the Editor; `SparrowMissileVariantTests`, `SparrowMissileFuzeTests`,
+`SparrowRoundGrowthTests`, `RoundGrowthRampTests` and `CombatHitDrainTests` were not run.
+
+1. Run the five test classes above from **Window ▸ General ▸ Test Runner**.
+2. Open `SkyBurstProjectile.prefab` ▸ `Projectile`: Flight Growth Target = `MissileVisual`,
+   Flight Growth Uniform ticked, Flight Growth Complete At 01 = **0.2**.
+3. In Dog Fight or Salvo as the Sparrow, tap the left trigger **once**. Count rockets and
+   watch the ammo gauge.
+4. Watch a base rocket fly past a pilot without touching it, and hit something directly.
+5. Enter Turret Stance (A / Space) and fire. Watch the rocket and what it leaves behind.
+   Fire a second heavy rocket straight down the first one's line.
+6. Shoot one of the small prisms a heavy rocket laid.
+7. With guns, destroy hostile prisms and watch the Charge ability gauge. Then shoot your
+   **own** trail. Then destroy 30+ prisms with a rocket blast only.
+8. Tap any ability once on two other ships (one tap = one action). Repeat after a round
+   boundary in Cellular Duel and after the countdown pause.
+9. With two players (Multiplayer Play Mode), fire a heavy rocket and watch it on the other
+   window.
+
+**PASS:** the tests pass; the three prefab fields hold their values; one tap = one rocket and
+one ammo step, on every ship and after both re-subscribe paths; a base rocket is slower and
+does nothing until it touches something; a heavy rocket is faster, lays a line of small
+prisms about every 30 units, detonates early near a pilot or creature, and leaves a cairn of
+prisms; a rocket never detonates on its own ribbon, and the second heavy flies past the
+first's ribbon; laid prisms die to gunfire; every rocket leaves the bay small, swells over
+about 0.6 s, then holds its size; the gauge resets every **25** gun kills (own-domain kills
+count too) and does **not** move for blast kills; the other window sees the heavy rocket's
+ribbon and early detonation.
+**FAIL:** two rockets per tap, or any ability acting twice on one tap · a base rocket
+detonating near a pilot · a heavy rocket blowing up on its own first prism · blast kills
+refilling the gauge · a rocket still growing at impact, or launches growing larger as the
+pool is reused · the remote window showing a base rocket for a heavy one · `SafeLookRotation`
+spam.
+**Known, do not fail on:** the bay's icon steps 0 → 1 → 2 and then stays at 2 (three-sprite
+art gap).
+**Report:** missiles now hit with a smaller sphere (about 3.8 units at rest, was 8.5) — say
+whether landing one in Dog Fight feels fair.
+
+### QA-SPARROW-MISSILE-BAY ⬜ — bay-animated skyburst launch with the real missile model
+**Source:** PR #708. Authored without a Unity compile or play-test. Reference:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow Skyburst Missile Bay".
+1. Fire a skyburst and **watch the hull** — this is the one thing only the editor can
+   prove (a **cross-FBX clip binding**).
+2. Fire several in a row and watch which side launches each time.
+3. Fire during a hard maneuver (roll + pitch together).
+4. Watch the launch seam: the bay opens, then the projectile leaves ~0.2 s later.
+5. Look at the exhaust particles against the missile's ~1.7 u visual.
+
+**PASS:** the bay physically opens on the hull before launch; sides alternate
+**right-then-left**; no puppetry fight (bay animation vs flight animation) during hard
+maneuvers; the handoff reads as one motion, not two; exhaust particles are sized for
+the missile.
+**FAIL:** a bay that never animates (the clip binding failed — the projectile still
+spawns at the bay-bone rest pose, so this fails quietly) · both missiles from the same
+side · the hull visibly fighting itself mid-maneuver · a visible gap or double-motion at
+the handoff.
+**Tuning to report:** `launchDelaySeconds` (0.2; useful range 0.16–0.26).
+**Known, flagged, do not fail on:** the skyburst's direct-hit sphere (world radius 8.5)
+now visibly dwarfs the missile — a Dog Fight balance call, already recorded.
+
+### QA-SPARROW-ROLL-ARM-WINDOW ⬜ — the strafing roll arms for 0.3 s, and the horizon tilts the right way
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow — the strafing roll's arm is a
+0.3 s WINDOW, not the whole boost hold" (`claude/sparrow-spin-cooldown-p8agtv`). The roll used
+to fire during any long boosted turn.
+
+1. Open `Sparrow.prefab` ▸ `BarrelRollController`: **Roll Arm Window Seconds = 0.3** (not 0).
+2. Fly the Sparrow, hold boost through a long hard turn with the stick pinned to the edge.
+3. Tap boost and slam the stick to full deflection in the same beat.
+4. Hold the stick at full deflection, then press boost.
+5. Stop (Turret Stance), then press boost and slam the stick.
+6. Watch the boost icon's ring on every boost press, with and without a roll.
+7. Watch the horizon during a roll at cruise and while boosting.
+
+**PASS:** the field reads 0.3; a long boosted turn never rolls; tap-and-slam rolls exactly as
+before; boost with the stick already pinned rolls immediately; the stopped dodge still
+strafes; the ring fills and wipes ~0.3 s later with no punch, and with a punch on a press that
+rolls; the horizon tilts the same way as the roll (no bank fighting it).
+**FAIL:** the field at 0 · a roll during a held boost turn · a deliberate tap-and-slam that
+misses · the horizon tilting against the roll.
+**Report:** whether 0.3 s is too tight on a gamepad (0.4–0.5 is the alternative).
+
+### QA-SPARROW-BOOST-WARD ⬜ — overheat removed, strafing roll freed, Elemental Ward added
+**Source:** PR #675. **Highest risk on the branch: two vessel prefabs were hand-edited
+as YAML** (a removed GameObject, a removed resource slot, a new component on each,
+renamed serialized fields). Reference: `SPARROW_AFTERBURNER.md` § In-editor verification.
+1. Open the **Sparrow** and **Serpent** prefabs. Confirm: no missing-script rows;
+   `OverheatingBoostActionExecutor` is **gone**; `ResourceSystem` reads Missiles /
+   FullAuto / ExhaustBarrage (**3 slots, no Heat**); `SparrowHUDController.barrelRollController`
+   is wired; `VesselElementalImmunity` sits on each root with the right condition.
+2. Hold boost for **60 s** continuously.
+3. At Time level 0: boost + full stick deflection.
+4. Watch the boost icon ring across a press → roll → release cycle.
+5. At Time ≥ 5 (set `TimeTestHarness = 0.5`): fly into a **danger prism while boosting**,
+   then into one **while not boosting**. Watch the elemental flowers each time.
+6. Repeat step 5 on a **stopped Serpent**.
+7. MPPM, two clients, one Sparrow at Time 5 — both machines must agree on who resists.
+
+**PASS:** both prefabs inspect cleanly; 60 s of boost produces no force-release, no
+danger trail and no self-slam; one press = exactly one roll; the boost ring is full on
+press, wipes empty on the roll, and stays empty until the next press (never a partial
+fill); at Time 5 a danger prism **while boosting** leaves the flowers undipped and
+**not boosting** dips them (the slow and input-mute still land either way, by design);
+the stopped Serpent never dips at any Time level; both peers agree.
+**FAIL:** a missing script or a Heat resource still present · boost force-releasing or
+laying a danger trail · more than one roll per press · a partially-filled boost ring ·
+the ward applying in the wrong boost state · peers disagreeing.
+**Open design question to report:** the ward holds `WhileBoosting` (mirrors the
+Serpent). With boost now unbounded, a pilot flying permanently full-throttle is
+permanently warded. Say whether it should be `Always` — it is one inspector field.
+
+### QA-SPARROW-STOPPED-ROLL ⬜ — the strafing roll works stopped, and the stance turns 3× faster
+**Source:** PR #679. Reference: `SPARROW_AFTERBURNER.md` §2.1–2.2 + items 4b–4e.
+1. **Regression first:** fly the Sparrow normally and confirm the **flying** roll is
+   unchanged — the shared modifier path was touched.
+2. **Stopped:** enter the stance, then boost + full left stick.
+3. Stopped, aim well away from the heading you had when you stopped, then dodge.
+4. Stopped, take a knockback (no movement), then release the stance.
+5. Time a **180° yaw** in the stance vs. out of it, then release the stance and time
+   again.
+6. **Serpent:** take a knockback and release — confirms the exemption is scoped to the
+   roll.
+7. MPPM two clients: a stopped roll must replicate like the flying one.
+
+**PASS:** the flying roll is unchanged; stopped, boost + full stick rolls **and**
+strafes, exactly one roll per press, and you are still stopped afterwards (stationary
+fire, no trail laid); the strafe follows **current facing**, not the heading you stopped
+with; releasing the stance produces no lurch; a 180° yaw takes about a third as long in
+the stance and the rate drops straight back on release; the Serpent holds knockback with
+no lurch; the stopped roll replicates.
+**FAIL:** a changed flying roll · no roll or no strafe when stopped · a strafe skewed
+toward the old heading · a banked lurch on release · a turn rate that stays fast after
+release (`TurnScalar` got cached) · a roll that does not replicate.
+
+### QA-SPARROW-TURRET-STANCE 🟡 — Turret Stance fires real prisms
+**Source:** PR #696. **Play-tested by the prompter through the final commit** (six
+rounds; the ShaderGraphs have been imported and rendered), so this item is only about
+the two things that report did not cover. Reference: `SPARROW_TURRET_STANCE.md`.
+1. **MPPM, two clients.** Enter Turret Stance and fire for 30 s while the other peer
+   watches. Turret prisms come from a local `blockFactory` and `ProjectileImmuneUntil`
+   is local `Time.time` state — nothing here is networked.
+2. **The CHARGE-5 skyburst flip.** Below Charge 5, confirm the skyburst blast
+   **friendly-fires**. At Charge 5, confirm the blast goes **domain-safe** while the
+   direct hit behaves as before.
+3. While at it, note whether `placementImmunitySeconds` still reads too long (you should
+   not be able to shoot your own just-placed prism, but the window should not feel like
+   a dead zone).
+
+**PASS:** both peers see a coherent turret volley with no desync or duplicated prisms
+and no exceptions on either machine; the blast friendly-fires below Charge 5 and is
+domain-safe at Charge 5.
+**FAIL:** prisms appearing on one machine only, or in different places · the blast
+friendly-firing at Charge 5, or going domain-safe below it · any exception during a
+sustained volley.
+**Known, do not fail on:** transform-moved triggers at high speed can tunnel through
+thin prisms — bullets do it too, and parity is the point.
+
+### QA-VESSEL-SPARROW-ROLL ⬜ — Sparrow rolls on prism hit
+**Source:** PR #669 (two hand-authored assets, never imported; 60° is a guess).
+1. Inspect the Sparrow's prism-effect container: `VesselRollByPrismEffect` in **slot 0**,
+   inspecting cleanly (no `Missing (Mono Script)`).
+2. Fly the Sparrow into prisms at a few angles and speeds.
+
+**PASS:** the asset inspects cleanly and every prism hit **rolls** the vessel rather
+than redirecting its course; control is recoverable.
+**FAIL:** missing script · no roll · the vessel still being deflected off-course · a
+roll so violent it reads as a loss of control.
+**Report the feel:** `rollDegrees` (60) is a single inspector value — say whether it
+wants to be larger or smaller.
+
+### QA-SPARROW-PROJECTILE-POOL ⬜ — async-refilled pooled projectiles are injected
+
+**Source:** PR #606. The failure mode is *silent duds* seconds after spawn.
+1. Spawn a Sparrow (any mode or freestyle) and fire full-auto for ~30 s.
+2. Then dump several skyburst missiles.
+3. Watch the Console throughout.
+4. Optional: confirm `PoolRefill.Projectile*` markers still appear in the profiler.
+
+**PASS:** every shot has launch SFX and live colliders for the whole 30 s, including
+after the pools cycle through async-refilled instances; **no `NullReferenceException`
+from `LaunchProjectile`**; the async refill markers still appear.
+**FAIL:** any dud shot (no SFX / passes through prisms) or any NRE from `LaunchProjectile`.
+
 ### QA-DOGFIGHT-MODE ⬜ — "Dog Fight" has never been opened
 **Source:** PR #703 + the `claude/dog-fight-game-mode-it9xgy` merges. Whole new game
 mode (`GameModes.DogFight = 41`), Sparrow-only, authored headless — **the platform's
@@ -262,7 +1242,7 @@ first mode scored on vessel-vs-vessel combat**. Arena is the **Boneyard**. Refer
    the shooting for 30 s. Their score must rise on **both** machines. (The reverse test
    is not equivalent — the host records directly.)
 10. In a 2v2, shoot and splash a **teammate**: no damage, no points, scoreboard flat.
-11. Play a full round to the point target (default **120**) and watch the scoreboard.
+11. Play a full round to the point target (**90**) and watch the scoreboard.
 
 **PASS:** the scene opens clean; four visibly different intensities all reading as the
 Boneyard; hulks are hollow and hideable; baselines within a few hundred of the expected
@@ -274,6 +1254,88 @@ of order) · intensity 4 rendering Atlantis · solid, un-enterable hulks · base
 by thousands · spawning inside the arena · a missile scoring 100 · scenery scoring ·
 a client's hits appearing only on the client · teammates damaging or scoring off each
 other · a non-Sparrow vessel spawning.
+**Known, do not fail on:** a hit flash is not yet shown to the **victim** (hit feedback is
+not replicated; the victim's petal loss IS, since PR #1007 - QA-COMBAT-PETAL-DRAIN-NET); the card preview's objective text is the placeholder "Classic
+Dogfight". The 90-point target is unmeasured — report the match length.
+
+### QA-SALVO-MODE ⬜ — "Salvo" has never been opened
+**Source:** `GameModes.Salvo = 44`, Sparrow destruction race in the Boneyard (shared with Dog
+Fight, Broadside and Dustup). Authored headless, **never run**. The "wingman reload" (a
+teammate's crystal refills your rockets) has no feedback beyond the gauge. Target **700**
+prisms, unmeasured. Reference: `_Scripts/Controller/Arcade/SALVO.md` § In-editor verification.
+
+1. Open `MinigameSalvo.unity`. The controller shows `rule = SalvoScoringRule`,
+   `missileResourceIndex = 0`, elemental scatter **14 / 400 / 42**; the Cell shows four
+   Boneyard configs on **Intensity Wise**.
+2. Launch a 2v2 (you + AI teammate) at intensity 1. Count the white crystals at the start.
+3. Shoot wreckage with the guns and watch your team score. Land a rocket on a hulk. Shoot a
+   **teammate's** trail.
+4. Empty your rocket tank (two rockets). Touch nothing; let your **teammate** collect a white
+   crystal. Then let an **opponent** collect one.
+5. Skim a coloured (elemental) crystal with an empty tank.
+6. Collect a white crystal and watch where the next one appears.
+7. Watch the objective arrow and the AI for two minutes.
+8. With two players (Multiplayer Play Mode): the client empties its tank and the host
+   collects; then the reverse.
+9. Play to the end and time it. Press Replay.
+10. Regression: launch Dog Fight and count its crystals.
+
+**PASS:** the scene opens clean; white crystals = players + 5 (9 in a 4-player lobby), spread
+inside about 420 and not stacked in the middle, and one respawns elsewhere after collection;
+gun kills tick the score per prism, a rocket adds its whole harvest, a teammate's trail scores
+nothing; a teammate's white crystal refills **your** tank on your machine and an opponent's
+does not; an elemental crystal raises its element and refills nothing; refills work both ways
+between host and client; the arrow points at the nearest white crystal; AI Sparrows fly at
+crystals and shoot wreckage rather than circling pilots; the match ends at 700 with "SALVO
+TIME" for the winners and "N Prisms Left" for the losers; Replay resets to 0; Dog Fight still
+has 4 fixed white crystals.
+**FAIL:** destruction not scoring · a refill from an opponent's crystal, or no refill from a
+teammate's · refills failing in one direction only between machines · AI orbiting enemy
+pilots · Dog Fight's crystal count changed.
+**Report:** match length at intensity 1, and roughly how much destruction came from rockets
+versus guns.
+
+### QA-BREAKWATER-MODE ⬜ — "Breakwater" has never been played
+**Source:** `GameModes.Breakwater = 50`, Sparrow station race: fifteen dishes with danger
+plugs you open with rockets, guns, or by threading the eye. Every file was compiled offline and
+`BreakwaterCourseTests` ran (49/49), but **"nothing here has been run in the Unity editor"**. The
+scene needs one open-and-save in the Editor to re-mint its network object ids — commit that
+diff. Reference: `_Scripts/Controller/Arcade/BREAKWATER.md` § In-editor verification.
+
+1. Open `MinigameBreakwater.unity`, then save it (**File ▸ Save**). Note whether git shows a
+   change to the scene (that change is expected; report it so it can be committed). The
+   controller shows `rule = BreakwaterScoringRule` and `arenaPrefab = SpawnableBreakwater`;
+   the spawner shows `spawnFormation = EquatorialRing`.
+2. Launch at intensity 1. Before touching the stick, look around: fifteen dishes facing
+   different ways, each with a blue ring at its mouth and a woven danger plug in its throat;
+   nothing near the start positions. The Console shows `[Breakwater] Course seed …: 15 stations`.
+3. Fire a rocket at a plug. Then grind a plug open in Turret Stance. Then fly through a
+   plug's eye without touching it.
+4. Destroy about 50 hostile prisms and watch the Charge ability gauge.
+5. Thread station 1. Then fly through station 3 before station 2. Then 2, then 3.
+6. Thread a station from its far side. Fly just past a ring's rim.
+7. Clip a plug's bars. Then clip the collar around a ring.
+8. Two pilots on one team: one threads 5, the other 0, then 3. Watch the team box.
+9. Watch an AI Sparrow for two stations.
+10. Thread the last station and look at the objective arrow. Finish the race. Press Replay.
+11. Compare intensity 1 and 4: port sizes, how twisty the course is, and whether one rocket
+    clears a whole plug.
+12. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**.
+13. Regression: launch Switchback (twenty rings, lime next ring, AI flying the course).
+
+**PASS:** the arena builds with fifteen stations and clear start positions; all three ways
+through a plug cross the ring and score the same **1**; about 50 gun kills refill one rocket;
+stations count only in order (3 before 2 does nothing), from either side, and never for a
+near miss; plug bars full-stop and debuff you while the collar is an ordinary hit; the team
+box shows the **best** single pilot's count (5, not 8); AI thread stations in order and fire
+down a station's axis on the way in; after the last station the arrow points to the next
+circuit station and the start gate is never offered again; the race ends with "VICTORY" and
+Replay rolls a new course; intensity 4 has tighter ports, a twistier course and one-rocket
+plugs; baselines match the doc's table; Switchback unchanged.
+**FAIL:** no arena, or stations near the spawns · a method that does not score · stations
+counting out of order · a near miss counting · the team box summing pilots · an AI stuck at a
+plug · Replay rebuilding the same course · Switchback changed.
+**Report:** the station count shown in the score row and the finish time at intensity 1.
 
 ### QA-WILDLIFE-LIBERATION ⬜ — "Wildlife Liberation" has never been opened
 **Source:** PR #678 + the `claude/wildlifeliberation-game-mode-j410ej` merges. Whole
@@ -312,7 +1374,8 @@ verification.
     this — you should spawn a Sparrow with a `clamping selected vessel` log line.
 12. **Sparrow-only, multiplayer:** have the client pick a Dolphin — they must still get
     a Sparrow.
-13. Play a round toward the kill target (default **250**).
+13. Play a round toward the kill target (**30** — the shipped value; the mode doc argues
+    for 500).
 
 **PASS:** three well-separated cages whose shape changes with intensity; baselines
 within a few hundred; equatorial outside spawn; a 1-prism creature dies to one shot and
@@ -323,6 +1386,322 @@ regardless of their pick.
 a counter ticking per prism · score moving for a starvation or a shark kill · creatures
 clumped at the arena centre or wandering between rooms · a flat population three minutes
 in · a non-Sparrow vessel spawning on either machine.
+**Known, do not fail on:** nothing from the 2026-10-05 list any more: the Clawfish is now
+hunted (shoot a tail rib to kill it), the objective arrow points at the nearest creature, and
+the pop-up messages are authored. Their absence is now a failure.
+**Report:** how long 30 kills takes, so the target can be set from a real number.
+
+## Priority 0 — Block F: the Dolphin — 10 red vessel entries and its three modes
+
+The Dolphin's ten open checklist entries are folded into six items. Fly QA-DOLPHIN-RIG-SWAP
+early in the session: it gates a merge. Rampage's forest is shared by The Bends, Bloomrush and
+Sirocco, so its ladder numbers are worth taking even if time runs short.
+
+### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
+**Source:** PR #660 + #695 (15× skim-energy nerf → exactly **150 skims / 50 danger
+skims** to fill; lime jaw CTA at full energy). The Dolphin's `VesselStatus` pointed at
+a **disabled** legacy skimmer, so every contact was dropped silently. The fix is
+unconfirmed. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §5–6.
+
+1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. This is the gate.
+2. Freestyle as the Dolphin: fly through cell mass so prisms pass through the skimmer.
+   Watch the Console — a single `[DolphinVesselHUDView]` warning means the shared bars
+   config is missing or the jaw refs carry no `Graphic`, and the lime CTA is silently
+   dead.
+3. Skim continuously and count roughly: the meter should take on the order of **150**
+   skims to fill (50 on danger prisms), not a handful.
+4. Skim to full and watch the **jaws blend to lime**; then ram a prism and confirm they
+   go back to white.
+5. Hold drift until the ring steps up, then release. Then fly **straight** for 10 s.
+   Then drift → release → drift again.
+6. Hit a crystal.
+7. Raise Charge to level 5 (elemental crystals) and plant two team crystals back to back.
+8. Run **Audit Vessel Ability Rows** — Dolphin should read 4/4, order ✅.
+9. With a second client (MPPM), confirm both peers agree on the level-5 upgrades.
+
+**PASS:** audit reports `Dolphin NearFieldSkimmer: 'EnergySkimmer' OK`; crackle arcs
+sweep the skimmer sphere per prism and the HUD jaw icon punches per skim; energy takes
+~150 skims to fill; jaws go lime at full and white on a prism ram; the gape widens as
+energy fills; drift fills the ring and flying straight does **not**; speed returns to
+normal after an interrupted discharge; the crystal fires the cone, empties energy and
+flashes the Space icon; two crystals plantable at Charge L5, preview tinted your domain
+and blooming (not popping); no `[DolphinVesselHUDView]` warning; both peers agree.
+**FAIL:** audit reports anything else for Dolphin · no visible/audible skim feedback ·
+a meter that fills in a few skims · jaws that never go lime · ring fills while flying
+straight · speed stuck high after drift→release→drift · peers disagree on upgrade state.
+*(Serpent is expected to FAIL the same audit — that is a known, separate item.)*
+
+### QA-DOLPHIN-SPEED-TUNE ⬜ — cruise 68, boost peak about 347, and a real full stop
+**Source:** PR #681 (cruise/boost retune) and `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴
+"Dolphin minimum speed → 0" (`claude/dolphin-minimum-speed-59q8ay`), which **supersedes the
+earlier 78 / 357 numbers**: the 10-unit speed floor was removed, so cruise is now 68 and the
+peak about 347, and releasing the throttle stops the ship. In-place scalar edits; the
+arithmetic is machine-checked, the feel is unflown.
+1. Menu_Main → freestyle → **Dolphin**. Full throttle, no boost — read the speed on the
+   DiagnosticsHUD.
+2. Release the throttle completely and watch the ship. Then throttle back up.
+3. Hold drift from an empty meter and time the boost ring filling.
+4. Release a full meter and read the peak speed, then time the fall back to cruise.
+5. Drift → release → drift again.
+6. Stop completely, then start a drift from rest.
+7. Fly any other vessel as a regression check.
+
+**PASS:** cruise settles at **≈68**; with the throttle released the Dolphin comes to a smooth
+**full stop** (not a crawl) and recovers responsively; the ring fills in **≈3.6 s**; the peak
+reads **≈347** and takes ~2.5 s to fall back; speed returns to normal with no stuck
+multiplier; a drift from rest reads as "parked", not stuck; no other vessel changed.
+**FAIL:** numbers materially off the targets above · a crawl instead of a stop · a stop you
+cannot recover from · a stuck multiplier after drift→release→drift · another vessel's speed
+changing.
+**Judgement call to report — this is the point of the item:** whether ~347 is too much (the
+speed tunnel amplifies it), and whether a dead stop feels right.
+
+### QA-DOLPHIN-DRIFT-HOLD ⬜ — the drift freezes speed and direction; the throttle is inert while drifting
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Dolphin drift holds its velocity —
+throttle disabled for the drift" and 🔴 "Vector flight model — Squirrel drift fix, Dolphin
+migration, Scarab refactor" (the Dolphin's drift is now **Locked**: entering a drift no longer
+costs speed). Reference: `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §2.
+
+1. Open the Dolphin prefab ▸ `VesselTransformer`: **Hold Speed While Drifting** is ticked.
+   Open Squirrel, Rhino and Manta: it is **unticked**.
+2. Freestyle on the Dolphin at part throttle. Start a drift, then sweep the throttle from end
+   to end. Watch the speed and steer with the stick.
+3. Repeat from a crawl and from full throttle.
+4. Release the drift. Then boost off a full meter.
+5. Drift into a danger prism.
+6. Drift, then end the turn / swap ships mid-drift, then fly again.
+7. Enter a drift straight out of a full boost.
+8. Swap to the Squirrel and drift with the throttle moving.
+9. With two players (Multiplayer Play Mode), both on Dolphins, drift on one and watch it on
+   the other.
+
+**PASS:** the field is ticked only on the Dolphin; during a drift the speed does not move
+with the throttle but the heading still swings; the held speed is whatever you had when the
+drift began; on release the throttle works immediately and boost accelerates as before; a
+danger prism still slams you to the danger slow mid-drift; nothing stays locked after a
+swap or turn end; entering a drift from a boost keeps the boosted speed and lets it decay
+naturally (no slam to cruise); the Squirrel's drift still follows the throttle; the remote
+Dolphin's drift speed matches on both machines.
+**FAIL:** speed changing with throttle during a Dolphin drift · a held speed that is always
+the same number · a danger prism ignored mid-drift · a throttle that stays dead after a swap
+· a drift entry that slams speed down · the Squirrel's drift changed.
+**Report:** whether re-drifting at the peak of a boost lets you ratchet speed upward.
+
+### QA-DOLPHIN-ECHO-SIGHT ⬜ — the re-cut element map, the Echo Sight halo, and the ability cards
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Dolphin elemental map re-cut around one
+weapon" (`claude/dolphin-elemental-upgrades-umokil`, five passes) and 🔴 "Ability Lockup
+(TOTEM) — Dolphin". **Highest risk: a hand-written halo shader (`EchoSightHalo.shader`) and a
+fragment-stage change to the prism sight shader, neither seen by Unity.** Reference:
+`R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §8–12, `Docs/ABILITY_LOCKUP.md`.
+
+1. Open `DolphinHUDVariant.prefab`: four slots left to right — ProfileButton, CrystalButton,
+   JawButton, DriftButton; `CrystalPip0/1` are **gone**; the `Profile` object has its script.
+   Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** (Dolphin 4/4, order ✅).
+2. Select `Resources/EchoSightHalo.mat`: it shows the `EchoSightHalo` shader, not magenta.
+3. Freestyle on the Dolphin. Watch the Charge icon as energy banks; hold and release the
+   right trigger.
+4. Hold the right trigger near a wall of prisms. Look at a shielded prism inside the cone.
+5. At Charge 5, put another ship inside the cone; release; swap ship while holding.
+6. In **Rampage** at Charge 5, hold the trigger with a rival in the cone — in open space,
+   surrounded by lit prisms, and fully behind prisms. Then mark a rival 1000+ units away.
+   Put two rivals of different teams in one cone.
+7. Below Mass 5, wait for a seeded crystal; then raise Mass to 5; then change team with the
+   Domain Changer toy.
+8. Lay a drift trail. Fire a blast at a dense wall; then one that catches a rival and some
+   creatures; then one that catches neither.
+9. Look at the four ability cards (flat plates with the element flower docked above each
+   icon).
+
+**PASS:** the HUD slots and audit are correct; the halo material compiles; the Charge icon
+draws a solid capsule (not a bowtie) that grows with energy, grey at rest and white while
+held; prisms in the cone light **whole** (jagged prism-by-prism edge, never a smooth cut
+across a face) and read as lit, not washed white, with the shielded tier still telling apart;
+at Charge 5 a rival in the cone glows in its own team colour with a ring-shaped halo on its
+outline that reads in all three Rampage cases, stays roughly the same size beyond ~750 units,
+stays circular, and fades out cleanly with no lingering glow (also after a ship swap); two
+rivals show their own colours; below Mass 5 seeds are lime with a lime Mass icon and a rival
+can collect them, at Mass 5 they and the icon take your team colour, follow a team change,
+and a rival cannot collect them; drift trail prisms are not shielded and do not grow; the tally
+under the jaws shows a 4–5 digit number at full size, and after a blast a white pilot count and
+a blue creature count that fade after ~2.5 s, blank (no "0") when nothing was caught; each
+ability card sits behind its icon with no second row of flowers anywhere.
+**FAIL:** a magenta or invisible halo · the whole field of prisms lighting at once regardless
+of where the cone points (report it — the fallback switch is `PRISM_SIGHT_WHOLE_PRISM 0`) ·
+a bowtie Charge icon · a black Mass icon · a glow that does not fade · a remote Dolphin's
+sight brightening things on your machine · a card covering its icon · two rows of flowers.
+
+### QA-VESSEL-AOE-IMPULSE ⬜ — explosion inertia, the Dolphin capsule cone, and debris spin
+**Source:** PRs #652, #632, #643, **#680** (the blast's collider was hand-swapped from a
+Sphere to a **Capsule** at the YAML class-id level — `!u!135` → `!u!136` — and aligned
+with the jaw gape).
+1. Select `_Prefabs/Projectile/AOEConicExplosion.prefab`. The root must show a
+   **Capsule Collider** (Is Trigger ✓, Radius 0.0667, Height 1, Direction **Z-Axis**,
+   Center 0/-0.5/0) — **not "Missing", not still a Sphere**. This is the riskiest edit
+   on the branch and shows up nowhere else. Also confirm **Inertia 1.8 / Proportional
+   Debris ✓ / Debris Restitution 0.333**.
+2. After a SkimRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
+   Squirrel overheat **danger** trail, then detonate a Dolphin crystal blast into it.
+3. Dolphin + crystal in open space: watch the cone's reach and where destruction ends.
+   **Roll 90° and fire again** — the fan must roll with the ship (ship-up, not world-up).
+4. Watch the jaws at **zero energy** (slightly open) and at every charge step — they
+   must agree with the HUD icon.
+5. Watch the direction struck prisms fly.
+6. Fire one **spherical** AOE (e.g. Rhino) as a regression check, and check the Manta /
+   Rhino / Serpent / Squirrel crystal blasts and the Sparrow skyburst are unchanged.
+7. Blow up prisms at a range of impact speeds and watch debris **tumble**.
+
+**PASS:** the capsule collider is present and correct; the blast expands through danger
+and regular-shielded prisms (shields pop, danger takes damage) and stops **only** on
+stellated super-shielded prisms; the charged blast reads as a **fan** that rolls with
+the ship; the cone mesh and its destruction both reach ≈2400 units with a travelling
+wavefront; struck prisms fly radially from the **apex**, not from the wavefront; jaws
+agree with the HUD at every charge step; the spherical AOE and the other four vessels'
+blasts are unchanged; debris tumbles noticeably more than before **at the same flight
+speed and shatter timing**.
+**FAIL:** a Missing or still-Sphere collider · the blast stopping on a danger prism ·
+destruction falling short of the cone mesh · a fan bound to world-up · debris flying
+from the moving wavefront · flight speed or shatter pace changing with the spin tune.
+**Known cosmetic gaps (report, do not fail on):** the conic VFX spawn flash does not
+scale with the tripled height; the rendered cone widens with the capsule's length by
+construction, so full charge draws wider than it destroys off-axis.
+
+### QA-DOLPHIN-RIG-SWAP ⬜ — Dolphin rig swap: flight 17, the re-flight that gates the merge
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Dolphin rig swap — FLOWN, BROKE, FIXED;
+needs a re-flight" (2026-08-26; **flight 17 pending since 2026-09-15**). Sixteen flights so far.
+The legacy hull was replaced by the `dolphin_shapekey` rig; every structural check passed while
+the ship was still broken in flight, so only a flight settles it. Reference:
+`Docs/VESSEL_CONSTRUCTION.md` §4.6.5.
+
+1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**: six jets, on the nozzle bones.
+2. Run **Audit Corridor Vessel Radii**: the Dolphin's number has not moved.
+3. Run **Audit Vessel Skimmers**: the Dolphin passes exactly as before.
+4. Fly the Dolphin in freestyle **side by side** (or alternately) with a Dolphin on an older
+   build if you have one. Turn hard in both directions.
+5. Raise each element from 0 to 10 and watch the hull change shape.
+6. Watch the jaws, wings and six thrusters while flying, boosting and drifting. Skim, lay
+   trail and fire a crystal blast.
+
+**PASS:** the three audits pass with the stated results; in ordinary flight the wings and all
+six boosters swing **with** the body's turn (they orbit it rather than spinning in place
+while the tail sweeps away), and the boosters swing about a common seat behind the body with
+the old, exaggerated amplitude; each element visibly morphs the hull; jaws, wings and
+thrusters animate; trail, skim and blast are unchanged; the team colour is on the accent, not
+the body, and no leftover yellow from Blender shows.
+**FAIL:** puppetry that tears apart · boosters spinning in place · a hull that does not morph ·
+team colour on the body or a yellow accent · any audit regressing. If an audit is not green,
+**do not hand-fix the prefab** — report what it printed.
+**Report the feel:** two inspector choices on `Dolphin.prefab` ▸ `RiptideAnimation` are open —
+`thrusterAnimationScaler 75` (the old amplitude) and `mirrorAppendageRoll` off. Say whether the
+roll on the parts still reads backwards.
+
+### QA-RAMPAGE-LADDER ⬜ — Rampage intensities 1–3 have never been played
+**Source:** `_Scripts/Controller/Arcade/RAMPAGE.md` § In-editor verification. Rampage
+(`GameModes.Rampage = 2`, Dolphin, target **2000** prisms) was play-tested at **intensity 4
+only**; rungs 1–3 were "authored headless". Both measured baselines **predate the sixth flora
+species (2026-09-20)** and were never re-measured. The forest is also the arena for The Bends,
+Bloomrush and Sirocco, so its numbers matter four times.
+
+1. Open `MinigameRampage.unity`: the Cell shows **4** configs and **Intensity Wise**.
+2. Launch solo with AI backfill (1 human + 3 AI) at intensity **1**. Confirm every ship,
+   including the AI, is a Dolphin, spread on a large sphere facing the cell.
+3. Wait about 60 s and look at the forest: plants fill the cell from just outside the core out
+   to the outer wall, in mixed colours and elements, and different **species** are visibly
+   different sizes.
+4. Read the cell's live volume and prism count on the DiagnosticsHUD once the forest stops
+   growing. Write both numbers down.
+5. Skim the forest, collect a crystal, fire the cone. Watch the score, the objective arrow and
+   where the crystal reappears.
+6. Watch one AI for a minute.
+7. Play to the target and time the match. Press Replay.
+8. Repeat steps 2–4 and 7 at intensities **2** and **3**. Then launch intensity 4 once for
+   comparison.
+9. With two players (Multiplayer Play Mode) at intensity 4, compare the prism count on both
+   windows.
+
+**PASS:** every ship is a Dolphin; at each rung the forest fills the space between core and wall
+and stops growing at the frenzy threshold rather than early; nothing planted inside the core or
+outside the wall; blast kills score for your team and your own trail scores nothing; the arrow
+points at the crystal and re-acquires; the crystal reappears inside the core; the AI flies at
+the crystal and swings its nose onto a stand of trees; the match ends at 2000 and Replay
+reloads cleanly; the four rungs look and profile obviously different; both machines show the
+same prism count (a client log line `IntensityWise config choice DEFERRED` once is fine).
+**FAIL:** a non-Dolphin ship · a forest that stops far short or overruns · rungs that look the
+same · a client showing a fraction of the host's prisms (a known race that must not regress) ·
+anonymous (unscored) blast kills.
+**Report numbers — the point of the item:** volume and prism count per rung, and match time per
+rung. The old model said about **569k / 3,500** at intensity 1 and **1.62M / 9,830** at 4.
+
+### QA-BENDS-MODE ⬜ — "The Bends" has never been played to a result
+**Source:** `GameModes.Bends = 42`, Dolphin duel: a "bend" is catching a rival in your crystal
+cone, which drains their elements; first team to **3** bends wins. Authored headless; a playtest
+found **the AI never landed a hit**, fixes followed (`Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴
+"Bends AI aim: wavefront intercept lead + human focus") and none has been verified. Reference:
+`_Scripts/Controller/Arcade/BENDS.md` § Verification.
+
+1. Open `MinigameBends.unity`: no missing scripts; `BendsController` and
+   `BendsPointTurnMonitor` resolve on the Game object.
+2. In **any** mode as the Dolphin, catch an AI in your crystal cone. Watch its element flowers.
+3. Start a 2-player, 2-team Bends match. Bend the opponent once. Watch the score and the target
+   readout.
+4. With two players (Multiplayer Play Mode), have the **client's** Dolphin land a bend.
+5. Catch two opponents in one blast. Hold one opponent inside the cone for a second or more.
+6. Bend a pilot who is elementally immune (if one is available).
+7. Watch an AI with you within about 2400 units: does its nose lead you as you cross, and does
+   its blast land? Then fly beyond 2400 units. Then put a human and an AI rival both in range.
+8. Play to 3. Read the scoreboard. Press Replay.
+
+**PASS:** a caught AI's flowers drop and recover over about 4 s; one bend adds **+1** and the
+deficit drops from 3 to 2; a client's bend adds exactly **+1** on both machines (not 2, not
+0); a double catch adds 2; a long hold adds 1 once; an immune pilot scores nothing; the AI
+leads a crossing target further at long range, lands blasts on a straight-flying rival,
+prefers the human, and grazes the forest when nobody is in range; the scoreboard's second line
+reads "N bends" correctly on every machine and Replay resets to 0.
+**FAIL:** flowers that never drop (the wiring is broken — stop, nothing else matters) · a client
+bend scoring 2 or 0 · an AI that never lands a hit in two minutes · a match that ends in two
+hits.
+**Known, do not fail on:** the card preview says "Shoot your Echo" (the mode has no guns; copy
+drift, logged). (The objective arrow is now wired here: it points at the nearest rival pilot,
+never a teammate.)
+**Report:** whether a 3-bend match feels too abrupt.
+
+### QA-SWITCHBACK-MODE ⬜ — "Switchback" has never been opened
+**Source:** `GameModes.Switchback = 45`, Dolphin gate race (twenty rings, **20** to win). C#
+compiled headless and the course generator ran over 400 seeds, but **nothing has been run in
+the Editor**. Its ring and grid-growing code is shared with Breakwater, Headlong, Redline,
+Regatta and Waystation. Reference: `_Scripts/Controller/Arcade/SWITCHBACK.md` § In-editor
+verification.
+
+1. Open `MinigameSwitchback.unity`: `rule = SwitchbackScoringRule`; the Cell shows **one**
+   config (Skim Race) on Random; the spawner shows `EquatorialRing`, 150 outside the core.
+2. Launch. Twenty blue rings bloom in, scattered and facing different ways. Gate 1 sits above
+   the cell centre, the same distance from every pilot.
+3. Thread gate 1. Then gate 3 before gate 2. Then 2, then 3.
+4. Thread a gate from its far side. Fly just past a ring's rim.
+5. Look at the ring colours: your next ring must be **lime**, all others blue.
+6. Two pilots on one team: one threads 5, the other 0, then 3. Watch the team box.
+7. With two players (Multiplayer Play Mode): the client threads gates; then the host. Compare
+   which ring is lime on each window when their counts differ.
+8. Collect a white crystal and catch a rival in the cone.
+9. Watch an AI Dolphin through three gates. Finish the race. Press Replay.
+10. Compare intensity 1 and 4.
+11. Open the Arcade screen with no favourites set and scroll to the bottom; open the last
+    card. Then favourite a mode and repeat.
+
+**PASS:** twenty rings at every intensity; gates count only in order, from either side, never
+for a near miss; your next ring is lime and the lime moves on; the team box shows the **best**
+pilot's count (5, not 8); a client's gates count on both machines and each window shows its own
+lime ring; a cone hit debuffs the rival for about 4 s without changing either gate count; the
+AI lines up on each gate's axis and threads in order; the race ends with "VICTORY" + time, "N
+Gates Left" for losers, and Replay resets to 0/20; rings are smaller and the course twistier at
+4; every Arcade card is drawn and the last one opens, with no `ArcadeExploreView` error.
+**FAIL:** no rings · out-of-order or near-miss gates counting · the team box summing pilots ·
+a shared lime ring across machines · an AI circling a ring · a missing or unopenable last card.
+
+## Priority 0 — Block G: the Rhino — Cleave and Headlong
+
+If the session has time, the Rhino vessel items in Priority 1 fit here too
+(QA-VESSEL-RHINO-SWORD, QA-RHINO-SWORD-COMBOS, QA-RHINO-SKIMMER-SHAPE, QA-RHINO-RAMP-BOOST,
+QA-P1-RHINO-RAMP-CEILING); Headlong exercises the ramp boost directly.
 
 ### QA-CLEAVE-MODE ⬜ — "Cleave" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
@@ -403,111 +1782,728 @@ specific:** a road you cannot find from spawn, a cut that keeps dropping while y
 one, a road that ROLLS about its own travel direction (that is the Twistbands' job, not
 this rung's), danger on an inside verge or on a straight, or a road folding through itself
 at the inside of a bend.
+**Known, do not fail on:** the Rhino's ability row shows two LOCKED cards (the 1st and 3rd)
+- those are open design slots with no ability yet; the other two icons are white placeholders.
+(The objective arrow and the pop-up messages now exist; the arrow points at a dense part of the
+arena and moves at most every 1.5 s.)
 
-### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
-**Source:** PR #660 + #695 (15× skim-energy nerf → exactly **150 skims / 50 danger
-skims** to fill; lime jaw CTA at full energy). The Dolphin's `VesselStatus` pointed at
-a **disabled** legacy skimmer, so every contact was dropped silently. The fix is
-unconfirmed. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §5–6.
+### QA-HEADLONG-MODE ⬜ — "Headlong" (the Rhino's circuit) has never been flown
+**Source:** PR #852. `GameModes.Headlong = 49`, Rhino-only closed circuit (8 rings a lap, **24**
+to win) built around the graded ramp boost. "Not editor-verified … nobody has flown it." The AI
+was never tuned for Rhino speed. Its doc points to a checklist entry that does not exist.
+Reference: `_Scripts/Controller/Arcade/HEADLONG.md` § 8.
 
-1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. This is the gate.
-2. Freestyle as the Dolphin: fly through cell mass so prisms pass through the skimmer.
-   Watch the Console — a single `[DolphinVesselHUDView]` warning means the shared bars
-   config is missing or the jaw refs carry no `Graphic`, and the lime CTA is silently
-   dead.
-3. Skim continuously and count roughly: the meter should take on the order of **150**
-   skims to fill (50 on danger prisms), not a handful.
-4. Skim to full and watch the **jaws blend to lime**; then ram a prism and confirm they
-   go back to white.
-5. Hold drift until the ring steps up, then release. Then fly **straight** for 10 s.
-   Then drift → release → drift again.
-6. Hit a crystal.
-7. Raise Charge to level 5 (elemental crystals) and plant two team crystals back to back.
-8. Run **Audit Vessel Ability Rows** — Dolphin should read 4/4, order ✅.
-9. With a second client (MPPM), confirm both peers agree on the level-5 upgrades.
+1. On a fresh account, open the Arcade screen: the **Headlong** card is clickable and its
+   launch panel pins the ship to the **Rhino**.
+2. Launch at intensity 1 with 2 players. The connecting panel holds until the circuit arrives,
+   then eight rings bloom in a closed loop; your next ring is lime and the arrow points at it.
+3. Fly a lap at full throttle, watching the speed readout.
+4. Thread the eighth ring and look at the score row and the lime ring.
+5. Launch intensity 4 and fly several laps, once feeding in more stick than each corner needs
+   and once with the smallest stick you can.
+6. Add an AI and watch it for two laps.
+7. With two players (Multiplayer Play Mode), compare the circuit and the gate counts.
+8. Regression: launch Switchback.
 
-**PASS:** audit reports `Dolphin NearFieldSkimmer: 'EnergySkimmer' OK`; crackle arcs
-sweep the skimmer sphere per prism and the HUD jaw icon punches per skim; energy takes
-~150 skims to fill; jaws go lime at full and white on a prism ram; the gape widens as
-energy fills; drift fills the ring and flying straight does **not**; speed returns to
-normal after an interrupted discharge; the crystal fires the cone, empties energy and
-flashes the Space icon; two crystals plantable at Charge L5, preview tinted your domain
-and blooming (not popping); no `[DolphinVesselHUDView]` warning; both peers agree.
-**FAIL:** audit reports anything else for Dolphin · no visible/audible skim feedback ·
-a meter that fills in a few skims · jaws that never go lime · ring fills while flying
-straight · speed stuck high after drift→release→drift · peers disagree on upgrade state.
-*(Serpent is expected to FAIL the same audit — that is a known, separate item.)*
+**PASS:** the card pins the Rhino; speed climbs steadily toward about 1200 over ~5 s; at
+intensities 1–2 exactly **one** corner costs speed; after ring 8 the lime returns to ring 1 and
+the row reads **8/24**, not "finished"; intensity 4 has three speed-costing corners including a
+hairpin to about a third of top speed, and extra stick visibly costs exit speed; the AI completes
+more than one lap; both machines see the same circuit and no crossing counts twice; Switchback
+unchanged.
+**FAIL:** a non-Rhino ship · a circuit that never arrives · "finished" after one lap · an AI stuck
+after lap 1 · a crossing credited twice.
+**Known, do not fail on:** the Rhino's ability row shows two LOCKED cards (the 1st and 3rd)
+- open design slots; the other two icons are white placeholders (QA-HULL-ABILITY-ROWS).
+**Report:** whether the graded ramp feels too forgiving or too punishing (dial:
+`straightnessGraceBand`).
 
-### QA-SHELL-COLLISION ⬜ — shape-precise shielded-prism collision (Burst shell tier)
-**Source:** PR #627. Reference: `Docs/SPATIAL_INDEX.md` § "Shell view — in-editor
-verification". Touches every skim and every shield pop in the game.
+## Priority 0 — Block H: the Manta — Redline and Bloomrush
 
-1. **Squirrel on Skim Race:** skim the super-shielded track lining along its length,
-   including grazing passes at the spike tips and passes aimed at the gaps *between*
-   spikes.
-2. **Rhino:** swipe a shielded prism and note at what distance the shield pops.
-3. Fly a dense trail while crystals auto-shield prisms around you.
-4. Profile a SkimRace round: watch `ShellContact.Build` / `ShellContact.Query` and
-   `Physics.SendEvents`.
-5. Toggle the runtime A/B switch off and back on.
+Short block. QA-P1-MANTA-SOAR-SPARROW-AFTERBURNER (Priority 1) fits in the same session.
 
-**PASS:** skims register at the **stella surface** (≈3× the box), spike-tip grazes
-hit, aimed-at-the-gap passes do **not**; boost is granted per shell touch; the Rhino
-pops at octahedron reach rather than point-blank; no prism becomes untouchable and no
-double-fire (pop *and* destroy in one contact); the two markers stay sub-ms and
-`Physics.SendEvents` is flat vs. the previous build; the A/B toggle reverts cleanly.
-**FAIL:** skims only at the box · gap false-positives · pop-then-destroy · any prism
-that cannot be hit at all · marker spikes or a rising `Physics.SendEvents` train.
+### QA-REDLINE-MODE ⬜ — "Redline" (the Manta's circuit) has never been flown
+**Source:** `GameModes.Redline = 53`, Manta-only closed circuit (8 rings a lap, **24** to win),
+flown on Soar (both triggers). "Not editor-verified." The AI never uses the Manta's turn ability,
+so it overshoots intensity-4 hairpins; its new Soar drive is a **fleet-wide** Manta AI change.
+Reference: `_Scripts/Controller/Arcade/REDLINE.md` § 8.
 
-### QA-EDITMODE-TESTS ⬜ — run the test suites that were written but never executed
-**Source:** PRs #659, #639, #627, #641, #668, #651, #673 + **#688/#690** (all 61 NUnit
-files were **moved under `Editor/` folders** so they stop shipping into the player, and
-`Assembly-CSharp-Editor` was given `InternalsVisibleTo`). That move touched 105 files
-and has never been run — a suite that silently stops compiling now looks like "no
-failures".
+1. On a fresh account, the **Redline** card is clickable and pins the ship to the **Manta**.
+2. Launch at intensity 1, 2 players: eight rings in a closed loop, lime next ring, arrow on it.
+3. Fly a lap with both triggers held down. Watch the speed readout.
+4. Thread the eighth ring and look at the score row.
+5. Launch intensity 4 and fly several laps.
+6. Add an AI Manta and watch it for two laps.
+7. With two players (Multiplayer Play Mode), compare gate counts; fly fast through gates on the
+   client.
+8. Regression: launch Headlong; and fly an AI Manta in another mode (Scurry or Brood Rush).
 
-1. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.**
-2. Record the **total test count** as well as pass/fail. The move preserved 762 `[Test]`
-   methods — a total far below that means suites are missing, not passing.
-3. Record every failing test by name and assertion message.
-4. Specifically confirm these suites are present and green: `CellSpawnFormationTests`,
-   `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`,
-   `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`,
-   `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `DisplayNameValidatorTests`,
-   `ShipModifierTests`.
+**PASS:** the card pins the Manta; speed settles at about **720** within ~2 s; at intensity 1
+nothing forces you to lift a trigger; after ring 8 the row reads **8/24**; at intensity 4 two
+corners force a trigger off and a third can just be held flat on a clean line; the AI soars on
+straights, lifts in corners and completes more than one lap; a fast client's crossings are never
+dropped; Headlong unchanged; AI Mantas elsewhere still fly normally.
+**FAIL:** a non-Manta ship · "finished" after one lap · a fast crossing dropped as implausible ·
+an AI that never lifts or never finishes a lap · AI Mantas in other modes behaving oddly.
+**Known, do not fail on:** the Manta is
+silent (its six sting sound slots are empty); the card preview is an empty shell.
 
-**PASS:** all EditMode tests green, the total is ≈762, and all eleven suites appear.
-**FAIL:** any red test (record the name + assertion message), a suite that does not
-appear at all (it did not compile into the editor assembly), or a total materially
-below 762.
+### QA-BLOOMRUSH-MODE ⬜ — "Bloomrush" has never been compiled or played in Unity
+**Source:** `GameModes.Bloomrush = 52`, Manta party game: tag everything you fly past, then reach
+a crystal before the fuses burn down and set it all off. A **120 s timed** round scored on hostile
+prism **volume** (`VolumeDestroyed`). Doc: "Not yet compiled or played in Unity." In Rampage's
+forest. Reference: `_Scripts/Controller/Arcade/BLOOMRUSH.md`.
 
-### QA-AUDIT-TOOLS ⬜ — run every FrogletTools auditor and record its verdict
-**Source:** PRs #637, #641, #653, #659, #661, #668, #646, #650, #702. Each auditor is a
-cheap, asset-only check that encodes a contract; several have never been run.
+1. Launch Bloomrush at intensity 1 with AI. Wait for the countdown to end.
+2. Do nothing for 25 s and watch for a hint message.
+3. Fly close past plants of a rival colour. Look for halos on what you tagged.
+4. Fly into a white crystal. Watch the detonations and your score.
+5. Tag more, then let the fuses run out without reaching a crystal. Compare the blasts.
+6. Watch the AI for a minute.
+7. Let the clock run out. Read the scoreboard. Then launch intensity 4 and watch how fast the
+   halos burn down.
+8. Go back to freestyle as the Manta and tag something; time its fuse.
 
-Run each and paste its report into your results file:
-1. **Vessels ▸ Audit Vessel Skimmers**
-2. **Vessels ▸ Audit Vessel Ability Rows**
-3. **Vessels ▸ Audit Vessel Elemental Morphs**
-4. **Vessels ▸ Validate Speed Tunnel Law**
-5. **Vessels ▸ Audit Corridor Vessel Radii** *(new — re-run after the skimmer-exclusion
-   fix; every hull radius must read ship-sized)*
-6. **Ecology ▸ Audit Cell-Owned Visuals**
-7. **Ecology ▸ Validate Lifeform Crystals**
-8. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
-9. **Ecology ▸ Measure Cell Environment Baselines**
-10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **250**
-    and Dog Fight **120**
-11. **Game Modes ▸ Game Mode Prefab Kit ▸ Validate**
-12. **Build ▸ Pending Tool Changes** (should list nothing unexpected)
+**PASS:** an idle hint appears after about 25 s; each tagged target shows a halo (visible to you
+only) that quickens and goes hot as its fuse burns; a crystal detonates your tags nearest-first
+as a rolling chain, shows a cash-out message, and raises your score by volume; fuses that run
+out make smaller blasts; the AI grazes and collects crystals; the round ends at 120 s and the
+highest volume wins (fuses beaten breaks a tie); fuses are visibly shorter at intensity 4;
+freestyle fuses are back to 25 s.
+**FAIL:** a compile error · tags with no halo · a crystal that detonates nothing · a score that
+never moves · a round that does not end at 120 s · freestyle fuses stuck at a match's value.
+**Known, do not fail on:** **silence** — six sound slots on `MantaStingConfig.asset` are empty
+by design until audio lands.
 
-**PASS:** every tool runs without throwing, and each reports either clean or *only*
-the known exceptions: Serpent fails the skimmer audit; Manta/Rhino/Serpent are listed
-as design-blocked in the ability-row audit; Dolphin/Urchin/Rhino/Grizzly lack elemental
-morphs; `SkyboxModel` entries listed under OK in the cell-visual audit.
-**FAIL:** any tool that throws, or any *new* failure beyond the known exceptions above
-— especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty, or a
-corridor radius that is not ship-sized.
+## Priority 0 — Block I: the Urchin — the hull, Skein and Hijack
+
+Last because the Urchin was the least finished hull. Its HUD, its AI and Hijack's replicated
+arena all merged 2026-10-06 and have their own items in Block P (QA-URCHIN-HUD, QA-URCHIN-AI,
+QA-HIJACK-OWNERSHIP-SYNC); run those first, then this block. The vessel item first. Its
+2026-10-08 fixes (Urchin backlog U1–U16 and Hijack shield sync) are in Block Q
+(QA-URCHIN-TWO-PEER, QA-URCHIN-BACKLOG-SOLO, QA-HIJACK-SHIELD-SYNC).
+
+### QA-URCHIN-VESSEL ⬜ — the Urchin's spikes, trail ride, launch and Track Projector
+**Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Urchin revival — chain-reaction spikes +
+trail rider" and 🔴 "Urchin — end-of-ribbon launch, merged spike trigger, Track Projector"
+(prefab edited as YAML, import never checked). `URCHIN_BACKLOG.md` U1/U2 (which blocked a
+multiplayer ship) and U4-U16 were fixed by PR #1005 - Block Q items QA-URCHIN-TWO-PEER and
+QA-URCHIN-BACKLOG-SOLO. References: `URCHIN_TRAIL_RIDER.md`, `URCHIN_CHAIN_SPIKES.md`,
+`URCHIN_TRACK_PROJECTOR.md`.
+
+1. Open `Urchin.prefab`: `ActionExecutorRegistry` lists **three** executors and the input
+   bindings read 1 → `UrchinSpikeAction`, 2 → `UrchinTrackAction`, 7 → `UrchinSlipAction`, with
+   no missing-script or unassigned warnings. Open `Resources/ElementalAbilityMaps/Urchin.asset`:
+   four entries (Chain Spikes, Trail Rider, Track Projector, Slip).
+2. Freestyle as the Urchin. Fly into a trail: you latch on. Push and pull the stick to slide
+   both ways along it.
+3. Ride an open (non-loop) trail to its end without steering. Then ride a loop.
+4. After a launch, watch your speed bleed off. Respawn and fly again.
+5. **Tap** the right trigger. Then **hold** it for half a second and for 2.5 s, and release.
+   Swap ship mid-hold.
+6. Press the left trigger (Track Projector) at cruise and at grind speed. Press it again
+   immediately.
+7. Ride across the surface of a plate-shaped (gyroid) flora if one is near.
+
+**PASS:** the prefab and map are as listed; the Urchin latches onto a trail and slides with the
+stick both ways; at an open trail's end it **launches** off rather than parking, and does not
+immediately re-latch to the same ribbon; a loop is ridden forever; excess ride speed bleeds off
+over several seconds and does not survive a respawn; a tap fires one aimed ring blast; a hold
+fires a burst (more spikes the longer you held, 6 up to 36) on release; a swap mid-hold fires
+nothing; the track lays a straight 13-prism stretch ahead of your nose and is on a 20 s
+cooldown; the Urchin rolls across a surface flora.
+**FAIL:** a missing executor or binding · no latch, or a frozen ride · parking at a ribbon's end ·
+re-latching to the same ribbon at once · a tap that bursts, or a hold that fires nothing · a burst
+after a mid-hold swap · a track that lands behind you or never cools down.
+**Known, do not fail on:** the four ability icons are white placeholders (art pending); three
+sound slots are empty. (Chain depth and reach must now agree between machines, and a remote steal
+must debit the victim - both checked in QA-URCHIN-TWO-PEER.)
+
+### QA-SKEIN-MODE ⬜ — "Skein": the intensity ladder and the AI Urchin have never been verified
+**Source:** PR #855. `GameModes.Skein = 51`, Urchin-only cable race. **Two playtest passes
+happened** (`SKEIN.md` §13–14: rings, the arrow, a faster Urchin, a start collar and start line);
+the §15 intensity-ladder pass ("no hunting for the next ring") is unverified, and the AI Urchin
+has never been seen racing end to end — without it there is no solo play. The ring target is
+missing from `EndConditionOverrides.asset`, so the code default (**24**) applies. Reference:
+`_Scripts/Controller/Arcade/SKEIN.md` §10, §15.
+
+1. Open `MinigameSkein.unity` and save it; report whether git shows a scene change (expected
+   once — network object ids are re-minted on first save).
+2. Launch at intensity **1**. Fly the course. From each ring, before turning, check whether the
+   next ring is already on screen.
+3. Launch at intensity **4** and compare.
+4. At intensity 1, ride the cable through a wide ring that surrounds the whole cable (a
+   "collar") on different strands.
+5. Add AI Urchins and watch one for two minutes. Then play solo with only AI opponents.
+6. Play to the end (24 rings).
+7. With two players (Multiplayer Play Mode), compare ring counts.
+
+**PASS:** at intensity 1 the next ring is visible from every ring as you pass through (the
+objective arrow is effectively never needed), and collars can be threaded from any strand;
+intensity 4 is visibly harder (more hunting, single-strand rings); AI Urchins grind the cable at
+full speed, thread rings in order and finish; a solo match against AI ends with a winner; both
+machines agree on counts.
+**FAIL:** rings at intensity 1 that are behind you when you pass the previous one · a collar
+that misses a strand · AI that orbit, stall on the cable, or never finish (no solo play) · a
+match that never ends.
+**Known, do not fail on:** the Urchin's ability icons are white placeholders. (Skein now has
+pop-up messages - halfway, lead change, home stretch - and AI Urchins that Slip off wrong strands
+and spike rival ones; see QA-URCHIN-AI.)
+**Report:** match length, and whether 24 rings is the right course length.
+
+### QA-HIJACK-MODE ⬜ — "Hijack" has never been opened (score agrees; the arena will not)
+**Source:** `GameModes.Hijack = 46`, Urchin steal race on the Switchyard (rail thirds and
+spiked "burrs"); first team to **750** stolen wins. "Nothing … has been run in the Unity editor."
+Prism ownership in the Switchyard **is replicated since PR #972** (QA-HIJACK-OWNERSHIP-SYNC
+covers the two-machine checks); before it, ride speed, the objective arrow and AI rail choice
+differed on each machine. Reference:
+`_Scripts/Controller/Arcade/HIJACK.md` § 9.
+
+1. Open `MinigameHijack.unity`: four Switchyard configs on **Intensity Wise**; `rule =
+   HijackScoringRule`. Save it and report whether git shows a scene change.
+2. Launch at intensity 1, **host only** first. Grind onto a rail section of a **rival** colour;
+   watch your score crawl up and your speed.
+3. Tap the spike trigger into a rival burr. Then ride a rail of **your own** colour.
+4. Grind a rail to its end **without steering**.
+5. Attach to a burr and roll across its spines.
+6. Watch AI Urchins for two minutes.
+7. Fall about 375 behind and watch your element flowers.
+8. Play to 750.
+9. Now with a client (Multiplayer Play Mode): play a minute, then compare the **scores** on both
+   windows, and note which rail sections look fast or slow on each.
+10. Regression: fly the Urchin in freestyle.
+
+**PASS:** riding a rival section scores steadily at a visible crawl (about 20) and your own
+colour rides fast (about 300) and scores nothing; a spike tap into a rival burr jumps the score
+by 100+ and snaps your speed back; reaching a rail's end launches you into the burr without
+steering; rolling a burr grows your spines and flips rival ones one per hop; AI grind at full
+speed, launch off ends, and their team's score climbs without circling pilots or the core
+crystal; a trailing team's flowers fill about 3 levels; the match ends at 750 with "HEIST TIME";
+the **scores agree** on both machines; freestyle Urchin unchanged.
+**FAIL:** stealing that does not score · own-colour riding that scores · a launch that needs
+steering to hit the burr · AI that orbit or crawl · scores that differ between machines.
+**Known, do not fail on:** the Urchin's ability icons are white placeholders. Rail colours, ride
+speeds, the arrow and (since PR #1004, QA-HIJACK-SHIELD-SYNC) rail prism SHIELDS must now AGREE
+between machines - a shield on one machine and not the other is a failure.
+
+## Priority 0 — Block J: two-player setup (the party cards are retired)
+
+Both party cards were retired 2026-10-08 as prototype vestiges: Multiplayer Freestyle (28),
+replaced by the Menu_Main lava lamp, freestyle, toybox and lobby, and Online Duel for the Cell
+(29), replaced by Brood Rush. Their items (QA-PARTY-FREESTYLE-MODE, QA-PARTY-DUEL-MODE) are gone.
+The two-player setup below stays here because Block Q and later items point at it.
+
+**Two-player setup used by every two-player item in Blocks J and Q:**
+1. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode**. Tick **Player 2** and type a tag for it
+   (for example `P2`) **before** you press Play. Without a tag the second window signs in as the
+   same account as other untagged windows and the invite in step 3 never arrives.
+2. Open `Menu_Main` and press Play. Wait until both windows show the main menu.
+3. In the main window, click the **+** slot on the party panel and pick the other player. In the
+   Player 2 window, press **Accept** on the invite. Wait (up to 15 seconds) until both windows show
+   two people in the party. The main window is the **host**; the Player 2 window is the **client**.
+
+## Priority 0 — Block P: the parallel PRs' own checks (merged 2026-10-06)
+
+All eleven PRs from the 2026-10-05 audit have merged. The six below (#971–#976) have their
+items in this block; their "Known, do not fail on" lines have been removed from the items above.
+The other five (#964–#970) have no items of their own yet - the lines they made untrue are
+corrected above, and their checks wait for the next `/qa-backlog` run.
+
+| Parallel PR (subject) | What it changes | Items whose "Known, do not fail on" lines it retires |
+|---|---|---|
+| Mode generator gates | Generators stop reverting rendered card art and stop emitting the retired call-to-action key | none in play (offline gates); spot-check card art in QA-ARCADE-ROSTER-SMOKE |
+| Wildlife Liberation / Tollway | Kill target vs doc, Clawfish heart, Tollway flora-family check | QA-WILDLIFE-LIBERATION, QA-TOLLWAY-MODE |
+| Objective arrows | Arrows for Bends, Cleave, Sirocco, Wildlife Liberation, Brood Rush, Scurry (+ Maelstrom lobby) | QA-BENDS-MODE, QA-CLEAVE-MODE, QA-SIROCCO-MODE, QA-WILDLIFE-LIBERATION, QA-BROODRUSH-ARENA |
+| Toasts — **merged #976** → QA-MODE-TOASTS | Pop-up message configs for Rampage, Cleave, Salvo, Switchback, Headlong, Redline, Breakwater, Skein, Hijack, Wildlife Liberation, Astro League | every mode item that listed "no pop-up messages" (retired) |
+| Registration drift | Scarab class list, Butterfly class icons, orphan scenes/cards, retired keys, stale preview copy | QA-SCARAB-VESSEL, QA-BUTTERFLY-VESSEL, QA-ASTROLEAGUE-REWORK, QA-BENDS-MODE |
+| Urchin HUD — **merged #973** → QA-URCHIN-HUD | A four-icon ability row for the Urchin | QA-URCHIN-VESSEL, QA-SKEIN-MODE, QA-HIJACK-MODE, QA-ARENA-PILOT-SWAP, QA-REGATTA-ARENA (retired) |
+| Hull ability rows — **merged #971** → QA-HULL-ABILITY-ROWS | Missing/borrowed icons on the Rhino, Serpent, Scarab rows | QA-SCARAB-VESSEL, QA-CLEAVE-MODE, QA-HEADLONG-MODE (retired) |
+| Urchin AI — **merged #975** → QA-URCHIN-AI | AI Urchins that spike, track and ride (Skein/Hijack backfill and solo play) | QA-URCHIN-VESSEL, QA-SKEIN-MODE, QA-HIJACK-MODE (retired) |
+| Fleet AI boost — **merged #974** → QA-AI-BOOST-POLICIES | AI boost for the hulls that could not use it (Regatta: Sparrow, Serpent, Dolphin, Scarab; plus the Squirrel outside Skim Race) | QA-REGATTA-ARENA (retired) |
+| Hijack replication — **merged #972** → QA-HIJACK-OWNERSHIP-SYNC | Prism ownership replicated, so ride speed, arrow and AI rail choice agree across machines | QA-HIJACK-MODE (retired) |
+| Audio slots | Empty sound slots on Manta, Urchin, Serpent, Scarab, Butterfly | QA-BLOOMRUSH-MODE, QA-REDLINE-MODE, QA-SCARAB-VESSEL, QA-BUTTERFLY-VESSEL, QA-URCHIN-VESSEL |
+
+<!-- qa-parallel-pr-checks: new items from the PRs above go between these markers -->
+
+### QA-URCHIN-HUD ⬜ — the Urchin finally has its four ability icons and gauges
+**Source:** PR #973 (`Tools/Build/author_urchin_hud.py`; `UrchinHUDVariant.prefab`,
+`Urchin.prefab`, `UrchinVesselHUDController`). Prefabs written as text and never imported; the
+Urchin flew with no HUD at all before this. Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+"Urchin HUD variant and four-icon row".
+
+1. In the Project window, open `Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab`.
+   Check the Inspector header says it is a variant of `VesselHUDPrefab`. Select the object that
+   has `UrchinVesselHUDView` and count the entries under **Ability Icons**.
+2. Open `Assets/_Prefabs/Spacevessels/Urchin.prefab`. On its `VesselStatus` component, read the
+   **Vessel HUD Controller** field. Look for any field that says **Missing**.
+3. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows**, then **FrogletTools ▸ Vessels ▸
+   Audit Ability Lockups**. Find the Urchin lines in each report.
+4. Start freestyle (click the centre of the main menu screen, or press **Y** on a gamepad), open
+   the Vessel Changer and pick the **Urchin**. Look at the bottom-right of the screen.
+5. Press the **right trigger** to fire spikes until the first card's bar drops; wait and watch it.
+6. Fly into a trail so the Urchin latches on; then press **B** to slip off.
+7. Press the **left trigger** to project a track; press it again straight away.
+8. Raise any element to level 5 (fly through elemental crystals) and look at that element's card.
+9. With **Window ▸ Multiplayer ▸ Multiplayer Play Mode** open a second player window. Fly an
+   Urchin in one window and look at the other window's screen. Then swap away from the Urchin and
+   back in the first window and fire spikes once.
+
+**PASS:** the variant shows 4 ability icons (Charge, Mass, Space, Time) with the ammo and riding
+bars filled in; `Urchin.prefab`'s Vessel HUD Controller is set and nothing says Missing; both
+auditors pass the Urchin (4/4, in order); in play, four cards sit bottom-right with element
+flowers above them and a locked crystal card to their left; control hints read RT on the 1st
+card, LT on the 3rd and B on the 4th, none on the 2nd; the 1st card's bar drops when you fire and
+refills over time; the 2nd card fills within a blink when you latch and empties when you slip
+(never stuck half-full); the 3rd card shows a clockwise recharge sweep for about 20 seconds and
+a second press does nothing; a level-5 element shows a badge on its card; the other window shows
+no Urchin HUD for someone else's ship; after swapping back, one spike shot drops the bar once.
+**FAIL:** a missing icon, Missing reference or "VesselHUDController is null on Urchin" warning in
+the Console · an error (red text) when the Urchin spawns · cards in the wrong order or a hint under
+the wrong card · a bar that never moves · a riding bar parked half-full · a track press that works
+during the recharge · another player's HUD drawn on your screen · the bar dropping twice per shot
+after a swap.
+**Known, do not fail on:** the four icons are plain white placeholder outlines (final art
+pending); holding the spike trigger shows no charge-up bar (not built yet).
+
+### QA-HULL-ABILITY-ROWS ⬜ — Rhino, Serpent and Scarab show their own ability icons
+**Source:** PR #971 (`Tools/Build/author_hull_ability_rows.py`, `author_hull_icon_placeholders.py`).
+Before it the Rhino bound 0 of 4 icons, the Serpent 1 of 4, and the Scarab wore the Sparrow's
+pictures. Prefabs written as text, never imported; no code changed.
+
+1. Open `RhinoHUDVariant`, `SerpentHUDVariant`, `ScarabHUDVariant` (in `Assets/_Prefabs/UI
+   Elements/VesselHUD/`) and `Assets/_Prefabs/Spacevessels/Serpent.prefab`, one at a time.
+   Watch the Console for red errors. In the Project window, check the new `*-PLACEHOLDER.png`
+   files under `Assets/_Graphics/Icons/AbilityIcons/Rhino`, `/Serpent` and `/Scarab` show as
+   Sprite images.
+2. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** and read the Rhino, Serpent and
+   Scarab lines. Run **FrogletTools ▸ Vessels ▸ Audit Ability Lockups**.
+3. Start freestyle and pick the **Rhino** in the Vessel Changer. Read the four cards bottom-right,
+   left to right.
+4. Pick the **Serpent**. Read the four cards and their control hints. Fire the rifle (right
+   trigger) and watch the first card.
+5. Pick the **Scarab**. Read the four cards. Use the blast, the switch and the ball and watch the
+   card colours.
+
+**PASS:** no import errors and the placeholders are Sprites; the row auditor reports Rhino Mass and
+Time bound and Serpent Charge, Space and Time bound, and the only complaints left are "open design
+slot / no icon" lines for Rhino Charge, Rhino Space and Serpent Mass; the lockup auditor reports no
+icon that does not fit; the Rhino reads LOCKED / Trail Slabs / LOCKED / Ramp Spool with no old
+Rhino chrome in the bottom-right; the Serpent reads Sniper Shot (RT) / LOCKED / Scope (LT) /
+Pellets (A) and firing the rifle sweeps a cooldown shadow over the first card; the Scarab shows a
+blast, a ring, a ball and a dial (not missiles or bullets) and its cards still change colour as
+before.
+**FAIL:** a red error on import · a placeholder that imports as a texture, not a Sprite · a hull
+with a missing card or an icon on the wrong card · Sparrow pictures still on the Scarab · old
+Rhino chrome back on screen · the Serpent's first card not sweeping after a shot.
+**Known, do not fail on:** all eight icons are plain white placeholders; the Serpent may show a
+"pitch not uniform" line in the row auditor (it measures spacing only between bound icons and
+skips the locked slot - not a real layout fault); the LOCKED cards are open design slots with no
+ability behind them.
+
+### QA-AI-BOOST-POLICIES ⬜ — AI ships now boost on the straights
+**Source:** PR #974 (`AIPilot.boostPolicy`; five assets in `Assets/_SO_Assets/AI Boost Policies/`;
+design `Assets/_Scripts/Controller/AI/AI_BOOST.md`). Before it only the Manta and Rhino AI could
+boost, so AI Sparrows, Serpents, Dolphins and Scarabs finished Regatta but never won. Code
+type-checked offline only; never compiled in Unity.
+
+1. Wait for Unity to finish compiling. Open `Sparrow`, `Serpent`, `Dolphin`, `Squirrel` and
+   `Scarab.prefab` (in `Assets/_Prefabs/Spacevessels/`) and find **Boost Policy** on each one's
+   `AIPilot` component.
+2. From the **Arena** screen launch **Regatta** with AI in Sparrow, Serpent, Dolphin and Scarab
+   seats (tap an ally's chip on the launch panel to change its ship). Watch each AI on a long
+   straight and as it approaches a ring. Note each finishing time.
+3. Launch **Scurry** or **Brood Rush** with an AI **Squirrel** and follow it on a long straight.
+4. Go back to the main menu and wait a minute in freestyle with the menu ship flying itself.
+5. Launch any race with an AI **Scarab** whose Time element is 5 or more (in Regatta, check the
+   card's starting elements) and watch it on straights.
+6. Regression: play **The Bends** with an AI Dolphin, **Dog Fight** with an AI Sparrow, **Skim
+   Race** and **Astro League** with AI.
+7. In an Arena match, use **D-pad right** to swap into an AI teammate's ship while it is
+   boosting.
+
+**PASS:** each prefab's Boost Policy shows its matching asset; in Regatta the Sparrow boosts
+between rings and lets go before each ring, the Serpent spends its pellets on long legs and not
+right before a ring, and the Dolphin's burst fires mid-leg rather than after the ring; those three
+finish closer to the Manta and Rhino than before; the AI Squirrel lays one boost ring ahead on a
+long straight, flies through its middle without stopping, and speeds up; the menu ship never lays
+rings; the Scarab at Time 5+ surges forward on straights no more than about every 2 seconds, and
+not at all below Time 5; Bends, Dog Fight, Skim Race and Astro League AI behave as before; after a
+mid-boost swap the ship stops boosting when you let go.
+**FAIL:** a Boost Policy field empty or Missing · an AI that boosts straight into rings or turns ·
+a Squirrel that crashes into its own ring and stops dead, or lays rings in the menu · a Scarab
+surge below Time 5 · a changed AI in the regression modes · a ship stuck boosting after a swap.
+**Known, do not fail on:** the Squirrel's ring is only visible on the host's machine (AI actions
+run on the host); in Regatta and Skim Race the AI Squirrel flies the Skim Race racing pilot
+instead and does not lay rings. **Report:** each hull's Regatta finishing time.
+
+### QA-URCHIN-AI ⬜ — AI Urchins race Skein and raid Hijack using their whole kit
+**Source:** PR #975 (`UrchinAutopilotDriver`, `Assets/Resources/UrchinAutopilotConfig.asset`,
+tests `UrchinRailAssessmentTests`). Before it the AI Urchin only steered, so Skein above
+intensity 1 had no working solo play. Offline compile and simulated run only.
+
+1. Wait for Unity to finish compiling. Select `Assets/Resources/UrchinAutopilotConfig.asset` and
+   check the Inspector shows numbers, not "missing script".
+2. Open **Window ▸ General ▸ Test Runner**, choose **EditMode**, and run
+   `UrchinRailAssessmentTests`.
+3. From the **Arcade** screen launch **Skein** at intensity **3** or **4** with 2–4 players so AI
+   fill the seats. Follow one AI Urchin for three minutes (watch the scoreboard's ring count).
+4. Launch **Skein** at intensity **1** with AI and let it run to the end.
+5. Launch **Hijack** solo with AI and watch an AI raider for two minutes.
+6. Regression: launch **Regatta** and **Broadside** with AI Urchins.
+
+**PASS:** the config shows values; all 13 tests pass; at intensity 3–4 the AI's ring count rises
+steadily and it finishes, and you see it do at least two of these: slip off a cable that does not
+lead to its next ring and fly straight at the ring; tap spikes on a cable of a rival's colour so
+the cable turns its colour (instead of crawling along it slowly); turn round to ride the other way
+when its ring is behind it; lay a track on a long straight and launch off it toward the ring; at
+intensity 1 the AI rides through the collars and finishes; Hijack raiders grind, spike rival rail
+sections and burrs, slip out when parked, and their team's steal count climbs (they never lay a
+track in Hijack); Regatta and Broadside Urchins behave as before.
+**FAIL:** "missing script" on the config · a failing test · an AI that stops scoring rings, sits
+crawling on a rival cable, or never finishes (no solo play) · Hijack raiders that orbit or stall ·
+a changed Regatta/Broadside Urchin.
+**Known, do not fail on:** a track laid only occasionally (it fires only on long lined-up legs).
+**Report:** how long a solo Skein match takes at intensity 4.
+
+### QA-HIJACK-OWNERSHIP-SYNC ⬜ — Hijack's rail and burr colours agree on every machine
+**Source:** PR #972 (`HijackOwnershipLedger`, four RPCs on `HijackController`; `HIJACK.md` §11).
+Hijack is scored on who owns each prism, but ownership used to be local to each machine.
+Compiled and simulated offline (two peers, 20/20) only.
+
+1. Open `Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity`. Select the Hijack controller
+   object and find the **Ownership Sync** header. Watch the Console for red errors.
+2. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode** with one extra player. Launch Hijack with
+   the two players on **different** teams.
+3. In the second window, grind a rail section of the other team's colour and spike a burr. Watch
+   the first window.
+4. In the first window, steal a burr. Watch the second window's burr and its objective arrow.
+5. In one window, watch the other player grinding a rival rail for ten seconds.
+6. In the second window, empty a burr completely. Watch where the AI raiders go.
+7. Stop. Start again with only the first window, steal one or two burrs, **then** join the second
+   player mid-match. Look at those burrs in the second window.
+8. Compare both windows' scores. Then play one full match solo with AI.
+
+**PASS:** the header shows flush 0.1 and grace 0.5 and there are no errors; the second player's
+stolen prisms turn their colour in the first window within a blink, and the first player rides
+fast over them; a burr stolen in the first window flips in the second, and its arrow moves on to a
+burr that still has loot; prisms the other player steals flip and STAY flipped; AI raiders stop
+choosing the rail to an emptied burr; a player joining late sees the already-stolen burrs in the
+thief's colour; scores agree; the solo match plays as before with no warnings.
+**FAIL:** a red error or missing-script line · colours that differ between the two windows ·
+stolen prisms that flip and then snap back after about half a second · an arrow pointing at an
+empty burr · AI raiders still heading for an emptied burr · a late joiner seeing the original
+colours · scores that differ.
+(Shields are synced too since PR #1004; their two-machine checks are QA-HIJACK-SHIELD-SYNC.)
+
+### QA-MODE-TOASTS ⬜ — pop-up messages in eleven modes that had none
+**Source:** PR #976 (eleven `GameToastConfig_*` assets, `DomainRaceToasts`, new publishers in the
+Wildlife Liberation, Astro League and Salvo controllers, a stolen-prisms counter for Hijack;
+`Assets/_Scripts/UI/GameToastSystem/GAME_TOASTS.md`). The PR's own description is a copy of
+another PR's, so these steps were written from the change itself. Never run in Unity.
+
+1. Wait for Unity to finish compiling. Select `Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset`
+   and check it lists configs for Rampage, Cleave, Salvo, Switchback, Headlong, Redline,
+   Breakwater, Skein, Hijack, Wildlife Liberation and Astro League, none shown as Missing.
+2. Play **Rampage** with AI to the end. Watch the pop-up messages (top of the screen).
+3. Play **Salvo** 2v2 (you plus an AI teammate). Let your teammate pick up a white crystal. Then
+   play a Salvo match alone on your team.
+4. Play **Hijack** with AI to at least 200 stolen.
+5. Play one gate race: **Switchback** or **Skein**, then one lapped race: **Headlong**, **Redline**
+   or **Breakwater**.
+6. Play **Cleave** and **Wildlife Liberation**. In Wildlife Liberation, fly into the core cage.
+7. Play **Astro League** until a goal, a match point, and if possible a draw at full time.
+8. Repeat one of the races with **Window ▸ Multiplayer ▸ Multiplayer Play Mode** (two windows),
+   and once leave and rejoin (or press Ready to replay) mid-match.
+
+**PASS:** every listed config is present; in Rampage, Salvo and Hijack a message appears when the
+leading team reaches a quarter and half of the target, and when the lead changes after that (no
+more than one lead message per 8 seconds); in Salvo your teammate's crystal pickup shows "<name>
+reloaded the wing" and refills your missiles, and nothing appears when you are alone on your
+team; Hijack shows "<name> has stolen N prisms" every 100; the gate races show halfway, lead
+change and home stretch messages, and the lapped races also show one "final lap" message;
+Cleave and Wildlife Liberation show their quarter / half / lead messages with the screen shake;
+the first pilot into Wildlife's core cage triggers "<name> broke into the core!" once per match;
+Astro League shows a goal message with the scorer, "MATCH POINT" one goal from the limit, and
+"Golden goal" on a draw; with two windows each message appears once in each window; a rejoin or
+replay does not dump a burst of old messages.
+**FAIL:** a config missing from the library · a mode in the list with no messages at all · a
+message with a blank or `{0}` in it · the wing-reload message for a solo team · the same message
+twice in one window · a burst of stale messages after a rejoin or replay.
+**Judgement call:** whether the message wording and frequency feel right; report any that are
+noisy.
+
+<!-- /qa-parallel-pr-checks -->
+
+---
+
+## Priority 0 — Block Q: the round-3 PRs' own checks (merged 2026-10-08)
+
+PRs #998–#1007 from the 2026-10-08 re-audit merged without anyone opening them in Unity. The items
+below cover #1007, #998, #1005, #1004, #1002 and #1001, ordered from the widest reach to the
+narrowest. Three of them need **two players** (the two-player setup at the top of Block J) —
+QA-COMBAT-PETAL-DRAIN-NET, QA-URCHIN-TWO-PEER and QA-HIJACK-SHIELD-SYNC — so run those three in
+one session. #1000 changed docs only; its two Inspector checks are folded into Block J. #999,
+#1006 and the other PRs merged the same week carry no Editor checklist of their own and are not
+itemised yet.
+
+<!-- qa-round3-pr-checks: new items from the round-3 PRs go between these markers -->
+
+### QA-COMBAT-PETAL-DRAIN-NET ⬜ — a shot pilot loses petals once, on every machine, and a client's hit scores once
+**Source:** PR #1007 (`ElementalTransfer.ApplyAllAuthoritative` / `RouteFor`, the relay RPCs on
+`NetworkVesselImpactor`, `CombatHitDrain.Apply`; `Docs/ELEMENTAL_ECONOMY.md` §7–§8,
+`_Scripts/Controller/Arcade/DOGFIGHT.md`). A combat hit's petal drain is now settled once, on the
+victim's own machine. Before it, an AI that shot a client never drained the client, and in human
+vs human the victim lost petals only if its own copy of the shot connected. Reaches every armed
+mode (Dog Fight, Salvo, Broadside, The Bends, Undertow). Compiled offline only; Netcode's RPC code
+generation has never run on it. **Also checks a question the PR left open:**
+`StatsManager.CombatHitLanded` credits every hit the host sees, and the host also replays a client's
+shots, so a client's hit may be scored twice — once from the host's replay and once from the
+client's own `Player.ReportCombatHit_ServerRpc` (step 9).
+
+1. Open the project and wait for Unity to finish compiling. Look at the Console for red errors,
+   especially any naming `NetworkVesselImpactor` or an RPC.
+2. Open **Window ▸ General ▸ Test Runner**, choose **EditMode**, and run
+   `ElementalTransferRouteTests` and `CombatHitDrainTests`.
+3. Play **Dog Fight** alone against AI. Let an AI hit you, and watch your four element flowers
+   (above your ability cards) and the crystals that fly off your ship.
+4. Do the two-player setup at the top of Block J, then launch **Dog Fight** with AI filling the
+   other seats. In the client window, fly through elemental crystals until the client's flowers
+   are coloured, not grey.
+5. **AI shoots the client.** Fly the client in front of an AI ship and take hits. Watch the client's
+   flowers in the client window, and count the crystals that leave the client's ship in **both**
+   windows.
+6. **Host shoots the client.** Have the host hit the client a few times. Watch the client's flowers
+   and the crystals in both windows.
+7. **Client shoots the host.** Swap roles and repeat step 6.
+8. **Client shoots an AI.** Watch that AI's flowers (or its ship's shape changing) and its crystals
+   in both windows.
+9. **Is a client's hit scored twice?** Note the host's score. Have the host hit the client with
+   exactly **one** missile, dead-on, and write down how much the host's score rises. Then have the
+   client hit the host with exactly one missile and write down how much the client's score rises,
+   in both windows. Then have the client land a short burst of bullets on the host while you count
+   the hits, and compare with how much the client's score rose.
+10. **One shot, four petals.** Hit a pilot who has petals in all four elements with one missile
+    blast. Count the crystals that fly off in each window.
+11. **Ward.** Hit a pilot while it is immune to debuffs (just after it respawns or uses a ward).
+12. Optional: in **Hijack** with two players, spike the other pilot just as a ship swap happens.
+
+**PASS:** no red errors; both test classes pass; solo play drains and ejects as before; when an AI
+hits the client, the client's flowers step down in the client window and the same number of
+crystals leave its ship in both windows; host→client and client→host hits step the victim's flowers
+down in both windows a moment after the hit, with one crystal per petal in both windows, and only on
+hits the shooter's score counted; client→AI hits drain the AI in both windows; **a client's missile
+raises the client's score by the same amount as the host's identical missile (50 in Dog Fight), and
+each client bullet hit adds 1, in both windows**; one blast on a four-element pilot ejects exactly 4
+crystals in each window and each flower steps down once; a warded pilot loses nothing; nothing
+throws in Hijack.
+**FAIL:** a red error or RPC error · a failing test · the client's flowers not moving when an AI
+shoots it (the bug this PR fixes) · flowers stepping down in one window only · different crystal
+counts in the two windows · 8 crystals from one four-element blast · **a client's hit scoring twice
+(a missile adding 100, or bullets adding 2 each)** · a warded pilot losing petals · solo play
+changed.
+**Known, do not fail on:** a pilot whose flowers are all grey has nothing to lose, so hitting it
+ejects nothing; the victim's own screen still shows no hit flash (hit feedback is not replicated);
+the Serpent's sniper round, explosion debuffs and skimmer steals still settle on each machine
+separately (named in the PR as not covered yet), so do not judge them here.
+**Report:** the two score jumps from step 9. If the client's is double, say so in the notes — it
+points at `StatsManager.CombatHitLanded`.
+
+### QA-CLEAVE-PREVIEW-RING ⬜ — the Cleave card preview stands you on the real spawn ring at every intensity
+**Source:** PR #998 (`Tools/Build/author_preview_spawns.py`,
+`ModePreviewDefinitionSO.ResolveSpawnRingRadiusFloor`, `ModePreviewArena`, `ModePreviewSession`;
+tests `ModePreviewSpawnFloorTests`; `_Scripts/Controller/Arcade/CLEAVE.md`). The preview used to
+stand the pilot 3150 out on all four rungs, about three times too far on the small rungs 3 and 4.
+The change runs through every card's preview, so step 6 checks two others.
+
+1. Wait for Unity to finish compiling. In **Window ▸ General ▸ Test Runner ▸ EditMode**, run
+   `ModePreviewSpawnFloorTests`.
+2. Select `Assets/_SO_Assets/Mode Previews/ModePreview_Cleave.asset` and read **Spawn Ring Radius
+   Floor By Intensity**. Then select `ModePreview_Rampage.asset` in the same folder and read the
+   same field.
+3. Open **FrogletTools ▸ Toolbox ▸ Logging** and turn on the **ArcadeLaunch** channel.
+4. Open `Menu_Main`, press Play, open the **Arcade** screen, open the **Cleave** card and start
+   **Test Flight** at intensity 1. Find the `[ModePreview] Spawn for Cleave` line in the Console.
+5. Step the intensity row to **3**, then **4**, then **2**. Each time, watch where the ship arrives
+   and read the new log line.
+6. Open the **Rampage** and **Wrecking Ball** cards' previews.
+
+**PASS:** all 9 tests pass; Cleave's list reads 3150, 3150, 1050, 1050 and Rampage's list is empty;
+at intensities 1 and 2 the log line says `floor=3150` and the ship arrives about 3150 from the
+centre; at 3 and 4 the arena rebuilds (the Cage), the line says `floor=1050`, and the ship arrives
+about 1050 from the centre, outside the cage; the Rampage and Wrecking Ball previews put the ship
+where they did before.
+**FAIL:** a failing test · different numbers in either list · at intensity 3 or 4 the ship still far
+out (about 3150) or inside the cage · the arena not rebuilding when the intensity changes · another
+card's preview ship arriving somewhere new.
+
+### QA-URCHIN-TWO-PEER ⬜ — two machines agree on an Urchin's spike chains, its steals, and a quick double swap
+**Source:** PR #1005, `URCHIN_BACKLOG.md` U1, U2 and U13 (in
+`_Scripts/Controller/Vessel/R_VesselActions/`). U1 and U2 blocked shipping the Urchin in
+multiplayer: each machine ran the spike chain off its own copy of the pilot's Charge level, and a
+client's steal credited the thief but never took the prisms off the victim. Now the chain reads the
+replicated level (`R_VesselElementalAbilityHandler.ReplicatedLevel`), and
+`ReportPrismStolen_ServerRpc` names the victim so the host debits it (`StatsManager.DebitPrismSteal`;
+the trade is `Docs/ScoringSystem/BUGS.md` B19). U13: a client's second quick ship swap used to
+start while its player still pointed at the despawned ship. Compiled offline only.
+
+1. Do the two-player setup at the top of Block J. Launch **Hijack** with the two players on
+   **different** teams.
+2. **U1, Charge 8+.** In the client window, fly through Charge crystals until the client's Charge
+   flower reads 8 or more. Tap the right trigger into a stretch of rail of the host's colour, then
+   hold it for 2.5 seconds and release. In **both** windows, count how many waves the chain spreads
+   in and how far it reaches.
+3. **U1, Charge 0.** Start a fresh match and repeat step 2 before collecting any Charge.
+4. **U2, client steals.** Before stealing, in the host window, select the host's player object in the
+   Hierarchy and find its **Round Stats** component; write down **Prisms Remaining** and **Volume
+   Remaining**. Do the same for the client's player object. Then, with the client, steal about 20
+   of the host's prisms and read the four numbers again in the host window.
+5. **U2, host steals.** With the host, steal about 20 of the client's prisms and read the numbers
+   again, in both windows.
+6. **U13.** Go back to `Menu_Main` with both players still in the party. In the client window, take
+   control of the ship and use the Vessel Changer twice in quick succession. Then open any Arcade
+   card's preview in the client window and swap ship there.
+
+**PASS:** at Charge 8+ both windows show the same number of chain waves and the same reach, and at
+Charge 0 both show the same short resting chain; after the client's steal the host's Prisms Remaining
+and Volume Remaining fall by about the same amount the client's rose; after the host's steal the
+client's numbers move once (not twice); the second quick swap waits until the first new ship is in
+place, with no `MissingReferenceException`, and the preview swap still lands.
+**FAIL:** a longer or shorter chain in one window than the other · the victim's remaining numbers
+not moving after a client steal (the U2 bug) · a tally moving twice for one steal · a
+`MissingReferenceException` or a stuck swap after the double swap.
+**Known, do not fail on:** a pilot whose Charge is below zero (a Charge debuff) now gets the short
+resting chain on every machine — that is the trade the fix chose.
+
+### QA-URCHIN-BACKLOG-SOLO ⬜ — five Urchin fixes you can check alone: stuck spikes, cell rides, guns, shared materials, double Slip
+**Source:** PR #1005, `URCHIN_BACKLOG.md` U4, U5, U6, U14, U16. U4: a spike that stuck kept
+converting that frame's hits. U5: every authored cell environment declared its world a 1D trail, so
+the Urchin tried to rail-grind it (now `PrismscapeDimension.Volume`). U6: a dead `GunsActive` flag
+removed. U14: `ApplyShipMaterialToSlots` cloned every material (now `sharedMaterials`). U16: a
+cancelled Slip ghost could make the hull solid again mid-way through the next ghost. Compiled
+offline only.
+
+1. Start freestyle (click the centre of the main menu screen, or press **Y** on a gamepad) and pick
+   the **Urchin** in the Vessel Changer.
+2. **U4.** Fire Chain Spikes (right trigger) into a dense mass of prisms. Watch a spike that sticks.
+3. **U5.** Still in freestyle, fly the **Cell Selector** toy (about 300° around the membrane ring)
+   and pick a world with a built structure (for example **Atlantis**, **Geode** or the
+   **Boneyard** if offered, otherwise **Yggdra**). When it has grown in, fly the Urchin into the
+   structure.
+4. **U5 regression.** Launch **Skein**, **Hijack**, **Regatta** (with an Urchin seat) and
+   **Breakwater** and latch onto their rails.
+5. **U6.** Latch onto a trail and fire spikes while riding.
+6. **U14.** Open **Window ▸ Analysis ▸ Frame Debugger** (or the Memory Profiler), then change the
+   Urchin's team colour mid-session (with the domain-changer toy) and check the ship's materials.
+7. **U16.** Press Slip (**B**) twice inside one ghost window, then watch the second ghost.
+
+**PASS:** a stuck spike converts only the prism it stuck in and stays where it struck; in an authored
+cell structure the Urchin rides the surface instead of snapping onto a rail that runs through the
+world; the Skein, Hijack, Regatta and Breakwater rails still rail-grind; spikes fire while riding; the
+ship repaints in the new colour and no new `(Instance)` materials appear for its Body or Window slots;
+the second ghost lasts its full time and the ship stays intangible throughout.
+**FAIL:** a stuck spike that keeps converting or jumps forward a segment · the Urchin snapping onto a
+line through an authored cell · a mode rail that no longer grinds · no spikes while riding · new
+`(Instance)` materials after a colour change · the ship turning solid partway through the second
+ghost.
+
+### QA-HIJACK-SHIELD-SYNC ⬜ — a rail prism's shield is the same on every machine in Hijack
+**Source:** PR #1004 (`HijackOwnershipLedger` packs each yard prism's shield tier into the same
+ownership word #972 replicates; new `shieldSweepBudget` field; `HijackYard` loot skips
+super-shielded prisms; `_Scripts/Controller/Arcade/HIJACK.md` §9 steps 10g–10h, §10–§11). Before it
+shields were local, so a Mass-5 prism shielded on one machine and not on the other counted as a steal
+on one and a shield break on the other. Compiled and simulated offline (46/46 two-peer assertions)
+only.
+
+1. Open `Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity` and let it compile. Select the
+   Hijack controller object and find **Shield Sweep Budget** under **Ownership Sync**. Look at the
+   Console for red errors, especially RPC errors.
+2. Do the two-player setup at the top of Block J, then launch **Hijack** with the two players on
+   **different** teams.
+3. **Client shields, host steals.** In the client window, raise the client's **Mass** to level 5
+   (fly through Mass crystals) and ride one of the client's own rail thirds. Watch those prisms in
+   both windows.
+4. In the host window, ride the host's ship (or watch an AI raider) over that third, twice. Watch
+   both windows after each pass.
+5. **Host shields, client steals.** Swap roles and repeat steps 3–4.
+6. **No flicker.** While the other player lays Mass-5 armour, watch the shields on your screen for
+   ten seconds.
+7. **Late join.** With some Mass-5 armour laid, add a third Multiplayer Play Mode player (tag `P3`)
+   and join it to the match. Once its yard is laid, look at the same prisms.
+8. **Regression.** Run QA-HIJACK-OWNERSHIP-SYNC steps 3–8.
+9. **Profiler.** In the host window, open **Window ▸ Analysis ▸ Profiler** at intensity 4 and find
+   `HijackOwnershipLedger.SweepShields`.
+10. Play one full match alone with AI.
+
+**PASS:** the field reads 4096 and there are no errors; the shielded prisms come up shielded in both
+windows within a blink; the **first** pass only breaks the shields (the prisms keep their owner's
+colour and the shield-break debris plays in both windows) and the **second** pass flips them, in both
+windows; the same holds with roles swapped and both windows agree after each pass; shields stay up
+with no drop-and-return after about half a second; the late joiner sees the same prisms shielded;
+the QA-HIJACK-OWNERSHIP-SYNC steps still pass; `SweepShields` costs a few tens of microseconds a
+frame; the solo match plays as before with no new warnings.
+**FAIL:** an RPC error · a prism shielded in one window and bare in the other · a first pass that
+flips a shielded prism in either window · the two windows disagreeing after a pass · shields that
+blink off and back · a late joiner seeing bare prisms · `SweepShields` costing much more than about
+0.1 ms a frame · a changed solo match.
+
+### QA-SCARAB-SCRAMBLE-AI-JUKES ⬜ — AI Scarabs dash to steal rival balls and to escort their own
+**Source:** PR #1002 (`ScarabScrambleController.TryAIJuke`, the `ScarabScrambleJukePlanner` geometry,
+6 new **AI Jukes** fields; tests `ScarabScrambleJukePlannerTests`;
+`_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` § AI). Before it the AI never juked, so it never
+stole a ball or fired the cavitation plate. The steal-versus-plate-knock ratio is modelled, not
+measured. Compiled offline; the 16 tests ran headless outside Unity.
+
+1. Open `MinigameScarabScramble.unity` and let it compile. Select the `Game` object and find the
+   **AI Jukes** header on `ScarabScrambleController`.
+2. In **Window ▸ General ▸ Test Runner ▸ EditMode**, run `ScarabScrambleJukePlannerTests`.
+3. Open **FrogletTools ▸ Toolbox ▸ Logging** and turn on the **ScarabDash** channel. Launch Scarab
+   Scramble at intensity 1, you plus two AI teams.
+4. **Steal.** Forge a ball (fly your front sphere through a white crystal) and leave it loose near an
+   AI that has no ball. Watch the AI.
+5. **Escort.** Follow an AI escorting its own ball down a long straight.
+6. Play to the final whistle and keep watching the AI for ten seconds after it.
+7. Optional: with two players (setup at the top of Block J), watch an AI steal from the client
+   window.
+
+**PASS:** six fields read 260, 0.1, 4.5, 150, 30, 70; all 16 tests pass; the Console shows
+`[ScarabJuke] Fired … committed` lines from AI ships with the 360° spin and the plate; the AI flies
+at the loose ball and dashes as it arrives, and the ball either turns the AI's colour or is thrown
+off its line; an escorting AI makes about one sideways dash per straight, never with its own ball
+close beside it, and never more than one dash per half second; no AI dashes after the final whistle;
+in the client window an AI steal shows the right colour change.
+**FAIL:** missing fields or a failing test · no `[ScarabJuke]` lines from AI ships · an AI that never
+goes for a loose rival ball · dashes faster than one per half second, or with its own ball beside it
+· an AI dashing after full time · a colour change missing on the client.
+**Report:** roughly how often an AI dash steals the ball versus knocks it away with the plate, and
+whether the escort dash helps or only looks busy.
+
+### QA-BUTTERFLY-SOUND-SLOTS ⬜ — the Butterfly's wingbeat and heart sounds have (empty) slots
+**Source:** PR #1001 (`ButterflyAnimation.wingbeatEvent` + `wingbeatMinAmplitude`,
+`ButterflyDustField.heartWitherEvent` / `heartNourishEvent`; `BUTTERFLY.md`). Three sounds that had
+no slot at all now have empty ones, per the locked "every sound is an exposed, empty field" rule. No
+prefab was edited, so the fields appear on the next save. Compiled offline only.
+
+1. Open `Assets/_Prefabs/Spacevessels/Butterfly.prefab`, select its `ButterflyAnimation` component
+   and look under **Audio**.
+2. Open `Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab`, select
+   `ButterflyDustField` and look under **Audio**.
+3. Start freestyle and fly the Butterfly for a minute with every slot empty. Watch the Console.
+4. Optional: temporarily assign any sound to the three slots (**do not save**), then fly: flap, hold
+   the Fold (left trigger), pass over a rival creature's heart in Dust mode, and pass over your own
+   team's lifeform. Undo the assignments afterwards.
+
+**PASS:** `ButterflyAnimation` shows an empty **Wingbeat Event** and **Wingbeat Min Amplitude** = 4;
+`ButterflyDustField` shows empty **Heart Wither Event** and **Heart Nourish Event**; no new warnings
+or errors in the Console; with test sounds assigned, the wingbeat plays once per flap and goes quiet
+while the Fold is held, the wither plays once as a rival creature dies, and the nourish plays at most
+once per lifeform every 5 seconds.
+**FAIL:** a slot missing from either component · a Console error or warning from these components ·
+(with test sounds) a wingbeat that keeps playing during the Fold, or a wither or nourish that plays
+when nothing died or was fed.
+**Known, do not fail on:** the Butterfly is silent with the slots empty — the audio owner wires them.
+
+<!-- /qa-round3-pr-checks -->
+
 
 ---
 
@@ -1152,6 +3148,82 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SIEGE-1 ⬜ — the siege: a cloud that surrounds you, leaves a gap, and dives if you stay
+
+**Source:** branch `claude/siege-port`, ported from the flight lab's SIEGE (`Tools/Ecology/flight/src/70_siege.js` on
+`cece/gifted-curie-x2cpd0`). Only the headless harnesses have run (`Tools/Build/substrate_harness/run.sh siege` replays
+five lab encounters event for event; `run.sh all`; `showcase_cell_harness/run.sh quick`; `author_substrate_fauna.py
+--check`); `/verify-unity` was not available and it has never been opened in the editor. Reference:
+`Docs/SUBSTRATE_FAUNA.md` §10. Tunables: the `Siege` block of `Substrate Siege Species.asset`.
+
+**Why it matters:** this is the lab encounter Garrett flew and called scary. It only works if the gap is readable, the
+danger is telegraphed, and staying put is what gets you hurt.
+
+1. **Find it.** Open the Swarm cell (Unity 2021.3.9f1). A cloud of ~150 small Time-coloured bodies hatches as one
+   ball 690-1080 u from the cell centre. With nobody near it drifts slowly as a loose cloud and stays in that band.
+2. **Stalked, then gathered round.** Fly within ~640 u. The cloud slides ahead of your line at ~430 u, then spreads
+   into a shell round you (~300 u radius) with an open cap on one side: the iris. No glow yet; touching a member now
+   must NOT burn petals.
+3. **The glow is the warning.** As the shell closes (to ~130 u) members start to glow and the danger tier rises on
+   exactly the glowing ones. A member must glow for at least a quarter second before it can bite.
+4. **The wall bites.** Brush the shell wall while it is closed: the members you touch bite (a burn), and the wall
+   breaches round that point.
+5. **Stay and it dives.** Hover inside a closed shell. After about a second of HOLD every member dives at once from all
+   sides. Expect one or two burns (the vessel's 1 s danger cooldown), then the cloud scatters and cools off ~10 s.
+6. **The gap is a way out.** Repeat, but fly out through the open cap while it is still closing. You should escape
+   with no burn, and the cloud cools off ~6 s before stalking you again. Then try ramming through members mid-dive:
+   note whether a dive feels like a crystal fountain (rammed members are not shielded; say if they should be).
+7. **The leash.** Get stalked, then fly far out of its band (toward the rim or the core). Once you are ~300 u past
+   the band the cloud gives up and drifts home.
+8. **Budgets.** Physics debugger during a dive: at most 4 siege proxies, locust proxies at most 8, colliders under
+   1,200 in total.
+9. **It lives.** Leave it alone for 10+ minutes, then come back: still roughly 100-160 members, none starving, with
+   new members appearing as it eats the band's flora. Ram 20 or so members and check it recovers over time rather
+   than dwindling (if it dwindles, raise `Metabolism` or lower `BirthStock`).
+
+**PASS:** a readable gather, close, hold and dive with a visible gap; only glowing members burn; flying out the gap
+avoids the bite; hovering gets dived on; the cloud stays in its band when idle and gives up past the leash; budgets
+hold; it feeds and breeds. **FAIL:** a burn from a member that was not glowing · a dive with no hold first · no
+visible gap · the cloud follows you across the cell · proxies or colliders over budget · the cloud dwindles or starves
+
+### QA-ARMS-1 ⬜ — the arms race: a schooling shoal and a pack of harriers that hunt it
+
+**Source:** branch `claude/arms-race-port`, ported from the lab's arms race (`Tools/NCA/arms_*.py`, run a9 generation
+1500, on `cece/gifted-curie-x2cpd0`). Only the headless harnesses have run (`Tools/Build/substrate_harness/run.sh arms`
+replays the lab's states input for input and its behaviour runs metric for metric; `run.sh all`; the author `--check`s);
+it has never been opened in the editor. Reference: `Docs/SUBSTRATE_FAUNA.md` §11. Tunables: the `Arms` block of
+`Substrate Shoal Species.asset` and `Substrate Harrier Species.asset`.
+
+**Why it matters:** this is the first creature behaviour that was evolved rather than written. It only lands if the
+schools visibly school, the pack visibly hunts together, and the burst is a fair warning before a burn.
+
+1. **Find the pond.** Open the Swarm cell (Unity 2021.3.9f1) and fly to the top of the middle shell: straight up (+Y)
+   from the cell centre, about 765 u out. The pond has no visible edge: it is the sphere ~400 u across that the fish
+   and harriers never leave, with two Time plants near its middle, ~120 small Time-coloured fish and 8 larger
+   Charge-coloured harriers. Say whether the invisible edge reads as odd when they turn along it.
+2. **The shoal schools.** Watch from just outside the pond for a minute. Fish should travel in tight groups heading the
+   same way (neighbours ~13 u apart), not a buzzing cloud. They graze near the plants but keep moving.
+3. **The harriers hunt as a pack.** Harriers cruise spread out (~65 u apart). When they go for a school, two or more
+   should close on it from different sides, then sprint. A sprinting harrier stretches into a long streak.
+4. **The school answers.** When harriers close in, the school swerves and splits round them. Catches happen (the fish
+   is sucked into the harrier and leaves a crystal) but most attacks on a tight school should fail.
+5. **The burst is the warning.** Hover inside the pond. Harriers will treat you as prey. A harrier must be streaking
+   (bursting) for at least 0.4 s before touching it burns petals; touching a cruising harrier or any fish must never
+   burn. Expect regular burns while you hover.
+6. **Speed is safety.** Fly straight through the pond at cruise speed. You should rarely or never be burned: the
+   harriers' burst (100 u/s) is slower than you. Ram through a school: fish die and drop crystals.
+7. **Budgets.** Physics debugger with your ship in the pond: at most 6 shoal proxies and 4 harrier proxies, colliders
+   under 1,200 in total.
+8. **It lives.** Leave the cell running 10+ minutes, then come back: the shoal still near 120-155 fish, harriers 8-12,
+   none starving, new fish appearing as they graze. Ram 30 fish and check the shoal recovers. If the shoal thins out,
+   the pond's two plants are not regrowing fast enough (say so; the fix is more plants in the pond's pen).
+
+**PASS:** schools that move as aligned groups; harriers that converge together and burst; the school swerves and most
+attacks fail; only a harrier that has been bursting for 0.4 s burns; a cruising ship gets through; budgets hold; both
+species are alive after 10 minutes. **FAIL:** a shapeless cloud of fish · harriers that hunt one by one · a burn from a
+fish or a cruising harrier · a burn the instant a harrier starts its burst · fish or harriers outside the pond · the
+shoal or the harriers die out · proxies or colliders over budget.
+
 ### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
 
 **Source:** branch `overnight/balance`. Only the headless showcase harness (`Tools/Build/showcase_cell_harness/run.sh all`,
@@ -1414,6 +3486,24 @@ petals (ELEMENTAL_ECONOMY.md §8 step 0).
 - An element sticks at 1 petal under repeated hostile contact.
 - The own-domain dip is a different size from the burn.
 
+
+### QA-FAIR-BURNS-1 ⬜ — spawn grace and the pack wind-up
+
+**Source:** PR "Fair burns: pack wind-up and spawn grace". Proven headless (substrate harness P/H, swarm core
+harness "pack hunter wind-up", player and editor refcompile). Not run in the editor. Reference:
+`Docs/ELEMENTAL_ECONOMY.md` §4.1 "Fair burns".
+
+1. **Inspect.** `VesselElementalDebuffByDangerPrismEffect.asset` shows Spawn Grace ▸ Spawn Grace Seconds **1**.
+   `Substrate Pack Hunter Species.asset` has `StrikeWindupS` **0.4**. A swarm config shows Hunt Windup Seconds and
+   Puff Windup Seconds **0.4**. Any Cell Config shows Stakes ▸ Petal Burn Rule **Tuned**.
+2. **Spawn grace.** Start freestyle in the Swarm cell as the non-controlling domain and fly straight into a striking
+   creature within the first second of the go. No petal should burn. Touch again after 1 s: it burns as usual.
+3. **Wind-up, substrate pack.** Let the Time pack ring you. After the ring closes, the hunters should visibly turn
+   on you (swell, sprint) for a beat before the first bite can land. Flying out through the gap in that beat
+   should escape without a burn.
+4. **Wind-up, swarm pack hunter and pufferfish.** Startle a Time swarm, then a Charge swarm. Their plates should
+   light about 0.4 s after they turn on you, not on the same frame.
+5. **Tuned everywhere.** In a cell other than Swarm, touch a hostile danger prism: each flower loses one petal.
 ### QA-SWARM-ROUND11-2 ⬜ — the Living Ecology substrate: a pack that surrounds you and dives in at once
 
 **Source:** branch `overnight/substrate`. Proven by the headless harness and Roslyn type-check only; not run in the
@@ -1893,197 +3983,6 @@ and flora deaths *other than* the joust still detonate.
 **Report:** whether skeletons accumulate to a visually or performance-troubling degree
 over a long round — only a playtest can answer that.
 
-### QA-ASTROLEAGUE-REWORK ⬜ — blade strikes, the fauna pen, the smaller court, the settling ball
-**Source:** PRs #704 and #706 (#706 is a playtest follow-up to #704, itself unflown).
-Reference: `_Scripts/Controller/Arcade/ASTROLEAGUE.md`, `Docs/ECOSYSTEM.md`.
-1. Play **Astro League**. Judge the court size first — #706 cut it **40 %** linearly.
-2. **Strike the ball with a swung sword tip**, then with a **parked** sword at the same
-   closing speed.
-3. Strike the ball hard and let it run. Time roughly how long until it comes to rest.
-4. Bounce the ball off a **wall** repeatedly and watch the carom lose energy.
-5. Fly the pitch and watch the **fauna**: the nucleus is play geometry here, not a
-   control zone, so creatures must be edible inside it.
-6. Check the **sphere cage cover** renders on every intensity.
-7. Score a goal and watch the replay (also covered by QA-SPEED-TUNNEL step 4).
-8. Watch/listen for the new strike feedback: pop, shake, burst.
-
-**PASS:** a swung tip sends the ball dramatically harder than a parked sword's deflect;
-a struck ball loses roughly 65 % of its speed in ~3 s and genuinely reaches **rest**
-rather than creeping; wall bounces cost energy while a vessel strike stays fully
-elastic; fauna are eaten inside the court (no arena-wide sanctuary); the cage renders at
-every intensity; strike feedback fires on contact.
-**FAIL:** a parked sword firing the ball · a ball that never settles or that stops dead
-· fauna untouchable anywhere on the pitch · a missing cage at some intensity · no strike
-feedback.
-**Judgement calls to report (each a one-field edit on `AstroLeagueSettings.asset`):**
-`ballDrag = 0.35` (sluggish → drop toward 0.2; won't die → push toward 0.5),
-`wallRestitution = 0.72` (a billiards-ish guess), and the 40 % court cut (if it now
-reads too small, the right size is between this and #704).
-
-### QA-SPARROW-BOOST-WARD ⬜ — overheat removed, strafing roll freed, Elemental Ward added
-**Source:** PR #675. **Highest risk on the branch: two vessel prefabs were hand-edited
-as YAML** (a removed GameObject, a removed resource slot, a new component on each,
-renamed serialized fields). Reference: `SPARROW_AFTERBURNER.md` § In-editor verification.
-1. Open the **Sparrow** and **Serpent** prefabs. Confirm: no missing-script rows;
-   `OverheatingBoostActionExecutor` is **gone**; `ResourceSystem` reads Missiles /
-   FullAuto / ExhaustBarrage (**3 slots, no Heat**); `SparrowHUDController.barrelRollController`
-   is wired; `VesselElementalImmunity` sits on each root with the right condition.
-2. Hold boost for **60 s** continuously.
-3. At Time level 0: boost + full stick deflection.
-4. Watch the boost icon ring across a press → roll → release cycle.
-5. At Time ≥ 5 (set `TimeTestHarness = 0.5`): fly into a **danger prism while boosting**,
-   then into one **while not boosting**. Watch the elemental flowers each time.
-6. Repeat step 5 on a **stopped Serpent**.
-7. MPPM, two clients, one Sparrow at Time 5 — both machines must agree on who resists.
-
-**PASS:** both prefabs inspect cleanly; 60 s of boost produces no force-release, no
-danger trail and no self-slam; one press = exactly one roll; the boost ring is full on
-press, wipes empty on the roll, and stays empty until the next press (never a partial
-fill); at Time 5 a danger prism **while boosting** leaves the flowers undipped and
-**not boosting** dips them (the slow and input-mute still land either way, by design);
-the stopped Serpent never dips at any Time level; both peers agree.
-**FAIL:** a missing script or a Heat resource still present · boost force-releasing or
-laying a danger trail · more than one roll per press · a partially-filled boost ring ·
-the ward applying in the wrong boost state · peers disagreeing.
-**Open design question to report:** the ward holds `WhileBoosting` (mirrors the
-Serpent). With boost now unbounded, a pilot flying permanently full-throttle is
-permanently warded. Say whether it should be `Always` — it is one inspector field.
-
-### QA-SPARROW-STOPPED-ROLL ⬜ — the strafing roll works stopped, and the stance turns 3× faster
-**Source:** PR #679. Reference: `SPARROW_AFTERBURNER.md` §2.1–2.2 + items 4b–4e.
-1. **Regression first:** fly the Sparrow normally and confirm the **flying** roll is
-   unchanged — the shared modifier path was touched.
-2. **Stopped:** enter the stance, then boost + full left stick.
-3. Stopped, aim well away from the heading you had when you stopped, then dodge.
-4. Stopped, take a knockback (no movement), then release the stance.
-5. Time a **180° yaw** in the stance vs. out of it, then release the stance and time
-   again.
-6. **Serpent:** take a knockback and release — confirms the exemption is scoped to the
-   roll.
-7. MPPM two clients: a stopped roll must replicate like the flying one.
-
-**PASS:** the flying roll is unchanged; stopped, boost + full stick rolls **and**
-strafes, exactly one roll per press, and you are still stopped afterwards (stationary
-fire, no trail laid); the strafe follows **current facing**, not the heading you stopped
-with; releasing the stance produces no lurch; a 180° yaw takes about a third as long in
-the stance and the rate drops straight back on release; the Serpent holds knockback with
-no lurch; the stopped roll replicates.
-**FAIL:** a changed flying roll · no roll or no strafe when stopped · a strafe skewed
-toward the old heading · a banked lurch on release · a turn rate that stays fast after
-release (`TurnScalar` got cached) · a roll that does not replicate.
-
-### QA-SPARROW-TURRET-STANCE 🟡 — Turret Stance fires real prisms
-**Source:** PR #696. **Play-tested by the prompter through the final commit** (six
-rounds; the ShaderGraphs have been imported and rendered), so this item is only about
-the two things that report did not cover. Reference: `SPARROW_TURRET_STANCE.md`.
-1. **MPPM, two clients.** Enter Turret Stance and fire for 30 s while the other peer
-   watches. Turret prisms come from a local `blockFactory` and `ProjectileImmuneUntil`
-   is local `Time.time` state — nothing here is networked.
-2. **The CHARGE-5 skyburst flip.** Below Charge 5, confirm the skyburst blast
-   **friendly-fires**. At Charge 5, confirm the blast goes **domain-safe** while the
-   direct hit behaves as before.
-3. While at it, note whether `placementImmunitySeconds` still reads too long (you should
-   not be able to shoot your own just-placed prism, but the window should not feel like
-   a dead zone).
-
-**PASS:** both peers see a coherent turret volley with no desync or duplicated prisms
-and no exceptions on either machine; the blast friendly-fires below Charge 5 and is
-domain-safe at Charge 5.
-**FAIL:** prisms appearing on one machine only, or in different places · the blast
-friendly-firing at Charge 5, or going domain-safe below it · any exception during a
-sustained volley.
-**Known, do not fail on:** transform-moved triggers at high speed can tunnel through
-thin prisms — bullets do it too, and parity is the point.
-
-### QA-SPARROW-MISSILE-BAY ⬜ — bay-animated skyburst launch with the real missile model
-**Source:** PR #708. Authored without a Unity compile or play-test. Reference:
-`Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow Skyburst Missile Bay".
-1. Fire a skyburst and **watch the hull** — this is the one thing only the editor can
-   prove (a **cross-FBX clip binding**).
-2. Fire several in a row and watch which side launches each time.
-3. Fire during a hard maneuver (roll + pitch together).
-4. Watch the launch seam: the bay opens, then the projectile leaves ~0.2 s later.
-5. Look at the exhaust particles against the missile's ~1.7 u visual.
-
-**PASS:** the bay physically opens on the hull before launch; sides alternate
-**right-then-left**; no puppetry fight (bay animation vs flight animation) during hard
-maneuvers; the handoff reads as one motion, not two; exhaust particles are sized for
-the missile.
-**FAIL:** a bay that never animates (the clip binding failed — the projectile still
-spawns at the bay-bone rest pose, so this fails quietly) · both missiles from the same
-side · the hull visibly fighting itself mid-maneuver · a visible gap or double-motion at
-the handoff.
-**Tuning to report:** `launchDelaySeconds` (0.2; useful range 0.16–0.26).
-**Known, flagged, do not fail on:** the skyburst's direct-hit sphere (world radius 8.5)
-now visibly dwarfs the missile — a Dog Fight balance call, already recorded.
-
-### QA-VESSEL-SPARROW-ROLL ⬜ — Sparrow rolls on prism hit
-**Source:** PR #669 (two hand-authored assets, never imported; 60° is a guess).
-1. Inspect the Sparrow's prism-effect container: `VesselRollByPrismEffect` in **slot 0**,
-   inspecting cleanly (no `Missing (Mono Script)`).
-2. Fly the Sparrow into prisms at a few angles and speeds.
-
-**PASS:** the asset inspects cleanly and every prism hit **rolls** the vessel rather
-than redirecting its course; control is recoverable.
-**FAIL:** missing script · no roll · the vessel still being deflected off-course · a
-roll so violent it reads as a loss of control.
-**Report the feel:** `rollDegrees` (60) is a single inspector value — say whether it
-wants to be larger or smaller.
-
-### QA-DOLPHIN-SPEED-TUNE ⬜ — +30 % cruise, +70 % charged boost
-**Source:** PR #681 (in-place scalar edits; the arithmetic is machine-checked, the
-*feel* is entirely unflown). Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴
-"Dolphin speed + charged-boost retune".
-1. Menu_Main → freestyle → **Dolphin**. Full throttle, no boost — read
-   `VesselStatus.Speed`.
-2. Hold drift from an empty meter and time the boost ring filling.
-3. Release a full meter and read the peak speed, then time the fall back to cruise.
-4. Drift → release → drift again.
-5. Fly any other vessel as a regression check.
-
-**PASS:** cruise settles at **≈78** (was 60); the ring fills in **≈3.6 s** (was 4); the
-peak reads **≈357** and takes ~2.5 s to fall back (was 210 over 2 s); speed returns to
-normal with no stuck multiplier; no other vessel changed.
-**FAIL:** numbers materially off the targets above · a stuck multiplier after
-drift→release→drift · another vessel's speed changing.
-**Judgement call to report — this is the point of the item:** 357 is a big jump and the
-speed tunnel amplifies how it reads. Say plainly whether it is too much.
-
-### QA-VESSEL-AOE-IMPULSE ⬜ — explosion inertia, the Dolphin capsule cone, and debris spin
-**Source:** PRs #652, #632, #643, **#680** (the blast's collider was hand-swapped from a
-Sphere to a **Capsule** at the YAML class-id level — `!u!135` → `!u!136` — and aligned
-with the jaw gape).
-1. Select `_Prefabs/Projectile/AOEConicExplosion.prefab`. The root must show a
-   **Capsule Collider** (Is Trigger ✓, Radius 0.0667, Height 1, Direction **Z-Axis**,
-   Center 0/-0.5/0) — **not "Missing", not still a Sphere**. This is the riskiest edit
-   on the branch and shows up nowhere else. Also confirm **Inertia 1.8 / Proportional
-   Debris ✓ / Debris Restitution 0.333**.
-2. After a SkimRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
-   Squirrel overheat **danger** trail, then detonate a Dolphin crystal blast into it.
-3. Dolphin + crystal in open space: watch the cone's reach and where destruction ends.
-   **Roll 90° and fire again** — the fan must roll with the ship (ship-up, not world-up).
-4. Watch the jaws at **zero energy** (slightly open) and at every charge step — they
-   must agree with the HUD icon.
-5. Watch the direction struck prisms fly.
-6. Fire one **spherical** AOE (e.g. Rhino) as a regression check, and check the Manta /
-   Rhino / Serpent / Squirrel crystal blasts and the Sparrow skyburst are unchanged.
-7. Blow up prisms at a range of impact speeds and watch debris **tumble**.
-
-**PASS:** the capsule collider is present and correct; the blast expands through danger
-and regular-shielded prisms (shields pop, danger takes damage) and stops **only** on
-stellated super-shielded prisms; the charged blast reads as a **fan** that rolls with
-the ship; the cone mesh and its destruction both reach ≈2400 units with a travelling
-wavefront; struck prisms fly radially from the **apex**, not from the wavefront; jaws
-agree with the HUD at every charge step; the spherical AOE and the other four vessels'
-blasts are unchanged; debris tumbles noticeably more than before **at the same flight
-speed and shatter timing**.
-**FAIL:** a Missing or still-Sphere collider · the blast stopping on a danger prism ·
-destruction falling short of the cone mesh · a fan bound to world-up · debris flying
-from the moving wavefront · flight speed or shatter pace changing with the spin tune.
-**Known cosmetic gaps (report, do not fail on):** the conic VFX spawn flash does not
-scale with the tripled height; the rendered cone widens with the capsule's length by
-construction, so full charge draws wider than it destroys off-axis.
-
 ### QA-CRYSTAL-CHARGE-SHADER ⬜ — the dedicated charge-crystal shader
 **Source:** PR #710 (new `.hlsl` + ShaderGraph + `CrystalEdgeArcs` component, compiled
 and rendered offline with clang but never by Unity).
@@ -2109,7 +4008,9 @@ whether it reads better or worse at gameplay distance.
 / `_ArcDuty` / `_ArcSpeed` for the discharge; `_RimStrength` / `_FacetAmbient` /
 `_EmissionStrength` for the body.
 
-### QA-MENU-VEIL-PAUSE ⬜ — the menu-return veil hold and the prewarmed pause menu
+### QA-MENU-VEIL-PAUSE 🔴 — the menu-return veil hold and the prewarmed pause menu
+**Last QA:** FAIL on `5663cc4b3` (2026-10-08, akouroshm) — The menu-return/loading veil does not hide the build: prisms are visibly **popping in during loading**, and on entering a game the player sees a **"metal seal" opening up** — an animation that appears to be a remnant of an old loading-screen concept, not the current veil. The teardown/build is not being covered. (Observed on 71d67ba9b.)
+
 **Source:** PRs #672, #693, #698. The prewarm crashed the **Windows player** on every
 login (#693) and the root was a type-punned `pauseMenuPanel` reference (#698) — so this
 item is the Editor half; the player half is QA-BUILD-WINDOWS-PLAYER.
@@ -2397,22 +4298,35 @@ a creature frozen mid-approach · any element **held** above level 10.
 
 ### QA-VESSEL-RHINO-SWORD ⬜ — sword point-velocity + the debris retune
 **Source:** PR #639. Reference: `RHINO_SHIELD_SWIPE.md` § In-editor verification (5–11).
+**⚠ Partly outdated (noted 2026-10-09, SKIP):** this item predates the sword rework
+(PRs #914 slice-on-destroy, #904 super-shield bind, #921 combos). That rework — and whether
+the sword behaves correctly today — is covered by **QA-RHINO-SWORD-COMBOS**; this item is
+*only* about the PR #639 debris physics (point-velocity + the ~⅓ debris-speed retune). Run
+the two together and keep this one scoped to debris speed.
 1. Fly straight with **no trigger**: hit a prism with the hull, then hit one with the
-   parked sword at the same speed.
+   parked sword at the same speed. **Judge the debris SPEED, not the break style** — the
+   sword SLICES where the hull shatters (that difference is expected, see "Known" below);
+   what this step tests is whether the two throw debris at the *same speed*.
 2. Mid-swipe: hit prisms with the **tip** and with the **hilt**. Select the
    ForceFieldSkimmer in play mode to see the per-point velocity gizmo rays.
 3. Clip your own Rhino trail (small prisms, vol ≈ 0.75) and a fat environment prism at
    the same speed.
 4. Fly a couple of other vessels and fire projectiles at prisms.
-5. Play Astro League and trigger a field reset.
+5. **(If reachable)** In Astro League, if you can trigger a field reset, confirm its prisms
+   **animate out** instead of freezing. **As of 2026-10-09 no way to trigger a field reset
+   was found in the build** — if you cannot find one, skip this step and flag it rather than
+   failing the item (see FAIL note).
 
 **PASS:** hull and parked-sword hits throw debris at the **same** speed; a tip strike
 visibly beats a hilt strike and throws along the swing tangent; small and large prisms
 at the same speed match; other vessels/projectiles throw debris at ~1/3 the old speed
-with nothing else changed; Astro League's field-reset prisms animate out instead of
-freezing.
+with nothing else changed. (Astro League field-reset prisms animating out — only if a
+reset can be triggered.)
 **FAIL:** a parked sword adding speed · tip and hilt identical · debris speed varying
-with prism size · debris pinned to one speed regardless of impact.
+with prism size · debris pinned to one speed regardless of impact. **Not a fail:** the
+sword breaking prisms differently from a hull (that is the intended slice), or being
+unable to find an Astro League field-reset trigger (flag that to design/engineering — it
+may be a removed or renamed mechanic — rather than failing here).
 **Judgement call to report:** shatter is now ~3× slower on gentle grazes (violence
 tracks force by design). Say whether the slow end reads as sluggish.
 
@@ -2543,19 +4457,6 @@ is left frozen mid-suction.
 suctions converging on a stale point or freezing.
 *(The old ~0.43 ms self/death figure is stale — do not compare against it.)*
 
-### QA-SPARROW-PROJECTILE-POOL ⬜ — async-refilled pooled projectiles are injected
-
-**Source:** PR #606. The failure mode is *silent duds* seconds after spawn.
-1. Spawn a Sparrow (any mode or freestyle) and fire full-auto for ~30 s.
-2. Then dump several skyburst missiles.
-3. Watch the Console throughout.
-4. Optional: confirm `PoolRefill.Projectile*` markers still appear in the profiler.
-
-**PASS:** every shot has launch SFX and live colliders for the whole 30 s, including
-after the pools cycle through async-refilled instances; **no `NullReferenceException`
-from `LaunchProjectile`**; the async refill markers still appear.
-**FAIL:** any dud shot (no SFX / passes through prisms) or any NRE from `LaunchProjectile`.
-
 ### QA-RHINO-SKIMMER-SHAPE ⬜ — sword X/Z preserved, Space drives length, capsule follows the hull
 **Source:** PRs #616 and #583.
 1. Open `Rhino.prefab`: the ForceFieldSkimmer sits under `Rhino_Test (1)` (the fuselage),
@@ -2660,16 +4561,6 @@ button is never left disabled.
 **FAIL:** a screen that will not navigate, a dead Home button, or a modal that cannot be
 reopened after one of the close paths.
 
-### QA-STATE-RESET ⬜ — runtime game state resets to defaults between sessions
-**Source:** PR #647. **Run this alongside QA-SCORING-CLIENT-MIRROR** — they are the two
-halves of "nothing leaks between games", and B17 is the networked half.
-1. Play a game to the end, return to the menu, and launch a **different** mode.
-2. Repeat with the same mode twice (use Play Again where available).
-
-**PASS:** the second launch starts with a clean score, intensity, player count and
-domain assignment — no leakage from the previous round.
-**FAIL:** any carried-over score, stale player count, or a domain that was not reassigned.
-
 ### QA-TOOLING-SHIP-PANEL ⬜ — the editor tool ship panel actually pushes
 **Source:** PR #663 (buttons never pressed in a running editor). **Do this on a throwaway
 branch, not on `bleeding-edge`.**
@@ -2764,6 +4655,210 @@ Progress is also **not saved between sessions** yet — quit and the unlocks res
 deliberate, so treat any gate-off test as a single-session test.
 
 
+### QA-TOY-ELEMENT-CHARGER ⬜ — the Element Charger toy grants elements to your vessel
+**Source:** PR #913. New freestyle toy, authored headless and never compiled. Reference:
+`Docs/ToySystem/` Element Charger entry.
+1. Compile, then run `ElementChargerToyTests`.
+2. In `Menu_Main` freestyle, fly the **Element Charger** (about 150° around the cell ring).
+   The choice row should bloom with **Charge** on your left.
+3. Fly each crystal in turn. Its elemental flower should step up by **5**, a level-5
+   ability upgrade should light on that element's ability icon, and the **hull should
+   morph**.
+4. Keep charging one element past 10: the overcharge must **drain back to 10** at about
+   one level every five seconds.
+5. Swap vessels (Vessel Changer toy): the new hull starts at **its own** levels, not the
+   charged ones.
+
+**PASS:** the row blooms with the four elements; each crystal raises its flower by 5,
+lights the L5 upgrade and morphs the hull; overcharge drains back to 10; a vessel swap
+resets to the new hull's own levels.
+**FAIL:** a crystal that does nothing · no upgrade light at level 5 · a hull that never
+morphs · overcharge that stays above 10 · charged levels carrying across a vessel swap.
+
+### QA-TOY-WANDER-MERGE ⬜ — Wanderway and Arkway merged into one Wander toy
+**Source:** PR #930 (merge) + #929 (the Arkway voyage). The two wander toys are now **one
+Wander toy with two choices**; authored headless, never compiled. Reference:
+`Docs/ToySystem/ARCHITECTURE.md`.
+1. Compile and watch the Console for errors.
+2. `Menu_Main` freestyle → fly the **Wander** toy. Two stations should bloom: a **mini
+   Ark** (With Ark) and an **archway microscene** (Without Ark).
+3. Thread **Without Ark**: the microscene belt primes behind the load veil the first time,
+   and resumes with no second veiled build after that.
+4. Thread **With Ark**: the Ark voyage starts behind the veil — real cells stream past and
+   the Ark itself is present.
+5. With a run live, fly the Wander toy again: it should bring you **home**.
+6. From the Toy Box menu, open Wander: with nothing running both cards **Start**; with one
+   running, that card reads **"Come home"** and the other is not committable.
+7. Change your domain: the emblem's mini Ark and the With Ark station recolour.
+
+**PASS:** compiles; both stations bloom; each choice starts its run behind one veil; a
+live run's toy brings you home; the Toy Box cards read Start / Come home correctly;
+the Ark elements recolour on a domain change.
+**FAIL:** a compile error · only one station · a second veiled rebuild on resume · a run
+that cannot be ended from the toy · both Toy Box cards committable while a run is live ·
+the emblem not recolouring.
+**Known, do not fail on:** the Wander codex portrait still shows the old Wanderway image
+(re-bake pending).
+
+### QA-ARKWAY-VOYAGE ⬜ — the Arkway is a real playable voyage now
+**Source:** PR #929. The Arkway streams **real cells** past a **fed-upon Ark** and its
+corridor prisms now actually render. Authored headless. Reference:
+`Docs/ECOSYSTEM.md §41` and `Docs/ToySystem/ARCHITECTURE.md` § Arkway.
+1. Start an Arkway voyage (via the Wander toy, With Ark).
+2. Watch the cells stream past — confirm they are real built cells, not empty space.
+3. Watch the **Ark** hull: fauna should be able to feed on it (its mass is ordinary
+   conserved prism mass in its domain).
+4. Confirm the **corridor prisms** along the route are visible (the fix this PR made).
+5. End the voyage and confirm you return home cleanly.
+
+**PASS:** real cells stream past; the Ark is present and its mass is grazeable; corridor
+prisms render; the voyage ends and returns you home.
+**FAIL:** empty space instead of cells · an Ark nothing can touch · invisible corridor
+prisms · a voyage that cannot be ended.
+
+### QA-ECOLOGY-BORROMEAN-FLORA ⬜ — the Borromean-rings flora and its four cells
+**Source:** PR #894. A new flora grown on the Borromean rings' minimal surface, plus four
+cells that grow it (the Garland cell family). Authored headless, **never compiled** (CI's
+Unity job is skipped). Reference: `Docs/ECOSYSTEM.md`.
+1. Compile; watch the Console for errors on first load.
+2. Freestyle → Cell Selector toy → each of the **four** Borromean/Garland cells. Confirm
+   each imports and builds with no `None` references.
+3. Run **FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals** — the new flora must pass.
+4. Stay in a cell and let the flora grow several waves; confirm it grows on the surface
+   (connected, not disconnected lumps) and the phase readout does not boot to Frenzy.
+
+**PASS:** compiles; all four cells build cleanly; the crystal validator is green; the
+flora grows coherently on its surface; no cell sits in Frenzy at rest.
+**FAIL:** a compile error · a cell that builds zero prisms or has `None` refs · a crystal
+validator failure · flora growing in disconnected lumps or not at all · a cell stuck in
+Frenzy.
+
+### QA-ECOLOGY-MANDELBULB-FLORA ⬜ — the Mandelbulb flora family and the Arboretum
+**Source:** PR #896. A new flora family plus the **elemental form law** (an element
+changes a plant's FORM, not just colour) and the **Arboretum** cell. Authored headless,
+never compiled. Reference: `Docs/ECOSYSTEM.md`.
+1. Compile; watch the Console.
+2. Freestyle → Cell Selector → **Arboretum**. Confirm it builds.
+3. Let the Mandelbulb flora grow; spawn or find all four elements of it and confirm each
+   element reads as a **different form**, not the same shape recoloured.
+4. Run **Validate Lifeform Crystals** — the family must pass.
+
+**PASS:** compiles; the Arboretum builds; the four elements of the flora are visibly
+different forms; the crystal validator is green.
+**FAIL:** a compile error · an Arboretum that does not build · four elements that are the
+same shape in different colours · a crystal validator failure.
+**Known, do not fail on:** the Cell Selector shows a grown world as a bare station with
+no scale model (a separate, logged gap).
+
+### QA-RHINO-SWORD-COMBOS ⬜ — trigger-tap sword combos, prism slicing, and the supershield bind
+**Source:** PRs #921 (trigger-tap combos + energized set), #914 (the sword SLICES prisms
+it destroys), #904 (the sword binds in super-shielded mass with no recoil, + a speed/turn
+retune). Reference: `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
+1. Freestyle as the **Rhino**. Tap the sword trigger in sequence and confirm a **combo**
+   plays through (not just a single repeated swipe), and that the energized set reads.
+2. Swipe through ordinary prisms and watch them **slice** as they are destroyed.
+3. Swipe into a **super-shielded** prism (e.g. the Skim Race track lining): the sword
+   should **bind** in it with **no recoil** kicking you off.
+4. Fly the Rhino normally and judge the retuned speed/turn — it should feel controllable.
+
+**PASS:** trigger taps chain into combos with the energized set; destroyed prisms slice;
+the sword binds in super-shielded mass without recoil; the speed/turn retune is flyable.
+**FAIL:** combos that never chain · no slice on destruction · a sword that bounces off
+super-shielded mass instead of binding · a retune that makes the Rhino uncontrollable.
+**Report the feel:** say whether the combo timing and the new speed/turn read well.
+
+### QA-SERPENT-RETICLE-PELLETS ⬜ — a visible reticle, a piercing sniper round, and Solid Fuel Pellets
+**Source:** PRs #900 (a reticle the pilot can see + a sniper round that pierces) and #903
+(Solid Fuel Pellets restored as the Serpent's Time ability, with its icon).
+1. Freestyle as the **Serpent**. Confirm a **reticle** is drawn where the pilot is aiming.
+2. Fire the sniper round at a line of prisms: it should **pierce** through more than one
+   rather than stopping on the first.
+3. Raise **Time** to level 5 and confirm the **Solid Fuel Pellets** ability is available
+   and its **icon** appears in the ability row.
+
+**PASS:** a visible aiming reticle; the sniper round pierces multiple prisms; Solid Fuel
+Pellets is present at Time 5 with its icon on the row.
+**FAIL:** no reticle · a round that stops on the first prism · a missing or icon-less
+Time ability.
+
+### QA-LIT-FUNDAMENTAL ⬜ — LIT promoted to a fundamental, explosion temp shield retired
+**Source:** PR #891. "LIT" became a platform fundamental and the old explosion
+temporary-shield hack was retired. Touches how own-domain mass reacts to a blast, so a
+defect is broad.
+1. Fire an own-domain explosion (e.g. a Dolphin crystal blast) into **your own** mass and
+   confirm it reads as **accepted** (lights/shields) rather than clipping or being
+   destroyed.
+2. Fire the same blast into **opposing** mass and confirm it is destroyed as before.
+3. Watch the Console for any LIT-related exception during a blast.
+
+**PASS:** own-domain mass reacts to a blast as LIT (no destruction, no clipping);
+opposing mass is destroyed; no exceptions.
+**FAIL:** own mass destroyed by your own blast · a visible clip/pop where a shield used to
+read · any LIT exception.
+
+### QA-ARCADE-CARD-BACKGROUNDS ⬜ — genre petals and rendered card backgrounds on every card
+**Source:** PR #911. Every arcade/arena card gained a **genre petal** marker and a
+**rendered intensity-2 background** image of its own arena.
+1. Open the **Arcade** screen and scroll every card. Each should show a background image
+   that looks like **that mode's own arena**, not a placeholder or a shared image.
+2. Open the **Arena** screen and do the same.
+3. Confirm each card shows its **genre petals** and that no card is blank or broken.
+
+**PASS:** every arcade and arena card shows a distinct, mode-appropriate background and
+its genre petals; none is blank, stretched or sharing another card's image.
+**FAIL:** a blank/placeholder background · a card wearing the wrong mode's image · missing
+genre petals · a stretched or broken image.
+
+### QA-TOYBOX-ACTIVITY ⬜ — daily activity, shuffle, pole switches, and text-free toys
+**Source:** PR #910. The toybox gained a **daily activity** button and a **shuffle**
+button, **pole switches**, and the toys lost their text labels.
+1. `Menu_Main` freestyle: open the Toy Box and confirm a **daily activity** and a
+   **shuffle** control are present and do something when used.
+2. Fly the toy ring and confirm the toys read **without text labels** — each still
+   identifiable by its shape/switch ring.
+3. Use a **pole switch** and confirm it activates as a switch should.
+
+**PASS:** daily activity and shuffle both work; toys are identifiable with no text; pole
+switches activate.
+**FAIL:** a dead daily-activity or shuffle control · a toy that is unidentifiable without
+its old label · a pole switch that does nothing.
+*(Toy legibility without labels is partly a taste call — report a genuinely
+unidentifiable toy as a note unless it is completely unreadable.)*
+
+### QA-MP-SESSION-LIFECYCLE ⬜ — a client can always leave, and a departed pilot's ship keeps flying
+**Source:** PR #865. Multiplayer session lifecycle rework: a client can always leave and
+is never stranded, and a pilot who leaves mid-game leaves a ship that keeps flying. Needs
+**MPPM with at least 2 virtual players**.
+1. Host + one client. Start a multiplayer game.
+2. Have the client **leave mid-game** (in-game leave button). Confirm the client returns
+   cleanly to the menu — not stranded on a black screen or a dead scene.
+3. On the host, confirm the departed pilot's **ship keeps flying** (as AI or drift) rather
+   than freezing or vanishing abruptly.
+4. Repeat with the client leaving from the scoreboard/end screen.
+
+**PASS:** the leaving client always reaches the menu cleanly; the host never sees the
+departed ship freeze or pop out; no exceptions on either machine.
+**FAIL:** a client stranded after leaving · a departed ship that freezes or vanishes
+instantly (breaking continuity) · an exception on either machine on a leave.
+
+### QA-OFFLINE-FALLBACK ⬜ — single-player offline fallback and the online/offline toggle
+**Source:** PR #812. When UGS/Relay is unreachable the game falls back to a local host,
+caches player data, and offers a player-facing online/offline toggle. Reference:
+`Docs/OFFLINE_MODE.md`.
+1. Launch with **networking cut** (no internet, or block UGS) and confirm the game still
+   reaches `Menu_Main` instead of hanging at boot.
+2. Confirm your **name, vessel unlocks and progression** still show (served from the disk
+   cache), and that matchmaking / party creation are stood down.
+3. Launch and play a single-player arcade game offline — it should run on the local host.
+4. Restore networking and use the **reconnect / online toggle**; confirm it comes back
+   online without an app restart.
+
+**PASS:** boot reaches the menu offline; cached name/unlocks/progression show; online-only
+UI (invites, leaderboards, purchases) is gated; a single-player game runs offline; the
+reconnect toggle restores online play in place.
+**FAIL:** a boot that hangs with no network · lost name/unlocks offline · an offline game
+that will not start · a reconnect that needs an app restart or throws.
+
 ---
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
@@ -2791,6 +4886,28 @@ before · any new error that was not there previously.
 **Known, do not fail on:** `ArgumentOutOfRangeException` from `LobbyPatcher` still appears
 (`Docs/PresenceSystem/BUGS.md` B1) — it is a defect inside Unity's own code, not ours.
 This change reduces how often it clusters; it does not remove it. Just record the count.
+
+### QA-P1-PARTY-REQUEST-DISCIPLINE ⬜ — one retry policy, no PENDING handshake, join pre-flight, nested timeouts
+
+**Landed:** `931dcd51`, `0521b858`, `d31e01b2`, `12e2cb1b`, `8a0eaa0d` on `Ys-bleeding-edge` (2026-10-07; review
+`Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md` Phases 0–1). Compiled and unit-tested
+headlessly; never opened in Unity.
+
+**Setup:** MPPM, 1 host + 3 virtual players, FrogletTools > Toolbox > Logging > `Party` ON. Every
+NetDiag log line now ends in `ugs[req/min=… 429/min=… retry/min=… reset=… offline=…]`.
+
+| # | Steps | Pass |
+|---|---|---|
+| 1 | Host invites all three within 5 s; each accepts within 10 s. | Roster 4/4 on all four screens < 2 s after the last accept; `429/min=0`, `reset=0`. |
+| 2 | Three guests press **Join** on the host's row at the same moment. | All seated; nobody bounced to a solo menu. |
+| 3 | Party 4/4; a fifth client presses Join. | Toast "…party is full"; the fifth client stays in its own menu with its own session (no reload). |
+| 4 | Guest accepts an invite whose sender quit 2 s earlier. | Toast "…no longer online" or "…no longer available"; invite row disappears; no reload. |
+| 5 | All four spam Invite/Cancel for 60 s. | `reset=0`, `offline=0`; UI never stalls > 2 s; a `UgsRequestPolicy` budget warning is acceptable. |
+| 6 | Pull a guest's network mid-match. | Host converts the vessel to AI at ~10 s (was 30 s); the guest bounces with a toast. |
+| 7 | Watch the Console through all of the above. | No `AcceptanceSignalService` lines (class deleted); no `IsRateLimitException`-era "retry 1/3 in 2000ms" chatter. |
+
+**On failure:** copy the NetDiag line(s) with the `ugs[...]` field into the result; the counters say
+which layer misbehaved (429s → the service, `reset` → the presence loop, `offline` → boot).
 
 ### QA-P2-QUIT-BUTTON ⬜ — the drop-in quit button
 **Source:** PR #701 (`QuitGameButton`, a self-wiring component for nested prefabs).
@@ -2841,12 +4958,6 @@ cytoplasm prefabs and three scenes (including `Menu_Main`) still point at a
 `CellRuntimeDataSO` GUID that does not exist. Spawn each of those fauna and check for a
 throw from `LifeForm.Start()` / `Flora.Plant()`. **PASS = enumerate which ones actually
 throw** — that list scopes the fix branch.
-
-### QA-P2-SPAWN-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
-Suspected pre-existing: the Spawn Matrix's four crystal moons sit ~2.2 world units out
-while toys place at `toyBodyRadius = 22`. Look at the bench. **PASS = the four moons are
-visible and distinct.** **FAIL = they are inside the sphere** (then the fix is a placement
-value, not code).
 
 ### QA-P1-RHINO-RAMP-CEILING ⬜ — Rhino's ramp no longer gets faster with Time
 The element-scaling unification removed a **fleet-wide** `Multiplier(Element.Time)` read from

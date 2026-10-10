@@ -15,4 +15,3 @@ MonoBehaviour:
   _bootstrapScene: Bootstrap
   _authenticationScene: Authentication
   _mainMenuScene: Menu_Main
-  _multiplayerScene: MinigameFreestyleMultiplayer_Gameplay

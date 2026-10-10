@@ -11,8 +11,11 @@ the whole result is validated in memory, and only then is anything written.
 WHAT THIS MODE IS. Regatta is the ARENA race: every playable hull on the same closed circuit of
 eight switch rings, with three super-shielded rails - one per playable domain - braided along
 the racing line, so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a
-Scarab or a Sparrow flies beside it. First DOMAIN whose LEAD RUNNER threads the last gate of
-the last lap wins. See Assets/_Scripts/Controller/Arcade/REGATTA.md.
+Scarab or a Sparrow flies beside it. The race ends when the first pilot threads the last gate of
+the last lap; the TEAM with the most gates threaded - every pilot's gates, summed
+(RegattaScoringRuleSO) - wins. Opponent AI (a domain no human flies) are pinned to the Squirrel
+through the card's OpponentAIVessel until the racing AI can drive every hull; ally AI fly what
+their teammates pick on the launch panel. See Assets/_Scripts/Controller/Arcade/REGATTA.md.
 
 WHAT IS FORKED AND WHY. Four cell configs, because the arena is an AUTHORED environment (the
 rails, one SpawnableRegattaRails prefab variant per intensity) and its volume ladder has to
@@ -21,7 +24,8 @@ derivation would price at a seventeenth. The spawn profile is the Barren cell's,
 no flora, no fauna (shielded mass is never food anyway, and fauna are per-peer).
 
 WHAT IS REFERENCED. The scene is a clone of MinigameRedline (itself Headlong's): the gate-race
-platform, the RaceGateTurnMonitor, the generic GateRaceScoringRuleSO (a second asset), the
+platform and the RaceGateTurnMonitor (the scoring rule is Regatta's own team-sum
+RegattaScoringRuleSO, a subclass of the gate-race rule), the
 equatorial spawn ring (overridden at runtime by the controller's own start line behind gate 0),
 the crystal manager, the cell network sync. The scoring metric, the objective icon, the goal
 row and the comeback source are SwitchesThreaded's, reused.
@@ -59,6 +63,7 @@ g = lib.Generator(MODE_ID, "Regatta")
 # ── New script GUIDs (the .cs.meta files this script also writes) ─────────────
 SCRIPT_PATHS = {
     "RegattaController":         "Assets/_Scripts/Controller/Arcade/Regatta/RegattaController.cs",
+    "RegattaScoringRuleSO":      "Assets/_Scripts/Controller/Arcade/Scoring/RegattaScoringRuleSO.cs",
     "RegattaCourse":             "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
     "SpawnableRegattaRails":     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRegattaRails.cs",
     "VesselStartingElements":    "Assets/_Scripts/Data/Structs/VesselStartingElements.cs",
@@ -90,7 +95,6 @@ EXISTING.update(lib.CELL_VISUALS)
 EXISTING.update(lib.CARD_ART)
 for _h, _g in lib.VESSELS.items():
     EXISTING[f"Vessel_{_h}"] = _g
-EXISTING["GateRaceScoringRuleSO"] = lib.existing_guid("Assets/_Scripts/Controller/Arcade/Scoring/GateRaceScoringRuleSO.cs")
 EXISTING["RedlineController"] = lib.existing_guid("Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs")
 EXISTING["RedlineScoringRule"] = lib.existing_guid("Assets/_SO_Assets/Scoring Rules/RedlineScoringRule.asset")
 EXISTING["SkimRaceCellConfig"] = lib.existing_guid("Assets/_SO_Assets/Cell Configs/Skim Race Cell/Skim Race Cell Config.asset")
@@ -157,10 +161,12 @@ g.folder_meta(SCRIPTS_DIR)
 g.text_meta(DOC)
 g.folder_meta(CELL_DIR)
 
-# ── 2. Scoring rule: the generic gate-race rule, a second asset ─────────────
+# ── 2. Scoring rule: the TEAM SUM - every pilot's gates count, highest team total wins ──
+# Points, not golf (golfRules 0): a pilot's Score is their own gate count, and RegattaController
+# runs points rules to match, so the end-game domain totals ARE the team sums.
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset", G_ASSET["RegattaScoringRule"],
-             lib.header_for(EXISTING["GateRaceScoringRuleSO"], "RegattaScoringRule") +
-             "  metric: 9\n  golfRules: 1\n")
+             lib.header_for(G_SCRIPT["RegattaScoringRuleSO"], "RegattaScoringRule") +
+             "  metric: 9\n  golfRules: 0\n")
 
 # ── 3. The arena: one SpawnableRegattaRails prefab per intensity ────────────
 def spawnable_prefab(i: int) -> str:
@@ -238,16 +244,17 @@ for _i in range(1, 5):
 for _i in range(1, 5):
     c = COURSE["intensities"][str(_i)]
     t = phase_thresholds(prisms_at(_i))
-    desc = (f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
-            f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
-            f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms on a "
-            f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
-            f"{c['cornerFloor']:.0f}u. The standard nucleus is the crystal respawn volume and the "
-            f"inner shell; the spawn profile is the Barren cell's (no flora, no fauna - shielded mass "
-            f"is never food, and a race whose obstacles differ per peer is not a race). "
-            f"PhaseThresholds ride the rails' MEASURED volume (Tools/Build/regatta_course_measurements.json) "
-            f"plus a trail band - regenerate with Tools/Build/author_regatta_assets.py, never by hand; "
-            f"the count x 16 derivation is 18x low here because a (6,6,8) prism is 288 volume.")
+    desc = lib.wrap_yaml_scalar(
+        f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
+        f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
+        f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms on a "
+        f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
+        f"{c['cornerFloor']:.0f}u. The standard nucleus is the crystal respawn volume and the "
+        f"inner shell; the spawn profile is the Barren cell's (no flora, no fauna - shielded mass "
+        f"is never food, and a race whose obstacles differ per peer is not a race). "
+        f"PhaseThresholds ride the rails' MEASURED volume (Tools/Build/regatta_course_measurements.json) "
+        f"plus a trail band - regenerate with Tools/Build/author_regatta_assets.py, never by hand; "
+        f"the count x 16 derivation is 18x low here because a (6,6,8) prism is 288 volume.")
     g.emit_asset(f"{CELL_DIR}/Regatta Cell Config {_i}.asset", G_ASSET[f"CellConfig{_i}"],
                  lib.header_for(EXISTING["CellConfigDataSO"], f"Regatta Cell Config {_i}") + f"""  CellName: Regatta
   Description: {desc}
@@ -265,6 +272,12 @@ for _i in range(1, 5):
 """ + "".join(f"    {k}: {v}\n" for k, v in t.items()))
 
 # ── 5. The arcade card: every playable hull, and the starting-element table ──
+# Every OPPONENT AI (a domain no human flies) flies this hull: the platform's gate-race AI holds
+# 0.6 throttle and drives no hull's speed ability but the Manta's, so a mixed opponent grid was
+# mostly hulls racing at cruise. The Squirrel skims the rails for its boost energy, which is the
+# one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
+# the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
+OPPONENT_AI_HULL = "Squirrel"
 HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab"]
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
@@ -291,12 +304,13 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   Description: Every hull, one circuit, three laps. Three rails run the racing line in the
     three team colours - an Urchin grinds the one in its colour and a Squirrel skims it,
     while a Manta, a Rhino, a Scarab or a Sparrow flies beside it. Thread the rings in
-    order; first team to put a pilot through the last one takes it. Pick the hull you fly
-    best - the card hands the slow ones a head start in Time.
+    order - every gate anyone on your team threads counts. The race ends when the first
+    pilot finishes; the team with the most gates wins. Pick your hull, and tap an ally's
+    avatar to pick theirs.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  GolfScoring: 1
+  CardBackground: {{fileID: 21300000, guid: {lib.card_background('Regatta')}, type: 3}}
+  GolfScoring: 0
   SceneName: MinigameRegatta
   Vessels:
 {VESSEL_ROWS}  MinPlayersAllowed: 2
@@ -311,19 +325,32 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   - A rail cannot be shot away. Only an energised Rhino sword opens a hole, and riders bridge holes.
   - Rhino and Manta pilots: every corner is a price. Lift for the tight ones, wind back up on the straight.
   - Slow hulls start with Time already high - it is your boost. Fast hulls start with it low.
+  - Every gate your team threads counts. Tap an ally AI's avatar on your team tile to pick the hull it flies.
   ViewUserAction: 0
   PlayUserAction: 0
   StartingElements:
 {STARTING}  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}
+  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}
 """)
 
-# ── 6. Toasts: two idle hints and the comeback line ─────────────────────────
+# ── 6. Toasts: two idle hints, the comeback line, and the shared race beats ──
+# The race beats (DomainRaceHalf / LeadChanged / HomeStretch / FinalLap = 129-132) are posted by
+# GateRaceController's DomainRaceToasts for every gate race, Regatta included; a beat this config
+# does not author shows nothing. Worded in the gate-race family's voice (Headlong, Redline,
+# Breakwater): {0} = leading domain, {1} = its score, {2} = the target. No Quarter (128) - no
+# gate race authors it; the halfway beat is the first one worth a toast on a course.
+# Regatta's {1} is the TEAM SUM (RegattaScoringRuleSO.DomainValue) and {2} one pilot's course,
+# so the numbers say "gates", not "gate N" - a team's tally is not a position on the course.
 g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Regatta.asset", G_ASSET["GameToastConfigRegatta"],
              lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_Regatta") +
              f"  gameMode: {MODE_ID}\n  toasts:\n" +
              lib.toast(110, "The rail in your colour is the racing line - and it cannot be shot away", idle=1, idle_seconds=25) +
              lib.toast(111, "Urchins: latch on and ride. Squirrels: skim it for boost. Everyone else: fly beside it", idle=1, idle_seconds=50) +
-             lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
+             lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9) +
+             lib.toast(129, "{0} is halfway home - {1}/{2} gates", tint_domain=1, domain_names=0) +
+             lib.toast(130, "{0} takes the lead - {1}/{2} gates", tint_domain=1, domain_names=0) +
+             lib.toast(131, "{0} is on the home stretch - {1}/{2} gates", tint_domain=1, domain_names=0) +
+             lib.toast(132, "{0} is on the final lap", tint_domain=1, domain_names=0))
 g.register_toast_config(G_ASSET["GameToastConfigRegatta"])
 
 # ── 7. Mode preview ──────────────────────────────────────────────────────────
@@ -352,9 +379,6 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Regatta.asset", G_ASSE
 g.register_preview(G_ASSET["ModePreviewRegatta"])
 
 # ── 8. Scene: clone MinigameRedline, swap the mode-specific wiring ───────────
-scene = g.read(f"{lib.SCENES_DIR}/MinigameRedline.unity")
-scene = lib.swap_guid(scene, EXISTING["RedlineController"], G_SCRIPT["RegattaController"], "controller")
-
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RedlineScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
   courseOuterRadius: 1080
@@ -394,25 +418,47 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RegattaScoringRule'
   startLineRadius: 120
   aiRailLeadDistance: 260
 """
-scene = lib.replace_block(scene, OLD_FIELDS, NEW_FIELDS, "controller fields")
+CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['RegattaController']}, type: 3}}\n"
 
 # THE CELL becomes INTENSITY-WISE over the four rail arenas.
-scene = lib.replace_block(scene,
-    f"  CellConfigs:\n  - {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n  cellTypeChoiceOptions: 0\n",
-    "  CellConfigs:\n" + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
-    + "  cellTypeChoiceOptions: 1\n",
-    "cell config")
+OLD_CELL_BLOCK = (f"  CellConfigs:\n  - {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n"
+                  "  cellTypeChoiceOptions: 0\n")
+NEW_CELL_BLOCK = ("  CellConfigs:\n"
+                  + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
+                  + "  cellTypeChoiceOptions: 1\n")
 
 # THE AI ROSTER draws its hull from the CARD: vesselClass 0 (Random) makes
 # ServerPlayerVesselInitializerWithAI.PickAIVesselType roll uniformly over the card's Vessels,
 # so a bot grid is a mixed grid too. (The donor's 2 = Dolphin, Headlong's inheritance from
 # Switchback, was clamped to the Manta by Redline's card; here it would pin every bot to one hull.)
-scene, n = re.subn(r"^  - vesselClass: 2\n(    PlayerName: AI \d)", r"  - vesselClass: 0\n\1", scene, flags=re.M)
-assert n == 4, f"AI templates swapped {n} times (expected 4)"
+AI_TEMPLATES = tuple(f"  - vesselClass: 0\n    PlayerName: AI {i}\n" for i in range(4))
 
 # Sanity: everything else the donor authored is what this mode wants.
-for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),):
-    assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+INHERITED_PROBES = ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),)
+
+
+def clone_scene() -> str:
+    scene = g.read(f"{lib.SCENES_DIR}/MinigameRedline.unity")
+    scene = lib.swap_guid(scene, EXISTING["RedlineController"], G_SCRIPT["RegattaController"], "controller")
+    scene = lib.replace_block(scene, OLD_FIELDS, NEW_FIELDS, "controller fields")
+    scene = lib.replace_block(scene, OLD_CELL_BLOCK, NEW_CELL_BLOCK, "cell config")
+    scene, n = re.subn(r"^  - vesselClass: 2\n(    PlayerName: AI \d)", r"  - vesselClass: 0\n\1", scene, flags=re.M)
+    assert n == 4, f"AI templates swapped {n} times (expected 4)"
+    for probe, why in INHERITED_PROBES:
+        assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+    return scene
+
+
+# The clone is a one-shot: once MinigameRegatta.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, and a re-clone would revert them to Redline's. The
+# committed scene is adopted, the blocks this script authors (controller, cell ladder, the four
+# Random-hull AI templates) must still be in it, and the donor asserts STAND DOWN when Redline
+# moves on (CLAUDE.md "spent one-shot"). See lib.committed_scene.
+scene, _scene_errors = lib.committed_scene(
+    f"{lib.SCENES_DIR}/MinigameRegatta.unity", clone_scene,
+    authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_FIELDS, NEW_CELL_BLOCK) + AI_TEMPLATES)
+_scene_errors += [f"MinigameRegatta.unity no longer provides: {why}"
+                  for probe, why in INHERITED_PROBES if not re.search(probe, scene, re.M)]
 g.emit_scene("MinigameRegatta", G_ASSET["MinigameRegatta.unity"], scene)
 
 # ── 9-12. The shared registries ──────────────────────────────────────────────
@@ -422,7 +468,7 @@ g.register_build_scene("MinigameRedline", "MinigameRegatta", G_ASSET["MinigameRe
 g.set_end_condition("regattaGateTarget", after="redlineGateTarget", value=GATE_TARGET)
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 if COURSE_STALE:
     errors.append("regatta_course_measurements.json is STALE: its sourceHash does not match the pure course "
@@ -503,8 +549,15 @@ if sc.count("  cellTypeChoiceOptions: 1\n") != 1:
 # The card lists every playable hull exactly once, and every StartingElements row names one of them.
 card = g.files["Assets/_SO_Assets/Games/ArcadeGameRegatta.asset"]
 for h in HULL_ORDER:
-    if card.count(EXISTING[f"Vessel_{h}"]) != 1:
+    if card.count(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n") != 1:
         errors.append(f"card does not list {h} exactly once")
+if f"  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}\n" not in card:
+    errors.append(f"card does not pin the {OPPONENT_AI_HULL} as its OpponentAIVessel")
+if OPPONENT_AI_HULL not in HULL_ORDER:
+    errors.append(f"the opponent hull {OPPONENT_AI_HULL} is not on the card - ClampVesselToGame would move it")
+rule = g.files["Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset"]
+if G_SCRIPT["RegattaScoringRuleSO"] not in rule or "  golfRules: 0\n" not in rule:
+    errors.append("RegattaScoringRule.asset is not the points-rules RegattaScoringRuleSO")
 for m in re.finditer(r"^  - Class: (\d+)$", card, re.M):
     if int(m.group(1)) not in {lib.VESSEL_CLASS_ID[h] for h in HULL_ORDER}:
         errors.append(f"StartingElements names class {m.group(1)}, which the card does not seat")

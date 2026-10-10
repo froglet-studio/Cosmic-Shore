@@ -283,6 +283,7 @@ namespace CosmicShore.Gameplay
             IsSlowed = false;
 
             ResourceSystem.Reset();
+            ResourceSystem.MarkSpawned();
             VesselTransformer.ResetTransformer();
             VesselPrismController.StopSpawn();
             VesselPrismController.ClearTrails();

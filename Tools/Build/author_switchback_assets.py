@@ -39,6 +39,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -271,7 +273,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameSwitchback.asset",
     First team to put a pilot through the last gate takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Switchback')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameSwitchback
   Vessels:
@@ -282,7 +284,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameSwitchback.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -292,17 +293,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameSwitchback.asset.meta",
 
 
 # ── 4. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
-
-# 4a. turn monitor script swap. Field set is identical (base TurnMonitor fields only) - both
-# monitors read their target from EndConditionOverridesSO rather than a serialized field.
-scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["SwitchbackGateTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
-
-# 4b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["SwitchbackController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
-
 OLD_FIELDS = f"  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}\n"
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['SwitchbackScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}}
@@ -320,30 +310,54 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['SwitchbackScoringRu
   maxPlausibleSpeed: 400
   reportResyncSeconds: 3
 """
-assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-# 4c. the CELL: one barren race cell instead of four cactus forests (see the module docstring).
-assert scene.count(DONOR_CELL_BLOCK) == 1, "donor cell block not found - has Rampage re-authored its cell?"
-scene = scene.replace(DONOR_CELL_BLOCK, NEW_CELL_BLOCK)
 
-assert scene.count(DONOR_CRYSTAL_BLOCK) == 1, \
-    "donor crystal block not found - has Rampage re-authored its crystal supply?"
-scene = scene.replace(DONOR_CRYSTAL_BLOCK, NEW_CRYSTAL_BLOCK)
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
 
-# 4d. the SPAWN RING: equatorial, so the pole the first gate sits on is equidistant from every
-# pilot. Distance comes down from Rampage's 500 because this cell's nucleus is the full-size
-# Nucleus.prefab (391.9u) rather than Rampage's HalfNucleus (196u) - keeping 500 would put the
-# ring at 892u, three quarters of the way to the membrane.
-scene, n = re.subn(r"^  spawnDistanceOutsideNucleus: 500$", "  spawnDistanceOutsideNucleus: 150",
-                   scene, count=1, flags=re.M)
-assert n == 1, "spawnDistanceOutsideNucleus not found"
-scene, n = re.subn(r"^  spawnFormation: 0$", "  spawnFormation: 1", scene, count=1, flags=re.M)
-assert n == 1, "spawnFormation not found"
+    # 4a. turn monitor script swap. Field set is identical (base TurnMonitor fields only) - both
+    # monitors read their target from EndConditionOverridesSO rather than a serialized field.
+    scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["SwitchbackGateTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
 
-# 4e. (No comeback source to patch: ElementalComebackSystem reads ScoringRuleSO.DomainValue
-# since 2026-09, so a clone cannot inherit its donor's comeback stat.)
+    # 4b. controller script swap + its serialized field block
+    scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["SwitchbackController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
 
+    assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+
+    # 4c. the CELL: one barren race cell instead of four cactus forests (see the module docstring).
+    assert scene.count(DONOR_CELL_BLOCK) == 1, "donor cell block not found - has Rampage re-authored its cell?"
+    scene = scene.replace(DONOR_CELL_BLOCK, NEW_CELL_BLOCK)
+
+    assert scene.count(DONOR_CRYSTAL_BLOCK) == 1, \
+        "donor crystal block not found - has Rampage re-authored its crystal supply?"
+    scene = scene.replace(DONOR_CRYSTAL_BLOCK, NEW_CRYSTAL_BLOCK)
+
+    # 4d. the SPAWN RING: equatorial, so the pole the first gate sits on is equidistant from every
+    # pilot. Distance comes down from Rampage's 500 because this cell's nucleus is the full-size
+    # Nucleus.prefab (391.9u) rather than Rampage's HalfNucleus (196u) - keeping 500 would put the
+    # ring at 892u, three quarters of the way to the membrane.
+    scene, n = re.subn(r"^  spawnDistanceOutsideNucleus: 500$", "  spawnDistanceOutsideNucleus: 150",
+                       scene, count=1, flags=re.M)
+    assert n == 1, "spawnDistanceOutsideNucleus not found"
+    scene, n = re.subn(r"^  spawnFormation: 0$", "  spawnFormation: 1", scene, count=1, flags=re.M)
+    assert n == 1, "spawnFormation not found"
+
+    # 4e. (No comeback source to patch: ElementalComebackSystem reads ScoringRuleSO.DomainValue
+    # since 2026-09, so a clone cannot inherit its donor's comeback stat.)
+    return scene
+
+
+# The clone is a one-shot: once MinigameSwitchback.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, so re-cloning reported 10 lines of drift that were all
+# Editor-minted ids. The committed scene is adopted, the blocks this script authors must still
+# be in it, and the checks below run on it. See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity", clone_scene,
+    authored_blocks=(NEW_FIELDS, NEW_CELL_BLOCK, NEW_CRYSTAL_BLOCK,
+                     "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity.meta",
      scene_meta(G_ASSET["MinigameSwitchback.unity"]))
@@ -438,7 +452,7 @@ emit(LIB_PATH, lib)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 # The comeback rate is meaningless without the target next to it - see COMEBACK_RATE.
 if 0.25 * GATE_TARGET * COMEBACK_RATE < 1.0:
@@ -570,6 +584,10 @@ if re.search(r"^  - CrystalsPerPlayer: 2\n", sc, re.M) or "    ExtraCrystals: -1
 if sc.count("  - vesselClass: 2\n") != 4:
     errors.append("cloned scene does not carry 4 Dolphin AI templates")
 
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
+
 if errors:
     print("VALIDATION FAILED:")
     for e in errors:
@@ -577,11 +595,7 @@ if errors:
     sys.exit(1)
 
 if CHECK_ONLY:
-    changed = []
-    for rel, content in files.items():
-        full = os.path.join(ROOT, rel)
-        if not os.path.exists(full) or read(rel) != content:
-            changed.append(rel)
+    changed = aml.drift(files)
     if changed:
         print(f"--check: {len(changed)} file(s) differ from the authored output:")
         for c in sorted(changed):

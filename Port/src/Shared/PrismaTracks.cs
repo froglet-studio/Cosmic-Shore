@@ -224,7 +224,7 @@ namespace Prisma
         public string Memory(int maxChars = 6000)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"# Prisma tracks ({Runs.Count} runs recorded, {Open.Count()} open problems)");
+            sb.AppendLine($"# Amoebius tracks ({Runs.Count} runs recorded, {Open.Count()} open problems)");
             if (Runs.Count == 0) { sb.AppendLine("No play runs recorded yet."); return sb.ToString(); }
             sb.AppendLine();
             sb.AppendLine("## Last runs (newest first)");

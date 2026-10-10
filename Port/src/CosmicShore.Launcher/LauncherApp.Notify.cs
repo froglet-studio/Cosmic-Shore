@@ -57,7 +57,7 @@ namespace CosmicShore.Launcher
                     string.Join("\n", problems.Take(2).Select(i => Trim(i.Message.Replace('\n', ' '), 70))), NoteKind.Warning,
                     ("CLEAN UP", () =>
                     {
-                        _chat.SetScope(ClaudeChat.Scope.Game);
+                        _chats.New();
                         _page = Page.Chat;
                         SendChat("Clean up the new problems from my last play run (prisma_tracks has them with counts):\n" +
                                  string.Join("\n", problems.Take(8).Select(i => $"- [{i.Kind}] {i.Message}")) +
@@ -94,7 +94,7 @@ namespace CosmicShore.Launcher
                 var drive = new DriveInfo(Path.GetPathRoot(LauncherSettings.DataDir)!);
                 if (drive.IsReady && drive.AvailableFreeSpace < 3L << 30)
                     Notify($"Low disk space: {drive.AvailableFreeSpace / (double)(1L << 30):0.0} GB free",
-                        "Prisma can remove old launcher versions (keeping the newest three), build caches and session reports older than 30 days.", NoteKind.Warning,
+                        "Amoebius can remove old launcher versions (keeping the newest three), build caches and session reports older than 30 days.", NoteKind.Warning,
                         ("CLEAN UP", () => Task.Run(FreeSpace)), ("NOT NOW", () => { }));
             }
             catch { /* the doctor never gets in the way */ }
@@ -124,7 +124,7 @@ namespace CosmicShore.Launcher
             var last = string.Join("\n", _jobs.Log.Tail(80));
             bool buildFail = last.Contains("error CS", StringComparison.Ordinal) || last.Contains("MSB", StringComparison.Ordinal) || last.Contains("being used by another process");
             if (!buildFail) return;
-            Notify("The build failed", "If the outputs are stale, a clean build fixes it. Prisma can delete Port's build folders and try again.", NoteKind.Error,
+            Notify("The build failed", "If the outputs are stale, a clean build fixes it. Amoebius can delete Port's build folders and try again.", NoteKind.Error,
                 ("CLEAN & RETRY", () => Task.Run(() =>
                 {
                     foreach (var proj in Directory.GetDirectories(Path.Combine(_ws.Dir, "Port", "src")))
@@ -197,7 +197,7 @@ namespace CosmicShore.Launcher
             dl.AddRectFilled(a + new Vector2(14, 16), a + new Vector2(42, 44), Neon.U(new Vector4(0.06f, 0.07f, 0.12f, 1f)), 8);
             Neon.PrismIcon(dl, a + new Vector2(28, 31), 16, 1f, Neon.Time);
             dl.AddCircleFilled(a + new Vector2(40, 18), 4, Neon.U(NoteColor(n.Kind)));
-            dl.AddText(Neon.Small, 12, a + new Vector2(54, 12), Neon.U(Neon.Dim), "PRISMA");
+            dl.AddText(Neon.Small, 12, a + new Vector2(54, 12), Neon.U(Neon.Dim), "AMOEBIUS");
             var ago = DateTime.Now - n.Time;
             var when = ago.TotalMinutes < 1 ? "now" : ago.TotalHours < 1 ? $"{(int)ago.TotalMinutes}m ago" : n.Time.ToString("HH:mm");
             dl.AddText(Neon.Small, 12, new Vector2(b.X - 14 - when.Length * 6.2f, a.Y + 12), Neon.U(Neon.Dim), when);
@@ -276,17 +276,16 @@ namespace CosmicShore.Launcher
 
         TourStep[] Tour => new[]
         {
-            new TourStep("Welcome to Prisma",
+            new TourStep("Welcome to Amoebius",
                 "Froglet's own engine for Cosmic Shore. It builds the game from source, runs it, records every run, and has an agent powered by Claude. Here is a one-minute tour.",
                 () => null),
-            new TourStep("Play", "Pick a branch and press START: Prisma fetches it, builds it and runs the game. Every play session is recorded when you close the game.", () => Rail(Page.Play), Page.Play),
+            new TourStep("Play", "Pick a branch and press START: Amoebius fetches it, builds it and runs the game. Every play session is recorded when you close the game.", () => Rail(Page.Play), Page.Play),
             new TourStep("Build", "Phone builds: an Android APK, or an iOS .ipa built on GitHub's Mac for Sideloadly.", () => Rail(Page.Build), Page.Build),
-            new TourStep("Project", "Prisma's own Player, Scenes and Quality settings. Empty fields follow Unity's.", () => Rail(Page.Project), Page.Project),
-            new TourStep("Prisma Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
+            new TourStep("Project", "Amoebius's own Player, Scenes and Quality settings. Empty fields follow Unity's.", () => Rail(Page.Project), Page.Project),
+            new TourStep("Amoebius Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
             new TourStep("Tracks", "Every run's performance per scene, the modes and vessels you used, audio, and every problem with when it was first and last seen.", () => Rail(Page.Tracks), Page.Tracks),
-            new TourStep("Board", "Your bugs and tasks. Prisma suggests new ones from your runs; nothing joins the board until you accept it.", () => Rail(Page.Board), Page.Board),
-            new TourStep("Milestones", "The roadmap to parity with Unity and beyond. START a checkpoint to open an engine session for it, right here.", () => Rail(Page.Milestones), Page.Milestones),
-            new TourStep("Notifications", "Prisma tells you what each run found and offers clean-ups - it never cleans up without asking.", () => Title("tbbell")),
+            new TourStep("Board", "Your bugs and tasks. Amoebius suggests new ones from your runs; nothing joins the board until you accept it.", () => Rail(Page.Board), Page.Board),
+            new TourStep("Notifications", "Amoebius tells you what each run found and offers clean-ups - it never cleans up without asking.", () => Title("tbbell")),
             new TourStep("Settings", "Looks and themes, the Claude account, updates and every installed version. Press ? in the top bar to see this tour again.", () => Rail(Page.Options), Page.Options),
         };
 

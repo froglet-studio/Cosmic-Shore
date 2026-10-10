@@ -322,9 +322,7 @@ namespace CosmicShore.UI
             // row non-invitable instead of letting the send fail at the service.
             // Re-evaluated on every party-member change (HandlePartyMemberChanged
             // repopulates the section), so rows free up when someone leaves.
-            // The GAME'S rule (4), not the transport capacity: gating the invite button on
-            // HasOpenSlots would offer a fifth and sixth seat that only exist as headroom.
-            bool localPartyFull = connectionData != null && !connectionData.HasOpenDisplaySlots;
+            bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
 
             entry.Populate(
                 player.PlayerId,
@@ -359,12 +357,11 @@ namespace CosmicShore.UI
             out string matchName)
         {
             memberCount = Mathf.Max(0, player.PartyMemberCount);
-            // ALWAYS the local display size (4). A remote's published PartyMaxSlots is only a
-            // fallback for a peer that has not published one, and it is CLAMPED to our own
-            // display size: a peer on an older build still publishes the transport capacity, and
-            // "x/6" must never reach the screen. The party size is a game rule, identical for
-            // everyone, so it is not actually a per-peer value at all.
-            int localDisplay = connectionData != null ? connectionData.PartyDisplaySlots : 0;
+            // ALWAYS the local party size (4). A remote's published PartyMaxSlots is only a
+            // fallback for a peer that has not published one: a peer on an older build may still
+            // publish 6, and "x/6" must never reach the screen. The party size is a game rule,
+            // identical for everyone, so it is not actually a per-peer value at all.
+            int localDisplay = connectionData != null ? connectionData.MaxPartySlots : 0;
             maxSlots = localDisplay > 0
                      ? localDisplay
                      : Mathf.Max(0, player.PartyMaxSlots);
@@ -634,8 +631,11 @@ namespace CosmicShore.UI
             if (!gameObject.activeSelf)
                 Show();
 
-            // If a row already exists for this sender, leave it (refresh of existing entry).
-            var existing = FindEntryByPlayerId<RequestInfoEntry>(_spawnedRequests, invite.HostPlayerId);
+            // If an INVITE row already exists for this sender, leave it (refresh of existing entry).
+            // By kind, like the friend-request path: a pending friend-request row from the same
+            // player used to count as "existing", so no invite row was made and - once the popup
+            // auto-hid - the player had no way left to accept the invite.
+            var existing = FindRequestEntryByKind(invite.HostPlayerId, RequestInfoEntry.Kind.PartyInvite);
             if (existing == null)
                 SpawnPartyInviteEntry(invite);
         }

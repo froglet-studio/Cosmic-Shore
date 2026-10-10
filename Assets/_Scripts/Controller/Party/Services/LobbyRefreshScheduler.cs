@@ -67,8 +67,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// How long (seconds) a single Boost() call keeps the scheduler in boosted
-        /// mode.  15s is long enough to cover a full invite round-trip including the
-        /// PENDING → real-id republish phase.
+        /// mode.  15s is long enough to cover a full invite round-trip: send, the
+        /// recipient's next poll, accept, and the join the host's admit-scan confirms.
         /// </summary>
         public const float BOOST_WINDOW_SECONDS = 15f;
 

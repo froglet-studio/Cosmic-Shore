@@ -72,6 +72,22 @@
    "track": null,
    "triangles": 278200
   },
+  "GrizzlyCharge": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16101,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 216196
+  },
+  "GrizzlyTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 8956
+  },
   "Headlong": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -181,6 +197,14 @@
    "track": "SkimRaceWaypointTrack",
    "triangles": 38116
   },
+  "Slingshot": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12312
+  },
   "Switchback": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -213,6 +237,14 @@
    "track": null,
    "triangles": 301700
   },
+  "Warpline": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12216
+  },
   "Waystation": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -243,5 +275,5 @@
   768,
   510
  ],
- "source_hash": "b05680f41b0b4caf89bdaf59fd9631d7be91cf6098e578eeee26e9f77ad1082e"
+ "source_hash": "9478c078c2af56747fbdb5efd307515aecbf0adf2d4e3143766ecef75dfbedb8"
 }

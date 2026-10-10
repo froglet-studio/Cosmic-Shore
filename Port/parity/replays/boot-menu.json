@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "scene": "Bootstrap",
+  "seed": 42,
+  "frames": 2400,
+  "checkpointEvery": 30,
+  "record": "600-2400:300",
+  "do": [],
+  "status": []
+}

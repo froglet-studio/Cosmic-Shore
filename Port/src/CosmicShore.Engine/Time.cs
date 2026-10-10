@@ -10,6 +10,7 @@ namespace CosmicShore.Engine
     {
         static float _frameDeltaTime;
         static bool _inFixedPhase;
+        static float _levelLoadTime;
 
         /// <summary>Scaled frame delta; reports <see cref="fixedDeltaTime"/> during FixedUpdate (original contract).</summary>
         public static float deltaTime => _inFixedPhase ? fixedDeltaTime : _frameDeltaTime;
@@ -23,6 +24,14 @@ namespace CosmicShore.Engine
         /// </summary>
         public static double timeAsDouble => time;
         public static float unscaledTime { get; private set; }
+
+        /// <summary>
+        /// Scaled seconds since the last Single scene load finished (original contract), marked by
+        /// <see cref="SceneManagement.SceneManager.NotifySceneLoaded(SceneManagement.Scene, SceneManagement.LoadSceneMode)"/>.
+        /// </summary>
+        public static float timeSinceLevelLoad => time - _levelLoadTime;
+
+        internal static void MarkLevelLoaded() => _levelLoadTime = time;
 
         /// <summary>
         /// Wall-clock seconds since startup in the original engine. Backed by the
@@ -67,6 +76,7 @@ namespace CosmicShore.Engine
             _inFixedPhase = false;
             unscaledDeltaTime = 0f;
             time = 0f;
+            _levelLoadTime = 0f;
             unscaledTime = 0f;
             timeScale = 1f;
             frameCount = 0;

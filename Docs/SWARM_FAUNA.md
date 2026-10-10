@@ -1392,7 +1392,7 @@ SwarmFauna (anchor, main thread)                               worker thread (Th
   prefab and each element's crystal models off `ElementalCrystalSetSO`. `DrawMembersOnGpu` off (or a device
   without vertex-stage structured buffers) = every member gets a GameObject as in round 6, warned once.
 - **Proxies.** A member within `EngageRadius` (160) of a vessel becomes a real `SwarmTadpoleFauna` - heart,
-  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (160) per swarm, created
+  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (155; 160 until 2026-10-08, §14.3) per swarm, created
   under the cell-wide `MaxSpawnsPerFrame` (24) and kept `ProxyLingerSeconds` (2) after it leaves range. Its
   living visuals are hidden (`Prism.SetOwnerHidden`: the render entity exists but is not drawn; crystal and
   spindle renderers off) because the GPU draw already shows it; `OnDeath` un-hides them first, so the
@@ -1439,6 +1439,12 @@ seeded floor (59,021 volume) already sits above RestlessEnter, so the food web i
 
 Worst case 978, asserted under `COLLIDER_CEILING` 1,200 by the author script. 2,295 starting tadpoles
 (up to ~2,880 if all three became whales) carry **zero** colliders.
+
+**2026-10-08 trim: `MaxProxies` 160 → 155.** Two merges that each passed the gate alone (the physarum
+sclerotium cap 5 → 8, +3 grove hearts; the NCA creatures, +4) put the cell at 1,178 + 23 = **1,201 / 1,200**
+together. Five fewer proxies per swarm frees 30 colliders: **1,148 + 23 = 1,171 / 1,200**. Only the five
+farthest of each swarm's nearest members lose their collider; members past the proxy set were already
+GPU-only. The ladder counts proxies as prisms, so `FrenzyEnter` moved 17,300 → 17,200.
 
 ### 14.4 Invariants - what holds, and what each costs
 
@@ -1906,6 +1912,11 @@ locked economy rule decides the cost (`Docs/ELEMENTAL_ECONOMY.md` §4): an **opp
 | Space | **locust** | a quarter of the cloud at a time, the quarter moving every `LocustPhaseSeconds` | read the shimmer and thread the safe gaps |
 | Time | **pack hunter** | startle above `HuntEnter` (0.2, earlier than the pufferfish), until below `DangerExit` | keep your distance; they turn on you early |
 
+**Fair burns (2026-10-08).** The pufferfish and the pack hunter now WIND UP: the plate goes up only after the
+startle has shown above its threshold for `PuffWindupSeconds` / `HuntWindupSeconds` (0.4 s each, the lab's
+bestiary `WINDUP`), so a strike never lands on the frame it is telegraphed (`SwarmTickJob.WindUp`;
+Docs/ELEMENTAL_ECONOMY.md §4.1 "Fair burns").
+
 `SwarmFaunaConfigSO.Bestiary` (default **on**, so every existing swarm config gets it without an asset edit) turns
 it off. The rule is `SwarmTickJob.BestiaryStrike`: pure per-member arithmetic on data the tick already had, no new
 neighbour queries, so the cost stays flat. Far members show the strike through the GPU tier colour; near ones get it
@@ -2060,7 +2071,9 @@ jobs.
 
 **What changed:**
 - **The pose is one function.** `SwarmBodyPose.PoseMatrix` is a scalar, Burst-compilable static function: field
-  reads, `MathF`, no `System.Numerics` method, no allocation. Two callers run it:
+  reads, `KernelMath` (never `MathF`: Burst cannot find `MathF`'s internal calls, and until 2026-10-07 this
+  job failed Burst compilation on `MathF.Sqrt` and ran managed; see `Docs/SUBSTRATE_FAUNA.md` §7.6), no
+  `System.Numerics` method, no allocation. Two callers run it:
   - **The game.** `SwarmPoseJob`, a `[BurstCompile] IJobParallelFor` in batches of 128, writes `float4x4`
     directly. It reads native copies of the published frame and of the shown-slot list, refreshed once per tick (two
     memcpys).
@@ -2069,6 +2082,13 @@ jobs.
     difference is 6e-5 u, which is float rounding at world coordinates.
   - **The Burst gate.** `check_burst_pose.py` runs inside `run.sh`. It is a textual check that the function stays
     inside what Burst compiles. Its negative control is the round-11a pose, which trips 5 rules.
+  - **Found 2026-10-08: `MathF.Sqrt` broke Burst for the whole game.** The pose first called `MathF.Sqrt`, as the
+    gate recommended. In Unity's Mono that is an InternalCall that Burst cannot link. Editor.log reads
+    `` Unable to find internal function `System.MathF::Sqrt` ``. Every Assembly-CSharp job shares one Burst library,
+    so from 10-05 every game job ran as managed code (`Docs/SUBSTRATE_FAUNA.md` §7.6, whose agent kernel had the
+    same defect; `Docs/SKIM_RACE_AI.md` §8.0k). The pose now calls `(float)Math.Sqrt`. That is a Burst intrinsic and bit-identical to `MathF.Sqrt`,
+    and R11d is unchanged. The gate now fails on any `MathF` member other than `Min/Max/Abs/PI` anywhere in
+    `SwarmBodyPose`, and on the 10-07 file it reports the one `MathF.Sqrt`.
 - **The job runs alongside other work.** `SwarmFauna.Update` schedules the job as soon as the frame's alpha is
   known and wakes the workers with `ScheduleBatchedJobs`. It then poses the proxies and issues the heart draw while
   the job runs.

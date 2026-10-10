@@ -67,8 +67,15 @@ namespace CosmicShore.Gameplay
                  "replicated unlock bit, per frame, so every peer lays the same tier.")]
         [SerializeField] bool massUpgradeShieldsInMassMode = true;
 
+        [Header("Camera")]
+        [Tooltip("Fraction of the camera's follow-offset HEIGHT kept in Mass mode. 0 puts the " +
+                 "camera directly behind the hull, level with it; Dust mode always keeps the " +
+                 "full authored height. Eased over widthBlendSeconds with the wake.")]
+        [SerializeField, Range(0f, 1f)] float massModeCameraHeight = 0f;
+
         public ModeInputStyle InputStyle => inputStyle;
         public float WidthBlendSeconds => Mathf.Max(0.05f, widthBlendSeconds);
+        public float MassModeCameraHeight => Mathf.Clamp01(massModeCameraHeight);
 
         /// <summary>
         /// The Mass-mode width multiplier at this vessel's Mass level — read through

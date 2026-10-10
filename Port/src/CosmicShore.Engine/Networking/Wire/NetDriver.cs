@@ -36,6 +36,9 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Allow a real transport (the player turns it on; headless tests stay single-process).</summary>
         public static bool Enabled { get; set; }
 
+        /// <summary>Opens the transport (TCP unless a test or a backend swaps it). Read at StartServer/StartClient.</summary>
+        internal static INetTransportFactory TransportFactory { get; set; } = new TcpTransportFactory();
+
         /// <summary>Verbose connection/spawn tracing (CS_PORT_TRACE_NET=1).</summary>
         static readonly bool Trace = Environment.GetEnvironmentVariable("CS_PORT_TRACE_NET") == "1";
 
@@ -44,7 +47,11 @@ namespace CosmicShore.Engine.Networking
             ConnectRequest = 1, ConnectAccept, ConnectReject, SceneReady, Spawn, Despawn, SyncComplete,
             NetVar, Rpc, Ownership, Parent, Transform, Named, SceneLoad, SceneLoadDone, SceneLoadEventCompleted,
             ClientConnected, ClientDisconnected, TimePing, TimePong,
+            // A pose with the network time it was taken at, for transforms on the unreliable channel.
+            TransformStamped,
         }
+
+        static NetDriver() => NetStats.KindName = b => ((Msg)b).ToString();
 
         sealed class ClientConn
         {
@@ -55,7 +62,7 @@ namespace CosmicShore.Engine.Networking
             public readonly List<byte[]> Pending = new();
         }
 
-        static NetSocket s_sock;
+        static INetTransport s_sock;
         static NetworkManager s_nm;
         static bool s_server;
         static readonly Dictionary<int, ClientConn> s_byPeer = new();
@@ -84,16 +91,17 @@ namespace CosmicShore.Engine.Networking
         internal static bool StartServer(NetworkManager nm, string address, int port)
         {
             Stop();
-            try { s_sock = NetSocket.Listen(address, port); }
+            try { s_sock = TransportFactory.Listen(address, port); }
             catch (Exception)
             {
-                try { s_sock = NetSocket.Listen(address, 0); }
+                try { s_sock = TransportFactory.Listen(address, 0); }
                 catch (Exception e) { Console.WriteLine($"[net] listen failed: {e.Message}"); s_sock = null; return false; }
             }
             s_nm = nm;
             s_server = true;
             s_timeBase = Now;
             s_nextClientId = 1;
+            NetStats.Reset(); // the stats describe this session
             Console.WriteLine($"[net] hosting on port {s_sock.ListenPort}");
             return true;
         }
@@ -107,7 +115,8 @@ namespace CosmicShore.Engine.Networking
             s_clientPaused = false;
             s_connectPayload = payload ?? Array.Empty<byte>();
             s_timeBase = Now;
-            s_sock = NetSocket.Connect(address, port, 10000);
+            NetStats.Reset();
+            s_sock = TransportFactory.Connect(address, port, 10000);
             Console.WriteLine($"[net] connecting to {address}:{port}");
         }
 
@@ -157,6 +166,7 @@ namespace CosmicShore.Engine.Networking
             foreach (var nt in s_transforms)
                 if (nt != null && nt.IsSpawned && !IsTransformAuthority(nt)) nt.PortInterpolate(now);
             CheckSceneEventTimeouts();
+            NetStats.EndFrame(now);
         }
 
         /// <summary>Post-late update: at the tick rate send dirty variables, authoritative transforms and clock pings.</summary>
@@ -172,8 +182,11 @@ namespace CosmicShore.Engine.Networking
             SendTransforms();
             if (!s_server && s_clientAccepted && (s_pingTimer -= 1f / tickRate) <= 0f)
             {
-                s_pingTimer = 2f;
-                var w = Begin(Msg.TimePing); w.Write(Now); SendRaw(0, End());
+                s_pingTimer = 1f;
+                // The client's latest RTT sample rides along, so the host's stats show every member's.
+                double rtt = -1;
+                foreach (var p in NetStats.Peers) if (p.ClientId == NetStats.ServerPeer) rtt = p.LastRttMs;
+                var w = Begin(Msg.TimePing); w.Write(Now); w.Write(rtt); SendRaw(0, End());
             }
         }
 
@@ -193,7 +206,24 @@ namespace CosmicShore.Engine.Networking
 
         static byte[] End() { s_w.Flush(); return s_ms.ToArray(); }
 
-        static void SendRaw(int peer, byte[] bytes) => s_sock?.Send(peer, bytes);
+        static void SendRaw(int peer, byte[] bytes) => SendRaw(peer, bytes, NetChannel.Reliable);
+
+        static void SendRaw(int peer, byte[] bytes, NetChannel channel)
+        {
+            if (s_sock == null) return;
+            NetStats.Sent(StatsPeer(peer), bytes, channel);
+            s_sock.Send(peer, bytes, -1, channel);
+        }
+
+        /// <summary>The channel the message being handled arrived on.</summary>
+        static NetChannel s_rxChannel;
+
+        /// <summary>The id the stats file a transport peer under: its client id, the server, or a unique pending id.</summary>
+        static ulong StatsPeer(int peer)
+        {
+            if (!s_server) return NetStats.ServerPeer;
+            return s_byPeer.TryGetValue(peer, out var c) && c.Approved ? c.Id : NetStats.PendingPeer - (ulong)peer;
+        }
 
         /// <summary>Server → one client; held until the client has its snapshot.</summary>
         static void ToClient(ClientConn c, byte[] bytes)
@@ -208,23 +238,25 @@ namespace CosmicShore.Engine.Networking
                 if (c.Id != except && (!syncedOnly || c.Synced)) ToClient(c, bytes);
         }
 
-        static void Handle(NetSocket.Event e)
+        static void Handle(NetEvent e)
         {
+            if (e.Kind == NetEventKind.Data) NetStats.Received(StatsPeer(e.Peer), e.Payload, e.Channel);
+            s_rxChannel = e.Channel;
             if (s_server) HandleServer(e);
             else HandleClient(e);
         }
 
         // ── Server side ─────────────────────────────────────────────
 
-        static void HandleServer(NetSocket.Event e)
+        static void HandleServer(NetEvent e)
         {
             var nm = s_nm;
             switch (e.Kind)
             {
-                case NetSocket.EventKind.Connected:
+                case NetEventKind.Connected:
                     s_byPeer[e.Peer] = new ClientConn { Peer = e.Peer };
                     return;
-                case NetSocket.EventKind.Disconnected:
+                case NetEventKind.Disconnected:
                     if (s_byPeer.Remove(e.Peer, out var gone) && gone.Approved) ServerClientGone(gone);
                     return;
             }
@@ -239,11 +271,13 @@ namespace CosmicShore.Engine.Networking
                 case Msg.NetVar: ReceiveVariable(r, c.Id); break;
                 case Msg.Rpc: NetRpc.Receive(r, c.Id); break;
                 case Msg.Transform: ReceiveTransform(r, c.Id); break;
+                case Msg.TransformStamped: ReceiveTransformStamped(r, c.Id); break;
                 case Msg.Named: ReceiveNamed(r, c.Id); break;
                 case Msg.SceneLoadDone: ServerSceneLoadDone(c.Id, r.ReadInt32()); break;
                 case Msg.TimePing:
                 {
                     double t = r.ReadDouble();
+                    if (r.BaseStream.Length - r.BaseStream.Position >= 8) NetStats.RttReport(c.Id, r.ReadDouble());
                     var w = Begin(Msg.TimePong); w.Write(t); w.Write(ServerNow()); SendRaw(c.Peer, End());
                     break;
                 }
@@ -267,6 +301,7 @@ namespace CosmicShore.Engine.Networking
                 s_sock.Disconnect(c.Peer);
                 return;
             }
+            NetStats.Rekey(NetStats.PendingPeer - (ulong)c.Peer, id);
             c.Id = id;
             c.Approved = true;
             c.Approval = response;
@@ -343,12 +378,12 @@ namespace CosmicShore.Engine.Networking
 
         // ── Client side ─────────────────────────────────────────────
 
-        static void HandleClient(NetSocket.Event e)
+        static void HandleClient(NetEvent e)
         {
             var nm = s_nm;
             switch (e.Kind)
             {
-                case NetSocket.EventKind.Connected:
+                case NetEventKind.Connected:
                 {
                     var w = Begin(Msg.ConnectRequest);
                     w.Write(s_connectPayload.Length);
@@ -356,7 +391,7 @@ namespace CosmicShore.Engine.Networking
                     SendRaw(0, End());
                     return;
                 }
-                case NetSocket.EventKind.Disconnected:
+                case NetEventKind.Disconnected:
                     ClientLost(string.IsNullOrEmpty(nm.DisconnectReason) ? "disconnected from server" : nm.DisconnectReason);
                     return;
             }
@@ -438,6 +473,7 @@ namespace CosmicShore.Engine.Networking
                 }
                 case Msg.Parent: ClientParent(r); break;
                 case Msg.Transform: ReceiveTransform(r, NetworkManager.ServerClientId); break;
+                case Msg.TransformStamped: ReceiveTransformStamped(r, NetworkManager.ServerClientId); break;
                 case Msg.Named: ReceiveNamed(r, NetworkManager.ServerClientId); break;
                 case Msg.SceneLoad: ClientSceneLoad(r.ReadString(), (LoadSceneMode)r.ReadByte(), r.ReadInt32()); break;
                 case Msg.SceneLoadEventCompleted: ClientSceneEventCompleted(r); break;
@@ -459,6 +495,7 @@ namespace CosmicShore.Engine.Networking
                 {
                     double sent = r.ReadDouble(), server = r.ReadDouble(), now = Now;
                     s_clientOffset = server + (now - sent) * 0.5 - now;
+                    NetStats.RttSample(NetStats.ServerPeer, (now - sent) * 1000.0);
                     break;
                 }
             }
@@ -955,6 +992,11 @@ namespace CosmicShore.Engine.Networking
                 var nt = s_transforms[i];
                 if (nt == null || !nt) { s_transforms.RemoveAt(i); continue; }
                 if (!nt.IsSpawned || !IsTransformAuthority(nt)) continue;
+                if (nt.UseUnreliableDeltas)
+                {
+                    SendStamped(nt);
+                    continue;
+                }
                 if (!nt.PortTakeOutgoing(out var p, out var q, out var s, out bool teleport)) continue;
                 var w = Begin(Msg.Transform);
                 w.Write(nt.NetworkObjectId);
@@ -971,6 +1013,62 @@ namespace CosmicShore.Engine.Networking
                 }
                 else SendRaw(0, bytes);
             }
+        }
+
+        /// <summary>
+        /// A transform that opted into UseUnreliableDeltas: each pose goes unreliably with the network time
+        /// it was taken at; a teleport, and the settled pose a quarter second after the last move, go reliably.
+        /// </summary>
+        static void SendStamped(NetworkTransform nt)
+        {
+            double now = Now;
+            NetChannel channel;
+            if (nt.PortTakeOutgoing(out var p, out var q, out var s, out bool teleport))
+                channel = teleport ? NetChannel.Reliable : NetChannel.Unreliable;
+            else if (nt.PortNeedsKeyframe(now, out p, out q, out s)) { teleport = false; channel = NetChannel.Reliable; }
+            else return;
+            var bytes = StampedMessage(nt.NetworkObjectId, NetObjects.BehaviourIndex(nt), ServerNow(), teleport, p, q, s);
+            if (s_server)
+            {
+                foreach (var c in s_byId.Values)
+                    if (c.Synced && (nt.IsServerAuthoritative() || c.Id != nt.OwnerClientId)) SendRaw(c.Peer, bytes, channel);
+            }
+            else SendRaw(0, bytes, channel);
+            nt.PortMarkSent(now, channel == NetChannel.Unreliable);
+        }
+
+        static byte[] StampedMessage(ulong id, ushort idx, double stamp, bool teleport, Vector3 p, Quaternion q, Vector3 s)
+        {
+            var w = Begin(Msg.TransformStamped);
+            w.Write(id); w.Write(idx); w.Write(stamp); w.Write(teleport);
+            w.Write(p.x); w.Write(p.y); w.Write(p.z);
+            w.Write(q.x); w.Write(q.y); w.Write(q.z); w.Write(q.w);
+            w.Write(s.x); w.Write(s.y); w.Write(s.z);
+            return End();
+        }
+
+        static void ReceiveTransformStamped(BinaryReader r, ulong sender)
+        {
+            ulong id = r.ReadUInt64();
+            ushort idx = r.ReadUInt16();
+            double stamp = r.ReadDouble();
+            bool teleport = r.ReadBoolean();
+            var p = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+            var q = new Quaternion(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+            var s = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+            if (NetObjects.Behaviour(id, idx) is not NetworkTransform nt) return;
+            var channel = s_rxChannel;
+            if (s_server)
+            {
+                if (nt.IsServerAuthoritative() || nt.OwnerClientId != sender) return;
+                if (!nt.PortAcceptStamp(stamp, teleport)) return;
+                nt.PortPushState(Now, p, q, s, teleport);
+                // Relayed on the channel it came on, with the owner's stamp, so every receiver orders it the same way.
+                var bytes = StampedMessage(id, idx, stamp, teleport, p, q, s);
+                foreach (var c in s_byId.Values)
+                    if (c.Id != sender && c.Synced) SendRaw(c.Peer, bytes, channel);
+            }
+            else if (!IsTransformAuthority(nt) && nt.PortAcceptStamp(stamp, teleport)) nt.PortPushState(Now, p, q, s, teleport);
         }
 
         static void ReceiveTransform(BinaryReader r, ulong sender)

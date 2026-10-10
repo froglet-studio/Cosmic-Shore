@@ -366,7 +366,7 @@ namespace CosmicShore.Gameplay
         // editor captures where Burst wasn't applied). Replaces the managed
         // 8000-prisms-per-frame slice, whose per-entry object-graph cost made
         // every recompute a ~10 ms reader-attributed frame spike at high prism
-        // counts (Docs/PERFORMANCE_OPTIMIZATION.md).
+        // counts (Docs/archive/PERFORMANCE_LOG_2026.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
 
         /// <summary>The three playable domains, hoisted to a static. These used to be
@@ -1158,7 +1158,7 @@ namespace CosmicShore.Gameplay
         /// oscillator - a frozen-solid cell is a valid state, not a defect to auto-correct.
         /// See Docs/ECOSYSTEM.md §0/§5.
         /// </summary>
-        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy;
+        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy && !DiagnosticProductionHold;
 
         /// <summary>
         /// True while new flora may be planted. Identical to <see cref="FloraGrowingEnabled"/>
@@ -1177,7 +1177,76 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool FaunaSpawningEnabled
         {
-            get { EnsureVolumeFresh(); return liveEnvVolumeTotal > 0f; }
+            get
+            {
+                if (DiagnosticProductionHold) return false;
+                EnsureVolumeFresh();
+                return liveEnvVolumeTotal > 0f;
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Diagnostic production hold - the DiagnosticsHUD `freeze` console command.
+        // ---------------------------------------------------------------------
+
+        /// <summary>
+        /// True while a DIAGNOSTIC production hold is in force on EVERY cell: no plant grows,
+        /// is planted or reproduces, no creature is seeded, born or grown onto a colony. It
+        /// exists for one reason - an A/B measurement is only valid between two arms taken in
+        /// the SAME state (Docs/PERFORMANCE_OPTIMIZATION.md §4.3), and a growing world is a
+        /// different world ten seconds later, so without a hold the arm measured second always
+        /// carries more mass than the arm measured first.
+        ///
+        /// <para>It is PRODUCTION gating and nothing else, the same class of gate Frenzy
+        /// already is (<see cref="FloraGrowingEnabled"/> is false at Frenzy, and that has always
+        /// been legal under the conserved-mass law): nothing is removed, nothing is aged, no
+        /// timer runs. Every ACTIVE force keeps working - grazing, predation, starvation,
+        /// vessel abilities - so a held world can only lose mass, never gain it, and fauna
+        /// aggression is untouched because <see cref="Phase"/> is not touched. Nothing banks
+        /// the held time either: every producer already turns its cycle whether or not it
+        /// produces (the lattice colony books, the worm colony, the seeders), so releasing the
+        /// hold resumes production at its ordinary rate rather than catching up.</para>
+        ///
+        /// <para>Settable only in the Editor and Development builds; in a Release build nothing
+        /// can raise it, so every read is a constant false. Reset at subsystem registration so
+        /// an editor session can never start held, and released by the owning switch on any
+        /// scene change so a measurement setting cannot escape into the next scene.</para>
+        /// </summary>
+        public static bool DiagnosticProductionHold { get; private set; }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>Raises or releases <see cref="DiagnosticProductionHold"/>. Diagnostics only.</summary>
+        public static void SetDiagnosticProductionHold(bool held) => DiagnosticProductionHold = held;
+#endif
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetDiagnosticProductionHold() => DiagnosticProductionHold = false;
+
+        // ---------------------------------------------------------------------
+        // Diagnostic read-outs - the DiagnosticsHUD `cells` console command.
+        // Read-only views of the private bootstrap state, so "why is this cell empty?" is one
+        // command rather than a code read. Nothing here changes behaviour.
+        // ---------------------------------------------------------------------
+
+        /// <summary>True once the first-crystal bootstrap has run: cytoplasm spawned, life spawner started.</summary>
+        public bool IsPostInitialized => postInitilized;
+
+        /// <summary>True while that bootstrap waits on a config this peer could not choose yet.</summary>
+        public bool IsPostInitDeferred => postInitDeferred;
+
+        /// <summary>The running life spawner's class name, or null when none runs.</summary>
+        public string ActiveSpawnerName => activeSpawner?.GetType().Name;
+
+        /// <summary>How this cell picks its config (Random / IntensityWise / EnvironmentFree).</summary>
+        public string ConfigChoiceName => cellTypeChoiceOptions.ToString();
+
+        /// <summary>
+        /// Live ENVIRONMENT volume (trail + flora; fauna bodies excluded) - the floor the
+        /// IntensityWise fauna loop needs above zero before it seeds anything.
+        /// </summary>
+        public float LiveEnvironmentVolume
+        {
+            get { EnsureVolumeFresh(); return liveEnvVolumeTotal; }
         }
 
         /// <summary>
@@ -1367,6 +1436,7 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             ActiveCells.Remove(this);
+            WarpFieldRuntime.Release(this);
 
             if (gameData != null)
                 gameData.OnInitializeGame.OnRaised -= Initialize;
@@ -1417,6 +1487,19 @@ namespace CosmicShore.Gameplay
                     grid?.Dispose();
                 countGrids.Clear();
             }
+
+            // The colony books are static and keyed by cell. ResetCell and Initialize retire this
+            // cell's entries, but a cell destroyed with its scene went through neither, and after
+            // the unload every Clear(cell) returns at its `!cell` guard - so the key could never be
+            // removed: each Menu_Main load leaked the previous colony's books (each entry pinning a
+            // destroyed AssembledFlora's object graph) and the colony census counted dead worlds'
+            // sites. `this` still passes the guard inside OnDestroy.
+            GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
         }
 
         void ResetCell()
@@ -1445,6 +1528,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -1560,6 +1644,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsFaunaAtCap(FaunaConfigurationSO config)
         {
+            // Every fauna producer that asks the cell asks HERE (the seeders, reproduction, the
+            // Microscene conveyor), so a diagnostic hold reads as "full" to all of them at once.
+            if (DiagnosticProductionHold) return true;
             int cap = ResolveFaunaCap(config);
             return cap > 0 && GetLiveFaunaCount(config) >= cap;
         }
@@ -1690,6 +1777,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsFloraAtCap(FloraConfigurationSO config)
         {
+            // Redundant with FloraPlantingEnabled at every current producer; kept so a producer
+            // that asks only for the cap still cannot plant through a diagnostic hold.
+            if (DiagnosticProductionHold) return true;
             int cap = ResolveFloraCap(config);
             return cap > 0 && GetLiveFloraCount(config) >= cap;
         }
@@ -1711,6 +1801,23 @@ namespace CosmicShore.Gameplay
 
         void Initialize()
         {
+            // Already bootstrapped by the first-crystal path (OnClientReady can land the first
+            // crystal inside InitDelayMs, so InitilizePostFirstCellItem ran the lazy Initialize
+            // AND started the spawner before OnInitializeGame arrived). The config is sticky
+            // (AssignConfig), the visuals and grids exist, so this pass has nothing to build -
+            // but it used to CLEAR every registry underneath a spawner that was already
+            // planting: the cell forgot its first wave (the seeder planted the floor again,
+            // species caps ignored the forgotten plants, their deaths decremented counts of
+            // plants still tracked) and their seed prisms left LiveVolume and the targeting
+            // grids. Rebind and refresh the stats only.
+            if (postInitilized && cellConfigData)
+            {
+                runtime.Cell = this;
+                runtime.EnsureCellStats(ID);
+                UpdateCellStats();
+                return;
+            }
+
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
@@ -1728,6 +1835,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -1994,6 +2102,11 @@ namespace CosmicShore.Gameplay
 
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
+
+            // The config's warp field, centred on this cell. A satellite never owns it: the field
+            // rescales the PLAYER, and a satellite is a world beside the one they are in.
+            if (cellConfigData.WarpField && !IsSatellite && Application.isPlaying)
+                WarpFieldRuntime.Activate(this, cellConfigData.WarpField, transform);
 
             if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
@@ -2531,6 +2644,7 @@ namespace CosmicShore.Gameplay
             liveFloraCounts.Clear();
             liveFauna.Clear();
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -2673,6 +2787,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -2820,6 +2935,9 @@ namespace CosmicShore.Gameplay
             nucleus = null;
             if (spawnedCytoplasm) spawnedCytoplasm.transform.SetParent(rootT, true);
             spawnedCytoplasm = null;
+
+            // The retiring world's warp field eases out with it (a no-op if it had none).
+            WarpFieldRuntime.Release(this);
 
             return root;
         }
@@ -3256,13 +3374,27 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetDensestRegionAnyDomain()
         {
-            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
-                return GetCellAnchorPosition();
-
-            var region = anyGrid.FindDensestRegion();
-            if (anyGrid.LastResultDensity <= 0f)
-                return GetCellAnchorPosition();
+            TryGetDensestRegionAnyDomain(out var region);
             return region;
+        }
+
+        /// <summary>
+        /// <see cref="GetDensestRegionAnyDomain"/> as a QUESTION: false when the cell holds no
+        /// mass at all, in which case <paramref name="region"/> is the same anchor fallback the
+        /// demand form returns. Lets a caller that has a better idea than "the crystal" for an
+        /// empty cell (the Spawn Matrix releasing into the Barren cell) tell the two apart.
+        /// </summary>
+        public bool TryGetDensestRegionAnyDomain(out Vector3 region)
+        {
+            region = GetCellAnchorPosition();
+            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
+                return false;
+
+            var densest = anyGrid.FindDensestRegion();
+            if (anyGrid.LastResultDensity <= 0f)
+                return false;
+            region = densest;
+            return true;
         }
 
         /// <summary>

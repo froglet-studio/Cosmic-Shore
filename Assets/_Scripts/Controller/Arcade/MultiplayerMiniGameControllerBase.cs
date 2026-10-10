@@ -122,6 +122,10 @@ namespace CosmicShore.Gameplay
             }
             ResetReadyGate();
             ResetRematchVotes();
+
+            // A replay fade still armed (the vessel never readied) must not outlive this
+            // controller: GameDataSO does, and the next scene's OnClientReady would call into it.
+            gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
             
             UnsubscribeFromSessionEvents();
             
@@ -164,11 +168,34 @@ namespace CosmicShore.Gameplay
         {
             try
             {
+                // On replay scene reload, fade in once the player vessel is ready.
+                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
+                //
+                // Subscribed BEFORE the InitDelayMs wait, not after it: on a reload the persistent
+                // human Players are re-processed at the vessel initializer's OnNetworkSpawn and the
+                // host's vessel spawns after preSpawnDelayMs (~200 ms; a client's pair lands after
+                // postSpawnDelayMs too), so OnClientReady fires inside the 1000 ms window.
+                // Subscribed after it, the fade was missed and Play Again left the screen black.
+                // The fade itself still waits for InitializeGame below, so it never reveals the
+                // scene earlier than before.
+                _replayGameInitialized = false;
+                _replayFadeDeferred = false;
+                if (gameData.IsReplayReload)
+                {
+                    gameData.IsReplayReload = false;
+                    gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                }
+
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}");
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
                 {
-                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                    // Bound to this controller: destroyed inside the wait (a client bounced by host
+                    // loss, a quick quit), InitializeGame would otherwise fire into the NEXT scene's
+                    // listeners and the server branch would run on a dead controller.
+                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime,
+                        cancellationToken: this.GetCancellationTokenOnDestroy());
                 }
 
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}");
@@ -178,12 +205,12 @@ namespace CosmicShore.Gameplay
                     gameData.InitializeGame();
                 }
 
-                // On replay scene reload, fade in once the player vessel is ready.
-                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
-                if (gameData.IsReplayReload)
+                // The replay fade-in, if OnClientReady already arrived during the wait.
+                _replayGameInitialized = true;
+                if (_replayFadeDeferred)
                 {
-                    gameData.IsReplayReload = false;
-                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                    _replayFadeDeferred = false;
+                    RevealAfterReplayReload();
                 }
 
                 if (!IsServer)
@@ -520,7 +547,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// This lives on the BASE because it was written twice - once in
-        /// <c>MultiplayerDomainGamesController</c>, once in <c>CoOpWildlifeBlitzMiniGame</c> - and
+        /// <c>MultiplayerDomainGamesController</c>, once in the retired <c>CoOpWildlifeBlitzMiniGame</c> - and
         /// both copies carried the same two defects. Two copies of a rule is how the second one
         /// gets forgotten, and a third mode would have written a third.
         /// </para>
@@ -588,6 +615,7 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                 $"[FLOW-9] [{GetType().Name}] All players ready - starting countdown.");
+            NetSessionRecorder.Mark("readyGate", $"{GetType().Name}: {because}");
             _readyClients.Clear();
             OnAllPlayersReady();
         }
@@ -776,10 +804,26 @@ namespace CosmicShore.Gameplay
                 _sceneLoader?.ArmClientMenuReturnWatchdog("Return to menu (host-driven)");
         }
 
+        // Play Again (scene reload): OnClientReady can arrive before InitializeGame has run, and
+        // the fade waits for whichever of the two comes second.
+        bool _replayGameInitialized;
+        bool _replayFadeDeferred;
+
         private void FadeFromBlackOnReplay()
         {
             gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
 
+            if (!_replayGameInitialized)
+            {
+                _replayFadeDeferred = true;
+                return;
+            }
+
+            RevealAfterReplayReload();
+        }
+
+        private void RevealAfterReplayReload()
+        {
             // Play Again reloads bypass SceneLoader.LoadSceneAsync entirely, so
             // neither host nor clients would ever take the scheduled scene-change
             // GC on repeated replays. This runs on every peer with the overlay
@@ -800,9 +844,10 @@ namespace CosmicShore.Gameplay
             gameData.ResetPlayers();
 
             // A rematch is a new GAME, so the round/turn counters start from zero on EVERY peer.
-            // This in-place path (Cellular Duel is the one mode that does not reload the scene)
-            // reset the scores but not these two, so the rematch started with the previous game's
-            // RoundsPlayed: it ended early, and OnlineDuelForTheCellController.SetupNewRound saw
+            // This in-place path (OnlineDuelForTheCellController, which CoOp Wildlife Blitz runs
+            // on, does not reload the scene) reset the scores but not these two, so the rematch
+            // started with the previous game's RoundsPlayed: it ended early, and
+            // OnlineDuelForTheCellController.SetupNewRound saw
             // RoundsPlayed > 0 on the first round and swapped vessels straight away (BH-1.6).
             // Only the two counters - GameDataSO.ResetRuntimeDataForReplay also clears
             // GameConfigSynced and the spawn poses, which a live multiplayer session must keep.

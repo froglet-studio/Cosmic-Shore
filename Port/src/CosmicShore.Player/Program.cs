@@ -9,9 +9,11 @@ namespace CosmicShore.Player
     /// CosmicShore — the port's player. Boots build scene 0 (Bootstrap) and lets the real
     /// game take it from there.
     ///
-    ///   CosmicShore [--scene NAME] [--size WxH] [--screenshot out.png] [--frames N]
+    ///   CosmicShore [--scene NAME] [--arcade MODE] [--size WxH] [--screenshot out.png] [--frames N]
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
-    ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
+    ///   CosmicShore --headless [--realtime] [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
+    ///   CosmicShore [--headless] --replay FILE --parity-out DIR     (parity harness, see ParityRun)
+    ///   CosmicShore --random-golden DIR --seeds S1,S2,...
     ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
     ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G] [--recycle-mb MB]
     ///
@@ -19,7 +21,10 @@ namespace CosmicShore.Player
     /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
     ///
     /// --headless ticks the engine with no window at a fixed 60 Hz for N frames (default
-    /// 600) and prints a scene/log summary — the fast loop for chasing boot problems.
+    /// 600) and prints a scene/log summary — the fast loop for chasing boot problems. --realtime (or
+    /// COSMIC_SHORE_HEADLESS_REALTIME=1) paces those ticks to the wall clock, which a multiplayer run
+    /// needs: other processes, the session folder and the sockets all run on wall time
+    /// (<see cref="RealtimePacer"/>, docs/MULTIPLAYER.md §6.1).
     ///
     /// --train runs the game's own AI genetic training headless (see <see cref="TrainingHost"/>);
     /// "replay" re-scores the generation the session asset scored in Unity and reports the disparity.
@@ -29,6 +34,9 @@ namespace CosmicShore.Player
     /// </summary>
     public static class Program
     {
+        /// <summary>--realtime: a headless run keeps game time on the wall clock.</summary>
+        static bool s_realtime = RealtimePacer.RequestedByEnvironment;
+
         /// <summary>
         /// Quality from the engine's own Project Settings (Port/ProjectSettings/PrismaProject.json),
         /// before environment variables and arguments, which override it for one run.
@@ -61,6 +69,7 @@ namespace CosmicShore.Player
             string trainDir = null, resume = null, evalPopulation = null;
             int recycleMb = 2500, controlPort = 0;
             string sessionReport = null;
+            string replay = null, parityOut = null, randomGolden = null, seedList = null;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
@@ -71,9 +80,11 @@ namespace CosmicShore.Player
                 switch (args[i])
                 {
                     case "--scene" when i + 1 < args.Length: scene = args[++i]; break;
+                    case "--arcade" when i + 1 < args.Length: ArcadeAutoStart.Mode = args[++i]; break;
                     case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--headless": headless = true; break;
+                    case "--realtime": s_realtime = true; break;
                     case "--render-from" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.RenderFrom); break;
                     case "--quiet": quiet = true; break;
                     case "--yaml-roundtrip" when i + 2 < args.Length:
@@ -107,17 +118,54 @@ namespace CosmicShore.Player
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
+                    case "--check-shaders": PlayerWindow.CheckShaders = true; break;
+                    case "--shader-gallery" when i + 1 < args.Length:
+                    {
+                        var spec = args[++i];
+                        int c = spec.IndexOf(':');
+                        int.TryParse(c > 0 ? spec[..c] : spec, out PlayerWindow.GalleryFrame);
+                        PlayerWindow.GalleryLegend = c > 0 ? spec[(c + 1)..] : null;
+                        break;
+                    }
+                    case "--view-model" when i + 1 < args.Length: ModelViewer.Path = args[++i]; break;
+                    case "--relay-server":
+                    {
+                        // --relay-server [UDP_PORT] [HTTP_PORT] [ADVERTISED_HOST]: run Froglet's relay and nothing else.
+                        int udp = 0, http = 0;
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int u)) { udp = u; i++; }
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int h)) { http = h; i++; }
+                        string host = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : "127.0.0.1";
+                        return RelayServerMain(udp, http, host);
+                    }
+                    case "--ugs-relay-check":
+                    {
+                        // --ugs-relay-check [REGION]: sign in two UGS players, allocate, join by code, connect through UGS
+                        // Relay and time frames both ways (docs/MULTIPLAYER.md §6.8). Touches the live UGS project.
+                        string region = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : null;
+                        return UgsRelayCheckMain(region);
+                    }
+                    case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
                     case "--render-scale" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.RenderScale); break;
                     case "--no-vsync": CosmicShore.Render.RenderQuality.VSync = false; break;
+                    // --gc-latency low: .NET's SustainedLowLatency (no blocking gen-2 collections while
+                    // memory allows), for an A/B of GC pauses against the default Interactive mode.
+                    case "--gc-latency" when i + 1 < args.Length:
+                        System.Runtime.GCSettings.LatencyMode = args[++i] is "low" or "sustained"
+                            ? System.Runtime.GCLatencyMode.SustainedLowLatency : System.Runtime.GCLatencyMode.Interactive;
+                        break;
                     case "--fps" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.TargetFps); break;
                     case "--aniso" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.Anisotropy); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
                     case "--do" when i + 1 < args.Length: script.Add(args[++i]); break;
+                    case "--replay" when i + 1 < args.Length: replay = args[++i]; break;
+                    case "--parity-out" when i + 1 < args.Length: parityOut = args[++i]; break;
+                    case "--random-golden" when i + 1 < args.Length: randomGolden = args[++i]; break;
+                    case "--seeds" when i + 1 < args.Length: seedList = args[++i]; break;
                     case "--shot" when i + 1 < args.Length:
                     {
                         var spec = args[++i];
@@ -128,6 +176,13 @@ namespace CosmicShore.Player
                     case "--record" when i + 1 < args.Length:
                         if (!FrameRecorder.TryAdd(args[++i])) Console.WriteLine($"[player] --record expects DIR:FROM-TO[:EVERY], got '{args[i]}'");
                         break;
+                    case "--position" when i + 1 < args.Length:
+                    {
+                        // --position X,Y: where the window opens (the MULTIPLAYER panel tiles its players).
+                        var xy = args[++i].Split(',');
+                        if (xy.Length == 2 && int.TryParse(xy[0], out int px) && int.TryParse(xy[1], out int py)) PlayerWindow.StartPosition = (px, py);
+                        break;
+                    }
                     case "--size" when i + 1 < args.Length:
                     {
                         var wh = args[++i].Split('x');
@@ -136,6 +191,16 @@ namespace CosmicShore.Player
                     }
                 }
             }
+
+            if (randomGolden != null)
+                return ParityRun.WriteRandomGoldens(randomGolden, (seedList ?? "0").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse));
+            if (replay != null)
+            {
+                var record = ParityRun.LoadReplay(replay, script, ref scene, ref seed, ref frames);
+                if (record != null && parityOut != null && !headless && !FrameRecorder.TryAdd(System.IO.Path.Combine(parityOut, "frames") + ":" + record))
+                    Console.WriteLine($"[parity] bad record spec '{record}'");
+            }
+            if (parityOut != null) ParityRun.Begin(parityOut);
 
             CosmicShore.Render.RenderQuality.Clamp();
             if (!wantTrain) SessionReport.Begin(sessionReport);
@@ -187,6 +252,67 @@ namespace CosmicShore.Player
                 SessionReport.Write("crash", e);
                 return 2;
             }
+            finally { ParityRun.End(); }
+        }
+
+        /// <summary>
+        /// Froglet's relay as a process (docs/MULTIPLAYER.md §6.7): the Relay Allocations REST shape on HTTP_PORT
+        /// and Unity Relay's message protocol on UDP_PORT. Players use it with COSMIC_SHORE_RELAY=&lt;the URL it prints&gt;.
+        /// COSMIC_SHORE_RELAY_SECRET makes allocating need that bearer token. Runs until killed (Ctrl+C).
+        /// </summary>
+        static int RelayServerMain(int udpPort, int httpPort, string advertisedHost)
+        {
+            using var relay = CosmicShore.Engine.Networking.FrogletRelayServer.Start(udpPort, httpPort, advertisedHost);
+            relay.Secret = Environment.GetEnvironmentVariable("COSMIC_SHORE_RELAY_SECRET") is { Length: > 0 } secret ? secret.Trim() : null;
+            Console.WriteLine($"[relay] listening: udp {relay.UdpPort}, allocations {relay.BaseUrl} (COSMIC_SHORE_RELAY={relay.BaseUrl})");
+            Console.WriteLine(relay.Secret != null
+                ? "[relay] allocating needs the secret: players set COSMIC_SHORE_RELAY_SECRET to the same value"
+                : "[relay] allocating is open to anyone who reaches this port (set COSMIC_SHORE_RELAY_SECRET before facing the internet)");
+            var quit = new System.Threading.ManualResetEventSlim();
+            Console.CancelKeyPress += (_, e) => { e.Cancel = true; quit.Set(); };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => quit.Set();
+            long lastForwarded = -1;
+            while (!quit.Wait(30000))
+            {
+                if (relay.Forwarded == lastForwarded) continue;
+                lastForwarded = relay.Forwarded;
+                Console.WriteLine($"[relay] {relay.AllocationCount} allocation(s), {relay.Forwarded} forwarded, {relay.Refused} refused, binds {relay.BindsAccepted} ok / {relay.BindsRejected} rejected");
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// The owner's one-command proof that UGS Relay works from Prisma (docs/MULTIPLAYER.md §6.8): two UGS
+        /// players (each keeps its session token in this profile's folder, so repeated runs reuse the same two),
+        /// a host allocation and join code, a join, a connection through the relay and timed frames both ways.
+        /// Exit 0 = PASS. It creates players in the live project on its first run, so it runs only when asked.
+        /// </summary>
+        static int UgsRelayCheckMain(string region)
+        {
+            var root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
+            CosmicShore.Engine.Networking.UgsAuthentication host, joiner;
+            try
+            {
+                host = UgsSetup.SignIn(root, "ugs-relay-check-host.token");
+                joiner = UgsSetup.SignIn(root, "ugs-relay-check-join.token");
+            }
+            catch (InvalidOperationException e) { Console.WriteLine("[relay-check] " + e.Message); return 2; }
+            Console.WriteLine($"[relay-check] UGS project {host.ProjectId}{(host.Environment != null ? ", environment " + host.Environment : " (default environment)")}, region {region ?? "chosen by the service"}");
+            try
+            {
+                host.GetAccessTokenAsync().GetAwaiter().GetResult();
+                Console.WriteLine($"[relay-check] host signed in ({host.LastSignIn}): player {host.PlayerId}");
+                joiner.GetAccessTokenAsync().GetAwaiter().GetResult();
+                Console.WriteLine($"[relay-check] joiner signed in ({joiner.LastSignIn}): player {joiner.PlayerId}");
+            }
+            catch (Exception e) when (e is CosmicShore.Engine.Networking.UgsServiceException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException or FormatException)
+            {
+                Console.WriteLine("[relay-check] FAILED at 'sign in': " + e.Message);
+                Console.WriteLine("[relay-check] FAIL");
+                return 1;
+            }
+            var r = CosmicShore.Engine.Networking.RelayCheck.RunAsync(UgsSetup.UgsRelay(host), UgsSetup.UgsRelay(joiner), Console.Out, region).GetAwaiter().GetResult();
+            return r.Passed ? 0 : 1;
         }
 
         static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null)
@@ -205,17 +331,21 @@ namespace CosmicShore.Player
             string lastScene = SceneManager.GetActiveScene().name;
             int frameNow = 0;
             SessionReport.Frame = () => frameNow;
+            var pacer = s_realtime && train == null ? new RealtimePacer(1.0 / 60.0) : null;
             for (int f = 0; f < frames && !quit; f++)
             {
                 frameNow = f;
                 script.BeforeTick(f);
+                ArcadeAutoStart.Tick(f);
                 control?.BeforeTick(f);
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
                 boot.Tick(1f / 60f);
+                ParityRun.AfterTick(f);
                 double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;
                 SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick
                 SessionReport.SimTime(tickMs);
+                pacer?.AfterTick();
                 if (train != null)
                 {
                     train.Poll(f);

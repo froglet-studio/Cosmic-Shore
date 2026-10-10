@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4e56d9c2764496f97787938466f0b3f, type: 3}
+  m_Name: BlackHoleConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.BlackHoleConfigSO
+  gmPerStrength: 2000
+  horizonPerStrength: 2
+  minHorizonRadius: 1.5
+  influenceAccelerationFloor: 0.6
+  maxInfluenceRadius: 900
+  spin: 0.9
+  releaseDamping: 1.5
+  releaseSpeed: 0.75
+  maxSubsteps: 8
+  maxBodies: 6000
+  maxBlackHoles: 4
+  admissionInterval: 0.1
+  pullVessels: 1
+  vesselPullScale: 1
+  maxVesselPullSpeed: 90
+  warpEnabled: 1
+  tidalResponseSeconds: 0.9
+  maxTidalStretch: 12
+  vesselTideScale: 0.08
+  warpReachMultiplier: 6
+  warpEaseSeconds: 0.5
+  lensEnabled: 1
+  lensRadiusMultiplier: 30
+  lensFadeStart: 0.55
+  lensSteps: 128
+  lensSkyResolution: 1024
+  lensSkyFacesPerFrame: 1
+  whiteCoreBrightness: 4
+  whiteCoreSkyMix: 0.8
+  spawnStrength: 10
+  spawnHorizonRadius: 0
+  spawnAheadOfCamera: 1
+  spawnDistanceHorizons: 6
+  spawnPosition: {x: 0, y: 0, z: 0}
+  spawnVelocity: {x: 0, y: 0, z: 0}
+  spawnSpinAxis: {x: 0, y: 0, z: 1}
+  pairAheadHorizons: 3
+  pairHalfGapHorizons: 4
+  pairDriftSpeed: 20
+  pairLifetime: 5
+  pairCloseRampSeconds: 0.6
+  crystalPairs: 0
+  crystalFormSeconds: 0.6
+  crystalStandSeconds: 0.05
+  crystalAnnihilateSeconds: 3.35
+  crystalReplaceSeconds: 0.4
+  crystalLensStrength: 0.6
+  crystalFeltStrength: 4
+  crystalFeltCap: 1.3
+  crystalFeltReach: 12
+  crystalSpiralTurns: 2.5
+  crystalBeatCycles: 7
+  crystalBeatDepth: 0.5
+  crystalMouthMaterial: {fileID: 2100000, guid: 7b025f919c16662b7fcec10a7a1937bb, type: 2}
+  crystalMouthExactRange: 2500
+  crystalMouthExactFadeBand: 600
+  crystalMouthExactRenderScale: 0.75
+  crystalMouthPanoramaFaceSize: 256

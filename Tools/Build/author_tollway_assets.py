@@ -42,9 +42,14 @@ import math
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - committed_scene (the clone's stand-down)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from arcade_mode_lib import wrap_yaml_scalar  # noqa: E402
 
 
 def guid(name: str) -> str:
@@ -112,17 +117,22 @@ EXISTING = {
     "CactiFloraMass":          "3c7234ddfb27413fa43e7640d54027c5",
     "CactiFloraSpace":         "e2677134f5ac45c5985e5c24cdf31a20",
     "CactiFloraTime":          "d182188565e8421bb0fa6a13dfebb0bb",
-    "QuasicrystalFloraPrefab": "eff83db54b6d4f7d98bfc3b42b8d1487",
-    "QuasicrystalFloraCharge": "fcf139eca19845ecbb5cea2d491214c6",
-    "QuasicrystalFloraMass":   "47624b4efa994b9296f16723e5c87482",
-    "QuasicrystalFloraSpace":  "f2677d56069e48aa85354b70616a650b",
-    "QuasicrystalFloraTime":   "d8ebac2e7c7b4e64ad1e307c036b4a3f",
+    # Borromean: the canonical element assets are OWNED by author_borromean_flora_assets.py
+    # (per-element plate, budget and heart). This cell only QUOTES them through its palette.
+    "BorromeanFloraPrefab":    "421bf59ddd3f6def5e0ad21fb5cbbcf1",
+    "BorromeanFloraCharge":    "e61deb54b42a17dc301eedd9cf2a3b2a",
+    "BorromeanFloraMass":      "46383de74eda38d7fc0f12e180a2bef3",
+    "BorromeanFloraSpace":     "06f079efbc163df424ab2731dc9267eb",
+    "BorromeanFloraTime":      "53ee29f1406fdd26f9c5fddefd961fe0",
     "CellIcon":        "6aa1c06e11b265744a5f9fa8858ac72a",
     "MembranePrefab":  "6e330f85972faf843b8a128e7166f7b5",
     "NucleusPrefab":   "b9cf1833fa2493d4b8724ccb6740fb3a",
     "CytoplasmPrefab": "9cacd903fcf4643459f5f14ac811bb20",
     # shared content
     "Vessel_Scarab":   "b136d82d275e0f8ea1feef29f0d416a4",
+    # the mode's own /cardart render (Assets/_Graphics/ARCADE/CardBackgrounds/Tollway.png).
+    # The card used to be emitted with a null background, so a re-run blanked the shipped art.
+    "CardBackground":  "92aaf6bf1b264e93aa97832ab6f1cc82",
 }
 
 # ── The race ─────────────────────────────────────────────────────────────────
@@ -168,18 +178,23 @@ ANCHOR_OUTER = round(ANCHOR_COURT_OUTER * COURT_RADII[0] / MEMBRANE_RADIUS, 4)  
 # ── ONE FLORA FAMILY PER INTENSITY ──────────────────────────────────────────
 # Intensity here is TRAFFIC (court radius up, crystal count down), and the anchor field is the
 # one thing a pilot reads the court by - so each of the four settings grows a COMPLETELY
-# DIFFERENT KIND OF PLANT, not four variations on one. The project ships three growth families
-# and all three are represented:
+# DIFFERENT KIND OF PLANT, not four variations on one. The project ships FIVE growth families
+# now (Phyllotactic, Assembled, Branching, Borromean, Mandelbulb) and four intensities can show
+# four of them, one each:
 #
 #   Spire         PhyllotacticFlora   a collared pillar, grown from a root
 #   Gyroid        AssembledFlora      a triply-periodic minimal surface of plates
 #   Cacti         BranchingFlora      a squat branching cactus of fat 5x5x3 pads
-#   Quasicrystal  AssembledFlora      an aperiodic cage of long thin struts
+#   Borromean     BorromeanFlora      a closed minimal membrane of combed plates, 108-222u across
 #
-# Gyroid and Quasicrystal share a growth COMPONENT and share nothing a player can see: one is a
-# smooth surface of 7x4.5x3.5 plates, the other a needle cage whose struts run to 44 units. The
-# family assert below is on the component (three families across four intensities is the most the
-# project can offer); the LOOK is what the roster is actually chosen for.
+# I4 was the Quasicrystal (AssembledFlora) while the project shipped three families; when the
+# Borromean and Mandelbulb families landed, two of four settings growing one component became a
+# real repeat and the family gate below went red. The Borromean took the slot rather than a
+# Mandelbulb-family species because a Mandelbulb plant is a 2,900-4,150 prism budget - fourteen
+# of them is a 40-58k-prism anchor field, against the Borromean's 180-360 (avg 261) per plant -
+# and because it still keeps the one-plant volume ladder rising (~5.6k volume a plant against
+# the Cacti's 3k). The Gyroid keeps I2, so the intensity-2 arena the card art renders from is
+# unchanged. The family assert is on the COMPONENT; the LOOK is what the roster is chosen for.
 #
 # Ordered by STANDING VOLUME, which here is also roughly "how big it reads": the court grows
 # 480 -> 720 and the marker grows with it.
@@ -202,7 +217,7 @@ ANCHOR_OUTER = round(ANCHOR_COURT_OUTER * COURT_RADII[0] / MEMBRANE_RADIUS, 4)  
 # General rule worth carrying: **before gating a design on a clearance, find out what actually
 # has to pass through the gap** - the thing that threads a Tollway ring is the one object in the
 # game with no prism collision at all.
-ANCHOR_SPECIES = ["Spire", "Gyroid", "Cacti", "Quasicrystal"]
+ANCHOR_SPECIES = ["Spire", "Gyroid", "Cacti", "Borromean"]
 
 # One cell config, one spawn profile and one anchor-flora config per intensity. Named the way
 # every other IntensityWise mode names them (`<Mode> Cell Config 1..4`), so the folder reads the
@@ -216,12 +231,13 @@ for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
 
 # A per-plant prism budget the CELL imposes, or None to keep the species' own.
 #
-# A LATTICE species keeps its own: its budget is GEOMETRY (a gyroid octagon is 24 prisms around
-# one crystal, a quasicrystal heart cell is one vertex's tree of struts), so a cell-imposed
-# number does not thin the plant, it truncates a shape mid-figure - "plant COUNT is the only
-# lever" (`Docs/ECOSYSTEM.md` 32.7/36). Spire and Cacti grow to whatever budget they are given,
-# and 40 keeps them markers rather than scenery.
-ANCHOR_PRISM_BUDGET = {"Spire": 40, "Gyroid": None, "Cacti": 40, "Quasicrystal": None}
+# A LATTICE or SURFACE species keeps its own: its budget is GEOMETRY (a gyroid octagon is 24
+# prisms around one crystal; a Borromean element is a finished closed membrane, 180/216/288/360
+# prisms for Charge/Mass/Space/Time), so a cell-imposed number does not thin the plant, it
+# truncates a shape mid-figure - "plant COUNT is the only lever" (`Docs/ECOSYSTEM.md` 32.7/36,
+# flora skill 7.1 "quote the per-plant budget, never re-author it"). Spire and Cacti grow to
+# whatever budget they are given, and 40 keeps them markers rather than scenery.
+ANCHOR_PRISM_BUDGET = {"Spire": 40, "Gyroid": None, "Cacti": 40, "Borromean": None}
 
 LIFEFORM_DIR = "Assets/_SO_Assets/Lifeforms"
 FLORA_PREFAB_DIR = "Assets/_Prefabs/FloraAndFauna"
@@ -306,6 +322,7 @@ ANCHOR_SITES = {}
 ANCHOR_FAMILY = {}
 ANCHOR_COMPONENT_FILEID = {}
 ANCHOR_BUDGET = {}
+ANCHOR_PLANT_VOLUME = {}
 
 _script_names = {}
 for _dirpath, _dirnames, _filenames in os.walk(os.path.join(ROOT, SCRIPTS_DIR)):
@@ -367,17 +384,32 @@ for _sp in ANCHOR_SPECIES:
 
     assert all(v is not None for v in _vols), \
         f"{_sp} authors no leaf size on its elements OR its prefab - its forest would price at 0"
-    ANCHOR_LEAF_VOLUME[_sp] = round(sum(_vols) / len(_vols), 2)
     assert len(_sites) <= 1, f"{_sp}'s elements disagree about PreferredSites: {_sites}"
     ANCHOR_SITES[_sp] = _sites.pop() if _sites else None
 
+    # Price the plant PER ELEMENT and average, because SpreadElements rolls the four uniformly
+    # and a species that keeps its own budget may grow a different one per element (the
+    # Borromean four are 180/216/288/360 prisms on four different plates). Averaging the budget
+    # and the leaf separately and multiplying would price a product of means rather than the
+    # mean plant: for the Borromean that is ~6,240 volume a plant against the true ~5,612. For a
+    # species whose elements agree on the budget the two are identical, so the three uniform
+    # species price exactly as before.
     _override = ANCHOR_PRISM_BUDGET[_sp]
     if _override is None:
-        assert len(set(_budgets)) == 1 and _budgets[0], \
-            f"{_sp} keeps its own geometry budget but its elements disagree: {_budgets}"
-        ANCHOR_BUDGET[_sp] = _budgets[0]
+        assert all(_budgets), \
+            f"{_sp} keeps its own geometry budget but an element authors none: {_budgets}"
+        _per_element = list(_budgets)
     else:
-        ANCHOR_BUDGET[_sp] = _override
+        _per_element = [_override] * len(ELEMENTS)
+    ANCHOR_BUDGET[_sp] = sum(_per_element) / len(_per_element)
+    if len(set(_per_element)) == 1:
+        # Uniform budget: budget x the (2dp) leaf mean, exactly as the shipped ladders priced it.
+        ANCHOR_LEAF_VOLUME[_sp] = round(sum(_vols) / len(_vols), 2)
+        ANCHOR_PLANT_VOLUME[_sp] = ANCHOR_BUDGET[_sp] * ANCHOR_LEAF_VOLUME[_sp]
+    else:
+        ANCHOR_PLANT_VOLUME[_sp] = sum(b * v for b, v in zip(_per_element, _vols)) / len(_vols)
+        # Effective leaf: what one prism of the mean plant weighs (printed summary only).
+        ANCHOR_LEAF_VOLUME[_sp] = round(ANCHOR_PLANT_VOLUME[_sp] / ANCHOR_BUDGET[_sp], 2)
 
 # How many anchors the court offers. ONE number for every intensity: intensity is court radius,
 # crystal count and SPECIES, and a field that also thinned with intensity made another axis out
@@ -391,8 +423,8 @@ ANCHOR_RESEED_SECONDS = 20
 # Standing anchor mass, per intensity. BOTH the count and the volume vary now, because the four
 # species differ in how many prisms they grow AND how big each one is - so both ladders below are
 # per-intensity, where the single-species pass could share one count ladder across all four.
-ANCHOR_PRISMS = {sp: ANCHOR_PLANTS * ANCHOR_BUDGET[sp] for sp in ANCHOR_SPECIES}
-ANCHOR_VOLUME = {sp: int(round(ANCHOR_PRISMS[sp] * ANCHOR_LEAF_VOLUME[sp]))
+ANCHOR_PRISMS = {sp: int(round(ANCHOR_PLANTS * ANCHOR_BUDGET[sp])) for sp in ANCHOR_SPECIES}
+ANCHOR_VOLUME = {sp: int(round(ANCHOR_PLANTS * ANCHOR_PLANT_VOLUME[sp]))
                  for sp in ANCHOR_SPECIES}
 
 # ── The volume ladder (the one thing the cell config is forked for) ──────────
@@ -411,7 +443,7 @@ def frenzy_enter_volume(sp):
 
 
 # The COUNT ladder is the rare frenzy/perf backstop, and it is per-species for the same reason:
-# a Quasicrystal anchor field is 1,540 prisms against a Gyroid's 420, so one shared count would
+# a Borromean anchor field is 3,654 prisms against a Gyroid's 420, so one shared count would
 # be four times too tight at one end and slack at the other.
 def restless_enter_count(sp):
     return _round_to(
@@ -642,13 +674,15 @@ CELL_DESC_TMPL = (
     "TOLLWAY.md."
 )
 for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    _cell_desc = wrap_yaml_scalar(CELL_DESC_TMPL.format(
+        i=_i, plants=ANCHOR_PLANTS, species=_sp,
+        family=ANCHOR_FAMILY[_sp],
+        volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS[_sp],
+        restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
+        maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET))
     emit(f"{ANCHOR_FLORA_DIR}/Tollway Cell Config {_i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Tollway Cell Config {_i}") + f"""  CellName: Tollway
-  Description: {CELL_DESC_TMPL.format(i=_i, plants=ANCHOR_PLANTS, species=_sp,
-                                      family=ANCHOR_FAMILY[_sp],
-                                      volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS[_sp],
-                                      restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
-                                      maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET)}
+  Description: {_cell_desc}
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
@@ -712,8 +746,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
     team to {TOLL_TARGET} tolls.
   IconActive: {{fileID: 0}}
   IconInactive: {{fileID: 0}}
-  CardBackground: {{fileID: 0}}
-  PreviewClip: {{fileID: 0}}
+  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
   GolfScoring: 0
   SceneName: MinigameTollway
   Vessels:
@@ -817,16 +850,14 @@ emit(PREVIEW_LIB, plib)
 # The donor already IS the court arena this mode wants - Scarab AI templates, the nucleus-as-court
 # cell, the spawn ring, the crystal manager - so the clone swaps the mode identity (controller,
 # turn monitor, rule, settings), the cell config (for the ladder) and the crystal economy.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity")
-
-for donor_key, new_guid, label in (
+IDENTITY_SWAPS = (
     ("ScarabScrambleController", G_SCRIPT["TollwayController"], "controller"),
     ("ScarabScrambleGoalTurnMonitor", G_SCRIPT["TollwayTollTurnMonitor"], "turn monitor"),
     ("ScarabScrambleScoringRule", G_ASSET["TollwayScoringRule"], "scoring rule"),
     ("ScarabScrambleSettings", G_ASSET["TollwaySettings"], "settings"),
-):
-    scene, n = re.subn(EXISTING[donor_key], new_guid, scene)
-    assert n == 1, f"{label} guid appeared {n} times in the donor scene (expected exactly 1)"
+)
+SCRIPT_LINES = tuple(f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT[k]}, type: 3}}\n"
+                     for k in ("TollwayController", "TollwayTollTurnMonitor"))
 
 # THE CELL becomes INTENSITY-WISE. The donor is a single-config cell (choice option 0 = Random
 # over a one-entry list, i.e. always that one); Tollway authors four and selects by intensity.
@@ -840,9 +871,6 @@ NEW_CELL_BLOCK = ("  CellConfigs:\n"
                   + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'TollwayCellConfig{i}']}, type: 2}}\n"
                             for i in range(1, len(ANCHOR_SPECIES) + 1))
                   + "  cellTypeChoiceOptions: 1\n")
-assert OLD_CELL_BLOCK in scene, "donor cell-config block not found"
-scene = scene.replace(OLD_CELL_BLOCK, NEW_CELL_BLOCK, 1)
-
 # THE CRYSTAL ECONOMY - the one gameplay dial this mode moves on the donor. Scramble runs
 # PlayerCountPlusExtra +2; Tollway runs IntensityScaled, because here the crystal count IS the
 # intensity axis: crystals become balls and balls are the traffic that pays tolls.
@@ -856,9 +884,29 @@ NEW_CRYSTALS = ("  crystalCountMode: 2\n"
                 "  crystalCountByIntensity:\n"
                 + "".join(f"  - CrystalsPerPlayer: {_num(p)}\n    ExtraCrystals: {e}\n"
                           for p, e in CRYSTALS_BY_INTENSITY))
-assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
-scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
 
+
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity")
+    for donor_key, new_guid, label in IDENTITY_SWAPS:
+        scene, n = re.subn(EXISTING[donor_key], new_guid, scene)
+        assert n == 1, f"{label} guid appeared {n} times in the donor scene (expected exactly 1)"
+    assert OLD_CELL_BLOCK in scene, "donor cell-config block not found"
+    scene = scene.replace(OLD_CELL_BLOCK, NEW_CELL_BLOCK, 1)
+    assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
+    scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+    return scene
+
+
+# The clone is a one-shot: once MinigameTollway.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, and a re-clone would revert them to Scarab Scramble's.
+# The committed scene is adopted, the blocks this script authors (controller and monitor scripts,
+# cell ladder, crystal economy) must still be in it, and the donor asserts STAND DOWN when Scarab
+# Scramble moves on (CLAUDE.md "spent one-shot"). The rule / settings / donor-guid checks in the
+# validation section below run on whichever scene this returns. See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity", clone_scene,
+    authored_blocks=SCRIPT_LINES + (NEW_CELL_BLOCK, NEW_CRYSTALS))
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity.meta",
      scene_meta(G_ASSET["MinigameTollway.unity"]))
@@ -919,7 +967,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 all_new = list(G_SCRIPT.values()) + list(G_ASSET.values())
 if len(set(all_new)) != len(all_new):
@@ -1100,7 +1148,7 @@ for _fam in _have_families:
 # it, since the plant COUNT is the same 14 at every intensity. Non-decreasing rather than
 # strictly increasing, because two species can legitimately carry the same mass in different
 # shapes.
-_plant_volumes = [round(ANCHOR_BUDGET[sp] * ANCHOR_LEAF_VOLUME[sp]) for sp in ANCHOR_SPECIES]
+_plant_volumes = [round(ANCHOR_PLANT_VOLUME[sp]) for sp in ANCHOR_SPECIES]
 if _plant_volumes != sorted(_plant_volumes):
     errors.append(f"the anchor species are not ordered by standing plant volume "
                   f"({_plant_volumes}) - the marker has to grow with the court, not shrink "
@@ -1184,8 +1232,10 @@ def cs_fields(path):
     return out
 
 
+# No `PreviewClip`: SO_Game.PreviewClip is RETIRED (arcade_mode_lib.RETIRED_CARD_KEYS). Listing
+# it here is what let the card keep emitting the dead key past the key-validation below.
 SO_BASE = {"Mode", "IsMultiplayer", "DisplayName", "Description", "IconActive", "IconInactive",
-           "CardBackground", "PreviewClip", "GolfScoring", "SceneName"}
+           "CardBackground", "GolfScoring", "SceneName"}
 CHECKS = [
     ("Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
@@ -1258,8 +1308,8 @@ print(f"  monuments: Restless at {RESTLESS_DAISES}, Frenzy at {FRENZY_DAISES}, "
 print(f"  families: {sorted(_have_families)} of {sorted(_families_available)} shipped")
 for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
     print(f"  I{_i} {_sp:<13} {ANCHOR_FAMILY[_sp]:<18} court {COURT_RADII[_i - 1]}u  "
-          f"{ANCHOR_BUDGET[_sp]:>4} prisms/plant x {ANCHOR_LEAF_VOLUME[_sp]:>6} vol = "
-          f"{ANCHOR_BUDGET[_sp] * ANCHOR_LEAF_VOLUME[_sp]:>8.0f} vol/plant")
+          f"{ANCHOR_BUDGET[_sp]:>6g} prisms/plant x {ANCHOR_LEAF_VOLUME[_sp]:>6} vol = "
+          f"{ANCHOR_PLANT_VOLUME[_sp]:>8.0f} vol/plant")
     print(f"       forest {ANCHOR_PRISMS[_sp]:>5} prisms / {ANCHOR_VOLUME[_sp]:>6} vol  ->  "
           f"volume {restless_enter_volume(_sp)}/{frenzy_enter_volume(_sp)}, "
           f"count {restless_enter_count(_sp)}/{frenzy_enter_count(_sp)}")

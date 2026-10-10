@@ -234,7 +234,7 @@ rules come out of it, and the second is the one that actually costs you:
 
 | Knob | Where | Shipped |
 |---|---|---|
-| race length (laps × rings) | `Resources/EndConditionOverrides` → `headlongGateTarget` | **24** |
+| race length (laps × rings) | **FrogletTools ▸ Game Modes ▸ End Game Conditions** → "Headlong - Gate Target (laps x rings)" (`Resources/EndConditionOverrides` → `headlongGateTarget`, Build twin `headlongGateTargetBuild`) | **24** |
 | laps | `MinigameHeadlong.unity` → `HeadlongController.laps` | **3** |
 | rings per lap | `HeadlongCircuitSettings.ForIntensity` → `GateCount` | **8** |
 | circuit base radius | same | **800** (~5 k per lap) |
@@ -249,6 +249,16 @@ different lengths. `Tools/Build/author_headlong_assets.py --check` asserts that,
 is a whole number of laps, and that the comeback rate still buys a whole element level at a
 quarter-of-target deficit — the trap `DOGFIGHT.md`, `BENDS.md`, `WILDLIFE_LIBERATION.md` and
 `SWITCHBACK.md` have each recorded independently.
+
+**It is authored in the End Game Conditions window, and only there.** Until 2026-10 the SO field,
+its `Build` twin, the getter, the `TryGetAuthoredTurnTarget` row and the asset value all existed but
+the window drew no row, so changing it meant hand-editing the asset. The row changed nothing that
+ships: the asset already held 24 / 24, and 24 over the scene's 3 laps is still 8 rings a lap.
+`laps` stays a scene field on purpose - it is an input to the circuit's SHAPE, not a second end
+condition: change it and the race is still 24 threadings, only the rings per lap move
+(`ceil(target / laps)`, rounded UP so a lap is whole, after which the course's own length is the
+target the monitor uses). A target that is not a multiple of `laps` therefore races to the next
+multiple, and the monitor logs the correction.
 
 ## 7. The arena is a REFERENCE, not a fork
 
@@ -293,8 +303,8 @@ leaving them as an absence.
 - **Not editor-verified.** Everything above §8 is asserted by static analysis, a real
   out-of-editor **compile** of the whole racing set AND the vessel-side change against stubbed
   packages, a 2400-circuit offline run of the shipped generator, and a 21-test edit-mode suite
-  compiled and run under a stub harness. Nobody has flown it. See
-  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  compiled and run under a stub harness. Nobody has flown it, and there is no Headlong entry in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` yet, so the first-flight check is still unrecorded.
 - **The AI has never been tuned for a circuit.** It inherits Switchback's approach/commit
   distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 1200 arrives
   3.5× faster and those numbers are very likely too short. The graded ramp helps here for free —

@@ -1,0 +1,189 @@
+using CosmicShore.Gameplay;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace CosmicShore.Tests
+{
+    /// <summary>
+    /// The Stoat's field dipole and pathfinder (<c>R_VesselActions/STOAT_DIPOLE.md</c>): the pure
+    /// arithmetic in <see cref="StoatDipoleMath"/>, held to the numbers the Stoat Flight Studio
+    /// measured for round 15 (<c>Docs/Studios/README.md</c>). Each test names the behaviour the
+    /// designer decided, so a failure says which decision moved.
+    /// </summary>
+    [TestFixture]
+    public class StoatDipoleTests
+    {
+        const float SideMax = 200f, LengthMax = 120f, Curve = 1.5f;
+
+        static StoatDipoleMath.Field Dipole(float separation, float strengthGM = 120000f, float horizon = 3.5f) =>
+            new StoatDipoleMath.Field
+            {
+                Sink = new Vector3(0.5f * separation, 0f, 0f), Source = new Vector3(-0.5f * separation, 0f, 0f),
+                SinkGM = strengthGM, SinkHorizon = horizon, SourceGM = strengthGM, SourceHorizon = horizon,
+                SourceSoftening = 2f * horizon, AccelerationCap = 3000f,
+            };
+
+        static readonly StoatDipoleMath.FlightSettings Flight = new() { TurnCap = 12f, Grip = 0.5f, GravitySpeedCeiling = 240f };
+
+        static StoatDipoleMath.PathSettings Path(bool portal = true) => new()
+        {
+            Length = 600f, Step = 3f, NoseOffset = 8f, LoopMargin = 8f, MinLoop = 60f, WarpDegrees = 3f, ExitGap = 1.05f, PortalOpen = portal,
+        };
+
+        // ------------------------------------------------------------------ placement
+
+        [Test]
+        public void OneTrigger_PullsThePolesApartSideways_WithASlightDiagonal()
+        {
+            var s = StoatDipoleMath.TargetSeparation(0f, 1f, Curve, SideMax, LengthMax);
+            Assert.AreEqual(200f, s.Lateral, 1e-3f, "RT alone: the full sideways separation, sink to the right");
+            Assert.AreEqual(60f, s.Longitudinal, 1e-3f, "…and half the lengthways one (the slight diagonal)");
+            var l = StoatDipoleMath.TargetSeparation(1f, 0f, Curve, SideMax, LengthMax);
+            Assert.AreEqual(-200f, l.Lateral, 1e-3f, "LT alone mirrors it: the sink to the left");
+        }
+
+        [Test]
+        public void BothTriggers_LineTheSinkUpDeadAhead_WithTheSourceBeyond()
+        {
+            var s = StoatDipoleMath.TargetSeparation(1f, 1f, Curve, SideMax, LengthMax);
+            Assert.AreEqual(0f, s.Lateral, 1e-4f);
+            Assert.AreEqual(120f, s.Longitudinal, 1e-3f);
+            StoatDipoleMath.PolePositions(Vector3.zero, Vector3.right, Vector3.forward, s, out var sink, out var source);
+            Assert.Less(sink.z, source.z, "the sink is the nearer pole: you shoot into it and out of the source");
+            Assert.AreEqual(0f, sink.x, 1e-4f);
+        }
+
+        [Test]
+        public void TheSqueezeCurve_AppliesToEachTrigger()
+        {
+            var half = StoatDipoleMath.TargetSeparation(0f, 0.5f, Curve, SideMax, LengthMax);
+            Assert.AreEqual(200f * Mathf.Pow(0.5f, 1.5f), half.Lateral, 1e-3f);
+        }
+
+        [Test]
+        public void LettingGoOfBoth_AnnihilatesOnlyOnceTheHorizonsTouch()
+        {
+            Assert.IsFalse(StoatDipoleMath.ShouldAnnihilate(true, 0f, 3.5f, 3.5f), "held: never");
+            Assert.IsFalse(StoatDipoleMath.ShouldAnnihilate(false, 20f, 3.5f, 3.5f), "let go but still apart: closing");
+            Assert.IsTrue(StoatDipoleMath.ShouldAnnihilate(false, 3f, 3.5f, 3.5f), "let go and touching: annihilate");
+        }
+
+        // ------------------------------------------------------------------ the field and the warp
+
+        [Test]
+        public void SteeringAlone_NeverWarpsThePath()
+        {
+            var r = StoatDipoleMath.PredictPath(new StoatDipoleMath.Body { Rotation = Quaternion.identity }, 60f,
+                new Vector3(0f, 2f, 0f), default, hasField: false, Flight, Path(), new Vector3[256], new int[8]);
+            Assert.IsFalse(r.Warped, "a held full turn draws a circle, and a circle is not a warp");
+            Assert.AreEqual(StoatDipoleMath.PathEnd.Loop, r.End, "it still ends where it would cross its own trail");
+        }
+
+        [Test]
+        public void APairFarBeyondThePath_DoesNotWarpIt()
+        {
+            var start = new StoatDipoleMath.Body { Position = new Vector3(0f, 0f, -2000f), Rotation = Quaternion.LookRotation(Vector3.left) };
+            var r = StoatDipoleMath.PredictPath(start, 60f, Vector3.zero, Dipole(71f), true, Flight, Path(), new Vector3[256], new int[8]);
+            Assert.IsFalse(r.Warped);
+        }
+
+        [Test]
+        public void AimedAtTheSink_ThePathGoesThroughTheWormholeAndIsWarped()
+        {
+            var field = Dipole(71f);
+            var start = new StoatDipoleMath.Body { Position = field.Sink + new Vector3(0f, 0f, -250f), Rotation = Quaternion.identity };
+            var pts = new Vector3[256];
+            var jumps = new int[8];
+            var r = StoatDipoleMath.PredictPath(start, 60f, Vector3.zero, field, true, Flight, Path(), pts, jumps);
+            Assert.IsTrue(r.Warped);
+            Assert.GreaterOrEqual(r.JumpCount, 1, "dead at the sink: through the wormhole");
+            Assert.Less(Vector3.Distance(pts[jumps[0]], field.Source), 3f * field.SourceHorizon, "out at the source");
+        }
+
+        [Test]
+        public void WithThePortalShut_ThePathStopsAtTheHorizon()
+        {
+            var field = Dipole(71f);
+            var start = new StoatDipoleMath.Body { Position = field.Sink + new Vector3(0f, 0f, -250f), Rotation = Quaternion.identity };
+            var r = StoatDipoleMath.PredictPath(start, 60f, Vector3.zero, field, true, Flight, Path(portal: false), new Vector3[256], new int[8]);
+            Assert.AreEqual(StoatDipoleMath.PathEnd.Hole, r.End);
+            Assert.AreEqual(0, r.JumpCount);
+        }
+
+        [Test]
+        public void ThePrediction_IsTheFlightsOwnStep()
+        {
+            // Fly a body with Step at a fine fixed step; the predicted line must follow it.
+            var field = Dipole(71f);
+            var start = new StoatDipoleMath.Body { Position = field.Sink + new Vector3(60f, 0f, -250f), Rotation = Quaternion.identity };
+            var pts = new Vector3[256];
+            var r = StoatDipoleMath.PredictPath(start, 60f, Vector3.zero, field, true, Flight, Path(), pts, new int[8]);
+            var b = start;
+            float worst = 0f;
+            for (int i = 0; i < 400; i++)
+            {
+                StoatDipoleMath.Step(ref b, field, 60f, 0.004f, Flight);
+                float best = float.MaxValue;
+                for (int k = 0; k < r.Count; k++) best = Mathf.Min(best, Vector3.Distance(pts[k], b.Position));
+                if (Vector3.Distance(b.Position, start.Position) > 10f) worst = Mathf.Max(worst, best);
+            }
+            Assert.Less(worst, 3f, "the line is where the flight goes (1.6 s of flight, off the sink)");
+        }
+
+        // ------------------------------------------------------------------ the autopilot, the dots, the strip
+
+        [Test]
+        public void TheAutopilot_PullsBoth_ForATargetDeadAhead_AndOneSide_ForATargetOffTheNose()
+        {
+            Assert.IsTrue(StoatDipoleMath.AutopilotTriggers(new Vector3(0f, 0f, 1000f), 300f, 12f, 75f, out bool l, out bool r));
+            Assert.IsTrue(l && r, "dead ahead: both triggers, the sink straight in front");
+            Assert.IsTrue(StoatDipoleMath.AutopilotTriggers(new Vector3(600f, 0f, 800f), 300f, 12f, 75f, out l, out r));
+            Assert.IsTrue(r && !l, "off to the right: the right trigger, the sink on that side");
+            Assert.IsTrue(StoatDipoleMath.AutopilotTriggers(new Vector3(-600f, 0f, 800f), 300f, 12f, 75f, out l, out r));
+            Assert.IsTrue(l && !r);
+            Assert.IsFalse(StoatDipoleMath.AutopilotTriggers(new Vector3(0f, 0f, 100f), 300f, 12f, 75f, out _, out _), "too near");
+            Assert.IsFalse(StoatDipoleMath.AutopilotTriggers(new Vector3(0f, 0f, -1000f), 300f, 12f, 75f, out _, out _), "behind: a pair laid ahead cannot help");
+        }
+
+        [Test]
+        public void TheDots_AreEvenlySpacedOnScreen_AndBreakAtAWormholePass()
+        {
+            var screen = new[] { new Vector2(0f, 0f), new Vector2(100f, 0f), new Vector2(500f, 0f), new Vector2(600f, 0f) };
+            var visible = new[] { true, true, true, true };
+            var dots = new Vector2[64];
+            var src = new int[64];
+            int n = StoatDipoleMath.LayDots(screen, visible, null, 2, 44f, dots, src);
+            Assert.AreEqual(3, n, "0, 44, 88 along a 100 px segment");
+            Assert.AreEqual(44f, dots[1].x - dots[0].x, 1e-3f);
+            Assert.AreEqual(44f, dots[2].x - dots[1].x, 1e-3f);
+
+            var breaks = new[] { false, false, true, false };
+            n = StoatDipoleMath.LayDots(screen, visible, breaks, 4, 44f, dots, src);
+            bool dotInTheGap = false;
+            for (int i = 0; i < n; i++) if (dots[i].x > 100.5f && dots[i].x < 499.5f) dotInTheGap = true;
+            Assert.IsFalse(dotInTheGap, "no dots across the jump from the sink to the source");
+            Assert.AreEqual(500f, dots[3].x, 1e-3f, "the far side restarts with a dot where it comes out");
+        }
+
+        [Test]
+        public void TheSink_StripsARival_NeverItsOwnerOrATeammate()
+        {
+            Assert.IsTrue(BlackHoleCrystalStrip.OwesStrip(1f, false, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade));
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(1f, true, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade), "the owner");
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(1f, false, true, CosmicShore.Data.Domains.Jade, CosmicShore.Data.Domains.Jade), "a teammate");
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(1f, false, false, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade), "domain unknown");
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(0f, false, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade), "share 0");
+        }
+
+        [Test]
+        public void TheBoost_RisesWhileWarped_AndFadesAfter()
+        {
+            float m = 1f;
+            for (int i = 0; i < 60; i++) m = StoatDipoleMath.StepBoost(m, true, 3f, 20f, 0.6f, 1f / 60f);
+            Assert.AreEqual(3f, m, 0.01f, "a second warped reaches the full boost");
+            for (int i = 0; i < 120; i++) m = StoatDipoleMath.StepBoost(m, false, 3f, 20f, 0.6f, 1f / 60f);
+            Assert.Less(m, 1.1f, "two seconds after the warp ends it is nearly gone");
+            Assert.GreaterOrEqual(m, 1f);
+        }
+    }
+}

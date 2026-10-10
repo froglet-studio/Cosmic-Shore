@@ -92,20 +92,33 @@ namespace CosmicShore.Engine.UI
             return (axis == 0 ? padding.left : padding.top) + surplusSpace * GetAlignmentOnAxis(axis);
         }
 
-        /// <summary>Positions the child at <paramref name="pos"/> from the parent's left/top edge (its size untouched).</summary>
-        protected void SetChildAlongAxis(RectTransform rect, int axis, float pos)
+        /// <summary>
+        /// Positions the child at <paramref name="pos"/> from the parent's left/top edge (its size
+        /// untouched). <paramref name="scale"/> is the child's local scale on the axis when the group
+        /// uses child scale: the child then occupies its size times that scale.
+        /// </summary>
+        protected void SetChildAlongAxis(RectTransform rect, int axis, float pos) => SetChildAlongAxisWithScale(rect, axis, pos, 1f);
+
+        /// <inheritdoc cref="SetChildAlongAxis(RectTransform,int,float)"/>
+        protected void SetChildAlongAxisWithScale(RectTransform rect, int axis, float pos, float scale)
         {
             if (rect == null) return;
             PinAnchorsUpperLeft(rect);
             Vector2 anchored = rect.anchoredPosition;
-            float extent = axis == 0 ? rect.sizeDelta.x : rect.sizeDelta.y;
+            float extent = (axis == 0 ? rect.sizeDelta.x : rect.sizeDelta.y) * scale;
             if (axis == 0) anchored.x = pos + extent * rect.pivot.x;
             else anchored.y = -pos - extent * (1f - rect.pivot.y);
             rect.anchoredPosition = anchored;
         }
 
-        /// <summary>Positions AND sizes the child along the axis (distances from the parent's left/top edge).</summary>
-        protected void SetChildAlongAxis(RectTransform rect, int axis, float pos, float size)
+        /// <summary>
+        /// Positions AND sizes the child along the axis (distances from the parent's left/top edge).
+        /// <paramref name="size"/> is the child's own (unscaled) size; it occupies size x <paramref name="scale"/>.
+        /// </summary>
+        protected void SetChildAlongAxis(RectTransform rect, int axis, float pos, float size) => SetChildAlongAxisWithScale(rect, axis, pos, size, 1f);
+
+        /// <inheritdoc cref="SetChildAlongAxis(RectTransform,int,float,float)"/>
+        protected void SetChildAlongAxisWithScale(RectTransform rect, int axis, float pos, float size, float scale)
         {
             if (rect == null) return;
             PinAnchorsUpperLeft(rect);
@@ -114,8 +127,8 @@ namespace CosmicShore.Engine.UI
             rect.sizeDelta = sizeDelta;
 
             Vector2 anchored = rect.anchoredPosition;
-            if (axis == 0) anchored.x = pos + size * rect.pivot.x;
-            else anchored.y = -pos - size * (1f - rect.pivot.y);
+            if (axis == 0) anchored.x = pos + size * scale * rect.pivot.x;
+            else anchored.y = -pos - size * scale * (1f - rect.pivot.y);
             rect.anchoredPosition = anchored;
         }
 

@@ -21,7 +21,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib          # noqa: E402
 import waystation_course as course     # noqa: E402
-import butterfly_games_common as common  # noqa: E402
 
 MODE_ID = 58
 RING_TARGET = 24
@@ -98,7 +97,7 @@ g.emit_asset(
     + "  metric: 9\n  golfRules: 1\n")
 
 # ── the arcade card ─────────────────────────────────────────────────────────
-DESCRIPTION = (
+DESCRIPTION = lib.wrap_yaml_scalar(
     "Butterflies only. The rings come in clusters - weave the coil, line up on the gate at the "
     "far end, then FOLD across the gap to the next one. The fold has one degree of freedom, the "
     "heading you leave on, so the exit gate is the aiming device: thread it on the right line "
@@ -115,7 +114,7 @@ g.emit_asset(
       f"  IconInactive: {{fileID: 21300000, guid: {lib.CARD_ART['IconInactive']}, type: 3}}\n"
       # Whatever the /cardart renderer wrote onto the card, else the placeholder - re-emitting the
       # placeholder unconditionally would undo a rendered background on every run.
-      f"  CardBackground: {{fileID: 21300000, guid: {common.card_background('Assets/_SO_Assets/Games/ArcadeGameWaystation.asset')}, type: 3}}\n"
+      f"  CardBackground: {{fileID: 21300000, guid: {lib.card_background('Waystation')}, type: 3}}\n"
       "  GolfScoring: 1\n"
       "  SceneName: MinigameWaystation\n"
       "  Vessels:\n"
@@ -130,9 +129,13 @@ g.emit_asset(
       "  PlayUserAction: 0\n"
       f"  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}\n")
 
-# ── toasts: TWO IDLE HINTS AND NOTHING ELSE ─────────────────────────────────
-# The gate-race platform has no gate-threaded hook, so a milestone situation here would have no
-# poster. An idle hint needs none - the toast system fires it off idleSeconds.
+# ── toasts: two idle hints and the shared race beats ────────────────────────
+# The idle hints need no poster - the toast system fires them off idleSeconds. The race beats
+# (DomainRaceHalf / LeadChanged / HomeStretch = 129-131) are posted by GateRaceController's
+# DomainRaceToasts for every gate race; a beat this config does not author shows nothing. Worded
+# in the open-chain gate races' voice (Skein says "ring" too): {0} = leading domain, {1} = its
+# lead runner's rings, {2} = the ring target. No Quarter (128, no gate race authors it) and no
+# FinalLap (132): Waystation is one pass of clusters, LapsPerRace 1, so that beat never fires.
 g.emit_asset(
     "Assets/_SO_Assets/Game Toasts/GameToastConfig_Waystation.asset",
     G_ASSET["GameToastConfig_Waystation"],
@@ -141,7 +144,10 @@ g.emit_asset(
     + lib.toast(117, "Thread every ring around you - they only count in order",
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=25)
     + lib.toast(118, "Out of rings? HOLD the fold and aim where you want to land",
-                tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40))
+                tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40)
+    + lib.toast(129, "{0} is halfway home - ring {1}/{2}", tint_domain=1, domain_names=0)
+    + lib.toast(130, "{0} takes the lead - ring {1}/{2}", tint_domain=1, domain_names=0)
+    + lib.toast(131, "{0} is on the home stretch - ring {1}/{2}", tint_domain=1, domain_names=0))
 
 # ── the preview: shell-only, like every gate race ──────────────────────────
 NOTES = (

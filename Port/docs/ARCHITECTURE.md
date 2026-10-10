@@ -1,4 +1,4 @@
-# Prisma v0.1 — Architecture Overview
+# Amoebius v0.1 — Architecture Overview
 
 *The Unity-free engine (the "port") that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
 
@@ -100,14 +100,14 @@ sits behind those names is first-party code.
 | Lifecycle | Unity messages (`Awake` … `OnDestroy`, `OnTrigger*`) are found by reflection once per type and bound as open-instance delegates (no `Expression.Compile`, which is slow on iOS's interpreter). They run in Script Execution Order: the `.meta` `executionOrder` (read by Content at boot) overrides `[DefaultExecutionOrder]`, and it orders Awake/OnEnable at a scene load, Start, and every per-frame phase | `SceneGraph/MonoBehaviour.cs`, `LifecycleMethodCache.cs`, `ScriptExecutionOrder.cs` |
 | Frame loop | `GameLoop.Tick` (Figure 4). Headless by design: tests tick it directly | `SceneGraph/GameLoop.cs` |
 | Time | Frame clock, fixed-step accumulator (the project's 0.04 s), unscaled clock | `Time.cs` |
-| Physics | Custom trigger physics. Overlap pairs fire `OnTriggerEnter/Stay/Exit`, sweep-sorted, deterministic. Raycast, SphereCast and OverlapSphere are supported, and Rigidbodies integrate ballistically. Spheres are exact; boxes and meshes are world-space AABBs. There is no contact solver (the game is trigger-driven) | `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
+| Physics | Custom trigger physics. Overlap pairs with a Rigidbody on at least one side whose layers meet in the Layer Collision Matrix (Unity's rules) fire `OnTriggerEnter/Stay/Exit` on the collider's GameObject and its Rigidbody's, sweep-sorted, deterministic. Raycast, SphereCast, OverlapSphere/Capsule/Box and `Collider.ClosestPoint` are supported, and Rigidbodies integrate ballistically. Spheres, oriented boxes and capsules are exact; a mesh is the oriented box of its bounds. A contact pass resolves a dynamic Rigidbody's solid SPHERE against solid colliders and fires `OnCollision*` (the census in §13.1); there is no general solver | `Physics/ShapeMath.cs`, `Physics/ContactPass.cs`, `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
 | Animation | A Mecanim driver: layers, nested state machines, transitions, triggers, 1D/2D/direct blend trees, FBX and `.anim` clips | `Animation/` |
 | Input | The Input System (actions, maps, bindings, composites, devices). `TouchFeed` gives EnhancedTouch semantics on phones | `InputSystem/` |
 | UI | uGUI: anchors, layout groups, masks, `EventSystem` raycasting and navigation, `Selectable` / `Button` / `ScrollRect` / `InputField`. TMP layout builds SDF glyph quads | `UI/` |
 | DI and events | Reflex (`[Inject]`, installers, containers) and Obvious SOAP (variables, events, lists) | `Injection/`, `Soap/` |
 | Async | A frame-driven task scheduler; awaits resume on the game-loop thread | `Tasks/` |
 | Rendering data | `Mesh`, `Material`, `Camera`, `RenderTexture`, volumes, change tracking. **Data only:** the Render project draws | `Rendering/` |
-| Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed | `Audio/` |
+| Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed (which then also answers event descriptions: one-shot, snapshot, length). `RuntimeManager.EventRecorded` is the parity harness's FMOD channel (starts, restarts, stops, FMOD and Unity mixer snapshots); `FmodGuids` names GUID-only references from the build's `GUIDs.txt` | `Audio/` |
 | Networking | Netcode for GameObjects' model over a TCP transport (section 8) | `Networking/` |
 | Services | Authentication, Cloud Save, Friends, Leaderboards and Analytics, kept on local disk | `Services/` |
 
@@ -227,18 +227,41 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 - networked scene loads and named messages;
 - RPCs, routed by the prologue from section 3.
 
-**`DirectoryMultiplayerService`** stands in for the UGS Lobby + Relay. It keeps one JSON file per
+**The transport seam.** `NetDriver` never touches a socket. It opens an `INetTransport`
+(`Networking/Wire/INetTransport.cs`) through `NetDriver.TransportFactory`, and reads its events
+in `EarlyUpdate`. The contract is reliable, ordered, whole frames; events come only through `Poll`
+on the main thread; peer 0 is the server; a failed connect reports `Disconnected`; a listen on a
+taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) was the first implementation, and stays
+the engine's in-process default for tests; Froglet's UDP transport (`UdpTransport`: reliable-ordered
+fragments with selective acks and RTT-timed resends, plus an unreliable channel) is what every
+networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). Below it,
+an `IDatagramLink` decides where its datagrams go: straight to the peer (`DirectLink`), or through a
+relay speaking Unity Relay's protocol (`RelayLink`), which is how players behind home routers reach
+each other. Froglet's own relay server (`FrogletRelayServer`, `CosmicShore --relay-server`) speaks
+the same protocol and REST shape as UGS Relay (`MULTIPLAYER.md` §6.7). `NetTransportContractTests`
+runs the same checks against every implementation (TCP, UDP, UDP through the relay, the in-memory
+loopback the tests use, and each behind the network simulator), and `NetDriverTransportTests`
+drives the driver's handshake.
+
+**`DirectoryMultiplayerService`** stands in for the UGS Lobby. It keeps one JSON file per
 session in a shared folder: roster, per-player properties (the game's invite channel), heartbeat,
-host endpoint.
+and the host's endpoint, or its relay join code when `COSMIC_SHORE_RELAY` names a relay (the host
+allocates before it starts listening; a joiner joins by code).
 
 **Services** are local stand-ins:
-- Authentication: an anonymous id persisted per install.
+- Authentication: an anonymous id persisted per install. Separately, with `COSMIC_SHORE_RELAY=ugs`
+  the relay signs in to UGS itself (`UgsAuthentication`, REST, one UGS player per save profile) to
+  get the bearer token UGS Relay needs (`MULTIPLAYER.md` §6.8).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
 
 **Turning it off:** `COSMIC_SHORE_NET=off` keeps everything in one process. A second player on one
-machine runs with `COSMIC_SHORE_PROFILE=b`.
+machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
+`--realtime`, which keeps its game clock on the wall clock (`RealtimePacer`).
+
+**The plan, the backends and the test tools** (simulator, stats, faults, the Launcher's
+MULTIPLAYER panel, the UDP transport) are in `MULTIPLAYER.md`.
 
 ---
 
@@ -377,7 +400,7 @@ own touch controls.
 | `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 
 Environment variables:
-- `COSMIC_SHORE_AUDIO=off|wav:PATH`
+- `COSMIC_SHORE_AUDIO=off|wav:PATH|nrt` (`nrt`: the FMOD runtime and banks, no output, mixed only on the engine's tick; what `engine_parity` runs)
 - `COSMIC_SHORE_NET=off`
 - `COSMIC_SHORE_PROFILE=b` (second install)
 - `COSMIC_SHORE_PROJECT=DIR` (use another project or packaged data)
@@ -414,10 +437,10 @@ connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
 frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
-launcher passes one for every play session. Prisma folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
+launcher passes one for every play session. Amoebius folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
 runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
 bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent
-scopes run in the app: the Prisma Agent (the game; `Port/` is denied) and milestone sessions
+scopes run in the app: the Amoebius Agent (the game; `Port/` is denied) and milestone sessions
 (the engine; the Unity project is denied). The MCP server exposes `prisma_tracks`, `prisma_board`
 and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
 
@@ -430,9 +453,9 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Engine, content, networking, services, gameplay | `dotnet test tests/CosmicShore.Tests`: ~1,590 tests in about 70 s, no GPU. Includes execution order, Unity's serialization rules, the tracks/board criteria, and `RenderBoundaryTests` (GL only inside `CosmicShore.Render`) |
 | The project's own Unity tests | `dotnet test tests/CosmicShore.Tests.Ported`: 352 tests, verbatim |
 | File round-trip | `cs-asset roundtrip`: every YAML file parses and writes back byte-identical |
-| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Prisma reads too, and nothing more (exit 1 otherwise) |
+| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Amoebius reads too, and nothing more (exit 1 otherwise) |
 | RPC coverage | The source sync warns `PRISMA001` for any RPC it cannot intercept (0 today) |
-| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Prisma's tracks compare it with earlier runs |
+| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Amoebius's tracks compare it with earlier runs |
 | Rendering | Scripted windowed runs with screenshots, under xvfb on Linux |
 | Shaders on phones | Every shader is translated and compiled by the Khronos GLSL ES reference compiler (`GlslEsTranslationTests`) |
 | Fidelity | `--train replay` re-scores a generation Unity already scored and reports the difference |
@@ -443,12 +466,30 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 
 | Area | Status |
 |---|---|
-| Physics | Triggers and queries only. Boxes and meshes are axis-aligned bounds, and there is no contact solver, so `OnCollision*` never fires |
+| Physics | Contacts for dynamic spheres only (the census below); a dynamic body with any other solid shape gets no contacts and a one-time warning. Meshes are the oriented box of their bounds. Since 2026-10-08 a trigger pair needs a Rigidbody on one side, as in Unity (two static triggers stay silent), and the layer collision matrix (with each collider's include/exclude layers) filters trigger pairs as it does contacts. Gravity is not simulated (no live user) |
 | Shaders | Material families are reproduced, not Unity's compiled shaders. A new Shader Graph needs a translation in `SceneRenderer` |
 | Online services | Local stand-ins: no real UGS accounts, cloud or leaderboards |
 | Provenance | No Unity binary is used. Two spots still follow Unity source too closely (TMP SDF text-shader terms, a Voronoi hash from Unity's docs) and are queued for clean rewrites: `docs/LEGAL_REVIEW.md`. Third-party notices: `THIRD_PARTY_NOTICES.md` |
 | Animation Rigging, Timeline, VFX Graph | Data only; they do not animate or emit |
-| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Prisma draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Prisma yet |
+| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Amoebius draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Amoebius yet |
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
 | Legacy projects | Data, Game, Cli and Client are kept for their tests; new work goes into Engine, Content, Render or the players |
+
+### 13.1 Physics census (C3, 2026-10-08)
+
+Every runtime use of `Rigidbody` and `OnCollision*` in `Assets/_Scripts`, and the contact behaviour it needs. Only the Astro League ball needs a contact; it is a sphere with bounciness 1 (Maximum) and zero friction (Minimum) hitting spheres, boxes and one capsule, so the contact pass covers it and **no physics library is bound** (ARCHITECTURE_REVIEW E13: BepuPhysics v2 only if mesh contacts or PhysX-like friction are ever needed).
+
+| Script | Use | Contact it needs |
+|---|---|---|
+| `AstroLeagueBall` | Dynamic body on the server; `OnCollisionEnter/Stay` (contact point, normal, collider); runtime PhysicsMaterial; `excludeLayers` TrailBlocks; `AddTorque` | Sphere vs solid hulls (sphere, rotated box, Rhino's capsule; all kinematic) and vs other balls; restitution, no friction; callbacks after the solve. Court walls are analytic (`AstroLeagueBoundary`), goals poll positions |
+| `MantaBomb` | `OnTriggerEnter` on the carrier root | Trigger messages routed to the attached Rigidbody's GameObject |
+| `ShapeCollisionTrigger`, `SpawnableShapeBase` | Kinematic carrier + trigger sphere | Trigger only |
+| `FullAutoBlockShootActionExecutor`, projectile prefabs | `isKinematic` toggles on trigger carriers moved by script | Trigger only |
+| `VesselImpactor`, `ScarabCavitationBlast` | Collider partition by owning Rigidbody | None |
+| `PrismOctahedronShield`, `PrismStellatedOctahedronShield`, `PrismStateManager` | `mass` written | None (never read) |
+| `ProjectileDetonatorSO` | Zeroes velocities | None |
+| `ShipAudioController` | `(Rigidbody)null` to FMOD | None |
+| `SkimmerForcefieldCracklePrismEffectSO` | `Collider.ClosestPoint` | Closest point on a rotated box |
+
+Firework and AxeBubble carry solid gravity bodies but nothing references them.

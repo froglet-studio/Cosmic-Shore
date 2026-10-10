@@ -426,6 +426,17 @@ wrong. Two things follow:
 
 ---
 
+- **A morph that LANDS ON prisms someone just laid inherits their arrival animations.** A freshly
+  laid prism blooms in on the clock (boost pool: `k = 2.5/s`, ~61% grown at 0.37 s) and a shield
+  engaged on a live prism blooms its faces. Reveal the prisms at the hand-off without settling those
+  and the pilot sees the morph land on full-size targets, then the targets jump smaller and grow back.
+  The morph IS their arrival: hold their photons (`Prism.SetOwnerHidden`, never `HideForTransport`),
+  and at the hand-off — still covered — `CompleteCreationImmediately` if needed,
+  `CompleteGrowthImmediately`, shield `Engage(instant: true)`, THEN unhide. Worked example:
+  `R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md` §2.5.
+
+---
+
 ## 11. Docs you must update
 
 | File | What |
@@ -462,8 +473,26 @@ The family is defined by four axes. A new member is a choice on each:
 
 - **CRADLE** (Urchin, `Docs/PRISM_ANIMATION.md` §4.7.2) — *hull · drape · riding · 24 × s16*.
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
-  over, outside rises to meet. **It is the family's only member, and the only consumer of the
-  high-poly swap, the residency contract and the global-uniform bank.**
+  over, outside rises to meet. The first member, and the reference implementation of the
+  high-poly swap, the residency contract and the global-uniform bank.
+- **GRAVITY WARP** (black hole, `Docs/PRISM_ANIMATION.md` §4.7.4, `Docs/BLACK_HOLE.md` §5) —
+  *a placed world object · the GR tidal stretch, one affine map per prism · proximity to a horizon ·
+  no residency*. Mass near a black hole's horizon is drawn spaghettified: log-stretch
+  `ε = GM·τ²/r³` along the line to the hole, `−ε/2` across it (the trace-free tidal tensor),
+  about each prism's own centre. **Built 2026-10-07, re-cut 2026-10-08, not yet playtested.** It
+  LEFT the residency half of the family on the re-cut: the first version was a per-vertex radial
+  STRAIN (`p' = U + dir·d·(1 − w·k(s))`, 32 × s12 residents), which slid mass toward the singularity
+  a second time on top of the real pull and — with `k` flat at the horizon — put the stretch's peak
+  mid-reach and ZERO at the horizon. The physics is one affine map per prism, which the authored
+  24-triangle prism draws exactly, so the dense mesh, the residency and its budget all went. **The
+  finding that transfers: before picking a per-vertex map, ask whether the effect is affine per
+  prism — if it is, the budget is zero and the normal is exact.** What it still adds to the family:
+  a SOURCE that is not a vessel and that also MOVES the prisms (through the movers contract, a
+  separate system — the morph never reads anything the field did not already make true); and a
+  second node on the vertex chain, spliced immediately BEFORE the cradle (the cradle stays last),
+  anchored structurally, all sixteen sibling wirers passing. Its harness measures the tensor number
+  for number, volume conservation, the ceiling, `ε_h ∝ 1/M²` and the inverse-transpose normal, with a
+  negative control that switches the normal correction off.
 
 **A neighbour, not a member: the Rhino sword's SLICE** (`Docs/PRISM_ANIMATION.md` §4.10). It is
 the admission test's question 1 answered "no" and still wanting the dense mesh — every input (the

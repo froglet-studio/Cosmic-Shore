@@ -19,7 +19,7 @@ ignore the slider today — with the slider applied exactly once.
 ## C2 — `Boost Activate` has a loop region but is fired as a one-shot
 
 `event:/SFX/Oneshots/Gameplay sfx/Boost Activate` loops. The code refuses to fire a looping event
-fire-and-forget (it leaked one immortal instance per boost — see `PERFORMANCE_OPTIMIZATION.md §0.4`),
+fire-and-forget (it leaked one immortal instance per boost — see `Docs/archive/PERFORMANCE_LOG_2026.md §0.4`),
 so **boost is silent** and logs one error per session. Either remove the loop region (a sting), or
 tell engineering it is meant to be a sustained bed and it gets an owned start/stop instance like the
 drift.

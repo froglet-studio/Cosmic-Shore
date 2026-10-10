@@ -2,7 +2,7 @@
 """Round 11a-2 (Docs/SWARM_FAUNA.md §19.4): the swarm body pose is ONE static function, SwarmBodyPose.PoseMatrix
 (+ the Bloom it calls), run by the harness (R11d) AND Burst-compiled by SwarmPoseJob in the game. Burst cannot be run
 here, so this is the textual gate that the function stays inside what Burst compiles: scalar float maths, field reads,
-MathF - no System.Numerics method or operator, no System.Math, no allocation, no managed construct.
+KernelMath (never MathF, whose internal calls Burst cannot find) - no System.Numerics method or operator, no System.Math, no allocation, no managed construct.
 
 Negative control (--self-test): the round-11a System.Numerics pose kept in TickJobHarness.cs (ReferenceMatrix) must FAIL.
 
@@ -15,7 +15,9 @@ FORBIDDEN = [
     (r"\bVector3\.\w+\(", "a System.Numerics.Vector3 method (Lerp/Cross/Dot/Normalize...)"),
     (r"\.Length\(\)", "Vector3.Length()"),
     (r"\bnew\s+\w", "an allocation or a constructor call"),
-    (r"(?<![\w.])Math\.", "System.Math (use MathF or a comparison)"),
+    (r"(?<![\w.])Math\.", "System.Math (use KernelMath or a comparison)"),
+    (r"\bMathF\.", "System.MathF - Burst cannot find its internal calls ('Unable to find internal function "
+                   "System.MathF::Sqrt'); use KernelMath (Unity.Mathematics in Unity, MathF in the harness)"),
     (r"\bstring\b|\bobject\b|\bclass\b", "a managed type"),
     (r"\btry\b|\bthrow\b|\bforeach\b|\?\.", "a managed construct"),
     (r"\w+\s*\[\s*\]", "a managed array"),

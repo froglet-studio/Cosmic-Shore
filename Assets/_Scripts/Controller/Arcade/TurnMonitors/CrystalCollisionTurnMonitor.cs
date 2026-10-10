@@ -12,7 +12,8 @@ namespace CosmicShore.Gameplay
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
         // The RESOLVED crystal target for this turn - set in StartMonitor from
-        // EndConditionOverridesSO (FrogletTools > Game Modes > End Game Conditions)→ waypoints → 39.
+        // EndConditionOverridesSO (FrogletTools > Game Modes > End Game Conditions) → the track's
+        // crystals per lap x laps → 39.
         // Intentionally NOT a [SerializeField]: end-game counts are authored only via the tool,
         // never per-scene. Do not re-add [SerializeField] here (see /EndGameConditions skill).
         protected int CrystalCollisions;
@@ -94,9 +95,11 @@ namespace CosmicShore.Gameplay
         {
             if (optionalEnvironment)
             {
+                // Crystals per lap is the track's authored count when it has one (a densely sampled
+                // spline carries far more waypoints than crystal anchors), else its waypoint count.
                 int intensity = optionalEnvironment.intensityLevel;
-                int waypointCount = optionalEnvironment.waypoints[intensity - 1].positions.Count;
-                return waypointCount * ResolveLaps(intensity);
+                int perLap = optionalEnvironment.CrystalsPerLap(intensity);
+                if (perLap > 0) return perLap * ResolveLaps(intensity);
             }
 
             CSDebug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal count configured for {gameObject.name} and no waypoints. Defaulting to 39.");
@@ -107,9 +110,10 @@ namespace CosmicShore.Gameplay
         /// Laps for the given 1-based intensity: the per-intensity entry when one is
         /// authored and positive, otherwise the flat <see cref="optionalLaps"/>. Keeps
         /// scenes that predate <see cref="lapsPerIntensity"/> (empty list) on their
-        /// original single-value behavior.
+        /// original single-value behavior. Public read-only: the Skim Race AI's map fingerprint
+        /// counts the laps too.
         /// </summary>
-        int ResolveLaps(int intensity)
+        public int ResolveLaps(int intensity)
         {
             int index = intensity - 1;
             if (lapsPerIntensity != null && index >= 0 && index < lapsPerIntensity.Count && lapsPerIntensity[index] > 0)

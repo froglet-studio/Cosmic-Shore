@@ -164,6 +164,67 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// How well the AI flies this match - the host's pick on the launch panel, written by the
+        /// launch pipeline beside <see cref="RequestedAIDomains"/> and read on the server where the
+        /// AI is installed (the Skim Race pilot first; <see cref="AIDifficultyRules.IsOfferedFor"/>
+        /// lists the modes that read it). Independent of intensity: intensity is the map,
+        /// difficulty is the opponent. Pre-launch config like the AI domains, so it survives
+        /// <see cref="ResetRuntimeData"/> into the game scene (and its replay reloads) and is
+        /// reset only by <see cref="ResetAllData"/>. [NonSerialized] for the same reason the
+        /// domain list is: a play-mode session must never bake a setting into the asset.
+        /// </summary>
+        [NonSerialized] public AIDifficulty RequestedAIDifficulty = AIDifficultyRules.Default;
+
+        /// <summary>
+        /// The HULLS teammates picked for their ally AI on the launch panel, parallel to
+        /// <see cref="RequestedAIDomains"/> (entry i is bot i). <see cref="VesselClassType.Random"/>
+        /// - and anything past the end of the list - means "no pick: draw from the card". Only
+        /// ally seats read it; an opponent seat flies <see cref="OpponentAIVesselClass"/> when
+        /// the card pins one (<see cref="AIHullSeating"/>). Host-side, [NonSerialized], same
+        /// lifetime as the domain list.
+        /// </summary>
+        [NonSerialized] public List<VesselClassType> RequestedAIVessels = new();
+
+        /// <summary>Replace the ally-hull picks (cleared when <paramref name="vessels"/> is null).</summary>
+        public void SetRequestedAIVessels(IReadOnlyList<VesselClassType> vessels)
+        {
+            RequestedAIVessels.Clear();
+            if (vessels != null) RequestedAIVessels.AddRange(vessels);
+        }
+
+        /// <summary>
+        /// The hull every OPPONENT AI flies this match (<see cref="SO_ArcadeGame.OpponentAIVessel"/>),
+        /// or <see cref="VesselClassType.Random"/> when the card pins none. Published by
+        /// <see cref="SyncFromArcadeGame"/> on the host - only the server spawns AI and settles
+        /// arena hulls, so no client ever needs it. Pre-launch config like
+        /// <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by ResetRuntimeData().
+        /// </summary>
+        [NonSerialized] public VesselClassType OpponentAIVesselClass = VesselClassType.Random;
+
+        /// <summary>
+        /// Whether <paramref name="player"/> is an AI flying the card's pinned opponent hull on a
+        /// domain no human flies. Such a hull sits OUTSIDE arena seating: a grid of identical
+        /// opponents is the card's choice, and it must never bump a human or an ally off a hull.
+        /// </summary>
+        public bool IsPinnedOpponent(IPlayer player, VesselClassType hull)
+        {
+            if (!AIHullSeating.IsConcrete(OpponentAIVesselClass) || hull != OpponentAIVesselClass) return false;
+            if (player is not Player p || !p || !p.NetIsAI.Value) return false;
+            return AIHullSeating.IsOpponentSeat(OpponentAIVesselClass, p.NetDomain.Value, CollectHumanDomains());
+        }
+
+        /// <summary>Every domain at least one human in <see cref="Players"/> flies.</summary>
+        public HashSet<Domains> CollectHumanDomains()
+        {
+            var domains = new HashSet<Domains>();
+            if (Players == null) return domains;
+            foreach (var ip in Players)
+                if (ip is Player p && p && !p.NetIsAI.Value)
+                    domains.Add(p.NetDomain.Value);
+            return domains;
+        }
+
+        /// <summary>
         /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
         /// behind first place - this game's comeback strength, authored on SO_ArcadeGame and
         /// synced from the launch pipeline (host) / config RPC (clients). Read every tick by
@@ -415,6 +476,9 @@ namespace CosmicShore.Utility
             // pilot-swap RPC, neither of which can see the card. Shipped to clients by the config
             // sync RPC so a guest's swap gesture knows whether it means anything here.
             IsArenaMatch = game.ArenaRules;
+
+            // The card's pinned opponent hull (Regatta: the Squirrel), host-side only.
+            OpponentAIVesselClass = game.OpponentAIVessel ? game.OpponentAIVessel.Class : VesselClassType.Random;
 
             // The card's per-hull starting element levels, published for the same reason as the
             // hull list and shipped to every client by the config sync RPC: element levels are
@@ -752,8 +816,8 @@ namespace CosmicShore.Utility
             CombatPointTargetCount = 0;
             SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
-            // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
-            // NOT reset here. They are pre-launch config values set by
+            // Note: RequestedAIBackfillCount, RequestedDomainCount and RequestedAIDifficulty
+            // are intentionally NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
             // in SceneLoader.LoadSceneAsync() so the game scene can read them.
             // They are reset in ResetAllData() instead.
@@ -861,6 +925,8 @@ namespace CosmicShore.Utility
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
+            RequestedAIDifficulty = AIDifficultyRules.Default;
+            RequestedAIVessels.Clear();
             RequestedDomainCount = 3;
             IsMaelstromMode = false;
 
@@ -971,14 +1037,27 @@ namespace CosmicShore.Utility
         public bool IsLocalDomain(Domains domain) =>
             LocalPlayer != null && domain == LocalPlayer.Domain;
 
+        /// <summary>
+        /// True when the local player's domain tops <see cref="DomainStatsList"/>, which
+        /// <see cref="CalculateDomainStats"/> leaves sorted best-first - the same entry the
+        /// scoreboard banner names. <paramref name="stats"/> is the local domain's entry.
+        ///
+        /// It used to compare the local domain against its OWN entry, which is true whenever the
+        /// local domain fielded anyone: both Duel pilots got VICTORY and the WinMatch quest.
+        /// </summary>
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
-            foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
+            if (LocalPlayer == null || DomainStatsList == null || DomainStatsList.Count == 0)
+                return false;
+
+            foreach (var stat in DomainStatsList)
             {
+                if (stat.Domain != LocalPlayer.Domain) continue;
                 stats = stat;
+                break;
             }
-            return stats.Domain == LocalPlayer.Domain;
+            return DomainStatsList[0].Domain == LocalPlayer.Domain;
         }
 
         // ----- Domain aggregation helpers (per-domain sums for team-based scoring) -----

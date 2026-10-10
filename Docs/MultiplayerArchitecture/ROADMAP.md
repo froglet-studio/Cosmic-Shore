@@ -10,7 +10,20 @@ as a prioritized next-work queue. Granular, already-sequenced items live in the 
 Companion to the PDF dossier in `Docs/MultiplayerArchitecture/`
 (Part II → “Future improvements & roadmap”).
 
+Companion **review** (2026-10-06): `REVIEW_INVITE_AND_RESILIENCE.md` — the Invite / Join-direct flow, request
+discipline (retries, 429s, duplicate requests) and disconnect resilience for a 4-player party, measured against
+industry practice, with the edge-case matrix, a four-phase rollout and the MPPM test plan. Several queue items
+below (push-based presence, reconnection, observability) are specified there.
+
 ## How to use this
+
+> **For the launch programme, start with
+> [`HARDENING_PLAN_STEAM_LAUNCH.md`](HARDENING_PLAN_STEAM_LAUNCH.md)** (2026-10-08) — the ordered
+> P0/P1/P2 queue to a Steam launch, the scale ladder (what breaks at 1, 4, 10, 40 and 100 CCU), the
+> four-level test strategy, the diagnosis/JSON schema, and the measured refactor list. Its
+> executable form is [`../prompts/MULTIPLAYER_HARDENING_PROMPT.md`](../prompts/MULTIPLAYER_HARDENING_PROMPT.md).
+> This file stays the live queue; that one is the programme.
+
 
 - The **invariants** are guardrails — keep them true. A change that breaks one is a regression, not a
   feature. They mirror the locked decisions in `../PartySystem/ARCHITECTURE.md`.

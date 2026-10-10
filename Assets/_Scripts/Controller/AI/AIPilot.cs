@@ -166,6 +166,13 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] private ActionExecutorRegistry actionExecutorRegistry;
 
+        [Header("Boost")]
+        [Tooltip("When this hull's autopilot spends its speed resource - on straights toward the " +
+                 "objective, conserving it before turns. One asset per boost MECHANIC (hold, pellet, " +
+                 "drift-charge, skim ring, throttle dash); see AI/AI_BOOST.md. Empty = the hull flies " +
+                 "exactly as before (the Manta and Rhino boost through their own executors instead).")]
+        [SerializeField] AIBoostPolicySO boostPolicy;
+
         enum Corner 
         {
             TopRight,
@@ -187,6 +194,11 @@ namespace CosmicShore.Gameplay
         float _maxDistanceSquared;
 
         Vector3 _targetPosition;
+
+        /// <summary>Where the pilot WANTS to be this frame (the objective, the mode's external
+        /// target, a chased vessel) — read-only, for an ability that must aim the way the AI is
+        /// going (the Stoat's autopilot sling). Steering may differ (the drift look target).</summary>
+        public Vector3 TargetPosition => _targetPosition;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;
@@ -345,6 +357,7 @@ namespace CosmicShore.Gameplay
             // the scene unloading under a live match.
             ReleaseAimTelegraph();
             EndOrbitBreak();
+            _boostDriver?.Release();
         }
 
 
@@ -626,6 +639,12 @@ namespace CosmicShore.Gameplay
             var handler = VesselStatus?.ActionHandler;
             _hasAimTelegraph = handler != null &&
                                handler.TryGetInputForAction<IAimTelegraphAction>(out _aimTelegraphInput);
+
+            // The boost driver, built against THIS vessel's bindings (null when it binds none of
+            // the ability the policy drives). A re-Initialize lets go of the previous one first.
+            _boostDriver?.Release();
+            _boostDriver = boostPolicy ? boostPolicy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
+            _boostActive = false;
         }
 
         public void StartAIPilot()
@@ -646,8 +665,10 @@ namespace CosmicShore.Gameplay
             foreach (var ability in _activeAbilities)
                 ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
+            _boostDriver?.Release();
 
             AutoPilotEnabled = true;
+            _boostActive = ResolveBoostActive();
 
             // A pilot that manages its own drift (the commit loop: line up a crystal, lock the
             // course, swing the nose onto the aim) must not ALSO blind-cycle the abilities bound
@@ -669,6 +690,9 @@ namespace CosmicShore.Gameplay
             {
                 if (ability.SourceAsset != null && _commitBoundActions.Contains(ability.SourceAsset))
                     continue;
+                // Same reason, other owner: the boost driver presses this one itself.
+                if (_boostActive && _boostDriver.Drives(ability.SourceAsset))
+                    continue;
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
 
@@ -686,6 +710,8 @@ namespace CosmicShore.Gameplay
             // false and this is the last chance to put the telegraph down.
             ReleaseAimTelegraph();
             EndOrbitBreak();
+            _boostDriver?.Release();
+            _boostActive = false;
 
             // A STOPPED pilot must leave its hull holding NOTHING. That used to be harmless to get
             // wrong, because the only stop was the menu's freestyle toggle, where the same player
@@ -729,6 +755,7 @@ namespace CosmicShore.Gameplay
                 // sweep accumulated before it stopped describes a pursuit that is no longer running.
                 ReleaseAimTelegraph();
                 EndOrbitBreak();
+                _boostDriver?.Release();
                 return;
             }
 
@@ -759,13 +786,24 @@ namespace CosmicShore.Gameplay
             _distance = steerTarget - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
+            // Boost policy (AI_BOOST.md). Ticked BEFORE the commit branches: the drift-charge
+            // driver may release the commit drift here and then hold the next one off.
+            TickBoostPolicy(toObjective);
+            bool commitHeldOff = _boostActive && _boostDriver.HoldsOffCommit;
+
             // A break-off is not a commitment, so it must not drift and must not light the aim
             // telegraph: the vessel is repositioning, and announcing an aim at the escape point
             // would be announcing an aim at nothing. The branches below read this, and the
             // drift-ended branch is what releases a telegraph already lit.
             LookingAtCrystal = !_extending &&
                                Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
-            if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
+            if (commitHeldOff)
+            {
+                // Spending the charge a commit would cancel: no commit, no telegraph, and nothing
+                // to unwind (the release already happened in TickBoostPolicy).
+                ReleaseAimTelegraph();
+            }
+            else if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
             {
                 // COMMIT. The course locks onto the objective and the nose is freed to swing
                 // elsewhere; from here the vessel is travelling at the crystal no matter where it
@@ -853,6 +891,9 @@ namespace CosmicShore.Gameplay
                 _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
             }
+
+            if (_boostActive && _boostDriver.HoldsLine)
+                CentreStick();
 
             //aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
@@ -1089,7 +1130,69 @@ namespace CosmicShore.Gameplay
             handler.StopShipControllerActionsReplicated(_aimTelegraphInput);
         }
 
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
+        #region Boost policy (AI_BOOST.md)
+
+        // Built at Initialize from boostPolicy against this vessel's bindings; null when the hull
+        // has no policy or binds none of its ability. _boostActive is the per-start verdict
+        // (mode gate, AI-player gate) and is what every hook below reads.
+        AIBoostDriver _boostDriver;
+        bool _boostActive;
+
+        bool ResolveBoostActive()
+        {
+            if (_boostDriver == null || boostPolicy == null) return false;
+            if (gameData != null && !boostPolicy.AllowsMode(gameData.GameMode)) return false;
+            if (boostPolicy.RequireAIPlayer && (VesselStatus?.Player == null || !VesselStatus.IsInitializedAsAI))
+                return false;
+            return true;
+        }
+
+        void TickBoostPolicy(Vector3 toObjective)
+        {
+            if (!_boostActive) return;
+
+            _boostDriver.Tick(new AIBoostContext(
+                toObjective, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
+                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted));
+
+            // The drift-charge driver spends the bank by ending the commit drift on a straight -
+            // the same release the off-course branch performs, just earlier.
+            if (_boostDriver.TakeCommitReleaseRequest() && _commitDriftHeld)
+            {
+                vessel.StopShipControllerActions(CommitControl);
+                _commitDriftHeld = false;
+                ReleaseAimTelegraph();
+            }
+        }
+
+        /// <summary>The stick this pilot last wrote (a frame stale at most - the same read the
+        /// Manta's drive makes), as the larger axis deflection.</summary>
+        float LastStickDeflection()
+        {
+            if (VesselStatus.IsSingleStickControls)
+            {
+                var stick = _inputStatus.EasedLeftJoystickPosition;
+                return Mathf.Max(Mathf.Abs(stick.x), Mathf.Abs(stick.y));
+            }
+            return Mathf.Max(Mathf.Abs(_inputStatus.XSum), Mathf.Abs(_inputStatus.YSum));
+        }
+
+        /// <summary>Hold the line: no turn input this frame, throttle untouched.</summary>
+        void CentreStick()
+        {
+            if (VesselStatus.IsSingleStickControls)
+            {
+                _inputStatus.EasedLeftJoystickPosition = Vector2.zero;
+                return;
+            }
+            _inputStatus.XSum = 0;
+            _inputStatus.YSum = 0;
+            _inputStatus.YDiff = 0;
+        }
+
+        #endregion
+
+        IEnumerator UseAbilityCoroutine(AIAbility action)
         {
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)

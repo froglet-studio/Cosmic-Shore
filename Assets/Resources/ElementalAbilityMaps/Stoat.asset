@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Stoat
+  m_EditorClassIdentifier:
+  vesselClass: 14
+  entries:
+  - Element: 3
+    AbilityLabel: Field Dipole
+    AbilityDescription: 'Squeeze a trigger and a sink-source pair (a black hole and
+      a white hole, joined as a wormhole) is laid 250 u ahead, the poles together,
+      in the frame you had then. The triggers'' DIFFERENCE pulls the poles apart
+      sideways - the sink on the deeper trigger''s side - and their SUM pulls them
+      apart lengthways, the sink always the nearer: one trigger alone gives a slight
+      diagonal, both buried put the sink dead ahead and the source 120 u beyond it.
+      Ease off and the poles come back together; let go of both and they meet and
+      annihilate, so there is only ever one pair. The poles'' strength and size are
+      fixed - only the separation (the dipole moment) follows the triggers. The field
+      bends your flight and anything that crosses the sink''s horizon goes through
+      it: you come out of the source; a rival vessel comes out stripped of its
+      crystals, left on the sink''s side; a creature is swallowed (killed); a prism
+      vanishes. Space is size: both poles'' horizon and pull scale x1 -> x2 at level
+      10 (StoatDipoleConfigSO.poleSize, read live). R_VesselActions/STOAT_DIPOLE.md.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Theft
+    UpgradeDescription: 'Prisms the sink swallows are STOLEN instead of destroyed:
+      they come out of the source in your domain (Prism.Steal, a super-steal - a
+      shield is no answer to a horizon). Gated on IsUpgradeActive(Space), replicated,
+      so every peer''s copy of the pair steals the same prisms.'
+  - Element: 4
+    AbilityLabel: Pathfinder
+    AbilityDescription: 'Passive. The path your hull will fly on the inputs you hold
+      right now, run 600 u ahead through your dipole''s field and drawn as dots from
+      the nose (blue-grey). When your poles WARP that path at all - it bends 3 degrees
+      or more, or it goes through the wormhole - it turns lime and you fly down it
+      faster: a warp of the hull''s own flight clock, so the path stays the path and
+      only arrives sooner. Time is rate: the boost is x2 at rest, x3 at level 5, x4 at
+      level 10 (StoatDipoleConfigSO.boost, read live). The base turn rates are x0.4
+      (pitch / yaw 48, roll 52), so the hull leans on its poles to turn.
+      X still holds the hull still (the Sparrow''s stop), outside the four abilities.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: 'OPEN DESIGN SLOT - proposals in Docs/ElementalAbilitySystem/FLEET_MAPS.md
+      (Stoat), not implemented.'
+  - Element: 1
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'NOT AUTHORED. Proposals in Docs/ElementalAbilitySystem/FLEET_MAPS.md
+      (Stoat) and R_VesselActions/STOAT_DIPOLE.md, pending sign-off.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: ''
+  - Element: 2
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'NOT AUTHORED. Proposals in Docs/ElementalAbilitySystem/FLEET_MAPS.md
+      (Stoat) and R_VesselActions/STOAT_DIPOLE.md, pending sign-off.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: ''

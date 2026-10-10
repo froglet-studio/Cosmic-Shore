@@ -125,6 +125,11 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float WorkerHungryBelow = 0.35f;
         [Range(0f, 1f)] public float WorkerBirthAbove = 0.9f;
         public float WorkerBirthCost = 16f;
+        [Tooltip("Below this fraction of the stomach a worker is DESPERATE and its colony's OWN colour becomes food. " +
+                 "Another domain's mass is always food (on the platform diet) and wins whenever both are in reach; own " +
+                 "colour is the starvation fallback - the cell's Frenzy shape on a stomach. Keep it below WorkerHungryBelow " +
+                 "(it is clamped there) so a fed worker never takes its own colour (Docs/BUILDERS_AND_THIEVES.md §2.1).")]
+        [Range(0f, 1f)] public float WorkerOwnDomainBelow = 0.25f;
 
         [Header("Thieves")]
         [Tooltip("Thieves the nest is FOUNDED with (GAME: the research seeded 18 at once and starved in the opening).")]
@@ -151,6 +156,11 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float ThiefHungryBelow = 0.4f;
         [Range(0f, 1f)] public float ThiefBirthAbove = 0.9f;
         public float ThiefBirthCost = 8f;
+        [Tooltip("Below this fraction of the stomach a thief is DESPERATE and its colony's OWN colour becomes food. " +
+                 "Another domain's mass is always food (on the platform diet) and wins whenever both are in reach; own " +
+                 "colour is the starvation fallback - the cell's Frenzy shape on a stomach. Keep it below ThiefHungryBelow " +
+                 "(it is clamped there) so a fed thief never takes its own colour (Docs/BUILDERS_AND_THIEVES.md §2.1).")]
+        [Range(0f, 1f)] public float ThiefOwnDomainBelow = 0.25f;
 
         [Header("Wearers (Docs/BUILDERS_AND_THIEVES.md §10)")]
         [Tooltip("Hearts the colony is founded with (GAME: the research seeded 40; one creature's worth for the demo cell).")]
@@ -189,6 +199,11 @@ namespace CosmicShore.Gameplay
         public float WearerMetabolism = 0.01f;
         [Range(0f, 1f)] public float WearerHungryBelow = 0.3f;
         public float WearerBirthCost = 10f;
+        [Tooltip("Below this fraction of the stomach a heart is DESPERATE and its colony's OWN colour becomes food. " +
+                 "Another domain's mass is always food (on the platform diet) and wins whenever both are in reach; own " +
+                 "colour is the starvation fallback - the cell's Frenzy shape on a stomach. Keep it below WearerHungryBelow " +
+                 "(it is clamped there) so a fed heart never takes its own colour (Docs/BUILDERS_AND_THIEVES.md §2.1).")]
+        [Range(0f, 1f)] public float WearerOwnDomainBelow = 0.25f;
 
         /// <summary>The wearer core's parameters.</summary>
         public WearerParams ToWearerParams(Vector3 cellCentre, float membrane) => new()
@@ -201,7 +216,7 @@ namespace CosmicShore.Gameplay
             Stomach = new BuilderStomachParams
             {
                 Capacity = WearerStomach, FounderFill = 0.6f, Metabolism = WearerMetabolism, Torpor = WearerMetabolism,
-                HungryBelow = WearerHungryBelow, BirthAbove = 0.9f, BirthCost = WearerBirthCost,
+                HungryBelow = WearerHungryBelow, BirthAbove = 0.9f, BirthCost = WearerBirthCost, OwnDomainBelow = WearerOwnDomainBelow,
             },
         };
 
@@ -220,6 +235,7 @@ namespace CosmicShore.Gameplay
             {
                 Capacity = WorkerStomach, Metabolism = WorkerMetabolism, Torpor = WorkerMetabolism,
                 HungryBelow = WorkerHungryBelow, BirthAbove = WorkerBirthAbove, BirthCost = WorkerBirthCost,
+                OwnDomainBelow = WorkerOwnDomainBelow,
             },
         };
 
@@ -235,6 +251,7 @@ namespace CosmicShore.Gameplay
             {
                 Capacity = ThiefStomach, Metabolism = ThiefMetabolism, Torpor = ThiefTorpor,
                 HungryBelow = ThiefHungryBelow, BirthAbove = ThiefBirthAbove, BirthCost = ThiefBirthCost,
+                OwnDomainBelow = ThiefOwnDomainBelow,
             },
         };
 

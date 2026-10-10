@@ -49,6 +49,14 @@ namespace CosmicShore.Utility
                  "honor it; fixed structures (e.g. SpawnableAtlantis) ignore it.")]
         [Min(1)] public int EnvironmentIntensity = 1;
 
+        [Header("Warp field")]
+        [Tooltip("Optional scalar warp field centred on the cell (Docs/WARP_FIELD.md). While this world " +
+                 "is live, every length a player observes - vessel size and speed, camera distance, the " +
+                 "prisms a vessel lays and their spacing - is multiplied by the field's value at that " +
+                 "vessel. A RadialWarp shrinks players toward the centre, so whatever sits there appears " +
+                 "to grow. Empty = no warp (every scale is exactly 1).")]
+        public WarpFieldSO WarpField;
+
         [Header("Sensing")]
         [Tooltip("Optional override for the cell's mass-SENSING radius - prism registration " +
                  "(ContainsPosition) and the density grids fauna seek mass with - independent of " +
@@ -62,8 +70,9 @@ namespace CosmicShore.Utility
         [Tooltip("How big a danger-prism contact bites in this cell (VesselElementalDebuffByDangerPrismEffectSO). " +
                  "Shipped = the effect asset's debuffMagnitude (-0.5 = 5 petals per element); Tuned = its " +
                  "tunedDebuffMagnitude (-0.1 = 1 petal). Applies to the hostile burn and the own-domain " +
-                 "temporary debuff alike. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
-        public PetalBurnRule PetalBurnRule = PetalBurnRule.Shipped;
+                 "temporary debuff alike. Tuned is the default in every cell (Garrett, 2026-10-08); Shipped " +
+                 "stays available per cell. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
+        public PetalBurnRule PetalBurnRule = PetalBurnRule.Tuned;
 
         [Tooltip("Who controls this cell before anybody has claimed it - i.e. the colour its fauna " +
                  "spawn in while the cell's own prism-count leader (the nucleus claim, or the " +

@@ -63,7 +63,7 @@ namespace CosmicShore.UI
                  "Should be the scene-wired FriendsListPanel.")]
         [SerializeField] private FriendsListPanel friendsListPanel;
 
-        /// <summary>Max slots rendered - matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
+        /// <summary>Max slots rendered - the party size, <c>HostConnectionDataSO.MaxPartySlots</c> (4).</summary>
         const int MAX_SLOTS = 4;
 
         readonly List<PartyRoster.Seat> _seats = new();
@@ -354,10 +354,9 @@ namespace CosmicShore.UI
         /// <summary>
         /// Builds the synced seating into <see cref="_seats"/>.
         ///
-        /// <para>The panel draws at most <see cref="MAX_SLOTS"/> seats while the party's
-        /// transport capacity is deliberately one higher (anti-flicker headroom - see
-        /// <c>HostConnectionDataSO.MaxPartySlots</c>), so a transient fifth member can exist.
-        /// If that pushes the LOCAL player past the last drawn slot they are moved INTO it: a
+        /// <para>The panel draws at most <see cref="MAX_SLOTS"/> seats. The party session holds exactly
+        /// that many, but the synced seating is built from a polled roster that can briefly carry
+        /// one player twice on a join or leave. If that pushes the LOCAL player past the last drawn slot they are moved INTO it: a
         /// panel that stops showing you your own party is a worse lie than a momentarily
         /// imperfect ordering, and the condition clears itself on the next reconcile.</para>
         /// </summary>

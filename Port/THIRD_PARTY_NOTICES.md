@@ -1,4 +1,4 @@
-# Prisma — third-party notices
+# Amoebius — third-party notices
 
 Everything under `Port/` is first-party Froglet Inc. code except the components below, which
 the engine, the player and the launcher use as libraries. None of them is Unity software, and
@@ -14,7 +14,7 @@ no Unity binary is used at build time or at run time.
 | StbImageSharp | texture loading | public domain / MIT | yes |
 | Newtonsoft.Json | `CosmicShore.Live` (the game's own scripts use it) | MIT | yes |
 | FMOD Studio (Firelight Technologies Pty Ltd.) | audio | **Proprietary — FMOD EULA**; needs an FMOD licence for the shipped tier and the in-game credit "FMOD Studio by Firelight Technologies Pty Ltd." | yes |
-| Inter, Chakra Petch, Aldrich | Prisma UI fonts | SIL Open Font License 1.1 | Prisma app only |
+| Inter, Chakra Petch, Aldrich | Amoebius UI fonts | SIL Open Font License 1.1 | Amoebius app only |
 | Roboto Mono | launcher console font | Apache 2.0 | launcher only |
 | xunit, NUnit, Microsoft.NET.Test.Sdk | tests | Apache 2.0 / MIT | never |
 

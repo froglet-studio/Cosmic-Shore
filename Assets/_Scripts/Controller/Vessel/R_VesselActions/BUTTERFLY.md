@@ -101,6 +101,16 @@ default** — so the fleet value belongs in the initializer, and a gate belongs 
 The rest of its camera block is deliberate and unflagged: `dynamicMinDistance 10` /
 `dynamicMaxDistance 40`, `followSmoothTime 0.2`, `rotationSmoothTime 5`, adaptive zoom off.
 
+**The height follows the mode (2026-10-08).** In **Mass mode** the camera drops to directly behind
+the hull — the offset's 37.4 of height goes to 0 and the 204 of distance is kept; **Dust mode**
+keeps the authored `(0, 37.4, -204)`. `SpreadWingsActionSO.massModeCameraHeight` (0..1, default 0)
+is the fraction of the height Mass mode keeps, and the executor eases it on the same
+`widthBlendSeconds` blend as the wake and the HUD's Mass card. It is written as
+`CustomCameraController.FollowHeightScale`, a multiplier applied at the point of use like
+`RearView` — never into `_followOffset`, which every re-applied `CameraSettingsSO` and zoom
+ability rewrites — and only while the player rig is following THIS Butterfly
+(`CameraFollowTarget` identity); the rig resets it to 1 whenever its follow target changes.
+
 ### 2.1 What the elements do to the shape
 
 The four morphs are `Generate` run at perturbed settings, so "level 7 Mass and level 3 Space" is the
@@ -146,7 +156,9 @@ field), both always on and both invisible, and an RT that spent a wing-energy me
 wake. It now has **ONE skimmer** — a capsule hanging below the hull — and the right trigger is a
 **mode switch**: Mass mode paints (wide wake, dust off), Dust mode dusts (narrow wake, capsule on
 and drawn as falling motes). Nothing costs energy any more; the choice itself is the cost, because
-you cannot paint wide and dust at once.
+you cannot paint wide and dust at once. (Since 2026-10-09 it also carries an always-on **crystal
+catcher** in the far-field slot — §3.1a — because the re-cut took elemental crystal pickup away
+with the wing skimmers.)
 
 ### 3.1 Charge — Scale Dust
 
@@ -189,6 +201,36 @@ clamped 0..15) publishes the integer levels and `ElementalFloat.EvaluateReplicat
 them. Integer levels are exactly what an `ElementalFloat` is authored against, so nothing is lost;
 fractional overcharge above 15 clamps.
 
+### 3.1a The crystal catcher (2026-10-09)
+
+**Symptom:** "the Butterfly does not collect elemental crystals." An elemental crystal is collected
+**only** by a skimmer contact — `ElementalCrystalImpactor.AcceptImpactee` ignores everything that is
+not a `SkimmerImpactor` (the hull's `VesselImpactor` takes omni crystals, which is why the bloom
+still fired). The re-cut left the dust capsule as the hull's ONLY skimmer, and `ButterflyDustField`
+switches its collider and impactor off outside Dust mode — the mode the Butterfly spawns and mostly
+flies in. So in Mass mode the hull had no live skimmer and flew straight through every elemental
+crystal; even in Dust mode only the column hanging *below* the hull could take one.
+
+**Fix:** `ButterflyCrystalSkimmer.prefab`, a plain trigger sphere (fixed **30 u** diameter — no
+element owns it; Space is the dust's length, one parameter per element), always on, wired as
+`VesselStatus._farFieldSkimmer` so `VesselController.Initialize` initialises it (an uninitialised
+skimmer credits nobody — vessel skill rule 11). Its container
+(`ButterflyCrystalSkimmerImpactorDataContainer`) is **empty on purpose**: collection is the
+crystal's side (`ElementalCrystalImpactor.CollectBy` runs the crystal's own collection effects and
+credits `skimmer.VesselStatus` — score, element level), and with every list empty
+`SkimmerImpactor.AcceptImpactee` returns before doing anything to a prism, pilot or heart, so an
+always-on sphere cannot dust in Mass mode. Fleet-wide nothing reacts to a skimmer from the other
+side either (measured 2026-10-09: eight `VesselContainers/*.asset` author `vesselSkimmerEffects: []`
+and Dolphin/Urchin omit the key; `PrismImpactor`'s skimmer list is never assigned). It vacuums crystals toward the hull like every other skimmer
+(`vacuumCrystal`, 80). Both are authored by `Tools/Build/author_butterfly_dust.py` (its `--check`
+fails if the far field stops pointing at the catcher or its container gains an effect) and mirrored
+by the Create Butterfly Vessel tool.
+
+The same pass wired the dust capsule's `onSkimmerShipImpact` (`EventOnSkimmerShipCollision`, as
+every other hull): it was null, and `Skimmer.ExecuteImpactOnShip` raises it unguarded after the
+vessel effects run, so every Dust-mode bite on a pilot threw a `NullReferenceException` from
+`OnTriggerEnter`.
+
 ### 3.2 Mass — Mass / Dust Mode
 
 The right trigger **toggles** (`SpreadWingsActionSO.inputStyle`, `Toggle` by default; `HoldForDust`
@@ -201,6 +243,9 @@ is the other option and is one enum change away). A Butterfly spawns in **Mass m
   `VesselPrismController.WidthMultiplier`, eased over `widthBlendSeconds` (1.5 s) so a mode change
   reads as a stroke rather than a snap.
 - **Dust mode**: the wings fold, the wake narrows to the unmultiplied key, and the capsule goes live.
+
+The follow camera moves with the mode: directly behind the hull in Mass mode, at its authored
+height in Dust mode (§2.0).
 
 `WidthMultiplier` is a new, general knob on the prism controller (default 1, so every other vessel
 is byte-identical). A widened prism **states** its size through `Prism.AdmitTargetScale` after
@@ -239,6 +284,81 @@ growth axis.
 **Diamond Dust (L5)** replaces Broadwing: dust on your own **plain** mass has a **6%** chance to
 raise a **super-shield** instead. It is deliberately rare — super-shielded mass is invulnerable to
 everything but an energised Rhino blade.
+
+### 3.3a The omni-crystal bloom (2026-10-08)
+
+Collecting an omni crystal sets off a **900-unit bloom** (`AOEButterflyBloom.prefab`, radius 450,
+0.6 s). It shipped carrying only the heart-kill below, so in play it was a huge flash that changed
+nothing. It now carries the Butterfly's whole verb set at once:
+
+| Target | What the bloom does | Asset |
+|---|---|---|
+| **Opposing pilot** | **strips** all four elements — the petals are EJECTED as collectable crystals (`ElementalTransfer.Eject`, classed `Explosion`), priced as the Debuff verb: **1.2 petals per element** | `ButterflyBloomDebuffByExplosionEffect` |
+| Opposing pilot | **scores a combat hit** (Debuff class, 12 points) — the Dolphin cone's shared reporter: only if the victim could be debuffed, only on the owning machine (the bloom is replayed on server AND owner) | `VesselCombatHitByCrystalBlast` |
+| **Own-domain prism** | the dust's TEND roll: grow / dangerous / shielded (0.4 / 0.3 / 0.3), Diamond Dust at Space 5 | `ButterflyBloomDust` (prefab component) |
+| **Opposing prism** | the dust's BLIGHT roll: destroyed / shrunk / stolen (1 / 1 / 1) | same |
+| Opposing lifeform heart | dies (unchanged) | `ButterflyBloomWitherLifeformEffect` |
+
+**The prism half owns no table.** `ButterflyBloomDust` (on the bloom prefab, an
+`IExplosionPrismPayload`) holds the dust's own `ButterflyScaleDustPrismEffect` asset and calls its
+`Apply`, so the bloom and the capsule roll from
+one set of weights and one deterministic per-prism hash — retune the dust and the bloom follows. The
+blast only supplies the DESTROY outcome's striker velocity: its own impact vector at the prism, so
+debris leaves along the wavefront (still × `restitution`, capped at `debrisSpeedLimit`).
+
+**How a non-destructive blast reaches prisms at all.** The bloom authors `affectsPrisms: 0`, so it
+never runs the Burst damage pass and its trigger declines prisms — which is also why its
+`explosionPrismEffects` could never have fired. `ExplosionImpactor.SweepPrismEffects` is the new
+path: for a blast with `affectsPrisms` OFF that carries prism effects (container entries or an
+`IExplosionPrismPayload` component), it queries
+`PrismSpatialIndex.QuerySphere` over each frame's wavefront, dispatches each prism once (instance-id
+ledger), at most 48 per frame (the Burst pass's own budget), and drains the remainder after the
+visual — identity-checked by `TimeCreated` so a pooled prism re-issued in the meantime is skipped. A
+blast that DOES damage mass is not swept (its mass is already decided), and only the SPHERICAL frame
+calls it.
+
+**Own pilot is spared** (`affectSelf: 0`): the bloom strips rivals only. One bloom pays a victim
+once (`ExplosionImpactor._vesselsHit`).
+
+**It is drawn as the capsule's dust** (`ButterflyBloomDust` on the prefab, round 2). Same material
+(`fx_spark_oval`), same colour rule (`ButterflyDustField.ResolveMoteColour` — the shielded rim of
+the pilot's domain), same in-hold-out fade and downward drift as the Dust-mode motes, in two layers:
+the wavefront leaves **2400 motes** through the sphere at constant density (the count follows swept
+volume, r³, so the haze is as thick beside the hull as at the rim), and **every prism the dust
+changes releases a puff of 5 larger motes** where it stood — the eye goes straight to the mass that
+grew, shielded, went dangerous, shrank, was stolen or died. The particle object is detached from the
+blast and outlives it by one mote lifetime. Cosmetic only, private xorshift scatter.
+
+**Telemetry.** Turn on **FrogletTools > Toolbox > Logging > `[ButterflyBloom]`** and each bloom
+logs one line as it retires: `reached=N` (prisms the sweep queued), `dispatched=N` (prisms a payload
+actually ran on) and the outcome tally (grow / danger / shield / super / untouched · destroy /
+shrink / steal / deflect · skipped). It separates "the sweep found nothing" (`reached=0`), "found
+prisms, dispatched nothing" (`dispatched=0`) and
+"changed things too subtly to see". The first playtest of round 1 reported exactly that ambiguity
+("prisms briefly turned lit, none seemed affected") — the lit is the bloom's long-standing
+own-domain passthrough light, not evidence the dust ran.
+
+**Round 2's answer (2026-10-08).** The log read `reached=617` with an all-zero tally, beside
+`explosionPrismEffects[0] is empty`: the sweep worked, but `ButterflyBloomScaleDustPrismEffect`
+loaded as null in that editor, so no effect ever ran. The branch's data was clean on all four
+null-slot causes (slot names a real guid · the guid has a `.meta` · the asset's script guid resolves
+to the `.cs` · the class derives from the slot's type), which puts the fault in the editor's import:
+the asset arrived in the SAME pull as its brand-new script and was imported before that script
+compiled. The asset's bytes were changed to force a re-import, and the log gained `dispatched=N`.
+
+**Round 3: that theory was wrong.** After the forced re-import the same editor logged `reached=858
+dispatched=0` and the same empty slot. The cause stayed invisible from the branch — all four checks
+still pass — so the dependency was REMOVED rather than chased a fourth time: the
+`ExplosionScaleDustPrismEffectSO` type and its asset are deleted, the container's
+`explosionPrismEffects` is empty again, and the bloom's prism dust is applied by
+`ButterflyBloomDust` itself, through the new `IExplosionPrismPayload` seam on `ExplosionImpactor`.
+That component and the dust asset it references both demonstrably load in that editor (the motes
+drew; the capsule dusts). **The open question for whoever next adds a ScriptableObject type by
+generator: a brand-new SO class whose first asset was written outside Unity loaded as null in a
+playtester's editor, three runs in a row, with every repo-side reason for a null slot ruled out.
+Selecting that asset in the inspector would have named the cause; nobody did. Prefer a
+serialized field on a component that already loads, and when a new SO type is unavoidable, have
+the human open its asset once before the playtest.**
 
 ### 3.4 Time — Fold
 
@@ -329,15 +449,16 @@ screen is unchanged apart from the row itself.
 | Fold tuning / executor | `R_VesselActions/Data Containers/FoldActionSO.cs`, `R_VesselActions/Executors/FoldActionExecutor.cs` |
 | Mode switch tuning / executor | `R_VesselActions/Data Containers/SpreadWingsActionSO.cs`, `R_VesselActions/Executors/SpreadWingsActionExecutor.cs` |
 | Dust capsule (collider gate + motes) | `R_VesselActions/ButterflyDustField.cs`, `_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab` |
+| Crystal catcher (always-on elemental pickup, §3.1a) | `_Prefabs/Spacevessels/Components/ButterflyCrystalSkimmer.prefab`, `ButterflyCrystalSkimmerImpactorDataContainer.asset` (empty) |
 | Dust (mass) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs` |
 | Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` (`biteScale`) |
 | Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` (opposing), `SkimmerNourishLifeformByCrystalEffectSO.cs` (ally) |
-| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` |
+| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` (strip `ButterflyBloomDebuffByExplosionEffect`, hit `VesselCombatHitByCrystalBlast`, heart-kill `ButterflyBloomWitherLifeformEffect`) |
+| Bloom → prisms + look | `R_VesselActions/ButterflyBloomDust.cs` (`IExplosionPrismPayload`), `ExplosionImpactor.SweepPrismEffects` |
 | Replicated element levels | `R_VesselActionHandler.NetElementLevels`, `R_VesselElementalAbilityHandler.ReplicatedLevel`, `ElementalFloat.EvaluateReplicated` |
 | Dust assets (generated) | `Tools/Build/author_butterfly_dust.py` (`--check`) |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |
-| Fold gate | `R_VesselActions/FoldGate.cs`, `R_VesselActions/FoldGateGeometry.cs` |
-| Fold gate offline proof | `Tools/Build/foldgate_harness/` (compiles and RUNS the shipped geometry) |
+| Fold wormhole (replaced the ring gates 2026-10-08; carries anyone, rivals pay a petal toll — `BUTTERFLY_FOLD.md` § "Anyone rides") | `Controller/Environment/Wormhole/WormholeMouth.cs`, `WormholeView.cs`, `WormholeGeometry.cs` (+ `WormholeGeometryTests`, `WormholeTollTests`); tuning on `ButterflyFoldAction.asset` |
 | HUD | `UI/Controller/ButterflyHUDController.cs`, `UI/View/ButterflyHUDView.cs` |
 | HUD row + icons (authored) | `Tools/Build/author_butterfly_ability_row.py`, `Tools/Build/author_butterfly_icon_placeholders.py` |
 | Design record | `Assets/Resources/ElementalAbilityMaps/Butterfly.asset` |
@@ -360,8 +481,9 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 1. **Build.** Run the tool. Expect zero `UNWIRED` lines. It is idempotent — safe to re-run.
 2. **Offline gate.** `DOTNET_ROOT=… Tools/Build/butterfly_hull_harness/run.sh` → `ALL CHECKS PASSED`.
 3. **Audits.** `FrogletTools ▸ Vessels ▸` **Audit Vessel Ability Rows** (4/4, in order),
-   **Audit Vessel Skimmers** (ONE skimmer, the near field, assigned; the far field EMPTY by design
-   — the audit may flag its collider as disabled at rest, which is Mass mode working), **Audit Vessel Elemental Morphs**
+   **Audit Vessel Skimmers** (near field = the dust capsule — the audit may flag its collider as
+   disabled at rest, which is Mass mode working; far field = `ButterflyCrystalSkimmer`, reported
+   `OK (crystal pickup only — no prism effects)`), **Audit Vessel Elemental Morphs**
    (four PROCEDURAL morphs, none INERT), **Audit Ability Lockups**, **Audit Vessel Construction**.
 4. **Fly it** in Menu_Main freestyle via the vessel-changer toy. Check: the hull is a butterfly and
    the wings BEAT visibly from the chase camera; the wake is a row of separate wide keys.
@@ -377,8 +499,21 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 5b. **Dust on the living.** Dust an opposing pilot (debuff lands; bigger at high Charge), an opposing
    creature or plant (it dies and drops its crystal), and one of your own (nothing visible changes —
    its starvation clock resets).
-5c. **Omni crystal.** Collect one: a large bloom; any opposing lifeform heart inside it dies; your
-   own lifeforms and all prisms survive.
+5c. **Omni crystal.** Collect one: a large bloom (radius ~450). Inside it: any opposing lifeform
+   heart dies; your own lifeforms survive; **your own trail** keys grow / go dangerous / go shielded
+   riding the wavefront outward; **an opponent's trail** keys vanish, shrink or turn your colour; an
+   **opposing pilot** inside it sheds elemental crystals (their flowers drop ~1 petal per element and
+   collectable crystals fly out along the blast), you do not, and **you score a hit** (Broadside-style
+   points / hit toast). The sphere fills with falling motes in your domain's shielded colour, and
+   every changed key puffs dust. If keys look unchanged, read the `[ButterflyBloom]` log line
+   before anything else. Run it twice on MPPM: the same keys
+   do the same thing on both clients. With a dense arena in range, confirm no frame hitch beyond the
+   ordinary debris (≤ 48 outcomes per frame).
+5d. **Elemental crystals (§3.1a).** In **Mass mode** (the spawn mode — do not press RT) fly through
+   an elemental crystal: it is snatched into the hull, the matching element's flower fills, and the
+   pickup counts in a mode that scores crystals. Repeat in Dust mode. Then dust a lifeform to death
+   and collect the crystal it drops. The console must show NO `[CrystalMorph] [HullFusion] … collected
+   by a skimmer with no vessel` warning, and no `NullReferenceException` when the dust bites a pilot.
 6. **Fold** (LT): the vessel stops, a ghost appears on the hull and travels; thumbs IN pull it to the
    cell core, thumbs OUT to the membrane, hands off leaves it at half radius; `YDiff` rolls the
    whole frame; release teleports you. Confirm the Time card's veil sweeps and a second press inside
@@ -391,12 +526,28 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 
 ## 9. Follow-ups
 
-- **The omni-crystal bloom kills opposing LIFEFORM hearts only.** "Destroys opposing domain
-  crystals" was read as the crystals that belong to an opposing domain in play — the hearts of its
-  flora and fauna. Opposing **team crystals** (`TeamCrystalImpactor`) are not in the blast's sweep
+- **The crystal catcher does not grow with the hull** (§3.1a, 2026-10-09). It is a fixed 30 u
+  sphere (`CRYSTAL_DIAMETER` in `author_butterfly_dust.py`) against a 21.35 u span at rest, and Mass
+  makes the hull bigger everywhere (§2.1), so at high Mass the wingtips can pass a crystal the sphere
+  does not reach. Deliberately NOT element-scaled: giving it an `ElementalFloat` would be a second
+  parameter on an element that already owns one, which is a design call, not wiring. Decide after a
+  playtest whether 30 reads right at Mass 0 and Mass 10; if it needs to follow the hull, the
+  candidate is reading the hull's own live span rather than adding an element channel.
+- **The bloom does not touch opposing TEAM crystals.** (It now strips pilots and dusts prisms —
+  §3.3a.) "Destroys opposing domain crystals" was read as the hearts of an opposing domain's flora
+  and fauna. Opposing **team crystals** (`TeamCrystalImpactor`) are not in the blast's sweep
   (`ExplosionImpactor.SweepCrystals` picks up OMNI crystals only) and are untouched; that needs a new
-  sweep arm if wanted. The bloom is **non-destructive to prisms** (`destructive: 0` on
-  `AOEButterflyBloom.prefab`) — one field if it should also clear mass.
+  sweep arm if wanted. The bloom's generic damage pass stays OFF (`affectsPrisms: 0`) — its
+  mass outcome is the dust roll; turning it on would SKIP the dust sweep, which the generator's
+  validation refuses.
+- **A third peer never sees the bloom.** Crystal collection resolves on the server and is
+  REPLAYED to the owning client only (`NetworkCrystalManager.ReplayVesselCrystalEffects`), so the
+  bloom — and its dust on prisms — runs on those two machines. A third client's prisms do not change.
+  The Dolphin cone's prism damage has the same shape; fixing it is a crystal-replay change, not a
+  Butterfly one.
+- **`explosionPrismEffects` still never run on a blast that DOES damage mass** while the spatial
+  index is up (the Burst pass does not dispatch them; only the Physics fallback does). No shipped
+  blast authors any, so nothing is lost today.
 - **`R_VesselActionHandler.NetElementLevels` replicates element levels fleet-wide** (one ushort per
   vessel, owner-written only on change). Only the Butterfly reads it today
   (`ElementalFloat.EvaluateReplicated`). Every other skimmer effect that scales on a level still reads
@@ -412,8 +563,30 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 - **No jets and no tail mounts are authored.** `VesselTailAndJets` is on the prefab; the mounts are
   not (`Docs/VESSEL_TAIL_AND_JETS.md` §4.z: the plume's dial is `m_LocalScale` on the jet instance,
   target `(0.6, 0.6, 0.13) × |followOffset.z| / 20` = `(3.6, 3.6, 0.78)` at this camera).
-- **No FMOD events.** Every sound slot ships empty and therefore silent, per the audio convention —
-  a wingbeat, the fold's departure and arrival, and the dust are the four that want events.
+- **No FMOD events are AUTHORED, but every slot now exists** (2026-10-05). Each ships empty and
+  therefore silent, per the audio convention — an empty `EventReference` is a clean no-op:
+  - `ShipAudioController` on the root — `engineEvent` (the engine loop; the fleet's other hulls use
+    `event:/Engine stuff/space ship engine main`). Empty logs ONE warning per hull per session.
+  - `SpreadWingsActionExecutor` — `massModeEvent`, `dustModeEvent` (the RT switch, only on a press
+    or release that actually changed the mode).
+  - `FoldActionExecutor` — `foldEngageEvent`, `foldDepartEvent`, `foldArriveEvent`,
+    `gatesOpenEvent`, `gateThreadEvent` (the last handed to each `WormholeMouth` at build, since a
+    mouth is AddComponent'd at runtime and has no inspector). A PEER voices the arrival once the
+    replicated pose is seen, not at the origin.
+  - `ButterflyDustField` on `Components/ButterflyDustSkimmer.prefab` — `scaleDustBiteEvent`
+    (Charge; played by `VesselElementalDebuffBySkimmerEffectSO` after its per-victim cooldown),
+    `dustTendEvent` / `dustBlightEvent` (Space; played by `SkimmerScaleDustPrismEffectSO`,
+    throttled per kind by `dustReachSoundInterval`), and `heartWitherEvent` / `heartNourishEvent`
+    (the heart halves: played by `SkimmerWitherLifeformByCrystalEffectSO` only when the kill
+    landed and by `SkimmerNourishLifeformByCrystalEffectSO` only when the refresh landed, at the
+    heart, each on its own `dustReachSoundInterval` clock; the effects find the field with
+    `TryGetComponent` on the skimmer, so any other adopter of those effects stays silent).
+  - `ButterflyAnimation` on `Butterfly.prefab` — `wingbeatEvent`, one voice per beat cycle at the top of the
+    stroke (phase 0.25, the start of the downstroke), attached to the hull, so its rate follows the
+    speed-driven beat. Silent while the beat's half-amplitude is under `wingbeatMinAmplitude`
+    (default 4°), which is what the fold drives it to; the glide (16°) and spread stay above it.
+  The new slots serialize empty on the prefab's next save; no prefab carries a value for them.
+  The Butterfly has no slotless sound left.
 - **The hull's morph bake duplicates the Scarab's.** `BakeMorphSet`/`BlendPart`/`AssertSameTopology`
   are the same machinery with different geometry. Extracting a shared `ProceduralHullMorph` is a
   genuine refactor, deliberately **logged and not acted on** inside a new-vessel branch.
@@ -421,8 +594,12 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
   `IProceduralHullSource`, but the codex bake has not been re-run.
 - **The four ability icons are PLACEHOLDERS** (§5.1), white silhouettes for the art pass to replace
   1:1. `upgradedSprite` is empty on all four, so an upgrade is signalled by the card alone.
-- **No card icons.** `SO_Class_Butterfly` authors no `IconActive`/`IconInactive`, so
-  `check_vessel_class_icons.py` is red on this hull. The Scarab's fix
-  (`Tools/Build/render_scarab_card_icons.py`) is the pattern.
-- **A standing fold gate has no HUD marker and no sound**, and an AI never threads one
+- **The card icons are a PLACEHOLDER.** `SO_Class_Butterfly`'s `IconActive` and `IconInactive`
+  both point at the Spread Wings ability placeholder (`Butterfly_SpreadWings.png`, guid
+  `4470d95b…`), wired in the registration-drift pass (#965, 2026-10) so
+  `check_vessel_class_icons.py` passes (11/11 resolve, re-run 2026-10-06). The guids resolve, but
+  the art is not the hull's own render and active/inactive are the same sprite. A real pair is
+  still owed; the Scarab's renderer (`Tools/Build/render_scarab_card_icons.py`) or the Urchin's
+  (`author_urchin_card_icons.py`) is the pattern.
+- **A standing fold wormhole has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
   (`BUTTERFLY_FOLD.md` § Follow-ups).

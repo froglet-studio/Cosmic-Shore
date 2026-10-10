@@ -1,0 +1,1055 @@
+{
+  "source": "Port/tools/gen_parity_scoreboard.py",
+  "results": {
+    "date": "2026-10-07",
+    "cases": [
+      "boot-menu",
+      "random",
+      "skimrace-fly"
+    ]
+  },
+  "summary": {
+    "subsystems": {
+      "Faithful": 0,
+      "Approximate": 26,
+      "Missing": 6
+    },
+    "shaders": {
+      "Faithful": 0,
+      "Approximate": 63,
+      "Missing": 18
+    }
+  },
+  "subsystems": [
+    {
+      "id": "game-code",
+      "area": "Core",
+      "name": "Game code compiles and runs unmodified (Assets/_Scripts live compile)",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "ExecutionOrderTests"
+      ],
+      "parity": [
+        {
+          "channel": "boot-menu/state",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "scene-load",
+      "area": "Core",
+      "name": "Unity YAML scenes and prefabs",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "ContentSceneTests",
+        "ContentYamlTests",
+        "SceneManagementTests"
+      ],
+      "parity": [
+        {
+          "channel": "boot-menu/state",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "serialization",
+      "area": "Core",
+      "name": "Unity serialization rules",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "UnitySerializationRulesTests",
+        "SerializerContractTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "game-loop",
+      "area": "Core",
+      "name": "Player loop, execution order, coroutines, async",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "GameLoopAndTasksTests",
+        "ExecutionOrderTests",
+        "ResourceAndCoroutineTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/events",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "random",
+      "area": "Core",
+      "name": "UnityEngine.Random sequences per seed",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "MathTests"
+      ],
+      "parity": [
+        {
+          "channel": "random/random",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "reflex",
+      "area": "Core",
+      "name": "Reflex dependency injection",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "InjectionTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "soap",
+      "area": "Core",
+      "name": "SOAP events and variables (GameDataSO match events as events kind game)",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "SoapTests",
+        "SoapListenerTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/events",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "input",
+      "area": "Input",
+      "name": "Input System devices and strategies to IInputStatus",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "InputStatusTests",
+        "InputStrategyTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/transforms",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "replay",
+      "area": "Input",
+      "name": "Input replay at IInputStatus (game-side ReplayPlayer, Unity PR)",
+      "status": "Missing",
+      "why": "not implemented",
+      "tests": [],
+      "parity": []
+    },
+    {
+      "id": "gameplay-state",
+      "area": "Gameplay",
+      "name": "Scores, crystals, round stats, match result",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "ScoringArcadeTests",
+        "ScoringFamilyTests",
+        "RoundStatsTests",
+        "TurnMonitorTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/state",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "vessel-motion",
+      "area": "Gameplay",
+      "name": "Vessel transforms in flight",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "VesselTransformerTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/transforms",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "ecology",
+      "area": "Gameplay",
+      "name": "Cells, flora, fauna",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "CellTests",
+        "CellEcologyTests",
+        "LifeFormFamilyTests",
+        "BoidChainTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "physics-queries",
+      "area": "Physics",
+      "name": "Triggers, overlaps and raycasts over spheres, oriented boxes and capsules (vessel trigger contacts as events kind contact)",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "PhysicsOverlapTests",
+        "PhysicsStepContractTests",
+        "OrientedShapeTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/events",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "physics-contacts",
+      "area": "Physics",
+      "name": "Sphere contacts and OnCollision* (the C3 census: the Astro League ball)",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "ContactPassTests"
+      ],
+      "parity": [
+        {
+          "channel": "astroleague-strike/state",
+          "result": "no result"
+        },
+        {
+          "channel": "astroleague-strike/events",
+          "result": "no result"
+        }
+      ]
+    },
+    {
+      "id": "animator",
+      "area": "Animation",
+      "name": "Animator, blend trees, FBX takes",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "AnimatorPlaybackTests",
+        "ModelAnimationTests",
+        "VesselAnimationTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "skinning",
+      "area": "Animation",
+      "name": "Skinned meshes",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "SkinBindposeTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "rigging",
+      "area": "Animation",
+      "name": "Animation Rigging constraints",
+      "status": "Missing",
+      "why": "not implemented",
+      "tests": [],
+      "parity": []
+    },
+    {
+      "id": "timeline",
+      "area": "Animation",
+      "name": "Timeline playback",
+      "status": "Missing",
+      "why": "not implemented",
+      "tests": [],
+      "parity": []
+    },
+    {
+      "id": "tween",
+      "area": "Animation",
+      "name": "DOTween",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "DOTweenShimTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "fmod-events",
+      "area": "Audio",
+      "name": "FMOD event sequence: starts and restarts, stops, FMOD and Unity mixer snapshots (order, count, timing; C4)",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "FmodBackendTests",
+        "FmodParityEventsTests",
+        "AudioSystemTests"
+      ],
+      "parity": [
+        {
+          "channel": "boot-menu/events",
+          "result": "missing"
+        },
+        {
+          "channel": "skimrace-fly/events",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "audio-mix",
+      "area": "Audio",
+      "name": "Bus and VCA levels at snapshot changes (within 1 dB)",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "FmodBackendTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "render-core",
+      "area": "Rendering",
+      "name": "Scene renderer, materials, lighting",
+      "status": "Approximate",
+      "why": "partly implemented",
+      "tests": [
+        "RenderBoundaryTests",
+        "RenderChangeTrackingTests",
+        "MaterialRevisionTests"
+      ],
+      "parity": [
+        {
+          "channel": "boot-menu/frames",
+          "result": "missing"
+        },
+        {
+          "channel": "skimrace-fly/frames",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "post",
+      "area": "Rendering",
+      "name": "Post stack (ACES, bloom, Panini)",
+      "status": "Approximate",
+      "why": "partly implemented",
+      "tests": [
+        "VolumeStackTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/frames",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "entities",
+      "area": "Rendering",
+      "name": "Entities Graphics prism mass",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "EntitiesShimTests",
+        "PrismManagerTests"
+      ],
+      "parity": [
+        {
+          "channel": "skimrace-fly/frames",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "particles",
+      "area": "Rendering",
+      "name": "ParticleSystem (26 prefabs)",
+      "status": "Missing",
+      "why": "not implemented",
+      "tests": [],
+      "parity": []
+    },
+    {
+      "id": "vfx-graph",
+      "area": "Rendering",
+      "name": "VFX Graph (2 graphs; Approximate is the target)",
+      "status": "Missing",
+      "why": "not implemented",
+      "tests": [],
+      "parity": []
+    },
+    {
+      "id": "ugui",
+      "area": "UI",
+      "name": "uGUI layout, graphics, events, navigation",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "EngineUiLayoutTests",
+        "EngineUiGraphicTests",
+        "EngineUiEventTests",
+        "EngineUiNavigationTests",
+        "EngineUiGeometryTests"
+      ],
+      "parity": [
+        {
+          "channel": "boot-menu/frames",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "tmp",
+      "area": "UI",
+      "name": "TextMeshPro text",
+      "status": "Approximate",
+      "why": "no Unity golden yet",
+      "tests": [
+        "UiShellTests"
+      ],
+      "parity": [
+        {
+          "channel": "boot-menu/frames",
+          "result": "missing"
+        }
+      ]
+    },
+    {
+      "id": "netcode-lan",
+      "area": "Networking",
+      "name": "Netcode over TCP, LAN parties",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "NetworkingTests",
+        "NetWireTests",
+        "MultiplayerSessionTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "internet-relay",
+      "area": "Networking",
+      "name": "Internet relay and real UGS (gate G2)",
+      "status": "Missing",
+      "why": "not implemented",
+      "tests": [],
+      "parity": []
+    },
+    {
+      "id": "cloud-data",
+      "area": "Services",
+      "name": "Cloud Save / stats (local stand-ins)",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "CloudDataTests",
+        "PlayerDataCloudTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "performance",
+      "area": "Performance",
+      "name": "p95 frame time within 10% of Unity (C7)",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "LongRunMemoryTests"
+      ],
+      "parity": []
+    }
+  ],
+  "shaders": [
+    {
+      "path": "Assets/NiceVibrations/Demo/_Common/Shaders/MaskedUI.shader",
+      "name": "MoreMountains/MaskedUI",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/BlockMaterials/PrismShader.shader",
+      "name": "BlockShaders/Prism",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/AnimatedSpindleGraph.shadergraph",
+      "name": "Shader Graphs/AnimatedSpindleGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/AxeBubbleDecal.shadergraph",
+      "name": "Shader Graphs/AxeBubbleDecal",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/BallTrail.shader",
+      "name": "CosmicShore/BallTrail",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
+      "name": "Shader Graphs/BlockGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph",
+      "name": "Shader Graphs/CageGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CausticsNoiseGraph.shadergraph",
+      "name": "Shader Graphs/CausticsNoiseGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader",
+      "name": "Shader Graphs/ChargeCrystal",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ConicGraph.shadergraph",
+      "name": "Shader Graphs/ConicGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CrystalGraph.shadergraph",
+      "name": "Shader Graphs/CrystalGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/DandruffGraph.shadergraph",
+      "name": "Shader Graphs/DandruffGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/DynamicFresnelGraph.shadergraph",
+      "name": "Shader Graphs/DynamicFresnelGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/EchoSightHalo.shader",
+      "name": "CosmicShore/EchoSightHalo",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
+      "name": "Shader Graphs/ExplodingBlockGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ExplodingCrystalGraph.shadergraph",
+      "name": "Shader Graphs/ExplodingCrystalGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ExplosionGraph.shadergraph",
+      "name": "Shader Graphs/ExplosionGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ForceFieldGraph.shadergraph",
+      "name": "Shader Graphs/ForceFieldGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader",
+      "name": "Shader Graphs/ForcefieldCrackle",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader",
+      "name": "Shader Graphs/ForcefieldCrackleCapsule",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph",
+      "name": "Shader Graphs/FresnelGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/HilbertGraph.shadergraph",
+      "name": "Shader Graphs/HilbertGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/InverseDynamicFresnelGraph.shadergraph",
+      "name": "Shader Graphs/InverseDynamicFresnelGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/LaserGraph.shadergraph",
+      "name": "Shader Graphs/LaserGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph",
+      "name": "Shader Graphs/SuctionGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismGraphs/UnstablePrismGraph.shadergraph",
+      "name": "Shader Graphs/UnstablePrismGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader",
+      "name": "Hidden/CosmicShore/PrismOcclusionDitherPreview",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/PrismSlice.shader",
+      "name": "CosmicShore/PrismSlice",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader",
+      "name": "Shader Graphs/ProjectileChargeField",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ProjectileGraph.shadergraph",
+      "name": "Shader Graphs/ProjectileGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/RippleGraph.shadergraph",
+      "name": "Shader Graphs/RippleGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: SceneColorNode",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SharkSpikeGraph.shadergraph",
+      "name": "Shader Graphs/SharkSpikeGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: SceneColorNode",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/ShepardGraph.shadergraph",
+      "name": "Shader Graphs/ShepardGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SkimmerGraph.shadergraph",
+      "name": "Shader Graphs/SkimmerGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SkyBoxGraph.shadergraph",
+      "name": "Shader Graphs/SkyBoxGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SkyboxModelGraph.shadergraph",
+      "name": "Shader Graphs/SkyboxModelGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SnowGraph.shadergraph",
+      "name": "Shader Graphs/SnowGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SoftSpark.shader",
+      "name": "CosmicShore/SoftSpark",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SpikeGraph.shadergraph",
+      "name": "Shader Graphs/SpikeGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph",
+      "name": "Shader Graphs/SpindleGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StarGraph.shadergraph",
+      "name": "Shader Graphs/StarGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader",
+      "name": "CosmicShore/SwarmMemberInstanced",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/TimeCrystalGraph.shadergraph",
+      "name": "Shader Graphs/TimeCrystalGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VelocityBlockGraphOld.shadergraph",
+      "name": "Shader Graphs/VelocityBlockGraphOld",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VelocityGraphOld.shadergraph",
+      "name": "Shader Graphs/VelocityGraphOld",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph",
+      "name": "Shader Graphs/VesselGraph",
+      "status": "Approximate",
+      "why": "hand-tuned family; frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/VesselTextureGraph.shadergraph",
+      "name": "Shader Graphs/VesselTextureGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/WispGraph.shadergraph",
+      "name": "Shader Graphs/WispGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
+      "name": "CosmicShore/Wormhole",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
+      "name": "Shader Graphs/CreatureTextureGraph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign10_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign10_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign11_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign11_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign12_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign12_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign1_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign1_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign2_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign2_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign3_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign3_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign4_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign4_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign5_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign5_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign6_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign6_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign7_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign7_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign8_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign8_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign9_Graph.shadergraph",
+      "name": "Shader Graphs/WorldSpaceDesign9_Graph",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/DistortionShader.shader",
+      "name": "Custom/TransparentPerlinDistortion",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
+      "name": "CosmicShore/HyperSeaSkybox",
+      "status": "Approximate",
+      "why": "skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs); frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
+      "name": "Custom/OmniChargeEdgesShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
+      "name": "Custom/OmniCrystalFresnelShader",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: CrystalMorph",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
+      "name": "Custom/OmniShepardFresnelShader",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader",
+      "name": "Shapes_Shader_Pack",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader",
+      "name": "Custom/SpreadFresnelShader",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/Standard SSU.shader",
+      "name": "Sprite Shaders Ultimate/Standard SSU",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader",
+      "name": "CosmicShore/StaticSkyPanorama",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader",
+      "name": "Custom/ViewAngleBasedColorBlendHDR",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader",
+      "name": "Custom/CircularGradientFresnel",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/UI/Gradient.shader",
+      "name": "UI/Gradient",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/UI/SilhouetteHolo.shader",
+      "name": "CosmicShore/UI/SilhouetteHolo",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/UI/VolumeDisplayShader.shader",
+      "name": "Shader Graphs/VolumeDisplayShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Models/ShieldShader.shadergraph",
+      "name": "Shader Graphs/ShieldShader",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Prefabs/Spacevessels/Components/Jet/Shader_IntegratedEffect.shader",
+      "name": "GAPH Custom Shader/Shader_IntegradedEffect",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Scripts/DialogueSystem/Animation/SpriteAnimation.shadergraph",
+      "name": "Shader Graphs/SpriteAnimation",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Scripts/DialogueSystem/Animation/UI_NoiseDissolve.shadergraph",
+      "name": "Shader Graphs/UI_NoiseDissolve",
+      "status": "Approximate",
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Scripts/Game/Vessel/Animation/JetShader.shader",
+      "name": "Custom/JetShader",
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
+    }
+  ]
+}

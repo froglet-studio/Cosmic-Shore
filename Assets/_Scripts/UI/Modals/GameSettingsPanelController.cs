@@ -189,7 +189,10 @@ namespace CosmicShore.UI
             SetInteractable(adaptivePerformanceDropdown, menu);
             SetInteractable(physicsDetailDropdown, menu);
             SetInteractable(autoDetectButton, menu);
+#if UNITY_EDITOR
+            // BenchmarkStressTest is not in Build Settings; Run Benchmark is Editor-only (BH-5.3).
             SetInteractable(benchmarkButton, menu);
+#endif
 
             // GENERAL tab exit actions - main menu only. quitGameButton may be hidden entirely here
             // (mobile, see BindQuitButton); SetInteractable is safe either way.
@@ -294,7 +297,7 @@ namespace CosmicShore.UI
             BindDropdown(adaptivePerformanceDropdown, AdaptiveOpts, SetAdaptivePerformanceIndex);
             BindDropdown(physicsDetailDropdown, PhysicsOpts, SetPhysicsDetailIndex);
             BindButton(autoDetectButton, AutoDetect);
-            BindButton(benchmarkButton, RunBenchmark);
+            BindBenchmarkButton();
 
             // OTHER
             BindOnOff(invertY, SetInvertY, () => InvertYOn);
@@ -469,8 +472,27 @@ namespace CosmicShore.UI
 
         public void RunBenchmark()
         {
+#if !UNITY_EDITOR
+            return;
+#else
             if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Benchmark is available only in the main menu"); return; }
             benchmarkLauncher?.LaunchBenchmark();
+#endif
+        }
+
+        /// <summary>
+        /// Shows and wires Run Benchmark in the Editor only. <c>BenchmarkStressTest</c> is not in
+        /// Build Settings (handoff §5), so a player build cannot load it — hide the button rather
+        /// than add the scene (BH-5.3).
+        /// </summary>
+        void BindBenchmarkButton()
+        {
+            if (benchmarkButton == null) return;
+#if UNITY_EDITOR
+            BindButton(benchmarkButton, RunBenchmark);
+#else
+            benchmarkButton.gameObject.SetActive(false);
+#endif
         }
 
         public void SetQualityPresetIndex(int index) { S?.SetQualityPreset((QualityPresetSetting)index); FlagRestartNeeded(); }
@@ -532,7 +554,7 @@ namespace CosmicShore.UI
             resolutionDropdown.ClearOptions();
             var labels = new List<string> { "Native" };
             for (int i = 1; i < _resolutions.Count; i++)
-                labels.Add($"{_resolutions[i].width} × {_resolutions[i].height}");
+                labels.Add($"{_resolutions[i].width} x {_resolutions[i].height}");
             resolutionDropdown.AddOptions(labels);
             resolutionDropdown.onValueChanged.RemoveListener(SetResolutionIndex);
             resolutionDropdown.onValueChanged.AddListener(SetResolutionIndex);

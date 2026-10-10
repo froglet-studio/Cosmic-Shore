@@ -11,8 +11,8 @@ namespace CosmicShore.Core
     /// <c>OnLaunchGame</c> → <c>SceneLoader.LaunchGame</c>), so the always-on Relay host loads it
     /// correctly via Netcode scene management and nothing special-cases it.
     ///
-    /// The scene runs as a single-player sandbox (<see cref="SandboxBenchmarkController"/> +
-    /// <c>MiniGamePlayerSpawnerAdapter</c>) - the host loads it, the Relay simply idles.
+    /// The scene runs as a single-player sandbox (<see cref="CosmicShore.Gameplay.SinglePlayerWildlifeBlitzController"/>;
+    /// Editor-only — not in player Build Settings) - the host loads it, the Relay simply idles.
     /// </summary>
     public class BenchmarkSceneLauncher : MonoBehaviour
     {
@@ -24,9 +24,14 @@ namespace CosmicShore.Core
         [SerializeField, Min(1), Tooltip("AI skill / spawn intensity. Higher = harder AI and denser spawns.")]
         int intensity = 2;
 
-        /// <summary>Hook this to the Settings → Benchmark button's onClick.</summary>
+        /// <summary>Hook this to the Settings → Benchmark button's onClick. Editor-only — the
+        /// scene is not in player Build Settings (BH-5.3).</summary>
         public void LaunchBenchmark()
         {
+#if !UNITY_EDITOR
+            Debug.LogWarning("[BenchmarkSceneLauncher] Run Benchmark is Editor-only (BenchmarkStressTest is not in Build Settings).");
+            return;
+#else
             if (gameData == null)
             {
                 Debug.LogError("[BenchmarkSceneLauncher] GameDataSO not injected - needs a ContainerScope in the scene.");
@@ -48,6 +53,7 @@ namespace CosmicShore.Core
             gameData.ConfigurePlayerCounts(1 + Mathf.Max(0, aiCount), 1);
 
             gameData.InvokeGameLaunch();
+#endif
         }
     }
 }
