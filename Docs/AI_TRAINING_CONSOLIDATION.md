@@ -419,6 +419,18 @@ open. Item 3 stays a dedicated flag; the runner uses the existing
 `IsTraining` stand-down. Item 10's edit-mode run is 20 passed, 0 failed
 (2026-09-29 11:25:22Z).
 
+**Item 6 closed 2026-10-10.** `PrismSensor.Sample` reads
+`PrismSpatialIndex.Instance.QuerySphere` (the same call
+`SkimRacePilot.GatherLaidMass` makes), so the genome pilot sees a prism the
+moment it registers rather than 0.6 s later when its collider wakes, the
+NonAlloc truncation of dense cells is gone, and the per-hit
+`GetComponentInParent` with it. `PrismSensor.PrismLayerMask` and
+`TrainingPilot.prismLayerMask` were removed (nothing serialized them: no
+prefab or scene carries either script). A null index returns an empty
+neighbourhood. Proved by `Tools/Build/unity_refcompile` (player config,
+0 project errors); no editor was attached, so the edit-mode suites were
+not re-run here.
+
 1. Copy `Assets/_Scripts/Utility/AITraining/` from `5d82eb0de` onto
    `AI-Genetic-algorithm`. Do not copy `Assets/_Scripts/Game/AI/`.
 2. Delete the `GameModes.Freestyle` arm. Resolve scenes from the arcade

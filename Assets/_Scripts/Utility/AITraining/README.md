@@ -520,9 +520,11 @@ already write.
 
 - The pilot allocates only its sensor scratch buffers up-front; per-frame
   work is bounded.
-- `PrismSensor.OverlapSphereNonAlloc` is the dominant cost. If you train
-  in scenes with many prism colliders, lower `prismScanRange` or set
-  `prismLayerMask` to a tighter mask.
+- `PrismSensor` reads `PrismSpatialIndex.QuerySphere` (the canonical index of
+  prism mass; it sees a prism the moment it registers, including the 0.6 s
+  after a lay while its collider is still off). The query is bucketed, so its
+  cost scales with the mass inside `prismScanRange`, not with the scene; lower
+  that range if a dense cell makes the sort of the result noticeable.
 - The runner does not pause `Time.timeScale` between episodes. HexRace
   advances by `RequestReplay`, which reloads the scene.
 - For overnight runs, lower vsync and target framerate in

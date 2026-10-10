@@ -31,7 +31,7 @@ namespace CosmicShore.Utility.AITraining
         [Header("Sensors")]
         [SerializeField] CellRuntimeDataSO cellData;
         [SerializeField] GameDataSO gameData;
-        [SerializeField] LayerMask prismLayerMask = ~0;
+        [Tooltip("Radius of the PrismSpatialIndex query around the hull that fills DecisionContext.NearbyPrisms.")]
         [SerializeField] float prismScanRange = 120f;
         [SerializeField] float threatScanRange = 200f;
         public TargetSensor.TargetMode TargetMode = TargetSensor.TargetMode.ClosestCrystal;
@@ -111,11 +111,7 @@ namespace CosmicShore.Utility.AITraining
             _targetSensor.Bind(_vessel);
             _sensors.Add(_targetSensor);
 
-            _prismSensor = new PrismSensor
-            {
-                MaxRange = prismScanRange,
-                PrismLayerMask = prismLayerMask
-            };
+            _prismSensor = new PrismSensor { MaxRange = prismScanRange };
             _prismSensor.Bind(_vessel);
             _sensors.Add(_prismSensor);
 
