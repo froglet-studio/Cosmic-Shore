@@ -190,6 +190,40 @@ namespace CosmicShore.Tests
                 "carrying it over would send the AI on a break-off it never earned.");
         }
 
+        [Test]
+        public void OrbitDetector_FiresWithinOneLapOfAnEccentricOrbit()
+        {
+            // The reported "circles its objective four, five, six times" defect, pinned. The
+            // objective sits OFF the centre of the pursuer's circle (the normal case - nothing puts
+            // it at the exact centre), so the range swings from R - e to R + e every lap. The jump
+            // guard used to compare against the window's CLOSEST range, read the far side of every
+            // lap as a target swap, zeroed the sweep, and never fired at all.
+            const float r = 100f, e = 50f;    // range swings 50..150: a 3x ratio, far past 1.6
+            var detector = new OrbitDetector();
+            detector.Reset();
+
+            const float step = 0.02f;         // radians per frame around the circle
+            int firedAt = -1;
+            for (int i = 0; i < 4000 && firedAt < 0; i++)
+            {
+                float a = i * step;
+                var pursuer = new Vector3(r * Mathf.Cos(a), 0f, r * Mathf.Sin(a));
+                var objective = new Vector3(e, 0f, 0f);
+                if (detector.Tick(objective - pursuer, 360f, 0.9f, 1.6f))
+                    firedAt = i;
+            }
+
+            Assert.GreaterOrEqual(firedAt, 0,
+                "An eccentric orbit was never reported. The target-jump guard must compare against " +
+                "the PREVIOUS frame's range - comparing against the closest range reads every lap's " +
+                "far side as a new objective and resets the sweep forever.");
+
+            float lapsFlown = firedAt * step / (2f * Mathf.PI);
+            Assert.LessOrEqual(lapsFlown, 2f,
+                $"Fired only after {lapsFlown:F2} laps around the pursuer's circle. The pilot may circle " +
+                "an objective once; the detector has to call it within the lap after it settles.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // Objective selection
         // ---------------------------------------------------------------------------------------
@@ -305,7 +339,7 @@ namespace CosmicShore.Tests
                         }
                     }
                     else if (PursuitReachability.IsInsideTurningCircle(toTarget, heading, radius, CaptureRadius) ||
-                             detector.Tick(toTarget, 540f, 0.9f, 1.6f))
+                             detector.Tick(toTarget, 360f, 0.9f, 1.6f))
                     {
                         extending = true;
                         extendElapsed = 0f;

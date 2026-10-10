@@ -175,6 +175,13 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Watching the path: seconds between letting go and laying the next pair.")]
         [SerializeField, Range(0f, 5f)] float autopilotRelaySeconds = 0.25f;
 
+        [Header("Autopilot - orbit cap")]
+        [Tooltip("The most the autopilot may circle its own sink on one pair, in degrees swept round it; then it lets " +
+                 "go and waits Autopilot Interval Seconds before the next pair. A hull circling the sink keeps its " +
+                 "path warped every frame, so without this the watching hold only ended at Max Hold Seconds - four " +
+                 "to six laps round the hole. 360 = one lap. 0 = no cap.")]
+        [SerializeField, Range(0f, 1080f)] float autopilotMaxOrbitDegrees = 360f;
+
         [Header("Audio (FMOD) — every sound is an exposed, editable field")]
         [Tooltip("Played when a squeeze opens the pair. Ships empty until a sound is chosen.")]
         [SerializeField] EventReference openEvent;
@@ -229,6 +236,7 @@ namespace CosmicShore.ScriptableObjects
         public float AutopilotMinHoldSeconds => autopilotMinHoldSeconds;
         public float AutopilotMaxHoldSeconds => autopilotMaxHoldSeconds;
         public float AutopilotRelaySeconds => autopilotRelaySeconds;
+        public float AutopilotMaxOrbitDegrees => autopilotMaxOrbitDegrees;
         public EventReference OpenEvent => openEvent;
         public EventReference AnnihilateEvent => annihilateEvent;
         public EventReference WarpEvent => warpEvent;

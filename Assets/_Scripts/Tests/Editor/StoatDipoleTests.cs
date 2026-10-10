@@ -185,5 +185,55 @@ namespace CosmicShore.Tests
             Assert.Less(m, 1.1f, "two seconds after the warp ends it is nearly gone");
             Assert.GreaterOrEqual(m, 1f);
         }
+
+        [Test]
+        public void OrbitCap_OneLapRoundTheSinkIsThreeSixtyDegrees()
+        {
+            // The reported defect: the autopilot circled its own sink four to six times, because a hull in
+            // orbit keeps its path warped and the watching hold only ended at its 15 s maximum. The cap sums
+            // the angle swept round the sink frame by frame; one lap has to read as one lap, whatever the
+            // radius, the centre or the frame rate.
+            var centre = new Vector3(40f, -15f, 300f);
+            foreach (float radius in new[] { 30f, 150f })
+            foreach (int frames in new[] { 30, 600 })
+            {
+                float swept = 0f;
+                var last = centre + new Vector3(radius, 0f, 0f);
+                for (int k = 1; k <= frames; k++)
+                {
+                    float a = 2f * Mathf.PI * k / frames;
+                    var now = centre + new Vector3(radius * Mathf.Cos(a), 0f, radius * Mathf.Sin(a));
+                    swept += StoatDipoleMath.SweptAround(centre, last, now);
+                    last = now;
+                }
+                Assert.AreEqual(360f, swept, 0.5f, $"one lap at r={radius}, {frames} frames");
+                // Float sums land a hair either side of 360 on the closing frame; one frame on, it has tripped.
+                float a1 = 2f * Mathf.PI * (frames + 1) / frames;
+                swept += StoatDipoleMath.SweptAround(centre, last,
+                    centre + new Vector3(radius * Mathf.Cos(a1), 0f, radius * Mathf.Sin(a1)));
+                Assert.IsTrue(StoatDipoleMath.OrbitCapReached(swept, 360f), "one lap and a frame reaches the one-lap cap");
+                Assert.IsFalse(StoatDipoleMath.OrbitCapReached(swept - 30f, 360f), "a frame or two short of the lap does not");
+            }
+        }
+
+        [Test]
+        public void OrbitCap_APassByTheSinkNeverTripsIt()
+        {
+            // Flying straight past the sink (the dipole's ordinary use) sweeps under 180 degrees round it, so a
+            // one-lap cap can never cut a pass short.
+            var centre = Vector3.zero;
+            float swept = 0f;
+            var last = new Vector3(-5000f, 0f, 20f);
+            for (int k = 1; k <= 2000; k++)
+            {
+                var now = new Vector3(-5000f + k * 5f, 0f, 20f);
+                swept += StoatDipoleMath.SweptAround(centre, last, now);
+                last = now;
+            }
+            Assert.Less(swept, 180f);
+            Assert.IsFalse(StoatDipoleMath.OrbitCapReached(swept, 360f));
+            Assert.IsFalse(StoatDipoleMath.OrbitCapReached(10000f, 0f), "0 = no cap");
+            Assert.AreEqual(0f, StoatDipoleMath.SweptAround(centre, centre, Vector3.one), "a position on the centre sweeps nothing");
+        }
     }
 }

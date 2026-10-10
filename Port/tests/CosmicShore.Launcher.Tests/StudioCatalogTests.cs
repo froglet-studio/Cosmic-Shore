@@ -30,6 +30,33 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void Parse_ReadsTheLiveMirrorAndBuildsEachPagesLink()
+        {
+            var c = StudioCatalog.Parse(@"{ ""mirror"": ""https://example.github.io/vessel-studio"", ""studios"": [
+                { ""id"": ""stoat"", ""name"": ""Stoat"", ""file"": ""stoat.html"" } ] }");
+            Assert.Equal("https://example.github.io/vessel-studio", c.Mirror);
+            Assert.Equal("https://example.github.io/vessel-studio/", c.MirrorUrl(c.Hub));          // the hub is the mirror's root
+            Assert.Equal("https://example.github.io/vessel-studio/stoat.html", c.MirrorUrl("stoat.html"));
+            Assert.Equal("https://example.github.io/vessel-studio/squirrel.html",
+                StudioCatalog.Parse(@"{ ""mirror"": ""https://example.github.io/vessel-studio/"" }").MirrorUrl("squirrel.html"));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(@"""""")]
+        [InlineData(@"""file:///C:/studio/index.html""")]
+        [InlineData(@"""javascript:alert(1)""")]
+        [InlineData(@"""not a url""")]
+        [InlineData("42")]
+        public void Parse_NoUsableMirrorMeansNoLiveLink(string? mirror)
+        {
+            var c = StudioCatalog.Parse(mirror == null ? "{}" : @"{ ""mirror"": " + mirror + " }");
+            Assert.Null(c.Error);
+            Assert.Null(c.Mirror);
+            Assert.Null(c.MirrorUrl("stoat.html"));
+        }
+
+        [Fact]
         public void Parse_SkipsIncompleteEntriesAndPagesOutsideTheFolder()
         {
             var c = StudioCatalog.Parse(@"{ ""studios"": [
@@ -74,6 +101,7 @@ namespace CosmicShore.Launcher.Tests
             Assert.NotEmpty(c.Studios);
             foreach (var s in c.Studios) Assert.True(File.Exists(StudioCatalog.PagePath(d.FullName, s.File)), s.File);
             Assert.True(File.Exists(StudioCatalog.PagePath(d.FullName, c.Hub)));
+            if (c.Mirror != null) Assert.StartsWith("https://", c.Mirror);   // the live mirror is served over https (pages fetch build.json)
         }
 
         [Fact]

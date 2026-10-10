@@ -20,6 +20,13 @@ namespace CosmicShore.Launcher
         public sealed record Studio(string Id, string Name, string File, string Kind, string Summary, string? Docs, string? EngineMode = null, string? EngineNote = null);
 
         public string? Web { get; init; }
+        /// <summary>
+        /// The live mirror: a plain https copy of the same build (<c>build_artifact.py</c>'s output, published to a static
+        /// site), so the hub and each studio open by link in any browser and update in place when the mirror is republished.
+        /// A mirror of the one artifact, never a second source (/vessel-studio D12). Null when the catalog has none or it is
+        /// not an http(s) URL.
+        /// </summary>
+        public string? Mirror { get; init; }
         public string Hub { get; init; } = "index.html";
         public IReadOnlyList<Studio> Studios { get; init; } = Array.Empty<Studio>();
         public string? Error { get; init; }
@@ -51,10 +58,24 @@ namespace CosmicShore.Launcher
                         list.Add(new Studio(id, name, file, Str(s, "kind") ?? "", Str(s, "summary") ?? "", Str(s, "docs"), Str(s, "engineMode"), Str(s, "engineNote")));
                     }
                 }
-                return new StudioCatalog { Web = Str(root, "web"), Hub = Str(root, "hub") ?? "index.html", Studios = list };
+                return new StudioCatalog { Web = Str(root, "web"), Mirror = HttpUrl(Str(root, "mirror")), Hub = Str(root, "hub") ?? "index.html", Studios = list };
             }
             catch (JsonException e) { return new StudioCatalog { Error = "The catalog is not valid JSON: " + e.Message }; }
         }
+
+        /// <summary>
+        /// OPEN LIVE: <paramref name="file"/> on the live mirror (the hub is the mirror's root), or null without a mirror.
+        /// The build keeps the folder's file names, so a page is the mirror plus its file.
+        /// </summary>
+        public string? MirrorUrl(string file)
+        {
+            if (Mirror == null) return null;
+            var root = Mirror.EndsWith("/") ? Mirror : Mirror + "/";
+            return file == Hub ? root : root + Uri.EscapeDataString(file);
+        }
+
+        static string? HttpUrl(string? s) =>
+            s != null && Uri.TryCreate(s.Trim(), UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp) ? u.AbsoluteUri : null;
 
         /// <summary>The local page for a studio file (or the hub), under the workspace.</summary>
         public static string PagePath(string workspaceDir, string file) => Path.Combine(workspaceDir, RelativeDir, file);

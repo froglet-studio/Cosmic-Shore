@@ -74,11 +74,12 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D26 | **The platform is detected, never asked** (the user, 2026-10-09: no Play-on-phone button; each device opens its own interface only). `VesselStudioIDE.platform()` (shared `studio-ide.js`) answers once at load from the host (`window.__studioHost`, `#amoebius`), the mobile UA / iPadOS, or a touch-only screen, and sets `body.dev-pc` / `body.dev-phone`. A phone opens straight into touch play (fullscreen on its first touch); a PC never sees a touch button (`.phone-only` hidden). On a phone, leaving touch play shows one **Back to flying** button. A layout override, if any, is a setting, not a stage button | A button that asks what the page can tell is clutter, and on a PC it is a control that does nothing useful | Moved onto `platform()` 2026-10-09: Play on phone removed | Its own `detectPlatform` (the original), the same rule; the Layout select is the override |
 | D27 | **Vessel Config, one section at a time** (the user, 2026-10-09: rename Others to Vessel Config; dropdowns and clean UI, no clutter). The sixth settings tab is **Vessel Config** (tab key stays `others` so saved layouts survive). A **Section** dropdown at its top (`VesselStudioIDE.sectionPicker`) shows one of its sections; the choice is remembered per studio. AI Config stays its own tab | A tab of unrelated vessel sections reads as clutter; one picked section reads as a settings page | Ability row · Live numbers | Lope · Archive |
 | D28 | **Intensity is chosen in Game Config** (the user, 2026-10-10: a universal Vessel Studio rule). The race panel's course ladder (I1-I4, D7) renders as an **Intensity** dropdown in Game Config when the studio passes `gameHost` (its own sibling section, above Players); Scene Config keeps Camera and Speed. Every studio has a Game Config tab, even before it has a Players list | Which intensity you race is part of setting up the game, beside who is racing | `gameHost: $('intensityPanel')`, a Game Config tab holding the Intensity panel | `grp-intensity` above `grp-game` in Game Config |
-| D29 | **Your hull never leaves the course unattended** (the user, 2026-10-10: a hull you can fly but are not flying went off to infinity; every vessel always heads for its next ring). With **Is AI** off and nobody on the controls for 3 s (no key, no stick past 0.2, no button or trigger, no touch), the AI flies your hull toward its next ring, racing and after the finish; the first input hands it straight back, and neither side's held pair is ever handed over (both triggers let go at the switch). The stage says **AI HOLDING YOUR HULL · touch any control to fly** | Watching a rival (View) is the normal way to use the studio, and an idle hull holding its last heading flew 6.6 km off course in 120 s | Not yet (the Squirrel's hull drifts too: port `pilotInput`) | `pilotInput` (`IDLE_TAKEOVER_S`, `humanOnControls`), used by the frame loop and the `tick`/`sim` hooks |
+| D29 | **One look: every studio wears the Stoat's typography and chrome** (the user, 2026-10-10: same fonts, spacing, line heights and sizes, so it reads as one vessel studio). `Docs/Studios/VesselStudio/studio-theme.js` (shared) carries the Stoat's values once: **Chakra Petch** for headings, labels, tabs and numbers; **Atkinson Hyperlegible** for reading text; body 15px / 1.45; title 1.5rem (1.05rem in the editor layout); section titles 0.9rem bold uppercase, 0.04em; cards 8px radius, 10px 12px padding; controls 0.9rem, 6px radius, 5px 7px; buttons 0.85rem bold; the transport bar bottom-left on the stage; the start card's night box; the Stoat's colour tokens with their light-theme twins; `--accent` = the Stoat amber in every studio (domain colours are for hulls and players, never chrome). A page loads it in `<head>` AFTER its own `<style>`, never loads its own Google Fonts, and keeps only its layout and vessel widgets. `build_artifact.py --check` fails a page that skips the theme or brings its own fonts | Two studios had two type systems (Saira + IBM Plex vs Chakra Petch + Atkinson) and different sizes everywhere; a shared file is the only way they stay alike | Moved onto the theme 2026-10-10: its own fonts and jade chrome gone; transport moved to the Stoat's place | The reference; loads the theme too, so a theme change reaches it |
+| D30 | **Your hull never leaves the course unattended** (the user, 2026-10-10: a hull you can fly but are not flying went off to infinity; every vessel always heads for its next ring). With **Is AI** off and nobody on the controls for 3 s (no key, no stick past 0.2, no button or trigger, no touch), the AI flies your hull toward its next ring, racing and after the finish; the first input hands it straight back, and neither side's held pair is ever handed over (both triggers let go at the switch). The stage says **AI HOLDING YOUR HULL · touch any control to fly** | Watching a rival (View) is the normal way to use the studio, and an idle hull holding its last heading flew 6.6 km off course in 120 s | Not yet (the Squirrel's hull drifts too: port `pilotInput`) | `pilotInput` (`IDLE_TAKEOVER_S`, `humanOnControls`), used by the frame loop and the `tick`/`sim` hooks |
 
 ## 1.5 The universal studio kit: how every studio's panels are built
 
-D1-D29 are the decisions. This section is the same rules arranged as a build manual: what a tester
+D1-D30 are the decisions. This section is the same rules arranged as a build manual: what a tester
 sees, where it goes, which control it uses, and which shared code draws it. A new studio, or a new
 panel in an old one, follows it. The aim (the user, 2026-10-09) is that **studios are modular,
 alike and reusable**: a tester who has used one studio already knows where everything is in the
@@ -111,6 +112,16 @@ next.
 - **Below 900 px** the docks stack under the stage and the page scrolls. On a phone, touch play takes
   the whole screen (D9).
 
+### 1.5.1b The look (D29)
+
+Load `studio-theme.js` in `<head>` after the page `<style>` (a source one folder up: `VesselStudio/studio-theme.js`), and
+write no font link, no font family and no chrome colour of your own: use `var(--font-display)` / `var(--font-body)`
+(aliases `--display`, `--body`, `--mono`), `var(--fg)`, `var(--dim)` (alias `--muted`), `var(--panel)`, `var(--panel-2)`,
+`var(--line)`, `var(--accent)`. Name things the way the theme styles them: `.card` / `.panel` with an `h3` or a
+`details.card > summary`, `.btn` / `button.pick` (+ `.primary`), `.transport`, `.overlay > .card` (or `.box`) for the
+start card, `.hud` for anything over the stage. Compare a new page with the Stoat's computed styles (body, title, tab,
+section title, dropdown, row label, button, transport) before publishing; they must be identical.
+
 ### 1.5.2 How a panel is made
 
 1. **A panel is a section with an id**: a `<details class="card" id="grp-...">` with a `<summary>`, or a
@@ -128,7 +139,9 @@ next.
    script under `Docs/Studios/VesselStudio/` (listed under `shared` in `studios.json`):
    - `ai_race_panel.js`: course, camera, speed, players, seats, levels, styles, thinking, auto-restart;
    - `studio-ide.js`: docks, tabs, pop-outs, folds;
-   - `studio-look.js`: sky, prism field, crystals, marker.
+   - `studio-look.js`: sky, prism field, crystals, marker;
+  - `studio-theme.js`: the fonts, sizes, spacing and chrome colours (D29);
+  - `studio-domains.js`: the game's domain colours.
 
    Then every studio gets the change.
 7. **Every panel and popup closes** with ×, a press outside it, and Escape (D15).
@@ -430,7 +443,14 @@ racePanel.set('camera', 'Free', true);   // code-side changes (a C key, a hook) 
 
 1. `Docs/Studios/VesselStudio/studios.json`: `id`, `name`, `file`, `kind`, `summary`, `docs`, plus
    `engineMode` (a `GameModes` name with an arcade card) and `engineNote` once the game has the mode.
-   `web` is the one artifact (§0).
+   `web` is the one artifact (§0). `mirror` is its **live mirror**
+   (https://yskhan61.github.io/vessel-studio/, repo `YsKhan61/vessel-studio`, GitHub Pages): the same
+   `build_artifact.py --ref origin/Ys-bleeding-edge` output pushed as plain files, so the hub and every page open by
+   link in any browser and update in place when it is republished. Amoebius's STUDIOS page opens it with
+   **OPEN LIVE IN BROWSER** (the hub, and `<mirror>/<file>` per studio). It is a mirror, never a second source or a
+   second artifact (D12): publish it from the build, never edit it. The publisher runs on the maintainer's machine
+   (it fetches the branch, rebuilds with that ref's own `build_artifact.py`, commits only when the studio files
+   changed). Sync, Ask, Requests and shared decisions need the claude.ai viewer, so on the mirror they say so.
 2. `index.html`: the vessel's bay and its `SPEC` string for the Ask box; take it off "no studio yet".
 3. **Amoebius** reads `studios.json` (`StudioCatalog.cs`) on its VESSEL STUDIO page: run `dotnet test Port/tests/CosmicShore.Launcher.Tests`.
    The page also lists Amoebius's artifact library (`Docs/Artifacts/artifacts.json`, entry `vessel-studio`): other
@@ -535,7 +555,7 @@ Tell the user what ran, one line per job.
 
 | Tier | What flies | Where |
 |---|---|---|
-| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; Amoebius VESSEL STUDIO ▸ OPEN IN AMOEBIUS |
+| A. Web studio | A JavaScript copy built from the shipped numbers | This artifact; its live mirror (`mirror`, §3.5); Amoebius VESSEL STUDIO ▸ OPEN IN AMOEBIUS / OPEN LIVE IN BROWSER |
 | B. PLAY IN ENGINE | The game's own vessel in its own mode | Amoebius VESSEL STUDIO (`engineMode` → `--arcade MODE`, `ArcadeAutoStart`) |
 | A2. **Third Eye** (Unity) | The game itself, watched from a second camera while you play: the studio's Chase / Follow / Free cameras and its AI-thinking colours on the game's own AI | `FrogletTools > AI > Third Eye`; `/vessel-ai` §4 |
 | C. Vessel Test Range | The real mode scenes with AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look | Unity + Amoebius; **plan only**: `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` |

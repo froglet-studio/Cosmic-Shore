@@ -1,6 +1,7 @@
 {
-  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them.",
+  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source.",
   "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
+  "mirror": "https://yskhan61.github.io/vessel-studio/",
   "hub": "index.html",
   "studios": [
     {
@@ -28,6 +29,7 @@
     "studio-look.js",
     "studio-ide.js",
     "ai_race_panel.js",
-    "studio-domains.js"
+    "studio-domains.js",
+    "studio-theme.js"
   ]
 }

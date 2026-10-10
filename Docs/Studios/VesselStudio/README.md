@@ -14,6 +14,17 @@ browser, in a phone browser, from Amoebius's **VESSEL STUDIO** page on Windows, 
 | `sync.js` | The **Sync panel** (Refresh, console, merge then delete, shared decisions; a Claude session does the git work as jobs). Not referenced by the pages in the repo: `.claude/skills/vessel-studio/build_artifact.py` and Refresh inject it at publish time. User doc: `SYNC_PANEL.md`. Live in the one artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa |
 | `stoat.html` | The **Stoat Flight Studio** (AI levels and rivals, 2026-10-09: Easy / Medium / Hard as the Skim Race levels, up to three rival Stoats each with its own level and play style, the **Score AI levels** scorecard; round 15: the field trajectory; round 14: editor layout, course ladder, AI sim lab), copied from `../StoatFlightStudio.html` with a back link. That file stays the source: re-copy it here when it changes. Opened from Amoebius as `stoat.html#prisma`, it reads "Running on Amoebius". |
 
+## Where it is published
+
+- **The one artifact** (claude.ai, `web` in `studios.json`): https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.
+  The full studio, with Sync, Ask, Requests and shared decisions.
+- **The live mirror** (`mirror` in `studios.json`): https://yskhan61.github.io/vessel-studio/ (GitHub Pages,
+  repo `YsKhan61/vessel-studio`). The same `build_artifact.py` output as plain files: open the hub or
+  `squirrel.html` / `stoat.html` by link in any browser, nothing to install, updated in place when it is
+  republished (a minute or so; a browser that has the page cached may need a refresh). The features that need
+  the claude.ai viewer say so there. A mirror, not a source: change the pages here, then republish.
+  Amoebius's VESSEL STUDIO page opens it with **OPEN LIVE IN BROWSER**.
+
 ## Rules for every studio page
 
 - **A reader of the shipped numbers, never their authority.** Each constant names the asset or class it was

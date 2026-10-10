@@ -7,9 +7,6 @@
      A READER of the shipped numbers, never their authority: every constant below names the asset or class
      it was copied from. The four courses are the game's own Skim Race tracks (MinigameSkimRace.unity, as
      Tools/Build/skimrace_track_fingerprint.py --emit-track reads them). -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   /* Layout: a cockpit and a race director's desk. The stage owns the screen; the rail holds the lab
      (pilots, course, cameras, scorecard) above the vessel tuning. One dark world, explicit palette. */
@@ -29,20 +26,20 @@
   html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   img, canvas { max-width: 100%; }
-  a { color: var(--jade); }
+  a { color: var(--accent); }
   button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   code { font-family: var(--mono); font-size: .9em; }
 
   .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
   .back { font: 600 13px/1.2 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
   h1 { margin: 0; font: 800 clamp(28px, 4vw, 40px)/1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
-  h1 span { color: var(--jade); }
+  h1 span { color: inherit; }   /* the studio title reads like the Stoat's: one colour (D29) */
   .round { font: 600 12px/1 var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
   .sub { color: var(--muted); max-width: 78ch; margin: 0; }
-  .host { font: 600 11px/1 var(--mono); color: var(--jade); }
+  .host { font: 600 11px/1 var(--mono); color: var(--accent); }
 
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
   .layout > section { min-width: 0; }
@@ -78,27 +75,27 @@
   .keys { font-family: var(--mono); font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
   .btns { display: flex; flex-wrap: wrap; gap: 8px; }
   .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
-  .btn.primary { background: var(--jade); color: #04130e; border-color: var(--jade); }
+  .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
   .btn.small { padding: 4px 10px; font-size: 12px; }
   .btn[disabled] { opacity: .5; cursor: default; }
-  .stagebtns { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }   /* above the start card: a sideways phone must reach Play on phone */
+  .stagebtns { position: absolute; left: 12px; bottom: 118px; display: flex; gap: 6px; z-index: 3; }   /* the transport where every studio has it (the Stoat's place, D29): bottom-left, above the readouts and the start card */
   .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
   body:not(.dev-phone) .phone-only { display: none !important; }   /* each device sees its own interface only (D26): no touch button on a PC */
   /* the studio transport (/vessel-studio D18): Play · Pause/Resume · Stop, like the Unity editor's */
   .transport { display: flex; gap: 2px; }
   .transport .btn:disabled { opacity: 0.35; cursor: default; }
-  .transport .btn.on { background: var(--jade, #35e0b0); color: #04130e; opacity: 1; }
+  .transport .btn.on { background: var(--accent); color: #1a1200; opacity: 1; }
   .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
 
   aside { display: grid; gap: 10px; min-width: 0; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
-  .panel.lab { border-color: #35e0b055; }
+  .panel.lab { border-color: var(--line); }
   .panel h3 { margin: 0; font: 700 15px/1.1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; }
   .field > span { font-size: 12px; color: var(--muted); }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
   .seg button { flex: 1; border: 0; background: transparent; padding: 5px 4px; font-size: 12px; min-width: 0; }
-  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--jade); font-weight: 600; }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--accent); font-weight: 600; }
   .seg.diff button[data-v="Easy"][aria-pressed="true"] { color: var(--easy); }
   .seg.diff button[data-v="Medium"][aria-pressed="true"] { color: var(--medium); }
   .seg.diff button[data-v="Hard"][aria-pressed="true"] { color: var(--hard); }
@@ -156,6 +153,7 @@
   body.play .camtag { bottom: auto; top: calc(56px + env(safe-area-inset-top, 0px)); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+<script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29): after this page's own <style> so it wins -->
 
 <div class="wrap">
   <header class="top">

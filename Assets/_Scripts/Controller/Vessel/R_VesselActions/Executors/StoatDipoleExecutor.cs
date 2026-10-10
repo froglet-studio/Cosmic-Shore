@@ -89,6 +89,10 @@ namespace CosmicShore.Gameplay
         float _aiReleaseAt = float.PositiveInfinity;
         bool _aiHoldingLeft, _aiHoldingRight;
         float _aiHoldStart, _aiDry;          // watching the path: when this pair was laid; how long its path has been unwarped
+        float _aiOrbitSwept;                 // degrees the hull has circled this pair's sink (the orbit cap)
+        Vector3 _aiLastHullPos;
+        int _aiLastTeleport;                 // a pass through the wormhole is a jump, not a sweep
+        bool _aiOrbitCapped;                 // the last let-go was the orbit cap: wait the full interval, not the relay
         StoatPathfinderExecutor _pathfinder; // resolved lazily (rule 6): the warp verdict the watching autopilot reads
 
         public StoatDipoleConfigSO Config => config;
@@ -514,7 +518,18 @@ namespace CosmicShore.Gameplay
             bool watch = config.AutopilotWatchPath && Pathfinder();
             if (_aiHoldingLeft || _aiHoldingRight)
             {
-                if (watch)
+                // At most one lap round the sink, in either hold. A hull circling its own sink keeps the
+                // predicted path warped every frame, so the watching hold below never dried out and ran to
+                // Max Hold Seconds - four to six laps round the hole before the AI got out.
+                var hullPos = _status.Transform.position;
+                int teleports = _status.VesselTransformer ? _status.VesselTransformer.TeleportCount : 0;
+                if (IsOpen && teleports == _aiLastTeleport)
+                    _aiOrbitSwept += StoatDipoleMath.SweptAround(_sink.transform.position, _aiLastHullPos, hullPos);
+                _aiLastHullPos = hullPos;
+                _aiLastTeleport = teleports;
+                bool capped = StoatDipoleMath.OrbitCapReached(_aiOrbitSwept, config.AutopilotMaxOrbitDegrees);
+                if (capped) _aiReleaseAt = 0f;
+                else if (watch)
                 {
                     // The studio's path-watching hold: keep the poles open while they warp the path and the target
                     // is still ahead; let go as it comes close, or once the warp has been off for a while.
@@ -534,9 +549,13 @@ namespace CosmicShore.Gameplay
                 if (_aiHoldingRight && ResolveBoundInput(Side.Right, handler, out var r)) handler.StopShipControllerActionsReplicated(r);
                 _aiHoldingLeft = _aiHoldingRight = false;
                 _aiLastPairTime = Time.time;
+                _aiOrbitCapped = capped;
                 return;
             }
-            if (Time.time - _aiLastPairTime < (watch ? config.AutopilotRelaySeconds : config.AutopilotIntervalSeconds)) return;
+            // After an orbit-capped let-go, the full interval: the quick relay would lay the next pair while the
+            // hull is still turning out of the last one, and catch it again.
+            float wait = watch && !_aiOrbitCapped ? config.AutopilotRelaySeconds : config.AutopilotIntervalSeconds;
+            if (Time.time - _aiLastPairTime < wait) return;
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!ai || !hull) return;
@@ -550,6 +569,10 @@ namespace CosmicShore.Gameplay
             _aiReleaseAt = watch ? float.PositiveInfinity : Time.time + config.AutopilotHoldSeconds;
             _aiHoldStart = Time.time;
             _aiDry = 0f;
+            _aiOrbitSwept = 0f;
+            _aiOrbitCapped = false;
+            _aiLastHullPos = hull.position;
+            _aiLastTeleport = _status.VesselTransformer ? _status.VesselTransformer.TeleportCount : 0;
             if (left && ResolveBoundInput(Side.Left, handler, out var li)) { handler.PerformShipControllerActionsReplicated(li); _aiHoldingLeft = true; }
             if (right && ResolveBoundInput(Side.Right, handler, out var ri)) { handler.PerformShipControllerActionsReplicated(ri); _aiHoldingRight = true; }
         }
