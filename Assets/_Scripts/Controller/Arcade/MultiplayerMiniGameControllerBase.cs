@@ -153,10 +153,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Called when a player leaves the session.
-        /// Override to handle player disconnection logic.
+        /// Relay for <c>ISession.PlayerLeaving</c>: a member left the UGS party session.
+        ///
+        /// <para><paramref name="ugsPlayerId"/> is the member's UGS authentication PlayerId (the
+        /// value behind <c>Player.NetUgsPlayerId</c>), NEVER a Netcode client id. The one override
+        /// this ever had parsed it as a <c>ulong</c>, so it matched nobody and never ran - and
+        /// had it run, it would have deleted the departed pilot's RoundStats, which B21 keeps on
+        /// purpose (the AI takes the ship, the score keeps counting). Mid-match departure is
+        /// handled on the Netcode side instead: <c>ServerPlayerVesselInitializer</c> adopts the
+        /// ship and announces <c>GameToastSituation.PilotHandedToAI</c>, and
+        /// <c>HandleClientDisconnectedForReadyGate</c> re-decides the ready gate. Override this
+        /// only for something the UGS session knows and Netcode does not.
+        /// Docs/PartySystem/DROPPING_OUT.md.</para>
         /// </summary>
-        protected virtual void OnPlayerLeavingFromSession(string clientId) 
+        protected virtual void OnPlayerLeavingFromSession(string ugsPlayerId)
         {
             // Base implementation does nothing
         }

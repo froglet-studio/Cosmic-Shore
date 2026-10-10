@@ -125,6 +125,19 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s and
   `ResetServerRoundAfterDelay` 0.1 s): a match torn down inside the wait no longer keeps the dead
   controller reachable or fires an RPC from it, and a cancelled reload puts `IsReplayReload` back.
+- **Dropping out of a match** (R13 item 6, 2026-10-10; the traces and findings are
+  `Docs/PartySystem/DROPPING_OUT.md`): a client's host-loss bounce now covers the screen and
+  unpauses BEFORE its 1 to 3 s teardown (`PartyInviteController.HandleHostLossAsync`), as the
+  deliberate Leave already did, so a dropped client no longer watches its own hull vanish with the
+  HUD up; the bounce notice is one neutral line for every cause the client cannot tell apart
+  ("Connection to the party was lost - returned to your menu.", `MultiplayerSetup`), replacing
+  "Host disconnected", which blamed the host for the player's own Wi-Fi; and the dead
+  `MultiplayerDomainGamesController.OnPlayerLeavingFromSession` override (it parsed a UGS player
+  id as a Netcode client id, never matched, and would have deleted the departed pilot's score) is
+  removed. Rejoin-in-progress and host migration stay cut. Compile-proved only:
+  `Tools/Build/unity_refcompile` player config `RESULT: OK - no errors in project code`, the
+  Prisma player build 0 errors, `check_console_logging.py` 0 problems, `validate_project.py`
+  PASSED.
 
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
@@ -191,6 +204,22 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
 14. Skim Race online, then Play Again: the fade, the reload and the fresh track still happen (the
     bound delays are the same lengths); quit the match during the half-second fade: back in the
     menu, the next launch is a normal start, not a replay reload (`GameData.IsReplayReload` false).
+15. Dropping out, host side (two machines, not MPPM; host + one client in any scored arcade
+    match, an AI seat or two as well). Client A pulls its network cable mid-turn: on the host,
+    A's hull sits frozen for about 30 s, then one toast "A left - AI has the ship" and the hull
+    flies again under AI; the turn and the scoreboard carry on; A's row keeps its score and A's
+    domain total includes it; the Party panel seat for A clears (note how long after the toast,
+    this is finding F6). Host returns the party to the menu: no ghost member, no stray AI vessel.
+    Repeat with A pressing pause ▸ LEAVE PARTY instead of pulling the cable: the same toast and
+    handover with no 30 s wait.
+16. Dropping out, client side (same setup). Pull the client's cable mid-turn with the pause menu
+    OPEN: after about 30 s the screen goes black BEFORE anything disappears from the arena (no
+    frame of the arena with the player's own hull missing and the HUD still up), then the
+    client's own Menu_Main with its autopilot vessel moving (timeScale restored) and exactly one
+    toast "Connection to the party was lost - returned to your menu." Then kill the HOST's
+    process while the client is in the match: the client gets the same black, menu and the same
+    wording (never "Host disconnected"). In the client's friends panel the host's row offers
+    Spectate while the host is still in the match and Join once the host is back in the menu.
 
 ---
 

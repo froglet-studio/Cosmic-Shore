@@ -190,18 +190,9 @@ namespace CosmicShore.Gameplay
             gameData.InvokeMiniGameEnd();
         }
 
-        protected override void OnPlayerLeavingFromSession(string clientId)
-        {
-            if (ulong.TryParse(clientId, out var id) &&
-                gameData.TryGetPlayerByOwnerClientId(id, out var player))
-            {
-                // Use Player.Domain (live mirror, kept in sync by OnNetDomainChanged) so
-                // the disconnect notification colors correctly even if domain changed
-                // mid-game.
-                var domain = player.Domain;
-                GameToastAPI.Post(GameToastSituation.PlayerDisconnected, domain, player.Name);
-                gameData.RemovePlayerData(player.Name);
-            }
-        }
+        // A mid-match departure is announced and adopted on the Netcode side (the vessel
+        // initializer's AI handover + PilotHandedToAI toast); the former OnPlayerLeavingFromSession
+        // override here parsed the UGS player id as a Netcode client id, never matched, and would
+        // have removed the departed pilot's score. See the base hook's remarks.
     }
 }

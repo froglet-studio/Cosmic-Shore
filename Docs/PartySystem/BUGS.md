@@ -991,6 +991,14 @@ the fresh menu's live `ToastService`. Once Task 0 (the SOAP confirm-popup,
 `INVITE_ENHANCEMENTS.md`) ships, upgrade the notice to a 1-button "OK" popup
 (same post-recovery timing).
 
+> **2026-10-10 (`DROPPING_OUT.md` F1, F2).** The notice now travels through
+> `ToastChannel.ShowPrefixOrHold`, so it survives the reload instead of depending on the
+> post-recovery timing, and it reads **"Connection to the party was lost - returned to your
+> menu."** rather than "Host disconnected": the client-side `OnClientDisconnectCallback` fires
+> identically for a host quit, a host link loss and the client's OWN link timing out, so the
+> old wording blamed the host for the player's Wi-Fi. `HandleHostLossAsync` also covers the
+> screen and unpauses before its teardown now, as the deliberate Leave always did.
+
 **Recommendation (the "better thing").** Bounce-to-solo is the right call now —
 reliable, and it reuses proven machinery. True **host migration** (promote a
 remaining client to host and keep the party alive) is the fancier alternative but a

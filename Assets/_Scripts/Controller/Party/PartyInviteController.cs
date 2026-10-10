@@ -578,6 +578,18 @@ namespace CosmicShore.Gameplay
             }
 
             _transitioning = true;
+
+            // Cover the screen and unpause BEFORE the teardown, exactly as the deliberate Leave
+            // path does. The recovery destroys the local Player and vessel, then awaits a UGS
+            // session leave and the NetworkManager shutdown (1-3 s) before Menu_Main loads, and
+            // nothing covered that window: a client whose host dropped watched its own hull
+            // vanish from the arena with the HUD still up, and only then went to black. The
+            // menu's own OnSceneLoaded re-arms the veil, so an early cover costs nothing. The
+            // unpause matters when the drop lands with the pause menu open - that menu dies with
+            // the scene and nothing else puts Time.timeScale back. Docs/PartySystem/DROPPING_OUT.md.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+            PauseSystem.TogglePauseGame(false);
+
             try
             {
                 // Hygiene: clear our stale joined_party presence property (it still points at

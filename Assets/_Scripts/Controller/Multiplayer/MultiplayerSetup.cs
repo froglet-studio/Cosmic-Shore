@@ -21,6 +21,15 @@ namespace CosmicShore.Gameplay
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
+        /// <summary>
+        /// The one line a bounced client reads on its fresh menu after the party connection
+        /// went away for ANY reason it cannot attribute (host quit, host link lost, own link
+        /// lost, transport failure). Shared by the two Netcode signals below so they cannot
+        /// drift into blaming one side. Delivered through <c>ToastChannel.ShowPrefixOrHold</c>,
+        /// so it survives the Menu_Main reload. ASCII only: it reaches a TMP_Text.
+        /// </summary>
+        const string PARTY_CONNECTION_LOST_NOTICE = "Connection to the party was lost - returned to your menu.";
+
         [Inject] GameDataSO gameData;
         [Inject] AuthenticationDataVariable authenticationDataVariable;
         AuthenticationData authenticationData => authenticationDataVariable.Value;
@@ -516,14 +525,20 @@ namespace CosmicShore.Gameplay
 
             if (clientId == networkManager.LocalClientId)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[MultiplayerSetup] Host left/disconnected - bouncing to solo menu.");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[MultiplayerSetup] Lost the host connection - bouncing to solo menu.");
                 // Host-loss recovery: re-establish our OWN solo host in Menu_Main (works
                 // from the lava-lamp menu AND any game scene). Routed through the proven
                 // self-rescue instead of gameData.InvokeOnSessionEnded() →
                 // SceneLoader.HandleActiveSessionEnd, whose defer-to-server guard hangs the
                 // client when the server is gone. See Docs/PartySystem/BUGS.md B10.
+                //
+                // The notice names the PARTY, not the host. This callback fires identically
+                // whether the host quit, the host's link died, or THIS machine's own link timed
+                // out (UnityTransport's DisconnectTimeoutMS, 30 s) - the client cannot tell
+                // which, and the old "Host disconnected" blamed the host for the player's own
+                // Wi-Fi. Docs/PartySystem/DROPPING_OUT.md.
                 if (PartyInviteController.Instance != null)
-                    PartyInviteController.Instance.HandleHostLossAsync("Host disconnected").Forget();
+                    PartyInviteController.Instance.HandleHostLossAsync(PARTY_CONNECTION_LOST_NOTICE).Forget();
                 else
                     gameData.InvokeOnSessionEnded(); // fallback: legacy path
             }
@@ -575,7 +590,7 @@ namespace CosmicShore.Gameplay
                 // menu. See Docs/PartySystem/BUGS.md B10.
                 if (PartyInviteController.Instance != null)
                 {
-                    await PartyInviteController.Instance.HandleHostLossAsync("Connection lost");
+                    await PartyInviteController.Instance.HandleHostLossAsync(PARTY_CONNECTION_LOST_NOTICE);
                     return;
                 }
 

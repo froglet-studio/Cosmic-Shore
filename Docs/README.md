@@ -25,6 +25,9 @@ Docs/
 │   │                            sent invites join the member's current party)
 │   ├── UI.md                    party/friends UI surface: component
 │   │                            inventory, invite UX flow, scene wiring
+│   ├── DROPPING_OUT.md          what a mid-match drop does today, traced
+│   │                            three ways (client link lost, client leaves,
+│   │                            host gone) with dated findings
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal
 │
 ├── PresenceSystem/              ← the lobby-only discovery layer
