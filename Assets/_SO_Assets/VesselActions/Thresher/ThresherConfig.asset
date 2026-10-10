@@ -96,7 +96,9 @@ MonoBehaviour:
   cameraFramingMargin: 1.15
   cameraMinAhead: 6
   cameraMaxDistance: 450
+  cameraMaxFollowTurnRate: 240
   spectateSpinRate: 1.8
+  spectateEngageSeconds: 0.2
   spectateReleaseFraction: 0.75
   spectateTiltDegrees: 25
   spectateBlendSeconds: 0.6
@@ -107,10 +109,13 @@ MonoBehaviour:
   ballRimCool: 0.6
   ballRimHot: 1
   ballHotRimWhiten: 0.35
+  ballMaxVisualSpin: 540
+  chainRimSlack: 0.35
+  chainRimTaut: 0.75
+  chainRimReady: 0.95
   ballVisualScale: 1.25
   chainLinks: 12
-  chainWidthFraction: 0.18
-  chainColor: {r: 0.22, g: 0.2, b: 0.2, a: 1}
+  chainColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}
   fallbackDomainColor: {r: 0.3, g: 0.9, b: 0.85, a: 1}
   fallbackDangerColor: {r: 1, g: 0.05, b: 0.05, a: 1}
   fallbackReadyColor: {r: 0.55, g: 0.95, b: 0.15, a: 1}

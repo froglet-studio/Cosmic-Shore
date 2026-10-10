@@ -138,8 +138,19 @@ Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2
   bloom threshold (0.16) and brightens toward 0.4 as it nears smash; a hot ball's body sits ON the
   0.5 bloom clamp (the whole ball blooms) and its rim whitens with heat; nothing exceeds 1.0
   (tonemapping is None, `Docs/PALETTE.md` §2.2). Compiled with DXC (both passes, ± instancing). The
-  drawn chain IS the gameplay chain, iron-grey, flickering lime at READY; a skid trail while
-  planting. **No dial on the ball** — the heat gauge lives only on the HUD's Charge card.
+  drawn ball's ROLL is capped at `ballMaxVisualSpin` 540 °/s: a white-hot ball truly rolls ~7000
+  °/s, which at 60 fps strobed the studs backwards (wagon-wheel) and read as jitter. **No dial on
+  the ball** — the heat gauge lives only on the HUD's Charge card. A skid trail while planting.
+- **The chain** IS the gameplay chain (the 12 links), drawn as a **fresnel tube** —
+  **`ThresherChainMaterial` / `ThresherChainFresnelShader`**. It is a LineRenderer (a VIEW-aligned
+  ribbon), whose normals all face the lens, so a mesh fresnel would be flat; but a view-aligned
+  ribbon is exactly a cylinder's silhouette, and across a unit cylinder seen side-on `N·V =
+  sqrt(1 − x²)`, so the fragment computes the tube's true fresnel from `x = 2·uv.y − 1` (power 0.8:
+  the chain is a few pixels wide at chase distance, so the rim has to cover most of it to read). It
+  is drawn at the width that CUTS (`2 × chainCutRadius`). Iron body (`chainColor`, under the bloom
+  threshold); the rim takes the ball's hue, `chainRimSlack` 0.35 while slack and `chainRimTaut`
+  0.75 while taut (the state in which it slices), flickering to CTA lime (`chainRimReady` 0.95) at
+  READY. The skid trail keeps `lineMaterial` (vertex colour).
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
   `VesselHUDPrefab`): the four-icon row Wrecking Ball · Heavy Iron · Winch · Plant
   (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
@@ -162,6 +173,19 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   in ~0.2 s) and **back in at `cameraZoomInRate` 0.7/s** (half-way in ~1 s), then written through
   `SetCameraDistance`. Needed distances (harness): reeled in 38/28/12/54 u behind/abeam/ahead/
   overhead — i.e. none; let out 161/161/15/290; at full Space 232/240/15/430.
+- **The zoom follows the chain's REACH, not the ball's swing.** The target is
+  `max(RequiredDistance(ball), ReachDistance(chain length))`, where `ReachDistance` is what a ball
+  anywhere on the chain's horizontal circle would need (sampled every 15°). Tracking the ball alone
+  pumped the camera in and out at the swing's rhythm (abeam 161 u ↔ ahead 15 u at full let-out);
+  now the distance moves with the winch and the ball's own position only adds (a ball looped
+  overhead).
+- **The follow frame turns at most `cameraMaxFollowTurnRate` 240 °/s** (`CustomCameraController.
+  MaxFollowTurnRate`, a default-0 seam). The fleet's cameras are hard-attached to the hull
+  (`CameraMode.FixedCamera`), so a hull that turns faster than any stick can carries the camera in
+  the same frame — and hooking onto a planted orbit swings the hull up to **91° in one frame**
+  (reeled in; 67° let out — measured offline by mimicking the transformer, while the rope's own
+  tug turns it at most 85–131 °/s). That was the camera "getting whipped around". Below the cap the
+  frame tracks the hull exactly, so ordinary flying is unchanged; a snap is spread over ~0.4 s.
 - **Spectate a fast spin.** Once a planted orbit circles at `spectateSpinRate` **1.8 rad/s
   (~100 °/s)** or faster, the camera detaches: `CustomCameraController.Spectate` (a new, default-null
   seam) blends over `spectateBlendSeconds` 0.6 s to a still vantage on the orbit's axis, tilted
@@ -169,7 +193,9 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   the narrower FOV with margin, looking at the pivot; screen-up is the way the camera was facing,
   laid into the orbit plane, so the ship's heading stays "up" across the cut. It watches the ship
   spin. It re-attaches (blending back out) on releasing LT or when the spin falls under
-  `spectateReleaseFraction` 0.75 of the threshold. At the shipped dials planting reeled in at cruise
+  `spectateReleaseFraction` 0.75 of the threshold. It detaches only after the spin has held over the
+  threshold for `spectateEngageSeconds` 0.2 s, so a tap of LT does not bob the camera up and
+  straight back down. At the shipped dials planting reeled in at cruise
   is already 3.2 rad/s (spectates at once); a fully let-out orbit at its cap is 1.1 rad/s (ridden),
   1.9 at full Time (spectates). While detached the vantage LEANS after the orbit's plane at
   `spectatePlaneFollowRate` 1.5/s, so steering a planted orbit turns it in front of a still camera
@@ -178,9 +204,11 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   `SpectateView`): applied as a BLEND over the settled follow pose, before shake and the portal
   carry; the follow pose is kept separately while blended so the chase smoothing never chases the
   vantage. Null (every other vessel, always) is a no-op: the blend stays 0 and no follow line runs
-  differently. Cleared on a follow-target change; a teleport cuts the blend.
+  differently. Cleared on a follow-target change; a teleport cuts the blend. `MaxFollowTurnRate`
+  likewise: 0 for every other vessel (the frame IS the target's rotation), cleared on a
+  follow-target change, reset on a teleport and by `SnapToTarget`.
 - **Hand-back**: `OnDisable` / `OnDestroy` / losing local pilot / disabling `cameraFraming` clear
-  the vantage and restore the prefab's distance.
+  the vantage and the follow-turn cap and restore the prefab's distance.
 
 ## 6. Flight model hooks
 
@@ -216,9 +244,10 @@ frame of drift. Untested in MPPM.
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
 | `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
-| `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null, §5a) |
+| `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null) and `MaxFollowTurnRate` follow-frame cap (default 0), §5a |
 | `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 43 tests (solver, planted steering, camera framing); offline runner + feel table |
+| `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 46 tests (solver, planted steering, camera framing and reach envelope); offline runner + feel table |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -260,11 +289,15 @@ prefab, `DriftAudioController`, jets and tails.
 9. **Camera**: let the chain out and swing it — the camera pulls back at once so the ball never
    leaves the frame; reel in and it drifts back to its usual distance over a couple of seconds.
    Plant reeled in — the camera lifts off to a still vantage over the orbit and you watch the ship
-   spin; release LT and it eases back behind the hull. Fly another vessel afterwards: its camera is
-   at its own distance and attached.
-10. **Ball look**: the ball is a dark body with a bright rim in your domain colour (no ring round
-    it); its studs flash as it rolls; it brightens toward smash speed, turns red and blooms when
-    hot, lit-blue with Charge L5.
+   spin; release LT and it eases back behind the hull. Planting never whips the camera round — the
+   hull visibly swings onto the orbit inside a camera that turns smoothly after it. Swinging a
+   let-out ball does not pump the camera in and out. Fly another vessel afterwards: its camera is
+   at its own distance and hard-attached.
+10. **Ball and chain look**: the ball is a dark body with a bright rim in your domain colour (no
+    ring round it); its studs flash as it rolls, and stay legible (no backwards strobe) when white
+    hot; it brightens toward smash speed, turns red and blooms when hot, lit-blue with Charge L5.
+    The chain reads as a round iron tube with a domain-coloured rim, brighter while taut, lime
+    flicker at READY.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`

@@ -544,6 +544,24 @@ namespace CosmicShore.Tests
             Assert.Greater(full, CamNeutral, "control: a let-out ball swung abeam must pull the camera back");
         }
 
+        [TestCase(22f)]
+        [TestCase(140f)]
+        [TestCase(210f)]
+        public void Framing_ReachEnvelopeCoversEverySwingOfTheChain(float length)
+        {
+            // The zoom follows ReachDistance(length) so it does not pump with the swing: it must
+            // frame the ball wherever a swing puts it on the chain's horizontal circle.
+            float r = 3.9f;
+            float reach = ThresherCameraFraming.ReachDistance(length, r, CamHeight, HalfV, HalfH, Margin, MinAhead);
+            for (int deg = 0; deg < 360; deg += 5)
+            {
+                float a = deg * Mathf.Deg2Rad;
+                var ball = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * length;
+                float need = ThresherCameraFraming.RequiredDistance(ball, r, CamHeight, HalfV, HalfH, Margin, MinAhead);
+                Assert.LessOrEqual(need, reach * 1.01f, $"a ball swung to {deg} deg at length {length} needs {need}, past the envelope {reach}");
+            }
+        }
+
         [Test]
         public void Framing_ZoomsOutFastAndBackInSlowly_NeverOvershooting()
         {

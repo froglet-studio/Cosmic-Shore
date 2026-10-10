@@ -102,6 +102,38 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds to ease fully into, or back out of, a <see cref="Spectate"/> vantage.</summary>
         public float SpectateBlendSeconds { get; set; } = 0.6f;
 
+        /// <summary>
+        /// A cap (degrees/second) on how fast the FOLLOW FRAME — the rotation the offset is laid
+        /// out in, and whose up the camera looks along — may turn toward the target's rotation.
+        /// 0 (the default, and the only value any other vessel ever sees) makes the frame the
+        /// target's rotation exactly, as before this existed.
+        ///
+        /// <para>Why it exists: the fleet's cameras are hard-attached (<c>CameraMode.FixedCamera</c>
+        /// sets <see cref="_disableRotationLerp"/>), so a hull that turns faster than any stick can
+        /// turn it carries the camera with it in the same frame. The Thresher's planted ball does
+        /// exactly that — hooking onto the orbit swings the hull up to 91° in one frame — and read
+        /// as the camera "getting whipped around". Below the cap the frame tracks the hull exactly,
+        /// so ordinary flying is unchanged; only the spikes are spread over time. Driven only by
+        /// <c>ThresherExecutor</c>; cleared on a follow-target change.</para>
+        /// </summary>
+        public float MaxFollowTurnRate { get; set; }
+        private Quaternion _followFrame = Quaternion.identity;
+        private bool _followFrameValid;
+
+        /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
+        private Quaternion StepFollowFrame(float dt)
+        {
+            Quaternion target = _followTarget.rotation;
+            if (MaxFollowTurnRate <= 0f || !_followFrameValid)
+            {
+                _followFrame = target;
+                _followFrameValid = true;
+                return target;
+            }
+            _followFrame = Quaternion.RotateTowards(_followFrame, target, MaxFollowTurnRate * Mathf.Max(0f, dt));
+            return _followFrame;
+        }
+
         /// <summary>A still camera vantage (see <see cref="Spectate"/>).</summary>
         public struct SpectateView
         {
@@ -357,17 +389,25 @@ namespace CosmicShore.Gameplay
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followPoint;
 
-            Vector3 desiredPos = followPoint + _followTarget.rotation * EffectiveOffset;
             Vector3 shipDelta = followPoint - _lastTargetPos;
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
             // frame (normal flight is only a few units/frame). Snap the camera into place instead of
             // SmoothDamping a wild swing across the arena - that swing read as a "wonky, jittery start".
             const float teleportStep = 50f;
-            if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
+            bool teleported = shipDelta.sqrMagnitude > teleportStep * teleportStep;
+            if (teleported) _followFrameValid = false;   // a teleport cuts the follow frame too
+
+            // The follow frame: the target's rotation, or a turn-rate-capped copy of it while a
+            // vessel asks for one (MaxFollowTurnRate).
+            Quaternion rotation = StepFollowFrame(Time.deltaTime);
+            Vector3 frameUp = rotation * Vector3.up;
+            Vector3 desiredPos = followPoint + rotation * EffectiveOffset;
+
+            if (teleported)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(followPoint - transform.position, frameUp, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
@@ -404,7 +444,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(followPoint - transform.position, frameUp, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -517,6 +557,8 @@ namespace CosmicShore.Gameplay
                 _followHeightScale = 1f;
                 _spectate = null;
                 _spectateBlend = 0f;
+                MaxFollowTurnRate = 0f;
+                _followFrameValid = false;
             }
 
             // Remember WHO took the target away, so a frozen camera can name its cause instead of
@@ -590,6 +632,7 @@ namespace CosmicShore.Gameplay
             if (!_followTarget) return;
 
             Vector3 followPoint = FollowPoint;
+            _followFrameValid = false;
             transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
 
             if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))

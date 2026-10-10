@@ -1081,6 +1081,7 @@ MonoBehaviour:
     Path: 
   ballMaterial: {fileID: 2100000, guid: 92d94825f0264e4eb25f79f37523b4e7, type: 2}
   lineMaterial: {fileID: 0}
+  chainMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0

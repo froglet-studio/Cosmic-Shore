@@ -74,8 +74,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Ball material: ThresherBallMaterial (ThresherBallFresnelShader). Its body and rim colours are driven " +
                  "per frame through a MaterialPropertyBlock (_DarkColor / _BrightColor).")]
         [SerializeField] Material ballMaterial;
-        [Tooltip("Chain and skid-trail material. Must honour vertex colour (Sprites/Default does).")]
+        [Tooltip("Skid-trail material (and the chain's fallback). Must honour vertex colour (Sprites/Default does).")]
         [SerializeField] Material lineMaterial;
+        [Tooltip("Chain material: ThresherChainMaterial (ThresherChainFresnelShader - a fresnel TUBE drawn on the " +
+                 "chain's ribbon). Body and rim colours are driven per frame through a MaterialPropertyBlock.")]
+        [SerializeField] Material chainMaterial;
 
         [Inject] GameDataSO _gameData;
 
@@ -555,6 +558,7 @@ namespace CosmicShore.Gameplay
         bool _spectating;
         Vector3 _spectateNormal, _spectateOutward, _spectateUp;
         float _spectateRadius;
+        float _spectateQualifyTime;
 
         /// <summary>
         /// The local pilot's camera, two jobs (<c>THRESHER.md</c> § Camera):
@@ -601,17 +605,30 @@ namespace CosmicShore.Gameplay
             float neutral = Mathf.Abs(_cam.NeutralOffsetZ);
             if (neutral <= 0f) neutral = _camDistance;
             Vector3 ballLocal = ship.InverseTransformDirection(_solver.BallPosition - ship.position);
-            float need = ThresherCameraFraming.RequiredDistance(ballLocal, ballRadius, _cam.GetFollowOffset().y,
+            float height = _cam.GetFollowOffset().y;
+            float need = ThresherCameraFraming.RequiredDistance(ballLocal, ballRadius, height,
                 halfFovV, halfFovH, config.CameraFramingMargin, config.CameraMinAhead);
+            // The REACH envelope (ThresherCameraFraming.ReachDistance): what a ball anywhere on the
+            // chain's horizontal circle at its CURRENT length would need. Without it the target
+            // tracked the ball round every swing (abeam 161 u, ahead 15 u at full let-out) and the
+            // camera pumped in and out at the swing's rhythm; with it the distance follows the
+            // winch, and the ball's own position only adds (a ball looped overhead).
+            need = Mathf.Max(need, ThresherCameraFraming.ReachDistance(_solver.Length,
+                ballRadius, height, halfFovV, halfFovH, config.CameraFramingMargin, config.CameraMinAhead));
             float target = Mathf.Clamp(need, neutral, Mathf.Max(neutral, config.CameraMaxDistance));
             _camDistance = ThresherCameraFraming.Ease(_camDistance, target,
                 config.CameraZoomOutRate, config.CameraZoomInRate, dt);
             _camWritten = -_camDistance;
             _cam.SetCameraDistance(_camWritten);
+            _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
 
             // Spectate.
             float spin = IsPivoting ? ThresherCameraFraming.SpinRate(_solver.LockSpeed, _solver.Length) : 0f;
-            if (!_spectating && IsPivoting && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate)
+            // Detach only once the spin has held over the threshold for spectateEngageSeconds, so a
+            // tap of LT does not bob the camera up toward the vantage and straight back down.
+            bool qualifies = IsPivoting && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
+            _spectateQualifyTime = qualifies ? _spectateQualifyTime + dt : 0f;
+            if (!_spectating && qualifies && _spectateQualifyTime >= config.SpectateEngageSeconds)
                 BeginSpectate(ship.position);
             else if (_spectating && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction))
                 EndSpectate();
@@ -684,8 +701,10 @@ namespace CosmicShore.Gameplay
         /// settings landing first), in which case that write stands.</summary>
         void ReleaseCamera()
         {
+            _spectateQualifyTime = 0f;
             if (!_cam) { _cam = null; _spectating = false; _camWritten = float.NaN; return; }
             EndSpectate();
+            _cam.MaxFollowTurnRate = 0f;
             float neutral = _cam.NeutralOffsetZ;
             if (neutral < 0f && _cam.GetCameraDistance() == _camWritten) _cam.SetCameraDistance(neutral);
             _cam = null;
@@ -774,6 +793,21 @@ namespace CosmicShore.Gameplay
             rim = WithMaxChannel(hue, Mathf.Lerp(config.BallRimCool, config.BallRimHot, k));
         }
 
+        /// <summary>The chain tube's two colours: an iron body (<c>chainColor</c>), and a rim in the
+        /// ball's hue — dim while slack, brighter while taut (the state in which it cuts) — that
+        /// flickers to the palette's CTA lime while READY.</summary>
+        void ChainShade(out Color body, out Color rim)
+        {
+            body = config.ChainColor;
+            body.a = 1f;
+            bool taut = _solver.Mode == ThresherMode.Pivot || _solver.IsTaut;
+            rim = WithMaxChannel(BallColor(out _), taut ? config.ChainRimTaut : config.ChainRimSlack);
+            if (!IsReady) return;
+            Color lime = WithMaxChannel(ReadyColor(), config.ChainRimReady);
+            bool on = Mathf.Repeat(Time.time * config.ReadyFlickerHz, 1f) < 0.5f;
+            rim = on ? lime : Color.Lerp(rim, lime, 0.35f);
+        }
+
         static Color WithMaxChannel(Color c, float max)
         {
             float m = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
@@ -793,6 +827,7 @@ namespace CosmicShore.Gameplay
         TrailRenderer _skid;
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
+        MaterialPropertyBlock _chainMpb;
         float _comboShownScale;
         int _comboShown;
 
@@ -824,7 +859,9 @@ namespace CosmicShore.Gameplay
                 parts.Add(MakePrimitive(PrimitiveType.Cube, _ball, a * 0.5f, Vector3.one * 0.32f, ballMat));
             _ballRenderers = parts.ToArray();
 
-            _chain = MakeLine("Chain", lineMat, false);
+            _chain = MakeLine("Chain", chainMaterial ? chainMaterial : lineMat, false);
+            _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
+            _chainMpb = new MaterialPropertyBlock();
 
             var skidGo = new GameObject("SkidTrail");
             skidGo.transform.SetParent(_ball, false);
@@ -923,8 +960,11 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 axis = Vector3.Cross(ship - ballPos, v);
                 if (axis.sqrMagnitude < 1e-6f) axis = Vector3.Cross(Vector3.up, v);
+                // Capped: a white-hot ball truly rolls ~7000 deg/s, which at 60 fps strobes the studs
+                // backwards (wagon-wheel) — read as jitter. The cap keeps the roll legible.
+                float rollDegPerSec = Mathf.Min(speed / r * Mathf.Rad2Deg, config.BallMaxVisualSpin);
                 if (axis.sqrMagnitude > 1e-6f)
-                    _ball.rotation = Quaternion.AngleAxis(speed / r * Mathf.Rad2Deg * dt, axis.normalized) * _ball.rotation;
+                    _ball.rotation = Quaternion.AngleAxis(rollDegPerSec * dt, axis.normalized) * _ball.rotation;
             }
 
             Color ballColor = BallColor(out float emission);
@@ -939,18 +979,16 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _ballRenderers.Length; i++)
                 if (_ballRenderers[i]) _ballRenderers[i].SetPropertyBlock(_mpb);
 
-            // Chain: the gameplay links, drawn. Lime flicker for READY.
-            float width = _settings.BallRadius * config.ChainWidthFraction;
-            _chain.startWidth = _chain.endWidth = width;
-            Color chainColor = config.ChainColor;
-            chainColor.a = 1f;
-            if (IsReady)
-            {
-                Color lime = ReadyColor();
-                bool on = Mathf.Repeat(Time.time * config.ReadyFlickerHz, 1f) < 0.5f;
-                chainColor = on ? lime : Color.Lerp(chainColor, lime, 0.35f);
-            }
-            _chain.startColor = _chain.endColor = chainColor;
+            // Chain: the gameplay links, drawn as a fresnel tube at the width that CUTS. Iron body;
+            // the rim takes the ball's hue, brighter while taut (it is slicing), lime-flickering at
+            // READY.
+            _chain.startWidth = _chain.endWidth = 2f * config.ChainCutRadius;
+            ChainShade(out Color chainBody, out Color chainRim);
+            _chainMpb.Clear();
+            _chainMpb.SetColor(DarkColorId, chainBody);
+            _chainMpb.SetColor(BrightColorId, chainRim);
+            _chain.SetPropertyBlock(_chainMpb);
+            _chain.startColor = _chain.endColor = chainRim;   // the vertex-colour fallback material
             if (_chain.positionCount != _links.Count) _chain.positionCount = _links.Count;
             _chain.SetPositions(_links.Points);
 

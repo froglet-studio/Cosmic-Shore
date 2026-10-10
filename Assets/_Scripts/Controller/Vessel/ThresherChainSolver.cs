@@ -700,6 +700,28 @@ namespace CosmicShore.Gameplay
             return hi;
         }
 
+        /// <summary>
+        /// The REACH envelope: the distance that keeps a ball anywhere on the chain's horizontal
+        /// circle of radius <paramref name="length"/> in frame — sampled every 15° of yaw (the
+        /// ring is left/right symmetric, so 0..180° covers it). The zoom tracks this, a function of
+        /// the chain's length alone, so it follows the winch instead of pumping in and out with
+        /// every swing; the ball's own position (<see cref="RequiredDistance"/>) only ever adds.
+        /// </summary>
+        public static float ReachDistance(float length, float radius, float height,
+                                          float halfFovVerticalRad, float halfFovHorizontalRad,
+                                          float margin, float minAhead)
+        {
+            float worst = 0f;
+            for (int deg = 0; deg <= 180; deg += 15)
+            {
+                float a = deg * Mathf.Deg2Rad;
+                var ball = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * length;
+                worst = Mathf.Max(worst, RequiredDistance(ball, radius, height,
+                    halfFovVerticalRad, halfFovHorizontalRad, margin, minAhead));
+            }
+            return worst;
+        }
+
         /// <summary>Is the ball inside the margin-shrunk view of a chase camera
         /// <paramref name="distance"/> behind the hull (see <see cref="RequiredDistance"/>)?</summary>
         public static bool Frames(Vector3 ballLocal, float radius, float height, float distance,

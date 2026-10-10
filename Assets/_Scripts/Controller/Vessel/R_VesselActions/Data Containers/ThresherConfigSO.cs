@@ -101,12 +101,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("The farthest the chase camera is ever pulled back (world units). The prefab's own " +
                  "distance is always the near limit.")]
         [SerializeField, Min(0f)] float cameraMaxDistance = 450f;
+        [Tooltip("The fastest the chase camera's frame may turn after the hull (degrees/s). The fleet's camera " +
+                 "is hard-attached, so a hull snap (hooking onto a planted orbit swings it up to 91 deg in one " +
+                 "frame) whipped the camera round with it. Above every stick turn rate, so ordinary flying is " +
+                 "untouched; only snaps are spread out. 0 = hard-attached as the rest of the fleet.")]
+        [SerializeField, Min(0f)] float cameraMaxFollowTurnRate = 240f;
 
         [Header("Camera - spectate a fast planted spin (local pilot only)")]
         [Tooltip("Detach the camera and WATCH the planted orbit from a still vantage once the ship " +
                  "circles the pivot at this rate or faster (radians/s; 1.8 is about 100 deg/s). Riding " +
                  "a faster spin in a chase camera reads as dizzying.")]
         [SerializeField, Min(0f)] float spectateSpinRate = 1.8f;
+        [Tooltip("The spin must hold at or over spectateSpinRate this long (seconds) before the camera " +
+                 "detaches, so a tap of LT does not bob the camera.")]
+        [SerializeField, Min(0f)] float spectateEngageSeconds = 0.2f;
         [Tooltip("Re-attach once the spin falls below this fraction of spectateSpinRate (or the plant " +
                  "is released). Below 1 so a spin hovering at the threshold does not flap.")]
         [SerializeField, Range(0f, 1f)] float spectateReleaseFraction = 0.75f;
@@ -133,16 +141,25 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float ballRimHot = 1f;
         [Tooltip("How far a white-hot ball's rim whitens (0 = pure hue, 1 = white).")]
         [SerializeField, Range(0f, 1f)] float ballHotRimWhiten = 0.35f;
+        [Tooltip("The fastest the drawn ball ROLLS (degrees/s). A white-hot ball truly rolls ~7000 deg/s, " +
+                 "which strobes the studs backwards at 60 fps.")]
+        [SerializeField, Min(0f)] float ballMaxVisualSpin = 540f;
+
+        [Header("Chain shading (ThresherChainFresnelShader: a fresnel tube on the chain's ribbon)")]
+        [Tooltip("Rim brightness (max channel, the ball's hue) while the chain is SLACK.")]
+        [SerializeField, Range(0f, 1f)] float chainRimSlack = 0.35f;
+        [Tooltip("Rim brightness while the chain is TAUT - the state in which it cuts.")]
+        [SerializeField, Range(0f, 1f)] float chainRimTaut = 0.75f;
+        [Tooltip("Rim brightness of the lime READY flicker.")]
+        [SerializeField, Range(0f, 1f)] float chainRimReady = 0.95f;
 
         [Header("Look")]
         [Tooltip("Rendered ball radius as a multiple of the physics radius.")]
         [SerializeField, Min(0.1f)] float ballVisualScale = 1.25f;
-        [Tooltip("Chain links (gameplay: the chain cuts; and drawn).")]
+        [Tooltip("Chain links (gameplay: the chain cuts; and drawn - at the width that cuts, 2 x chainCutRadius).")]
         [SerializeField, Range(2, 32)] int chainLinks = 12;
-        [Tooltip("Drawn chain width as a fraction of the ball's physics radius.")]
-        [SerializeField, Min(0f)] float chainWidthFraction = 0.18f;
-        [Tooltip("The chain's own colour (iron).")]
-        [SerializeField] Color chainColor = new Color(0.22f, 0.2f, 0.2f);
+        [Tooltip("The chain tube's BODY colour (iron). Keep it under the 0.2 bloom threshold: the rim carries the light.")]
+        [SerializeField] Color chainColor = new Color(0.07f, 0.065f, 0.065f);
         [Tooltip("Fallback ball colour when the palette cannot be read (e.g. no theme loaded).")]
         [SerializeField] Color fallbackDomainColor = new Color(0.3f, 0.9f, 0.85f);
         [Tooltip("Fallback hot colour when the palette has no danger colour.")]
@@ -181,7 +198,9 @@ namespace CosmicShore.Gameplay
         public float CameraFramingMargin => cameraFramingMargin;
         public float CameraMinAhead => cameraMinAhead;
         public float CameraMaxDistance => cameraMaxDistance;
+        public float CameraMaxFollowTurnRate => cameraMaxFollowTurnRate;
         public float SpectateSpinRate => spectateSpinRate;
+        public float SpectateEngageSeconds => spectateEngageSeconds;
         public float SpectateReleaseFraction => spectateReleaseFraction;
         public float SpectateTiltDegrees => spectateTiltDegrees;
         public float SpectateBlendSeconds => spectateBlendSeconds;
@@ -192,9 +211,12 @@ namespace CosmicShore.Gameplay
         public float BallRimCool => ballRimCool;
         public float BallRimHot => ballRimHot;
         public float BallHotRimWhiten => ballHotRimWhiten;
+        public float BallMaxVisualSpin => ballMaxVisualSpin;
+        public float ChainRimSlack => chainRimSlack;
+        public float ChainRimTaut => chainRimTaut;
+        public float ChainRimReady => chainRimReady;
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
-        public float ChainWidthFraction => chainWidthFraction;
         public Color ChainColor => chainColor;
         public Color FallbackDomainColor => fallbackDomainColor;
         public Color FallbackDangerColor => fallbackDangerColor;
