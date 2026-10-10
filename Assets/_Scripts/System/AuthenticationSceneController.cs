@@ -5,6 +5,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
@@ -73,6 +74,10 @@ namespace CosmicShore.Core
         [Inject] private OfflineModeService _offlineMode;
 
         CancellationTokenSource _cts;
+
+        // Load Time Insights (cold-boot recording): the username step is a human wait that spans
+        // two button handlers, so it is an explicit handle rather than a `using` scope. -1 = none.
+        int _usernameSetupSpan = -1;
         bool _navigated;
 
         /// <summary>
@@ -199,6 +204,10 @@ namespace CosmicShore.Core
             var done = new UniTaskCompletionSource();
             void Complete() => done.TrySetResult();
             overlay.OnPrivacyFlowCompleted += Complete;
+            // A human is answering: reported as human wait so a first-run boot is not read as
+            // engineering time (Load Time Insights, cold-boot recording).
+            using var privacySpan = LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                "Privacy flow on screen (age gate / consent) — human", isHumanWait: true);
             try
             {
                 // Destroy() without Finish() would never raise the event; poll the instance
@@ -244,8 +253,12 @@ namespace CosmicShore.Core
                         // main-thread-only. The fast path happens to complete synchronously
                         // today, but "it resumes inline" is exactly the assumption that put
                         // the reachability read on a timer thread above.
-                        await _facade.EnsureSignedInAnonymouslyAsync().AsMainThread()
-                            .AttachExternalCancellation(ct);
+                        using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                                   "Auth: re-announce sign-in (already signed in)", isWait: true))
+                        {
+                            await _facade.EnsureSignedInAnonymouslyAsync().AsMainThread()
+                                .AttachExternalCancellation(ct);
+                        }
                     }
                     catch (OperationCanceledException) { throw; }
                     catch (Exception ex)
@@ -261,7 +274,12 @@ namespace CosmicShore.Core
             // 2. Try cached session sign-in with a timeout.
             if (_facade != null)
             {
-                bool cached = await TrySignInCachedWithTimeoutAsync(ct);
+                bool cached;
+                using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                           $"Auth: cached session sign-in (UGS, {cachedAuthTimeout:F0}s timeout)", isWait: true))
+                {
+                    cached = await TrySignInCachedWithTimeoutAsync(ct);
+                }
                 if (cached)
                 {
                     CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Cached session valid. Auto-skipping.");
@@ -338,8 +356,12 @@ namespace CosmicShore.Core
             {
                 if (_facade != null)
                 {
-                    await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
-                        .AttachExternalCancellation(ct);
+                    using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                               "Auth: anonymous sign-in (UGS, automatic)", isWait: true))
+                    {
+                        await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
+                            .AttachExternalCancellation(ct);
+                    }
 
                     // The facade reports a failed sign-in through OnSignInFailed, it does not
                     // throw - so reaching here is not proof of a session (BH-1.4). Without this
@@ -383,8 +405,12 @@ namespace CosmicShore.Core
             {
                 if (_facade != null)
                 {
-                    await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
-                        .AttachExternalCancellation(ct);
+                    using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                               "Auth: anonymous sign-in (UGS, guest button)", isWait: true))
+                    {
+                        await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
+                            .AttachExternalCancellation(ct);
+                    }
 
                     // Failure arrives through OnSignInFailed, not as an exception (BH-1.4):
                     // treat "no session" as a failed attempt, not a success.
@@ -436,9 +462,14 @@ namespace CosmicShore.Core
 
                 try
                 {
-                    await UniTask.WaitUntil(
-                        () => _playerDataService.IsInitialized,
-                        cancellationToken: timeoutCts.Token);
+                    using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                               $"Auth: waiting for PlayerDataService (cloud profile load, {playerDataTimeout:F0}s timeout)",
+                               isWait: true))
+                    {
+                        await UniTask.WaitUntil(
+                            () => _playerDataService.IsInitialized,
+                            cancellationToken: timeoutCts.Token);
+                    }
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
@@ -450,6 +481,10 @@ namespace CosmicShore.Core
             {
                 HideLoading();
                 ShowUsernameSetup();
+                // First-run human step; closed in NavigateToMainMenu. -1 when not recording.
+                LoadInsights.End(_usernameSetupSpan);
+                _usernameSetupSpan = LoadInsights.Begin(LoadInsightCategory.GameFlow,
+                    "Username setup on screen — human", isHumanWait: true);
             }
             else
             {
@@ -727,6 +762,9 @@ namespace CosmicShore.Core
             _navigated = true;
             _awaitingPlayerInput = false;
 
+            LoadInsights.End(_usernameSetupSpan);
+            _usernameSetupSpan = -1;
+
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
             CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Navigating to Main Menu...");
             LoadMainMenuNetworkedAsync(_cts?.Token ?? CancellationToken.None).Forget();
@@ -776,7 +814,12 @@ namespace CosmicShore.Core
                     // completes on the second fire.  .AsMainThread() guarantees the
                     // continuation runs on Unity's main thread, since the upstream SOAP
                     // raise may originate from a UGS Task completion on the ThreadPool.
-                    await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread();
+                    using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                               $"Host start: waiting for Relay session (attempt {attempt}/{maxAttempts}, {timeout:F0}s timeout)",
+                               isWait: true))
+                    {
+                        await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread();
+                    }
                     networkReady = true;
                     CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
@@ -836,8 +879,12 @@ namespace CosmicShore.Core
                 bool offlineReady;
                 try
                 {
-                    offlineReady = _offlineMode != null
-                        && await _offlineMode.EnterOfflineSessionAsync(ct);
+                    using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                               "Host start: offline local host (127.0.0.1)", isWait: true))
+                    {
+                        offlineReady = _offlineMode != null
+                            && await _offlineMode.EnterOfflineSessionAsync(ct);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -860,7 +907,11 @@ namespace CosmicShore.Core
 
                     try
                     {
-                        await WaitForRelayReadyAsync(ct).AsMainThread();
+                        using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                                   "Host start: waiting for Relay after manual retry — human", isHumanWait: true))
+                        {
+                            await WaitForRelayReadyAsync(ct).AsMainThread();
+                        }
                         CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Relay session confirmed live after manual retry.");
 
                         // Clear the latched Retry surface. Without this the panel
@@ -883,6 +934,9 @@ namespace CosmicShore.Core
             _sceneTransitionManager?.SetFadeImmediate(1f);
 
             CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} via network scene management...");
+            // The scene-load span itself is opened by LoadInsightsRuntime's Netcode hook (this
+            // scene is destroyed before the menu arrives, so it cannot close one of its own).
+            LoadInsights.Mark($"Authentication → {menuScene} Netcode scene load requested");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
 

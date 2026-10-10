@@ -26,13 +26,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     ///   client into a game scene,
     /// • safety rails: abort on return-to-menu, application quit, or a 15-minute timeout.
     ///
-    /// Dev builds can arm recording without the editor via the -csmloadinsights command-line flag.
+    /// Dev builds can arm recording without the editor via the -csmloadinsights command-line flag;
+    /// -csmloadinsights-boot additionally records the cold boot (engine start → main menu) on
+    /// that start. Both set the persisted arm flags, exactly like the editor tab's buttons.
     /// </summary>
     public class LoadInsightsRuntime : MonoBehaviour
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         const float InFlightFlushSeconds = 5f;
         const float TimeoutMs = 15f * 60f * 1000f;
+
+        // The app-shell scenes. A game-launch recording that lands in one was abandoned; a boot
+        // recording walks all three by design and ends at the menu's OnClientReady.
+        const string BootstrapSceneName = "Bootstrap";
+        const string AuthenticationSceneName = "Authentication";
+        const string MenuSceneName = "Menu_Main";
 
         static LoadInsightsRuntime s_instance;
 
@@ -43,10 +51,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoSpawn()
         {
-            if (Environment.CommandLine != null &&
-                Environment.CommandLine.Contains("-csmloadinsights", StringComparison.OrdinalIgnoreCase))
+            string commandLine = Environment.CommandLine ?? "";
+            if (commandLine.Contains("-csmloadinsights", StringComparison.OrdinalIgnoreCase))
                 LoadInsights.Armed = true;
+            if (commandLine.Contains("-csmloadinsights-boot", StringComparison.OrdinalIgnoreCase))
+                LoadInsights.BootArmed = true;
             EnsureSpawned();
+
+            // This hook runs once per process, after the Bootstrap scene's Awake: the earliest
+            // point a script can open the boot recording. BeginBoot back-dates its clock to
+            // engine start and is a no-op unless both arm flags are set.
+            LoadInsights.BeginBoot();
         }
 
         /// <summary>Idempotent spawn — also callable from the editor tab when arming mid-play.</summary>
@@ -115,6 +130,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             LoadInsights.Mark($"Unity scene loaded: {scene.name} ({mode})");
 
+            // A boot walks Bootstrap → Authentication → Menu_Main by design; its endpoint is the
+            // menu's OnClientReady (LoadInsights.MarkVisualReady), not a scene arrival.
+            if (LoadInsights.IsBootRecording)
+            {
+                LoadInsights.OnBootSceneArrived(scene.name == MenuSceneName);
+                return;
+            }
+
             // A load recording that lands back in a non-game scene was abandoned by the player
             // (or failed and fell back) — close it out honestly instead of timing the menu.
             if (!IsGameScene(scene.name))
@@ -157,17 +180,23 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     if (!nm.IsServer && LoadInsights.Armed && !LoadInsights.IsRecording && IsGameScene(ev.SceneName))
                         LoadInsights.BeginLoad($"Netcode scene load (client) — {ev.SceneName}");
                     LoadInsights.Mark($"Netcode scene load begins: {ev.SceneName}");
-                    if (!nm.IsServer)
+                    // Clients: their whole scene load. The HOST only during a boot recording: a
+                    // game launch's host scene load is already spanned by SceneLoader, but the
+                    // Authentication → Menu_Main load is requested by the auth scene, which is
+                    // destroyed before the menu arrives and so cannot close a span of its own.
+                    if (!nm.IsServer || LoadInsights.IsBootRecording)
                     {
                         LoadInsights.End(_clientSceneSpan);
                         _clientSceneSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
-                            $"Client scene load ({ev.SceneName})");
+                            nm.IsServer
+                                ? $"Netcode scene load → activation (host, {ev.SceneName})"
+                                : $"Client scene load ({ev.SceneName})");
                     }
                     break;
 
                 case SceneEventType.LoadComplete:
                     LoadInsights.Mark($"Netcode scene load complete: {ev.SceneName} (client {ev.ClientId})");
-                    if (!nm.IsServer && ev.ClientId == nm.LocalClientId)
+                    if (_clientSceneSpan >= 0 && ev.ClientId == nm.LocalClientId)
                     {
                         LoadInsights.End(_clientSceneSpan);
                         _clientSceneSpan = -1;
@@ -199,7 +228,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         /// <summary>Anything that isn't an app-shell scene counts as a game scene.</summary>
         static bool IsGameScene(string sceneName) =>
-            sceneName != "Menu_Main" && sceneName != "Authentication" && sceneName != "Bootstrap";
+            sceneName != MenuSceneName && sceneName != AuthenticationSceneName && sceneName != BootstrapSceneName;
 #endif
     }
 }

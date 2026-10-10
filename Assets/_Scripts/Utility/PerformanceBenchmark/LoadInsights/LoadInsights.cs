@@ -46,6 +46,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     {
         public const string OutputSubfolder = "Benchmarks/LoadInsights";
         public const string ArmedPrefKey = "CSM.LoadInsights.Armed";
+        public const string BootArmedPrefKey = "CSM.LoadInsights.BootArmed";
 
         /// <summary>Frames longer than this during a load are recorded as stalls.</summary>
         public const float StallThresholdMs = 150f;
@@ -65,6 +66,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         static bool s_armedCached;
         static bool s_armedRead;
+        static bool s_bootArmedCached;
+        static bool s_bootArmedRead;
+
+        // Which interval this recording spans (see LoadRecordingKind). A boot recording keeps one
+        // extra handle: the span from Menu_Main activation to the menu vessel spawning, which is
+        // the boot's endpoint and would otherwise be the boot's largest unattributed stretch.
+        static LoadRecordingKind s_kind = LoadRecordingKind.GameLaunch;
+        static int s_bootMenuSpan = -1;
 
         static volatile bool s_recording;
         static long s_startTs;
@@ -102,6 +111,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         public static bool IsRecording => s_recording;
 
+        /// <summary>True while a cold-boot recording (engine start → main menu) is in flight.</summary>
+        public static bool IsBootRecording => s_recording && s_kind == LoadRecordingKind.ColdBoot;
+
         /// <summary>
         /// Record Insight Mode. While armed (and a host exists), every game launch is recorded
         /// until disarmed. Persisted so it survives domain reloads and editor restarts.
@@ -118,6 +130,27 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 s_armedCached = value;
                 s_armedRead = true;
                 PlayerPrefs.SetInt(ArmedPrefKey, value ? 1 : 0);
+                PlayerPrefs.Save();
+            }
+        }
+
+        /// <summary>
+        /// Also record the COLD BOOT (engine start → main menu ready) at the next application
+        /// start, in addition to game launches. Only honoured while <see cref="Armed"/>; persisted
+        /// like it. The sweep runner and the <c>-csmloadinsights-boot</c> flag set it.
+        /// </summary>
+        public static bool BootArmed
+        {
+            get
+            {
+                if (!s_bootArmedRead) { s_bootArmedCached = PlayerPrefs.GetInt(BootArmedPrefKey, 0) == 1; s_bootArmedRead = true; }
+                return s_bootArmedCached;
+            }
+            set
+            {
+                s_bootArmedCached = value;
+                s_bootArmedRead = true;
+                PlayerPrefs.SetInt(BootArmedPrefKey, value ? 1 : 0);
                 PlayerPrefs.Save();
             }
         }
@@ -154,31 +187,110 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             lock (s_gate)
             {
-                s_spans = new List<LoadInsightSpan>(256);
-                s_active = new List<int>(16);
-                s_marks = new List<LoadMark>(64);
-                s_stalls = new List<LoadStall>(MaxStalls);
-                s_errors = new List<SweepError>(16);
-                s_counters = new Dictionary<string, long>(16);
-                s_accums = new Dictionary<string, (double, long, double)>(16);
-                s_dropped = 0;
-                s_frames = 0;
-                s_lastSampledFrame = -1;
-                s_worstFrameMs = 0f;
-                s_visualReadyMs = -1f;
-                s_trigger = trigger;
-                s_sceneFrom = SafeActiveSceneName();
-                s_sceneTo = "";
-                s_gameMode = "";
-                s_intensity = 0; s_totalPlayers = 0; s_humanPlayers = 0; s_aiBackfill = 0;
-                s_isMultiplayer = false;
-
-                s_startTs = Stopwatch.GetTimestamp();
-                s_generation++;
-                s_recording = true;
-                s_marks.Add(new LoadMark { atMs = 0f, label = $"Load started — {trigger}" });
+                ResetStateUnlocked(trigger);
             }
             UnityEngine.Debug.Log($"[LoadInsights] ● Recording load — {trigger}");
+        }
+
+        /// <summary>
+        /// Starts recording the COLD BOOT: engine start → main menu ready. No-op unless armed,
+        /// boot-armed and hosted. Called once by <see cref="LoadInsightsRuntime"/> from its
+        /// first-script hook (AfterSceneLoad of the Bootstrap scene). The clock is back-dated to
+        /// engine start (<see cref="Time.realtimeSinceStartupAsDouble"/>), so player init and the
+        /// Bootstrap scene's load and Awake, which ran before any script could open a span, are
+        /// inside the interval as one closed span rather than silently excluded. The recording
+        /// completes at the menu's first OnClientReady (<see cref="MarkVisualReady"/>): the menu
+        /// vessel has spawned and the splash fade begins, which is where the player gets the menu.
+        /// A boot never supersedes a load already recording.
+        /// </summary>
+        public static void BeginBoot()
+        {
+            if (!HostAvailable || !Armed || !BootArmed) return;
+            if (s_recording) return;
+
+            // Main-thread only (Time): the runtime calls this from its spawn hook. In a player,
+            // realtimeSinceStartup is the time since the app started, so engine init and the
+            // Bootstrap scene load are already on the clock. In the Editor that clock runs from the
+            // EDITOR's start, so the Play session's own clock is used instead; it reads 0 at this
+            // hook, which means an editor boot cannot see its pre-script interval. An editor boot
+            // is not where the target's number comes from (it is a development build on the floor
+            // machine), so that blind spot is accepted and stated rather than approximated.
+            double sinceEngineStartMs = Application.isEditor
+                ? Time.unscaledTimeAsDouble * 1000.0
+                : Time.realtimeSinceStartupAsDouble * 1000.0;
+            if (sinceEngineStartMs < 0.0) sinceEngineStartMs = 0.0;
+
+            lock (s_gate)
+            {
+                ResetStateUnlocked("Cold boot — engine start → main menu");
+                s_kind = LoadRecordingKind.ColdBoot;
+                s_gameMode = "Cold boot";
+                s_startTs -= (long)(sinceEngineStartMs / s_msPerTick);
+
+                // Everything before this hook, as one closed span: nothing else can claim it.
+                // Skipped when the clock has nothing on it (the Editor case above).
+                float now = NowMsUnlocked();
+                if (now > 0.5f)
+                {
+                    s_spans.Add(new LoadInsightSpan
+                    {
+                        id = 0,
+                        parentId = -1,
+                        depth = 0,
+                        label = "Engine start → first script hook (player init, Bootstrap scene load + Awake)",
+                        category = (int)LoadInsightCategory.SceneLoad,
+                        categoryName = LoadInsightCategories.DisplayName(LoadInsightCategory.SceneLoad),
+                        startMs = 0f,
+                        endMs = now,
+                        durationMs = now
+                    });
+                }
+                AddMarkUnlocked("First script hook (LoadInsightsRuntime spawned)");
+            }
+            UnityEngine.Debug.Log("[LoadInsights] ● Recording cold boot — engine start → main menu");
+        }
+
+        /// <summary>
+        /// Boot recording only: a scene arrived. The main menu opens the span that runs until the
+        /// menu vessel spawns (the boot's endpoint), so Menu_Main's own activation and spawn chain
+        /// are named rather than left as the boot's biggest unattributed stretch. The vessel
+        /// initializers' own spans nest inside it and win attribution.
+        /// </summary>
+        internal static void OnBootSceneArrived(bool isMainMenu)
+        {
+            if (!IsBootRecording || !isMainMenu || s_bootMenuSpan >= 0) return;
+            s_bootMenuSpan = Begin(LoadInsightCategory.GameFlow,
+                "Menu_Main active → menu vessel spawned (OnClientReady)");
+        }
+
+        /// <summary>Fresh recording state. Caller holds <see cref="s_gate"/>.</summary>
+        static void ResetStateUnlocked(string trigger)
+        {
+            s_spans = new List<LoadInsightSpan>(256);
+            s_active = new List<int>(16);
+            s_marks = new List<LoadMark>(64);
+            s_stalls = new List<LoadStall>(MaxStalls);
+            s_errors = new List<SweepError>(16);
+            s_counters = new Dictionary<string, long>(16);
+            s_accums = new Dictionary<string, (double, long, double)>(16);
+            s_dropped = 0;
+            s_frames = 0;
+            s_lastSampledFrame = -1;
+            s_worstFrameMs = 0f;
+            s_visualReadyMs = -1f;
+            s_trigger = trigger;
+            s_sceneFrom = SafeActiveSceneName();
+            s_sceneTo = "";
+            s_gameMode = "";
+            s_intensity = 0; s_totalPlayers = 0; s_humanPlayers = 0; s_aiBackfill = 0;
+            s_isMultiplayer = false;
+            s_kind = LoadRecordingKind.GameLaunch;
+            s_bootMenuSpan = -1;
+
+            s_startTs = Stopwatch.GetTimestamp();
+            s_generation++;
+            s_recording = true;
+            s_marks.Add(new LoadMark { atMs = 0f, label = $"Load started — {trigger}" });
         }
 
         /// <summary>Finalizes the recording as a successful load (playable reached).</summary>
@@ -195,16 +307,29 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             CompleteInternal($"Aborted: {reason}", aborted: true);
         }
 
-        /// <summary>Stamps the user-visible "loaded" moment (splash cleared / OnClientReady).</summary>
+        /// <summary>
+        /// Stamps the user-visible "loaded" moment (splash cleared / OnClientReady). For a cold-boot
+        /// recording this IS the endpoint: the first OnClientReady after boot is the menu vessel
+        /// spawning in Menu_Main, which is what releases the splash.
+        /// </summary>
         public static void MarkVisualReady()
         {
             if (!s_recording) return;
+            bool completesBoot;
             lock (s_gate)
             {
                 if (!s_recording) return;
                 if (s_visualReadyMs < 0f) s_visualReadyMs = NowMsUnlocked();
-                AddMarkUnlocked("Client ready — splash cleared, vessel visible");
+                completesBoot = s_kind == LoadRecordingKind.ColdBoot;
+                AddMarkUnlocked(completesBoot
+                    ? "Main menu ready — menu vessel spawned, splash fade begins"
+                    : "Client ready — splash cleared, vessel visible");
             }
+            if (!completesBoot) return;
+
+            End(s_bootMenuSpan);
+            s_bootMenuSpan = -1;
+            CompleteInternal("Main menu ready — OnClientReady in Menu_Main (splash fade begins)", aborted: false);
         }
 
         /// <summary>Game parameters for the report header. Call once at launch (GameDataSO knows them all).</summary>
@@ -570,6 +695,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var report = new LoadInsightReport
             {
                 trigger = s_trigger,
+                recordingKind = (int)s_kind,
                 completionReason = reason,
                 sceneFrom = s_sceneFrom,
                 sceneTo = string.IsNullOrEmpty(s_sceneTo) ? SafeActiveSceneName() : s_sceneTo,

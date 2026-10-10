@@ -146,6 +146,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             }
             GUI.backgroundColor = prev;
 
+            // The second interval the load-time target names (Docs/PERFORMANCE_OPTIMIZATION.md
+            // §0.6). Honoured only while armed; recorded once per app start / Play press.
+            bool bootArmed = LoadInsights.BootArmed;
+            bool bootNext = EditorGUILayout.ToggleLeft(
+                "Also record the cold boot (engine start → main menu ready) on the next Play / app start",
+                bootArmed);
+            if (bootNext != bootArmed) LoadInsights.BootArmed = bootNext;
+
             if (LoadInsights.Armed && !LoadInsights.IsRecording)
             {
                 string hint = Application.isPlaying

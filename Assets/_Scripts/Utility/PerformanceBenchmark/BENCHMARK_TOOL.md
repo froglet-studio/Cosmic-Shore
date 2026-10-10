@@ -144,6 +144,15 @@ Extras that matter in practice:
   check when disarmed, and the runtime host only exists in the Editor and Development builds.
 - Dev builds can arm without the editor: launch with **`-csmloadinsights`** and pull the `.txt`
   off the device afterwards.
+- **Cold boot too.** The tab's **"Also record the cold boot"** toggle (or **`-csmloadinsights-boot`**)
+  records a second kind of interval on the next Play / app start: engine clock zero → the menu's
+  first `OnClientReady` (the menu vessel spawned, splash fade beginning), with spans across
+  bootstrap, auth, the Relay host start and Menu_Main's activation. It lands as
+  **`load_boot_*.json`** in the same folder and reads in the same tab. It is the first of the two
+  published load-time targets (`Docs/PERFORMANCE_OPTIMIZATION.md` §0.6); the game launch is the second.
+  A player build back-dates the clock to engine start, so player init and the Bootstrap scene load
+  are inside the interval as one closed span; in the Editor the Play clock reads 0 at the first
+  script hook, so an editor boot starts there and its pre-script interval is not measured.
 - Adding coverage: wrap new load-path work in
   `using (LoadInsights.Measure(LoadInsightCategory.X, "label")) { … }` — unattributed time is
   called out in the report so gaps are visible, not hidden.
@@ -284,6 +293,52 @@ DiagnosticsHUD's manual **Run Diagnostic**, which any tester can trigger in any 
 
 ---
 
+## Load-time sweep (`-csmloadsweep`) — every mode, every intensity, unattended
+
+The matrix is 31 cards × 4 intensities (120 cells without Maelstrom), which is not a hand-click
+job. The same hook that runs `-csmbench` runs the sweep instead when a **development build** is
+launched with `-csmloadsweep`; the two flags are exclusive, a sweep owns the whole session.
+
+```
+CosmicShore.exe -csmloadsweep                                   # boot + all 120 cells, 4 players each
+CosmicShore.exe -csmloadsweep -csmloadsweep-players max         # the worst-case player-count pass
+CosmicShore.exe -csmloadsweep -csmloadsweep-modes Rampage,Scurry -csmloadsweep-intensities 1,4 -csmloadsweep-repeats 3
+```
+
+What it does (`LoadSweepRunner`): arms the recorder before the first scene so the **cold boot** is
+recorded; waits for the menu; then for every card on the Arcade roster (`Arcade.ArcadeGames`, the
+27 arcade + 4 arena cards the menu offers) at every authored intensity it configures `GameDataSO`
+exactly as the launch modal does (`SyncFromArcadeGame` + `ConfigurePlayerCounts`, 1 human + AI
+backfill), raises the normal launch, waits for the Load Time Insights report (arena complete),
+returns to the menu through `SceneLoader.ReturnToMainMenu`, and moves on. It is a driver, not a
+mode: nothing about how a load runs is different under it.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `-csmloadsweep-modes <csv>` | all | `GameModes` member names, case-insensitive; naming Maelstrom explicitly includes it |
+| `-csmloadsweep-intensities <csv>` | `1,2,3,4` | clipped to each card's `MinIntensity`..`MaxIntensity` |
+| `-csmloadsweep-players <max\|min\|N>` | `4` | per cell, clamped into the card's allowed range; `4` keeps cells comparable, `max` is the worst case |
+| `-csmloadsweep-repeats <N>` | `1` | launches per cell |
+| `-csmloadsweep-cooldown <s>` | `5` | seconds in the menu between cells |
+| `-csmloadsweep-timeout <s>` | `300` | per-cell cap; an over-running load is aborted and the row says so |
+| `-csmloadsweep-include-maelstrom` | off | Maelstrom is a meta-mode whose loads are the other modes' cells |
+| `-csmloadsweep-stay` | off | stay running after the table is written instead of quitting |
+
+Both `-name value` and `-name=value` shapes parse. Output, under `{persistentDataPath}/Benchmarks/LoadInsights/`:
+one `load_<scene>_*.json` + `.txt` per cell (the full attribution, stalls and hints),
+`load_boot_*` for the boot, and **`sweep_<stamp>.md`** (+ `.json`): one row per cell, **worst
+cell first** (no data, then aborted, then longest), each with a **PASS / FAIL / NO DATA** verdict
+against the published targets (`LoadTimeTargets`, mirrored on `BenchmarkConfigSO`), how far over
+target it is, its top cost, unattributed share, worst frame, prisms laid and errors. The table is
+re-written after every cell, so a sweep killed at cell 40 still leaves rows 1–40.
+
+Two things to know before reading a row: **Burst compilation must be ON** or every number is
+managed IL (`Docs/PERFORMANCE_OPTIMIZATION.md` §0), and the arm flags persist in PlayerPrefs, so
+the runner snapshots them at start and restores them when it finishes or the app quits; a sweep
+that is force-killed mid-way leaves the build armed until the next sweep or a manual disarm.
+
+---
+
 ## Output & storage
 
 | Source | Path |
@@ -308,7 +363,9 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 | Load Time Insights tab (donut chart + tables) | `Editor/LoadInsightsTab.cs` |
 | Load-time span recorder (static API + attribution) | `LoadInsights/LoadInsights.cs` |
 | Load report model + Claude-ready text renderer | `LoadInsights/LoadInsightReport.cs` |
-| Load insights runtime host (stalls, in-flight snapshots, client trigger) | `LoadInsights/LoadInsightsRuntime.cs` |
+| Load insights runtime host (stalls, in-flight snapshots, client trigger, boot recording) | `LoadInsights/LoadInsightsRuntime.cs` |
+| Published load-time targets, sweep options, worst-first table | `LoadInsights/LoadSweepTable.cs` |
+| Unattended load-time sweep driver (`-csmloadsweep`) | `LoadInsights/LoadSweepRunner.cs` |
 | Per-frame capture (runtime, end-of-frame, zero-alloc) | `PerformanceBenchmarkRunner.cs` |
 | Manual-session error log + F8 marks (runtime) | `ManualSweepSession.cs` |
 | In-build overlay + Run Diagnostic (F7) | `DiagnosticsHUD.cs` |
@@ -320,7 +377,7 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 | Netcode (NGO) markers + counters | `NetMarkers.cs` |
 | Game-load counters (prisms/VFX/vessels) | `GameLoadSampler.cs` |
 | Multi-scene + error sweep | `BenchmarkSweepRunner.cs` |
-| Dev-build self-runner (`-csmbench`) | `BenchmarkBuildAutoRunner.cs` |
+| Dev-build self-runner (`-csmbench`) and the sweep hook (`-csmloadsweep`) | `BenchmarkBuildAutoRunner.cs` |
 | Standalone per-frame CSV logger | `ProfilerCsvLogger.cs` |
 | Data model | `FrameSnapshot.cs`, `BenchmarkStatistics.cs`, `BenchmarkReport.cs` (schema + source) |
 | A–F grade | `BenchmarkGrade.cs` |
@@ -355,3 +412,7 @@ initializers, `INetworkSerializable` structs).
   The recorder is inert unless armed AND the runtime host exists (Editor / Development builds).
 - **Cross-source runs** (Editor vs DevBuild, or different platforms) aren't comparable on absolute
   numbers — only same-source before/after deltas are meaningful (Compare warns).
+- **The load-time sweep is a solo host plus AI backfill.** It measures the host's load; a guest's
+  experience of a party launch (the client-side spans) needs a second machine and is not swept.
+  The cold-boot recording assumes a cached sign-in — a first-run boot carries human steps, which
+  are reported as human wait and are outside the target.

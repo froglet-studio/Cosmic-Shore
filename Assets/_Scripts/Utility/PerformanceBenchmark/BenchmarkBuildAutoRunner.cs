@@ -12,6 +12,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     ///
     /// Strictly gated so it NEVER runs in a normal session: requires both the dev-build/editor
     /// compile guard AND the launch argument.
+    ///
+    /// The same hook also starts the unattended LOAD-TIME SWEEP: launched with
+    /// <c>-csmloadsweep</c> the build records its own cold boot, then launches every arcade card at
+    /// every intensity through the normal launch path, records each load with Load Time Insights,
+    /// and writes one report per cell plus a worst-cell-first table
+    /// (<see cref="LoadSweepRunner"/>, options in <see cref="LoadSweepOptions"/>). The two
+    /// arguments are exclusive: a sweep owns the whole session.
     /// </summary>
     public class BenchmarkBuildAutoRunner : MonoBehaviour
     {
@@ -22,18 +29,27 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void MaybeAutoBench()
         {
-            if (!HasLaunchArg()) return;
+            var args = System.Environment.GetCommandLineArgs();
+
+            // Before the first scene: the sweep arms the recorder here so the Bootstrap scene's
+            // own hook (LoadInsightsRuntime, AfterSceneLoad) finds it armed and records the boot.
+            if (HasArg(args, LoadSweepOptions.LaunchArg))
+            {
+                LoadSweepRunner.Launch(LoadSweepOptions.Parse(args));
+                return;
+            }
+
+            if (!HasArg(args, LaunchArg)) return;
 
             var go = new GameObject("[BenchmarkBuildAutoRunner]");
             DontDestroyOnLoad(go);
             go.AddComponent<BenchmarkBuildAutoRunner>();
         }
 
-        static bool HasLaunchArg()
+        static bool HasArg(string[] args, string arg)
         {
-            var args = System.Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length; i++)
-                if (args[i] == LaunchArg) return true;
+                if (args[i] == arg) return true;
             return false;
         }
 

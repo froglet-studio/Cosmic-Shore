@@ -4,6 +4,7 @@ using System.Threading;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Core;
@@ -224,7 +225,12 @@ namespace CosmicShore.Core
                 // opaque, so first-use effects (crystal pickups, explosions,
                 // trails) don't hitch on in-game shader compilation. Runs before
                 // the minimum-splash wait so its cost is absorbed by the hold.
-                WarmUpShaders();
+                // Load Time Insights (cold-boot recording): each boot step is a span. No-ops
+                // unless a recording is armed.
+                using (LoadInsights.Measure(LoadInsightCategory.Other, "Shader variant warm-up (behind splash)"))
+                {
+                    WarmUpShaders();
+                }
 
                 // Enforce minimum splash duration.
                 // When auto-created (no config), use a short default so existing
@@ -235,10 +241,14 @@ namespace CosmicShore.Core
                 if (remaining > 0f)
                 {
                     Log($"Holding splash for {remaining:F2}s");
-                    await UniTask.Delay(
-                        TimeSpan.FromSeconds(remaining),
-                        DelayType.UnscaledDeltaTime,
-                        cancellationToken: ct);
+                    using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                               $"Minimum splash hold ({remaining:F2}s)", isWait: true))
+                    {
+                        await UniTask.Delay(
+                            TimeSpan.FromSeconds(remaining),
+                            DelayType.UnscaledDeltaTime,
+                            cancellationToken: ct);
+                    }
                 }
 
                 // Splash is now managed by SceneTransitionManager as the persistent
@@ -265,10 +275,14 @@ namespace CosmicShore.Core
 
                 // Use SceneTransitionManager if available (provides fade transitions).
                 // Skip fadeOut - the splash overlay is already opaque from bootstrap.
-                if (sceneTransitionManager != null)
-                    await sceneTransitionManager.LoadSceneAsync(targetScene, fadeOut: false);
-                else
-                    SceneManager.LoadScene(targetScene);
+                using (LoadInsights.Measure(LoadInsightCategory.SceneLoad,
+                           $"Bootstrap → {targetScene} scene load (+ settle and fade)"))
+                {
+                    if (sceneTransitionManager != null)
+                        await sceneTransitionManager.LoadSceneAsync(targetScene, fadeOut: false);
+                    else
+                        SceneManager.LoadScene(targetScene);
+                }
             }
             catch (OperationCanceledException)
             {

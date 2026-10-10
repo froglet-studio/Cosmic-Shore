@@ -40,6 +40,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Tooltip("Optional label to tag this benchmark run (e.g. 'Demo_Build', 'Squirrel_Race').")]
         [SerializeField] private string benchmarkLabel = "";
 
+        [Header("Load-Time Targets")]
+        [Tooltip("Cold boot target in seconds: engine start → main menu ready (menu vessel spawned, " +
+                 "splash fade begins), cached sign-in, online. The published number lives in " +
+                 "Docs/PERFORMANCE_OPTIMIZATION.md §0.6; this default mirrors it (LoadTimeTargets).")]
+        [SerializeField, Min(0f)] private float coldBootToMenuTargetSeconds = LoadTimeTargets.ColdBootToMenuSeconds;
+
+        [Tooltip("Menu → first playable frame target in seconds, for EVERY mode and intensity: arcade " +
+                 "launch tap → arena complete (connecting screen done). Published in " +
+                 "Docs/PERFORMANCE_OPTIMIZATION.md §0.6; this default mirrors it (LoadTimeTargets).")]
+        [SerializeField, Min(0f)] private float menuToPlayableTargetSeconds = LoadTimeTargets.MenuToPlayableSeconds;
+
         public float WarmupDuration => warmupDuration;
         public float SampleDuration => sampleDuration;
         public bool CaptureRenderingStats => captureRenderingStats;
@@ -49,5 +60,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public bool CaptureNetcodeStats => captureNetcodeStats;
         public string OutputFolder => outputFolder;
         public string BenchmarkLabel => benchmarkLabel;
+        public float ColdBootToMenuTargetSeconds => coldBootToMenuTargetSeconds;
+        public float MenuToPlayableTargetSeconds => menuToPlayableTargetSeconds;
     }
 }

@@ -647,8 +647,14 @@ namespace CosmicShore.UI
                     PrismTrailBuilder.SetLoadGateHolding(true);
                     try
                     {
-                        while (!PrismTrailBuilder.PollArenaReady())
-                            await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                        // Same envelope the connecting panel opens around its hold, so a mode
+                        // without a panel still attributes its gate remainder by name.
+                        using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                                   "Arena-ready gate hold, no connecting panel (remainder no builder span claimed)"))
+                        {
+                            while (!PrismTrailBuilder.PollArenaReady())
+                                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                        }
                     }
                     finally
                     {

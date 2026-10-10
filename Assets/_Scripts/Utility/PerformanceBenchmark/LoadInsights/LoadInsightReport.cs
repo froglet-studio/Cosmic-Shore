@@ -29,6 +29,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         Other = 13
     }
 
+    /// <summary>
+    /// Which interval a recording spans. A game launch (menu tap → arena complete) is the original
+    /// and the default; the cold boot (engine start → main menu ready) is the other interval the
+    /// published load-time target names (Docs/PERFORMANCE_OPTIMIZATION.md §0.6). Static ids: the
+    /// value is serialized into every report.
+    /// </summary>
+    public enum LoadRecordingKind
+    {
+        GameLaunch = 0,
+        ColdBoot = 1
+    }
+
     /// <summary>Display names for <see cref="LoadInsightCategory"/> (used by report text and the editor tab).</summary>
     public static class LoadInsightCategories
     {
@@ -156,6 +168,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // ── Identity / source ───────────────────────────
         public int schemaVersion;
         public string reportId;
+
+        /// <summary>True for a cold-boot recording (engine start → main menu), false for a game launch.</summary>
+        public bool IsColdBoot => recordingKind == (int)LoadRecordingKind.ColdBoot;
         public string timestamp;
         public SourceInfo source = new();
         public string gitBranch;
@@ -163,6 +178,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ── What load this was ──────────────────────────
         public string trigger;             // what started the recording
+        public int recordingKind;          // LoadRecordingKind: 0 = game launch, 1 = cold boot
         public string completionReason;    // "Playable (turn started)", "Aborted: …", "Timeout", …
         public bool interrupted;           // recovered from an in-flight snapshot (app died mid-load)
         public string sceneFrom;
@@ -236,7 +252,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string dir = Path.Combine(Application.persistentDataPath, outputFolder);
             Directory.CreateDirectory(dir);
 
-            string scene = string.IsNullOrEmpty(sceneTo) ? "unknown" : SanitizeFileName(sceneTo);
+            // A boot report is named by what it is, not by the scene it ended in: the tab's
+            // load_*.json glob still lists it, and a sweep can tell the two kinds apart on disk.
+            string scene = IsColdBoot ? "boot"
+                : string.IsNullOrEmpty(sceneTo) ? "unknown" : SanitizeFileName(sceneTo);
             string stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             string baseName = $"load_{scene}_{stamp}_{reportId}";
 
@@ -278,7 +297,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string net = isMultiplayer
                 ? $"multiplayer {networkRole}" + (connectedClients > 0 ? $" · {connectedClients} connected" : "")
                 : "single player";
-            sb.AppendLine($"  Game        {gameMode} · intensity {intensity} · {players} · {net}");
+            if (IsColdBoot)
+                sb.AppendLine("  Interval    Cold boot · engine start → main menu ready (menu vessel spawned, splash fade begins)");
+            else
+                sb.AppendLine($"  Game        {gameMode} · intensity {intensity} · {players} · {net}");
             // Older reports ended at countdown GO; when visual-ready IS the endpoint, don't
             // print the same number twice.
             bool visualDiffers = visualReadyMs >= 0f && Mathf.Abs(totalMs - visualReadyMs) > 50f;

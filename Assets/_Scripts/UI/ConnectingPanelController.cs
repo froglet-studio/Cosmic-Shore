@@ -5,6 +5,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -261,11 +262,25 @@ namespace CosmicShore.UI
 
             try
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(dwellSeconds), ignoreTimeScale: true, cancellationToken: ct);
+                // Load Time Insights: the panel's phases ARE the load's taxonomy (dwell → laying →
+                // growing → ready → peers), so each is a span. No-ops unless a recording is armed.
+                using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                           $"Connecting panel dwell ({dwellSeconds:F1}s)", isWait: true))
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(dwellSeconds), ignoreTimeScale: true, cancellationToken: ct);
+                }
                 if (holdUntil != null)
                 {
-                    while (!holdUntil())
-                        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    // Envelope for the arena-ready hold. The builder's own spans (streamed lay,
+                    // arena settle) nest inside it and win attribution; what this span keeps is the
+                    // remainder — the gate's own gaps (ReadyStableSeconds, frames between async
+                    // build steps) — named, instead of reported as "Unattributed".
+                    using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                               "Connecting panel hold: arena-ready gate (remainder no builder span claimed)"))
+                    {
+                        while (!holdUntil())
+                            await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    }
                 }
 
                 // THIS machine's arena is complete: the bar finishes here, because the bar
@@ -304,6 +319,11 @@ namespace CosmicShore.UI
 
             _waitingForPeers = true;
             float waited = 0f;
+            // A replication wait, not this machine's build: flagged as waiting so it is split out
+            // of the engineering time in a Load Time Insights report.
+            using var peerWaitSpan = LoadInsights.Measure(LoadInsightCategory.Netcode,
+                $"Waiting for peers' arenas ({playerRoster.HumanCount - playerRoster.ReadyHumanCount} of " +
+                $"{playerRoster.HumanCount} humans still building)", isWait: true);
             try
             {
                 while (!playerRoster.AllHumansReady)

@@ -214,6 +214,203 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.6 LOAD-TIME TARGET (2026-10-10, board item R7) — published, with the harness that measures it
+
+This section is the deliverable Steam checklist item **D2** was missing: *"a published load-time
+target set alongside the frame and memory targets."* Nothing before it stated what a good load was,
+so DoD #5 (*cold boot to playable meets the load-time target, all modes*) had nothing to test. It
+publishes two numbers, says which cells are expected to miss them, records where the measurement
+seam (`LoadInsights.Measure`) was audited and extended, and hands the run to **H8**. It measures;
+it does not optimise. The historical tables in §1 and the backlog in §4 are untouched except for two
+new backlog entries (§4 Tasks 11 and 12) recorded on the way.
+
+> The frame and memory targets this sits beside do not exist yet either: H8 *"locks the hardware
+> floor and the frame/memory targets"* (`Docs/STEAM_RELEASE_TASKS.md`, row H8). The load target is
+> therefore the first of the three to be published, and it is written so the same floor machine
+> can produce all three in one sitting.
+
+```
+LOAD_TIME_TARGET cold_boot_to_menu_s=10 menu_to_playable_s=20
+```
+
+The line above is machine-readable on purpose: `LoadSweepTableTests.PublishedTargets_MatchTheCodeConstants`
+parses it and asserts it equals `LoadTimeTargets` (`LoadSweepTable.cs`), which `BenchmarkConfigSO`'s
+defaults and the sweep's PASS/FAIL column read. Change the number here and the code's copy in the
+same commit, or the test says so.
+
+### The two targets
+
+| Interval | Target | Where it starts | Where it ends |
+|---|---|---|---|
+| **Cold boot → main menu** | **10 s** | engine clock zero (`Time.realtimeSinceStartup`, so player init and the Bootstrap scene's load/Awake are inside) | the menu's first `OnClientReady` (the menu vessel has spawned; `SceneLoader.FadeFromSplashOnReady` starts the splash fade) |
+| **Menu → first playable frame** | **20 s**, every mode, every intensity | the arcade launch tap (`GameDataSO.InvokeGameLaunch`) | arena complete: connecting screen done, every laid prism grown (`MiniGameHUD.HandleClientReady` → `LoadInsights.CompleteLoad`); the pre-game cinematic, Ready and countdown are gameplay and excluded |
+
+Conditions that make a number count, in this order: **Burst compilation ON** (§0's first rule;
+the tell is a job row reading `ExecuteJobFunction.Invoke()`), a **development build** (editor
+numbers are inflated 2–3× and are not the target; `BENCHMARK_TOOL.md` § Dev-build capture), the
+**GTX 1060 floor machine** (H8), a **cached sign-in and a working connection** (a first-run boot
+contains human steps, which the recorder flags as human wait and the target does not cover),
+**4 players** per cell (1 human + 3 AI backfill, the sweep's default; `max` is a second, separate
+pass for the worst case), and **intensity 1–4 as authored on each card**.
+
+### Why these numbers and not others
+
+**Cold boot → menu: 10 s.** The authored waits on the path are small and quoted: the splash is held
+to `_minimumSplashDuration: 1` (`Assets/_SO_Assets/BootstrapConfig.asset`), the menu vessel's
+spawn chain carries `preSpawnDelayMs = 200` and `postSpawnDelayMs = 200`
+(`ServerPlayerVesselInitializer.cs`), and the shader warm-up behind the splash is a no-op because
+its collection is empty (§4 Task 3). So about 1.4 s of the boot is authored; the rest is three scene
+loads (Bootstrap → Authentication → Menu_Main), two UGS round trips (cached sign-in, capped at
+`cachedAuthTimeout = 3f`; cloud profile, capped at `playerDataTimeout = 5f`), one Relay allocation
+(the always-hosted model starts a host before the menu loads, `AuthenticationSceneController.LoadMainMenuNetworkedAsync`),
+and Menu_Main's synchronous activation, which §6 (2026-08-06) already records as the stall that
+*"still freezes the splash spinner for its duration — structural"*. 10 s and not 15: one Relay
+attempt that times out costs `networkHostTimeout = 15f` on its own, so a 15 s target would admit a
+boot in which the first attempt failed, and a failed attempt is a defect to fix, not a load to
+tolerate. 10 s and not 5: 1.4 s is already spoken for, three network round trips are serial, and
+the 4.1 MB Menu_Main (§6, 2026-08-20) has to activate after all of them; 5 s leaves the network
+nothing on a bad day.
+
+**Menu → first playable: 20 s, the same for every cell.** Four in-repo anchors, none of which is
+a measurement of the matrix (that is the point of H8):
+
+1. **The recorder's own thresholds.** `LoadInsights.BuildHints` (`LoadInsights.cs`) already calls a
+   load of **≥ 60 s** a *Blocker* (*"most players force-quit long before this"*), **≥ 20 s** a
+   *Warning* (*"Long load"*), and advises *"Aim for <10s"*. Publishing 20 s makes the target and
+   the tool's warning the same line: a report that carries the `load-long` hint has failed the
+   target, mechanically, with no second judgement. 10 s stays as the stretch inside the hint text.
+2. **The authored floor.** Before a single prism is counted, every launch on every machine pays
+   `waitBeforeLoading = 0.5f` (`SceneLoader.cs`), `InitDelayMs => 1000`
+   (`MultiplayerMiniGameControllerBase.cs`), `preSpawnDelayMs = 200` + `postSpawnDelayMs = 200`
+   (`ServerPlayerVesselInitializer.cs`), `dwellSeconds = 2f` (`ConnectingPanelController.cs`) and
+   `ReadyStableSeconds = 0.5f` (`PrismTrailBuilder.cs`): **4.4 s** of fixed waits, 22 % of the
+   target. A 10 s target would hand the arena build 5.6 s; the next anchor says that is not enough
+   for the heavy cells even after a large improvement.
+3. **The watched hold trades build speed for a frame rate by design.** While the connecting panel
+   shows the arena being built, the lay slice is **25 ms** per frame with an **18 ms** creation
+   budget, against the unwatched **250 ms / 512 completions** (`Docs/CONNECTING_PANEL.md` §3). Both
+   dials are work-conserving: the same prisms are laid, over more frames. The target has to be set
+   with that tempo, not against it; cranking the slices back up would buy the number by giving up
+   the preview, which is an optimisation decision this section does not make.
+4. **The observed scale.** The tool was written to answer *"why did this game take 90 seconds to
+   load?"* (`BENCHMARK_TOOL.md` §5), and the panel doc's own cost note is *"Laying 49,856 prisms is
+   heavy with or without a preview"* (`Docs/CONNECTING_PANEL.md` §2). That is one pairing (≈90 s at
+   ≈50k prisms, editor, pre-dating later lay work), and it is the only one in the repository. It
+   says a 50k-prism cell sits well over 20 s unless the lay has since become several times faster,
+   which is exactly what the sweep will establish.
+
+Bounds that are **not** targets and must not be mistaken for them: the peer wait releases loud at
+**45 s** (`peerWaitTimeoutSeconds = 45f`, `Docs/CONNECTING_PANEL.md` §4), the arena gate releases
+with an error after **180 s** with no progress (`LoadGateHardCapSeconds = 180f`), and the recorder
+aborts after **15 min**.
+
+### Expected to fail (the hypothesis the first sweep tests)
+
+The matrix is larger than the board says. The prompt and R7 size it at **19 modes × 4 = 76**;
+measured from the rosters (`python3 Tools/Build/check_gamelist_scenes.py`;
+`Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset` 27 cards, `ArenaGames.asset` 4 cards, all with
+`MinIntensity 1` / `MaxIntensity 4`), it is **31 cards × 4 intensities = 124 cells**, **120 excluding
+Maelstrom**, which is a meta-mode whose loads are the other modes' cells. The sweep runs 120 by
+default.
+
+Ranked by the laid prism count each mode documents, against the hypothesis that a 20 s target at
+the watched tempo clears cells up to roughly **25k laid prisms** (anchor 4 above, allowing the lay
+to have become ~3× faster than the 90 s observation):
+
+| Cell | Documented load | Expectation |
+|---|---|---|
+| **Scurry I4** | Atlantis, ~69,000 prisms, *"the heaviest authored environment the game ships"* (`SCURRY.md` §"No dedicated environment generation"; `RAMPAGE.md` § collider impact; `ECOSYSTEM.md`) | **FAIL** |
+| **Rampage I1** | **59,590** prisms (`RAMPAGE.md`: *"59,590 at intensity 1 against 11,918 at 4"*; `ECOSYSTEM.md`: *"49,150 → 59,590"*), and *"Intensity 1 is the heaviest cell in any arcade mode and has not been profiled"* (`RAMPAGE.md`) | **FAIL** |
+| **Rampage I2** | 37,000-prism backstop on the ladder (`RAMPAGE.md` ladder table: 50,000 / 37,000 / 23,250 / 10,000) | **FAIL** |
+| **DogFight I4, Salvo I4** | `SpawnableBoneyard4`, **34,654** prisms (`DOGFIGHT.md`: *"9,043 / 16,100 / 24,807 / 34,654 prisms for intensities 1–4"*; `SALVO.md` shares the Boneyard ladder) | **FAIL** |
+| **Rampage I3, DogFight I3, Salvo I3** | 23,250 and 24,807 | **borderline**, either way is information |
+| **Cleave I1–I4** | 14,731 → 16,423 (`CLEAVE.md`) | pass, with the least margin of the passing set |
+| **Joust I4** | the gyroid lattice (`SCURRY.md`: *"the gyroid remains Joust's intensity-4 structure"*); `JOUST.md` records no prism count | **unknown** — measure first |
+| **SkimRace I1–I4, Breakwater, Hijack, Skein, Tollway, Wrecking Ball, Bloomrush** | all under ~10k laid (`SKIMRACE.md` 1,015 at I4; `BREAKWATER.md` 4,575 → 2,385; `HIJACK.md` peak 9,930; `SKEIN.md` 6,699 at I4; `WRECKING_BALL.md` I1 ≈ Rampage's I4 forest ~10,000) | pass |
+| **Wildlife Liberation I4** | 4,463 prisms but **868 creatures / 15,296 colliders** (`WILDLIFE_LIBERATION.md`): the cost is in the Fauna spans, not the lay | pass on prisms; the first cell where **Fauna** should top the pie |
+| Bends, ScarabScramble, Switchback, Headlong, Redline, Undertow, Regatta, Broadside, Waystation, Dustup, Tapestry, Sirocco, Grizzly Charge, Grizzly Time, Astro League, Brood Rush | no documented count | **no prediction** — the sweep is their first number |
+
+A second failure class is independent of prisms: **player count.** `ServerPlayerVesselInitializerWithAI`
+says of its backfill loop *"The whole loop runs synchronously in ONE frame — the dominant launch
+spike at high player counts"*; at `-csmloadsweep-players max` the 12-seat cards (SkimRace, Joust)
+spawn 11 AI in one tick. That pass is run separately so it does not blur the prism axis (§4 Task 12).
+
+A grown world is the counter-example worth naming: the Lattice cell grows **42,840** prisms from
+twelve seeds (`ECOSYSTEM.md` § the lattice table) and *"authors no environment, so it boots
+instantly"*. Growth is ecology pacing after the gate releases, so a grown world is cheap to LOAD and
+expensive to RUN; this target does not see it, the frame target (H8) does.
+
+### `LoadInsights.Measure` coverage, audited against the connecting panel's phases
+
+The panel's progress model is the load's ready-made taxonomy (`Docs/CONNECTING_PANEL.md` §1:
+dwell → laying → growing → ready, then the peer wait of §4). Every phase now has a span; the ones
+added on this branch are marked NEW. All of them cost one bool check when a recording is not armed
+and change nothing about how the load runs.
+
+| Interval | Span (category) | Status |
+|---|---|---|
+| Launch tap → splash cover | `SceneLoader splash cover before load` (Scripted Delays, wait) | existing |
+| Scene load → activation | `Scene load → activation` on the host (`SceneLoader`), `Client scene load` on a client (`LoadInsightsRuntime`) (Scene Load) | existing |
+| Activation → controller spawn | mark only: `Game controller spawned` | **gap, stated**: Netcode's in-scene `NetworkObject` spawn and the scene objects' Awake/Start run inside the Scene Load span and are not sub-attributed |
+| `InitDelayMs` gate, `InitializeGame` raise | Scripted Delays (wait) / Game Flow | existing |
+| Cell membrane, density grids, environment, cytoplasm; flora, fauna, crystals; pool prewarm | Cell & Environment / Flora / Fauna / Crystals / Pooling | existing |
+| Vessel and AI spawn, replication waits, client pair init | Vessels / AI Backfill / Netcode (wait) | existing |
+| **Dwell** | NEW `Connecting panel dwell (2.0s)` (Scripted Delays, wait) | closed |
+| **Laying** | `Streamed prism lay (…)` plus the per-stage accumulators (Cell & Environment) | existing |
+| **Growing** | `Arena settle: creation queue + grow-in` (Cell & Environment) | existing |
+| **Hold remainder** (gate gaps, `ReadyStableSeconds`, frames between async build steps) | NEW envelope `Connecting panel hold: arena-ready gate (remainder no builder span claimed)` (Game Flow); the same envelope in `MiniGameHUD`'s no-panel branch | closed: the builder spans nest inside and win attribution, so the envelope keeps only what no builder span claimed, named instead of "Unattributed" |
+| **Peers** | NEW `Waiting for peers' arenas (n of m humans still building)` (Netcode, wait) | closed |
+| Cinematic, Ready, countdown | none | excluded by design: the endpoint precedes them |
+
+The cold boot had **no coverage at all**; the recorder only knew game launches. It now has a second
+recording kind (`LoadRecordingKind.ColdBoot`, `LoadInsights.BeginBoot`), armed by the tab's new
+toggle, by `-csmloadinsights-boot`, or by the sweep, and completed at the menu's first `OnClientReady`:
+
+| Boot interval | Span (category) | Status |
+|---|---|---|
+| Engine start → first script hook (player init, Bootstrap load + Awake) | one closed span, back-dated to engine clock zero (Scene Load) | NEW |
+| Shader warm-up, minimum splash hold, Bootstrap → Authentication load | Other / Scripted Delays (wait) / Scene Load | NEW (`AppManager.RunBootstrapAsync`) |
+| Privacy flow, username setup | Game Flow, **human wait** | NEW (`AuthenticationSceneController`) |
+| Cached sign-in, anonymous sign-in, cloud profile load | Netcode (wait) | NEW |
+| Relay session per attempt, offline host fallback, manual retry | Netcode (wait) / Game Flow (human) | NEW |
+| Authentication → Menu_Main Netcode load | `Netcode scene load → activation (host, Menu_Main)` (Scene Load), opened by the runtime's Netcode hook because the auth scene is destroyed before the menu arrives | NEW |
+| Menu_Main active → menu vessel spawned | envelope (Game Flow); the vessel initializers' spans nest inside | NEW |
+
+Gaps that remain, stated rather than papered over: the activation internals above; the Netcode
+in-scene spawn between activation and the controller's `OnNetworkSpawn` (a mark, not a span); a
+guest's boot (a pure client joining a party) is not an interval the target covers; and a first-run
+boot contains human steps that are reported as human wait and excluded from the target by the
+"cached sign-in" condition.
+
+### How the sweep is driven (H8 runs this)
+
+One command, unattended, from a **development build** with *Frame Timing Stats* on:
+
+```
+CosmicShore.exe -csmloadsweep
+CosmicShore.exe -csmloadsweep -csmloadsweep-players max          # the player-count pass
+CosmicShore.exe -csmloadsweep -csmloadsweep-modes Rampage,Scurry -csmloadsweep-intensities 1,4 -csmloadsweep-repeats 3
+```
+
+`BenchmarkBuildAutoRunner` sees the flag before the first scene loads, arms the recorder (boot
+included) and starts `LoadSweepRunner`, which records the cold boot, then for every card on the
+Arcade roster (27 arcade + 4 arena cards, Maelstrom excluded unless `-csmloadsweep-include-maelstrom`)
+and every intensity it configures `GameDataSO` exactly as the launch modal does
+(`SyncFromArcadeGame` + `ConfigurePlayerCounts`), raises the normal launch, waits for the Load Time
+Insights report, returns to the menu, and moves on. Output, under
+`{persistentDataPath}/Benchmarks/LoadInsights/`: one `load_<scene>_*.json` + `.txt` per cell,
+`load_boot_*` for the boot, and **`sweep_<stamp>.md`** (+ `.json`), the table a human reads
+top-down by worst cell, re-written after every cell so a killed run still leaves its partial table.
+Every row carries a PASS / FAIL / NO DATA verdict against the targets above, how far over it is,
+its top cost, its unattributed share, its worst frame and its prism count. Options and the arm-flag
+restore are documented in `BENCHMARK_TOOL.md` § Load-time sweep. The in-editor equivalent is the
+tab's arm button plus the new boot toggle, one launch at a time.
+
+**Verify Burst is ON before trusting a single row** (§0). A sweep taken with it off is a sweep of
+managed IL at ~20× cost and must be discarded, not annotated.
+
+---
+
 ## 0.5 FMOD — lifecycle hardening + `StopEventsOutsideMaxDistance` (2026-09-02, SHIPPED)
 
 Full record: `Docs/AudioSystem/FMOD_AUDIT.md`. Perf-relevant parts: (1) the boot music was a
@@ -1713,6 +1910,36 @@ precondition everywhere. Two amplifiers were fixed alongside:
 
 ---
 
+### Task 11 — Authored fixed waits on the launch path: 4.4 s before a prism counts (recorded 2026-10-10, R7; measurement first)
+
+**Status:** recorded, deliberately not changed (the R7 branch measures, it does not optimise).
+**Value:** up to 4.4 s off every launch of every mode on every machine, 22 % of the 20 s target
+(§0.6). **Root cause:** readiness that should be event-driven is timer-driven, in five places
+that each look harmless alone: `waitBeforeLoading = 0.5f` (`SceneLoader.cs`, the splash cover
+before the load), `InitDelayMs => 1000` (`MultiplayerMiniGameControllerBase.cs`, the gate before
+`InitializeGame`), `preSpawnDelayMs = 200` and `postSpawnDelayMs = 200`
+(`ServerPlayerVesselInitializer.cs`, "wait for NetworkVariables to sync" and "wait for the vessel
+NetworkObject to replicate"), `dwellSeconds = 2f` (`ConnectingPanelController.cs`) and
+`ReadyStableSeconds = 0.5f` (`PrismTrailBuilder.cs`). Every one is already a Scripted Delays span, so
+a Load Time Insights report prices them exactly (the `scripted-delays` hint fires at 500 ms). The
+dwell is a design choice (the panel should be seen); the other four are replication guesses that a
+`NetworkVariable` callback or the existing roster RPC would replace. **Do after the sweep**, with
+the per-cell reports naming which of the five actually sits on the critical path; a fixed wait that
+overlaps real work costs nothing and is not worth touching.
+
+### Task 12 — AI backfill spawns N players and vessels in one frame (recorded 2026-10-10, R7; measurement first)
+
+**Status:** recorded, not changed. **Root cause:** `ServerPlayerVesselInitializerWithAI`'s backfill
+loop instantiates, injects and network-spawns every AI player and vessel synchronously in a single
+tick; its own comment says *"The whole loop runs synchronously in ONE frame — the dominant launch
+spike at high player counts"*, and the loop carries a span precisely so the scaling is visible. At
+the sweep's default of 4 players that is 3 AI; at `-csmloadsweep-players max` the 12-seat cards
+(SkimRace, Joust) spawn 11, which is a stall independent of the prism axis and the reason §0.6
+runs the player-count pass separately. The fix shape is the §2 convention (slice over frames behind
+the connecting screen, which is covered anyway); do it only once the `max` pass puts a number on it.
+
+---
+
 ## 5. Standing verification protocol (run after each fix)
 
 Same SkimRace scenario, Deep Profile **off**:
@@ -1750,3 +1977,4 @@ not compiler, at the time of the merge).
 | 2026-08-20 (editor reload round 2) | Resolved Task 10's deferred items. **Enter Play Mode Options ENABLED** (domain + scene reload skipped on every Play press) after the full static-state audit: 259 runtime files with mutable statics/static events classified, **52 new `SubsystemRegistration` resets** shipped (66 runtime files now carry one) (worst finds: `PrismEffectsManager._isQuitting` latching true on play exit and killing VFX from the second Play on; `PrismTrailBuilder`'s 15-field arena-gate group wedging the load gate; `Time.*` stamps compared across the restarting clock in haptics/combat latches/explosion cooldowns). **Obvious.Soap patched** — `ScriptableEventBase` had no play-mode lifecycle, so `_onRaised` survived every Play and the un-unsubscribed constructor lambdas in `AnalyticsServiceFacade`/`ApplicationStateMachine`/`MaelstromController` stacked one dead handler set per session; events/lists/dictionaries now clear delegates at both play boundaries, `ScriptableVariable` clears `_onValueChanged`, and a reimport double-subscribe is fixed in all four families. Third-party compatibility proven from pinned source (Reflex 14.1.0, UniTask, NGO 2.5.0, FMOD, DOTween). **Editor asmdef split closed with data, not shipped**: 79 of 168 editor files are immovable tests, only 26 of the remaining 89 (~17% of editor LOC) are free of gameplay-type refs, and the split cannot touch the reload cost — only sub-second compile time. FMOD stays capture-gated. |
 | 2026-08-21 (hang diagnosis round) | Five Crash Detector reports diagnosed the "Run managed callbacks" freeze: 4/5 hangs strike in EDIT mode 20-60s after play exit — the recompile-triggered reload — with **FMOD Live Update enabled for playInEditor** (the attribution's item-5 never-recovers precondition); 1/5 was a per-contact **NRE storm** from `SkimmerImpactor` (legacy `Components/Skimmer.prefab` predates the container refactor; six nesting vessels ran a null container). Shipped: FMOD play-in-editor Live Update OFF; `PlayModeReloadGuard` (assembly-reload lock held for all of play mode — no mid-play reloads, project-wide); `ImpactorBase.IsEffectContainerMissing` + `RunEffectIsolated` wired into Skimmer/Vessel impactors (impact dispatch can no longer storm, closing the open item); `HostConnectionService` no longer disposes awaited semaphores; and the Crash Detector watchdog now writes a live **HangDump-*.dmp** minidump when the main thread is unresponsive past 45s and keeps running through `beforeAssemblyReload`, so the next hang arrives with the deadlock's stack instead of a guess. |
 | 2026-08-21 (mechanism pinned) | A live screenshot of the recurrence ("Running managed callbacks — Executing PlayModeStateChanged Callback (EnteredEditMode), busy 02:15", after a GitHub Desktop branch switch during play) corrected the round-3 framing: the freeze is INSIDE the play-exit `playModeStateChanged` dispatch, and the blocker is FMOD — `RuntimeManager.HandlePlayModeStateChange → Destroy()` releasing the Studio system synchronously at `EnteredEditMode` (and `EditorUtils.HandleOnPausedModeChanged`'s synchronous calls for the pause/unpause reports), blocking forever on a wedged Live Update socket. Live-Update-off (round 3) stands as the cure; two amplifiers fixed: the Soap `playModeStateChanged` re-subscription leak (832 assets × every reimport round — patched on bleeding-edge 2026-08-20; pulling IS part of the fix) and `PlayModeSOProtector`, whose diff-based restore mass-overwrote a mid-play branch switch — it now restores only what an `OnWillSaveAssets` ledger proves UNITY saved during play, making it structurally blind to git. `Assets/_Recovery/` gitignored; the "Recovering Scene Backups" prompt is a symptom of killed sessions — answer No. |
+| 2026-10-10 (load-time target, R7) | Added **§0.6**: the two published load-time targets (cold boot → menu **10 s**; menu → first playable **20 s**, every cell) with the in-repo anchors each rests on, the corrected matrix (**31 cards × 4 = 124 cells**, 120 without Maelstrom, not the 76 the board assumed), the named expected-to-fail list (Scurry I4, Rampage I1–I2, DogFight/Salvo I4 fail; I3s borderline; Joust I4 unknown), the `LoadInsights.Measure` coverage audit against the connecting panel's phases (dwell, hold remainder and peer wait closed; activation internals stated as the remaining gap) and the new cold-boot recording kind, and the unattended sweep (`-csmloadsweep`, `LoadSweepRunner` / `LoadSweepTable`, one report per cell plus a worst-first table). §4 gained Tasks 11 and 12 (the 4.4 s of authored waits; the single-frame AI backfill loop), recorded with root causes and left alone. No load behaviour changed; every new span is a no-op unless a recording is armed. The run itself is H8's. |
