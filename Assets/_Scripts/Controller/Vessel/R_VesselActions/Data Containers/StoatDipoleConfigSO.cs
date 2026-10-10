@@ -151,6 +151,29 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds between two of the autopilot's pairs.")]
         [SerializeField, Range(0f, 20f)] float autopilotIntervalSeconds = 2f;
 
+        [Header("Autopilot - watching the path (the studio's measured best)")]
+        [Tooltip("On: the autopilot holds the poles while they WARP its path (the pathfinder's lime: the flight runs " +
+                 "faster), lets go as its target comes close, and lays the next pair almost at once. Off: the timed " +
+                 "hold above (Autopilot Hold Seconds). Measured in the Stoat Flight Studio: Hard went from 70-89 s to " +
+                 "49-59 s over the four courses, warped 79-95% of the race (Docs/Studios/VesselStudio/README.md).")]
+        [SerializeField] bool autopilotWatchPath = true;
+
+        [Tooltip("Watching the path: lay a pair only when the target is further than this, and let go once it is " +
+                 "closer, so the bend does not throw the hull past the ring's mouth. World units.")]
+        [SerializeField, Range(0f, 400f)] float autopilotLetGoNear = 60f;
+
+        [Tooltip("Watching the path: let go once the path has not been warped for this long, seconds.")]
+        [SerializeField, Range(0.05f, 3f)] float autopilotDrySeconds = 0.5f;
+
+        [Tooltip("Watching the path: always hold at least this long before judging the warp, seconds.")]
+        [SerializeField, Range(0f, 3f)] float autopilotMinHoldSeconds = 0.8f;
+
+        [Tooltip("Watching the path: never hold one pair longer than this, seconds.")]
+        [SerializeField, Range(1f, 60f)] float autopilotMaxHoldSeconds = 15f;
+
+        [Tooltip("Watching the path: seconds between letting go and laying the next pair.")]
+        [SerializeField, Range(0f, 5f)] float autopilotRelaySeconds = 0.25f;
+
         [Header("Audio (FMOD) — every sound is an exposed, editable field")]
         [Tooltip("Played when a squeeze opens the pair. Ships empty until a sound is chosen.")]
         [SerializeField] EventReference openEvent;
@@ -199,6 +222,12 @@ namespace CosmicShore.ScriptableObjects
         public float AutopilotMinDistance => autopilotMinDistance;
         public float AutopilotHoldSeconds => autopilotHoldSeconds;
         public float AutopilotIntervalSeconds => autopilotIntervalSeconds;
+        public bool AutopilotWatchPath => autopilotWatchPath;
+        public float AutopilotLetGoNear => autopilotLetGoNear;
+        public float AutopilotDrySeconds => autopilotDrySeconds;
+        public float AutopilotMinHoldSeconds => autopilotMinHoldSeconds;
+        public float AutopilotMaxHoldSeconds => autopilotMaxHoldSeconds;
+        public float AutopilotRelaySeconds => autopilotRelaySeconds;
         public EventReference OpenEvent => openEvent;
         public EventReference AnnihilateEvent => annihilateEvent;
         public EventReference WarpEvent => warpEvent;

@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Stoat's AI levels and path-watching autopilot (Slingshot, Warpline) (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**What landed** (ported from the Stoat Flight Studio, where it was measured):
+- `GateRaceHandicap` (new, pure C#) plus `GateRaceController.ArmRacers`. On a card where
+  `AIDifficultyRules.IsOfferedFor` is true (now Skim Race, Slingshot, Warpline), Easy and Medium AIs race on a
+  belief: a ring noticed late (they fly straight on), and a misjudged ring (they fly beside the mouth and turn
+  back). The numbers are `SkimRaceDifficultySO`'s. Hard races the true course.
+- `StoatDipoleExecutor.Autopilot`, watching the path (`StoatDipoleConfigSO.autopilotWatchPath`, default on): it
+  holds the pair while `StoatPathfinderExecutor.IsWarped`, lets go near the target (60 u) or after 0.5 s
+  unwarped, and re-lays after 0.25 s.
+- Tests: `GateRaceHandicapTests` (new); `AIDifficultyRulesTests.IsOffered_OnlyWhereTheAIReadsIt` (extended).
+
+**Verify in editor**
+1. Run the edit-mode tests `GateRaceHandicapTests` and `AIDifficultyRulesTests`. All should pass.
+2. Arcade ▸ Slingshot: the launch panel shows the AI difficulty picker. Pick Easy, two AI, and race.
+   With *Show* the AI's target (Scene view, or the race's own gizmos), an Easy AI sometimes flies straight on past
+   a ring before turning, and sometimes passes a ring outside its mouth, then turns back.
+3. Same race on Hard: no late turns, no ring missed by a wide margin.
+4. Watch an AI Stoat (any difficulty): its pathfinder dots stay lime (warped) for most of each leg, and it opens a
+   new pair right after the last one closes. Untick `StoatDipoleConfig` ▸ *Autopilot Watch Path* and compare:
+   the old 4 s timed holds, mostly unwarped.
+5. Warpline: the same three checks.
+
+**First-pass tuning (studio-measured, not settled):** `autopilotLetGoNear` 60, `autopilotDrySeconds` 0.5,
+`autopilotMinHoldSeconds` 0.8, `autopilotRelaySeconds` 0.25. The studio's best squeeze was 1.0. Unity's AI
+still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
+
+---
+
 ### 🔴 The game's Burst jobs compile again: no `MathF` externs in Burst code; `burst` reads Burst's refusal from the log (`perf/performance-optimization`, 2026-10-08)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0k): `SubstrateKernel` (SubstrateAgentJob) and `SwarmBodyPose.PoseMatrix`

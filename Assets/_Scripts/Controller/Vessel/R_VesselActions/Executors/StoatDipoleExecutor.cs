@@ -88,6 +88,8 @@ namespace CosmicShore.Gameplay
         float _aiLastPairTime = float.NegativeInfinity;
         float _aiReleaseAt = float.PositiveInfinity;
         bool _aiHoldingLeft, _aiHoldingRight;
+        float _aiHoldStart, _aiDry;          // watching the path: when this pair was laid; how long its path has been unwarped
+        StoatPathfinderExecutor _pathfinder; // resolved lazily (rule 6): the warp verdict the watching autopilot reads
 
         public StoatDipoleConfigSO Config => config;
         /// <summary>True while this hull's pair is open on this machine.</summary>
@@ -483,8 +485,23 @@ namespace CosmicShore.Gameplay
         {
             var handler = _status.ActionHandler;
             if (!handler) return;
+            bool watch = config.AutopilotWatchPath && Pathfinder();
             if (_aiHoldingLeft || _aiHoldingRight)
             {
+                if (watch)
+                {
+                    // The studio's path-watching hold: keep the poles open while they warp the path and the target
+                    // is still ahead; let go as it comes close, or once the warp has been off for a while.
+                    float held = Time.time - _aiHoldStart;
+                    _aiDry = _pathfinder.IsWarped ? 0f : _aiDry + Time.deltaTime;
+                    var aiNow = _status.AIPilot;
+                    bool near = aiNow && (aiNow.TargetPosition - _status.Transform.position).sqrMagnitude
+                                         < config.AutopilotLetGoNear * config.AutopilotLetGoNear;
+                    bool letGo = near || held > config.AutopilotMaxHoldSeconds ||
+                                 (held > config.AutopilotMinHoldSeconds && _aiDry > config.AutopilotDrySeconds);
+                    if (!letGo) return;
+                    _aiReleaseAt = 0f;
+                }
                 if (Time.time < _aiReleaseAt) return;
                 _aiReleaseAt = float.PositiveInfinity;
                 if (_aiHoldingLeft && ResolveBoundInput(Side.Left, handler, out var l)) handler.StopShipControllerActionsReplicated(l);
@@ -493,17 +510,31 @@ namespace CosmicShore.Gameplay
                 _aiLastPairTime = Time.time;
                 return;
             }
-            if (Time.time - _aiLastPairTime < config.AutopilotIntervalSeconds) return;
+            if (Time.time - _aiLastPairTime < (watch ? config.AutopilotRelaySeconds : config.AutopilotIntervalSeconds)) return;
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!ai || !hull) return;
             var local = hull.InverseTransformPoint(ai.TargetPosition);
-            if (!StoatDipoleMath.AutopilotTriggers(local, config.AutopilotMinDistance, AutopilotStraightDegrees, AutopilotMaxDegrees,
-                    out bool left, out bool right))
+            // Watching the path lays a pair whenever the target is not right on top of it, at any bearing: the
+            // warp is the speed, so the pair is open as much of the race as it can be.
+            if (!StoatDipoleMath.AutopilotTriggers(local,
+                    watch ? config.AutopilotLetGoNear * 1.5f : config.AutopilotMinDistance, AutopilotStraightDegrees,
+                    watch ? 180f : AutopilotMaxDegrees, out bool left, out bool right))
                 return;
-            _aiReleaseAt = Time.time + config.AutopilotHoldSeconds;
+            _aiReleaseAt = watch ? float.PositiveInfinity : Time.time + config.AutopilotHoldSeconds;
+            _aiHoldStart = Time.time;
+            _aiDry = 0f;
             if (left && ResolveBoundInput(Side.Left, handler, out var li)) { handler.PerformShipControllerActionsReplicated(li); _aiHoldingLeft = true; }
             if (right && ResolveBoundInput(Side.Right, handler, out var ri)) { handler.PerformShipControllerActionsReplicated(ri); _aiHoldingRight = true; }
+        }
+
+        /// <summary>The Stoat's pathfinder (its warp verdict), resolved until found (vessel contract rule 6).</summary>
+        bool Pathfinder()
+        {
+            if (_pathfinder) return true;
+            _pathfinder = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<StoatPathfinderExecutor>() : null;
+            if (!_pathfinder) _pathfinder = GetComponent<StoatPathfinderExecutor>();
+            return _pathfinder;
         }
 
         /// <summary>Which input event this side's trigger is bound to on THIS vessel — read off the binding maps
