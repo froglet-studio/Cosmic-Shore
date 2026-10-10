@@ -426,6 +426,36 @@ The 70 s limit is out of reach on Relativity: two laps of crystal-to-crystal cho
 (82 s). Same situation as I3; re-baselining the I4 limit is a product decision (as I2's was,
 §6.11) and has not been made.
 
+### 6.13 Intensity 4 re-tuned on the final Relativity course (2026-10-10): `skimrace-v2-i4`
+
+The §6.12 re-tune was on the FIRST course and within noise, so the shipped I4 policy was still the
+one tuned on the old polyline. This pass tuned on the final course, with two AI seats, since the
+2-seat finishing rate (12/40 inside 180 s) was the weak row: CEM over the pursuit set (36
+parameters, sigma 0.15 of each range), 24 candidates x 6 seeds per iteration for 16 iterations,
+calibrated physics (`ph.Dt=0.026 ph.DtJitter=0.5`), every-seat scoring (an unfinished race is
+300 + 10 per missing crystal, plus half the worst time). Tuner score 341 -> 217; its own final on
+the baseline's seeds (seedbase 99000, 2 seats): every seat finished in **39/40** (v1-i4: 12/40),
+race median 153.1 s (172.1 s).
+
+**Validation on fresh seeds** (seedbase 50000, 40 races per cell, limit 120 s, a race cut at
+180 s; v1-i4 run on the same seeds in the same build):
+
+| Cell | v1-i4 | **v2-i4** |
+|---|---|---|
+| 1 AI seat, finished | 40/40, median 149.3 s, worst 179.6 s | **40/40, median 141.3 s, worst 165.0 s** |
+| 2 AI seats, every seat finished | 5/40, race median 166.0 s | **39/40, race median 151.2 s** |
+| 2 AI seats, first finisher median (the editor-comparable number) | 148.5 s | **141.4 s** |
+| 2 AI seats, resets per race (largest causes) | pull 4.6, crossing 4.3, pickup ring 3.9, other rail 3.8 | pull 6.2, crossing 5.1, other rail 3.5, pickup ring 3.4 |
+
+The gain is robustness with a second seat and about 8 s alone; the policy takes a few more strikes
+per race and finishes anyway (lower `MinThrottle` 0.126, `LowBoostApproachScale` 0.559, lane step
+2.44 instead of 3, crystal bump half-width 195). **70 s is still out of reach on Relativity** (78 s of
+crystal chords at top speed, §6.12); re-baselining the I4 limit remains a product decision. Authored
+by `Tools/Build/author_skimrace_ai_config.py` (`--check` passes); the asset is
+`Resources/SkimRaceAIConfig_I4.asset`, `PolicyVersion skimrace-v2-i4`. Not flown in the editor:
+the in-editor I4 matrix (§7, 2 and 3 AI seats) is owed, and the simulator's calibration (§6.1) is
+the only reason to expect the editor to agree.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop

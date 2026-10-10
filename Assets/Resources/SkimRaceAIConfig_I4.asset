@@ -12,50 +12,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
   m_Name: SkimRaceAIConfig_I4
   m_EditorClassIdentifier: 
-  PolicyVersion: skimrace-v1-i4
+  PolicyVersion: skimrace-v2-i4
   DeployInNormalPlay: 1
   DecisionHz: 0
-  LookaheadSeconds: 0.562
-  LookaheadMin: 38.148
-  LookaheadMax: 435.887
-  SkimHeight: 8.064
-  CrystalBumpHalfWidth: 204.001
-  LowBoostApproachScale: 0.637
-  LowBoostFull: 3.758
-  DirectBoost: 2.554
-  DirectBoostHysteresis: 0.427
-  DirectViaClearance: 2
-  DirectViaLift: 22.619
-  DirectViaLateral: 23.841
+  LookaheadSeconds: 0.732
+  LookaheadMin: 20
+  LookaheadMax: 458.225
+  SkimHeight: 5.894
+  CrystalBumpHalfWidth: 195.497
+  LowBoostApproachScale: 0.559
+  LowBoostFull: 3.808
+  DirectBoost: 2.705
+  DirectBoostHysteresis: 0.49
+  DirectViaClearance: 2.059
+  DirectViaLift: 32.283
+  DirectViaLateral: 23.098
   TrackGuard: 1
-  TrackGuardMargin: 1.54
-  PassMargin: 9.2
+  TrackGuardMargin: 1.802
+  PassMargin: 10.122
   DefaultCaptureRadius: 24
-  RibbonClearHeight: 4.737
-  RibbonClearLateral: 29.748
-  CrossingHeightFraction: 0.153
+  RibbonClearHeight: 4.625
+  RibbonClearLateral: 29.705
+  CrossingHeightFraction: 0.226
   SequencedCrossing: 0
-  CrossingLeadSeconds: 0
-  CrossingLookaheadScale: 1
+  CrossingLeadSeconds: 0.04
+  CrossingLookaheadScale: 0.932
   CrossingThrottle: 1
-  CrossingSlowDistance: 150
+  CrossingSlowDistance: 100.333
   SlabGuardSeconds: 0
   HullGuardSeconds: 0
   HullMargin: 1.2
   HullEscapeLift: 40
-  CrystalDirectDistance: 98.858
-  TerminalCentreBias: 0.1
+  CrystalDirectDistance: 85.345
+  TerminalCentreBias: 0.077
   TerminalNeedsClearChord: 0
-  TerminalChordClearance: 1.5
+  TerminalChordClearance: 0.581
   LineBandClamp: 0
   BesidePassNoCrossing: 0
   SidePassOverCrossing: 0
   ChordClearance: 0
-  LaneHeightStep: 3
+  LaneHeightStep: 2.437
   PickupClearDistance: 0
-  MassGuardSeconds: 0.915
-  MassGuardMargin: 0.857
-  MassGuardSegment: 0.221
+  MassGuardSeconds: 0.916
+  MassGuardMargin: 1.051
+  MassGuardSegment: 0.228
   MassGuardStep: 0.04
   RolloutFollowsLine: 0
   HullHalfWidth: 2.06
@@ -81,9 +81,9 @@ MonoBehaviour:
   MpcStrikeCost: 20
   MpcStrikeUsesBoostLoss: 0
   MpcNominalBias: 0.05
-  LeadGain: 2.474
-  MaxLeadDegrees: 25.604
-  StickGainPerDegree: 0.133
+  LeadGain: 2.494
+  MaxLeadDegrees: 23.545
+  StickGainPerDegree: 0.087
   LevelingRoll: 0.25
   UseLineTracker: 0
   TrackerConvergeSeconds: 0.6
@@ -93,8 +93,8 @@ MonoBehaviour:
   TrackerMaxLeadDegrees: 90
   TrackerCurvatureSpan: 12
   CruiseThrottle: 1
-  MinThrottle: 0.155
-  ReachabilityMargin: 1.232
+  MinThrottle: 0.126
+  ReachabilityMargin: 1.343
   CaptureThrottleSearch: 0
   CaptureHorizon: 1.5
   CaptureWindowSeconds: 2
@@ -130,8 +130,8 @@ MonoBehaviour:
   RingAlignDegrees: 1.5
   RingForwardDistance: 100
   RingCooldownSeconds: 20.5
-  StallSeconds: 4.308
+  StallSeconds: 3.766
   ProgressEpsilon: 25
   RecoverySeconds: 2.5
-  RecoveryThrottle: 0.641
+  RecoveryThrottle: 0.565
   MissingTargetGrace: 0.25
