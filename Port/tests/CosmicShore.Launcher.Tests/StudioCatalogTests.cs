@@ -105,6 +105,50 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void Defaults_MatchTheRepositoryCatalog()
+        {
+            // the page's always-on web links (no workspace yet) must be the catalog's own
+            var d = new DirectoryInfo(Directory.GetCurrentDirectory());
+            while (d != null && !Directory.Exists(Path.Combine(d.FullName, StudioCatalog.RelativeDir))) d = d.Parent;
+            if (d == null) return;
+            var c = StudioCatalog.Load(d.FullName);
+            Assert.Equal(c.Web, StudioCatalog.DefaultWeb);
+            Assert.Equal(c.Mirror, StudioCatalog.DefaultMirror);
+        }
+
+        [Fact]
+        public void WebLinksWork_WithNoCatalog()
+        {
+            var none = new StudioCatalog { Error = "no checkout" };
+            Assert.Equal(StudioCatalog.DefaultWeb, none.WebLink);
+            Assert.Equal(StudioCatalog.DefaultMirror, none.LiveUrl(none.Hub));
+            Assert.Equal(StudioCatalog.DefaultMirror + "stoat.html", none.LiveUrl("stoat.html"));
+            var own = StudioCatalog.Parse(@"{ ""web"": ""https://claude.ai/artifact/x"", ""mirror"": ""https://e.github.io/vs"" }");
+            Assert.Equal("https://claude.ai/artifact/x", own.WebLink);   // the catalog wins over the defaults
+            Assert.Equal("https://e.github.io/vs/stoat.html", own.LiveUrl("stoat.html"));
+        }
+
+        [Fact]
+        public void PickRoot_ReadsTheUnityCheckoutUntilTheWorkspaceHasTheStudio()
+        {
+            var tmp = Path.Combine(Path.GetTempPath(), "pickroot-" + System.Guid.NewGuid().ToString("N"));
+            string ws = Path.Combine(tmp, "ws"), clone = Path.Combine(tmp, "clone");
+            void Catalog(string dir) { Directory.CreateDirectory(Path.Combine(dir, StudioCatalog.RelativeDir)); File.WriteAllText(Path.Combine(dir, StudioCatalog.RelativeDir, StudioCatalog.FileName), "{}"); }
+            try
+            {
+                Directory.CreateDirectory(ws);
+                Assert.Null(StudioCatalog.PickRoot(ws, false, null));                   // nothing at all: no root, the web links still work
+                Catalog(clone);
+                Assert.Equal(clone, StudioCatalog.PickRoot(ws, false, clone));          // no workspace yet: the Unity checkout (the user's case)
+                Assert.Equal(clone, StudioCatalog.PickRoot(ws, true, clone));           // a workspace on a branch without the studio
+                Catalog(ws);
+                Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, clone));              // the workspace once it carries the studio
+                Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, null));
+            }
+            finally { try { Directory.Delete(tmp, true); } catch (IOException) { } }
+        }
+
+        [Fact]
         public void Parse_ReadsTheEngineModeAndPlayInEngineAddsArcade()
         {
             var c = StudioCatalog.Parse(@"{ ""studios"": [

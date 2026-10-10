@@ -561,7 +561,8 @@ namespace CosmicShore.Launcher
             Neon.Tooltip("Update: fetch the branch without starting");
             ImGui.SameLine(0, 8);
             if (Neon.IconButton("ws", Neon.IconFolder, 40, _ws.Exists)) OpenFolder(_ws.Dir);
-            Neon.Tooltip("Open the workspace folder");
+            Neon.Tooltip(_ws.Exists ? "Open the workspace folder: " + _ws.Dir
+                : "No workspace yet: Amoebius plays from its own copy of the repo, made the first time you press START.");
 
             // pipeline, only while launching
             if (_jobs.Busy && _jobs.JobName == "Start game") DrawPipeline(dl, new Vector2(x0, y + 62), colW);

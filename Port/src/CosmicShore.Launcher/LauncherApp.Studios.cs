@@ -33,11 +33,21 @@ namespace CosmicShore.Launcher
             dl.AddTriangleFilled(c + new Vector2(7, 0), c + new Vector2(-5, -5), c + new Vector2(-5, 5), col);
         }
 
+        /// <summary>
+        /// Where the studio and artifact pages are read from (<see cref="StudioCatalog.PickRoot"/>): Amoebius's workspace,
+        /// else the checkout Unity opened Amoebius from. Opening a studio never waits for a workspace or a build.
+        /// </summary>
+        string? StudioRoot => StudioCatalog.PickRoot(_ws.Dir, _ws.Exists, ClonePath);
+        bool StudioFromClone => StudioRoot is { } r && !(_ws.Exists && string.Equals(Path.GetFullPath(r), Path.GetFullPath(_ws.Dir), StringComparison.OrdinalIgnoreCase));
+
+        const string NoCheckout = "No checkout to read the studios from yet: open Amoebius from Unity (FrogletTools > Amoebius > Launch Amoebius), " +
+                                  "set your Cosmic Shore folder in OPTIONS, or press START on PLAY once. The web links work meanwhile.";
+
         StudioCatalog Studios()
         {
             if (_studios == null || (DateTime.UtcNow - _studiosRead).TotalSeconds > 5)   // pick up a branch switch or an edited catalog
             {
-                _studios = _ws.Exists ? StudioCatalog.Load(_ws.Dir) : new StudioCatalog { Error = "Amoebius's workspace is not set up yet (PLAY page)." };
+                _studios = StudioRoot is { } root ? StudioCatalog.Load(root) : new StudioCatalog { Error = NoCheckout };
                 _studiosRead = DateTime.UtcNow;
             }
             return _studios;
@@ -47,7 +57,7 @@ namespace CosmicShore.Launcher
         {
             if (_artLib == null || (DateTime.UtcNow - _artRead).TotalSeconds > 5)   // an import by the agent shows within seconds
             {
-                _artLib = _ws.Exists ? ArtifactLibrary.Load(_ws.Dir) : new ArtifactLibrary { Error = "Amoebius's workspace is not set up yet (PLAY page)." };
+                _artLib = StudioRoot is { } root ? ArtifactLibrary.Load(root) : new ArtifactLibrary { Error = NoCheckout };
                 _artRead = DateTime.UtcNow;
             }
             return _artLib;
@@ -61,30 +71,38 @@ namespace CosmicShore.Launcher
             ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 76));
             ImGui.BeginChild("##studios", new Vector2(b.X - a.X, b.Y - a.Y - 80));
 
+            var root = StudioRoot;
+            bool pages = root != null && cat.Error == null;
+
+            // The web links need no files: they are always here, first (a fresh Amoebius has no workspace yet).
+            if (SmallButton("OPEN HUB", 130, pages)) OpenStudioWindow(StudioCatalog.PagePath(root!, cat.Hub));
+            Neon.Tooltip("The Vessel Studio hub in its own window: every studio, where each platform stands, and the studio agent.");
+            ImGui.SameLine(0, 8);
+            if (SmallButton("WEB LINK", 130, true)) OpenUrl(cat.WebLink);
+            Neon.Tooltip("The published Vessel Studio artifact on claude.ai (Sync, Ask and shared decisions work there).\n" +
+                         "Open the same link on your phone: the studio opens in touch play by itself.\n" + cat.WebLink);
+            ImGui.SameLine(0, 8);
+            if (SmallButton("OPEN LIVE IN BROWSER", 220, true)) OpenUrl(cat.LiveUrl(cat.Hub));
+            Neon.Tooltip("The live mirror of the published studio: the same build on a plain web page, in your default browser.\n" +
+                         "Opens by link anywhere (a phone too) and updates in place when it is republished.\n" + cat.LiveUrl(cat.Hub));
+            ImGui.SameLine(0, 8);
+            if (SmallButton("FOLDER", 110, root != null && Directory.Exists(Path.Combine(root, StudioCatalog.RelativeDir)))) OpenFolder(Path.Combine(root!, StudioCatalog.RelativeDir));
+            Neon.Tooltip(root != null ? Path.Combine(root, StudioCatalog.RelativeDir) : "No checkout yet.");
+
             if (cat.Error != null)
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, Neon.Amber);
-                ImGui.TextWrapped(cat.Error + " Switch the workspace on the GIT page to a branch that has the Vessel Studio (Docs/Studios/VesselStudio): vessel-studio, or Ys-bleeding-edge for the latest studios and the engine run.");
+                ImGui.TextWrapped(root == null ? cat.Error
+                    : cat.Error + " This checkout's branch has no Vessel Studio: switch to Ys-bleeding-edge (or vessel-studio) in Unity, or on the GIT page for Amoebius's workspace.");
                 ImGui.PopStyleColor();
             }
+            else if (StudioFromClone)
+                ImGui.TextColored(Neon.Dim, "Reading the studios from your checkout: " + root + "  (Amoebius's own workspace is made the first time you press START on PLAY).");
 
-            if (_ws.Exists && cat.Error == null)
+            if (pages)
             {
-                if (SmallButton("OPEN HUB", 130, true)) OpenStudioWindow(StudioCatalog.PagePath(_ws.Dir, cat.Hub));
-                Neon.Tooltip("The Vessel Studio hub: every studio, where each platform stands, and the studio agent.");
-                ImGui.SameLine(0, 8);
-                if (SmallButton("WEB LINK", 130, cat.Web != null)) OpenUrl(cat.Web!);
-                Neon.Tooltip("The published studio on claude.ai. Open the same link on your phone, pick a studio and tap Play on phone.\n" + (cat.Web ?? "(none in the catalog)"));
-                ImGui.SameLine(0, 8);
-                if (SmallButton("OPEN LIVE IN BROWSER", 220, cat.Mirror != null)) OpenUrl(cat.MirrorUrl(cat.Hub)!);
-                Neon.Tooltip("The live mirror of the published studio: the same build on a plain web page, in your default browser.\n" +
-                             "Opens by link anywhere (a phone too) and updates in place when it is republished. Sync, Ask and shared\n" +
-                             "decisions need the claude.ai viewer (WEB LINK).\n" + (cat.Mirror ?? "(no \"mirror\" in the catalog)"));
-                ImGui.SameLine(0, 8);
-                if (SmallButton("FOLDER", 110, true)) OpenFolder(Path.Combine(_ws.Dir, StudioCatalog.RelativeDir));
-                ImGui.SameLine(0, 8);
                 var vs = lib.VesselStudio;
-                if (SmallButton("UPDATE FROM ARTIFACT", 220, vs != null)) ArtifactAgent(vs!.Url, vs.Id, vs.Title);
+                if (SmallButton("UPDATE FROM ARTIFACT", 220, vs != null && _ws.Exists)) ArtifactAgent(vs!.Url, vs.Id, vs.Title);
                 Neon.Tooltip("Has the agent bring back anything the published Vessel Studio has that this branch does not\n" +
                              "(the /amoebius-artifact skill). The repo pages are the source, so usually it reports no changes.");
                 if (vs != null)
@@ -112,20 +130,22 @@ namespace CosmicShore.Launcher
                 ImGui.TextColored(Neon.Ink, s.Summary);
                 ImGui.PopTextWrapPos();
                 ImGui.SetCursorScreenPos(top + new Vector2(18, btnY));
-                if (SmallButton("OPEN IN AMOEBIUS", 160, _ws.Exists)) OpenStudioWindow(StudioCatalog.PagePath(_ws.Dir, s.File));
-                Neon.Tooltip("Opens " + StudioCatalog.RelativeDir + "/" + s.File + " from Amoebius's workspace as its own window (no browser tabs),\n" +
-                             "with Amoebius's layout remembered. Uses Edge or Chrome's app mode; without either it opens in your browser.");
+                var pagePath = root != null ? StudioCatalog.PagePath(root, s.File) : null;
+                bool hasPage = pagePath != null && File.Exists(pagePath);
+                if (SmallButton("OPEN IN AMOEBIUS", 160, hasPage)) OpenStudioWindow(pagePath!);
+                Neon.Tooltip("Opens " + StudioCatalog.RelativeDir + "/" + s.File + " as its own window (no browser tabs), with its layout remembered.\n" +
+                             "Uses Edge or Chrome's app mode; without either it opens in your browser.\n" + (pagePath ?? "No checkout yet."));
                 ImGui.SameLine(0, 8);
-                if (SmallButton("BROWSER", 100, _ws.Exists)) OpenUrl(StudioCatalog.PagePath(_ws.Dir, s.File));
+                if (SmallButton("BROWSER", 100, hasPage)) OpenUrl(pagePath!);
                 Neon.Tooltip("The same page in your default browser.");
                 ImGui.SameLine(0, 8);
-                var live = cat.MirrorUrl(s.File);
-                if (SmallButton("OPEN LIVE IN BROWSER", 220, live != null)) OpenUrl(live!);
-                Neon.Tooltip("This studio on the live mirror, in your default browser: the published build, updated in place.\n" + (live ?? "(no \"mirror\" in the catalog)"));
+                var live = cat.LiveUrl(s.File);
+                if (SmallButton("OPEN LIVE IN BROWSER", 220, true)) OpenUrl(live);
+                Neon.Tooltip("This studio on the live mirror, in your default browser: the published build, updated in place.\n" + live);
                 ImGui.SameLine(0, 8);
                 if (s.EngineMode != null)
                 {
-                    if (SmallButton("PLAY IN ENGINE", 160, _ws.Exists && !_jobs.Busy)) _jobs.Play(StudioCatalog.EngineArgs(s));
+                    if (SmallButton("PLAY IN ENGINE", 160, !_jobs.Busy)) _jobs.Play(StudioCatalog.EngineArgs(s));
                     Neon.Tooltip("Builds and starts the game in Amoebius (as PLAY does), then opens the " + s.EngineMode + " card from the main menu\n" +
                                  "and presses Start: the game's own " + s.Name + ". Press Ready in the race. A new profile answers the first-run prompts first.");
                     ImGui.SameLine(0, 8);
@@ -135,7 +155,7 @@ namespace CosmicShore.Launcher
                 if (s.Docs != null)
                 {
                     ImGui.SameLine(0, 8);
-                    if (SmallButton("DOCS", 90, _ws.Exists)) OpenUrl(Path.Combine(_ws.Dir, s.Docs));
+                    if (SmallButton("DOCS", 90, root != null)) OpenUrl(Path.Combine(root!, s.Docs));
                     Neon.Tooltip(s.Docs);
                 }
                 if (s.EngineMode != null)
@@ -166,7 +186,15 @@ namespace CosmicShore.Launcher
             if (_artScrollFrames > 0) { ImGui.SetScrollHereY(0); _artScrollFrames--; }   // --page studios:artifacts
             ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Cyan, "ARTIFACTS"); ImGui.PopFont();
             ImGui.TextColored(Neon.Dim, "Anything you build as a claude.ai artifact, here or in another session, comes into Amoebius by its link.");
-            if (!_ws.Exists) return;
+            if (!_ws.Exists)
+                ImGui.TextColored(Neon.Dim, "Adding an artifact writes into Amoebius's workspace: press START on PLAY once to make it. The list below reads your checkout meanwhile.");
+            else DrawArtifactAdd();
+            DrawArtifactList(lib);
+        }
+
+        /// <summary>The add row: an artifact link for the agent, or a downloaded page, written into Amoebius's workspace.</summary>
+        void DrawArtifactAdd()
+        {
 
             ImGui.Dummy(new Vector2(0, 6));
             ImGui.PushItemWidth(Math.Min(560, ImGui.GetContentRegionAvail().X - 260));
@@ -202,7 +230,10 @@ namespace CosmicShore.Launcher
             Neon.Tooltip("One page saved from the artifact, with its link above, without a session. A page that loads other files\n" +
                          "of its artifact (scripts, data) needs ADD WITH AGENT, which brings every file.");
             if (_artMsg != null) ImGui.TextColored(_artMsgOk ? Neon.Lime : Neon.Amber, _artMsg);
+        }
 
+        void DrawArtifactList(ArtifactLibrary lib)
+        {
             if (lib.Error != null) { ImGui.TextColored(Neon.Dim, lib.Error + " The first import creates it."); return; }
             foreach (var group in lib.Others)
             {
@@ -231,10 +262,11 @@ namespace CosmicShore.Launcher
             ImGui.TextColored(Neon.Ink, blurb);
             ImGui.PopTextWrapPos();
             ImGui.SetCursorScreenPos(top + new Vector2(18, btnY));
-            var page = ArtifactLibrary.PagePath(_ws.Dir, e);
+            var root = StudioRoot ?? _ws.Dir;
+            var page = ArtifactLibrary.PagePath(root, e);
             bool here = File.Exists(page);
             if (SmallButton("OPEN IN AMOEBIUS", 160, here)) OpenStudioWindow(page);
-            Neon.Tooltip("Opens " + e.Dir + "/" + e.EntryPage + " from Amoebius's workspace as its own window.\n" +
+            Neon.Tooltip("Opens " + e.Dir + "/" + e.EntryPage + " as its own window.\n" +
                          "Features that need the claude.ai viewer (shared data, asking Claude) work on the web link.");
             ImGui.SameLine(0, 8);
             if (SmallButton("BROWSER", 100, here)) OpenUrl(page);
@@ -242,10 +274,10 @@ namespace CosmicShore.Launcher
             if (SmallButton("WEB LINK", 110, true)) OpenUrl(e.Url);
             Neon.Tooltip(e.Url);
             ImGui.SameLine(0, 8);
-            if (SmallButton("UPDATE", 100, true)) ArtifactAgent(e.Url, e.Id, e.Title);
+            if (SmallButton("UPDATE", 100, _ws.Exists)) ArtifactAgent(e.Url, e.Id, e.Title);
             Neon.Tooltip("Has the agent bring in the artifact's current version (the /amoebius-artifact skill).");
             ImGui.SameLine(0, 8);
-            if (SmallButton("FOLDER", 100, Directory.Exists(Path.Combine(_ws.Dir, e.Dir)))) OpenFolder(Path.Combine(_ws.Dir, e.Dir));
+            if (SmallButton("FOLDER", 100, Directory.Exists(Path.Combine(root, e.Dir)))) OpenFolder(Path.Combine(root, e.Dir));
             ImGui.SetCursorScreenPos(top + new Vector2(0, cardH + 10));
             ImGui.Dummy(new Vector2(w, 0));
             ImGui.PopID();

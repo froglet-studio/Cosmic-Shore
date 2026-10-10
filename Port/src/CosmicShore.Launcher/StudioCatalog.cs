@@ -15,6 +15,14 @@ namespace CosmicShore.Launcher
         public const string RelativeDir = "Docs/Studios/VesselStudio";
         public const string FileName = "studios.json";
 
+        /// <summary>
+        /// The one Vessel Studio artifact and its live mirror, used when no catalog can be read yet (no workspace, no
+        /// checkout): the web links are the one part of the page that needs no files, so they always work.
+        /// Keep in step with <c>web</c> and <c>mirror</c> in studios.json (StudioCatalogTests holds them together).
+        /// </summary>
+        public const string DefaultWeb = "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa";
+        public const string DefaultMirror = "https://yskhan61.github.io/vessel-studio/";
+
         /// <param name="EngineMode">An arcade mode (a <c>GameModes</c> name) PLAY IN ENGINE opens in the Prisma player: the game's own vessel.</param>
         /// <param name="EngineNote">What that engine run is, in a line (it may differ from the studio's design).</param>
         public sealed record Studio(string Id, string Name, string File, string Kind, string Summary, string? Docs, string? EngineMode = null, string? EngineNote = null);
@@ -72,6 +80,25 @@ namespace CosmicShore.Launcher
             if (Mirror == null) return null;
             var root = Mirror.EndsWith("/") ? Mirror : Mirror + "/";
             return file == Hub ? root : root + Uri.EscapeDataString(file);
+        }
+
+        /// <summary>The artifact link to open: the catalog's, else <see cref="DefaultWeb"/>.</summary>
+        public string WebLink => Web ?? DefaultWeb;
+
+        /// <summary>A page on the live mirror: the catalog's mirror, else <see cref="DefaultMirror"/>.</summary>
+        public string LiveUrl(string file) => MirrorUrl(file) ?? (file == Hub ? DefaultMirror : DefaultMirror + Uri.EscapeDataString(file));
+
+        /// <summary>
+        /// Where the studio pages are read from. The pages are plain files, so they need no build and no workspace:
+        /// Amoebius's workspace when it carries the catalog, else the user's own checkout (the one Unity opened Amoebius
+        /// from), else whichever of the two exists. Null when there is neither.
+        /// </summary>
+        public static string? PickRoot(string? workspaceDir, bool workspaceExists, string? cloneDir)
+        {
+            bool Has(string? d) => d != null && System.IO.File.Exists(Path.Combine(d, RelativeDir, FileName));
+            if (workspaceExists && Has(workspaceDir)) return workspaceDir;
+            if (Has(cloneDir)) return cloneDir;
+            return workspaceExists ? workspaceDir : cloneDir;
         }
 
         static string? HttpUrl(string? s) =>
