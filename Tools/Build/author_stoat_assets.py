@@ -129,6 +129,13 @@ PATHFINDER_EXECUTOR_SCRIPT = DIPOLE_SCRIPTS[1][1]
 DIPOLE_CONFIG_SCRIPT = DIPOLE_SCRIPTS[2][1]
 DIPOLE_ACTION_SCRIPT = DIPOLE_SCRIPTS[3][1]
 DIPOLE_CONFIG = "c6ae04d75c934a21aae1b3607d52cb84"
+# Stage 5: the studio's chase camera (StoatFlightStudio.html cameraStep: 6.5 up, 21 behind, looking 40 past the
+# nose and 3 up). Before it the Stoat flew on the Squirrel's camera asset: flat, 17 straight behind.
+CAMERA_DIR = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
+CAMERA_ASSET = os.path.join(CAMERA_DIR, "StoatCameraSettingsSO.asset")
+CAMERA_GUID = "e17964483cec46e09bccb69a53eee1d0"
+CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
+SQUIRREL_CAMERA_GUID = "3c3fc507fffc4f5e86ab043ee7543cd2"
 DIPOLE_LEFT = "9eacf723b796418caecfe237336b9985"
 DIPOLE_RIGHT = "62ce60a32bef4c70b42fd1f7cd9896ff"
 
@@ -509,7 +516,10 @@ def register_class_list(text: str) -> str:
 
 # ----------------------------------------------------------------------------- registrations
 def container_entry() -> str:
-    return f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n"
+    # The container's slots are Transform[]: the entry names the prefab's ROOT TRANSFORM. The GameObject's
+    # fileID (which DefaultNetworkPrefabs rightly takes) loads there as a reference that throws
+    # MissingReferenceException, and hung boot on "Host ready..." (check_vessel_prefab_container.py check 7).
+    return f"  - {{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}\n"
 
 
 def register_container(text: str) -> str:
@@ -622,10 +632,17 @@ def dipole_config_asset() -> str:
             "  dotGap: 10\n"
             f"  openColor: {color(150 / 255, 166 / 255, 194 / 255)}\n"
             f"  warpedColor: {color(157 / 255, 1, 46 / 255)}\n"
-            "  autopilotHold01: 0.8\n"
+            "  autopilotHold01: 1\n"
             "  autopilotMinDistance: 300\n"
             "  autopilotHoldSeconds: 4\n"
-            "  autopilotIntervalSeconds: 2\n" +
+            "  autopilotIntervalSeconds: 2\n"
+            # the studio's path-watching field AI (aiWarpQ 1 above, aiNear, aiLimeWait)
+            "  autopilotWatchPath: 1\n"
+            "  autopilotLetGoNear: 60\n"
+            "  autopilotDrySeconds: 0.5\n"
+            "  autopilotMinHoldSeconds: 0.8\n"
+            "  autopilotMaxHoldSeconds: 15\n"
+            "  autopilotRelaySeconds: 0.25\n" +
             empty_event("openEvent") + empty_event("annihilateEvent") + empty_event("warpEvent"))
 
 
@@ -716,6 +733,33 @@ def apply_dipole(text: str) -> str:
     return text[:t.start()] + block + text[t.end():]
 
 
+def camera_asset() -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {CAMERA_SCRIPT}, type: 3}}\n"
+            "  m_Name: StoatCameraSettingsSO\n  m_EditorClassIdentifier: \n"
+            "  mode: 0\n"
+            "  followOffset: {x: 0, y: 6.5, z: -21}\n"
+            "  lookAheadDistance: 40\n"
+            "  lookAheadLift: 3\n"
+            "  dynamicMinDistance: 10\n  dynamicMaxDistance: 40\n  followSmoothTime: 0.2\n  rotationSmoothTime: 5\n"
+            "  disableSmoothing: 0\n  nearClipPlane: 0.3\n  farClipPlane: 12000\n  enableAdaptiveZoom: 0\n"
+            "  adaptiveMaxDistance: 0\n  orthographicSize: 5\n")
+
+
+def camera_reference(guid: str) -> str:
+    return f"  settings: {{fileID: 11400000, guid: {guid}, type: 2}}\n  OnInitializePlayerCamera:"
+
+
+def apply_camera(text: str) -> str:
+    """Stage 5 on the committed prefab: VesselCameraCustomizer points at the Stoat's own camera asset. Idempotent."""
+    if camera_reference(CAMERA_GUID) in text:
+        return text
+    return replace_once(text, camera_reference(SQUIRREL_CAMERA_GUID), camera_reference(CAMERA_GUID),
+                        "VesselCameraCustomizer settings (the Squirrel's camera asset)")
+
+
 def dipole_files() -> "dict[str, str]":
     """Every non-prefab file stage 4 owns, {absolute path: content}."""
     out = {}
@@ -731,6 +775,8 @@ def dipole_files() -> "dict[str, str]":
                                  "  userData: \n"
                                  "  assetBundleName: \n"
                                  "  assetBundleVariant: \n")
+    out[CAMERA_ASSET] = camera_asset()
+    out[CAMERA_ASSET + ".meta"] = asset_meta(CAMERA_GUID)
     return out
 
 
@@ -798,6 +844,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     want(f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n" in prefab,
          "VesselCustomization does not paint the hull (the domain colour would land on the hidden Squirrel mesh)")
     want(animation_block() in prefab, "the root's VesselAnimation is not StoatAnimation with the user's lope")
+    want(camera_reference(CAMERA_GUID) in prefab,
+         "VesselCameraCustomizer does not use StoatCameraSettingsSO (the studio's chase camera)")
     want(MANTA_ANIMATION_SCRIPT not in prefab, "the Squirrel clone's MantaAnimationContoller is still on the prefab")
     want(f"  - component: {{fileID: {ANIMATION_ID}}}\n" in prefab, "the animation component left the root")
 
@@ -900,6 +948,10 @@ def self_test() -> int:
     fires("container entry missing", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), "")))
     fires("network entry missing", lambda f: f.__setitem__(os.path.relpath(NETWORK_PREFABS, ROOT), f[os.path.relpath(NETWORK_PREFABS, ROOT)].replace(network_entry(), "")))
     fires("map lost the dipole's input", lambda f: f.__setitem__(os.path.relpath(MAP, ROOT), f[os.path.relpath(MAP, ROOT)].replace("    Input: 2\n", "    Input: 0\n")))
+    fires("camera back on the Squirrel's", lambda f: f.__setitem__(rel, f[rel].replace(camera_reference(CAMERA_GUID), camera_reference(SQUIRREL_CAMERA_GUID))))
+    cam = os.path.relpath(CAMERA_ASSET, ROOT)
+    fires("chase camera retuned by hand", lambda f: f.__setitem__(cam, f.get(cam, "").replace("  lookAheadDistance: 40\n", "  lookAheadDistance: 0\n")))
+    fires("container entry is the GameObject", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n")))
     fires("hull dropped", lambda f: f.__setitem__(rel, f[rel].replace(hull_blocks(), "")))
     fires("paint left on the Squirrel mesh", lambda f: f.__setitem__(rel, f[rel].replace(
         f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n", f"  _shipGeometries:\n  - {{fileID: {SQUIRREL_MESH_GO}}}\n")))
@@ -912,6 +964,9 @@ def self_test() -> int:
     ok &= idem
     idem = apply_dipole(files[rel]) == files[rel]
     print(f"  stage 4 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
+    ok &= idem
+    idem = apply_camera(files[rel]) == files[rel]
+    print(f"  stage 5 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
     ok &= idem
     print("self-test " + ("OK" if ok else "FAILED"))
     return 0 if ok else 1
@@ -940,6 +995,11 @@ def main(argv) -> int:
         if after != before:
             write(PREFAB, after)
             print(f"stage 4: the field dipole + pathfinder wired into {os.path.relpath(PREFAB, ROOT)}")
+        before = after
+        after = apply_camera(before)
+        if after != before:
+            write(PREFAB, after)
+            print(f"stage 5: the studio's chase camera wired into {os.path.relpath(PREFAB, ROOT)}")
         for path, text in dipole_files().items():
             old = None
             if os.path.exists(path):

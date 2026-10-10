@@ -1217,7 +1217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  settings: {fileID: 11400000, guid: 3c3fc507fffc4f5e86ab043ee7543cd2, type: 2}
+  settings: {fileID: 11400000, guid: e17964483cec46e09bccb69a53eee1d0, type: 2}
   OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea,
     type: 2}
 --- !u!114 &9172589084772723142

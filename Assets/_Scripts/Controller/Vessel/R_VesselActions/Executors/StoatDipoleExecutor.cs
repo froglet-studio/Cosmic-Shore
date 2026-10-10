@@ -314,6 +314,32 @@ namespace CosmicShore.Gameplay
 
             FlyField(dt);
             if (autopilot) Autopilot();
+            else if (_aiHoldingLeft || _aiHoldingRight) HandBackAiHold();
+        }
+
+        /// <summary>
+        /// The pilot took the hull back from the autopilot (the lava lamp's AI hands over when you click to
+        /// fly) while the AI was holding a pair. <see cref="Autopilot"/> only runs while the AI flies, so
+        /// without this its triggers stayed pressed forever: the pair it laid in the menu stayed open and its
+        /// field flung the pilot's hull from the first frame of freestyle. Let go of what the AI pressed,
+        /// through the same replicated path it pressed with; the pair then closes as any released pair does.
+        /// </summary>
+        void HandBackAiHold()
+        {
+            var handler = _status.ActionHandler;
+            if (_aiHoldingLeft)
+            {
+                if (handler && ResolveBoundInput(Side.Left, handler, out var l)) handler.StopShipControllerActionsReplicated(l);
+                else Release(Side.Left);
+            }
+            if (_aiHoldingRight)
+            {
+                if (handler && ResolveBoundInput(Side.Right, handler, out var r)) handler.StopShipControllerActionsReplicated(r);
+                else Release(Side.Right);
+            }
+            _aiHoldingLeft = _aiHoldingRight = false;
+            _aiReleaseAt = float.PositiveInfinity;
+            _aiLastPairTime = Time.time;
         }
 
         float Live(Side side) => _holds[(int)side].Holding ? _holds[(int)side].Live : 0f;

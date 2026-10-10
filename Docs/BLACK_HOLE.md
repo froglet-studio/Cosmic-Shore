@@ -1,7 +1,7 @@
 # BLACK HOLES — gravity wells in the HyperSea
 
-> A black hole is spawned with ONE number — its strength — anywhere in any scene, from the
-> DiagnosticsHUD console (`blackhole spawn 10`). It pulls every prism in reach into orbit or into
+> A black hole is spawned with ONE number — its strength — by `BlackHoleRegistry.Spawn`; in the game
+> today only the Stoat's field dipole lays them (`StoatDipoleExecutor`, two at a time). It pulls every prism in reach into orbit or into
 > the singularity, pulls vessels (which can out-run it), drags space around with its spin, and
 > spaghettifies what comes near its horizon. **Everything it does is physics, approximated — no
 > painted glow, no disc, no invented swirl**: a Paczyński–Wiita pull, Lense–Thirring frame
@@ -36,11 +36,9 @@
 | The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `BlackHoleSky.cs` (the scene's own skybox in six faces, for rays bent off-screen), `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | The lens's own render pass — copies the camera colour AFTER the transparents and draws every lens from it (Render Graph, injected from script; §5.1) | `BlackHoleLensPass.cs` |
-| Keys: **B** opens/closes the tool, **Shift+B** spawns ahead of the camera on screen (§6.2) | `BlackHoleHotkeys.cs` |
-| Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
-| The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
+| Who lays holes | The Stoat's field dipole only (`StoatDipoleExecutor`; `R_VesselActions/STOAT_DIPOLE.md`). Its settings are the studio's, ported (`StoatDipoleConfig.asset`) |
+| Keys, console, the Black Hole tool, the test scene | **Retired 2026-10-10** (§6). The Vessel Studio's Stoat page is where a pair is tried now |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
-| The test scene | **Not on bleeding-edge.** `BlackHoleTest.unity`, `BlackHoleTestHarness`, `BlackHoleTestConfigSO`, the scene setup tool and the mouse camera `MouseOrbitCamera` stayed on `claude/peaceful-rubin-hhw49n` when the black hole alone was brought over (§7) |
 | The crystal wormhole that grew out of the Black Hole cell (attractor + repulsor, smooth wells) | `Docs/CRYSTAL_WORMHOLE.md` |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
 | See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
@@ -68,8 +66,8 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 3 | The lens: a per-pixel Schwarzschild ray trace on a lens-sized sphere (right from every viewpoint, inside it too) | §5.1 |
 | 4 | Painted accretion disc built, then REMOVED at the user's request — the hole is its shadow and the bent scene | §5.1, §10 |
 | 5 | Made physical: Lense–Thirring frame dragging (`spin`), GR tidal spaghettification (`tidalResponseSeconds`, `maxTidalStretch`) | §2, §5, §9.2 |
-| 6 | The Black Hole tool (`B` / `blackhole tool on`): spawn rows, live holes, every config field | §6.1 |
-| 7 | Spawn placement: ahead of the camera ON SCREEN (in horizon radii) or a world position; Shift+B | §6.1, §6.2 |
+| 6 | The Black Hole tool (`B` / `blackhole tool on`): spawn rows, live holes, every config field (retired 2026-10-10) | §6 |
+| 7 | Spawn placement: ahead of the camera ON SCREEN (in horizon radii) or a world position; Shift+B (retired 2026-10-10) | §6 |
 | 8 | The lens sky is the scene's OWN skybox (`BlackHoleSky`), never URP's baked default | §5.1 |
 | 9 | Every camera gets the lens's depth texture; the on-screen camera, not `Camera.main`, places spawns | §5.1 |
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
@@ -85,7 +83,7 @@ white holes and pairs (§11 — the repulsion on a vessel, the pass-through of c
 drawn over the now-diverging source lens, the drift and annihilation); the Crystal Wormhole cell end to
 end (§12); the after-transparents lens pass (`BlackHoleLensPass`, Render Graph) on every camera and the
 Scene view; the lens sky (`BlackHoleSky`) on a low quality level; Shift+B in lava-lamp freestyle with a
-vessel flying; the edit-mode suites `BlackHoleTests`, `BlackHolePhysicsTests`, `BlackHoleToolTests`,
+vessel flying (retired, §6); the edit-mode suites `BlackHoleTests`, `BlackHolePhysicsTests`,
 `CrystalWormholeTests`, `WarpFieldTests` (written, never run).
 
 **What builds on it next:** the Stoat vessel, whose ability spawns these holes (row 13; prototype on
@@ -457,110 +455,29 @@ fails the edit-mode suite on it. **Nothing here has been seen on screen**; the l
 Dials (`BlackHoleConfig`, Lens header): `lensRadiusMultiplier`, `lensFadeStart`, `lensSteps`;
 `lensEnabled` off falls back to the plain black sphere.
 
-## 6. Console
+## 6. Tools, keys, console and the test scene — retired (2026-10-10)
 
-From any scene (the HUD and the console auto-spawn; editor and development builds only):
+The DiagnosticsHUD console verbs (`blackhole …`, `bh`, `wormhole …`), the **Black Hole tool** panel
+(`BlackHoleTool` + `BlackHoleToolModel`, its offline proof `Tools/Build/black_hole_tool_harness` and
+`BlackHoleToolTests`), the keys (**B**, **Shift+B**, **N**, **M** — `BlackHoleHotkeys`), the
+`BlackHoleTest` scene with `BlackHoleTestHarness`, `BlackHoleTestConfigSO` / `BlackHoleTestConfig.asset`
+and **Setup Black Hole Test Scene**, and the config's Spawn section (`spawnStrength`,
+`spawnHorizonRadius`, `spawnAheadOfCamera`, `spawnDistanceHorizons`, `spawnPosition`, `spawnVelocity`,
+`spawnSpinAxis`, `pairAheadHorizons`) were deleted at the owner's request, with the registry helpers
+only they called (`SpawnFromConfig`, `SpawnPairFromConfig`, `SpawnStyledPairFromConfig`, `SpawnPoint`).
 
-```
-blackhole tool [on|off]                          open / close the Black Hole tool (§6.1); no word = toggle
-blackhole config                                 open the tool on its config view
-blackhole spawn                                  spawn from the config's Spawn section (ahead of the camera, or at its position)
-blackhole spawn <strength> [x y z] [vx vy vz]   spawn at (x,y,z) — default 300 u ahead of the camera
-blackhole here <strength>                        spawn at the camera
-blackhole size <id> <r_s>                        resize a live hole (event-horizon radius; 0 = from strength)
-blackhole move <id> <vx> <vy> <vz>               set a hole's velocity (drive it through mass)
-blackhole strength <id> <value>                  retune a live hole's pull
-blackhole spin <id> <ax> <ay> <az>               set its spin axis (Lense–Thirring frame dragging)
-blackhole list                                   every live hole and its numbers
-blackhole white [<strength> [x y z]]            spawn a WHITE hole (§11) the same way as spawn
-blackhole pair [left|right]                      spawn a black–white pair across the camera, black on that side (default left)
-blackhole despawn <id> | all                     eased release, then destroy
-bh ...  /  black hole ...                        aliases ("black hole tool on" works as typed)
-```
+**Why.** They were bring-up instruments for a hole nobody flew. Two of them auto-spawned into EVERY
+scene (`[RuntimeInitializeOnLoadMethod]`), so a stray N or M in the lava lamp laid a pair at the
+camera, and the hotkeys and the debug HUD's "cmd: blackhole tool on" made a lava-lamp hole look like
+something the menu did. The settings they edited are now the Stoat's, decided in the Vessel Studio
+(`Docs/Studios/StoatFlightStudio.html`, the field-dipole rows) and ported to
+`StoatDipoleConfig.asset`; that studio page is where a pair is tried, watched and tuned.
 
-The HUD's `BlackHole` section shows live holes, bodies, captures, how many holes are stretching
-prisms, and pulled vessels.
-
-### 6.1 The Black Hole tool (`BlackHoleTool`, `BlackHoleToolModel`)
-
-`blackhole tool on` opens a panel (top-right, drag it by its title bar; `blackhole tool off` or ×
-closes it). **Its values live in the config ASSET, `Resources/BlackHoleConfig`, not in the tool**, so
-what is on the asset is what spawns — from the tool, or from `blackhole spawn` with no strength.
-
-- **SPAWN** rows edit the asset's Spawn section: **Spawn Strength** (the pull: `GM = strength ×
-  gmPerStrength`), **Spawn Horizon Radius** (the SIZE — the event-horizon radius in world units;
-  0 derives it from the strength), **Spawn Ahead Of Camera** (on by default: the hole lands straight
-  ahead of the camera you are looking through — your vessel's while flying) with **Spawn Distance
-  Horizons** (how far, in horizon radii: 6 = 120 u at strength 10; nearer than ~3 the camera is inside
-  the ~2.6 r_s shadow), **Spawn Position** (where it goes instead, world space, when that is off),
-  **Spawn Velocity** (u/s, world space; zero parks it) and **Spawn Spin Axis** (world). A caption
-  shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the position and how far it is
-  from the camera, GM and the influence radius.
-- **Spawn black** / **Spawn white** spawn from exactly those values (`BlackHoleRegistry.SpawnFromConfig`,
-  placement in `SpawnPoint`); the two **Pair** buttons lay a black–white pair across the camera, black
-  on the left or the right (§11), from the **Pair** rows (ahead, half-gap, drift, lifetime).
-  **Despawn all**; **Save asset** (Editor) writes the asset to disk.
-- **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
-  and **Despawn**.
-- **Config ▾** opens a second panel, docked to the left, with EVERY other field of the asset —
-  physics, budgets, vessels, spaghettification, lens — grouped by its `[Header]`, a slider wherever the field has a
-  `[Range]`, an input otherwise, clamped to its own `[Range]` / `[Min]`; hovering a label shows the
-  field's `[Tooltip]`. It is generated from the SO by reflection (`BlackHoleToolModel.EditableFields`),
-  so a field added to the config appears here with no change to the tool. **Select asset** (Editor)
-  selects it in the Inspector.
-
-Edits apply live. In the Editor they edit the asset itself and mark it dirty (the config is outside
-`_SO_Assets/`, so `PlayModeSOProtector` does not revert it) — **Save asset** persists them now, the
-project's next save otherwise.
-
-**Size and strength are separate.** A hole's horizon radius is its own `Size` when set (> 0), else
-`max(minHorizonRadius, horizonPerStrength × strength)`. So to change how big holes are: set **Spawn
-Horizon Radius** in the tool (or `blackhole size <id> <r_s>` on a live one) for one hole, or
-**horizonPerStrength** / **minHorizonRadius** for every hole that derives its size from strength.
-What the player sees scales from r_s: the shadow is ~2.6 r_s, the lens bends out to
-**lensRadiusMultiplier** r_s, and spaghettification is evaluated out to **warpReachMultiplier** r_s.
-How hard a hole of a given size shreds is `GM·τ²/r_s³` — a bigger hole at the same strength stretches
-LESS at its horizon (§5).
-
-**Proof.** `Tools/Build/black_hole_tool_harness/run.sh` compiles the SHIPPED `BlackHoleConfigSO.cs`
-and `BlackHoleToolModel.cs` (with a handful of `UnityEngine` stubs — the engine's reference DLLs have
-no method bodies) and runs them: the tool reaches all 29 config fields, every number is bounded, the
-asset, the SO and the tool agree key for key and the asset loads through the model sane, the size
-helpers, the clamping, the labels and the switch — and two negative controls (a config with an
-unsupported field, an asset with a renamed key) fire. `BlackHoleToolTests` (edit mode) checks the
-model against Unity's own `SerializedObject` view of the asset, the spawn pose, the size helpers, the
-clamping, and builds the real panel and closes it.
-
-### 6.2 Keys, and how to test it (`BlackHoleHotkeys`)
-
-Editor and development builds, any scene, ignored while a text field has focus:
-
-| Key | Does |
-|---|---|
-| **B** | Open / close the Black Hole tool (in the Editor it also selects `Resources/BlackHoleConfig` in the Inspector) |
-| **Shift+B** | Spawn a hole from the config right now — ahead of the camera — without opening anything (Shift also boosts while flying) |
-| **N** / **M** | Spawn a black–white PAIR across the camera — black on the LEFT (N) or the RIGHT (M); N sits left of M on the keyboard. The Stoat's sling, from any vessel (§11) |
-| `blackhole tool on` / `off` | The same as B, from the DiagnosticsHUD console (`blackhole config` opens the config view) |
-
-**In freestyle** (Menu_Main): **B** opens the tool, Shift+B spawns ahead of the camera. (The Cell Selector's
-*Crystal Wormhole* runs smooth wells, not black holes — `Docs/CRYSTAL_WORMHOLE.md`.)
-
-**In lava-lamp freestyle** (Menu_Main, flying a vessel): **B** → set strength/size/distance → close
-it with B → **Shift+B** while flying: the hole appears straight ahead of your vessel's camera
-(the view you fly — `BlackHoleLens.ViewCamera()`, the camera actually on screen, which is not `Camera.main` there).
-It pulls the cell's prisms and your vessel — faster than the local escape speed gets away,
-slower is drawn in and held at the horizon (§4) — so boost out, or **Despawn all** / `blackhole
-despawn all`. Lava lamp's lifeforms are not pulled (§8), and the scene's lighting bake does not
-matter: the lens bends whatever skybox the scene renders (§5.1).
-
-## 7. The test scene
-
-**Not on bleeding-edge.** `BlackHoleTest.unity` (a prism-lattice field, a centre hole and a
-fly-through, driven by `BlackHoleTestHarness` / `bhtest`), its config `BlackHoleTestConfigSO`, the
-**Setup Black Hole Test Scene** tool and the Transport-Fever-style `MouseOrbitCamera` (§7.1 on that
-branch) live on `claude/peaceful-rubin-hhw49n` and were deliberately left there when the black hole
-alone was brought over. The in-game place to see a hole is the Black Hole cell (§11), or Shift+B
-anywhere (§6.2). Bring the scene over as its own change if it is wanted; nothing here depends on it.
+**What stays.** Everything a laid hole needs: `BlackHole`, `BlackHoleRegistry` (`Spawn`, `SpawnPair`,
+`SpawnCrystalPair`, `LetGo`, `Annihilate`, the driver), the gravity field, the vessel pull, the warp,
+the lens and its pass, the sky, `BlackHoleConfigSO` and its asset, and `BlackHoleTests` /
+`BlackHolePhysicsTests`. Sections below that name the tool, its buttons or `blackhole …` verbs are the
+record of how a behaviour was first tried, not a way to reach it today.
 
 ## 8. Stated limits of the simple version
 
@@ -610,7 +527,7 @@ Offline, in this order; nothing was run in the editor:
   namespace` false positives in untouched files. `check_generated_assets.py`: 4 added + 2 modified
   assets OK against the compiled schema.
 - Edit-mode: `BlackHoleTests` (HLSL/bank/slot agreement, splice order on both graphs, validator
-  specs, config sanity, residency budget; the test-scene wiring test stayed with the scene, §7) and `BlackHolePhysicsTests` (eleven
+  specs, config sanity, residency budget; the test-scene wiring test was deleted with the scene, §6) and `BlackHolePhysicsTests` (eleven
   claims about what a hole does, run through the shipped integrator) — written, to be run in the
   editor with the rest of the suite.
 

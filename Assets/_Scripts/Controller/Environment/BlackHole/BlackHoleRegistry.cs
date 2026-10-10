@@ -241,38 +241,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// A pair from the config's Spawn and Pair sections, laid across the camera on screen (the
-        /// vessel's while flying): the midpoint <see cref="BlackHoleConfigSO.PairAheadHorizons"/>
-        /// horizon radii ahead, the holes <see cref="BlackHoleConfigSO.PairHalfGapHorizons"/> to
-        /// either side on the camera's own horizontal — the black hole on the LEFT when
-        /// <paramref name="blackOnLeft"/>, else on the right. What the Black Hole tool's Spawn Pair
-        /// button, the P key and <c>blackhole pair</c> do, and what the Stoat's triggers will do from
-        /// the vessel. Without a camera the pair lies along world +X at the spawn position.
-        /// </summary>
-        public static Pair SpawnPairFromConfig(bool blackOnLeft)
-        {
-            var config = Config;
-            var cam = BlackHoleLens.ViewCamera();
-            float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
-            Vector3 midpoint, right;
-            if (cam != null)
-            {
-                var t = cam.transform;
-                midpoint = t.position + t.forward * (rs * config.PairAheadHorizons);
-                right = t.right;
-            }
-            else
-            {
-                midpoint = config.SpawnPosition;
-                right = Vector3.right;
-            }
-            // The axis runs black → white: black on the left means the axis points right.
-            var axis = blackOnLeft ? right : -right;
-            return SpawnPair(midpoint, axis, config.SpawnStrength, config.SpawnHorizonRadius, rs * config.PairHalfGapHorizons,
-                config.PairDriftSpeed, config.PairLifetime, config.SpawnSpinAxis);
-        }
-
-        /// <summary>
         /// The settings a CRYSTAL pair (§13) is opened with: the config's Crystal Pair section, a throat of
         /// the size dial a drift pair's horizon is (<see cref="BlackHoleConfigSO.HorizonRadius"/>), and the
         /// pilots its mouths may carry. A pilot's sling passes only that pilot (a vessel may not move an
@@ -338,35 +306,6 @@ namespace CosmicShore.Gameplay
             return wormhole;
         }
 
-        /// <summary>
-        /// What the tool's Pair buttons, N/M and <c>blackhole pair</c> lay: a pair of the configured STYLE
-        /// (<see cref="BlackHoleConfigSO.CrystalPairs"/>), across the camera — the attractor on the left when
-        /// <paramref name="attractorOnLeft"/>. Returns a one-line description, or null when refused.
-        /// </summary>
-        public static string SpawnStyledPairFromConfig(bool attractorOnLeft)
-        {
-            var config = Config;
-            if (!config.CrystalPairs)
-            {
-                var pair = SpawnPairFromConfig(attractorOnLeft);
-                return pair == null ? null
-                    : $"drift pair: attractor #{pair.Black.Id} on the {(attractorOnLeft ? "left" : "right")}, repulsor #{pair.White.Id}; " +
-                      $"half-gap {pair.HalfGap0:F0} u, closing at {pair.DriftSpeed:F0} u/s, meets in " +
-                      $"{BlackHolePairMath.SecondsToMeet(pair.HalfGap0, pair.Black.HorizonRadius, pair.DriftSpeed, pair.CloseRamp):F1} s";
-            }
-            var cam = BlackHoleLens.ViewCamera();
-            float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
-            Vector3 midpoint = cam != null ? cam.transform.position + cam.transform.forward * (rs * config.PairAheadHorizons) : config.SpawnPosition;
-            Vector3 right = cam != null ? cam.transform.right : Vector3.right;
-            // An environmental pair carries every pilot in the scene at the moment it opens.
-            var riders = new List<IPlayer>(Object.FindObjectsByType<Player>(FindObjectsSortMode.None));
-            var wormhole = SpawnCrystalPair(midpoint, attractorOnLeft ? right : -right, rs * config.PairHalfGapHorizons,
-                CrystalSettings(config.SpawnStrength, config.SpawnHorizonRadius, config.SpawnSpinAxis, riders));
-            return wormhole == null ? null
-                : $"crystal pair: attractor #{wormhole.Attractor.Id} on the {(attractorOnLeft ? "left" : "right")}, repulsor #{wormhole.Repulsor.Id}; " +
-                  $"forms in {config.CrystalFormSeconds:F1} s, stands {config.CrystalStandSeconds:F1} s, annihilates over {config.CrystalAnnihilateSeconds:F1} s";
-        }
-
         /// <summary>Annihilate a pair now: both holes ease out together. The pair is forgotten.</summary>
         public static void Annihilate(Pair pair)
         {
@@ -422,34 +361,6 @@ namespace CosmicShore.Gameplay
                 pair.Black.transform.position = blackPos;
                 pair.White.transform.position = whitePos;
             }
-        }
-
-        /// <summary>
-        /// Where a spawn from the config lands: <see cref="BlackHoleConfigSO.SpawnDistanceHorizons"/>
-        /// horizon radii straight ahead of <paramref name="camera"/> when
-        /// <see cref="BlackHoleConfigSO.SpawnAheadOfCamera"/> is on and there is a camera, else
-        /// <see cref="BlackHoleConfigSO.SpawnPosition"/>.
-        /// </summary>
-        public static Vector3 SpawnPoint(BlackHoleConfigSO config, Transform camera)
-        {
-            if (!config.SpawnAheadOfCamera || camera == null) return config.SpawnPosition;
-            float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
-            return camera.position + camera.forward * (rs * config.SpawnDistanceHorizons);
-        }
-
-        /// <summary>
-        /// Spawn a hole exactly as the config's Spawn section says — strength, size, where
-        /// (<see cref="SpawnPoint"/>, ahead of <see cref="BlackHoleLens.ViewCamera"/> — the camera on
-        /// screen, the vessel's while flying, which in the real game is NOT <c>Camera.main</c> —
-        /// or at the spawn position), velocity, spin — what the Black Hole tool's Spawn button,
-        /// Shift+B and <c>blackhole spawn</c> with no strength do. Null when refused (see <see cref="Spawn"/>).
-        /// </summary>
-        public static BlackHole SpawnFromConfig(HolePolarity polarity = HolePolarity.Sink)
-        {
-            var config = Config;
-            var cam = BlackHoleLens.ViewCamera();
-            return Spawn(SpawnPoint(config, cam != null ? cam.transform : null), config.SpawnStrength,
-                config.SpawnVelocity, config.SpawnSpinAxis, config.SpawnHorizonRadius, polarity);
         }
 
         /// <summary>Begin a hole's despawn (eased warp release, then destroy). False if no such id.</summary>

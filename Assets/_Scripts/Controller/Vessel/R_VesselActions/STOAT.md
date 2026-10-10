@@ -204,7 +204,8 @@ Kept, deliberately, as prototype debt: the Squirrel's model (hidden — its rend
 live, so the Stoat's hit box is still the Squirrel's ~4 u box, not the 8 u body), HUD variant and four ability ICONS (the
 row will show the Squirrel's art until `author_hull_ability_rows.py` / the icon pass runs for the
 Stoat), its two executors (`SquirrelTubeActionExecutor` and the seed executor — unbound, inert), its
-camera settings SO (far clip 12000 — `check_vessel_camera_farclip.py`), its telemetry (the default,
+camera settings SO until 2026-10-10 (now its own `StoatCameraSettingsSO`, the studio's chase camera —
+`STOAT_DIPOLE.md` §3a; far clip 12000, `check_vessel_camera_farclip.py`), its telemetry (the default,
 `VesselTelemetryBootstrapper` has no Stoat case). **The clone is a spent one-shot once committed**:
 `author_stoat_assets.py` clones only while `Stoat.prefab` is absent and otherwise stands down and
 validates the shipped file, so Squirrel drift can never silently re-author the Stoat.

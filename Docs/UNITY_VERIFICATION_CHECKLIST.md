@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Stoat in the lava lamp: chase camera, AI hand-over, studio settings; black hole tools retired (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**What landed** (checked in Amoebius, which runs the real Menu_Main: the AI's 2 holes closed to 0 on hand-over,
+the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead):
+- `StoatDipoleExecutor.HandBackAiHold`: when the autopilot hands the hull to the player with a pair held, it lets
+  go through the replicated stop. Before, the menu AI's pair stayed open and flung the hull ("a black hole at the
+  centre, the camera off the vessel").
+- `CameraSettingsSO.lookAheadDistance` / `lookAheadLift` (0 = unchanged for every other vessel) and
+  `CustomCameraController.LookPoint`; `StoatCameraSettingsSO` (the studio's chase camera) on `Stoat.prefab`.
+- `StoatDipoleConfig.autopilotHold01` 0.8 → 1 (the studio's measured best) and the path-watching fields authored.
+- Deleted: `BlackHoleTool`, `BlackHoleToolModel`, `BlackHoleConsole`, `BlackHoleHotkeys`, `BlackHoleTestHarness`,
+  `BlackHoleTestConfigSO` + asset, `BlackHoleTest.unity`, `BlackHoleTestSceneSetupTool`, `BlackHoleToolTests`,
+  `Tools/Build/black_hole_tool_harness`, the config's Spawn section and the registry's tool-only spawn helpers.
+- Tests: `CameraLookAheadTests` (new); `BlackHoleTests` lost its test-scene test.
+
+**Verify in editor**
+1. Compile; no missing-script warnings on `BlackHoleConfig.asset` (it never carried the removed Spawn keys).
+2. Run `CameraLookAheadTests`, `FollowHeightScaleTests`, `RearViewLawTests`, `BlackHoleTests`.
+3. Menu_Main, switch to the Stoat (Vessel Changer toy). Let the lava lamp run until the AI lays a pair, then click
+   to fly: the pair closes within a second or two, the hull flies where you steer, and the camera sits above and
+   behind with the hull low in frame and the path dots running ahead.
+4. Fly another vessel after the Stoat (Vessel Changer): its camera is exactly as before (aimed at the hull).
+5. Press B, N, M in play mode: nothing happens (the hotkeys are gone).
+
 ### 🔴 The Stoat's AI levels and path-watching autopilot (Slingshot, Warpline) (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **What landed** (ported from the Stoat Flight Studio, where it was measured):

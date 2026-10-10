@@ -173,6 +173,18 @@ Worked example: Skim Race I4 "Relativity", `Tools/Build/author_skimrace_relativi
   end of the document on the SECOND run (the first run has nothing to remove). Use `[^\n]*`, and
   run the generator twice: write, then `--check`.
 
+### 3b. A mode prototyped in a vessel studio
+
+When the mode was first raced in a vessel studio (the Stoat's Slingshot / Warpline, the Squirrel's Skim
+Race), the studio's numbers come over through generators: the course and target through this skill's
+generator, the HULL's numbers (ability config, chase camera, AI tuning) through the vessel's own generator
+(`/vessel` §4.ad). The studio's AI levels are the lobby's `AIDifficulty` (Skim Race levels via
+`SkimRaceDifficultySO`; a gate race applies them with `GateRaceHandicap`). Two studio behaviours the mode
+must keep: an AI that presses an input releases it on hand-back (`/vessel` §4.ad.3), and a hull nobody is
+flying still heads for its next target (the studio's idle takeover, `/vessel-studio` D29; in the game a
+human seat with no input simply flies straight, so a mode that can leave a seat unattended needs an AI
+backfill, not a drifting hull).
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

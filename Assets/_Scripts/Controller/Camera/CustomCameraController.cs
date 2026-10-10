@@ -24,6 +24,8 @@ namespace CosmicShore.Gameplay
         private Coroutine _distanceLerpRoutine;
         public bool adaptiveZoomEnabled;
         private float _neutralOffsetZ;
+        private float _lookAhead;   // CameraSettingsSO.lookAheadDistance
+        private float _lookLift;    // CameraSettingsSO.lookAheadLift
 
         /// <summary>
         /// Look behind: pose the camera at the MIRROR of its follow offset — the same distance
@@ -270,6 +272,21 @@ namespace CosmicShore.Gameplay
                 _followOffset.y * _followHeightScale,
                 RearView && !PlacementAnchor.HasValue ? -_followOffset.z : _followOffset.z);
 
+        /// <summary>
+        /// The point the camera LOOKS AT: the framed point, moved <see cref="CameraSettingsSO.lookAheadDistance"/>
+        /// along the vessel's nose and <see cref="CameraSettingsSO.lookAheadLift"/> along its up. Both are 0 on
+        /// every vessel that does not author them, which is the framed point itself (the camera looks at the
+        /// hull, as it always has). A placement frames an explicit world point, so it is never moved; rear
+        /// view mirrors the look-ahead as it mirrors the offset, so the camera ahead looks past the hull
+        /// behind it. Scaled by the warp like the offset, so the framing holds at any warp size.
+        /// </summary>
+        private Vector3 LookPoint(Vector3 followPoint, float warp)
+        {
+            if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f)) return followPoint;
+            float ahead = RearView ? -_lookAhead : _lookAhead;
+            return followPoint + (_followTarget.forward * ahead + _followTarget.up * (_lookLift * _followHeightScale)) * warp;
+        }
+
         private bool _warpClipActive;
 
         /// <summary>
@@ -345,7 +362,7 @@ namespace CosmicShore.Gameplay
             if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(LookPoint(followPoint, warp) - transform.position, _followTarget.up, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
@@ -381,7 +398,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(LookPoint(followPoint, warp) - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -436,6 +453,8 @@ namespace CosmicShore.Gameplay
 
             Camera.nearClipPlane = _currentSettings.nearClipPlane;
             Camera.farClipPlane = _currentSettings.farClipPlane;
+            _lookAhead = _currentSettings.lookAheadDistance;
+            _lookLift = _currentSettings.lookAheadLift;
 
             if (flags.HasFlag(CameraMode.DynamicCamera))
             {
@@ -539,7 +558,7 @@ namespace CosmicShore.Gameplay
             Vector3 followPoint = FollowPoint;
             transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
 
-            if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (SafeLookRotation.TryGet(LookPoint(followPoint, 1f) - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = followPoint;

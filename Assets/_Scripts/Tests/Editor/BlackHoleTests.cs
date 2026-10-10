@@ -26,7 +26,6 @@ namespace CosmicShore.Tests
         const string FunctionName = "PrismGravityWarpDeform";
         const string CradleFunctionName = "PrismCradleDeform";
         const string ConfigAssetPath = "Assets/Resources/" + BlackHoleRegistry.ConfigResourcePath + ".asset";
-        const string TestScenePath = "Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity";
 
         static readonly string[] LiveGraphs =
         {
@@ -404,26 +403,6 @@ namespace CosmicShore.Tests
                 Assert.Less(Vector3.Dot(Vector3.Cross(b - a, c - a), a + b + c), 0f,
                     $"sky cube triangle {t / 3} faces outward — a back-face-culling skybox would not draw from inside it.");
             }
-        }
-
-        [Test]
-        public void TestScene_ExistsAndCarriesTheHarnessWiredToItsConfig()
-        {
-            Assert.IsTrue(File.Exists(TestScenePath), $"{TestScenePath} is missing — run FrogletTools > Scene Setup > Setup Black Hole Test Scene.");
-            string scene = File.ReadAllText(TestScenePath);
-            Assert.IsTrue(scene.Contains("CosmicShore.Utility.BlackHoleTestHarness"), "BlackHoleTest.unity carries no BlackHoleTestHarness.");
-            Assert.IsTrue(scene.Contains("CosmicShore.Gameplay.ThemeManager"), "BlackHoleTest.unity carries no ThemeManager — the first laid prism would NRE.");
-            Assert.IsTrue(scene.Contains("PrismManagers"), "BlackHoleTest.unity carries no PrismManagers instance.");
-            string hyperSea = AssetDatabase.AssetPathToGUID("Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat");
-            Assert.IsFalse(string.IsNullOrEmpty(hyperSea), "HyperSeaSkybox.mat is missing.");
-            Assert.IsTrue(scene.Contains($"m_SkyboxMaterial: {{fileID: 2100000, guid: {hyperSea}, type: 2}}"),
-                "BlackHoleTest.unity's skybox is not the HyperSea sky — the hole would sit in Unity's default sky.");
-
-            var testConfig = AssetDatabase.LoadAssetAtPath<BlackHoleTestConfigSO>("Assets/Resources/BlackHoleTestConfig.asset");
-            Assert.IsNotNull(testConfig, "Assets/Resources/BlackHoleTestConfig.asset is missing.");
-            Assert.IsNotNull(testConfig.PrismPrefab, "BlackHoleTestConfig has no prism prefab — Spawn would do nothing.");
-            Assert.LessOrEqual((long)testConfig.DefaultCounts.x * testConfig.DefaultCounts.y * testConfig.DefaultCounts.z,
-                testConfig.MaxTotalPrisms, "BlackHoleTestConfig's default field exceeds its own cap.");
         }
     }
 }

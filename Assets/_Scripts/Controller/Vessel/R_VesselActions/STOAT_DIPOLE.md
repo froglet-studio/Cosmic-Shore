@@ -89,6 +89,33 @@ disagree on whose pair exists. This bites Warpline and Slingshot at 3+ Stoats; t
 the same ceiling. Raising it is a lens/shader change (the bank and the well job together), not a
 config edit — logged as a follow-up, not done here.
 
+## 3a. Ported from the studio: the settings map, the camera, the AI hand-over (2026-10-10)
+
+**Settings.** Every field-dipole row of the studio is in `StoatDipoleConfig.asset`, authored by
+`author_stoat_assets.py` (never by hand; `--check` fails a hand edit):
+
+| studio | Unity | value |
+|---|---|---|
+| `ftAhead`, `ftSepMax`, `ftSepLong`, `ftSepFollow` | `aheadDistance`, `sidewaysMax`, `lengthwaysMax`, `followRate` | 250, 200, 120, 6 |
+| `ftStrength` × 20,000, `ftHorizon`, `ftWhite` | `poleGM`, `poleHorizon`, `sourcePush` | 120 000, 3.5, 1 |
+| `dpAccelCap`, `dpTurnCap`, `ftGrip` | `accelerationCap`, `turnCap`, `grip` | 3000, 12, 0.5 |
+| `ftLength`, `ftStep`, `ftNose`, `ftMargin`, `ftMinLoop`, `ftWarpDeg`, `ftDotPx`, `ftDotGap` | `pathLength` … `dotGap` | 600, 3, 8, 8, 60, 3, 4, 10 |
+| `ftBoost`, `ftRise`, `ftFade` | `boost` (Time: 2 → **3 at level 5** → 4), `boostRise`, `boostFadeSeconds` | 3, 20, 0.6 |
+| `ftTurnScale` | the prefab's `PitchScaler` / `YawScaler` / `RollScaler` × 0.4 | 48 / 48 / 52 |
+| `ftSteer` 1, `ftTrail` 0 | the pathfinder flies the held steering and never tests laid trail | — |
+| `aiWarpQ`, `aiNear`, `aiLimeWait` | `autopilotHold01`, `autopilotLetGoNear`, `autopilotDrySeconds` | **1** (was 0.8), 60, 0.5 |
+
+**Camera.** The Stoat flies on its own `StoatCameraSettingsSO` (stage 5 of the generator): the studio's chase
+camera, 6.5 u up and 21 u behind (`followOffset (0, 6.5, -21)`), looking 40 u past the nose and 3 u up
+(`lookAheadDistance` / `lookAheadLift`, `CustomCameraController.LookPoint`). Until then it carried the
+Squirrel's (flat, 17 u straight behind, aimed at the hull). The field of view stays the player's setting.
+
+**The AI hands the hull back clean.** The lava lamp flies the menu Stoat on AI; its path-watching autopilot
+lays pairs there. When you click to fly, `StoatDipoleExecutor.HandBackAiHold` lets go of whatever the AI was
+pressing (through the replicated stop), so the AI's pair closes. Before it the press stayed held forever:
+the pair laid in the menu stayed open and its field flung your hull from the first frame of freestyle,
+which read as "a black hole spawned in the centre, the camera off the vessel".
+
 ## 4. Files
 
 | | |
@@ -99,7 +126,8 @@ config edit — logged as a follow-up, not done here.
 | Config | `Data Containers/StoatDipoleConfigSO.cs` → `_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset` |
 | Triggers | `Data Containers/StoatDipoleActionSO.cs` → `StoatDipoleLeftAction` / `StoatDipoleRightAction` |
 | Platform hooks | `VesselTransformer.FlightTimeScale`, `BlackHole.PrismCapture` / `CrystalStripShare` / `DomainTint`, `Prism.Vanish`, `BlackHoleCrystalStrip`, `R_VesselActionHandler.NetStoatDipole*` |
-| Prefab + assets | `Tools/Build/author_stoat_assets.py` stage 4 (`--check`, `--self-test`) |
+| Prefab + assets | `Tools/Build/author_stoat_assets.py` stages 4-5 (`--check`, `--self-test`) |
+| Camera | `_SO_Assets/Camera/StoatCameraSettingsSO.asset` (stage 5) |
 | Arcade | `Arcade/WARPLINE.md` (the Time race), `Arcade/SLINGSHOT.md` (now flown on the dipole) |
 
 Audio slots ship **empty** (`openEvent`, `annihilateEvent`, `warpEvent` on the config).

@@ -9,9 +9,9 @@ namespace CosmicShore.ScriptableObjects
     /// A black hole has two numbers: its STRENGTH, which sets the gravitational parameter
     /// (<c>GM</c>, what pulls), and its SIZE, the event-horizon radius (<c>r_s</c>, what swallows
     /// and what the lens draws). A hole spawned with size 0 derives its size from its strength
-    /// (<see cref="HorizonRadius(float)"/>), so the console's <c>blackhole spawn 10</c> and a
-    /// designer's asset edit reach the same physics; the Black Hole tool (<c>blackhole tool on</c>)
-    /// sets size explicitly from the Spawn section below. The influence radius (how far out mass is
+    /// (<see cref="HorizonRadius(float)"/>), so a strength alone reaches the same physics
+    /// as a designer's asset edit; the Stoat's dipole sets size explicitly
+    /// (StoatDipoleConfig). The influence radius (how far out mass is
     /// simulated at all) follows from GM and r_s plus the acceleration floor below which a pull is
     /// not worth a body.
     ///
@@ -206,58 +206,15 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 2f)]
         [SerializeField] float whiteCoreSkyMix = 0.8f;
 
-        [Header("Spawn (the Black Hole tool — B, or blackhole tool on; Shift+B spawns)")]
-        [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
-                 "Spawn Horizon Radius at 0 the strength also sets the size.")]
-        [Range(0f, 100f)]
-        [SerializeField] float spawnStrength = 10f;
-
-        [Tooltip("SIZE of a hole the tool spawns: its event-horizon radius r_s, world units. On screen " +
-                 "the black shadow is ~2.6 r_s in radius and the lens bends the scene out to Lens Radius " +
-                 "Multiplier r_s. 0 = derived from strength (Horizon Per Strength x strength, at least " +
-                 "Min Horizon Radius).")]
-        [Range(0f, 200f)]
-        [SerializeField] float spawnHorizonRadius = 0f;
-
-        [Tooltip("ON: a spawn (the tool's Spawn button, Shift+B, `blackhole spawn` with no strength) goes " +
-                 "straight AHEAD of the camera you are looking through — while flying, your vessel's " +
-                 "camera — Spawn Distance Horizons away. OFF: it goes to Spawn Position.")]
-        [SerializeField] bool spawnAheadOfCamera = true;
-
-        [Tooltip("How far ahead of the camera a spawn lands, in HORIZON RADII (with Spawn Ahead Of Camera " +
-                 "on). In horizon radii because a hole is big for its strength: its shadow is ~2.6 r_s in " +
-                 "radius, so much nearer than 3 r_s the camera starts inside the shadow and the vessel " +
-                 "inside the strong pull. 6 is 120 u for a strength-10 hole (r_s 20).")]
-        [Range(3f, 100f)]
-        [SerializeField] float spawnDistanceHorizons = 6f;
-
-        [Tooltip("WHERE a spawn goes when Spawn Ahead Of Camera is off: the hole's centre, world space.")]
-        [SerializeField] Vector3 spawnPosition = Vector3.zero;
-
-        [Tooltip("Velocity a spawned hole travels at, u/s, world space. Zero parks it at the spawn " +
-                 "position; a moving hole is what sets the mass it passes ORBITING (it pulls, it does " +
-                 "not tow).")]
-        [SerializeField] Vector3 spawnVelocity = Vector3.zero;
-
-        [Tooltip("Spin axis of a spawned hole, world space: the frame dragging winds infalling mass " +
-                 "around it, in the plane perpendicular to it.")]
-        [SerializeField] Vector3 spawnSpinAxis = Vector3.forward;
-
         [Header("Pair (a black hole and a white hole born together — Docs/BLACK_HOLE.md §11)")]
-        [Tooltip("How far AHEAD of the camera (or the vessel) the pair's midpoint is placed, in horizon radii " +
-                 "of the spawned holes. 0 puts the midpoint level with the camera, the holes straight out to " +
-                 "its left and right.")]
-        [Range(0f, 50f)]
-        [SerializeField] float pairAheadHorizons = 3f;
-
         [Tooltip("Each hole's distance from the pair's midpoint at birth, in horizon radii — the black hole " +
                  "to one side, the white hole to the other, on the camera's (the vessel's) own horizontal. " +
                  "Nearer than ~3 the vessel between them sits inside both shadows.")]
         [Range(1.5f, 30f)]
         [SerializeField] float pairHalfGapHorizons = 4f;
 
-        [Tooltip("How fast the two holes CLOSE on each other once let go, u/s (a tool pair is let go at birth; " +
-                 "the Stoat's when its trigger is released). They fall together, accelerating to this over " +
+        [Tooltip("How fast the two holes CLOSE on each other once let go, u/s (the Stoat's " +
+                 "when its trigger is released). They fall together, accelerating to this over " +
                  "pairCloseRampSeconds, and annihilate where their horizons touch.")]
         [Range(0f, 200f)]
         [SerializeField] float pairDriftSpeed = 20f;
@@ -272,8 +229,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float pairCloseRampSeconds = 0.6f;
 
         [Header("Pair style (Docs/BLACK_HOLE.md §13)")]
-        [Tooltip("Which wormhole pair every pair spawn lays — the Stoat's sling, the tool's Pair buttons, N/M and " +
-                 "`blackhole pair`. OFF: the DRIFT pair (this branch, §11): a black attractor with a shadow and a " +
+        [Tooltip("Which wormhole pair every pair spawn lays — the Stoat's sling. " +
+                 "OFF: the DRIFT pair (this branch, §11): a black attractor with a shadow and a " +
                  "white-hot repulsor, the physical pull, drifting apart and annihilating over pairLifetime (the " +
                  "Stoat's own sling life on StoatSlingConfig). ON: the CRYSTAL wormhole (charming-cerf, §12): two " +
                  "smooth wells with the graded lens and the felt pull, seamless mouths that carry the pilot through, " +
@@ -351,13 +308,6 @@ namespace CosmicShore.ScriptableObjects
         [Range(32, 1024)]
         [SerializeField] int crystalMouthPanoramaFaceSize = 256;
 
-        public float SpawnStrength => Mathf.Max(0f, spawnStrength);
-        public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
-        public bool SpawnAheadOfCamera => spawnAheadOfCamera;
-        public float SpawnDistanceHorizons => Mathf.Clamp(spawnDistanceHorizons, 3f, 100f);
-        public Vector3 SpawnPosition => spawnPosition;
-        public Vector3 SpawnVelocity => spawnVelocity;
-        public Vector3 SpawnSpinAxis => spawnSpinAxis.sqrMagnitude > 1e-6f ? spawnSpinAxis.normalized : Vector3.forward;
 
         public bool LensEnabled => lensEnabled;
         public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
@@ -367,14 +317,13 @@ namespace CosmicShore.ScriptableObjects
         public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
         public float WhiteCoreBrightness => Mathf.Clamp(whiteCoreBrightness, 0f, 16f);
         public float WhiteCoreSkyMix => Mathf.Clamp(whiteCoreSkyMix, 0f, 2f);
-        public float PairAheadHorizons => Mathf.Clamp(pairAheadHorizons, 0f, 50f);
         public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
         public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
         public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);
         public float PairCloseRampSeconds => Mathf.Clamp(pairCloseRampSeconds, 0f, 5f);
 
-        /// <summary>The pair style (§13): false = the drift pair, true = the crystal wormhole. Settable: the
-        /// tool's style switch and <c>blackhole style</c> flip it live, like every other field the tool edits.</summary>
+        /// <summary>The pair style (§13): false = the drift pair, true = the crystal wormhole. Settable, so a
+        /// test can flip it.</summary>
         public bool CrystalPairs { get => crystalPairs; set => crystalPairs = value; }
         public float CrystalFormSeconds => Mathf.Clamp(crystalFormSeconds, 0.05f, 10f);
         public float CrystalStandSeconds => Mathf.Clamp(crystalStandSeconds, 0.01f, 30f);

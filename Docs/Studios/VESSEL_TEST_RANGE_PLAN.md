@@ -43,9 +43,9 @@ web page (A), its `engineMode` (B, exists), and **range presets** (B and C, §4)
 | AI seat counts and difficulty | `GameDataSO.ConfigurePlayerCounts`, the launch panel's difficulty row | `BenchmarkSceneLauncher.cs` shows the whole launch path in 15 lines |
 | Watch another pilot | `SpectatorController` re-points the follow rig at any vessel, plus a slow **dolly** orbit, and moves the occlusion corridor and vision shading onto the watched hull | `Controller/Multiplayer/SpectatorController.cs`, `Docs/PartySystem/SPECTATOR.md` |
 | Watch any pilot from the editor while you play | **Third Eye** window: its own hidden camera rendered into an editor window, Chase / Follow / Free fly / Free orbit on any pilot, AI aim overlay, renders while paused. Editor-only, so it does not replace R1's in-game free camera for Amoebius and players | `Assets/_Scripts/Editor/AI/ThirdEyeWindow.cs`, `/vessel-ai` §4.1 |
-| A free camera for test scenes | `MouseOrbitCamera`: pan, orbit, zoom about a pivot, WASD, runs on unscaled time; config in an SO | `Controller/Camera/MouseOrbitCamera.cs` (used by `BlackHoleTestHarness`) |
+| A free camera for test scenes | `MouseOrbitCamera`: pan, orbit, zoom about a pivot, WASD, runs on unscaled time; config in an SO | `Controller/Camera/MouseOrbitCamera.cs` (unused since the black hole test scene was retired 2026-10-10; kept for the Test Range) |
 | A camera that does not disturb gameplay | `CameraManager.BeginManualReplayCamera()` (AstroLeague replays, spectator dolly) | `Controller/Managers/CameraManager.cs` |
-| A test-rig pattern | `BlackHoleTestHarness`: dev-only (`#if DEVELOPMENT_BUILD \|\| UNITY_EDITOR`), a `DiagnosticsHUD` section, a console command, a setup tool | `Utility/Tools/BlackHoleTestHarness.cs`, `Docs/BLACK_HOLE.md` §7 |
+| A test-rig pattern | The retired `BlackHoleTestHarness` (deleted 2026-10-10, `Docs/BLACK_HOLE.md` §6): dev-only (`#if DEVELOPMENT_BUILD \|\| UNITY_EDITOR`), a `DiagnosticsHUD` section, a console command, a setup tool. Read it from git history (`git log --diff-filter=D -- Assets/_Scripts/Utility/Tools/BlackHoleTestHarness.cs`) | — |
 | Weak-device simulation | `DeviceTier` (Desktop / MobileHigh / MobileLow), simulated from **FrogletTools ▸ Performance ▸ Device Tier** | `System/Platform/DeviceTierClassifier.cs`, `Editor/DeviceTierWindow.cs` |
 | A cheap look at a whole cell | `CellMiniatureBuilder`: the cell as one mesh, no prisms (Mode Preview's scale model) | `Docs/ModePreview/ARCHITECTURE.md` §1.1 |
 | Time scale for AI runs | The training runner scales `Time.timeScale` and restores it | `Utility/AITraining/Runner/TrainingAutoLauncher.cs` |
@@ -57,7 +57,7 @@ time controls, and a graphics-fidelity switch.
 
 ## 3. The Test Range harness (to build)
 
-`VesselTestRange` is a dev-only `MonoBehaviour`. Like `BlackHoleTestHarness` it compiles only in
+`VesselTestRange` is a dev-only `MonoBehaviour`. Like the retired `BlackHoleTestHarness` did, it compiles only in
 the Editor and development builds, so it never ships (`Docs/CONDITIONAL_COMPILATION.md`, and
 `check_conditional_compilation.py` first). It installs into **any** gameplay scene after the mode has
 started, so every real map is a test range with no copied scenes.

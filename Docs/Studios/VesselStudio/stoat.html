@@ -3005,6 +3005,10 @@
         c.textAlign = 'left'; c.font = font(9.5, 600); c.fillStyle = st.col; c.fillText(st.name, x0, y);
       });
     }
+    if (!aiOn && wasIdleAi && mode === 'fly') {
+      c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = '#9dff2e';
+      c.fillText('AI HOLDING YOUR HULL · touch any control to fly', cw / 2, ch - pad - 4 * sc);
+    }
     if (aiOn && mode === 'fly') {   // the sim lab: say who is flying, and as what
       const lead = STYLES.filter((st) => P[st.key] > 0.6).map((st) => st.name), noisy = P.aiNoise > 0.05;
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = lead.length === 1 ? STYLE_BY_KEY['style' + lead[0]].col : ink;
@@ -4561,12 +4565,35 @@
     requestAnimationFrame(frame);
   }
   let manualNow = 0;
+  const IDLE_TAKEOVER_S = 3;
+  let idleFor = 0, wasIdleAi = false;
+  // Is anybody touching the controls right now? Read without side effects (pollInput tracks the trigger holds).
+  function humanOnControls() {
+    if (keys.size) return true;
+    if (touch.used && (touch.lt > 0.05 || touch.rt > 0.05 || Math.hypot(touch.L.x, touch.L.y) > 0.15 || Math.hypot(touch.R.x, touch.R.y) > 0.15)) return true;
+    const g = readPad(); if (!g) return false;
+    for (let i = 0; i < 4; i++) if (Math.abs(g.axes[i] || 0) > 0.2) return true;
+    for (let i = 0; i < g.buttons.length; i++) if (g.buttons[i] && (g.buttons[i].pressed || g.buttons[i].value > 0.05)) return true;
+    return false;
+  }
+  // Your hull's input this step: yours, or (Is AI ticked, or nobody on the controls for IDLE_TAKEOVER_S) the AI's.
+  function pilotInput(dt) {
+    if (aiOn) return youAiInput(dt);
+    if (mode === 'fly' && race !== 'ready') { if (humanOnControls()) idleFor = 0; else idleFor += dt; } else idleFor = 0;   // racing, and after the finish too
+    const idleAi = idleFor >= IDLE_TAKEOVER_S;
+    if (idleAi !== wasIdleAi) { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); }   // a pair is never handed over
+    wasIdleAi = idleAi;
+    return idleAi && mode === 'fly' ? youAiInput(dt) : pollInput(dt);
+  }
   function advance(dt, now) {
     resize();
+    // Your hull with nobody on the controls: after IDLE_TAKEOVER_S the AI flies it for you toward the next ring,
+    // and the first stick, key, trigger or touch hands it back. Without this an unattended hull (you watching a
+    // rival) kept its last heading forever and left the course for infinity.
     if (aiOn && mode === 'fly') {
       const n = Math.max(1, Math.round(simSpeed)), h = dt * simSpeed / n;
       for (let i = 0; i < n; i++) simStep(h, youAiInput(h), i === n - 1);
-    } else simStep(dt, pollInput(dt), true);
+    } else simStep(dt, pilotInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
     syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
@@ -4686,7 +4713,7 @@
   buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? youAiInput(dt) : pollInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, aiOn ? youAiInput(dt) : pollInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
+  window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, STYLE_BRAIN, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera, get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
   Object.assign(window.__stoatStudio, {

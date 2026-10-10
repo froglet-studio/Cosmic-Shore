@@ -60,10 +60,16 @@ MonoBehaviour:
   dotGap: 10
   openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
   warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
-  autopilotHold01: 0.8
+  autopilotHold01: 1
   autopilotMinDistance: 300
   autopilotHoldSeconds: 4
   autopilotIntervalSeconds: 2
+  autopilotWatchPath: 1
+  autopilotLetGoNear: 60
+  autopilotDrySeconds: 0.5
+  autopilotMinHoldSeconds: 0.8
+  autopilotMaxHoldSeconds: 15
+  autopilotRelaySeconds: 0.25
   openEvent:
     Guid:
       Data1: 0

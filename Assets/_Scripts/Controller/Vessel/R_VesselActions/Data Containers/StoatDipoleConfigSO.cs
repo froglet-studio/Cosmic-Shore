@@ -139,8 +139,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] Color warpedColor = new(157f / 255f, 1f, 46f / 255f, 1f);
 
         [Header("Autopilot")]
-        [Tooltip("The autopilot's squeeze on each trigger it pulls, 0..1.")]
-        [SerializeField, Range(0f, 1f)] float autopilotHold01 = 0.8f;
+        [Tooltip("The autopilot's squeeze on each trigger it pulls, 0..1. The studio's aiWarpQ: 1 (a full squeeze) " +
+                 "measured fastest on every course.")]
+        [SerializeField, Range(0f, 1f)] float autopilotHold01 = 1f;
 
         [Tooltip("The autopilot lays a pair only when its target is at least this far away, world units.")]
         [SerializeField, Min(0f)] float autopilotMinDistance = 300f;

@@ -17,6 +17,15 @@ namespace CosmicShore.Gameplay
         
         [Tooltip("Follow Offset Values")]
         public Vector3 followOffset = new Vector3(0f, 10f, -20f);
+
+        [Tooltip("How far ahead of the vessel's nose the camera looks, world units. 0 (every vessel that does not " +
+                 "set it) looks at the hull itself. A chase camera that looks ahead keeps the hull low in the frame " +
+                 "and shows where it is going: the Stoat's is 40, its studio's chase camera.")]
+        public float lookAheadDistance = 0f;
+
+        [Tooltip("How far above the vessel (along its up) the camera's look point sits, world units. 0 = the hull's " +
+                 "own height. The Stoat's is 3, its studio's chase camera.")]
+        public float lookAheadLift = 0f;
         
         [Tooltip("This is a new name for the close cam distance value.")]
         public float dynamicMinDistance = 10f;
