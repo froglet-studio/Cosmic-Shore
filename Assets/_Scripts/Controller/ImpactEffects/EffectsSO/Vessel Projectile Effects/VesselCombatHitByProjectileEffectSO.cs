@@ -79,11 +79,10 @@ namespace CosmicShore.Gameplay
             // that a future weapon which CAN hit its own domain cannot start paying teammates.
             if (victimStatus.Domain == shooterStatus.Domain) return;
 
-            string shooterName = shooterStatus.PlayerName;
-            string victimName = victimStatus.PlayerName;
-
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass,
-                                               sameVictimCooldownSeconds, out int supersededRank))
+            // One gate for the score and the petals: a warded victim is neither scored on nor
+            // robbed (CombatHitDrain.TryAdmit). A round is a gun round, classed Other.
+            if (!CombatHitDrain.TryAdmit(victimStatus, shooterStatus, hitClass, sameVictimCooldownSeconds,
+                                         ElementalDebuffSources.Other, out int supersededRank))
                 return;
 
             // The round's own bite, priced off the same list its points come from - ten points
@@ -98,8 +97,8 @@ namespace CosmicShore.Gameplay
 
             onCombatHitLanded.Raise(new CombatHitStats
             {
-                ShooterName = shooterName,
-                VictimName = victimName,
+                ShooterName = shooterStatus.PlayerName,
+                VictimName = victimStatus.PlayerName,
                 HitClass = hitClass,
                 SupersededRank = supersededRank,
             });

@@ -47,16 +47,6 @@ namespace CosmicShore.Gameplay
                  "its own blast) on a clean hit.")]
         [SerializeField, Min(0f)] float sameVictimCooldownSeconds = 0.5f;
 
-        [Tooltip("Only score if the victim could actually BE debuffed - i.e. is not warded against " +
-                 "Explosion-class elemental debuffs. Off for a missile (a rocket that hits you hit " +
-                 "you, whatever your immunity state); ON for a DEBUFF-class blast, where the whole " +
-                 "event being scored IS the element drain and a warded pilot takes none of it " +
-                 "(ResourceSystem.ApplyElementalEffect drops negative magnitudes while immune). " +
-                 "Without this the scoring effect and the debuff effect - siblings in one " +
-                 "container, dispatched from one contact - would disagree about whether " +
-                 "anything happened.")]
-        [SerializeField] bool requireDebuffableVictim = false;
-
         [Tooltip("Only report the hit on the machine that OWNS the shooting vessel. Off for a " +
                  "weapon whose blast exists on exactly one machine - a projectile is a pooled " +
                  "local object, so the machine that spawned it is the only one that can raise " +
@@ -92,12 +82,6 @@ namespace CosmicShore.Gameplay
             if (!ElementalTransfer.IsDecidedHere(shooterStatus)) return;
             if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
 
-            // The score follows the effect: no drain, no point. Asked about THIS blast's own debuff
-            // class - a victim warded only against danger prisms is still fully debuffable here, and
-            // scoring must agree with the sibling debuff effect rather than with a broader state.
-            if (requireDebuffableVictim &&
-                victimStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.Explosion)) return;
-
             // Never score a pilot for their own blast, and never for a teammate's. The
             // ExplosionImpactor already skips own-domain vessels unless the blast is running
             // friendly fire (the CHARGE-5 'Domain-Safe Skybursts' gate flips exactly that), so
@@ -106,11 +90,13 @@ namespace CosmicShore.Gameplay
             if (victimStatus.Domain == shooterStatus.Domain) return;
             if (ReferenceEquals(victimStatus, shooterStatus)) return;
 
-            string shooterName = shooterStatus.PlayerName;
-            string victimName = victimStatus.PlayerName;
-
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass,
-                                               sameVictimCooldownSeconds, out int supersededRank))
+            // One gate for the score and the petals: a warded victim is neither scored on nor
+            // robbed (CombatHitDrain.TryAdmit). Asked about THIS blast's own class, Explosion, the
+            // same one the drain below and the sibling debuff effect are warded by. This used to be
+            // an opt-in flag (requireDebuffableVictim) that rockets left off, so a rocket scored
+            // through a ward its victim's petals were safe behind.
+            if (!CombatHitDrain.TryAdmit(victimStatus, shooterStatus, hitClass, sameVictimCooldownSeconds,
+                                         ElementalDebuffSources.Explosion, out int supersededRank))
                 return;
 
             // A hit bites in proportion to what it is worth - ten points to the petal, netted
@@ -129,8 +115,8 @@ namespace CosmicShore.Gameplay
 
             onCombatHitLanded.Raise(new CombatHitStats
             {
-                ShooterName = shooterName,
-                VictimName = victimName,
+                ShooterName = shooterStatus.PlayerName,
+                VictimName = victimStatus.PlayerName,
                 HitClass = hitClass,
                 SupersededRank = supersededRank,
             });

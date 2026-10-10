@@ -69,7 +69,7 @@ They now share ONE primitive — **`BoostRingBuilder`** (`Controller/Environment
 | Case | Path |
 |---|---|
 | Squirrel omnicrystal hit | `SquirrelVesselExplosionByCrystalEffect` → `AOEShieldedRingSpawner` → `AOEBlockSpawner` + `SpawnableRings` (shielded) |
-| Joust (overtake) | `VesselExplosionBySkimmerEffect` → `AOEDangerRingSpawner` → same `AOEBlockSpawner` + `SpawnableRings` (danger) |
+| Joust (overtake) | ~~`VesselExplosionBySkimmerEffect` → `AOEDangerRingSpawner`~~ RETIRED 2026-10-10: the joust no longer lays a danger ring in the overtaken pilot's path (PvP is petals only); `_aoePrefabs` is empty and the effect keeps the joust point, toast and audio |
 | Tube ability | `SquirrelTubeActionExecutor` — one `LayRing` per ring along the axis |
 
 The two guarantees that make the skim deterministic:

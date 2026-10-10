@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// cavitation container already carried the debuff (a pilot in the plate has been bent in
     /// every mode since the hull shipped) and NO scoring report and NO lifeform-crystal effect.
     /// Both are added: a <c>VesselCombatHitByExplosionEffectSO</c> stamped Debuff-class with
-    /// <c>requireDebuffableVictim</c> (the score follows the effect, The Bends' rule) and an
+    /// the score following the effect (<c>CombatHitDrain.TryAdmit</c>, now every reporter's rule) and an
     /// <c>ExplosionWitherLifeformByCrystalEffectSO</c> (the Sparrow warhead's creature kill, on a
     /// plate). Both land platform-wide - the plate now kills wildlife in Scramble and Tollway too,
     /// where it was already shredding their bodies - and only this mode's rule PAYS for either.</para>

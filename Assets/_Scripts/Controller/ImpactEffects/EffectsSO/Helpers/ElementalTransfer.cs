@@ -18,7 +18,8 @@ namespace CosmicShore.Gameplay
     /// returns how many truly came loose. Everything here hands out exactly that number. So a
     /// caller cannot over-pay an attacker, cannot mint a crystal out of a pilot who had nothing,
     /// and cannot leak a fraction - and a warded pilot yields nothing at all, which is what keeps
-    /// the scoring effects that ask <c>requireDebuffableVictim</c> agreeing with what happened.
+    /// every scoring effect (which admits through <c>CombatHitDrain.TryAdmit</c> on the same ward)
+    /// agreeing with what happened.
     /// </para>
     ///
     /// <para><b>Why the form keys on the weapon CLASS.</b> Contact verbs steal and ranged verbs
