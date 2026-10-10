@@ -262,7 +262,7 @@ namespace CosmicShore.Launcher
                         run = () => OpenUrl(cat.LiveUrl(s.File));
                         break;
                 }
-                list.Add(new PageAction(a.Label, ok, tip, run));
+                list.Add(new PageAction(a.Label.ToUpperInvariant(), ok, tip, run));   // the hub sets its card labels in capitals (CSS)
             }
             return list;
         }
