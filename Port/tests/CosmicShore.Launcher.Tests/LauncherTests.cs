@@ -263,6 +263,44 @@ namespace CosmicShore.Launcher.Tests
             Assert.Contains(lines, l => l.Text.Contains("unsaved change"));
         }
 
+        /// <summary>
+        /// "Beside my clone" when the clone's origin is a fork (or an old URL) without the branch PLAY offers: the branch
+        /// list reads the configured repository, so the fetch must too. Before the fix this failed with
+        /// "fatal: couldn't find remote ref Ys-bleeding-edge" (2026-10-10).
+        /// </summary>
+        [Fact]
+        public void Worktree_fetches_from_the_configured_repository_when_the_clones_origin_lacks_the_branch()
+        {
+            string root = Path.Combine(Path.GetTempPath(), "prisma-wt-" + Guid.NewGuid().ToString("N")[..8]);
+            string canon = Path.Combine(root, "canon.git"), fork = Path.Combine(root, "fork.git"), src = Path.Combine(root, "src"), clone = Path.Combine(root, "Cosmic-Shore");
+            Directory.CreateDirectory(src);
+            Setup.Git(root, "init", "-q", "--bare", canon);
+            Setup.Git(root, "init", "-q", "--bare", fork);
+            Setup.Git(src, "init", "-q");
+            Setup.Git(src, "config", "user.email", "t@example.com");
+            Setup.Git(src, "config", "user.name", "T");
+            Directory.CreateDirectory(Path.Combine(src, "Port", "src", "CosmicShore.Player"));
+            File.WriteAllText(Path.Combine(src, "Port", "src", "CosmicShore.Player", "CosmicShore.Player.csproj"), "<Project />\n");
+            Setup.Git(src, "add", "-A");
+            Setup.Git(src, "commit", "-q", "-m", "engine");
+            Setup.Git(src, "push", "-q", canon, "HEAD:refs/heads/bleeding-edge");
+            Setup.Git(src, "push", "-q", canon, "HEAD:refs/heads/Ys-bleeding-edge");   // only the real repository has it
+            Setup.Git(src, "push", "-q", fork, "HEAD:refs/heads/bleeding-edge");
+            Setup.Git(root, "clone", "-q", fork, clone);                                  // the user's clone: origin = the fork
+
+            var s = new LauncherSettings { Workspace = WorkspaceMode.WorktreeOfMyClone, MyClonePath = clone, RemoteUrl = canon };
+            var tools = new Toolchain();
+            tools.Detect(s);
+            var ws = new Workspace(s, tools);
+            var log = new LogBuffer();
+            bool ok = ws.Sync("Ys-bleeding-edge", log, (_, _) => { }, default).Result;
+            var lines = new System.Collections.Generic.List<LogLine>();
+            log.CopyTo(lines);
+            Assert.True(ok, string.Join("\n", lines.Select(l => l.Text)));
+            Assert.True(ws.HasEngine);
+            Assert.Equal(Setup.Git(src, "rev-parse", "HEAD"), ws.HeadSha());
+        }
+
         [Theory]
         [InlineData("prisma/fix-score", true)]
         [InlineData("has space", false)]

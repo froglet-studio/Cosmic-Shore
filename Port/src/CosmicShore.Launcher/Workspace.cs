@@ -116,8 +116,17 @@ namespace CosmicShore.Launcher
                     return false;
                 }
                 progress(0, "Fetching " + branch);
-                var f = await ProcessRunner.Run(Git, new[] { "-C", clone, "fetch", "--progress", "origin", branch }, null, log, ct, GitEnv(), OnGit);
-                if (f.ExitCode != 0) return Fail(log, "git fetch failed. Check the branch name; for a private repository sign in to GitHub or paste a token in OPTIONS > SOURCE.");
+                // Fetch from the repository the branch list comes from (ListBranches, RemoteTip: _s.RemoteUrl), not from
+                // whatever the clone calls "origin": a clone of a fork, or one whose origin is an old URL, does not carry
+                // every branch PLAY offers, and its fetch failed with "couldn't find remote ref" (2026-10-10). The clone's
+                // own origin is the fallback, for a RemoteUrl this machine cannot reach.
+                var f = await ProcessRunner.Run(Git, new[] { "-C", clone, "fetch", "--progress", _s.RemoteUrl, branch }, null, log, ct, GitEnv(), OnGit);
+                if (f.ExitCode != 0)
+                {
+                    log.Add(LogKind.Info, $"Fetching {branch} from {_s.RemoteUrl} failed; trying the clone's own origin.");
+                    f = await ProcessRunner.Run(Git, new[] { "-C", clone, "fetch", "--progress", "origin", branch }, null, log, ct, GitEnv(), OnGit);
+                }
+                if (f.ExitCode != 0) return Fail(log, $"git fetch failed: neither {_s.RemoteUrl} nor the clone's origin has \"{branch}\". Check the branch name and OPTIONS > SOURCE (the repository URL); for a private repository sign in to GitHub or paste a token there.");
                 var sha = (await ProcessRunner.Run(Git, new[] { "-C", clone, "rev-parse", "FETCH_HEAD" }, null, log, ct, GitEnv(), quiet: true)).StdOut.Trim();
                 if (!Exists)
                 {
