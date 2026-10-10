@@ -179,10 +179,10 @@ namespace CosmicShore.Launcher
                 _domainHex = File.Exists(js) ? StudioCatalog.ParseDomains(File.ReadAllText(js)) : new();
                 _domainRoot = root;
             }
-            float cw = ImGui.GetContentRegionAvail().X - 4;
-            int cols = Math.Max(1, (int)((cw + CardGap) / (CardMinW + CardGap)));
-            float cardW = (cw - CardGap * (cols - 1)) / cols;
+            float cw = Math.Min(1120, ImGui.GetContentRegionAvail().X - 4);   // the hub's column (max-width 1120px)
             var studios = cat.Studios;
+            int cols = Math.Clamp((int)((cw + CardGap) / (CardMinW + CardGap)), 1, Math.Max(1, studios.Count));   // auto-fit, as the hub's grid
+            float cardW = (cw - CardGap * (cols - 1)) / cols;
             for (int i = 0; i < studios.Count; i += cols)
             {
                 var top = ImGui.GetCursorScreenPos();
@@ -297,8 +297,9 @@ namespace CosmicShore.Launcher
             ImGui.PushFont(Neon.Mono);
             float specH = s.Spec.Sum(r => ImGui.CalcTextSize(r.Value, false, inner - SpecKeyW(s)).Y + 2);
             ImGui.PopFont();
+            float gaps = (s.Spec.Count + 1) * ImGui.GetStyle().ItemSpacing.Y;   // each text item ends with the item spacing
             int rows = ButtonRows(cat.CardActions.Select(x => x.Label), inner);
-            return CardPad + PreviewH + 12 + 36 + 8 + sumH + 10 + specH + 14 + rows * 46 + 22 + CardPad;
+            return CardPad + PreviewH + 12 + 36 + 8 + sumH + gaps + 10 + specH + 14 + rows * 46 + 22 + CardPad;
         }
 
         static float SpecKeyW(StudioCatalog.Studio s)
