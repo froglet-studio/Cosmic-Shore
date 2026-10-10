@@ -22,8 +22,8 @@ namespace CosmicShore.Editor
     /// installs its own SDK the first time START is pressed, after which builds work. Prisma is told
     /// which clone opened it, so its PLAY page follows the branch Unity has checked out. FrogletTools > Amoebius > Vessel
     /// Studio Page opens it on its VESSEL STUDIO page (<c>--page studios</c>); FrogletTools > Vessels > Vessel Studio
-    /// (<c>Studios/VesselStudioWindow</c>, the studio home) opens the studio pages themselves (the artifact's own files)
-    /// in an app window through <see cref="OpenStudioWindow"/>.
+    /// (<c>Studios/VesselStudioWindow</c>, the studio home) opens the studio pages themselves through <see cref="OpenStudio"/>:
+    /// built from this checkout and served by Amoebius (/vessel-studio D33), never the raw files.
     /// READER: writes only under the gitignored <c>Library/</c>, never assets - no ship panel.
     /// </summary>
     public static class LaunchPrisma
@@ -84,14 +84,61 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// A studio page as its own app window (Edge, always on Windows 10/11, or Chrome: <c>--app</c>, no tabs or address
-        /// bar), with a window profile under <c>Library/</c> so the studio's layout is remembered; the default browser
-        /// when neither is installed. The Vessel Studio home's cards and OPEN THE HUB use it; Amoebius's OPEN IN AMOEBIUS
-        /// does the same (StudioCatalog.AppWindowArgs).
+        /// A Vessel Studio page (<paramref name="file"/>: <c>index.html</c>, <c>stoat.html</c>, ...) the way every surface opens
+        /// it (/vessel-studio D33): the build of THIS checkout's branch, served by Amoebius on 127.0.0.1, with Sync, Ask,
+        /// Requests and Decisions working. An Amoebius already serving this checkout (its <c>&lt;data&gt;/studio/server.json</c>,
+        /// process alive) opens it at once in an app window; otherwise Amoebius starts with <c>--page studios:&lt;file&gt;</c>
+        /// and opens it itself. The home's cards and OPEN THE HUB use it.
         /// </summary>
-        internal static void OpenStudioWindow(string pagePath)
+        internal static void OpenStudio(string file)
         {
-            string url = new Uri(Path.GetFullPath(pagePath)).AbsoluteUri;
+            string served = RunningStudioServer();
+            if (served != null)
+            {
+                OpenStudioWindow(served + Uri.EscapeDataString(file) + "#amoebius");
+                return;
+            }
+            _openPage = "studios:" + file;
+            Launch();
+        }
+
+        [Serializable]
+        class StudioServerFile { public int pid; public int port; public string @base; public string root; }
+
+        /// <summary>The base URL of an Amoebius studio server already serving this checkout, else null.</summary>
+        static string RunningStudioServer()
+        {
+            try
+            {
+                string data = Environment.GetEnvironmentVariable("PRISMA_DATA_DIR");
+                if (string.IsNullOrEmpty(data))
+                    data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Prisma");
+                string path = Path.Combine(data, "studio", "server.json");
+                if (!File.Exists(path)) return null;
+                var s = JsonUtility.FromJson<StudioServerFile>(File.ReadAllText(path));
+                if (s == null || s.port <= 0 || string.IsNullOrEmpty(s.@base) || !s.@base.StartsWith("http://127.0.0.1:", StringComparison.Ordinal)) return null;
+                if (!SamePath(s.root, Root)) return null;   // serving another checkout: start one for this branch
+                using (var p = Process.GetProcessById(s.pid)) if (p.HasExited) return null;
+                return s.@base;
+            }
+            catch (Exception) { return null; }   // no process with that id, unreadable file: start Amoebius
+        }
+
+        static bool SamePath(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
+            string Norm(string p) => Path.GetFullPath(p).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var cmp = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            return string.Equals(Norm(a), Norm(b), cmp);
+        }
+
+        /// <summary>
+        /// A served studio URL as its own app window (Edge, always on Windows 10/11, or Chrome: <c>--app</c>, no tabs or
+        /// address bar), with a window profile under <c>Library/</c> so the studio's layout is remembered; the default
+        /// browser when neither is installed. Amoebius's OPEN IN AMOEBIUS does the same (StudioCatalog.AppWindowArgs).
+        /// </summary>
+        static void OpenStudioWindow(string url)
+        {
             string profile = Path.Combine(Root, "Library", "VesselStudioWindow");
             foreach (var exe in AppBrowserCandidates())
             {

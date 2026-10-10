@@ -11,7 +11,10 @@ namespace CosmicShore.Editor.Studios
 {
     /// <summary>
     /// The Vessel Studio HOME: the web hub's front page (<c>Docs/Studios/VesselStudio/index.html</c>) in Unity, read
-    /// from the same files, so a studio added to <c>studios.json</c> shows up here with nothing else to change. The
+    /// from the same files, so a studio added to <c>studios.json</c> shows up here with nothing else to change. Its cards
+    /// are the hub's (/vessel-studio D34): the text, the spec rows and the buttons all come from <c>studios.json</c>
+    /// (<c>cardActions</c>: Open studio, PLAY IN ENGINE, TUNE IN UNITY, OPEN LIVE IN BROWSER, the same order as Amoebius's
+    /// VESSEL STUDIO page), never spelled here; <c>parity_gate.py</c> checks it. The
     /// colours are the studio's (<c>studio-theme.js</c>: the Stoat's night tokens and amber chrome; card accents from
     /// <c>studio-domains.js</c>), not the editor skin's: this page is a studio page.
     /// </summary>
@@ -26,14 +29,54 @@ namespace CosmicShore.Editor.Studios
         [Serializable]
         public sealed class Catalog
         {
-            public string web, mirror, hub;
+            public string web, mirror, hub, lede, fleetNote;
             public StudioEntry[] studios;
+            public string[] fleet;
+            public CardAction[] cardActions;
         }
 
         [Serializable]
         public sealed class StudioEntry
         {
-            public string id, name, file, kind, summary, accent, docs, engineMode, engineNote;
+            public string id, name, file, kind, chip, summary, accent, docs, engineMode, engineNote, preview;
+            public bool tuner;
+            public SpecRow[] spec;
+        }
+
+        /// <summary>A row under the card's summary (<c>spec</c>).</summary>
+        [Serializable]
+        public sealed class SpecRow { public string k, v; }
+
+        /// <summary>One of the card's buttons (<c>cardActions</c>): the hosts it works on, what the studio needs for it.</summary>
+        [Serializable]
+        public sealed class CardAction { public string id, label, on, needs, tip; }
+
+        /// <summary>A card button as this home shows it: in its place always; disabled with the reason when it does not apply.</summary>
+        public readonly struct CardButton
+        {
+            public readonly string Id, Label, Tip;
+            public readonly bool Enabled;
+            public CardButton(string id, string label, bool enabled, string tip) { Id = id; Label = label; Enabled = enabled; Tip = tip; }
+        }
+
+        /// <summary>
+        /// The card's buttons for <paramref name="s"/> on Unity, from the catalog's <c>cardActions</c> in their order (the same
+        /// rule as Amoebius's <c>StudioCatalog.Applies</c>). <paramref name="hasTuner"/>: Unity has the studio's tuning page. Pure, tested.
+        /// </summary>
+        public static List<CardButton> CardButtons(Catalog cat, StudioEntry s, bool hasTuner)
+        {
+            var list = new List<CardButton>();
+            foreach (var a in cat?.cardActions ?? Array.Empty<CardAction>())
+            {
+                if (a == null || string.IsNullOrEmpty(a.label)) continue;
+                bool here = Array.IndexOf((a.on ?? "").Split(','), "unity") >= 0;
+                string why = !here ? "Not in Unity." :
+                    a.needs == "engineMode" && string.IsNullOrEmpty(s.engineMode) ? "This vessel has no game mode in the engine yet." :
+                    a.needs == "tuner" && !(s.tuner && hasTuner) ? "No Unity tuning page for this vessel yet." :
+                    a.needs == "mirror" && string.IsNullOrEmpty(cat.mirror) ? "No live mirror in the catalog." : null;
+                list.Add(new CardButton(a.id, a.label.ToUpperInvariant(), why == null, why ?? a.tip ?? ""));   // capitals, as the hub's CSS shows them
+            }
+            return list;
         }
 
         // The studio look (studio-theme.js), night only: the stage and the hub are night whatever the editor skin.
@@ -82,6 +125,7 @@ namespace CosmicShore.Editor.Studios
         string[] _fleet = Array.Empty<string>();
         readonly Dictionary<string, Texture2D> _previewTex = new();
         readonly Dictionary<string, StudioPreviewCanvas> _previewCanvas = new();
+        readonly Dictionary<string, Texture2D> _thumbs = new();   // the baked previews (studios.json "preview")
         Vector2 _homeScroll;
         float _homeHeight = 900f;
         double _lastFrame;
@@ -97,7 +141,9 @@ namespace CosmicShore.Editor.Studios
                 _catalog = JsonUtility.FromJson<Catalog>(File.ReadAllText(StudioPath("studios.json")));
                 _domains = ParseDomains(File.ReadAllText(StudioPath("studio-domains.js")));
                 string hub = StudioPath("index.html");
-                _fleet = File.Exists(hub) ? ParseFleet(File.ReadAllText(hub)) : Array.Empty<string>();
+                _fleet = _catalog.fleet is { Length: > 0 } f ? f : File.Exists(hub) ? ParseFleet(File.ReadAllText(hub)) : Array.Empty<string>();
+                foreach (var t in _thumbs.Values) if (t) DestroyImmediate(t);
+                _thumbs.Clear();
             }
             catch (Exception e)
             {
@@ -157,7 +203,7 @@ namespace CosmicShore.Editor.Studios
                 EditorUtility.DisplayDialog("Vessel Studio", $"{StudioDir}/{file} is not in this checkout. Pull Ys-bleeding-edge.", "OK");
                 return;
             }
-            LaunchPrisma.OpenStudioWindow(path);
+            LaunchPrisma.OpenStudio(file);   // the build of this checkout, served by Amoebius (/vessel-studio D33)
         }
 
         /// <summary>Keeps the previews moving: a repaint at most 30 times a second, and only on the home page.</summary>
@@ -189,15 +235,13 @@ namespace CosmicShore.Editor.Studios
             GUI.Label(new Rect(x, y, vw, 46f), vessel, Look.H1);
             GUI.Label(new Rect(x + vw, y, cw - vw, 46f), "STUDIO", Look.Tinted(Look.H1, Look.Accent));
             y += 52f;
-            const string lede = "Pick a vessel and its studio opens: fly it with gamepad, keys or your phone's thumbs, switch its " +
-                                "play-style types and element levels, and read what every number does. The same pages open here, " +
-                                "in Amoebius, in the claude.ai artifact and in your phone's browser.";
+            string lede = _catalog?.lede ?? "Pick a vessel and its studio opens.";
             float lh = Look.Lede.CalcHeight(new GUIContent(lede), Mathf.Min(cw, 640f));
             GUI.Label(new Rect(x, y, Mathf.Min(cw, 640f), lh), lede, Look.Lede);
             y += lh + 12f;
 
             float bx = x;
-            if (Button(ref bx, y, "OPEN THE HUB", Look.Accent, true, "The web hub itself (index.html from this checkout) in its own window"))
+            if (Button(ref bx, y, "OPEN THE HUB", Look.Accent, true, "The web hub itself, built from this checkout and served by Amoebius, in its own window"))
                 OpenPage(_catalog?.hub ?? "index.html");
             if (Button(ref bx, y, "CLAUDE.AI ARTIFACT", Look.Accent, false, "The one Vessel Studio artifact: Ask, shared requests, the decision log and Sync live there"))
                 Application.OpenURL(_catalog?.web ?? StudioUrl);
@@ -240,15 +284,15 @@ namespace CosmicShore.Editor.Studios
                     fx += w + 6f;
                 }
                 y += 32f;
-                const string none = "No studio yet. Ask the studio agent (in the artifact, or Amoebius's AGENT) to start one; each needs the vessel's own numbers read from its assets first.";
+                string none = _catalog?.fleetNote ?? "No studio yet.";
                 float nh = Look.Note.CalcHeight(new GUIContent(none), cw);
                 GUI.Label(new Rect(x, y, cw, nh), none, Look.Note);
                 y += nh + 18f;
             }
 
-            const string foot = "A studio opens in its own window: the artifact's own pages from this checkout, so it looks and plays exactly as on claude.ai " +
-                                "(Unity has no web view, so it is an Edge or Chrome app window). Ask, shared requests, the decision log and Sync need claude.ai; " +
-                                "each page links there. Tune in Unity puts a studio's six tabs over the vessel's real assets, live while you play.";
+            const string foot = "A studio opens in its own window: this checkout's build, served by Amoebius, so it looks and plays exactly as on claude.ai " +
+                                "(Unity has no web view, so it is an Edge or Chrome app window), with Sync, Ask, Requests and Decisions working. " +
+                                "TUNE IN UNITY puts a studio's tabs over the vessel's real assets, live while you play. The cards are the web hub's (studios.json).";
             float fh = Look.Note.CalcHeight(new GUIContent(foot), cw);
             GUI.Label(new Rect(x, y, cw, fh), foot, Look.Note);
             y += fh + 28f;
@@ -257,8 +301,44 @@ namespace CosmicShore.Editor.Studios
             if (Event.current.type == EventType.Repaint && !Mathf.Approximately(_homeHeight, y)) { _homeHeight = y; Repaint(); }
         }
 
-        float CardHeight(StudioEntry s, float w) =>
-            Pad + PreviewHeight + 12f + 32f + 26f + Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), w - 2f * Pad) + 14f + 26f + Pad;
+        const float SpecLine = 16f, ButtonH = 26f;
+
+        static GUIStyle _specKey, _specVal;
+        static GUIStyle SpecKey => _specKey ??= new GUIStyle(Look.Note) { wordWrap = false, font = EditorStyles.miniFont };
+        static GUIStyle SpecVal => _specVal ??= new GUIStyle(Look.Tinted(Look.Note, Look.Fg)) { wordWrap = true };
+
+        float SpecKeyWidth(StudioEntry s)
+        {
+            float w = 0f;
+            foreach (var r in s.spec ?? Array.Empty<SpecRow>()) w = Mathf.Max(w, SpecKey.CalcSize(new GUIContent(r.k)).x);
+            return w > 0f ? w + 12f : 0f;
+        }
+
+        float SpecHeight(StudioEntry s, float w)
+        {
+            float h = 0f, kw = SpecKeyWidth(s);
+            foreach (var r in s.spec ?? Array.Empty<SpecRow>()) h += Mathf.Max(SpecLine, SpecVal.CalcHeight(new GUIContent(r.v), w - kw)) + 2f;
+            return h;
+        }
+
+        static int ButtonRows(List<CardButton> buttons, float width)
+        {
+            int rows = 1; float x = 0f;
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                float bw = Look.Button.CalcSize(new GUIContent(buttons[i].Label)).x + 24f;
+                if (i > 0 && x + bw > width) { rows++; x = 0f; }
+                x += bw + 8f;
+            }
+            return rows;
+        }
+
+        float CardHeight(StudioEntry s, float w)
+        {
+            float inner = w - 2f * Pad;
+            return Pad + PreviewHeight + 12f + 32f + 26f + Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), inner) + 10f + SpecHeight(s, inner)
+                   + 14f + ButtonRows(CardButtons(_catalog, s, Tuners.ContainsKey(s.id)), inner) * (ButtonH + 6f) + Pad;
+        }
 
         void DrawCard(Rect r, StudioEntry s)
         {
@@ -267,39 +347,83 @@ namespace CosmicShore.Editor.Studios
             FrogletEditorPalette.DrawCard(r, Look.Panel, hover ? accent : Look.Line);
             float x = r.x + Pad, w = r.width - 2f * Pad, y = r.y + Pad;
 
+            // the preview: Unity's line-for-line port of the hub's canvas where it has one, else the baked thumbnail (studios.json preview)
             var preview = new Rect(x, y, w, PreviewHeight);
             if (Event.current.type == EventType.Repaint)
-                GUI.DrawTextureWithTexCoords(preview, Preview(s, accent), new Rect(0f, 1f, 1f, -1f));   // the canvas is top-down
+            {
+                if (!StudioPreviews.Has(s.id) && Thumb(s.preview) is { } thumb) GUI.DrawTexture(preview, thumb, ScaleMode.ScaleAndCrop);
+                else GUI.DrawTextureWithTexCoords(preview, Preview(s, accent), new Rect(0f, 1f, 1f, -1f));   // the canvas is top-down
+            }
             y += PreviewHeight + 12f;
 
             GUI.Label(new Rect(x, y, w, 30f), (s.name ?? s.id).ToUpperInvariant(), Look.Tinted(Look.Name, accent));
             y += 32f;
-            string kind = s.kind ?? "";
-            float kw = Mathf.Min(w, Look.Chip.CalcSize(new GUIContent(kind)).x + 16f);
-            var chip = new Rect(x, y, kw, 20f);
-            FrogletEditorPalette.DrawCard(chip, accent.WithAlpha(0.08f), accent);
-            GUI.Label(chip, kind, Look.Tinted(Look.Chip, accent));
+            string chip = string.IsNullOrEmpty(s.chip) ? s.kind ?? "" : s.chip;
+            float kw = Mathf.Min(w, Look.Chip.CalcSize(new GUIContent(chip)).x + 16f);
+            var chipRect = new Rect(x, y, kw, 20f);
+            FrogletEditorPalette.DrawCard(chipRect, accent.WithAlpha(0.08f), accent);
+            GUI.Label(chipRect, chip, Look.Tinted(Look.Chip, accent));
             y += 26f;
             float sh = Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), w);
             GUI.Label(new Rect(x, y, w, sh), s.summary ?? "", Look.Body);
+            y += sh + 10f;
 
-            // the actions sit on the card's floor, so cards in a row line up
-            float by = r.yMax - Pad - 26f, bx = x;
-            if (Button(ref bx, by, "OPEN STUDIO ▸", accent, true, $"Open the {s.name} studio (the artifact's own page, from this checkout) in its own window"))
-                OpenPage(s.file);
-            if (Tuners.ContainsKey(s.id) &&
-                Button(ref bx, by, "TUNE IN UNITY", accent, false, $"The {s.name} studio's six tabs over the vessel's real assets, live while you play"))
+            // the spec rows, key and value, as on the hub card
+            float skw = SpecKeyWidth(s);
+            foreach (var row in s.spec ?? Array.Empty<SpecRow>())
             {
-                _view = s.id;
-                GUIUtility.ExitGUI();
+                float vh = Mathf.Max(SpecLine, SpecVal.CalcHeight(new GUIContent(row.v), w - skw));
+                GUI.Label(new Rect(x, y, skw, SpecLine), row.k, SpecKey);
+                GUI.Label(new Rect(x + skw, y, w - skw, vh), row.v, SpecVal);
+                y += vh + 2f;
             }
-            if (!string.IsNullOrEmpty(s.engineMode) &&
-                Button(ref bx, by, "PLAY IN ENGINE", accent, false, (s.engineNote ?? "") + " Opens Amoebius's VESSEL STUDIO page: pick " + s.name + ", then PLAY IN ENGINE."))
-                EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage;
+
+            // the card's buttons (studios.json cardActions, every one in its place) sit on the card's floor, so cards in a row line up
+            var buttons = CardButtons(_catalog, s, Tuners.ContainsKey(s.id));
+            int rows = ButtonRows(buttons, w);
+            float by = r.yMax - Pad - rows * (ButtonH + 6f) + 6f, bx = x;
+            var btnRow = new Rect(x, by, w, r.yMax - Pad - by);   // a disabled button's click is not the card's
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                var b = buttons[i];
+                float bw = Look.Button.CalcSize(new GUIContent(b.Label)).x + 24f;
+                if (i > 0 && bx + bw > x + w) { bx = x; by += ButtonH + 6f; }
+                if (Button(ref bx, by, b.Label, accent, i == 0, b.Tip, b.Enabled)) RunCardButton(b.Id, s);
+            }
 
             // the whole card opens the studio, as on the web hub (drawn after the buttons, so they keep their clicks)
-            if (GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
+            if (!btnRow.Contains(Event.current.mousePosition) && GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
             EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
+        }
+
+        void RunCardButton(string id, StudioEntry s)
+        {
+            switch (id)
+            {
+                case "open": OpenPage(s.file); break;
+                case "engine": EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage; break;   // Amoebius's VESSEL STUDIO page: PLAY IN ENGINE there
+                case "tune": _view = s.id; GUIUtility.ExitGUI(); break;
+                case "live":
+                    var m = _catalog?.mirror ?? "";
+                    Application.OpenURL((m.EndsWith("/") ? m : m + "/") + (s.file == (_catalog?.hub ?? "index.html") ? "" : Uri.EscapeDataString(s.file)));
+                    break;
+            }
+        }
+
+        /// <summary>A baked preview thumbnail (studios.json <c>preview</c>, made by bake_previews.cjs), loaded once.</summary>
+        Texture2D Thumb(string rel)
+        {
+            if (string.IsNullOrEmpty(rel) || rel.Contains("..")) return null;
+            if (_thumbs.TryGetValue(rel, out var t)) return t;
+            t = null;
+            string p = StudioPath(rel);
+            if (File.Exists(p))
+            {
+                t = new Texture2D(2, 2, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                if (!t.LoadImage(File.ReadAllBytes(p))) { DestroyImmediate(t); t = null; }
+            }
+            _thumbs[rel] = t;
+            return t;
         }
 
         /// <summary>This frame of a studio's preview, drawn on the CPU (well under a millisecond) and uploaded.</summary>
@@ -323,8 +447,17 @@ namespace CosmicShore.Editor.Studios
         }
 
         /// <summary>A studio button (the page's own, not the editor skin's): filled when primary, outlined otherwise. Advances <paramref name="x"/>.</summary>
-        static bool Button(ref float x, float y, string label, Color accent, bool primary, string tooltip)
+        static bool Button(ref float x, float y, string label, Color accent, bool primary, string tooltip, bool enabled = true)
         {
+            if (!enabled)
+            {
+                float dw = Look.Button.CalcSize(new GUIContent(label)).x + 24f;
+                var dr = new Rect(x, y, dw, 26f);
+                x += dw + 8f;
+                FrogletEditorPalette.DrawCard(dr, Color.clear, Look.Line);
+                GUI.Label(dr, new GUIContent(label, tooltip), Look.Tinted(Look.Button, Look.Off));
+                return false;
+            }
             float w = Look.Button.CalcSize(new GUIContent(label)).x + 24f;
             var r = new Rect(x, y, w, 26f);
             x += w + 8f;
