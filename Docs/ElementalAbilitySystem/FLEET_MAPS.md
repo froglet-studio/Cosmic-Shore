@@ -324,6 +324,8 @@ Time→charge fill rate / "Instant Draw".
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | **ramp wind-up rate** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — "Ramp Spool", LIVE since Broadside's playtest) | *(open)* — the row is FILLED, the upgrade is not. The old proposal here was "slab growth rate → **Fast Pour**"; it is retired rather than moved, because Time now owns the ramp and one element owns one parameter |
 
+> **Decision packet, 2026-10-10 — un-approved:** the table above is stale on three of four rows (the Charge host `GrowSkimmerAction` is inactive on `Rhino.prefab`, Space is already live in data as the sword's resting length 30 → 50, and the Mass row scales a grow loop that has never run) — the tree-verified proposal a designer can accept or reject row by row is **[`RHINO_PROPOSAL.md`](RHINO_PROPOSAL.md)**.
+
 ### Serpent — scope + rifle (was "Wall-Weaver") — CHARGE + SPACE APPROVED + SHIPPED
 
 Garrett's markup, 2026-09-16: *"when the serpent hold the left trigger it should take on a first
