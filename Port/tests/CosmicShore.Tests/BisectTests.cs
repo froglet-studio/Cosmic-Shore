@@ -111,6 +111,45 @@ namespace CosmicShore.Tests
             Assert.Empty(o.Candidates);
         }
 
+        // git 2.55 (the GitHub runner's git since 2026-10) quotes the term in every bisect
+        // message: "<sha> is the first 'bad' commit", "# first 'bad' commit: [...]", "The first
+        // 'bad' commit could be any of:". 2.43 (Ubuntu 24.04) writes them bare. The parser reads
+        // both, and a custom term pair (old/new) the same way.
+        [Theory]
+        [InlineData("bad", false)]
+        [InlineData("bad", true)]
+        [InlineData("new", true)]
+        public void Reads_the_first_bad_commit_with_or_without_the_quoted_term(string term, bool quoted)
+        {
+            const string sha = "3333333333333333333333333333333333333333";
+            string t = quoted ? $"'{term}'" : term;
+            var run = $"running sh step.sh\n{sha} is the first {t} commit\ncommit {sha}\nAuthor: t <t@t>\n\n    plant\nbisect found first {t} commit\n";
+            var log = $"# {term}: [{sha}] plant\ngit bisect start 'HEAD' 'HEAD~9'\n# good: [4444444444444444444444444444444444444444] c5\ngit bisect good 4444444444444444444444444444444444444444\n# {term}: [{sha}] plant\ngit bisect {term} {sha}\n# first {t} commit: [{sha}] plant\n";
+            var o = BisectOutcome.Parse(run, log);
+            Assert.Equal(sha, o.FirstBad);
+            Assert.Equal("plant", o.FirstBadSubject);
+            Assert.Equal(2, o.Steps.Count);
+            Assert.Empty(o.Candidates);
+
+            // The log alone names it too (the run output is what git bisect run printed; a
+            // caller that only kept the log still gets the answer).
+            Assert.Equal(sha, BisectOutcome.Parse("", log).FirstBad);
+            // And the run output alone, when the log was lost.
+            Assert.Equal(sha, BisectOutcome.Parse(run, "").FirstBad);
+        }
+
+        [Fact]
+        public void Only_skipped_commits_left_names_the_candidates_with_the_quoted_term()
+        {
+            const string a = "1111111111111111111111111111111111111111", b = "2222222222222222222222222222222222222222";
+            var run = $"There are only 'skip'ped commits left to test.\nThe first 'bad' commit could be any of:\n{a}\n{b}\nWe cannot bisect more!\n";
+            var log = $"# bad: [{b}] x\ngit bisect start 'b' 'g'\n# skip: [{a}] one\ngit bisect skip {a}\n# only skipped commits left to test\n# possible first 'bad' commit: [{a}] one\n# possible first 'bad' commit: [{b}] x\n";
+            var o = BisectOutcome.Parse(run, log);
+            Assert.Null(o.FirstBad);
+            Assert.Equal(new[] { a, b }, o.Candidates);
+            Assert.Single(o.Skipped);
+        }
+
         [Fact]
         public void Only_skipped_commits_left_names_the_candidates()
         {

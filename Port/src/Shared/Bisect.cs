@@ -65,9 +65,15 @@ namespace Prisma.Bisect
         public List<BisectStep> Steps { get; init; } = new();
         public IEnumerable<BisectStep> Skipped => Steps.Where(s => s.Verdict == "skip");
 
-        static readonly Regex Judged = new(@"^# (good|bad|skip): \[([0-9a-f]{7,64})\] ?(.*)$");
-        static readonly Regex First = new(@"^# first bad commit: \[([0-9a-f]{7,64})\] ?(.*)$");
-        static readonly Regex FirstInRun = new(@"^([0-9a-f]{40,64}) is the first bad commit");
+        // git 2.55 quotes the term in every message ("# first 'bad' commit:", "<sha> is the first
+        // 'bad' commit", "The first 'bad' commit could be any of:"); 2.43 writes it bare. A custom
+        // term pair (old/new) is read the same way. The judged lines are keyed by the state word
+        // git wrote, so "old"/"new" verdicts are reported as such.
+        const string Term = @"'?[A-Za-z0-9_-]+'?";
+        static readonly Regex Judged = new(@"^# (good|bad|skip|old|new): \[([0-9a-f]{7,64})\] ?(.*)$");
+        static readonly Regex First = new(@"^# first " + Term + @" commit: \[([0-9a-f]{7,64})\] ?(.*)$");
+        static readonly Regex FirstInRun = new(@"^([0-9a-f]{40,64}) is the first " + Term + @" commit");
+        static readonly Regex AnyOf = new(@"^The first " + Term + @" commit could be any of");
 
         /// <summary>
         /// The log records the endpoints as comments before <c>git bisect start</c>; every judged
@@ -96,7 +102,7 @@ namespace Prisma.Bisect
                     var m = FirstInRun.Match(l);
                     if (m.Success) first = m.Groups[1].Value;
                 }
-            int any = lines.FindIndex(l => l.StartsWith("The first bad commit could be any of", StringComparison.Ordinal));
+            int any = lines.FindIndex(l => AnyOf.IsMatch(l));
             if (any >= 0)
                 candidates.AddRange(lines.Skip(any + 1).TakeWhile(l => Regex.IsMatch(l, "^[0-9a-f]{40,64}$")));
             return new BisectOutcome { FirstBad = first, FirstBadSubject = firstSubject ?? "", Candidates = candidates, Steps = steps };
