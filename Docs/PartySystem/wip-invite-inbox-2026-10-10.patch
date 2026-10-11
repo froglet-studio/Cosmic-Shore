@@ -1,0 +1,3087 @@
+diff --git a/Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/PartyInviteNotificationPanel Variant.prefab b/Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/PartyInviteNotificationPanel Variant.prefab
+index 62141ef78..0dc898f63 100644
+--- a/Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/PartyInviteNotificationPanel Variant.prefab	
++++ b/Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/PartyInviteNotificationPanel Variant.prefab	
+@@ -116,12 +116,12 @@ PrefabInstance:
+     - target: {fileID: 3523272532893709464, guid: 86934f33e957bcc479b57b0f6de66feb,
+         type: 3}
+       propertyPath: m_fontSizeMax
+-      value: 43.776
++      value: 18.24
+       objectReference: {fileID: 0}
+     - target: {fileID: 3523272532893709464, guid: 86934f33e957bcc479b57b0f6de66feb,
+         type: 3}
+       propertyPath: m_fontSizeMin
+-      value: 2.88
++      value: 11
+       objectReference: {fileID: 0}
+     - target: {fileID: 3837452600753724683, guid: 86934f33e957bcc479b57b0f6de66feb,
+         type: 3}
+@@ -276,6 +276,7 @@ MonoBehaviour:
+   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+   autoHideSeconds: 3
+   inviteReceivedAudio: 9
++  detailText: {fileID: 6279010007188498831}
+ --- !u!114 &4276064187497720726 stripped
+ MonoBehaviour:
+   m_CorrespondingSourceObject: {fileID: 6670123930361067137, guid: 86934f33e957bcc479b57b0f6de66feb,
+@@ -300,3 +301,15 @@ MonoBehaviour:
+   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+   m_Name: 
+   m_EditorClassIdentifier: 
++--- !u!114 &6279010007188498831 stripped
++MonoBehaviour:
++  m_CorrespondingSourceObject: {fileID: 3523272532893709464, guid: 86934f33e957bcc479b57b0f6de66feb,
++    type: 3}
++  m_PrefabInstance: {fileID: 7477853239410613527}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 0}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: 
+diff --git a/Assets/_Scenes/Menu_Main.unity b/Assets/_Scenes/Menu_Main.unity
+index d3d66bf35..5ebb6f14d 100644
+--- a/Assets/_Scenes/Menu_Main.unity
++++ b/Assets/_Scenes/Menu_Main.unity
+@@ -33054,6 +33054,7 @@ RectTransform:
+   - {fileID: 912042175}
+   - {fileID: 832335692}
+   - {fileID: 475031920}
++  - {fileID: 5192036231887571325}
+   m_Father: {fileID: 1879184137}
+   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+   m_AnchorMin: {x: 0, y: 0}
+@@ -40800,6 +40801,7 @@ RectTransform:
+   - {fileID: 956899653}
+   - {fileID: 2098251184}
+   - {fileID: 1768582924}
++  - {fileID: 6082596323656604475}
+   m_Father: {fileID: 1513083449}
+   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+   m_AnchorMin: {x: 0, y: 0}
+@@ -58687,6 +58689,7 @@ RectTransform:
+   - {fileID: 590853641}
+   - {fileID: 734894958}
+   - {fileID: 2104817374}
++  - {fileID: 7487739786344818616}
+   m_Father: {fileID: 149581060}
+   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+   m_AnchorMin: {x: 0, y: 0}
+@@ -165967,6 +165970,7 @@ RectTransform:
+   - {fileID: 2780039877076830730}
+   - {fileID: 4457681556839479449}
+   - {fileID: 1032728615}
++  - {fileID: 1783881887788138505}
+   m_Father: {fileID: 3611855818750974332}
+   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+   m_AnchorMin: {x: 0, y: 0}
+@@ -193745,3 +193749,983 @@ MonoBehaviour:
+   m_hasFontAssetChanged: 0
+   m_baseMaterial: {fileID: 0}
+   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
++--- !u!1 &6408791355721241545
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 1783881887788138505}
++  - component: {fileID: 7338442213134353847}
++  - component: {fileID: 5566665373392793944}
++  - component: {fileID: 2785178634022101241}
++  - component: {fileID: 5254427861028706537}
++  m_Layer: 5
++  m_Name: InviteBadge
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &1783881887788138505
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6408791355721241545}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children:
++  - {fileID: 1601299525227405450}
++  m_Father: {fileID: 7902067495310257080}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0.64, y: 0.812}
++  m_AnchorMax: {x: 0.7132, y: 0.856}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &7338442213134353847
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6408791355721241545}
++  m_CullTransparentMesh: 1
++--- !u!114 &5566665373392793944
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6408791355721241545}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 0.85, b: 0.2, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
++  m_Type: 0
++  m_PreserveAspect: 1
++  m_FillCenter: 1
++  m_FillMethod: 4
++  m_FillAmount: 1
++  m_FillClockwise: 1
++  m_FillOrigin: 0
++  m_UseSpriteMesh: 0
++  m_PixelsPerUnitMultiplier: 1
++--- !u!225 &2785178634022101241
++CanvasGroup:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6408791355721241545}
++  m_Enabled: 1
++  m_Alpha: 0
++  m_Interactable: 0
++  m_BlocksRaycasts: 0
++  m_IgnoreParentGroups: 0
++--- !u!114 &5254427861028706537
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6408791355721241545}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: 289b3aac0415443a97cd1d275fa81816, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.PartyInviteBadge
++  connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
++  canvasGroup: {fileID: 2785178634022101241}
++  countText: {fileID: 2122666818602002266}
++  maxShownCount: 9
++  pollIntervalSeconds: 0.5
++--- !u!1 &6234926451212711944
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 1601299525227405450}
++  - component: {fileID: 499396568625070468}
++  - component: {fileID: 2122666818602002266}
++  m_Layer: 5
++  m_Name: Count
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &1601299525227405450
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6234926451212711944}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children: []
++  m_Father: {fileID: 1783881887788138505}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0, y: 0}
++  m_AnchorMax: {x: 1, y: 1}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &499396568625070468
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6234926451212711944}
++  m_CullTransparentMesh: 1
++--- !u!114 &2122666818602002266
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 6234926451212711944}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 1, b: 1, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_text: 
++  m_isRightToLeft: 0
++  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
++  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
++    type: 2}
++  m_fontSharedMaterials: []
++  m_fontMaterial: {fileID: 0}
++  m_fontMaterials: []
++  m_fontColor32:
++    serializedVersion: 2
++    rgba: 4280163348
++  m_fontColor: {r: 0.08, g: 0.08, b: 0.12, a: 1}
++  m_enableVertexGradient: 0
++  m_colorMode: 3
++  m_fontColorGradient:
++    topLeft: {r: 1, g: 1, b: 1, a: 1}
++    topRight: {r: 1, g: 1, b: 1, a: 1}
++    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
++    bottomRight: {r: 1, g: 1, b: 1, a: 1}
++  m_fontColorGradientPreset: {fileID: 0}
++  m_spriteAsset: {fileID: 0}
++  m_tintAllSprites: 0
++  m_StyleSheet: {fileID: 0}
++  m_TextStyleHashCode: -1183493901
++  m_overrideHtmlColors: 0
++  m_faceColor:
++    serializedVersion: 2
++    rgba: 4294967295
++  m_fontSize: 24
++  m_fontSizeBase: 24
++  m_fontWeight: 400
++  m_enableAutoSizing: 1
++  m_fontSizeMin: 12
++  m_fontSizeMax: 26
++  m_fontStyle: 1
++  m_HorizontalAlignment: 2
++  m_VerticalAlignment: 512
++  m_textAlignment: 65535
++  m_characterSpacing: 0
++  m_characterHorizontalScale: 1
++  m_wordSpacing: 0
++  m_lineSpacing: 0
++  m_lineSpacingMax: 0
++  m_paragraphSpacing: 0
++  m_charWidthMaxAdj: 0
++  m_TextWrappingMode: 0
++  m_wordWrappingRatios: 0.4
++  m_overflowMode: 0
++  m_linkedTextComponent: {fileID: 0}
++  parentLinkedComponent: {fileID: 0}
++  m_enableKerning: 0
++  m_ActiveFontFeatures: 6e72656b
++  m_enableExtraPadding: 0
++  checkPaddingRequired: 0
++  m_isRichText: 1
++  m_EmojiFallbackSupport: 1
++  m_parseCtrlCharacters: 1
++  m_isOrthographic: 1
++  m_isCullingEnabled: 0
++  m_horizontalMapping: 0
++  m_verticalMapping: 0
++  m_uvLineOffset: 0
++  m_geometrySortingOrder: 0
++  m_IsTextObjectScaleStatic: 0
++  m_VertexBufferAutoSizeReduction: 0
++  m_useMaxVisibleDescender: 1
++  m_pageToDisplay: 1
++  m_margin: {x: 0, y: 0, z: 0, w: 0}
++  m_isUsingLegacyAnimationComponent: 0
++  m_isVolumetricText: 0
++  m_hasFontAssetChanged: 0
++  m_baseMaterial: {fileID: 0}
++  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
++--- !u!1 &3346124297888035869
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 6082596323656604475}
++  - component: {fileID: 7329572384936192034}
++  - component: {fileID: 8347092670397454249}
++  - component: {fileID: 1710422539605112461}
++  - component: {fileID: 2166474430281595524}
++  m_Layer: 5
++  m_Name: InviteBadge
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &6082596323656604475
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 3346124297888035869}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children:
++  - {fileID: 7484277126078592560}
++  m_Father: {fileID: 1470385306}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0.64, y: 0.812}
++  m_AnchorMax: {x: 0.7132, y: 0.856}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &7329572384936192034
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 3346124297888035869}
++  m_CullTransparentMesh: 1
++--- !u!114 &8347092670397454249
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 3346124297888035869}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 0.85, b: 0.2, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
++  m_Type: 0
++  m_PreserveAspect: 1
++  m_FillCenter: 1
++  m_FillMethod: 4
++  m_FillAmount: 1
++  m_FillClockwise: 1
++  m_FillOrigin: 0
++  m_UseSpriteMesh: 0
++  m_PixelsPerUnitMultiplier: 1
++--- !u!225 &1710422539605112461
++CanvasGroup:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 3346124297888035869}
++  m_Enabled: 1
++  m_Alpha: 0
++  m_Interactable: 0
++  m_BlocksRaycasts: 0
++  m_IgnoreParentGroups: 0
++--- !u!114 &2166474430281595524
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 3346124297888035869}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: 289b3aac0415443a97cd1d275fa81816, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.PartyInviteBadge
++  connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
++  canvasGroup: {fileID: 1710422539605112461}
++  countText: {fileID: 7448700332199360475}
++  maxShownCount: 9
++  pollIntervalSeconds: 0.5
++--- !u!1 &9084598276183044002
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 7484277126078592560}
++  - component: {fileID: 2004344860906122144}
++  - component: {fileID: 7448700332199360475}
++  m_Layer: 5
++  m_Name: Count
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &7484277126078592560
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 9084598276183044002}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children: []
++  m_Father: {fileID: 6082596323656604475}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0, y: 0}
++  m_AnchorMax: {x: 1, y: 1}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &2004344860906122144
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 9084598276183044002}
++  m_CullTransparentMesh: 1
++--- !u!114 &7448700332199360475
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 9084598276183044002}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 1, b: 1, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_text: 
++  m_isRightToLeft: 0
++  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
++  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
++    type: 2}
++  m_fontSharedMaterials: []
++  m_fontMaterial: {fileID: 0}
++  m_fontMaterials: []
++  m_fontColor32:
++    serializedVersion: 2
++    rgba: 4280163348
++  m_fontColor: {r: 0.08, g: 0.08, b: 0.12, a: 1}
++  m_enableVertexGradient: 0
++  m_colorMode: 3
++  m_fontColorGradient:
++    topLeft: {r: 1, g: 1, b: 1, a: 1}
++    topRight: {r: 1, g: 1, b: 1, a: 1}
++    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
++    bottomRight: {r: 1, g: 1, b: 1, a: 1}
++  m_fontColorGradientPreset: {fileID: 0}
++  m_spriteAsset: {fileID: 0}
++  m_tintAllSprites: 0
++  m_StyleSheet: {fileID: 0}
++  m_TextStyleHashCode: -1183493901
++  m_overrideHtmlColors: 0
++  m_faceColor:
++    serializedVersion: 2
++    rgba: 4294967295
++  m_fontSize: 24
++  m_fontSizeBase: 24
++  m_fontWeight: 400
++  m_enableAutoSizing: 1
++  m_fontSizeMin: 12
++  m_fontSizeMax: 26
++  m_fontStyle: 1
++  m_HorizontalAlignment: 2
++  m_VerticalAlignment: 512
++  m_textAlignment: 65535
++  m_characterSpacing: 0
++  m_characterHorizontalScale: 1
++  m_wordSpacing: 0
++  m_lineSpacing: 0
++  m_lineSpacingMax: 0
++  m_paragraphSpacing: 0
++  m_charWidthMaxAdj: 0
++  m_TextWrappingMode: 0
++  m_wordWrappingRatios: 0.4
++  m_overflowMode: 0
++  m_linkedTextComponent: {fileID: 0}
++  parentLinkedComponent: {fileID: 0}
++  m_enableKerning: 0
++  m_ActiveFontFeatures: 6e72656b
++  m_enableExtraPadding: 0
++  checkPaddingRequired: 0
++  m_isRichText: 1
++  m_EmojiFallbackSupport: 1
++  m_parseCtrlCharacters: 1
++  m_isOrthographic: 1
++  m_isCullingEnabled: 0
++  m_horizontalMapping: 0
++  m_verticalMapping: 0
++  m_uvLineOffset: 0
++  m_geometrySortingOrder: 0
++  m_IsTextObjectScaleStatic: 0
++  m_VertexBufferAutoSizeReduction: 0
++  m_useMaxVisibleDescender: 1
++  m_pageToDisplay: 1
++  m_margin: {x: 0, y: 0, z: 0, w: 0}
++  m_isUsingLegacyAnimationComponent: 0
++  m_isVolumetricText: 0
++  m_hasFontAssetChanged: 0
++  m_baseMaterial: {fileID: 0}
++  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
++--- !u!1 &7885745136455407667
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 7487739786344818616}
++  - component: {fileID: 6847849185496181372}
++  - component: {fileID: 262673827514294221}
++  - component: {fileID: 4967166809115644785}
++  - component: {fileID: 8681818678211683093}
++  m_Layer: 5
++  m_Name: InviteBadge
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &7487739786344818616
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 7885745136455407667}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children:
++  - {fileID: 6300201511830884478}
++  m_Father: {fileID: 1994025747}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0.64, y: 0.812}
++  m_AnchorMax: {x: 0.7132, y: 0.856}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &6847849185496181372
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 7885745136455407667}
++  m_CullTransparentMesh: 1
++--- !u!114 &262673827514294221
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 7885745136455407667}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 0.85, b: 0.2, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
++  m_Type: 0
++  m_PreserveAspect: 1
++  m_FillCenter: 1
++  m_FillMethod: 4
++  m_FillAmount: 1
++  m_FillClockwise: 1
++  m_FillOrigin: 0
++  m_UseSpriteMesh: 0
++  m_PixelsPerUnitMultiplier: 1
++--- !u!225 &4967166809115644785
++CanvasGroup:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 7885745136455407667}
++  m_Enabled: 1
++  m_Alpha: 0
++  m_Interactable: 0
++  m_BlocksRaycasts: 0
++  m_IgnoreParentGroups: 0
++--- !u!114 &8681818678211683093
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 7885745136455407667}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: 289b3aac0415443a97cd1d275fa81816, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.PartyInviteBadge
++  connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
++  canvasGroup: {fileID: 4967166809115644785}
++  countText: {fileID: 5251748455173788297}
++  maxShownCount: 9
++  pollIntervalSeconds: 0.5
++--- !u!1 &2006741221733878510
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 6300201511830884478}
++  - component: {fileID: 2749694430986347510}
++  - component: {fileID: 5251748455173788297}
++  m_Layer: 5
++  m_Name: Count
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &6300201511830884478
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2006741221733878510}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children: []
++  m_Father: {fileID: 7487739786344818616}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0, y: 0}
++  m_AnchorMax: {x: 1, y: 1}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &2749694430986347510
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2006741221733878510}
++  m_CullTransparentMesh: 1
++--- !u!114 &5251748455173788297
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2006741221733878510}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 1, b: 1, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_text: 
++  m_isRightToLeft: 0
++  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
++  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
++    type: 2}
++  m_fontSharedMaterials: []
++  m_fontMaterial: {fileID: 0}
++  m_fontMaterials: []
++  m_fontColor32:
++    serializedVersion: 2
++    rgba: 4280163348
++  m_fontColor: {r: 0.08, g: 0.08, b: 0.12, a: 1}
++  m_enableVertexGradient: 0
++  m_colorMode: 3
++  m_fontColorGradient:
++    topLeft: {r: 1, g: 1, b: 1, a: 1}
++    topRight: {r: 1, g: 1, b: 1, a: 1}
++    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
++    bottomRight: {r: 1, g: 1, b: 1, a: 1}
++  m_fontColorGradientPreset: {fileID: 0}
++  m_spriteAsset: {fileID: 0}
++  m_tintAllSprites: 0
++  m_StyleSheet: {fileID: 0}
++  m_TextStyleHashCode: -1183493901
++  m_overrideHtmlColors: 0
++  m_faceColor:
++    serializedVersion: 2
++    rgba: 4294967295
++  m_fontSize: 24
++  m_fontSizeBase: 24
++  m_fontWeight: 400
++  m_enableAutoSizing: 1
++  m_fontSizeMin: 12
++  m_fontSizeMax: 26
++  m_fontStyle: 1
++  m_HorizontalAlignment: 2
++  m_VerticalAlignment: 512
++  m_textAlignment: 65535
++  m_characterSpacing: 0
++  m_characterHorizontalScale: 1
++  m_wordSpacing: 0
++  m_lineSpacing: 0
++  m_lineSpacingMax: 0
++  m_paragraphSpacing: 0
++  m_charWidthMaxAdj: 0
++  m_TextWrappingMode: 0
++  m_wordWrappingRatios: 0.4
++  m_overflowMode: 0
++  m_linkedTextComponent: {fileID: 0}
++  parentLinkedComponent: {fileID: 0}
++  m_enableKerning: 0
++  m_ActiveFontFeatures: 6e72656b
++  m_enableExtraPadding: 0
++  checkPaddingRequired: 0
++  m_isRichText: 1
++  m_EmojiFallbackSupport: 1
++  m_parseCtrlCharacters: 1
++  m_isOrthographic: 1
++  m_isCullingEnabled: 0
++  m_horizontalMapping: 0
++  m_verticalMapping: 0
++  m_uvLineOffset: 0
++  m_geometrySortingOrder: 0
++  m_IsTextObjectScaleStatic: 0
++  m_VertexBufferAutoSizeReduction: 0
++  m_useMaxVisibleDescender: 1
++  m_pageToDisplay: 1
++  m_margin: {x: 0, y: 0, z: 0, w: 0}
++  m_isUsingLegacyAnimationComponent: 0
++  m_isVolumetricText: 0
++  m_hasFontAssetChanged: 0
++  m_baseMaterial: {fileID: 0}
++  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
++--- !u!1 &1464887362619196039
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 5192036231887571325}
++  - component: {fileID: 3672338817390516677}
++  - component: {fileID: 1138974552991965635}
++  - component: {fileID: 2468223879479503136}
++  - component: {fileID: 3264836342827404747}
++  m_Layer: 5
++  m_Name: InviteBadge
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &5192036231887571325
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 1464887362619196039}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children:
++  - {fileID: 3936992056429543036}
++  m_Father: {fileID: 1197869416}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0.64, y: 0.812}
++  m_AnchorMax: {x: 0.7132, y: 0.856}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &3672338817390516677
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 1464887362619196039}
++  m_CullTransparentMesh: 1
++--- !u!114 &1138974552991965635
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 1464887362619196039}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 0.85, b: 0.2, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
++  m_Type: 0
++  m_PreserveAspect: 1
++  m_FillCenter: 1
++  m_FillMethod: 4
++  m_FillAmount: 1
++  m_FillClockwise: 1
++  m_FillOrigin: 0
++  m_UseSpriteMesh: 0
++  m_PixelsPerUnitMultiplier: 1
++--- !u!225 &2468223879479503136
++CanvasGroup:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 1464887362619196039}
++  m_Enabled: 1
++  m_Alpha: 0
++  m_Interactable: 0
++  m_BlocksRaycasts: 0
++  m_IgnoreParentGroups: 0
++--- !u!114 &3264836342827404747
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 1464887362619196039}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: 289b3aac0415443a97cd1d275fa81816, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.PartyInviteBadge
++  connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
++  canvasGroup: {fileID: 2468223879479503136}
++  countText: {fileID: 1333772588349218062}
++  maxShownCount: 9
++  pollIntervalSeconds: 0.5
++--- !u!1 &2477433036789643348
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 3936992056429543036}
++  - component: {fileID: 2408869564874516530}
++  - component: {fileID: 1333772588349218062}
++  m_Layer: 5
++  m_Name: Count
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!224 &3936992056429543036
++RectTransform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2477433036789643348}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0, y: 0, z: 0}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children: []
++  m_Father: {fileID: 5192036231887571325}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++  m_AnchorMin: {x: 0, y: 0}
++  m_AnchorMax: {x: 1, y: 1}
++  m_AnchoredPosition: {x: 0, y: 0}
++  m_SizeDelta: {x: 0, y: 0}
++  m_Pivot: {x: 0.5, y: 0.5}
++--- !u!222 &2408869564874516530
++CanvasRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2477433036789643348}
++  m_CullTransparentMesh: 1
++--- !u!114 &1333772588349218062
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2477433036789643348}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
++  m_Material: {fileID: 0}
++  m_Color: {r: 1, g: 1, b: 1, a: 1}
++  m_RaycastTarget: 0
++  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
++  m_Maskable: 1
++  m_OnCullStateChanged:
++    m_PersistentCalls:
++      m_Calls: []
++  m_text: 
++  m_isRightToLeft: 0
++  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
++  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
++    type: 2}
++  m_fontSharedMaterials: []
++  m_fontMaterial: {fileID: 0}
++  m_fontMaterials: []
++  m_fontColor32:
++    serializedVersion: 2
++    rgba: 4280163348
++  m_fontColor: {r: 0.08, g: 0.08, b: 0.12, a: 1}
++  m_enableVertexGradient: 0
++  m_colorMode: 3
++  m_fontColorGradient:
++    topLeft: {r: 1, g: 1, b: 1, a: 1}
++    topRight: {r: 1, g: 1, b: 1, a: 1}
++    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
++    bottomRight: {r: 1, g: 1, b: 1, a: 1}
++  m_fontColorGradientPreset: {fileID: 0}
++  m_spriteAsset: {fileID: 0}
++  m_tintAllSprites: 0
++  m_StyleSheet: {fileID: 0}
++  m_TextStyleHashCode: -1183493901
++  m_overrideHtmlColors: 0
++  m_faceColor:
++    serializedVersion: 2
++    rgba: 4294967295
++  m_fontSize: 24
++  m_fontSizeBase: 24
++  m_fontWeight: 400
++  m_enableAutoSizing: 1
++  m_fontSizeMin: 12
++  m_fontSizeMax: 26
++  m_fontStyle: 1
++  m_HorizontalAlignment: 2
++  m_VerticalAlignment: 512
++  m_textAlignment: 65535
++  m_characterSpacing: 0
++  m_characterHorizontalScale: 1
++  m_wordSpacing: 0
++  m_lineSpacing: 0
++  m_lineSpacingMax: 0
++  m_paragraphSpacing: 0
++  m_charWidthMaxAdj: 0
++  m_TextWrappingMode: 0
++  m_wordWrappingRatios: 0.4
++  m_overflowMode: 0
++  m_linkedTextComponent: {fileID: 0}
++  parentLinkedComponent: {fileID: 0}
++  m_enableKerning: 0
++  m_ActiveFontFeatures: 6e72656b
++  m_enableExtraPadding: 0
++  checkPaddingRequired: 0
++  m_isRichText: 1
++  m_EmojiFallbackSupport: 1
++  m_parseCtrlCharacters: 1
++  m_isOrthographic: 1
++  m_isCullingEnabled: 0
++  m_horizontalMapping: 0
++  m_verticalMapping: 0
++  m_uvLineOffset: 0
++  m_geometrySortingOrder: 0
++  m_IsTextObjectScaleStatic: 0
++  m_VertexBufferAutoSizeReduction: 0
++  m_useMaxVisibleDescender: 1
++  m_pageToDisplay: 1
++  m_margin: {x: 0, y: 0, z: 0, w: 0}
++  m_isUsingLegacyAnimationComponent: 0
++  m_isVolumetricText: 0
++  m_hasFontAssetChanged: 0
++  m_baseMaterial: {fileID: 0}
++  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+diff --git a/Assets/_Scripts/Controller/Party/HostConnectionService.cs b/Assets/_Scripts/Controller/Party/HostConnectionService.cs
+index d9d95413d..b764254c7 100644
+--- a/Assets/_Scripts/Controller/Party/HostConnectionService.cs
++++ b/Assets/_Scripts/Controller/Party/HostConnectionService.cs
+@@ -243,21 +243,20 @@ namespace CosmicShore.Gameplay
+         // Invite state
+         // ─────────────────────────────────────────────────────────────────────
+ 
+-        private PartyInviteData? _lastFiredInvite;
+-
+-        /// <summary>
+-        /// Consecutive refresh ticks on which the sender of <see cref="_lastFiredInvite"/> had no
+-        /// invite line for us. Two in a row are required before the record is dropped, so a single
+-        /// stale lobby snapshot (a presence-lobby converge mid-tick) cannot flicker a live invite.
+-        /// </summary>
+-        private int _inviteMissTicks;
+         /// <summary>
+-        /// True after the local user has accept/decline/left for <see cref="_lastFiredInvite"/>.
+-        /// Kept alongside the cached invite so the SDK-side dedup guard still
+-        /// suppresses repeated SOAP raises while UI queries via <see cref="LastPendingInvite"/>
+-        /// correctly report "no pending invite".
++        /// Every open invite addressed to us, one per sender (<see cref="IncomingInviteInbox"/>).
++        /// This service is its single writer; the popup, the friends panel's Requests rows and
++        /// the party panel's unread badge read it through the accessors below, so none of them
++        /// can disagree about what is still answerable. Lifetime is the host's own outgoing
++        /// timeout, so both sides clear together.
+         /// </summary>
+-        private bool _lastInviteResolved;
++        private readonly IncomingInviteInbox _incomingInvites = new(OUTGOING_INVITE_TIMEOUT_SECONDS);
++
++        /// <summary>Senders whose invite line was found on the current refresh tick (scratch for the sweep).</summary>
++        private readonly HashSet<string> _invitingSenders = new();
++
++        /// <summary>Invites a sweep ended this tick (scratch; reported to the UI as resolved).</summary>
++        private readonly List<PartyInviteData> _withdrawnInvites = new();
+ 
+         /// <summary>
+         /// Owns the in-memory map of pending outgoing invites and the serialised
+@@ -328,11 +327,41 @@ namespace CosmicShore.Gameplay
+         int        IPartyStateQuery.PartyMemberCount     => connectionData?.PartyMembers?.Count ?? 0;
+ 
+         /// <summary>
+-        /// Most recently detected incoming invite, or null once the user has
+-        /// resolved it (accept/decline/leave) or Menu_Main has reloaded.
++        /// Most recently received invite that is still open, or null when none is (every one
++        /// resolved, expired or withdrawn, or Menu_Main has reloaded). The whole inbox is
++        /// <see cref="CopyPendingIncomingInvites"/>.
+         /// </summary>
+-        public PartyInviteData? LastPendingInvite =>
+-            _lastInviteResolved ? null : _lastFiredInvite;
++        public PartyInviteData? LastPendingInvite => _incomingInvites.Newest(Time.unscaledTime);
++
++        /// <summary>How many invites addressed to us are still open.</summary>
++        public int PendingIncomingInviteCount => _incomingInvites.PendingCount(Time.unscaledTime);
++
++        /// <summary>
++        /// How many open invites the player has not yet had on screen in the friends panel:
++        /// what the party panel's badge shows. Cleared by <see cref="MarkIncomingInvitesSeen"/>.
++        /// </summary>
++        public int UnseenIncomingInviteCount => _incomingInvites.UnseenCount(Time.unscaledTime);
++
++        /// <summary>Seconds an invite stays open after it was first observed (the host's outgoing timeout).</summary>
++        public float IncomingInviteLifetimeSeconds => _incomingInvites.LifetimeSeconds;
++
++        /// <summary>Copies every open invite into <paramref name="into"/>, oldest first.</summary>
++        public void CopyPendingIncomingInvites(List<PartyInviteData> into)
++            => _incomingInvites.CopyPending(into, Time.unscaledTime);
++
++        /// <summary>Whether that sender's invite is still open (the UI reconciles its rows against this).</summary>
++        public bool IsIncomingInvitePending(string senderPlayerId)
++            => _incomingInvites.IsPending(senderPlayerId, Time.unscaledTime);
++
++        /// <summary>Seconds that sender's invite stays open from now; 0 when it is not open.</summary>
++        public float IncomingInviteSecondsRemaining(string senderPlayerId)
++            => _incomingInvites.SecondsRemaining(senderPlayerId, Time.unscaledTime);
++
++        /// <summary>
++        /// The friends panel has shown the inbox: every open invite counts as seen, and the
++        /// party panel's unread badge goes away. A later invite is unseen again.
++        /// </summary>
++        public void MarkIncomingInvitesSeen() => _incomingInvites.MarkAllSeen();
+ 
+         // ╔═══════════════════════════════════════════════════════════════════╗
+         // ║  Unity Lifecycle                                                  ║
+@@ -517,8 +546,7 @@ namespace CosmicShore.Gameplay
+                 return;
+             }
+ 
+-            _lastFiredInvite     = null;
+-            _lastInviteResolved  = false;
++            _incomingInvites.Clear();
+             PublishPresenceImmediateAsync().Forget();
+         }
+ 
+@@ -788,10 +816,10 @@ namespace CosmicShore.Gameplay
+ 
+         public async UniTask AcceptInviteAsync(PartyInviteData invite)
+         {
+-            // Mark resolved up-front so a re-opened FriendsListPanel doesn't
+-            // re-spawn a row for the invite the user just accepted.
+-            _lastInviteResolved = true;
+-            _eventBus.RaiseInviteResolved();
++            // Mark every open invite resolved up-front so a re-opened FriendsListPanel doesn't
++            // re-spawn a row for the invite the user just accepted - nor for any other: we are
++            // leaving for this sender's party, so whatever else was waiting is moot.
++            ResolveAllIncomingInvites();
+ 
+             // This party is invite-formed for analytics purposes (joiner side).
+             connectionData.PartyFormedByInvite = true;
+@@ -894,9 +922,8 @@ namespace CosmicShore.Gameplay
+             if (_gameData != null && _gameData.IsOfflineSession)
+                 throw new InvalidOperationException("Offline session - joining a party is unavailable.");
+ 
+-            // Any invite popup we were looking at is moot: we are leaving for a different party.
+-            _lastInviteResolved = true;
+-            _eventBus.RaiseInviteResolved();
++            // Any invite we were looking at is moot: we are leaving for a different party.
++            ResolveAllIncomingInvites();
+             connectionData.PartyFormedByInvite = false;
+ 
+             try
+@@ -956,8 +983,7 @@ namespace CosmicShore.Gameplay
+             if (_gameData != null && _gameData.IsOfflineSession)
+                 throw new InvalidOperationException("Offline session - spectating is unavailable.");
+ 
+-            _lastInviteResolved = true;
+-            _eventBus.RaiseInviteResolved();
++            ResolveAllIncomingInvites();
+             connectionData.PartyFormedByInvite = false;
+ 
+             try
+@@ -993,16 +1019,35 @@ namespace CosmicShore.Gameplay
+             }
+         }
+ 
+-        public UniTask DeclineInviteAsync()
++        /// <summary>
++        /// Declines ONE open invite - <paramref name="senderPlayerId"/>'s - and leaves every other
++        /// sender's waiting; with no sender given, declines them all. The sender's slot is freed
++        /// by their own timeout (UGS exposes no decline signal back to them), and their record is
++        /// kept until their line is gone so the line still on the wire is not read as a new
++        /// invite. Raises <see cref="HostConnectionDataSO.OnInviteResolved"/> either way: the UI
++        /// reconciles its rows against <see cref="IsIncomingInvitePending"/>.
++        /// </summary>
++        public UniTask DeclineInviteAsync(string senderPlayerId = null)
+         {
+-            // Sender's slot is freed by their own timeout - UGS doesn't expose
+-            // a decline signal back to the sender.
+-            _lastFiredInvite     = null;
+-            _lastInviteResolved  = true;
++            if (string.IsNullOrEmpty(senderPlayerId))
++                _incomingInvites.ResolveAll();
++            else
++                _incomingInvites.Resolve(senderPlayerId);
++
+             _eventBus.RaiseInviteResolved();
+             return UniTask.CompletedTask;
+         }
+ 
++        /// <summary>
++        /// Ends every open invite and tells the UI: the local player is leaving for a different
++        /// party (accept, direct join, spectate) or leaving the one they are in.
++        /// </summary>
++        private void ResolveAllIncomingInvites()
++        {
++            _incomingInvites.ResolveAll();
++            _eventBus.RaiseInviteResolved();
++        }
++
+         /// <summary>
+         /// Client-side leave. Routes through <see cref="PartyInviteController"/>
+         /// for the Netcode shutdown + fresh local-host restart.
+@@ -1016,9 +1061,7 @@ namespace CosmicShore.Gameplay
+                 return;
+             }
+ 
+-            _lastFiredInvite    = null;
+-            _lastInviteResolved = true;
+-            _eventBus.RaiseInviteResolved();
++            ResolveAllIncomingInvites();
+ 
+             // Locally fire OnPartyMemberLeft so panels clear slots immediately
+             // instead of waiting for the next refresh tick.
+@@ -1414,18 +1457,18 @@ namespace CosmicShore.Gameplay
+                 if (connectionData.OnlinePlayers != null)
+                     RefreshOnlinePlayersDiff();
+ 
+-                // Scan composite invite_payloads for lines targeting us - and notice when the
+-                // line behind the invite we last surfaced is GONE (see ForgetWithdrawnInvite).
+-                bool lastHostStillInviting = false;
++                // Scan composite invite_payloads for lines targeting us - every sender's, into
++                // the inbox - and notice when the line behind an invite we surfaced is GONE
++                // (see SweepIncomingInvites).
++                _invitingSenders.Clear();
+                 foreach (var p in _lobbyService.ActiveLobby.Players)
+                 {
+                     if (p.Id == connectionData.LocalPlayerId) continue;
+                     if (!TryFindIncomingInvite(p, out var invite)) continue;
+-                    if (_lastFiredInvite.HasValue && _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
+-                        lastHostStillInviting = true;
++                    _invitingSenders.Add(invite.HostPlayerId);
+                     TryRaiseIncomingInvite(invite);
+                 }
+-                ForgetWithdrawnInvite(lastHostStillInviting);
++                SweepIncomingInvites();
+ 
+                 // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
+                 // because recipients won't set joined_party until after they read the
+@@ -1659,7 +1702,7 @@ namespace CosmicShore.Gameplay
+             => InviteService.ParseLine(line);
+ 
+         /// <summary>
+-        /// Drops the incoming-invite record once the sender no longer has a line for us.
++        /// Drops a sender's incoming-invite record once they no longer have a line for us.
+         ///
+         /// <para>
+         /// The record is keyed on the SENDER and it used to be permanent: after this player
+@@ -1680,75 +1723,47 @@ namespace CosmicShore.Gameplay
+         /// is in flight (the line is cleared as the corroboration lands) and while we are inside
+         /// that host's party (the in-session guard in <see cref="TryRaiseIncomingInvite"/> answers
+         /// any stale re-appearance there). An UNRESOLVED invite whose line vanished was withdrawn
+-        /// by the host, so the popup is told to go too.
++        /// by the host - and one that outlived <see cref="OUTGOING_INVITE_TIMEOUT_SECONDS"/> has
++        /// expired - so the popup, the panel rows and the badge are told to let it go.
+         /// </para>
+         /// </summary>
+-        private void ForgetWithdrawnInvite(bool lastHostStillInviting)
++        private void SweepIncomingInvites()
+         {
+-            if (!_lastFiredInvite.HasValue) { _inviteMissTicks = 0; return; }
+-            if (lastHostStillInviting)      { _inviteMissTicks = 0; return; }
++            bool transitioning = PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning;
+ 
+-            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+-                return;
++            _withdrawnInvites.Clear();
++            int ended = _incomingInvites.Sweep(
++                senderStillInviting: _invitingSenders.Contains,
++                hold: invite => transitioning || IsClientOfSession(invite.PartySessionId),
++                now: Time.unscaledTime,
++                withdrawn: _withdrawnInvites);
+ 
+-            var last = _lastFiredInvite.Value;
+-            if (_partySessionService.ActiveSession != null &&
+-                !connectionData.IsPartyHost &&
+-                _partySessionService.ActiveSession.Id == last.PartySessionId)
+-                return;
+-
+-            if (++_inviteMissTicks < 2) return;
+-            _inviteMissTicks = 0;
+-
+-            bool wasUnresolved = !_lastInviteResolved;
+-            _lastFiredInvite    = null;
+-            _lastInviteResolved = false;
++            if (ended == 0) return;
+ 
+-            if (wasUnresolved)
+-            {
++            foreach (var invite in _withdrawnInvites)
+                 CSDebug.LogVerbose(CSLogChannel.Party,
+-                    $"[INVITE-RECV] Invite from '{last.HostDisplayName}' was withdrawn (line gone) - dismissing.");
+-                _eventBus.RaiseInviteResolved();
+-            }
+-            else
+-            {
+-                CSDebug.LogVerbose(CSLogChannel.Party, $"[INVITE-RECV] Invite from '{last.HostDisplayName}' is over - a later invite from them will surface as new.");
+-            }
++                    $"[INVITE-RECV] Invite from '{invite.HostDisplayName}' is over (withdrawn or expired) - dismissing.");
++            _eventBus.RaiseInviteResolved();
+         }
+ 
++        /// <summary>True when we are a CLIENT inside <paramref name="sessionId"/> (not its host).</summary>
++        private bool IsClientOfSession(string sessionId)
++            => _partySessionService.ActiveSession != null &&
++               !connectionData.IsPartyHost &&
++               _partySessionService.ActiveSession.Id == sessionId;
++
+         private void TryRaiseIncomingInvite(PartyInviteData invite)
+         {
+-            // Already a client in this session - suppress re-fire.
+-            if (_partySessionService.ActiveSession != null &&
+-                !connectionData.IsPartyHost &&
+-                _partySessionService.ActiveSession.Id == invite.PartySessionId)
+-            {
+-                _lastFiredInvite    = invite;
+-                _lastInviteResolved = true;
+-                return;
+-            }
+-
+-            // PENDING → real id transition for an already-resolved invite:
+-            // silently update the cached record so WaitForRealSessionId can
+-            // observe the change without re-popping the popup.
+-            if (_lastInviteResolved &&
+-                _lastFiredInvite.HasValue &&
+-                _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
+-            {
+-                _lastFiredInvite = invite;
+-                return;
+-            }
+-
+-            bool isDuplicate = _lastFiredInvite.HasValue &&
+-                _lastFiredInvite.Value.PartySessionId == invite.PartySessionId &&
+-                _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId;
+-            if (isDuplicate) return;
++            // Per-sender dedup lives in the inbox: a line already on record is a duplicate, a line
++            // for a resolved invite only refreshes the record (the PENDING → real id transition
++            // the accept flow waits on), a line for the party we are already a client of is
++            // suppressed, and only a genuinely new invite is raised.
++            var observation = _incomingInvites.Observe(invite, Time.unscaledTime, IsClientOfSession(invite.PartySessionId));
++            if (observation != IncomingInviteInbox.Observation.New) return;
+ 
+             CSDebug.LogVerbose(CSLogChannel.Party,
+                 $"[INVITE-RECV] New invite from '{invite.HostDisplayName}' " +
+-                $"(sessionId: {invite.PartySessionId})");
+-            _lastFiredInvite    = invite;
+-            _lastInviteResolved = false;
++                $"(sessionId: {invite.PartySessionId}); {_incomingInvites.PendingCount(Time.unscaledTime)} open.");
+             _eventBus.RaiseInviteReceived(invite);
+ 
+             _scheduler.Boost();
+diff --git a/Assets/_Scripts/Controller/Party/PartyInviteController.cs b/Assets/_Scripts/Controller/Party/PartyInviteController.cs
+index 636403522..8a62f57cc 100644
+--- a/Assets/_Scripts/Controller/Party/PartyInviteController.cs
++++ b/Assets/_Scripts/Controller/Party/PartyInviteController.cs
+@@ -409,12 +409,14 @@ namespace CosmicShore.Gameplay
+         }
+ 
+         /// <summary>
+-        /// Decline the pending invite. Dismisses the popup and clears the invite.
++        /// Decline one sender's open invite (<paramref name="senderPlayerId"/>), leaving every
++        /// other sender's waiting in the inbox; with no sender given, declines them all. The
++        /// popup and the friends panel's rows reconcile on the OnInviteResolved raise.
+         /// </summary>
+-        public async UniTask DeclineInviteAsync()
++        public async UniTask DeclineInviteAsync(string senderPlayerId = null)
+         {
+             if (HostConnectionService.Instance != null)
+-                await HostConnectionService.Instance.DeclineInviteAsync();
++                await HostConnectionService.Instance.DeclineInviteAsync(senderPlayerId);
+         }
+ 
+         /// <summary>
+diff --git a/Assets/_Scripts/Controller/Party/Services/IncomingInviteInbox.cs b/Assets/_Scripts/Controller/Party/Services/IncomingInviteInbox.cs
+new file mode 100644
+index 000000000..81edd3d0a
+--- /dev/null
++++ b/Assets/_Scripts/Controller/Party/Services/IncomingInviteInbox.cs
+@@ -0,0 +1,362 @@
++// ─────────────────────────────────────────────────────────────────────────────
++// IncomingInviteInbox.cs
++// The recipient-side INBOX of party invites: every invite addressed to the local
++// player that is still open, keyed by its sender.
++//
++// WHY this class exists (R13 item 2, "an invite you miss is gone forever"):
++//   HostConnectionService used to remember ONE incoming invite (_lastFiredInvite +
++//   a resolved flag). With two friends inviting at once the refresh loop's
++//   duplicate check compared each line against whichever invite it had seen LAST,
++//   so the two invites took turns being "new": OnInviteReceived re-fired for both
++//   on every 0.75-1.5 s tick, the popup bounced between the two senders (its
++//   auto-hide timer reset each time), the invite sound replayed each tick, and the
++//   friends panel's rehydrate-on-open could only ever read the latest one. A
++//   decline, which resolves "the" invite, also dropped the other sender's.
++//
++//   Holding every open invite in one place, with the dedup done per SENDER, makes
++//   the popup, the friends panel's Requests rows and the unread badge three views
++//   of the same list - none of them can disagree about what is still answerable.
++//
++// LIFETIME:
++//   Pure C# - no Unity types. Created as a field on HostConnectionService, which
++//   is its single writer; UI reads it through the service's accessors. Time is a
++//   plain float the caller supplies (Time.unscaledTime in the service, a hand-set
++//   clock in tests).
++//
++// THREAD SAFETY:
++//   Main-thread only.
++// ─────────────────────────────────────────────────────────────────────────────
++
++using System;
++using System.Collections.Generic;
++using CosmicShore.ScriptableObjects;
++
++namespace CosmicShore.Gameplay
++{
++    /// <summary>
++    /// Every open party invite addressed to the local player, one per sender.
++    ///
++    /// <para>An entry is PENDING while it is unresolved and younger than
++    /// <see cref="LifetimeSeconds"/> (the host's own outgoing-invite timeout, so both sides
++    /// clear together). Resolved entries (accepted, declined, suppressed because we are already
++    /// in that sender's party) are kept, not deleted, until the sender's invite line is gone:
++    /// that is what stops a line that is still on the wire from re-surfacing as a new invite,
++    /// and what lets a later line from the same sender count as a NEW invite once the old one
++    /// is over (the "re-invite after a decline" and "3rd player can never get in" fixes).</para>
++    ///
++    /// <para>An entry is also UNSEEN until the friends panel (the inbox's on-screen form) has
++    /// been opened; <see cref="UnseenCount"/> is what the party panel's badge shows.</para>
++    /// </summary>
++    public sealed class IncomingInviteInbox
++    {
++        /// <summary>
++        /// Consecutive refresh ticks on which a sender had no line for us before their entry is
++        /// dropped. Two, so a single stale lobby snapshot (a presence-lobby converge mid-tick)
++        /// cannot flicker a live invite.
++        /// </summary>
++        public const int MissTicksBeforeWithdrawn = 2;
++
++        /// <summary>What <see cref="Observe"/> decided about a line the refresh loop found.</summary>
++        public enum Observation
++        {
++            /// <summary>A new open invite: the caller raises OnInviteReceived.</summary>
++            New = 0,
++            /// <summary>The same open invite seen again: nothing to raise.</summary>
++            Duplicate = 1,
++            /// <summary>
++            /// A line for an invite already resolved (the PENDING to real-session-id transition
++            /// of an accepted invite, or a declined one still on the wire): the record is updated
++            /// silently so the accept flow can read the real id, and nothing is raised.
++            /// </summary>
++            Refreshed = 2,
++            /// <summary>
++            /// A line for the party we are already a member of: not an invite. Recorded as
++            /// resolved so it is never raised.
++            /// </summary>
++            Suppressed = 3,
++        }
++
++        sealed class Entry
++        {
++            public PartyInviteData Invite;
++            public float ObservedAt;
++            public bool Resolved;
++            public bool Seen;
++            public int MissTicks;
++        }
++
++        // Oldest first: the order the invites arrived, which is the order the panel lists them.
++        readonly List<Entry> _entries = new();
++        readonly float _lifetimeSeconds;
++
++        /// <param name="lifetimeSeconds">
++        /// Seconds an invite stays pending after it was first observed. 0 or less means it never
++        /// expires on its own (the sender's line going away still ends it).
++        /// </param>
++        public IncomingInviteInbox(float lifetimeSeconds)
++        {
++            _lifetimeSeconds = Math.Max(0f, lifetimeSeconds);
++        }
++
++        /// <summary>Seconds an invite stays pending after it was first observed; 0 = never expires.</summary>
++        public float LifetimeSeconds => _lifetimeSeconds;
++
++        // ─────────────────────────────────────────────────────────────────────
++        // Writes (HostConnectionService only)
++        // ─────────────────────────────────────────────────────────────────────
++
++        /// <summary>
++        /// Records a line the refresh loop found addressed to us and says whether it is new.
++        /// Dedup is per SENDER: the same sender's same session seen again is a
++        /// <see cref="Observation.Duplicate"/>; the same sender with a different session id is a
++        /// new invite (they formed a new party) and replaces their old record.
++        /// </summary>
++        /// <param name="invite">The parsed line.</param>
++        /// <param name="now">The caller's clock.</param>
++        /// <param name="alreadyInSenderSession">
++        /// True when the local player is a client of the very session the line names, in which
++        /// case the line is a stale re-appearance, not an invite.
++        /// </param>
++        public Observation Observe(PartyInviteData invite, float now, bool alreadyInSenderSession)
++        {
++            var entry = Find(invite.HostPlayerId);
++
++            if (alreadyInSenderSession)
++            {
++                if (entry == null)
++                {
++                    entry = new Entry { ObservedAt = now };
++                    _entries.Add(entry);
++                }
++                entry.Invite    = invite;
++                entry.Resolved  = true;
++                entry.MissTicks = 0;
++                return Observation.Suppressed;
++            }
++
++            if (entry != null)
++            {
++                entry.MissTicks = 0;
++
++                if (entry.Resolved)
++                {
++                    entry.Invite = invite;
++                    return Observation.Refreshed;
++                }
++
++                if (entry.Invite.PartySessionId == invite.PartySessionId)
++                    return Observation.Duplicate;
++
++                // Same sender, a new party: a new invite, so a fresh clock and unread again.
++                entry.Invite     = invite;
++                entry.ObservedAt = now;
++                entry.Seen       = false;
++                return Observation.New;
++            }
++
++            _entries.Add(new Entry { Invite = invite, ObservedAt = now });
++            return Observation.New;
++        }
++
++        /// <summary>
++        /// One refresh tick's bookkeeping, run after every line has been
++        /// <see cref="Observe"/>d: drops a sender's record once their line has been gone for
++        /// <see cref="MissTicksBeforeWithdrawn"/> ticks, and ends an invite that outlived
++        /// <see cref="LifetimeSeconds"/> while its line is still on the wire.
++        /// </summary>
++        /// <param name="senderStillInviting">Whether this tick found a line from that sender.</param>
++        /// <param name="hold">
++        /// True for an invite whose record must be left alone this tick: a join to it is in
++        /// flight (the line is cleared as the corroboration lands) or we are inside that sender's
++        /// party (a stale re-appearance there is answered by <see cref="Observe"/>).
++        /// </param>
++        /// <param name="now">The caller's clock.</param>
++        /// <param name="withdrawn">
++        /// Receives every invite that was still PENDING and is now over (withdrawn by the sender
++        /// or expired), so the caller can tell the UI. A resolved record that is dropped is not
++        /// reported: nothing on screen is waiting on it.
++        /// </param>
++        /// <returns>How many invites were added to <paramref name="withdrawn"/>.</returns>
++        public int Sweep(Func<string, bool> senderStillInviting, Func<PartyInviteData, bool> hold,
++                         float now, List<PartyInviteData> withdrawn)
++        {
++            int ended = 0;
++
++            for (int i = _entries.Count - 1; i >= 0; i--)
++            {
++                var entry = _entries[i];
++                bool stillInviting = senderStillInviting != null && senderStillInviting(entry.Invite.HostPlayerId);
++
++                if (stillInviting)
++                {
++                    entry.MissTicks = 0;
++
++                    // Outlived its lifetime while the line lingers (our clock started later than
++                    // the sender's, so this is rare): end it, but keep the record resolved so the
++                    // lingering line is not read as a new invite next tick.
++                    if (!entry.Resolved && HasExpired(entry, now))
++                    {
++                        entry.Resolved = true;
++                        withdrawn?.Add(entry.Invite);
++                        ended++;
++                    }
++                    continue;
++                }
++
++                if (hold != null && hold(entry.Invite))
++                    continue;
++
++                if (++entry.MissTicks < MissTicksBeforeWithdrawn)
++                    continue;
++
++                bool wasPending = IsPending(entry, now);
++                _entries.RemoveAt(i);
++
++                if (wasPending)
++                {
++                    withdrawn?.Add(entry.Invite);
++                    ended++;
++                }
++            }
++
++            return ended;
++        }
++
++        /// <summary>
++        /// Ends one sender's invite (a Decline). Returns true when it was pending.
++        /// The record stays until the sender's line is gone (see the class summary).
++        /// </summary>
++        public bool Resolve(string senderPlayerId)
++        {
++            var entry = Find(senderPlayerId);
++            if (entry == null) return false;
++
++            bool wasPending = !entry.Resolved;
++            entry.Resolved = true;
++            return wasPending;
++        }
++
++        /// <summary>
++        /// Ends every open invite: the local player accepted one, joined a party directly, went
++        /// to spectate, or left their party. Whatever else was waiting is moot, since they are
++        /// leaving for a different party. Returns true when any was pending.
++        /// </summary>
++        public bool ResolveAll()
++        {
++            bool anyPending = false;
++            foreach (var entry in _entries)
++            {
++                anyPending |= !entry.Resolved;
++                entry.Resolved = true;
++            }
++            return anyPending;
++        }
++
++        /// <summary>The inbox has been looked at (the friends panel opened): nothing is unseen.</summary>
++        public void MarkAllSeen()
++        {
++            foreach (var entry in _entries)
++                entry.Seen = true;
++        }
++
++        /// <summary>Forgets everything (Menu_Main reloaded).</summary>
++        public void Clear() => _entries.Clear();
++
++        // ─────────────────────────────────────────────────────────────────────
++        // Reads
++        // ─────────────────────────────────────────────────────────────────────
++
++        /// <summary>How many invites are still open.</summary>
++        public int PendingCount(float now)
++        {
++            int count = 0;
++            foreach (var entry in _entries)
++                if (IsPending(entry, now)) count++;
++            return count;
++        }
++
++        /// <summary>How many open invites the player has not had on screen in the friends panel yet.</summary>
++        public int UnseenCount(float now)
++        {
++            int count = 0;
++            foreach (var entry in _entries)
++                if (IsPending(entry, now) && !entry.Seen) count++;
++            return count;
++        }
++
++        /// <summary>Copies every open invite into <paramref name="into"/>, oldest first.</summary>
++        public void CopyPending(List<PartyInviteData> into, float now)
++        {
++            if (into == null) return;
++            into.Clear();
++            foreach (var entry in _entries)
++                if (IsPending(entry, now)) into.Add(entry.Invite);
++        }
++
++        /// <summary>The most recently received open invite, or null when nothing is open.</summary>
++        public PartyInviteData? Newest(float now)
++        {
++            for (int i = _entries.Count - 1; i >= 0; i--)
++                if (IsPending(_entries[i], now)) return _entries[i].Invite;
++            return null;
++        }
++
++        /// <summary>The longest-waiting open invite, or null when nothing is open.</summary>
++        public PartyInviteData? Oldest(float now)
++        {
++            foreach (var entry in _entries)
++                if (IsPending(entry, now)) return entry.Invite;
++            return null;
++        }
++
++        /// <summary>Whether that sender's invite is still open.</summary>
++        public bool IsPending(string senderPlayerId, float now)
++        {
++            var entry = Find(senderPlayerId);
++            return entry != null && IsPending(entry, now);
++        }
++
++        /// <summary>That sender's open invite, when there is one.</summary>
++        public bool TryGetPending(string senderPlayerId, float now, out PartyInviteData invite)
++        {
++            var entry = Find(senderPlayerId);
++            if (entry != null && IsPending(entry, now))
++            {
++                invite = entry.Invite;
++                return true;
++            }
++            invite = default;
++            return false;
++        }
++
++        /// <summary>
++        /// Seconds that sender's invite stays open from <paramref name="now"/>: 0 when it is not
++        /// open, <see cref="float.PositiveInfinity"/> when invites never expire.
++        /// </summary>
++        public float SecondsRemaining(string senderPlayerId, float now)
++        {
++            var entry = Find(senderPlayerId);
++            if (entry == null || !IsPending(entry, now)) return 0f;
++            if (_lifetimeSeconds <= 0f) return float.PositiveInfinity;
++            return Math.Max(0f, entry.ObservedAt + _lifetimeSeconds - now);
++        }
++
++        // ─────────────────────────────────────────────────────────────────────
++        // Helpers
++        // ─────────────────────────────────────────────────────────────────────
++
++        Entry Find(string senderPlayerId)
++        {
++            if (string.IsNullOrEmpty(senderPlayerId)) return null;
++            foreach (var entry in _entries)
++                if (entry.Invite.HostPlayerId == senderPlayerId) return entry;
++            return null;
++        }
++
++        bool HasExpired(Entry entry, float now)
++            => _lifetimeSeconds > 0f && now - entry.ObservedAt >= _lifetimeSeconds;
++
++        bool IsPending(Entry entry, float now)
++            => !entry.Resolved && !HasExpired(entry, now);
++    }
++}
+diff --git a/Assets/_Scripts/Controller/Party/Services/IncomingInviteInbox.cs.meta b/Assets/_Scripts/Controller/Party/Services/IncomingInviteInbox.cs.meta
+new file mode 100644
+index 000000000..7b478e097
+--- /dev/null
++++ b/Assets/_Scripts/Controller/Party/Services/IncomingInviteInbox.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: b07ee681f5fb4ec4bed52c96ad654ed2
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/_Scripts/Tests/Editor/IncomingInviteInboxTests.cs b/Assets/_Scripts/Tests/Editor/IncomingInviteInboxTests.cs
+new file mode 100644
+index 000000000..473e08ee0
+--- /dev/null
++++ b/Assets/_Scripts/Tests/Editor/IncomingInviteInboxTests.cs
+@@ -0,0 +1,424 @@
++#if UNITY_EDITOR
++using System.Collections.Generic;
++using CosmicShore.Gameplay;
++using CosmicShore.ScriptableObjects;
++using CosmicShore.UI;
++using NUnit.Framework;
++
++namespace CosmicShore.Tests
++{
++    /// <summary>
++    /// IncomingInviteInbox tests - the recipient-side list behind the invite popup, the friends
++    /// panel's Requests rows and the party panel's unread badge (R13 item 2, "an invite you miss
++    /// is gone forever").
++    ///
++    /// WHY THIS MATTERS:
++    /// The service used to remember ONE incoming invite, so two friends inviting at once took
++    /// turns being "new" on every refresh tick (the popup bounced between them and the sound
++    /// replayed each tick), the panel could only rehydrate the latest one, and declining one
++    /// sender's invite dropped the other's. None of that needs a lobby to assert: the inbox is
++    /// pure, with a hand-set clock, so every shape a two-machine play test cannot reliably
++    /// produce is pinned here.
++    /// </summary>
++    [TestFixture]
++    public class IncomingInviteInboxTests
++    {
++        const float Lifetime = 60f;
++
++        static PartyInviteData Invite(string sender, string session = null, string name = null, int avatar = 0)
++            => new(sender, session ?? $"session-{sender}", name ?? sender, avatar);
++
++        static IncomingInviteInbox NewInbox(float lifetime = Lifetime) => new(lifetime);
++
++        static List<string> PendingSenders(IncomingInviteInbox inbox, float now)
++        {
++            var list = new List<PartyInviteData>();
++            inbox.CopyPending(list, now);
++            var ids = new List<string>();
++            foreach (var i in list) ids.Add(i.HostPlayerId);
++            return ids;
++        }
++
++        /// <summary>One refresh tick's sweep where every listed sender still has a line for us.</summary>
++        static int Sweep(IncomingInviteInbox inbox, float now, List<PartyInviteData> withdrawn, params string[] stillInviting)
++        {
++            var set = new HashSet<string>(stillInviting);
++            return inbox.Sweep(set.Contains, _ => false, now, withdrawn);
++        }
++
++        #region Observe
++
++        [Test]
++        public void FirstInvite_IsNew_AndPendingAndUnseen()
++        {
++            var inbox = NewInbox();
++
++            Assert.AreEqual(IncomingInviteInbox.Observation.New, inbox.Observe(Invite("a"), 10f, false));
++
++            Assert.AreEqual(1, inbox.PendingCount(10f));
++            Assert.AreEqual(1, inbox.UnseenCount(10f));
++            Assert.IsTrue(inbox.IsPending("a", 10f));
++        }
++
++        [Test]
++        public void SameSenderSameSession_IsDuplicate_NotRaisedAgain()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++
++            Assert.AreEqual(IncomingInviteInbox.Observation.Duplicate, inbox.Observe(Invite("a"), 11.5f, false));
++            Assert.AreEqual(IncomingInviteInbox.Observation.Duplicate, inbox.Observe(Invite("a"), 13f, false));
++            Assert.AreEqual(1, inbox.PendingCount(13f));
++        }
++
++        [Test]
++        public void TwoSenders_BothStayPending_AndNeitherIsRaisedTwice()
++        {
++            // The measured defect: with a single cached invite the two lines alternated as "new"
++            // on every tick. Three ticks with both lines present must raise each exactly once.
++            var inbox = NewInbox();
++            int raised = 0;
++
++            for (int tick = 0; tick < 3; tick++)
++            {
++                float now = 10f + tick * 1.5f;
++                if (inbox.Observe(Invite("a"), now, false) == IncomingInviteInbox.Observation.New) raised++;
++                if (inbox.Observe(Invite("b"), now, false) == IncomingInviteInbox.Observation.New) raised++;
++            }
++
++            Assert.AreEqual(2, raised, "each sender's invite is raised once");
++            Assert.AreEqual(2, inbox.PendingCount(13f));
++            CollectionAssert.AreEqual(new[] { "a", "b" }, PendingSenders(inbox, 13f), "oldest first");
++        }
++
++        [Test]
++        public void SameSenderNewSession_IsANewInvite_ReplacingTheOld()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a", "s1"), 10f, false);
++            inbox.MarkAllSeen();
++
++            Assert.AreEqual(IncomingInviteInbox.Observation.New, inbox.Observe(Invite("a", "s2"), 30f, false));
++
++            Assert.AreEqual(1, inbox.PendingCount(30f), "one record per sender");
++            Assert.IsTrue(inbox.TryGetPending("a", 30f, out var current));
++            Assert.AreEqual("s2", current.PartySessionId);
++            Assert.AreEqual(1, inbox.UnseenCount(30f), "a new invite is unread again");
++            Assert.AreEqual(Lifetime, inbox.SecondsRemaining("a", 30f), 0.001f, "and its clock restarted");
++        }
++
++        [Test]
++        public void LineForTheSessionWeAreAlreadyIn_IsSuppressed_NotPending()
++        {
++            var inbox = NewInbox();
++
++            Assert.AreEqual(IncomingInviteInbox.Observation.Suppressed, inbox.Observe(Invite("a"), 10f, alreadyInSenderSession: true));
++
++            Assert.AreEqual(0, inbox.PendingCount(10f));
++            Assert.AreEqual(0, inbox.UnseenCount(10f));
++            Assert.AreEqual(IncomingInviteInbox.Observation.Refreshed, inbox.Observe(Invite("a"), 11f, false),
++                "a later tick's same line only refreshes the resolved record");
++        }
++
++        #endregion
++
++        #region Resolve
++
++        [Test]
++        public void ResolveOne_KeepsTheOtherSendersInvite()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("b"), 11f, false);
++
++            Assert.IsTrue(inbox.Resolve("a"));
++
++            Assert.IsFalse(inbox.IsPending("a", 12f));
++            Assert.IsTrue(inbox.IsPending("b", 12f));
++            Assert.AreEqual(1, inbox.PendingCount(12f));
++            Assert.IsFalse(inbox.Resolve("a"), "already resolved");
++            Assert.IsFalse(inbox.Resolve("nobody"));
++        }
++
++        [Test]
++        public void ResolveAll_EndsEverything_AndReportsWhetherAnyWasOpen()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("b"), 11f, false);
++
++            Assert.IsTrue(inbox.ResolveAll());
++            Assert.AreEqual(0, inbox.PendingCount(12f));
++            Assert.IsNull(inbox.Newest(12f));
++            Assert.IsFalse(inbox.ResolveAll(), "nothing was open the second time");
++        }
++
++        [Test]
++        public void ResolvedSenderSeenAgain_IsRefreshedSilently_WithTheNewSessionId()
++        {
++            // The accept flow: the line goes PENDING -> real session id after we accepted, and
++            // the record must follow it without re-raising the popup.
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a", "PENDING"), 10f, false);
++            inbox.ResolveAll();
++
++            Assert.AreEqual(IncomingInviteInbox.Observation.Refreshed, inbox.Observe(Invite("a", "real-id"), 12f, false));
++            Assert.AreEqual(0, inbox.PendingCount(12f));
++        }
++
++        [Test]
++        public void Clear_ForgetsEverything()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Clear();
++
++            Assert.AreEqual(0, inbox.PendingCount(10f));
++            Assert.AreEqual(IncomingInviteInbox.Observation.New, inbox.Observe(Invite("a"), 11f, false), "a fresh record after the reload");
++        }
++
++        #endregion
++
++        #region Lifetime
++
++        [Test]
++        public void Expiry_EndsAnInviteAfterItsLifetime()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++
++            Assert.IsTrue(inbox.IsPending("a", 10f + Lifetime - 0.01f));
++            Assert.AreEqual(0.01f, inbox.SecondsRemaining("a", 10f + Lifetime - 0.01f), 0.001f);
++
++            Assert.IsFalse(inbox.IsPending("a", 10f + Lifetime));
++            Assert.AreEqual(0f, inbox.SecondsRemaining("a", 10f + Lifetime));
++            Assert.AreEqual(0, inbox.UnseenCount(10f + Lifetime), "an expired invite is not unread either");
++        }
++
++        [Test]
++        public void ZeroLifetime_NeverExpires()
++        {
++            var inbox = NewInbox(0f);
++            inbox.Observe(Invite("a"), 10f, false);
++
++            Assert.IsTrue(inbox.IsPending("a", 1e6f));
++            Assert.IsTrue(float.IsPositiveInfinity(inbox.SecondsRemaining("a", 1e6f)));
++        }
++
++        [Test]
++        public void SecondsRemaining_CountsFromFirstObservation_NotFromTheLatestDuplicate()
++        {
++            // The panel's row clock: re-opening the panel 40 s in shows 20 s left, not a fresh 60.
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("a"), 50f, false);
++
++            Assert.AreEqual(20f, inbox.SecondsRemaining("a", 50f), 0.001f);
++        }
++
++        #endregion
++
++        #region Seen (the badge)
++
++        [Test]
++        public void MarkAllSeen_ClearsUnread_KeepsPending_AndALaterInviteIsUnreadAgain()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("b"), 11f, false);
++            Assert.AreEqual(2, inbox.UnseenCount(11f));
++
++            inbox.MarkAllSeen();
++
++            Assert.AreEqual(0, inbox.UnseenCount(11f));
++            Assert.AreEqual(2, inbox.PendingCount(11f), "seen is not answered");
++
++            inbox.Observe(Invite("c"), 12f, false);
++            Assert.AreEqual(1, inbox.UnseenCount(12f));
++        }
++
++        [Test]
++        public void UnseenCount_ExcludesResolved()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("b"), 11f, false);
++            inbox.Resolve("a");
++
++            Assert.AreEqual(1, inbox.UnseenCount(11f));
++        }
++
++        #endregion
++
++        #region Sweep
++
++        [Test]
++        public void Sweep_LineGoneOneTick_KeepsTheInvite()
++        {
++            // A single stale lobby snapshot must not flicker a live invite.
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            var withdrawn = new List<PartyInviteData>();
++
++            Assert.AreEqual(0, Sweep(inbox, 11.5f, withdrawn));
++            Assert.IsTrue(inbox.IsPending("a", 11.5f));
++            Assert.IsEmpty(withdrawn);
++        }
++
++        [Test]
++        public void Sweep_LineGoneTwoTicks_WithdrawsTheOpenInvite()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("b"), 10f, false);
++            var withdrawn = new List<PartyInviteData>();
++
++            Sweep(inbox, 11.5f, withdrawn, "b");
++            Assert.AreEqual(1, Sweep(inbox, 13f, withdrawn, "b"));
++
++            Assert.AreEqual(1, withdrawn.Count);
++            Assert.AreEqual("a", withdrawn[0].HostPlayerId);
++            Assert.IsFalse(inbox.IsPending("a", 13f));
++            Assert.IsTrue(inbox.IsPending("b", 13f), "the other sender's line is still there");
++        }
++
++        [Test]
++        public void Sweep_ALinePresentResetsTheMissCount()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            var withdrawn = new List<PartyInviteData>();
++
++            Sweep(inbox, 11.5f, withdrawn);          // miss 1
++            Sweep(inbox, 13f, withdrawn, "a");       // back
++            Sweep(inbox, 14.5f, withdrawn);          // miss 1 again, not 2
++
++            Assert.IsTrue(inbox.IsPending("a", 14.5f));
++            Assert.IsEmpty(withdrawn);
++        }
++
++        [Test]
++        public void Sweep_HeldInvite_IsLeftAlone()
++        {
++            // A join to it is in flight, or we are inside that sender's party.
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            var withdrawn = new List<PartyInviteData>();
++
++            for (int tick = 0; tick < 4; tick++)
++                inbox.Sweep(_ => false, invite => invite.HostPlayerId == "a", 11.5f + tick * 1.5f, withdrawn);
++
++            Assert.IsTrue(inbox.IsPending("a", 17f));
++            Assert.IsEmpty(withdrawn);
++        }
++
++        [Test]
++        public void Sweep_ResolvedRecordWhoseLineIsGone_IsDroppedSilently_SoTheNextLineIsANewInvite()
++        {
++            // The "re-invite after a decline" fix: once the declined invite's line is gone, a
++            // later line from the same sender (even the same session id) is raised again.
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a", "s1"), 10f, false);
++            inbox.Resolve("a");
++            var withdrawn = new List<PartyInviteData>();
++
++            Sweep(inbox, 11.5f, withdrawn);
++            Assert.AreEqual(0, Sweep(inbox, 13f, withdrawn), "nothing on screen was waiting on it");
++            Assert.IsEmpty(withdrawn);
++
++            Assert.AreEqual(IncomingInviteInbox.Observation.New, inbox.Observe(Invite("a", "s1"), 20f, false));
++            Assert.IsTrue(inbox.IsPending("a", 20f));
++        }
++
++        [Test]
++        public void Sweep_ExpiredWhileTheLineLingers_IsReportedOnce_AndNotRaisedAgainWhileItLingers()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            var withdrawn = new List<PartyInviteData>();
++
++            Assert.AreEqual(1, Sweep(inbox, 10f + Lifetime + 1f, withdrawn, "a"));
++            Assert.AreEqual("a", withdrawn[0].HostPlayerId);
++
++            withdrawn.Clear();
++            Assert.AreEqual(0, Sweep(inbox, 10f + Lifetime + 2.5f, withdrawn, "a"), "reported once");
++            Assert.AreEqual(IncomingInviteInbox.Observation.Refreshed, inbox.Observe(Invite("a"), 10f + Lifetime + 4f, false),
++                "the lingering line is not a new invite");
++
++            // Once the line is gone, the record goes with it and the sender can invite afresh.
++            Sweep(inbox, 10f + Lifetime + 5.5f, withdrawn);
++            Sweep(inbox, 10f + Lifetime + 7f, withdrawn);
++            Assert.AreEqual(IncomingInviteInbox.Observation.New, inbox.Observe(Invite("a"), 10f + Lifetime + 8.5f, false));
++        }
++
++        #endregion
++
++        #region Order
++
++        [Test]
++        public void NewestAndOldest_FollowArrivalOrder_SkippingResolved()
++        {
++            var inbox = NewInbox();
++            inbox.Observe(Invite("a"), 10f, false);
++            inbox.Observe(Invite("b"), 11f, false);
++            inbox.Observe(Invite("c"), 12f, false);
++
++            Assert.AreEqual("c", inbox.Newest(12f).Value.HostPlayerId);
++            Assert.AreEqual("a", inbox.Oldest(12f).Value.HostPlayerId);
++
++            inbox.Resolve("c");
++            inbox.Resolve("a");
++            Assert.AreEqual("b", inbox.Newest(12f).Value.HostPlayerId);
++            Assert.AreEqual("b", inbox.Oldest(12f).Value.HostPlayerId);
++            CollectionAssert.AreEqual(new[] { "b" }, PendingSenders(inbox, 12f));
++        }
++
++        #endregion
++
++        #region The popup's detail line and the badge's label
++
++        [Test]
++        public void Notice_OneInvite_SaysWhereItWaitsAndForHowLong()
++        {
++            Assert.AreEqual("Also in your friends list for 60 s", PartyInviteNotificationPanel.Notice.Compose(1, 60f));
++            Assert.AreEqual("Also in your friends list for 58 s", PartyInviteNotificationPanel.Notice.Compose(1, 57.2f), "rounded up");
++            Assert.AreEqual("Also in your friends list for 1 s", PartyInviteNotificationPanel.Notice.Compose(1, 0.2f));
++        }
++
++        [Test]
++        public void Notice_SeveralInvites_CountsThem()
++        {
++            Assert.AreEqual("2 invites waiting. Also in your friends list for 60 s", PartyInviteNotificationPanel.Notice.Compose(2, 60f));
++            Assert.AreEqual("3 invites waiting. Also in your friends list", PartyInviteNotificationPanel.Notice.Compose(3, 0f));
++        }
++
++        [Test]
++        public void Notice_UnknownLifetime_LeavesTheSecondsOff()
++        {
++            Assert.AreEqual("Also in your friends list", PartyInviteNotificationPanel.Notice.Compose(1, 0f));
++            Assert.AreEqual("Also in your friends list", PartyInviteNotificationPanel.Notice.Compose(0, float.PositiveInfinity));
++        }
++
++        [Test]
++        public void Notice_IsAscii()
++        {
++            // The UI font carries 97 glyphs; anything else is tofu.
++            foreach (char c in PartyInviteNotificationPanel.Notice.Compose(2, 42f))
++                Assert.LessOrEqual((int)c, 126, $"non-ASCII character {(int)c}");
++        }
++
++        [Test]
++        public void BadgeLabel_EmptyForZero_NumberUpToCap_PlusPastIt()
++        {
++            Assert.AreEqual(string.Empty, PartyInviteBadge.Label.Format(0, 9));
++            Assert.AreEqual(string.Empty, PartyInviteBadge.Label.Format(-1, 9));
++            Assert.AreEqual("1", PartyInviteBadge.Label.Format(1, 9));
++            Assert.AreEqual("9", PartyInviteBadge.Label.Format(9, 9));
++            Assert.AreEqual("9+", PartyInviteBadge.Label.Format(12, 9));
++            Assert.AreEqual("1+", PartyInviteBadge.Label.Format(2, 0), "a cap below 1 is treated as 1");
++        }
++
++        #endregion
++    }
++}
++#endif
+diff --git a/Assets/_Scripts/Tests/Editor/IncomingInviteInboxTests.cs.meta b/Assets/_Scripts/Tests/Editor/IncomingInviteInboxTests.cs.meta
+new file mode 100644
+index 000000000..c272d2e9f
+--- /dev/null
++++ b/Assets/_Scripts/Tests/Editor/IncomingInviteInboxTests.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: 971aff8d31424110b841a2824a161695
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/_Scripts/UI/Elements/ArcadeLobbyList.cs b/Assets/_Scripts/UI/Elements/ArcadeLobbyList.cs
+index 2330e78f0..909555883 100644
+--- a/Assets/_Scripts/UI/Elements/ArcadeLobbyList.cs
++++ b/Assets/_Scripts/UI/Elements/ArcadeLobbyList.cs
+@@ -98,12 +98,19 @@ namespace CosmicShore.UI
+ 
+         Func<string, ulong> _clientIdLookup;
+ 
++        // The modal this panel lives in (Arcade, Arena, Mission or Toybox screen modal), or null
++        // outside one. Read for the invite auto-open: those modals hide by CanvasGroup alpha and
++        // never deactivate, so "enabled" does not mean "on screen" here.
++        ModalWindowManager _ownerModal;
++
+         // ─────────────────────────────────────────────────────────────────────
+         // Lifecycle
+         // ─────────────────────────────────────────────────────────────────────
+ 
+         void Awake()
+         {
++            _ownerModal = GetComponentInParent<ModalWindowManager>(true);
++
+             if (leaveButton)
+                 leaveButton.onClick.AddListener(OnLeaveButtonPressed);
+ 
+@@ -283,6 +290,13 @@ namespace CosmicShore.UI
+ 
+         void HandleInviteReceived(PartyInviteData _)
+         {
++            // "While the arcade lobby is visible" is literal: this panel's modal hides by alpha
++            // and stays enabled, so without the check all four lobby copies opened their friends
++            // panel on every invite, whatever screen the player was on - which counted the invite
++            // as seen before anyone saw it, and met the player with an open panel on their next
++            // visit. A hidden lobby leaves the badge to announce the invite.
++            if (_ownerModal != null && !_ownerModal.IsOpen) return;
++
+             if (friendsListPanel != null && !friendsListPanel.gameObject.activeSelf)
+                 friendsListPanel.Show();
+         }
+diff --git a/Assets/_Scripts/UI/Elements/FriendsListPanel.cs b/Assets/_Scripts/UI/Elements/FriendsListPanel.cs
+index b07a2b1dd..ad616ccf0 100644
+--- a/Assets/_Scripts/UI/Elements/FriendsListPanel.cs
++++ b/Assets/_Scripts/UI/Elements/FriendsListPanel.cs
+@@ -32,7 +32,13 @@ namespace CosmicShore.UI
+     ///                  who is already a friend, or already asked, shows that state
+     ///                  instead of the button (read from FriendsDataSO).
+     ///   • Requests   - incoming friend requests AND incoming party invites
+-    ///                  combined, with Accept/Decline buttons.
++    ///                  combined, with Accept/Decline buttons. The party-invite rows
++    ///                  are the INBOX: every open invite the service holds
++    ///                  (<see cref="HostConnectionService.CopyPendingIncomingInvites"/>),
++    ///                  re-read each time the panel opens, so an invite whose popup
++    ///                  auto-hid is still here for its full lifetime and a second
++    ///                  invite never displaces the first. Opening the panel marks the
++    ///                  inbox seen, which clears the party panel's unread badge.
+     ///
+     /// Sound plays when a party invite is received.
+     /// </summary>
+@@ -85,9 +91,12 @@ namespace CosmicShore.UI
+         [Header("Settings")]
+         [Tooltip("Seconds before an incoming request auto-declines. 0 = no expiry.")]
+         [SerializeField] private float friendRequestExpirationSeconds = 600f;
+-        [Tooltip("Seconds the incoming party-invite row lives in the Requests list before it is " +
+-                 "auto-removed. Kept in step with the host's outgoing-invite timeout so both sides " +
+-                 "clear together (host reverts the invitee to 'online' and can re-invite).\n\n" +
++        [Tooltip("Upper bound on the seconds an incoming party-invite row lives in the Requests list " +
++                 "before it is auto-removed. The row's real clock is the service's inbox (the host's " +
++                 "outgoing-invite timeout, counted from when the invite was first observed), so a row " +
++                 "spawned by re-opening the panel 40 s after the invite arrived shows the 20 s it has " +
++                 "left rather than a fresh 60. Kept in step with that timeout so both sides clear " +
++                 "together (host reverts the invitee to 'online' and can re-invite).\n\n" +
+                  "This is NOT a pure human reaction window: the recipient's clock starts when " +
+                  "their lobby POLL observes the invite, which is a 0.75-1.5s refresh plus RTT " +
+                  "plus any rate-limit backoff behind the moment the host sent it. 10s was the " +
+@@ -106,9 +115,41 @@ namespace CosmicShore.UI
+         readonly List<GameObject> _spawnedRequests = new();
+         readonly List<GameObject> _spawnedRecent = new();
+ 
+-        /// <summary>Currently-pending party invites keyed by sender PlayerId.</summary>
++        /// <summary>Currently-pending party invites keyed by sender PlayerId (a mirror of the service's inbox).</summary>
+         readonly Dictionary<string, PartyInviteData> _pendingPartyInvites = new();
+ 
++        /// <summary>Scratch for copying the inbox out of the service without allocating per open.</summary>
++        readonly List<PartyInviteData> _rehydrateScratch = new();
++
++        /// <summary>
++        /// The modal window this panel lives in (Arcade, Arena, Mission or Toybox screen modal), or
++        /// null for a panel placed outside one. Those modals never deactivate - they hide by
++        /// CanvasGroup alpha - so this panel can be ENABLED while nothing of it is on screen, and
++        /// "the player has seen the inbox" has to be read off the modal, not off OnEnable.
++        /// </summary>
++        ModalWindowManager _ownerModal;
++        bool _ownerModalResolved;
++
++        /// <summary>
++        /// True when the player can actually see this panel: enabled, and its owning modal (if
++        /// any) is open. A hidden modal's copy still receives every SOAP raise and keeps its rows
++        /// current, but it must not count the inbox as seen.
++        /// </summary>
++        bool IsShownToPlayer => isActiveAndEnabled && (OwnerModal == null || OwnerModal.IsOpen);
++
++        ModalWindowManager OwnerModal
++        {
++            get
++            {
++                if (!_ownerModalResolved)
++                {
++                    _ownerModal = GetComponentInParent<ModalWindowManager>(true);
++                    _ownerModalResolved = true;
++                }
++                return _ownerModal;
++            }
++        }
++
+         /// <summary>PlayerIds for whom we've already sent an invite (keeps row in pending tint).</summary>
+         readonly HashSet<string> _outgoingInvitePlayerIds = new();
+ 
+@@ -144,11 +185,18 @@ namespace CosmicShore.UI
+             ValidateSceneWiring();
+             ResetAddFriendSection();
+             RehydrateOutgoingInvitesFromService();
+-            RehydratePendingInviteFromService();
++            RehydratePendingInvitesFromService();
+             SubscribeSoap();
+             SubscribeServiceEvents();
+             PopulateAll();
+ 
++            // The inbox is on screen: nothing in it is unread any more (the party panel's badge
++            // reads this count). Only when the player can see it: the modal this panel lives in
++            // hides by alpha, so an enable is not an open there - its OnModalOpened is.
++            if (OwnerModal != null)
++                OwnerModal.OnModalOpened += HandleOwnerModalOpened;
++            MarkInboxSeenIfShown();
++
+             // Pull fresh presence/invite data the moment the panel opens so the
+             // user never sees stale "X Players Online" or a missing invite row
+             // that was added between polling ticks. Debounced and mutex-aware
+@@ -156,6 +204,23 @@ namespace CosmicShore.UI
+             HostConnectionService.Instance?.ForceRefreshNow();
+         }
+ 
++        /// <summary>
++        /// Tells the service the inbox has been looked at, when (and only when) this panel is
++        /// actually in front of the player. The party panel's unread badge reads that count.
++        /// </summary>
++        void MarkInboxSeenIfShown()
++        {
++            if (!IsShownToPlayer) return;
++            HostConnectionService.Instance?.MarkIncomingInvitesSeen();
++        }
++
++        /// <summary>
++        /// The modal this panel lives in came up with the panel already open in it (it was left
++        /// open on an earlier visit, or an invite spawned rows while the modal was hidden): now
++        /// the player can see the rows, so the inbox is seen.
++        /// </summary>
++        void HandleOwnerModalOpened() => MarkInboxSeenIfShown();
++
+         /// <summary>
+         /// Pulls every still-outstanding outgoing invite from the service so the
+         /// pending tint is restored on rows the user invited before this panel
+@@ -206,26 +271,31 @@ namespace CosmicShore.UI
+         }
+ 
+         /// <summary>
+-        /// Pulls the most recently-received, still-unresolved party invite from
+-        /// <see cref="HostConnectionService.LastPendingInvite"/> and seeds it
+-        /// into <see cref="_pendingPartyInvites"/>. This closes the gap where
+-        /// an invite arrived while the panel was hidden - without this, the
+-        /// OnEnable SOAP subscription would have missed the event and the
+-        /// rendered Requests section would be empty on first open.
++        /// Re-reads EVERY still-open party invite from the service's inbox
++        /// (<see cref="HostConnectionService.CopyPendingIncomingInvites"/>) into
++        /// <see cref="_pendingPartyInvites"/>. This closes the gap where invites arrived while
++        /// the panel was hidden - the OnEnable SOAP subscription missed those raises - and it
++        /// used to read only the LATEST one, so a second invite that arrived before the panel
++        /// was opened hid the first. The service is the source of truth, so the local map is
++        /// rebuilt from it rather than merged; without a service (offline) it is left as is.
+         /// </summary>
+-        void RehydratePendingInviteFromService()
++        void RehydratePendingInvitesFromService()
+         {
+             var service = HostConnectionService.Instance;
+             if (service == null) return;
+ 
+-            var pending = service.LastPendingInvite;
+-            if (!pending.HasValue) return;
+-
+-            _pendingPartyInvites[pending.Value.HostPlayerId] = pending.Value;
++            _pendingPartyInvites.Clear();
++            service.CopyPendingIncomingInvites(_rehydrateScratch);
++            foreach (var invite in _rehydrateScratch)
++                _pendingPartyInvites[invite.HostPlayerId] = invite;
++            _rehydrateScratch.Clear();
+         }
+ 
+         void OnDisable()
+         {
++            if (OwnerModal != null)
++                OwnerModal.OnModalOpened -= HandleOwnerModalOpened;
++
+             UnsubscribeSoap();
+             UnsubscribeServiceEvents();
+ 
+@@ -636,11 +706,28 @@ namespace CosmicShore.UI
+                 invite.HostDisplayName,
+                 ResolveAvatar(invite.HostAvatarId),
+                 RequestInfoEntry.Kind.PartyInvite,
+-                partyInviteExpirationSeconds,
++                ResolvePartyInviteRowLifetime(invite.HostPlayerId),
+                 onAccept: OnAcceptPartyInviteClicked,
+                 onDecline: OnDeclinePartyInviteClicked);
+         }
+ 
++        /// <summary>
++        /// How long the row for that sender's invite lives: the time the service's inbox says the
++        /// invite has LEFT (its clock started when the invite was first observed, not when this
++        /// panel happened to open), capped by <see cref="partyInviteExpirationSeconds"/>. The
++        /// serialized value stands in when the service has no record of it (offline, or a row
++        /// spawned from a raise the service has not booked yet).
++        /// </summary>
++        float ResolvePartyInviteRowLifetime(string senderPlayerId)
++        {
++            var service = HostConnectionService.Instance;
++            if (service == null) return partyInviteExpirationSeconds;
++
++            float remaining = service.IncomingInviteSecondsRemaining(senderPlayerId);
++            if (remaining <= 0f || float.IsInfinity(remaining)) return partyInviteExpirationSeconds;
++            return Mathf.Min(partyInviteExpirationSeconds, remaining);
++        }
++
+         void HandleIncomingFriendRequestAdded(FriendData request)
+         {
+             // Dedup: FriendsServiceFacade rebuilds IncomingRequests as Clear() + Add()
+@@ -705,30 +792,35 @@ namespace CosmicShore.UI
+         }
+ 
+         /// <summary>
+-        /// Fires when an invite is accepted/declined from ANY source (this panel,
+-        /// the HomeScreen notification popup, etc.). Clears every party-invite
+-        /// row so the UI stays in sync regardless of where the user answered.
++        /// Fires when an invite is accepted, declined, withdrawn or expired from ANY source (this
++        /// panel, the HomeScreen notification popup, the service's sweep). The raise carries no
++        /// payload, so the rows are RECONCILED against the service's inbox: only the invites it
++        /// no longer holds open lose their row. Clearing everything here used to make a Decline
++        /// of one sender's invite silently drop the other sender's. Without a service (offline)
++        /// every invite row goes, as before.
+         /// </summary>
+         void HandleInviteResolved()
+         {
+             if (_pendingPartyInvites.Count == 0) return;
+ 
+-            _pendingPartyInvites.Clear();
+-
+-            for (int i = _spawnedRequests.Count - 1; i >= 0; i--)
+-            {
+-                var go = _spawnedRequests[i];
+-                if (!go) { _spawnedRequests.RemoveAt(i); continue; }
++            var service = HostConnectionService.Instance;
+ 
+-                var entry = go.GetComponent<RequestInfoEntry>();
+-                if (entry == null) continue;
+-                if (entry.EntryKind != RequestInfoEntry.Kind.PartyInvite) continue;
++            _resolvedScratch.Clear();
++            foreach (var senderId in _pendingPartyInvites.Keys)
++                if (service == null || !service.IsIncomingInvitePending(senderId))
++                    _resolvedScratch.Add(senderId);
+ 
+-                Destroy(go);
+-                _spawnedRequests.RemoveAt(i);
++            foreach (var senderId in _resolvedScratch)
++            {
++                _pendingPartyInvites.Remove(senderId);
++                RemoveRequestEntryByKind(senderId, RequestInfoEntry.Kind.PartyInvite);
+             }
++            _resolvedScratch.Clear();
+         }
+ 
++        /// <summary>Scratch for the senders a resolve raise closed (no allocation per raise).</summary>
++        readonly List<string> _resolvedScratch = new();
++
+         void HandlePartyInviteReceived(PartyInviteData invite)
+         {
+             // Dedup: multiple raises for the same session should only add one row.
+@@ -751,6 +843,10 @@ namespace CosmicShore.UI
+             var existing = FindRequestEntryByKind(invite.HostPlayerId, RequestInfoEntry.Kind.PartyInvite);
+             if (existing == null)
+                 SpawnPartyInviteEntry(invite);
++
++            // The new row is in the list; it counts as seen only if the player can see the list
++            // (a hidden modal's copy of this panel receives this raise too).
++            MarkInboxSeenIfShown();
+         }
+ 
+         #endregion
+@@ -963,7 +1059,8 @@ namespace CosmicShore.UI
+ 
+             try
+             {
+-                await controller.DeclineInviteAsync();
++                // ONE sender's invite: any other open invite keeps its row.
++                await controller.DeclineInviteAsync(hostPlayerId);
+             }
+             catch (System.Exception e)
+             {
+diff --git a/Assets/_Scripts/UI/Elements/PartyInviteBadge.cs b/Assets/_Scripts/UI/Elements/PartyInviteBadge.cs
+new file mode 100644
+index 000000000..025e3d02a
+--- /dev/null
++++ b/Assets/_Scripts/UI/Elements/PartyInviteBadge.cs
+@@ -0,0 +1,121 @@
++using CosmicShore.Gameplay;
++using CosmicShore.ScriptableObjects;
++using CosmicShore.Utility;
++using TMPro;
++using UnityEngine;
++
++namespace CosmicShore.UI
++{
++    /// <summary>
++    /// The unread-invite count on the party panel: a small disc with a number, shown while the
++    /// service's <see cref="IncomingInviteInbox"/> holds open party invites the player has not
++    /// yet had on screen in the friends panel, hidden otherwise. It sits next to the PARTY
++    /// header of every <see cref="ArcadeLobbyList"/> (the friends panel's entry point), so an
++    /// invite whose popup auto-hid is still announced wherever the player would go to answer it.
++    ///
++    /// <para>Reads <see cref="HostConnectionService.UnseenIncomingInviteCount"/>, which the
++    /// friends panel clears on open (<see cref="HostConnectionService.MarkIncomingInvitesSeen"/>).
++    /// Repaints on the invite SOAP events for immediacy and on a slow tick for the two changes
++    /// that have no event (the panel marking the inbox seen, an invite expiring). Self-driven:
++    /// the party panel does not reference it and no scene wiring beyond its own fields.</para>
++    /// </summary>
++    public class PartyInviteBadge : MonoBehaviour
++    {
++        [Header("SOAP Data")]
++        [Tooltip("The party data asset whose OnInviteReceived / OnInviteResolved raises repaint the badge at once.")]
++        [SerializeField] private HostConnectionDataSO connectionData;
++
++        [Header("UI References")]
++        [Tooltip("Faded to 0 while nothing is unread. Found on this GameObject when left empty.")]
++        [SerializeField] private CanvasGroup canvasGroup;
++        [Tooltip("The number on the disc.")]
++        [SerializeField] private TMP_Text countText;
++
++        [Header("Display")]
++        [Tooltip("Counts above this read as \"N+\" so the disc never has to grow.")]
++        [SerializeField] private int maxShownCount = 9;
++        [Tooltip("Seconds between the slow repaints that catch the inbox being marked seen or an invite expiring.")]
++        [SerializeField] private float pollIntervalSeconds = 0.5f;
++
++        float _nextPoll;
++        int _shown = -1;
++
++        /// <summary>What the disc reads for a count, as pure text so it can be asserted without a scene.</summary>
++        public static class Label
++        {
++            /// <summary>Empty for nothing unread, the number up to <paramref name="maxShown"/>, "N+" past it.</summary>
++            public static string Format(int unseenCount, int maxShown)
++            {
++                if (unseenCount <= 0) return string.Empty;
++                int cap = Mathf.Max(1, maxShown);
++                return unseenCount > cap ? $"{cap}+" : unseenCount.ToString();
++            }
++        }
++
++        void Awake()
++        {
++            if (!canvasGroup)
++                TryGetComponent(out canvasGroup);
++
++            Apply(0);
++        }
++
++        void OnEnable()
++        {
++            if (connectionData)
++            {
++                if (connectionData.OnInviteReceived != null)
++                    connectionData.OnInviteReceived.OnRaised += HandleInviteReceived;
++                if (connectionData.OnInviteResolved != null)
++                    connectionData.OnInviteResolved.OnRaised += Refresh;
++            }
++
++            Refresh();
++        }
++
++        void OnDisable()
++        {
++            if (connectionData)
++            {
++                if (connectionData.OnInviteReceived != null)
++                    connectionData.OnInviteReceived.OnRaised -= HandleInviteReceived;
++                if (connectionData.OnInviteResolved != null)
++                    connectionData.OnInviteResolved.OnRaised -= Refresh;
++            }
++        }
++
++        void Update()
++        {
++            if (Time.unscaledTime < _nextPoll) return;
++            _nextPoll = Time.unscaledTime + Mathf.Max(0.1f, pollIntervalSeconds);
++            Refresh();
++        }
++
++        void HandleInviteReceived(PartyInviteData _) => Refresh();
++
++        /// <summary>Repaints from the service's unread count (0 without a service).</summary>
++        public void Refresh()
++        {
++            var service = HostConnectionService.Instance;
++            Apply(service != null ? service.UnseenIncomingInviteCount : 0);
++        }
++
++        void Apply(int unseen)
++        {
++            if (unseen == _shown) return;
++            _shown = unseen;
++
++            bool show = unseen > 0;
++            if (canvasGroup)
++            {
++                canvasGroup.alpha = show ? 1f : 0f;
++                // Never a click target: the "+" slot and the header under it keep their hits.
++                canvasGroup.blocksRaycasts = false;
++                canvasGroup.interactable = false;
++            }
++
++            if (countText)
++                countText.text = Label.Format(unseen, maxShownCount);
++        }
++    }
++}
+diff --git a/Assets/_Scripts/UI/Elements/PartyInviteBadge.cs.meta b/Assets/_Scripts/UI/Elements/PartyInviteBadge.cs.meta
+new file mode 100644
+index 000000000..606787186
+--- /dev/null
++++ b/Assets/_Scripts/UI/Elements/PartyInviteBadge.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: 289b3aac0415443a97cd1d275fa81816
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/_Scripts/UI/Screens/PartyInviteNotificationPanel.cs b/Assets/_Scripts/UI/Screens/PartyInviteNotificationPanel.cs
+index e589df1ce..2197bb550 100644
+--- a/Assets/_Scripts/UI/Screens/PartyInviteNotificationPanel.cs
++++ b/Assets/_Scripts/UI/Screens/PartyInviteNotificationPanel.cs
+@@ -1,3 +1,4 @@
++using System;
+ using CosmicShore.Core;
+ using CosmicShore.Gameplay;
+ using CosmicShore.ScriptableObjects;
+@@ -17,6 +18,14 @@ namespace CosmicShore.UI
+     /// <see cref="PartyInviteController.AcceptInviteAsync"/>, Decline to
+     /// <see cref="PartyInviteController.DeclineInviteAsync"/>.
+     ///
++    /// <para>The popup is a TEASER, not the inbox. It auto-hides after
++    /// <see cref="autoHideSeconds"/> (hiding never declines), and its detail line says so:
++    /// the invite waits in the friends panel's Requests list for the rest of its lifetime,
++    /// which the service's <see cref="IncomingInviteInbox"/> keeps. A second invite arriving
++    /// while one is shown takes the card (newest wins on the card) but does not destroy the
++    /// first: the line reads "2 invites waiting", and when the shown invite is answered or
++    /// withdrawn the card moves on to the next open one.</para>
++    ///
+     /// The GameObject must remain active so OnEnable can subscribe to SOAP events.
+     /// The panel starts visually hidden via CanvasGroup (alpha=0).
+     /// </summary>
+@@ -27,6 +36,10 @@ namespace CosmicShore.UI
+ 
+         [Header("UI References")]
+         [SerializeField] private TMP_Text inviterNameText;
++        [Tooltip("Optional. The card's second line: how many invites are waiting and that they " +
++                 "stay in the friends list for N s after this card hides (Notice.Compose). The " +
++                 "row's status label on the prefab variant. Unwired: the card shows the name alone.")]
++        [SerializeField] private TMP_Text detailText;
+         [SerializeField] private Image inviterAvatarImage;
+         [SerializeField] private Button acceptButton;
+         [SerializeField] private Button declineButton;
+@@ -37,8 +50,10 @@ namespace CosmicShore.UI
+ 
+         [Header("Timing")]
+         [Tooltip("Seconds the bottom-left popup stays before it auto-HIDES. Hiding does NOT decline - " +
+-                 "the invite remains in the FriendsListPanel Requests list, and the host's pending " +
+-                 "invite clears on its own outgoing-invite timeout.")]
++                 "the invite remains in the FriendsListPanel Requests list for the rest of its " +
++                 "lifetime (HostConnectionService.IncomingInviteLifetimeSeconds, the host's " +
++                 "outgoing-invite timeout) and the card says so; the host's pending invite clears " +
++                 "on its own timeout.")]
+         [SerializeField] private float autoHideSeconds = 3f;
+ 
+         [Header("Audio")]
+@@ -48,6 +63,31 @@ namespace CosmicShore.UI
+         private PartyInviteData? _pendingInvite;
+         private float _timer;
+         private bool _responding;
++        private int _shownSecondsRemaining = -1;
++
++        /// <summary>
++        /// The card's detail line, as pure text so it can be asserted without a scene.
++        /// </summary>
++        public static class Notice
++        {
++            /// <summary>
++            /// "Also in your friends list for 58 s", prefixed with "2 invites waiting. " when more
++            /// than one invite is open. With no known lifetime (0 or less, or infinite) the
++            /// seconds are left off. ASCII only: the UI font has no other glyphs.
++            /// </summary>
++            /// <param name="pendingCount">How many invites are open, this one included.</param>
++            /// <param name="secondsRemaining">Seconds this invite stays in the friends list.</param>
++            public static string Compose(int pendingCount, float secondsRemaining)
++            {
++                string where = secondsRemaining > 0f && !float.IsInfinity(secondsRemaining)
++                    ? $"Also in your friends list for {Math.Max(1, (int)Math.Ceiling(secondsRemaining))} s"
++                    : "Also in your friends list";
++
++                return pendingCount > 1
++                    ? $"{pendingCount} invites waiting. {where}"
++                    : where;
++            }
++        }
+ 
+         // ─────────────────────────────────────────────────────────────────────
+         // Unity Lifecycle
+@@ -74,8 +114,8 @@ namespace CosmicShore.UI
+                 CSDebug.LogError(
+                     "[INVITE-UI] connectionData or OnInviteReceived is NULL - cannot subscribe");
+ 
+-            // Also dismiss the popup if the same invite is resolved from a
+-            // different panel (e.g. FriendsListPanel Accept/Decline buttons).
++            // Also react when an invite is resolved from a different panel (the FriendsListPanel
++            // Accept/Decline buttons) or ends in the service (withdrawn, expired).
+             if (connectionData?.OnInviteResolved != null)
+                 connectionData.OnInviteResolved.OnRaised += OnInviteResolvedElsewhere;
+         }
+@@ -90,20 +130,36 @@ namespace CosmicShore.UI
+         }
+ 
+         /// <summary>
+-        /// Called when AcceptInviteAsync or DeclineInviteAsync runs anywhere.
+-        /// Cancels the pending invite this popup is showing and hides it,
+-        /// so the user doesn't see a stale notification after handling the
+-        /// invite in FriendsListPanel.
++        /// Called when any invite was resolved anywhere (accepted, declined, withdrawn, expired).
++        /// The raise carries no payload, so the card asks the service: if the invite it shows is
++        /// still open it stays (only the count line changes); otherwise the card moves on to the
++        /// next open invite, or hides when there is none. That is what stops the user seeing a
++        /// stale card after answering in the FriendsListPanel, and what keeps a second sender's
++        /// invite visible after the first was declined.
+         /// </summary>
+         private void OnInviteResolvedElsewhere()
+         {
+             if (!_pendingInvite.HasValue && canvasGroup != null && canvasGroup.alpha == 0f)
+                 return;
+ 
+-            _pendingInvite = null;
+-            _responding = false;
+-            _timer = 0f;
+-            ShowPanel(false);
++            var service = HostConnectionService.Instance;
++            if (service == null)
++            {
++                Dismiss();
++                return;
++            }
++
++            if (_pendingInvite.HasValue && service.IsIncomingInvitePending(_pendingInvite.Value.HostPlayerId))
++            {
++                RefreshDetailLine(force: true);
++                return;
++            }
++
++            var next = service.LastPendingInvite;
++            if (next.HasValue)
++                Present(next.Value, playSound: false);
++            else
++                Dismiss();
+         }
+ 
+         void Update()
+@@ -115,13 +171,13 @@ namespace CosmicShore.UI
+             if (_timer >= autoHideSeconds)
+             {
+                 // Auto-HIDE only - do NOT decline. The invite stays in the FriendsListPanel
+-                // Requests list for its own lifetime; the host's pending clears via its timeout.
+-                // (A newer invite would have already replaced _pendingInvite + reset the timer -
+-                // latest-wins is inherent in OnInviteReceived.)
+-                _pendingInvite = null;
+-                _timer = 0f;
+-                ShowPanel(false);
++                // Requests list (and the service's inbox) for its own lifetime; the host's
++                // pending clears via its timeout.
++                Dismiss();
++                return;
+             }
++
++            RefreshDetailLine(force: false);
+         }
+ 
+         void OnDestroy()
+@@ -140,24 +196,9 @@ namespace CosmicShore.UI
+                 $"[INVITE-UI] OnInviteReceived from {invite.HostDisplayName}, " +
+                 $"SessionId: {invite.PartySessionId}");
+ 
+-            _pendingInvite = invite;
+-            _timer = 0f;
+-            _responding = false;
+-
+-            if (inviterNameText != null)
+-                inviterNameText.text = invite.HostDisplayName;
+-
+-            if (inviterAvatarImage != null)
+-            {
+-                var sprite = ResolveAvatarSprite(invite.HostAvatarId);
+-                if (sprite != null)
+-                    inviterAvatarImage.sprite = sprite;
+-            }
+-
+-            SetButtonsInteractable(true);
+-            ShowPanel(true);
+-
+-            AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
++            // Newest wins on the CARD; the earlier invite is still open in the inbox and the
++            // detail line counts it.
++            Present(invite, playSound: true);
+         }
+ 
+         // ─────────────────────────────────────────────────────────────────────
+@@ -181,19 +222,22 @@ namespace CosmicShore.UI
+         }
+ 
+         /// <summary>
+-        /// Declines the pending invite. Delegates to <see cref="PartyInviteController.DeclineInviteAsync"/>.
++        /// Declines the pending invite - this sender's only; any other open invite keeps waiting
++        /// and the card moves on to it on the resolve raise. Delegates to
++        /// <see cref="PartyInviteController.DeclineInviteAsync"/>.
+         /// </summary>
+         public void OnDeclinePressed()
+         {
+-            if (_responding) return;
++            if (_responding || !_pendingInvite.HasValue) return;
+             _responding = true;
+ 
+             SetButtonsInteractable(false);
+ 
++            var invite = _pendingInvite.Value;
+             _pendingInvite = null;
+             ShowPanel(false);
+ 
+-            DeclineAsync();
++            DeclineAsync(invite.HostPlayerId);
+         }
+ 
+         // ─────────────────────────────────────────────────────────────────────
+@@ -215,19 +259,79 @@ namespace CosmicShore.UI
+             }
+         }
+ 
+-        private async void DeclineAsync()
++        private async void DeclineAsync(string senderPlayerId)
+         {
+             var controller = PartyInviteController.Instance;
+             if (controller != null)
+             {
+-                await controller.DeclineInviteAsync();
++                await controller.DeclineInviteAsync(senderPlayerId);
+             }
++            _responding = false;
+         }
+ 
+         // ─────────────────────────────────────────────────────────────────────
+         // Helpers
+         // ─────────────────────────────────────────────────────────────────────
+ 
++        /// <summary>Puts <paramref name="invite"/> on the card with a fresh auto-hide clock.</summary>
++        private void Present(PartyInviteData invite, bool playSound)
++        {
++            _pendingInvite = invite;
++            _timer = 0f;
++            _responding = false;
++            _shownSecondsRemaining = -1;
++
++            if (inviterNameText != null)
++                inviterNameText.text = invite.HostDisplayName;
++
++            if (inviterAvatarImage != null)
++            {
++                var sprite = ResolveAvatarSprite(invite.HostAvatarId);
++                if (sprite != null)
++                    inviterAvatarImage.sprite = sprite;
++            }
++
++            RefreshDetailLine(force: true);
++            SetButtonsInteractable(true);
++            ShowPanel(true);
++
++            if (playSound)
++                AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
++        }
++
++        private void Dismiss()
++        {
++            _pendingInvite = null;
++            _responding = false;
++            _timer = 0f;
++            ShowPanel(false);
++        }
++
++        /// <summary>
++        /// Writes the detail line from the service's inbox. Cheap, but the text is only rebuilt
++        /// when the whole second changes (or on <paramref name="force"/>), so the card does not
++        /// re-lay out a TMP string every frame.
++        /// </summary>
++        private void RefreshDetailLine(bool force)
++        {
++            if (detailText == null || !_pendingInvite.HasValue) return;
++
++            var service = HostConnectionService.Instance;
++            int pending = 1;
++            float remaining = 0f;
++            if (service != null)
++            {
++                pending   = Mathf.Max(1, service.PendingIncomingInviteCount);
++                remaining = service.IncomingInviteSecondsRemaining(_pendingInvite.Value.HostPlayerId);
++            }
++
++            int wholeSeconds = remaining > 0f && !float.IsInfinity(remaining) ? Mathf.CeilToInt(remaining) : 0;
++            if (!force && wholeSeconds == _shownSecondsRemaining) return;
++            _shownSecondsRemaining = wholeSeconds;
++
++            detailText.text = Notice.Compose(pending, remaining);
++        }
++
+         private void ShowPanel(bool show)
+         {
+             if (canvasGroup == null) return;
+diff --git a/Docs/PartySystem/UI.md b/Docs/PartySystem/UI.md
+index 3b153da2b..7a7c47cf5 100644
+--- a/Docs/PartySystem/UI.md
++++ b/Docs/PartySystem/UI.md
+@@ -24,10 +24,11 @@ Friend + Recent + Requests). They share the same component family:
+ | `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. Also **ensures its own `PartySlotDomainGlow`** at `Awake` (see "Seating"). |
+ | `PartyRoster` | Pure static. THE party seating order, and the only place it is decided. No Unity, UGS or Netcode types — the caller supplies the client-id lookup, which is what makes it edit-mode testable (`PartyRosterTests`). |
+ | `PartySlotDomainGlow` | The animated halo behind a slot's avatar, tinted with that pilot's live domain. Generated (GameObject, sprite and rect) rather than authored, so it needs no scene wiring and no party surface can ship without it. |
+-| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade`. There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
++| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites; the party-invite rows are the **invite inbox**, re-read from `HostConnectionService`'s `IncomingInviteInbox` every time the panel opens, see "Invite inbox and badge" below). Auto-opens when a party invite arrives; opening it marks the inbox seen, which clears the party panel's `PartyInviteBadge`. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade` (and `MarkIncomingInvitesSeen`). There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
+ | `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. A third button, **Join** (`joinButton` + `joinButtonIcon`), is one control with two faces resolved by `FriendsListPanel.ResolveJoinMode`: a blue doorway icon that walks you into that player's party with no invite (drawn disabled when the party is full), or — while the player is IN A MATCH — an amber eye icon that is the row's ONLY enabled button and **spectates** the match (`SPECTATOR.md`). On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
+ | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite, RecentPlayer }` — one row type serves all three (delegates to `FriendsServiceFacade` / `PartyInviteController`); in its `RecentPlayer` shape (`PopulateRecentPlayer`) the Accept glyph is the add-friend button, Decline is hidden, the label is the resolved state and nothing expires. Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
+-| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
++| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup**: a small bottom-left card (avatar + inviter name + a detail line + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, and on `OnInviteResolved` asks the service whether the invite it shows is still open: if not it moves on to the next open invite or hides. **Auto-hide after `autoHideSeconds` (3 s, serialized)** hides only; the detail line says so: "Also in your friends list for 58 s", prefixed "2 invites waiting." when more than one is open (`Notice.Compose`, edit-mode tested). **Newest wins on the card only**: an earlier invite stays in the inbox and is counted on the card. Decline answers the shown sender's invite alone. Lives as **`PartyInviteNotificationPanel Variant.prefab`**, a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline; `detailText` is the row's status label). Instanced bottom-left under `Screens/HomeScreen` in Menu_Main. |
++| `PartyInviteBadge` | The **unread-invite count**: a small amber disc (built-in `Knob` sprite) with a number, a child `InviteBadge` of every `ArcadeLobbyList` just right of its PARTY header. Reads `HostConnectionService.UnseenIncomingInviteCount`; faded to 0 by its own `CanvasGroup` while nothing is unread, never a raycast target. Repaints on `OnInviteReceived` / `OnInviteResolved` and on a 0.5 s tick (for the panel marking the inbox seen and for expiry, which raise nothing). Self-driven: `ArcadeLobbyList` does not reference it. Scene-authored with `cs-asset`, not a prefab. |
+ 
+ **Live identity (names/avatars) in these panels.** Rows and slots render
+ from the SOAP lists and repaint on the lists' item events, so a player's
+@@ -115,8 +116,11 @@ Sender opens the friends/online list and clicks a player row (whole row = invite
+ Recipient's refresh loop detects invite
+   ├─ HostConnectionService.RefreshAsync() [base 1.5s; 0.75s while boosted]
+   │   └─ Scans every OTHER lobby player's invite_payloads for a line whose targetId == local ID
++  ├─ IncomingInviteInbox.Observe (per-sender dedup; only a NEW invite is raised)
+   ├─ OnInviteReceived SOAP event raised
+-  ├─ FriendsListPanel auto-opens and spawns a RequestInfoEntry (Kind.PartyInvite) row
++  ├─ PartyInviteNotificationPanel shows the card; PartyInviteBadge counts it while unseen
++  ├─ FriendsListPanel auto-opens (when its screen is up) and spawns a RequestInfoEntry
++  │   (Kind.PartyInvite) row; on open it re-reads EVERY open invite from the inbox
+   └─ User presses Accept
+       └─ PartyInviteController.AcceptInviteAsync(invite)
+           ├─ CleanUpCurrentSession()
+@@ -261,6 +265,69 @@ play at all.
+   `anchoredPosition` (the prefab authors 0,0). **Not yet opened in the Unity Editor**: first
+   pass is a real online match on two accounts, then the panel on both.
+ 
++### Invite inbox and badge (an invite you miss is not gone, 2026-10-10)
++
++**Every open party invite lives in `HostConnectionService`'s `IncomingInviteInbox`**
++(`_Scripts/Controller/Party/Services/`, pure C#, one record per SENDER, the service its single
++writer), and the popup, the friends panel's Requests rows and the party panel's badge are three
++views of that one list. Measured before the change: the service remembered ONE incoming invite
++(`_lastFiredInvite` + a resolved flag), so with two friends inviting at once the refresh loop's
++duplicate check compared each line against whichever it had seen LAST and the two took turns
++being "new": `OnInviteReceived` re-fired for both every 0.75-1.5 s tick, the popup bounced between
++the senders with its 3 s auto-hide timer reset each time, the invite sound replayed each tick, the
++panel's rehydrate-on-open could only read the latest one, and a Decline (which resolved "the"
++invite) dropped the other sender's as well. `IncomingInviteInboxTests` (26) pin every shape.
++
++- **Inbox rules.** `Observe(line)` is per sender: the same sender's same session seen again is a
++  duplicate (nothing raised); a resolved invite's line only refreshes the record (the PENDING to
++  real-session-id transition the accept flow reads); a line for the party we are already a client
++  of is suppressed; the same sender with a NEW session id is a new invite (fresh clock, unread
++  again). An invite is PENDING while unresolved and younger than `IncomingInviteLifetimeSeconds`
++  (the host's 60 s outgoing timeout, so both sides clear together). Accept, direct join, spectate
++  and leave resolve ALL (the player is leaving for a different party); **Decline resolves ONE**
++  (`DeclineInviteAsync(senderPlayerId)` on the service and the controller; the no-argument form
++  still declines all). A resolved record is kept until the sender's line is gone, so the line
++  still on the wire is not read as a new invite, and the sender can invite afresh afterwards.
++  The per-tick `Sweep` drops a sender whose line has been gone for two ticks (a stale snapshot
++  cannot flicker a live invite), ends one that outlived its lifetime, holds anything a join is in
++  flight for, and raises `OnInviteResolved` once when an open invite ended that way.
++- **Service surface** (read by the UI): `LastPendingInvite` (newest open), `PendingIncomingInviteCount`,
++  `UnseenIncomingInviteCount`, `CopyPendingIncomingInvites(list)`, `IsIncomingInvitePending(id)`,
++  `IncomingInviteSecondsRemaining(id)`, `IncomingInviteLifetimeSeconds`, `MarkIncomingInvitesSeen()`.
++  `OnInviteResolved` stays a no-payload SOAP raise; every listener reconciles against
++  `IsIncomingInvitePending` instead of clearing everything.
++- **Requests rows (the inbox on screen).** On enable the panel rebuilds `_pendingPartyInvites`
++  from `CopyPendingIncomingInvites` (it used to seed only `LastPendingInvite`), spawns one row per
++  open invite, then `MarkIncomingInvitesSeen` **if the player can see it**: the four screen
++  modals never deactivate (they hide by CanvasGroup alpha), so every copy of this panel is
++  ENABLED whatever screen is up and receives every raise; "seen" is read off the owning
++  `ModalWindowManager.IsOpen` (`IsShownToPlayer`), and the modal's `OnModalOpened` marks the inbox
++  seen when a panel left open comes back into view. For the same reason `ArcadeLobbyList`'s
++  invite auto-open now really is "while the arcade lobby is visible": a hidden lobby's copy no
++  longer opens its friends panel (which counted the invite as seen before anyone saw it, and met
++  the player with an open panel on their next visit); the badge announces it instead. A row's
++  lifetime is the inbox's remaining seconds
++  capped by `partyInviteExpirationSeconds`, so a panel opened 40 s after the invite shows the 20 s
++  it has left rather than a fresh 60. `HandleInviteResolved` removes only the rows whose sender
++  the service no longer lists; the panel's Decline passes the sender id.
++- **Badge.** `InviteBadge` (Image + CanvasGroup + `PartyInviteBadge` with a `Count` TMP child)
++  under each of the four `ArcadeLobbyList`s, anchored by fraction at x 0.64-0.713, y 0.812-0.856
++  of the party panel (a 40 x 40 disc right of the PARTY word). Shows `UnseenIncomingInviteCount`
++  ("9+" past `maxShownCount`), hides at 0, clears the moment the friends panel opens. A player on
++  the Home screen sees the popup; the badge waits on the Arcade, Arena, Mission and Toybox party
++  panels, which is where the "+" that opens the inbox is.
++- **Popup.** `autoHideSeconds` stays a serialized field. The card's detail line (`detailText`, the
++  variant's `OnlineStatus` label, auto-size 11-18.24) reads "Also in your friends list for N s"
++  from the inbox's remaining time, or "2 invites waiting. Also in your friends list for N s" when
++  more than one is open, refreshed once per whole second while shown. A second invite takes the
++  card without destroying the first's record; when the shown invite is answered elsewhere or
++  withdrawn the card moves on to the newest open one; Decline on the card answers that sender only.
++- **Seen in Prisma** (xvfb, the directory-backed session stand-in with two pilots seeded into the
++  presence lobby's roster from outside the process): see the verification checklist entry.
++  **Not yet opened in the Unity Editor**: the badge objects and the variant's `detailText` were
++  authored with `cs-asset`; the first editor pass should open Menu_Main, send two invites from two
++  other accounts and watch the card, the badge and the rows.
++
+ ## Scene wiring checklist (Menu_Main)
+ 
+ 1. **Persistent GameObjects** (Bootstrap scene, `DontDestroyOnLoad`):
+@@ -277,6 +344,8 @@ play at all.
+    - Wire the Add Friend trio into `FriendsListPanel`: `addFriendNameInput` (the `TMP_InputField` on `AddFriendInput`), `addFriendSendButton` (the `Button` on `AddFriendSendButton`), `addFriendStatusText` (the `TextMeshProUGUI` on `AddFriendStatus`). All three or none; every FriendListPanel copy in the scene (Arcade, Arena, Mission, Toybox) carries them.
+    - Wire the Recent pair into `FriendsListPanel`: `recentContent` (the `Content` `RectTransform` under `Recent Scroll View/Viewport`) and `recentEmptyText` (the `TextMeshProUGUI` on `Recent Scroll View/RecentEmptyText`). Every FriendListPanel copy in the scene (Arcade, Arena, Mission, Toybox) carries them. The store needs no scene wiring: `Resources/RecentPlayersConfig.asset` is loaded by name.
+    - Wire `SO_ProfileIconList` into `ArcadeLobbyList` / `FriendsListPanel` for avatars.
++   - The invite badge: an `InviteBadge` child (Image on the built-in `Knob` sprite + `CanvasGroup` + `PartyInviteBadge`, with a `Count` `TextMeshProUGUI` child) under every `ArcadeLobbyList` (Arcade, Arena, Mission, Toybox); wire `PartyInviteBadge.connectionData` (`HostConnectionData.asset`), `canvasGroup` (its own) and `countText` (the `Count` TMP). `ArcadeLobbyList` needs no reference to it.
++   - The popup's `detailText` on `PartyInviteNotificationPanel Variant.prefab` is the variant's `OnlineStatus` label (wired on the prefab, not the scene instance).
+ 
+ Prefabs live in `_Prefabs/UI Elements/Panels/Party/`. SO assets
+ (`HostConnectionData.asset` + the event/list assets) live in
