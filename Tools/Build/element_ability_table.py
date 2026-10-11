@@ -696,11 +696,13 @@ def rows_for_vessel(vessel, map_path, guid_to_path, script_index, symbols, max_d
 
 
 def resolve_element_field(field, info, body):
-    v = None
     m = re.search(rf"^\s*{re.escape(field)}:\s*(\d+)\s*$", body, re.M)
     if m:
-        v = ELEMENTS.get(int(m.group(1)))
-    return v or info["elems"].get(field)
+        # An AUTHORED value wins outright - including 0, Element.None, which means "no gate".
+        # Falling back to the C# initializer on a None reported a gate the asset had switched
+        # off (the Thresher's forked skim-boost effect read as a Charge L5 gate).
+        return ELEMENTS.get(int(m.group(1)))
+    return info["elems"].get(field)
 
 
 def find_authored(field, own_body, bodies):

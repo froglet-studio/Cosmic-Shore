@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Thresher
+  m_EditorClassIdentifier:
+  vesselClass: 14
+  entries:
+  - Element: 1
+    AbilityLabel: Wrecking Ball
+    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s. At smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion that does the same. Charge scales the explosion: ThresherConfigSO.explosionSizeMultiplier, x1 at rest -> x2 at level 10 (floor x0.5), on a 16-unit base diameter.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Lit
+    UpgradeDescription: 'The hot ball burns your LIT domain colour instead of red; its explosions spare your own domain''s prisms (AffectSelfOverride off - the fleet''s domain-sparing-in-the-explosion-layer rule) and it bounces off your own domain''s mass even when hot. Gated on IsUpgradeActive(Charge) in ThresherExecutor.'
+  - Element: 2
+    AbilityLabel: Heavy Iron
+    AbilityDescription: 'The ball''s weight - PASSIVE. Mass scales the ball''s MASS (a heavier ball tugs the ship harder and swings with more momentum) and, because Mass is volume, its RADIUS with the cube root: ThresherConfigSO.ballMassMultiplier, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Wrecker
+    UpgradeDescription: 'A smashing ball loses no speed: plough becomes 1.0, so a hot ball tears through a whole row at full speed. Below smash speed it still pays crushKeep. Gated on IsUpgradeActive(Mass) in ThresherExecutor (ThresherChainSolver.KeepAfterHit).'
+  - Element: 3
+    AbilityLabel: Winch
+    AbilityDescription: 'The RIGHT trigger. Hold to let chain out (longer reach, slower whip); release and it reels in fast, conserving the ball''s spin - the crack. The chain SLICES rival prisms it touches while taut. Space scales the reach: ThresherConfigSO.chainReachMultiplier on maxLen, x1 at rest -> x1.5 at level 10 (floor x0.6).'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Reaper Chain
+    UpgradeDescription: 'The chain cuts while slack too, and cuts shielded prisms (the first cut pops the shield). Gated on IsUpgradeActive(Space) in ThresherExecutor.CutWithChain.'
+  - Element: 4
+    AbilityLabel: Plant
+    AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it on the chain, faster every lap (right trigger up winds you in and spins you faster); release to fly off with the ball yanked after you. Time scales the spin: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Slingshot
+    UpgradeDescription: 'On release the ball is flung at no less than smash speed, so it leaves the pivot red-hot. Gated on IsUpgradeActive(Time) in ThresherExecutor.EndPlant (ThresherChainSolver.Release).'

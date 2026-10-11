@@ -65,6 +65,7 @@ day after the channel it referred to had been deleted.
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
+| **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -537,6 +538,26 @@ mode ball launched by a cavitation cone and a braking wall on the A button — S
 Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
 with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
 the record; do not re-litigate from a superseded pass.**
+
+### Thresher — the wrecking ball (chain + ball + plant) — APPROVED + SHIPPED (2026-10-08)
+
+Approved by Garrett on 2026-10-08 (element map and all four level-5s). A prototype hull; the
+mechanic and every dial are in `Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md`.
+One parameter per element, each an `ElementalFloat` on `ThresherConfigSO` read with
+`EvaluateReplicated` (every peer simulates the ball):
+
+| Element | Ability (input) | Scales | Level 5 | Gated at |
+|---|---|---|---|---|
+| Charge | **Wrecking Ball** (passive) | smash-explosion diameter ×1 → ×2 | **Lit** — the hot ball burns the lit domain colour; its explosions spare the pilot's own domain (`AffectSelfOverride` off — domain-sparing in the explosion layer) and it bounces off own-domain mass even when hot | `ThresherExecutor.LitActive` |
+| Mass | **Heavy Iron** (passive) | ball mass ×1 → ×1.75 (radius by the cube root) | **Wrecker** — a smash costs the ball no speed (plough 1.0) | `ThresherExecutor.WreckerActive` |
+| Space | **Winch** (RT) | let-out chain length ×1 → ×1.5 | **Reaper Chain** — the chain cuts while slack, and cuts shielded prisms | `ThresherExecutor.ReaperActive` |
+| Time | **Plant** (LT) | orbit spin-up rate and cap ×1 → ×1.75 | **Slingshot** — the unlock yank is never weaker than smash speed | `ThresherExecutor.SlingshotActive` |
+
+**One L5 per element** (rule 26): the hull is a Squirrel clone, and the Squirrel's skimmer and
+vessel containers gate their own upgrades on Charge/Space/Time (steal, overtake, crystal blast,
+lifeform wither, danger skim bonus). The Thresher runs forked containers
+(`ThresherImpactorDataContainer`, `ThresherSkimmerImpactorDataContainer`,
+`ThresherSkimmerBoostPrismEffect`) without them, and its skimmer's Space scaling is off.
 
 ## 3. Implementation notes for approved rows
 

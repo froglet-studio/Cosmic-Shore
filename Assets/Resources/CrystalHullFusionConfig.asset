@@ -1021,3 +1021,87 @@ MonoBehaviour:
     mateArcDuty: 0
     sinkDepth: 0.12
     convergeToDomainColour: 1
+  - vessel: 14
+    element: 1
+    bake: {fileID: 11400000, guid: 7d32ad4d63a127345a5311a30ea2ccaf, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 14
+    element: 2
+    bake: {fileID: 11400000, guid: 3d2e4d9c38db0d34b9f5761317ac55c1, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 14
+    element: 3
+    bake: {fileID: 11400000, guid: e47fe070b929b464b83c889294c5fa49, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 14
+    element: 4
+    bake: {fileID: 11400000, guid: a38b290ed6ae8704fa2d6fae8b906dd0, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1

@@ -1469,6 +1469,24 @@ defaults reproduce the old formula, and PROVE that with the harness (max |Δ| 6e
 material on the shader is untouched. Whenever a look complaint is "washed out" on a transparent
 mesh, count the back faces before touching a colour.
 
+### Technique: a FRESNEL TUBE on a LineRenderer, and sizing a rim for a SMALL object
+
+A `LineRenderer` (VIEW alignment) is a camera-facing ribbon — every normal faces the lens, so a mesh
+fresnel on it is flat. But a view-aligned ribbon IS a cylinder's silhouette, and across a unit
+cylinder seen side-on the surface at signed distance `x` from the axis has `N·V = sqrt(1 − x²)`
+exactly. `uv.y` runs 0..1 ACROSS a LineRenderer's width in every texture mode, so the fragment
+`x = 2·uv.y − 1; rim = pow(1 − sqrt(saturate(1 − x²)), p)` is the tube's true fresnel: one renderer,
+no mesh, no normals (`ThresherChainFresnelShader`, 2026-10-09). Drive its colours through a
+`MaterialPropertyBlock` on the LineRenderer, `Cull Off` (the ribbon flips winding over the lens axis).
+
+**Size the rim to the object's SCREEN size, not to the crystals' power 4.** Area-weighted over a
+sphere's disc the mean rim weight of `(1 − N·V)^p` is `2 / ((p+1)(p+2))`: **0.067 at p = 4** (a
+hairline — right for a crystal tens of units across), 0.229 at p = 1.5, more again below 1. A ball a
+few units across seen from 100+ units, or a chain a few pixels wide, needs p ≈ 1.5 / 0.8 or the rim
+is sub-pixel and the object reads as a flat dull blob. Check the choice with a numpy render of the
+fragment maths (sphere raycast or a ribbon strip) before committing — it is the cheapest honest look
+call without an editor.
+
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
 "How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on
