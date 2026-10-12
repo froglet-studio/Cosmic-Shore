@@ -764,8 +764,10 @@ not (90-128 s, §8.0c).**
   The strike-free ceiling is 66-70 s, so 70 s needs essentially zero strikes; the pilot takes ~15-30
   per race and no lever or tune tried reduces that without losing more time (§6.8).
 - **I4: not met, and not reachable with this approach.** Even with every hull contact switched off
-  the simulator needs ~124 s for one AI seat (§6.7, old polyline). On Relativity (§6.12) the
-  shipped policy completes in ~146 s median and 70 s is below the ~78-82 s physical floor.
+  the simulator needs ~124 s for one AI seat (§6.7, old polyline). On Relativity the shipped
+  `skimrace-v2-i4` completes in ~141 s median (§6.13: 141.3 s with one AI seat, first finisher
+  141.4 s with two, simulator, not yet flown in the editor), and 70 s is below the ~78-82 s
+  physical floor (§6.12).
 - **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
   Squirrel tops out at 300 u/s).
 - **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +
