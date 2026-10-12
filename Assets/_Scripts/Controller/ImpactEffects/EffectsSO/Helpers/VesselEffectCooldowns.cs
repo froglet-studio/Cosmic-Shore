@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// A per-object anti-spam table for an impact effect: the last time the effect applied to each
-    /// key (a vessel's ResourceSystem, a crystal), with the one property a STATIC table needs: a
+    /// key (a vessel's ResourceSystem), with the one property a STATIC table needs: a
     /// key seen for the first time pays for a prune of every destroyed key, so the table only ever
     /// grows by live objects and a match's dead keys never outlive the next match. Destroyed is
     /// Unity's fake null (<c>key == null</c>), deliberately not ReferenceEquals.
