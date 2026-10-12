@@ -120,6 +120,14 @@ the authoring session, so `/verify-unity` did NOT run. Out of editor:
    Sideloadly installs it with a free Apple ID.
 7. Windows: a Release build from `FrogletTools ▸ Build` still succeeds, and the game runs unchanged.
    Nothing here touches Standalone settings, but the package removal re-resolves every platform.
+8. **Path C (2026-10-12):** after the one-time setup in `Docs/IOS_BUILD.md` §2 Path C, run **iOS
+   TestFlight** once.
+   - The job's summary names the version and build (`0.2.0 (14.<run>)`).
+   - The build appears in App Store Connect → TestFlight within about an hour.
+   - It installs through the TestFlight app on an iPhone.
+   - The workflow has never run. Its signing script was tested on a generated Xcode project with
+     the same three targets, and its profile check against good and bad profiles. Xcode 26 on a
+     real Unity export is untested.
 
 ---
 
