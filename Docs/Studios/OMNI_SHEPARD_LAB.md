@@ -97,10 +97,11 @@ now (Found 3).
 **Found**
 1. **A lab with one camera cannot show that the game has several.** `CrystalDepthPrisms` read
    `Camera.main`. In Bootstrap that is the MainCamera-tagged "Camera", the main menu's
-   Cinemachine-brain camera with the AudioListener. In flight it stays where the menu left it, while
-   "CM PlayerCam", which is untagged and drawn by `CustomCameraController`, renders the game. So every
-   column's depth was measured from a point that never moved: the ratchet held every prism wherever
-   it started, and the face split never opened. That is the "frozen" the designer saw. The precedent was
+   Cinemachine-brain camera with the AudioListener, a child of `CameraManager`. It never follows the
+   vessel; "CM PlayerCam", which is untagged and never retagged, is driven by `CustomCameraController`
+   and renders the game. So every column's depth was measured from a point that never moved (or, with
+   that camera off, the driver found none and left the prisms undriven, sealed and solid). Either way
+   the ratchet held every prism still and the face split never opened. That is the "frozen" the designer saw. The precedent was
    already in the tree (`WormholeView.ResolveController`). **Any view-dependent effect must ask
    `CameraManager` for the active controller's camera, not `Camera.main`.**
 2. **Rooting every style on Shipped broke the library when Shipped changed.** Round 8 made `SHIPPED`
@@ -110,6 +111,17 @@ now (Found 3).
    the pinned Breathe look for every other base.
 3. **A decision that leaves out the view cannot say what was approved.** `snapshot()` recorded only
    the non-view knobs, so "Space squares on" was invisible in the log. It now records `view` as well.
+
+## Follow-ups (refactor rows, measured at ship time 2026-10-12, round 9)
+
+Rows only: none of these is fixed on this branch.
+
+| # | Kind | Row | Evidence |
+|---|---|---|---|
+| F1 | inconsistency (walked past, latent) | `Crystal.ResolveActivationMaterial` / `ChangeDomain` pick the team material by model SLOT INDEX from `OriginalMaterialSet`, whose slot 0 is the omni body. A Mass crystal given a domain would put `OmniCrystalBody` on its depth-prism renderer: wrong shader, prisms frozen. Fix by keying the team material to the model's own default material, not its index. | Not live today: `grep crystalPrefab:` over scenes/prefabs finds 0 references to `CrystalMass` / `ActiveCrystalMass` and 31 to the omni `Crystal.prefab`; a Mass prefab's `ownDomain` is -1. |
+| F2 | debt created | `OriginalMaterialSet` slots 2-4 still name retired tone/rim materials (`OmniShepardTriangles 1/2`, `OmniShepardTrianglesRim`), and `ThemeManager` clones all three for every domain: 9 material instances no crystal draws. `author_omni_crystal_triangles.py` keeps authoring the 8 retired tone/rim materials because the lab's Classic and Breathe styles read them. Blocking question: is the lab still deciding anything with them? If not, retire both together. | `OmniShepardTriangles 0` and the `Inactive` tone materials have 0 references outside `.mat` files; `1`, `2` and `Rim` are referenced only by `OriginalMaterialSet.asset`. |
+| F3 | inconsistency (made visible) | `author_mass_crystal_look.py --check` reports 8 drifting Mass shell materials (`Active/BlueMassCrystalMaterial[ 1-3]`). The same 8 drift on a clean `bleeding-edge` worktree, so this branch did not cause it: the Editor re-saved them. Two of them are still live in `SpawnedSegments.prefab`. Decide which side wins (re-run the generator or teach it the re-saved form), so its `--check` can fail on a real change again. | `--check` exits 1 on this branch and on base, naming the same 8 files. |
+| F4 | inconsistency (walked past, cross-system) | The repo disagrees about which camera `Camera.main` is in flight. `MainMenuCameraController` (~:405) says "CM PlayerCam is Camera.main during freestyle", but in `Bootstrap.unity` "CM PlayerCam" is `Untagged` and nothing retags it. The only MainCamera under `CameraManager` is the Cinemachine-brain "Camera", which never follows the vessel. 52 `Camera.main` reads in 32 runtime files; a view-dependent one among them has this branch's bug. Filed as a suggested task. | `grep -rn "Camera\.main" Assets/_Scripts --include=*.cs` minus `Editor/` and `Tests/`. Bootstrap YAML: `m_TagString` of "CM PlayerCam" vs "Camera". |
 
 ## Round 8 (2026-10-12): the Depth ratchet ships
 

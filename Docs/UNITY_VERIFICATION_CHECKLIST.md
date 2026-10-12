@@ -73,8 +73,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   fields are gone. Step 1 of the entry below now reads "fly round a crystal": the crystal holds still.
 - **The ratchet runs against the gameplay camera** (`CameraManager.GetActiveController()` →
   `CustomCameraController.Camera`), not `Camera.main`. `Camera.main` in Bootstrap is the menu's
-  Cinemachine-brain camera parked where the menu left it, so round 8's prisms held still and sealed in
-  flight and the face split never opened.
+  Cinemachine-brain camera under `CameraManager`, which never follows the vessel, so round 8's
+  prisms held still and sealed in flight and the face split never opened.
 - **Space squares:** `CrystalSpaceSquares` on `OmniCrystalBody.prefab` puts the body on a shared copy of
   its runtime twin with the art file's three shape keys as blend shapes (`OmniSpaceSquares.asset`) and
   plays the 4.8 s loop, each crystal at its own phase.

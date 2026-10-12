@@ -526,7 +526,7 @@ body at any thickness. The Mass crystal wears the same look on its 60 prisms (on
 (the body's colour formula, `_Spread` and `_Opacity` dissolve, plus the column vertex stage and two
 passes - arriving and leaving prism), `CrystalDepthPrisms` (steps the ratchet per visible crystal
 against the GAMEPLAY camera - `CameraManager`'s active controller's camera, NOT `Camera.main`, which in
-Bootstrap is the menu's Cinemachine-brain camera parked where the menu left it: round 8 read it, and
+Bootstrap is the menu's Cinemachine-brain camera under `CameraManager`, which never follows the vessel: round 8 read it, and
 in game every prism held still and sealed while the lab, which has one camera, looked right - and writes `_DepthState[plate]` through a property block; undriven, the
 shader draws every prism sealed and solid), `CrystalDepthPrismProfile.asset` (depths, ratchet;
 shared), `DepthRatchet` (the pure math; JS twin in the lab), and `RhombusSkinBaker.TryCutPlates` (the
