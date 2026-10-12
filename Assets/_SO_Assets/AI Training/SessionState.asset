@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SessionState
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingSessionStateSO
   ScenarioKey: Squirrel_SkimRace_I4
-  LastWriteUtc: 2026-10-10T07:42:59.7225303Z
+  LastWriteUtc: 2026-10-12T22:21:03.8241500Z
   EpisodesCompleted: 1368
   EpisodesRequested: 24
   Population:
@@ -25,7 +25,7 @@ MonoBehaviour:
     noveltyWeight: 0.15
     tournamentSize: 3
     generation: 7
-    evaluationsThisGen: -999808
+    evaluationsThisGen: 192
     nextCheckoutIndex: 192
     population:
     - geneNames:
@@ -2527,50 +2527,50 @@ MonoBehaviour:
     - threat.engagement_range
     - threat.steer_weight
     geneValues:
-    - 179.45839
-    - 0.92
-    - 1.2130095
-    - 1
-    - 40.24157
-    - 0.29415965
-    - 7.8305273
-    - 0.24649036
-    - 0.23553374
-    - 0.85922825
-    - 0.007837399
-    - 0.08269588
-    - 18.280329
-    - 0.36786112
+    - 164.41396
+    - 0.97202605
+    - 0.9728226
+    - 0.9202984
+    - 26.454685
+    - 0.55598825
+    - 3.7273955
+    - 0.4318
+    - 0.16691011
+    - 0.33218583
+    - 0
+    - 0.22051986
+    - 12.999311
+    - 0.9402033
     - 0.99
-    - 0.85
+    - 0.9701649
     - 0.38490057
-    - 13.474535
-    - 25.861975
-    - 49.397045
-    - 0.25942123
-    - 0.43838388
-    - 0.34517193
-    - 60.827362
-    - 0.95
-    - 2.6757224
-    - 3.17366
-    - 4.6221833
-    - 0
-    - 0.7975043
-    - 0.9097542
-    - 0.64068496
-    - 0.79477614
-    - 0.5805523
-    - 0.7855245
-    - 4.0375686
-    - 0.9818654
-    - 0.4532494
-    - 0.87422323
-    - 0.1
-    - 0
+    - 20.174503
+    - 16.408482
+    - 35.334503
+    - 0.08269107
+    - 1
+    - 0.5
+    - 35.93877
+    - 0.999
+    - 2.8001738
+    - 1.9564748
+    - 1.3071113
+    - 0.5530403
+    - 0.599044
+    - 0.96964794
+    - 6.8095064
+    - 0.607456
+    - 0.4569003
+    - 0.90932786
+    - 1.3593042
+    - 0.51839286
+    - 0.4
+    - 0.7
+    - 0.5366956
+    - 0.26887402
     - 0.3
-    - 152.42505
-    - 0.6379274
+    - 58.19189
+    - 0.4471784
     enabledModules:
     - TargetSeeking
     - ObstacleAvoidance
@@ -2578,12 +2578,12 @@ MonoBehaviour:
     - Skim
     - BoostManagement
     - AbilityScheduler
-    GenerationBorn: 6
+    GenerationBorn: 7
     EvaluationCount: 0
     Fitness: 0
     NoveltyScore: 0
     Lineage: "?+?+?+?++?+?+?+?+"
-  HallOfFameBestFitness: 679.9873
+  HallOfFameBestFitness: 221.4
   FitnessHistory:
     Capacity: 256
     Head: 88
