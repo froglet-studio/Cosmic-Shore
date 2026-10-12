@@ -1,0 +1,605 @@
+<!doctype html>
+<!--
+  Darwin Lab - TEMPLATE. Do not edit DarwinLab.html by hand: `python3 Tools/Evolution/build_lab.py` bakes this file
+  with the shipped model (sim.js), the shipped numbers re-read from the real assets (shipped.json + a drift check),
+  the harness's evidence (results.json) and the parity golden (golden.json) into:
+    Tools/Evolution/DarwinLab.html           the standalone page (file://, verify_lab.cjs)
+    Tools/Evolution/DarwinLab.artifact.html  the same page as the claude.ai Artifact tool publishes it
+  Contract: .claude/skills/labmaker/SKILL.md §2. Docs/EVOLUTION.md §7.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<!--ARTIFACT-START-->
+<title>Darwin Lab</title>
+<!--FONTS-->
+<style>
+  /* Layout: an editor - header / live stage + right settings dock / bottom results dock; nothing scrolls the page. */
+  :root {
+    --bg: #eef1ec; --panel: #f8faf6; --ink: #182019; --muted: #5c6a60; --line: #d3dbd2;
+    --accent: #1f7a5c; --changed: #1f7a5c; --warn: #9a5a0a; --ok: #1f7a43; --bad: #a83a3a;
+    --stage: #0b1412; --stage-ink: #cfe3d8; --grid: #1a2b26;
+    --tempo: #ff8a5c; --reach: #4fd6d3; --fecundity: #f4c242; --cohesion: #b48cff;
+    --herb: #46d08a; --pred: #ff5c7a; --food: #e3c24f;
+    --display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1513; --panel: #141d1a; --ink: #e2ebe5; --muted: #8fa397; --line: #26332d;
+      --accent: #5cd3a3; --changed: #5cd3a3; --warn: #f0b060; --ok: #5cc98a; --bad: #ff7b7b;
+      --stage: #060b0a; --stage-ink: #cfe3d8; --grid: #16231f; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1513; --panel: #141d1a; --ink: #e2ebe5; --muted: #8fa397; --line: #26332d;
+    --accent: #5cd3a3; --changed: #5cd3a3; --warn: #f0b060; --ok: #5cc98a; --bad: #ff7b7b;
+    --stage: #060b0a; --stage-ink: #cfe3d8; --grid: #16231f; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) 232px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 10px 14px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; min-width: 0; }
+  header h1 { font: 500 22px/1 var(--display); letter-spacing: -0.01em; margin: 0; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); font-variant-numeric: tabular-nums; }
+  .presets { display: flex; gap: 4px; flex-wrap: wrap; }
+  .presets button { font-size: 11px; padding: 3px 8px; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; min-width: 0; background: var(--stage); }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; right: 12px; top: 6px; text-align: right; color: var(--stage-ink); font: 12px/1.5 var(--mono); pointer-events: none; white-space: pre; opacity: 0.92; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; min-width: 0; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 5px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button:focus-visible, .btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 72px; gap: 2px 8px; margin: 9px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+  .row label .key { color: var(--muted); font: 11px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12px; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .row .src { grid-column: 1 / -1; color: var(--muted); font: 10.5px var(--mono); }
+  .src.drift { color: var(--warn); }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 11.5px; letter-spacing: 0.02em; text-transform: uppercase; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12px; }
+  .best { font-weight: 700; color: var(--ok); }
+  .pos { color: var(--ok); } .neg { color: var(--bad); } .nil { color: var(--muted); }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); } .status-bad { color: var(--bad); }
+  .hint { color: var(--muted); font-size: 12px; margin: 4px 0; }
+  .lead { font: 400 14px/1.5 var(--body); max-width: 70ch; margin: 4px 0 8px; }
+  .lead strong { color: var(--accent); font-weight: 600; }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; }
+  .cols { display: flex; gap: 16px; flex-wrap: wrap; }
+  .cols > * { flex: 1 1 280px; min-width: 0; }
+  .spark { width: 100%; height: 56px; display: block; background: var(--stage); border-radius: 4px; }
+  ul.plain { margin: 4px 0; padding-left: 18px; }
+  ul.plain li { margin: 2px 0; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 4 / 3; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); }
+    header, #dock, #bottom { padding-left: 16px; padding-right: 16px; }
+    header h1 { font-size: 19px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<div id="app">
+  <header>
+    <h1 id="title">Darwin Lab</h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <div class="presets" id="presets" aria-label="Regime presets"></div>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="speed" title="Model seconds per wall second">60×</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="resetAll" title="Every setting back to the shipped asset">Shipped</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="hud"></div></div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+/*__SIM_JS__*/
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const Evo = window.Evo;
+
+  // ================= LAB meta + the shipped numbers =================
+  // A READER of the shipped numbers (SHIPPED_META carries each one's source). build_lab.py re-reads the real assets
+  // at bake time; any value that no longer matches the asset is listed in SHIPPED_DRIFT and flagged on screen.
+  const LAB = { name: 'Darwin Lab', branch: '__BRANCH__', round: 1, built: '__BUILD_DATE__', doc: 'Docs/EVOLUTION.md' };
+  const SHIPPED_META = /*__SHIPPED_JSON__*/ {};
+  const SHIPPED_DRIFT = /*__SHIPPED_DRIFT__*/ [];
+  const RESULTS = /*__RESULTS_JSON__*/ {};
+  const GOLDEN = /*__GOLDEN_JSON__*/ {};
+  const SHIPPED = {};
+  for (const k of Object.keys(SHIPPED_META)) { const v = SHIPPED_META[k].value; SHIPPED[k] = typeof v === 'boolean' ? (v ? 1 : 0) : v; }
+  // lab-only switches (no game field): the selection-off control, the clock
+  SHIPPED.InertPhenotype = 0;   // lab: selection OFF (genomes mutate and inherit, express nothing)
+  SHIPPED.Seeder = 1;           // lab: the periodic top-up to the floor (the spawner's seed behaviour, on in the game)
+  SHIPPED_META.PopulationScale = SHIPPED_META.PopulationScale || { value: 1, source: 'SpawnProfileSO.FaunaPopulationScale (Blob Cell Spawn Profile: unset = 1)' };
+  SHIPPED_META.PredatorScale = SHIPPED_META.PredatorScale || { value: 1, source: 'SpawnProfileSO.FaunaPopulationScale, applied to the predator alone (lab split)' };
+  SHIPPED.PopulationScale = 1; SHIPPED.PredatorScale = 1;
+
+  // ================= SPEC: one row per slider =================
+  const SPEC = [
+    ['Biome', 'PopulationScale', 1, 60, 1, 'Herbivore population ×', 'SpawnProfileSO.FaunaPopulationScale: the cap and the seed floor times this. The Blob cell ships 1 (cap 6); the evidence runs use 20 and 50 so selection can beat drift.'],
+    ['Biome', 'PredatorScale', 0, 20, 1, 'Predator population ×', 'The same lever on the shark. 0 = no predators (no turnover but famine).'],
+    ['Biome', 'FoodCap', 50, 3000, 10, 'Food ceiling (prisms)', 'FloraSpawnVolumeCeiling / 16: the most grazeable mass the cell holds. Regrowth slows as it fills.'],
+    ['Biome', 'FloraGrowth', 0, 100, 1, 'Flora regrowth (prisms/s)', 'Model assumption (Tools/ecosim): how fast the flora add mass below the ceiling.'],
+    ['Biome', 'GrazeRate', 0.05, 5, 0.05, 'Graze rate at full food (/s)', 'Model assumption (Tools/ecosim): feeds per second for the authored creature on a full cell.'],
+    ['Biome', 'HalfSaturation', 10, 1000, 10, 'Half-saturation (prisms)', 'Food level at which grazing runs at half speed. Lower = feeding stays easy as the cell empties.'],
+    ['Biome', 'SpawnWave', 1, 60, 1, 'Seeder wave (s)', 'BaseFaunaSpawnTime: how often the spawner tops a species back up to its floor.'],
+    ['Biome', 'Seeder', 0, 1, 1, 'Seeder on', '1 = the spawner re-seeds founders below the floor (immigration of the authored species). 0 = a closed population.'],
+    ['Biome', 'ConservedStomach', 0, 1, 1, 'Conserved stomach', 'CellConfigDataSO.ConservedFaunaStomach: 1 = a feed adds only its volume; 0 (shipped) = any feed refills the stomach.'],
+    ['Species', 'HerbFeedsPerOffspring', 1, 100, 1, 'Herbivore feeds per birth', 'FaunaConfigurationSO.FeedsPerOffspring. The Fecundity locus divides it.'],
+    ['Species', 'HerbCooldown', 0, 120, 1, 'Herbivore birth cooldown (s)', 'ReproductionCooldownSeconds.'],
+    ['Species', 'HerbStarvation', 5, 600, 5, 'Herbivore starvation (s)', 'starvationSeconds: upkeep burns one meal in this long. The Tempo and Reach loci scale it.'],
+    ['Species', 'HerbCap', 1, 400, 1, 'Herbivore cap (authored)', 'MaxLivePopulation before the population lever. A performance backstop, not the economy.'],
+    ['Species', 'HerbFloor', 1, 200, 1, 'Herbivore seed floor (authored)', 'PopulationSize: the seeder only tops up to this.'],
+    ['Species', 'PredFeedsPerOffspring', 1, 50, 1, 'Predator kills per birth', 'FeedsPerOffspring on the shark.'],
+    ['Species', 'PredCooldown', 0, 300, 5, 'Predator birth cooldown (s)', 'ReproductionCooldownSeconds on the shark.'],
+    ['Species', 'PredStarvation', 5, 600, 5, 'Predator starvation (s)', 'starvationSeconds on the shark prefab.'],
+    ['Species', 'PredCap', 0, 100, 1, 'Predator cap (authored)', 'MaxLivePopulation on the shark.'],
+    ['Species', 'PredFloor', 0, 50, 1, 'Predator seed floor (authored)', 'PopulationSize on the shark.'],
+    ['Species', 'HuntInterval', 1, 120, 1, 'Hunt interval (s)', 'LightFaunaDataSO.huntIntervalSeconds: one kill attempt per predator per interval.'],
+    ['Species', 'PredationImmunity', 0, 60, 1, 'Newborn immunity (s)', 'Fauna.predationImmunitySeconds.'],
+    ['Species', 'StomachCapacity', 1, 160, 1, 'Stomach capacity (volume)', 'One nominal prism (16). Only matters with the conserved stomach.'],
+    ['Mutation', 'MutationRate', 0, 1, 0.05, 'Mutation rate', 'EvolutionSettings.MutationRate: chance per locus per birth that the gene steps.'],
+    ['Mutation', 'MutationSigma', 0, 0.5, 0.01, 'Mutation sigma', 'EvolutionSettings.MutationSigma: size of one step in gene units (a gene spans -1..+1). 0 = mutation OFF.'],
+    ['Mutation', 'FounderSpread', 0, 0.5, 0.01, 'Founder spread', 'EvolutionSettings.FounderSpread: standing variation among seeded founders. 0 = every founder is the authored species.'],
+    ['Expression', 'TempoPaceRange', 1, 3, 0.05, 'Tempo → pace ×', 'Speed multiplier at gene +1 (÷ at -1).'],
+    ['Expression', 'TempoUpkeepRange', 1, 3, 0.05, 'Tempo → upkeep ×', 'The COST of pace: stomach drain at gene +1. Authored above the pace gain.'],
+    ['Expression', 'ReachRadiusRange', 1, 3, 0.05, 'Reach → radius ×', 'Graze radius at gene +1 (encounter rate goes as its square here).'],
+    ['Expression', 'ReachUpkeepRange', 1, 3, 0.05, 'Reach → upkeep ×', 'The cost of sensing further.'],
+    ['Expression', 'FecundityRange', 1, 4, 0.05, 'Fecundity → births ×', 'Feeds per birth divided by this at gene +1.'],
+    ['Expression', 'FecundityProvisionRange', 1, 4, 0.05, 'Fecundity → child stomach ÷', 'An r-lean parent births hungrier children (one-sided: a K-lean keeps them full).'],
+    ['Expression', 'CohesionRange', 1, 3, 0.05, 'Cohesion → flock radius ×', 'Has NO mechanism in this arena: the locus drifts, by design. It is the neutral marker.'],
+    ['Controls', 'InertPhenotype', 0, 1, 1, 'Selection OFF', 'The abiotic baseline: genomes still inherit and mutate but express nothing. Whatever moves here is drift.'],
+  ];
+
+  const LS = 'lab:' + LAB.name + ':';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const PRESETS = [
+    { name: 'Blob ×20', tip: 'the Blob cell as authored, 20× the herbivores and 5× the sharks (the evidence baseline)', v: { PopulationScale: 20, PredatorScale: 5 } },
+    { name: 'Famine', tip: '50× herbivores on the shipped food: starvation bounds the population, not the cap', v: { PopulationScale: 50, PredatorScale: 5 } },
+    { name: 'Sparse', tip: 'a third of the food, regrowing at 8 prisms/s', v: { PopulationScale: 50, PredatorScale: 5, FoodCap: 250, FloraGrowth: 8 } },
+    { name: 'Rich', tip: 'twice the food at 40 prisms/s', v: { PopulationScale: 20, PredatorScale: 5, FoodCap: 1500, FloraGrowth: 40 } },
+    { name: 'No predators', tip: 'no sharks: famine is the only turnover', v: { PopulationScale: 20, PredatorScale: 0 } },
+    { name: 'Closed', tip: 'famine with the seeder off: no founder immigration', v: { PopulationScale: 50, PredatorScale: 5, Seeder: 0 } },
+    { name: 'Mutation off', tip: 'CONTROL: heredity without variation', v: { PopulationScale: 20, PredatorScale: 5, MutationSigma: 0, MutationRate: 0 } },
+    { name: 'Selection off', tip: 'CONTROL: the abiotic baseline', v: { PopulationScale: 20, PredatorScale: 5, InertPhenotype: 1 } },
+  ];
+  const saved = lsGet(LS + 'P', null);
+  const P = Object.assign({}, SHIPPED, saved || PRESETS[0].v);
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  // ================= THE MODEL (Tools/Evolution/sim.js, the C# arena's exact port) =================
+  const EVO_KEYS = ['MutationRate', 'MutationSigma', 'FounderSpread', 'TempoPaceRange', 'TempoUpkeepRange', 'ReachRadiusRange', 'ReachUpkeepRange', 'FecundityRange', 'FecundityProvisionRange', 'CohesionRange'];
+  function arenaParams(src) {
+    const over = {}, evo = {};
+    for (const k of Object.keys(src)) {
+      if (EVO_KEYS.includes(k)) evo[k] = src[k];
+      else if (k === 'Seeder' || k === 'ConservedStomach' || k === 'InertPhenotype') over[k] = !!src[k];
+      else over[k] = src[k];
+    }
+    over.Evolution = evo;
+    return Evo.params(over);
+  }
+  let arena = null, seed = 1, acc = 0, speed = 60, hist = [], lastSample = -1e9, first = null;
+  const SAMPLE_EVERY = 10, HIST_MAX = 1800;
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    arena = new Evo.Arena(arenaParams(P), seed);
+    acc = 0; hist = []; lastSample = -1e9; first = null;
+    sample();
+  }
+  function sample() {
+    const row = arena.census();
+    hist.push(row); if (hist.length > HIST_MAX) hist.splice(0, hist.length - HIST_MAX);
+    if (!first && row[Evo.ROW.herb] > 0) first = row.slice();
+    lastSample = arena.t;
+  }
+  // Advances the model by dt seconds of wall time at the current speed; never draws, never reads a device.
+  function simStep(dt) {
+    acc += dt * speed;
+    const P0 = arena.P;
+    let guard = 0;
+    while (acc >= P0.Dt && guard++ < 4000) {
+      arena.stepOnce(); acc -= P0.Dt;
+      if (arena.t - lastSample >= SAMPLE_EVERY) sample();
+    }
+  }
+  function shiftOf(row) {
+    const out = [0, 0, 0, 0];
+    if (!first || !row || row[Evo.ROW.herb] === 0) return out;
+    for (let l = 0; l < 4; l++) out[l] = row[Evo.ROW.mean + l] - first[Evo.ROW.mean + l];
+    return out;
+  }
+  // The living population's mean genes right now (no counters touched - census() resets them).
+  function liveMeans() {
+    const gs = arena.genomes(), m = [0, 0, 0, 0];
+    if (!gs.length) return m;
+    for (const g of gs) for (let l = 0; l < 4; l++) m[l] += g[l];
+    return m.map(v => v / gs.length);
+  }
+  // One number per column the lab decides on: the drift of each trait since the first census, and the population.
+  function score() {
+    const m = liveMeans(), s = [0, 0, 0, 0];
+    if (first && arena.h.length) for (let l = 0; l < 4; l++) s[l] = m[l] - first[Evo.ROW.mean + l];
+    return { tempo: +s[0].toFixed(3), reach: +s[1].toFixed(3), fecundity: +s[2].toFixed(3), cohesion: +s[3].toFixed(3), pop: arena.h.length, t: +arena.t.toFixed(1) };
+  }
+
+  // ================= headless batch: the scorecard =================
+  // Runs fresh arenas (never the live one) across seeds for the current settings and its two controls.
+  const VARIANTS = [
+    { name: 'Your settings', v: {} },
+    { name: 'Mutation off', v: { MutationSigma: 0, MutationRate: 0 } },
+    { name: 'Selection off', v: { InertPhenotype: 1 } },
+  ];
+  function runOne(settings, s, hours) {
+    const a = new Evo.Arena(arenaParams(settings), s);
+    const dt = a.P.Dt, steps = Math.round(hours * 3600 / dt), every = Math.round(60 / dt);
+    const rows = [];
+    for (let i = 0; i < steps; i += every) { a.advance(every); rows.push(a.census()); }
+    let f = rows.find(r => r[Evo.ROW.herb] > 0) || rows[0];
+    const from = Math.floor(rows.length * 3 / 4);
+    const fin = [0, 0, 0, 0]; let n = 0, pop = 0, starved = 0, eaten = 0;
+    for (let i = from; i < rows.length; i++) { const r = rows[i]; if (r[Evo.ROW.herb] > 0) { n++; for (let l = 0; l < 4; l++) fin[l] += r[Evo.ROW.mean + l]; } pop += r[Evo.ROW.herb]; }
+    for (const r of rows) { starved += r[Evo.ROW.starved]; eaten += r[Evo.ROW.eaten]; }
+    const shift = fin.map((v, l) => n > 0 ? v / n - f[Evo.ROW.mean + l] : 0);
+    return { shift, pop: pop / (rows.length - from), starved, eaten, gen: rows[rows.length - 1][Evo.ROW.maxGen] };
+  }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3], hours = opts.hours || 1, rows = [];
+    for (const va of VARIANTS) {
+      const settings = Object.assign({}, P, va.v);
+      const acc4 = [0, 0, 0, 0], sq4 = [0, 0, 0, 0]; let pop = 0, gen = 0;
+      for (const s of seeds) {
+        const r = runOne(settings, s, hours);
+        for (let l = 0; l < 4; l++) { acc4[l] += r.shift[l]; sq4[l] += r.shift[l] * r.shift[l]; }
+        pop += r.pop; gen = Math.max(gen, r.gen);
+      }
+      const n = seeds.length;
+      const mean = acc4.map(v => +(v / n).toFixed(3));
+      const sd = acc4.map((v, l) => +(n > 1 ? Math.sqrt(Math.max(0, (sq4[l] - v * v / n) / (n - 1))) : 0).toFixed(3));
+      rows.push({ variant: va.name, tempo: mean[0], reach: mean[1], fecundity: mean[2], cohesion: mean[3], sd, pop: +(pop / n).toFixed(1), gen });
+    }
+    return rows;
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= the stage =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const C = { tempo: '#ff8a5c', reach: '#4fd6d3', fecundity: '#f4c242', cohesion: '#b48cff', herb: '#46d08a', pred: '#ff5c7a', food: '#e3c24f', ink: '#cfe3d8', dim: '#6b8278', grid: '#1a2b26', bg: '#060b0a' };
+  function fmtT(t) { const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = Math.floor(t % 60); return (h ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
+  function render() {
+    const w = canvas.width, h = canvas.height, dpr = Math.min(2, devicePixelRatio || 1);
+    ctx.save(); ctx.scale(dpr, dpr);
+    const W = w / dpr, H = h / dpr;
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+    const pad = 12, narrow = W < 560;
+    const topH = Math.round(H * 0.22), midY = topH + pad, midH = Math.round(H * (narrow ? 0.48 : 0.50)), botY = midY + midH + pad, botH = H - botY - pad;
+    ctx.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+    // ---- top: population & food ----
+    drawPanel(pad, pad + 14, W - 2 * pad, topH - pad - 14, 'population · food');
+    if (hist.length > 1) {
+      const n = hist.length, x0 = pad, x1 = W - pad, y0 = pad + 14, y1 = topH;
+      const maxPop = Math.max(10, ...hist.map(r => Math.max(r[1], r[2]))), cap = Math.max(1, arena.P.FoodCap);
+      line(hist, r => r[3] / cap, x0, x1, y0, y1, C.food, 1);
+      line(hist, r => r[2] / maxPop, x0, x1, y0, y1, C.pred, 1.2);
+      line(hist, r => r[1] / maxPop, x0, x1, y0, y1, C.herb, 1.6);
+      legend(x1 - 230, y0 + 10, [[C.herb, 'herbivores ' + hist[n - 1][1]], [C.pred, 'sharks ' + hist[n - 1][2]], [C.food, 'food ' + Math.round(hist[n - 1][3])]]);
+    }
+    // ---- middle: four trait traces ----
+    const cols = narrow ? 2 : 4, rowsN = narrow ? 2 : 1, cw = (W - 2 * pad - (cols - 1) * pad) / cols, ch = (midH - (rowsN - 1) * pad) / rowsN;
+    const loci = [['tempo', C.tempo], ['reach', C.reach], ['fecundity', C.fecundity], ['cohesion', C.cohesion]];
+    loci.forEach(([name, col], l) => {
+      const cx = pad + (l % cols) * (cw + pad), cy = midY + Math.floor(l / cols) * (ch + pad);
+      drawPanel(cx, cy + 14, cw, ch - 14, name + (l === 3 ? ' (neutral control)' : ''));
+      const gx0 = cx, gx1 = cx + cw - 34, gy0 = cy + 14, gy1 = cy + ch;
+      // founder line
+      ctx.strokeStyle = C.dim; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(gx0, (gy0 + gy1) / 2); ctx.lineTo(gx1, (gy0 + gy1) / 2); ctx.stroke(); ctx.setLineDash([]);
+      if (hist.length > 1) {
+        // ± sd band
+        ctx.fillStyle = col + '33'; ctx.beginPath();
+        hist.forEach((r, i) => { const x = gx0 + (gx1 - gx0) * i / (hist.length - 1), y = gy0 + (gy1 - gy0) * (1 - (Math.min(1, r[4 + l] + r[8 + l]) + 1) / 2); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        for (let i = hist.length - 1; i >= 0; i--) { const r = hist[i], x = gx0 + (gx1 - gx0) * i / (hist.length - 1), y = gy0 + (gy1 - gy0) * (1 - (Math.max(-1, r[4 + l] - r[8 + l]) + 1) / 2); ctx.lineTo(x, y); }
+        ctx.closePath(); ctx.fill();
+        line(hist, r => (r[4 + l] + 1) / 2, gx0, gx1, gy0, gy1, col, 1.8);
+        const last = hist[hist.length - 1];
+        ctx.fillStyle = col; ctx.fillText((last[4 + l] >= 0 ? '+' : '') + last[4 + l].toFixed(2) + ' ± ' + last[8 + l].toFixed(2), gx0 + 6, gy0 + 14);
+      }
+      // histogram of the living, vertical, at the right edge
+      const gs = arena.genomes(), bins = 16, counts = new Array(bins).fill(0);
+      for (const g of gs) counts[Math.min(bins - 1, Math.max(0, Math.floor((g[l] + 1) / 2 * bins)))]++;
+      const peak = Math.max(1, ...counts), hx = gx1 + 4, hw = 28, bh = (gy1 - gy0) / bins;
+      ctx.fillStyle = col + 'cc';
+      counts.forEach((c, b) => { if (c) ctx.fillRect(hx, gy1 - (b + 1) * bh + 1, hw * c / peak, Math.max(1, bh - 2)); });
+    });
+    // ---- bottom: genome scatter tempo × reach, coloured by fecundity ----
+    if (botH > 40) {
+      const sx = pad, sw = narrow ? W - 2 * pad : Math.min(W - 2 * pad, botH * 2.2);
+      drawPanel(sx, botY + 14, sw, botH - 14, 'living genomes · tempo → · reach ↑ · colour = fecundity');
+      const gs = arena.genomes();
+      const x0 = sx + 6, x1 = sx + sw - 6, y0 = botY + 18, y1 = botY + botH - 4;
+      ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo((x0 + x1) / 2, y0); ctx.lineTo((x0 + x1) / 2, y1); ctx.moveTo(x0, (y0 + y1) / 2); ctx.lineTo(x1, (y0 + y1) / 2); ctx.stroke();
+      for (const g of gs) {
+        const x = x0 + (x1 - x0) * (g[0] + 1) / 2, y = y1 - (y1 - y0) * (g[1] + 1) / 2, f = (g[2] + 1) / 2;
+        ctx.fillStyle = `rgba(${Math.round(120 + 135 * f)},${Math.round(140 + 50 * f)},${Math.round(230 - 180 * f)},0.85)`;
+        ctx.fillRect(x - 2, y - 2, 4, 4);
+      }
+      ctx.strokeStyle = C.ink; ctx.beginPath(); const fx = (x0 + x1) / 2, fy = (y0 + y1) / 2; ctx.moveTo(fx - 6, fy); ctx.lineTo(fx + 6, fy); ctx.moveTo(fx, fy - 6); ctx.lineTo(fx, fy + 6); ctx.stroke();
+      if (!narrow && W - 2 * pad - sw > 180) {
+        const tx = sx + sw + pad, ty = botY + 30;
+        ctx.fillStyle = C.ink;
+        const tot = arena.total;
+        ['generations up to ' + arena.maxGen, 'births ' + tot.births + ' · founders seeded ' + tot.founders, 'starved ' + tot.starved + ' · eaten ' + tot.eaten,
+         'cap ' + arena.herbCap + ' · floor ' + arena.herbFloor + ' · sharks ≤ ' + arena.predCap,
+         'seed ' + seed + ' · ' + speed + '× · dt ' + arena.P.Dt + ' s'].forEach((s, i) => ctx.fillText(s, tx, ty + i * 15));
+      }
+    }
+    ctx.restore();
+    $('hud').textContent = 't ' + fmtT(arena.t) + '  N ' + arena.h.length + (paused ? '  [paused]' : '');
+  }
+  function drawPanel(x, y, w, h, title) {
+    ctx.strokeStyle = C.grid; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.fillStyle = C.dim; ctx.fillText(title, x + 2, y - 4);
+  }
+  function line(rows, fn, x0, x1, y0, y1, col, lw) {
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+    rows.forEach((r, i) => { const x = x0 + (x1 - x0) * i / Math.max(1, rows.length - 1), v = Math.max(0, Math.min(1, fn(r))), y = y1 - (y1 - y0) * v; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke(); ctx.lineWidth = 1;
+  }
+  function legend(x, y, items) { items.forEach(([col, text], i) => { ctx.fillStyle = col; ctx.fillRect(x, y - 8 + i * 14, 8, 8); ctx.fillStyle = C.ink; ctx.fillText(text, x + 12, y + i * 14); }); }
+
+  // ================= UI: tabs, sliders, shipped-vs-yours, presets =================
+  const outputs = {};
+  const fmt = (v, step) => { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); };
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const changed = Object.keys(diffOnly());
+    $('diff').textContent = changed.length ? changed.length + ' setting' + (changed.length > 1 ? 's differ' : ' differs') + ' from the shipped asset' : 'the shipped numbers';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + fmt(P[key], step); }
+    for (const b of $('presets').children) { const pr = PRESETS.find(p => p.name === b.dataset.name); b.setAttribute('aria-pressed', String(pr && Object.keys(pr.v).every(k => Math.abs(P[k] - pr.v[k]) < 1e-9) && Object.keys(diffOnly()).every(k => k in pr.v))); }
+  }
+  const RESET_KEYS = new Set(['PopulationScale', 'PredatorScale', 'HerbCap', 'HerbFloor', 'PredCap', 'PredFloor']);
+  function applyLive() {
+    // live edits reach the running arena: the biome numbers at once, the evolution numbers for the next birth
+    const np = arenaParams(P);
+    for (const k of Object.keys(np)) if (k !== 'Evolution') arena.P[k] = np[k];
+    arena.P.Evolution = np.Evolution;
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS + 'P', diffOnly()); if (RESET_KEYS.has(key)) reset(); else applyLive(); refreshDiff(); }
+  function applyPreset(pr) { Object.assign(P, SHIPPED, pr.v); lsSet(LS + 'P', diffOnly()); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find(t => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some(t => t.name === sel) ? sel : tabs[0].name);
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    if (group === 'Controls') { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'A control is a run that must NOT adapt. Mutation off = sigma 0 (Mutation tab). Selection off = this switch.'; box.appendChild(p); }
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div><div class="src"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const meta = SHIPPED_META[key], drift = SHIPPED_DRIFT.find(d => d.key === key), src = row.querySelector('.src');
+      src.textContent = meta ? 'shipped ' + SHIPPED[key] + ' · ' + meta.source : 'lab-only (no game field)';
+      if (drift) { src.textContent = 'ASSET MOVED: the asset now says ' + drift.asset + ', this page bakes ' + drift.baked + ' (' + meta.source + ') - rebuild the lab'; src.classList.add('drift'); }
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key] }); inp.id = 'p-' + key;
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map(r => r[0]))];
+  makeTabs('dockTabs', 'dockBody', groups.map(g => ({ name: g, build: () => sliderGroup(g) })), LS + 'dock');
+  for (const pr of PRESETS) { const b = document.createElement('button'); b.className = 'btn'; b.textContent = pr.name; b.title = pr.tip; b.dataset.name = pr.name; b.onclick = () => applyPreset(pr); $('presets').appendChild(b); }
+
+  // ================= the decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet(LS + 'log', []);
+  function snapshot() { return { round: LAB.round, seed, changed: diffOnly(), score: score() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet(LS + 'log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic (e.g. mutation sigma for the Blob cell)"><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button> <span class="hint" id="logCopied"></span></p><table id="logTable"></table>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude at the start of every round.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'hint status-ok' : 'hint status-warn';
+    const d = diffOnly();
+    box.querySelector('#logChoice').value = 'Settings: ' + (Object.keys(d).length ? JSON.stringify(d) : 'shipped');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => {
+      const t = remote.concat(localLog).map(x => new Date(x.createdAt).toISOString() + ' · ' + x.topic + ': ' + x.choice + ' ' + JSON.stringify(x.settings)).join('\n');
+      const done = () => { box.querySelector('#logCopied').textContent = 'copied'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => { box.querySelector('#logCopied').textContent = t ? 'select the table and copy' : 'nothing recorded yet'; });
+    };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  // ================= bottom dock: scorecard, evidence, parity, decisions, about =================
+  const sign = (v) => (v > 0.02 ? 'pos' : v < -0.02 ? 'neg' : 'nil');
+  const fz = (v) => (v >= 0 ? '+' : '') + v.toFixed(3);
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="lead">The scorecard runs <strong>fresh arenas headless</strong> for your settings and its two controls, 3 seeds × 1 hour of cell time, and reports each trait\'s drift from the first census. A shift that sits inside the <em>Selection off</em> row\'s spread is a plateau, not a result.</p><p><button class="btn primary" id="runBatch">Score your settings</button> <span class="hint" id="batchNote"></span></p><table id="scoreTable"></table>';
+    box.querySelector('#runBatch').onclick = () => {
+      const t0 = performance.now(), rows = runBatch(), t = box.querySelector('#scoreTable');
+      t.innerHTML = '<tr><th>Variant</th><th class="num">Δ tempo</th><th class="num">Δ reach</th><th class="num">Δ fecundity</th><th class="num">Δ cohesion (control)</th><th class="num">population</th><th class="num">generations</th></tr>';
+      for (const r of rows) {
+        const tr = document.createElement('tr');
+        const cells = [r.variant, fz(r.tempo) + ' ±' + r.sd[0].toFixed(2), fz(r.reach) + ' ±' + r.sd[1].toFixed(2), fz(r.fecundity) + ' ±' + r.sd[2].toFixed(2), fz(r.cohesion) + ' ±' + r.sd[3].toFixed(2), r.pop.toFixed(1), String(r.gen)];
+        cells.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i > 0) td.className = 'num'; if (i >= 1 && i <= 4) td.classList.add(sign([r.tempo, r.reach, r.fecundity, r.cohesion][i - 1])); tr.appendChild(td); });
+        t.appendChild(tr);
+      }
+      box.querySelector('#batchNote').textContent = rows.length * 3 + ' runs in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s';
+    };
+    return box;
+  }
+  function evidencePanel() {
+    const box = document.createElement('div');
+    const R = RESULTS, regimes = R.regimes || [];
+    const famine = regimes.find(r => r.name === 'famine'), rich = regimes.find(r => r.name === 'rich'), sel = regimes.find(r => r.name === 'control-selection-off');
+    const lead = document.createElement('p'); lead.className = 'lead';
+    if (famine && rich && sel) {
+      lead.innerHTML = 'Baked from <strong>Tools/Build/evolution_harness</strong> (C#, the shipped core): ' + regimes.length + ' regimes × ' + R.seeds + ' seeds × ' + R.hours + ' h of cell time. Under famine the population evolves <strong>slower</strong> (tempo ' + fz(famine.scorecard.shiftMean[0]) + ') and longer-reaching (reach ' + fz(famine.scorecard.shiftMean[1]) + '); on rich food it evolves <strong>faster</strong> (tempo ' + fz(rich.scorecard.shiftMean[0]) + '). The selection-off control drifts ' + fz(sel.scorecard.shiftMean[0]) + ' ± ' + sel.scorecard.shiftSd[0].toFixed(2) + '. Opposite directions in different environments, and nothing in the controls, is natural selection rather than a ratchet.';
+    } else lead.textContent = 'No baked evidence in this build: run `bash Tools/Build/evolution_harness/run.sh evidence` then rebuild the lab.';
+    box.appendChild(lead);
+    const t = document.createElement('table');
+    t.innerHTML = '<tr><th>Regime</th><th class="num">population</th><th class="num">Δ tempo</th><th class="num">Δ reach</th><th class="num">Δ fecundity</th><th class="num">Δ cohesion</th><th>4 h of mean traits</th></tr>';
+    for (const reg of regimes) {
+      const tr = document.createElement('tr'), sc = reg.scorecard;
+      const td0 = document.createElement('td'); td0.innerHTML = '<b></b><br><span class="hint"></span>'; td0.querySelector('b').textContent = reg.name; td0.querySelector('span').textContent = reg.note; tr.appendChild(td0);
+      const tdp = document.createElement('td'); tdp.className = 'num'; tdp.textContent = sc.meanPopulation.toFixed(1); tr.appendChild(tdp);
+      for (let l = 0; l < 4; l++) { const td = document.createElement('td'); td.className = 'num ' + sign(sc.shiftMean[l]); td.textContent = fz(sc.shiftMean[l]) + ' ±' + sc.shiftSd[l].toFixed(3); tr.appendChild(td); }
+      const tdS = document.createElement('td'); const cv = document.createElement('canvas'); cv.className = 'spark'; cv.width = 320; cv.height = 56; tdS.style.minWidth = '180px'; tdS.appendChild(cv); tr.appendChild(tdS);
+      t.appendChild(tr);
+      queueMicrotask(() => sparkline(cv, reg));
+    }
+    box.appendChild(t);
+    const foot = document.createElement('p'); foot.className = 'hint';
+    foot.textContent = 'Δ = time-averaged mean gene over the last quarter minus the first census, mean ± sd across seeds. Loci: ' + (R.loci || []).join(', ') + '. Generated ' + (R.generated || '?') + '.';
+    box.appendChild(foot);
+    return box;
+  }
+  function sparkline(cv, reg) {
+    const c = cv.getContext('2d'), w = cv.width, h = cv.height;
+    c.fillStyle = C.bg; c.fillRect(0, 0, w, h);
+    c.strokeStyle = C.grid; c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w, h / 2); c.stroke();
+    const runs = reg.runs || []; if (!runs.length) return;
+    const n = Math.min(...runs.map(r => r.rows.length));
+    [C.tempo, C.reach, C.fecundity, C.cohesion].forEach((col, l) => {
+      c.strokeStyle = col; c.lineWidth = 1.4; c.beginPath();
+      for (let i = 0; i < n; i++) {
+        let s = 0, k = 0; for (const r of runs) { if (r.rows[i][1] > 0) { s += r.rows[i][4 + l]; k++; } }
+        const v = k ? s / k : 0, x = w * i / (n - 1), y = h / 2 - v * (h / 2) * 0.95;
+        i ? c.lineTo(x, y) : c.moveTo(x, y);
+      }
+      c.stroke();
+    });
+  }
+  function parityPanel() {
+    const box = document.createElement('div');
+    const cases = GOLDEN.cases || [];
+    box.innerHTML = '<p class="lead">This page runs <strong>sim.js</strong>, the exact JavaScript port of the C# core the game ships and the arena the harness measured. The port is held to the C# by <strong>gate_parity.cjs</strong>: the same seed must give the same census rows, bit for bit. The golden trajectories are baked in, so the page can prove it right here.</p><p><button class="btn primary" id="runParity">Re-run the parity cases in this browser</button> <span id="parityNote" class="hint"></span></p><table id="parityTable"></table>';
+    const t = box.querySelector('#parityTable');
+    t.innerHTML = '<tr><th>Case</th><th class="num">seed</th><th class="num">steps</th><th class="num">rows</th><th>status</th></tr>';
+    for (const cs of cases) { const tr = document.createElement('tr'); tr.innerHTML = '<td></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="nil">not run</td>'; tr.children[0].textContent = cs.name; tr.children[1].textContent = cs.seed; tr.children[2].textContent = cs.steps; tr.children[3].textContent = cs.rows.length; tr.dataset.name = cs.name; t.appendChild(tr); }
+    box.querySelector('#runParity').onclick = () => {
+      const t0 = performance.now(); let ok = 0;
+      for (const cs of cases) {
+        const over = Object.assign({}, cs.params, { Evolution: Object.assign({}, cs.params.Evolution) });
+        const a = new Evo.Arena(Evo.params(over), cs.seed);
+        const rows = []; for (let s = 0; s < cs.steps; s += cs.every) { a.advance(cs.every); rows.push(a.census()); }
+        let diff = null;
+        if (rows.length !== cs.rows.length) diff = 'row count';
+        else outer: for (let i = 0; i < rows.length; i++) for (let k = 0; k < rows[i].length; k++) if (rows[i][k] !== cs.rows[i][k]) { diff = 'row ' + i + ' col ' + k + ': ' + rows[i][k] + ' vs ' + cs.rows[i][k]; break outer; }
+        const tr = t.querySelector('tr[data-name="' + cs.name + '"]'); if (tr) { tr.children[4].textContent = diff ? 'DIFFERS - ' + diff : 'exact'; tr.children[4].className = diff ? 'status-bad' : 'status-ok'; }
+        if (!diff) ok++;
+      }
+      box.querySelector('#parityNote').textContent = ok + '/' + cases.length + ' cases exact in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s';
+    };
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    const cols = document.createElement('div'); cols.className = 'cols';
+    const a = document.createElement('div');
+    a.innerHTML = '<p class="lead"><strong>Darwin Lab</strong> is where a designer decides a biome\'s evolution knobs by watching a population adapt - and watching it NOT adapt under the controls. Every slider on the Mutation and Expression tabs is a field of <span class="key">EvolutionSettings</span> on the cell\'s CellConfigDataSO; the Biome and Species tabs are the shipped assets the arena is built from.</p><p class="hint" id="aboutMeta"></p><p><b>What this lab does NOT model</b></p><ul class="plain"><li>Space. The arena is well mixed: "reach" is an encounter-rate multiplier, not a radius, and sharks pick prey uniformly rather than by distance.</li><li>Plants. The flora is one pool that regrows logistically; the game grows prisms on spindles that fauna graze in place.</li><li>Vessels. No trail mass, no Shepherd joust, no ability deaths - only starvation and predation select here.</li><li>Predator genomes. Sharks carry none in this round (Docs/EVOLUTION.md §8).</li><li>Cohesion. The locus has no mechanism in the arena, by design - it is the neutral marker every run carries.</li><li>Frame cost. Nothing here says what a population of 300 costs the GPU; Tools/ecosim does.</li><li>The shipped Blob cell caps its tadpoles at 6. The evidence runs lift that cap with the population lever; at 6 drift beats selection.</li></ul>';
+    a.querySelector('#aboutMeta').textContent = LAB.name + ' · round ' + LAB.round + ' · built ' + LAB.built + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
+    const b = document.createElement('div');
+    b.innerHTML = '<p><b>Where every shipped number comes from</b></p>';
+    const t = document.createElement('table'); t.innerHTML = '<tr><th>key</th><th class="num">value</th><th>source</th></tr>';
+    for (const k of Object.keys(SHIPPED_META)) { const tr = document.createElement('tr'); const drift = SHIPPED_DRIFT.find(d => d.key === k); tr.innerHTML = '<td class="key"></td><td class="num"></td><td></td>'; tr.children[0].textContent = k; tr.children[1].textContent = String(SHIPPED_META[k].value); tr.children[2].textContent = SHIPPED_META[k].source + (drift ? ' - ASSET MOVED: now ' + drift.asset : ''); if (drift) tr.children[2].className = 'status-warn'; t.appendChild(tr); }
+    b.appendChild(t);
+    cols.appendChild(a); cols.appendChild(b); box.appendChild(cols);
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Evidence', build: evidencePanel }, { name: 'Parity', build: parityPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], LS + 'bottom');
+
+  $('meta').textContent = 'round ' + LAB.round + ' · the HyperSea\'s heritable genome · ' + (SHIPPED_DRIFT.length ? SHIPPED_DRIFT.length + ' asset(s) moved since the bake' : 'numbers match the assets');
+  if (SHIPPED_DRIFT.length) $('meta').className = 'meta status-warn';
+  let paused = false;
+  const SPEEDS = [10, 60, 300, 1000];
+  $('speed').onclick = () => { speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]; $('speed').textContent = speed + '×'; };
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS + 'P', {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+  // ================= sizing + loop (with a manual clock for recorders) =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) { resize(); if (!paused) simStep(dt); render(); }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ================= the test surface =================
+  window.__lab = {
+    LAB, SHIPPED, SHIPPED_META, SHIPPED_DRIFT, SPEC, P, PLATFORM, VARIANTS, PRESETS, RESULTS, GOLDEN, Evo,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, record, applyPreset,
+    state: () => ({ t: arena.t, seed, herbivores: arena.h.length, predators: arena.pr.length, food: arena.food, maxGen: arena.maxGen }),
+  };
+})();
+</script>
+<!--ARTIFACT-END-->
+</body>
+</html>

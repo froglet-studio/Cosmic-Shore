@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore.Utility
 {
@@ -27,10 +28,27 @@ namespace CosmicShore.Utility
         public readonly Element Element;
         public readonly TTuning Tuning;
 
+        /// <summary>
+        /// The heritable genome riding this pick (Docs/EVOLUTION.md). The founder value (all genes 0) is the
+        /// species exactly as authored, which is what every pick carries while a biome's
+        /// <c>CellConfigDataSO.Evolution</c> is off. A parent's genome reaches its offspring through the SAME
+        /// inherit channel as the element - mutated on the way by <c>Cell.GenomeForOffspring</c> - so there is one
+        /// inheritance path, not two (Docs/ECOSYSTEM_MASTERPLAN.md Phase 3).
+        /// </summary>
+        public readonly LifeformGenome Genome;
+
         public LifeformVariantPick(Element element, TTuning tuning)
+            : this(element, tuning, LifeformGenome.Founder) { }
+
+        public LifeformVariantPick(Element element, TTuning tuning, LifeformGenome genome)
         {
             Element = element;
             Tuning = tuning;
+            Genome = genome;
         }
+
+        /// <summary>The same identity carrying a different genome (a founder's roll, or a child's mutation).</summary>
+        public LifeformVariantPick<TTuning> WithGenome(LifeformGenome genome) =>
+            new LifeformVariantPick<TTuning>(Element, Tuning, genome);
     }
 }

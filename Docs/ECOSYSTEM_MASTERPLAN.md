@@ -74,10 +74,10 @@ energy-constrained agent ecology where *survival is selection* — our north-sta
 | Response to stimuli | react to environment | aggression-by-phase, prey-seeking, starvation clocks | ✅ have it |
 | Homeostasis / regulation | self-bounding populations | prey-linked starvation + phase gates; full **Lotka–Volterra** after the predator/herbivore split | 🟡 partial → **P2** |
 | Reproduction | individuals replicate | well-fed fauna breed; spawner becomes a seeder | ❌ → **P3** |
-| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | 🟡 **first heritable trait shipped** — the spawn variant (its **element**, and that element's tuning) is rolled once and inherited by offspring through `AssignLineage` (`Docs/ECOSYSTEM.md §17`; the pick also carried a hatch level until §40 retired lifeform levels entirely); that inheritance channel is the seat for the trait genome → **P3** |
-| Variation / mutation | offspring differ heritably | mutation on inheritance | ❌ → **P3/P4** |
-| Selection | differential survival/reproduction | the energy economy (starvation/predation) **already selects** — becomes *natural* selection once traits are heritable | 🟡 substrate exists → **P4** |
-| **Adaptation / EVOLUTION (the bar)** | open-ended Darwinian evolution → novelty | reproduction + genome + mutation + selection; then speciation / predator-prey arms races | ❌ → **P4 (centerpiece)** |
+| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | ✅ **shipped 2026-10** (`Docs/EVOLUTION.md`): a four-locus `LifeformGenome` (Tempo, Reach, Fecundity, Cohesion) rides the SAME inherit channel as the element (`LifeformVariantPick.Genome`, `Docs/ECOSYSTEM.md §17`/§59) and causally drives the phenotype (speed band, graze radius, feeds per birth, provisioning — never size or the heart, §40). Off in every shipped biome until `CellConfigDataSO.Evolution.Enabled` |
+| Variation / mutation | offspring differ heritably | mutation on inheritance | ✅ **shipped 2026-10**: Gaussian steps of `MutationSigma` on every birth, clamped to the band (Irwin–Hall, bounded to ±6σ: the smooth, non-lethal pathway); `FounderSpread` gives the seeder's founders standing variation |
+| Selection | differential survival/reproduction | the energy economy (starvation/predation) **already selects** — becomes *natural* selection once traits are heritable | ✅ **endogenous**: nothing scores; every cost is a metabolic multiplier the economy collects (`Docs/EVOLUTION.md §1`) |
+| **Adaptation / EVOLUTION (the bar)** | open-ended Darwinian evolution → novelty | reproduction + genome + mutation + selection; then speciation / predator-prey arms races | 🟡 **demonstrated in the shipped-rules model, with controls** (`Docs/EVOLUTION.md §6`: tempo −0.32 under famine, +0.75 on rich food; selection-off −0.08 ±0.23; mutation-off +0.14 and fixed; the neutral locus drifts). In-game ledger + Evolution Monitor built, **not yet observed in the Editor**. Open-endedness untouched → **P4 frontier** |
 
 **The minimal credible claim** — ship these four, wired together, and the system is defensibly
 capable of *Darwinian evolution* (artificial life, minus the literal word *chemical*):
@@ -218,9 +218,15 @@ you want the anchor power-up synced. It can ride the controller's existing `Netw
   (`Docs/ECOSYSTEM.md §40`) — each spawn rolls one, and offspring inherit their parent's roll
   rather than re-rolling. That is the first trait riding the reproduction path and the seat the
   genome plugs into. ✅ (`Docs/ECOSYSTEM.md §17`)
-- TODO: a small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
+- ~~TODO: a small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
   diet-bias, reproduction-threshold, element); offspring inherit **with mutation** — extend the
-  inherited `LifeformVariantPick` channel rather than adding a second inheritance path.
+  inherited `LifeformVariantPick` channel rather than adding a second inheritance path.~~
+  **DONE 2026-10 (`Docs/EVOLUTION.md`, `Docs/ECOSYSTEM.md §59`).** Four loci on the inherited pick — Tempo
+  (speed vs upkeep), Reach (graze radius vs upkeep), Fecundity (births per feed vs provisioning), Cohesion
+  (flock radius) — mutated on every birth, expressed at lineage bind, carried on the network payload.
+  **Size is deliberately NOT a locus**: §40 made size a property of species × element after this list was
+  written, and the genome keeps it; a size locus is an open design call (`Docs/EVOLUTION.md §8`). Off in
+  every shipped biome until `CellConfigDataSO.Evolution.Enabled`.
 - ~~TODO (follow-up from the spread): **phase-threshold retune for the new volume mix.**~~
   **CLOSED by `Docs/ECOSYSTEM.md` §40.** The level spread raised mean creature scale ~13% above
   what the thresholds were authored for; levels are retired, so the multiplier is exactly 1 and
@@ -238,6 +244,12 @@ you want the anchor power-up synced. It can ride the controller's existing `Netw
 - **Evolution telemetry**: trait histograms over time + data export — so we can *show* the
   system evolves. *Life:* Darwinian evolution. Later: speciation, predator-prey arms races
   (open-endedness) — the impressive-to-NASA frontier.
+  **Built 2026-10:** `EvolutionLedger` per cell (lineages, generations, deaths by cause, a census per species),
+  the **Evolution Monitor** window (FrogletTools ▸ Ecology) with a JSON export, and the **evidence run**
+  (`Tools/Build/evolution_harness`: 9 regimes × 5 seeds × 4 h with mutation-off and selection-off controls) plus
+  the **Darwin Lab** (`Tools/Evolution/`) — `Docs/EVOLUTION.md §6–7`. The selection-off / mutation-off control
+  this list calls item 4 is the harness's `control-*` regimes. Still owed: the in-editor observation (§9 there),
+  and the frontier (speciation, arms races).
 
 **Phase 5 — The living world** *(roadmap steps 5–7)*
 - Domain **territory dynamics** (control ebbs/flows, no monoculture lock-in), **flora succession**

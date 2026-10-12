@@ -19,6 +19,19 @@ namespace CosmicShore.Gameplay
         [Header("Data")]
         [SerializeField] private LightFaunaDataSO data;
 
+        // The genome's expression on this creature (Docs/EVOLUTION.md §2): per-instance multipliers on the SHARED
+        // data asset's speed band and consume radius. The asset is one object for the whole species, so a
+        // per-individual trait can never be written into it; it is applied where the asset is read. Both 1 while
+        // the biome's evolution is off.
+        float _paceMult = 1f, _reachMult = 1f;
+
+        protected override void ApplyPhenotype(in LifeformPhenotype p)
+        {
+            base.ApplyPhenotype(p);
+            _paceMult = p.Pace;
+            _reachMult = p.Reach;
+        }
+
         // NOTE: bleeding-edge's frame-paced grazing queue (maxConsumesPerFrame /
         // _pendingMeals / EatPrism / DrainPendingMeals) is intentionally NOT carried
         // here. The intentional-feeding model below supersedes it for both diets: the
@@ -161,8 +174,8 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            float minSpeed = Mathf.Max(0f, data.minSpeed);
-            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
+            float minSpeed = Mathf.Max(0f, data.minSpeed) * _paceMult;
+            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * _paceMult);
 
             currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
             StartCoroutine(UpdateBehaviorCoroutine());
@@ -545,7 +558,7 @@ namespace CosmicShore.Gameplay
 
             float detectionRadius = Mathf.Max(0f, data.detectionRadius);
             float separationRadius = Mathf.Max(0f, data.separationRadius);
-            float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
+            float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier() * _reachMult;
 
             // Squared-distance space for the neighbor loops below: every `distance` use is a
             // radius threshold or the inverse-square weight diff.normalized/distance
@@ -732,8 +745,8 @@ namespace CosmicShore.Gameplay
             // faster than it cruises.
             if (diet == FaunaDiet.Predator && _targetPrey)
                 speedMult *= Mathf.Max(1f, data.pursuitSpeedMultiplier);
-            float minSpeed = Mathf.Max(0f, data.minSpeed) * speedMult;
-            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * speedMult);
+            float minSpeed = Mathf.Max(0f, data.minSpeed) * speedMult * _paceMult;
+            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * speedMult * _paceMult);
 
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
 
@@ -842,7 +855,7 @@ namespace CosmicShore.Gameplay
 
             // UpdateBehavior normally publishes these; the puppet skips it, so set the same
             // aggression-scaled radius here rather than feeding against a stale zero.
-            _consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
+            _consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier() * _reachMult;
             _consumeRadiusSqr = _consumeRadius * _consumeRadius;
 
             if (_feedHoldUntil > Time.time) return;

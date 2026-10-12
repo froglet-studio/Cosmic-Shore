@@ -11460,3 +11460,28 @@ outer-sheet fragments the rider cannot bridge (largest component 83–99%).
   Gyroid` (no recorded pre-conversion budget in `LATTICE_SOURCE_BUDGET`), identically on a clean `bleeding-edge`
   worktree (A/B'd at ship). Needs the number only that conversion's author has.
 
+## 59. THE GENOME — heredity with mutation, and the evidence that the cell evolves (Oct 2026)
+
+Masterplan Phase 3's open TODO. Every lifeform's `LifeformVariantPick` now carries a **four-locus genome**
+(`LifeformGenome`: Tempo, Reach, Fecundity, Cohesion, each in [-1, 1], gene 0 = the species as its element
+authored it), rolled for a founder by the SEEDER (`Cell.GenomeForFounder`, spread `FounderSpread`) and **mutated
+on every birth** (`Cell.OffspringPick` → `GenomeMutation.Mutate`, Gaussian steps of `MutationSigma`, clamped), in
+the same inherit channel §17 built for the element. A worm split passes its pick verbatim (the halves are one
+animal); a replicated puppet receives the server's genome on the spawn payload (`FaunaIdentity.Genome`, one uint)
+and never rolls. Expression (`GenomeExpression`) is a piecewise-rational map with `f(−g) = 1/f(g)`: Tempo scales the
+speed band and COSTS upkeep (the stomach drains faster), Reach scales the graze radius and costs upkeep, Fecundity
+divides the feeds per birth and births hungrier children, Cohesion scales the boid's cohesion radius. **No locus
+touches size or the heart (§40 stands).** Everything is inert until `CellConfigDataSO.Evolution.Enabled`, which is
+**off in every shipped biome**. The cell keeps an `EvolutionLedger` (founders, births, deaths by cause, a census per
+species every 30 s) that FrogletTools ▸ Ecology ▸ Evolution Monitor draws.
+
+The evidence (`Tools/Build/evolution_harness`, the shipped fauna rules as a well-mixed arena, 9 regimes × 5 seeds ×
+4 h): tempo evolves **down under famine (−0.32) and up on rich food (+0.75)**; with selection off the means wander
+±0.1 with a ±0.2 seed spread, with mutation off they move +0.14 and fix; the Cohesion locus, which has no mechanism
+in the arena, drifts without direction. Two findings a biome that turns the switch on must carry: **a seed floor near
+the carrying capacity erases adaptation** (6,807 injected founders against 2,744 births showed no shift), and
+**selection lowered the carrying capacity** (275 selected against 300 inert). The Darwin Lab
+(`Tools/Evolution/`, https://claude.ai/artifact/5axngABeaGGT2ev4ZR2ZaL) flies the exact JavaScript port, held to the
+C# bit for bit by `gate_parity.cjs`. Full record, the invariants restated, the open design calls (which biome first;
+whether a size locus is wanted at all) and the in-editor verification: **`Docs/EVOLUTION.md`**. Not yet run in the
+Editor.
