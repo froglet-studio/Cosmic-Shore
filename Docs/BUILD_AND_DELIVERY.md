@@ -258,8 +258,8 @@ exactly two cases:
    (`.claude/skills/ship/SKILL.md` §5.5).
 
 Everything else is suppressed: `unity-ci.yml` skips every job for a `pull_request` event whose head
-is `claude/**` (a skipped check, never a pending one), and `ios-unsigned-ipa.yml` / `prisma-ios.yml`
-list `claude/**` in `branches-ignore`, because an agent branch merging `bleeding-edge` in would
+is `claude/**` (a skipped check, never a pending one), and `ios-unsigned-ipa.yml` / `ios-testflight.yml` /
+`prisma-ios.yml` list `claude/**` in `branches-ignore`, because an agent branch merging `bleeding-edge` in would
 otherwise "change" the request file and start a Mac build nobody asked for. A human can still run
 any of them on a `claude/**` branch from the Actions tab (**Run workflow**).
 
