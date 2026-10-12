@@ -261,15 +261,18 @@ spawn chain carries `preSpawnDelayMs = 200` and `postSpawnDelayMs = 200`
 (`ServerPlayerVesselInitializer.cs`), and the shader warm-up behind the splash is a no-op because
 its collection is empty (§4 Task 3). So about 1.4 s of the boot is authored; the rest is three scene
 loads (Bootstrap → Authentication → Menu_Main), two UGS round trips (cached sign-in, capped at
-`cachedAuthTimeout = 3f`; cloud profile, capped at `playerDataTimeout = 5f`), one Relay allocation
-(the always-hosted model starts a host before the menu loads, `AuthenticationSceneController.LoadMainMenuNetworkedAsync`),
-and Menu_Main's synchronous activation, which §6 (2026-08-06) already records as the stall that
-*"still freezes the splash spinner for its duration — structural"*. 10 s and not 15: one Relay
-attempt that times out costs `networkHostTimeout = 15f` on its own, so a 15 s target would admit a
-boot in which the first attempt failed, and a failed attempt is a defect to fix, not a load to
-tolerate. 10 s and not 5: 1.4 s is already spoken for, three network round trips are serial, and
-the 4.1 MB Menu_Main (§6, 2026-08-20) has to activate after all of them; 5 s leaves the network
-nothing on a bad day.
+`cachedAuthTimeout: 3`; cloud profile, capped at `playerDataTimeout: 15`, both as authored on the
+controller in `Authentication.unity`, where the profile cap overrides the script default of 5), one
+Relay allocation (the always-hosted model starts a host before the menu loads,
+`AuthenticationSceneController.LoadMainMenuNetworkedAsync`), and Menu_Main's synchronous activation,
+which §6 (2026-08-06) already records as the stall that *"still freezes the splash spinner for its
+duration — structural"*. 10 s and not 15: one Relay attempt that times out costs 15 s on its own (the
+scene authors `networkHostTimeout: 3`, and `Mathf.Max(networkHostTimeout, 15f)` raises it to 15), so
+a 15 s target would admit a boot in which the first attempt failed, and a failed attempt is a defect
+to fix, not a load to tolerate. The same holds for a cloud profile load that runs to its 15 s cap.
+10 s and not 5: 1.4 s is already spoken for, three network round trips are serial, and the 4.1 MB
+Menu_Main (§6, 2026-08-20) has to activate after all of them; 5 s leaves the network nothing on a
+bad day.
 
 **Menu → first playable: 20 s, the same for every cell.** Four in-repo anchors, none of which is
 a measurement of the matrix (that is the point of H8):
@@ -279,13 +282,16 @@ a measurement of the matrix (that is the point of H8):
    *Warning* (*"Long load"*), and advises *"Aim for <10s"*. Publishing 20 s makes the target and
    the tool's warning the same line: a report that carries the `load-long` hint has failed the
    target, mechanically, with no second judgement. 10 s stays as the stretch inside the hint text.
-2. **The authored floor.** Before a single prism is counted, every launch on every machine pays
+2. **The authored floor.** Whatever it builds, every launch on every machine pays
    `waitBeforeLoading = 0.5f` (`SceneLoader.cs`), `InitDelayMs => 1000`
    (`MultiplayerMiniGameControllerBase.cs`), `preSpawnDelayMs = 200` + `postSpawnDelayMs = 200`
-   (`ServerPlayerVesselInitializer.cs`), `dwellSeconds = 2f` (`ConnectingPanelController.cs`) and
-   `ReadyStableSeconds = 0.5f` (`PrismTrailBuilder.cs`): **4.4 s** of fixed waits, 22 % of the
-   target. A 10 s target would hand the arena build 5.6 s; the next anchor says that is not enough
-   for the heavy cells even after a large improvement.
+   (`ServerPlayerVesselInitializer.cs`), the connecting panel's dwell, `dwellSeconds: 4` as
+   authored on `ConnectingPanel.prefab` (the script default in `ConnectingPanelController.cs` is 2,
+   and no scene overrides the prefab), and `ReadyStableSeconds = 0.5f` (`PrismTrailBuilder.cs`):
+   **6.4 s** of fixed waits, 32 % of the target. A launch that built nothing would still take 6.4 s.
+   The arena build can overlap the dwell, but a 10 s target would leave only 3.6 s above that
+   floor; the next anchor says that is not enough for the heavy cells even after a large
+   improvement.
 3. **The watched hold trades build speed for a frame rate by design.** While the connecting panel
    shows the arena being built, the lay slice is **25 ms** per frame with an **18 ms** creation
    budget, against the unwatched **250 ms / 512 completions** (`Docs/CONNECTING_PANEL.md` §3). Both
@@ -1924,18 +1930,20 @@ precondition everywhere. Two amplifiers were fixed alongside:
 
 ---
 
-### Task 11 — Authored fixed waits on the launch path: 4.4 s before a prism counts (recorded 2026-10-10, R7; measurement first)
+### Task 11 — Authored fixed waits on the launch path: a 6.4 s floor on every launch (recorded 2026-10-10, R7; measurement first)
 
 **Status:** recorded, deliberately not changed (the R7 branch measures, it does not optimise).
-**Value:** up to 4.4 s off every launch of every mode on every machine, 22 % of the 20 s target
+**Value:** up to 6.4 s off every launch of every mode on every machine, 32 % of the 20 s target
 (§0.6). **Root cause:** readiness that should be event-driven is timer-driven, in five places
 that each look harmless alone: `waitBeforeLoading = 0.5f` (`SceneLoader.cs`, the splash cover
 before the load), `InitDelayMs => 1000` (`MultiplayerMiniGameControllerBase.cs`, the gate before
 `InitializeGame`), `preSpawnDelayMs = 200` and `postSpawnDelayMs = 200`
 (`ServerPlayerVesselInitializer.cs`, "wait for NetworkVariables to sync" and "wait for the vessel
-NetworkObject to replicate"), `dwellSeconds = 2f` (`ConnectingPanelController.cs`) and
-`ReadyStableSeconds = 0.5f` (`PrismTrailBuilder.cs`). Every one is already a Scripted Delays span, so
-a Load Time Insights report prices them exactly (the `scripted-delays` hint fires at 500 ms). The
+NetworkObject to replicate"), the connecting panel's `dwellSeconds: 4` (authored on
+`ConnectingPanel.prefab`; the script default is 2) and `ReadyStableSeconds = 0.5f`
+(`PrismTrailBuilder.cs`). Every one is already a Scripted Delays span, so a Load Time Insights
+report prices them (the `scripted-delays` hint fires at 500 ms); the dwell is an envelope span, so
+a report shows only the part of it that no build work overlapped. The
 dwell is a design choice (the panel should be seen); the other four are replication guesses that a
 `NetworkVariable` callback or the existing roster RPC would replace. **Do after the sweep**, with
 the per-cell reports naming which of the five actually sits on the critical path; a fixed wait that
@@ -1992,3 +2000,4 @@ not compiler, at the time of the merge).
 | 2026-08-21 (hang diagnosis round) | Five Crash Detector reports diagnosed the "Run managed callbacks" freeze: 4/5 hangs strike in EDIT mode 20-60s after play exit — the recompile-triggered reload — with **FMOD Live Update enabled for playInEditor** (the attribution's item-5 never-recovers precondition); 1/5 was a per-contact **NRE storm** from `SkimmerImpactor` (legacy `Components/Skimmer.prefab` predates the container refactor; six nesting vessels ran a null container). Shipped: FMOD play-in-editor Live Update OFF; `PlayModeReloadGuard` (assembly-reload lock held for all of play mode — no mid-play reloads, project-wide); `ImpactorBase.IsEffectContainerMissing` + `RunEffectIsolated` wired into Skimmer/Vessel impactors (impact dispatch can no longer storm, closing the open item); `HostConnectionService` no longer disposes awaited semaphores; and the Crash Detector watchdog now writes a live **HangDump-*.dmp** minidump when the main thread is unresponsive past 45s and keeps running through `beforeAssemblyReload`, so the next hang arrives with the deadlock's stack instead of a guess. |
 | 2026-08-21 (mechanism pinned) | A live screenshot of the recurrence ("Running managed callbacks — Executing PlayModeStateChanged Callback (EnteredEditMode), busy 02:15", after a GitHub Desktop branch switch during play) corrected the round-3 framing: the freeze is INSIDE the play-exit `playModeStateChanged` dispatch, and the blocker is FMOD — `RuntimeManager.HandlePlayModeStateChange → Destroy()` releasing the Studio system synchronously at `EnteredEditMode` (and `EditorUtils.HandleOnPausedModeChanged`'s synchronous calls for the pause/unpause reports), blocking forever on a wedged Live Update socket. Live-Update-off (round 3) stands as the cure; two amplifiers fixed: the Soap `playModeStateChanged` re-subscription leak (832 assets × every reimport round — patched on bleeding-edge 2026-08-20; pulling IS part of the fix) and `PlayModeSOProtector`, whose diff-based restore mass-overwrote a mid-play branch switch — it now restores only what an `OnWillSaveAssets` ledger proves UNITY saved during play, making it structurally blind to git. `Assets/_Recovery/` gitignored; the "Recovering Scene Backups" prompt is a symptom of killed sessions — answer No. |
 | 2026-10-10 (load-time target, R7) | Added **§0.6**: the two published load-time targets (cold boot → menu **10 s**; menu → first playable **20 s**, every cell) with the in-repo anchors each rests on, the corrected matrix (**31 cards × 4 = 124 cells**, 120 without Maelstrom, not the 76 the board assumed), the named expected-to-fail list (Scurry I4, Rampage I1–I2, DogFight/Salvo I4 fail; I3s borderline; Joust I4 unknown), the `LoadInsights.Measure` coverage audit against the connecting panel's phases (dwell, hold remainder and peer wait closed; activation internals stated as the remaining gap) and the new cold-boot recording kind, and the unattended sweep (`-csmloadsweep`, `LoadSweepRunner` / `LoadSweepTable`, one report per cell plus a worst-first table). §4 gained Tasks 11 and 12 (the 4.4 s of authored waits; the single-frame AI backfill loop), recorded with root causes and left alone. No load behaviour changed; every new span is a no-op unless a recording is armed. The run itself is H8's. |
+| 2026-10-12 (R7 review fixes) | §0.6 anchors corrected against the shipped assets: the connecting panel's dwell is `dwellSeconds: 4` on `ConnectingPanel.prefab` (2 is only the script default), so the authored launch floor is **6.4 s** (32 % of the 20 s target, 3.6 s left above it at a 10 s target), not 4.4 s, and Task 11 says so; the cloud-profile cap is `playerDataTimeout: 15` in `Authentication.unity`, not 5. The coverage audit now states the attribution rule (latest-started open span wins; an envelope, such as the dwell or the arena-ready hold, only takes time no other span claims), the boot completes only in Menu_Main, and the sweep reads the menu's ArcadeGames and ArenaGames rosters (31 cards) and stops when the menu never becomes ready. `BenchmarkConfigSO` no longer carries target fields; `LoadTimeTargets` is the only copy. |
