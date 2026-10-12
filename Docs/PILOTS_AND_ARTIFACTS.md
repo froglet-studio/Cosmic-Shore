@@ -227,7 +227,7 @@ measure.
 - **Loadout** (`Assets/_Scripts/System/LoadOut/Loadout.cs`): `(Intensity, PlayerCount,
   VesselType, GameMode, IsMultiplayer)`. A loadout is a *game* configuration; a squad is a *crew*
   configuration. Keep them separate and let the pre-game flow pick one of each.
-- **Elemental ability maps** (`Resources/ElementalAbilityMaps/<Vessel>.asset`,
+- **Elemental ability maps** (`Assets/Resources/ElementalAbilityMaps/<Vessel>.asset`,
   `ElementalAbilityMapSO`): the four knobs. An artifact's parameter should be checked against the
   map so it never duplicates a knob an element already owns on that vessel
   (`element_ability_table.py --json` is the reader to build that check on).
