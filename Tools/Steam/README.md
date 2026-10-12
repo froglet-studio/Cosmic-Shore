@@ -28,23 +28,32 @@ depot id or credential is stored in the repository** — they live in the build 
    targeting**. The Playtest child app has its own pair; it is never the base app's.
 2. Create a **builder account** — a dedicated Steamworks account with build permission on both
    apps. Do not use a personal account; the credentials end up on the build machine.
-3. On the build machine, establish a cached session once, interactively, so Steam Guard is satisfied:
+3. On the app you are targeting, **create a password-protected branch named `internal`** (App
+   Admin → Builds; Valve's [Branches (Betas)](https://partner.steamgames.com/doc/store/application/branches)
+   page covers creating a branch and setting its password). The script names a branch; it does not
+   create one.
+4. On the build machine, establish a cached session once, interactively, so Steam Guard is satisfied:
    ```bash
    steamcmd +login <builder-account>
    ```
-4. Export the environment for the target and upload:
+5. Export the environment for the target and upload:
    ```bash
    # Playtest child app — the invite channel (ids from A4)
    export STEAM_PLAYTEST_APPID=<playtest-appid>
    export STEAM_PLAYTEST_DEPOTID=<playtest-depotid>
    export STEAM_USER=<builder-account>
-   ./upload.sh --target playtest --build-dir ../../Builds/Windows64 --branch internal
+   ./upload.sh --target playtest --build-dir ../../Builds/Windows64 --branch internal --set-live
 
    # Base app — the future paid build (ids from A2). --target base is the default.
    export STEAM_APPID=<appid>
    export STEAM_DEPOTID=<depotid>
-   ./upload.sh --target base --build-dir ../../Builds/Windows64 --branch internal
+   ./upload.sh --target base --build-dir ../../Builds/Windows64 --branch internal --set-live
    ```
+   `--set-live` is what puts the build on `internal`; the script sets a branch other than
+   `default` live without a prompt. **Without `--set-live`, every upload — `internal` included —
+   lands in Steamworks unassigned**, and `--branch` only labels the build description, so whoever
+   installs `internal` gets the previous build.
+
    Both pairs may be exported at once. The script reads only the pair for the chosen target, and
    refuses outright if the two pairs share an id — that is the paste error that publishes a build
    to the wrong audience.
@@ -56,7 +65,7 @@ apps*. The short form — note that the **same branch name has a different audie
 
 | Branch | Base app (`--target base`) | Playtest app (`--target playtest`) |
 |---|---|---|
-| `internal` | Team only, password protected. Every build lands here first. | Team only, password protected. Smoke-test the exact child-app build from Steam before it reaches testers; the overlay check (**B7**) runs here now. |
+| `internal` | Team only, password protected. Every build is set live here first (`--branch internal --set-live`). | Team only, password protected. Every build is set live here first (`--target playtest --branch internal --set-live`); smoke-test the exact child-app build from Steam before it reaches testers; the overlay check (**B7**) runs here now. |
 | `beta` | Revision-1's closed-playtest branch. Under the Playtest model nobody outside the team owns the base app, so it has **no audience** until the paid conversion. Keep it password protected; do not point testers at it. | Not defined. The tester population is managed by signup grants and friend invites, not by a branch password. |
 | `default` | **Everyone who owns the game.** The paid release and its patches, nothing before. | **Every tester who has been granted access** — signup grants and friend invites alike. This is the live invite channel (**E7**). |
 
@@ -65,9 +74,10 @@ type the target's app id back. Two things to know about that:
 
 - Valve's SteamPipe documentation says the `default` branch **cannot be set live from a build
   script at all** — *"That must be done through the App Admin panel"*
-  (<https://partner.steamgames.com/doc/sdk/uploading>). So the normal path is to upload *without*
-  `--set-live` and publish from App Admin → Builds. The confirmation is the last line of defence,
-  not the publishing mechanism.
+  (<https://partner.steamgames.com/doc/sdk/uploading>). So the normal path to `default` is: upload
+  with `--branch internal --set-live`, check the build on `internal`, then set it live on `default`
+  from App Admin → Builds. The confirmation is the last line of defence, not the publishing
+  mechanism.
 - On the Playtest app, `default` is what every granted tester downloads. Setting a build live there
   is a wave-wide ship, and the wave policy (`Docs/STEAM_PLAYTEST_RUNBOOK.md` § A6) says when that
   is allowed.

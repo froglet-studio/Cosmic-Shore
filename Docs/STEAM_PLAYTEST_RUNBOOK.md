@@ -122,11 +122,25 @@ irreversible one. Localized names are supported and fall under the same rule.
    store review checklist *"only consists of capsule images and icons"*. Add the Playtest set to
    Will's E3 list; sizes are the upload sizes in the paid-path doc's capsule table (the library
    capsule, 600 × 900, is the one Valve names).
-6. **Build.** Upload with `./Tools/Steam/upload.sh --target playtest --branch internal`, install the
-   child app from Steam on a clean machine, run the smoke test and the overlay check (**B7** lives
-   here now — the Playtest app is a real Steam build), then set the build live on the child app's
-   `default` from App Admin → Builds. See § *Branch model under two apps* for what `default` means on
-   this app.
+6. **Create the `internal` branch, then build.**
+   - On the child app, **create a password-protected branch named `internal`** (App Admin →
+     Builds; Valve's *Branches (Betas)* page, under *Sources*, covers creating a branch and setting
+     its password — read the control labels off the page). It is the team's smoke-test branch, and
+     it does not exist until someone creates it.
+   - Upload with
+     `./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live`.
+     **`--set-live` is what puts the build on `internal`.** Without it the build lands in App Admin →
+     Builds unassigned and `--branch` only labels the build description, so whoever installs
+     `internal` gets the previous build, or nothing. The script sets a non-`default` branch live
+     without a prompt (it asks for the app id back only for `default`), and Valve allows a build
+     script to set any branch but `default` live.
+   - In the child app's App Admin → Builds, confirm the new build (description ending
+     `[playtest] -> internal`) is the one live on `internal`.
+   - Install the child app from Steam on a clean machine, switch it to `internal` (the game's
+     Properties → Betas, enter the branch password), run the smoke test and the overlay check
+     (**B7** lives here now — the Playtest app is a real Steam build), then set the build live on
+     the child app's `default` from App Admin → Builds. See § *Branch model under two apps* for what
+     `default` means on this app.
 7. **Submit for review** (A7 / H5). The Playtest goes through *"a simplified store page and build
    review"*. The base app's store page review must pass before build review begins (the paid-path
    rule; it still holds).
@@ -255,14 +269,17 @@ app id entirely.** The same branch name has a different audience on each app:
 
 | Branch | Base app — `--target base`, ids from **A2** | Playtest child app — `--target playtest`, ids from **A4** |
 |---|---|---|
-| `internal` | Team only, password protected. Every build lands here first. | Team only, password protected. The team installs the exact child-app build from Steam here before it reaches testers. **B7 (overlay check) runs here now**, not on the base app's `beta`. |
+| `internal` | Team only, password protected. Every build is set live here first (`--branch internal --set-live`). | Team only, password protected; created by hand in A4 step 6. Every build is set live here first (`--target playtest --branch internal --set-live`), and the team installs the exact child-app build from Steam here before it reaches testers. **B7 (overlay check) runs here now**, not on the base app's `beta`. |
 | `beta` | Revision-1's closed-playtest branch. Under the Playtest model **nobody outside the team owns the base app**, so this branch has **no audience** until the paid conversion. Keep it defined and password protected; do not point testers at it; do not read "promote to beta for the playtest" in the paid-path doc as a Playtest step. | **Not defined.** The tester population is controlled by signup grants and friend invites, not by a branch password. If a sub-cohort ever needs a different build, that is a decision for the wave policy, not a branch to create quietly. |
 | `default` | **Everyone who owns the game.** The paid release and its patches, nothing before. Before the paid release it has no audience in this plan (no Release State Override keys are issued). | **Every tester who has been granted access** — signup grants and friend invites alike. **This is the live invite channel (E7 / E10).** Setting a build live here is a wave-wide ship and is governed by § A6. |
 
-Three consequences:
+Four consequences:
 
 - **E7 (Wave 0) and E10 (Wave 1) are Playtest-app `default` operations.** Where the older docs say
   "promote to `beta` for the playtest (E7)", read "set live on the Playtest app's `default`".
+- **An upload without `--set-live` is set live nowhere**, `internal` included: it lands in App
+  Admin → Builds unassigned and `--branch` only names it in the description. `--set-live` with
+  `internal` sets it live there without a prompt.
 - **Setting `default` live is an App Admin action on either app.** Valve's SteamPipe documentation
   says the `default` branch cannot be set live from a build script — *"That must be done through
   the App Admin panel"* (<https://partner.steamgames.com/doc/sdk/uploading>). `upload.sh` still
@@ -287,17 +304,18 @@ export STEAM_USER=<builder-account>                 # builder account, cached st
 
 # Playtest child app (ids from A4) — the invite channel
 export STEAM_PLAYTEST_APPID=<playtest-appid> STEAM_PLAYTEST_DEPOTID=<playtest-depotid>
-./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal
+./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live
 
 # Base app (ids from A2) — the future paid build; --target base is the default
 export STEAM_APPID=<appid> STEAM_DEPOTID=<depotid>
-./Tools/Steam/upload.sh --target base --build-dir Builds/Windows64 --branch internal
+./Tools/Steam/upload.sh --target base --build-dir Builds/Windows64 --branch internal --set-live
 ```
 
 The script refuses with the checklist item's name when its target's ids are unset, refuses if the
 two pairs share an id, stamps `[playtest]` or `[base]` into the build description beside the version
 and commit from `build_manifest.txt`, and demands the target's app id typed back before
-`--set-live default`.
+`--set-live default`. `--set-live` with `internal` sets that branch live with no prompt; without
+`--set-live`, every upload lands in App Admin → Builds unassigned, whatever `--branch` says.
 
 ---
 
@@ -328,7 +346,7 @@ offered. If it is ever wanted, it is a new decision with its own sign-off.
 | A1 | Partner account, agreements, banking, tax, signer | Garrett, Shombith, Caleb | A2 |
 | A2 | **Pay $100 fee, create the BASE app, record `STEAM_APPID` / `STEAM_DEPOTID`** | Shombith | **30-day clock, A4, B4** |
 | A3 | Content survey | Garrett | Store review |
-| **A4** | **Name decided in writing → create the Playtest child app → record `STEAM_PLAYTEST_APPID` / `STEAM_PLAYTEST_DEPOTID` → Limited signup, Not Playable, invites 1–3, manual batches → capsules → build on `internal` → simplified review** | Shombith (name: Garrett) | A5 step 4, A7, E7 |
+| **A4** | **Name decided in writing → create the Playtest child app → record `STEAM_PLAYTEST_APPID` / `STEAM_PLAYTEST_DEPOTID` → Limited signup, Not Playable, invites 1–3, manual batches → capsules → password-protected `internal` branch created on the child app → build set live on `internal` (`--branch internal --set-live`) → simplified review** | Shombith (name: Garrett) | A5 step 4, A7, E7 |
 | **A5** | **Coming Soon page live; child app through review; signups enabled under Special Settings; section verified from a non-partner account; date recorded** | Caleb, Shombith | **Coming Soon 2-week clock, E9, the queue** |
 | **A6** | **Wave policy signed** (sizes, invite multiplier, weekly caps, capacity and telemetry pause rules, levers and roles, money clause, review statement) | Garrett | **E7, every grant** |
 | A7 | Store page + Playtest build submitted for review | Shombith | E7 |
@@ -351,6 +369,9 @@ offered. If it is ever wanted, it is a new decision with its own sign-off.
   into a crowd within days, and sent invites survive a pause.
 - **A Playtest build with a live purchase surface.** Charging in any form is prohibited; the R4
   de-scope is the guarantee and must not be reverted for a Playtest build.
+- **Uploading to `internal` without `--set-live`.** The build lands unassigned, and the team then
+  smoke-tests and overlay-checks whatever was already live on `internal` (or finds nothing). Before
+  signing a build off, read the description of the build live on `internal` in App Admin → Builds.
 - **Expecting `--set-live default` to publish.** Valve says the default branch is set live from App
   Admin; the script's confirmation is a guard, not the mechanism.
 
