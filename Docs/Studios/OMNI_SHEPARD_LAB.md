@@ -13,6 +13,7 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniShepardLab.html`
 - **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--old-style id] [--new-style id]`
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
+- **Space squares (round 6):** `blender -b CrystalsRaw_V2.blend --python Tools/Build/bake_omni_space_squares.py -- Docs/Studios/data/omni_space_squares.json` (the `.blend` is the art team's, not in the repo); the extractor then maps it onto the body FBX
 - **What ships (since round 4):** "Breathe", see Round 4 below and `Docs/PALETTE.md` §2.10
 
 ## How the effect works (measured from the assets)
@@ -37,6 +38,93 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 6 (2026-10-12): the Mass crystal, hole fill, and the Space squares
+
+The designer asked for three things:
+- **"This is going to affect the mass crystal too."** Bring in the current Mass crystal effect, with
+  a simple switch to see the selected effect on the whole Mass crystal, since it is all triangles.
+- **"A triangle hole that gets filled by an opaque prism."** The prism that made the hole fades out
+  into the prism that fills it, at the top of the column.
+- **The Space effect alongside.** Bring in the squares rearranging on the surface by weaving above
+  and below the other surface prisms. Two `.blend` files were attached for this.
+
+**Crystal switch (header, and View ▸ Crystal)**
+- **Omni** — as before.
+- **Mass (shipped)** — `CrystalMass.prefab` exactly as it ships: four shells of the 60 triangular
+  prisms of `MassCrystalExport1` (`ActiveMassCrystalMaterial 0–3`). Three shells sweep their bands
+  (0.33→0, 0.66→0.33, 1→0.66, period 3 s, `_ScaleDistance 1`), and the outer shell stays static at
+  1.03→0.98. Read from the prefab and materials by `omni_shepard_lab_assets.py`, like the omni.
+- **Mass + effect** — the selected style on all 60 Mass prisms. Plate centres are computed from the
+  Mass mesh the way `OmniCrystalTriangles.asset` bakes them.
+
+The Mass is drawn at the omni body's world size (7.5 u) so the two compare side by side. The compare
+grid follows the switch.
+
+**Hole fill (Fill tab, ten styles)**
+- Each column's slot is a triangular **hole**. On the omni, the body's own 20 triangle plates are
+  removed: the body is drawn from a mask of its 6-corner components.
+- The prism in the hole is opaque. It wears the omni body material, with a screen-door dither for
+  its fades.
+- Each cycle:
+  1. The resident prism fades out in the hole while its replacement fades in at the top of the same
+     column (*Cross-fade*).
+  2. The replacement drops.
+  3. It sits in the hole until the next swap (*Sit in hole*).
+- Each column draws two instances, the arriving prism and the leaving one.
+- *Glass* swaps the opaque prisms back to the Shepard material, for comparison.
+
+| Style (Omni / Mass + effect) | Holes open (avg) | Births seen | Arrivals in view /s |
+|---|---|---|---|
+| Hole fill | 12.8 / 38.4 | 89.2% / 89.2% | 1.42 / 4.38 |
+| **Hole fill, spin-hidden** | 12.8 / 38.5 | **0% / 0%** | **2.0 / 6.0** |
+| Hole fill, long wait | 7.8 / 23.4 | 89.2% | 1.42 / 4.38 |
+| Spin-hidden columns (glass) on the Mass | — | 100% | 6.0 |
+| Shipped (Breathe) on the Mass | — | 0% | 17.1 |
+
+- In plain Hole fill the births are seen by design: the cross-fade at the top of the column is the
+  look asked for.
+- Spin-hidden glass cannot hide anything on the Mass, because there is no opaque body. Hole fill
+  can: the opaque prisms ARE the body.
+
+**Space squares (View ▸ Space squares, Squares speed)**
+- Found in `CrystalsRaw_V2.blend`, object `OmniCrystal.001`, action `Action.008`, 25 fps, a
+  120-frame (4.8 s) loop. Three shape keys move only the 60 square plates:
+  - `SquareRotateAroundPentagon` (frames 1→40, then snaps to 0);
+  - `SquareOverTri_Step1/2` (41→80, then held);
+  - `SquareOverTri_Step2/2`, stacked on Step 1 (81→120).
+- Both snaps land congruent (0 and 2e-5 off-slot), so they cannot be seen.
+- `Tools/Build/bake_omni_space_squares.py` (Blender, headless) writes
+  `Docs/Studios/data/omni_space_squares.json`: the basis, each key's delta against its relative key,
+  and the per-frame weights that Blender's curves produce. It refuses to write unless its replay
+  matches Blender's evaluated mesh at all 120 frames; measured 1.15e-6.
+- `omni_shepard_lab_assets.py` maps the Blender vertices onto the shipped body FBX. They share axes
+  at 2.2417× scale, with a different vertex order. Measured mapping error 1.1e-5; a shifted body is
+  refused (new self-test).
+- The lab replays it on the body with the authored normals turned by each face's rotation, so frame
+  0 is pixel-identical to the static body.
+- It is a view toggle: it works with every style and every cell of the compare grid.
+- **It is not in the game.** Shipping it needs the body re-exported with blend shapes, plus an
+  animator clip. The Ship-it tab says so when it is on.
+
+**Found**
+1. **Hole fill, spin-hidden needed NO swirl, not 72°.** The first derivation said a prism landing at
+   1 − dwell needs a 180° − 360°·dwell swirl to land in front. The sweep showed swirl 0 gives 0%
+   births seen and the most arrivals in view (2.0/s). The swap happens behind the crystal and the
+   spin itself brings the hole round, so the derivation answered the wrong question. Set to 0.
+2. **The Mass's opaque prisms clipped to yellow.** They used the Mass shell's HDR colours
+   (1.98 green). They now wear the omni body material, the one an opaque crystal surface uses.
+3. **The HUD read 0 speed for every fill style.** It sampled the descent at the omni's hold point,
+   which in Hole fill is the cross-fade. It now samples the fill timeline's drop segment.
+
+**Checked**
+- `verify_lab.cjs` PASS (including the WebGL-warning check).
+- Pixel parity vs round 5 with the new features off: 0 px over 2/255 for Shipped, Classic,
+  Spin-hidden columns and Hidden columns.
+- Squares on at t = 0 is 0 px different from squares off.
+- `omni_shepard_lab_assets.py --check` OK and `--self-test` 9 of 9.
+- `omni_shepard_shader_parity.py` 7 of 7.
+- No C# or asset changed this round, so `/verify-unity` has nothing to run.
 
 ## Round 5 (2026-10-12): one triangle per column, hidden births
 

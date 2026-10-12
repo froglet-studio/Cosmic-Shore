@@ -41,6 +41,16 @@ CRYSTAL_PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "Environment", "Crysta
 TRI_PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "Environment", "OmniCrystalTriangles.prefab")
 TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
 BODY_FBX = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalExport1_8-21-25.fbx")
+MASS_FBX = os.path.join(ROOT, "Assets", "_Models", "MassCrystalExport1_8-21-25.fbx")
+# The Space element's squares on the omni, baked from the artist's CrystalsRaw_V2.blend by
+# Tools/Build/bake_omni_space_squares.py (the .blend is kept by the art team, not in this repo).
+SPACE_SQUARES = os.path.join(ROOT, "Docs", "Studios", "data", "omni_space_squares.json")
+MASS_PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "Environment", "CrystalMass.prefab")
+# The Mass crystal's four shells, in crystalModels order (Tools/Build/author_mass_crystal_look.py SHELLS).
+MASS_SHELLS = [("innerShell", "ActiveMassCrystalMaterial", "BlueMassCrystalMaterial"),
+               ("secondShell", "ActiveMassCrystalMaterial 1", "BlueMassCrystalMaterial 1"),
+               ("easedShell", "ActiveMassCrystalMaterial 2", "BlueMassCrystalMaterial 2"),
+               ("outerShell", "ActiveMassCrystalMaterial 3", "BlueMassCrystalMaterial 3")]
 SHEPARD_SHADER_GUID = "b55e562cd5045859607550ce7ba8267f"   # OmniShepardFresnelShader.shader
 BEGIN, END = "// <assets>", "// </assets>"
 
@@ -188,6 +198,112 @@ def body_mesh():
     return pts, tris, nrm
 
 
+def mass_crystal():
+    """The Mass crystal as it ships: 60 triangular prisms (MassCrystalExport1), four shells of them."""
+    nodes = fbx_binary.read(MASS_FBX)
+    nodes = nodes[0] if isinstance(nodes, tuple) else nodes
+
+    def walk(ns):
+        for x in ns:
+            yield x
+            yield from walk(x.children)
+    g = [x for x in walk(nodes) if x.name == "Geometry"][0]
+    V = g.first("Vertices").props[0][1]
+    I = g.first("PolygonVertexIndex").props[0][1]
+    ln = g.first("LayerElementNormal")
+    N = ln.first("Normals").props[0][1]
+    NI = ln.first("NormalsIndex").props[0][1] if ln.first("ReferenceInformationType").props[0][1] == b"IndexToDirect" else list(range(len(I)))
+    # Plates = connected components of control points (the model is exploded: 60 disjoint prisms).
+    parent = list(range(len(V) // 3))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    polys, cur = [], []
+    for j, x in enumerate(I):
+        cur.append((~x if x < 0 else x, NI[j]))
+        if x < 0:
+            polys.append(cur)
+            cur = []
+    for poly in polys:
+        for cp, _ in poly[1:]:
+            parent[find(cp)] = find(poly[0][0])
+    # Unity's import of this FBX (bakeAxisConversion 0, useFileScale, UnitScaleFactor 100): x negated,
+    # winding reversed; the AUTHORED normals (normalImportMode 0). One vertex per polygon corner.
+    pos, nrm, plate_of, tris = [], [], [], []
+    for poly in polys:
+        base = len(pos)
+        for cp, n in poly:
+            pos.append((-V[3 * cp], V[3 * cp + 1], V[3 * cp + 2]))
+            nrm.append((-N[3 * n], N[3 * n + 1], N[3 * n + 2]))
+            plate_of.append(find(cp))
+        for k in range(1, len(poly) - 1):
+            tris += [base, base + k + 1, base + k]
+    roots = sorted(set(plate_of), key=lambda r: min(i for i, q in enumerate(plate_of) if q == r))
+    plates = [[] for _ in roots]
+    index = {r: i for i, r in enumerate(roots)}
+    for t in range(0, len(tris), 3):
+        plates[index[plate_of[tris[t]]]].extend(tris[t:t + 3])
+    centre = []
+    for i, q in enumerate(plate_of):
+        corners = {pos[k] for k in range(len(pos)) if plate_of[k] == q}
+        centre.append(tuple(sum(c[a] for c in corners) / len(corners) for a in range(3)))
+    if len(plates) != 60:
+        raise SystemExit(f"MassCrystalExport1: expected 60 triangular prisms, found {len(plates)}")
+    pre = read(MASS_PREFAB)
+    shells = []
+    for name, active, inactive in MASS_SHELLS:
+        L = shepard_layer(os.path.join(MATS, active + ".mat"))
+        Li = shepard_layer(os.path.join(MATS, inactive + ".mat"))
+        L["inactiveBright"], L["inactiveDark"] = Li["bright"], Li["dark"]
+        L["material"] = active
+        L["queue"] = int(re.search(r"m_CustomRenderQueue: (-?\d+)", read(os.path.join(MATS, active + ".mat"))).group(1))
+        m = re.search(r"m_Name: " + re.escape(name) + r"\n(?:.*\n)*?--- !u!4 [^\n]*\nTransform:\n(?:.*\n)*?  m_LocalScale: \{x: ([0-9.]+)", pre)
+        L["localScale"] = float(m.group(1)) if m else 1.0
+        shells.append(L)
+    r5 = lambda v: round(v, 5)
+    return {
+        "shells": [{k: (round(v, 6) if isinstance(v, float) else v) for k, v in L.items()} for L in shells],
+        "mesh": {"p": [r5(c) for q in pos for c in q], "n": [round(c, 4) for q in nrm for c in q],
+                 "plates": plates, "c": [r5(c) for q in centre for c in q]},
+    }
+
+
+def space_squares(body_pts):
+    """The squares animation, mapped vertex for vertex onto the shipped body FBX's control points."""
+    if not os.path.exists(SPACE_SQUARES):
+        return None
+    d = json.load(open(SPACE_SQUARES))
+    B = d["basis"]
+    nb = len(B) // 3
+    rb = max(math.sqrt(sum(c * c for c in B[3 * i:3 * i + 3])) for i in range(nb))
+    rf = max(math.sqrt(sum(c * c for c in p)) for p in body_pts)
+    sc = rb / rf   # the .blend carries the model at the triangle-export scale (2.2417x the body FBX)
+    # Same axes, different vertex order: match by position (a coarse grid keeps it fast).
+    grid = {}
+    for i, p in enumerate(body_pts):
+        grid.setdefault(tuple(round(c * 50) for c in p), []).append(i)
+    mapping, worst = [], 0.0
+    for i in range(nb):
+        q = [B[3 * i + c] / sc for c in range(3)]
+        key = tuple(round(c * 50) for c in q)
+        cand = [j for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1)
+                for j in grid.get((key[0] + dx, key[1] + dy, key[2] + dz), [])]
+        j = min(cand, key=lambda j: sum((body_pts[j][c] - q[c]) ** 2 for c in range(3)))
+        worst = max(worst, math.sqrt(sum((body_pts[j][c] - q[c]) ** 2 for c in range(3))))
+        mapping.append(j)
+    if len(set(mapping)) != nb or worst > 1e-4:
+        raise SystemExit(f"omni_space_squares.json does not map onto the body FBX (unique {len(set(mapping))}/{nb}, worst {worst:.2e})")
+    keys = []
+    for k in d["keys"]:
+        keys.append({"name": k["name"], "cps": [mapping[v] for v in k["verts"]],
+                     "d": [round(c / sc, 6) for c in k["delta"]]})
+    return {"source": d["source"], "fps": d["fps"], "frames": len(d["weights"]),
+            "weights": [w for row in d["weights"] for w in row], "keys": keys, "mapErr": float(f"{worst:.2e}")}
+
+
 def build():
     moving, rims, root_scale = crystal_layers()
     if not moving:
@@ -222,6 +338,8 @@ def build():
             "c": [r5(x) for q in cen for x in q] if cen else None,
         },
         "bodyMesh": {"p": [r5(c) for p in bpos for c in p], "i": btris, "n": [round(c, 4) for c in bnrm]},
+        "mass": mass_crystal(),
+        "squares": space_squares(bpos),
     }
 
 
@@ -282,6 +400,17 @@ def self_test():
         check("a non-Shepard material is refused", False)
     except SystemExit:
         check("a non-Shepard material is refused", True)
+    sq = d["squares"]
+    if sq is not None:
+        check("space squares: three keys on the 60 square plates (480 corners each), 120 frames",
+              len(sq["keys"]) == 3 and all(len(k["cps"]) == 480 for k in sq["keys"]) and sq["frames"] == 120)
+        # Planted defect: a body that is off by a millimetre-scale shift must not be silently mapped.
+        bpos = [(p[0] + 0.01, p[1], p[2]) for p in body_mesh()[0]]
+        try:
+            space_squares(bpos)
+            check("space squares refuse a body they do not map onto", False)
+        except SystemExit:
+            check("space squares refuse a body they do not map onto", True)
     return ok
 
 

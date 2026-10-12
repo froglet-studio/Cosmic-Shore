@@ -60,6 +60,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: round-3 commit vs round-4 fix of `omni_shepard_lab_parity.cjs`.
 - Promoted: no
 
+### L-GEN-6 — Bake an artist's animation straight out of the .blend, and refuse to write unless the replay matches Blender
+- Lab: Omni Shepard Lab, round 6 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: the designer attached two `.blend` files and said the "squares weaving" effect was in there somewhere. Headless Blender (`blender -b file.blend --python script.py`) listed every object, its shape keys and its action's curves in seconds: `OmniCrystal.001`, three relative keys (one stacked on another, so a delta has to be taken against ITS relative key, not the Basis), 120 frames at 25 fps. The baker writes the basis, the per-key deltas and the per-frame weights that Blender's curves produce, then replays them and compares the result with Blender's own evaluated mesh at every frame (with the modifiers off, since the display node group splits edges). It refuses to write past 1e-5; measured 1.15e-6. The .blend held the model at 2.2417× the shipped FBX with a different vertex order, so the extractor matches the vertices by position and refuses a body it cannot map (a self-test shifts the body by 0.01 to prove it).
+- Do instead: never hand-transcribe keyframes, and never eyeball an export. Read the source file headlessly, write the exact data (keys and evaluated weights, not curve guesses), prove the replay against the tool's own evaluation, and map onto the shipped mesh with a measured error and a planted mismatch. Keep the `.blend` out of the repo; commit the bake script and its JSON.
+- Evidence: `Tools/Build/bake_omni_space_squares.py`, `omni_shepard_lab_assets.py:space_squares` and its self-test, `OMNI_SHEPARD_LAB.md` "Round 6".
+- Promoted: no
+
 ---
 
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
@@ -195,6 +202,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the ask was "hide each triangle's birth behind the crystal by turning the whole object to the camera". A camera-averaged score (26 directions, a ray-vs-sphere occlusion test, "seen" = solid within the first 10% of the trip at an unhidden spot) turned it into numbers. Spin alone: 20% of births seen (the four columns 69° from the spin axis, which no rotation can hide); control without spin: 87%. A parameter sweep (tilt, swing strength, swing end, launch height) then showed tilt only moves the problem (20–60%). It also exposed a real bug: the per-column swing measured its turn from the landing direction but applied it after the swirl, so spin + swing read 80% instead of 0%.
 - Do instead: for any "the viewer never sees X" effect, write the occlusion score first, average it over cameras, add a control with the mechanism off, and sweep each knob before tuning by eye. A combination that scores WORSE than either part alone is a bug until proven otherwise.
 - Evidence: `OMNI_SHEPARD_LAB.md` "Round 5"; `metrics()` / `centreAt()` / `steerRot()` in the page.
+- Promoted: no
+
+### L-STU-20 — A derived knob value is a hypothesis: sweep it before you write it into a style
+- Lab: Omni Shepard Lab, round 6 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: "Hole fill, spin-hidden" lands each prism at 1 − dwell of its cycle, not at 1. A derivation said the opposing swirl therefore had to shrink from 180° to 180° − 360°·dwell (72°) and that value went into the style, with the derivation as a comment. The same occlusion sweep as L-STU-19 said otherwise: swirl 0 gives 0% births seen and the most arrivals in view (2.0/s). The swap happens behind the crystal, and the spin itself carries the hole round to the front, so the derivation answered the wrong question. Also this round: a new view feature (the Space squares) was built so that frame 0 is byte-identical to the feature off. That made "0 px differ" a meaningful test of the feature's wiring, not only of the pages around it.
+- Do instead: when a style's value comes from algebra, run the sweep over it before committing, and delete the derivation comment if the sweep disagrees. Build every new overlay so that its rest state is pixel-identical to it being off, and diff the two.
+- Evidence: `OMNI_SHEPARD_LAB.md` "Round 6" Found 1; the `fill-spin` style (`spiral: 0`).
 - Promoted: no
 
 ---
