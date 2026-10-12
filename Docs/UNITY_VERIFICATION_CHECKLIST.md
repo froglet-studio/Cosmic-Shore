@@ -65,6 +65,47 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator
+`author_omni_crystal_triangles.py --check`), on top of the Depth ratchet entry below:
+- **No free turn.** `CrystalDepthPrisms` no longer turns the crystal's models; the profile's three turn
+  fields are gone. Step 1 of the entry below now reads "fly round a crystal": the crystal holds still.
+- **The ratchet runs against the gameplay camera** (`CameraManager.GetActiveController()` →
+  `CustomCameraController.Camera`), not `Camera.main`. `Camera.main` in Bootstrap is the menu's
+  Cinemachine-brain camera parked where the menu left it, so round 8's prisms held still and sealed in
+  flight and the face split never opened.
+- **Space squares:** `CrystalSpaceSquares` on `OmniCrystalBody.prefab` puts the body on a shared copy of
+  its runtime twin with the art file's three shape keys as blend shapes (`OmniSpaceSquares.asset`) and
+  plays the 4.8 s loop, each crystal at its own phase.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player
+and editor 0 errors in project code (negative-controlled); the squares baker run headlessly on the
+shipped code against the real body FBX and asset (16/16: exactly the 480 square corners move, normals
+turn with their faces to 2e-5; three mutants fail); playback matches the lab's `squaresWeights()` to
+6e-7. What only the Editor can show: that a SkinnedMeshRenderer swapped onto the shaped twin keeps its
+bones and plays the weights.
+
+**Verify in editor:**
+1. Fly round an omni crystal (any mode with omnis). The crystal does not turn. The far side's prisms
+   stand out from the silhouette with their faces parted; as you circle, prisms coming toward you drop
+   into their holes and never rise while in view. If every prism sits sealed and still, the camera
+   resolve failed: check which camera `CameraManager.GetActiveController()` returns.
+2. On the omni body the 60 squares turn about the pentagons, then weave over the triangles, looping
+   every 4.8 s. Neighbouring crystals are out of step. The rhombi still flip, and the squares'
+   shading turns with them (no flat or black squares mid-turn).
+3. Console: no `CrystalSpaceSquares` error. The likely ones name an unreadable mesh, or anchors that
+   do not sit on a body vertex, which means the FBX moved: re-run the bake.
+4. Collect an omni; let the Scarab forge / Squirrel ring morph fold one. Fusion still finds the body
+   (`RhombusSkinBaker.SourceOf` resolves the squares twin to the FBX).
+5. Team omni (Skim Race track): prisms still ride by depth in the domain colour; squares still weave.
+6. Main menu (freestyle lava lamp): crystals there fall back to `Camera.main`. Check that the prisms
+   still respond as the menu camera moves.
+7. Profile: `CrystalSpaceSquares.LateUpdate` is a few µs per visible omni. The one-time shaping, on
+   the first omni seen, is one bake per twin.
+
+---
+
 ### 🔴 Omni + Mass crystals: triangles SEALED BY DEPTH (the Depth ratchet) (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/PALETTE.md §2.10`, `Docs/Studios/OMNI_SHEPARD_LAB.md` round 8; generators

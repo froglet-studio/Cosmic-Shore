@@ -57,15 +57,32 @@ namespace CosmicShore.Utility
         {
             s_cache.Clear();
             s_cut.Clear();
+            s_derived.Clear();
         }
 
         /// <summary>Cut twins: (the mesh a renderer drew, the corner count cut) -> that mesh without those plates.</summary>
         static readonly Dictionary<(Mesh, int), Mesh> s_cut = new();
 
+        /// <summary>Twins other bakers derive from a mesh this one handed out (the omni body's Space squares,
+        /// <see cref="CosmicShore.Gameplay.CrystalSpaceSquares"/>): twin -> the mesh it was copied from.</summary>
+        static readonly Dictionary<Mesh, Mesh> s_derived = new();
+
+        /// <summary>
+        /// Records that <paramref name="twin"/> is a copy of <paramref name="from"/> with something added, so
+        /// <see cref="SourceOf"/> still resolves a renderer wearing it to the authored asset (a fusion bake keyed by
+        /// the FBX mesh, a morph built from the cage). A baker that swaps a crystal body onto its own twin registers
+        /// it here; an unregistered twin reads as its own source and those readers lose the crystal.
+        /// </summary>
+        public static void RegisterDerivedTwin(Mesh twin, Mesh from)
+        {
+            if (twin && from && twin != from) s_derived[twin] = from;
+        }
+
         /// <summary>The mesh a drawn twin was baked from; any other mesh is its own source.</summary>
         public static Mesh SourceOf(Mesh displayed)
         {
             if (displayed == null) return null;
+            if (s_derived.TryGetValue(displayed, out var from) && from != null) return SourceOf(from);
             foreach (var cut in s_cut)
                 if (cut.Value != null && cut.Value == displayed) return SourceOf(cut.Key.Item1);
             foreach (var skin in s_cache.Values)

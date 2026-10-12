@@ -14,7 +14,7 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--old-style id] [--new-style id]`
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
 - **Space squares (round 6):** `blender -b CrystalsRaw_V2.blend --python Tools/Build/bake_omni_space_squares.py -- Docs/Studios/data/omni_space_squares.json` (the `.blend` is the art team's, not in the repo); the extractor then maps it onto the body FBX
-- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7)
+- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7); since round 9 the crystal holds still and the body plays the Space squares
 - **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py`
 
 ## How the effect works (measured from the assets)
@@ -39,6 +39,77 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 9 (2026-10-12): no free turn, the ratchet unfrozen, the Space squares ship
+
+After flying round 8, the designer wrote: "lets ditch the autorotation on the whole object for both
+crystals. And the depth effect did not make it into unity for the triangles or the face split. both of
+those effects were frozen. i have recorded a new decision that includes the space squares."
+
+The new decision is not in the live page's shared `decisions` log; it holds only the five earlier
+entries, so it was probably saved locally in that browser. This round ships the round-8 recipe, with
+no free turn and the squares on at the art file's speed. One cause is that a decision snapshot did
+not carry the VIEW knobs, so a pick made while watching the squares could not have said so. It does
+now (Found 3).
+
+**Changes**
+
+| Piece | What changed |
+|---|---|
+| `CrystalDepthPrisms.cs` | **The free turn is gone.** The crystal's models are no longer turned, and the authored-pose restore went with it. **The ratchet runs against the gameplay camera:** `CameraManager`'s active `CustomCameraController.Camera`, falling back to `Camera.main` only where no controller is active (main menu, test scenes). It is resolved once per frame for every crystal (Found 1). |
+| `CrystalDepthPrismProfileSO` / `.asset` | The three turn fields are removed. |
+| `CrystalSpaceSquares.cs` + `CrystalSpaceSquaresSO.cs` (new) | **The Space squares in game.** The FBX carries no shape keys, so on the first visible frame the body moves onto a copy of the twin it draws. That copy has the art file's three keys as blend shapes. It is made once per twin and shared, and registered through the new `RhombusSkinBaker.RegisterDerivedTwin` so `SourceOf` still finds the FBX for hull fusion and the morph. The driver then plays the baked weights, with a per-crystal phase. Positions are Blender's exactly. Each key carries four frames (25/50/75/100) whose normals are the authored normal turned with its face, the lab's `squaresAttr` rule. A stacked key (Step2 is relative to Step1) is measured with its base at 1. |
+| `OmniSpaceSquares.asset` (new, generated) | `author_omni_crystal_triangles.py` maps `omni_space_squares.json` onto the body FBX's control points: 480 anchors in Unity's space (x negated), 3 keys of 480 offsets, 120 frames × 3 weights, 25 fps, speed 1. It refuses a bake that does not land on the body, and anchors that sit within 10× the runtime match tolerance of another control point. |
+| `OmniCrystalBody.prefab` | Carries `CrystalSpaceSquares`. Only `Crystal.prefab` instances it. |
+| Lab | `SHIPPED.turn` is 0; turn knobs cost code again. The squares view is on by default, at the asset's speed. Decisions record the view (Found 3). Library styles are rooted on the look they were designed on (Found 2). The export says what to change when the squares are off or at another speed. |
+
+**Checked**
+- **C#:** `unity_refcompile` player and editor configs report 0 errors in project code. Negative
+  control: one planted error each in `CrystalSpaceSquares.cs` and its test is named.
+- **The baker, run headlessly on the shipped code:** `CrystalSpaceSquaresBaker` and
+  `CrystalSpaceSquaresSO`, extracted from the source files, ran against faithful `UnityEngine` stubs,
+  the real body FBX (imported Unity's way: x negated, split by normal, welded) and the real asset.
+  16/16 pass:
+  - the moving vertices weld to exactly the 480 square corners (1,440 of 2,880 split vertices);
+  - offsets equal the asset's to 6e-8;
+  - at every frame of every key, stacked keys included, each normal is its authored normal turned
+    with each of its faces, to 2.2e-5;
+  - the drawn mesh is never edited, there is one twin per drawn mesh, and a mesh already carrying the
+    keys is worn as is.
+
+  Mutants each fail: normals left unturned, stacking ignored, and the snap rule removed (weights off
+  by 0.97).
+- **Playback = the lab:** `WeightsAt` against the lab's own `squaresWeights()` (extracted from the
+  page) over 2,001 samples matches to 6.4e-7.
+- **Lab, pixels:**
+  - Classic, fill-spin, depth-seal and col-hidden are 0 px against the round-7 page, with the squares
+    view off to match it.
+  - Round 8 had broken Classic: 245/255 off, 107,926 px.
+  - Breathe is 0 px against round 8.
+  - Shipped with `turn 15` set back is 0 px against round 8, and its knobs differ only in `turn` and
+    `viewSquares`.
+- Shader parity: the depth prisms still pass 8/8 and Breathe 7/7. `verify_lab.cjs` PASS; extractor
+  `--check` OK and `--self-test` 12/12; omni generator `--check` OK. The Mass generator shows only its
+  known shell-material drift.
+- **Not verified:** a play session in the Editor. No Unity is available in this session, so
+  `/verify-unity` did not run. The checklist entry is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Found**
+1. **A lab with one camera cannot show that the game has several.** `CrystalDepthPrisms` read
+   `Camera.main`. In Bootstrap that is the MainCamera-tagged "Camera", the main menu's
+   Cinemachine-brain camera with the AudioListener. In flight it stays where the menu left it, while
+   "CM PlayerCam", which is untagged and drawn by `CustomCameraController`, renders the game. So every
+   column's depth was measured from a point that never moved: the ratchet held every prism wherever
+   it started, and the face split never opened. That is the "frozen" the designer saw. The precedent was
+   already in the tree (`WormholeView.ResolveController`). **Any view-dependent effect must ask
+   `CameraManager` for the active controller's camera, not `Camera.main`.**
+2. **Rooting every style on Shipped broke the library when Shipped changed.** Round 8 made `SHIPPED`
+   the Depth ratchet, and `styleParams` laid every style over it. So a Classic, Columns or Spin style
+   (which never set the depth knobs) inherited the ratchet and its prisms: Classic drew 245/255 off its
+   round-7 self. A style is now rooted on the look it was designed on: Shipped for `base: 'shipped'`,
+   the pinned Breathe look for every other base.
+3. **A decision that leaves out the view cannot say what was approved.** `snapshot()` recorded only
+   the non-view knobs, so "Space squares on" was invisible in the log. It now records `view` as well.
 
 ## Round 8 (2026-10-12): the Depth ratchet ships
 

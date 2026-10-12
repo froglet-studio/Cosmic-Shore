@@ -3,8 +3,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// How a crystal's triangular prisms ride their columns by depth (<see cref="CrystalDepthPrisms"/>) and how
-    /// the whole crystal turns. The SHAPE of each prism (thickness, face split, how far out the top of a column
+    /// How a crystal's triangular prisms ride their columns by depth (<see cref="CrystalDepthPrisms"/>). The
+    /// crystal itself holds still: the lab's free turn was dropped (2026-10-12), so the pilot flying round a
+    /// crystal is the only thing that turns its prisms through the ratchet. The SHAPE of each prism (thickness, face split, how far out the top of a column
     /// is) lives on its material (<c>OmniDepthPrismShader</c>), so the omni and the Mass crystal share this one
     /// profile and differ only in their materials.
     ///
@@ -32,24 +33,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a reseat takes. The two prisms dither on complementary pixels, so it never shows a gap.")]
         [SerializeField, Min(0.05f)] float reseatFadeSeconds = 0.6f;
 
-        [Header("Free turn")]
-        [Tooltip("The whole crystal (body, prisms, charge edges) turns at this rate about a fixed axis - NOT locked to the camera. Deg/s.")]
-        [SerializeField, Range(-60f, 60f)] float turnDegreesPerSecond = 15f;
-
-        [Tooltip("The turn axis, tipped this far from the crystal's up.")]
-        [SerializeField, Range(0f, 90f)] float turnTiltDegrees = 25f;
-
-        [Tooltip("Swings the turn axis round the crystal's up at this rate, so every face comes round to every side. Deg/s.")]
-        [SerializeField, Range(-30f, 30f)] float axisWobbleDegreesPerSecond;
-
         public float OpenDepth => openDepth;
         public float SealDepth => sealDepth;
         public float ProfilePower => profilePower;
         public float ReseatDepth => reseatDepth;
         public float ReseatFadeSeconds => reseatFadeSeconds;
-        public float TurnDegreesPerSecond => turnDegreesPerSecond;
-        public float TurnTiltDegrees => turnTiltDegrees;
-        public float AxisWobbleDegreesPerSecond => axisWobbleDegreesPerSecond;
 
         public float Seat(float depth) => CosmicShore.Utility.DepthRatchet.Seat(depth, openDepth, sealDepth, profilePower);
     }

@@ -103,6 +103,7 @@ the mesh asset's axis conversion is the one thing to check.
 
 import argparse
 import hashlib
+import json
 import math
 import os
 import re
@@ -170,7 +171,7 @@ def mat_guid(name):
 # are retired from the crystal; ONE opaque prism renderer fills the body's 20 triangle holes, each prism
 # riding its column by its depth from the camera (CrystalDepthPrisms + OmniDepthPrismShader). The lab's
 # recipe: {depth 2 (ratchet), depthOpen -0.88, depthSeal 1, faceSplit 0.5, thickAnchor 1 (inward),
-# thickness 8 (omni; the Mass crystal 6.25), turn 15} on top of start 1 / stop 0.5 / sizeStart 0.5.
+# thickness 8 (omni; the Mass crystal 6.25), turn 15 - dropped 2026-10-12, the crystal holds still} on top of start 1 / stop 0.5 / sizeStart 0.5.
 DEPTH_SHADER = "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader"
 DEPTH_SHADER_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniDepthPrismShader.shader").hexdigest()
 DEPTH_NAME = "OmniDepthPrisms"
@@ -187,9 +188,9 @@ DEPTH_RATCHET_GUID = hashlib.md5(b"CosmicShore/Utility/DepthRatchet.cs").hexdige
 DEPTH_PROFILE = "Assets/_SO_Assets/Environment/CrystalDepthPrismProfile.asset"
 DEPTH_PROFILE_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfile.asset").hexdigest()
 # CrystalDepthPrismProfileSO's fields, as the lab picked them (the SO's own defaults match).
+# The free turn (15 deg/s about a 25-degree axis) was dropped 2026-10-12: the crystal holds still in game.
 DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.8),
-                        ("reseatFadeSeconds", 0.6), ("turnDegreesPerSecond", 15), ("turnTiltDegrees", 25),
-                        ("axisWobbleDegreesPerSecond", 0)]
+                        ("reseatFadeSeconds", 0.6)]
 
 
 def shepard_bands():
@@ -346,6 +347,20 @@ SHELL_GO, SHELL_TR, SHELL_MF, SHELL_MR, SHELL_FADE, SHELL_DEPTH = (
     3086241560104200014, 3086241560104200015, 3086241560104200016)
 # Ids inside TrucatedOctahedron.prefab, for the body instance.
 OCTA_GO, OCTA_TR, OCTA_MR = 2448508127246415652, 1114034561007818392, 2073129193669181770
+# OmniCrystalBody.prefab's own addition: the Space squares driver (round 9).
+BODY_SQUARES = 2346576036425758006
+
+# THE SPACE SQUARES since round 9 (decision 2026-10-12): the artist's three shape keys on the body's 60 square
+# plates (CrystalsRaw_V2.blend, OmniCrystal.001, Action.008 - baked to JSON by bake_omni_space_squares.py),
+# written as anchors (the moving control points, in Unity's space) + per-key offsets + the frame weights.
+# CrystalSpaceSquares adds them to the body's runtime twin as blend shapes and plays them.
+SQUARES_JSON = "Docs/Studios/data/omni_space_squares.json"
+SQUARES_ASSET = "Assets/_SO_Assets/Environment/OmniSpaceSquares.asset"
+SQUARES_ASSET_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniSpaceSquares.asset").hexdigest()
+SQUARES_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalSpaceSquaresSO.cs").hexdigest()
+SQUARES_DRIVER_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalSpaceSquares.cs").hexdigest()
+SQUARES_PLAYBACK_SPEED = 1               # the art file's own 25 fps: a 4.8 s loop
+SQUARES_MATCH = 1e-4                     # CrystalSpaceSquaresBaker.MatchTolerance, x the body's radius
 
 # Crystal.prefab: the four child slots, in crystalModels order. The stripped
 # Transform/GameObject ids are PRESERVED across this rewrite so the root's
@@ -914,6 +929,7 @@ GameObject:
   - component: {{fileID: {OCTA_TR}}}
   - component: {{fileID: {OCTA_MR}}}
   - component: {{fileID: 2346576036425758005}}
+  - component: {{fileID: {BODY_SQUARES}}}
   m_Layer: 0
   m_Name: OmniCrystalBody
   m_TagString: Untagged
@@ -992,7 +1008,109 @@ SkinnedMeshRenderer:
     m_Center: {{x: 0, y: 0, z: 0}}
     m_Extent: {{x: {extent}, y: {extent}, z: {extent}}}
   m_DirtyAABB: 0
-""" + fade.group(0)
+""" + fade.group(0) + body_squares_doc()
+
+
+def _f32(c):
+    """A float as Unity holds it (float32), written exactly."""
+    return repr(float(struct.unpack("<f", struct.pack("<f", c))[0]))
+
+
+def _v3(a):
+    return "{x: %s, y: %s, z: %s}" % tuple(_f32(c) for c in a)
+
+
+def space_squares():
+    """The squares, mapped onto the body FBX's control points: (anchors, body radius, keys, weights, fps).
+    The .blend carries the model at another scale (the triangle export's); the axes are the FBX's, so a basis
+    point divided by the radius ratio IS a control point. Anchors and offsets come out in Unity's space (x
+    negated, as for the prism plates). Refuses a bake that does not land on the body vertex for vertex, and
+    anchors the runtime could confuse with each other or with a still vertex."""
+    d = json.load(open(os.path.join(ROOT, SQUARES_JSON)))
+    cps, _ = _load(OMNI_FBX)
+    basis = [d["basis"][i:i + 3] for i in range(0, len(d["basis"]), 3)]
+    rf = max(math.dist((0, 0, 0), p) for p in cps)
+    sc = max(math.dist((0, 0, 0), p) for p in basis) / rf
+    grid = defaultdict(list)
+    for i, p in enumerate(cps):
+        grid[tuple(round(c * 50) for c in p)].append(i)
+
+    def nearest(q):
+        key = tuple(round(c * 50) for c in q)
+        cand = [j for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1)
+                for j in grid.get((key[0] + dx, key[1] + dy, key[2] + dz), [])]
+        return min(cand, key=lambda j: math.dist(cps[j], q))
+    to_cp = {}
+    for k in d["keys"]:
+        for v in k["verts"]:
+            q = [c / sc for c in basis[v]]
+            j = nearest(q)
+            if math.dist(cps[j], q) > 1e-4:
+                raise SystemExit(f"{SQUARES_JSON}: basis vertex {v} lands {math.dist(cps[j], q):.2e} from the body FBX")
+            to_cp[v] = j
+    if len(set(to_cp.values())) != len(to_cp):
+        raise SystemExit(f"{SQUARES_JSON}: two moving vertices land on one body control point")
+    order = sorted(set(to_cp.values()))
+    slot = {cp: a for a, cp in enumerate(order)}
+    tol = SQUARES_MATCH * rf
+    moving = set(order)
+    for cp in order:
+        for j in range(len(cps)):
+            if j != cp and math.dist(cps[j], cps[cp]) < 10 * tol:
+                raise SystemExit(f"body control points {cp} and {j} sit within {10 * tol:.1e}: the runtime match is ambiguous"
+                                 + ("" if j in moving else " (and one of them holds still)"))
+    anchors = [(-cps[cp][0], cps[cp][1], cps[cp][2]) for cp in order]
+    names = [k["name"] for k in d["keys"]]
+    keys = []
+    for k in d["keys"]:
+        offs = [(0.0, 0.0, 0.0)] * len(order)
+        for n, v in enumerate(k["verts"]):
+            dx, dy, dz = (c / sc for c in k["delta"][3 * n:3 * n + 3])
+            offs[slot[to_cp[v]]] = (-dx, dy, dz)
+        stacked = -1 if k["relative"] == "Basis" else names.index(k["relative"])
+        keys.append((k["name"], stacked, offs))
+    weights = [w for row in d["weights"] for w in row]
+    return anchors, rf, keys, weights, d["fps"]
+
+
+def space_squares_text():
+    anchors, radius, keys, weights, fps = space_squares()
+    out = ["%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+           "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+           "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n"
+           "  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+           f"  m_Script: {{fileID: 11500000, guid: {SQUARES_SO_GUID}, type: 3}}\n"
+           "  m_Name: OmniSpaceSquares\n  m_EditorClassIdentifier: \n  anchors:\n"]
+    out += [f"  - {_v3(a)}\n" for a in anchors]
+    out.append(f"  bodyRadius: {_f32(radius)}\n  keys:\n")
+    for name, stacked, offs in keys:
+        out.append(f"  - name: {name}\n    stackedOn: {stacked}\n    deltas:\n")
+        out += [f"    - {_v3(o)}\n" for o in offs]
+    out.append("  weights:\n")
+    out += [f"  - {_f32(w)}\n" for w in weights]
+    out.append(f"  framesPerSecond: {fps}\n  playbackSpeed: {SQUARES_PLAYBACK_SPEED}\n")
+    return "".join(out)
+
+
+SQUARES_ASSET_META = f"""fileFormatVersion: 2
+guid: {SQUARES_ASSET_GUID}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
+def body_squares_doc():
+    """The CrystalSpaceSquares driver on the body."""
+    return (f"--- !u!114 &{BODY_SQUARES}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+            f"  m_CorrespondingSourceObject: {{fileID: 0}}\n  m_PrefabInstance: {{fileID: 0}}\n"
+            f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {OCTA_GO}}}\n  m_Enabled: 1\n"
+            f"  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {SQUARES_DRIVER_GUID}, type: 3}}\n"
+            f"  m_Name: \n  m_EditorClassIdentifier: \n"
+            f"  squares: {{fileID: 11400000, guid: {SQUARES_ASSET_GUID}, type: 2}}\n")
 
 
 BODY_META = f"""fileFormatVersion: 2
@@ -1209,6 +1327,10 @@ def main():
         BODY_PREFAB + ".meta": BODY_META,
         DEPTH_PROFILE: depth_profile_text(),
         DEPTH_PROFILE + ".meta": DEPTH_PROFILE_META,
+        SQUARES_ASSET: space_squares_text(),
+        SQUARES_ASSET + ".meta": SQUARES_ASSET_META,
+        "Assets/_Scripts/Controller/Environment/Crystals/CrystalSpaceSquares.cs.meta": script_meta(SQUARES_DRIVER_GUID),
+        "Assets/_Scripts/Controller/Environment/Crystals/CrystalSpaceSquaresSO.cs.meta": script_meta(SQUARES_SO_GUID),
         DEPTH_SHADER + ".meta": DEPTH_SHADER_META,
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs.meta": script_meta(DEPTH_PRISMS_GUID),
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrismProfileSO.cs.meta": script_meta(DEPTH_PROFILE_SO_GUID),

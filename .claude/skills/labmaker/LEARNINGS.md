@@ -232,6 +232,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `OMNI_SHEPARD_LAB.md` "Round 8"; `depthState()`/`reset()` in the page; `Tools/Build/omni_shepard_lab_parity.cjs --new-set`.
 - Promoted: no
 
+### L-STU-24 — A lab has one camera; the game has several. A view-dependent look must name WHICH camera it reads
+- Lab: Omni Shepard Lab, round 9 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: the Depth ratchet graduated with every proof green: the shader matched the lab to 2e-5, the ratchet tests passed headlessly, and the lab's Shipped equalled the pick pixel for pixel. In game every prism sat sealed and still. `CrystalDepthPrisms` read `Camera.main`, and in Bootstrap that is the main menu's Cinemachine-brain camera, parked where the menu left it. The gameplay view is "CM PlayerCam", untagged and driven by `CustomCameraController`. The lab has exactly one camera, so no parity proof could reach that question. The repo already had the right resolve (`WormholeView.ResolveController`).
+- Do instead: when a look depends on the viewer, the graduation names the game's viewer explicitly (here `CameraManager.GetActiveController()`'s camera, falling back to `Camera.main` only where none is active), and its checklist entry carries a fly-round step that fails visibly if the resolve is wrong. Grep for how the repo already resolves the gameplay camera before writing `Camera.main`.
+- Evidence: `OMNI_SHEPARD_LAB.md` "Round 9" Found 1; `CrystalDepthPrisms.ViewCamera()`.
+- Promoted: no
+
+### L-STU-25 — Root each library style on the look it was designed on, and record the view in every decision
+- Lab: Omni Shepard Lab, round 9 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: (1) Round 8 moved `SHIPPED` to the Depth ratchet, and `styleParams` laid every style over `SHIPPED`. So every Classic, Columns and Spin style, none of which set the depth knobs, inherited the ratchet: Classic drew 245/255 off its round-7 self, and no round-8 check compared a library style across the graduation. (2) The designer recorded a pick "that includes the space squares", but `snapshot()` dropped view knobs, so the log could not have shown it.
+- Do instead: a style's root is the base it was designed on (Shipped only for `base: 'shipped'`, a pinned look for the rest), and every graduation pixel-diffs a few library styles from each base against the previous round's page (they must be 0 px). A decision snapshot carries the view as well as the look.
+- Evidence: `styleParams` and `snapshot()` in the page; `omni_shepard_lab_parity.cjs --old-style X --new-style X`.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

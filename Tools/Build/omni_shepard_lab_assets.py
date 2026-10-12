@@ -57,6 +57,8 @@ MASS_SHELLS = [("innerShell", "ActiveMassCrystalMaterial", "BlueMassCrystalMater
 SHEPARD_SHADER_GUID = "b55e562cd5045859607550ce7ba8267f"   # OmniShepardFresnelShader.shader
 DEPTH_SHADER = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "Shaders", "OmniDepthPrismShader.shader")
 DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
+# The squares as the game plays them (round 9): the lab's default speed is the asset's.
+SQUARES_ASSET = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniSpaceSquares.asset")
 MASS_DEPTH_MAT = "MassDepthPrisms"
 # The Breathe tone layers, shipped rounds 4-7 and retired from Crystal.prefab by the Depth ratchet (round 8):
 # still authored (OriginalMaterialSet's slots 2-3), so the lab keeps its Breathe styles on their real numbers.
@@ -161,8 +163,7 @@ def depth_look():
         return None
     mass = depth_material(MASS_DEPTH_MAT)
     prof = {k: float(v) for k, v in re.findall(r"^  (\w+): (-?[0-9.eE+-]+)$", read(DEPTH_PROFILE), re.M)}
-    keys = ["openDepth", "sealDepth", "profilePower", "reseatDepth", "reseatFadeSeconds",
-            "turnDegreesPerSecond", "turnTiltDegrees", "axisWobbleDegreesPerSecond"]
+    keys = ["openDepth", "sealDepth", "profilePower", "reseatDepth", "reseatFadeSeconds"]
     missing = [k for k in keys if k not in prof]
     if missing:
         raise SystemExit(f"CrystalDepthPrismProfile.asset lacks {missing}")
@@ -355,7 +356,10 @@ def space_squares(body_pts):
     for k in d["keys"]:
         keys.append({"name": k["name"], "cps": [mapping[v] for v in k["verts"]],
                      "d": [round(c / sc, 6) for c in k["delta"]]})
-    return {"source": d["source"], "fps": d["fps"], "frames": len(d["weights"]),
+    speed = 1.0
+    if os.path.exists(SQUARES_ASSET):
+        speed = float(re.search(r"^  playbackSpeed: (\S+)$", read(SQUARES_ASSET), re.M).group(1))
+    return {"source": d["source"], "fps": d["fps"], "frames": len(d["weights"]), "speed": speed,
             "weights": [w for row in d["weights"] for w in row], "keys": keys, "mapErr": float(f"{worst:.2e}")}
 
 

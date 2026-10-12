@@ -17,6 +17,3 @@ MonoBehaviour:
   profilePower: 1
   reseatDepth: -0.8
   reseatFadeSeconds: 0.6
-  turnDegreesPerSecond: 15
-  turnTiltDegrees: 25
-  axisWobbleDegreesPerSecond: 0
