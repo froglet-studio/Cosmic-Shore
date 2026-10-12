@@ -77,7 +77,8 @@ mean with in-training means, which are noisier: an elite carries its in-training
 next generation, and a new child's first flight is its whole mean, so Learn can replace the pick
 in its first match. What the export guarantees is that Learn deploys its own current best, not a
 stale hall of fame no genome can beat. A session state that holds another scenario is not written
-(a warning says so).
+(a warning says so). A `--fitness` that does not parse as a finite number with a `.` decimal
+point (`221,4`, `abc`, `NaN`) exits 2 and writes nothing; it used to record fitness 0.
 `--seed` makes a run reproducible (two runs with one seed are bit-identical). A train run always
 has one; its workers fly different matches (the gameplay seed is offset per worker) but evolve
 under the shared seed.

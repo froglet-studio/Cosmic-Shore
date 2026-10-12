@@ -383,7 +383,7 @@ own touch controls.
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
-| `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
+| `--train train\|replay\|eval\|export` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 
 Environment variables:
 - `COSMIC_SHORE_AUDIO=off|wav:PATH|nrt` (`nrt`: the FMOD runtime and banks, no output, mixed only on the engine's tick; what `engine_parity` runs)

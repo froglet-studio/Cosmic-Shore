@@ -16,6 +16,7 @@ namespace CosmicShore.Player
     ///   CosmicShore --random-golden DIR --seeds S1,S2,...
     ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
     ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G] [--recycle-mb MB]
+    ///   CosmicShore --train export --genome FILE --fitness F [--note TEXT] --train-out DIR
     ///
     /// --verbose opens every CSDebug log channel (a development build's bring-up traces).
     /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
@@ -28,6 +29,8 @@ namespace CosmicShore.Player
     /// "train" evolves generation by generation over --workers processes (one per core), each
     /// genome flown --evals times per generation. "eval" flies the --genome FILE(s) --flights
     /// times each, racing each other, and reports each one's mean fitness and standard error.
+    /// "export" deploys one genome file into the archive and the session's hall of fame at the
+    /// fitness named; a --fitness that does not parse as a finite number exits 2.
     /// </summary>
     public static class Program
     {
@@ -111,7 +114,16 @@ namespace CosmicShore.Player
                     case "--flights" when i + 1 < args.Length: int.TryParse(args[++i], out flights); break;
                     case "--population" when i + 1 < args.Length: evalPopulation = args[++i]; break;
                     case "--fitness" when i + 1 < args.Length:
-                        float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out exportFitness); break;
+                        // TryParse writes 0 when it fails, and 0 is a fitness the archive would record,
+                        // so a value that does not parse (a comma decimal, a typo) stops the run here.
+                        if (!float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float parsedFitness)
+                            || !float.IsFinite(parsedFitness))
+                        {
+                            Console.WriteLine($"[train] --fitness expects a finite number with a '.' decimal point (e.g. 221.4), got '{args[i]}'");
+                            return 2;
+                        }
+                        exportFitness = parsedFitness;
+                        break;
                     case "--note" when i + 1 < args.Length: exportNote = args[++i]; break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
