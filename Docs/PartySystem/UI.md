@@ -132,21 +132,33 @@ Recipient's refresh loop detects invite
           └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
 ```
 
-### When the join fails: the notice survives the reload (2026-10-10)
+### When the join fails: the notice reaches the menu it lands on (2026-10-10, corrected 2026-10-12)
 
 Every failure arm of the accept flow ends in
 `PartyInviteController.BounceToSoloMenuAsync`, which restarts the client's own solo host
-(`RecoverFromFailedTransitionAsync`) and then raises "Couldn't join - returned to your menu."
-on the `bounceToastChannel`. That notice used to be best-effort: `ToastService` is a
-scene-bound MonoBehaviour that subscribes to the channel in `OnEnable`, so a line raised in
-the gap around the Menu_Main reload had no subscriber and vanished, and the player saw the
-menu come back with no explanation. The controller now raises it with
-`ToastChannel.ShowPrefixOrHold`: delivered at once when a service is listening, otherwise
-parked on the channel asset (which outlives the scene) for up to 45 s and drained by the
-next `ToastService.OnEnable`. The hold is a mailbox, not a queue: a later held line replaces
-an earlier one, and the plain `ShowPrefix` keeps its drop-when-unheard contract for gameplay
-toasts. Pinned by `ToastChannelHoldTests`. Not yet seen in an editor: force a join failure
-(accept an invite whose host has quit) and watch for the line on the fresh menu.
+(`RecoverFromFailedTransitionAsync`) and then shows "Couldn't join - returned to your menu."
+(host loss uses the same bounce with "Connection to the party was lost - returned to your
+menu.").
+
+The first version of this raised the line on a `bounceToastChannel` field and held it on the
+channel asset until a `ToastService` subscribed. It never reached anyone: the field was not
+assigned on `PartyServices.prefab` (the only `PartyInviteController` in the project) or in
+Bootstrap, and the only `ToastService` in the project lives inside `ToastHolder.prefab`, which is
+nested in the Sparrow and Scarab vessel prefabs, not in Menu_Main. The field and the hold are
+gone.
+
+The notice now goes through `ToastNotificationAPI.Show`, the toast Menu_Main actually has (the
+friends panel's feedback uses it): the API creates its persistent manager on demand and spawns
+toasts under the menu's `ToastNotificationContainer` (`UI_Refactored/Safe Area`). The controller is
+`DontDestroyOnLoad`, so the method carries the line across the reload itself. It waits, in real
+time, for the scene-transition veil to lift (`SceneTransitionManager.IsVeiled`; at most
+`bounceNoticeVeilWaitSeconds`, 15 s), because the veil sorts above every canvas and the menu
+only lifts it once the local vessel is ready, plus a 1.5 s settle hold after a match. The wait is
+not awaited by the bounce, so `_transitioning` is released with the recovery as before.
+`BounceNoticeDeliveryTests` pins the three things the route depends on: no inspector-assigned
+channel on the controller, the API's Resources assets, and the container in Menu_Main. Not yet
+seen in an editor: force a join failure (accept an invite whose host has quit) and watch for the
+line on the fresh menu once it is visible.
 
 ## Friend requests vs. party invites
 

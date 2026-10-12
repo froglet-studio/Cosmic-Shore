@@ -37,9 +37,12 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
 
-        [Tooltip("Optional. Toast shown when a join fails and the client bounces back to its own menu. " +
-                 "Raised with a hold, so it survives the Menu_Main reload and lands on the fresh menu's ToastService.")]
-        [SerializeField] private ToastChannel bounceToastChannel;
+        [Header("Bounce Notice")]
+        [Tooltip("Longest real-time wait, after a failed join or a lost host has bounced the player back to " +
+                 "their own menu, for the scene-transition veil to lift before the notice (\"Couldn't join\", " +
+                 "\"Connection to the party was lost\") is shown. The veil sorts above every canvas, so a notice " +
+                 "shown while the screen is still black would time out unseen. Past this wait it is shown anyway.")]
+        [SerializeField] private float bounceNoticeVeilWaitSeconds = 15f;
 
         [Header("Timing")]
         [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
@@ -619,15 +622,44 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
             await RecoverFromFailedTransitionAsync();
-            // Show the notice AFTER recovery, and HELD. ToastService is a scene-bound
-            // MonoBehaviour (it subscribes to the channel in OnEnable), so it is destroyed +
-            // recreated by the Menu_Main reload - and is absent entirely in a game scene. A
-            // plain ShowPrefix raised in the gap had no subscriber and was silently dropped,
-            // which is how a failed join read as "the game put me back in my menu for no
-            // reason". ShowPrefixOrHold parks the line on the channel asset (which outlives
-            // the scene) until the fresh menu's ToastService subscribes and drains it.
-            // See Docs/PartySystem/BUGS.md B10.
-            bounceToastChannel?.ShowPrefixOrHold(toastMessage);
+
+            // The notice goes up AFTER recovery, on the menu the player landed on, and only once
+            // they can see it. Not awaited: the bounce (and the _transitioning guard its callers
+            // release in their finally) ends with the recovery, as before, so an invite can be
+            // answered while the notice is still waiting for the veil.
+            ShowBounceNoticeWhenVisibleAsync(toastMessage).Forget();
+        }
+
+        /// <summary>
+        /// Shows the bounce notice once the scene-transition veil no longer covers the screen, or
+        /// after <see cref="bounceNoticeVeilWaitSeconds"/> of real time. The menu's own SceneLoader
+        /// lifts the veil once the local vessel is ready (plus a settle hold on a game-to-menu
+        /// return), which can land after recovery returns, and a toast shown under the veil runs
+        /// out its display time behind black.
+        ///
+        /// <para>This controller outlives the scene change, so this method itself carries the line
+        /// across the Menu_Main reload. It is shown through <see cref="ToastNotificationAPI"/>, the
+        /// toast Menu_Main actually has: the API creates its persistent manager on demand and finds
+        /// the menu's "ToastNotificationContainer" (UI_Refactored/Safe Area), the route the friends
+        /// panel's feedback already takes. The ToastChannel this used to raise on was never assigned
+        /// on PartyServices.prefab, and its only listener (ToastService) lives inside two vessel
+        /// prefabs rather than the menu, so the notice never reached anyone.
+        /// See Docs/PartySystem/BUGS.md B10.</para>
+        /// </summary>
+        private async UniTaskVoid ShowBounceNoticeWhenVisibleAsync(string message)
+        {
+            // Land on the player loop first: the recovery's last await may have resumed anywhere,
+            // and both the veil read and the toast touch Unity objects.
+            await UniTask.Yield(PlayerLoopTiming.Update);
+
+            float deadline = Time.realtimeSinceStartup + Mathf.Max(0f, bounceNoticeVeilWaitSeconds);
+            while (_sceneTransitionManager != null && _sceneTransitionManager.IsVeiled &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+            }
+
+            ToastNotificationAPI.Show(message);
         }
 
         /// <summary>

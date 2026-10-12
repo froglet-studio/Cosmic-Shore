@@ -25,8 +25,9 @@ namespace CosmicShore.Gameplay
         /// The one line a bounced client reads on its fresh menu after the party connection
         /// went away for ANY reason it cannot attribute (host quit, host link lost, own link
         /// lost, transport failure). Shared by the two Netcode signals below so they cannot
-        /// drift into blaming one side. Delivered through <c>ToastChannel.ShowPrefixOrHold</c>,
-        /// so it survives the Menu_Main reload. ASCII only: it reaches a TMP_Text.
+        /// drift into blaming one side. Delivered by the bounce in <c>PartyInviteController</c>
+        /// through <c>ToastNotificationAPI</c>, after the Menu_Main reload and once the transition
+        /// veil has lifted. ASCII only: it reaches a TMP_Text.
         /// </summary>
         const string PARTY_CONNECTION_LOST_NOTICE = "Connection to the party was lost - returned to your menu.";
 

@@ -57,6 +57,13 @@ namespace CosmicShore.Core
         public bool IsTransitioning => _isTransitioning;
 
         /// <summary>
+        /// True while the overlay still covers any of the screen (not fully transparent). The
+        /// overlay sorts above every other canvas, so anything shown under it - a toast, a
+        /// notice - is drawn but not seen until this goes false.
+        /// </summary>
+        public bool IsVeiled => _fadeCanvasGroup != null && _fadeCanvasGroup.alpha > 0.01f;
+
+        /// <summary>
         /// Fired after a scene finishes loading and the fade-in begins.
         /// </summary>
         public event Action<string> OnSceneLoadComplete;

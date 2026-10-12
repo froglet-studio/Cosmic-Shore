@@ -991,13 +991,18 @@ the fresh menu's live `ToastService`. Once Task 0 (the SOAP confirm-popup,
 `INVITE_ENHANCEMENTS.md`) ships, upgrade the notice to a 1-button "OK" popup
 (same post-recovery timing).
 
-> **2026-10-10 (`DROPPING_OUT.md` F1, F2).** The notice now travels through
-> `ToastChannel.ShowPrefixOrHold`, so it survives the reload instead of depending on the
-> post-recovery timing, and it reads **"Connection to the party was lost - returned to your
+> **2026-10-10 (`DROPPING_OUT.md` F1, F2).** The notice reads **"Connection to the party was lost - returned to your
 > menu."** rather than "Host disconnected": the client-side `OnClientDisconnectCallback` fires
 > identically for a host quit, a host link loss and the client's OWN link timing out, so the
 > old wording blamed the host for the player's Wi-Fi. `HandleHostLossAsync` also covers the
 > screen and unpauses before its teardown now, as the deliberate Leave always did.
+>
+> **2026-10-12 correction.** That day's change also routed the notice through a held
+> `ToastChannel.ShowPrefixOrHold`, which delivered nothing: the controller's `bounceToastChannel`
+> was never assigned on `PartyServices.prefab`, and the project's only `ToastService` sits in
+> `ToastHolder.prefab` inside the Sparrow and Scarab vessels, not in Menu_Main. The notice now
+> goes through `ToastNotificationAPI.Show` after recovery, once the transition veil has lifted
+> (`Docs/PartySystem/UI.md`, "When the join fails"). The hold and the field are gone.
 
 **Recommendation (the "better thing").** Bounce-to-solo is the right call now —
 reliable, and it reuses proven machinery. True **host migration** (promote a

@@ -51,7 +51,7 @@ four-player match with a stranger has **no path to friending them**, which combi
 the social graph cannot grow from play at all. For a party game this is the natural place friend
 requests come from.
 
-### 4 · The join-failure message is best-effort · **medium** · ✅ landed 2026-10-10 (`ToastChannel.ShowPrefixOrHold`; not yet opened in Unity)
+### 4 · The join-failure message is best-effort · **medium** · ✅ landed 2026-10-10, corrected 2026-10-12 (`ToastNotificationAPI` after the veil lifts; the held `ToastChannel` version reached no listener; not yet opened in Unity)
 
 `PartyInviteController`'s toast field is documented as *"Optional. Best-effort toast shown when a
 join fails and the client bounces back to its own menu. **May be suppressed during the scene

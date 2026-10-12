@@ -21,10 +21,7 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            if (!channel) return;
-            channel.OnChatToast += Enqueue;
-            // A notice raised between scenes (a failed join bouncing to the menu) waited for us.
-            if (channel.TryTakeHeld(out var held)) Enqueue(held, null);
+            if (channel) channel.OnChatToast += Enqueue;
         }
         void OnDisable()
         {

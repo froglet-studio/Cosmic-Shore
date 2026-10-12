@@ -10,9 +10,15 @@ namespace CosmicShore.UI
     /// </summary>
     public static class ToastNotificationAPI
     {
-        private const string ChannelPath = "Channels/ToastNotificationChannel";
-        private const string SettingsPath = "ToastNotificationSettings";
-        private const string ContainerName = "ToastNotificationContainer";
+        /// <summary>Resources path of the SOAP channel the auto-created manager listens on.</summary>
+        public const string ChannelPath = "Channels/ToastNotificationChannel";
+        /// <summary>Resources path of the settings the auto-created manager is given.</summary>
+        public const string SettingsPath = "ToastNotificationSettings";
+        /// <summary>
+        /// Name of the RectTransform toasts spawn under. A scene without one drops every toast (the
+        /// manager warns once per attempt); Menu_Main carries it under UI_Refactored/Safe Area.
+        /// </summary>
+        public const string ContainerName = "ToastNotificationContainer";
 
         private static ToastNotificationChannel _channel;
 
