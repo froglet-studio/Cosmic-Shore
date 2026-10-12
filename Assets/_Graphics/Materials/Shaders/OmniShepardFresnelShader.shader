@@ -53,7 +53,7 @@ Shader "Custom/OmniShepardFresnelShader"
         [ToggleUI] _Breathe ("Breathe (ping-pong the band)", Float) = 0
         _PhaseOffset ("Phase Offset (fraction of a period)", Float) = 0
         _PlateScaleStart ("Plate Scale at Start", Range(0.1, 3)) = 1
-        _Thickness ("Plate Thickness", Range(0.2, 3)) = 1
+        _Thickness ("Plate Thickness", Range(0.2, 8)) = 1
     }
 
     SubShader

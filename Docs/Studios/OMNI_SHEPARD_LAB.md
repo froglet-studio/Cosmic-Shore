@@ -115,6 +115,8 @@ zero-length columns swap unseen.
 - `omni_shepard_lab_assets.py --check` OK; `omni_shepard_shader_parity.py` PASS.
 - No C# or asset changed, so `/verify-unity` has nothing to run.
 
+**Also:** the Thickness slider now goes to 8, up from 3. `OmniShepardFresnelShader`'s `_Thickness` inspector range was raised to `Range(0.2, 8)` to match, so a lab pick can be typed into the material. That is a property-range change only: the shipped value stays 1.25 and the vertex code is untouched (shader parity 7 of 7).
+
 **Not modelled / to build:** all lab-side. Seal by depth and Depth columns need only the shader
 (the object-space camera direction, the plate centre already baked, and hole fill). The Ratchet also
 needs per-plate state written from C# each frame (`MaterialPropertyBlock.SetVectorArray`) and a
