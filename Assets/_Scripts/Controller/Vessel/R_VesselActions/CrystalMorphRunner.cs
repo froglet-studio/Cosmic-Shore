@@ -15,8 +15,9 @@ namespace CosmicShore.Gameplay
     /// ── What the omni crystal is made of, and which part moves ───────────────────────────────
     /// The omni crystal is ONE body plus overlays (Docs/PALETTE.md §2.10): slot 0 is the whole
     /// cage on <c>OmniCrystalFresnelShader</c> — the shader that carries the morph path — and
-    /// slots 1-3 are Mass's Shepard-tone triangles breathing in to it and back out, a
-    /// different mesh on <c>OmniShepardFresnelShader</c>. Only the body can fold; the overlays
+    /// slot 1 is the depth prisms filling its triangle holes, a different mesh on
+    /// <c>OmniDepthPrismShader</c> (copied with their property block, so they hold the column
+    /// places they had on the pickup frame). Only the body can fold; the overlays
     /// FADE over <see cref="CrystalMorphConfigSO.overlayFadeFraction"/> of the geometry window, so
     /// they leave as the cage opens instead of vanishing on the pickup frame.
     ///
