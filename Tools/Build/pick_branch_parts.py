@@ -50,10 +50,19 @@ PARTS = {
           "3bdd94362 e91c90363 b6e3a44ec 323a18eda f3b60adcb 511501e84 52d96167f"),
 }
 
-# A part on the left does not build or does not work without the parts on the right. Filled from the
-# measurement of each part built ALONE on origin/bleeding-edge (Docs/BRANCH_TEST_PLAN_2026-10-12.md,
-# "Parts alone"); empty until that measurement lands, so nothing unmeasured is asserted here.
-DEPENDS = {}
+# A part on the left does not build without the parts on the right. Measured 2026-10-12 by building
+# every part ALONE on origin/bleeding-edge (reference compile, player + editor, and Prisma's live
+# compile of the same tree; Docs/BRANCH_TEST_PLAN_2026-10-12.md, "Parts alone"):
+#   G alone: LoadSweepRunner reads GameDataSO.IsGeneticTrainingSession, which E adds (editor + Prisma fail).
+#   H alone: ParityProbe uses the engine's FMOD callback types that I adds (Prisma's live compile fails,
+#            and Prisma parity CI runs on every bleeding-edge push).
+#   I alone: ParityRun uses the game's ReplayFile / ReplayPlayer / DeterministicSession, which H adds.
+# H and I therefore travel together.
+DEPENDS = {
+    "G": ["E"],
+    "H": ["I"],
+    "I": ["H"],
+}
 
 DOC_PREFIXES = ("Docs/", "Port/docs/", ".github/pull_request_template.md")
 
@@ -70,16 +79,17 @@ def is_doc(path):
 
 
 def resolve(keys):
-    chosen, added = [], []
+    """The chosen parts plus everything they need, each once (H and I need each other)."""
+    chosen, added, seen = [], [], set()
 
     def visit(k):
-        if k in chosen:
+        if k in seen:
             return
+        seen.add(k)
         for d in DEPENDS.get(k, []):
-            if d not in chosen:
-                visit(d)
-                if d not in keys:
-                    added.append((d, k))
+            if d not in seen and d not in keys:
+                added.append((d, k))
+            visit(d)
         chosen.append(k)
 
     for k in keys:
