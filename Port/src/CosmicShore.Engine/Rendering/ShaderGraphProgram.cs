@@ -48,6 +48,13 @@ namespace CosmicShore.Engine
         public int ZWrite = -1;
         /// <summary>The target lets each material override surface, blend and cull.</summary>
         public bool AllowMaterialOverride;
+        /// <summary>
+        /// A hand-written shader's own Blend factors (UnityEngine.Rendering.BlendMode values), -1 when
+        /// the <see cref="AlphaMode"/> decides: ShaderLab can name pairs URP's four modes cannot (One One).
+        /// </summary>
+        public int BlendSrc = -1, BlendDst = -1;
+        /// <summary>The render queue its tags ask for ("Transparent+2" = 3002), -1 to derive it.</summary>
+        public int Queue = -1;
 
         /// <summary>Nodes the compiler could not translate exactly: "Type: reason". Empty when every node translated.</summary>
         public readonly List<string> Approximations = new();

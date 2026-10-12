@@ -482,6 +482,25 @@ namespace CosmicShore.Gameplay
                 renderer.SetPropertyBlock(null);
         }
 
+        /// <summary>
+        /// The crystal pair <paramref name="domain"/> paints a crystal in — what this crystal would
+        /// wear if that domain owned it. A hull fusion converges onto it, so a pickup that becomes
+        /// part of a vessel ends in that vessel's colours rather than the lime it was collected in.
+        /// False for a domain with no crystal pair (<see cref="Domains.Blue"/> is the unresolved
+        /// sentinel and is refused, not answered — Docs/PALETTE.md §2.8) or an unwired theme.
+        /// </summary>
+        public bool TryGetDomainCrystalColors(Domains domain, out Color bright, out Color dull)
+        {
+            bright = default;
+            dull = default;
+            if (domain is not (Domains.Jade or Domains.Ruby or Domains.Gold)) return false;
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return false;
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var set) || set == null) return false;
+            bright = set.BrightCrystalColor;
+            dull = set.DullCrystalColor;
+            return true;
+        }
+
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
 
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;

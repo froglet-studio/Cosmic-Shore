@@ -161,6 +161,13 @@ ball, so no crystal can drift into the shared interior.
   other transfer, so each machine strips its own copy of the pilot and mints its own local crystals.
   A peer whose tolerant `TryResolveTransit` misses a transit misses that toll too; same stance as
   every per-peer crystal.
+- **It scores for the Butterfly** (2026-10-10, PvP is petals only:
+  `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`). Every toll is a combat hit of class `tollHitClass`
+  (Debuff) for the mouth's `Owner` against the payer, raised on `onTollHitLanded`
+  (Event_CombatHitStats) once, on the owner's machine (`ElementalTransfer.IsDecidedHere`), and
+  admitted through `CombatHitDrain.TryAdmit` under the same `WormholeToll` ward the take honours, so
+  a pilot who keeps their petals is not scored on. No latch window: every transit is one toll and one
+  hit. An owner-less mouth scores for nobody.
 
 An unpaired mouth (one withering away, `WormholeMouth.Retire`) is still **sealed**
 (`_WormholeSealed`): no view through, only the fresnel shell. That is now the only seal.

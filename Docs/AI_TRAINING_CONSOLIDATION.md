@@ -14,8 +14,8 @@ The `Assets/_Scripts/Utility/AITraining/` tree was copied from
 was not merged. Compile fixes against current APIs:
 
 - `GameModes.Freestyle` is retired. The launcher scene arm and the runner's
-  fallback fitness case are gone. `MultiplayerFreestyle` still uses
-  `ApplyFreestyleDefaults()`.
+  fallback fitness case are gone. `MultiplayerFreestyle` (28) was retired
+  2026-10, and `ApplyFreestyleDefaults()` with it.
 - `Domains.None` and `Domains.Unassigned` are gone. Sensors treat `Domains.Blue`
   as the no-team sentinel.
 - `TrainingPilot.BindVessel` still writes only `IInputStatus` and calls

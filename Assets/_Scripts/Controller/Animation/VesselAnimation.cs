@@ -43,6 +43,11 @@ namespace CosmicShore.Gameplay
             AssignTransforms();
 
             _isInitialized = true;
+
+            // Build, off the main thread, where a collected crystal's faces will land on this hull,
+            // so the first pickup does not pay for it (CRYSTAL_HULL_FUSION.md). A no-op for a vessel
+            // the fusion config does not list.
+            CrystalHullFusion.Prewarm(vesselStatus, transform);
         }
 
         protected virtual void OnDestroy()

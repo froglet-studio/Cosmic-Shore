@@ -8,7 +8,8 @@ using CosmicShore.Render;
 namespace CosmicShore.Player
 {
     /// <summary>
-    /// <c>--check-shaders</c>: every Shader Graph in the project, compiled by the content layer and
+    /// <c>--check-shaders</c>: every Shader Graph in the project (and every hand translation of a
+    /// hand-written .shader), compiled by the content layer and
     /// linked on THIS context through the renderer's own template, as desktop GLSL and (when the
     /// driver accepts GLSL ES, GL_ARB_ES3_compatibility) as the phones' GLSL ES 3.00. Prints one
     /// line per failure and a summary; the exit code is the number of failures.
@@ -21,7 +22,9 @@ namespace CosmicShore.Player
             if (root == null) { Console.WriteLine("[shader-check] no project root (set COSMIC_SHORE_PROJECT)"); return 1; }
             var db = new AssetDatabase(root);
             var catalog = new ShaderGraphCatalog(db);
-            var graphs = db.AllAssetPaths.Where(p => p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase)
+            // Every graph, then every hand-written .shader that has a hand translation (HandShaders).
+            var graphs = db.AllAssetPaths.Where(p => (p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase)
+                                                      || (p.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) && HandShaders.Has(db.GuidOf(p))))
                                                      && p.StartsWith(db.AssetsRoot, StringComparison.OrdinalIgnoreCase))
                                          .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
             bool es = GlCaps.Has("GL_ARB_ES3_compatibility");
@@ -48,7 +51,7 @@ namespace CosmicShore.Player
                 }
                 else failed++;
             }
-            Console.WriteLine($"[shader-check] {ok} of {ok + failed} graphs linked ({approximate} with approximations){(es ? ", desktop and ES" : ", desktop only (no GL_ARB_ES3_compatibility)")}; {failed} failed");
+            Console.WriteLine($"[shader-check] {ok} of {ok + failed} graphs and hand shaders linked ({approximate} with approximations){(es ? ", desktop and ES" : ", desktop only (no GL_ARB_ES3_compatibility)")}; {failed} failed");
             return failed;
         }
     }

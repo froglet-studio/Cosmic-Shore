@@ -15,10 +15,13 @@ namespace CosmicShore.Engine
     public enum ParticleSystemNoiseQuality { Low = 0, Medium = 1, High = 2 }
 
     /// <summary>
-    /// UnityEngine.ParticleSystem. The port simulates emission COUNTS (so particleCount,
-    /// isPlaying and stop actions behave) while the particles themselves are drawn by the
-    /// render arc. Modules are proxy structs over shared per-system state, as in the
-    /// original: <c>var main = ps.main; main.startSize = 2;</c> writes through.
+    /// UnityEngine.ParticleSystem, simulated: each particle is born from the shape module with the
+    /// main module's start values, moves under gravity and velocity over lifetime (limited and
+    /// damped), and ages through colour, size and rotation over lifetime; emission is rate over
+    /// time and distance plus bursts. The renderer reads the live particles through
+    /// <see cref="GetRenderParticles"/> and draws them as billboards. Modules are proxy structs over
+    /// shared per-system state, as in the original: <c>var main = ps.main; main.startSize = 2;</c>
+    /// writes through. Not simulated: noise, collision, sub-emitters, trails, texture-sheet frames.
     /// Adding one adds its ParticleSystemRenderer, as the original does (AstroLeagueBall builds
     /// its sparks with AddComponent and styles GetComponent&lt;ParticleSystemRenderer&gt;()).
     /// </summary>
@@ -71,6 +74,7 @@ namespace CosmicShore.Engine
                 ParticleSystemGradientMode.Color => colorMax,
                 ParticleSystemGradientMode.TwoColors => Color.Lerp(colorMin, colorMax, lerpFactor),
                 ParticleSystemGradientMode.Gradient => gradientMax?.Evaluate(time) ?? Color.white,
+                ParticleSystemGradientMode.RandomColor => gradientMax?.Evaluate(lerpFactor) ?? Color.white,
                 _ => Color.Lerp(gradientMin?.Evaluate(time) ?? Color.white, gradientMax?.Evaluate(time) ?? Color.white, lerpFactor),
             };
 
@@ -153,8 +157,22 @@ namespace CosmicShore.Engine
         }
 
         internal readonly State s = new();
-        float _time, _emitAccumulator, _count;
-        bool _playing, _emitting, _paused;
+        float _time, _emitAccumulator, _distanceAccumulator, _delayLeft;
+        bool _playing, _emitting, _paused, _hasLastPos;
+        Vector3 _lastEmitterPos;
+        readonly List<int> _burstCyclesDone = new();
+        System.Random _rng;
+
+        /// <summary>One live particle. Positions and velocities are in the simulation space (the emitter's local space, or world).</summary>
+        struct Live
+        {
+            public Vector3 Pos, Vel, Size0;
+            public float Age, Life, Rot0, RotZ;
+            public Color Col0;
+            public float R0, R1; // per-particle randoms for two-curve / two-colour lerps over lifetime
+        }
+        Live[] _p = new Live[16];
+        int _n;
 
         public MainModule main => new(this);
         public EmissionModule emission => new(this);
@@ -180,7 +198,7 @@ namespace CosmicShore.Engine
         public bool isEmitting => _emitting && !_paused;
         public bool isStopped => !_playing;
         public bool isPaused => _paused;
-        public int particleCount => (int)_count;
+        public int particleCount => _n;
         public float time { get => _time; set => _time = value; }
         public float totalTime => _time;
         public uint randomSeed { get; set; }
@@ -190,7 +208,13 @@ namespace CosmicShore.Engine
         public void Play() => Play(true);
         public void Play(bool withChildren)
         {
-            _playing = true; _emitting = true; _paused = false;
+            if (!_playing || !_emitting)
+            {
+                if (!_playing) { _time = 0; _emitAccumulator = 0; _distanceAccumulator = 0; _burstCyclesDone.Clear(); _hasLastPos = false; }
+                _delayLeft = s.startDelay.Evaluate(0f, Rand()) * s.startDelayMultiplier;
+            }
+            _playing = true; _emitting = true; _paused = false; _justPlayed = true;
+            if (s.prewarm && s.loop && _n == 0) Prewarm();
             if (withChildren) foreach (var c in Children()) c.Play(false);
         }
         public void Stop() => Stop(true, ParticleSystemStopBehavior.StopEmitting);
@@ -198,19 +222,65 @@ namespace CosmicShore.Engine
         public void Stop(bool withChildren, ParticleSystemStopBehavior stopBehavior)
         {
             _emitting = false;
-            if (stopBehavior == ParticleSystemStopBehavior.StopEmittingAndClear) { _count = 0; Finish(); }
+            if (stopBehavior == ParticleSystemStopBehavior.StopEmittingAndClear) { _n = 0; Finish(); }
             if (withChildren) foreach (var c in Children()) c.Stop(false, stopBehavior);
         }
         public void Pause(bool withChildren = true) { _paused = true; if (withChildren) foreach (var c in Children()) c.Pause(false); }
-        public void Clear(bool withChildren = true) { _count = 0; if (withChildren) foreach (var c in Children()) c.Clear(false); }
-        public bool IsAlive(bool withChildren = true) => _playing && (_emitting || _count > 0);
-        public void Emit(int count) { _count = Math.Min(s.maxParticles, _count + count); if (!_playing) _playing = true; }
-        public void Emit(EmitParams emitParams, int count) => Emit(count);
-        public void Simulate(float t, bool withChildren = true, bool restart = true, bool fixedTimeStep = true) { if (restart) { _time = 0; _count = 0; } Step(t); }
-        public int GetParticles(Particle[] particles) => 0;
-        public int GetParticles(Particle[] particles, int size) => 0;
-        public void SetParticles(Particle[] particles, int size) => _count = size;
-        public void SetParticles(Particle[] particles) => _count = particles?.Length ?? 0;
+        public void Clear(bool withChildren = true) { _n = 0; if (withChildren) foreach (var c in Children()) c.Clear(false); }
+        public bool IsAlive(bool withChildren = true) => _playing && (_emitting || _n > 0);
+        public void Emit(int count)
+        {
+            for (int i = 0; i < count; i++) Spawn(null);
+            if (!_playing) { _playing = true; _emitting = false; }
+        }
+        public void Emit(EmitParams emitParams, int count)
+        {
+            for (int i = 0; i < count; i++) Spawn(emitParams);
+            if (!_playing) { _playing = true; _emitting = false; }
+        }
+        public void Simulate(float t, bool withChildren = true, bool restart = true, bool fixedTimeStep = true)
+        {
+            if (restart) { _time = 0; _n = 0; _emitAccumulator = 0; _burstCyclesDone.Clear(); _playing = true; _emitting = true; }
+            const float step = 1f / 30f;
+            for (float done = 0; done < t; done += step) Step(Math.Min(step, t - done));
+            _paused = true;
+        }
+        public int GetParticles(Particle[] particles) => GetParticles(particles, particles?.Length ?? 0);
+        public int GetParticles(Particle[] particles, int size)
+        {
+            if (particles == null) return 0;
+            int n = Math.Min(Math.Min(size, particles.Length), _n);
+            for (int i = 0; i < n; i++)
+            {
+                ref var q = ref _p[i];
+                particles[i] = new Particle
+                {
+                    position = q.Pos, velocity = q.Vel, remainingLifetime = q.Life - q.Age, startLifetime = q.Life,
+                    startColor = q.Col0, startSize = q.Size0.x, startSize3D = q.Size0, rotation = (q.Rot0 + q.RotZ) * Mathf.Rad2Deg,
+                    randomSeed = (uint)(q.R0 * uint.MaxValue),
+                };
+            }
+            return n;
+        }
+        public void SetParticles(Particle[] particles) => SetParticles(particles, particles?.Length ?? 0);
+        public void SetParticles(Particle[] particles, int size)
+        {
+            if (particles == null) { _n = 0; return; }
+            int n = Math.Min(size, particles.Length);
+            Ensure(n);
+            for (int i = 0; i < n; i++)
+            {
+                var src = particles[i];
+                float life = Math.Max(1e-4f, src.startLifetime);
+                _p[i] = new Live
+                {
+                    Pos = src.position, Vel = src.velocity, Life = life, Age = Math.Clamp(life - src.remainingLifetime, 0f, life),
+                    Col0 = src.startColor, Size0 = src.startSize3D == Vector3.zero ? new Vector3(src.startSize, src.startSize, src.startSize) : src.startSize3D,
+                    Rot0 = src.rotation * Mathf.Deg2Rad, R0 = 0.5f, R1 = 0.5f,
+                };
+            }
+            _n = n;
+        }
         public void TriggerSubEmitter(int subEmitterIndex) { }
 
         IEnumerable<ParticleSystem> Children()
@@ -218,39 +288,306 @@ namespace CosmicShore.Engine
             foreach (var c in GetComponentsInChildren<ParticleSystem>(true)) if (!ReferenceEquals(c, this)) yield return c;
         }
 
-        void Awake() { if (s.playOnAwake) Play(false); }
+        // ParticleSystem is not a MonoBehaviour, so no Awake/Update reach it: the game loop ticks every
+        // live system (GameLoop, after the animators). A system that was not ticked last frame has
+        // just become active - Unity's OnEnable - and plays when playOnAwake; one that went inactive
+        // lost its particles.
+        static readonly List<ParticleSystem> s_tick = new();
+        static int s_tickId;
+        int _lastTick = -2;
 
-        void Update()
+        /// <summary>Advances every active particle system by this frame's delta time.</summary>
+        public static void TickAll()
         {
+            s_tickId++;
+            LiveComponents<ParticleSystem>.CollectActive(s_tick);
+            foreach (var ps in s_tick)
+            {
+                try { ps.Tick(); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }
+
+        void Tick()
+        {
+            bool everTicked = _lastTick >= 0, activated = _lastTick != s_tickId - 1;
+            _lastTick = s_tickId;
+            if (activated)
+            {
+                // Back from inactive: Unity cleared it then (an explicit Play since keeps its particles).
+                if (everTicked && !_justPlayed) { _n = 0; _playing = false; }
+                if (s.playOnAwake && !_playing) Play(false);
+            }
+            _justPlayed = false;
             if (!_playing || _paused) return;
             float dt = (s.useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime) * s.simulationSpeed;
             Step(dt);
         }
 
+        bool _justPlayed;
+
+        float Rand() => (float)(_rng ??= useAutoRandomSeed ? new System.Random() : new System.Random((int)randomSeed)).NextDouble();
+
+        void Ensure(int n) { if (_p.Length < n) Array.Resize(ref _p, Math.Max(n, _p.Length * 2)); }
+
+        void Prewarm()
+        {
+            // One whole cycle already run, as Unity's prewarm (sampled at 30 Hz).
+            float d = Math.Max(0.0001f, s.duration);
+            const float step = 1f / 30f;
+            for (float t = 0; t < d; t += step) Step(step);
+        }
+
         void Step(float dt)
         {
+            if (dt <= 0f) return;
+            bool world = s.simulationSpace == ParticleSystemSimulationSpace.World;
+            // Age, move and retire.
+            var gravity = Physics.gravity * (s.gravityModifier.Evaluate(Norm(), 0.5f) * s.gravityModifierMultiplier);
+            if (!world) gravity = Quaternion.Inverse(transform.rotation) * gravity;
+            for (int i = 0; i < _n; i++)
+            {
+                ref var q = ref _p[i];
+                q.Age += dt;
+                if (q.Age >= q.Life) { _p[i] = _p[--_n]; i--; continue; }
+                float t = q.Age / q.Life;
+                q.Vel += gravity * dt;
+                if (s.limitVelocityEnabled)
+                {
+                    float lim = s.limit.Evaluate(t, q.R0), sp = q.Vel.magnitude;
+                    if (sp > lim && sp > 1e-6f) q.Vel = Vector3.Lerp(q.Vel, q.Vel * (lim / sp), s.dampen);
+                }
+                var v = q.Vel;
+                if (s.velocityEnabled)
+                {
+                    var extra = new Vector3(s.velX.Evaluate(t, q.R1), s.velY.Evaluate(t, q.R1), s.velZ.Evaluate(t, q.R1));
+                    if (s.velSpace != s.simulationSpace)
+                        extra = world ? transform.TransformDirection(extra) : transform.InverseTransformDirection(extra);
+                    v = (v + extra) * s.speedModifier.Evaluate(t, q.R1);
+                }
+                q.Pos += v * dt;
+                if (s.rotationOverLifetimeEnabled) q.RotZ += s.rotationZ.Evaluate(t, q.R1) * dt;
+            }
+
+            if (_delayLeft > 0f) { _delayLeft -= dt; if (_delayLeft > 0f) { CheckFinished(); return; } }
+            float prev = _time;
             _time += dt;
-            float life = Math.Max(0.0001f, s.startLifetime.Evaluate(0f, 0.5f));
-            _count = Math.Max(0f, _count - _count * Math.Min(1f, dt / life));
             if (_emitting && s.emissionEnabled)
             {
-                _emitAccumulator += s.rateOverTime.Evaluate(Math.Clamp(_time / Math.Max(0.0001f, s.duration), 0f, 1f), 0.5f) * dt;
-                float whole = MathF.Floor(_emitAccumulator);
-                _emitAccumulator -= whole;
-                _count = Math.Min(s.maxParticles, _count + whole);
+                float rate = s.rateOverTime.Evaluate(Norm(), Rand());
+                _emitAccumulator += rate * dt;
+                // Rate over distance: what the emitter travelled in world space this step.
+                var here = transform.position;
+                if (_hasLastPos && (s.rateOverDistance.constantMax > 0f || s.rateOverDistance.mode != ParticleSystemCurveMode.Constant))
+                    _distanceAccumulator += (here - _lastEmitterPos).magnitude * s.rateOverDistance.Evaluate(Norm(), Rand());
+                _lastEmitterPos = here; _hasLastPos = true;
+                int whole = (int)MathF.Floor(_emitAccumulator) + (int)MathF.Floor(_distanceAccumulator);
+                _emitAccumulator -= MathF.Floor(_emitAccumulator);
+                _distanceAccumulator -= MathF.Floor(_distanceAccumulator);
+                for (int i = 0; i < whole; i++) Spawn(null);
+                Bursts(prev, _time);
             }
             if (_time >= s.duration)
             {
-                if (s.loop) _time %= Math.Max(0.0001f, s.duration);
+                if (s.loop) { _time %= Math.Max(0.0001f, s.duration); _burstCyclesDone.Clear(); }
                 else _emitting = false;
             }
-            if (!_emitting && _count < 0.5f) Finish();
+            CheckFinished();
+        }
+
+        float Norm() => Math.Clamp(_time / Math.Max(0.0001f, s.duration), 0f, 1f);
+
+        void Bursts(float from, float to)
+        {
+            while (_burstCyclesDone.Count < s.bursts.Count) _burstCyclesDone.Add(0);
+            for (int b = 0; b < s.bursts.Count; b++)
+            {
+                var burst = s.bursts[b];
+                int cycles = burst.cycleCount <= 0 ? int.MaxValue : burst.cycleCount;
+                while (_burstCyclesDone[b] < cycles)
+                {
+                    float at = burst.time + _burstCyclesDone[b] * Math.Max(0.0001f, burst.repeatInterval);
+                    if (at > to || at >= s.duration) break;
+                    _burstCyclesDone[b]++;
+                    if (at < from && from > 0f) continue; // already passed before this step (only from the start of a cycle)
+                    if (Rand() > burst.probability) continue;
+                    int count = (int)MathF.Round(burst.count.Evaluate(Norm(), Rand()));
+                    for (int i = 0; i < count; i++) Spawn(null);
+                }
+            }
+        }
+
+        void CheckFinished() { if (!_emitting && _n == 0 && _delayLeft <= 0f) Finish(); }
+
+        void Spawn(EmitParams? param)
+        {
+            if (_n >= s.maxParticles) return;
+            Ensure(_n + 1);
+            float t = Norm();
+            var (pos, dir) = s.shapeEnabled ? ShapePoint() : (Vector3.zero, Vector3.forward);
+            float speed = s.startSpeed.Evaluate(t, Rand());
+            var vel = dir * speed;
+            bool world = s.simulationSpace == ParticleSystemSimulationSpace.World;
+            if (world)
+            {
+                var scale = s.scalingMode switch
+                {
+                    ParticleSystemScalingMode.Hierarchy => transform.lossyScale,
+                    ParticleSystemScalingMode.Local => transform.localScale,
+                    _ => Vector3.one,
+                };
+                pos = transform.position + transform.rotation * Vector3.Scale(pos, scale);
+                vel = transform.rotation * vel;
+            }
+            float r = Rand();
+            var size = s.startSize3D
+                ? new Vector3(s.startSizeX.Evaluate(t, r), s.startSizeY.Evaluate(t, r), s.startSizeZ.Evaluate(t, r))
+                : Vector3.one * s.startSize.Evaluate(t, r);
+            var live = new Live
+            {
+                Pos = pos, Vel = vel, Size0 = size,
+                Life = Math.Max(1e-4f, s.startLifetime.Evaluate(t, Rand())),
+                Rot0 = s.startRotation.Evaluate(t, Rand()),
+                Col0 = s.startColor.Evaluate(t, Rand()),
+                R0 = Rand(), R1 = Rand(),
+            };
+            if (param is { } e)
+            {
+                if (e.applyShapeToPosition) live.Pos += e.position; else if (e.position != Vector3.zero) live.Pos = e.position;
+                if (e.velocity != Vector3.zero) live.Vel = e.velocity;
+                if (e.startLifetime > 0f) live.Life = e.startLifetime;
+                if (e.startSize > 0f) live.Size0 = Vector3.one * e.startSize;
+                if (e.startColor.a != 0 || e.startColor.r != 0 || e.startColor.g != 0 || e.startColor.b != 0) live.Col0 = e.startColor;
+            }
+            _p[_n++] = live;
+        }
+
+        /// <summary>A birth point and direction in the emitter's local space, from the shape module.</summary>
+        (Vector3 pos, Vector3 dir) ShapePoint()
+        {
+            Vector3 pos, dir;
+            float radius = s.radius, thick = Math.Clamp(s.radiusThickness, 0f, 1f);
+            float arc = s.arc * Mathf.Deg2Rad;
+            Vector3 RandomUnit()
+            {
+                float z = Rand() * 2f - 1f, a = Rand() * MathF.PI * 2f, rr = MathF.Sqrt(Math.Max(0f, 1f - z * z));
+                return new Vector3(rr * MathF.Cos(a), rr * MathF.Sin(a), z);
+            }
+            float Shell(float cubeRoot) => radius * (1f - thick * (1f - cubeRoot));
+            switch (s.shapeType)
+            {
+                case ParticleSystemShapeType.Sphere:
+                    dir = RandomUnit(); pos = dir * Shell(MathF.Cbrt(Rand())); break;
+                case ParticleSystemShapeType.Hemisphere:
+                    dir = RandomUnit(); if (dir.z < 0) dir.z = -dir.z; pos = dir * Shell(MathF.Cbrt(Rand())); break;
+                case ParticleSystemShapeType.Cone:
+                case ParticleSystemShapeType.ConeVolume:
+                {
+                    float a = Rand() * arc, rr = Shell(MathF.Sqrt(Rand())) / Math.Max(radius, 1e-6f);
+                    var ring = new Vector3(MathF.Cos(a), MathF.Sin(a), 0f);
+                    float angle = Math.Clamp(s.angle, 0f, 90f) * Mathf.Deg2Rad;
+                    dir = new Vector3(ring.x * rr * MathF.Sin(angle), ring.y * rr * MathF.Sin(angle), MathF.Cos(angle)).normalized;
+                    pos = ring * rr * radius;
+                    if (s.shapeType == ParticleSystemShapeType.ConeVolume) pos += dir * (Rand() * s.length);
+                    break;
+                }
+                case ParticleSystemShapeType.Box:
+                case ParticleSystemShapeType.BoxShell:
+                case ParticleSystemShapeType.BoxEdge:
+                    pos = new Vector3(Rand() - 0.5f, Rand() - 0.5f, Rand() - 0.5f); dir = Vector3.forward; break;
+                case ParticleSystemShapeType.Circle:
+                case ParticleSystemShapeType.Donut:
+                {
+                    float a = Rand() * arc;
+                    dir = new Vector3(MathF.Cos(a), MathF.Sin(a), 0f);
+                    pos = dir * Shell(MathF.Sqrt(Rand()));
+                    break;
+                }
+                case ParticleSystemShapeType.SingleSidedEdge:
+                    pos = new Vector3((Rand() * 2f - 1f) * radius, 0f, 0f); dir = Vector3.up; break;
+                case ParticleSystemShapeType.Rectangle:
+                    pos = new Vector3(Rand() - 0.5f, Rand() - 0.5f, 0f); dir = Vector3.forward; break;
+                case ParticleSystemShapeType.Mesh:
+                case ParticleSystemShapeType.MeshRenderer:
+                case ParticleSystemShapeType.SkinnedMeshRenderer:
+                {
+                    var mesh = s.shapeMesh ?? s.shapeMeshRenderer?.GetComponent<MeshFilter>()?.sharedMesh ?? s.shapeSkinnedMeshRenderer?.sharedMesh;
+                    var verts = mesh?.vertices;
+                    if (verts is { Length: > 0 })
+                    {
+                        int k = Math.Min(verts.Length - 1, (int)(Rand() * verts.Length));
+                        pos = verts[k];
+                        var normals = mesh.normals;
+                        dir = normals is { Length: > 0 } && k < normals.Length ? normals[k] : pos.normalized;
+                    }
+                    else { dir = RandomUnit(); pos = Vector3.zero; }
+                    break;
+                }
+                default:
+                    dir = RandomUnit(); pos = Vector3.zero; break;
+            }
+            if (s.randomDirectionAmount > 0f) dir = Vector3.Slerp(dir, RandomUnit(), s.randomDirectionAmount);
+            if (s.sphericalDirectionAmount > 0f && pos.sqrMagnitude > 1e-10f) dir = Vector3.Slerp(dir, pos.normalized, s.sphericalDirectionAmount);
+            var rot = Quaternion.Euler(s.shapeRotation);
+            pos = rot * Vector3.Scale(pos, s.shapeScale) + s.shapePosition;
+            dir = (rot * dir).normalized;
+            return (pos, dir);
+        }
+
+        /// <summary>One particle as drawn: world position, size (x, y), colour and rotation (radians) after the over-lifetime modules.</summary>
+        public struct RenderParticle
+        {
+            public Vector3 Position, Velocity;
+            public Vector2 Size;
+            public Color Color;
+            public float Rotation;
+        }
+
+        /// <summary>
+        /// Port hook for the renderer: the live particles in WORLD space with colour, size and
+        /// rotation over lifetime applied. Returns the count written (grows <paramref name="buffer"/>).
+        /// </summary>
+        public int GetRenderParticles(ref RenderParticle[] buffer)
+        {
+            if (buffer == null || buffer.Length < _n) buffer = new RenderParticle[Math.Max(_n, 16)];
+            bool world = s.simulationSpace == ParticleSystemSimulationSpace.World;
+            var scale = s.scalingMode switch
+            {
+                ParticleSystemScalingMode.Hierarchy => transform.lossyScale,
+                ParticleSystemScalingMode.Local => transform.localScale,
+                _ => Vector3.one,
+            };
+            var rotation = transform.rotation;
+            var origin = transform.position;
+            float sizeScale = s.scalingMode == ParticleSystemScalingMode.Shape ? 1f : Math.Abs(scale.x);
+            for (int i = 0; i < _n; i++)
+            {
+                ref var q = ref _p[i];
+                float t = q.Age / q.Life;
+                var col = q.Col0;
+                if (s.colorOverLifetimeEnabled) col *= s.colorOverLifetime.Evaluate(t, q.R1);
+                var size = new Vector2(q.Size0.x, q.Size0.y);
+                if (s.sizeOverLifetimeEnabled)
+                {
+                    if (s.sizeSeparateAxes) size = new Vector2(size.x * s.sizeX.Evaluate(t, q.R1), size.y * s.sizeY.Evaluate(t, q.R1));
+                    else size *= s.sizeOverLifetime.Evaluate(t, q.R1) * s.sizeMultiplier;
+                }
+                buffer[i] = new RenderParticle
+                {
+                    Position = world ? q.Pos : origin + rotation * Vector3.Scale(q.Pos, scale),
+                    Velocity = world ? q.Vel : rotation * q.Vel,
+                    Size = world ? size : size * sizeScale,
+                    Color = col,
+                    Rotation = q.Rot0 + q.RotZ,
+                };
+            }
+            return _n;
         }
 
         void Finish()
         {
             if (!_playing) return;
-            _playing = false; _count = 0;
+            _playing = false; _n = 0;
             switch (s.stopAction)
             {
                 case ParticleSystemStopAction.Disable: gameObject.SetActive(false); break;

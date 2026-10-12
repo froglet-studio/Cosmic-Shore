@@ -764,40 +764,40 @@
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Bitmap-Custom-Atlas.shader",
       "guid": "48bb5f55d8670e349b6e614913f9d910",
       "name": "TextMeshPro/Bitmap Custom Atlas",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Bitmap-Mobile.shader",
       "guid": "1e3b057af24249748ff873be7fafee47",
       "name": "TextMeshPro/Mobile/Bitmap",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Bitmap.shader",
       "guid": "128e987d567d4e2c824d754223b3f3b0",
       "name": "TextMeshPro/Bitmap",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF Overlay.shader",
       "guid": "dd89cf5b9246416f84610a006f916af7",
       "name": "TextMeshPro/Distance Field Overlay",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF SSD.shader",
       "guid": "14eb328de4b8eb245bb7cea29e4ac00b",
       "name": "TextMeshPro/Distance Field SSD",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
@@ -822,56 +822,56 @@
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile Masking.shader",
       "guid": "bc1ede39bf3643ee8e493720e4259791",
       "name": "TextMeshPro/Mobile/Distance Field - Masking",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile Overlay.shader",
       "guid": "a02a7d8c237544f1962732b55a9aebf1",
       "name": "TextMeshPro/Mobile/Distance Field Overlay",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile SSD.shader",
       "guid": "c8d12adcee749c344b8117cf7c7eb912",
       "name": "TextMeshPro/Mobile/Distance Field SSD",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile-2-Pass.shader",
       "guid": "0178fcb869bafef4690d177d31d17db8",
       "name": "TextMeshPro/Mobile/Distance Field - 2 Pass",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Mobile.shader",
       "guid": "fe393ace9b354375a9cb14cdbbc28be4",
       "name": "TextMeshPro/Mobile/Distance Field",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Surface-Mobile.shader",
       "guid": "85187c2149c549c5b33f0cdb02836b17",
       "name": "TextMeshPro/Mobile/Distance Field (Surface)",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF-Surface.shader",
       "guid": "f7ada0af4f174f0694ca6a487b8f543d",
       "name": "TextMeshPro/Distance Field (Surface)",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
@@ -894,16 +894,16 @@
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_SDF.shader",
       "guid": "68e6db2ebdc24f95958faec2be5558d6",
       "name": "TextMeshPro/Distance Field",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
       "path": "Assets/Unity Assests/TextMesh Pro/Shaders/TMP_Sprite.shader",
       "guid": "cf81c85f95fe47e1a27f6ae460cf182c",
       "name": "TextMeshPro/Sprite",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)",
       "approximations": []
     },
     {
@@ -1035,14 +1035,6 @@
       "approximations": []
     },
     {
-      "path": "Assets/_Graphics/Materials/Graphs/FoldGatePortal.shader",
-      "guid": "4bbb3a527bac48b9aa0f4efe6de383f3",
-      "name": "CosmicShore/FoldGatePortal",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
-      "approximations": []
-    },
-    {
       "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader",
       "guid": "0d2382aa91a61b6220c03dc1763fd26f",
       "name": "Shader Graphs/ForcefieldCrackle",
@@ -1054,8 +1046,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader",
       "guid": "e66cc995d379448caf38b18d87140dde",
       "name": "Shader Graphs/ForcefieldCrackleCapsule",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
@@ -1140,8 +1132,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader",
       "guid": "c451cf0afd834429a6f4e6652dad5b50",
       "name": "Shader Graphs/ProjectileChargeField",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
@@ -1301,6 +1293,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
+      "guid": "1b0aa366a170fb99b7d63b228298811a",
+      "name": "CosmicShore/Wormhole",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
       "guid": "4a2897f9dfc7e5645aee8db7ca02c177",
       "name": "Shader Graphs/CreatureTextureGraph",
@@ -1416,8 +1416,34 @@
       "path": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
       "guid": "a8f4e2b6c9d1357024681acf3b5d7e90",
       "name": "CosmicShore/HyperSeaSkybox",
+      "route": "own",
+      "why": "skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs)",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
+      "guid": "fea45e80b3e94b3e34515f9ff6446e87",
+      "name": "Custom/OmniChargeEdgesShader",
       "route": "missing",
       "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
+      "guid": "554d96e9b67505208a3fbf0acb165350",
+      "name": "Custom/OmniCrystalFresnelShader",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": [
+        "CrystalMorph: the mesh\u0027s TEXCOORD2/3 morph targets are not in the graph template; drawn unmorphed"
+      ]
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
+      "guid": "b55e562cd5045859607550ce7ba8267f",
+      "name": "Custom/OmniShepardFresnelShader",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
@@ -1432,8 +1458,8 @@
       "path": "Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader",
       "guid": "db3a7d241b308d845a0133c22554acad",
       "name": "Custom/SpreadFresnelShader",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
@@ -1456,16 +1482,16 @@
       "path": "Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader",
       "guid": "20424d64830139e4d856f9eff8565409",
       "name": "Custom/ViewAngleBasedColorBlendHDR",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader",
       "guid": "3ed4773a603820f42915cc01f4dd4f76",
       "name": "Custom/CircularGradientFresnel",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
@@ -1528,8 +1554,8 @@
       "path": "Assets/_Scripts/Game/Vessel/Animation/JetShader.shader",
       "guid": "8efe19062b480f445801d12c6fca1ded",
       "name": "Custom/JetShader",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     }
   ]

@@ -270,5 +270,60 @@ namespace CosmicShore.Launcher.Tests
         [InlineData("-x", false)]
         [InlineData("ok/", false)]
         public void Branch_names(string name, bool ok) => Assert.Equal(ok, SourceControl.ValidBranch(name));
+
+        /// <summary>
+        /// TOOLS > BUILD: a TOOL chat may write only cs-asset, its tests and the native-tools
+        /// registry - the Unity project and every other part of Prisma are denied.
+        /// </summary>
+        [Fact]
+        public void A_tool_chat_may_edit_only_cs_asset_its_tests_and_the_registry()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "prisma-tooldeny-" + Guid.NewGuid().ToString("N")[..8]);
+            try
+            {
+                foreach (var d in new[] { "Assets", "Port/src/CosmicShore.AssetTool", "Port/src/CosmicShore.Engine", "Port/tests/CosmicShore.AssetTool.Tests",
+                                          "Port/tests/CosmicShore.Tests", "Port/tools/froglet-tools", "Port/docs" })
+                    Directory.CreateDirectory(Path.Combine(root, d));
+                File.WriteAllText(Path.Combine(root, "Port/CLAUDE.md"), "");
+                File.WriteAllText(Path.Combine(root, "Port/tools/check_unity_isolation.py"), "");
+                var denies = ClaudeChat.ToolDenies(root).ToList();
+                Assert.Contains("Edit(Assets/**)", denies);
+                Assert.Contains("Edit(Port/src/CosmicShore.Engine/**)", denies);
+                Assert.Contains("Edit(Port/tests/CosmicShore.Tests/**)", denies);
+                Assert.Contains("Edit(Port/docs/**)", denies);
+                Assert.Contains("Edit(Port/CLAUDE.md)", denies);
+                Assert.Contains("Edit(Port/tools/check_unity_isolation.py)", denies);
+                Assert.DoesNotContain(denies, d => d.Contains("CosmicShore.AssetTool") || d.Contains("froglet-tools"));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+
+        /// <summary>The native-tools registry: a card with an entry gets RUN with its cs-asset arguments; bad entries are skipped.</summary>
+        [Fact]
+        public void The_native_tools_registry_reads_entries_and_skips_bad_ones()
+        {
+            var file = Path.Combine(Path.GetTempPath(), "prisma-native-" + Guid.NewGuid().ToString("N")[..8] + ".json");
+            try
+            {
+                File.WriteAllText(file, """
+                { "tools": [
+                  { "menu": "FrogletTools/Validation/Example", "args": ["example-audit", "--json"], "writes": false, "summary": "checks" },
+                  { "menu": "FrogletTools/Build/Writer", "args": ["writer"], "writes": true },
+                  { "menu": "", "args": ["x"] },
+                  { "menu": "FrogletTools/No/Args" }
+                ] }
+                """);
+                var list = LauncherApp.LoadNativeTools(file);
+                Assert.Equal(2, list.Count);
+                Assert.Equal(new[] { "example-audit", "--json" }, list[0].Args);
+                Assert.False(list[0].Writes);
+                Assert.True(list[1].Writes);
+                Assert.Empty(LauncherApp.LoadNativeTools(file + ".missing"));
+                // The registry the repository ships parses.
+                var shipped = Path.Combine(AppContext.BaseDirectory, "../../../../../tools/froglet-tools/tools.json");
+                if (File.Exists(shipped)) LauncherApp.LoadNativeTools(shipped);
+            }
+            finally { File.Delete(file); }
+        }
     }
 }

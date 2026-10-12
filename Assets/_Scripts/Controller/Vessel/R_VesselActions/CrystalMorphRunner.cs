@@ -153,11 +153,10 @@ namespace CosmicShore.Gameplay
             {
                 var model = models[i]?.model;
                 if (model == null) continue;
-                if (!model.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) continue;
-                if (!model.TryGetComponent<MeshRenderer>(out var source)) continue;
+                if (!TryGetDrawn(model, out var mesh, out var source)) continue;
 
-                cage ??= filter.sharedMesh;
-                bool isBody = filter.sharedMesh == cage;
+                cage ??= mesh;
+                bool isBody = mesh == cage;
 
                 var copy = new GameObject(isBody ? $"Body{i}" : $"Overlay{i}");
                 copy.transform.SetParent(transform, false);
@@ -166,7 +165,7 @@ namespace CosmicShore.Gameplay
                 copy.transform.localScale = model.transform.localScale;
                 copy.layer = model.layer;
 
-                copy.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+                copy.AddComponent<MeshFilter>().sharedMesh = mesh;
                 var renderer = copy.AddComponent<MeshRenderer>();
                 renderer.sharedMaterials = source.sharedMaterials;
                 renderer.shadowCastingMode = source.shadowCastingMode;
@@ -180,7 +179,7 @@ namespace CosmicShore.Gameplay
                 {
                     CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                         $"[CrystalMorph] {Owner}: '{crystal.name}' model {i} draws " +
-                        $"'{filter.sharedMesh.name}', not the cage '{cage.name}' — an overlay; it " +
+                        $"'{mesh.name}', not the cage '{cage.name}' — an overlay; it " +
                         "fades rather than folds.");
                     _overlays.Add(renderer);
                     _overlayBlocks.Add(block);
@@ -196,6 +195,32 @@ namespace CosmicShore.Gameplay
                 _bodyBlocks.Add(block);
             }
             return _body.Count > 0;
+        }
+
+        /// <summary>
+        /// The mesh a crystal model draws and the renderer drawing it. A SKINNED body - the omni crystal's,
+        /// whose rhombi flip on bones (<see cref="CrystalFlipWave"/>) - is read as the mesh it was skinned
+        /// FROM, at rest: that is the cage every morph mesh is built against, and a plate caught mid-flip
+        /// settles onto it as the fold begins (the same choice <see cref="CrystalHullFusion"/> makes).
+        /// </summary>
+        static bool TryGetDrawn(GameObject model, out Mesh mesh, out Renderer source)
+        {
+            if (model.TryGetComponent<MeshFilter>(out var filter) && filter.sharedMesh &&
+                model.TryGetComponent<MeshRenderer>(out var meshRenderer))
+            {
+                mesh = filter.sharedMesh;
+                source = meshRenderer;
+                return true;
+            }
+            if (model.TryGetComponent<SkinnedMeshRenderer>(out var skinned) && skinned.sharedMesh)
+            {
+                mesh = RhombusSkinBaker.SourceOf(skinned.sharedMesh);
+                source = skinned;
+                return true;
+            }
+            mesh = null;
+            source = null;
+            return false;
         }
 
         static Color ReadColour(MaterialPropertyBlock block, Material mat, int id, Color fallback)

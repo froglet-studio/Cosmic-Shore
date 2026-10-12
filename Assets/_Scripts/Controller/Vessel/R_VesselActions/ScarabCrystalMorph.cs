@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
             if (!morph.Adopt(crystal))
             {
                 CSDebug.LogWarning($"[ScarabCrystalMorph] '{crystal.name}' exposed no drawable body " +
-                                   "(a model with a MeshFilter AND a MeshRenderer), so there is " +
+                                   "(a model with a MeshFilter and MeshRenderer, or a SkinnedMeshRenderer), so there is " +
                                    "nothing to morph — the ball falls back to its birth bloom.");
                 Destroy(go);
                 return null;

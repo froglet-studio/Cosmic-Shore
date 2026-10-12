@@ -181,6 +181,14 @@ namespace CosmicShore.Content
             return null;
         }
 
+        /// <summary>Indexes an asset written after the scan (a new file and its .meta), so it resolves by guid and path.</summary>
+        public void Register(string assetPath, string guid)
+        {
+            var full = System.IO.Path.GetFullPath(assetPath);
+            _guidToPath[guid] = full;
+            _pathToGuid[full] = guid;
+        }
+
         public string PathOf(string guid)
             => guid != null && _guidToPath.TryGetValue(guid, out var p) ? p : null;
 

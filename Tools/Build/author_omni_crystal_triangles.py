@@ -68,6 +68,19 @@ tone materials too; see the materials block below):
 
 If the triangle shells ever render nothing or sit rotated against the body,
 the mesh asset's axis conversion is the one thing to check.
+
+ 3. THE BODY PREFAB. Time owns the RHOMBI, and its signature is the Time crystal's
+    flip wave: the 30 rhombi turn 180 degrees about a diagonal, ring by ring, from
+    one vertex to the opposite one (Docs/TIME_CRYSTAL.md). A plate can only turn on a
+    bone, so the body is `OmniCrystalBody.prefab` - a FLAT COPY of the shared
+    `TrucatedOctahedron.prefab` (which Mine, MazeCrystal and OldCrystalTime keep) with
+    the same internal ids, its MeshRenderer re-classed in place as a
+    SkinnedMeshRenderer and its MeshFilter dropped. It draws the same FBX mesh; at
+    runtime `CrystalFlipWave` (on the Crystal root, `skinRhombi` on) has
+    `RhombusSkinBaker` give the rhombi bones and flips them on the Time crystal's own
+    profile. Because the ids match, slot 0's overrides and stripped stubs carry over
+    with only the source guid changed. The root's CrystalFlipWave lives in the part of
+    Crystal.prefab this script preserves, and --check asserts it is there.
 """
 
 import argparse
@@ -162,6 +175,10 @@ EDGE_ARCS_GUID = "ed80837ca1fd4d9ebeb185fec643a226"      # CrystalEdgeArcs.cs
 ACCENT_TINT_GUID = "599565cac0fff6c38bbe40a3fcc53207"    # CrystalAccentTint.cs
 PENTAGON_PLATE_CORNERS = 10                              # a pentagonal prism: 2 x 5 corners
 TRUNC_OCTA_PREFAB = "Assets/_Prefabs/Environment/TrucatedOctahedron.prefab"
+BODY_PREFAB = "Assets/_Prefabs/Environment/OmniCrystalBody.prefab"
+BODY_PREFAB_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniCrystalBody.prefab").hexdigest()
+FLIP_WAVE_GUID = "c1b251f1ac8f4a15b1bc5681c1d6bcc5"          # CrystalFlipWave.cs
+FLIP_PROFILE_GUID = "7ae6c13f991929b01f383003cb5d9277"       # TimeCrystalFlipWaveProfile.asset
 # The shader's whole property set: (name, kind, source) - source is the material it is copied from.
 CHARGE_PROPS = [("_ArcCoreColor", "c", CHARGE_DONOR), ("_ArcDuty", "f", CHARGE_DONOR),
                 ("_ArcIntensity", "f", CHARGE_DONOR), ("_ArcJitter", "f", CHARGE_DONOR),
@@ -680,6 +697,146 @@ MeshFilter:
             + behaviour(CHARGE_TINT, ACCENT_TINT_GUID, "  crystal: {fileID: 0}\n"))
 
 
+def body_prefab_text():
+    """OmniCrystalBody.prefab: TrucatedOctahedron's GameObject, Transform and FadeIn under the SAME ids,
+    with its MeshRenderer re-classed in place as a SkinnedMeshRenderer (id kept, so slot 0's material
+    overrides still land) and no MeshFilter. No bones are authored: RhombusSkinBaker adds them at runtime,
+    and until it does the renderer draws the mesh unskinned - the same body, at rest. The AABB is the
+    mesh's own box widened by a rhombus's reach, so a turning plate is never culled."""
+    octa = open(os.path.join(ROOT, TRUNC_OCTA_PREFAB)).read()
+    fade = re.search(r"^--- !u!114 &2346576036425758005\n.*\Z", octa, re.S | re.M)
+    if not fade or FADE_IN_GUID not in fade.group(0):
+        raise SystemExit(f"{TRUNC_OCTA_PREFAB}: its FadeIn is no longer the last document - re-read the donor")
+    verts, _ = _load(OMNI_FBX)
+    half = max(max(abs(c) for c in v) for v in verts)
+    extent = round(half * 1.25, 4)   # + a rhombus's reach (0.31 of the shell radius), rounded up
+    return f"""%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &{OCTA_GO}
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  serializedVersion: 6
+  m_Component:
+  - component: {{fileID: {OCTA_TR}}}
+  - component: {{fileID: {OCTA_MR}}}
+  - component: {{fileID: 2346576036425758005}}
+  m_Layer: 0
+  m_Name: OmniCrystalBody
+  m_TagString: Untagged
+  m_Icon: {{fileID: 0}}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &{OCTA_TR}
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {OCTA_GO}}}
+  serializedVersion: 2
+  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
+  m_LocalPosition: {{x: 0, y: 0, z: 0}}
+  m_LocalScale: {{x: 1, y: 1, z: 1}}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {{fileID: 0}}
+  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
+--- !u!137 &{OCTA_MR}
+SkinnedMeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {OCTA_GO}}}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 3
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {{fileID: 2100000, guid: {MAT_BODY_EXPLODING}, type: 2}}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {{fileID: 0}}
+  m_ProbeAnchor: {{fileID: 0}}
+  m_LightProbeVolumeOverride: {{fileID: 0}}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {{fileID: 0}}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  serializedVersion: 2
+  m_Quality: 0
+  m_UpdateWhenOffscreen: 0
+  m_SkinnedMotionVectors: 1
+  m_Mesh: {body_mesh_ref()}
+  m_Bones: []
+  m_BlendShapeWeights: []
+  m_RootBone: {{fileID: 0}}
+  m_AABB:
+    m_Center: {{x: 0, y: 0, z: 0}}
+    m_Extent: {{x: {extent}, y: {extent}, z: {extent}}}
+  m_DirtyAABB: 0
+""" + fade.group(0)
+
+
+BODY_META = f"""fileFormatVersion: 2
+guid: {BODY_PREFAB_GUID}
+PrefabImporter:
+  externalObjects: {{}}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
+FLIP_WAVE_DOC = re.compile(r"^--- !u!114 &(-?\d+)\nMonoBehaviour:\n(?:  .*\n)*?  m_Script: \{fileID: 11500000, guid: "
+                           + FLIP_WAVE_GUID + r", type: 3\}\n((?:  .*\n)*)", re.M)
+
+
+def check_flip_wave(crystal_text):
+    """The root's CrystalFlipWave sits in the part of Crystal.prefab this script preserves; hold it to the
+    body it has to drive."""
+    m = FLIP_WAVE_DOC.search(crystal_text)
+    problems = []
+    if not m:
+        return [f"{CRYSTAL_PREFAB}: the root has no CrystalFlipWave - the rhombi will hold still"]
+    body = m.group(2)
+    if f"  model: {{fileID: {SLOTS[0][1]}}}\n" not in body:
+        problems.append("CrystalFlipWave.model is not the body's stripped Transform")
+    if "  skinRhombi: 1\n" not in body:
+        problems.append("CrystalFlipWave.skinRhombi is off - the body's rhombi have no bones to turn")
+    if f"guid: {FLIP_PROFILE_GUID}" not in body:
+        problems.append("CrystalFlipWave.profile is not TimeCrystalFlipWaveProfile")
+    if f"  - component: {{fileID: {m.group(1)}}}\n" not in crystal_text:
+        problems.append("CrystalFlipWave is not in the root's m_Component list")
+    return [f"{CRYSTAL_PREFAB}: {p}" for p in problems]
+
+
 CHARGE_META = f"""fileFormatVersion: 2
 guid: {CHARGE_PREFAB_GUID}
 PrefabImporter:
@@ -756,7 +913,7 @@ def crystal_children_text():
     out = []
     for i, (inst, stripped_tr, stripped_go, name) in enumerate(SLOTS):
         body = i == 0
-        guid = TRUNC_OCTA_GUID if body else SHELL_PREFAB_GUID
+        guid = BODY_PREFAB_GUID if body else SHELL_PREFAB_GUID
         t_go, t_tr, t_mr = ((OCTA_GO, OCTA_TR, OCTA_MR) if body
                             else (SHELL_GO, SHELL_TR, SHELL_MR))
         mat = SLOT_MATERIALS[i][0]
@@ -854,6 +1011,8 @@ def main():
         SHELL_PREFAB + ".meta": SHELL_META,
         CHARGE_PREFAB: charge_prefab_text(),
         CHARGE_PREFAB + ".meta": CHARGE_META,
+        BODY_PREFAB: body_prefab_text(),
+        BODY_PREFAB + ".meta": BODY_META,
     }
     for path, text in material_texts().items():
         want[path] = text
@@ -879,6 +1038,10 @@ def main():
     if failures:
         raise SystemExit("author_omni_crystal_triangles: " + ", ".join(failures) +
                          " differ from what this script authors. Run it without --check.")
+    broken = check_flip_wave(want[CRYSTAL_PREFAB])
+    if broken:
+        raise SystemExit("author_omni_crystal_triangles: " + "; ".join(broken))
+    print("  ok      Crystal.prefab root carries CrystalFlipWave (skinRhombi, Time profile)")
 
 
 if __name__ == "__main__":

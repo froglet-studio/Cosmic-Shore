@@ -161,4 +161,38 @@ public class AnimatorPlaybackTests : System.IDisposable
         _loop.Run(2, 1f / 60f);
         Assert.Equal(1f, part.transform.localPosition.x, 3);    // 0.5 * 0 + 0.5 * rest
     }
+
+    /// <summary>
+    /// AnimationClip.SampleAnimation (the model viewer's takes): every binding the hierarchy has is
+    /// written at the time asked, a child by its path, rotation written a component at a time comes
+    /// out unit length, and a binding with no target is skipped rather than thrown on.
+    /// </summary>
+    [Fact]
+    public void SampleAnimation_PosesTheHierarchyAtTheTimeAsked()
+    {
+        var root = new GameObject("rig");
+        var bone = new GameObject("bone");
+        bone.transform.SetParent(root.transform, false);
+        var clip = new AnimationClip { name = "take", length = 2f };
+        void Bind(string path, string attr, float a, float b) => clip.Bindings.Add(new ClipBinding
+        {
+            Path = path, ClassId = 4, Attribute = attr,
+            Curve = new AnimationCurve(new Keyframe(0f, a), new Keyframe(2f, b)),
+        });
+        Bind("bone", "m_LocalPosition.y", 0f, 4f);
+        // A quarter turn about Z, a component at a time (sampled halfway, the raw sum is not unit length).
+        Bind("bone", "m_LocalRotation.z", 0f, 0.7071068f);
+        Bind("bone", "m_LocalRotation.w", 1f, 0.7071068f);
+        Bind("missing/child", "m_LocalPosition.x", 0f, 1f);
+
+        clip.SampleAnimation(root, 1f);
+        Assert.Equal(2f, bone.transform.localPosition.y, 4);
+        var q = bone.transform.localRotation;
+        Assert.Equal(1f, System.MathF.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w), 4);
+        Assert.True(q.z > 0.3f && q.z < 0.45f, $"halfway is about 22.5 degrees, z = {q.z}");
+
+        clip.SampleAnimation(root, 2f);
+        Assert.Equal(4f, bone.transform.localPosition.y, 4);
+        Assert.Equal(0.7071068f, bone.transform.localRotation.z, 4);
+    }
 }

@@ -162,6 +162,25 @@ namespace CosmicShore.Launcher
             return true;
         }
 
+        /// <summary>The workspace's checked-out commit (full sha), or null without a workspace.</summary>
+        public string? HeadSha()
+        {
+            if (!Exists || _tools.Git == null) return null;
+            var o = ProcessRunner.Capture(_tools.Git, "-C", Dir, "rev-parse", "HEAD");
+            return string.IsNullOrWhiteSpace(o) ? null : o.Trim();
+        }
+
+        /// <summary>The tip of <paramref name="branch"/> on GitHub (no fetch: ls-remote), or null when it cannot be read.</summary>
+        public async Task<string?> RemoteTip(string branch, CancellationToken ct)
+        {
+            if (_tools.Git == null) return null;
+            var r = await ProcessRunner.Run(_tools.Git, new[] { "ls-remote", _s.RemoteUrl, "refs/heads/" + branch }, null, null, ct, GitEnv(), quiet: true);
+            if (r.ExitCode != 0) return null;
+            var line = r.StdOut.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            var sha = line?.Split('\t')[0].Trim();
+            return string.IsNullOrEmpty(sha) ? null : sha;
+        }
+
         public CommitInfo? Commit()
         {
             if (!Exists || _tools.Git == null) return null;

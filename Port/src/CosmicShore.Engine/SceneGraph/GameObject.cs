@@ -323,6 +323,8 @@ namespace CosmicShore.Engine
                 LiveComponents<Canvas>.Register(canvas);
             if (component is Animator animator)
                 LiveComponents<Animator>.Register(animator);
+            if (component is ParticleSystem particles)
+                LiveComponents<ParticleSystem>.Register(particles); // ticked by the game loop (not a MonoBehaviour)
             if (component is Rigidbody rigidbody)
                 GameLoop.Current.RegisterRigidbody(rigidbody); // E18 dynamics registry (creation order)
             if (component is MonoBehaviour mb)

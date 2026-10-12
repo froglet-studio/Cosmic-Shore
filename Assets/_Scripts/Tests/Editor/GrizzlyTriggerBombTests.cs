@@ -183,4 +183,72 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(_cfg.SelfLaunchEdgeStrength, 1f, "the edge of a blast must not throw harder than its heart");
         }
     }
+
+    /// <summary>
+    /// The bomb's spike crown (<see cref="GrizzlyBombVisual.SpikeMesh"/>): twelve cones that must
+    /// stay SEATED on the core whatever the core's shader does to it. The core's fresnel shader
+    /// pushes every vertex a world unit along its normal, so the spikes carry radial normals to
+    /// ride the same push, and their bases sit inside the core so retracting them is a scale.
+    /// </summary>
+    [TestFixture]
+    public class GrizzlyBombSpikeMeshTests
+    {
+        const float CoreRadius = 0.5f;   // Unity's sphere mesh, the core's object space
+
+        [Test]
+        public void TwelveSpikesSpreadEvenly()
+        {
+            var axes = GrizzlyBombVisual.SpikeAxes();
+            Assert.AreEqual(12, axes.Length);
+            for (int i = 0; i < axes.Length; i++)
+            {
+                Assert.AreEqual(1f, axes[i].magnitude, 1e-4f, "a spike axis must be a direction");
+                for (int j = i + 1; j < axes.Length; j++)
+                    Assert.GreaterOrEqual(Vector3.Angle(axes[i], axes[j]), 60f,
+                        "the icosahedron's nearest vertices are ~63 deg apart - two spikes this close would overlap");
+            }
+        }
+
+        [Test]
+        public void BasesHideInsideTheCoreAndTipsStandOutOfIt()
+        {
+            var mesh = GrizzlyBombVisual.SpikeMesh;
+            var verts = mesh.vertices;
+            Assert.AreEqual(12 * (GrizzlyBombVisual.SpikeSides + 1), verts.Length);
+            int tips = 0;
+            foreach (var v in verts)
+            {
+                if (Mathf.Abs(v.magnitude - GrizzlyBombVisual.SpikeTipRadius) < 1e-4f) { tips++; continue; }
+                Assert.Less(v.magnitude, CoreRadius, "a spike's base must sit inside the core, or retracting it shows a floating cone");
+            }
+            Assert.AreEqual(12, tips);
+            Assert.Greater(GrizzlyBombVisual.SpikeTipRadius, CoreRadius / 0.7f,
+                "a tip must clear the core even well retracted");
+        }
+
+        [Test]
+        public void NormalsAreRadialSoTheCorePushKeepsThemSeated()
+        {
+            var mesh = GrizzlyBombVisual.SpikeMesh;
+            var verts = mesh.vertices;
+            var normals = mesh.normals;
+            for (int i = 0; i < verts.Length; i++)
+                Assert.AreEqual(1f, Vector3.Dot(normals[i], verts[i].normalized), 1e-4f,
+                    "a cone normal would push the spike sideways off the core by the shader's _Spread");
+        }
+
+        [Test]
+        public void EveryTriangleUsesItsOwnSpike()
+        {
+            var tris = GrizzlyBombVisual.SpikeMesh.triangles;
+            int per = GrizzlyBombVisual.SpikeSides + 1;
+            Assert.AreEqual(12 * GrizzlyBombVisual.SpikeSides * 3, tris.Length);
+            for (int t = 0; t < tris.Length; t += 3)
+            {
+                int spike = tris[t] / per;
+                Assert.AreEqual(spike, tris[t + 1] / per);
+                Assert.AreEqual(spike, tris[t + 2] / per);
+            }
+        }
+    }
 }

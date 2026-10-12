@@ -295,6 +295,8 @@ namespace CosmicShore.Engine
                     if (Mathf.Abs(sa.Center.z - se.Center.z) > sa.Extents.z + se.Extents.z) continue;
                     if (solid) { NoteSolidPair(a, e); continue; }
                     if (!HasBody(a) && !HasBody(e)) continue; // static against static: no trigger messages
+                    // The Layer Collision Matrix filters trigger pairs too (Skimmers never trigger Skimmers).
+                    if (!Physics.LayersInteract(_live[a], _live[e])) continue;
                     int lo = Math.Min(a, e), hi = Math.Max(a, e);
                     _candidates.Add(((long)lo << 32) | (uint)hi);
                 }

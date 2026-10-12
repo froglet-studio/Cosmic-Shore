@@ -53,6 +53,7 @@ Transform:
   - {fileID: 4785963160405140657}
   - {fileID: 6167652258310247765}
   - {fileID: 878149464122343524}
+  - {fileID: 1044916945384916742}
   - {fileID: 530293167561801255}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -479,7 +480,7 @@ MonoBehaviour:
   _name: Butterfly
   vesselType: 13
   _nearFieldSkimmer: {fileID: 281340694002912670}
-  _farFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 92358954707176188}
   orientationHandle: {fileID: 0}
 --- !u!114 &7771659394208071225
 MonoBehaviour:
@@ -1251,6 +1252,92 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 7526780584530545883}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7700000000000003001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 9012526572693406291}
+    m_Modifications:
+    - target: {fileID: 4816621673548213744, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_Name
+      value: ButterflyCrystalSkimmer
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6468737b336e3d0b86c68a2b4fd16415, type: 3}
+--- !u!4 &1044916945384916742 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7231566422788689087, guid: 6468737b336e3d0b86c68a2b4fd16415,
+    type: 3}
+  m_PrefabInstance: {fileID: 7700000000000003001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &92358954707176188 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7751815150560592197, guid: 6468737b336e3d0b86c68a2b4fd16415,
+    type: 3}
+  m_PrefabInstance: {fileID: 7700000000000003001}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &7700000000000002001 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1958240267839501301, guid: 744c7a43f1156e7bde213ac0f51abc71,

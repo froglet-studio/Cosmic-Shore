@@ -69,6 +69,80 @@ namespace CosmicShore.Gameplay
         public Vector3? PlacementAnchor { get; set; }
 
         /// <summary>
+        /// A still vantage the camera eases INTO and holds instead of chasing the vessel: a world
+        /// position, the point it looks at, and its up. Driven only by the Thresher
+        /// (<c>ThresherExecutor</c>, <c>R_VesselActions/THRESHER.md</c>) — when its planted orbit
+        /// spins faster than a chase camera can follow without making the pilot dizzy, the camera
+        /// detaches and WATCHES the ship spin instead of riding it.
+        ///
+        /// <para>Applied at the point of use as a BLEND over the ordinary follow pose, never by
+        /// writing <see cref="_followOffset"/> or the follow target — the same reasoning as
+        /// <see cref="RearView"/>. Setting it eases in over <see cref="SpectateBlendSeconds"/>;
+        /// clearing it eases back out to the live follow pose, so neither edge is a cut. Null (the
+        /// default, and the only value any other vessel ever sees) leaves the camera exactly as
+        /// before this existed: the blend stays at 0 and no line of the follow path changes.</para>
+        /// </summary>
+        public SpectateView? Spectate
+        {
+            get => _spectate;
+            set
+            {
+                _spectate = value;
+                if (value.HasValue) _lastSpectate = value.Value;
+            }
+        }
+        private SpectateView? _spectate;
+        private SpectateView _lastSpectate;
+        private float _spectateBlend;
+        // The un-blended follow pose, kept while a blend is up so the follow path's smoothing
+        // continues from where IT left the camera, never from the vantage it was blended toward.
+        private Vector3 _followPosePosition;
+        private Quaternion _followPoseRotation;
+
+        /// <summary>Seconds to ease fully into, or back out of, a <see cref="Spectate"/> vantage.</summary>
+        public float SpectateBlendSeconds { get; set; } = 0.6f;
+
+        /// <summary>
+        /// A cap (degrees/second) on how fast the FOLLOW FRAME — the rotation the offset is laid
+        /// out in, and whose up the camera looks along — may turn toward the target's rotation.
+        /// 0 (the default, and the only value any other vessel ever sees) makes the frame the
+        /// target's rotation exactly, as before this existed.
+        ///
+        /// <para>Why it exists: the fleet's cameras are hard-attached (<c>CameraMode.FixedCamera</c>
+        /// sets <see cref="_disableRotationLerp"/>), so a hull that turns faster than any stick can
+        /// turn it carries the camera with it in the same frame. The Thresher's planted ball does
+        /// exactly that — hooking onto the orbit swings the hull up to 91° in one frame — and read
+        /// as the camera "getting whipped around". Below the cap the frame tracks the hull exactly,
+        /// so ordinary flying is unchanged; only the spikes are spread over time. Driven only by
+        /// <c>ThresherExecutor</c>; cleared on a follow-target change.</para>
+        /// </summary>
+        public float MaxFollowTurnRate { get; set; }
+        private Quaternion _followFrame = Quaternion.identity;
+        private bool _followFrameValid;
+
+        /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
+        private Quaternion StepFollowFrame(float dt)
+        {
+            Quaternion target = _followTarget.rotation;
+            if (MaxFollowTurnRate <= 0f || !_followFrameValid)
+            {
+                _followFrame = target;
+                _followFrameValid = true;
+                return target;
+            }
+            _followFrame = Quaternion.RotateTowards(_followFrame, target, MaxFollowTurnRate * Mathf.Max(0f, dt));
+            return _followFrame;
+        }
+
+        /// <summary>A still camera vantage (see <see cref="Spectate"/>).</summary>
+        public struct SpectateView
+        {
+            public Vector3 Position;
+            public Vector3 LookAt;
+            public Vector3 Up;
+        }
+
+        /// <summary>
         /// How much of the follow offset's HEIGHT (y) the camera keeps: 1 = the authored offset,
         /// 0 = level with the vessel, directly behind it. Driven only by the Butterfly's
         /// <c>SpreadWingsActionExecutor</c> — Mass mode drops the camera to directly behind the
@@ -231,6 +305,7 @@ namespace CosmicShore.Gameplay
         private void ShiftCamera(Vector3 shift)
         {
             transform.position += shift;
+            _followPosePosition += shift;
             _lastTargetPos += shift;
         }
 
@@ -308,24 +383,36 @@ namespace CosmicShore.Gameplay
             // is released.
             Vector3 followPoint = FollowPoint;
 
+            if (_spectateBlend > 0f)
+                transform.SetPositionAndRotation(_followPosePosition, _followPoseRotation);
+
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followPoint;
 
-            Vector3 desiredPos = followPoint + _followTarget.rotation * EffectiveOffset;
             Vector3 shipDelta = followPoint - _lastTargetPos;
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
             // frame (normal flight is only a few units/frame). Snap the camera into place instead of
             // SmoothDamping a wild swing across the arena - that swing read as a "wonky, jittery start".
             const float teleportStep = 50f;
-            if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
+            bool teleported = shipDelta.sqrMagnitude > teleportStep * teleportStep;
+            if (teleported) _followFrameValid = false;   // a teleport cuts the follow frame too
+
+            // The follow frame: the target's rotation, or a turn-rate-capped copy of it while a
+            // vessel asks for one (MaxFollowTurnRate).
+            Quaternion rotation = StepFollowFrame(Time.deltaTime);
+            Vector3 frameUp = rotation * Vector3.up;
+            Vector3 desiredPos = followPoint + rotation * EffectiveOffset;
+
+            if (teleported)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(followPoint - transform.position, frameUp, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
                 _lastTargetPos = followPoint;
+                _spectateBlend = 0f;   // a teleport cuts; a vantage set before it is stale
                 return;
             }
 
@@ -357,7 +444,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(followPoint - transform.position, frameUp, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -375,12 +462,40 @@ namespace CosmicShore.Gameplay
 
             _lastTargetPos = followPoint;
 
+            ApplySpectateBlend();
+
             // After the pose is settled and BEFORE shake: the hand-over moves the settled pose,
             // and the shake is a decoration on top of whichever side of the portal that is.
             TickCarry(followPoint);
             PublishCarryToCorridor();
 
             ApplyShake();
+        }
+
+        /// <summary>
+        /// Blend the settled follow pose toward the <see cref="Spectate"/> vantage. A no-op while
+        /// no vantage is set and the blend has decayed to zero, which is every frame for every
+        /// vessel but a spinning Thresher.
+        /// </summary>
+        private void ApplySpectateBlend()
+        {
+            float target = _spectate.HasValue ? 1f : 0f;
+            if (_spectateBlend <= 0f && target <= 0f) return;
+
+            float step = SpectateBlendSeconds > 0f ? Time.unscaledDeltaTime / SpectateBlendSeconds : 1f;
+            _spectateBlend = Mathf.MoveTowards(_spectateBlend, target, step);
+            if (_spectateBlend <= 0f) return;
+
+            _followPosePosition = transform.position;
+            _followPoseRotation = transform.rotation;
+
+            var view = _lastSpectate;
+            float w = Mathf.SmoothStep(0f, 1f, _spectateBlend);
+            Vector3 up = view.Up.sqrMagnitude > 1e-6f ? view.Up : Vector3.up;
+            if (!SafeLookRotation.TryGet(view.LookAt - view.Position, up, out var spectateRot, this, logError: false))
+                spectateRot = transform.rotation;
+            transform.position = Vector3.Lerp(transform.position, view.Position, w);
+            transform.rotation = Quaternion.Slerp(transform.rotation, spectateRot, w);
         }
 
         /// <summary>
@@ -435,11 +550,15 @@ namespace CosmicShore.Gameplay
 
         public void SetFollowTarget(Transform target)
         {
-            // A carry and a height scale belong to the ship they were started for.
+            // A carry, a height scale and a spectate vantage belong to the ship they were started for.
             if (target != _followTarget)
             {
                 CancelCarry();
                 _followHeightScale = 1f;
+                _spectate = null;
+                _spectateBlend = 0f;
+                MaxFollowTurnRate = 0f;
+                _followFrameValid = false;
             }
 
             // Remember WHO took the target away, so a frozen camera can name its cause instead of
@@ -513,6 +632,7 @@ namespace CosmicShore.Gameplay
             if (!_followTarget) return;
 
             Vector3 followPoint = FollowPoint;
+            _followFrameValid = false;
             transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
 
             if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))

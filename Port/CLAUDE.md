@@ -47,6 +47,7 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 |---|---|---|---|
 | **Prisma Agent** (powered by Claude) | the game, as it runs in Prisma | `Assets/` and the rest of the repo, **never `Port/`** | Prisma's AGENT page |
 | **Engine development / milestones** | the engine, toward a roadmap checkpoint | `Port/` (this file's rules), **never `Assets/`, `Packages/`, `ProjectSettings/`** | Claude Code at the repo root |
+| **Tool build** | one FrogletTools tool, made native | `Port/src/CosmicShore.AssetTool`, `Port/tests/CosmicShore.AssetTool.Tests`, `Port/tools/froglet-tools` only | Prisma's EDITOR > TOOLS > BUILD |
 
 Deny rules on the Claude Code CLI enforce the agent's scope in every mode. Prisma runs any number of
 agent chats side by side, all in Prisma's workspace (not the user's clone): their edits

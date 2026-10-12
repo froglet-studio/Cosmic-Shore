@@ -59,9 +59,62 @@ namespace CosmicShore.Utility
         public const string BakedSuffix = "(EdgeArcs)";
 
         static readonly Dictionary<(Mesh source, int plateCorners), Mesh> s_cache = new();
+        static readonly Dictionary<Mesh, Mesh> s_readableTwins = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetCache() => s_cache.Clear();
+        static void ResetCache()
+        {
+            s_cache.Clear();
+            s_readableTwins.Clear();
+        }
+
+        /// <summary>
+        /// The mesh (and plate filter) a drawn twin was baked FROM - the FBX mesh asset a crystal
+        /// prefab references. An edit-time bake keyed by that asset can then be recognised from a
+        /// live crystal, which only holds the twin. A mesh this baker did not make is its own source.
+        /// </summary>
+        public static bool TryGetSource(Mesh displayed, out Mesh source, out int plateCorners)
+        {
+            source = displayed;
+            plateCorners = 0;
+            if (displayed == null) return false;
+            foreach (var entry in s_cache)
+            {
+                if (entry.Value != displayed) continue;
+                source = entry.Key.source;
+                plateCorners = entry.Key.plateCorners;
+                return source != null;
+            }
+            return true; // not a twin this baker made: the mesh is its own source
+        }
+
+        /// <summary>
+        /// A CPU-READABLE copy of a mesh a renderer is drawing, for a caller that has to read or
+        /// rewrite its vertices (a crystal fusing onto a hull). A readable mesh is returned as is; a
+        /// baked twin <see cref="GetOrBake"/> uploaded (and so dropped the CPU copy of) is re-baked
+        /// once from its source, identical channel for channel, and cached. False for an unreadable
+        /// mesh this baker did not make.
+        ///
+        /// It exists because the drawn twin is DELIBERATELY unreadable: a reader that only checks
+        /// <c>isReadable</c> on what the renderer holds refuses every charge crystal, and a refusal
+        /// that falls back to an older effect looks, on screen, exactly like that effect.
+        /// </summary>
+        public static bool TryGetReadable(Mesh displayed, out Mesh readable)
+        {
+            readable = null;
+            if (displayed == null) return false;
+            if (displayed.isReadable) { readable = displayed; return true; }
+            if (s_readableTwins.TryGetValue(displayed, out readable) && readable != null) return true;
+
+            foreach (var entry in s_cache)
+            {
+                if (entry.Value != displayed || entry.Key.source == null || !entry.Key.source.isReadable) continue;
+                readable = Bake(entry.Key.source, entry.Key.plateCorners);
+                s_readableTwins[displayed] = readable;
+                return readable != null;
+            }
+            return false;
+        }
 
         /// <summary>
         /// Returns the arc-baked twin of <paramref name="source"/>, building it on first request.

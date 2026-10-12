@@ -36,7 +36,7 @@ namespace CosmicShore.Launcher
         {
             PageHeader(a, "EDITOR", _edTab switch
             {
-                0 => "Every FrogletTools tool - the agent runs it on the project files, no Unity needed",
+                0 => "Every FrogletTools tool - RUN the native ones, BUILD the rest into Prisma with the agent",
                 1 => "The game's ScriptableObject data sets - browse and edit fields; edits land in the workspace (commit on GIT)",
                 _ => "Every model (FBX, Blender, Maya) as Unity imports it, in the game's colours - drag to turn, VIEW IN ENGINE",
             });
@@ -49,6 +49,15 @@ namespace CosmicShore.Launcher
                 _edTools = null; _edTypes = null; _edData = null; _edModel = null; _edModels = null;
             }
             Neon.Tooltip("Rebuild the editor tools from the workspace (after a pull or an agent's script edit) and reload this page.");
+
+            // An update moved the workspace: rebuild the tools from its code and reload the page.
+            if (_jobs.SyncCount != _edSyncSeen)
+            {
+                if (_edSyncSeen >= 0) { Ed.Invalidate(); _edTools = null; _edTypes = null; _edData = null; _edModel = null; _edModels = null; }
+                _edSyncSeen = _jobs.SyncCount;
+            }
+            var bannerH = DrawBehindBanner(ImGui.GetWindowDrawList(), new Vector2(a.X, a.Y + 64), b.X - a.X);
+            a.Y += bannerH;
 
             var ca = new Vector2(a.X, a.Y + 70);
             ImGui.SetCursorScreenPos(ca);
@@ -186,9 +195,19 @@ namespace CosmicShore.Launcher
                 dl.AddText(Neon.Small, 13, p + new Vector2(16, 56), Neon.U(Neon.Mix(Neon.Ink, Neon.Dim, 0.35f)), Wrap(text, (int)(cw / 7.2f), 4));
                 ImGui.SetCursorScreenPos(new Vector2(p.X + 14, q.Y - 46));
                 ImGui.PushID(t.Menu);
-                if (SmallButton("RUN WITH CLAUDE", 170, true)) RunToolWithClaude(t);
-                Neon.Tooltip("Opens a new agent chat that reads this tool's source and does its job on the project files.\n" +
-                             (t.Writes == "writer" ? "It writes assets, so the chat plans first (PLAN mode)." : "It runs in your current mode."));
+                var native = NativeTool(t.Menu);
+                if (native != null)
+                {
+                    if (SmallButton(_edToolRunning == t.Menu ? "RUNNING..." : "RUN", 110, _edToolRunning == null)) RunNativeTool(t, native);
+                    Neon.Tooltip("Runs Prisma's native version of this tool (cs-asset " + string.Join(" ", native.Args) + ")" +
+                                 (native.Writes ? ".\nIt changes files in Prisma's workspace; review them on GIT." : ". It only reads."));
+                }
+                else
+                {
+                    if (SmallButton("BUILD", 110, true)) BuildToolWithClaude(t);
+                    Neon.Tooltip("Opens an agent chat that builds this tool natively in Prisma (a cs-asset command, its test and a RUN button here),\n" +
+                                 "so it runs without Unity from then on. The chat may change only cs-asset and the native-tools registry.");
+                }
                 ImGui.SameLine(0, 6);
                 if (SmallButton("SOURCE", 84, true)) SourceControl.OpenUrl(Ed.FullPath(t.File));
                 Neon.Tooltip($"{t.File}:{t.Line}  ({t.Class}.{t.Method})");
@@ -222,22 +241,76 @@ namespace CosmicShore.Launcher
             return string.Join("\n", outp);
         }
 
-        void RunToolWithClaude(EdToolInfo t)
+        // ── Native tools: Port/tools/froglet-tools/tools.json in the workspace (BUILD adds to it) ──
+
+        internal sealed record NativeToolEntry(string Menu, string[] Args, bool Writes, string? Summary);
+        List<NativeToolEntry>? _nativeTools;
+        DateTime _nativeToolsStamp;
+        string? _edToolRunning;
+
+        /// <summary>The native version of a tool, from the workspace's registry (re-read when it changes).</summary>
+        NativeToolEntry? NativeTool(string menu)
         {
-            var chat = _chats.New();
-            chat.Title = "Tool: " + t.Name;
+            var file = Path.Combine(_ws.Dir, "Port", "tools", "froglet-tools", "tools.json");
+            var stamp = File.Exists(file) ? File.GetLastWriteTimeUtc(file) : DateTime.MinValue;
+            if (_nativeTools == null || stamp != _nativeToolsStamp)
+            {
+                _nativeToolsStamp = stamp;
+                _nativeTools = LoadNativeTools(file);
+            }
+            return _nativeTools.FirstOrDefault(n => string.Equals(n.Menu, menu, StringComparison.Ordinal));
+        }
+
+        internal static List<NativeToolEntry> LoadNativeTools(string file)
+        {
+            var list = new List<NativeToolEntry>();
+            try
+            {
+                if (!File.Exists(file)) return list;
+                using var d = JsonDocument.Parse(File.ReadAllText(file));
+                foreach (var e in d.RootElement.GetProperty("tools").EnumerateArray())
+                {
+                    var menu = e.TryGetProperty("menu", out var m) ? m.GetString() : null;
+                    var args = e.TryGetProperty("args", out var a) && a.ValueKind == JsonValueKind.Array ? a.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : null;
+                    if (string.IsNullOrEmpty(menu) || args is not { Length: > 0 }) continue;
+                    list.Add(new NativeToolEntry(menu, args, e.TryGetProperty("writes", out var w) && w.ValueKind == JsonValueKind.True,
+                                                 e.TryGetProperty("summary", out var su) ? su.GetString() : null));
+                }
+            }
+            catch (Exception e) when (e is JsonException or IOException or KeyNotFoundException or InvalidOperationException) { }
+            return list;
+        }
+
+        void RunNativeTool(EdToolInfo t, NativeToolEntry native)
+        {
+            _edToolRunning = t.Menu;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var (ok, stdout, err) = await Ed.Run(native.Args);
+                    _jobs.Log.Add(LogKind.Info, $"---- {t.Name} (native) ----");
+                    foreach (var line in (stdout + "\n" + err).Split('\n').Where(l => l.Trim().Length > 0)) _jobs.Log.Add(ok ? LogKind.Output : LogKind.Warn, line);
+                    var first = stdout.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "";
+                    EdNote(ok ? null : $"{t.Name} failed: " + (err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "see CONSOLE"),
+                           $"{t.Name}: {Trim(first, 120)}  (full output on CONSOLE{(native.Writes ? "; changes on GIT" : "")})");
+                }
+                finally { _edToolRunning = null; }
+            });
+        }
+
+        /// <summary>BUILD: an agent chat (TOOL scope) that makes this tool native - a cs-asset command, its test, a registry entry.</summary>
+        void BuildToolWithClaude(EdToolInfo t)
+        {
+            var chat = _chats.New(ClaudeChat.Scope.Tool);
+            chat.Title = "Build tool: " + t.Name;
             _page = Page.Chat;
-            bool writer = t.Writes == "writer";
             SendChat(
-                $"Do the job of the Unity editor tool \"{t.Menu}\" without Unity. Its source is {t.File} (class {t.Class}, method {t.Method}, line {t.Line})" +
-                (t.Description != null ? $"; it describes itself as: {t.Description}" : "") + ".\n" +
-                "Read that source first, then do the same work directly on the project files in this checkout: read and edit scenes, prefabs and " +
-                ".asset files with cs-asset (dotnet run --project Port/src/CosmicShore.AssetTool -- <command>; or the prisma tools asset_dataset, " +
-                "asset_model, asset_model_preview), or with careful text edits as the asset-surgery skill describes. " +
-                "If it is an audit or report, run its checks and give me the report. If it is an interactive window, tell me briefly what it offers and ask what to do. " +
-                "If its job truly needs the running Unity editor (play mode, the scene view, lightmapping, an editor-only API with no file equivalent), say so and stop. " +
-                "Report what you changed; it stays in Prisma's workspace for me to review on the GIT page.",
-                writer ? ClaudeChat.Mode.Plan : (ClaudeChat.Mode)_s.ChatMode);
+                $"Build the Unity editor tool \"{t.Menu}\" natively for Prisma. Its source is {t.File} (class {t.Class}, method {t.Method}, line {t.Line})" +
+                (t.Description != null ? $"; it describes itself as: {t.Description}" : "") + (t.Doc != null ? $". Its docs: {t.Doc}" : "") + ".\n" +
+                "Plan it first: what the tool reads and writes, the cs-asset command you will add (its name and arguments), how you will test it, and anything it " +
+                "needs from the Unity editor that has no file equivalent.",
+                ClaudeChat.Mode.Plan);
         }
 
         // ------------------------------------------------------------------ DATA
@@ -333,6 +406,7 @@ namespace CosmicShore.Launcher
             if (_edTypes == null) { if (!_edTypesLoading && Ed.Error == null) LoadEdTypes(); }
             if (EdFailed(a, b, _edTypesLoading || _edDataLoading)) return;
             if (_edTypes == null) { ImGui.SetCursorScreenPos(a); ImGui.TextColored(Neon.Dim, "Reading the data sets..."); return; }
+            if (_edOpenData != null && _edTypes.Any(t => t.Items.Any(i => i.Path == _edOpenData))) { OpenDataByPath(_edOpenData); _edOpenData = null; }
             if (_edOpen != null && _edOpen.EndsWith(".asset", StringComparison.OrdinalIgnoreCase)) { OpenDataByPath(_edOpen); _edOpen = null; }
             var dl = ImGui.GetWindowDrawList();
             float c1 = 280, c2 = 300;
@@ -360,6 +434,12 @@ namespace CosmicShore.Launcher
             dl.AddText(Neon.Strong, 14, fa + new Vector2(14, 10), Neon.U(Neon.Ink), _edType == null ? "Pick a type" : Trim(_edType.Type, 30));
             if (_edType != null)
             {
+                ImGui.SetCursorScreenPos(new Vector2(fb.X - 82, fa.Y + 6));
+                if (SmallButton(_edNewFile ? "CANCEL" : "+ NEW", 74, !_edNewBusy)) { _edNewFile = !_edNewFile; _edNewName = "New" + _edType.Type; }
+                Neon.Tooltip("A new data file of this type with the script's defaults, as Unity's Create menu writes it.");
+                if (_edNewFile) DrawNewDataFile(fa + new Vector2(14, 40), fb - new Vector2(14, 8));
+                else
+                {
                 ImGui.SetCursorScreenPos(fa + new Vector2(6, 36));
                 ImGui.BeginChild("##edfiles", fb - fa - new Vector2(12, 42));
                 foreach (var it in _edType.Items.Where(i => _edSearch.Length == 0 || Matches(i.Name) || Matches(_edType.Type)).OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase))
@@ -370,6 +450,7 @@ namespace CosmicShore.Launcher
                     ImGui.PopID();
                 }
                 ImGui.EndChild();
+                }
             }
 
             // fields
@@ -544,6 +625,55 @@ namespace CosmicShore.Launcher
             ImGui.PopID();
         }
 
+        // ── NEW: a data file of the selected type (cs-asset new-asset) ──
+        bool _edNewFile, _edNewBusy;
+        string _edNewName = "", _edNewFolder = "";
+
+        void DrawNewDataFile(Vector2 a, Vector2 b)
+        {
+            var type = _edType!;
+            if (_edNewFolder.Length == 0 || !_edNewFolder.StartsWith("Assets/", StringComparison.Ordinal))
+                _edNewFolder = type.Items.Count > 0 ? Path.GetDirectoryName(type.Items[0].Path)!.Replace('\\', '/') : "Assets/_SO_Assets";
+            ImGui.SetCursorScreenPos(a);
+            ImGui.BeginChild("##ednew", b - a);
+            ImGui.PushFont(Neon.Small);
+            ImGui.TextColored(Neon.Dim, $"A new {type.Type} with the script's\ndefault values, ready to edit here.");
+            ImGui.Dummy(new Vector2(0, 6));
+            ImGui.TextColored(Neon.Ink, "Name");
+            ImGui.PushItemWidth(-1);
+            ImGui.InputText("##newname", ref _edNewName, 128);
+            ImGui.PopItemWidth();
+            ImGui.TextColored(Neon.Ink, "Folder");
+            ImGui.PushItemWidth(-1);
+            ImGui.InputText("##newfolder", ref _edNewFolder, 512);
+            ImGui.PopItemWidth();
+            ImGui.Dummy(new Vector2(0, 8));
+            string name = _edNewName.Trim();
+            bool ready = !_edNewBusy && name.Length > 0 && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
+            if (SmallButton(_edNewBusy ? "CREATING..." : "CREATE", 140, ready))
+            {
+                _edNewBusy = true;
+                string path = _edNewFolder.TrimEnd('/') + "/" + name + ".asset";
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (ok, _, err) = await Ed.Run("new-asset", type.Type, path);
+                        if (!ok) { EdNote(err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "could not create it", ""); return; }
+                        EdNote(null, $"Created {path}. Commit it on GIT when it is ready.");
+                        _edNewFile = false;
+                        _edTypes = null; // re-read the data sets, then open the new file
+                        _edOpenData = path;
+                    }
+                    finally { _edNewBusy = false; }
+                });
+            }
+            ImGui.PopFont();
+            ImGui.EndChild();
+        }
+
+        string? _edOpenData;
+
         static string UnquoteForEdit(string v) =>
             v.Length >= 2 && v[0] == '\'' && v[^1] == '\'' ? v[1..^1].Replace("''", "'") :
             v.Length >= 2 && v[0] == '"' && v[^1] == '"' ? v[1..^1].Replace("\\n", "\n").Replace("\\\"", "\"").Replace("\\\\", "\\") : v;
@@ -566,6 +696,7 @@ namespace CosmicShore.Launcher
         // ------------------------------------------------------------------ MODELS
 
         List<string>? _edModels;
+        int _edSyncSeen = -1;
         string? _edModelPath;
         JsonDocument? _edModel;
         bool _edModelLoading, _edPreviewLoading;
@@ -586,8 +717,15 @@ namespace CosmicShore.Launcher
         float _edAngle = 145;
         readonly Dictionary<string, (uint tex, Vector2 size)> _edTex = new();
 
+        // Blend-shape weights for the preview (0-100), by shape name; reset with each model.
+        readonly Dictionary<string, float> _edShapes = new(StringComparer.Ordinal);
+
+        string ShapeSpec() => string.Join(";", _edShapes.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => kv.Key + "=" + kv.Value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)));
+
         void SelectModel(string path)
         {
+            if (_edModelPath != path) _edShapes.Clear();
             _edModelPath = path;
             _edModel?.Dispose();
             _edModel = null;
@@ -616,7 +754,8 @@ namespace CosmicShore.Launcher
             if (path == null) return;
             var full = Ed.FullPath(path);
             long stamp = File.Exists(full) ? File.GetLastWriteTimeUtc(full).Ticks : 0;
-            var key = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes($"{path}|{stamp}|tt24")))[..16];
+            string shapes = ShapeSpec();
+            var key = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes($"{path}|{stamp}|tt24|{shapes}")))[..16];
             var png = Path.Combine(PreviewDir, key + ".png");
             var meta = png + ".json";
             if (File.Exists(png) && File.Exists(meta)) { _edSheet = ReadSheet(File.ReadAllText(meta)); _edPreviewFile = png; return; }
@@ -627,11 +766,13 @@ namespace CosmicShore.Launcher
                 try
                 {
                     Directory.CreateDirectory(PreviewDir);
-                    var (ok, stdout, err) = await Ed.Run("model-preview", path, "--out", png, "--size", "320", "--turntable", "24", "--yaw", "145");
+                    var args = new List<string> { "model-preview", path, "--out", png, "--size", "320", "--turntable", "24", "--yaw", "145" };
+                    if (shapes.Length > 0) { args.Add("--shapes"); args.Add(shapes); }
+                    var (ok, stdout, err) = await Ed.Run(args.ToArray());
                     if (ok)
                     {
                         File.WriteAllText(meta, stdout);
-                        if (_edModelPath == path) { _edSheet = ReadSheet(stdout); _edPreviewFile = png; }
+                        if (_edModelPath == path && ShapeSpec() == shapes) { _edSheet = ReadSheet(stdout); _edPreviewFile = png; }
                     }
                     else EdNote(err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "preview failed", "");
                 }
@@ -687,6 +828,10 @@ namespace CosmicShore.Launcher
             var la = a; var lb = new Vector2(a.X + c1, b.Y);
             Card(dl, la, lb);
             dl.AddText(Neon.Strong, 14, la + new Vector2(14, 10), Neon.U(Neon.Ink), $"{_edModels.Count} MODELS");
+            ImGui.SetCursorScreenPos(new Vector2(lb.X - 104, la.Y + 6));
+            if (SmallButton(_edImporting ? "CANCEL" : "+ IMPORT", 96, !_edImportBusy)) _edImporting = !_edImporting;
+            Neon.Tooltip("Bring a new FBX (or .blend/.ma/.mb) into the project with the import settings the other models use.");
+            if (_edImporting) { DrawModelImport(la + new Vector2(14, 40), lb - new Vector2(14, 8)); return; }
             ImGui.SetCursorScreenPos(la + new Vector2(6, 36));
             ImGui.BeginChild("##edmodels", lb - la - new Vector2(12, 42));
             foreach (var g in _edModels.Where(m => Matches(m)).GroupBy(m => Path.GetDirectoryName(m)!.Replace('\\', '/')))
@@ -779,6 +924,74 @@ namespace CosmicShore.Launcher
 
         static float Wrap(float deg) => ((deg % 360) + 360) % 360;
 
+        // ── IMPORT: a new model in, with the project's import settings (cs-asset model-import) ──
+        bool _edImporting, _edImportBusy, _edImportPrefab = true;
+        string _edImportSrc = "", _edImportTo = "Assets/_Models", _edImportName = "";
+
+        void DrawModelImport(Vector2 a, Vector2 b)
+        {
+            ImGui.SetCursorScreenPos(a);
+            ImGui.BeginChild("##edimport", b - a);
+            ImGui.PushFont(Neon.Small);
+            ImGui.TextColored(Neon.Dim, "The model is copied into the project with a .meta\nin the settings the other models share, and a new GUID.");
+            ImGui.Dummy(new Vector2(0, 6));
+            ImGui.TextColored(Neon.Ink, "File");
+            ImGui.PushItemWidth(-1);
+            ImGui.InputTextWithHint("##impsrc", "C:\\...\\model.fbx", ref _edImportSrc, 1024);
+            ImGui.PopItemWidth();
+            if (OperatingSystem.IsWindows() && SmallButton("BROWSE", 100, !_edImportBusy))
+                Task.Run(() =>
+                {
+                    var picked = FilePicker.Open("Pick a model", "Models|*.fbx;*.blend;*.ma;*.mb");
+                    if (picked != null) { _edImportSrc = picked; if (_edImportName.Length == 0) _edImportName = Path.GetFileNameWithoutExtension(picked); }
+                });
+            ImGui.Dummy(new Vector2(0, 4));
+            ImGui.TextColored(Neon.Ink, "Into folder");
+            ImGui.PushItemWidth(-1);
+            ImGui.InputText("##impto", ref _edImportTo, 512);
+            ImGui.PopItemWidth();
+            if (_edModelPath != null && SmallButton("SAME AS SELECTED", 170, true)) _edImportTo = Path.GetDirectoryName(_edModelPath)!.Replace('\\', '/');
+            ImGui.Dummy(new Vector2(0, 4));
+            ImGui.TextColored(Neon.Ink, "Name");
+            ImGui.PushItemWidth(-1);
+            ImGui.InputTextWithHint("##impname", "the file's name", ref _edImportName, 128);
+            ImGui.PopItemWidth();
+            ImGui.Checkbox("Also make a prefab that holds it", ref _edImportPrefab);
+            ImGui.Dummy(new Vector2(0, 8));
+            bool ready = !_edImportBusy && File.Exists(_edImportSrc.Trim().Trim('"')) && IsModelFile(_edImportSrc.Trim().Trim('"'))
+                         && _edImportTo.Replace('\\', '/').StartsWith("Assets/", StringComparison.Ordinal);
+            if (SmallButton(_edImportBusy ? "IMPORTING..." : "IMPORT", 160, ready))
+            {
+                _edImportBusy = true;
+                var src = _edImportSrc.Trim().Trim('"');
+                var args = new List<string> { "model-import", src, "--to", _edImportTo.Replace('\\', '/').TrimEnd('/') };
+                if (_edImportName.Trim().Length > 0) { args.Add("--name"); args.Add(_edImportName.Trim()); }
+                if (_edImportPrefab) args.Add("--prefab");
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (ok, stdout, err) = await Ed.Run(args.ToArray());
+                        if (!ok) { EdNote(err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "import failed", ""); return; }
+                        string? path = null, prefab = null;
+                        try
+                        {
+                            using var d = JsonDocument.Parse(EditorTool.RepairConsoleText(stdout));
+                            path = d.RootElement.GetProperty("path").GetString();
+                            if (d.RootElement.TryGetProperty("prefab", out var pf) && pf.ValueKind == JsonValueKind.String) prefab = pf.GetString();
+                        }
+                        catch (Exception e) when (e is JsonException or KeyNotFoundException) { }
+                        EdNote(null, $"Imported {path}" + (prefab != null ? $" and {prefab}" : "") + ". Commit it on GIT when it looks right.");
+                        _edModels = null; _edImporting = false; _edImportName = ""; _edImportSrc = "";
+                        if (path != null) _edOpen = path;
+                    }
+                    finally { _edImportBusy = false; }
+                });
+            }
+            ImGui.PopFont();
+            ImGui.EndChild();
+        }
+
         void DrawModelFacts(JsonElement m)
         {
             string S(string k) => m.TryGetProperty(k, out var v) ? v.ToString() : "";
@@ -802,6 +1015,7 @@ namespace CosmicShore.Launcher
             Fact("File", $"{S("sizeKB")} KB  ·  guid {Trim(S("guid"), 12)}");
             if (m.TryGetProperty("discardedPolygons", out var dp) && dp.GetInt32() > 0) Fact("Discarded", $"{dp.GetInt32()} degenerate polygons");
             foreach (var w in m.GetProperty("warnings").EnumerateArray()) { ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Amber, Glyphs(w.GetString() ?? "")); ImGui.PopFont(); }
+            DrawShapeSliders(m);
             if (m.TryGetProperty("gameMaterials", out var gm) && gm.ValueKind == JsonValueKind.Array) DrawGameMaterials(m, gm);
             ImGui.Dummy(new Vector2(0, 8));
             ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Cyan, "MESHES"); ImGui.PopFont();
@@ -813,6 +1027,35 @@ namespace CosmicShore.Launcher
                 ImGui.TextColored(Neon.Dim, $"   {mesh.GetProperty("triangles").GetInt32():N0} tris  ·  {mesh.GetProperty("submeshes")} submesh  ·  " +
                                             (mesh.GetProperty("skinned").GetBoolean() ? $"skinned, {mesh.GetProperty("bones")} bones  ·  " : "") +
                                             (shapes.Count > 0 ? $"shapes: {string.Join(", ", shapes)}" : ""));
+            }
+            ImGui.PopFont();
+        }
+
+        /// <summary>
+        /// A slider per blend shape (the elemental hull morphs, the crystals' spins): letting go
+        /// re-renders the turntable with those weights. VIEW IN ENGINE has the same sliders live.
+        /// </summary>
+        void DrawShapeSliders(JsonElement m)
+        {
+            var names = m.GetProperty("meshes").EnumerateArray()
+                .SelectMany(x => x.TryGetProperty("blendShapes", out var b) ? b.EnumerateArray().Select(n => n.GetString() ?? "") : Enumerable.Empty<string>())
+                .Where(n => n.Length > 0).Distinct().ToList();
+            if (names.Count == 0) return;
+            ImGui.Dummy(new Vector2(0, 8));
+            ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Cyan, "BLEND SHAPES"); ImGui.PopFont();
+            ImGui.SameLine(0, 12);
+            if (SmallButton("ZERO", 70, _edShapes.Values.Any(v => v > 0) && !_edPreviewLoading)) { _edShapes.Clear(); RenderPreview(); }
+            ImGui.PushFont(Neon.Small);
+            foreach (var n in names)
+            {
+                ImGui.PushID("shape" + n);
+                float w = _edShapes.TryGetValue(n, out var cur) ? cur : 0;
+                ImGui.TextColored(Neon.Ink, Trim(Glyphs(n), 28)); ImGui.SameLine(200);
+                ImGui.PushItemWidth(Math.Max(120, ImGui.GetContentRegionAvail().X - 8));
+                if (ImGui.SliderFloat("##w", ref w, 0, 100, "%.0f")) _edShapes[n] = w;
+                if (ImGui.IsItemDeactivatedAfterEdit()) RenderPreview();
+                ImGui.PopItemWidth();
+                ImGui.PopID();
             }
             ImGui.PopFont();
         }

@@ -47,6 +47,25 @@ namespace CosmicShore.Content.Models
             return null;
         }
 
+        /// <summary>
+        /// The clips Unity makes from <paramref name="model"/>, as (name, sub-asset fileID): the
+        /// meta's <c>clipAnimations</c>, or one per take when it lists none. Empty when the meta turns
+        /// animation import off.
+        /// </summary>
+        public static List<(string Name, long FileId)> ListClips(ImportedModel model)
+        {
+            var list = new List<(string, long)>();
+            if (model?.Scene == null || !model.Settings.ImportAnimation) return list;
+            if (model.Settings.Clips.Count > 0)
+            {
+                foreach (var c in model.Settings.Clips) list.Add((c.Name, c.InternalId));
+                return list;
+            }
+            foreach (var st in model.Scene.ObjectList)
+                if (st.Kind == "AnimationStack") list.Add((st.Name, ModelFileIds.Hash("AnimationClip", st.Name)));
+            return list;
+        }
+
         /// <summary>FBX GlobalSettings TimeMode → frames per second (FbxTime::EMode).</summary>
         public static double FrameRate(FbxScene scene)
         {

@@ -53,6 +53,19 @@ namespace CosmicShore.Engine
         /// </summary>
         public static Action<Texture, RenderTexture, Material, int> BlitHook;
 
+        /// <summary>
+        /// The render backend's GPU copy for <see cref="CopyTexture(Texture, int, int, Texture, int, int)"/>;
+        /// null while no backend provides one, and then <see cref="SystemInfo.copyTextureSupport"/>
+        /// reports None so callers take their fallback, as on a device without copy support.
+        /// </summary>
+        public static Action<Texture, int, int, Texture, int, int> CopyTextureHook;
+
+        /// <summary>Original: Graphics.CopyTexture - one element/mip of a texture into another's (a 2D target into an array slice).</summary>
+        public static void CopyTexture(Texture src, int srcElement, int srcMip, Texture dst, int dstElement, int dstMip)
+            => CopyTextureHook?.Invoke(src, srcElement, srcMip, dst, dstElement, dstMip);
+
+        public static void CopyTexture(Texture src, Texture dst) => CopyTexture(src, 0, 0, dst, 0, 0);
+
         public static void Blit(Texture source, RenderTexture dest) => Blit(source, dest, null, -1);
         public static void Blit(Texture source, RenderTexture dest, Material mat, int pass = -1)
         {

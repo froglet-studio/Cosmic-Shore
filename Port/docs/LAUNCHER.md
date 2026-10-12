@@ -34,6 +34,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
+| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
@@ -53,6 +54,31 @@ The two dots at the bottom of the rail are git and .NET (hover for versions). Th
 bottom shows what is happening, a progress bar and CANCEL. The title bar shows the branch, the
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
+
+## TIME - benchmarks and local multiplayer
+
+**BENCHMARK** times the game on this machine. Tick scenes and replays (REPLAY rows are the parity
+harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
+gameplay rather than an idle scene), pick the length (10 s to 2 min at 60 fps), how many runs of
+each (the median is kept), WINDOW (rendered, so GPU time counts) or HEADLESS (simulation only), the
+window size, VSync and the .NET garbage collector's mode (default, low latency, or **A/B**: every item
+in both, the LOW GC row compared with its default row). **RUN** builds the Release player if the workspace changed since the last
+build, then starts one game per scene and run; each closes itself when its frames are done, writes
+its session report, and the next one starts. Replays play in PLAY's save slot, so log in once from
+PLAY first (a fresh slot stops at the birth-year prompt).
+
+RESULTS shows one row per scene: frame time at the 50th and 95th percentile and the worst frame,
+frames over 33 ms, the simulation's 95th percentile, GPU time (timer queries), load time (the scene's switch
+to its first frame; hover for boot to first frame), GC pause per frame and
+the frame count, each with its change against the previous benchmark on the same machine (green
+faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` and can be picked
+from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
+benchmark unattended and closes Prisma when it is saved.
+
+**MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
+`player2` ...) with networking on and sound only in the first. They share one session folder, so
+a party or match hosted in one window shows up in the others: host in one, join from the rest.
+Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
 
 ## TRACKS - Prisma's memory of every run
 
@@ -256,10 +282,13 @@ script edit), and every edit lands in the workspace, where GIT commits it.
 
 **TOOLS** - every FrogletTools menu item in the project (95 on 2026-10-08), read from source: its
 category, importance (the dots), description, whether it is a window or one click, and whether it
-writes assets. Filter by category or search. **RUN WITH CLAUDE** opens a new agent chat that reads
-the tool's source and does its job on the project files without Unity - an audit gives you its
-report, a writer plans first (PLAN mode) - or says plainly when the job needs the running Unity
-editor. **SOURCE** opens the script, **DOCS** its documentation.
+writes assets. Filter by category or search. A tool Prisma has a native version of shows **RUN**: it
+runs that `cs-asset` command on Prisma's workspace (output on CONSOLE, a writer's changes on GIT).
+Every other tool shows **BUILD**: an agent chat that builds the native version - reads the tool's
+source, plans first, then adds a `cs-asset` command, its test and an entry in
+`Port/tools/froglet-tools/tools.json`, after which the card shows RUN. That chat may change only
+cs-asset, its tests and that folder (the TOOL scope, enforced by deny rules), and says plainly when
+a tool's job needs the running Unity editor. **SOURCE** opens the script, **DOCS** its documentation.
 
 ![DATA](architecture/launcher_editor_data.png)
 
@@ -268,15 +297,24 @@ see its fields as Unity's inspector labels them, with the script's headers, tool
 ranges. Toggles, numbers (sliders where the script has a `[Range]`), text, enums, vectors and
 colours are edited in place: each change is one `cs-asset set` that rewrites only that line. A
 reference shows the file it points at; click a data file or model to open it. Keys the script no
-longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about the file.
+longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about the file. **+ NEW**
+creates a data file of the selected type with the script's defaults, as Unity's Create menu writes it
+(`cs-asset new-asset TYPE PATH`: same header and field order, a NativeFormatImporter `.meta` with a
+fresh GUID), and opens it for editing.
 
 ![MODELS](architecture/launcher_editor_models.png)
+
+**+ IMPORT** brings a new model in (`cs-asset model-import`): the file is copied to the folder you
+pick with a `.meta` in the import settings the project's models share (majority values, a fresh
+GUID, no tables from another model), Prisma's importer reads it back, and optionally a prefab that
+holds it is written and loaded through the engine as proof.
 
 **MODELS** - every model by folder: the 66 FBX files, and Blender (`.blend`) and Maya (`.ma`/`.mb`)
 files, tagged BLENDER / MAYA. Unity cannot read those two either: its importer runs the installed
 Blender or Maya in the background to export an FBX. Prisma does the same (Unity's own export
 settings), keeps the FBX until the file changes, and says so plainly when the application is not
-installed (`PRISMA_BLENDER` / `PRISMA_MAYAPY` point at one that is not where Prisma looks).
+installed. SETTINGS > TOOLCHAIN shows whether Blender and Maya were found, their version and path,
+with **BROWSE** to point at one Prisma did not find (passed on as `PRISMA_BLENDER` / `PRISMA_MAYAPY`).
 
 Pick a model for a preview **in the colours the game draws it with**: the materials come from the
 prefabs that draw its meshes (Manta's model from `Manta.prefab`, VesselGraph's `_Color1`), not from
@@ -284,12 +322,18 @@ the model file, whose own materials are usually placeholders. **Drag across the 
 (24 views rendered once, about a second), **<** **>** step, **FRONT** faces it. Beside it: what
 Unity's importer makes of it (triangles, vertices, meshes and nodes, size, materials, blend shapes,
 skinning and bones, animation takes, the `.meta` import scale, warnings) and **IN THE GAME** - the
-prefabs that draw it and each mesh's materials with shader and colour swatch.
+prefabs that draw it and each mesh's materials with shader and colour swatch. A model with blend
+shapes (the vessels' Mass / Charge / Space / Time hull morphs, the crystals' spins) gets a **BLEND
+SHAPES** slider each: let go and the turntable is drawn again with those weights; **ZERO** resets them.
 
 **VIEW IN ENGINE** opens the model in Prisma's own renderer - the real shaders, not the CPU
 picture - on a turntable: drag to turn, wheel to zoom, right-drag to pan, **F** frame, **R** reset,
-**Space** stop/start the spin, **Tab** the next prefab's materials (and the model's own). No game
-scene loads, so it opens in seconds once the player is built (`CosmicShore --view-model FILE`).
+**Space** stop/start the spin, **Tab** the next prefab's materials (and the model's own). On screen:
+the model, whose colours are shown and its size (top left), the controls (bottom left, **H** hides
+them), a live slider per blend shape (top right, drag; **B** zeroes them) and its animation takes
+(bottom right: **T** plays the next take, **P** pauses, drag the bar to scrub; a take that moves the
+hull morphs moves their sliders too). No game scene loads, and the player is only rebuilt when the
+workspace changed since the last build, so it opens in seconds (`CosmicShore --view-model FILE`).
 **ASK CLAUDE** starts a chat about the model.
 
 The agent has the same data through MCP: `asset_froglet_tools`, `asset_datasets`,
@@ -314,4 +358,4 @@ own clone: *Beside my clone* uses a git worktree next to it.
 folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
 chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
-its own and echoes the log; `--auto "chat:<message>"` sends one chat message;
+its own and echoes the log; `--auto "chat:<message>"` sends one chat message; `--auto bench:A,B[:frames[:low|ab]]` runs a headless benchmark (optionally low-latency GC, or both) and exits;

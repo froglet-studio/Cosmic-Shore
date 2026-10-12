@@ -199,12 +199,10 @@ for k, p in SCRIPT_PATHS.items():
 # authored differently - which is the point of the class living on the ASSET rather than being
 # inferred at runtime.
 #
-# requireDebuffableVictim is the flag this mode added, and it exists so the score and the effect
-# cannot disagree. An elementally immune pilot (ResourceSystem.IsElementallyImmune) takes no
-# element drain from the blast - ApplyElementalEffect drops negative magnitudes while immune - so
-# scoring their attacker would pay for something that provably did not happen. Off for a missile
-# (a rocket that hits you hit you, whatever your immunity state); on here, because the whole
-# event being scored IS the drain.
+# The score and the drain cannot disagree about a warded pilot: every combat-hit reporter now
+# asks CombatHitDrain.TryAdmit, which refuses a victim warded against the blast's class. This
+# mode used to opt into that with a requireDebuffableVictim flag; since 2026-10-10 (scored hits
+# and petal theft are one-to-one) it is unconditional and the flag is gone.
 #
 # requireOwningMachine is the OTHER flag this mode added, and it is a networking fix rather than
 # a design choice. A crystal collection resolves server-side and
@@ -218,7 +216,6 @@ emit("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByCrysta
      f"""  hitClass: 2
   onCombatHitLanded: {{fileID: 11400000, guid: {EXISTING['Event_CombatHitStats']}, type: 2}}
   sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
-  requireDebuffableVictim: 1
   requireOwningMachine: 1
 """)
 emit("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByCrystalBlast.asset.meta",

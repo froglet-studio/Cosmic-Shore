@@ -52,7 +52,6 @@ namespace CosmicShore.Core
             { "Ribcage",                      "Cleave" },
             { "PeelTheCage",                  "Cleave" },
             { "MultiplayerJoust",             "Joust" },
-            { "MultiplayerCellularDuel",      "OnlineDuelForTheCell" },
             { "CellularDuel",                 "DuelForTheCell" },
             { "MultiplayerWildlifeBlitzGame", "CoOpWildlifeBlitz" },
             { "MazeRunner",                   "MazeRun" },
