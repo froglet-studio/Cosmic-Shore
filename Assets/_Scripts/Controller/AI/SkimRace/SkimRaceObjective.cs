@@ -121,13 +121,18 @@ namespace CosmicShore.Gameplay
         public override int Remaining(IVesselStatus status) =>
             Mathf.Max(0, GameData.CrystalTargetCount - SharedProgress(status));
 
-        /// <summary>World radius of the crystal's pickup sphere — what the hull has to touch.</summary>
+        /// <summary>World radius of the crystal's pickup sphere — what the hull has to touch. For a
+        /// race-ring crystal (<see cref="CrystalRaceRing"/>) it is the mouth the pilot must thread,
+        /// at the same inner fraction Regatta's pilot aims for, so it flies through the ring rather
+        /// than at its rim.</summary>
         float CaptureRadius(Crystal c)
         {
             if (c == _radiusOf) return _radius;
             _radiusOf = c;
             _radius = 0f;
-            if (c != null && c.TryGetComponent(out SphereCollider sc))
+            if (c != null && c.TryGetComponent(out CrystalRaceRing ring))
+                _radius = ring.MouthRadius * RegattaRingObjective.CaptureFractionOfMouth;
+            else if (c != null && c.TryGetComponent(out SphereCollider sc))
             {
                 var s = sc.transform.lossyScale;
                 _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));

@@ -4,6 +4,8 @@
 
 SkimRace is a competitive crystal-collection racing mode for 1-4 players. Players race along a procedurally generated track, collecting crystals. The first player to collect all crystals wins; losers are ranked by crystals remaining. The mode supports solo play with AI opponents, multiplayer with friends, or mixed human+AI lobbies.
 
+**The crystals are drawn and collected as RACE RINGS** (since 2026-10-12, §7a) — the same `RaceGateRing` every gate race (Switchback, Redline, Headlong…) flies through, sized to the omni crystal it replaced, standing square across the track, painted the domain it belongs to and threaded by its mouth instead of touched. Everything else in this document still calls them crystals because, underneath, they still are: placement, respawn, replication, scoring, the HUD count, the comeback system, the AI target and the objective arrow are unchanged.
+
 **Key architectural facts:**
 
 - **Single scene**: `Assets/_Scenes/Multiplayer Scenes/MinigameSkimRace.unity` — no separate singleplayer scene
@@ -175,7 +177,7 @@ segmentSpawner.Initialize();
 - Each segment slot calls `SelectSpawnable(currentIntensity)` to pick a track piece
 - Domain cycling: segments cycle through active player domains (Jade, Ruby, Gold) for color theming
 - Segments positioned along Z-axis: `index * StraightLineLength` offset
-- Crystals are spawned as part of track segments (via `SpawnableWaypointTrack` waypoints)
+- Crystals are NOT part of the track: `NetworkCrystalManager` places one per player at the scene's per-intensity anchors (an anchor plus a random point on a 35 u shell, `anchorJitterRadius`), and moves each to its next anchor on every pickup. They are drawn as race rings (§7a)
 
 **Per-intensity waypoint tracks** (`SpawnableWaypointTrack` component in `MinigameSkimRace.unity`; the paired crystal anchors live on the scene's `CrystalManager`). Every loop is closed and begins near the shared player spawns at (700, ~0, −200) facing +Z. Crystals per lap (the waypoint count unless the track authors `crystalsPerLap`) drives the auto crystal target, with laps authored per level via `CrystalCollisionTurnMonitor.lapsPerIntensity` so the long tracks don't run as many laps as the short ones:
 
@@ -355,6 +357,43 @@ gameData.OnMiniGameTurnStarted.Raise()
                 └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
 The end condition is **domain-aggregated**: the turn ends as soon as any active domain's summed CrystalsCollected reaches the target. Teammates (humans + AI on the same Domain) cross the finish line together.
+
+### 7a. The crystals are race rings
+
+Skim Race's `NetworkCrystalManager` spawns **`Assets/_Prefabs/Environment/SkimRaceRingCrystal.prefab`**
+(it spawned `BigCrystalVariant.prefab` until 2026-10-12). That prefab is a `Crystal` with **no crystal
+model and no collider**, its `TeamCrystalImpactor`, and a **`CrystalRaceRing`**
+(`_Scripts/Controller/Arcade/Racing/CrystalRaceRing.cs`), which draws the crystal as a `RaceGateRing`
+and turns a threading of its mouth into a pickup.
+
+| Promise | How it is kept |
+|---|---|
+| **Same rings as the gate races** | `CrystalRaceRing` raises a `RaceGateRing` — the class Switchback/Redline/Headlong build their courses from — through `ToyFactory.AddSwitchRing`, the one builder every switch ring comes from. Same mesh, same prism material family, same bloom-in and wither-out. |
+| **Same size as the crystal** | Mouth radius **24 u** = `BigCrystalVariant`'s pickup sphere (`SphereCollider` r 1.2 × root scale 20), so the target a pilot has to hit is unchanged. Its visible body was smaller (circumradius 0.735 × 20 ≈ 14.7 u, Ø ≈ 29 u); the ring follows the switch law (*the drawn ring IS the trigger*), so it is drawn at the trigger's size. `SkimRaceRingCrystalTests.RingMouth_IsTheSizeOfTheCrystalItReplaced` reads both prefabs and holds the two equal. |
+| **Same placement** | Unchanged: the crystal is still placed and respawned by `CrystalManager` (anchor + `Random.onUnitSphere × anchorJitterRadius`, next anchor on every pickup, one per player). The ring follows its crystal: when the crystal moves, the threaded ring withers where it stood and a new one blooms at the next anchor. |
+| **Square across the track** | The mouth faces the tangent of the LAID track at the ring's nearest point (`CrystalRaceRing.TrackAxisAt` over `SkimRaceCourse`, built once per match from the track prisms by `SkimRaceCourseSource`), so a pilot flying straight down the track looks into the open ring wherever the jitter put it. Crystals spawn on client-ready, often before the track is laid: such a ring raises on a placeholder axis and turns (`RaceGateRing.SetAxis`, no re-bloom) as soon as the lay finishes — behind the connecting panel, which the track's arena-build bracket holds. The course is never read mid-lay. |
+| **Domain rules** | The ring is painted the crystal's domain (`RaceGateRing.Owner` → `ToySwitchSignal.Domain`, the "belongs to" reading the Scarab's switch already uses outside the toybox). Only a pilot the crystal's `TeamCrystalImpactor` accepts (`OmniCrystalImpactor.AcceptsDomain`) is tested; any other pilot flies through with nothing happening on either side. Before, a wrong-domain hull touching a crystal was refused by the crystal but still ran the vessel half of the pickup (speed buff, boost ring); a ring does not do that. |
+
+**Detection — owner detects, server records** (the gate races' split). Each machine tests only the
+pilots it simulates (`IPlayer.IsNetworkOwner`: the host's human and every AI, a client's own human)
+with a swept segment-vs-mouth test (`RaceGateRing.CrossedMouth`), skipping teleports and implausible
+steps exactly as `GateRaceController` does. On a crossing it dispatches the SAME impactor pair a
+physics contact would have, through `ImpactorBase.AcceptImpacteeFromSweep`: the vessel's half locally
+(its effects are owner-decided and broadcast by `NetworkVesselImpactor`), and the crystal's half via
+`CrystalManager.ReportRingThreaded` — the host credits directly, a client sends
+`NetworkCrystalManager.RingThreaded_ServerRpc` (own vessel only), and the server refuses a ring that
+has already MOVED (a teammate took it first) so nobody is credited for the next anchor. Credit,
+explode, respawn and stats are then the crystal's ordinary pickup path.
+
+**What else changed to make room for a bodyless crystal.** `Crystal.HasBody` (false for a ring
+crystal); `SquirrelCrystalMorph.Begin` stands down quietly for one (the boost ring is still laid —
+only the cage-to-ring morph has nothing to carry). The AI's `CrystalTrackObjective.CaptureRadius`
+aims at `0.7 × mouth` for a ring crystal (Regatta's fraction), so it flies through the ring, not at
+its rim.
+
+**Not done here (follow-ups):** the card background (`ArcadeGameSkimRace`, `/cardart`) still stages
+lime crystal glyphs; the offline AI simulator (`skimrace_sim_harness/Sim.cs`) still scores sphere
+touches; Prisma (`Port/`) still spawns the crystal model.
 
 ### 8. Winner Determination & Score Sync
 
@@ -544,6 +583,10 @@ ugsStatsManager.ReportSkimRaceStats(
 | Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Waypoint track (per-intensity waypoints, ribbon normals, crystals per lap, marked waypoints) | `SpawnableWaypointTrack.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| Crystal drawn + collected as a race ring (§7a) | `CrystalRaceRing.cs` | `_Scripts/Controller/Arcade/Racing/` |
+| The race ring itself (shared with every gate race) | `RaceGateRing.cs` | `_Scripts/Controller/Arcade/Racing/` |
+| Ring crystal prefab (spawned by the scene's `NetworkCrystalManager`) | `SkimRaceRingCrystal.prefab` | `_Prefabs/Environment/` |
+| Ring crystal tests (size, track orientation, domain, scene wiring) | `SkimRaceRingCrystalTests.cs` | `_Scripts/Tests/Editor/` |
 | I4 "Relativity" generator (scene track + crystal anchors + preview bake; `--check`, `--report`) | `author_skimrace_relativity_track.py` | `Tools/Build/` |
 | I4 layout tests (on the baked preview prefab) | `SkimRaceRelativityTrackTests.cs` | `_Scripts/Tests/Editor/` |
 | End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |

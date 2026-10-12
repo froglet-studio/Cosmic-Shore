@@ -32,10 +32,11 @@ namespace CosmicShore.Data
         /// things that hand you one - the Domain Changer's slots and the painting's stroke-start
         /// gates (both route through <c>Player.RequestSetDomain_ServerRpc</c>).
         ///
-        /// <para>The one wearer outside the toybox is the Scarab's placed switch, where the
-        /// colour names the domain the switch BELONGS to rather than one it grants. Nothing in
-        /// that mode changes your domain, so the two readings never share a screen - but do not
-        /// add a third toybox wearer without settling which reading wins.</para>
+        /// <para>The wearers outside the toybox are the Scarab's placed switch and Skim Race's
+        /// race-ring crystals (<c>CrystalRaceRing</c>), where the colour names the domain the
+        /// switch BELONGS to rather than one it grants. Nothing in either mode changes your domain,
+        /// so the two readings never share a screen - but do not add a third toybox wearer without
+        /// settling which reading wins.</para>
         /// </summary>
         Domain = 1,
 

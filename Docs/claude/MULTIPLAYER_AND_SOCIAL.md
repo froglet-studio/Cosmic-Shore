@@ -646,6 +646,8 @@ count. Record: `Docs/ArcadeLaunch/ARCHITECTURE.md §3.1.2`, `Docs/PartySystem/BU
 
 SkimRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameSkimRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/SKIMRACE.md` for the full technical reference.
 
+**Its crystals are race rings** (`SKIMRACE.md` §7a): `SkimRaceRingCrystal.prefab` is a bodyless, colliderless `Crystal` whose `CrystalRaceRing` draws it as the gate races' `RaceGateRing` — 24 u mouth (the omni crystal's pickup sphere), square across the laid track, painted its owner's domain, threaded only by that domain (owner detects, server records via `CrystalManager.ReportRingThreaded`). Placement, respawn, scoring and the AI target are the crystal's, unchanged.
+
 #### Architecture
 
 ```

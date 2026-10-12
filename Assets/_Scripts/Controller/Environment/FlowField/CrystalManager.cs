@@ -205,6 +205,49 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual void ReplayVesselCrystalEffects(int crystalId, ulong vesselNetworkObjectId, ulong ownerClientId) { }
 
+        /// <summary>The match's game data, for a crystal that needs the roster (a
+        /// <see cref="CrystalRaceRing"/> testing the pilots it simulates). Crystals are minted with
+        /// <c>Instantiate</c> and never injected, so they reach it through their manager.</summary>
+        public GameDataSO GameData => gameData;
+
+        /// <summary>
+        /// A pilot threaded the race ring crystal <paramref name="crystalId"/>, which was standing
+        /// at <paramref name="ringPosition"/> when it was threaded: run the crystal's half of the
+        /// pickup (credit, explode, respawn) on the machine that decides collection.
+        ///
+        /// <para>This is the authority's entry point. A non-networked session IS the authority;
+        /// <see cref="NetworkCrystalManager"/> forwards a client's report to the server. Either way
+        /// the pickup goes through the crystal's own impactor, so the domain rule, the impact
+        /// latch and the stats credit are the physics path's, not a second copy of them.</para>
+        /// </summary>
+        public virtual void ReportRingThreaded(int crystalId, Vector3 ringPosition, VesselImpactor collector) =>
+            CreditRingThreaded(crystalId, ringPosition, collector);
+
+        /// <summary>
+        /// Positional tolerance between where a pilot saw the ring and where the authority has it.
+        /// The ring is the crystal redrawn, so the two only differ when the crystal has MOVED - a
+        /// teammate took it first - and then by hundreds of units. A unit of slack absorbs float
+        /// round-trips over the wire and nothing else.
+        /// </summary>
+        const float RingReportToleranceSqr = 1f;
+
+        /// <summary>
+        /// The authority's half of a ring pickup. Refuses a report against a ring that has since
+        /// moved: without that check a pilot who threaded a ring a moment after a teammate took
+        /// it would be credited for the crystal at its NEXT anchor, which they never reached.
+        /// </summary>
+        protected bool CreditRingThreaded(int crystalId, Vector3 ringPosition, VesselImpactor collector)
+        {
+            if (collector == null) return false;
+            if (!cellData.TryGetCrystalById(crystalId, out var crystal) || crystal == null) return false;
+            if (crystal.IsExploding) return false;
+            if ((crystal.transform.position - ringPosition).sqrMagnitude > RingReportToleranceSqr) return false;
+            if (!crystal.TryGetComponent(out OmniCrystalImpactor impactor)) return false;
+
+            impactor.AcceptImpacteeFromSweep(collector);
+            return true;
+        }
+
         // ------------------------------------------------------------
         // CellItem management (unchanged conceptually)
         // ------------------------------------------------------------
