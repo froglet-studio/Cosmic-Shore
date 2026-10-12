@@ -300,15 +300,15 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
   contains that certificate.
 - The signed app is not a development build (`get-task-allow`).
 
-**Security follow-up (open, flagged 2026-10-12).** The first uploads use the Apple-ID route, which
-is **tied to one person's Apple ID**. Separately, anyone with write access to this repo could, in
+**Security follow-up (open, flagged 2026-10-12).** Anyone with write access to this repo could, in
 principle, write a workflow that leaks any repository secret; that holds for every secret, not just
 these. The plan:
 
-1. **Switch to a team API key.** The Account Holder presses **Request Access** once. An Admin then
-   creates a team API key (App Manager), and the job prefers it automatically.
-2. **Remove the personal route.** Delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD` and
-   `ASC_APP_ID`, and revoke the app-specific password.
+1. **Use a team API key.** Done on 2026-10-12. The Account Holder granted API access, and the
+   upload secrets are a team API key (App Manager), which the job prefers automatically.
+2. **Remove the personal route.** The Apple-ID route is **tied to one person's Apple ID**. If its
+   secrets were ever added, delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD`, `ASC_APP_ID`
+   and `ASC_ITC_PROVIDER`, and revoke the app-specific password.
 3. **Restrict the iOS secrets.** Move them into a GitHub **Environment** (`testflight`) that releases
    them only to runs on `bleeding-edge`, with a required reviewer, and add `environment: testflight`
    to the job.
