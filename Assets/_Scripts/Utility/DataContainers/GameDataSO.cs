@@ -774,8 +774,18 @@ namespace CosmicShore.Utility
         {
             FlightClock.EndGame();
             // Every peer raises this, so every machine remembers the other humans of the match
-            // (the friends panel's RECENT section). Solo and AI-only games record nobody.
-            RecentPlayersStore.RecordMatchEnd(Players);
+            // (the friends panel's RECENT section). Solo and AI-only games record nobody. The
+            // record is a disk write; a failure there (disk full, a locked or read-only file) must
+            // cost the RECENT list one match, never this peer's end screen and scoreboard.
+            try
+            {
+                RecentPlayersStore.RecordMatchEnd(Players);
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[GameDataSO] Recording the recently-played-with list failed " +
+                                   $"({e.GetType().Name}: {e.Message}); the match end carries on.");
+            }
             OnMiniGameEnd?.Raise();
         }
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();

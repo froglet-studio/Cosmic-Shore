@@ -235,7 +235,9 @@ play at all.
   at `Resources/RecentPlayersConfig.asset` holds the cap (20) and the file name; a missing asset
   falls back to the same defaults.
 - **Recording**: `GameDataSO.InvokeMiniGameEnd` calls `RecentPlayersStore.RecordMatchEnd(Players)`
-  next to `FlightClock.EndGame()`. Every peer raises that (the modes sync results through a
+  next to `FlightClock.EndGame()`, inside a try/catch: the record is a disk write, and a failure
+  there (disk full, a locked or read-only file) logs a warning and costs the list one match, never
+  the `OnMiniGameEnd` raise that brings up that peer's end screen. Every peer raises that (the modes sync results through a
   ClientRpc first), so every machine remembers the match. Only seats with a UGS id are kept; AI
   seats (flagged, no id) and the local pilot (by flag AND by id, so a stale second object for the
   same account cannot record "you played with yourself") are dropped, and a solo or AI-only game
