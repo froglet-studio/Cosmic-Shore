@@ -115,6 +115,16 @@ zero-length columns swap unseen.
 - `omni_shepard_lab_assets.py --check` OK; `omni_shepard_shader_parity.py` PASS.
 - No C# or asset changed, so `/verify-unity` has nothing to run.
 
+**Face split (Shape ▸ Face split; four new depth styles)**
+- Each triangle is treated as the prism it is. Its five faces (top, bottom and three sides) move apart along their own normals by *Face split* × the plate radius × (1 − u).
+- u is the column place, so it is the same gradient. In the depth styles the far side is split open at the top of its columns and the near side is whole and sealed. In the clock-driven styles a prism assembles on its way down.
+- `OmniCrystalTriangles.asset` and `MassCrystalExport1` already give each face its own corners, with flat normals (18 corners and 5 faces per prism, normals within 3e-5 of the face normal). The vertex normal therefore is the face normal, and the shader needs nothing new baked.
+- Checked:
+  - In the JS twin, all five face centroids move out by the same 0.237 mesh units at split 1.
+  - Pixel parity is 0 px vs the round-7 page at split 0 (Shipped, Sealed by depth, Depth ratchet, Hole fill spin-hidden).
+  - Shader parity is 7 of 7.
+- New styles: Sealed by depth, faces split; Depth ratchet, faces split; Depth columns, faces split; Sealed by depth, gradient, faces split.
+
 **Also:** the Thickness slider now goes to 8, up from 3. `OmniShepardFresnelShader`'s `_Thickness` inspector range was raised to `Range(0.2, 8)` to match, so a lab pick can be typed into the material. That is a property-range change only: the shipped value stays 1.25 and the vertex code is untouched (shader parity 7 of 7).
 
 **Not modelled / to build:** all lab-side. Seal by depth and Depth columns need only the shader

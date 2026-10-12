@@ -189,6 +189,7 @@
     spiral: 0, tumble: 0, scatter: 0, // proposal: swirl about the axis, spin about own axis, scattered launch
     sizeFollow: 1,                    // plates scale with the shell (the shader does no other)
     sizeStart: L0.plateScaleStart,    // _PlateScaleStart
+    faceSplit: 0,                     // proposal (round 7): each prism's five faces pushed apart, by the column-place gradient
     thickness: L0.thickness,          // _Thickness
     opacity: L0.opacity,              // _Opacity
     alphaMode: 0, fade: 1.05, fadeIn: 0.15,      // shipped: alpha = (1.05 - s) * _Opacity
@@ -212,7 +213,7 @@
     hold: 'shader', steer: 'shader', steerMode: 'shader', turnEnd: 'shader', spin: 'shader', spinTilt: 'shader', spinOffset: 'shader', spinSpread: 'shader',
     fill: 'shader', fillCross: 'shader', fillDwell: 'shader', fillShade: 'shader', stagger: 'shader',
     depth: 'shader', depthOpen: 'shader', depthSeal: 'shader', depthPower: 'shader', depthSwap: 'shader', depthFade: 'shader',
-    turn: 'shader', turnTilt: 'shader', turnWobble: 'shader', pattern: 'shader', spiral: 'shader', tumble: 'shader', scatter: 'shader',
+    turn: 'shader', turnTilt: 'shader', turnWobble: 'shader', faceSplit: 'shader', pattern: 'shader', spiral: 'shader', tumble: 'shader', scatter: 'shader',
     sizeFollow: 'shader', alphaMode: 'shader', fade: 'shader', fadeIn: 'shader', blend: 'shader', brightness: 'shader',
     hueShift: 'shader', landFlash: 'shader', bodyPulse: 'shader', trails: 'shader', trailGap: 'shader',
   };
@@ -257,6 +258,7 @@
     ['Shape', 'sizeFollow', 0, 1, 0.05, 'Shrink with distance', '1 (shipped): a triangle is twice its landed size at launch because the whole shell is scaled. 0: constant size.'],
     ['Shape', 'sizeStart', 0.2, 3, 0.05, 'Size at launch', 'Extra size multiplier at launch, easing to 1 on landing. Below 1: grow as they arrive.'],
     ['Shape', 'thickness', 0.2, 8, 0.05, 'Thickness', 'Plate thickness. Thin = panels, thick = blocks.'],
+    ['Shape', 'faceSplit', 0, 2, 0.05, 'Face split', 'Treats each triangle as the prism it is: its five faces (top, bottom, three sides) move apart along their own normals, by this many plate radii at the top of the column, closing as the prism comes down and whole once it lands or seals. It follows the same gradient as the column place, so in the depth styles the far side is split open and the near side is whole.'],
     ['Light', 'opacity', 0, 1, 0.01, 'Opacity', '_Opacity.'],
     ['Light', 'alphaMode', 0, 1, 1, 'Fade style', 'Shipped: alpha = (fade line − scale). Fade in: full opacity after a short fade-in, whatever the height.', ['Shipped fade', 'Fade in']],
     ['Light', 'fade', 0.8, 2.5, 0.01, 'Fade line', 'The 1.05 in the shipped alpha formula. Raise it to see triangles from higher up.'],
@@ -382,10 +384,14 @@
   BASES.depth = DEPTH;
   STYLES.splice(1, 0,
     { id: 'depth-seal', base: 'depth', name: 'Sealed by depth', blurb: 'The far side stands open at the top of its columns, the near side is sealed; as the crystal turns, prisms glide down into their holes coming toward you and lift away going behind.', v: {} },
+    { id: 'depth-split', base: 'depth', name: 'Sealed by depth, faces split', blurb: 'Each prism comes apart into its five faces with the same depth gradient: whole and sealed in front, split wide open at the top of its column behind.', v: { faceSplit: 0.7 } },
     { id: 'depth-ratchet', base: 'depth', name: 'Depth ratchet', blurb: 'Prisms only ever go down where you can see them: coming toward you they ride the depth into their holes; going away they stay sealed, and are replaced at the top of their columns once behind.', v: { depth: 2 } },
+    { id: 'depth-ratchet-split', base: 'depth', name: 'Depth ratchet, faces split', blurb: 'The one-way ratchet, with each prism\'s faces drawing together as it comes down into its hole.', v: { depth: 2, faceSplit: 0.7 } },
     { id: 'depth-columns', base: 'depth', name: 'Depth columns', blurb: 'Every column runs the hole-fill swap forever; its length is set by depth: tall behind, nothing in front, so the front swaps in place, unseen.', v: { depth: 3 } },
+    { id: 'depth-columns-split', base: 'depth', name: 'Depth columns, faces split', blurb: 'Depth columns with each falling prism assembling from its faces on the way down.', v: { depth: 3, faceSplit: 0.7 } },
     { id: 'depth-sharp', base: 'depth', name: 'Sealed by depth, sharp edge', blurb: 'The whole change happens across the silhouette: everything you can see is sealed, everything just past the edge stands at the top.', v: { depthOpen: -0.15, depthSeal: 0.15 } },
     { id: 'depth-gradient', base: 'depth', name: 'Sealed by depth, gradient', blurb: 'Lift is proportional to depth over the whole crystal: only the prism facing you is fully sealed.', v: { depthOpen: -1, depthSeal: 0.7 } },
+    { id: 'depth-gradient-split', base: 'depth', name: 'Sealed by depth, gradient, faces split', blurb: 'Lift AND face split proportional to depth over the whole crystal: a prism is whole only where it faces you.', v: { depthOpen: -1, depthSeal: 0.7, faceSplit: 1 } },
     { id: 'depth-high', base: 'depth', name: 'Sealed by depth, held high', blurb: 'Prisms stay near the top until they are well round, then drop in late.', v: { depthPower: 2.2, depthSeal: 0.35 } },
     { id: 'depth-tumble', base: 'depth', name: 'Sealed by depth, tumbling', blurb: 'A tilted, wobbling turn: every face comes round to every side, and the near side is always sealed.', v: { turnTilt: 55, turnWobble: 9 } },
     { id: 'depth-ratchet-tumble', base: 'depth', name: 'Depth ratchet, tumbling', blurb: 'The one-way ratchet on a wobbling turn, so no column gets stuck sealed.', v: { depth: 2, turnTilt: 55, turnWobble: 9 } },
@@ -800,10 +806,20 @@
     let d2 = rotV(dir, Y, sw).map((x, i) => x + pl.jit[i] * p.scatter * (1 - u)); const dl = Math.hypot(...d2); d2 = d2.map((x) => x / dl);
     let local = [0, 1, 2].map((i) => G.TP[3 * vi + i] - pl.cent[i]); const ld = local[0] * dir[0] + local[1] * dir[1] + local[2] * dir[2];
     local = local.map((x, i) => x + dir[i] * ld * (p.thickness - 1));
+    if (p.faceSplit) {
+      const fn = [0, 1, 2].map((i) => G.TN[3 * vi + i]), fl = Math.hypot(...fn) || 1, sg = Math.sign([0, 1, 2].reduce((a, i) => a + fn[i] * (G.TP[3 * vi + i] - pl.cent[i]), 0));
+      local = local.map((x, i) => x + fn[i] / fl * sg * p.faceSplit * splitUnitOf(G) * (1 - u));
+    }
     local = rotV(rotV(local, pl.axis, tb), Y, sw);
     if (p.steer > 0) { const st = steerRot(p, d2, pl.axis, u, cam); d2 = rotV(d2, st.ax, st.ang); local = rotV(local, st.ax, st.ang); }
     const ls = (1 + (s - 1) * p.sizeFollow) * (p.sizeStart + (1 - p.sizeStart) * u);
     return [0, 1, 2].map((i) => d2[i] * pl.r * s + local[i] * ls);
+  }
+
+  // A plate's radius (mean corner distance from its centre, mesh units): the face split's unit.
+  function splitUnitOf(G) {
+    if (G.splitUnit == null) { let sum = 0, n = 0; G.PLATES.forEach((idx, j) => { const c = G.plate[j].cent; for (const v of new Set(idx)) { sum += Math.hypot(G.TP[3 * v] - c[0], G.TP[3 * v + 1] - c[1], G.TP[3 * v + 2] - c[2]); n++; } }); G.splitUnit = sum / n; }
+    return G.splitUnit;
   }
 
   // ================= rendering: WebGL =================
@@ -819,7 +835,7 @@
     'uniform float uDir; uniform float uHold; uniform float uStagger; uniform float uPattern; uniform float uSpiral; uniform float uTumble; uniform float uScatter;' +
     'uniform float uSizeFollow; uniform float uSizeStart; uniform float uThick; uniform float uAlphaMode; uniform float uFadeIn; uniform float uFade; uniform float uOpacity;' +
     'uniform float uStatic; uniform float uStaticS; uniform float uSteer; uniform float uSteerMode; uniform float uTurnEnd; uniform vec3 uCamDir; uniform float uSpin; uniform float uSpinSpread; uniform mat3 uModel;' +
-    'uniform float uFill; uniform float uFillCross; uniform float uFillDwell; uniform float uPrev; uniform float uStaticScale; uniform float uDepth; uniform vec4 uDS[60];' +
+    'uniform float uFill; uniform float uFillCross; uniform float uFillDwell; uniform float uPrev; uniform float uStaticScale; uniform float uDepth; uniform vec4 uDS[60]; uniform float uFaceSplit; uniform float uSplitUnit;' +
     'varying vec3 vN; varying vec3 vW; varying float vA; varying float vU;' + GLSL_LIB +
     'float S(float x){ return uStart + (uStop - uStart) * (1.0 - pow(max(1.0 - x, 0.0), uEase)); }' +
     'float shell(float u){ float k = min(uN - 1.0, floor(u * uN)); float f = u * uN - k; return mix(S(k / uN), S((k + 1.0) / uN), f); }' +
@@ -844,6 +860,9 @@
     ' float sw = radians(uSpiral) * (1.0 - u); float tb = radians(uTumble) * (1.0 - u); vec3 ax = normalize(aAxis);' +
     ' vec3 d2 = normalize(rotAxis(dir, Y, sw) + aJit * uScatter * (1.0 - u));' +
     ' vec3 local = aPos - aCent; local += dir * dot(local, dir) * (uThick - 1.0);' +
+    // Round 7, face split: every face of the prism (its corners are split per face, with flat normals)
+    // moves out along its own normal, by uFaceSplit plate radii at the top of the column, 0 when seated.
+    ' vec3 fn = normalize(aNrm); local += fn * sign(dot(fn, aPos - aCent)) * uFaceSplit * uSplitUnit * (1.0 - u);' +
     ' local = rotAxis(rotAxis(local, ax, tb), Y, sw); vec3 nrm = rotAxis(rotAxis(aNrm, ax, tb), Y, sw);' +
     // Round 5: swing the column so the birth is on the camera's far side of the crystal, easing onto
     // the plate's own column by uTurnEnd of the trip. Identity at uSteer 0.
@@ -1060,7 +1079,7 @@
       ['uSpiral', p.spiral], ['uTumble', p.tumble], ['uScatter', p.scatter], ['uSizeFollow', p.sizeFollow], ['uSizeStart', p.sizeStart], ['uThick', p.thickness], ['uAlphaMode', p.alphaMode],
       ['uFadeIn', p.fadeIn], ['uFade', p.fade], ['uOpacity', p.opacity], ['uRimPower', p.rimPower], ['uFaceFwd', p.faceForward], ['uGain', p.brightness], ['uHue', p.hueShift], ['uFlash', p.landFlash],
       ['uSteer', p.steer], ['uSteerMode', p.steerMode], ['uTurnEnd', p.turnEnd], ['uSpin', p.spin], ['uSpinSpread', p.spinSpread],
-      ['uFill', fill ? 1 : 0], ['uFillCross', p.fillCross], ['uFillDwell', p.fillDwell], ['uStaticScale', 0], ['uOpaque', opaqueFill ? 1 : 0], ['uDepth', depth ? 1 : 0], ['uComp', depth ? 1 : 0]]) gl.uniform1f(u[k], v);
+      ['uFill', fill ? 1 : 0], ['uFillCross', p.fillCross], ['uFillDwell', p.fillDwell], ['uStaticScale', 0], ['uOpaque', opaqueFill ? 1 : 0], ['uDepth', depth ? 1 : 0], ['uComp', depth ? 1 : 0], ['uFaceSplit', p.faceSplit], ['uSplitUnit', splitUnitOf(G)]]) gl.uniform1f(u[k], v);
     if (depth) {
       const st = depthState(p, t, eye), ds = new Float32Array(4 * st.u.length);
       for (let j = 0; j < st.u.length; j++) { ds[4 * j] = st.u[j]; ds[4 * j + 1] = st.x[j]; ds[4 * j + 2] = st.old[j]; }
@@ -1570,6 +1589,7 @@
       if (mode === 3) lines.push('• Depth columns: the hole-fill timeline per column, with the column length scaled by 1 - seat(d); the leaving prism dithers on the complementary pixels (1 - noise) so a swap in place shows nothing.');
       if (mode === 2) lines.push('• Ratchet: per-plate state the shader cannot keep. A small component holds each plate\'s place and reseat fade, steps the rule (coming toward the camera: follow seat(d) down; going away: hold; behind _DepthSwap: reseat at the top over _DepthFade s) and writes them each frame with MaterialPropertyBlock.SetVectorArray, read as _DepthState[plateIndex] with the plate index baked into the mesh.');
     }
+    if (P.faceSplit > 0) lines.push('• Face split ' + P.faceSplit + ': in OmniShepardFresnelShader\'s vertex stage, local += faceNormal * sign(dot(faceNormal, v - plateCentre)) * _FaceSplit * plateRadius * (1 - u). OmniCrystalTriangles.asset already splits each prism\'s corners per face with flat normals, so the vertex normal IS the face normal; nothing new to bake.');
     if (P.turn || P.turnWobble) lines.push('• Free turn: a rotator on the crystal transform, ' + P.turn + '°/s about an axis tipped ' + P.turnTilt + '° from up' + (P.turnWobble ? ', that axis swinging round the vertical at ' + P.turnWobble + '°/s' : '') + '. It turns the body too.');
     if (P.viewSquares > 0.5) lines.push('• Space squares (view only, not in the game): re-export the omni body from CrystalsRaw_V2.blend (OmniCrystal.001) with its shape keys as Unity blend shapes, and drive SquareRotateAroundPentagon and the two SquareOverTri steps from an animator clip baked from Action.008 (4.8 s loop). The squares also need the same transform as the triangles if Spin to hide is on, which a child of the rotated crystal gets for free.');
     return lines.join('\n');
