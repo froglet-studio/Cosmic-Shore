@@ -18,19 +18,25 @@ cleanup that deleted the selected Xcode.
 |---|---|---|
 | Standalone (Windows/Mac/Linux) | `com.FrogletGames.CosmicShore` | Since 2026-09-11 (`BUILD_AND_DELIVERY.md` §6) |
 | Android | `com.FrogletGames.CosmicShore` | Was `com.FrogletGames.TailGlider` until 2026-10-02 |
-| iOS | **`com.FrogletGames.CosmicShore.dev`** | The **TEST** id. Was `com.FrogletGames.Tail-Glider` until 2026-10-02 |
-| iOS (production, not yet used) | `com.FrogletGames.CosmicShore` | Flip to this when Froglet's **paid** Apple team ships TestFlight/App Store builds |
+| iOS (Player Settings) | **`com.FrogletGames.CosmicShore`** | The **production** id, since 2026-10-08, when Froglet's paid Apple team came online for TestFlight / App Store. Was the test id `.dev` from 2026-10-02, and `com.FrogletGames.Tail-Glider` before that |
+| iOS (Path A sideload `.ipa`) | **`com.FrogletGames.CosmicShore.dev`** | The **TEST** id. `ios-unsigned-ipa.yml` rewrites the app's `CFBundleIdentifier` to it whatever Player Settings exported |
 
-### Why iOS is on a test id
+### Why the free path stays on a test id
 
 An App ID is **globally unique across every Apple team**. A free Apple ID ("Personal Team") that
 builds `com.FrogletGames.CosmicShore` registers that identifier to the personal team, and Froglet's
 paid team then gets *"the app identifier cannot be registered to your development team because it
-is not available"* until the personal registration lapses. Testing on `.dev` keeps the production
-id clean. It also lets a dev build and a store build sit side by side on one phone.
+is not available"* until the personal registration lapses. So the store id lives only on the paid
+team, and the free sideload path never sees it:
 
-To go to production: Player Settings → iOS → Bundle Identifier → `com.FrogletGames.CosmicShore`
-(it is `applicationIdentifier.iPhone` in `ProjectSettings/ProjectSettings.asset`).
+- **Register the production App ID on the paid team first** (developer.apple.com → Identifiers).
+  Once the paid team owns it, no personal team can claim it.
+- **Path A's unsigned `.ipa` is always `.dev`.** The workflow sets the app's own
+  `CFBundleIdentifier` in the built (still unsigned) bundle, so a Windows export made with the
+  production id still sideloads as `.dev`. Embedded frameworks keep their own ids. It also lets a
+  dev build and a store build sit side by side on one phone.
+- **A borrowed Mac (3b) signing with a free team must change the id to `.dev` in Xcode's
+  Signing & Capabilities** before building. Player Settings now export the production id.
 
 ### What the change costs (stated, not hidden)
 
@@ -77,7 +83,7 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
    | | Development Build | ✔ | Keeps logs; also exempts the release-only build guards (`UnityPipelineReleaseGuard`, `CreditsReleaseGuard`) |
    | | Autoconnect Profiler / Deep Profiling / Script Debugging | off | All three slow the build and the game, and a sideloaded phone has nothing to connect them to |
    | | Compression Method | LZ4 | Smaller `Data` folder, so a smaller zip to upload. Loads fast |
-   | Player → iOS → Other Settings | Bundle Identifier | `com.FrogletGames.CosmicShore.dev` | Already set in `ProjectSettings.asset` (§1) |
+   | Player → iOS → Other Settings | Bundle Identifier | `com.FrogletGames.CosmicShore` (leave it) | The production id is what Player Settings carry. The CI job rewrites the `.ipa` to `.dev` itself (§1) |
    | | Signing Team ID / Automatically Sign | empty / off | Path A builds unsigned; Sideloadly signs. On a borrowed Mac (3b), pick the team in Xcode instead |
    | | Target SDK | **Device SDK** | Already set. A Simulator build will not install on a phone |
    | | Target minimum iOS Version | 15.0 | Already set (Unity 6.3's floor) |
@@ -111,7 +117,8 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
      and it is kept for 3 days.
    - **3b. Any Mac you can borrow for an hour — free, and simpler.** With the phone plugged into
      that Mac, open `Unity-iPhone.xcodeproj`. Under Signing & Capabilities, add the free Apple ID
-     as the team. Press **Run**. That skips Sideloadly and step 4. The Mac needs a macOS version
+     as the team **and change the Bundle Identifier to `com.FrogletGames.CosmicShore.dev`** (the
+     export carries the production id, which a free team must never register; §1). Press **Run**. That skips Sideloadly and step 4. The Mac needs a macOS version
      that runs Xcode 16.
    - **3c. Codemagic** — a personal account gets 500 free macOS minutes a month. That is the same
      idea as 3a, on someone else's runner, and needs its own setup.
@@ -161,8 +168,8 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
 - No TestFlight.
 - No push, Game Center or In-App Purchase capabilities. Push is already off in
   `ProjectSettings/NotificationsSettings.asset`. If Xcode or Sideloadly complains about an
-  In-App Purchase entitlement (`com.unity.purchasing` is installed), remove that capability for
-  the test build.
+  In-App Purchase entitlement, remove that capability for the test build. (`com.unity.purchasing`
+  was uninstalled on 2026-10-08, so a fresh export should not carry one.)
 
 ### Path B — Unity Build Automation (needs the paid Apple Developer Program, $99/yr)
 
@@ -182,7 +189,7 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
    openssl pkcs12 -export -legacy -inkey ios.key -in cert.pem -out ios.p12
    ```
    Keep `-legacy`. OpenSSL 3's default encryption produces `.p12` files Apple/Unity tooling rejects.
-2. **App ID** `com.FrogletGames.CosmicShore.dev` (or the production id).
+2. **App ID** `com.FrogletGames.CosmicShore` for TestFlight / App Store (register it on the paid team before anyone builds it; §1). A separate `com.FrogletGames.CosmicShore.dev` App ID is only for development-signed builds that should sit beside the store app.
 3. **Provisioning profile:**
    - *Development* — register the phone's UDID under Devices first. The **Apple Devices** app on
      Windows shows the UDID when you click the serial number.
