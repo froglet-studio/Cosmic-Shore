@@ -299,6 +299,20 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
   contains that certificate.
 - The signed app is not a development build (`get-task-allow`).
 
+**Security follow-up (open, flagged 2026-10-12).** The first uploads use the Apple-ID route, which
+is **tied to one person's Apple ID**. Separately, anyone with write access to this repo could, in
+principle, write a workflow that leaks any repository secret; that holds for every secret, not just
+these. The plan:
+
+1. **Switch to a team API key.** The Account Holder presses **Request Access** once. An Admin then
+   creates a team API key (App Manager), and the job prefers it automatically.
+2. **Remove the personal route.** Delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD` and
+   `ASC_APP_ID`, and revoke the app-specific password.
+3. **Restrict the iOS secrets.** Move them into a GitHub **Environment** (`testflight`) that releases
+   them only to runs on `bleeding-edge`, with a required reviewer, and add `environment: testflight`
+   to the job.
+4. **Protect `bleeding-edge`.** Require a pull request and a review, and audit who has write access.
+
 The build number becomes `<Unity build>.<run number>` (14 → `14.52`), so every upload is unique.
 Nothing secret is printed. The signed `.ipa` is not kept as an artifact, because the repo is
 public; only the xcodebuild logs are kept, for 7 days.

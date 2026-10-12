@@ -526,6 +526,11 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
     day someone switched it on.
   - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
     at that time; don't rely on an old claim that it's unused.
+- **The TestFlight upload credentials need locking down (flagged 2026-10-12).** The first uploads
+  use the Apple-ID route, which is tied to one person's Apple ID. And any repo writer could, in
+  principle, write a workflow that leaks a repository secret. The plan is in `Docs/IOS_BUILD.md`
+  Path C, "Security follow-up": a team API key, deleting the personal route, a `testflight`
+  Environment limited to bleeding-edge with a reviewer, and branch protection.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, the two iOS workflows and
   the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
