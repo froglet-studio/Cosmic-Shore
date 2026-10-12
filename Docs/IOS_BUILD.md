@@ -318,6 +318,44 @@ The build number becomes `<Unity build>.<run number>` (14 → `14.52`), so every
 Nothing secret is printed. The signed `.ipa` is not kept as an artifact, because the repo is
 public; only the xcodebuild logs are kept, for 7 days.
 
+### Check layouts in the Device Simulator before building
+
+Window > General > Device Simulator. It reproduces each device's resolution, safe area and
+orientation in Play mode, so most layout bugs show here without a 30-minute TestFlight round trip.
+
+**Devices it ships with stop at the iPhone 13 Pro.** `com.unity.device-simulator.devices` is at
+1.0.0 here. Its latest, 1.0.1 (Oct 2025), has the same 82 devices, so updating the package adds
+nothing.
+
+**The current devices are project-local definitions** in `Assets/Editor/DeviceSimulator/`. The
+Simulator imports any `.device` file in the project, and an `Editor` folder keeps them out of
+builds. The set:
+
+| Device | Panel (px) | Landscape safe area (L/R inset, bottom) |
+|---|---|---|
+| iPhone 15 Pro | 1179 × 2556 | 177 px, 63 px |
+| iPhone 15 Pro Max | 1290 × 2796 | 177 px, 63 px |
+| iPhone 16 Pro | 1206 × 2622 | 186 px, 63 px |
+| iPhone 16 Pro Max | 1320 × 2868 | 186 px, 63 px |
+| iPhone 17 Pro | 1206 × 2622 | 186 px, 63 px |
+| iPhone 17 Pro Max | 1320 × 2868 | 186 px, 63 px |
+| iPad Pro 13-inch (M4) | 2064 × 2752 | none, 40 px |
+
+- Each has a portrait overlay with its Dynamic Island.
+- The insets are Apple's published safe areas in points, × 3: 59 pt for the 14 Pro–15 Pro Max
+  shape and 62 pt for the 16 Pro panels.
+- **The 17 Pro pair is assumed to match the 16 Pro panels.** Confirm on a device when one is
+  available.
+- `systemInfo` (RAM, GPU name) feeds the device-tier classifier. Simulator runs of these devices
+  classify as a modern iPhone does.
+
+**To add a device:**
+1. Copy the closest `.device` file.
+2. Change `friendlyName`, `width`/`height`, the four `orientations` safe areas (pixels, origin
+   bottom-left) and `systemInfo`.
+3. Give it a fresh GUID in its `.meta`.
+4. The overlay is optional, but a cutout is easier to judge with one.
+
 ### Code that compiles ONLY in an iOS player build
 
 The editor defines `UNITY_EDITOR` even with iOS selected. So anything under
