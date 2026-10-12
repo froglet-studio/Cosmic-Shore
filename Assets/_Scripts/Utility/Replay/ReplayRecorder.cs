@@ -13,9 +13,12 @@ namespace CosmicShore.Utility
     /// <see cref="InputEvents"/> the strategy raised through <c>OnButtonPressed</c> /
     /// <c>OnButtonReleased</c> since the previous snapshot.
     ///
-    /// <para>Inert unless <see cref="Start"/> was called: the one call site in
-    /// <c>InputController.Update</c> tests <see cref="Recording"/> first. Nothing here writes
-    /// input; it only reads what the strategy produced.</para>
+    /// <para>Inert unless <see cref="Start"/> was called: both call sites in
+    /// <c>InputController.Update</c> test <see cref="Recording"/> first. <see cref="Listen"/> runs
+    /// there before the strategy does, so the edges a strategy raises on the first recorded frame
+    /// are heard; subscribing only at the first <see cref="Capture"/> lost them, because that runs
+    /// after the strategy has already raised. Nothing here writes input; it only reads what the
+    /// strategy produced.</para>
     /// </summary>
     public static class ReplayRecorder
     {
@@ -53,9 +56,27 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Subscribes to <paramref name="status"/>' button events (once; a different status moves
+        /// the subscription). InputController calls it every recorded frame before the strategy
+        /// runs, so the edges raised during that frame's ProcessInput, or by a strategy switch,
+        /// land in that frame's <c>pressed</c> / <c>released</c>.
+        /// </summary>
+        public static void Listen(IInputStatus status)
+        {
+            if (!Recording || status == null) return;
+            Bind(status);
+        }
+
+        /// <summary>True while recording with <paramref name="status"/>' button events subscribed.</summary>
+        public static bool IsListeningTo(IInputStatus status) =>
+            Recording && status != null && ReferenceEquals(s_bound, status);
+
+        /// <summary>
         /// Snapshots <paramref name="status"/> as the next frame. Called by InputController after
         /// <c>currentStrategy.ProcessInput()</c>; the button events raised during that call were
-        /// collected by the subscriptions <see cref="Bind"/> made on this status' event assets.
+        /// collected by the subscriptions <see cref="Listen"/> made on this status' event assets.
+        /// It subscribes too, for a recording that <see cref="Start"/> began during this frame's
+        /// ProcessInput, after the Listen call had already passed.
         /// </summary>
         public static void Capture(IInputStatus status)
         {
@@ -71,6 +92,10 @@ namespace CosmicShore.Utility
                 Throttle = status.Throttle,
                 LeftTriggerAnalog = status.LeftTriggerAnalog,
                 RightTriggerAnalog = status.RightTriggerAnalog,
+                EasedLeftJoystickPosition = status.EasedLeftJoystickPosition,
+                EasedRightJoystickPosition = status.EasedRightJoystickPosition,
+                LeftNormalizedJoystickPosition = status.LeftNormalizedJoystickPosition,
+                RightNormalizedJoystickPosition = status.RightNormalizedJoystickPosition,
                 pressed = s_pressed.ToArray(),
                 released = s_released.ToArray(),
             });

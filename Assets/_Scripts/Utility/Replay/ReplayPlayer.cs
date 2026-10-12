@@ -72,6 +72,12 @@ namespace CosmicShore.Utility
         public bool Finished => _index >= _frames.Length;
 
         /// <summary>
+        /// True while the replay has raised a press of <paramref name="e"/> and not yet its
+        /// release: the button <see cref="Stop"/> would still release.
+        /// </summary>
+        public bool IsHolding(InputEvents e) => _held.Contains(e);
+
+        /// <summary>
         /// Initializes against <paramref name="status"/> when it is not the bound one and returns
         /// this strategy, so InputController can select it with one expression.
         /// </summary>
@@ -116,6 +122,10 @@ namespace CosmicShore.Utility
             inputStatus.Throttle = frame.Throttle;
             inputStatus.LeftTriggerAnalog = frame.LeftTriggerAnalog;
             inputStatus.RightTriggerAnalog = frame.RightTriggerAnalog;
+            inputStatus.EasedLeftJoystickPosition = frame.EasedLeftJoystickPosition;
+            inputStatus.EasedRightJoystickPosition = frame.EasedRightJoystickPosition;
+            inputStatus.LeftNormalizedJoystickPosition = frame.LeftNormalizedJoystickPosition;
+            inputStatus.RightNormalizedJoystickPosition = frame.RightNormalizedJoystickPosition;
             if (!raiseEvents) return;
 
             foreach (var name in frame.Pressed)

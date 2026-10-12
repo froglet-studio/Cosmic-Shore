@@ -6,10 +6,16 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// One recorded frame of the parity replay (<c>Port/parity/README.md</c>, replay version 1).
-    /// The flight floats the vessel reads from <see cref="CosmicShore.Gameplay.IInputStatus"/>
-    /// plus the <see cref="CosmicShore.Data.InputEvents"/> names the strategy raised that frame.
+    /// The flight floats and stick vectors the vessel reads from
+    /// <see cref="CosmicShore.Gameplay.IInputStatus"/> plus the
+    /// <see cref="CosmicShore.Data.InputEvents"/> names the strategy raised that frame.
     /// A plain [Serializable] class so <see cref="JsonUtility"/> reads and writes it in both
     /// engines; arrays, never null on a freshly built frame.
+    ///
+    /// <para>The four stick vectors were added after the first files were written, still as
+    /// version 1: a frame without them reads them as zero, which is exactly what the player left
+    /// in <c>IInputStatus</c> before (its Bind resets the status and nothing wrote the sticks), so
+    /// an older file plays back unchanged. The engine ignores <c>status</c> either way.</para>
     /// </summary>
     [Serializable]
     public sealed class ReplayStatusFrame
@@ -37,6 +43,18 @@ namespace CosmicShore.Utility
 
         [Tooltip("IInputStatus.RightTriggerAnalog after the strategy's ProcessInput.")]
         public float RightTriggerAnalog;
+
+        [Tooltip("IInputStatus.EasedLeftJoystickPosition after the strategy's ProcessInput: what single-stick hulls (SingleStickVesselTransformer, ScarabVesselTransformer) steer from.")]
+        public Vector2 EasedLeftJoystickPosition;
+
+        [Tooltip("IInputStatus.EasedRightJoystickPosition after the strategy's ProcessInput.")]
+        public Vector2 EasedRightJoystickPosition;
+
+        [Tooltip("IInputStatus.LeftNormalizedJoystickPosition after the strategy's ProcessInput (barrel roll, Scarab animation).")]
+        public Vector2 LeftNormalizedJoystickPosition;
+
+        [Tooltip("IInputStatus.RightNormalizedJoystickPosition after the strategy's ProcessInput (gun aim, Scarab juke).")]
+        public Vector2 RightNormalizedJoystickPosition;
 
         [Tooltip("InputEvents raised through OnButtonPressed during this frame, by enum name.")]
         public string[] pressed = Array.Empty<string>();

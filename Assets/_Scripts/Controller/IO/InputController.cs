@@ -128,10 +128,14 @@ namespace CosmicShore.Gameplay
             UpdateDualMouseEngagement();
             UpdateActiveDeviceFamily();
 
+            // Parity harness (Assets/_Scripts/Utility/Replay): a recording listens to the status'
+            // button events before the strategy runs, so the edges raised this frame (the first
+            // recorded one included, and a strategy switch's releases) are heard; after
+            // ProcessInput it snapshots the status the strategy just wrote.
+            if (ReplayRecorder.Recording)
+                ReplayRecorder.Listen(InputStatus);
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
-            // Parity harness (Assets/_Scripts/Utility/Replay): a recording snapshots the status
-            // the strategy just wrote, plus the InputEvents it raised this frame.
             if (ReplayRecorder.Recording)
                 ReplayRecorder.Capture(InputStatus);
             orientationHandler.Update();
