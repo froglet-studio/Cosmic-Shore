@@ -186,85 +186,100 @@ def check_configs(index: avs.AssetIndex) -> tuple[int, int, list[str]]:
     return checked, issues, lines
 
 
+# The self-test gates both static CI jobs, so its fixtures are SYNTHETIC: a Unity-shaped crystal
+# prefab, a lifeform prefab that nests it, and a config, written into a temp project with their
+# own script guids. An earlier version copied a named live config and the first passing live
+# prefab, so renaming that config or adding a lifeform that sorted first could turn CI red.
+
+SYN_SCRIPTS = {"LightFauna": avs._g(0x1F1), "Crystal": avs._g(0x1F2),
+               "FaunaConfigurationSO": avs._g(0x1F3), "FloraConfigurationSO": avs._g(0x1F4)}
+SYN_CRYSTAL, SYN_CREATURE, SYN_CONFIG = avs._g(0x2E1), avs._g(0x2E2), avs._g(0x2E3)
+CR_GO, CR_T, CR_CRYSTAL = 10, 11, 12          # the crystal prefab
+LF_GO, LF_T, LF_FAUNA = 1, 2, 3               # the lifeform prefab
+CRYSTAL_INSTANCES = (900, 901)
+
+
+def _mono(fid: int, go: int, script: str, fields: list[str]) -> str:
+    return avs._doc(avs.MONO, fid, "MonoBehaviour", [
+        f"  m_GameObject: {{fileID: {go}}}", "  m_Enabled: 1",
+        f"  m_Script: {{fileID: 11500000, guid: {SYN_SCRIPTS[script]}, type: 3}}",
+        "  m_Name: ", "  m_EditorClassIdentifier: "] + fields)
+
+
+def _synthetic_project(root: Path, crystals: int = 1, element_override: str | None = "3",
+                       removed: bool = False, variant: str | None = "    Enabled: 1\n    HeartWorldScale: 2.5\n"
+                       ) -> tuple[str, str]:
+    """Write the project; return (prefab rel path, config rel path). By default it passes: the
+    crystal prefab's own Element is 0 (NOT elemental) and the lifeform's instance overrides it to
+    3 (Space), so a pass proves the override is read through the nested instance."""
+    w = avs._write
+    for name, guid in SYN_SCRIPTS.items():
+        w(root, f"Assets/Scripts/{name}.cs", "", guid)
+    w(root, "Assets/Crystals/CrystalMass.prefab", avs.YAML_HEAD
+      + avs._go(CR_GO, "CrystalMass", [CR_T, CR_CRYSTAL]) + avs._transform(CR_T, CR_GO, 0)
+      + _mono(CR_CRYSTAL, CR_GO, "Crystal", ["  crystalProperties:", "    fuelAmount: 0.01",
+                                             "    Element: 0", "    crystalValue: 0"]), SYN_CRYSTAL)
+    mods = [(CR_CRYSTAL, "crystalProperties.Element", element_override, "{fileID: 0}")] \
+        if element_override is not None else []
+    text = (avs.YAML_HEAD + avs._go(LF_GO, "Creature", [LF_T, LF_FAUNA]) + avs._transform(LF_T, LF_GO, 0)
+            + _mono(LF_FAUNA, LF_GO, "LightFauna", []))
+    for inst in CRYSTAL_INSTANCES[:crystals]:
+        text += avs._instance(inst, LF_T, SYN_CRYSTAL, mods, [CR_CRYSTAL] if removed else [])
+    prefab = "Assets/Lifeforms/Creature.prefab"
+    w(root, prefab, text, SYN_CREATURE)
+    config = "Assets/Configs/Creature Fauna Config Data.asset"
+    w(root, config, avs.YAML_HEAD + avs._doc(avs.MONO, 11400000, "MonoBehaviour", [
+        "  m_GameObject: {fileID: 0}", "  m_Enabled: 1",
+        f"  m_Script: {{fileID: 11500000, guid: {SYN_SCRIPTS['FaunaConfigurationSO']}, type: 3}}",
+        "  m_Name: Creature Fauna Config Data", "  m_EditorClassIdentifier: ",
+        f"  FaunaPrefab: {{fileID: {LF_GO}, guid: {SYN_CREATURE}, type: 3}}",
+        "  SpreadElements: 0", "  Element: 3"]) + (f"  Variant:\n{variant}" if variant is not None else ""),
+      SYN_CONFIG)
+    return prefab, config
+
+
 def self_test() -> int:
-    """Negative controls on a synthetic project: a lifeform prefab with no crystal, a config
-    with its Variant block removed, and a config that passes. The script metas are copied so the
-    guids resolve by file name exactly as they do on the live tree."""
-    import shutil
+    """Negative controls on a synthetic project: a lifeform prefab whose crystal comes through a
+    nested instance with an element override passes, and each half of the invariant is broken
+    once (no crystal, a removed crystal, a non-elemental crystal, two crystals; no Variant block,
+    a disabled one, one with no HeartWorldScale)."""
     import tempfile
     ok = True
-    live = avs.AssetIndex(ROOT)
-    with tempfile.TemporaryDirectory() as td:
-        root = Path(td)
-        def put(rel: str) -> Path:
-            dst = root / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(ROOT / rel, dst)
-            return dst
-        # Scripts the walk resolves by name: every lifeform class, the crystal, the configs.
-        names = subclasses("LifeForm") | {"LightFauna", "Crystal", "FaunaConfigurationSO", "FloraConfigurationSO"}
-        for g, path in live.by_guid.items():
-            if path.suffix == ".cs" and path.stem in names:
-                put(str(path.relative_to(ROOT)) + ".meta")
-        # A passing lifeform prefab: the first one on the live tree the prefab check passes.
-        lifeform_guids = script_guids(live, sorted(names - {"Crystal", "FaunaConfigurationSO", "FloraConfigurationSO"}))
-        crystal_guid = next(g for g, p in live.by_guid.items() if p.suffix == ".cs" and p.stem == "Crystal")
-        shark = None
-        for g, path in sorted(live.by_guid.items(), key=lambda kv: str(kv[1])):
-            if path.suffix != ".prefab" or "Qfish" in path.name:
-                continue
-            comps = all_components(live, g)
-            if not any(avs.guid_of(c.value("m_Script")[0]) in lifeform_guids for c in comps):
-                continue
-            crystals = [c for c in comps if avs.guid_of(c.value("m_Script")[0]) == crystal_guid]
-            if len(crystals) == 1 and crystal_element(crystals[0]) in ELEMENTAL:
-                shark = str(path.relative_to(ROOT))
-                break
-        put(shark); put(shark + ".meta")
-        # The prefab's nested crystal source must come along, or the walk cannot see the crystal.
-        import re
-        pending = [ROOT / shark]
-        seen = set()
-        while pending:
-            cur = pending.pop()
-            for g in set(re.findall(r"m_SourcePrefab: \{fileID: 100100000, guid: ([0-9a-f]{32})", cur.read_text(encoding="utf-8", errors="replace"))):
-                src = live.by_guid.get(g)
-                if src and g not in seen:
-                    seen.add(g)
-                    put(str(src.relative_to(ROOT))); put(str(src.relative_to(ROOT)) + ".meta")
-                    pending.append(src)
-        all_components.cache_clear()
-        cfg = "Assets/_SO_Assets/Threat Flora/Swarm Physarum Flora Space Config Data.asset"
-        put(cfg); put(cfg + ".meta")
-        # Its prefab reference must resolve to SOMETHING for the config to count; it is a guid
-        # reference, not a file read, so the meta alone is enough.
-        idx = avs.AssetIndex(root)
-        c1, i1, _ = check_prefabs(idx)
-        c2, i2, l2 = check_configs(idx)
-        ok &= _expect(f"a complete lifeform prefab passes ({shark.rsplit('/', 1)[-1]})", c1 >= 1 and i1 == 0)
-        ok &= _expect("a config with an enabled Variant and a HeartWorldScale passes", c2 == 1 and i2 == 0)
 
-        # Negative control 1: strip the Variant block from the config.
-        text = (root / cfg).read_text(encoding="utf-8")
-        stripped = re.sub(r"^  Variant:\n(?:    .*\n)*", "", text, flags=re.M)
-        (root / cfg).write_text(stripped, encoding="utf-8")
-        _c, i2b, l2b = check_configs(avs.AssetIndex(root))
-        ok &= _expect("a config with no Variant block is a finding", i2b == 1 and any("no Variant tuning" in l for l in l2b))
-
-        # Negative control 2: a lifeform prefab with every Crystal component removed by hand.
-        ptext = (root / shark).read_text(encoding="utf-8", errors="replace")
-        crystal_guid = next(g for g, p in live.by_guid.items() if p.suffix == ".cs" and p.stem == "Crystal")
-        without = re.sub(r"--- !u!114 &-?\d+( stripped)?\nMonoBehaviour:\n(?:(?!--- !u!).*\n)*?  m_Script: \{fileID: 11500000, guid: " + crystal_guid + r", type: 3\}\n(?:(?!--- !u!).*\n)*", "", ptext)
-        (root / shark).write_text(without, encoding="utf-8")
-        # Also drop the nested crystal source prefabs so no nested crystal survives.
-        for g in set(re.findall(r"m_SourcePrefab: \{fileID: 100100000, guid: ([0-9a-f]{32})", ptext)):
-            src = live.by_guid.get(g)
-            if src and "rystal" in src.name:
-                (root / src.relative_to(ROOT)).unlink(missing_ok=True)
-                (root / (str(src.relative_to(ROOT)) + ".meta")).unlink(missing_ok=True)
+    def run(**kw) -> tuple[tuple[int, int, list[str]], tuple[int, int, list[str]]]:
         all_components.cache_clear()
-        _c, i1b, l1b = check_prefabs(avs.AssetIndex(root))
-        ok &= _expect("a lifeform prefab with no crystal is a finding", i1b >= 1 and any("NO crystal" in l for l in l1b))
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            _synthetic_project(root, **kw)
+            idx = avs.AssetIndex(root)
+            return check_prefabs(idx), check_configs(idx)
+
+    (c1, i1, _l1), (c2, i2, _l2) = run()
+    ok &= _expect("a lifeform prefab with one nested crystal, element overridden to Space, passes",
+                  c1 == 1 and i1 == 0)
+    ok &= _expect("a config with an enabled Variant and a HeartWorldScale passes", c2 == 1 and i2 == 0)
+
+    (_c, i, lines), _ = run(crystals=0)
+    ok &= _expect("a lifeform prefab with no crystal is a finding", i == 1 and any("NO crystal" in l for l in lines))
+    (_c, i, lines), _ = run(removed=True)
+    ok &= _expect("a crystal the nesting instance REMOVES is gone",
+                  i == 1 and any("NO crystal" in l for l in lines))
+    (_c, i, lines), _ = run(element_override=None)
+    ok &= _expect("a crystal whose element is not elemental is a finding",
+                  i == 1 and any("crystal element is '0'" in l for l in lines))
+    (_c, i, lines), _ = run(crystals=2)
+    ok &= _expect("a lifeform with two crystals is a finding", i == 1 and any("2 crystals" in l for l in lines))
+
+    _, (_c, i, lines) = run(variant=None)
+    ok &= _expect("a config with no Variant block is a finding",
+                  i == 1 and any("no Variant tuning" in l for l in lines))
+    _, (_c, i, lines) = run(variant="    Enabled: 0\n    HeartWorldScale: 2.5\n")
+    ok &= _expect("a config whose Variant is disabled is a finding",
+                  i == 1 and any("DISABLED Variant block" in l for l in lines))
+    _, (_c, i, lines) = run(variant="    Enabled: 1\n    HeartWorldScale: 0\n")
+    ok &= _expect("an enabled Variant with no HeartWorldScale is a finding",
+                  i == 1 and any("authors no HeartWorldScale" in l for l in lines))
+    all_components.cache_clear()
     print("self-test:", "OK" if ok else "FAILED")
     return 0 if ok else 1
 
