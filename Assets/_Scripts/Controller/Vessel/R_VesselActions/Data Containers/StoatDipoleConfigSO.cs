@@ -78,6 +78,14 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds the source takes to grow in (whInS); it starts at 55% of this, so a fresh pair pulls before it pushes.")]
         [SerializeField, Range(0.05f, 5f)] float sourceGrowSeconds = 1.1f;
 
+        [Tooltip("Black hole sinks back to a point (s) (dieS). The pair's annihilation: both poles shrink to a point along " +
+                 "1 − smoothstep(t / dieS) while the gravitational wave and the white hole's light leave (Docs/BLACK_HOLE.md §5.2).")]
+        [SerializeField, Range(0.05f, 4f)] float dieSeconds = 0.7f;
+
+        [Tooltip("Size (× the black hole) (whSizeX): the white hole's horizon as a multiple of the black hole's — the lens " +
+                 "draws its core this much bigger or smaller.")]
+        [SerializeField, Range(0.3f, 3f)] float sourceSizeX = 1f;
+
         [Header("Flight in the field (the owner's)")]
         [Tooltip("The fastest the field may turn the nose, radians per second (dpTurnCap).")]
         [SerializeField, Range(0.5f, 40f)] float turnCap = 12f;
@@ -226,6 +234,8 @@ namespace CosmicShore.ScriptableObjects
         public float AccelerationCap => accelerationCap;
         public float SinkGrowSeconds => sinkGrowSeconds;
         public float SourceGrowSeconds => sourceGrowSeconds;
+        public float DieSeconds => dieSeconds;
+        public float SourceSizeX => sourceSizeX;
         public float TurnCap => turnCap;
         public float Grip => grip;
         public float GravitySpeedCeilingCruises => gravitySpeedCeilingCruises;

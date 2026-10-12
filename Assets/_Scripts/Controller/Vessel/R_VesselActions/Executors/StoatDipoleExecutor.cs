@@ -97,6 +97,9 @@ namespace CosmicShore.Gameplay
         StoatPathfinderExecutor _pathfinder; // resolved lazily (rule 6): the warp verdict the watching autopilot reads
 
         public StoatDipoleConfigSO Config => config;
+        /// <summary>The studio's ftStrength → the game's poleGM (studio_to_unity/stoat.json: scale 20 000).</summary>
+        const float StoatPoleGMPerStrength = 20000f;
+
         /// <summary>True while this hull's pair is open on this machine.</summary>
         public bool IsOpen => _sink && _source && !_sink.IsDespawning && !_source.IsDespawning;
         public bool IsHolding(Side side) => _holds[(int)side].Holding;
@@ -205,12 +208,29 @@ namespace CosmicShore.Gameplay
             _sink.OwnerVessel = OwnerTransform();
             _source.OwnerVessel = OwnerTransform();
             _age = 0f;
+            // The white hole's birth: its light converging from far away onto the pair (the studio's spawnWave('in', mid)).
+            BlackHoleWaves.Spawn(BlackHoleWaves.Kind.In, 0.5f * (sinkAt + sourceAt), inSeconds: config.SourceGrowSeconds);
             ApplyOwnerRules();
             return true;
         }
 
         void Close(bool annihilate)
         {
+            if (annihilate && _sink && _source && !_sink.IsDespawning && !_source.IsDespawning)
+            {
+                // The studio's startDying: the pair's mass leaves as a gravitational wave from where the poles met, along
+                // the line they met on, its strength the pair's (mass = S/6 in 0.3..2, S = the pole's strength); the white
+                // hole's light leaves as an outgoing shell; both poles sink to a point over dieS.
+                Vector3 sinkAt = _sink.transform.position, sourceAt = _source.transform.position;
+                var axis = sourceAt - sinkAt;
+                if (axis.sqrMagnitude < 1e-6f) axis = _right;
+                float strength = Mathf.Abs(_sink.GM) / StoatPoleGMPerStrength;
+                BlackHoleWaves.Spawn(BlackHoleWaves.Kind.Gravitational, 0.5f * (sinkAt + sourceAt), axis,
+                    Mathf.Min(2f, Mathf.Max(0.3f, strength / 6f)));
+                BlackHoleWaves.Spawn(BlackHoleWaves.Kind.Out, sourceAt);
+                _sink.BeginDespawn(config.DieSeconds);
+                _source.BeginDespawn(config.DieSeconds);
+            }
             if (_sink && !_sink.IsDespawning) _sink.BeginDespawn();
             if (_source && !_source.IsDespawning) _source.BeginDespawn();
             bool wasOpen = _sink || _source;
@@ -256,7 +276,8 @@ namespace CosmicShore.Gameplay
             float bornSink = Mathf.SmoothStep(0f, 1f, _age / Mathf.Max(0.01f, config.SinkGrowSeconds));
             float bornSource = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1f, _age / Mathf.Max(0.01f, config.SourceGrowSeconds)));
             SetPole(_sink, config.PoleHorizon * size * bornSink, config.PoleGM * size * bornSink);
-            SetPole(_source, config.PoleHorizon * size * bornSource, config.PoleGM * config.SourcePush * size * bornSource);
+            // the studio's rsR = ftHorizon × whSizeX × born; its push SR = ftStrength × ftWhite × born
+            SetPole(_source, config.PoleHorizon * config.SourceSizeX * size * bornSource, config.PoleGM * config.SourcePush * size * bornSource);
         }
 
         static void SetPole(BlackHole hole, float horizon, float gm)
@@ -294,6 +315,10 @@ namespace CosmicShore.Gameplay
             bool autopilot = _status.AutoPilotEnabled;
             Track(Side.Left, input != null ? input.LeftTriggerAnalog : 0f, analog, autopilot, dt);
             Track(Side.Right, input != null ? input.RightTriggerAnalog : 0f, analog, autopilot, dt);
+
+            // A squeeze the hole budget refused (every pilot's pairs, the fading ones too, share it) keeps asking
+            // while the trigger is held, so the pair opens the moment there is room instead of only on a re-press.
+            if (!IsOpen && (_holds[0].Holding || _holds[1].Holding) && BlackHoleRegistry.CanSpawn(2)) Open();
 
             if (IsOpen)
             {
@@ -382,7 +407,7 @@ namespace CosmicShore.Gameplay
             // The size travels as the horizon; the GM is the same multiple of the authored one.
             float size = horizon / Mathf.Max(1e-3f, config.PoleHorizon);
             SetPole(_sink, horizon, config.PoleGM * size);
-            SetPole(_source, horizon, config.PoleGM * config.SourcePush * size);
+            SetPole(_source, horizon * config.SourceSizeX, config.PoleGM * config.SourcePush * size);
         }
 
         void Publish()

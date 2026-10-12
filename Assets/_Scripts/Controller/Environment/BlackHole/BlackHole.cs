@@ -169,6 +169,7 @@ namespace CosmicShore.Gameplay
             set => _domainTintAmount = Mathf.Clamp01(value);
         }
         float _domainTintAmount;
+        float _dieSeconds, _dieT, _dieFrom;
 
         /// <summary>What a SINK does with a prism that crosses its horizon (<see cref="BlackHoleGravityField"/>).</summary>
         public enum PrismCaptureRule
@@ -317,10 +318,20 @@ namespace CosmicShore.Gameplay
         /// released by the field on the next tick (a hole that is gone stops pulling at once —
         /// only the PHOTONS ease, the same split every §4.7 global keeps).
         /// </summary>
-        public void BeginDespawn()
+        public void BeginDespawn() => BeginDespawn(0f);
+
+        /// <summary>
+        /// Despawn over <paramref name="seconds"/> along the studio's death curve (<c>updateDipole</c>'s dying branch):
+        /// the horizon and everything drawn from it sink to a point as 1 − smoothstep(t / seconds) — the Vessel Studio's
+        /// <c>dieS</c>, a pair's annihilation (Docs/BLACK_HOLE.md §5.2). 0 = the config's linear warp ease.
+        /// </summary>
+        public void BeginDespawn(float seconds)
         {
             if (_despawning) return;
             _despawning = true;
+            _dieSeconds = Mathf.Max(0f, seconds);
+            _dieT = 0f;
+            _dieFrom = _weight;
             BlackHoleRegistry.Unregister(this);
             _registered = false;
         }
@@ -354,7 +365,14 @@ namespace CosmicShore.Gameplay
             var config = BlackHoleRegistry.Config;
             float ease = config.WarpEaseSeconds;
             float rate = ease > 0f ? dt / ease : 1f;
-            if (_despawning)
+            if (_despawning && _dieSeconds > 0f)
+            {
+                _dieT += dt;
+                float e = Mathf.SmoothStep(0f, 1f, _dieT / _dieSeconds);
+                _weight = _dieFrom * (1f - e);
+                if (_dieT >= _dieSeconds) { _weight = 0f; Destroy(gameObject); }
+            }
+            else if (_despawning)
             {
                 _weight = Mathf.Max(0f, _weight - rate);
                 if (_weight <= 0f) Destroy(gameObject);

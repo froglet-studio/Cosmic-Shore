@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Every Stoat gets its pair; the annihilation's waves (`Ys-bleeding-edge`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **The hole budget is 16** (`BlackHoleConfig.maxBlackHoles`, `BlackHolePhysics.NativeWells.Capacity`; it was 4). With two
+  AIs holding pairs the player's squeeze was silently refused. The prism tide bank stays at 4 and takes the holes nearest
+  the camera (`BlackHoleWarp.PickNearest`). A refused squeeze keeps asking while the trigger is held.
+- **The studio's waves** (`BlackHoleWaves`, Docs/BLACK_HOLE.md §5.2): the white hole's light converging at a pair's birth,
+  the gravitational wave and the outgoing light at its death, drawn by the lens (the bend, crests, the view stretching as it
+  passes you, a shell's wash) and by the prism shader (prisms stretch and squeeze, `gwPrism`). Both poles sink over `dieS`.
+  New `BlackHoleConfig` rows: `whInFrom`, `whOutSpeed`, `whOutFade`, `shellBend`, `gwAmp`, `gwSpeed`, `gwPeriod`,
+  `gwRingdown`, `gwPrism`, `gwShake`, `gwGlow`; `StoatDipoleConfig.dieSeconds` (dieS), `sourceSizeX` (whSizeX). All mapped in
+  `studio_to_unity/stoat.json` (50/50 match the artifact).
+- Offline proof: `verify_black_hole_lens.py` (1b, 5b, C2) and `verify_prism_gravity_warp.py` 16, each against the page's own
+  code, each with a negative control. **Not compiled or run by Unity** (no `/verify-unity` in this session).
+
+**Verify in editor:**
+1. `BlackHoleTests` (`Config_HoleBudgetSeatsEveryPilotsPair`, `Lens_DrawsTheStudiosWaves`,
+   `Waves_StrainHasAFrontARingdownAndASilentAxis`), `BlackHolePhysicsTests`, `CrystalWormholeTests` pass.
+2. Slingshot (or lava lamp) with 2-3 AI Stoats: squeeze repeatedly while they hold their pairs — **every** squeeze lays your pair.
+3. Lay a pair: a thin bright ring shrinks onto it from far away over ~1 s.
+4. Let go of both triggers: the poles close and annihilate — a ripple runs outward (bright crests, darker troughs), the screen
+   gently breathes as it passes you, prisms near it stretch and squeeze, a bright ring leaves the white hole, and both
+   holes shrink to a point in ~0.7 s. Subtle at the shipped numbers, as in the artifact.
+5. The ripple keeps going (~40 s, faint) after the holes are gone; no error when it ends; the Frame Debugger shows the lens
+   pass only while a hole or a wave is alive.
+
 ### 🔴 The black and white hole lens is the Vessel Studio's, one pass for every hole (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **What landed:** `BlackHoleLens.shader` / `.hlsl` rewritten as the studio's lens pass (`StoatFlightStudio.html`,

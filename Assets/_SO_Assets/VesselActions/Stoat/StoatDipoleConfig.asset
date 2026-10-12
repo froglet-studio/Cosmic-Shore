@@ -34,6 +34,8 @@ MonoBehaviour:
   accelerationCap: 3000
   sinkGrowSeconds: 0.9
   sourceGrowSeconds: 1.1
+  dieSeconds: 0.7
+  sourceSizeX: 1
   turnCap: 12
   grip: 0.5
   gravitySpeedCeilingCruises: 4

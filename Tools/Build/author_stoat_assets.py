@@ -613,6 +613,8 @@ def dipole_config_asset() -> str:
             "  accelerationCap: 3000\n"
             "  sinkGrowSeconds: 0.9\n"
             "  sourceGrowSeconds: 1.1\n"
+            "  dieSeconds: 0.7\n"
+            "  sourceSizeX: 1\n"
             "  turnCap: 12\n"
             "  grip: 0.5\n"
             "  gravitySpeedCeilingCruises: 4\n"

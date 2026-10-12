@@ -205,12 +205,19 @@ namespace unity {
 static float4 _BHWellC[BLACK_HOLE_LENS_MAX_WELLS], _BHWellP[BLACK_HOLE_LENS_MAX_WELLS], _BHWellM[BLACK_HOLE_LENS_MAX_WELLS], _BHWellT[BLACK_HOLE_LENS_MAX_WELLS];
 static float _BHWellCount;
 static float4 _BHLook, _BHLook2;
+static float4 _BHWaveC[4], _BHWaveP[4], _BHWaveQ[4], _BHWaveA[4];
+static float _BHWaveCount;
+static float4 _BHWave;
 static float2 g_uv;
 static float g_sceneZ;
 #include "frag.h"
 }
 
 struct Well { float4 c, p, m; };
+// The waves both sides draw this case (none by default): light shells and the gravitational wave, the view's own
+// stretch (gwCam), a passing shell's wash, the crests' glow.
+struct WaveSet { int n = 0; float4 c[4], p[4], q[4]; float2 ax[4]; float gwCam = 0, shellWash = 0, gwGlow = 1; };
+static WaveSet g_waves;
 struct Look { float kShadow, kCore, ringGlow, ringWidth, lensFade, coreBright, coreMix, aspect; };
 
 static float3 run_studio(const std::vector<Well>& wells, const Look& L, float2 uv, float sceneZ)
@@ -220,11 +227,12 @@ static float3 run_studio(const std::vector<Well>& wells, const Look& L, float2 u
     // the raw depth whose linDepth is sceneZ
     float z = (camFar + camNear - 2.0f * camNear * camFar / sceneZ) / (camFar - camNear);
     scene_depth_raw = (z + 1.0f) * 0.5f;
-    aspect = L.aspect; soft = 0.65f; gwCam = 0; shellWash = 0; gwGlow = 1;
+    aspect = L.aspect; soft = 0.65f; gwCam = g_waves.gwCam; shellWash = g_waves.shellWash; gwGlow = g_waves.gwGlow;
     kShadow = L.kShadow; kCore = L.kCore; ringGlow = L.ringGlow; ringWidth = L.ringWidth; lensFade = L.lensFade;
     coreBright = L.coreBright; coreMix = L.coreMix;
     for (int i = 0; i < 4; i++) { wvC[i] = float4(0,0,0,0); wC[i] = float4(0,0,0,0); wP[i] = float4(0,0,0,0); wM[i] = float4(0,0,0,0); }
     for (size_t i = 0; i < wells.size() && i < 4; i++) { wC[i] = wells[i].c; wP[i] = wells[i].p; wM[i] = wells[i].m; }
+    for (int i = 0; i < g_waves.n; i++) { wvC[i] = g_waves.c[i]; wvP[i] = g_waves.p[i]; wvQ[i] = g_waves.q[i]; wvAx[i] = g_waves.ax[i]; }
     vUv = uv;
     studio_main();
     return gl_FragColor.xyz();
@@ -238,6 +246,10 @@ static bool run_unity(const std::vector<Well>& wells, const Look& L, float2 uv, 
     _BHWellCount = (float)wells.size();
     _BHLook = float4(L.kShadow, L.kCore, L.ringGlow, L.ringWidth);
     _BHLook2 = float4(L.lensFade, L.coreBright, L.coreMix, L.aspect);
+    for (int i = 0; i < 4; i++) { _BHWaveC[i] = _BHWaveP[i] = _BHWaveQ[i] = _BHWaveA[i] = float4(0,0,0,0); }
+    for (int i = 0; i < g_waves.n; i++) { _BHWaveC[i] = g_waves.c[i]; _BHWaveP[i] = g_waves.p[i]; _BHWaveQ[i] = g_waves.q[i]; _BHWaveA[i] = float4(g_waves.ax[i].x, g_waves.ax[i].y, 0, 0); }
+    _BHWaveCount = (float)g_waves.n;
+    _BHWave = float4(g_waves.gwCam, g_waves.shellWash, g_waves.gwGlow, 0);
     g_uv = uv; g_sceneZ = sceneZ;
     float4 r = shipped_frag();
     if (r.x == -1.0f && r.w == -1.0f) { out = scene_colour(uv); return false; }   // discarded: the camera's own pixel
@@ -261,6 +273,32 @@ static Well random_well(std::mt19937& rng, float type)
         w.m = float4(0.0f, 0.0f, 0.0f, rc * depth);
     }
     return w;
+}
+
+// Random waves in screen units, as BlackHoleWaves.ScreenWaves lays them (k = f / depth: screen units per world unit).
+static void random_waves(std::mt19937& rng, int n)
+{
+    std::uniform_real_distribution<float> U(0.0f, 1.0f);
+    g_waves = WaveSet();
+    g_waves.n = n;
+    for (int i = 0; i < n; i++) {
+        float k = 0.0005f + 0.01f * U(rng);
+        g_waves.c[i] = float4(-0.8f + 1.6f * U(rng), -0.4f + 0.8f * U(rng), U(rng) < 0.5f ? 1.0f : 2.0f, 1.0f);
+        if (g_waves.c[i].z < 1.5f) {
+            float env = U(rng), R = 50.0f + 700.0f * U(rng);
+            g_waves.p[i] = float4(R * k, 6.0f * env * k * (0.5f + 2.0f * U(rng)), 28.0f * k, 0.35f * env);
+            g_waves.q[i] = float4(0, 0, 0, 0); g_waves.ax[i] = float2(0, 0);
+        } else {
+            float a = 6.2831853f * U(rng), has = U(rng) < 0.8f ? 1.0f : 0.0f;
+            g_waves.ax[i] = has > 0.5f ? float2(std::cos(a), std::sin(a)) : float2(0, 0);
+            float speed = 60.0f + 400.0f * U(rng), ring = 0.3f + 1.5f * U(rng);
+            g_waves.p[i] = float4(k, g_waves.ax[i].x, 12.0f * (0.3f + 1.7f * U(rng)) * k, 6.0f * U(rng));
+            g_waves.q[i] = float4(speed, 0.1f + 0.8f * U(rng), ring, has);
+        }
+    }
+    g_waves.gwCam = 0.06f * (U(rng) - 0.5f);
+    g_waves.shellWash = U(rng) < 0.5f ? 0.0f : 0.3f * U(rng);
+    g_waves.gwGlow = 3.0f * U(rng);
 }
 
 int main(int argc, char** argv)
@@ -301,6 +339,38 @@ int main(int argc, char** argv)
     CHECK(worstOrder < 1e-4f, "reversing the holes changed a pixel by %.6f", worstOrder);
     printf("1. parity with the studio's lens: %d pixels over 400 random sets of 1-4 holes, worst %.2g (case %d); %d left untouched\n", pixels, worst, worstCase, untouched);
     printf("2. order: reversing the holes changes no pixel (worst %.2g)\n", worstOrder);
+
+    // 1b. the WAVES (Docs/BLACK_HOLE.md §5.2): light shells and the gravitational wave with the view's own stretch and a
+    //     passing shell's wash, with and without holes, against the studio's wave loop.
+    {
+        int wpx = 0, wtouched = 0; float wworst = 0.0f;
+        for (int c = 0; c < 300; c++) {
+            random_waves(rng, 1 + (int)(U(rng) * 3.99f));
+            int n = (int)(U(rng) * 3.0f);
+            std::vector<Well> wells;
+            for (int i = 0; i < n; i++) wells.push_back(random_well(rng, 1.0f + (float)(int)(U(rng) * 4.0f)));
+            for (int k = 0; k < 200; k++) {
+                float2 uv(U(rng), U(rng));
+                if (k % 2 == 0) {   // near a wave's front or its centre
+                    const float4& wc = g_waves.c[k % g_waves.n]; const float4& wp = g_waves.p[k % g_waves.n];
+                    float r = (wc.z < 1.5f ? wp.x : 0.3f) * (0.6f + 0.8f * U(rng)), a = 6.2831853f * U(rng);
+                    uv = float2(wc.x / L.aspect + 0.5f + r * std::cos(a) / L.aspect, wc.y + 0.5f + r * std::sin(a));
+                    if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f) continue;
+                }
+                float sceneZ = 1500.0f + 6000.0f * U(rng);
+                float3 a = run_studio(wells, L, uv, sceneZ);
+                float3 b; bool touched = run_unity(wells, L, uv, sceneZ, b);
+                float d = std::max(std::fabs(a.x - b.x), std::max(std::fabs(a.y - b.y), std::fabs(a.z - b.z)));
+                float tol = touched ? 2e-4f : 1.0f / 1024.0f * 3.0f + 1e-5f;
+                if (touched) wworst = std::max(wworst, d);
+                CHECK(d <= tol, "waves case %d pixel (%.4f, %.4f): studio (%.5f %.5f %.5f) vs Unity (%.5f %.5f %.5f)%s", c, uv.x, uv.y, a.x, a.y, a.z, b.x, b.y, b.z, touched ? "" : " [untouched]");
+                wpx++; if (touched) wtouched++;
+            }
+        }
+        g_waves = WaveSet();
+        printf("1b. waves: %d pixels over 300 random sets of 1-4 light shells and gravitational waves (0-2 holes, the view "
+               "stretched, a shell's wash) match the studio's wave loop, worst %.2g (%d drawn)\n", wpx, wworst, wtouched);
+    }
 
     // 3. no disc edge: walk out across the reach
     {
@@ -635,6 +705,214 @@ def run_tier_c(work, require_real):
     return ok and fired
 
 
+WAVES_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleWaves.cs")
+
+WAVE_STUB = r"""
+using System;
+namespace UnityEngine {
+  public static class Mathf {
+    public const float Deg2Rad = (float)(Math.PI / 180.0), PI = (float)Math.PI;
+    public static float Tan(float v) => (float)Math.Tan(v);
+    public static float Exp(float v) => (float)Math.Exp(v);
+    public static float Sin(float v) => (float)Math.Sin(v);
+    public static float Sqrt(float v) => (float)Math.Sqrt(v);
+    public static float Min(float a, float b) => a < b ? a : b;
+    public static float Max(float a, float b) => a > b ? a : b;
+    public static float Clamp01(float v) => v < 0 ? 0 : (v > 1 ? 1 : v);
+    public static float Abs(float v) => v < 0 ? -v : v;
+  }
+  public struct Vector3 {
+    public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; }
+    public static Vector3 zero => new Vector3(0, 0, 0);
+    public float sqrMagnitude => x * x + y * y + z * z;
+    public float magnitude => (float)Math.Sqrt(sqrMagnitude);
+    public Vector3 normalized { get { float m = magnitude; return new Vector3(x / m, y / m, z / m); } }
+    public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+    public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+    public static Vector3 operator *(Vector3 a, float k) => new Vector3(a.x * k, a.y * k, a.z * k);
+    public static bool operator ==(Vector3 a, Vector3 b) => a.x == b.x && a.y == b.y && a.z == b.z;
+    public static bool operator !=(Vector3 a, Vector3 b) => !(a == b);
+    public override bool Equals(object o) => o is Vector3 v && v == this;
+    public override int GetHashCode() => 0;
+    public static float Dot(Vector3 a, Vector3 b) => a.x * b.x + a.y * b.y + a.z * b.z;
+    public static float Distance(Vector3 a, Vector3 b) => (a - b).magnitude;
+  }
+  public struct Vector4 { public float x, y, z, w; public Vector4(float a, float b, float c, float d) { x = a; y = b; z = c; w = d; }
+    public static Vector4 zero => new Vector4(0, 0, 0, 0); }
+  // a camera at the origin looking down +z (Unity's view space is -z forward)
+  public struct Matrix4x4 { public Vector3 MultiplyPoint3x4(Vector3 p) => new Vector3(p.x, p.y, -p.z); }
+  public static class Time { public static float time; }
+  public enum RuntimeInitializeLoadType { BeforeSceneLoad }
+  public sealed class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
+}
+namespace CosmicShore.ScriptableObjects {
+  public class BlackHoleConfigSO {
+    public float WhInFrom { get; set; } public float WhOutSpeed { get; set; } public float WhOutFade { get; set; }
+    public float ShellBend { get; set; } public float GwAmp { get; set; } public float GwSpeed { get; set; }
+    public float GwPeriod { get; set; } public float GwRingdown { get; set; } public float GwShake { get; set; }
+  }
+}
+namespace CosmicShore.Gameplay {
+  static class BlackHoleLensPass { internal static void AcquireWaves() { } internal static void ReleaseWaves() { } }
+}
+"""
+
+WAVE_MAIN = r"""
+using System;
+using System.Globalization;
+using UnityEngine;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+public static class Program {
+  public static void Main() {
+    var inv = CultureInfo.InvariantCulture;
+    foreach (var line in Console.In.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries)) {
+      var f = Array.ConvertAll(line.Split(' '), s => float.Parse(s, inv));
+      // fov kind cx cy cz ax ay az mass u inS | whInFrom whOutSpeed whOutFade shellBend gwAmp gwSpeed gwPeriod gwRingdown gwShake
+      var cfg = new BlackHoleConfigSO { WhInFrom = f[11], WhOutSpeed = f[12], WhOutFade = f[13], ShellBend = f[14], GwAmp = f[15],
+        GwSpeed = f[16], GwPeriod = f[17], GwRingdown = f[18], GwShake = f[19] };
+      // three.js world (x, y, z), camera looking down -z  ->  Unity world (x, y, -z), camera looking down +z
+      Time.time = 1e9f;   // every wave of the previous case is over
+      BlackHoleWaves.Tick(new BlackHoleConfigSO { GwSpeed = 1f, GwRingdown = 1f, WhOutSpeed = 1f, WhOutFade = 1f });
+      if (BlackHoleWaves.Count != 0) throw new Exception("a wave outlived its life");
+      Time.time = 0f;
+      BlackHoleWaves.Spawn((BlackHoleWaves.Kind)(int)f[1], new Vector3(f[2], f[3], -f[4]), new Vector3(f[5], f[6], -f[7]), f[8], f[10]);
+      var c = new Vector4[4]; var p = new Vector4[4]; var q = new Vector4[4]; var ax = new Vector4[4];
+      int n = BlackHoleWaves.ScreenWaves(new Matrix4x4(), Vector3.zero, f[0], 0.3f, f[9], cfg, c, p, q, ax, out float gwCam, out float wash);
+      Console.WriteLine(string.Join(" ", new float[] { n, c[0].x, c[0].y, c[0].z, p[0].x, p[0].y, p[0].z, p[0].w, q[0].x, q[0].y, q[0].z, q[0].w,
+        ax[0].x, ax[0].y, gwCam, wash }.Select(v => v.ToString("R", inv))));
+    }
+  }
+}
+"""
+
+WAVE_JS = r"""
+const page = require('fs').readFileSync(process.argv[2], 'utf8');
+const cut = (re) => { const m = page.match(re); if (!m) throw new Error('not found: ' + re); return m[0]; };
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+eval(cut(/const smooth = \(a, b, x\) => \{[^\n]*\};/).replace('const smooth', 'var smooth'));
+const GW_R0 = Number(cut(/const GW_R0 = \d+/).split('=')[1]), TAU_W = Math.PI * 2;
+let simT = 0, waves = [], P = {};
+const gwStrainAt = eval('(' + cut(/function gwStrainAt\(x, y, z, w\) \{[\s\S]*?\n  \}/).replace('function gwStrainAt', 'function') + ')');
+class V3 { constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
+  copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this; } clone() { return new V3(this.x, this.y, this.z); }
+  applyMatrix4() { return this; }   // the camera is at the origin, unrotated: its inverse world matrix is the identity
+  project(cam) { const t = Math.tan(cam.fov * Math.PI / 360); const z = -this.z; this.x = this.x / z / (t * cam.aspect); this.y = this.y / z / t; return this; }
+  addScaledVector(v, k) { this.x += v.x * k; this.y += v.y * k; this.z += v.z * k; return this; }
+  distanceTo(v) { return Math.hypot(this.x - v.x, this.y - v.y, this.z - v.z); } }
+const tv = new V3(), tv2 = new V3();
+const row4 = () => ({ x: 0, y: 0, z: 0, w: 0, set(a, b, c, d) { this.x = a; this.y = b; this.z = c; this.w = d; return this; } });
+const row2 = () => ({ x: 0, y: 0, set(a, b) { this.x = a; this.y = b; return this; } });
+const U = { wvC: { value: [row4(), row4(), row4(), row4()] }, wvP: { value: [row4(), row4(), row4(), row4()] },
+  wvQ: { value: [row4(), row4(), row4(), row4()] }, wvAx: { value: [row2(), row2(), row2(), row2()] },
+  gwCam: { value: 0 }, shellWash: { value: 0 }, gwGlow: { value: 0 } };
+const lensMat = { uniforms: U };
+const setWaveUniforms = eval('(' + cut(/function setWaveUniforms\(cam, f\) \{[\s\S]*?\n  \}/).replace('function setWaveUniforms', 'function') + ')');
+const out = [];
+for (const line of require('fs').readFileSync(0, 'utf8').trim().split('\n')) {
+  const v = line.split(' ').map(Number);
+  const [fov, kind, cx, cy, cz, ax, ay, az, mass, u, inS] = v;
+  [P.whInFrom, P.whOutSpeed, P.whOutFade, P.shellBend, P.gwAmp, P.gwSpeed, P.gwPeriod, P.gwRingdown, P.gwShake] = v.slice(11);
+  P.whInS = inS; P.gwGlow = 1;
+  const cam = { fov, aspect: 1.6, near: 0.3, position: new V3() };
+  const type = kind === 1 ? 'in' : kind === 2 ? 'out' : 'gw';
+  waves = [{ type, c: new V3(cx, cy, cz), axis: kind === 3 ? new V3(ax, ay, az) : null, mass, t0: 0 }];
+  simT = u;
+  setWaveUniforms(cam, 0.5 / Math.tan(fov * Math.PI / 360));
+  const c = U.wvC.value[0], p = U.wvP.value[0], q = U.wvQ.value[0], a = U.wvAx.value[0];
+  const n = U.wvC.value.filter((r) => r.w > 0.5).length;
+  out.push([n, c.x, c.y, c.z, p.x, p.y, p.z, p.w, q.x, q.y, q.z, q.w, a.x, a.y, U.gwCam.value, U.shellWash.value].join(' '));
+}
+console.log(out.join('\n'));
+"""
+
+
+def run_tier_c2(work, require_real):
+    """C2. BlackHoleWaves.ScreenWaves (the whole shipped file, compiled against stubs) vs the page's setWaveUniforms."""
+    dotnet = shutil.which("dotnet") or (os.path.expanduser("~/.dotnet/dotnet") if os.path.exists(os.path.expanduser("~/.dotnet/dotnet")) else None)
+    node = shutil.which("node")
+    if not dotnet or not node:
+        print("C2 SKIPPED: dotnet or node not found" + (" - FAIL (--require-real)" if require_real else ""))
+        return not require_real
+    import random
+    rnd = random.Random(11)
+    cases = []
+    for k in range(480):
+        kind = 1 + k % 3
+        fov = rnd.choice([50.0, 68.0, 90.0])
+        cz = -rnd.choice([120.0, 400.0, 1500.0]) * (0.6 + rnd.random())       # in front of the camera (three.js: -z)
+        cx, cy = (rnd.random() - 0.5) * -cz * 0.8, (rnd.random() - 0.5) * -cz * 0.5
+        a = [rnd.random() - 0.5 for _ in range(3)]
+        l = sum(x * x for x in a) ** 0.5
+        a = [x / l for x in a]
+        if kind == 3 and k % 7 == 0:
+            cz = -rnd.choice([15.0, 40.0])                                      # the camera inside the burst: gwCam
+        mass = 0.3 + 1.7 * rnd.random()
+        inS = 0.3 + 2 * rnd.random()
+        u = rnd.random() * (inS if kind == 1 else 4.0)
+        cfg = [rnd.choice([400, 700, 1500]), rnd.choice([200, 450, 900]), rnd.choice([0.8, 1.6, 3]), rnd.choice([2, 6, 15]),
+               rnd.choice([6, 12, 30]), rnd.choice([60, 120, 400]), rnd.choice([0.2, 0.35, 0.9]), rnd.choice([0.5, 1, 2]),
+               rnd.choice([0.5, 1, 2.5])]
+        cases.append(" ".join(f"{v:.6f}" for v in [fov, kind, cx, cy, cz, a[0], a[1], a[2], mass, u, inS] + cfg))
+    stdin = "\n".join(cases) + "\n"
+    with open(os.path.join(work, "waves.js"), "w") as f:
+        f.write(WAVE_JS)
+    js = subprocess.run([node, os.path.join(work, "waves.js"), STUDIO], input=stdin, capture_output=True, text=True)
+    if js.returncode != 0:
+        print("C2: the studio's setWaveUniforms did not run:\n" + js.stderr[:2000])
+        return False
+    studio_rows = js.stdout.strip().splitlines()
+
+    def build(label, src):
+        proj = os.path.join(work, label)
+        os.makedirs(proj, exist_ok=True)
+        with open(os.path.join(proj, f"{label}.csproj"), "w") as f:
+            f.write('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType>'
+                    '<TargetFramework>net' + dotnet_major(dotnet) + '.0</TargetFramework><Nullable>disable</Nullable>'
+                    '<ImplicitUsings>disable</ImplicitUsings><LangVersion>latest</LangVersion></PropertyGroup></Project>')
+        for name, text in (("Stub.cs", WAVE_STUB), ("BlackHoleWaves.cs", src), ("Program.cs", "using System.Linq;\n" + WAVE_MAIN)):
+            with open(os.path.join(proj, name), "w") as f:
+                f.write(text)
+        b = subprocess.run([dotnet, "build", "-nologo", "-v", "q", "-o", os.path.join(proj, "out")], cwd=proj,
+                           capture_output=True, text=True)
+        if b.returncode != 0:
+            print(f"C2: BlackHoleWaves.cs did not build ({label}):\n" + (b.stdout + b.stderr)[-3000:])
+            return None
+        r = subprocess.run([dotnet, os.path.join(proj, "out", f"{label}.dll")], input=stdin, capture_output=True, text=True)
+        return r.stdout.strip().splitlines()
+
+    def compare(rows):
+        worst, bad = 0.0, 0
+        for a, b in zip(studio_rows, rows):
+            av = [float(v) for v in a.split()]
+            bv = [float(v) for v in b.split()]
+            # a light shell (kind 1) uses c and p only: the studio leaves the wave-only rows q and ax of the previous
+            # wave in that slot (it clears c alone), and the shader never reads them for a shell
+            cols = [j for j in range(len(av)) if not (av[3] < 1.5 and 8 <= j <= 13)]
+            for j in cols:
+                d = abs(av[j] - bv[j]) / max(1e-4, abs(av[j]))
+                worst = max(worst, d)
+                if d > 2e-3:
+                    bad += 1
+                    break
+        return worst, bad
+
+    src = open(WAVES_CS, encoding="utf-8").read()
+    rows = build("waves", src)
+    if rows is None or len(rows) != len(studio_rows):
+        return False
+    worst, bad = compare(rows)
+    gw = sum(1 for r in studio_rows if abs(float(r.split()[14])) > 1e-6)
+    print(f"C2. ScreenWaves vs the page's setWaveUniforms: {len(rows)} waves (shells in and out, gravitational; {gw} with the "
+          f"camera inside the burst), worst relative error {worst:.2g}, {bad} mismatched")
+    mutated = src.replace("28f * k", "30f * k")
+    assert mutated != src, "the shell's width 28 moved: update the negative control"
+    rows = build("waves_control", mutated)
+    fired = rows is not None and compare(rows)[1] > 0
+    print(f"C2 negative control [a shell's width 28 -> 30]: {'FIRED' if fired else 'DID NOT FIRE'}")
+    return bad == 0 and fired
+
+
 def dotnet_major(dotnet):
     r = subprocess.run([dotnet, "--version"], capture_output=True, text=True)
     m = re.match(r"(\d+)", r.stdout.strip())
@@ -675,6 +953,17 @@ def main():
         fired = rc is not None and rc != 0 and "studio (" in out
         print(f"\n5. negative control [photon ring 1.03 -> 1.10]: {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
+
+        mutated = hlsl.replace("squeeze += 0.14 * gwGlow", "squeeze += 0.24 * gwGlow")
+        assert mutated != hlsl, "the wave's trough darkening 0.14 moved: update the negative control"
+        with open(os.path.join(work, "shipped.h"), "w") as f:
+            f.write(shipped_hlsl_to_cpp(mutated))
+        rc, out = build_and_run(work, HARNESS, [], "control_waves")
+        fired = rc is not None and rc != 0 and "waves case" in out
+        print(f"5b. negative control [a wave's trough darkening 0.14 -> 0.24]: {'FIRED' if fired else 'DID NOT FIRE'}")
+        ok &= fired
+        with open(os.path.join(work, "shipped.h"), "w") as f:
+            f.write(shipped_hlsl_to_cpp(hlsl))
 
         print("\nB1. glslang compile of BlackHoleLens.shader against the per-file URP mock")
         write_mock_library(work)
@@ -721,6 +1010,7 @@ def main():
 
         print("\nC. the camera's numbers: the shipped C# against the page's JavaScript")
         ok &= run_tier_c(work, require_real)
+        ok &= run_tier_c2(work, require_real)
     finally:
         if keep:
             print("kept:", work)

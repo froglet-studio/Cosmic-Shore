@@ -165,9 +165,9 @@ whose scripted pad releases the way a thumb does. `StoatSlingMath.Peak` keeps th
 (`StoatSlingTests.Peak_KeepsTheDeepestSqueezeThroughTheLetGo`).
 
 **One pair per Stoat.** A new sling annihilates THIS hull's previous pair first (never the tool's or
-another hull's), so a pilot can chain nudges without exhausting `BlackHoleConfig.maxBlackHoles` (4 —
-two pairs fleet-wide). A refused sling (no room) is a verbose log on the `BlackHole` channel, not an
-error.
+another hull's), so a pilot can chain nudges without exhausting `BlackHoleConfig.maxBlackHoles` (16 —
+eight pairs fleet-wide since 2026-10-12; it was 4, and two AIs holding pairs refused the player's). A refused sling
+(no room) is a verbose log on the `BlackHole` channel, not an error, and keeps asking while the trigger is held.
 
 ## 4. The prefab — what the generator changed and what it kept
 

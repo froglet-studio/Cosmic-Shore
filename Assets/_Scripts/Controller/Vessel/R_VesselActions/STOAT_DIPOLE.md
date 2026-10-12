@@ -96,13 +96,11 @@ upgrade bit, the name and the domain are replicated). The boost and the field fl
 flies. Known limits, the platform's own: the gravity field's prisms and the stripped crystals are
 local per peer (the wormhole toll's stance), so two peers can disagree on a prism at the horizon's edge.
 
-**The hole budget is FOUR, so only TWO Stoats can hold a pair at once.** `BlackHoleConfig.maxBlackHoles`
-is clamped to `BlackHolePhysics.NativeWells.Capacity` (4), which the lens shader's well bank is sized
-to. A third Stoat's squeeze is refused (`BlackHoleRegistry.CanSpawn`, a quiet verbose line), and each
-peer applies the budget to its own copies in its own order, so in a 3–4 Stoat race two peers can
-disagree on whose pair exists. This bites Warpline and Slingshot at 3+ Stoats; the round-4 sling had
-the same ceiling. Raising it is a lens/shader change (the bank and the well job together), not a
-config edit — logged as a follow-up, not done here.
+**The hole budget is 16 (2026-10-12; it was FOUR).** At four, only two Stoats could hold a pair at once, and in lava lamp
+or Slingshot with two AIs holding theirs the player's squeeze was silently refused ("sometimes my pair spawns, sometimes it
+doesn't"). `BlackHoleConfig.maxBlackHoles` is now 16 (`BlackHolePhysics.NativeWells.Capacity`); the prism tide shader
+draws the 4 holes nearest the camera and the lens the nearest 8. A squeeze refused for room keeps asking while the trigger
+is held, so it opens as soon as there is room. A hole that is annihilating has already left the count.
 
 ## 3a. Ported from the studio: the settings map, the camera, the AI hand-over (2026-10-10)
 

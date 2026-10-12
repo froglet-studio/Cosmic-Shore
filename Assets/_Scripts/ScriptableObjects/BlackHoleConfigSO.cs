@@ -89,10 +89,13 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)]
         [SerializeField] int maxBodies = 6000;
 
-        [Tooltip("How many black holes may be live at once (console spawns past this are refused). " +
-                 "Mirrors PRISM_GRAVITY_WARP_SLOTS in PrismGravityWarp.hlsl — change both together.")]
-        [Range(1, 4)]
-        [SerializeField] int maxBlackHoles = 4;
+        [Tooltip("How many holes may be live at once, every pilot's together (a spawn past this is refused; a hole that is " +
+                 "annihilating has already left the count). A Stoat's pair is two, so a 4-pilot race needs 8; 16 leaves " +
+                 "room for the cell's own. At a budget of 4, two AIs holding pairs refused the player's squeeze (2026-10-12). " +
+                 "At most BlackHolePhysics.NativeWells.Capacity (16). The prism tide shader draws the 4 holes nearest the " +
+                 "camera; the lens the nearest 8.")]
+        [Range(2, 16)]
+        [SerializeField] int maxBlackHoles = 16;
 
         [Tooltip("Seconds between admission sweeps (the spatial query that finds new prisms inside " +
                  "an influence sphere). Bodies already admitted integrate every frame regardless.")]
@@ -216,6 +219,51 @@ namespace CosmicShore.ScriptableObjects
         [Range(0.005f, 0.5f)]
         [SerializeField] float photonRingWidth = 0.06f;
 
+        [Header("Waves in space-time — the Vessel Studio's 'life' rows (Docs/BLACK_HOLE.md §5.2)")]
+        [Tooltip("Its light shell starts this far out (u)")]
+        [Range(100f, 3000f)]
+        [SerializeField] float whInFrom = 700f;
+
+        [Tooltip("White hole's light leaves at (u/s)")]
+        [Range(50f, 2000f)]
+        [SerializeField] float whOutSpeed = 450f;
+
+        [Tooltip("That light fades over (s)")]
+        [Range(0.1f, 6f)]
+        [SerializeField] float whOutFade = 1.6f;
+
+        [Tooltip("Light shells bend the sky by (u)")]
+        [Range(0f, 30f)]
+        [SerializeField] float shellBend = 6f;
+
+        [Tooltip("Gravity wave strength (u)")]
+        [Range(0f, 40f)]
+        [SerializeField] float gwAmp = 12f;
+
+        [Tooltip("Gravity wave speed (u/s)")]
+        [Range(50f, 2000f)]
+        [SerializeField] float gwSpeed = 120f;
+
+        [Tooltip("Ripple period (s)")]
+        [Range(0.05f, 1.5f)]
+        [SerializeField] float gwPeriod = 0.35f;
+
+        [Tooltip("Ringdown fades over (s)")]
+        [Range(0.05f, 3f)]
+        [SerializeField] float gwRingdown = 1f;
+
+        [Tooltip("Prisms stretch & squeeze in it")]
+        [Range(0f, 2f)]
+        [SerializeField] float gwPrism = 0.6f;
+
+        [Tooltip("Space stretches as it passes you")]
+        [Range(0f, 4f)]
+        [SerializeField] float gwShake = 1f;
+
+        [Tooltip("Show the wave's crests (visual aid)")]
+        [Range(0f, 3f)]
+        [SerializeField] float gwGlow = 1f;
+
         [Header("Pair (a black hole and a white hole born together — Docs/BLACK_HOLE.md §11)")]
         [Tooltip("Each hole's distance from the pair's midpoint at birth, in horizon radii — the black hole " +
                  "to one side, the white hole to the other, on the camera's (the vessel's) own horizontal. " +
@@ -330,6 +378,17 @@ namespace CosmicShore.ScriptableObjects
         public float WhiteCoreSkyMix => Mathf.Clamp(whiteCoreSkyMix, 0f, 2f);
         public float PhotonRingGlow => Mathf.Clamp(photonRingGlow, 0f, 2f);
         public float PhotonRingWidth => Mathf.Clamp(photonRingWidth, 0.005f, 0.5f);
+        public float WhInFrom => Mathf.Max(0f, whInFrom);
+        public float WhOutSpeed => Mathf.Max(0f, whOutSpeed);
+        public float WhOutFade => Mathf.Max(0.05f, whOutFade);
+        public float ShellBend => Mathf.Max(0f, shellBend);
+        public float GwAmp => Mathf.Max(0f, gwAmp);
+        public float GwSpeed => Mathf.Max(1f, gwSpeed);
+        public float GwPeriod => Mathf.Max(0.02f, gwPeriod);
+        public float GwRingdown => Mathf.Max(0.01f, gwRingdown);
+        public float GwPrism => Mathf.Max(0f, gwPrism);
+        public float GwShake => Mathf.Max(0f, gwShake);
+        public float GwGlow => Mathf.Max(0f, gwGlow);
         public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
         public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
         public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);
@@ -365,7 +424,9 @@ namespace CosmicShore.ScriptableObjects
         public float ReleaseSpeed => Mathf.Max(0.01f, releaseSpeed);
         public int MaxSubsteps => Mathf.Clamp(maxSubsteps, 1, 16);
         public int MaxBodies => Mathf.Max(0, maxBodies);
-        public int MaxBlackHoles => Mathf.Clamp(maxBlackHoles, 1, 4);
+        /// <summary>The budget's ceiling: <c>BlackHolePhysics.NativeWells.Capacity</c> (BlackHoleTests holds them equal).</summary>
+        public const int HoleBudgetCeiling = 16;
+        public int MaxBlackHoles => Mathf.Clamp(maxBlackHoles, 2, HoleBudgetCeiling);
         public float AdmissionInterval => Mathf.Max(0.02f, admissionInterval);
         public bool PullVessels => pullVessels;
         public float VesselPullScale => Mathf.Max(0f, vesselPullScale);

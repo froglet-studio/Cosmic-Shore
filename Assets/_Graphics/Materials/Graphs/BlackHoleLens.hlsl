@@ -99,6 +99,51 @@ void BlackHoleLensWell(float2 p, float4 c, float4 w, float4 m, float4 look, floa
     }
 }
 
+// THE WAVES (Docs/BLACK_HOLE.md §5.2, the studio's wave loop, line for line). One wave's step (c, P, Q, ax: its
+// uniforms, from BlackHoleWaves.ScreenWaves):
+//   c   xy its centre on screen, z the kind (1 a light shell, 2 the gravitational wave), w 1 = live
+//   a light shell:  P = (radius R·k, bend shellBend·env·k, width 28·k, glow 0.35·env)  — k = f / depth, screen units per u
+//   the wave:       P = (k, -, gwAmp·mass·k, age u), Q = (gwSpeed, gwPeriod, gwRingdown, has the meeting axis), ax its
+//                   direction on screen. The strain at screen distance th is the studio's gwStrainAt at r = th / k:
+//                   e^(−u'/τ)·sin(2π u'/period)·min(1, 60/r) with u' = u − r/speed, sin² of the angle to the axis.
+// A shell pushes the view outward across its front and glows (1, 0.96, 0.86); the wave pushes it along its strain, its
+// crests (stretched) a little brighter (0.45, 0.6, 1.0) and its troughs (squeezed) a little darker — a visual aid, gwGlow.
+void BlackHoleLensWave(float2 p, float4 c, float4 P, float4 Q, float4 ax, float gwGlow,
+                       inout float2 disp, inout float3 glow, inout float squeeze)
+{
+    float2 d = p - c.xy;
+    float th = max(length(d), 1e-5);
+    float2 dir = d / th;
+    if (c.z < 1.5)
+    {
+        float x = (th - P.x) / max(P.z, 1e-5);
+        float g = exp(-x * x);
+        disp += dir * P.y * x * g;
+        glow += float3(1.0, 0.96, 0.86) * P.w * g;
+    }
+    else
+    {
+        float r = th / max(P.x, 1e-6);
+        float u = P.w - r / max(Q.x, 1.0);
+        if (u > 0.0 && u < 8.0 * Q.z)
+        {
+            float ca = dot(dir, ax.xy);
+            float s2 = Q.w > 0.5 ? 1.0 - ca * ca : 1.0;   // silent along the meeting line, loudest across it
+            float h = exp(-u / Q.z) * sin(6.2831853 * u / max(Q.y, 0.02)) * min(1.0, 60.0 / max(r, 1.0));
+            disp += dir * P.z * h * s2;
+            glow += float3(0.45, 0.6, 1.0) * 0.32 * gwGlow * max(0.0, h) * s2;
+            squeeze += 0.14 * gwGlow * max(0.0, -h) * s2;
+        }
+    }
+}
+
+// A passing gravitational wave stretches the whole view one way and squeezes it the other (gwCam: the strain at the
+// camera × gwShake): the pixel's own screen point before any lens.
+float2 BlackHoleLensViewStretch(float2 p, float gwCam)
+{
+    return p + gwCam * float2(p.x, -p.y);
+}
+
 // Where the pixel samples the scene: p moved by the summed displacement, back to 0..1, mirrored at the
 // screen's edges (a ray bent off the screen shows the screen reflected, as in the studio — never the sky).
 float2 BlackHoleLensSampleUV(float2 p, float2 disp, float aspect)
@@ -108,22 +153,25 @@ float2 BlackHoleLensSampleUV(float2 p, float2 disp, float aspect)
     return 1.0 - abs(1.0 - abs(suv));
 }
 
-// The pixel's colour from the scene it sampled: the white core over it, the photon ring added, the shadow last.
+// The pixel's colour from the scene it sampled: the white core over it, the waves' squeeze, glow and a passing shell's
+// wash, the photon ring added, the shadow last (the studio's order).
 float3 BlackHoleLensComposite(float3 col, float shadow, float core, float coreGlow, float3 glow,
-                              float coreMix, float3 shadowColour, float3 coreColour)
+                              float coreMix, float3 shadowColour, float3 coreColour, float squeeze, float shellWash)
 {
     if (core > 0.5) col = col * coreMix + coreColour * coreGlow;
-    col = col + glow;
+    col = col * (1.0 - min(0.6, squeeze)) + glow + float3(1.0, 0.96, 0.86) * shellWash;
     if (shadow > 0.5) col = shadowColour;
     return col;
 }
 
-// Whether the holes changed this pixel at all. Far from every hole the bend is exactly zero (past its reach)
-// or far below a pixel (a smooth well's tail), and the ring and core are dark: such a pixel is left exactly as
-// the camera drew it rather than re-sampled from the copy.
-bool BlackHoleLensUntouched(float2 disp, float shadow, float core, float3 glow)
+// Whether the holes and waves changed this pixel at all. Far from every hole the bend is exactly zero (past its reach)
+// or far below a pixel (a smooth well's tail), the ring, core and crests are dark and no shell is washing over the
+// camera: such a pixel is left exactly as the camera drew it rather than re-sampled from the copy. disp here is the
+// pixel's whole move, the view's own stretch included.
+bool BlackHoleLensUntouched(float2 disp, float shadow, float core, float3 glow, float squeeze, float shellWash)
 {
-    return dot(disp, disp) < 1e-14 && shadow < 0.5 && core < 0.5 && max(glow.x, max(glow.y, glow.z)) < 1.0 / 1024.0;
+    return dot(disp, disp) < 1e-14 && shadow < 0.5 && core < 0.5 && max(glow.x, max(glow.y, glow.z)) < 1.0 / 1024.0
+        && squeeze < 1.0 / 1024.0 && shellWash < 1.0 / 1024.0;
 }
 
 #endif // BLACK_HOLE_LENS_INCLUDED

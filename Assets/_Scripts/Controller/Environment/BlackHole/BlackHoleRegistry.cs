@@ -437,6 +437,7 @@ namespace CosmicShore.Gameplay
 
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
+            BlackHoleWaves.Tick(config);
             BlackHoleWarp.Flush(_warpHoles, config);
             // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
             // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
