@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Thresher
+  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
+  Class: 14
+  Name: Thresher
+  Description: A small, nimble hull towing a heavy wrecking ball on a chain. Turn hard and
+    snap back and the ball whips round; wind the chain out and let it reel in, and
+    it cracks red-hot through everything. Plant it and swing round it to sling
+    yourself off.
+  PrimaryElement: 0
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
+  IconActive: {fileID: 21300000, guid: 372925148d56fc4971f260a7f5cdd470, type: 3}
+  IconInactive: {fileID: 21300000, guid: 372925148d56fc4971f260a7f5cdd470, type: 3}
+  PreviewImage: {fileID: 0}
+  SquadImage: {fileID: 0}
+  TrailPreviewImage: {fileID: 0}
+  CardSilohoutteActive: {fileID: 0}
+  CardSilohoutteInactive: {fileID: 0}
+  Abilities: []
+  Games: []
+  TrainingGames: []
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.5
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.5
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.5
+  isLocked: 0
+  ownedFromStart: 0
+  UnlockCost: 100

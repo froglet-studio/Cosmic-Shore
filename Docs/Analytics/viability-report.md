@@ -106,7 +106,7 @@ singleton (`AppManager.cs:384`) and wires ~25 event subscriptions in its constru
 | `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `WeeklyChallengeLeaderboardService` (`AddPlayerScoreAsync` / `GetScoresAsync` against ONE board, id on `WeeklyChallengeCatalogSO.leaderboardId`). The per-mode path in `UGSStatsManager` was retired. |
 | `com.unity.services.friends` | 1.1.1 | **Yes** | `FriendsServiceFacade` (relationships + presence) |
 | `com.unity.services.multiplayer` | 1.1.8 | **Yes** | Sessions + Relay: `PartySessionService.cs:184/239`, `PresenceLobbyService` (lobby-only presence session), `MultiplayerSetup` |
-| `com.unity.purchasing` | 4.12.2 | **Installed, unused** | `IAPManager` is a web-checkout flow via `Application.OpenURL` — no store SDK calls (`Docs/MENU_PROGRESSION_AND_IAP.md` §5) |
+| `com.unity.purchasing` | 4.12.2 | **Installed, unused** (uninstalled 2026-10-08, `Docs/PLATFORM_UNIFICATION.md` §3.9) | `IAPManager` is a web-checkout flow via `Application.OpenURL` — no store SDK calls (`Docs/MENU_PROGRESSION_AND_IAP.md` §5) |
 | `com.unity.ads` | 4.12.0 | **Yes (mobile only)** | `AdsSystem.cs` — init compiled only for `UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID` |
 
 **Not installed:** Remote Config, Matchmaker, Vivox, Cloud Code. Legacy PlayFab SDK is
