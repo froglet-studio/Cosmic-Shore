@@ -1313,8 +1313,11 @@ namespace CosmicShore.UI
                 SetSendButtonInteractable(true);
 
                 // The facade synced FriendsDataSO before returning (its await carries .AsMainThread()),
-                // so the rows can be rebuilt here, on the main thread, in their new state.
-                if (gameObject.activeInHierarchy)
+                // so the rows can be rebuilt here, on the main thread, in their new state. Unless the
+                // panel is gone: Menu_Main can unload during the await (a launch, or a party pulling
+                // the player into a match), and touching the destroyed panel's gameObject threw a
+                // MissingReferenceException out of this async void. `this` first: Unity's null check.
+                if (this && isActiveAndEnabled)
                     PopulateRecentSection();
             }
         }
