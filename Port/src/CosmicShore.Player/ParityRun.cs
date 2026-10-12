@@ -139,20 +139,7 @@ namespace CosmicShore.Player
         public static void PrepareProfile(string parityOut)
         {
             if (Replay == null) return;
-            string root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
-            string template = root == null ? null : Path.Combine(root, "Port", "parity", "profile");
-            if (template == null || !Directory.Exists(template))
-            {
-                Console.WriteLine("[parity] no Port/parity/profile template; the machine's profile plays (a first-time one stops at the username prompt)");
-                return;
-            }
-            string dir = Path.Combine(parityOut ?? Path.Combine(Path.GetTempPath(), "cosmic-shore-parity"), "profile");
-            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
-            Directory.CreateDirectory(dir);
-            foreach (var file in Directory.GetFiles(template))
-                File.Copy(file, Path.Combine(dir, Path.GetFileName(file)));
-            Application.persistentDataPathOverride = dir;
-            Console.WriteLine($"[parity] profile: fresh copy of {Path.GetRelativePath(root, template)} at {dir}");
+            BotProfile.UseFreshCopy(Path.Combine(parityOut ?? Path.Combine(Path.GetTempPath(), "cosmic-shore-parity"), "profile"), "parity");
         }
 
         static bool SamePath(string a, string b)

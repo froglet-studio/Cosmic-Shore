@@ -28,6 +28,17 @@ export COSMIC_SHORE_NET=off
 `LiveAssetsDir` picks the `Assets/` tree the Live assembly compiles; `LiveSrcDir` keeps its
 synced sources apart from the default tree's, so the two builds never share a sync directory.
 
+**The profile a training process plays as.** Every `--train` process starts from a fresh copy of
+`Port/parity/profile/` (the age prompt answered, analytics consent OFF, a player named `parity`,
+nothing earned): a worker's copy sits in `<run>/profile-w<N>`, an eval or export process's in
+`<--train-out>/profile` (`BotProfile.PrepareForTraining`). A machine that has never run the game has
+no profile, and a first-time profile stops in the Authentication scene at the birth-year, consent
+and username prompts that nobody answers headless: the weekly training routine's first run
+(2026-10-11, a fresh container) sat there for 30 minutes and trained nothing. Setting
+`COSMIC_SHORE_PROFILE` keeps that machine profile instead, with a line saying so. The template is
+looked up in `COSMIC_SHORE_PROJECT`, then in the checkout the binary or the working directory sits
+in, so the sparse `../be` content tree above still finds it.
+
 ## Commands
 
 All modes read `Assets/_SO_Assets/AI Training/TrainingControl.asset` and its scenario, session

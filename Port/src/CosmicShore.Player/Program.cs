@@ -218,6 +218,8 @@ namespace CosmicShore.Player
                         train.ConfigureParallel(workers, worker, evals, generations, evoSeed, trainDir);
                         train.ConfigureLifecycle(resume, recycleMb);
                     }
+                    // A fresh machine's first-time profile would stop at the Authentication prompts.
+                    BotProfile.PrepareForTraining(trainDir ?? trainOut, worker);
                     // Training is headless: a window would only cap the tick rate at vsync.
                     int result = RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, train);
                     return train.Recycle ? TrainingWorkers.RecycleExitCode : result;

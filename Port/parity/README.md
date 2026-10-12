@@ -152,7 +152,8 @@ count and `"input":"ReplayPlayer"` or `"do"`.
 **The profile a run plays as.** Every `--replay` run starts from a fresh copy of
 `Port/parity/profile/` (`prefs.json` with the age and consent prompts answered, `ugs-cloudsave.json`
 with a player named `parity`, a fixed `ugs-player-id`), placed under `--parity-out/profile` and
-made the process's persistent data path (`ParityRun.PrepareProfile`). Two reasons: a first-time
+made the process's persistent data path (`ParityRun.PrepareProfile`, through `BotProfile`, which
+headless training uses too). Two reasons: a first-time
 profile stops in the Authentication scene at the username prompt and never reaches the menu the
 replays press (measured: `engine_parity`'s `COSMIC_SHORE_PROFILE=parity` was such a profile, so
 every case ended with 3 events and 0 transforms), and the display name is the KEY of the state
