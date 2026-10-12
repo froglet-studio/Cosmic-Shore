@@ -373,6 +373,18 @@ jobs:
             echo "::warning::codesign --verify reported a problem with the signature (see above)."
           fi
 
+      # The macOS images ship fastlane; this only guards against an image that stops shipping it,
+      # which would otherwise fail the job after a 25-minute archive.
+      - name: Make sure fastlane is installed
+        if: steps.gate.outputs.upload != 'none'
+        run: |
+          if command -v fastlane >/dev/null 2>&1; then
+            echo "fastlane: $(command -v fastlane)"
+          else
+            echo "fastlane is not on this runner image; installing it with Homebrew."
+            brew install fastlane
+          fi
+
       - name: Upload to TestFlight (API key)
         if: steps.gate.outputs.upload == 'apikey'
         env:
@@ -385,16 +397,7 @@ jobs:
           LANG: en_US.UTF-8
         run: |
           KEY_JSON="$RUNNER_TEMP/signing/asc_api_key.json"
-          python3 - "$KEY_JSON" <<'PY'
-          import base64, json, os, sys
-          key = os.environ["ASC_KEY_P8"].strip()
-          if "BEGIN PRIVATE KEY" not in key:
-              # Accept the .p8 pasted as base64 as well as its raw text.
-              key = base64.b64decode("".join(key.split())).decode()
-          json.dump({"key_id": os.environ["ASC_KEY_ID"].strip(),
-                     "issuer_id": os.environ["ASC_ISSUER_ID"].strip(),
-                     "key": key, "in_house": False}, open(sys.argv[1], "w"))
-          PY
+          python3 Tools/iOS/asc_api_key_json.py "$KEY_JSON"
           fastlane pilot upload \
             --ipa "$IPA" \
             --api_key_path "$KEY_JSON" \

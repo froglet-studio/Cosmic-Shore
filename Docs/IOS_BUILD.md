@@ -266,7 +266,7 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
    | `IOS_DIST_CERT_P12_BASE64` | Base64 of `cosmicshore-dist.p12` |
    | `IOS_DIST_CERT_PASSWORD` | Its password |
    | `IOS_APPSTORE_PROFILE_BASE64` | Base64 of the `.mobileprovision` |
-   | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` | API-key route: the two ids, and the `.p8` file's text (base64 also accepted) |
+   | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` | API-key route: the two ids, and the whole `.p8` file's text, BEGIN and END lines included. Base64 of the file, or only the lines between BEGIN and END, also work (`Tools/iOS/asc_api_key_json.py`) |
    | `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD`, `ASC_APP_ID`, optional `ASC_ITC_PROVIDER` | Apple ID route |
 
    With neither upload set, the job still builds, signs and checks the `.ipa`, then stops. That
