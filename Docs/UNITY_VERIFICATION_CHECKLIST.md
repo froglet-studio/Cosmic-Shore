@@ -152,6 +152,25 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
   menu, and its pending delay pinned the dead vessel and its trail (Prisma's leak scan: 12,623 ->
   570 destroyed prisms reachable after 12 matches).
 
+- **An invite you miss is no longer gone** (R13 item 2, landed 2026-10-12;
+  `Docs/PartySystem/UI.md` "Invite inbox and badge"). `HostConnectionService` keeps every open
+  invite in an `IncomingInviteInbox` (one record per sender; it used to remember ONE, so two
+  friends inviting at once re-fired both on every refresh tick and a Decline dropped the other
+  sender's too). The popup's detail line says the invite waits in the friends list
+  ("2 invites waiting. Also in your friends list for N s") and the card moves on to the next open
+  invite when the shown one is answered or ends; a Decline answers one sender; the friends panel's
+  Requests rows list every open invite on open; a `PartyInviteBadge` (an `InviteBadge` child of all
+  four `ArcadeLobbyList`s, authored with `cs-asset`) counts the ones not yet seen there. The
+  recipient's lifetime, the row timer and the sender's outgoing timeout are one serialized value,
+  `HostConnectionService.outgoingInviteTimeoutSeconds` (60 s, default on `PartyServices.prefab`).
+  Proved without an editor: `unity_refcompile` player and editor configs 0 project errors, the
+  Prisma build 0 errors, `IncomingInviteInboxTests` 26/26 against Prisma's Live assembly (two
+  planted bugs each turned tests red: last-seen-only dedup made the two-sender test raise 6 times
+  instead of 2), `cs-asset roundtrip` byte-identical and `serialization-audit` 0 DROPPED / 0 EXTRA
+  on Menu_Main, the variant prefab and `PartyServices.prefab`, no new dangling local refs; seen in
+  Prisma with invites seeded into the directory-backed presence lobby (each raised once, the badge
+  at 2, both rows, a card Decline moving on with "Declined 'seed-Marlin'; 1 still open.").
+
 **Verify in editor:**
 1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
    Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
@@ -244,6 +263,24 @@ project errors; the Prisma live compile and its 1691-test engine suite green; no
     mid-turn through the pause menu, then watch `GameData.asset`'s RoundStatsList in the inspector
     for ten seconds: no Score moves. Before this branch the time score kept climbing in the menu.
     A normal turn end still stops the scorers (the end-of-game total is unchanged).
+19. Invite inbox, THREE signed-in accounts (two inviters, one invitee; machines or MPPM), Party
+    log channel on (FrogletTools > Toolbox > Logging). Invitee on the Home screen. Inviter A sends:
+    the bottom-left card shows A with "Also in your friends list for 60 s", one invite sound,
+    and hides after 3 s. Inviter B sends: the card shows B with "2 invites waiting. Also in your
+    friends list for N s"; for the next 30 s the console shows exactly ONE `[INVITE-RECV] New
+    invite` line per sender and the sound does not replay (before this branch both re-fired every
+    0.75-1.5 s tick). Invitee opens Arcade (do not open the friends panel): the yellow badge right
+    of PARTY reads 2, on the Arena, Mission and Toybox party panels too. Press an empty "+" slot:
+    REQUESTS lists BOTH invites, each with its seconds left (not a fresh 60), the badge is gone
+    and stays gone after closing the panel. Decline B's row: A's row stays, its Accept still works,
+    and the log reads `Declined '<B's id>'; 1 still open.` Accept A: the join completes as before
+    (real session id, `[HostConnectionService] Joined party`). Separately: with both invites on the
+    card, Decline on the CARD moves the card to the other invite instead of hiding it; let an
+    invite run 60 s unanswered and confirm the invitee's row and the inviter's PENDING row clear
+    within a few seconds of each other, and that the inviter can then invite again and it arrives
+    as new. Check the card's detail line fits its frame at 16:9 and 4:3, and the badge sits clear
+    of the PARTY word and the "Players Online" line on all four panels. Edit-mode
+    `IncomingInviteInboxTests` green (26).
 
 ---
 

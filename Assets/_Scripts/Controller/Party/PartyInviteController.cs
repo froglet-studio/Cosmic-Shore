@@ -409,12 +409,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Decline the pending invite. Dismisses the popup and clears the invite.
+        /// Decline one sender's open invite (<paramref name="senderPlayerId"/>), leaving every
+        /// other sender's waiting in the inbox; with no sender given, declines them all. The
+        /// popup and the friends panel's rows reconcile on the OnInviteResolved raise.
         /// </summary>
-        public async UniTask DeclineInviteAsync()
+        public async UniTask DeclineInviteAsync(string senderPlayerId = null)
         {
             if (HostConnectionService.Instance != null)
-                await HostConnectionService.Instance.DeclineInviteAsync();
+                await HostConnectionService.Instance.DeclineInviteAsync(senderPlayerId);
         }
 
         /// <summary>

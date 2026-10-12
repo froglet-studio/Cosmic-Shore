@@ -62,6 +62,20 @@ namespace CosmicShore.Gameplay
                  "while staying responsive enough that invite arrival and member joins feel instant.")]
         [SerializeField] private float refreshIntervalSeconds = 1.5f;
 
+        [Header("Invites")]
+        [Tooltip("Seconds a party invite stays open, on BOTH sides: the sender's outgoing invite " +
+                 "expires this long after it was sent (its line leaves the presence lobby and the " +
+                 "invitee's row reverts to re-invitable), and the recipient's inbox " +
+                 "(IncomingInviteInbox) ends it this long after it was first observed - which also " +
+                 "times the popup's \"in your friends list for N s\" line and the friends panel's row. " +
+                 "One value, so both sides clear together.\n\n" +
+                 "The sender's clock starts at SEND, the recipient's when their lobby poll OBSERVES " +
+                 "the invite - a refresh interval plus RTT plus any 429 backoff later. At 10s the " +
+                 "host could expire an invite (and stop accepting the acceptance signal, see the " +
+                 "OutgoingCount gate on the acceptance scan) before a distant player had finished " +
+                 "reading it. Must be positive: the sender's invite expires at send + this value.")]
+        [SerializeField] private float outgoingInviteTimeoutSeconds = 60f;
+
         [Inject] private PlayerDataService playerDataService;
         [Inject] private GameDataSO _gameData;
 
@@ -97,12 +111,6 @@ namespace CosmicShore.Gameplay
         private const string PARTY_SESSION_KEY       = "partySession";
         private const string PENDING_SESSION_ID      = "PENDING";
 
-        // The HOST's clock starts at SEND, while the recipient's starts when their lobby poll
-        // OBSERVES the invite - a refresh interval plus RTT plus any 429 backoff later. At 10s
-        // the host could expire an invite (and stop accepting the acceptance signal, see
-        // ScanForAcceptances' OutgoingCount gate) before a distant player had finished reading
-        // it. Kept in step with FriendsListPanel.partyInviteExpirationSeconds.
-        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 60f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
@@ -243,21 +251,27 @@ namespace CosmicShore.Gameplay
         // Invite state
         // ─────────────────────────────────────────────────────────────────────
 
-        private PartyInviteData? _lastFiredInvite;
+        /// <summary>
+        /// Every open invite addressed to us, one per sender (<see cref="IncomingInviteInbox"/>).
+        /// This service is its single writer; the popup, the friends panel's Requests rows and
+        /// the party panel's unread badge read it through the accessors below, so none of them
+        /// can disagree about what is still answerable. Lifetime is
+        /// <see cref="outgoingInviteTimeoutSeconds"/>, the value this service's own outgoing
+        /// invites expire on, so the sender's and the recipient's sides clear together.
+        /// </summary>
+        private IncomingInviteInbox _incomingInvites;
 
         /// <summary>
-        /// Consecutive refresh ticks on which the sender of <see cref="_lastFiredInvite"/> had no
-        /// invite line for us. Two in a row are required before the record is dropped, so a single
-        /// stale lobby snapshot (a presence-lobby converge mid-tick) cannot flicker a live invite.
+        /// <see cref="_incomingInvites"/>, created on first use: its lifetime is the serialized
+        /// <see cref="outgoingInviteTimeoutSeconds"/>, which a field initializer cannot read.
         /// </summary>
-        private int _inviteMissTicks;
-        /// <summary>
-        /// True after the local user has accept/decline/left for <see cref="_lastFiredInvite"/>.
-        /// Kept alongside the cached invite so the SDK-side dedup guard still
-        /// suppresses repeated SOAP raises while UI queries via <see cref="LastPendingInvite"/>
-        /// correctly report "no pending invite".
-        /// </summary>
-        private bool _lastInviteResolved;
+        private IncomingInviteInbox Inbox => _incomingInvites ??= new IncomingInviteInbox(outgoingInviteTimeoutSeconds);
+
+        /// <summary>Senders whose invite line was found on the current refresh tick (scratch for the sweep).</summary>
+        private readonly HashSet<string> _invitingSenders = new();
+
+        /// <summary>Invites a sweep ended this tick (scratch; reported to the UI as resolved).</summary>
+        private readonly List<PartyInviteData> _withdrawnInvites = new();
 
         /// <summary>
         /// Owns the in-memory map of pending outgoing invites and the serialised
@@ -328,11 +342,41 @@ namespace CosmicShore.Gameplay
         int        IPartyStateQuery.PartyMemberCount     => connectionData?.PartyMembers?.Count ?? 0;
 
         /// <summary>
-        /// Most recently detected incoming invite, or null once the user has
-        /// resolved it (accept/decline/leave) or Menu_Main has reloaded.
+        /// Most recently received invite that is still open, or null when none is (every one
+        /// resolved, expired or withdrawn, or Menu_Main has reloaded). The whole inbox is
+        /// <see cref="CopyPendingIncomingInvites"/>.
         /// </summary>
-        public PartyInviteData? LastPendingInvite =>
-            _lastInviteResolved ? null : _lastFiredInvite;
+        public PartyInviteData? LastPendingInvite => Inbox.Newest(Time.unscaledTime);
+
+        /// <summary>How many invites addressed to us are still open.</summary>
+        public int PendingIncomingInviteCount => Inbox.PendingCount(Time.unscaledTime);
+
+        /// <summary>
+        /// How many open invites the player has not yet had on screen in the friends panel:
+        /// what the party panel's badge shows. Cleared by <see cref="MarkIncomingInvitesSeen"/>.
+        /// </summary>
+        public int UnseenIncomingInviteCount => Inbox.UnseenCount(Time.unscaledTime);
+
+        /// <summary>Seconds an invite stays open after it was first observed (the host's outgoing timeout).</summary>
+        public float IncomingInviteLifetimeSeconds => Inbox.LifetimeSeconds;
+
+        /// <summary>Copies every open invite into <paramref name="into"/>, oldest first.</summary>
+        public void CopyPendingIncomingInvites(List<PartyInviteData> into)
+            => Inbox.CopyPending(into, Time.unscaledTime);
+
+        /// <summary>Whether that sender's invite is still open (the UI reconciles its rows against this).</summary>
+        public bool IsIncomingInvitePending(string senderPlayerId)
+            => Inbox.IsPending(senderPlayerId, Time.unscaledTime);
+
+        /// <summary>Seconds that sender's invite stays open from now; 0 when it is not open.</summary>
+        public float IncomingInviteSecondsRemaining(string senderPlayerId)
+            => Inbox.SecondsRemaining(senderPlayerId, Time.unscaledTime);
+
+        /// <summary>
+        /// The friends panel has shown the inbox: every open invite counts as seen, and the
+        /// party panel's unread badge goes away. A later invite is unseen again.
+        /// </summary>
+        public void MarkIncomingInvitesSeen() => Inbox.MarkAllSeen();
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Unity Lifecycle                                                  ║
@@ -517,8 +561,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            _lastFiredInvite     = null;
-            _lastInviteResolved  = false;
+            Inbox.Clear();
             PublishPresenceImmediateAsync().Forget();
         }
 
@@ -657,7 +700,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     $"[INVITE-SEND] {targetPlayerId} already pending - refreshing timeout");
                 _inviteService.RefreshTimeout(targetPlayerId,
-                    Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
+                    Time.unscaledTime + outgoingInviteTimeoutSeconds);
                 return;
             }
 
@@ -720,7 +763,7 @@ namespace CosmicShore.Gameplay
                     connectionData.LocalPlayerId,
                     connectionData.LocalDisplayName,
                     connectionData.LocalAvatarId,
-                    Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
+                    Time.unscaledTime + outgoingInviteTimeoutSeconds);
                 inviteAdded = true;
 
                 // First invite transitions us from InParty to Inviting.
@@ -788,10 +831,10 @@ namespace CosmicShore.Gameplay
 
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
-            // Mark resolved up-front so a re-opened FriendsListPanel doesn't
-            // re-spawn a row for the invite the user just accepted.
-            _lastInviteResolved = true;
-            _eventBus.RaiseInviteResolved();
+            // Mark every open invite resolved up-front so a re-opened FriendsListPanel doesn't
+            // re-spawn a row for the invite the user just accepted - nor for any other: we are
+            // leaving for this sender's party, so whatever else was waiting is moot.
+            ResolveAllIncomingInvites();
 
             // This party is invite-formed for analytics purposes (joiner side).
             connectionData.PartyFormedByInvite = true;
@@ -894,9 +937,8 @@ namespace CosmicShore.Gameplay
             if (_gameData != null && _gameData.IsOfflineSession)
                 throw new InvalidOperationException("Offline session - joining a party is unavailable.");
 
-            // Any invite popup we were looking at is moot: we are leaving for a different party.
-            _lastInviteResolved = true;
-            _eventBus.RaiseInviteResolved();
+            // Any invite we were looking at is moot: we are leaving for a different party.
+            ResolveAllIncomingInvites();
             connectionData.PartyFormedByInvite = false;
 
             try
@@ -956,8 +998,7 @@ namespace CosmicShore.Gameplay
             if (_gameData != null && _gameData.IsOfflineSession)
                 throw new InvalidOperationException("Offline session - spectating is unavailable.");
 
-            _lastInviteResolved = true;
-            _eventBus.RaiseInviteResolved();
+            ResolveAllIncomingInvites();
             connectionData.PartyFormedByInvite = false;
 
             try
@@ -993,14 +1034,36 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public UniTask DeclineInviteAsync()
+        /// <summary>
+        /// Declines ONE open invite - <paramref name="senderPlayerId"/>'s - and leaves every other
+        /// sender's waiting; with no sender given, declines them all. The sender's slot is freed
+        /// by their own timeout (UGS exposes no decline signal back to them), and their record is
+        /// kept until their line is gone so the line still on the wire is not read as a new
+        /// invite. Raises <see cref="HostConnectionDataSO.OnInviteResolved"/> either way: the UI
+        /// reconciles its rows against <see cref="IsIncomingInvitePending"/>.
+        /// </summary>
+        public UniTask DeclineInviteAsync(string senderPlayerId = null)
         {
-            // Sender's slot is freed by their own timeout - UGS doesn't expose
-            // a decline signal back to the sender.
-            _lastFiredInvite     = null;
-            _lastInviteResolved  = true;
+            if (string.IsNullOrEmpty(senderPlayerId))
+                Inbox.ResolveAll();
+            else
+                Inbox.Resolve(senderPlayerId);
+
+            string declined = string.IsNullOrEmpty(senderPlayerId) ? "every invite" : "'" + senderPlayerId + "'";
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[INVITE-RECV] Declined {declined}; {Inbox.PendingCount(Time.unscaledTime)} still open.");
             _eventBus.RaiseInviteResolved();
             return UniTask.CompletedTask;
+        }
+
+        /// <summary>
+        /// Ends every open invite and tells the UI: the local player is leaving for a different
+        /// party (accept, direct join, spectate) or leaving the one they are in.
+        /// </summary>
+        private void ResolveAllIncomingInvites()
+        {
+            Inbox.ResolveAll();
+            _eventBus.RaiseInviteResolved();
         }
 
         /// <summary>
@@ -1016,9 +1079,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            _lastFiredInvite    = null;
-            _lastInviteResolved = true;
-            _eventBus.RaiseInviteResolved();
+            ResolveAllIncomingInvites();
 
             // Locally fire OnPartyMemberLeft so panels clear slots immediately
             // instead of waiting for the next refresh tick.
@@ -1414,18 +1475,18 @@ namespace CosmicShore.Gameplay
                 if (connectionData.OnlinePlayers != null)
                     RefreshOnlinePlayersDiff();
 
-                // Scan composite invite_payloads for lines targeting us - and notice when the
-                // line behind the invite we last surfaced is GONE (see ForgetWithdrawnInvite).
-                bool lastHostStillInviting = false;
+                // Scan composite invite_payloads for lines targeting us - every sender's, into
+                // the inbox - and notice when the line behind an invite we surfaced is GONE
+                // (see SweepIncomingInvites).
+                _invitingSenders.Clear();
                 foreach (var p in _lobbyService.ActiveLobby.Players)
                 {
                     if (p.Id == connectionData.LocalPlayerId) continue;
                     if (!TryFindIncomingInvite(p, out var invite)) continue;
-                    if (_lastFiredInvite.HasValue && _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
-                        lastHostStillInviting = true;
+                    _invitingSenders.Add(invite.HostPlayerId);
                     TryRaiseIncomingInvite(invite);
                 }
-                ForgetWithdrawnInvite(lastHostStillInviting);
+                SweepIncomingInvites();
 
                 // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
                 // because recipients won't set joined_party until after they read the
@@ -1659,7 +1720,7 @@ namespace CosmicShore.Gameplay
             => InviteService.ParseLine(line);
 
         /// <summary>
-        /// Drops the incoming-invite record once the sender no longer has a line for us.
+        /// Drops a sender's incoming-invite record once they no longer have a line for us.
         ///
         /// <para>
         /// The record is keyed on the SENDER and it used to be permanent: after this player
@@ -1675,80 +1736,52 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// The host's line for us disappears exactly when the invite is over - cleared on our
-        /// corroborated join, cancelled by the host, or timed out after 60s - so its absence is
+        /// corroborated join, cancelled by the host, or timed out (<see cref="outgoingInviteTimeoutSeconds"/>) - so its absence is
         /// the signal that the NEXT line from that host is a NEW invite. Left alone while a join
         /// is in flight (the line is cleared as the corroboration lands) and while we are inside
         /// that host's party (the in-session guard in <see cref="TryRaiseIncomingInvite"/> answers
         /// any stale re-appearance there). An UNRESOLVED invite whose line vanished was withdrawn
-        /// by the host, so the popup is told to go too.
+        /// by the host - and one that outlived <see cref="outgoingInviteTimeoutSeconds"/> has
+        /// expired - so the popup, the panel rows and the badge are told to let it go.
         /// </para>
         /// </summary>
-        private void ForgetWithdrawnInvite(bool lastHostStillInviting)
+        private void SweepIncomingInvites()
         {
-            if (!_lastFiredInvite.HasValue) { _inviteMissTicks = 0; return; }
-            if (lastHostStillInviting)      { _inviteMissTicks = 0; return; }
+            bool transitioning = PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning;
 
-            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
-                return;
+            _withdrawnInvites.Clear();
+            int ended = Inbox.Sweep(
+                senderStillInviting: _invitingSenders.Contains,
+                hold: invite => transitioning || IsClientOfSession(invite.PartySessionId),
+                now: Time.unscaledTime,
+                withdrawn: _withdrawnInvites);
 
-            var last = _lastFiredInvite.Value;
-            if (_partySessionService.ActiveSession != null &&
-                !connectionData.IsPartyHost &&
-                _partySessionService.ActiveSession.Id == last.PartySessionId)
-                return;
+            if (ended == 0) return;
 
-            if (++_inviteMissTicks < 2) return;
-            _inviteMissTicks = 0;
-
-            bool wasUnresolved = !_lastInviteResolved;
-            _lastFiredInvite    = null;
-            _lastInviteResolved = false;
-
-            if (wasUnresolved)
-            {
+            foreach (var invite in _withdrawnInvites)
                 CSDebug.LogVerbose(CSLogChannel.Party,
-                    $"[INVITE-RECV] Invite from '{last.HostDisplayName}' was withdrawn (line gone) - dismissing.");
-                _eventBus.RaiseInviteResolved();
-            }
-            else
-            {
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[INVITE-RECV] Invite from '{last.HostDisplayName}' is over - a later invite from them will surface as new.");
-            }
+                    $"[INVITE-RECV] Invite from '{invite.HostDisplayName}' is over (withdrawn or expired) - dismissing.");
+            _eventBus.RaiseInviteResolved();
         }
+
+        /// <summary>True when we are a CLIENT inside <paramref name="sessionId"/> (not its host).</summary>
+        private bool IsClientOfSession(string sessionId)
+            => _partySessionService.ActiveSession != null &&
+               !connectionData.IsPartyHost &&
+               _partySessionService.ActiveSession.Id == sessionId;
 
         private void TryRaiseIncomingInvite(PartyInviteData invite)
         {
-            // Already a client in this session - suppress re-fire.
-            if (_partySessionService.ActiveSession != null &&
-                !connectionData.IsPartyHost &&
-                _partySessionService.ActiveSession.Id == invite.PartySessionId)
-            {
-                _lastFiredInvite    = invite;
-                _lastInviteResolved = true;
-                return;
-            }
-
-            // PENDING → real id transition for an already-resolved invite:
-            // silently update the cached record so WaitForRealSessionId can
-            // observe the change without re-popping the popup.
-            if (_lastInviteResolved &&
-                _lastFiredInvite.HasValue &&
-                _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
-            {
-                _lastFiredInvite = invite;
-                return;
-            }
-
-            bool isDuplicate = _lastFiredInvite.HasValue &&
-                _lastFiredInvite.Value.PartySessionId == invite.PartySessionId &&
-                _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId;
-            if (isDuplicate) return;
+            // Per-sender dedup lives in the inbox: a line already on record is a duplicate, a line
+            // for a resolved invite only refreshes the record (the PENDING → real id transition
+            // the accept flow waits on), a line for the party we are already a client of is
+            // suppressed, and only a genuinely new invite is raised.
+            var observation = Inbox.Observe(invite, Time.unscaledTime, IsClientOfSession(invite.PartySessionId));
+            if (observation != IncomingInviteInbox.Observation.New) return;
 
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[INVITE-RECV] New invite from '{invite.HostDisplayName}' " +
-                $"(sessionId: {invite.PartySessionId})");
-            _lastFiredInvite    = invite;
-            _lastInviteResolved = false;
+                $"(sessionId: {invite.PartySessionId}); {Inbox.PendingCount(Time.unscaledTime)} open.");
             _eventBus.RaiseInviteReceived(invite);
 
             _scheduler.Boost();

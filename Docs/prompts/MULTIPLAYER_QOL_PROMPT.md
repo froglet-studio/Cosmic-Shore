@@ -35,7 +35,7 @@ facade itself, returns **nothing**. The two UI surfaces that used to call them �
 CLAUDE.md already records this as a known gap. It is the single highest-value QoL fix on this list
 because every other social feature depends on a friends list existing.
 
-### 2 · An invite you miss is gone forever · **high**
+### 2 · An invite you miss is gone forever · **high** · ✅ landed 2026-10-12 (`IncomingInviteInbox` + `PartyInviteBadge`; not yet opened in Unity)
 
 `PartyInviteNotificationPanel` auto-hides after **`autoHideSeconds = 3f`** and is explicitly
 **latest-wins** — a second invite replaces the first. There is no inbox, no history, and no badge.

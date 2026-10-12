@@ -98,12 +98,19 @@ namespace CosmicShore.UI
 
         Func<string, ulong> _clientIdLookup;
 
+        // The modal this panel lives in (Arcade, Arena, Mission or Toybox screen modal), or null
+        // outside one. Read for the invite auto-open: those modals hide by CanvasGroup alpha and
+        // never deactivate, so "enabled" does not mean "on screen" here.
+        ModalWindowManager _ownerModal;
+
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
+            _ownerModal = GetComponentInParent<ModalWindowManager>(true);
+
             if (leaveButton)
                 leaveButton.onClick.AddListener(OnLeaveButtonPressed);
 
@@ -283,6 +290,13 @@ namespace CosmicShore.UI
 
         void HandleInviteReceived(PartyInviteData _)
         {
+            // "While the arcade lobby is visible" is literal: this panel's modal hides by alpha
+            // and stays enabled, so without the check all four lobby copies opened their friends
+            // panel on every invite, whatever screen the player was on - which counted the invite
+            // as seen before anyone saw it, and met the player with an open panel on their next
+            // visit. A hidden lobby leaves the badge to announce the invite.
+            if (_ownerModal != null && !_ownerModal.IsOpen) return;
+
             if (friendsListPanel != null && !friendsListPanel.gameObject.activeSelf)
                 friendsListPanel.Show();
         }

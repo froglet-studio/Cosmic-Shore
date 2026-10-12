@@ -24,10 +24,11 @@ Friend + Recent + Requests). They share the same component family:
 | `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. Also **ensures its own `PartySlotDomainGlow`** at `Awake` (see "Seating"). |
 | `PartyRoster` | Pure static. THE party seating order, and the only place it is decided. No Unity, UGS or Netcode types — the caller supplies the client-id lookup, which is what makes it edit-mode testable (`PartyRosterTests`). |
 | `PartySlotDomainGlow` | The animated halo behind a slot's avatar, tinted with that pilot's live domain. Generated (GameObject, sprite and rect) rather than authored, so it needs no scene wiring and no party surface can ship without it. |
-| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade`. There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
+| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites; the party-invite rows are the **invite inbox**, re-read from `HostConnectionService`'s `IncomingInviteInbox` every time the panel opens, see "Invite inbox and badge" below). Auto-opens when a party invite arrives; opening it marks the inbox seen, which clears the party panel's `PartyInviteBadge`. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade` (and `MarkIncomingInvitesSeen`). There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
 | `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. A third button, **Join** (`joinButton` + `joinButtonIcon`), is one control with two faces resolved by `FriendsListPanel.ResolveJoinMode`: a blue doorway icon that walks you into that player's party with no invite (drawn disabled when the party is full), or — while the player is IN A MATCH — an amber eye icon that is the row's ONLY enabled button and **spectates** the match (`SPECTATOR.md`). On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
 | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite, RecentPlayer }` — one row type serves all three (delegates to `FriendsServiceFacade` / `PartyInviteController`); in its `RecentPlayer` shape (`PopulateRecentPlayer`) the Accept glyph is the add-friend button, Decline is hidden, the label is the resolved state and nothing expires. Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
-| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
+| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup**: a small bottom-left card (avatar + inviter name + a detail line + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, and on `OnInviteResolved` asks the service whether the invite it shows is still open: if not it moves on to the next open invite or hides. **Auto-hide after `autoHideSeconds` (3 s, serialized)** hides only; the detail line says so: "Also in your friends list for 58 s", prefixed "2 invites waiting." when more than one is open (`Notice.Compose`, edit-mode tested). **Newest wins on the card only**: an earlier invite stays in the inbox and is counted on the card. Decline answers the shown sender's invite alone. Lives as **`PartyInviteNotificationPanel Variant.prefab`**, a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline; `detailText` is the row's status label). Instanced bottom-left under `Screens/HomeScreen` in Menu_Main. |
+| `PartyInviteBadge` | The **unread-invite count**: a small amber disc (built-in `Knob` sprite) with a number, a child `InviteBadge` of every `ArcadeLobbyList` just right of its PARTY header. Reads `HostConnectionService.UnseenIncomingInviteCount`; faded to 0 by its own `CanvasGroup` while nothing is unread, never a raycast target. Repaints on `OnInviteReceived` / `OnInviteResolved` and on a 0.5 s tick (for the panel marking the inbox seen and for expiry, which raise nothing). Self-driven: `ArcadeLobbyList` does not reference it. Scene-authored with `cs-asset`, not a prefab. |
 
 **Live identity (names/avatars) in these panels.** Rows and slots render
 from the SOAP lists and repaint on the lists' item events, so a player's
@@ -115,8 +116,11 @@ Sender opens the friends/online list and clicks a player row (whole row = invite
 Recipient's refresh loop detects invite
   ├─ HostConnectionService.RefreshAsync() [base 1.5s; 0.75s while boosted]
   │   └─ Scans every OTHER lobby player's invite_payloads for a line whose targetId == local ID
+  ├─ IncomingInviteInbox.Observe (per-sender dedup; only a NEW invite is raised)
   ├─ OnInviteReceived SOAP event raised
-  ├─ FriendsListPanel auto-opens and spawns a RequestInfoEntry (Kind.PartyInvite) row
+  ├─ PartyInviteNotificationPanel shows the card; PartyInviteBadge counts it while unseen
+  ├─ FriendsListPanel auto-opens (when its screen is up) and spawns a RequestInfoEntry
+  │   (Kind.PartyInvite) row; on open it re-reads EVERY open invite from the inbox
   └─ User presses Accept
       └─ PartyInviteController.AcceptInviteAsync(invite)
           ├─ CleanUpCurrentSession()
@@ -261,6 +265,83 @@ play at all.
   `anchoredPosition` (the prefab authors 0,0). **Not yet opened in the Unity Editor**: first
   pass is a real online match on two accounts, then the panel on both.
 
+### Invite inbox and badge (an invite you miss is not gone, 2026-10-10)
+
+**Every open party invite lives in `HostConnectionService`'s `IncomingInviteInbox`**
+(`_Scripts/Controller/Party/Services/`, pure C#, one record per SENDER, the service its single
+writer), and the popup, the friends panel's Requests rows and the party panel's badge are three
+views of that one list. Measured before the change: the service remembered ONE incoming invite
+(`_lastFiredInvite` + a resolved flag), so with two friends inviting at once the refresh loop's
+duplicate check compared each line against whichever it had seen LAST and the two took turns
+being "new": `OnInviteReceived` re-fired for both every 0.75-1.5 s tick, the popup bounced between
+the senders with its 3 s auto-hide timer reset each time, the invite sound replayed each tick, the
+panel's rehydrate-on-open could only read the latest one, and a Decline (which resolved "the"
+invite) dropped the other sender's as well. `IncomingInviteInboxTests` (26) pin every shape.
+
+- **Inbox rules.** `Observe(line)` is per sender: the same sender's same session seen again is a
+  duplicate (nothing raised); a resolved invite's line only refreshes the record, silently (the
+  line of an invite we accepted or declined stays on the wire until the sender clears it; the eager
+  model stamps the real session id at send, so the accept flow reads the id off the invite it was
+  handed, never off this refresh); a line for the party we are already a client of is suppressed; the same sender with a NEW session id is a new invite (fresh clock, unread
+  again). An invite is PENDING while unresolved and younger than `IncomingInviteLifetimeSeconds`,
+  which is `HostConnectionService.outgoingInviteTimeoutSeconds` (serialized, default 60 s, on
+  `PartyServices.prefab`): the SAME value the sender's outgoing invite expires on, so both sides
+  clear together (a code constant until 2026-10-12). Accept, direct join, spectate
+  and leave resolve ALL (the player is leaving for a different party); **Decline resolves ONE**
+  (`DeclineInviteAsync(senderPlayerId)` on the service and the controller; the no-argument form
+  still declines all). A resolved record is kept until the sender's line is gone, so the line
+  still on the wire is not read as a new invite, and the sender can invite afresh afterwards.
+  The per-tick `Sweep` drops a sender whose line has been gone for two ticks (a stale snapshot
+  cannot flicker a live invite), ends one that outlived its lifetime, holds anything a join is in
+  flight for, and raises `OnInviteResolved` once when an open invite ended that way.
+- **Service surface** (read by the UI): `LastPendingInvite` (newest open), `PendingIncomingInviteCount`,
+  `UnseenIncomingInviteCount`, `CopyPendingIncomingInvites(list)`, `IsIncomingInvitePending(id)`,
+  `IncomingInviteSecondsRemaining(id)`, `IncomingInviteLifetimeSeconds`, `MarkIncomingInvitesSeen()`.
+  `OnInviteResolved` stays a no-payload SOAP raise; every listener reconciles against
+  `IsIncomingInvitePending` instead of clearing everything.
+- **Requests rows (the inbox on screen).** On enable the panel rebuilds `_pendingPartyInvites`
+  from `CopyPendingIncomingInvites` (it used to seed only `LastPendingInvite`), spawns one row per
+  open invite, then `MarkIncomingInvitesSeen` **if the player can see it**: the four screen
+  modals never deactivate (they hide by CanvasGroup alpha), so every copy of this panel is
+  ENABLED whatever screen is up and receives every raise; "seen" is read off the owning
+  `ModalWindowManager.IsOpen` (`IsShownToPlayer`), and the modal's `OnModalOpened` marks the inbox
+  seen when a panel left open comes back into view. For the same reason `ArcadeLobbyList`'s
+  invite auto-open now really is "while the arcade lobby is visible": a hidden lobby's copy no
+  longer opens its friends panel (which counted the invite as seen before anyone saw it, and met
+  the player with an open panel on their next visit); the badge announces it instead. A row's
+  lifetime is exactly the inbox's remaining seconds (no expiry when the inbox never expires), so a
+  panel opened 40 s after the invite shows the 20 s it has left rather than a fresh 60, and the row,
+  the popup's countdown and the sender's timeout are one value; `partyInviteExpirationSeconds` is
+  only the fallback for an invite the service has no record of (it was a cap until 2026-10-12, a
+  second knob that could clip a row while its invite was still open). `HandleInviteResolved` removes only the rows whose sender
+  the service no longer lists; the panel's Decline passes the sender id.
+- **Badge.** `InviteBadge` (Image + CanvasGroup + `PartyInviteBadge` with a `Count` TMP child)
+  under each of the four `ArcadeLobbyList`s, anchored by fraction at x 0.64-0.713, y 0.812-0.856
+  of the party panel (a 40 x 40 disc right of the PARTY word). Shows `UnseenIncomingInviteCount`
+  ("9+" past `maxShownCount`), hides at 0, clears the moment the friends panel opens. A player on
+  the Home screen sees the popup; the badge waits on the Arcade, Arena, Mission and Toybox party
+  panels, which is where the "+" that opens the inbox is.
+- **Popup.** `autoHideSeconds` stays a serialized field. The card's detail line (`detailText`, the
+  variant's `OnlineStatus` label, auto-size up to 18.24; the Menu_Main instance overrides the minimum to 1.2) reads "Also in your friends list for N s"
+  from the inbox's remaining time, or "2 invites waiting. Also in your friends list for N s" when
+  more than one is open, refreshed once per whole second while shown. A second invite takes the
+  card without destroying the first's record; when the shown invite is answered (here or
+  elsewhere), withdrawn or expired, the card moves on to the newest open one, or hides. Decline on
+  the card answers that sender only and leaves the card on the declined invite until the resolve
+  raise moves it on (it used to hide and clear the card first, which turned the raise into a no-op,
+  so the card vanished with another invite still open; fixed 2026-10-12).
+- **Seen in Prisma** (xvfb, 2026-10-12, the directory-backed session stand-in with pilots seeded
+  into the presence lobby's roster from outside the process; `COSMIC_SHORE_NET=off` cannot do it,
+  its `LocalMultiplayerService` roster is the local player alone): the card for the first invite,
+  its auto-hide, the second arriving as "2 invites waiting", the badge at 2 on the Arcade party
+  panel, both Requests rows with the badge cleared, a Decline on the card moving it on to the next
+  open invite, and both lingering lines expiring once each at 60 s. See the verification checklist
+  entry. The Requests rows needed the same relayout nudge as the RECENT section (Prisma quirk,
+  above).
+  **Not yet opened in the Unity Editor**: the badge objects and the variant's `detailText` were
+  authored with `cs-asset`; the first editor pass should open Menu_Main, send two invites from two
+  other accounts and watch the card, the badge and the rows.
+
 ## Scene wiring checklist (Menu_Main)
 
 1. **Persistent GameObjects** (Bootstrap scene, `DontDestroyOnLoad`):
@@ -277,6 +358,8 @@ play at all.
    - Wire the Add Friend trio into `FriendsListPanel`: `addFriendNameInput` (the `TMP_InputField` on `AddFriendInput`), `addFriendSendButton` (the `Button` on `AddFriendSendButton`), `addFriendStatusText` (the `TextMeshProUGUI` on `AddFriendStatus`). All three or none; every FriendListPanel copy in the scene (Arcade, Arena, Mission, Toybox) carries them.
    - Wire the Recent pair into `FriendsListPanel`: `recentContent` (the `Content` `RectTransform` under `Recent Scroll View/Viewport`) and `recentEmptyText` (the `TextMeshProUGUI` on `Recent Scroll View/RecentEmptyText`). Every FriendListPanel copy in the scene (Arcade, Arena, Mission, Toybox) carries them. The store needs no scene wiring: `Resources/RecentPlayersConfig.asset` is loaded by name.
    - Wire `SO_ProfileIconList` into `ArcadeLobbyList` / `FriendsListPanel` for avatars.
+   - The invite badge: an `InviteBadge` child (Image on the built-in `Knob` sprite + `CanvasGroup` + `PartyInviteBadge`, with a `Count` `TextMeshProUGUI` child) under every `ArcadeLobbyList` (Arcade, Arena, Mission, Toybox); wire `PartyInviteBadge.connectionData` (`HostConnectionData.asset`), `canvasGroup` (its own) and `countText` (the `Count` TMP). `ArcadeLobbyList` needs no reference to it.
+   - The popup's `detailText` on `PartyInviteNotificationPanel Variant.prefab` is the variant's `OnlineStatus` label (wired on the prefab, not the scene instance).
 
 Prefabs live in `_Prefabs/UI Elements/Panels/Party/`. SO assets
 (`HostConnectionData.asset` + the event/list assets) live in

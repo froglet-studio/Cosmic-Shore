@@ -32,7 +32,13 @@ namespace CosmicShore.UI
     ///                  who is already a friend, or already asked, shows that state
     ///                  instead of the button (read from FriendsDataSO).
     ///   • Requests   - incoming friend requests AND incoming party invites
-    ///                  combined, with Accept/Decline buttons.
+    ///                  combined, with Accept/Decline buttons. The party-invite rows
+    ///                  are the INBOX: every open invite the service holds
+    ///                  (<see cref="HostConnectionService.CopyPendingIncomingInvites"/>),
+    ///                  re-read each time the panel opens, so an invite whose popup
+    ///                  auto-hid is still here for its full lifetime and a second
+    ///                  invite never displaces the first. Opening the panel marks the
+    ///                  inbox seen, which clears the party panel's unread badge.
     ///
     /// Sound plays when a party invite is received.
     /// </summary>
@@ -85,9 +91,13 @@ namespace CosmicShore.UI
         [Header("Settings")]
         [Tooltip("Seconds before an incoming request auto-declines. 0 = no expiry.")]
         [SerializeField] private float friendRequestExpirationSeconds = 600f;
-        [Tooltip("Seconds the incoming party-invite row lives in the Requests list before it is " +
-                 "auto-removed. Kept in step with the host's outgoing-invite timeout so both sides " +
-                 "clear together (host reverts the invitee to 'online' and can re-invite).\n\n" +
+        [Tooltip("FALLBACK only: the seconds an incoming party-invite row lives in the Requests list " +
+                 "when HostConnectionService has no record of the invite. Normally the row's clock is " +
+                 "the service's inbox (HostConnectionService.outgoingInviteTimeoutSeconds, the same " +
+                 "value the sender's outgoing invite expires on, counted from when the invite was " +
+                 "first observed), so a row spawned by re-opening the panel 40 s after the invite " +
+                 "arrived shows the 20 s it has left rather than a fresh 60, and both sides clear " +
+                 "together (host reverts the invitee to 'online' and can re-invite).\n\n" +
                  "This is NOT a pure human reaction window: the recipient's clock starts when " +
                  "their lobby POLL observes the invite, which is a 0.75-1.5s refresh plus RTT " +
                  "plus any rate-limit backoff behind the moment the host sent it. 10s was the " +
@@ -106,8 +116,40 @@ namespace CosmicShore.UI
         readonly List<GameObject> _spawnedRequests = new();
         readonly List<GameObject> _spawnedRecent = new();
 
-        /// <summary>Currently-pending party invites keyed by sender PlayerId.</summary>
+        /// <summary>Currently-pending party invites keyed by sender PlayerId (a mirror of the service's inbox).</summary>
         readonly Dictionary<string, PartyInviteData> _pendingPartyInvites = new();
+
+        /// <summary>Scratch for copying the inbox out of the service without allocating per open.</summary>
+        readonly List<PartyInviteData> _rehydrateScratch = new();
+
+        /// <summary>
+        /// The modal window this panel lives in (Arcade, Arena, Mission or Toybox screen modal), or
+        /// null for a panel placed outside one. Those modals never deactivate - they hide by
+        /// CanvasGroup alpha - so this panel can be ENABLED while nothing of it is on screen, and
+        /// "the player has seen the inbox" has to be read off the modal, not off OnEnable.
+        /// </summary>
+        ModalWindowManager _ownerModal;
+        bool _ownerModalResolved;
+
+        /// <summary>
+        /// True when the player can actually see this panel: enabled, and its owning modal (if
+        /// any) is open. A hidden modal's copy still receives every SOAP raise and keeps its rows
+        /// current, but it must not count the inbox as seen.
+        /// </summary>
+        bool IsShownToPlayer => isActiveAndEnabled && (OwnerModal == null || OwnerModal.IsOpen);
+
+        ModalWindowManager OwnerModal
+        {
+            get
+            {
+                if (!_ownerModalResolved)
+                {
+                    _ownerModal = GetComponentInParent<ModalWindowManager>(true);
+                    _ownerModalResolved = true;
+                }
+                return _ownerModal;
+            }
+        }
 
         /// <summary>PlayerIds for whom we've already sent an invite (keeps row in pending tint).</summary>
         readonly HashSet<string> _outgoingInvitePlayerIds = new();
@@ -144,10 +186,17 @@ namespace CosmicShore.UI
             ValidateSceneWiring();
             ResetAddFriendSection();
             RehydrateOutgoingInvitesFromService();
-            RehydratePendingInviteFromService();
+            RehydratePendingInvitesFromService();
             SubscribeSoap();
             SubscribeServiceEvents();
             PopulateAll();
+
+            // The inbox is on screen: nothing in it is unread any more (the party panel's badge
+            // reads this count). Only when the player can see it: the modal this panel lives in
+            // hides by alpha, so an enable is not an open there - its OnModalOpened is.
+            if (OwnerModal != null)
+                OwnerModal.OnModalOpened += HandleOwnerModalOpened;
+            MarkInboxSeenIfShown();
 
             // Pull fresh presence/invite data the moment the panel opens so the
             // user never sees stale "X Players Online" or a missing invite row
@@ -155,6 +204,23 @@ namespace CosmicShore.UI
             // inside HostConnectionService, so bursty opens are safe.
             HostConnectionService.Instance?.ForceRefreshNow();
         }
+
+        /// <summary>
+        /// Tells the service the inbox has been looked at, when (and only when) this panel is
+        /// actually in front of the player. The party panel's unread badge reads that count.
+        /// </summary>
+        void MarkInboxSeenIfShown()
+        {
+            if (!IsShownToPlayer) return;
+            HostConnectionService.Instance?.MarkIncomingInvitesSeen();
+        }
+
+        /// <summary>
+        /// The modal this panel lives in came up with the panel already open in it (it was left
+        /// open on an earlier visit, or an invite spawned rows while the modal was hidden): now
+        /// the player can see the rows, so the inbox is seen.
+        /// </summary>
+        void HandleOwnerModalOpened() => MarkInboxSeenIfShown();
 
         /// <summary>
         /// Pulls every still-outstanding outgoing invite from the service so the
@@ -206,26 +272,31 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Pulls the most recently-received, still-unresolved party invite from
-        /// <see cref="HostConnectionService.LastPendingInvite"/> and seeds it
-        /// into <see cref="_pendingPartyInvites"/>. This closes the gap where
-        /// an invite arrived while the panel was hidden - without this, the
-        /// OnEnable SOAP subscription would have missed the event and the
-        /// rendered Requests section would be empty on first open.
+        /// Re-reads EVERY still-open party invite from the service's inbox
+        /// (<see cref="HostConnectionService.CopyPendingIncomingInvites"/>) into
+        /// <see cref="_pendingPartyInvites"/>. This closes the gap where invites arrived while
+        /// the panel was hidden - the OnEnable SOAP subscription missed those raises - and it
+        /// used to read only the LATEST one, so a second invite that arrived before the panel
+        /// was opened hid the first. The service is the source of truth, so the local map is
+        /// rebuilt from it rather than merged; without a service (offline) it is left as is.
         /// </summary>
-        void RehydratePendingInviteFromService()
+        void RehydratePendingInvitesFromService()
         {
             var service = HostConnectionService.Instance;
             if (service == null) return;
 
-            var pending = service.LastPendingInvite;
-            if (!pending.HasValue) return;
-
-            _pendingPartyInvites[pending.Value.HostPlayerId] = pending.Value;
+            _pendingPartyInvites.Clear();
+            service.CopyPendingIncomingInvites(_rehydrateScratch);
+            foreach (var invite in _rehydrateScratch)
+                _pendingPartyInvites[invite.HostPlayerId] = invite;
+            _rehydrateScratch.Clear();
         }
 
         void OnDisable()
         {
+            if (OwnerModal != null)
+                OwnerModal.OnModalOpened -= HandleOwnerModalOpened;
+
             UnsubscribeSoap();
             UnsubscribeServiceEvents();
 
@@ -636,9 +707,27 @@ namespace CosmicShore.UI
                 invite.HostDisplayName,
                 ResolveAvatar(invite.HostAvatarId),
                 RequestInfoEntry.Kind.PartyInvite,
-                partyInviteExpirationSeconds,
+                ResolvePartyInviteRowLifetime(invite.HostPlayerId),
                 onAccept: OnAcceptPartyInviteClicked,
                 onDecline: OnDeclinePartyInviteClicked);
+        }
+
+        /// <summary>
+        /// How long the row for that sender's invite lives: exactly the time the service's inbox
+        /// says the invite has LEFT (its clock started when the invite was first observed, not when
+        /// this panel happened to open), so the row, the popup's countdown and the sender's own
+        /// timeout are one value and cannot drift apart. 0 (no expiry) when the inbox never expires
+        /// invites. <see cref="partyInviteExpirationSeconds"/> stands in only when the service has
+        /// no record of it (offline, or a row spawned from a raise the service has not booked yet).
+        /// </summary>
+        float ResolvePartyInviteRowLifetime(string senderPlayerId)
+        {
+            var service = HostConnectionService.Instance;
+            if (service == null) return partyInviteExpirationSeconds;
+
+            float remaining = service.IncomingInviteSecondsRemaining(senderPlayerId);
+            if (float.IsPositiveInfinity(remaining)) return 0f;
+            return remaining > 0f ? remaining : partyInviteExpirationSeconds;
         }
 
         void HandleIncomingFriendRequestAdded(FriendData request)
@@ -705,29 +794,34 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Fires when an invite is accepted/declined from ANY source (this panel,
-        /// the HomeScreen notification popup, etc.). Clears every party-invite
-        /// row so the UI stays in sync regardless of where the user answered.
+        /// Fires when an invite is accepted, declined, withdrawn or expired from ANY source (this
+        /// panel, the HomeScreen notification popup, the service's sweep). The raise carries no
+        /// payload, so the rows are RECONCILED against the service's inbox: only the invites it
+        /// no longer holds open lose their row. Clearing everything here used to make a Decline
+        /// of one sender's invite silently drop the other sender's. Without a service (offline)
+        /// every invite row goes, as before.
         /// </summary>
         void HandleInviteResolved()
         {
             if (_pendingPartyInvites.Count == 0) return;
 
-            _pendingPartyInvites.Clear();
+            var service = HostConnectionService.Instance;
 
-            for (int i = _spawnedRequests.Count - 1; i >= 0; i--)
+            _resolvedScratch.Clear();
+            foreach (var senderId in _pendingPartyInvites.Keys)
+                if (service == null || !service.IsIncomingInvitePending(senderId))
+                    _resolvedScratch.Add(senderId);
+
+            foreach (var senderId in _resolvedScratch)
             {
-                var go = _spawnedRequests[i];
-                if (!go) { _spawnedRequests.RemoveAt(i); continue; }
-
-                var entry = go.GetComponent<RequestInfoEntry>();
-                if (entry == null) continue;
-                if (entry.EntryKind != RequestInfoEntry.Kind.PartyInvite) continue;
-
-                Destroy(go);
-                _spawnedRequests.RemoveAt(i);
+                _pendingPartyInvites.Remove(senderId);
+                RemoveRequestEntryByKind(senderId, RequestInfoEntry.Kind.PartyInvite);
             }
+            _resolvedScratch.Clear();
         }
+
+        /// <summary>Scratch for the senders a resolve raise closed (no allocation per raise).</summary>
+        readonly List<string> _resolvedScratch = new();
 
         void HandlePartyInviteReceived(PartyInviteData invite)
         {
@@ -751,6 +845,10 @@ namespace CosmicShore.UI
             var existing = FindRequestEntryByKind(invite.HostPlayerId, RequestInfoEntry.Kind.PartyInvite);
             if (existing == null)
                 SpawnPartyInviteEntry(invite);
+
+            // The new row is in the list; it counts as seen only if the player can see the list
+            // (a hidden modal's copy of this panel receives this raise too).
+            MarkInboxSeenIfShown();
         }
 
         #endregion
@@ -963,7 +1061,8 @@ namespace CosmicShore.UI
 
             try
             {
-                await controller.DeclineInviteAsync();
+                // ONE sender's invite: any other open invite keeps its row.
+                await controller.DeclineInviteAsync(hostPlayerId);
             }
             catch (System.Exception e)
             {
