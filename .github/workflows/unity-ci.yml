@@ -12,7 +12,7 @@
 # claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
 # pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
 # a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml and
-# prisma-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
+# amoebius-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
 # command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
 #
 # RUNNER IS NOT DECIDED YET. The `unity` job is SKIPPED until the repository variable

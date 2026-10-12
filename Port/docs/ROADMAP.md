@@ -1,15 +1,15 @@
-# Prisma roadmap: checkpoints, timeline, prompts
+# Amoebius roadmap: checkpoints, timeline, prompts
 
 Written 2026-10-05; updated 2026-10-06 with the architecture review
 (`ARCHITECTURE_REVIEW_2026-10-06.md`: what was checked, decided and done for each of its 20
 items). Owner: Froglet Inc. Read this before planning engine work. Agents: the launcher's PARITY
-CHECK and `/prisma` read the open lists here.
+CHECK and `/amoebius` read the open lists here.
 
 ## The two milestones
 
 | | Milestone | Done when | Target |
 |---|---|---|---|
-| **M1** | **Gameplay parity.** Playing Cosmic Shore in Prisma is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
+| **M1** | **Gameplay parity.** Playing Cosmic Shore in Amoebius is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
 | **M2** | **Unity-free development.** Developers stop opening Unity. The engine's own tools do every Unity job Cosmic Shore needs, and nothing more. | One full release cycle (3 weeks) is shipped with Unity never opened (E9). | **Q1 2028** (~22 more weeks) |
 
 M2 depends on M1: nobody gives up the editor for a runtime that still looks different. Some
@@ -113,9 +113,9 @@ C0 foundations (done Oct 6)
 
 | # | Checkpoint | Exit criterion (measurable) | Weeks | Depends on |
 |---|---|---|---|---|
-| **C0** | **Foundations** (done 2026-10-06) | `#line` maps errors to `Assets/`; incremental sync; RPCs the sync cannot intercept are warned (`PRISMA001`); execution order from `.meta` and the attribute in every phase; Unity's serialization rules with `cs-asset serialization-audit` at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test) | - | - |
+| **C0** | **Foundations** (done 2026-10-06) | `#line` maps errors to `Assets/`; incremental sync; RPCs the sync cannot intercept are warned (`AMOEBIUS001`); execution order from `.meta` and the attribute in every phase; Unity's serialization rules with `cs-asset serialization-audit` at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test) | - | - |
 | **C1** | **Parity harness** | (1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in the review response (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON): every subsystem and shader Faithful / Approximate / Missing with its covering test | 4 | C0 |
-| **C1b** | **Bisect** (done 2026-10-08: found a planted regression in 3 steps) | `prisma_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps | 1 | C1 |
+| **C1b** | **Bisect** (done 2026-10-08: found a planted regression in 3 steps) | `amoebius_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps | 1 | C1 |
 | **C2** | **Visual completeness** | A Shader Graph compiler (the 85 node types the project uses) with the 30 custom functions ported once and families keyed by guid; the 38 `.shader` files hand-translated by on-screen use; an unknown shader warns once; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw (VFX Graph as Approximate); the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s | 14 (rolling) | C1 |
 | **C3** | **Physics parity** | Contact resolution for the 17 Rigidbody users, plus oriented boxes; OnCollision* fires; replays end with identical scores. Rule: never a general solver in-house; bind BepuPhysics v2 for contacts only if the census needs mesh contacts or PhysX-like friction | 3 | C1 |
 | **C4** | **Audio parity** | Every replay's FMOD event sequence matches Unity's, including mixer snapshots | 1 | C1 |
@@ -135,14 +135,14 @@ transition, and the cut-over is a decision, not a migration.
 the editor starts where daily work happens - the tools, the data and the models - and **builds no
 hierarchy, scene inspector, prefab-override UI or asset browser**. Scene and prefab structure is
 the agent's job: `cs-asset` already creates, deletes, reparents and adds components, writes prefab
-overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Prisma
+overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Amoebius
 shows the result in the running game. Measured that day: **95 FrogletTools** menu items (66 with
 `[FrogletTool]` metadata), **1,313 ScriptableObject data files** in **363 script types**, **66 FBX
 models**. E1-E3 do not depend on M1 and run beside it.
 
 | # | Checkpoint | Exit criterion | Weeks |
 |---|---|---|---|
-| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Prisma (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
+| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Amoebius (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
 | **E2** | **Data sets** (started 2026-10-08) | EDITOR > DATA shows every ScriptableObject data file with Unity's labels, headers, tooltips and ranges; edits every field kind the data uses (values, enums, vectors, colours, references picked from the project, list items added and removed) through `cs-asset set`, byte-stable; creates a new data file of a type with the script's defaults | 4 |
 | **E3** | **Models** (started 2026-10-08) | EDITOR > MODELS shows every FBX as Unity imports it (meshes, materials, blend shapes, bones, takes, import settings) with a preview; importing a new FBX writes its `.meta` with the settings the game's models use and a stable GUID, and the engine loads it in a prefab like the others | 4 |
 | **E4** | **Play mode** | Play from the editor with an incremental script recompile (< 5 s); data-set edits apply to the running game live | 4 |
@@ -169,19 +169,19 @@ hands, it comes back as a narrow tool for that job, not a general hierarchy.
 
 ## How to run each checkpoint (prompts)
 
-Milestones are worked in Claude Code at the repository root (Prisma's MILESTONES page was retired
+Milestones are worked in Claude Code at the repository root (Amoebius's MILESTONES page was retired
 on 2026-10-08): paste a prompt below; the session updates `docs/milestones.json` as it moves the
 checkpoint. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
 `engine_test` green, `engine_smoke` PASS, `unity_isolation_check` ok, docs updated, and this
 file's row marked done with the date and the measurement.
 
 **C1 - Parity harness**
-> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
+> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Amoebius and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
 
 **C1b - Bisect**
-> Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.
+> Add `amoebius_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.
 
-Built 2026-10-08: `prisma_bisect` (`src/CosmicShore.Mcp/Bisect.cs`, verdicts in `src/Shared/Bisect.cs`, `BisectTests`); proof `python Port/tools/bisect_demo.py --check smoke|parity`. Evidence in docs/milestones.json.
+Built 2026-10-08: `amoebius_bisect` (`src/CosmicShore.Mcp/Bisect.cs`, verdicts in `src/Shared/Bisect.cs`, `BisectTests`); proof `python Port/tools/bisect_demo.py --check smoke|parity`. Evidence in docs/milestones.json.
 
 **C2 - Visual completeness**
 > First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in this file.
@@ -246,4 +246,4 @@ Next items, by on-screen use (rank with `render.shaders` from each mode's report
 |---|---|---|---|
 | M0 - runs the real game, builds, tooling, Claude bridge | done | 2026-10-05 | PR #959 |
 | C0 - foundations (architecture review) | done | 2026-10-06 | `ARCHITECTURE_REVIEW_2026-10-06.md` |
-| C1 - parity harness | in progress | 2026-10-08 | engine side done: `engine_parity` diffs state, Random, events (`fmod`, `game`, `contact`), transforms and frames; 5 planted differences caught; `prisma-parity-ci.yml` (36 build scenes); `PARITY.md`. Waiting on the Unity replay/capture PR (board T-3, spec `Port/parity/README.md`) for goldens and on CI's first GitHub run; the engine's self-diff drifts on the Authentication load time (B-1) |
+| C1 - parity harness | in progress | 2026-10-08 | engine side done: `engine_parity` diffs state, Random, events (`fmod`, `game`, `contact`), transforms and frames; 5 planted differences caught; `amoebius-parity-ci.yml` (36 build scenes); `PARITY.md`. Waiting on the Unity replay/capture PR (board T-3, spec `Port/parity/README.md`) for goldens and on CI's first GitHub run; the engine's self-diff drifts on the Authentication load time (B-1) |

@@ -1301,7 +1301,7 @@
       "route": "hand",
       "why": "hand translation (Content/Shaders/Hand)",
       "approximations": [
-        "Panorama: the partner\u0027s six-face capture is a texture array Prisma does not have (copyTextureSupport None, so the game never readies one); the void colour stands in"
+        "Panorama: the partner\u0027s six-face capture is a texture array Amoebius does not have (copyTextureSupport None, so the game never readies one); the void colour stands in"
       ]
     },
     {

@@ -8,16 +8,16 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace Prisma
+namespace Amoebius
 {
     /// <summary>
-    /// Prisma's memory of every play run: each session report the player writes is folded into
+    /// Amoebius's memory of every play run: each session report the player writes is folded into
     /// tracks - performance per scene over time, the features (modes, vessels, scenes) each run
     /// touched, audio activity, and every distinct problem with when it was first and last seen.
-    /// The Prisma Agent gets <see cref="Memory"/> with every prompt, so it starts from what the
+    /// The Amoebius Agent gets <see cref="Memory"/> with every prompt, so it starts from what the
     /// last runs showed instead of rediscovering it. Linked into the launcher and the MCP server.
     /// </summary>
-    public sealed class PrismaTracks
+    public sealed class AmoebiusTracks
     {
         public sealed class Run
         {
@@ -75,18 +75,25 @@ namespace Prisma
             var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrEmpty(baseDir))
                 baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
-            return Path.Combine(baseDir, "Prisma", "tracks");
+            var dir = Path.Combine(baseDir, "Amoebius", "tracks");
+            // Until the launcher moves its data folder over from the engine's earlier name, the
+            // tracks it recorded there are still the ones to read and add to.
+            var legacy = Path.Combine(baseDir, "Prisma", "tracks");
+            return !Directory.Exists(dir) && Directory.Exists(legacy) ? legacy : dir;
         }
+
+        /// <summary>The session report's <c>kind</c>, under this name and the engine's earlier ones.</summary>
+        public static readonly string[] SessionKinds = { "amoebius-session", "prisma-session", "froglet-engine-session" };
 
         public static string FileIn(string dir) => Path.Combine(dir, "tracks.json");
 
-        public static PrismaTracks Load(string? dir = null)
+        public static AmoebiusTracks Load(string? dir = null)
         {
             dir ??= DefaultDir();
             try
             {
                 var f = FileIn(dir);
-                if (File.Exists(f)) return JsonSerializer.Deserialize<PrismaTracks>(File.ReadAllText(f), Json) ?? new();
+                if (File.Exists(f)) return JsonSerializer.Deserialize<AmoebiusTracks>(File.ReadAllText(f), Json) ?? new();
             }
             catch (Exception) { }
             return new();
@@ -110,7 +117,7 @@ namespace Prisma
             if (Runs.Any(r => r.Report == reportPath)) return null;
             JsonElement d;
             try { d = JsonDocument.Parse(File.ReadAllText(reportPath)).RootElement; } catch { return null; }
-            if (!d.TryGetProperty("kind", out var k) || k.GetString() != "froglet-engine-session" && k.GetString() != "prisma-session") return null;
+            if (!d.TryGetProperty("kind", out var k) || !SessionKinds.Contains(k.GetString())) return null;
 
             string S(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
             double D(JsonElement e, string p) => e.TryGetProperty(p, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
@@ -224,7 +231,7 @@ namespace Prisma
         public string Memory(int maxChars = 6000)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"# Prisma tracks ({Runs.Count} runs recorded, {Open.Count()} open problems)");
+            sb.AppendLine($"# Amoebius tracks ({Runs.Count} runs recorded, {Open.Count()} open problems)");
             if (Runs.Count == 0) { sb.AppendLine("No play runs recorded yet."); return sb.ToString(); }
             sb.AppendLine();
             sb.AppendLine("## Last runs (newest first)");

@@ -3,31 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using Prisma;
+using Amoebius;
 
 namespace CosmicShore.Tests;
 
 /// <summary>
-/// Prisma's run memory and board: session reports fold into tracks (with the CPU, allocation and
+/// Amoebius's run memory and board: session reports fold into tracks (with the CPU, allocation and
 /// GC figures), and a bug that came from the tracks is verified by the tracks - its acceptance
 /// check passes when the problem stays away for three runs through its scene, and a relapse
 /// reopens it.
 /// </summary>
-public class PrismaTracksBoardTests : IDisposable
+public class AmoebiusTracksBoardTests : IDisposable
 {
-    readonly string _dir = Path.Combine(Path.GetTempPath(), "prisma-tracks-" + Guid.NewGuid().ToString("N"));
+    readonly string _dir = Path.Combine(Path.GetTempPath(), "amoebius-tracks-" + Guid.NewGuid().ToString("N"));
     int _n;
     DateTime _clock = new(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
 
-    public PrismaTracksBoardTests() => Directory.CreateDirectory(_dir);
+    public AmoebiusTracksBoardTests() => Directory.CreateDirectory(_dir);
     public void Dispose() { try { Directory.Delete(_dir, true); } catch (IOException) { } }
 
-    string Report(bool withError, double gcMsPerFrame = 0.05)
+    string Report(bool withError, double gcMsPerFrame = 0.05, string kind = "amoebius-session")
     {
         _clock = _clock.AddMinutes(10);
         var report = new
         {
-            kind = "prisma-session",
+            kind,
             version = 1,
             startedUtc = _clock.ToString("O"),
             seconds = 60.0,
@@ -48,7 +48,7 @@ public class PrismaTracksBoardTests : IDisposable
     [Fact]
     public void Ingest_CarriesCpuAndMemory_IntoTheRunAndTheBrief()
     {
-        var t = new PrismaTracks();
+        var t = new AmoebiusTracks();
         var r = t.Ingest(Report(false))!.Run;
         Assert.Equal(5.5, r.SimP95);
         Assert.Equal(4.0, r.RenderP95);
@@ -59,9 +59,19 @@ public class PrismaTracksBoardTests : IDisposable
     }
 
     [Fact]
+    public void Reports_UnderTheEnginesEarlierNames_StillFoldIn()
+    {
+        var t = new AmoebiusTracks();
+        Assert.NotNull(t.Ingest(Report(false, kind: "prisma-session")));
+        Assert.NotNull(t.Ingest(Report(false, kind: "froglet-engine-session")));
+        Assert.Null(t.Ingest(Report(false, kind: "some-other-report")));
+        Assert.Equal(2, t.Runs.Count);
+    }
+
+    [Fact]
     public void SteadyGcPauses_OverAMillisecondPerFrame_AreAPerfProblem()
     {
-        var t = new PrismaTracks();
+        var t = new AmoebiusTracks();
         t.Ingest(Report(false, gcMsPerFrame: 2.4));
         var gc = Assert.Single(t.Issues.Values, i => i.Area == "gc");
         Assert.Equal("perf", gc.Kind);
@@ -72,14 +82,14 @@ public class PrismaTracksBoardTests : IDisposable
     [Fact]
     public void ATrackedBug_IsVerifiedByTheTracks_AndReopensWhenItComesBack()
     {
-        var t = new PrismaTracks();
-        var b = new PrismaBoard();
+        var t = new AmoebiusTracks();
+        var b = new AmoebiusBoard();
         t.Ingest(Report(true));
         var suggested = Assert.Single(b.Suggest(t));
-        Assert.Equal(PrismaBoard.Status.Suggested, suggested.State);
+        Assert.Equal(AmoebiusBoard.Status.Suggested, suggested.State);
         Assert.Contains("3 runs through Menu_Main", suggested.Criterion);
 
-        b.Move(suggested, PrismaBoard.Status.Doing);
+        b.Move(suggested, AmoebiusBoard.Status.Doing);
         t.Ingest(Report(false));
         t.Ingest(Report(false));
         Assert.Empty(b.Verify(t));                    // two clean runs: not yet
@@ -87,26 +97,26 @@ public class PrismaTracksBoardTests : IDisposable
         var (item, met) = Assert.Single(b.Verify(t)); // the third: the check passes
         Assert.True(met);
         Assert.NotNull(item.CriterionMet);
-        Assert.Equal(PrismaBoard.Status.Doing, item.State); // moving to DONE stays the user's call
+        Assert.Equal(AmoebiusBoard.Status.Doing, item.State); // moving to DONE stays the user's call
 
-        b.Move(item, PrismaBoard.Status.Done);
+        b.Move(item, AmoebiusBoard.Status.Done);
         t.Ingest(Report(true));
         var (back, metAgain) = Assert.Single(b.Verify(t));
         Assert.False(metAgain);
         Assert.Null(back.CriterionMet);
-        Assert.Equal(PrismaBoard.Status.Todo, back.State);   // a relapse reopens the card
+        Assert.Equal(AmoebiusBoard.Status.Todo, back.State);   // a relapse reopens the card
     }
 
     [Fact]
     public void MilestoneSuggestions_CarryTheCheckpointsExitCriterion()
     {
-        var b = new PrismaBoard();
+        var b = new AmoebiusBoard();
         var cps = new List<(string, string, string, List<string>, string)>
         {
             ("C0", "Foundations", "done", new List<string>(), "x"),
             ("C1", "Parity harness", "todo", new List<string> { "C0" }, "Scoreboard runs headless and reports per-subsystem deltas"),
         };
-        var task = Assert.Single(b.Suggest(new PrismaTracks(), cps));
+        var task = Assert.Single(b.Suggest(new AmoebiusTracks(), cps));
         Assert.Equal("C1", task.Milestone);
         Assert.Equal("Scoreboard runs headless and reports per-subsystem deltas", task.Criterion);
     }

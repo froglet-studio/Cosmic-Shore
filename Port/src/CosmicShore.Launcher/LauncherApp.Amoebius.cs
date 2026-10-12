@@ -7,13 +7,13 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using ImGuiNET;
-using Prisma;
+using Amoebius;
 
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// Prisma's own pages: TRACKS (what every play run recorded), BOARD (the task and bug tracker,
-    /// with Prisma's suggestions) and MILESTONES (the roadmap's checkpoints, each run as an engine
+    /// Amoebius's own pages: TRACKS (what every play run recorded), BOARD (the task and bug tracker,
+    /// with Amoebius's suggestions) and MILESTONES (the roadmap's checkpoints, each run as an engine
     /// session), plus the macOS-style title bar they sit under.
     /// </summary>
     public sealed partial class LauncherApp
@@ -22,15 +22,15 @@ namespace CosmicShore.Launcher
         readonly Dictionary<Page, (Vector2 a, Vector2 b)> _railRects = new();
         static string TracksDir => Path.Combine(LauncherSettings.DataDir, "tracks");
 
-        PrismaTracks _tracks = PrismaTracks.Load(TracksDir);
-        PrismaBoard _board = ClearMilestoneCards(PrismaBoard.Load(TracksDir));
+        AmoebiusTracks _tracks = AmoebiusTracks.Load(TracksDir);
+        AmoebiusBoard _board = ClearMilestoneCards(AmoebiusBoard.Load(TracksDir));
 
         /// <summary>
         /// Milestone sessions left the app (engine work runs in Claude Code at the repository root),
         /// so the cards they left on the board - "Milestone C1 stopped at the 80-turn limit", "Start
-        /// milestone E1" - are cleared the first time this Prisma starts.
+        /// milestone E1" - are cleared the first time this Amoebius starts.
         /// </summary>
-        static PrismaBoard ClearMilestoneCards(PrismaBoard board)
+        static AmoebiusBoard ClearMilestoneCards(AmoebiusBoard board)
         {
             if (board.Items.RemoveAll(i => i.Source == "milestones" || i.Milestone != null) > 0) board.Save(TracksDir);
             return board;
@@ -43,12 +43,12 @@ namespace CosmicShore.Launcher
 
         // ------------------------------------------------------------------ data
 
-        /// <summary>Folds every session report not yet in the tracks, then lets Prisma suggest board items.</summary>
+        /// <summary>Folds every session report not yet in the tracks, then lets Amoebius suggest board items.</summary>
         void IngestSessions(bool notify)
         {
-            var results = new List<PrismaTracks.IngestResult>();
-            List<PrismaBoard.Item> suggested;
-            List<(PrismaBoard.Item item, bool met)> verified;
+            var results = new List<AmoebiusTracks.IngestResult>();
+            List<AmoebiusBoard.Item> suggested;
+            List<(AmoebiusBoard.Item item, bool met)> verified;
             lock (_dataLock)
             {
                 foreach (var f in LauncherJobs.Sessions().OrderBy(f => f.LastWriteTimeUtc))
@@ -65,9 +65,9 @@ namespace CosmicShore.Launcher
                 var card = it;
                 if (met)
                     Notify($"{card.Id} looks fixed", $"{Trim(card.Title, 70)}\nIts acceptance check passed: not seen again in 3 runs.", NoteKind.Success,
-                        card.State == PrismaBoard.Status.Done ? Array.Empty<(string, Action)>() : new (string, Action)[]
+                        card.State == AmoebiusBoard.Status.Done ? Array.Empty<(string, Action)>() : new (string, Action)[]
                         {
-                            ("MARK DONE", () => { MoveCard(card, PrismaBoard.Status.Done, "done: acceptance check passed"); }),
+                            ("MARK DONE", () => { MoveCard(card, AmoebiusBoard.Status.Done, "done: acceptance check passed"); }),
                             ("SHOW", () => { _page = Page.Board; _openCard = card.Id; }),
                         });
                 else
@@ -85,15 +85,15 @@ namespace CosmicShore.Launcher
         /// Moves a card and keeps its tracked problem in step: a bug in DOING marks the problem as
         /// being fixed (the agent's brief says so); anywhere else it is just open again.
         /// </summary>
-        void MoveCard(PrismaBoard.Item it, PrismaBoard.Status to, string? note = null)
+        void MoveCard(AmoebiusBoard.Item it, AmoebiusBoard.Status to, string? note = null)
         {
             lock (_dataLock)
             {
                 _board.Move(it, to, note);
                 if (it.IssueKey != null && _tracks.Issues.TryGetValue(it.IssueKey, out var issue)
-                    && issue.State is PrismaTracks.IssueState.Open or PrismaTracks.IssueState.Fixing)
+                    && issue.State is AmoebiusTracks.IssueState.Open or AmoebiusTracks.IssueState.Fixing)
                 {
-                    issue.State = to == PrismaBoard.Status.Doing ? PrismaTracks.IssueState.Fixing : PrismaTracks.IssueState.Open;
+                    issue.State = to == AmoebiusBoard.Status.Doing ? AmoebiusTracks.IssueState.Fixing : AmoebiusTracks.IssueState.Open;
                     _tracks.Save(TracksDir);
                 }
                 _board.Save(TracksDir);
@@ -102,7 +102,7 @@ namespace CosmicShore.Launcher
 
         int RailBadge(Page p) => p switch
         {
-            Page.Board => _board.Items.Count(i => i.State == PrismaBoard.Status.Suggested),
+            Page.Board => _board.Items.Count(i => i.State == AmoebiusBoard.Status.Suggested),
             Page.Tracks => _tracks.Open.Count(i => i.Kind is "crash" or "exception"),
             Page.Git => _git.Last?.Changes.Count ?? 0,
             _ => 0,
@@ -116,7 +116,7 @@ namespace CosmicShore.Launcher
             var a = new Vector2(RailW + 1, 0); var b = new Vector2(size.X, TitleH);
             dl.AddRectFilled(a, b, Neon.U(Neon.Space0, 0.55f));
             dl.AddLine(new Vector2(a.X, b.Y), b, Neon.U(Neon.Ink, 0.07f));
-            string title = "Prisma  ·  Cosmic Shore";
+            string title = "Amoebius  ·  Cosmic Shore";
             ImGui.PushFont(Neon.Strong);
             var ts = ImGui.CalcTextSize(title);
             ImGui.PopFont();
@@ -146,7 +146,7 @@ namespace CosmicShore.Launcher
             IconAt("tbbell", 40, IconBell, "Notifications", () => _centerOpen = !_centerOpen, _notes.Count(n => !n.Seen));
             int running = _chats.Running;
             IconAt("tbagent", 40, (d, c, col) => { d.AddCircleFilled(c, 5, Neon.U(running > 0 ? Neon.Amber : _chat.SignedIn == true || !string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? Neon.Lime : Neon.Dim)); },
-                running > 0 ? $"Prisma Agent: {running} chat{(running == 1 ? " is" : "s are")} working" : "Prisma Agent (powered by Claude)", () => _page = Page.Chat);
+                running > 0 ? $"Amoebius Agent: {running} chat{(running == 1 ? " is" : "s are")} working" : "Amoebius Agent (powered by Claude)", () => _page = Page.Chat);
             // branch chip
             var branch = Trim(_s.Branch, 34);
             ImGui.PushFont(Neon.Small);
@@ -166,7 +166,7 @@ namespace CosmicShore.Launcher
         void DrawTracks(Vector2 a, Vector2 b)
         {
             var dl = ImGui.GetWindowDrawList();
-            PrismaTracks t; lock (_dataLock) t = _tracks;
+            AmoebiusTracks t; lock (_dataLock) t = _tracks;
             PageHeader(a, "TRACKS", $"{t.Runs.Count} runs recorded  ·  {t.Open.Count()} open problems  ·  every play session is folded in when the game closes");
             ImGui.SetCursorScreenPos(new Vector2(b.X - 470, a.Y + 6));
             Segmented("ttab", new[] { "OVERVIEW", "PERFORMANCE", "AUDIO", "FEATURES", "RUNS" }, _tracksTab, i => _tracksTab = i, Neon.Cyan);
@@ -175,7 +175,7 @@ namespace CosmicShore.Launcher
             {
                 Card(dl, ca, new Vector2(b.X, ca.Y + 120));
                 dl.AddText(Neon.Strong, 16, ca + new Vector2(22, 22), Neon.U(Neon.Ink), "No runs yet");
-                dl.AddText(Neon.Small, 14, ca + new Vector2(22, 50), Neon.U(Neon.Dim), "Press START on PLAY, play, and close the game. Prisma records the run here:");
+                dl.AddText(Neon.Small, 14, ca + new Vector2(22, 50), Neon.U(Neon.Dim), "Press START on PLAY, play, and close the game. Amoebius records the run here:");
                 dl.AddText(Neon.Small, 14, ca + new Vector2(22, 72), Neon.U(Neon.Dim), "performance per scene, the modes and vessels you used, audio, and every problem.");
                 return;
             }
@@ -231,7 +231,7 @@ namespace CosmicShore.Launcher
             "crash" => Neon.Red, "exception" => Neon.Red, "error" => Neon.Amber, "perf" => Neon.Violet, "audio" => Neon.Cyan, _ => Neon.Dim,
         };
 
-        void TracksOverview(PrismaTracks t)
+        void TracksOverview(AmoebiusTracks t)
         {
             var dl = ImGui.GetWindowDrawList();
             var p = ImGui.GetCursorScreenPos();
@@ -248,7 +248,7 @@ namespace CosmicShore.Launcher
             foreach (var issue in t.Open.Take(12)) IssueRow(issue);
         }
 
-        void IssueRow(PrismaTracks.Issue issue)
+        void IssueRow(AmoebiusTracks.Issue issue)
         {
             var dl = ImGui.GetWindowDrawList();
             var p = ImGui.GetCursorScreenPos();
@@ -262,15 +262,15 @@ namespace CosmicShore.Launcher
             ImGui.SetCursorScreenPos(p + new Vector2(w - 190, 12));
             if (SmallButton("FIX", 70, true)) FixWithAgent(issue.Message, issue.Kind, issue.Runs);
             ImGui.SameLine(0, 6);
-            bool tracked = _board.Items.Any(i => i.IssueKey == issue.Key && i.State is not PrismaBoard.Status.Suggested and not PrismaBoard.Status.Dismissed);
+            bool tracked = _board.Items.Any(i => i.IssueKey == issue.Key && i.State is not AmoebiusBoard.Status.Suggested and not AmoebiusBoard.Status.Dismissed);
             if (SmallButton(tracked ? "ON BOARD" : "TRACK", 100, !tracked))
             {
                 lock (_dataLock)
                 {
                     var existing = _board.Items.FirstOrDefault(i => i.IssueKey == issue.Key);
-                    if (existing != null) _board.Move(existing, PrismaBoard.Status.Todo, "accepted from TRACKS");
-                    else _board.Add(PrismaBoard.Kind.Bug, Trim(issue.Message, 90), issue.Message, "tracks", PrismaBoard.Status.Todo,
-                                    issue.Kind is "crash" or "exception" ? 1 : 2, issue.Key, criterion: PrismaBoard.TracksCriterion(issue.LastScene));
+                    if (existing != null) _board.Move(existing, AmoebiusBoard.Status.Todo, "accepted from TRACKS");
+                    else _board.Add(AmoebiusBoard.Kind.Bug, Trim(issue.Message, 90), issue.Message, "tracks", AmoebiusBoard.Status.Todo,
+                                    issue.Kind is "crash" or "exception" ? 1 : 2, issue.Key, criterion: AmoebiusBoard.TracksCriterion(issue.LastScene));
                 }
                 SaveBoard();
             }
@@ -278,7 +278,7 @@ namespace CosmicShore.Launcher
             ImGui.SetCursorScreenPos(p + new Vector2(0, 62));
         }
 
-        void TracksPerf(PrismaTracks t)
+        void TracksPerf(AmoebiusTracks t)
         {
             var dl = ImGui.GetWindowDrawList();
             var timed = t.Runs.Where(r => r.SimP95 > 0 || r.AllocKBPerFrame > 0).TakeLast(40).ToList();
@@ -312,7 +312,7 @@ namespace CosmicShore.Launcher
             ImGui.PopFont();
         }
 
-        void TracksAudio(PrismaTracks t)
+        void TracksAudio(AmoebiusTracks t)
         {
             var dl = ImGui.GetWindowDrawList();
             var p = ImGui.GetCursorScreenPos();
@@ -330,7 +330,7 @@ namespace CosmicShore.Launcher
             foreach (var i in audio) IssueRow(i);
         }
 
-        void TracksFeatures(PrismaTracks t)
+        void TracksFeatures(AmoebiusTracks t)
         {
             var dl = ImGui.GetWindowDrawList();
             void Column(string title, IEnumerable<string> values, Vector2 p, float w)
@@ -356,7 +356,7 @@ namespace CosmicShore.Launcher
             Column("Scenes visited", t.Runs.SelectMany(r => r.Scenes), p0 + new Vector2((cw + 12) * 2, 0), cw);
         }
 
-        void TracksRuns(PrismaTracks t)
+        void TracksRuns(AmoebiusTracks t)
         {
             var dl = ImGui.GetWindowDrawList();
             foreach (var r in t.Runs.AsEnumerable().Reverse().Take(60))
@@ -373,7 +373,7 @@ namespace CosmicShore.Launcher
                 {
                     _chats.New();
                     _page = Page.Chat;
-                    SendChat($"Analyse this play run in Prisma: {r.Report}. Compare it with the tracks (prisma_tracks), rank what needs fixing in the game, and suggest the fixes as board items (prisma_board_suggest).",
+                    SendChat($"Analyse this play run in Amoebius: {r.Report}. Compare it with the tracks (amoebius_tracks), rank what needs fixing in the game, and suggest the fixes as board items (amoebius_board_suggest).",
                         ClaudeChat.Mode.Plan);
                 }
                 ImGui.PopID();
@@ -385,7 +385,7 @@ namespace CosmicShore.Launcher
         {
             _chats.New();
             _page = Page.Chat;
-            SendChat($"Fix this {kind} in Cosmic Shore - Prisma has seen it in {runs} run(s):\n{message}\n\nFind it in the tracks (prisma_tracks) and the game's code, reproduce it, fix it in the game, and prove the fix with the prisma tools. If its cause is in Prisma itself, say which milestone it belongs to instead.",
+            SendChat($"Fix this {kind} in Cosmic Shore - Amoebius has seen it in {runs} run(s):\n{message}\n\nFind it in the tracks (amoebius_tracks) and the game's code, reproduce it, fix it in the game, and prove the fix with the amoebius tools. If its cause is in Amoebius itself, say which milestone it belongs to instead.",
                 (ClaudeChat.Mode)_s.ChatMode);
         }
 
@@ -396,13 +396,13 @@ namespace CosmicShore.Launcher
         void DrawBoard(Vector2 a, Vector2 b)
         {
             var dl = ImGui.GetWindowDrawList();
-            List<PrismaBoard.Item> items; lock (_dataLock) items = _board.Items.ToList();
-            var suggested = items.Where(i => i.State == PrismaBoard.Status.Suggested).ToList();
-            PageHeader(a, "BOARD", $"{items.Count(i => i.Type == PrismaBoard.Kind.Bug && i.State is PrismaBoard.Status.Todo or PrismaBoard.Status.Doing)} open bugs  ·  " +
-                                   $"{items.Count(i => i.Type == PrismaBoard.Kind.Task && i.State is PrismaBoard.Status.Todo or PrismaBoard.Status.Doing)} open tasks  ·  {suggested.Count} suggested");
+            List<AmoebiusBoard.Item> items; lock (_dataLock) items = _board.Items.ToList();
+            var suggested = items.Where(i => i.State == AmoebiusBoard.Status.Suggested).ToList();
+            PageHeader(a, "BOARD", $"{items.Count(i => i.Type == AmoebiusBoard.Kind.Bug && i.State is AmoebiusBoard.Status.Todo or AmoebiusBoard.Status.Doing)} open bugs  ·  " +
+                                   $"{items.Count(i => i.Type == AmoebiusBoard.Kind.Task && i.State is AmoebiusBoard.Status.Todo or AmoebiusBoard.Status.Doing)} open tasks  ·  {suggested.Count} suggested");
             ImGui.SetCursorScreenPos(new Vector2(b.X - 260, a.Y + 6));
             Segmented("btab", new[] { "ALL", "BUGS", "TASKS" }, _boardTab, i => _boardTab = i, Neon.Cyan);
-            bool Want(PrismaBoard.Item i) => _boardTab == 0 || (_boardTab == 1) == (i.Type == PrismaBoard.Kind.Bug);
+            bool Want(AmoebiusBoard.Item i) => _boardTab == 0 || (_boardTab == 1) == (i.Type == AmoebiusBoard.Kind.Bug);
 
             // add a new item
             var addP = new Vector2(a.X, a.Y + 66);
@@ -420,7 +420,7 @@ namespace CosmicShore.Launcher
             ImGui.SameLine(0, 8);
             if ((SmallButton("ADD", 80, _newItem.Trim().Length > 0) || enter) && _newItem.Trim().Length > 0)
             {
-                lock (_dataLock) _board.Add(_newItemType == 0 ? PrismaBoard.Kind.Bug : PrismaBoard.Kind.Task, _newItem, criterion: _newCriterion);
+                lock (_dataLock) _board.Add(_newItemType == 0 ? AmoebiusBoard.Kind.Bug : AmoebiusBoard.Kind.Task, _newItem, criterion: _newCriterion);
                 SaveBoard();
                 _newItem = _newCriterion = "";
             }
@@ -431,18 +431,18 @@ namespace CosmicShore.Launcher
             var sug = suggested.Where(Want).ToList();
             if (sug.Count > 0)
             {
-                ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Magenta, $"Suggested by Prisma  ({sug.Count})"); ImGui.PopFont();
+                ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Magenta, $"Suggested by Amoebius  ({sug.Count})"); ImGui.PopFont();
                 foreach (var it in sug.Take(8)) SuggestionCard(it);
                 ImGui.Dummy(new Vector2(0, 8));
             }
-            var cols = new[] { (PrismaBoard.Status.Todo, "TO DO"), (PrismaBoard.Status.Doing, "DOING"), (PrismaBoard.Status.Done, "DONE") };
+            var cols = new[] { (AmoebiusBoard.Status.Todo, "TO DO"), (AmoebiusBoard.Status.Doing, "DOING"), (AmoebiusBoard.Status.Done, "DONE") };
             float cw = (ImGui.GetContentRegionAvail().X - 24) / 3;
             var top = ImGui.GetCursorScreenPos();
             float maxY = top.Y;
             for (int c = 0; c < 3; c++)
             {
                 var (state, name) = cols[c];
-                var colItems = items.Where(i => i.State == state && Want(i)).OrderBy(i => i.Priority).ThenByDescending(i => i.Updated).Take(state == PrismaBoard.Status.Done ? 12 : 40).ToList();
+                var colItems = items.Where(i => i.State == state && Want(i)).OrderBy(i => i.Priority).ThenByDescending(i => i.Updated).Take(state == AmoebiusBoard.Status.Done ? 12 : 40).ToList();
                 var x = top.X + c * (cw + 12);
                 dl.AddText(Neon.Strong, 15, new Vector2(x + 4, top.Y), Neon.U(Neon.Dim), $"{name}  {colItems.Count}");
                 float y = top.Y + 28;
@@ -454,7 +454,7 @@ namespace CosmicShore.Launcher
             ImGui.EndChild();
         }
 
-        void SuggestionCard(PrismaBoard.Item it)
+        void SuggestionCard(AmoebiusBoard.Item it)
         {
             var dl = ImGui.GetWindowDrawList();
             var p = ImGui.GetCursorScreenPos();
@@ -469,15 +469,15 @@ namespace CosmicShore.Launcher
                 dl.AddText(Neon.Small, 12, p + new Vector2(cx, 8), Neon.U(Neon.Dim), "done when: " + Trim(it.Criterion, room));
             ImGui.PushID(it.Id);
             ImGui.SetCursorScreenPos(p + new Vector2(w - 210, 12));
-            if (SmallButton("ACCEPT", 100, true)) { lock (_dataLock) _board.Move(it, PrismaBoard.Status.Todo, "accepted"); SaveBoard(); }
+            if (SmallButton("ACCEPT", 100, true)) { lock (_dataLock) _board.Move(it, AmoebiusBoard.Status.Todo, "accepted"); SaveBoard(); }
             ImGui.SameLine(0, 6);
-            if (SmallButton("DISMISS", 96, true)) { lock (_dataLock) _board.Move(it, PrismaBoard.Status.Dismissed, "dismissed"); SaveBoard(); }
+            if (SmallButton("DISMISS", 96, true)) { lock (_dataLock) _board.Move(it, AmoebiusBoard.Status.Dismissed, "dismissed"); SaveBoard(); }
             ImGui.PopID();
             ImGui.SetCursorScreenPos(p + new Vector2(0, 62));
         }
 
         /// <summary>One card in a column; returns its bottom edge. Click to open; open cards show the detail and actions.</summary>
-        float BoardCard(PrismaBoard.Item it, Vector2 p, float w)
+        float BoardCard(AmoebiusBoard.Item it, Vector2 p, float w)
         {
             var dl = ImGui.GetWindowDrawList();
             bool open = _openCard == it.Id;
@@ -487,8 +487,8 @@ namespace CosmicShore.Launcher
             Card(dl, p, p + new Vector2(w, h));
             var pc = it.Priority == 1 ? Neon.Red : it.Priority == 2 ? Neon.Amber : Neon.Dim;
             dl.AddRectFilled(p + new Vector2(0, 10), p + new Vector2(3, h - 10), Neon.U(pc), 2);
-            dl.AddText(Neon.Small, 12, p + new Vector2(14, 8), Neon.U(it.Type == PrismaBoard.Kind.Bug ? Neon.Red : Neon.Cyan),
-                $"{it.Id}  ·  {(it.Type == PrismaBoard.Kind.Bug ? "BUG" : "TASK")}  ·  P{it.Priority}" + (it.Source != "user" ? "  ·  " + it.Source : ""));
+            dl.AddText(Neon.Small, 12, p + new Vector2(14, 8), Neon.U(it.Type == AmoebiusBoard.Kind.Bug ? Neon.Red : Neon.Cyan),
+                $"{it.Id}  ·  {(it.Type == AmoebiusBoard.Kind.Bug ? "BUG" : "TASK")}  ·  P{it.Priority}" + (it.Source != "user" ? "  ·  " + it.Source : ""));
             dl.AddText(Neon.Body, 15, p + new Vector2(14, 28), Neon.U(Neon.Ink), Trim(it.Title, (int)(w / 8.2f)));
             if (it.CriterionMet != null)
             {
@@ -506,14 +506,14 @@ namespace CosmicShore.Launcher
                 for (int i = 0; i < lines.Count; i++)
                     dl.AddText(Neon.Small, 13, p + new Vector2(14, 58 + i * 22), Neon.U(lines[i].StartsWith("DONE WHEN: ") ? (it.CriterionMet != null ? Neon.Lime : Neon.Cyan) : Neon.Dim), Trim(lines[i], (int)(w / 7.2f)));
                 ImGui.SetCursorScreenPos(p + new Vector2(12, h - 42));
-                if (it.State != PrismaBoard.Status.Todo && SmallButton("< BACK", 80, true)) MoveCard(it, it.State - 1);
+                if (it.State != AmoebiusBoard.Status.Todo && SmallButton("< BACK", 80, true)) MoveCard(it, it.State - 1);
                 ImGui.SameLine(0, 6);
-                if (it.State != PrismaBoard.Status.Done && SmallButton(it.State == PrismaBoard.Status.Todo ? "START >" : "DONE >", 86, true))
+                if (it.State != AmoebiusBoard.Status.Done && SmallButton(it.State == AmoebiusBoard.Status.Todo ? "START >" : "DONE >", 86, true))
                     MoveCard(it, it.State + 1);
                 ImGui.SameLine(0, 6);
                 if (it.Milestone == null && SmallButton("AGENT", 76, true))
                 {
-                    if (it.State == PrismaBoard.Status.Todo) MoveCard(it, PrismaBoard.Status.Doing, "handed to the Prisma Agent");
+                    if (it.State == AmoebiusBoard.Status.Todo) MoveCard(it, AmoebiusBoard.Status.Doing, "handed to the Amoebius Agent");
                     _chats.New();
                     _page = Page.Chat;
                     SendChat($"Work on board item {it.Id} ({it.Type}): {it.Title}\n{it.Detail}\n\n" +

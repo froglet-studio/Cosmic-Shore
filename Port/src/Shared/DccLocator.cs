@@ -5,26 +5,27 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace Prisma
+namespace Amoebius
 {
     /// <summary>
     /// Where Blender and Maya are installed, the way Unity's ModelImporter looks for them, so
-    /// cs-asset (which converts .blend/.ma/.mb files through them) and Prisma's SETTINGS >
-    /// TOOLCHAIN agree. <c>PRISMA_BLENDER</c> / <c>PRISMA_MAYAPY</c> name the executable outright
-    /// (Prisma sets them from SETTINGS); otherwise PATH, then the usual install folders.
+    /// cs-asset (which converts .blend/.ma/.mb files through them) and Amoebius's SETTINGS >
+    /// TOOLCHAIN agree. <c>AMOEBIUS_BLENDER</c> / <c>AMOEBIUS_MAYAPY</c> name the executable outright
+    /// (Amoebius sets them from SETTINGS; <c>PRISMA_*</c>, their names before the rename, still
+    /// count); otherwise PATH, then the usual install folders.
     /// </summary>
     public static class DccLocator
     {
         /// <summary>The Blender executable, or null.</summary>
-        public static string? FindBlender() => Find("PRISMA_BLENDER", new[] { "blender" }, BlenderInstalls());
+        public static string? FindBlender() => Find("AMOEBIUS_BLENDER", new[] { "blender" }, BlenderInstalls());
 
-        /// <summary>Maya's Python (mayapy): PRISMA_MAYAPY, MAYA_LOCATION/bin, then PATH and the usual install folders.</summary>
+        /// <summary>Maya's Python (mayapy): AMOEBIUS_MAYAPY, MAYA_LOCATION/bin, then PATH and the usual install folders.</summary>
         public static string? FindMayaPy()
         {
             var loc = Environment.GetEnvironmentVariable("MAYA_LOCATION");
             var fromLocation = string.IsNullOrEmpty(loc) ? Array.Empty<string>()
                 : new[] { Path.Combine(loc, "bin", OperatingSystem.IsWindows() ? "mayapy.exe" : "mayapy") };
-            return Find("PRISMA_MAYAPY", new[] { "mayapy" }, fromLocation.Concat(MayaInstalls()));
+            return Find("AMOEBIUS_MAYAPY", new[] { "mayapy" }, fromLocation.Concat(MayaInstalls()));
         }
 
         /// <summary>"4.2.1" from <c>blender --version</c>'s first line; null when it does not answer in time.</summary>
@@ -55,8 +56,11 @@ namespace Prisma
 
         static string? Find(string envVar, string[] names, IEnumerable<string> installs)
         {
-            var env = Environment.GetEnvironmentVariable(envVar);
-            if (!string.IsNullOrWhiteSpace(env) && File.Exists(env)) return env;
+            foreach (var v in new[] { envVar, envVar.Replace("AMOEBIUS_", "PRISMA_") })
+            {
+                var env = Environment.GetEnvironmentVariable(v);
+                if (!string.IsNullOrWhiteSpace(env) && File.Exists(env)) return env;
+            }
             foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
                 foreach (var n in names)
                     foreach (var candidate in OperatingSystem.IsWindows() ? new[] { n + ".exe" } : new[] { n })

@@ -6,20 +6,20 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Prisma
+namespace Amoebius
 {
     /// <summary>
-    /// Prisma's task and bug tracker. Items come from the user, from Prisma itself (problems the
+    /// Amoebius's task and bug tracker. Items come from the user, from Amoebius itself (problems the
     /// tracks found, regressions, missing audio, the next milestone that is ready) and from the
-    /// Prisma Agent (prisma_board_suggest). Anything Prisma or the agent proposes starts as
+    /// Amoebius Agent (amoebius_board_suggest). Anything Amoebius or the agent proposes starts as
     /// SUGGESTED and only joins the board when the user accepts it. Kept beside the tracks.
     ///
-    /// Every item carries an acceptance criterion: the check that proves it done. For a bug Prisma
+    /// Every item carries an acceptance criterion: the check that proves it done. For a bug Amoebius
     /// found in the tracks, the check is the tracks' own: the problem stays away for three runs
     /// through its scene. <see cref="Verify"/> applies it after every ingest, so "fixed" is
     /// evidence, not a claim, and a fixed problem that comes back reopens its card.
     /// </summary>
-    public sealed class PrismaBoard
+    public sealed class AmoebiusBoard
     {
         public enum Kind { Bug = 0, Task = 1 }
         public enum Status { Suggested = 0, Todo = 1, Doing = 2, Done = 3, Dismissed = 4 }
@@ -46,7 +46,7 @@ namespace Prisma
 
         /// <summary>The criterion of a bug that came from the tracks (the rule that turns an issue Quiet).</summary>
         public static string TracksCriterion(string? scene) =>
-            $"Not seen again in 3 runs through {(string.IsNullOrEmpty(scene) ? "any scene" : scene)} (Prisma checks this after every run)";
+            $"Not seen again in 3 runs through {(string.IsNullOrEmpty(scene) ? "any scene" : scene)} (Amoebius checks this after every run)";
 
         public List<Item> Items { get; set; } = new();
         public int NextBug { get; set; } = 1;
@@ -56,17 +56,17 @@ namespace Prisma
 
         public static string FileIn(string dir) => Path.Combine(dir, "board.json");
 
-        public static PrismaBoard Load(string? dir = null)
+        public static AmoebiusBoard Load(string? dir = null)
         {
-            dir ??= PrismaTracks.DefaultDir();
-            try { if (File.Exists(FileIn(dir))) return JsonSerializer.Deserialize<PrismaBoard>(File.ReadAllText(FileIn(dir)), Json) ?? new(); }
+            dir ??= AmoebiusTracks.DefaultDir();
+            try { if (File.Exists(FileIn(dir))) return JsonSerializer.Deserialize<AmoebiusBoard>(File.ReadAllText(FileIn(dir)), Json) ?? new(); }
             catch (Exception) { }
             return new();
         }
 
         public void Save(string? dir = null)
         {
-            dir ??= PrismaTracks.DefaultDir();
+            dir ??= AmoebiusTracks.DefaultDir();
             Directory.CreateDirectory(dir);
             var tmp = FileIn(dir) + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(this, Json));
@@ -94,11 +94,11 @@ namespace Prisma
         }
 
         /// <summary>
-        /// Prisma's own suggestions: a bug for every tracked problem worth fixing that the board
+        /// Amoebius's own suggestions: a bug for every tracked problem worth fixing that the board
         /// does not know yet, and a task for each milestone checkpoint whose dependencies are done.
         /// Returns what it added (all SUGGESTED).
         /// </summary>
-        public List<Item> Suggest(PrismaTracks tracks, IEnumerable<(string id, string title, string status, List<string> deps, string exit)>? checkpoints = null)
+        public List<Item> Suggest(AmoebiusTracks tracks, IEnumerable<(string id, string title, string status, List<string> deps, string exit)>? checkpoints = null)
         {
             var added = new List<Item>();
             var known = new HashSet<string>(Items.Where(i => i.IssueKey != null).Select(i => i.IssueKey!));
@@ -137,13 +137,13 @@ namespace Prisma
         /// when the problem went quiet, and a met card whose problem came back loses it (a DONE card
         /// reopens to TO DO). Returns the cards that changed and how. Moving to DONE stays the user's call.
         /// </summary>
-        public List<(Item item, bool met)> Verify(PrismaTracks tracks)
+        public List<(Item item, bool met)> Verify(AmoebiusTracks tracks)
         {
             var changed = new List<(Item, bool)>();
             foreach (var it in Items.Where(i => i.IssueKey != null && i.State is Status.Todo or Status.Doing or Status.Done))
             {
                 if (!tracks.Issues.TryGetValue(it.IssueKey!, out var issue)) continue;
-                if (issue.State == PrismaTracks.IssueState.Quiet && it.CriterionMet == null)
+                if (issue.State == AmoebiusTracks.IssueState.Quiet && it.CriterionMet == null)
                 {
                     // Stamped with the run that proved it, so "came back" compares run with run.
                     it.CriterionMet = tracks.Runs.Count > 0 ? tracks.Runs[^1].Time : DateTime.UtcNow;
@@ -152,7 +152,7 @@ namespace Prisma
                                  (issue.LastScene != null ? $" across 3 runs through {issue.LastScene}" : ""));
                     changed.Add((it, true));
                 }
-                else if (issue.State is PrismaTracks.IssueState.Open or PrismaTracks.IssueState.Fixing && it.CriterionMet != null)
+                else if (issue.State is AmoebiusTracks.IssueState.Open or AmoebiusTracks.IssueState.Fixing && it.CriterionMet != null)
                 {
                     it.CriterionMet = null;
                     it.Updated = DateTime.UtcNow;

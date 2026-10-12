@@ -56,7 +56,7 @@ namespace CosmicShore.Launcher
         bool _remoteChecking;
 
         /// <summary>
-        /// True when Prisma's own copy is not at the tip of the branch it plays: the editor tools
+        /// True when Amoebius's own copy is not at the tip of the branch it plays: the editor tools
         /// and the game would run older code than GitHub has.
         /// </summary>
         public bool Behind(string branch) =>
@@ -336,7 +336,7 @@ namespace CosmicShore.Launcher
             return true;
         }
 
-        string BuildStamp(string cfg) => Path.Combine(Path.GetDirectoryName(PlayerExeFor(cfg))!, ".prisma-built-from");
+        string BuildStamp(string cfg) => Path.Combine(Path.GetDirectoryName(PlayerExeFor(cfg))!, ".amoebius-built-from");
 
         /// <summary>What the workspace holds right now: its commit, or null when it has unsaved changes (then nothing is "already built").</summary>
         string? BuiltFrom() => _ws.PendingChanges() == 0 ? _ws.HeadSha() : null;

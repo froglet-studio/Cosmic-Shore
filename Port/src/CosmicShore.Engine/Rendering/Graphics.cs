@@ -131,7 +131,7 @@ namespace CosmicShore.Engine
 
         /// <summary>
         /// Procedural instancing: the shader builds each instance from GPU buffers (SV_InstanceID).
-        /// Prisma's renderer has no vertex-stage storage buffers
+        /// Amoebius's renderer has no vertex-stage storage buffers
         /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> is 0), so nothing is drawn and the
         /// first call says so. Code that checks the capability first never gets here.
         /// </summary>
@@ -139,7 +139,7 @@ namespace CosmicShore.Engine
         {
             if (s_primitivesWarned || mesh is null || instanceCount <= 0) return;
             s_primitivesWarned = true;
-            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Prisma backend yet.");
+            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Amoebius backend yet.");
         }
 
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,

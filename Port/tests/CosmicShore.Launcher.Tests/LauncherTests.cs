@@ -14,11 +14,11 @@ namespace CosmicShore.Launcher.Tests
 {
     static class Setup
     {
-        public static readonly string Data = Path.Combine(Path.GetTempPath(), "prisma-launcher-tests-" + Environment.ProcessId);
+        public static readonly string Data = Path.Combine(Path.GetTempPath(), "amoebius-launcher-tests-" + Environment.ProcessId);
 
-        /// <summary>Everything the launcher writes goes to a scratch folder, never the real Prisma data.</summary>
+        /// <summary>Everything the launcher writes goes to a scratch folder, never the real Amoebius data.</summary>
         [ModuleInitializer]
-        internal static void Init() => Environment.SetEnvironmentVariable("PRISMA_DATA_DIR", Data);
+        internal static void Init() => Environment.SetEnvironmentVariable("AMOEBIUS_DATA_DIR", Data);
 
         public static string Git(string dir, params string[] args)
         {
@@ -218,9 +218,9 @@ namespace CosmicShore.Launcher.Tests
             Assert.Contains("+TWO", git.Diff(a).Result);
 
             var log = new LogBuffer();
-            Assert.Null(git.Commit("prisma/fix-score", "fix: score", "Tester", "t@example.com", log).Result);
+            Assert.Null(git.Commit("amoebius/fix-score", "fix: score", "Tester", "t@example.com", log).Result);
             st = git.Last!;
-            Assert.Equal("prisma/fix-score", st.Branch);
+            Assert.Equal("amoebius/fix-score", st.Branch);
             Assert.Empty(st.Changes);
             Assert.Equal(1, st.Ahead);
             Assert.True(st.Log[0].Unpushed);
@@ -229,9 +229,9 @@ namespace CosmicShore.Launcher.Tests
             Assert.Null(git.Push(log).Result);
             st = git.Last!;
             Assert.Equal(0, st.Ahead);
-            Assert.Equal("origin/prisma/fix-score", st.Upstream);
-            Assert.Equal("fix: score", Setup.Git(bare, "log", "-1", "--format=%s", "prisma/fix-score"));
-            Assert.Equal("https://github.com/froglet-studio/Cosmic-Shore/compare/bleeding-edge...prisma%2Ffix-score?expand=1", git.PullRequestUrl("prisma/fix-score", "bleeding-edge"));
+            Assert.Equal("origin/amoebius/fix-score", st.Upstream);
+            Assert.Equal("fix: score", Setup.Git(bare, "log", "-1", "--format=%s", "amoebius/fix-score"));
+            Assert.Equal("https://github.com/froglet-studio/Cosmic-Shore/compare/bleeding-edge...amoebius%2Ffix-score?expand=1", git.PullRequestUrl("amoebius/fix-score", "bleeding-edge"));
         }
 
         [Fact]
@@ -264,7 +264,7 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Theory]
-        [InlineData("prisma/fix-score", true)]
+        [InlineData("amoebius/fix-score", true)]
         [InlineData("has space", false)]
         [InlineData("a..b", false)]
         [InlineData("-x", false)]
@@ -273,12 +273,12 @@ namespace CosmicShore.Launcher.Tests
 
         /// <summary>
         /// TOOLS > BUILD: a TOOL chat may write only cs-asset, its tests and the native-tools
-        /// registry - the Unity project and every other part of Prisma are denied.
+        /// registry - the Unity project and every other part of Amoebius are denied.
         /// </summary>
         [Fact]
         public void A_tool_chat_may_edit_only_cs_asset_its_tests_and_the_registry()
         {
-            var root = Path.Combine(Path.GetTempPath(), "prisma-tooldeny-" + Guid.NewGuid().ToString("N")[..8]);
+            var root = Path.Combine(Path.GetTempPath(), "amoebius-tooldeny-" + Guid.NewGuid().ToString("N")[..8]);
             try
             {
                 foreach (var d in new[] { "Assets", "Port/src/CosmicShore.AssetTool", "Port/src/CosmicShore.Engine", "Port/tests/CosmicShore.AssetTool.Tests",
@@ -302,7 +302,7 @@ namespace CosmicShore.Launcher.Tests
         [Fact]
         public void The_native_tools_registry_reads_entries_and_skips_bad_ones()
         {
-            var file = Path.Combine(Path.GetTempPath(), "prisma-native-" + Guid.NewGuid().ToString("N")[..8] + ".json");
+            var file = Path.Combine(Path.GetTempPath(), "amoebius-native-" + Guid.NewGuid().ToString("N")[..8] + ".json");
             try
             {
                 File.WriteAllText(file, """
@@ -324,6 +324,42 @@ namespace CosmicShore.Launcher.Tests
                 if (File.Exists(shipped)) LauncherApp.LoadNativeTools(shipped);
             }
             finally { File.Delete(file); }
+        }
+    }
+
+    public class UpgradeTests
+    {
+        /// <summary>A worktree made beside the clone under the engine's earlier name stays in use (it may hold the agent's edits).</summary>
+        [Fact]
+        public void A_worktree_made_under_the_engines_earlier_name_stays_in_use()
+        {
+            var clone = Path.Combine(Setup.Data, "upgrade", "Cosmic-Shore");
+            Directory.CreateDirectory(clone);
+            var s = new LauncherSettings { Workspace = WorkspaceMode.WorktreeOfMyClone, MyClonePath = clone };
+            var ws = new Workspace(s, new Toolchain());
+            Assert.Equal(clone + "-amoebius", ws.Dir);
+
+            Directory.CreateDirectory(clone + "-prisma");
+            File.WriteAllText(Path.Combine(clone + "-prisma", ".git"), "gitdir: elsewhere\n");
+            Assert.Equal(clone + "-prisma", ws.Dir);
+
+            Directory.CreateDirectory(Path.Combine(clone + "-amoebius", ".git"));
+            Assert.Equal(clone + "-amoebius", ws.Dir);
+        }
+
+        [Fact]
+        public void Project_settings_fall_back_to_the_file_under_the_engines_earlier_name()
+        {
+            var root = Path.Combine(Setup.Data, "upgrade", "project");
+            var legacy = Path.Combine(root, "Port", "ProjectSettings", "PrismaProject.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(legacy)!);
+            File.WriteAllText(legacy, "{\"quality\":{\"msaa\":8}}");
+            Assert.Equal(8, Amoebius.AmoebiusProjectSettings.Load(root).Quality.Msaa);
+
+            // Once saved under the new name, that one wins.
+            new Amoebius.AmoebiusProjectSettings { Quality = { Msaa = 2 } }.Save(root);
+            Assert.True(File.Exists(Amoebius.AmoebiusProjectSettings.PathIn(root)));
+            Assert.Equal(2, Amoebius.AmoebiusProjectSettings.Load(root).Quality.Msaa);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace CosmicShore.Launcher
         public string Branch { get; set; } = "bleeding-edge";
         public WorkspaceMode Workspace { get; set; } = WorkspaceMode.Managed;
         public string MyClonePath { get; set; } = "";
-        /// <summary>The clone Unity has open (Launch Prisma passes it with --clone): PLAY follows its branch.</summary>
+        /// <summary>The clone Unity has open (Launch Amoebius passes it with --clone): PLAY follows its branch.</summary>
         public string UnityClonePath { get; set; } = "";
         /// <summary>PLAY's branch follows the branch Unity / GitHub Desktop has checked out, until another is picked.</summary>
         public bool FollowClone { get; set; } = true;
@@ -80,9 +80,9 @@ namespace CosmicShore.Launcher
         public string ClaudeEffort { get; set; } = "";
         public bool VoiceReplies { get; set; }
         public string ClaudePath { get; set; } = "";
-        /// <summary>Blender's executable for .blend models (empty = search like Unity does). Exported to cs-asset as PRISMA_BLENDER.</summary>
+        /// <summary>Blender's executable for .blend models (empty = search like Unity does). Exported to cs-asset as AMOEBIUS_BLENDER.</summary>
         public string BlenderPath { get; set; } = "";
-        /// <summary>Maya's mayapy for .ma/.mb models (empty = search). Exported as PRISMA_MAYAPY.</summary>
+        /// <summary>Maya's mayapy for .ma/.mb models (empty = search). Exported as AMOEBIUS_MAYAPY.</summary>
         public string MayaPyPath { get; set; } = "";
         public int ChatMode { get; set; }
 
@@ -111,8 +111,10 @@ namespace CosmicShore.Launcher
 
         static string ResolveDataDir()
         {
-            // A second, separate Prisma (and the launcher tests) can point everything elsewhere.
-            if (Environment.GetEnvironmentVariable("PRISMA_DATA_DIR") is { Length: > 0 } own)
+            // A second, separate Amoebius (and the launcher tests) can point everything elsewhere.
+            // PRISMA_DATA_DIR is the variable's name from before the rename.
+            if ((Environment.GetEnvironmentVariable("AMOEBIUS_DATA_DIR") is { Length: > 0 } a ? a
+                 : Environment.GetEnvironmentVariable("PRISMA_DATA_DIR")) is { Length: > 0 } own)
             {
                 Directory.CreateDirectory(own);
                 return own;
@@ -120,11 +122,15 @@ namespace CosmicShore.Launcher
             var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrEmpty(baseDir))
                 baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
-            var dir = Path.Combine(baseDir, "Prisma");
-            // Settings, sessions, tracks and versions from before the rename move over once.
-            var legacy = Path.Combine(baseDir, "FrogletEngine");
-            if (!Directory.Exists(dir) && Directory.Exists(legacy))
-                try { Directory.Move(legacy, dir); } catch { /* in use: start fresh beside it */ }
+            var dir = Path.Combine(baseDir, "Amoebius");
+            // Settings, sessions, tracks and versions from under the engine's earlier names (Prisma,
+            // then FrogletEngine) move over once.
+            foreach (var name in new[] { "Prisma", "FrogletEngine" })
+            {
+                var legacy = Path.Combine(baseDir, name);
+                if (!Directory.Exists(dir) && Directory.Exists(legacy))
+                    try { Directory.Move(legacy, dir); } catch { /* in use: start fresh beside it */ }
+            }
             Directory.CreateDirectory(dir);
             return dir;
         }

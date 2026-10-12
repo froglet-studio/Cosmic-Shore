@@ -39,7 +39,7 @@ namespace CosmicShore.Content.Shaders
         static readonly Dictionary<string, string> s_approximations = new(StringComparer.Ordinal)
         {
             ["OmniChargeEdgesShader"] = "Fog: the additive pass fades toward the fog colour, not toward black",
-            ["Wormhole"] = "Panorama: the partner's six-face capture is a texture array Prisma does not have (copyTextureSupport None, so the game never readies one); the void colour stands in",
+            ["Wormhole"] = "Panorama: the partner's six-face capture is a texture array Amoebius does not have (copyTextureSupport None, so the game never readies one); the void colour stands in",
         };
 
         public static bool Has(string guid) => guid != null && ByGuid.ContainsKey(guid);

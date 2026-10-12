@@ -1,4 +1,4 @@
-# Prisma v0.1 — Architecture Overview
+# Amoebius v0.1 — Architecture Overview
 
 *The Unity-free engine (the "port") that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
 
@@ -38,7 +38,7 @@ players also reference Content, Render and Engine directly.
 | **CosmicShore.Mobile** | The Android/iOS player: the same `PlayerWindow` on an SDL GL ES view, with touch | same as Player |
 | **CosmicShore.AssetTool** | `cs-asset`: edit scenes, prefabs and assets from the command line | Content, Live, Compat |
 | **CosmicShore.Build** | `cs-build`: Unity-style player builds (player data, Android APK/AAB, iOS) | none (reads files only) |
-| **CosmicShore.Launcher** | `Prisma.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
+| **CosmicShore.Launcher** | `Amoebius.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
 | *Data, Game, Cli, Client* | **Legacy.** Early hand-ported gameplay, headless round drivers and "sprint" windows. The player does not use them; the tests still do | Engine |
 | Tests | `CosmicShore.Tests` (xunit, 1,568 tests); `CosmicShore.Tests.Ported` (the project's Unity EditMode tests, 352) | — |
 
@@ -70,7 +70,7 @@ Everything targets .NET 10 (`Directory.Build.props`). The solution is `Port/Cosm
    first line, `if (NetRpc.Intercept(this, "Name", args)) return;`. That one line routes the call
    over the network, or lets it run locally. An RPC it cannot intercept (a generic method, an
    attribute split over lines, Netcode 2's `[Rpc(SendTo...)]`) is reported as warning
-   **`PRISMA001`** at its file and line, never skipped silently: it would run locally instead of
+   **`AMOEBIUS001`** at its file and line, never skipped silently: it would run locally instead of
    over the network.
 4. **Maps back to the original file.** Each output starts with `#line 1 "<path under Assets/>"`
    and the rewrite keeps line numbers, so compiler errors, stack traces, debugger steps and
@@ -330,7 +330,7 @@ Numbered badges mark what to click.
 
 ### 11.1 The launcher (start here)
 
-`Prisma.exe` (`Port/dist/Prisma-Windows.zip`) is the one file to give a tester.
+`Amoebius.exe` (`Port/dist/Amoebius-Windows.zip`) is the one file to give a tester.
 Full guide: `docs/LAUNCHER.md`.
 
 ![Launcher PLAY](architecture/launcher_play.png)
@@ -348,7 +348,7 @@ or on a Mac builds a signed `.ipa`. Everything else is folded under *Options*.
 
 ![Launcher PROJECT](architecture/launcher_project_1.png)
 
-**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/PrismaProject.json`),
+**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/AmoebiusProject.json`),
 so Unity's `ProjectSettings/` is never edited. PLAYER (names, version, bundle ids, build numbers),
 SCENES (Scenes In Build, shown), QUALITY (MSAA, render scale, filtering, vsync). Empty fields
 inherit Unity's values.
@@ -447,18 +447,18 @@ MCP server, so Claude Code drives the engine with tools: `engine_build`, `engine
 `unity_isolation_check`, `game_start` / `game_stop`, `game_screenshot` (returned as an image),
 `game_input`, `game_wait`, `game_find`, `game_hierarchy`, `game_get` / `game_set`, `game_ui_at`,
 `game_dump_ui`, `game_logs`, `game_load_scene`. On a server without a display it runs the game
-under `xvfb-run`. Connect it with `claude mcp add prisma -- dotnet run --project
+under `xvfb-run`. Connect it with `claude mcp add amoebius -- dotnet run --project
 Port/src/CosmicShore.Mcp --` or `claude --mcp-config Port/.mcp.json`; the launcher's CLAUDE page
 connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
 frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
-launcher passes one for every play session. Prisma folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
+launcher passes one for every play session. Amoebius folds them into **tracks** (`src/Shared/AmoebiusTracks.cs`:
 runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
-bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent
-scopes run in the app: the Prisma Agent (the game; `Port/` is denied) and milestone sessions
-(the engine; the Unity project is denied). The MCP server exposes `prisma_tracks`, `prisma_board`
-and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
+bug **board** (`src/Shared/AmoebiusBoard.cs`) that it and its agents suggest items to. Two agent
+scopes run in the app: the Amoebius Agent (the game; `Port/` is denied) and milestone sessions
+(the engine; the Unity project is denied). The MCP server exposes `amoebius_tracks`, `amoebius_board`
+and `amoebius_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
 
 ---
 
@@ -469,9 +469,9 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Engine, content, networking, services, gameplay | `dotnet test tests/CosmicShore.Tests`: ~1,590 tests in about 70 s, no GPU. Includes execution order, Unity's serialization rules, the tracks/board criteria, and `RenderBoundaryTests` (GL only inside `CosmicShore.Render`) |
 | The project's own Unity tests | `dotnet test tests/CosmicShore.Tests.Ported`: 352 tests, verbatim |
 | File round-trip | `cs-asset roundtrip`: every YAML file parses and writes back byte-identical |
-| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Prisma reads too, and nothing more (exit 1 otherwise) |
-| RPC coverage | The source sync warns `PRISMA001` for any RPC it cannot intercept (0 today) |
-| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Prisma's tracks compare it with earlier runs |
+| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Amoebius reads too, and nothing more (exit 1 otherwise) |
+| RPC coverage | The source sync warns `AMOEBIUS001` for any RPC it cannot intercept (0 today) |
+| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Amoebius's tracks compare it with earlier runs |
 | Rendering | Scripted windowed runs with screenshots, under xvfb on Linux |
 | Shaders on phones | Every shader is translated and compiled by the Khronos GLSL ES reference compiler (`GlslEsTranslationTests`) |
 | Fidelity | `--train replay` re-scores a generation Unity already scored and reports the difference |
@@ -487,7 +487,7 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Online services | Local stand-ins: no real UGS accounts, cloud or leaderboards |
 | Provenance | No Unity binary is used. Two spots still follow Unity source too closely (TMP SDF text-shader terms, a Voronoi hash from Unity's docs) and are queued for clean rewrites: `docs/LEGAL_REVIEW.md`. Third-party notices: `THIRD_PARTY_NOTICES.md` |
 | Animation Rigging, Timeline, VFX Graph | Data only; they do not animate or emit |
-| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Prisma draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Prisma yet |
+| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Amoebius draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Amoebius yet |
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
 | Legacy projects | Data, Game, Cli and Client are kept for their tests; new work goes into Engine, Content, Render or the players |

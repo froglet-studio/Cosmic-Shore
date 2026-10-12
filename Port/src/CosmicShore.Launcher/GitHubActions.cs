@@ -15,14 +15,18 @@ using System.Threading.Tasks;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// Builds the iOS .ipa on GitHub's free macOS runner (.github/workflows/prisma-ios.yml):
+    /// Builds the iOS .ipa on GitHub's free macOS runner (.github/workflows/amoebius-ios.yml):
     /// starts the run for a branch, follows it step by step, downloads the artifact and unzips the
     /// .ipa. Apple only compiles iPhone apps on macOS; this is how a Windows PC gets one without a Mac.
     /// The .ipa is unsigned: Sideloadly (or AltStore) signs it with the user's Apple ID.
     /// </summary>
     public sealed class GitHubActions
     {
-        public const string Workflow = "prisma-ios.yml";
+        /// <summary>The workflow's file, then its name before the rename (a branch from before it has that one).</summary>
+        static readonly string[] Workflows = { "amoebius-ios.yml", "prisma-ios.yml" };
+
+        /// <summary>The workflow the current build runs (set by <see cref="Start"/>).</summary>
+        public string Workflow { get; private set; } = Workflows[0];
         const string RequestFile = "Port/ios-build-request.txt";
         static readonly string[] SharedBranches = { "bleeding-edge", "development", "main" };
 
@@ -37,7 +41,7 @@ namespace CosmicShore.Launcher
             if (!m.Success) throw new InvalidOperationException("The repository is not on github.com: " + remoteUrl);
             _owner = m.Groups[1].Value; _repo = m.Groups[2].Value; _token = token;
             _http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(10) };
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/0.1");
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Amoebius/0.1");
             _http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
             _http.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
         }
@@ -70,8 +74,14 @@ namespace CosmicShore.Launcher
             var repo = await Get($"https://api.github.com/repos/{_owner}/{_repo}", ct);
             string def = repo.RootElement.GetProperty("default_branch").GetString()!;
 
-            var r = await Send(HttpMethod.Post, Api($"actions/workflows/{Workflow}/dispatches"),
-                new { @ref = def, inputs = new { @ref = branch, configuration = debug ? "Debug" : "Release" } }, ct);
+            HttpResponseMessage r = null!;
+            foreach (var wf in Workflows)
+            {
+                Workflow = wf;
+                r = await Send(HttpMethod.Post, Api($"actions/workflows/{wf}/dispatches"),
+                    new { @ref = def, inputs = new { @ref = branch, configuration = debug ? "Debug" : "Release" } }, ct);
+                if (r.StatusCode is not (HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)) break;
+            }
             string evt = "workflow_dispatch";
             if (r.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
             {
@@ -79,6 +89,7 @@ namespace CosmicShore.Launcher
                 if (SharedBranches.Contains(branch) || branch.StartsWith("build/"))
                     throw new Exception($"The iOS workflow is not on {def} yet, and {branch} is a shared branch. Pick your feature branch, or merge the port first.");
                 log.Add(LogKind.Info, $"Workflow not on {def} yet - starting it from {branch} instead.");
+                Workflow = await BranchWorkflow(branch, ct);
                 await TouchRequestFile(branch, ct);
                 evt = "push";
             }
@@ -103,6 +114,15 @@ namespace CosmicShore.Launcher
             throw new Exception("The build was requested but no run appeared on GitHub within two minutes.");
         }
 
+        /// <summary>The iOS workflow file <paramref name="branch"/> has: the push it is started by runs that one.</summary>
+        async Task<string> BranchWorkflow(string branch, CancellationToken ct)
+        {
+            foreach (var wf in Workflows)
+                using (var r = await Send(HttpMethod.Get, Api($"contents/.github/workflows/{wf}?ref={Uri.EscapeDataString(branch)}"), null, ct))
+                    if (r.IsSuccessStatusCode) return wf;
+            return Workflows[0];
+        }
+
         async Task TouchRequestFile(string branch, CancellationToken ct)
         {
             string? sha = null;
@@ -110,10 +130,10 @@ namespace CosmicShore.Launcher
             if (cur.IsSuccessStatusCode)
                 using (var doc = JsonDocument.Parse(await cur.Content.ReadAsStringAsync(ct)))
                     sha = doc.RootElement.GetProperty("sha").GetString();
-            var text = $"Requested by Prisma at {DateTime.UtcNow:O}\n";
+            var text = $"Requested by Amoebius at {DateTime.UtcNow:O}\n";
             var put = await Send(HttpMethod.Put, Api("contents/" + RequestFile), new
             {
-                message = "ci(ios): request a Prisma .ipa build",
+                message = "ci(ios): request an Amoebius .ipa build",
                 content = Convert.ToBase64String(Encoding.UTF8.GetBytes(text)),
                 branch,
                 sha,

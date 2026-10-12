@@ -320,7 +320,7 @@ namespace CosmicShore.Player
                     .Select(kv => new { count = kv.Value, message = kv.Key[(prefix.Length + 2)..].Trim() }).ToList();
                 var report = new
                 {
-                    kind = "prisma-session",
+                    kind = "amoebius-session",
                     version = 1,
                     startedUtc = s_start.ToString("O"),
                     seconds = Math.Round(total, 1),

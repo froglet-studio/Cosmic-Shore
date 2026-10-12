@@ -30,9 +30,19 @@ namespace CosmicShore.Launcher
         public Workspace(LauncherSettings s, Toolchain tools) { _s = s; _tools = tools; }
 
         public string Dir => _s.Workspace == WorkspaceMode.WorktreeOfMyClone && !string.IsNullOrWhiteSpace(_s.MyClonePath)
-            ? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/'))!,
-                Path.GetFileName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/')) + "-prisma")
+            ? WorktreeDir(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/'))
             : _s.ResolvedManagedPath;
+
+        /// <summary>
+        /// The worktree beside <paramref name="clone"/>: CLONE-amoebius, or one already made under the
+        /// engine's earlier names (a git worktree cannot just be renamed, and it may hold the agent's
+        /// uncommitted edits).
+        /// </summary>
+        static string WorktreeDir(string clone)
+        {
+            var dirs = new[] { "-amoebius", "-prisma", "-froglet-engine" }.Select(s => clone + s).ToArray();
+            return dirs.FirstOrDefault(d => Directory.Exists(Path.Combine(d, ".git")) || File.Exists(Path.Combine(d, ".git"))) ?? dirs[0];
+        }
 
         public bool Exists => Directory.Exists(Path.Combine(Dir, ".git")) || File.Exists(Path.Combine(Dir, ".git"));
         public bool HasEngine => File.Exists(Path.Combine(Dir, "Port", "src", "CosmicShore.Player", "CosmicShore.Player.csproj"));
@@ -195,8 +205,8 @@ namespace CosmicShore.Launcher
         public List<string> BuildScenes()
         {
             if (!File.Exists(Path.Combine(Dir, "ProjectSettings", "EditorBuildSettings.asset"))) return new();
-            var p = Prisma.PrismaProjectSettings.Load(Dir);
-            return p.BuildScenes(new Prisma.PrismaProjectSettings.UnityDefaults(Dir))
+            var p = Amoebius.AmoebiusProjectSettings.Load(Dir);
+            return p.BuildScenes(new Amoebius.AmoebiusProjectSettings.UnityDefaults(Dir))
                 .Where(s => s.Enabled).Select(s => Path.GetFileNameWithoutExtension(s.Path)).ToList();
         }
 
