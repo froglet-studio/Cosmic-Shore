@@ -77,11 +77,6 @@ META_EXEMPT_SUFFIXES = (".meta", ".DS_Store")
 UNITY_IGNORED_PREFIXES = (".", "~")
 
 EDITOR_TOKEN = re.compile(r"\bUnityEditor\b")
-# A string literal is data, not a reference: a serialized type name such as
-# "UnityEditor.ShaderGraph.GraphData" compiles in a player. Strip ordinary and
-# verbatim single-line literals before looking for the token. A char literal
-# cannot hold the word, so it is left alone.
-STRING_LITERAL = re.compile(r'@?"(?:\\.|[^"\\])*"')
 # A MonoBehaviour/ScriptableObject declaration. Unity's file-name rule applies
 # to MonoBehaviour only, but catching both is cheap and the message differs.
 TYPE_DECL = re.compile(
@@ -177,6 +172,146 @@ def _is_editor_only(cond: str) -> bool:
     return any(tok.strip() == "UNITY_EDITOR" for tok in c.split("&&"))
 
 
+def blank_literals(line: str) -> str:
+    """One line of C# with the CONTENT of every string and char literal
+    replaced by spaces, and any comment dropped. Everything else is kept.
+
+    A literal is data, not a reference: a serialized type name such as
+    "UnityEditor.ShaderGraph.GraphData" compiles in a player. But code that
+    merely sits near a quote is still code, and a regex cannot tell the two
+    apart. The regex this replaces hid a real reference in three places, each
+    now a negative control in test_validate_project.py:
+
+      $"x={UnityEditor.EditorApplication.isPlaying}"   an interpolation hole
+                                                        is code, not text
+      @"C:\\dir\\" + UnityEditor.AssetDatabase...      a verbatim string ends
+                                                        at the first lone quote;
+                                                        backslash escapes nothing
+      '"' ... UnityEditor.Selection ... "z"            a quote inside a char
+                                                        literal opens nothing
+
+    So this walks the line left to right the way the C# lexer does: plain
+    "..." with backslash escapes, verbatim @"..." with "" as its only escape,
+    interpolated $"..." / $@"..." / @$"..." whose {holes} are lexed as code
+    again (nested literals included; {{ and }} are text), '...' char literals,
+    and // and /* */ comments so a quote in a comment opens nothing.
+
+    It is per line, like the check it serves. A literal or block comment that
+    does not close on its line is blanked to the end of the line, and the next
+    line is read as code, so a multi-line verbatim string can at worst produce
+    a finding to look at, never hide one.
+    """
+    out: list[str] = []
+    _lex_code(line, 0, out, in_hole=False)
+    return "".join(out)
+
+
+def _lex_code(s: str, i: int, out: list[str], in_hole: bool) -> int:
+    """Copy code from s[i:] to out, blanking literal content, until the end of
+    the line or, inside an interpolation hole, the } that closes it. Returns
+    the index just past what was consumed."""
+    n = len(s)
+    depth = 0   # braces opened inside a hole, e.g. a lambda body or initializer
+    while i < n:
+        c = s[i]
+        if c == "/" and s.startswith("//", i):
+            return n                                  # comment to end of line
+        if c == "/" and s.startswith("/*", i):
+            end = s.find("*/", i + 2)
+            if end < 0:
+                return n
+            out.append(" ")
+            i = end + 2
+            continue
+        if in_hole and c == "{":
+            depth += 1
+        elif in_hole and c == "}":
+            if depth == 0:
+                return i                              # the hole's own closer
+            depth -= 1
+        if c == "'":
+            end = _char_literal_end(s, i)
+            if end > i:
+                out.append("'" + " " * (end - i - 1) + "'")
+                i = end + 1
+                continue
+        prefix = _string_prefix(s, i)
+        if prefix is not None:
+            i = _lex_string(s, i + len(prefix), out, prefix)
+            continue
+        out.append(c)
+        i += 1
+    return n
+
+
+def _string_prefix(s: str, i: int) -> str | None:
+    """The opening of a string literal at s[i], prefix and quote included, or
+    None. '@' alone before an identifier is a verbatim identifier, not a
+    string, and '$' only means interpolation directly before a quote."""
+    for p in ('$@"', '@$"', '$"', '@"', '"'):
+        if s.startswith(p, i):
+            return p
+    return None
+
+
+def _lex_string(s: str, i: int, out: list[str], prefix: str) -> int:
+    """s[i:] is just past the opening quote. Emit the literal with its text
+    blanked and its interpolation holes lexed as code; return the index just
+    past the closing quote (or the end of the line if it never closes)."""
+    verbatim = "@" in prefix
+    interpolated = "$" in prefix
+    n = len(s)
+    out.append(prefix)
+    while i < n:
+        c = s[i]
+        if c == '"':
+            if verbatim and i + 1 < n and s[i + 1] == '"':
+                out.append("  ")                      # "" is a quote in @"..."
+                i += 2
+                continue
+            out.append('"')
+            return i + 1
+        if c == "\\" and not verbatim:
+            step = min(2, n - i)                      # \" and \\ are one char
+            out.append(" " * step)
+            i += step
+            continue
+        if interpolated and c in "{}":
+            if i + 1 < n and s[i + 1] == c:
+                out.append("  ")                      # {{ and }} are text
+                i += 2
+                continue
+            if c == "{":
+                out.append("{")
+                i = _lex_code(s, i + 1, out, in_hole=True)
+                if i < n:                             # the hole's closing }
+                    out.append("}")
+                    i += 1
+                continue
+        out.append(" ")
+        i += 1
+    return n
+
+
+def _char_literal_end(s: str, i: int) -> int:
+    """Index of the closing quote of a char literal opening at s[i], or i when
+    s[i] does not open one. Strict on purpose: an apostrophe that is not a
+    well-formed char literal is left as code rather than swallowing what
+    follows it."""
+    n = len(s)
+    if i + 2 >= n:
+        return i
+    if s[i + 1] == "\\":
+        # \n, \', \\, \0, \x41, \u0041, \U00000041: at most 10 chars of escape.
+        j = i + 3
+        while j < n and j - i <= 11 and s[j] != "'":
+            j += 1
+        return j if j < n and s[j] == "'" else i
+    if s[i + 1] != "'" and s[i + 2] == "'":
+        return i + 2
+    return i
+
+
 def check_editor_in_runtime(root: Path, files: list[str]) -> list[Finding]:
     out = []
     for rel in files:
@@ -198,7 +333,7 @@ def check_editor_in_runtime(root: Path, files: list[str]) -> list[Finding]:
                 continue
             if line.strip().startswith("//"):
                 continue
-            if not EDITOR_TOKEN.search(STRING_LITERAL.sub('""', line)):
+            if not EDITOR_TOKEN.search(blank_literals(line)):
                 continue
             out.append(Finding(
                 "editor-in-runtime", rel,

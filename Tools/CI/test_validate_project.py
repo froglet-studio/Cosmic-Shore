@@ -63,6 +63,30 @@ EDITOR_CASES = [
      'string t = "say \\"UnityEditor\\" here";\n', False),
     ("a literal beside a real reference",
      'var w = UnityEditor.EditorWindow.focusedWindow; string t = "UnityEditor";\n', True),
+    # The regex that first stripped literals hid a real reference in each of
+    # the next three shapes (review of 8c6952942, reproduced end to end): an
+    # interpolation hole is code, a verbatim string ends at the first lone
+    # quote whatever precedes it, and a quote inside a char literal opens no
+    # string. Each must still flag.
+    ("reference inside an interpolation hole",
+     'Debug.Log($"playing={UnityEditor.EditorApplication.isPlaying}");\n', True),
+    ("verbatim string ending in a backslash",
+     'var p = @"C:\\dir\\" + UnityEditor.AssetDatabase.GetAssetPath(x) + "y";\n', True),
+    ("after a quote char literal",
+     "if (c == '\"') UnityEditor.Selection.activeObject = o; var s = \"z\";\n", True),
+    ("hole in a verbatim interpolated string",
+     'var p = $@"C:\\{UnityEditor.EditorApplication.applicationPath}\\x";\n', True),
+    ("quote inside a block comment",
+     'int a = 1; /* " */ UnityEditor.Selection.activeObject = null;\n', True),
+    # ...while the text around those holes is still data.
+    ("text and nested literals of an interpolated string",
+     'var s = $"{d["UnityEditor"]} {{UnityEditor}} {x:F2}";\n', False),
+    ("doubled quote inside a verbatim literal",
+     'var s = @"say ""UnityEditor"" here";\n', False),
+    ("escaped quote char literal before a literal",
+     "char q = '\\''; var s = \"UnityEditor\";\n", False),
+    ("trailing comment",
+     "int a = 1; // see UnityEditor.AssetDatabase\n", False),
 ]
 
 # (relative path, should be skipped by collect)
