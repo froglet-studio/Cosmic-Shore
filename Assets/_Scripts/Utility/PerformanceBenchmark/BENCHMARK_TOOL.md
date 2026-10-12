@@ -155,7 +155,12 @@ Extras that matter in practice:
   script hook, so an editor boot starts there and its pre-script interval is not measured.
 - Adding coverage: wrap new load-path work in
   `using (LoadInsights.Measure(LoadInsightCategory.X, "label")) { … }` — unattributed time is
-  called out in the report so gaps are visible, not hidden.
+  called out in the report so gaps are visible, not hidden. Each millisecond goes to the
+  latest-started open span. A **hold or a fixed dwell that other work runs inside** (the connecting
+  panel's dwell and arena-ready gate, the boot's menu wait) is opened with
+  `LoadInsights.MeasureEnvelope(...)` instead: an envelope only takes the time no other open span
+  claims, so a lay that started before the hold keeps its own time. A plain span opened over work
+  already running takes the rest of that work's time; the timeline marks envelopes `(envelope)`.
 
 ---
 

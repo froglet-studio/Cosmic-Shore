@@ -347,6 +347,13 @@ dwell → laying → growing → ready, then the peer wait of §4). Every phase 
 added on this branch are marked NEW. All of them cost one bool check when a recording is not armed
 and change nothing about how the load runs.
 
+The attribution rule these rows rely on: every millisecond goes to the **latest-started open
+span**, except that an **envelope** (`LoadInsights.MeasureEnvelope` / `BeginEnvelope`: a hold or a
+fixed dwell that other work runs inside) only gets the time no other open span claims
+(`LoadInsights.Claimant`, held by `LoadInsightsAttributionTests`). Without that exception a hold
+opened at `t0 + dwell` took every remaining millisecond of a lay already in flight, and the heavy
+cells' top cost read "arena-ready gate" instead of "Streamed prism lay".
+
 | Interval | Span (category) | Status |
 |---|---|---|
 | Launch tap → splash cover | `SceneLoader splash cover before load` (Scripted Delays, wait) | existing |
@@ -355,10 +362,10 @@ and change nothing about how the load runs.
 | `InitDelayMs` gate, `InitializeGame` raise | Scripted Delays (wait) / Game Flow | existing |
 | Cell membrane, density grids, environment, cytoplasm; flora, fauna, crystals; pool prewarm | Cell & Environment / Flora / Fauna / Crystals / Pooling | existing |
 | Vessel and AI spawn, replication waits, client pair init | Vessels / AI Backfill / Netcode (wait) | existing |
-| **Dwell** | NEW `Connecting panel dwell (2.0s)` (Scripted Delays, wait) | closed |
+| **Dwell** | NEW envelope `Connecting panel dwell (4.0s)` (Scripted Delays, wait; the label prints the prefab's `dwellSeconds`) | closed: an envelope, so a lay already running keeps its own time and the dwell books only its idle part as a scripted wait |
 | **Laying** | `Streamed prism lay (…)` plus the per-stage accumulators (Cell & Environment) | existing |
 | **Growing** | `Arena settle: creation queue + grow-in` (Cell & Environment) | existing |
-| **Hold remainder** (gate gaps, `ReadyStableSeconds`, frames between async build steps) | NEW envelope `Connecting panel hold: arena-ready gate (remainder no builder span claimed)` (Game Flow); the same envelope in `MiniGameHUD`'s no-panel branch | closed: the builder spans nest inside and win attribution, so the envelope keeps only what no builder span claimed, named instead of "Unattributed" |
+| **Hold remainder** (gate gaps, `ReadyStableSeconds`, frames between async build steps) | NEW envelope `Connecting panel hold: arena-ready gate (remainder no builder span claimed)` (Game Flow); the same envelope in `MiniGameHUD`'s no-panel branch | closed: an envelope claims only what no other open span claims, so every builder span keeps its own time whether it started before the hold (a streamed lay that began during the dwell) or inside it (the settle), and the envelope keeps only the gaps, named instead of "Unattributed" |
 | **Peers** | NEW `Waiting for peers' arenas (n of m humans still building)` (Netcode, wait) | closed |
 | Cinematic, Ready, countdown | none | excluded by design: the endpoint precedes them |
 
@@ -374,7 +381,7 @@ toggle, by `-csmloadinsights-boot`, or by the sweep, and completed at the menu's
 | Cached sign-in, anonymous sign-in, cloud profile load | Netcode (wait) | NEW |
 | Relay session per attempt, offline host fallback, manual retry | Netcode (wait) / Game Flow (human) | NEW |
 | Authentication → Menu_Main Netcode load | `Netcode scene load → activation (host, Menu_Main)` (Scene Load), opened by the runtime's Netcode hook because the auth scene is destroyed before the menu arrives | NEW |
-| Menu_Main active → menu vessel spawned | envelope (Game Flow); the vessel initializers' spans nest inside | NEW |
+| Menu_Main active → menu vessel spawned | envelope (Game Flow); the Netcode scene-load span still open when the menu arrives and the vessel initializers' spans keep their own time | NEW |
 
 Gaps that remain, stated rather than papered over: the activation internals above; the Netcode
 in-scene spawn between activation and the controller's `OnNetworkSpawn` (a mark, not a span); a

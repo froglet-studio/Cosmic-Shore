@@ -37,8 +37,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     ///
     /// A recording runs from <see cref="BeginLoad"/> (game launch) to <see cref="CompleteLoad"/>
     /// (first playable moment — turn started). Spans may nest and overlap across async flows; at
-    /// completion every millisecond of wall-clock is attributed to exactly ONE span (innermost
-    /// active wins) so category percentages sum to 100. The finished
+    /// completion every millisecond of wall-clock is attributed to exactly ONE span (the
+    /// latest-started open span wins, except that an ENVELOPE — a hold or fixed dwell opened with
+    /// <see cref="MeasureEnvelope"/> — only claims time no other open span claims; see
+    /// <see cref="Claimant"/>) so category percentages sum to 100. The finished
     /// <see cref="LoadInsightReport"/> is auto-saved as JSON + readable .txt under
     /// <c>persistentDataPath/Benchmarks/LoadInsights/</c>.
     /// </summary>
@@ -85,7 +87,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Recording state (guarded by s_gate).
         static List<LoadInsightSpan> s_spans;
-        static List<int> s_active;             // open span ids in begin order; last = innermost
+        static List<int> s_active;             // open span ids in begin order; Claimant picks the owner
         static List<LoadMark> s_marks;
         static List<LoadStall> s_stalls;
         static List<SweepError> s_errors;
@@ -168,7 +170,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 lock (s_gate)
                 {
                     if (!s_recording || s_active == null || s_active.Count == 0) return "—";
-                    var span = s_spans[s_active[^1]];
+                    var span = s_spans[Claimant(s_active, s_spans)];
                     return $"{span.categoryName}: {span.label}";
                 }
             }
@@ -251,15 +253,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// Boot recording only: a scene arrived. The main menu opens the span that runs until the
-        /// menu vessel spawns (the boot's endpoint), so Menu_Main's own activation and spawn chain
-        /// are named rather than left as the boot's biggest unattributed stretch. The vessel
-        /// initializers' own spans nest inside it and win attribution.
+        /// Boot recording only: a scene arrived. The main menu opens the envelope that runs until
+        /// the menu vessel spawns (the boot's endpoint), so Menu_Main's own activation and spawn
+        /// chain are named rather than left as the boot's biggest unattributed stretch. Being an
+        /// envelope, it takes nothing from the spans already open when the scene arrives (the
+        /// Netcode scene load) or opened after it (the vessel initializers).
         /// </summary>
         internal static void OnBootSceneArrived(bool isMainMenu)
         {
             if (!IsBootRecording || !isMainMenu || s_bootMenuSpan >= 0) return;
-            s_bootMenuSpan = Begin(LoadInsightCategory.GameFlow,
+            s_bootMenuSpan = BeginEnvelope(LoadInsightCategory.GameFlow,
                 "Menu_Main active → menu vessel spawned (OnClientReady)");
         }
 
@@ -355,7 +358,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// <summary>Scoped span: <c>using (LoadInsights.Measure(cat, "label")) { … }</c>.</summary>
         public static LoadSpanScope Measure(LoadInsightCategory category, string label,
             bool isWait = false, bool isHumanWait = false)
-            => new(Begin(category, label, isWait, isHumanWait));
+            => new(BeginSpan(category, label, isWait, isHumanWait, envelope: false));
+
+        /// <summary>
+        /// Scoped ENVELOPE span, for a hold or a fixed dwell that other load work runs inside: the
+        /// connecting panel's dwell and its arena-ready gate, the no-panel gate in MiniGameHUD, the
+        /// boot's wait for the menu vessel. An envelope claims only the time no other open span
+        /// claims, WHENEVER those spans started — a streamed lay that began before the hold keeps
+        /// its own time instead of losing the rest of it to the hold — so what the envelope keeps
+        /// is exactly the gaps it exists to name. A plain span opened late would take every
+        /// remaining millisecond of anything already running (<see cref="Claimant"/>).
+        /// </summary>
+        public static LoadSpanScope MeasureEnvelope(LoadInsightCategory category, string label, bool isWait = false)
+            => new(BeginSpan(category, label, isWait, isHumanWait: false, envelope: true));
 
         /// <summary>
         /// Opens a span and returns its handle (-1 when not recording — safe to pass to End).
@@ -363,6 +378,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// </summary>
         public static int Begin(LoadInsightCategory category, string label,
             bool isWait = false, bool isHumanWait = false)
+            => BeginSpan(category, label, isWait, isHumanWait, envelope: false);
+
+        /// <summary>
+        /// <see cref="Begin"/> for an envelope span (see <see cref="MeasureEnvelope"/>), for a hold
+        /// that crosses methods or frames; pair with <see cref="End"/>.
+        /// </summary>
+        public static int BeginEnvelope(LoadInsightCategory category, string label, bool isWait = false)
+            => BeginSpan(category, label, isWait, isHumanWait: false, envelope: true);
+
+        static int BeginSpan(LoadInsightCategory category, string label, bool isWait, bool isHumanWait, bool envelope)
         {
             if (!s_recording) return -1;
             lock (s_gate)
@@ -371,7 +396,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (s_spans.Count >= MaxSpans) { s_dropped++; return -1; }
 
                 int id = s_spans.Count;
-                int parent = s_active.Count > 0 ? s_active[^1] : -1;
+                // A span's parent is the latest-started open span, so work started inside a hold
+                // nests under it. An envelope is never the CHILD of work it merely overlaps (a lay
+                // that began before the hold): it nests only under an earlier envelope.
+                int parent = -1;
+                for (int i = s_active.Count - 1; i >= 0; i--)
+                {
+                    if (envelope && !s_spans[s_active[i]].isEnvelope) continue;
+                    parent = s_active[i];
+                    break;
+                }
                 var span = new LoadInsightSpan
                 {
                     id = id,
@@ -383,6 +417,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     startMs = NowMsUnlocked(),
                     isWait = isWait || isHumanWait,
                     isHumanWait = isHumanWait,
+                    isEnvelope = envelope,
                     offMainThread = MainThreadId >= 0 &&
                                     System.Threading.Thread.CurrentThread.ManagedThreadId != MainThreadId
                 };
@@ -503,8 +538,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// Names the span that best explains a stalled frame: run the same innermost-wins
-        /// attribution the pie uses, restricted to [frameStart, frameEnd], and return the span
+        /// Names the span that best explains a stalled frame: run the same attribution the pie
+        /// uses (<see cref="Claimant"/>), restricted to [frameStart, frameEnd], and return the span
         /// that claimed the most of that window. The naive "innermost active at frame end"
         /// misattributes single-frame monsters — a 100s spawn that opens and closes mid-frame
         /// isn't active anymore when the frame ends. Runs only for stalls (≤64/load), so the
@@ -536,7 +571,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 float from = Mathf.Max(cursor, frameStartMs);
                 float to = Mathf.Min(upTo, frameEndMs);
                 if (to <= from || active.Count == 0) return;
-                int inner = active[^1];
+                int inner = Claimant(active, s_spans);
                 claimed.TryGetValue(inner, out float v);
                 claimed[inner] = v + (to - from);
             }
@@ -678,7 +713,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                         id = s.id, parentId = s.parentId, depth = s.depth, label = s.label,
                         category = s.category, categoryName = s.categoryName,
                         startMs = s.startMs, endMs = s.endMs, durationMs = s.durationMs,
-                        isWait = s.isWait, isHumanWait = s.isHumanWait,
+                        isWait = s.isWait, isHumanWait = s.isHumanWait, isEnvelope = s.isEnvelope,
                         offMainThread = s.offMainThread
                     });
             }
@@ -765,11 +800,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// Exact wall-clock attribution: walk the span boundaries in time order and hand every
-        /// segment to the innermost span active during it (none → Unattributed). Fills each span's
-        /// exclusiveMs, the per-category slices, and the wait/work split. Percentages sum to 100.
+        /// The open span that owns the current instant, from <paramref name="active"/> (indices
+        /// into <paramref name="spans"/>, in start order): the most recently started span that is
+        /// not an envelope, else the most recently started envelope. Among plain spans this is the
+        /// innermost one for properly nested spans and the latest-started one for overlapping
+        /// async spans, as it always was; an envelope only gets the instants nothing else claims.
         /// </summary>
-        static void ComputeAttribution(LoadInsightReport report)
+        internal static int Claimant(List<int> active, List<LoadInsightSpan> spans)
+        {
+            for (int i = active.Count - 1; i >= 0; i--)
+                if (!spans[active[i]].isEnvelope) return active[i];
+            return active[^1];
+        }
+
+        /// <summary>
+        /// Exact wall-clock attribution: walk the span boundaries in time order and hand every
+        /// segment to the span <see cref="Claimant"/> picks among those active during it (none →
+        /// Unattributed). Fills each span's exclusiveMs, the per-category slices, and the wait/work
+        /// split. Percentages sum to 100. Internal so the edit-mode tests can hold the rule.
+        /// </summary>
+        internal static void ComputeAttribution(LoadInsightReport report)
         {
             var spans = report.spans;
             int n = spans.Count;
@@ -799,16 +849,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     unattributedMs += len;
                     return;
                 }
-                var innermost = spans[active[^1]];
-                innermost.exclusiveMs += len;
-                if (innermost.isWait) waitMs += len;
-                if (innermost.isHumanWait) humanWaitMs += len;
+                var owner = spans[Claimant(active, spans)];
+                owner.exclusiveMs += len;
+                if (owner.isWait) waitMs += len;
+                if (owner.isHumanWait) humanWaitMs += len;
 
-                catMs.TryGetValue(innermost.category, out var agg);
+                catMs.TryGetValue(owner.category, out var agg);
                 agg.ms += len;
-                if (innermost.isWait) agg.wait += len;
-                if (seen.Add(innermost.id)) agg.count++;
-                catMs[innermost.category] = agg;
+                if (owner.isWait) agg.wait += len;
+                if (seen.Add(owner.id)) agg.count++;
+                catMs[owner.category] = agg;
             }
 
             foreach (var (t, kind, idx) in events)

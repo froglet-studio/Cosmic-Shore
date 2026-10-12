@@ -354,7 +354,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField(
-                "Exact attribution: every ms goes to the innermost active span — percentages sum to 100.",
+                "Exact attribution: every ms goes to the latest-started open span (an envelope only gets what nothing else claims) — percentages sum to 100.",
                 EditorStyles.miniLabel);
         }
 
@@ -585,7 +585,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             foreach (var sp in r.spans)
             {
                 string indent = new string(' ', Mathf.Min(sp.depth, 8) * 3);
-                string flags = (sp.isWait ? " (wait)" : "") + (sp.truncated ? " (open at end)" : "");
+                string flags = (sp.isWait ? " (wait)" : "") + (sp.isEnvelope ? " (envelope)" : "")
+                             + (sp.truncated ? " (open at end)" : "");
                 events.Add((sp.startMs, 1,
                     $"{indent}• [{sp.durationMs,7:F0} ms] {sp.label}{flags}",
                     CategoryColor(sp.category)));

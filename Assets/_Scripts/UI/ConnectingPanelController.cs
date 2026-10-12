@@ -264,18 +264,19 @@ namespace CosmicShore.UI
             {
                 // Load Time Insights: the panel's phases ARE the load's taxonomy (dwell → laying →
                 // growing → ready → peers), so each is a span. No-ops unless a recording is armed.
-                using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                // The dwell and the hold are ENVELOPES: the arena build runs inside them, so a
+                // streamed lay that started before either one keeps its own time instead of losing
+                // the rest of it to whichever opened last. Each envelope keeps only what no builder
+                // span claims — the dwell's idle part, the gate's own gaps (ReadyStableSeconds,
+                // frames between async build steps) — named instead of reported as "Unattributed".
+                using (LoadInsights.MeasureEnvelope(LoadInsightCategory.ScriptedDelay,
                            $"Connecting panel dwell ({dwellSeconds:F1}s)", isWait: true))
                 {
                     await UniTask.Delay(TimeSpan.FromSeconds(dwellSeconds), ignoreTimeScale: true, cancellationToken: ct);
                 }
                 if (holdUntil != null)
                 {
-                    // Envelope for the arena-ready hold. The builder's own spans (streamed lay,
-                    // arena settle) nest inside it and win attribution; what this span keeps is the
-                    // remainder — the gate's own gaps (ReadyStableSeconds, frames between async
-                    // build steps) — named, instead of reported as "Unattributed".
-                    using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                    using (LoadInsights.MeasureEnvelope(LoadInsightCategory.GameFlow,
                                "Connecting panel hold: arena-ready gate (remainder no builder span claimed)"))
                     {
                         while (!holdUntil())

@@ -72,7 +72,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     public class LoadInsightSpan
     {
         public int id;
-        public int parentId = -1;      // innermost span active when this one began (-1 = root)
+        public int parentId = -1;      // latest-started open span when this one began (an envelope: latest open envelope; -1 = root)
         public int depth;
         public string label;
         public int category;
@@ -80,8 +80,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float startMs;
         public float endMs = -1f;      // -1 while open
         public float durationMs;
-        public float exclusiveMs;      // wall-clock attributed to THIS span (innermost-active wins)
+        public float exclusiveMs;      // wall-clock attributed to THIS span (see LoadInsights.Claimant)
         public bool isWait;            // deliberate wait (delay/replication/human) rather than CPU work
+        public bool isEnvelope;        // a hold or fixed dwell other work runs inside: claims only time no other open span claims
         public bool isHumanWait;       // waiting on a human (e.g. Ready click) — reported separately
         public bool truncated;         // still open when the load completed
         public bool offMainThread;     // began off the main thread (UGS/Netcode continuation)
@@ -119,7 +120,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     {
         public float atMs;             // offset from load start (frame end)
         public float durationMs;       // frame time
-        public string during;          // innermost active span label ("—" if none)
+        public string during;          // label of the span that claimed most of that frame ("—" if none)
     }
 
     /// <summary>An instant event on the load timeline.</summary>
@@ -154,8 +155,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// <summary>
     /// Complete result of one recorded game load: what happened, in what order, and where the
     /// wall-clock went. Attribution is exact — every millisecond between load start and playable
-    /// lands in exactly one category (innermost active span wins; span-free time is
-    /// "Unattributed"), so the percentages always sum to 100.
+    /// lands in exactly one category (the latest-started open span wins, and an envelope span
+    /// only takes what nothing else claims; span-free time is "Unattributed"), so the
+    /// percentages always sum to 100.
     ///
     /// Serialized to JSON next to a human/Claude-readable .txt under
     /// <c>persistentDataPath/Benchmarks/LoadInsights/</c>.
@@ -438,7 +440,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             foreach (var sp in spans)
             {
                 string indent = new string(' ', Math.Min(sp.depth, 8) * 2);
-                string flags = (sp.isWait ? " (wait)" : "") + (sp.truncated ? " (still running at end)" : "")
+                string flags = (sp.isWait ? " (wait)" : "") + (sp.isEnvelope ? " (envelope)" : "")
+                             + (sp.truncated ? " (still running at end)" : "")
                              + (sp.offMainThread ? " (off-main)" : "");
                 events.Add((sp.startMs, 1, $"  {indent}• [{sp.durationMs,7:F0} ms] {sp.categoryName}: {sp.label}{flags}"));
             }

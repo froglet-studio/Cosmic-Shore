@@ -648,8 +648,9 @@ namespace CosmicShore.UI
                     try
                     {
                         // Same envelope the connecting panel opens around its hold, so a mode
-                        // without a panel still attributes its gate remainder by name.
-                        using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                        // without a panel still attributes its gate remainder by name; the
+                        // builder's spans keep their own time whenever they started.
+                        using (LoadInsights.MeasureEnvelope(LoadInsightCategory.GameFlow,
                                    "Arena-ready gate hold, no connecting panel (remainder no builder span claimed)"))
                         {
                             while (!PrismTrailBuilder.PollArenaReady())
