@@ -53,12 +53,38 @@ namespace CosmicShore.Utility
         // Enter Play Mode keeps statics across sessions (domain reload is off), so a re-exported model must
         // be baked afresh rather than served from the last session's cache.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetCache() => s_cache.Clear();
+        static void ResetCache()
+        {
+            s_cache.Clear();
+            s_cut.Clear();
+            s_derived.Clear();
+        }
+
+        /// <summary>Cut twins: (the mesh a renderer drew, the corner count cut) -> that mesh without those plates.</summary>
+        static readonly Dictionary<(Mesh, int), Mesh> s_cut = new();
+
+        /// <summary>Twins other bakers derive from a mesh this one handed out (the omni body's Space squares,
+        /// <see cref="CosmicShore.Gameplay.CrystalSpaceSquares"/>): twin -> the mesh it was copied from.</summary>
+        static readonly Dictionary<Mesh, Mesh> s_derived = new();
+
+        /// <summary>
+        /// Records that <paramref name="twin"/> is a copy of <paramref name="from"/> with something added, so
+        /// <see cref="SourceOf"/> still resolves a renderer wearing it to the authored asset (a fusion bake keyed by
+        /// the FBX mesh, a morph built from the cage). A baker that swaps a crystal body onto its own twin registers
+        /// it here; an unregistered twin reads as its own source and those readers lose the crystal.
+        /// </summary>
+        public static void RegisterDerivedTwin(Mesh twin, Mesh from)
+        {
+            if (twin && from && twin != from) s_derived[twin] = from;
+        }
 
         /// <summary>The mesh a drawn twin was baked from; any other mesh is its own source.</summary>
         public static Mesh SourceOf(Mesh displayed)
         {
             if (displayed == null) return null;
+            if (s_derived.TryGetValue(displayed, out var from) && from != null) return SourceOf(from);
+            foreach (var cut in s_cut)
+                if (cut.Value != null && cut.Value == displayed) return SourceOf(cut.Key.Item1);
             foreach (var skin in s_cache.Values)
                 if (skin != null && skin.Mesh == displayed) return skin.Source;
             return displayed;
@@ -93,12 +119,17 @@ namespace CosmicShore.Utility
             return true;
         }
 
-        /// <summary>Builds a twin, uncached (the edit-mode tests own what they bake).</summary>
-        internal static Skin Bake(Mesh source, out string problem)
+        /// <summary>A mesh's plates: every vertex's weld id, the welded positions, and each weld's plate root.</summary>
+        sealed class PlateMap
         {
-            var vertices = source.vertices;
+            public int[] WeldIds;
+            public List<Vector3> WeldPositions;
+            public int[] RootOfWeld;
+        }
 
-            // Weld positions, then join every triangle's corners: a plate is a connected component.
+        /// <summary>Welds positions, then joins every triangle's corners: a plate is a connected component.</summary>
+        static PlateMap MapPlates(Mesh source, Vector3[] vertices)
+        {
             var weldIds = new int[vertices.Length];
             var weldLookup = new Dictionary<Vector3Int, int>(vertices.Length);
             var weldPositions = new List<Vector3>(vertices.Length);
@@ -132,6 +163,19 @@ namespace CosmicShore.Utility
                     parent[Find(weldIds[tris[i + 2]])] = a;
                 }
             }
+            var roots = new int[parent.Length];
+            for (int w = 0; w < roots.Length; w++) roots[w] = Find(w);
+            return new PlateMap { WeldIds = weldIds, WeldPositions = weldPositions, RootOfWeld = roots };
+        }
+
+        /// <summary>Builds a twin, uncached (the edit-mode tests own what they bake).</summary>
+        internal static Skin Bake(Mesh source, out string problem)
+        {
+            var vertices = source.vertices;
+            var plates = MapPlates(source, vertices);
+            var weldIds = plates.WeldIds;
+            var weldPositions = plates.WeldPositions;
+            int Find(int w) => plates.RootOfWeld[w];
 
             // Each plate's distinct corners, in order of first appearance so bone order is stable.
             var cornersByPlate = new Dictionary<int, List<Vector3>>();
@@ -238,6 +282,82 @@ namespace CosmicShore.Utility
             renderer.rootBone = root;
             renderer.localBounds = bounds;
             return true;
+        }
+
+        /// <summary>
+        /// Swaps <paramref name="renderer"/> onto a twin of the mesh it draws with every plate of exactly
+        /// <paramref name="cornerCount"/> distinct corners REMOVED from its index buffers - the omni body's 20
+        /// triangular prisms (6 corners) become holes for <see cref="CosmicShore.Gameplay.CrystalDepthPrisms"/> to
+        /// fill. Every vertex, bone weight and bindpose is kept, so a skinned body keeps its bones, its flip wave and
+        /// its bounds; only triangles go. Shared per (mesh, corner count) like the skin twin, and
+        /// <see cref="SourceOf"/> resolves it back to the authored asset. Idempotent.
+        /// </summary>
+        public static bool TryCutPlates(SkinnedMeshRenderer renderer, int cornerCount, out string problem)
+        {
+            var mesh = renderer ? renderer.sharedMesh : null;
+            if (!mesh)
+            {
+                problem = "no skinned mesh renderer, or it draws no mesh";
+                return false;
+            }
+            foreach (var done in s_cut.Values)
+            {
+                if (done != mesh) continue;
+                problem = null;
+                return true;
+            }
+            if (!s_cut.TryGetValue((mesh, cornerCount), out var cut) || cut == null)
+            {
+                if (!mesh.isReadable)
+                {
+                    problem = $"mesh '{mesh.name}' is not Read/Write enabled, so its plates cannot be found";
+                    return false;
+                }
+                cut = Cut(mesh, cornerCount, out problem);
+                if (cut == null) return false;
+                s_cut[(mesh, cornerCount)] = cut;
+            }
+            renderer.sharedMesh = cut;
+            problem = null;
+            return true;
+        }
+
+        /// <summary>Builds a cut twin, uncached (the edit-mode tests own what they cut).</summary>
+        internal static Mesh Cut(Mesh source, int cornerCount, out string problem)
+        {
+            var plates = MapPlates(source, source.vertices);
+            var corners = new Dictionary<int, int>();
+            foreach (int root in plates.RootOfWeld)
+                corners[root] = corners.TryGetValue(root, out int n) ? n + 1 : 1;
+            int platesCut = 0;
+            foreach (int n in corners.Values)
+                if (n == cornerCount) platesCut++;
+            if (platesCut == 0)
+            {
+                problem = $"mesh '{source.name}' has no plate of {cornerCount} corners to cut";
+                return null;
+            }
+
+            var twin = Object.Instantiate(source);
+            string baseName = source.name.EndsWith(BakedSuffix) ? source.name[..^BakedSuffix.Length].TrimEnd() : source.name;
+            // Keeps the skin twin's suffix, so TryDress still recognises a renderer wearing this as dressed.
+            twin.name = source.name.EndsWith(BakedSuffix) ? $"{baseName} (Cut {cornerCount}) {BakedSuffix}" : $"{baseName} (Cut {cornerCount})";
+            var kept = new List<int>();
+            for (int s = 0; s < source.subMeshCount; s++)
+            {
+                var tris = source.GetTriangles(s);
+                kept.Clear();
+                for (int i = 0; i < tris.Length; i += 3)
+                {
+                    if (corners[plates.RootOfWeld[plates.WeldIds[tris[i]]]] == cornerCount) continue;
+                    kept.Add(tris[i]);
+                    kept.Add(tris[i + 1]);
+                    kept.Add(tris[i + 2]);
+                }
+                twin.SetTriangles(kept, s, false);
+            }
+            problem = null;
+            return twin;
         }
     }
 }

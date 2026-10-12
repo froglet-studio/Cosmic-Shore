@@ -65,6 +65,90 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator
+`author_omni_crystal_triangles.py --check`), on top of the Depth ratchet entry below:
+- **No free turn.** `CrystalDepthPrisms` no longer turns the crystal's models; the profile's three turn
+  fields are gone. Step 1 of the entry below now reads "fly round a crystal": the crystal holds still.
+- **The ratchet runs against the gameplay camera** (`CameraManager.GetActiveController()` →
+  `CustomCameraController.Camera`), not `Camera.main`. `Camera.main` in Bootstrap is the menu's
+  Cinemachine-brain camera under `CameraManager`, which never follows the vessel, so round 8's
+  prisms held still and sealed in flight and the face split never opened.
+- **Space squares:** `CrystalSpaceSquares` on `OmniCrystalBody.prefab` puts the body on a shared copy of
+  its runtime twin with the art file's three shape keys as blend shapes (`OmniSpaceSquares.asset`) and
+  plays the 4.8 s loop, each crystal at its own phase.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player
+and editor 0 errors in project code (negative-controlled); the squares baker run headlessly on the
+shipped code against the real body FBX and asset (16/16: exactly the 480 square corners move, normals
+turn with their faces to 2e-5; three mutants fail); playback matches the lab's `squaresWeights()` to
+6e-7. What only the Editor can show: that a SkinnedMeshRenderer swapped onto the shaped twin keeps its
+bones and plays the weights.
+
+**Verify in editor:**
+1. Fly round an omni crystal (any mode with omnis). The crystal does not turn. The far side's prisms
+   stand out from the silhouette with their faces parted; as you circle, prisms coming toward you drop
+   into their holes and never rise while in view. If every prism sits sealed and still, the camera
+   resolve failed: check which camera `CameraManager.GetActiveController()` returns.
+2. On the omni body the 60 squares turn about the pentagons, then weave over the triangles, looping
+   every 4.8 s. Neighbouring crystals are out of step. The rhombi still flip, and the squares'
+   shading turns with them (no flat or black squares mid-turn).
+3. Console: no `CrystalSpaceSquares` error. The likely ones name an unreadable mesh, or anchors that
+   do not sit on a body vertex, which means the FBX moved: re-run the bake.
+4. Collect an omni; let the Scarab forge / Squirrel ring morph fold one. Fusion still finds the body
+   (`RhombusSkinBaker.SourceOf` resolves the squares twin to the FBX).
+5. Team omni (Skim Race track): prisms still ride by depth in the domain colour; squares still weave.
+6. Main menu (freestyle lava lamp): crystals there fall back to `Camera.main`. Check that the prisms
+   still respond as the menu camera moves.
+7. Profile: `CrystalSpaceSquares.LateUpdate` is a few µs per visible omni. The one-time shaping, on
+   the first omni seen, is one bake per twin.
+
+---
+
+### 🔴 Omni + Mass crystals: triangles SEALED BY DEPTH (the Depth ratchet) (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/PALETTE.md §2.10`, `Docs/Studios/OMNI_SHEPARD_LAB.md` round 8; generators
+`author_omni_crystal_triangles.py --check` and `author_mass_crystal_look.py`): the omni's three
+breathing tone shells and the Mass crystal's four shells are replaced by ONE opaque prism renderer per
+crystal on the new `OmniDepthPrismShader`, driven by the new `CrystalDepthPrisms`
+(`CrystalDepthPrismProfile.asset`, pure math in `DepthRatchet`). Each prism rides a column over its
+own hole by its DEPTH from the camera: the far side stands open at the top of its columns, the near
+side is sealed, and in view a prism only ever moves down (it reseats at the top of its column only
+behind the crystal). Faces split at the top (0.5 plate radius), thickness grows inward (omni 8, Mass
+6.25), and the whole crystal turns 15°/s about an axis tipped 25° (the crystal ROOT is not turned).
+The omni body loses its 20 triangle plates at runtime (`RhombusSkinBaker.TryCutPlates`, a cut twin of
+the skinned body). `Crystal.prefab` now has two `crystalModels` slots (body, prisms);
+`OriginalMaterialSet.CrystalMaterial1` is `OmniDepthPrisms`.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player
+and editor configs 0 errors in project code (negative-controlled); the ratchet tests run headlessly
+against the shipped `DepthRatchet.cs` (3/3, a mutant that reseats in view fails); the shader compiles
+with DXC (both passes, vertex + fragment) and its vertex function matches the lab to 2e-5 on both
+meshes (`Tools/Build/omni_depth_prism_shader_parity.py`); the lab's Shipped style equals the recorded
+pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
+
+**Verify in editor:**
+1. Any mode with omni crystals (Skim Race, freestyle): fly round a crystal. The side facing you is
+   sealed (flush triangles, no holes); the far side's triangles stand out from the silhouette with
+   their faces parted; as the crystal turns, triangles coming toward you drop into their holes and
+   never rise while in view. No triangle pops in or out in view.
+2. The body's 30 rhombi still flip (Time wave) and the pentagons still crackle (charge edges), and
+   both turn WITH the body - nothing slides against the holes.
+3. Collect an omni crystal: the husk bursts as before; a respawned crystal appears at once.
+4. A team crystal (Skim Race track, or a Dolphin team crystal): the prisms wear the domain colour and
+   still ride their columns (slot 1 = `OmniDepthPrisms` clone).
+5. A Mass crystal (free pickup, a Gyroid / Tadpole / Mass Shark / Brittlestar heart): one solid prism
+   crystal, prisms riding by depth; blue while embedded, lime once free; collect bursts the husk.
+6. The Scarab forge and the Squirrel ring morph on an omni pickup: the body folds; the prisms fade as
+   an overlay (they carry their frozen state).
+7. Console: no `CrystalDepthPrisms` errors (they name a missing profile, an unreadable mesh, or a body
+   that could not be cut).
+8. Profile with many crystals on screen: `CrystalDepthPrisms.LateUpdate` should be a few µs per
+   visible crystal.
+
+---
+
 ### 🔴 Store readiness: production iOS id, Android API 36 + ARM64, Unity IAP removed, iOS export-compliance plist (`claude/serene-edison-lfv24f`, 2026-10-08)
 
 Step 1 and the store settings of `Docs/PLATFORM_UNIFICATION.md` (§3.9). The console walkthrough is
@@ -380,7 +464,43 @@ outcome onto the prefab component, which fixed it. Root cause of the null load i
 
 ---
 
+### 🔴 Omni crystal: the triangles BREATHE; the rim is retired (`cece/eager-rubin-km7qyn`, 2026-10-10)
+
+**Landed** (`Docs/PALETTE.md §2.10`; picked in the Omni Shepard Lab, `Docs/Studios/OMNI_SHEPARD_LAB.md`
+round 4): `OmniShepardFresnelShader` gained four opt-in dials, inert at their defaults
+(`_Breathe`, `_PhaseOffset`, `_PlateScaleStart`, `_Thickness`). `OmniCrystalTriangles.asset` gained a
+per-vertex plate centre in TEXCOORD2 (stride 48 → 60). The six `OmniShepardTriangles*` materials now
+breathe 1.0 ↔ 0.5 over 10.5 s, phases 0 / ⅓ / ⅔, with plates half size far out, 1.25× thick, and
+face-forward shading. `Crystal.prefab` lost slot 4 (the rim). Everything is regenerated by
+`Tools/Build/author_omni_crystal_triangles.py` (`--check` clean). C# changes are comment and
+tooltip text only. **No Unity editor or `unity` CLI in the authoring container, so `/verify-unity`
+did NOT run.** The HLSL `vert()` was compiled with clang and checked vertex by vertex against the lab
+(`Tools/Build/omni_shepard_shader_parity.py`, 7/7 incl. two negative controls); the fragment and
+ShaderLab wrapper were not compiled by Unity.
+
+**Verify in editor**
+1. Console after import: no errors on `OmniShepardFresnelShader`, `OmniCrystalTriangles.asset` or
+   `Crystal.prefab`. The mesh inspector shows UV2 (TEXCOORD2) with 3 components.
+2. In play, the omni crystal's triangles drift IN from twice the crystal's radius to its surface and
+   back OUT, three shells a third of a cycle apart (one full round trip ≈ 10.5 s). Far out they are
+   small (half size), on the surface they match the body's triangles. They are slightly thicker than
+   the body's plates. No visible pop anywhere in the cycle. There is no static outer triangle rim any more.
+3. **Compare against the lab:** open `Docs/Studios/OmniShepardLab.html` (Styles ▸ Shipped). The game
+   should match it apart from bloom and transparent sort order.
+4. **Mass crystal unchanged:** it shares this shader and authors none of the new dials; its four shells
+   should look exactly as before.
+5. Team crystals (Skim Race track crystal, Dolphin crystal) breathe the same way in domain colours.
+   Console: no "Invalid crystal material index".
+6. Scarab forge / Squirrel ring morph on an omni crystal: the triangle overlays fade as the cage opens
+   (four slots now, not five); no warnings.
+7. Transparent order: the three shells keep fixed queues 2999/3000/3001 while breathing through each
+   other. Watch for a shell visibly drawing in front of a nearer one; if it shows, report it.
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
+
+> **Partly superseded 2026-10-10:** the triangles now breathe instead of falling, and the
+> stationary rim (slot 4) is gone; see the entry above. Steps 3 (falling, rim) and 8 (falling,
+> rim) describe the old look; the rest still applies.
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
 `Crystal.prefab` slot 0 = whole omni model on the new, self-contained `OmniCrystalFresnelShader`

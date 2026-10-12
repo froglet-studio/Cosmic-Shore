@@ -480,7 +480,7 @@ colour is barely affected.
 (convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
 hue separation.
 
-### 2.10 The omni crystal is a BODY plus three tone shells — an element's effect belongs on that element's SHAPES (2026-10-07)
+### 2.10 The omni crystal is a BODY plus its triangle prisms — an element's effect belongs on that element's SHAPES (2026-10-07; prisms sealed by depth since 2026-10-12)
 
 The omni crystal is an **exploded polyhedron**: 122 disjoint plates, one component per face of the
 solid it was blown apart from — **20 triangular prisms, 90 boxes, 12 pentagonal prisms**
@@ -500,17 +500,78 @@ had two consequences and neither was authored:
    **0.02–0.07** — a ghost, one hundredth above the graph's own 0.01 clip. Everything you could see
    of an omni crystal was the pulse.
 
-What ships is a body plus a three-shell tone chain and a stationary rim, authored by
-`Tools/Build/author_omni_crystal_triangles.py` (`--check`):
+What ships (since 2026-10-12) is a body plus ONE renderer of opaque triangle prisms SEALED BY DEPTH,
+authored by `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
 
-| slot | geometry | default / inactive material | band (s, falling) |
+| slot | geometry | default / inactive material | motion |
 |---|---|---|---|
-| 0 | **the whole omni model** (`OmniCrystalBody.prefab`); its 30 rhombi flip, the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
-| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`OmniShepardFresnelShader`) | 1.000 → 0.833 |
-| 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
-| 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
-| 4 | triangles only, **stationary** | `OmniShepardTrianglesRim` / `…RimInactive` | 1.03 → 0.98, unscaled |
-| child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | — |
+| 0 | **the whole omni model** (`OmniCrystalBody.prefab`) minus its 20 triangle plates at runtime (the holes); its 30 rhombi flip and its 60 squares weave (Space squares), the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | still |
+| 1 | the 20 triangular prisms (`OmniCrystalTriangles.asset`, SEATED at the prefab's scale) | `OmniDepthPrisms` / `…Inactive` (`OmniDepthPrismShader`, opaque) | each rides its column by depth (`CrystalDepthPrisms`) |
+| child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | still |
+
+**The triangles are SEALED BY DEPTH (2026-10-12, the Omni Shepard Lab's pick, round 8).** Each prism
+sits in a column over its own hole, and WHERE in the column is set by its depth from the camera, not
+by a clock: `d = plate direction · camera direction` in the crystal's own space, `seat =
+smoothstep(-0.88, 1, d)`. So the far side of the crystal stands open at the tops of its columns
+(twice the crystal's radius, half size, faces parted by half a plate radius) and the near side is
+sealed, whichever way the crystal faces - the separation reads as depth. The shipped mode is the
+RATCHET: in view a prism only ever moves DOWN; going away it holds; once it is behind `d = -0.8`
+(hidden by the body - the lab measured the cliff at about -0.75) it fades out in its hole while a new
+one fades in at the top of its column, on complementary dither pixels so the swap never shows a gap.
+That is the Shepard tone on a crystal you can turn any way - and the pilot turns it, by flying round it:
+the crystal itself holds still (round 8 shipped a 15°/s free turn; it was dropped on 2026-10-12, round
+9). Thickness grows INWARD (8 on the omni), so a sealed prism's top face is flush with the
+body at any thickness. The Mass crystal wears the same look on its 60 prisms (one renderer,
+`MassDepthPrisms`, thickness 6.25; it has no body, so no holes). The pieces: `OmniDepthPrismShader`
+(the body's colour formula, `_Spread` and `_Opacity` dissolve, plus the column vertex stage and two
+passes - arriving and leaving prism), `CrystalDepthPrisms` (steps the ratchet per visible crystal
+against the GAMEPLAY camera - `CameraManager`'s active controller's camera, NOT `Camera.main`, which in
+Bootstrap is the menu's Cinemachine-brain camera under `CameraManager`, which never follows the vessel: round 8 read it, and
+in game every prism held still and sealed while the lab, which has one camera, looked right - and writes `_DepthState[plate]` through a property block; undriven, the
+shader draws every prism sealed and solid), `CrystalDepthPrismProfile.asset` (depths, ratchet;
+shared), `DepthRatchet` (the pure math; JS twin in the lab), and `RhombusSkinBaker.TryCutPlates` (the
+body's holes, a cut twin of the skinned body that keeps every vertex and bone, resolving back to the
+FBX through `SourceOf`). Proved offline: `Tools/Build/omni_depth_prism_shader_parity.py` (the
+shader's vertex function vs the lab, both meshes, 2e-5) and `omni_shepard_lab_parity.cjs` (the lab's
+Shipped draws the recorded pick exactly).
+
+**The body plays the Space SQUARES (2026-10-12, round 9).** The art file's animation
+(`CrystalsRaw_V2.blend`, `OmniCrystal.001`, Action.008): the 60 square plates turn about the
+pentagons, then weave over the triangles - three shape keys (`SquareRotateAroundPentagon`,
+`SquareOverTri_Step1/2`, and `Step2/2` stacked on Step1) on a 4.8 s loop at 25 fps. The FBX carries no
+shape keys, so `CrystalSpaceSquares` (on `OmniCrystalBody.prefab`) puts the body on a copy of the twin
+it draws with the keys added as blend shapes - one copy per twin, shared by every omni; positions are
+Blender's exactly, and each key carries frames at 25/50/75/100 whose normals are the authored normal
+turned with its face (a turning square's normal is not linear in its weight) - and plays the baked
+frame weights, each crystal at its own phase, holding a frame's values across a snap. Blend shapes
+apply before skinning, so the Time flip wave's bones still turn the rhombi. The data,
+`OmniSpaceSquares.asset`, is generated by `author_omni_crystal_triangles.py` from
+`Docs/Studios/data/omni_space_squares.json` (anchors = the moving control points in Unity's space,
+x negated). Proved headlessly: the shipped baker on the shipped body welds to exactly the 480 square
+corners, every normal matches its face's turn to 2e-5, and the weights match the lab's
+`squaresWeights()` to 6e-7.
+
+The Breathe look below shipped from 2026-10-10 to 2026-10-12; its materials stay authored
+(`OriginalMaterialSet` slots 2-3 still name them, and the lab's Breathe styles read them).
+
+**The tone BREATHES (2026-10-10, the Omni Shepard Lab's pick).** Until then the three shells were
+contiguous falling bands (1.000 → 0.833 → 0.667 → 0.500, 3 s each) that landed on the body and
+jumped back out, with a stationary rim (slot 4) at the outer radius to hide each new shell's
+birth. The team found that look flat and picked "Breathe" in
+`Docs/Studios/OmniShepardLab.html` (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 4): each shell
+drifts in from s = 1 (twice the crystal) to the surface and back OUT over one 10.5 s round trip,
+the three shells a third of a trip apart. Every triangle is half its landed size at the far end
+and full size on the surface; the plates are 1.25× thick; the shading is face-forward (dark face
+centres front and back, bright edges only). That is four opt-in dials on `OmniShepardFresnelShader`:
+`_Breathe` (the band ping-pongs), `_PhaseOffset` (this layer's share of the clock),
+`_PlateScaleStart` and `_Thickness` (each plate sized and stretched about its OWN centre). The
+plate centre is baked per vertex into `OmniCrystalTriangles.asset`'s TEXCOORD2 by the generator.
+All four are inert at their defaults, so the Mass crystal's shells, which author none of them,
+draw exactly as before. Proved offline: `Tools/Build/omni_shepard_shader_parity.py` compiles the
+shipped shader's `vert()` with clang and shows (a) the defaults are `v · s` to 1e-7, with and
+without plate centres, and (b) the three shipped materials match the lab's model of the picked
+look to 3e-6 on the real mesh. `Tools/Build/omni_shepard_lab_parity.cjs` shows the lab's shipped
+page draws exactly what the designer exported.
 
 **Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
 signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the
@@ -565,7 +626,7 @@ skinned (720 of 2,880 split vertices), the still body never moves, the rest pose
 body's own family: the body's colour formula verbatim — `lerp(_BrightColor, _DarkColor, (1 + N·V)/2)`,
 dark where a face looks at you, bright toward the silhouette — on the body's own colour pair (each
 tone material is the body material moved onto the tone shader, nothing else changed), with
-ShepardGraph's motion and alpha transcribed. A falling triangle is therefore the body's triangle made
+ShepardGraph's motion and alpha transcribed. A triangle in flight is therefore the body's triangle made
 see-through; it cannot drift to a different lime than the plate it lands on. This retired the
 mismatch the first pass had: the triangles were on `ShepardGraph`, whose colour is
 `lerp(dull, bright, (1−N·V)⁴)` and which `Crystal.ApplyColorSetTint` repaints with the CTA pair at
@@ -578,30 +639,28 @@ crystals through `CrystalManager.ChangeDomain`, the Dolphin's `TeamCrystal`) swa
 `GetTeamCrystalMaterial(domain, slot)`, which `ThemeManager` builds by cloning the BASE set
 (`OriginalMaterialSet`) slot by slot. That set still pointed at the four Mass-era Shepard materials,
 so a team omni ran a Shepard band on its BODY (shrinking it toward the centre) and the old inward
-bands on its triangles — the "scaling issues". The base set now points at exactly the omni's five
+bands on its triangles — the "scaling issues". The base set now points at exactly the omni's
 per-slot materials, and `ThemeManager` paints each clone's `_BrightColor`/`_DarkColor` from the
 domain pair (`BrightCrystalColor`/`DullCrystalColor`). That mapping is one-to-one: Dull is authored
 black on Jade, Ruby and Gold, which is precisely the lime body's near-black face. Side effect, by
 design: `MazeCrystal` (one model, the omni mesh) also reads slot 0 when domain-owned, so it now wears
 the omni body in its domain colour instead of a Shepard band.
 
-**Five slots, and the fifth is real.** The rim is slot 4 so a team crystal paints it too:
-`SO_MaterialSet.CrystalMaterial4` (optional — `ThemeManager` skips it when a base set does not
-author it) and `GetTeamCrystalMaterial` case 4. Every slot explodes on `CrystalMaterial`, because the
-spent husk animates `CrystalGraph`'s `_velocity` and a tone material on a husk would play its band
-instead of bursting; the cost is one more pooled husk per collect.
-
-**The stationary rim is what hides the pop.** The Mass crystal's fourth shell never moves
-(`_ScaleDistance 0`) and holds alpha 0.02–0.07 at the full radius, so each new shell is born on a
-faint copy of itself instead of out of nothing. The omni carries the same shell at its tone's birth
-radius (s = 1, twice the crystal), with `ActiveMassCrystalMaterial 3`'s motion values on the tone
-shader.
+**Slots; the rim was retired with the falling look, the tone shells with the Breathe look.** Since
+2026-10-12 the omni has two slots (body, depth prisms); before that, four. Slot 4 was a stationary rim (the Mass
+crystal's fourth shell, `_ScaleDistance 0`, alpha 0.02–0.07 at the full radius) that hid each
+falling shell's birth. A breathing shell has no birth: it turns round at the far end at alpha 0.05,
+so the rim went (2026-10-10). `SO_MaterialSet.CrystalMaterial4` and `GetTeamCrystalMaterial` case 4
+stay (optional; nothing asks for index 4 now), and `OriginalMaterialSet.CrystalMaterial4` still
+points at `OmniShepardTrianglesRim`, which the generator keeps authoring so the lab's Classic style
+can draw it. Every slot explodes on `CrystalMaterial`, because the spent husk animates
+`CrystalGraph`'s `_velocity` and a tone material on a husk would play its band instead of bursting.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
 `crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
 vessel retirements (`CrystalMorphRunner.Adopt` — the Scarab's crystal→ball forge and the Squirrel's
 crystal→ring morph) build their morph mesh from slot 0 and fold every model drawing that same mesh.
-The triangle shells and rim are a different mesh, so they are OVERLAYS: they fade over
+The triangle shells are a different mesh, so they are OVERLAYS: they fade over
 `CrystalMorphConfig.overlayFadeFraction` of the geometry window while the cage opens (a verbose
 `CrystalMorph`-channel line names each one, not a warning: it is the design).
 
@@ -1080,9 +1139,9 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     husks (on `CrystalMaterial`) drift and a team omni's fade without moving. Fix is one of: keep
     `explodingMaterial` when the target material cannot drive a husk, or add CrystalGraph's
     `n · dot(_velocity, n)` push to `OmniCrystalFresnelShader`. A fix, not a report.
-  - **Five husks per omni collect** (one per `crystalModels` entry, `Crystal.Explode`), up from
-    four, since the rim became slot 4 — all on `CrystalMaterial`, so they overlap as one. Measure
-    the pooled-husk cost before deciding whether `Explode` should spawn one husk per crystal.
+  - **Four husks per omni collect** (one per `crystalModels` entry, `Crystal.Explode`), back down
+    from five since the rim was retired (2026-10-10) — all on `CrystalMaterial`, so they overlap as
+    one. Measure the pooled-husk cost before deciding whether `Explode` should spawn one husk per crystal.
   - **The omni shader transcribes `SpreadFresnelShader`** (displacement + colour, verbatim) rather
     than including it — deliberate on the test branch, so the elemental crystals were untouched.
     Once verified in the editor, fold both onto one `SpreadFresnelCore.hlsl` (the refactor was
