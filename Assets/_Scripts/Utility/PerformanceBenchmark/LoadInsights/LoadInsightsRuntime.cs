@@ -40,7 +40,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // recording walks all three by design and ends at the menu's OnClientReady.
         const string BootstrapSceneName = "Bootstrap";
         const string AuthenticationSceneName = "Authentication";
-        const string MenuSceneName = "Menu_Main";
+        const string MenuSceneName = LoadInsights.MainMenuSceneName;
 
         static LoadInsightsRuntime s_instance;
 

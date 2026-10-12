@@ -371,7 +371,9 @@ cells' top cost read "arena-ready gate" instead of "Streamed prism lay".
 
 The cold boot had **no coverage at all**; the recorder only knew game launches. It now has a second
 recording kind (`LoadRecordingKind.ColdBoot`, `LoadInsights.BeginBoot`), armed by the tab's new
-toggle, by `-csmloadinsights-boot`, or by the sweep, and completed at the menu's first `OnClientReady`:
+toggle, by `-csmloadinsights-boot`, or by the sweep, and completed at the menu's first `OnClientReady`
+(a first `OnClientReady` in any other scene means the session did not start from Bootstrap, and the
+recording is aborted as *"not a cold boot"*):
 
 | Boot interval | Span (category) | Status |
 |---|---|---|

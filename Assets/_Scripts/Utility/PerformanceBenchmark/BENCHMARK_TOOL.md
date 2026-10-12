@@ -152,7 +152,11 @@ Extras that matter in practice:
   published load-time targets (`Docs/PERFORMANCE_OPTIMIZATION.md` §0.6); the game launch is the second.
   A player build back-dates the clock to engine start, so player init and the Bootstrap scene load
   are inside the interval as one closed span; in the Editor the Play clock reads 0 at the first
-  script hook, so an editor boot starts there and its pre-script interval is not measured.
+  script hook, so an editor boot starts there and its pre-script interval is not measured. The
+  boot completes only at an `OnClientReady` in **Menu_Main**. The toggle stays ticked across Play
+  presses, so a session that did not start from Bootstrap (Play in a game scene with the Bootstrap
+  redirect off) reaches its first `OnClientReady` elsewhere: that recording is **aborted** with
+  *"not a cold boot"* and a console warning, never saved as a boot.
 - Adding coverage: wrap new load-path work in
   `using (LoadInsights.Measure(LoadInsightCategory.X, "label")) { … }` — unattributed time is
   called out in the report so gaps are visible, not hidden. Each millisecond goes to the

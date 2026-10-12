@@ -50,6 +50,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public const string ArmedPrefKey = "CSM.LoadInsights.Armed";
         public const string BootArmedPrefKey = "CSM.LoadInsights.BootArmed";
 
+        /// <summary>The scene a cold-boot recording must end in: its endpoint is this scene's first OnClientReady.</summary>
+        public const string MainMenuSceneName = "Menu_Main";
+
         /// <summary>Frames longer than this during a load are recorded as stalls.</summary>
         public const float StallThresholdMs = 150f;
 
@@ -312,27 +315,44 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         /// <summary>
         /// Stamps the user-visible "loaded" moment (splash cleared / OnClientReady). For a cold-boot
-        /// recording this IS the endpoint: the first OnClientReady after boot is the menu vessel
-        /// spawning in Menu_Main, which is what releases the splash.
+        /// recording this IS the endpoint, but only in <see cref="MainMenuSceneName"/>: a boot
+        /// that walks Bootstrap → Authentication → Menu_Main raises its first OnClientReady when
+        /// the menu vessel spawns, which is what releases the splash. A first OnClientReady in any
+        /// other scene means this session did not boot from Bootstrap (an Editor Play pressed in a
+        /// game scene with the Bootstrap redirect off, while the boot toggle was left ticked), so
+        /// the recording is aborted with that reason rather than saved as a cold boot it was not.
         /// </summary>
         public static void MarkVisualReady()
         {
             if (!s_recording) return;
-            bool completesBoot;
+            string scene = SafeActiveSceneName();
+            bool inMenu = scene == MainMenuSceneName;
+            bool isBoot;
             lock (s_gate)
             {
                 if (!s_recording) return;
-                if (s_visualReadyMs < 0f) s_visualReadyMs = NowMsUnlocked();
-                completesBoot = s_kind == LoadRecordingKind.ColdBoot;
-                AddMarkUnlocked(completesBoot
-                    ? "Main menu ready — menu vessel spawned, splash fade begins"
-                    : "Client ready — splash cleared, vessel visible");
+                isBoot = s_kind == LoadRecordingKind.ColdBoot;
+                if (s_visualReadyMs < 0f && (!isBoot || inMenu)) s_visualReadyMs = NowMsUnlocked();
+                AddMarkUnlocked(!isBoot ? "Client ready — splash cleared, vessel visible"
+                    : inMenu ? "Main menu ready — menu vessel spawned, splash fade begins"
+                    : $"Client ready in '{scene}', not {MainMenuSceneName} — not a cold boot");
             }
-            if (!completesBoot) return;
+            if (!isBoot) return;
 
             End(s_bootMenuSpan);
             s_bootMenuSpan = -1;
-            CompleteInternal("Main menu ready — OnClientReady in Menu_Main (splash fade begins)", aborted: false);
+            if (inMenu)
+            {
+                CompleteInternal($"Main menu ready — OnClientReady in {MainMenuSceneName} (splash fade begins)", aborted: false);
+                return;
+            }
+
+            UnityEngine.Debug.LogWarning(
+                $"[LoadInsights] The cold-boot recording reached its first OnClientReady in '{scene}', not " +
+                $"{MainMenuSceneName}: this session did not boot from Bootstrap, so it is not a cold boot. " +
+                "Aborting it. Untick 'Also record the cold boot' or start Play from Bootstrap.");
+            AbortLoad($"not a cold boot: first OnClientReady was in '{scene}', not {MainMenuSceneName} " +
+                      "(the session did not start from Bootstrap)");
         }
 
         /// <summary>Game parameters for the report header. Call once at launch (GameDataSO knows them all).</summary>
