@@ -155,6 +155,11 @@ time, for the scene-transition veil to lift (`SceneTransitionManager.IsVeiled`; 
 `bounceNoticeVeilWaitSeconds`, 15 s), because the veil sorts above every canvas and the menu
 only lifts it once the local vessel is ready, plus a 1.5 s settle hold after a match. The wait is
 not awaited by the bounce, so `_transitioning` is released with the recovery as before.
+`ToastNotificationManager` (persistent) now drops toast items its scene took with it before it
+places a new one: the items are children of the menu's container, so the reload destroyed them
+without a dismissal, and one left in the pool threw `MissingReferenceException` on the next show
+(three left on screen made every later toast queue forever). Without that, any toast earlier in
+the session cost the bounce its notice.
 `BounceNoticeDeliveryTests` pins the three things the route depends on: no inspector-assigned
 channel on the controller, the API's Resources assets, and the container in Menu_Main. Not yet
 seen in an editor: force a join failure (accept an invite whose host has quit) and watch for the

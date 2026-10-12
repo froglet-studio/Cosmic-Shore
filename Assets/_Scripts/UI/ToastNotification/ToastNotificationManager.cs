@@ -77,6 +77,8 @@ namespace CosmicShore.UI
 
             if (string.IsNullOrWhiteSpace(message)) return;
 
+            ForgetToastsDestroyedWithTheirScene();
+
             if (_activeToasts.Count >= settings.maxVisible)
             {
                 if (_pendingQueue.Count < settings.maxQueue)
@@ -104,6 +106,32 @@ namespace CosmicShore.UI
         }
 
         #region Pool
+
+        /// <summary>
+        /// This manager outlives every scene, but its toast items are children of a container that
+        /// lives IN a scene (Menu_Main's ToastNotificationContainer), so a scene change destroys them
+        /// without a dismissal: a toast on screen at the time stayed in <see cref="_activeToasts"/>
+        /// for good (three of them and every later toast queued forever), and a pooled one threw
+        /// MissingReferenceException the next time it was popped. A failed party join or a lost host
+        /// reloads Menu_Main and then shows its notice here, so any toast earlier in the session was
+        /// enough to lose that notice. Drops the dead references before a toast is placed.
+        /// </summary>
+        private void ForgetToastsDestroyedWithTheirScene()
+        {
+            _activeToasts.RemoveAll(item => !item);
+
+            bool anyDeadInPool = false;
+            foreach (var item in _pool)
+                if (!item) { anyDeadInPool = true; break; }
+            if (!anyDeadInPool) return;
+
+            var live = new List<ToastNotificationItem>(_pool.Count);
+            foreach (var item in _pool)
+                if (item) live.Add(item);
+            _pool.Clear();
+            for (int i = live.Count - 1; i >= 0; i--)
+                _pool.Push(live[i]);
+        }
 
         private ToastNotificationItem GetOrCreateItem()
         {
