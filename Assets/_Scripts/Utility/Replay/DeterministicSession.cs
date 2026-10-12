@@ -55,6 +55,31 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Drops every harness static: stops the running replay, ends (and discards) any
+        /// recording and ends the session, which releases the frame clock. The capture tool calls
+        /// it when a case's Play session is over; <see cref="ResetStatics"/> calls it at the start
+        /// of every run.
+        /// </summary>
+        public static void Reset()
+        {
+            ReplayPlayer.Stop();
+            ReplayRecorder.Stop();
+            End();
+        }
+
+        /// <summary>
+        /// This project enters Play mode with domain reload disabled, so without this reset the
+        /// statics above outlive the run that set them: a capture's last replay kept the input
+        /// strategy slot and the next Play ignored every device, with the session still seeding
+        /// the <see cref="NewRandom"/> sites and the frame clock still pinned. SubsystemRegistration
+        /// runs before BeforeSceneLoad, so <see cref="ApplyEnvironment"/> re-arms a capture case
+        /// after it. Prisma runs this phase before <c>ParityRun.BeginSession</c> hands it a replay
+        /// (<c>Port/src/CosmicShore.Player/PlayerBoot.cs</c>), so that handoff is not undone.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => Reset();
+
+        /// <summary>
         /// A <see cref="System.Random"/> for <paramref name="site"/>. Outside a session it is the
         /// time-seeded one the site always made. Inside one, the n-th request from a site gets a
         /// seed derived from the session seed, the site name and n, so two pilots asking from the

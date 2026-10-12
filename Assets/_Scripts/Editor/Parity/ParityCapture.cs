@@ -41,6 +41,14 @@ namespace CosmicShore.Editor
     /// <para>Case runs survive the domain reload Play mode causes: the queue lives in
     /// <see cref="SessionState"/> and <see cref="Hook"/> re-arms the driver after every reload.
     /// Keep the editor focused while it runs: InputController skips unfocused frames on Windows.</para>
+    ///
+    /// <para>Every way out of a case leaves the editor clean: the driver ends a case by exiting
+    /// Play itself (it reached the replay's frame count, or it aborted), and only then does the
+    /// next case start. Pressing Stop mid-case, or <c>FrogletTools > Parity > Cancel Capture</c>,
+    /// cancels the whole run instead; the interrupted case's <c>run.json</c> (the probe's
+    /// finished-run marker) is removed and the console names the partial directory. A case whose
+    /// replay will not load, or whose scene is not in the build, is counted as failed and skipped. Each exit runs <see cref="DeterministicSession.Reset"/> and
+    /// clears the two environment variables, so a normal Play afterwards gets the devices back.</para>
     /// </summary>
     public static class ParityCapture
     {
@@ -51,7 +59,9 @@ namespace CosmicShore.Editor
 
         [Serializable] class Manifest { public int[] seeds = Array.Empty<int>(); public ManifestCase[] cases = Array.Empty<ManifestCase>(); }
         [Serializable] class ManifestCase { public string name; public string replay; }
-        [Serializable] class Queue { public string parityDir; public ManifestCase[] cases = Array.Empty<ManifestCase>(); public int index; public int failures; }
+        // ended: the driver itself exited Play for the current case (complete or aborted). Kept in
+        // the queue, not a static, so it survives a domain reload like the rest of the run.
+        [Serializable] class Queue { public string parityDir; public ManifestCase[] cases = Array.Empty<ManifestCase>(); public int index; public int failures; public bool ended; }
 
         static ReplayFile s_replay;
         static string s_caseName;
@@ -63,6 +73,8 @@ namespace CosmicShore.Editor
         static Vector2 s_mousePosition;
         static bool s_mouseLeft;
         static int s_idleFrames;
+        static bool s_caseFaulted;
+        static bool s_probeSeen;
 
         public static string ParityDirectory => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Port", "parity"));
 
@@ -71,6 +83,45 @@ namespace CosmicShore.Editor
             Description = "Play every Port/parity manifest case in Play mode and write the Unity goldens the engine parity diff compares against.",
             DocPath = "Assets/_Scripts/Utility/Replay/README.md")]
         public static void CaptureGoldensMenu() => CaptureAll();
+
+        [MenuItem("FrogletTools/Parity/Cancel Capture")]
+        [FrogletTool(FrogletToolCategory.Validation, Importance = 2,
+            Description = "Stop a Capture Goldens run: clear its queue and environment, leave Play mode and hand input back to the devices.",
+            DocPath = "Assets/_Scripts/Utility/Replay/README.md")]
+        public static void CancelCaptureMenu() => Cancel();
+
+        /// <summary>
+        /// Cancels the queued run, wherever it is: in a case's Play session, between cases, or
+        /// stuck after a failure. Safe with nothing queued; it still clears the environment
+        /// variables and the replay statics. Returns true when a run was cancelled.
+        /// </summary>
+        public static bool Cancel()
+        {
+            var queue = LoadQueue();
+            // Erase the queue first, so the EnteredEditMode that leaving Play causes, and a
+            // delayCall already waiting to start the next case, both find nothing to run.
+            SessionState.EraseString(QueueKey);
+            bool playing = EditorApplication.isPlaying;
+            // A case the driver has already ended (its exit is pending) finished; leave it be.
+            if (queue != null && playing && !queue.ended && queue.index < queue.cases.Length && (s_probeSeen || ParityProbe.Active))
+            {
+                // Close the channels now, so the run.json the probe writes on close is the one
+                // MarkPartial removes rather than one written after it.
+                ParityProbe.End();
+                MarkPartial(queue);
+            }
+            ResetCaseState();
+            DeterministicSession.Reset();
+            ClearEnvironment();
+            if (playing) EditorApplication.ExitPlaymode();
+            if (queue == null)
+            {
+                CSDebug.Log("[ParityCapture] no capture was queued; environment and replay state cleared");
+                return false;
+            }
+            CSDebug.LogWarning($"[ParityCapture] cancelled at case {Math.Min(queue.index + 1, queue.cases.Length)}/{queue.cases.Length}; cases after it were not captured");
+            return true;
+        }
 
         /// <summary>
         /// Writes the random goldens, then queues every manifest case and starts the first. The
@@ -120,49 +171,74 @@ namespace CosmicShore.Editor
 
         static void SaveQueue(Queue queue) => SessionState.SetString(QueueKey, JsonUtility.ToJson(queue));
 
+        /// <summary>
+        /// Starts the queue's current case, skipping (and counting as failed) every case that
+        /// cannot start: a missing replay, a replay that does not parse, a scene not in the build.
+        /// A loop, not recursion, and nothing it throws escapes into the delayCall that runs it,
+        /// so one bad case can neither leave the queue stuck nor leave the last case's
+        /// environment armed for the developer's next Play.
+        /// </summary>
         static void StartNextCase()
         {
             var queue = LoadQueue();
             if (queue == null) return;
-            if (queue.index >= queue.cases.Length)
+            while (queue.index < queue.cases.Length)
             {
-                Finish(queue);
-                return;
+                var entry = queue.cases[queue.index];
+                try
+                {
+                    if (ArmCase(queue, entry))
+                    {
+                        queue.ended = false;
+                        SaveQueue(queue);
+                        EditorApplication.EnterPlaymode();
+                        return;
+                    }
+                }
+                catch (Exception e)
+                {
+                    CSDebug.LogError($"[ParityCapture] case '{entry.name}': {e.GetType().Name}: {e.Message}; skipped");
+                }
+                ClearEnvironment();
+                queue.index++; queue.failures++;
+                SaveQueue(queue);
             }
-            var entry = queue.cases[queue.index];
+            Finish(queue);
+        }
+
+        /// <summary>Loads the case's replay and arms the environment hook and start scene; false (with the reason logged) when the case cannot run.</summary>
+        static bool ArmCase(Queue queue, ManifestCase entry)
+        {
             string replayPath = Path.Combine(queue.parityDir, entry.replay ?? "");
             if (!File.Exists(replayPath))
             {
                 CSDebug.LogError($"[ParityCapture] case '{entry.name}': replay '{replayPath}' not found; skipped");
-                queue.index++; queue.failures++;
-                SaveQueue(queue);
-                StartNextCase();
-                return;
+                return false;
             }
             var replay = ReplayFile.Load(replayPath);
-            string outDir = Path.Combine(queue.parityDir, "goldens", entry.name);
-            Directory.CreateDirectory(outDir);
-
             var sceneAsset = FindSceneAsset(replay.scene);
             if (sceneAsset == null)
             {
                 CSDebug.LogError($"[ParityCapture] case '{entry.name}': scene '{replay.scene}' is not in the build settings; skipped");
-                queue.index++; queue.failures++;
-                SaveQueue(queue);
-                StartNextCase();
-                return;
+                return false;
             }
+            string outDir = CaseOutputDirectory(queue, entry);
+            Directory.CreateDirectory(outDir);
 
             Environment.SetEnvironmentVariable(DeterministicSession.ReplayEnvironmentVariable, replayPath);
             Environment.SetEnvironmentVariable(DeterministicSession.ParityOutEnvironmentVariable, outDir);
             EditorSceneManager.playModeStartScene = sceneAsset;
             CSDebug.Log($"[ParityCapture] case {queue.index + 1}/{queue.cases.Length} '{entry.name}': {replay.frames} frames from {replay.scene}, seed {replay.seed} -> {outDir}");
-            EditorApplication.EnterPlaymode();
+            return true;
         }
+
+        static string CaseOutputDirectory(Queue queue, ManifestCase entry) =>
+            Path.Combine(queue.parityDir, "goldens", entry.name ?? "");
 
         static void Finish(Queue queue)
         {
             SessionState.EraseString(QueueKey);
+            DeterministicSession.Reset();
             ClearEnvironment();
             CSDebug.Log($"[ParityCapture] done: {queue.cases.Length - queue.failures}/{queue.cases.Length} case(s) written under {Path.Combine(queue.parityDir, "goldens")}");
         }
@@ -172,6 +248,22 @@ namespace CosmicShore.Editor
             Environment.SetEnvironmentVariable(DeterministicSession.ReplayEnvironmentVariable, null);
             Environment.SetEnvironmentVariable(DeterministicSession.ParityOutEnvironmentVariable, null);
             EditorSceneManager.playModeStartScene = null;
+        }
+
+        /// <summary>
+        /// The current case was interrupted: its channels hold part of a run, and the probe wrote
+        /// <c>run.json</c> when it closed them. That file is the mark of a run the probe finished,
+        /// so removing it leaves the directory reading as unfinished. engine_parity does not look
+        /// for it and would still diff the partial channels, which is why the warning says to
+        /// recapture or restore the case before committing.
+        /// </summary>
+        static void MarkPartial(Queue queue)
+        {
+            var entry = queue.cases[queue.index];
+            string outDir = CaseOutputDirectory(queue, entry);
+            string runJson = Path.Combine(outDir, "run.json");
+            if (File.Exists(runJson)) File.Delete(runJson);
+            CSDebug.LogWarning($"[ParityCapture] case '{entry.name}' was interrupted; {outDir} holds a partial run (run.json removed). Recapture it, or restore the committed goldens with git checkout.");
         }
 
         static SceneAsset FindSceneAsset(string sceneName)
@@ -193,10 +285,45 @@ namespace CosmicShore.Editor
             if (change != PlayModeStateChange.EnteredEditMode) return;
             var queue = LoadQueue();
             if (queue == null) return;
+            bool faulted = s_caseFaulted, probeSeen = s_probeSeen;
             ResetCaseState();
+            // The case's replay and session must not reach the next case, or a normal Play.
+            DeterministicSession.Reset();
+            if (!queue.ended)
+            {
+                // Play was stopped by hand, not by the driver: that cancels the run. Only a case
+                // whose probe began has touched its goldens; one stopped earlier left them as
+                // they were. Every case from this one on counts as not written.
+                if (queue.index < queue.cases.Length && probeSeen) MarkPartial(queue);
+                CSDebug.LogWarning("[ParityCapture] Play was stopped before the case finished; capture cancelled");
+                int written = queue.index - (queue.failures - (faulted ? 1 : 0));
+                queue.failures = queue.cases.Length - written;
+                Finish(queue);
+                return;
+            }
             queue.index++;
+            queue.ended = false;
             SaveQueue(queue);
             EditorApplication.delayCall += StartNextCase;
+        }
+
+        /// <summary>The driver ends the current case: records why in the queue, then leaves Play.</summary>
+        static void EndCase(Queue queue, bool failed)
+        {
+            if (failed && !s_caseFaulted) queue.failures++;
+            s_caseFaulted |= failed;
+            queue.ended = true;
+            SaveQueue(queue);
+            EditorApplication.ExitPlaymode();
+        }
+
+        /// <summary>A case that ran but hit a fault (a do step that threw) still finishes, and is counted once as failed.</summary>
+        static void MarkCaseFaulted(Queue queue)
+        {
+            if (s_caseFaulted) return;
+            s_caseFaulted = true;
+            queue.failures++;
+            SaveQueue(queue);
         }
 
         // ── The in-play driver ─────────────────────────────────────────────────────────
@@ -205,9 +332,21 @@ namespace CosmicShore.Editor
         {
             if (!EditorApplication.isPlaying) return;
             var queue = LoadQueue();
-            if (queue == null || queue.index >= queue.cases.Length) return;
-            if (s_replay == null && !LoadCase(queue)) return;
+            if (queue == null || queue.ended || queue.index >= queue.cases.Length) return;
+            if (s_replay == null)
+            {
+                string loadError;
+                try { loadError = LoadCase(queue); }
+                catch (Exception e) { loadError = $"{e.GetType().Name}: {e.Message}"; }
+                if (loadError != null)
+                {
+                    CSDebug.LogError($"[ParityCapture] case '{queue.cases[queue.index].name}': {loadError}; aborting");
+                    EndCase(queue, failed: true);
+                    return;
+                }
+            }
 
+            s_probeSeen |= ParityProbe.Active;
             if (!ParityProbe.Active)
             {
                 // The environment hook arms the probe before the first scene; a run that never
@@ -215,9 +354,7 @@ namespace CosmicShore.Editor
                 if (++s_idleFrames > BootGraceFrames)
                 {
                     CSDebug.LogError($"[ParityCapture] case '{s_caseName}': ParityProbe never began (is {DeterministicSession.ParityOutEnvironmentVariable} readable by the hook?); aborting");
-                    queue.failures++;
-                    SaveQueue(queue);
-                    EditorApplication.ExitPlaymode();
+                    EndCase(queue, failed: true);
                 }
                 return;
             }
@@ -233,21 +370,30 @@ namespace CosmicShore.Editor
                 if (due > frame) break;
                 var list = s_steps[due];
                 s_steps.Remove(due);
-                foreach (var step in list) Run(step, frame);
+                foreach (var step in list)
+                {
+                    try { Run(step, frame); }
+                    catch (Exception e)
+                    {
+                        CSDebug.LogError($"[ParityCapture] case '{s_caseName}', frame {frame}: do step '{step}' failed ({e.GetType().Name}: {e.Message}); the case is counted as failed");
+                        MarkCaseFaulted(queue);
+                    }
+                }
             }
 
             if (frame >= s_replay.frames)
             {
-                CSDebug.Log($"[ParityCapture] case '{s_caseName}' complete at frame {frame}");
-                EditorApplication.ExitPlaymode();
+                CSDebug.Log($"[ParityCapture] case '{s_caseName}' {(s_caseFaulted ? "finished with a failed step" : "complete")} at frame {frame}");
+                EndCase(queue, failed: false);
             }
         }
 
-        static bool LoadCase(Queue queue)
+        /// <summary>Loads the running case's replay and do steps; returns why it could not, or null.</summary>
+        static string LoadCase(Queue queue)
         {
             var entry = queue.cases[queue.index];
             string replayPath = Path.Combine(queue.parityDir, entry.replay ?? "");
-            if (!File.Exists(replayPath)) return false;
+            if (!File.Exists(replayPath)) return $"replay '{replayPath}' not found";
             s_replay = ReplayFile.Load(replayPath);
             s_caseName = entry.name;
             s_steps.Clear();
@@ -264,13 +410,16 @@ namespace CosmicShore.Editor
             }
             s_idleFrames = 0;
             if (s_steps.Count > 0) EnsureDevices();
-            return true;
+            return null;
         }
 
         static void ResetCaseState()
         {
             s_replay = null;
             s_caseName = null;
+            s_idleFrames = 0;
+            s_caseFaulted = false;
+            s_probeSeen = false;
             s_steps.Clear();
             s_releases.Clear();
             s_heldKeys.Clear();
