@@ -11,13 +11,21 @@ namespace CosmicShore.Utility.AITraining
     /// scratch list, so the per-frame cost is the query plus a sort of what it
     /// returned.
     ///
-    /// It used to be a <c>Physics.OverlapSphereNonAlloc</c>. That query misses the
-    /// mass a pilot most needs to see: a prism's collider is off for 0.6 s after it
-    /// is laid, so a trail being laid right in front of the hull was invisible, the
-    /// NonAlloc buffer truncated dense cells silently, and every hit paid a
-    /// <c>GetComponentInParent</c>. The index sees every LIVE prism (active, not
-    /// destroyed) the moment it registers, returns the <see cref="Prism"/> directly,
-    /// and is the spatial API the rest of the game queries.
+    /// It used to be a <c>Physics.OverlapSphereNonAlloc</c>. Moving to the index
+    /// bought three things: no silent truncation of a dense cell to the 64-entry
+    /// NonAlloc buffer, no <c>GetComponentInParent</c> per hit (the index returns the
+    /// <see cref="Prism"/> directly), and the same spatial API and population
+    /// (LIVE prisms: active, not destroyed, reservations excluded) the rest of the
+    /// game queries, independent of physics layers.
+    ///
+    /// It did NOT close the spawn-window blind spot. A laid prism waits
+    /// <see cref="Prism.waitTime"/> (0.6 s) in <c>CreateBlockCoroutine</c>, and
+    /// <c>FinishCreation</c> then enables its collider and registers it in the index
+    /// in the same call, so a prism laid right in front of the hull is invisible to
+    /// this sensor for those 0.6 s exactly as it was to the collider scan. Seeing it
+    /// earlier needs a registration (or a reservation-visible query) at lay time,
+    /// which is a <see cref="PrismSpatialIndex"/> / <see cref="Prism"/> lifecycle
+    /// change of its own.
     ///
     /// Prisms beyond <see cref="MaxRange"/> are never reported, so the policy layer
     /// does not filter. Sorted nearest-first so policies that take only the closest
@@ -78,7 +86,10 @@ namespace CosmicShore.Utility.AITraining
                 });
             }
 
-            // Closest-first selection. The list is small, so the sort is cheap.
+            // Closest-first selection. _scratch holds every live prism within MaxRange
+            // (the query has no cap), so this sort grows with the mass in range, as the
+            // query grows with the index (README, Performance notes). Not profiled yet:
+            // measure TrainingPilot.Update before replacing it with a bounded nearest-K pick.
             _scratch.Sort((a, b) => a.Range.CompareTo(b.Range));
             int take = Mathf.Min(_scratch.Count, MaxPrisms);
             for (int i = 0; i < take; i++) ctx.NearbyPrisms.Add(_scratch[i]);

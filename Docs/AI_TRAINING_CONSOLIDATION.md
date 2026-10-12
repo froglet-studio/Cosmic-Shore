@@ -432,17 +432,30 @@ carries the negative control (practice mode still claims). A GA launch also
 clears a stale practice flag. Proved by `unity_refcompile`; the edit-mode
 suite was not re-run here (no editor).
 
-**Item 6 closed 2026-10-10.** `PrismSensor.Sample` reads
+**Item 6 done 2026-10-10; the spawn-window gap it was meant to close is
+still open (corrected 2026-10-12).** `PrismSensor.Sample` reads
 `PrismSpatialIndex.Instance.QuerySphere` (the same call
-`SkimRacePilot.GatherLaidMass` makes), so the genome pilot sees a prism the
-moment it registers rather than 0.6 s later when its collider wakes, the
-NonAlloc truncation of dense cells is gone, and the per-hit
-`GetComponentInParent` with it. `PrismSensor.PrismLayerMask` and
-`TrainingPilot.prismLayerMask` were removed (nothing serialized them: no
-prefab or scene carries either script). A null index returns an empty
-neighbourhood. Proved by `Tools/Build/unity_refcompile` (player config,
-0 project errors); no editor was attached, so the edit-mode suites were
-not re-run here.
+`SkimRacePilot.GatherLaidMass` makes), so the NonAlloc truncation of dense
+cells is gone, the per-hit `GetComponentInParent` with it, and the sensor
+uses the spatial API and population the rest of the game queries.
+`PrismSensor.PrismLayerMask` and `TrainingPilot.prismLayerMask` were removed
+(nothing serialized them: no prefab or scene carries either script). A null
+index returns an empty neighbourhood. Proved by `Tools/Build/unity_refcompile`
+(player config, 0 project errors); no editor was attached, so the edit-mode
+suites were not re-run here.
+
+The 2026-10-10 note also said the pilot now "sees a prism the moment it
+registers rather than 0.6 s later when its collider wakes". That is false.
+`Prism.CreateBlockCoroutine` waits `waitTime` (0.6 s), and
+`Prism.FinishCreation` then enables the collider and calls
+`PrismSpatialIndex.Register` in the same call (the restore path does the
+same), and `QuerySphere` returns only registered live slots. A prism laid in
+front of the hull is therefore missing from `NearbyPrisms` for those 0.6 s,
+exactly as it was with the collider scan, and the "misses new mass" half
+of hard-loop risk register row 13 stays open. Closing it needs the index to
+see a prism at lay time (an early registration, or a query that returns
+reservations), which is a `PrismSpatialIndex`/`Prism` lifecycle change with
+its own review.
 
 1. Copy `Assets/_Scripts/Utility/AITraining/` from `5d82eb0de` onto
    `AI-Genetic-algorithm`. Do not copy `Assets/_Scripts/Game/AI/`.
@@ -532,7 +545,11 @@ record a lie.
     one poisons the population while the loop "works."
 13. **OverlapSphere.** The sensor misses new mass and violates the spatial
     index rule. Fitness then rewards pilots who ignore the trail they
-    cannot see.
+    cannot see. **Half open (2026-10-12):** the sensor now reads
+    `PrismSpatialIndex`, so the spatial-index rule holds, but the index
+    registers a prism in the same call that wakes its collider, 0.6 s after
+    the lay, so new mass is still missed for that window (Port checklist,
+    the item 6 note).
 14. **`GameModes.Freestyle`.** Fixed in the port. The retired scene arm
     and the runner fallback case are gone.
 15. **Modes with no recipe.** A scheduler that launches Dog Fight, Bends,

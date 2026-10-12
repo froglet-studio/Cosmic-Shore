@@ -520,13 +520,30 @@ already write.
 
 ## Performance notes
 
-- The pilot allocates only its sensor scratch buffers up-front; per-frame
-  work is bounded.
-- `PrismSensor` reads `PrismSpatialIndex.QuerySphere` (the canonical index of
-  prism mass; it sees a prism the moment it registers, including the 0.6 s
-  after a lay while its collider is still off). The query is bucketed, so its
-  cost scales with the mass inside `prismScanRange`, not with the scene; lower
-  that range if a dense cell makes the sort of the result noticeable.
+- The pilot allocates only its sensor scratch buffers up-front (a list grows
+  once to the densest neighbourhood it has seen and is reused). Per-frame work
+  is bounded except in `PrismSensor`, below.
+- `PrismSensor` reads `PrismSpatialIndex.QuerySphere`, the canonical index of
+  prism mass. Against the old `Physics.OverlapSphereNonAlloc` that buys no
+  silent truncation at 64 hits, no `GetComponentInParent` per hit, and the
+  same population and API the rest of the game queries. It does **not** see a
+  prism any sooner: a laid prism enables its collider and registers in the
+  index in the same `Prism.FinishCreation` call, 0.6 s (`Prism.waitTime`) after
+  the lay, so the sensor is as blind to a trail laid right in front of the
+  hull for those 0.6 s as the collider scan was.
+- Its cost does **not** scale with the mass inside `prismScanRange`. The query
+  walks the 8 m buckets of the sphere's bounding box, which at the default
+  120 m is always 31³ = 29,791 buckets, and `QuerySphere` scans every
+  registered slot instead whenever the index holds fewer slots than that. So
+  the query costs one pass over the whole index (or 29,791 bucket probes in a
+  bigger one), and every prism it finds in range is then turned into a
+  `PrismInfo` and the whole list sorted before the nearest `MaxPrisms` (32)
+  are kept; the old scan handled at most 64 hits. It runs every frame for
+  every `TrainingPilot` (editor training and Play against trained AI: the
+  deployment service resolves its control asset only in the editor, and no
+  prefab or scene carries the pilot). Not profiled: if
+  `TrainingPilot.Update` shows in the Profiler, lower `prismScanRange` first
+  (it shrinks both the bucket box and the hit list).
 - The runner does not pause `Time.timeScale` between episodes. HexRace
   advances by `RequestReplay`, which reloads the scene.
 - For overnight runs, lower vsync and target framerate in
