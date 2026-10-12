@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 27 | 5 |
-| Shaders | 0 | 63 | 18 |
+| Shaders | 0 | 63 | 20 |
 
 ## Subsystems
 
@@ -123,6 +123,8 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Sprite Shaders Ultimate/Standard SSU | `Assets/_Graphics/Materials/Shaders/Standard SSU.shader` | Missing | hand-written .shader: no translation yet |
 | CosmicShore/StaticSkyPanorama | `Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader` | Missing | hand-written .shader: no translation yet |
+| CosmicShore/ThresherBallFresnel | `Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader` | Missing | generic material-family fallback |
+| CosmicShore/ThresherChainFresnel | `Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader` | Missing | generic material-family fallback |
 | Custom/ViewAngleBasedColorBlendHDR | `Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Custom/CircularGradientFresnel | `Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | UI/Gradient | `Assets/_Graphics/Materials/Shaders/UI/Gradient.shader` | Missing | hand-written .shader: no translation yet |

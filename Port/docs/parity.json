@@ -17,7 +17,7 @@
     "shaders": {
       "Faithful": 0,
       "Approximate": 63,
-      "Missing": 18
+      "Missing": 20
     }
   },
   "subsystems": [
@@ -991,6 +991,20 @@
       "name": "CosmicShore/StaticSkyPanorama",
       "status": "Missing",
       "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader",
+      "name": "CosmicShore/ThresherBallFresnel",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader",
+      "name": "CosmicShore/ThresherChainFresnel",
+      "status": "Missing",
+      "why": "generic material-family fallback",
       "test": ""
     },
     {
