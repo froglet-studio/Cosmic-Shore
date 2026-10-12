@@ -1,6 +1,9 @@
 <!--
 Fill the headings in; delete the comments. The Verification status section is read by the
 /qa-backlog scan to find work nobody has opened in Unity, so say plainly what did NOT run.
+The scan FINDS a PR by searching bodies for "untested", "verify in editor" and "play-test", so
+keep the NOT run line's wording: a PR with none of them is never found, and its section is
+never read.
 -->
 
 ## What and why
@@ -18,7 +21,7 @@ Fill the headings in; delete the comments. The Verification status section is re
      - Ran in the Unity editor: <what you opened and saw, scene and mode>.
      - Ran offline: unity_refcompile (player config), edit-mode suites, Tools/Build gates,
        generator --check, sim harness. Name each with its result.
-     - NOT run (a human must open Unity): <the exact scene, mode and thing to look at>.      -->
+     - NOT run, untested; verify in editor: <the exact scene, mode and thing to look at>.    -->
 
 ## Tool output
 

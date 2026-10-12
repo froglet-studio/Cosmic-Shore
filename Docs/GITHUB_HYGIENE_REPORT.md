@@ -8,9 +8,51 @@ they were re-verified.
 
 | Step | Result |
 |---|---|
-| FMOD per-machine state untracked | `Cosmic Shore/.cache/` (279 files, 74 MB in the working tree) and `Cosmic Shore/.unsaved/` (2 files) removed from the index with `git rm --cached` and ignored in `.gitignore`. The files stay on disk, so an open FMOD Studio session is unaffected. `Cosmic Shore/Metadata/` (218 files, the project source), `Cosmic Shore/Assets/` (106 files, the source audio) and `Cosmic Shore/Build/` (4 files, the banks Unity loads through `FMODStudioSettings` `ImportType: 0`) stay tracked. |
-| PR template | `.github/pull_request_template.md`, with the *Verification status* section the `/qa-backlog` scan reads, and a *Tool output* section for the `/ship` §2.5 gate. |
+| FMOD per-machine state untracked | `Cosmic Shore/.cache/` (279 files, 74 MB in the working tree) and `Cosmic Shore/.unsaved/` (2 files) removed from the index with `git rm --cached` and ignored in `.gitignore`. The files stay on disk on the machine that ran it. **On every other clone, pulling this change deletes them** (git removes a tracked file that was deleted upstream; `.gitignore` does not stop that): the next bank build re-encodes the cache once, and `.unsaved/` carried one real unsaved edit, recorded in §1.1 so it is not lost. `Cosmic Shore/Metadata/` (218 files, the project source), `Cosmic Shore/Assets/` (106 files, the source audio) and `Cosmic Shore/Build/` (4 files, the banks Unity loads through `FMODStudioSettings` `ImportType: 0`) stay tracked. |
+| PR template | `.github/pull_request_template.md`, with the *Verification status* section the `/qa-backlog` scan reads, and a *Tool output* section for the `/ship` §2.5 gate. The scan first FINDS PRs by body search for `untested`, `"verify in editor"` and `"play-test"` (`.claude/skills/qa-backlog/SKILL.md` step 3), so the template's NOT-run line is worded `NOT run, untested; verify in editor: …` to carry two of them. |
 | Secret scan | Every tracked text file was scanned for credential-shaped strings (PlayFab `DeveloperSecretKey`, UGS secret keys, AWS and GitHub token prefixes, Slack tokens, private-key blocks, numeric Steam app ids in VDF or env form). **One hit, not a secret:** `Tools/Analytics/export_cloud_save.py` names the environment variable `UGS_SECRET_KEY` in its usage text and reads it from the environment. No value is tracked. `ProjectSettings/ProjectSettings.asset` carries the UGS `cloudProjectId`, which is a public project identifier, not a credential. |
+
+### 1.1 The one unsaved FMOD edit this takes out of git: `Squirel boost` (FMOD owner, before pulling)
+
+When `.unsaved/` was untracked it held one event whose unsaved state differs from the saved
+project: **`Squirel boost`** (`event:/SFX/Oneshots/Gameplay sfx/Squirel boost`, event
+`{e5eaad0e-b631-4200-8e2f-2b745b9c78e2}`, played by `Squirrel.prefab` and `Thresher.prefab`). The
+two copies differ in exactly two track volumes, and the shipped bank matches the UNSAVED copy:
+
+| Track (`EventMixerGroup`) | Saved: `Metadata/Event/{e5eaad0e…}.xml` | Unsaved: `.unsaved/Metadata/Event/{e5eaad0e…}.xml` (no longer tracked) | Shipped: `Build/Desktop/SFX.bank` |
+|---|---|---|---|
+| Audio 1 `{a6975854-bd62-4aa5-8860-8b455a97fc6c}` | +1 dB | **+9 dB** | +9 dB |
+| Audio 3 `{11eade32-7017-4b9e-b4bf-e69e5680d87e}` | −9 dB | **0 dB** (the volume property is absent, which is the default) | 0 dB |
+
+- **The unsaved copy is the newer edit.** Both files were last written by `c13425ba5` (aradia1,
+  2026-10-06, "drift changes"), which moved the previous unsaved values (+1 / −9) into `Metadata/`
+  and left +9 / 0 in `.unsaved/`.
+- **The game plays the unsaved values today.** In `SFX.bank` each mixer group's volume is a float 64
+  bytes after the group's little-endian GUID (the offset was checked against a −4.5 dB group in the
+  same bank). The bank on this branch reads 9.0 and 0.0; the bank before `c13425ba5` reads 1.0 and
+  −9.0.
+- **So the next bank build from a clone without the unsaved state silently changes the Squirrel's
+  boost**: Audio 1 drops 8 dB and Audio 3 drops 9 dB, for a build made for ANY FMOD change, with
+  nothing in that diff to say why.
+- The removed file is still readable from history:
+  `git show 001f75452^:"Cosmic Shore/.unsaved/Metadata/Event/{e5eaad0e-b631-4200-8e2f-2b745b9c78e2}.xml"`.
+
+**What the FMOD owner (aradia1) does, once, ideally before pulling this change:**
+
+1. Open `Cosmic Shore/Cosmic Shore.fspro` in FMOD Studio 2.02.
+2. Open the event **Events ▸ SFX ▸ Oneshots ▸ Gameplay sfx ▸ Squirel boost** and read the volume of
+   the tracks **Audio 1** and **Audio 3**.
+3. Choose the intended values (the shipped bank has +9 dB / 0 dB, the saved project +1 dB / −9 dB),
+   set them, and **File ▸ Save** until the title bar shows no `*`.
+4. **File ▸ Build**, then commit only the `Cosmic Shore/Metadata/` and `Cosmic Shore/Build/`
+   changes, never a `.cache/` or `.unsaved/` path.
+
+If the pull happened first, FMOD Studio reopens on the saved +1 / −9; set the values from the
+table by hand and continue from step 3. If the pull stops with *"Your local changes to the following
+files would be overwritten"* or modify/delete conflicts on `Cosmic Shore/.cache/…`, run
+`git rm -r --cached "Cosmic Shore/.cache" "Cosmic Shore/.unsaved"`, commit, and pull again (the
+files on disk are kept). Never resolve such a conflict with "keep mine": that re-tracks the cache,
+and `.gitignore` does not untrack a file once it has been added.
 
 ## 2. The decisions this report puts to a human
 
@@ -97,6 +139,8 @@ February to April 2026; a cleanup must exclude every one of those heads. No bran
 
 ## 4. What is still open on R15
 
+- The `Squirel boost` track volumes (§1.1): the FMOD owner saves the intended values and rebuilds
+  the banks.
 - The LFS decision (§2.1) and the history decision (§2.2) are the human's.
 - `CODEOWNERS` (§2.4) once the handles are confirmed.
 - Branch deletions ride #1030.
