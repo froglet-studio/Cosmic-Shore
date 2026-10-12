@@ -11,9 +11,9 @@ survival is fitness; and EVIDENCE — lineage tracking, trait distributions over
 control run that shows no adaptation.* This document is that work. The one-line claim it earns:
 
 > **Under the shipped fauna rules, a population's heritable traits move in opposite directions in different
-> environments (slower under famine, faster on rich food), and do not move when either mutation or selection is
-> switched off.** That is natural selection, not a ratchet, and the neutral locus every run carries drifts
-> instead of adapting.
+> environments (slower under famine, faster on rich food). With selection switched off they show no directional
+> shift; with mutation switched off they shift once, on the founders' standing variation, and then stop.** That is
+> natural selection, not a ratchet, and the neutral locus every run carries drifts instead of adapting.
 
 The mechanics log for the ecology is `Docs/ECOSYSTEM.md` (§59 is this feature's entry); the locked invariants are
 `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`. The Darwin Lab, where a designer tunes a biome's knobs by watching:
@@ -198,10 +198,13 @@ regimes, ×50 (cap 300, floor 200), and say so.
    the seeder off) and **up** on rich food (+0.75): a slow creature burns its stomach slower and outlasts a famine; a
    fast one reaches abundant food first. The same locus, the same code, opposite optima. A ratchet (a trait that is
    simply better) would move one way everywhere.
-2. **The controls do not adapt.** With selection off the means wander ±0.1 with a seed-to-seed spread of ±0.2 — a
-   random walk with no direction. With mutation off they move about +0.14 and stop: selection on the standing
-   variation only, until it fixes. Both are the "abiotic baseline" the masterplan's item 4 asks for, and the measured
-   **noise band** a real shift has to clear: a shift inside ±0.2 is a plateau.
+2. **Selection off shows no direction; mutation off shifts once and stops.** With selection off the means wander
+   ±0.1 with a seed-to-seed spread of ±0.2 — a random walk with no direction. With mutation off they move about
+   +0.14, consistently across seeds (every seed's shift on the three active loci is positive), and stop: selection
+   on the founders' standing variation only, until it fixes. That is a real directional shift, not noise, and it is
+   bounded by the variation the seeder put in. Together they are the baseline the masterplan's item 4 asks for: a
+   shift that claims ongoing adaptation has to clear the selection-off **noise band** (±0.2; a shift inside it is a
+   plateau) and the one-off standing-variation shift (about +0.14).
 3. **The neutral locus drifts but does not adapt.** Cohesion, which has no mechanism in the model, lands at −0.18 to
    +0.02 with the widest spreads in the table (±0.28, ±0.44): genetic draft — a lineage that wins on reach carries its
    cohesion value along — not selection. Every run carries this control.
@@ -221,7 +224,7 @@ regimes, ×50 (cap 300, floor 200), and say so.
 
 ### 6.4 The NASA scorecard, after this branch (masterplan §3)
 
-| Criterion | Before | Now |
+| Criterion | Before | Now (built, off in every shipped biome, not editor-verified) |
 |---|---|---|
 | Heredity | 🟡 the element and its tuning | ✅ a four-locus genome, inherited through the same pick |
 | Variation / mutation | ❌ | ✅ bounded Gaussian steps on every birth, standing variation on seeding |

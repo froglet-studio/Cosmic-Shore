@@ -74,9 +74,9 @@ energy-constrained agent ecology where *survival is selection* — our north-sta
 | Response to stimuli | react to environment | aggression-by-phase, prey-seeking, starvation clocks | ✅ have it |
 | Homeostasis / regulation | self-bounding populations | prey-linked starvation + phase gates; full **Lotka–Volterra** after the predator/herbivore split | 🟡 partial → **P2** |
 | Reproduction | individuals replicate | well-fed fauna breed; spawner becomes a seeder | ❌ → **P3** |
-| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | ✅ **shipped 2026-10** (`Docs/EVOLUTION.md`): a four-locus `LifeformGenome` (Tempo, Reach, Fecundity, Cohesion) rides the SAME inherit channel as the element (`LifeformVariantPick.Genome`, `Docs/ECOSYSTEM.md §17`/§59) and causally drives the phenotype (speed band, graze radius, feeds per birth, provisioning — never size or the heart, §40). Off in every shipped biome until `CellConfigDataSO.Evolution.Enabled` |
-| Variation / mutation | offspring differ heritably | mutation on inheritance | ✅ **shipped 2026-10**: Gaussian steps of `MutationSigma` on every birth, clamped to the band (Irwin–Hall, bounded to ±6σ: the smooth, non-lethal pathway); `FounderSpread` gives the seeder's founders standing variation |
-| Selection | differential survival/reproduction | the energy economy (starvation/predation) **already selects** — becomes *natural* selection once traits are heritable | ✅ **endogenous**: nothing scores; every cost is a metabolic multiplier the economy collects (`Docs/EVOLUTION.md §1`) |
+| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | ✅ **built 2026-10, off by default, not editor-verified** (`Docs/EVOLUTION.md`): a four-locus `LifeformGenome` (Tempo, Reach, Fecundity, Cohesion) rides the SAME inherit channel as the element (`LifeformVariantPick.Genome`, `Docs/ECOSYSTEM.md §17`/§59) and causally drives the phenotype (speed band, graze radius, feeds per birth, provisioning — never size or the heart, §40). Off in every shipped biome until `CellConfigDataSO.Evolution.Enabled`, and no human has yet run it in the Unity Editor (`Docs/EVOLUTION.md §9`) |
+| Variation / mutation | offspring differ heritably | mutation on inheritance | ✅ **built 2026-10, off by default, not editor-verified**: Gaussian steps of `MutationSigma` on every birth, clamped to the band (Irwin–Hall, bounded to ±6σ: the smooth, non-lethal pathway); `FounderSpread` gives the seeder's founders standing variation |
+| Selection | differential survival/reproduction | the energy economy (starvation/predation) **already selects** — becomes *natural* selection once traits are heritable | ✅ **built 2026-10, off by default, not editor-verified** — endogenous: nothing scores; every cost is a metabolic multiplier the economy collects (`Docs/EVOLUTION.md §1`). Shown in the headless model only (`Docs/EVOLUTION.md §6`), with the genome off in every shipped biome |
 | **Adaptation / EVOLUTION (the bar)** | open-ended Darwinian evolution → novelty | reproduction + genome + mutation + selection; then speciation / predator-prey arms races | 🟡 **demonstrated in the shipped-rules model, with controls** (`Docs/EVOLUTION.md §6`: tempo −0.32 under famine, +0.75 on rich food; selection-off −0.08 ±0.23; mutation-off +0.14 and fixed; the neutral locus drifts). In-game ledger + Evolution Monitor built, **not yet observed in the Editor**. Open-endedness untouched → **P4 frontier** |
 
 **The minimal credible claim** — ship these four, wired together, and the system is defensibly
@@ -210,7 +210,7 @@ you want the anchor power-up synced. It can ride the controller's existing `Netw
   post-spawn predation-immunity window. *Emergence:* genuine population oscillation. *Life:*
   metabolism + homeostasis. *Gameplay:* predators players can bait; prey blooms to harvest.
 
-**Phase 3 — Reproduction + the genome** *(reproduction ✅ adopted; genome = the evolution substrate, TODO)*
+**Phase 3 — Reproduction + the genome** *(reproduction ✅ adopted; genome = the evolution substrate, built 2026-10, off by default, not editor-verified)*
 - Well-fed lifeforms **reproduce** (`Fauna.NotifyFed`→`TryReproduce`; `FaunaReproductionRules`);
   the spawner is now a one-time **seeder**. ✅ *(adopted from `bleeding-edge`)*
 - The **spawn variant is now heritable**: a cell spreads its species across its **element
@@ -221,7 +221,7 @@ you want the anchor power-up synced. It can ride the controller's existing `Netw
 - ~~TODO: a small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
   diet-bias, reproduction-threshold, element); offspring inherit **with mutation** — extend the
   inherited `LifeformVariantPick` channel rather than adding a second inheritance path.~~
-  **DONE 2026-10 (`Docs/EVOLUTION.md`, `Docs/ECOSYSTEM.md §59`).** Four loci on the inherited pick — Tempo
+  **BUILT 2026-10, off by default, not editor-verified (`Docs/EVOLUTION.md`, `Docs/ECOSYSTEM.md §59`).** Four loci on the inherited pick — Tempo
   (speed vs upkeep), Reach (graze radius vs upkeep), Fecundity (births per feed vs provisioning), Cohesion
   (flock radius) — mutated on every birth, expressed at lineage bind, carried on the network payload.
   **Size is deliberately NOT a locus**: §40 made size a property of species × element after this list was
