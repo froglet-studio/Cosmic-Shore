@@ -146,7 +146,9 @@ namespace CosmicShore.Gameplay
 
             _cfg = cfg;
             _container = container;
-            _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : new System.Random(System.Environment.TickCount);
+            // Seed 0 (the shipped Arkway settings) is a fresh stream per voyage; in a parity
+            // replay's deterministic session that stream is seeded too.
+            _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : DeterministicSession.NewRandom(nameof(CellConveyor));
             _heading = heading.sqrMagnitude > 0.01f ? heading.normalized : Vector3.forward;
             _targetIndex = 0;
 

@@ -67,7 +67,8 @@ namespace CosmicShore.Gameplay
             trails.Clear();
 
             // Initialize seeded random
-            actualSeed = seed == 0 ? System.Environment.TickCount : seed;
+            // Seed 0 draws one; in a parity replay's deterministic session that draw is seeded.
+            actualSeed = seed == 0 ? DeterministicSession.NewRandom(nameof(SpawnableRaceTrack)).Next() : seed;
             rng = new System.Random(actualSeed);
 
             GameObject container = new GameObject();

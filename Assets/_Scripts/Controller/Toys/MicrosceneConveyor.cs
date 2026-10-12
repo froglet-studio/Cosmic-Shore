@@ -144,7 +144,9 @@ namespace CosmicShore.Gameplay
             _vessel = vessel;
             _isFreestyleActive = isFreestyleActive;
             _gameData = gameData;
-            _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : new System.Random(Environment.TickCount);
+            // Seed 0 (the shipped Wanderway settings) is a fresh stream per belt; in a parity
+            // replay's deterministic session that stream is seeded too.
+            _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : DeterministicSession.NewRandom(nameof(MicrosceneConveyor));
 
             PrimeAsync().Forget();
         }
