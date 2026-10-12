@@ -348,7 +348,10 @@ invite) dropped the other sender's as well. `IncomingInviteInboxTests` (26) pin 
   still on the wire is not read as a new invite, and the sender can invite afresh afterwards.
   The per-tick `Sweep` drops a sender whose line has been gone for two ticks (a stale snapshot
   cannot flicker a live invite), ends one that outlived its lifetime, holds anything a join is in
-  flight for, and raises `OnInviteResolved` once when an open invite ended that way.
+  flight for, and raises `OnInviteResolved` once when an open invite ended that way. The inbox is
+  emptied on a Menu_Main reload. `outgoingInviteTimeoutSeconds` carries `[Min(1)]`, the "must be
+  positive" its tooltip states: the sender's invite expires at send + this value, so 0 would end
+  it at once, while the inbox reads 0 as "never expires".
 - **Service surface** (read by the UI): `LastPendingInvite` (newest open), `PendingIncomingInviteCount`,
   `UnseenIncomingInviteCount`, `CopyPendingIncomingInvites(list)`, `IsIncomingInvitePending(id)`,
   `IncomingInviteSecondsRemaining(id)`, `IncomingInviteLifetimeSeconds`, `MarkIncomingInvitesSeen()`.

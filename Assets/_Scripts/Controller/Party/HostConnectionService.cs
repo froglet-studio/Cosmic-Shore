@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
                  "host could expire an invite (and stop accepting the acceptance signal, see the " +
                  "OutgoingCount gate on the acceptance scan) before a distant player had finished " +
                  "reading it. Must be positive: the sender's invite expires at send + this value.")]
-        [SerializeField] private float outgoingInviteTimeoutSeconds = 60f;
+        [Min(1f)] [SerializeField] private float outgoingInviteTimeoutSeconds = 60f;
 
         [Inject] private PlayerDataService playerDataService;
         [Inject] private GameDataSO _gameData;
