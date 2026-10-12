@@ -56,26 +56,28 @@ PARTS = {
     # parts is picked once; without F its table hunk is a docs-only conflict and only the metas land.
     "H": ("Parity harness, Unity side (replay recorder/player, deterministic session, probe, capture)",
           "1a397c3e3 646d599e0 9339b9f21"),
-    "I": ("Prisma engine (Port/ only)", "93c5d74e7 8bd90dbe4 e03b31341 1fcb52135 1ea3d23b5 441fafc47 6bf9e5a0c"),
+    "I": ("Prisma engine (Port/ only)", "8bd90dbe4 e03b31341 1fcb52135 1ea3d23b5 441fafc47 6bf9e5a0c 2c915676c"),
     "J": ("Multiplayer QoL: held toast, Add Friend, Recently played with, ready identity, dropping out, invite inbox and badge",
           "75b764375 d70061b42 278055856 107c04c8a 6be10752d 71ed6a5ce caf4e2dd8"),
     "K": ("Leak and lifetime fixes", "c88d7083f 1c6fc87ad f375809ea e12a8165a"),
     "L": ("Heritable genome (evolution), from cece/friendly-goodall-woddjw",
           "3bdd94362 e91c90363 b6e3a44ec 323a18eda f3b60adcb 511501e84 52d96167f"),
+    "M": ("Prisma engine APIs the parity probe compiles against (Port/ only)", "93c5d74e7"),
 }
 
 # A part on the left does not build without the parts on the right. Measured 2026-10-12 by building
 # every part ALONE on origin/bleeding-edge (reference compile, player + editor, and Prisma's live
-# compile of the same tree; Docs/BRANCH_TEST_PLAN_2026-10-12.md, "Parts alone"):
+# compile of the same tree; Docs/BRANCH_TEST_PLAN_2026-10-12.md, section 2):
 #   G alone: LoadSweepRunner reads GameDataSO.IsGeneticTrainingSession, which E adds (editor + Prisma fail).
-#   H alone: ParityProbe uses the engine's FMOD callback types that I adds (Prisma's live compile fails,
-#            and Prisma parity CI runs on every bleeding-edge push).
+#   H alone: ParityProbe uses the engine's FMOD callback types that M adds (Prisma's live compile fails,
+#            and Prisma parity CI runs on every bleeding-edge push). bleeding-edge + M + H builds.
 #   I alone: ParityRun uses the game's ReplayFile / ReplayPlayer / DeterministicSession, which H adds.
-# H and I therefore travel together.
+# M builds alone, so the Port rule (a port push never changes the Unity project) can be kept by
+# landing M, then H, then I as three pushes; the tool skips a part's commits already on the base.
 DEPENDS = {
     "G": ["E"],
-    "H": ["I"],
-    "I": ["H"],
+    "H": ["M"],
+    "I": ["H", "M"],
 }
 
 DOC_PREFIXES = ("Docs/", "Port/docs/", ".github/pull_request_template.md")
@@ -100,7 +102,7 @@ def is_doc(path):
 
 
 def resolve(keys):
-    """The chosen parts plus everything they need, each once (H and I need each other)."""
+    """The chosen parts plus everything they need, each once."""
     chosen, added, seen = [], [], set()
 
     def visit(k):
@@ -171,6 +173,9 @@ def advise(chosen):
     if "A" not in chosen:
         print("WARNING: part A is not picked. bleeding-edge's guard has been red at 'Validate project' since "
               "2026-10-08 and part A is the fix, so this branch's guard run will be red for that reason alone.")
+    if "H" in chosen and ({"M", "I"} & set(chosen)):
+        print("NOTE: H changes the Unity project and M and I are Port-only. Port/CLAUDE.md wants port pushes "
+              "kept apart from Unity ones: build and land M alone, then H, then I (each build skips what has landed).")
     if "D" in chosen:
         missing = [k for k in D_DESCRIBES if k not in chosen]
         if missing:
