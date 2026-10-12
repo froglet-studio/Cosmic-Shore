@@ -71,6 +71,13 @@ namespace CosmicShore.Engine.Audio.Fmod
     public sealed class EventInstanceState
     {
         public string Path;
+        /// <summary>
+        /// The event's GUID: the reference's own, or the one GUIDs.txt lists for a path-only
+        /// reference (default when neither names one). A description callback is found by it
+        /// first, so an instance whose serialized path differs from the name the description was
+        /// listed under (a stale label, or an event GUIDs.txt does not list) still reaches it.
+        /// </summary>
+        public GUID Guid;
         public float Volume = 1f;
         public Vector3 Position;
         public Transform AttachedTo;
@@ -167,7 +174,7 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public RESULT getDescription(out EventDescription description)
         {
-            description = State == null ? default : new EventDescription { Path = State.Path };
+            description = State == null ? default : new EventDescription { Path = State.Path, Guid = State.Guid };
             return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
         }
 
@@ -298,7 +305,7 @@ namespace CosmicShore.Engine.Audio.Fmod
                 throw new System.ArgumentException("EventReference is null.", nameof(reference));
             string path = ResolveLoadedPath(reference);
             AudioStats.Created(path ?? reference.ToString());
-            var state = new EventInstanceState { Path = path };
+            var state = new EventInstanceState { Path = path, Guid = reference.Guid.IsNull ? FmodGuids.GuidOf(reference.Path) : reference.Guid };
             FmodBackend.Current?.Create(state, reference);
             return new EventInstance { State = state };
         }
@@ -433,7 +440,7 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         /// <summary>The event's description; throws <see cref="EventNotFoundException"/> when no loaded bank carries it, as the original does.</summary>
         public static EventDescription GetEventDescription(EventReference reference)
-            => new() { Path = ResolveLoadedPath(reference) ?? string.Empty };
+            => new() { Path = ResolveLoadedPath(reference) ?? string.Empty, Guid = reference.Guid };
         public static EventDescription GetEventDescription(string path) => new() { Path = path };
 
         /// <summary>Studio system (global parameters, bus/VCA lookups).</summary>
@@ -503,13 +510,22 @@ namespace CosmicShore.Engine.Audio.Fmod
         public static void RecordMixerSnapshot(string mixer, string snapshot)
             => EventRecorded?.Invoke("fmod-snapshot", $"start:mixer:{mixer}/{snapshot}");
 
-        // EventDescription.setCallback, by event path: the game's ParityProbe hooks STARTED |
-        // RESTARTED on every loaded description, and start() invokes it with the instance's
-        // handle. One callback per description, as the original keeps one.
+        // EventDescription.setCallback: the game's ParityProbe hooks STARTED | RESTARTED on every
+        // loaded description, and start() invokes it with the instance's handle. One callback per
+        // description, as the original keeps one. A description is the event, so it is keyed by
+        // GUID whenever it has one (FMOD matches by identity, not by name) and by path otherwise;
+        // an instance looks for its GUID first, then its path.
+        static readonly Dictionary<GUID, (EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)> s_callbacksByGuid = new();
         static readonly Dictionary<string, (EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)> s_descriptionCallbacks = new();
 
-        internal static void SetDescriptionCallback(string path, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)
+        internal static void SetDescriptionCallback(GUID guid, string path, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)
         {
+            if (!guid.IsNull)
+            {
+                if (callback == null) s_callbacksByGuid.Remove(guid);
+                else s_callbacksByGuid[guid] = (callback, mask);
+                return;
+            }
             if (path == null) return;
             if (callback == null) s_descriptionCallbacks.Remove(path);
             else s_descriptionCallbacks[path] = (callback, mask);
@@ -517,7 +533,10 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         internal static void InvokeDescriptionCallback(EventInstanceState state, EVENT_CALLBACK_TYPE type)
         {
-            if (state.Path == null || !s_descriptionCallbacks.TryGetValue(state.Path, out var c) || (c.mask & type) == 0) return;
+            (EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask) c = default;
+            bool found = (!state.Guid.IsNull && s_callbacksByGuid.TryGetValue(state.Guid, out c))
+                         || (state.Path != null && s_descriptionCallbacks.TryGetValue(state.Path, out c));
+            if (!found || (c.mask & type) == 0) return;
             c.callback(type, (System.IntPtr)state.Id, System.IntPtr.Zero);
         }
 
@@ -525,6 +544,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         public static void ResetForTests()
         {
             s_descriptionCallbacks.Clear();
+            s_callbacksByGuid.Clear();
             Buses.Clear();
             Vcas.Clear();
             StudioSystem.Globals.Clear();

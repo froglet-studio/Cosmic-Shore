@@ -61,6 +61,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         /// <summary>GUIDs the loaded strings bank indexes (events, snapshots, buses, VCAs, parameters, banks).</summary>
         public static int StringsBankCount => s_bank?.Count ?? 0;
 
+        /// <summary>The loaded strings bank's GUID index (empty when none was read).</summary>
+        public static IEnumerable<GUID> StringsBankGuids => (IEnumerable<GUID>)s_bank ?? Array.Empty<GUID>();
+
         /// <summary>The strings bank file that was read, for messages.</summary>
         public static string StringsBankFile => s_bankFile;
 

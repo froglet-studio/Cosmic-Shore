@@ -173,6 +173,51 @@ public class FmodBankGateTests : IDisposable
         Assert.Equal(new[] { "fmod:event:/SFX/Unlisted" }, _events);
     }
 
+    /// <summary>
+    /// The game's ParityProbe hooks its start callback on every description the loaded banks list,
+    /// once per GUID. In Unity that is every event the bank carries. The port's pseudo bank lists
+    /// GUIDs.txt's events and, beyond them, every GUID the strings bank indexes (the Bootstrap music
+    /// is in the bank and not in the file), and a callback reaches an instance by its GUID whatever
+    /// path it was created under. Before, the list was GUIDs.txt alone and callbacks were matched
+    /// by path, so a probe pointed at a second directory missed those starts (measured on
+    /// skimrace-status: 209 engine lines against the probe's 200).
+    /// </summary>
+    [Fact]
+    public void TheBankListsWhatTheStringsBankCarriesAndTheProbesCallbackHearsEveryStart()
+    {
+        Assert.Equal(2, FmodGuids.Load(TempFile("GUIDs.txt", System.Text.Encoding.ASCII.GetBytes(
+            $"{{{Known}}} event:/SFX/Known\n{{{Retired}}} event:/SFX/Loops/Retired\n"))));
+        Assert.True(FmodGuids.LoadStringsBank(TempFile("Master.strings.bank", SyntheticStringsBank(new[] { Known, Stale }))) >= 14);
+
+        Assert.Equal(RESULT.OK, RuntimeManager.StudioSystem.getBankList(out var banks));
+        Assert.Equal(RESULT.OK, Assert.Single(banks).getEventList(out var descriptions));
+        var ids = descriptions.Select(d => { d.getID(out var id); return id; }).ToList();
+        Assert.Contains(FmodGuids.FromSystem(Known), ids);
+        Assert.Contains(FmodGuids.FromSystem(Stale), ids);
+        Assert.Equal(ids.Count, ids.Distinct().Count());     // one description per GUID, as the probe hooks
+
+        // What the probe does: hook every listed description, then the game plays.
+        var heard = new List<string>();
+        EVENT_CALLBACK probe = (type, handle, _) =>
+        {
+            new EventInstance(handle).getDescription(out var d);
+            d.getPath(out var path);
+            heard.Add(type + ":" + path);
+            return RESULT.OK;
+        };
+        foreach (var d in descriptions)
+            Assert.Equal(RESULT.OK, d.setCallback(probe, EVENT_CALLBACK_TYPE.STARTED | EVENT_CALLBACK_TYPE.RESTARTED));
+
+        RuntimeManager.CreateInstance(Ref(Stale, "event:/Music/Music")).start();   // in the bank, not in GUIDs.txt
+        RuntimeManager.CreateInstance(Ref(Known, "event:/SFX/known")).start();     // a label whose case differs from GUIDs.txt's
+        RuntimeManager.CreateInstance("event:/SFX/Known").start();                 // path only: matched by GUIDs.txt's GUID
+
+        var expected = new[] { "event:/Music/Music", "event:/SFX/known", "event:/SFX/Known" };
+        Assert.Equal(expected.Select(p => "STARTED:" + p), heard);
+        Assert.Equal(expected.Select(p => "fmod:" + p), _events);  // the engine's own writer says the same
+        Assert.Empty(Warnings);
+    }
+
     [Fact]
     public void WithNoStringsBankNothingIsRefused()
     {

@@ -88,17 +88,20 @@ namespace CosmicShore.Engine.Audio.Fmod
     public struct EventDescription
     {
         internal string Path;
+        /// <summary>The event's GUID when the description was made from one (a reference, the strings bank); else GUIDs.txt's for <see cref="Path"/>.</summary>
+        internal GUID Guid;
 
         public bool isValid() => Path != null;
 
         public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        /// <summary>The GUID the project's GUIDs.txt gives this path (default when it is not listed).</summary>
-        public RESULT getID(out GUID id) { id = FmodGuids.GuidOf(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        /// <summary>The event's GUID: its own when it has one, else the one GUIDs.txt gives this path (default when it is not listed).</summary>
+        public RESULT getID(out GUID id) { id = Guid.IsNull ? FmodGuids.GuidOf(Path) : Guid; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         /// <summary>Sets (null clears) the callback every instance of this event invokes; see <see cref="RuntimeManager.InvokeDescriptionCallback"/>.</summary>
         public RESULT setCallback(EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask = EVENT_CALLBACK_TYPE.ALL)
         {
             if (Path == null) return RESULT.ERR_INVALID_HANDLE;
-            RuntimeManager.SetDescriptionCallback(Path, callback, callbackmask);
+            getID(out var id);
+            RuntimeManager.SetDescriptionCallback(id, Path, callback, callbackmask);
             return RESULT.OK;
         }
         // With a runtime installed these come from the banks (a looping event is NOT a one-shot,
@@ -129,7 +132,8 @@ namespace CosmicShore.Engine.Audio.Fmod
 
     /// <summary>
     /// Original contract: FMOD.Studio.Bank. The port has no banks; <see cref="StudioSystem.getBankList"/>
-    /// answers one pseudo bank that lists every event and snapshot path GUIDs.txt names.
+    /// answers one pseudo bank that lists every event and snapshot path GUIDs.txt names, and one
+    /// description per GUID the build's strings bank indexes that GUIDs.txt does not list.
     /// </summary>
     public struct Bank
     {
@@ -137,12 +141,27 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool isValid() => Path != null;
         public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT getID(out GUID id) { id = FmodGuids.GuidOf(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+
+        /// <summary>
+        /// Every event the build carries, as far as the port can name it. GUIDs.txt is only as
+        /// current as the last manual export, while the real bank's list is every event it holds
+        /// (the game's ParityProbe hooks its start callback on each, so an event missing here is an
+        /// event the probe never hears in Prisma): the Bootstrap music and seven other serialized
+        /// references are in the strings bank and not in the file. Those are listed too, each by
+        /// its GUID and named "{guid}" because the bank's own path table is not decoded; a
+        /// callback set on one reaches every instance of that GUID whatever path it was created
+        /// under. The strings bank also indexes buses, VCAs, banks and parameters, so a few of
+        /// those extra descriptions name no event; no instance ever carries their GUIDs.
+        /// </summary>
         public RESULT getEventList(out EventDescription[] array)
         {
             var list = new List<EventDescription>();
             foreach (var p in FmodGuids.Paths)
                 if (p.StartsWith("event:/", StringComparison.Ordinal) || p.StartsWith("snapshot:/", StringComparison.Ordinal))
-                    list.Add(new EventDescription { Path = p });
+                    list.Add(new EventDescription { Path = p, Guid = FmodGuids.GuidOf(p) });
+            foreach (var g in FmodGuids.StringsBankGuids)
+                if (FmodGuids.PathOf(g) == null)
+                    list.Add(new EventDescription { Path = FmodGuids.ToSystem(g).ToString("B"), Guid = g });
             array = list.ToArray();
             return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
         }
@@ -200,10 +219,10 @@ namespace CosmicShore.Engine.Audio.Fmod
             return RESULT.OK;
         }
 
-        /// <summary>One pseudo bank over GUIDs.txt, or none when no GUIDs file was loaded.</summary>
+        /// <summary>One pseudo bank over GUIDs.txt and the strings bank's index, or none when neither was loaded.</summary>
         public RESULT getBankList(out Bank[] array)
         {
-            array = FmodGuids.Count == 0 ? Array.Empty<Bank>() : new[] { new Bank { Path = "bank:/Master" } };
+            array = FmodGuids.Count == 0 && !FmodGuids.StringsBankLoaded ? Array.Empty<Bank>() : new[] { new Bank { Path = "bank:/Master" } };
             return RESULT.OK;
         }
 

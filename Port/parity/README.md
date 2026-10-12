@@ -185,6 +185,20 @@ board B-1); the gate's effect is proved by `FmodBankGateTests`, not by a shipped
 path-only reference is refused only through a GUID the table knows; the index is cross-checked
 against GUIDs.txt at load and dropped (with a line on stderr) if it misses most of the file.
 
+**The game's probe hears those eight too.** `ParityProbe` sets its start callback on every
+description `getBankList`/`getEventList` returns, once per GUID; in Unity that is every event the
+real bank carries. The engine's pseudo bank lists GUIDs.txt's events and, beyond them, one
+description per GUID the strings bank indexes (named `{guid}`, since the bank's path table is not
+decoded), and a description's callback reaches an instance by GUID before path, so an instance
+created under any serialized label (the music, the `mass birttle` loop, a label whose case differs
+from GUIDs.txt's) calls it. Until 2026-10-12 the list was GUIDs.txt alone and callbacks were
+matched by path, so a probe pointed at a second directory missed those starts (measured on
+skimrace-status: the engine wrote 209 event lines, the probe 200, all of the gap `event:/Music/Music`
+and `mass birttle`). `FmodBankGateTests.TheBankListsWhatTheStringsBankCarriesAndTheProbesCallbackHearsEveryStart`
+proves the starts; the two-writer run was not re-measured. The same measurement showed four
+`mass birttle` `fmod-stop` lines the probe did not write; the probe takes those from its emitter
+stop relays, not from the bank list, so this change does not address them.
+
 **The status-frame case `skimrace-status`** (seed 2026, 2760 frames): the skimrace-fly `do` steps
 with `arcade ready` at frame 1800, then 600 status frames shaped as a keyboard writes them: XDiff
 0.5 (cruise, the dual-stick speed term at rest) with XSum sweeps (-1 to 1 and back, a held 0.6
