@@ -492,7 +492,7 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 | Legacy Unity Analytics off (`UnityAnalyticsSettings` enabled + initialize-on-startup → 0) | `UnityConnectSettings.asset` | The engine-level service started at boot, **before** the consent screen, and nothing calls its API. UGS Analytics (the consented one, `com.unity.services.analytics`) is a separate package and is untouched. |
 | `ITSAppUsesNonExemptEncryption = NO` written into every iOS build | `Assets/_Scripts/Editor/Build/IosExportCompliancePostprocess.cs` | Stops App Store Connect holding each build at "Missing Compliance". The declaration: HTTPS + Relay DTLS, standard algorithms, in support of gameplay, under the EAR Cat. 5 Pt. 2 Note 4 games exclusion. **The company owns this answer**; delete the file to answer per upload instead. |
 | NativeShare's photo-library purpose string: the plugin default ("The app requires access to Photos to save media to it.") → a specific one naming paintings and screenshots | `ProjectSettings/NativeShare.json` (the plugin's own settings file; its iOS post-process writes `NSPhotoLibraryUsageDescription` / `NSPhotoLibraryAddUsageDescription` from it) | App Review 5.1.1 rejects purpose strings that don't say what the access is for. |
-| Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb`, `Tools/iOS/testflight-request.txt` | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Not yet run.** |
+| Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Not yet run.** |
 
 **Found and left open** (setup guide §5):
 
@@ -526,6 +526,11 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
     day someone switched it on.
   - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
     at that time; don't rely on an old claim that it's unused.
+- **The TestFlight upload credentials need locking down (flagged 2026-10-12).** The first uploads
+  use the Apple-ID route, which is tied to one person's Apple ID. And any repo writer could, in
+  principle, write a workflow that leaks a repository secret. The plan is in `Docs/IOS_BUILD.md`
+  Path C, "Security follow-up": a team API key, deleting the personal route, a `testflight`
+  Environment limited to bleeding-edge with a reviewer, and branch protection.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, the two iOS workflows and
   the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.

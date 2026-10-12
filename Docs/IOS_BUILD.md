@@ -255,7 +255,9 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
 5. **Add the repository secrets.** Go to GitHub → Settings → Secrets and variables → Actions →
    New repository secret; this needs admin on the repo.
    - Base64 in PowerShell:
-     `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cosmicshore-dist.p12")) | Set-Clipboard`
+     `[Convert]::ToBase64String([IO.File]::ReadAllBytes((Get-Item .\cosmicshore-dist.p12).FullName)) | Set-Clipboard`
+     (the full path matters: .NET resolves a bare file name against the process directory, not the
+     folder PowerShell has `cd`-ed into).
    - Base64 in Git Bash: `base64 -w0 cosmicshore-dist.p12`
 
    | Secret | Value |
@@ -282,9 +284,10 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
      failure there names its own fix.
 2. **Share the export.** Zip the folder and upload it to Dropbox. Replacing the previous file
    keeps the same link, so the secret rarely changes.
-3. **Start the job.** Use Actions → **iOS TestFlight** → Run workflow once this file is on
-   bleeding-edge. Until then, bump `Tools/iOS/testflight-request.txt` on a feature branch outside
-   `claude/` and push.
+3. **Start the job.** Use Actions → **iOS TestFlight** → Run workflow, and pick the branch the export
+   came from. That is the only trigger. A push trigger used to start it whenever a branch first
+   received a request file; every agent branch's first bleeding-edge merge did that, and with the
+   secrets set each run would have uploaded a build.
 4. **Wait for App Store Connect.** About 20–30 minutes later the build reaches App Store Connect,
    and processing takes another 5–30. In TestFlight, add it to the internal group, or turn on
    automatic distribution for that group.
@@ -296,6 +299,20 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
 - The profile is an App Store profile for `9959RFD7XD.com.FrogletGames.CosmicShore`, and it
   contains that certificate.
 - The signed app is not a development build (`get-task-allow`).
+
+**Security follow-up (open, flagged 2026-10-12).** The first uploads use the Apple-ID route, which
+is **tied to one person's Apple ID**. Separately, anyone with write access to this repo could, in
+principle, write a workflow that leaks any repository secret; that holds for every secret, not just
+these. The plan:
+
+1. **Switch to a team API key.** The Account Holder presses **Request Access** once. An Admin then
+   creates a team API key (App Manager), and the job prefers it automatically.
+2. **Remove the personal route.** Delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD` and
+   `ASC_APP_ID`, and revoke the app-specific password.
+3. **Restrict the iOS secrets.** Move them into a GitHub **Environment** (`testflight`) that releases
+   them only to runs on `bleeding-edge`, with a required reviewer, and add `environment: testflight`
+   to the job.
+4. **Protect `bleeding-edge`.** Require a pull request and a review, and audit who has write access.
 
 The build number becomes `<Unity build>.<run number>` (14 → `14.52`), so every upload is unique.
 Nothing secret is printed. The signed `.ipa` is not kept as an artifact, because the repo is

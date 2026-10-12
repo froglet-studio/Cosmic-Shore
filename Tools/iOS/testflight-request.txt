@@ -1,7 +1,0 @@
-# Changing this file and pushing it to a feature branch starts .github/workflows/ios-testflight.yml.
-# (Once the workflow is on bleeding-edge, the Actions tab's "Run workflow" button does the same.)
-# The Xcode-project link and the signing material are NOT read from here. They are repository
-# SECRETS, because this repository is public. Steps: Docs/IOS_BUILD.md section 2, Path C.
-#
-# Bump the line below to request a new TestFlight upload.
-request: 1

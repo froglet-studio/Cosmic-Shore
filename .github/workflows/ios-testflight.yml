@@ -16,8 +16,9 @@
 #     APPLE_ID_EMAIL + APPLE_APP_SPECIFIC_PASSWORD + ASC_APP_ID [+ ASC_ITC_PROVIDER]
 #   With neither, the job still builds, signs and checks the .ipa, then stops before uploading.
 #
-# HOW TO RUN: Actions tab -> "iOS TestFlight" -> Run workflow (once this file is on bleeding-edge),
-# or push a change to Tools/iOS/testflight-request.txt on a feature branch.
+# HOW TO RUN: Actions tab -> "iOS TestFlight" -> Run workflow. Manual only, on purpose: an upload is
+# a deliberate act, and a push trigger fired on every agent branch's first bleeding-edge merge
+# (runs 1 and 2, 2026-10-12), which with the secrets set would each have uploaded a build.
 #
 # PRIVACY: this repository is public, so run logs are too. Nothing secret is printed, and the
 # signed .ipa is NOT kept as an artifact; it goes to App Store Connect only.
@@ -25,17 +26,6 @@
 name: iOS TestFlight
 
 on:
-  push:
-    paths:
-      - 'Tools/iOS/testflight-request.txt'
-    # Same reasoning as ios-unsigned-ipa.yml: shared and agent branches would "change" the request
-    # file on every merge and start an upload nobody asked for.
-    branches-ignore:
-      - 'bleeding-edge'
-      - 'development'
-      - 'main'
-      - 'build/**'
-      - 'claude/**'
   workflow_dispatch:
 
 permissions:
@@ -202,6 +192,27 @@ jobs:
           if [ "$ENC" = "missing" ]; then
             echo "::warning::Info.plist has no ITSAppUsesNonExemptEncryption, so App Store Connect will ask the export-compliance questions for this build. IosExportCompliancePostprocess did not run on this export."
           fi
+
+      - name: Remove the alpha channel from the app icons
+        run: |
+          # App Store Connect refuses an app icon that has an alpha channel (ITMS-90717), even a
+          # fully opaque one. The project's icon source (CSThumbApp.png) is RGBA, so flatten every
+          # PNG in the exported AppIcon set onto an opaque background before the archive.
+          python3 -m pip install --quiet --break-system-packages Pillow
+          python3 - "$PROJ" <<'PY'
+          import glob, os, sys
+          from PIL import Image
+          flattened = 0
+          for path in glob.glob(os.path.join(sys.argv[1], "**", "*.appiconset", "*.png"), recursive=True):
+              im = Image.open(path)
+              if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                  rgba = im.convert("RGBA")
+                  flat = Image.new("RGB", rgba.size, (0, 0, 0))
+                  flat.paste(rgba, mask=rgba.getchannel("A"))
+                  flat.save(path)
+                  flattened += 1
+          print(f"Removed the alpha channel from {flattened} app icon file(s).")
+          PY
 
       - name: Install the signing certificate and profile
         env:
