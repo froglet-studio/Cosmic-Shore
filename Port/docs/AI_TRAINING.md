@@ -126,10 +126,18 @@ different tracks from an un-recycled one after the first recycle, by design.
 the OS kills a worker (measured 2026-10-10: the memory cgroup of a 16 GB box killed a 2.4 GB
 worker at generation 8 of 10, with three agents' players alongside the four workers) the same
 command plus `--resume-run` keeps the run directory, removes the in-flight generation's result
-files and starts every worker from its own checkpoint at the last completed generation; the
-generation and episode limits are the run's (`run/meta.txt`), as after a recycle. `--workers`
-must match the killed run (the merge needs every slot). Size `--workers x --recycle-mb` under
-the memory the box can actually give the run.
+files and starts every worker from the last completed generation; the generation and episode
+limits are the run's (`run/meta.txt`), as after a recycle. Each worker checkpoints right after
+its own merge, when its current match ends, so the workers write seconds apart (7.5 s between
+two workers in the run a review measured), and the supervisor gives the survivors 15 s before it kills them: a kill
+in that window leaves the slots a generation apart, or a slot with no checkpoint at all in the
+first generation. Every worker holds the identical population after a merge, so the resume
+copies the NEWEST checkpoint over every slot that is behind or missing, says which slots it
+brought forward, and resumes there (if worker 0 was behind, the previous generation's
+progress row and trained export, which only worker 0's merge writes, may be missing). It
+refuses only when no slot has a checkpoint, when a checkpoint names a slot `--workers` does
+not have, or when the run already finished. Keep `--workers` the same as the killed run. Size
+`--workers x --recycle-mb` under the memory the box can actually give the run.
 
 Why recycling is needed: the game leaks across scene reloads, and Unity retains the same references
 (there its engine objects are near-empty shells; in the port they carry managed data).

@@ -20,7 +20,10 @@ namespace CosmicShore.Player
     /// command, which keeps the run directory, deletes the result files of the generation that
     /// was in flight (a worker that had already written its slice would otherwise be merged
     /// against the others' re-flown slices), and starts every worker from its own checkpoint.
-    /// Every worker needs one: the merge requires all of them in the same generation.</para>
+    /// The workers checkpoint seconds apart (each after its own merge), so a kill can leave them
+    /// a generation apart; every worker holds the identical population after a merge, so the
+    /// newest checkpoint is copied over the slots that are behind and the run resumes there
+    /// (<see cref="Prisma.Training.TrainingRunResume.Prepare"/>).</para>
     /// </summary>
     static class TrainingWorkers
     {
@@ -41,8 +44,9 @@ namespace CosmicShore.Player
             string[] checkpoints = null;
             if (resumeRun)
             {
-                int generation = Prisma.Training.TrainingRunResume.Prepare(dir, workers, out checkpoints, out string refusal);
+                int generation = Prisma.Training.TrainingRunResume.Prepare(dir, workers, out checkpoints, out string refusal, out string note);
                 if (checkpoints == null) { Console.WriteLine("[train] cannot resume: " + refusal); return 2; }
+                if (note != null) Console.WriteLine("[train] " + note);
                 Console.WriteLine($"[train] resuming the run in {dir} from generation {generation} ({workers} checkpoint(s))");
             }
             for (int w = 0; w < workers; w++) procs[w] = Start(args, w, dir, seed, checkpoints?[w]);
