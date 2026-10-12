@@ -192,6 +192,14 @@ namespace CosmicShore.UI
         private RectTransform _strip;
         private float _laidOutWidth = -1f;
         private const string StripViewportName = "Screens Viewport";
+        // The layer the strip was authored in (Menu_Main: Safe Area). Its rect is where screen
+        // CONTENT goes; the strip itself moves out to the full canvas so backgrounds can bleed.
+        private RectTransform _contentLayer;
+        private Vector4 _laidOutInsets = new(-1f, -1f, -1f, -1f);
+        private readonly List<SafeAreaBleed> _bleeds = new();
+        private bool _bleedsBuilt;
+        private float _designWidth = 1920f;
+        private static readonly Vector3[] Corners = new Vector3[4];
         private Coroutine navigateCoroutine;
         private bool _isInFreestyle;
         private float _freestyleToggleCooldownUntil;
@@ -595,6 +603,9 @@ namespace CosmicShore.UI
             _rootCanvas = parentCanvas.rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
+            if (_rootCanvas.TryGetComponent<CanvasScaler>(out var scaler)
+                && scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
+                _designWidth = scaler.referenceResolution.x;
             EnsureStripViewport();
 
             CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
@@ -747,18 +758,16 @@ namespace CosmicShore.UI
         #region Viewport Layout
 
         /// <summary>
-        /// Returns the width, in canvas units, of the viewport the strip slides inside — its PARENT,
-        /// the clipped layer <see cref="EnsureStripViewport"/> puts it in, which fills the menu
-        /// canvas's fitted content layer (<c>Docs/UI_ARCHITECTURE_AUDIT.md</c> §1.3).
+        /// Returns the width, in canvas units, of the viewport the strip slides inside: its PARENT,
+        /// the full-canvas layer <see cref="EnsureStripViewport"/> puts it in. That width is one
+        /// screen SLOT.
         ///
         /// <para>It must not measure the strip itself. The strip carries a ContentSizeFitter
         /// (horizontal Min Size) that collapses its width to 0 on the first layout pass, so a self
-        /// measurement read the safe width in <c>Start</c> and fell back to the CANVAS width on
-        /// every later call. On a Dynamic Island iPhone (2556 px wide, 177 px inset each side) the
-        /// panels were laid out 2202 px apart and slid 2556 px per step, so every navigation left
-        /// the screen another 354 px off. On a desktop the two widths are equal, which is why it
-        /// only ever showed on a phone. The parent has no fitter and is the rect the screens
-        /// should fill.</para>
+        /// measurement read one width in <c>Start</c> and the canvas width on every later call. On a
+        /// Dynamic Island iPhone the panels were laid out 2202 px apart and slid 2556 px per step;
+        /// at 4:3, 1440 units apart and slid 1920. Either way, every navigation left the screen
+        /// further off.</para>
         /// </summary>
         private float GetViewportWidthInCanvasUnits()
         {
@@ -773,39 +782,69 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Puts the strip inside a full-stretch child of its parent carrying a
-        /// <see cref="RectMask2D"/>, so the neighbouring screens it slides between are clipped to
-        /// the viewport. On a display with side insets the viewport is narrower than the screen,
-        /// and without the clip the next and previous screens would show in the cutout margins and
-        /// take taps there. Same shape as <see cref="SafeAreaLayer.Wrap"/>; idempotent.
+        /// How far the content layer sits in from each canvas edge, as (left, bottom, right, top) in
+        /// canvas units: the safe-area margins. Zero on any display whose safe area is the screen.
+        /// </summary>
+        private Vector4 GetContentInsets()
+        {
+            if (!_contentLayer || !_canvasRect) return Vector4.zero;
+
+            _contentLayer.GetWorldCorners(Corners);
+            Vector2 min = _canvasRect.InverseTransformPoint(Corners[0]);
+            Vector2 max = _canvasRect.InverseTransformPoint(Corners[2]);
+            Rect canvas = _canvasRect.rect;
+            return new Vector4(Mathf.Max(0f, min.x - canvas.xMin), Mathf.Max(0f, min.y - canvas.yMin),
+                               Mathf.Max(0f, canvas.xMax - max.x), Mathf.Max(0f, canvas.yMax - max.y));
+        }
+
+        /// <summary>
+        /// Moves the strip into a full-canvas viewport carrying a <see cref="RectMask2D"/>, placed in
+        /// the root canvas just before the layer the strip was authored in. Screens therefore still
+        /// draw under everything in that layer (NavBar, modals, toasts), as they did as its first
+        /// child.
+        ///
+        /// <para>Why full-canvas and not the content layer: each screen gets a full-screen SLOT,
+        /// its content laid out in the safe rect within the slot, and its backgrounds bleed to the
+        /// slot edges (<see cref="SafeAreaBleed"/>). That is the desktop look on a notched phone:
+        /// nothing leaks around the corners, and the slots are a full screen apart so a neighbour
+        /// can never show.</para>
         /// </summary>
         private void EnsureStripViewport()
         {
             _strip = transform as RectTransform;
-            if (!_strip) return;
+            if (!_strip || !_canvasRect) return;
 
             var parent = _strip.parent as RectTransform;
             if (!parent) return;
             if (parent.name == StripViewportName && parent.GetComponent<RectMask2D>()) return;
+
+            // The ancestor that is a direct child of the root canvas: the viewport goes before it.
+            Transform rootLayer = _strip;
+            while (rootLayer.parent && rootLayer.parent != _canvasRect)
+                rootLayer = rootLayer.parent;
+            if (rootLayer.parent != _canvasRect) return;
+
+            _contentLayer = parent == _canvasRect ? null : parent;
 
             var go = new GameObject(StripViewportName, typeof(RectTransform), typeof(RectMask2D))
             {
                 layer = gameObject.layer
             };
             var viewport = (RectTransform)go.transform;
-            viewport.SetParent(parent, false);
+            viewport.SetParent(_canvasRect, false);
             SafeAreaLayer.Stretch(viewport);
-            viewport.SetSiblingIndex(_strip.GetSiblingIndex());
+            viewport.SetSiblingIndex(rootLayer.GetSiblingIndex());
             _strip.SetParent(viewport, false);
         }
 
         /// <summary>
-        /// Resizes and repositions each screen panel to fill the viewport width, so the layout
-        /// works at any aspect ratio and any safe-area inset.
+        /// Lays every screen out in its own full-viewport slot, with its content in the safe rect
+        /// inside that slot, so the layout works at any aspect ratio and any inset.
         /// </summary>
         private void LayoutScreensToViewport()
         {
-            float viewportWidth = GetViewportWidthInCanvasUnits();
+            float slot = GetViewportWidthInCanvasUnits();
+            Vector4 inset = GetContentInsets();
             int count = GetScreenCount();
 
             // The strip itself: its left edge on the viewport's left edge, full viewport height.
@@ -817,7 +856,7 @@ namespace CosmicShore.UI
                 _strip.anchorMin = new Vector2(0f, 0f);
                 _strip.anchorMax = new Vector2(0f, 1f);
                 _strip.pivot = new Vector2(0f, 0.5f);
-                _strip.sizeDelta = new Vector2(viewportWidth * count, 0f);
+                _strip.sizeDelta = new Vector2(slot * count, 0f);
             }
 
             for (int i = 0; i < count; i++)
@@ -825,15 +864,96 @@ namespace CosmicShore.UI
                 RectTransform rt = GetScreenRootRT(i);
                 if (rt == null) continue;
 
-                // Anchor to left edge, stretch vertically
+                // Slot i spans [i * slot, (i + 1) * slot]; the panel is its safe rect.
                 rt.anchorMin = new Vector2(0f, 0f);
                 rt.anchorMax = new Vector2(0f, 1f);
                 rt.pivot = new Vector2(0f, 0.5f);
-                rt.sizeDelta = new Vector2(viewportWidth, 0f);
-                rt.anchoredPosition = new Vector2(i * viewportWidth, 0f);
+                rt.offsetMin = new Vector2(i * slot + inset.x, inset.y);
+                rt.offsetMax = new Vector2((i + 1) * slot - inset.z, -inset.w);
             }
 
-            _laidOutWidth = viewportWidth;
+            _laidOutWidth = slot;
+            _laidOutInsets = inset;
+            ApplyBleeds(inset);
+        }
+
+        /// <summary>
+        /// Sizes every background bleed for the current insets, building them the first time a
+        /// display has any (a desktop never does, so it never gets one).
+        /// </summary>
+        private void ApplyBleeds(Vector4 inset)
+        {
+            if (!_bleedsBuilt)
+            {
+                if (inset.x < 0.5f && inset.y < 0.5f && inset.z < 0.5f && inset.w < 0.5f) return;
+                BuildBleeds();
+                _bleedsBuilt = true;
+            }
+
+            Vector3 canvasScale = _canvasRect ? _canvasRect.lossyScale : Vector3.one;
+            foreach (var bleed in _bleeds)
+                bleed.Apply(inset, canvasScale);
+        }
+
+        /// <summary>
+        /// Finds the backgrounds that should reach the screen edges and gives each a
+        /// <see cref="SafeAreaBleed"/>. A background is a visible <see cref="Image"/> as wide as its
+        /// safe rect (or as the 1920 design width, where the safe rect is wider), reached through
+        /// ancestors that are as wide. It bleeds left and right, and down or up only where it reaches
+        /// that rect's bottom or top. It searches:
+        /// <list type="bullet">
+        /// <item>every screen panel, whose rect IS its slot's safe rect;</item>
+        /// <item>the content layer's own children (NavBar, ModalWindows, ...), against the content
+        /// layer's rect.</item>
+        /// </list>
+        /// Anything narrower is content and stays where it is.
+        /// </summary>
+        private void BuildBleeds()
+        {
+            for (int i = 0; i < GetScreenCount(); i++)
+            {
+                RectTransform root = GetScreenRootRT(i);
+                if (root) CollectBleeds(root, root, 0);
+            }
+
+            if (!_contentLayer) return;
+            for (int i = 0; i < _contentLayer.childCount; i++)
+            {
+                if (_contentLayer.GetChild(i) is RectTransform child)
+                    CollectBleeds(child, _contentLayer, 0);
+            }
+        }
+
+        private void CollectBleeds(RectTransform node, RectTransform reference, int depth)
+        {
+            const float tolerance = 1f;
+            const int maxDepth = 4;
+
+            Rect r = reference.rect;
+            node.GetWorldCorners(Corners);
+            Vector2 min = reference.InverseTransformPoint(Corners[0]);
+            Vector2 max = reference.InverseTransformPoint(Corners[2]);
+
+            // Full width means full width on the screen it was authored for: the whole safe rect,
+            // or the design width (1920) where the safe rect is wider. The hub modals are 1920-wide
+            // panels centred in a 2017-wide phone safe area, so they count.
+            float fullWidth = Mathf.Min(r.width, _designWidth);
+            if (max.x - min.x < fullWidth - tolerance) return;
+
+            if (node.TryGetComponent<Image>(out var image) && SafeAreaBleed.CanBleed(image))
+            {
+                // Down or up only where it reaches the safe rect's edge (or passes it).
+                bool bottom = min.y - r.yMin <= tolerance;
+                bool top = r.yMax - max.y <= tolerance;
+                _bleeds.Add(SafeAreaBleed.Create(image, reference, true, bottom, true, top));
+            }
+
+            if (depth >= maxDepth) return;
+            for (int i = 0; i < node.childCount; i++)
+            {
+                if (node.GetChild(i) is RectTransform child && child.name != SafeAreaBleed.CopyName)
+                    CollectBleeds(child, reference, depth + 1);
+            }
         }
 
         /// <summary>The strip's anchoredPosition that puts screen <paramref name="index"/> in the viewport.</summary>
@@ -856,7 +976,8 @@ namespace CosmicShore.UI
         {
             // Null until Start has laid the strip out.
             if (!_strip) return;
-            if (Mathf.Approximately(GetViewportWidthInCanvasUnits(), _laidOutWidth)) return;
+            if (Mathf.Approximately(GetViewportWidthInCanvasUnits(), _laidOutWidth)
+                && GetContentInsets() == _laidOutInsets) return;
 
             LayoutScreensToViewport();
 

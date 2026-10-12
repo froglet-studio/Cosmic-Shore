@@ -454,11 +454,21 @@ component and others get a new parent instead:
       another 354 px off;
     - the whole strip shifted 177 px into the cutout and 63 px down;
     - neighbouring screens visible in the margins, with nothing clipping them.
-  - **Fix** (`ScreenSwitcher`): the strip now sits in a runtime `Screens Viewport`. That is a
-    full-stretch child of `Safe Area` carrying a `RectMask2D`, so neighbours are clipped. The
-    switcher measures that viewport, pins the strip's pivot to its left edge (so the fitter's zeroed
-    width moves nothing), and slides by `anchoredPosition`. It re-lays out whenever the viewport
-    width changes.
+  - **Fix** (`ScreenSwitcher`): the strip now sits in a runtime `Screens Viewport`, a
+    full-canvas `RectMask2D` child of the root canvas, placed just before `Safe Area` so screens
+    still draw under the NavBar and modals.
+    - Each screen gets a full-screen slot, with its content laid out in the safe rect inside that
+      slot.
+    - The strip's pivot is pinned to its left edge (so the fitter's zeroed width moves nothing),
+      and it slides one slot per screen by `anchoredPosition`.
+    - It re-lays out whenever the slot width or the safe insets change.
+  - **Backgrounds bleed** (`SafeAreaBleed`, same day). A first fix clipped everything to the safe
+    rect, which left every screen a box with the 3D scene showing round the notch, the corners and
+    the bottom, and the NavBar band stopping short of the edges.
+    - Full-width background images now get a copy that reaches the screen edge: in each screen,
+      in the NavBar, and in the modals, including 1920-wide panels centred in a wider safe area.
+    - The source keeps its rect and its raycast area; its CanvasRenderer alpha is 0.
+    - Only built when a display has margins, so a desktop never gets one.
   - **Second bug fixed with it:** `currentScreen` is serialized as 0 (HANGAR), so restoring HANGAR
     from the `ReturnToScreen` pref hit NavigateTo's "already on this screen" return. The strip was
     never positioned and the hangar grid never built. `Start` now navigates from no screen.
