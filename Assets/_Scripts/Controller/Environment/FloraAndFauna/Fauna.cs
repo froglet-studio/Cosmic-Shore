@@ -335,6 +335,12 @@ namespace CosmicShore.Gameplay
         // Fraction of a full stomach this creature is born with: 1 (born full, the shipped rule) unless its parent
         // leans r on the Fecundity locus. Set by the parent BEFORE Initialize; read by StartStomach.
         float _birthProvision = 1f;
+        // The starvation clock this individual's phenotype is expressed from: the serialized starvationSeconds as its
+        // first lineage bind found it, before the element's tuning. Every bind starts from it, so the upkeep always
+        // divides the AUTHORED clock once and never an already-expressed one - on a re-bind, or on a clone whose
+        // Instantiate copied its parent's expressed clock (PrepareCloneAsDescendant hands the clone this value).
+        // NaN = not bound yet.
+        float _authoredStarvationSeconds = float.NaN;
 
         /// <summary>This individual's expressed phenotype (Neutral while its biome's evolution is off).</summary>
         public LifeformPhenotype Phenotype => _phenotype;
@@ -357,9 +363,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// This individual's rolled variant - element, tuning, and the level it hatched at -
         /// or null before <see cref="AssignLineage"/> has run. Exposed so a subclass that
-        /// produces a NEW individual outside the reproduction path can pass it on: the worm
-        /// colony's split hands it to the severed half, because the two halves of a split
-        /// worm are the same animal and must not re-roll their identity.
+        /// produces a NEW individual outside <see cref="SpawnOffspring"/> can pass it on: the
+        /// worm colony's split hands it to the severed half, verbatim for a player's cut (the
+        /// two halves are the same animal and must not re-roll their identity) and through
+        /// <see cref="Cell.OffspringPick{T}"/> for the colony's fission, which is its birth.
         /// </summary>
         protected LifeformVariantPick<FaunaVariantTuning>? VariantPick => _variantPick;
 
@@ -413,14 +420,20 @@ namespace CosmicShore.Gameplay
                 var pick = config.RollVariant(inherit);
                 // The GENOME rides the same pick (Docs/EVOLUTION.md). A seeder spawn - no inherit - rolls its
                 // founder genes here; an OFFSPRING arrives with its parent's already-mutated genome inside
-                // `inherit` (SpawnOffspring), a replicated puppet with the wire's, and a worm split with its
-                // other half's. None of those three is re-rolled: the only place a genome is ever rolled is a
-                // founder, and the only place it ever changes is a birth.
+                // `inherit` (SpawnOffspring, and a worm's fission, which is its birth), a replicated puppet with
+                // the wire's, and a worm's cut half with its other half's verbatim. None of those is re-rolled:
+                // the only place a genome is ever rolled is a founder, and the only place it ever changes is a
+                // birth (Cell.OffspringPick).
                 if (!inherit.HasValue && host) pick = pick.WithGenome(host.GenomeForFounder());
                 _variantPick = pick;
 
                 if (pick.Element != Element.None)
                     ProvisionHeart(pick.Element);
+
+                // Start from the AUTHORED clock (see _authoredStarvationSeconds): the element's tuning may replace
+                // it, and the phenotype below then divides the result exactly once.
+                if (float.IsNaN(_authoredStarvationSeconds)) _authoredStarvationSeconds = starvationSeconds;
+                else starvationSeconds = _authoredStarvationSeconds;
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
 
@@ -470,6 +483,26 @@ namespace CosmicShore.Gameplay
             if (p.Upkeep == 1f) return;
             starvationSeconds = GenomeExpression.StarvationSeconds(starvationSeconds, p);
             if (_stomachLive) StartStomach();   // re-derive the upkeep (spawn-time: nothing has been eaten yet)
+        }
+
+        /// <summary>
+        /// Readies a clone of this individual made with <c>Instantiate(this)</c> - the worm colony's split
+        /// (<see cref="WormFauna"/>), the only such caller - to bind as a new individual descended from this one.
+        /// Call it BEFORE the clone's <see cref="AssignLineage"/>:
+        ///  - Instantiate copies the serialized <c>starvationSeconds</c>, which this individual's phenotype has
+        ///    already divided by its upkeep. The clone takes this individual's AUTHORED clock instead, so its own
+        ///    bind expresses its genome against the authored number once (Docs/EVOLUTION.md §2), never on top of
+        ///    this individual's expression.
+        ///  - Its ledger row hangs off this individual's (a birth one generation on, in the same lineage) rather
+        ///    than founding a lineage of its own. While the biome's evolution is off neither has a row and the
+        ///    clone's bind records nothing, as every bind.
+        /// With evolution off both halves come out exactly as before: the authored clock is re-applied, the
+        /// element's tuning replaces it as it did, and the neutral phenotype divides nothing.
+        /// </summary>
+        protected void PrepareCloneAsDescendant(Fauna clone)
+        {
+            clone._authoredStarvationSeconds = _authoredStarvationSeconds;
+            clone._parentLedgerId = _ledgerId;
         }
 
         /// <summary>

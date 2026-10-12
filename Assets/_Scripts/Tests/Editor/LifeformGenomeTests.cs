@@ -294,6 +294,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Ledger_ClearNeverReissuesAnId_SoTheOldWorldsDeathsCloseNothing()
+        {
+            // A creature of the cleared world (ResetCell's deferred Destroy, a swap's drain) still closes its row by
+            // id when it dies or is torn down. If Clear restarted the ids, that id would now name a NEW creature.
+            var ledger = new EvolutionLedger();
+            uint oldFounder = ledger.RecordFounder("tadpole", LifeformGenome.Founder, 0);
+            uint oldChild = ledger.RecordBirth("tadpole", oldFounder, LifeformGenome.Founder, 1);
+            ledger.Clear();
+
+            uint fresh = ledger.RecordFounder("tadpole", new LifeformGenome(0.2f, 0, 0, 0), 2);
+            uint freshChild = ledger.RecordBirth("tadpole", fresh, new LifeformGenome(0.3f, 0, 0, 0), 3);
+            Assert.Greater(fresh, oldChild, "ids keep counting across a Clear");
+            Assert.Greater(freshChild, fresh);
+
+            Assert.IsFalse(ledger.RecordDeath(oldFounder, LifeformDeathCause.Teardown, 4), "the old world's founder closes nothing");
+            Assert.IsFalse(ledger.RecordDeath(oldChild, LifeformDeathCause.Teardown, 4), "the old world's child closes nothing");
+            Assert.AreEqual(2, ledger.LivingCount, "the new world's rows are untouched");
+            Assert.IsTrue(ledger.TryGetLiving(fresh, out var f));
+            Assert.AreEqual(fresh, f.LineageId);
+            Assert.IsTrue(ledger.TryGetLiving(freshChild, out var c));
+            Assert.AreEqual(1, c.Generation);
+            Assert.AreEqual(0, ledger.TotalDeathsOf("tadpole", LifeformDeathCause.Teardown), "no death is booked against the new world");
+        }
+
+        [Test]
         public void Ledger_RowsAreCappedPerSpecies_AndJsonIsWellFormed()
         {
             var ledger = new EvolutionLedger { MaxSnapshotsPerSpecies = 16 };

@@ -1244,11 +1244,12 @@ trio, and the traps).
 - **THE GENOME IS A LEAN, NOT A LEVEL — and it is OFF until a biome says otherwise** (`Docs/EVOLUTION.md`,
   `Docs/ECOSYSTEM.md §59`). Every lifeform's inherited pick carries a four-locus `LifeformGenome` (Tempo, Reach,
   Fecundity, Cohesion, each in [-1, 1]; 0 = the species as its element authored it). A FOUNDER rolls it once at the
-  seeder (`Cell.GenomeForFounder`), a CHILD's is its parent's mutated in exactly one place (`Cell.OffspringPick`), a
-  worm split and a replicated puppet carry it verbatim, and **nothing a creature does is ever written back into its
-  genes** — the retired earned level was exactly that mistake. Every locus is a TRADE-OFF the economy collects (pace
-  and reach cost upkeep; more births cost provisioning) and **no locus touches size or the heart** (§40 stands:
-  a lifeform's silhouette is its species × element). There is NO fitness function: the ledger
+  seeder (`Cell.GenomeForFounder`), a CHILD's is its parent's mutated in exactly one place (`Cell.OffspringPick`) —
+  a worm's fission is its birth and goes through it too — a worm's cut half and a replicated puppet carry it verbatim,
+  and **nothing a creature does is ever written back into its genes** — the retired earned level was exactly that
+  mistake. Every locus is a TRADE-OFF the economy collects (pace and reach cost upkeep; more births cost
+  provisioning) and **no locus touches size or the heart** (§40 stands: a lifeform's silhouette is its species ×
+  element). There is NO fitness function: the ledger
   (`EvolutionLedger`) records what starvation, predation and reproduction decided and steers nothing. The whole
   apparatus is inert while `CellConfigDataSO.Evolution.Enabled` is false, which it is in every shipped biome; a biome
   that turns it on needs turnover and a seed floor well below its carrying capacity, or the seeder's immigration

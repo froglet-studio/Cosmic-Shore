@@ -894,8 +894,10 @@ namespace CosmicShore.Gameplay
         /// The colony's natural REPRODUCTION (Docs/ECOSYSTEM.md §23.10): a fed, complete colony
         /// at full length splits at the middle of its chain into two colonies, through exactly
         /// the severance a player's mid-body cut runs (<see cref="SpawnSplitColony"/>) minus the
-        /// dead member — so continuity, heredity, hearts (every member keeps its own), wither and
-        /// regrowth are the cut's, and segment totals are conserved. The front half keeps the head
+        /// dead member — so continuity, hearts (every member keeps its own), wither and regrowth
+        /// are the cut's, and segment totals are conserved. Heredity is a birth's: the half is
+        /// this colony's child, its genome mutated through <see cref="Cell.OffspringPick{T}"/>
+        /// (verbatim while the biome's evolution is off). The front half keeps the head
         /// and regrows a tail, the rear half keeps the tail and regrows a head, each on its own
         /// next production cycle.
         ///
@@ -923,7 +925,7 @@ namespace CosmicShore.Gameplay
             _lastFissionTime = Time.time;
             var rear = segments.GetRange(mid, count - mid);
             segments.RemoveRange(mid, count - mid);
-            SpawnSplitColony(rear);
+            SpawnSplitColony(rear, fission: true);
         }
 
         /// <summary>
@@ -1026,7 +1028,7 @@ namespace CosmicShore.Gameplay
                 // production cycle.
                 var rear = segments.GetRange(index, segments.Count - index);
                 segments.RemoveRange(index, segments.Count - index);
-                SpawnSplitColony(rear);
+                SpawnSplitColony(rear, fission: false);
             }
             // else: the TAIL died — the rear stays soft until the next production cycle
             // grows a replacement stinger.
@@ -1037,9 +1039,20 @@ namespace CosmicShore.Gameplay
         /// THIS ONE rather than a fresh prefab instantiation, which is both simpler and
         /// biologically right: the two halves of a split worm are the same animal, so
         /// the child inherits this colony's exact tuning (config, segment prefabs, diet,
-        /// starvation clock) with no serialized self-reference to keep wired. The
+        /// authored starvation clock) with no serialized self-reference to keep wired. The
         /// segments are not children of the root, so the clone brings no body with it —
         /// it adopts the severed half in Initialize.
+        ///
+        /// Heredity (Docs/EVOLUTION.md): a <paramref name="fission"/> is the colony's
+        /// reproduction (Docs/ECOSYSTEM.md §23.10), so the half is its CHILD and its pick goes
+        /// through <see cref="Cell.OffspringPick{T}"/> — the one place a lineage's genome
+        /// changes — exactly as <c>Fauna.SpawnOffspring</c>'s does. A player's cut is not a
+        /// birth: the half keeps this colony's pick verbatim. Either way the half is filed in
+        /// the ledger as a birth under this colony (never a new founder), and its genome is
+        /// expressed against the AUTHORED starvation clock, not on top of this colony's
+        /// already-expressed one (<c>Fauna.PrepareCloneAsDescendant</c>). With the biome's
+        /// evolution off, both paths are exactly the split as it was: the pick is unchanged,
+        /// no random draw is made and nothing is recorded.
         ///
         /// It is a genuinely SEPARATE population from the moment it exists: it rolls its
         /// own goal orbit offset (Fauna.Start) so the two halves stop seeking the identical
@@ -1051,7 +1064,7 @@ namespace CosmicShore.Gameplay
         /// Two callers, one path: a player's interior kill (<see cref="HandleSegmentDeath"/>)
         /// and the colony's own fission at full length (<see cref="TryFission"/>).
         /// </summary>
-        void SpawnSplitColony(List<WormSegmentFauna> rear)
+        void SpawnSplitColony(List<WormSegmentFauna> rear, bool fission)
         {
             if (rear == null || rear.Count == 0) return;
 
@@ -1063,10 +1076,15 @@ namespace CosmicShore.Gameplay
             // Same lineage AND the same identity: the split registers in the cell's live
             // count (so the spawner's seed floor sees two worms), inherits the species
             // config, and is handed this colony's own variant pick rather than re-rolling
-            // one — the halves of a split worm are the same animal and must keep the same
-            // element (heredity, exactly as an offspring inherits its parent's pick).
+            // one — the halves of a split worm keep the same element (heredity, exactly as an
+            // offspring inherits its parent's pick). A fission's half is this colony's child,
+            // so its genome mutates on the way like any offspring's; a cut's does not.
             if (cell && SourceConfig)
-                colony.AssignLineage(cell, SourceConfig, VariantPick);
+            {
+                var pick = fission ? cell.OffspringPick(VariantPick) : VariantPick;
+                PrepareCloneAsDescendant(colony);
+                colony.AssignLineage(cell, SourceConfig, pick);
+            }
             if (cell)
                 cell.RegisterSpawnedObject(colony.gameObject);
             // The replication seam, AFTER the lineage bind (which settles the element the spawn

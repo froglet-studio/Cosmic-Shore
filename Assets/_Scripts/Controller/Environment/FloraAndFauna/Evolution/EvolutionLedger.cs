@@ -89,13 +89,17 @@ namespace CosmicShore.Gameplay
         /// <summary>Species in the order they were first seen.</summary>
         public IReadOnlyList<string> Species => _speciesOrder;
 
-        /// <summary>Forgets everything (a cell reset / swap / teardown: the next world starts its own book).</summary>
+        /// <summary>
+        /// Forgets everything (a cell reset / swap / teardown: the next world starts its own book) EXCEPT the id
+        /// counter. A creature of the previous world can outlive the Clear - ResetCell's deferred Destroy, a swap's
+        /// drain - and still close its row by id when it dies or is torn down, so an id handed out once must never
+        /// name a creature of the next world. Ids are monotonic for the ledger's lifetime, which is its cell's.
+        /// </summary>
         public void Clear()
         {
             _living.Clear();
             _books.Clear();
             _speciesOrder.Clear();
-            _nextId = 1;
         }
 
         SpeciesBook Book(string species)
@@ -149,7 +153,10 @@ namespace CosmicShore.Gameplay
             return id;
         }
 
-        /// <summary>An individual leaves the living set. Unknown ids are ignored (a creature recorded before a Clear).</summary>
+        /// <summary>
+        /// An individual leaves the living set. Unknown ids are ignored: a creature recorded before a Clear names an
+        /// id the ledger never reissues (<see cref="Clear"/>), so its death closes nothing.
+        /// </summary>
         public bool RecordDeath(uint id, LifeformDeathCause cause, double time)
         {
             if (!_living.TryGetValue(id, out var ind)) return false;

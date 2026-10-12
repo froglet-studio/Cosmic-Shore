@@ -32,7 +32,7 @@ list.
 food; selection-off control **−0.08 ±0.23**; the neutral cohesion locus drifts without direction.
 
 **Checked.**
-- `bash Tools/Build/evolution_harness/run.sh` — 46 core + 10 arena gates OK, 6/6 negative controls bit; evidence
+- `bash Tools/Build/evolution_harness/run.sh` — 47 core + 10 arena gates OK, 6/6 negative controls bit; evidence
   (9 regimes × 5 seeds × 4 h) in 8 s; golden written.
 - `node Tools/Evolution/gate_parity.cjs` — 4/4 cases exact (20 + 20 + 10 + 10 census rows of 21 numbers each), RNG
   first draws, 8 mutation samples, phenotype and packed genome exact; 3/3 planted defects caught.

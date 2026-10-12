@@ -251,6 +251,11 @@ namespace EvolutionHarness
                 Check(ledger.SnapshotsOf("tadpole").Count == 16, "Ledger: rows are capped per species");
                 ledger.Clear();
                 Check(ledger.LivingCount == 0 && ledger.Species.Count == 0, "Ledger: Clear forgets everything");
+                // A creature of the cleared world still closes its row by id; a reissued id would close a NEW one.
+                uint afterClear = ledger.RecordFounder("tadpole", LifeformGenome.Founder, 200);
+                Check(afterClear > orphan && !ledger.RecordDeath(a, LifeformDeathCause.Teardown, 201)
+                      && ledger.TryGetLiving(afterClear, out _) && ledger.LivingCount == 1,
+                      "Ledger: Clear never reissues an id, so the cleared world's deaths close no new row");
                 Negative(Math.Abs(row.Mean[0] - 0.1) < 1e-6, "a census mean that ignored the births would read the founder");
             }
 

@@ -112,17 +112,21 @@ The seams (each one line or one block, all inert while `Evolution.Enabled` is of
 |---|---|---|
 | the pick carries a genome | `LifeformVariantPick<T>.Genome`, `WithGenome` | the founder value unless something rolls one |
 | founders roll | `Fauna.AssignLineage` (no `inherit`), `CellLifeSpawnerBase.SpawnFlora` (no `inherit`) | `Cell.GenomeForFounder()` |
-| offspring mutate | `Fauna.SpawnOffspring`, `Flora.SpawnOffspring` | `Cell.OffspringPick(parentPick)` — the ONE place a lineage's genome changes |
-| a split does not mutate | `WormFauna` passes `VariantPick` verbatim | the two halves are the same animal |
+| offspring mutate | `Fauna.SpawnOffspring`, `Flora.SpawnOffspring`, `WormFauna.TryFission` | `Cell.OffspringPick(parentPick)` — the ONE place a lineage's genome changes |
+| a worm's fission is a birth | `WormFauna.TryFission` → `SpawnSplitColony(rear, fission: true)` → `Cell.OffspringPick` | the colony's reproduction (`Docs/ECOSYSTEM.md` §23.10): the half is its child, mutated like any offspring |
+| a worm's cut does not mutate | `WormFauna.HandleSegmentDeath` → `SpawnSplitColony(rear, fission: false)` passes `VariantPick` verbatim | a player's mid-body kill: the two halves are the same animal |
+| a split half descends | `Fauna.PrepareCloneAsDescendant` | either split's half is filed as a birth under its colony (same lineage, one generation on; the ledger has founders and births only), never as a new founder; and since `Instantiate(this)` copies the colony's already-expressed clock, the half takes the colony's AUTHORED clock and expresses its own genome against it once |
 | a puppet never rolls | `Fauna.ApplyReplicatedIdentity(..., packedGenome)` | the wire's genome arrives as the inherit pick |
-| expression | `Fauna.ApplyPhenotype` (upkeep → `starvationSeconds`), `Boid.ApplyPhenotype` (speed band, graze radius, cohesion radius), `LightFauna.ApplyPhenotype` (per-instance multipliers on the shared `LightFaunaDataSO`'s speed band and consume radius) | runs once at lineage bind, AFTER `ApplyVariantTuning`, so gene 0 is the element exactly |
+| expression | `Fauna.ApplyPhenotype` (upkeep → `starvationSeconds`, divided from the authored clock every lineage bind starts from), `Boid.ApplyPhenotype` (speed band, graze radius, cohesion radius), `LightFauna.ApplyPhenotype` (per-instance multipliers on the shared `LightFaunaDataSO`'s speed band and consume radius) | runs once at lineage bind, AFTER `ApplyVariantTuning`, so gene 0 is the element exactly |
 | births | `Fauna.TryReproduce` → `GenomeExpression.FeedsPerOffspring` | the Fecundity locus |
 | provisioning | `Fauna.StartStomach` → `FaunaStomach.FillFraction` | a child born part full; the parent pays nothing, as today |
 | the ledger | `Fauna.RecordInLedger` / `RecordDeathInLedger`, `Cell.RecordLifeform*`, `Cell.EvolutionCensusLoop` | authority only; a creature destroyed without dying is a `Teardown`, never selection |
 
 `Cell.ResetEvolution()` clears the ledger at every registry reset (Initialize's fresh pass, `ResetCell`, both of the
 swap's bookkeeping resets, `OnDestroy`) — the same sites the colony frontiers are retired from, because a book a
-population owns is the cell's to drop (`/ecology` §2.6).
+population owns is the cell's to drop (`/ecology` §2.6). A clear never reissues an id: a creature of the previous
+world can outlive it (`ResetCell`'s deferred `Destroy`, a swap's drain) and still close its row by id, so the ids
+keep counting for the ledger's lifetime and such a late death closes nothing in the new book.
 
 **Flora** carry and inherit the genome and mutate it, but **express nothing** yet: a plant's genome is a neutral
 lineage marker until a plant trait with a real cost is chosen (§8).
@@ -148,7 +152,7 @@ set, cumulative counters, and at most `MaxSnapshotsPerSpecies` rows.
 `Tools/Build/evolution_harness/run.sh` compiles the shipped core first against **netstandard2.1 / C# 9 with warnings
 as errors** (Unity's profile — a core that would not compile in the Editor fails here), then runs:
 
-- **`core`** — 46 gates on the core with planted-bug negative controls (a linear map must fail the reciprocal test, a
+- **`core`** — 47 gates on the core with planted-bug negative controls (a linear map must fail the reciprocal test, a
   biased uniform must shift the normal, a corrupted wire byte must not be the same genome, a census that ignored
   births must read the founder);
 - **`arena`** — the evidence model: same seed → same trajectory draw for draw; the selection-off control is EXACTLY
@@ -158,8 +162,8 @@ as errors** (Unity's profile — a core that would not compile in the Editor fai
   provenance);
 - **`golden`** — the parity trajectories for the lab (§7).
 
-The 26 NUnit edit-mode tests in `Assets/_Scripts/Tests/Editor/LifeformGenomeTests.cs` pin the same contract for the
-Editor (run here under dotnet with NUnit 3.14: 26 passed).
+The 27 NUnit edit-mode tests in `Assets/_Scripts/Tests/Editor/LifeformGenomeTests.cs` pin the same contract for the
+Editor (run here under dotnet with NUnit 3.14: 27 passed).
 
 ### 6.1 The model
 
@@ -279,30 +283,51 @@ moved, rebuild, re-verify, republish to the same URL, write the round up in `Too
 - **The provisioning is paid by nobody.** A child is born `Provision` full and the parent's stomach is untouched, as
   today's births are. Under the conserved stomach the honest rule is a transfer. *Not built; the arena matches the
   game.*
+- **A worm pays for Tempo and Reach and is paid nothing for them.** `WormFauna` expresses only the base upkeep
+  (its starvation clock); its speed and graze reach come from `WormColonyConfigSO`, which no locus scales, and its
+  births are fissions, so Fecundity (feeds per birth, provisioning) has no reach on it either. With a biome on,
+  selection can only push a worm's Tempo and Reach down. *Not built; a design call if a worm biome is switched on.*
 - **The `Cohesion` locus has no mechanism in the arena** and is the neutral control; in the game it scales the boid's
   cohesion radius, which has real flocking consequences the arena cannot see.
 - **Open-endedness** (speciation, arms races) is the frontier the masterplan hedges on; nothing here claims it.
 
 ## 9. Verify in-editor (the human is the gate — none of this has been run in Unity)
 
-1. **Compile.** Open the project; the new folder `FloraAndFauna/Evolution/` and the window must compile. Run the
-   edit-mode suite: `LifeformGenomeTests` (26) green, and the ecology suites unchanged.
+The full, numbered pass/fail steps are filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. What they must respect:
+
+- **The real assets.** There is no `Blob Cell Config`. Menu_Main boots **Garland** (`Garland Cell Config.asset` is the
+  one config marked `BootDefault`; Lattice is only `data[0]` of the list) and Garland's fauna are all `LightFauna`
+  (Brittlestar, QuadFish, Shark), so starvation and shark kills are both observable in the boot world. The Boid
+  tadpoles live in **Lattice** (reach it with the Cell Selector toy); Yggdra carries the Blob spawn profile's sharks
+  and tadpoles; the only `NetworkSynced` fauna are Wildlife Liberation's sharks (`Wildlife Liberation Cell Config 1`).
+- **Change knobs BEFORE Play.** A genome is expressed once, at lineage bind: a creature that already exists never
+  changes, so a mid-play edit shows nothing until the next spawn.
+- **Play-mode edits to a `CellConfigDataSO` persist on disk,** and saving one writes a new `evolution:` block that no
+  shipped asset carries. Revert every Cell Config after testing; never commit `Enabled: 1` unreviewed.
+- **A client prints census lines for its LOCAL species.** Only `NetworkSynced` species are server-recorded; every other
+  species is simulated, and recorded, on each peer.
+
+1. **Compile.** `LifeformGenomeTests` (27) green, and the ecology suites unchanged.
 2. **Switch off = shipped.** Menu_Main freestyle as today: no new log line, no behaviour change (every biome is off).
-3. **Switch on.** On `Blob Cell Config` (or the biome chosen in §8) set `Evolution ▸ Enabled`, keep the defaults;
-   open **FrogletTools ▸ Ecology ▸ Evolution Monitor**; Play. Expect: species cards appear with the seeder's first wave
-   (founders, generation 0, gene histograms spread by `FounderSpread`); after a feed-fed birth, generation 1 and a
-   lineage count; after a starvation or a shark kill, the deaths-by-cause row moves. The `Ecology` channel prints one
-   census line per species every 30 s.
-4. **A birth inherits.** Watch one tadpole's brood: a child's histogram bar sits near its parent's (±0.1), never a
-   fresh founder spread.
-5. **Expression is visible on the creature.** Spawn Matrix a tadpole, then raise `TempoPaceRange` to 3 and
-   `FounderSpread` to 0.5 on that biome: the spread of swimming speeds must widen visibly; set `Enabled` off: uniform
-   again.
-6. **Nothing pops.** A newborn with `Provision` < 1 is born part full and still blooms in; a starved one withers
+3. **Switch on.** Exit Play; on `Garland Cell Config` tick `Evolution ▸ Enabled`; open **FrogletTools ▸ Ecology ▸
+   Evolution Monitor**; Play. Species cards appear with the seeder's first wave; births, generations and deaths by
+   cause move as creatures breed, starve and are eaten; the `Ecology` channel prints one census line per species
+   every 30 s.
+4. **A birth inherits.** `Founder Spread` 0 before Play: every locus starts at one bar; children land in the bins
+   beside it, never a fresh founder spread.
+5. **Expression is visible.** Before Play, on `Garland Cell Config` (Evolution on) set `Founder Spread` 0.5 and
+   `Tempo Upkeep Range` 3: `Starvation Seconds` on several `LightFauna` of one species and one heart colour now
+   differ, and match again with Evolution off. For speed, do the same on `Lattice Cell Config` with `Tempo Pace
+   Range` 3 and read a Lattice tadpole's `Boid` `Min Speed` / `Max Speed` after a Cell Selector swap.
+6. **A worm split.** With Garland on, release a Worm Colony from the Spawn Matrix and cut a body segment: the severed
+   half's `Starvation Seconds` equals its colony's (a cut keeps the genome; before this fix it was divided again), and
+   the monitor counts the half as a birth, not a founder.
+7. **Nothing pops.** A newborn with `Provision` < 1 is born part full and still blooms in; a starved one withers
    extremities-first and drops its heart as before.
-7. **Network.** Host + client on a `NetworkSynced` species: a client's puppet shows the same element AND the same
-   speed band as the server's creature (the genome rode the payload); a client never prints a census line.
-8. **Export.** Export JSON from the monitor; open it in the lab's Evidence tab (next round's "from the game" tab).
+8. **Network.** Host + client on Wildlife Liberation with `Wildlife Liberation Cell Config 1` on: the same shark shows
+   the same `Starvation Seconds` on both peers (the genome rode the payload), and the client records no shark founders.
+9. **Export.** Export JSON from the monitor; it parses and names the species.
+10. **Revert** every Cell Config change (`git checkout -- "Assets/_SO_Assets/Cell Configs"`).
 
 ## 10. Invariants (the `/ecology` §2 restatement)
 
@@ -313,7 +338,9 @@ moved, rebuild, re-verify, republish to the same URL, write the round up in `Too
 - **No domain asymmetry** — untouched: the genome has no domain.
 - **Wither-to-crystal + mass conservation** — untouched: the sealed `Die` runs as before; the ledger only reads it.
 - **Volume is the spine** — untouched.
-- **Every lifeform drops one crystal; a colony is a population** — untouched; a worm split passes its pick verbatim.
+- **Every lifeform drops one crystal; a colony is a population** — untouched. A worm's cut half keeps its pick
+  verbatim (the same animal); a worm's fission half is the colony's child, its genome mutated through
+  `Cell.OffspringPick` like every other birth, so the one-place rule holds for the worm too.
 - **Endogenous selection only** — *this is the feature*: there is no fitness function anywhere, and the ledger cannot
   steer. There is still **no lifeform level**: a gene is a lean, not an achievement, and nothing a creature does is
   written back into its genome.

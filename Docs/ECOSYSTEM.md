@@ -3152,7 +3152,8 @@ segment: `WormFauna.TryFission` splits the chain at the middle (`count / 2` — 
 8 + 8) and hands the rear half to **`SpawnSplitColony`, the exact path a player's mid-body cut
 runs**, minus the dead member. So nothing pops in and nothing is bespoke: the daughter is a clone
 of the parent brain that adopts segments already swimming in place, inherits the lineage config
-and the variant pick (breeds true), every member keeps its own heart (§23.8 — no heart drops,
+and the variant pick (breeds true in its element; its genome, in a biome with evolution on, mutates
+through `Cell.OffspringPick` like any birth's, §59), every member keeps its own heart (§23.8 — no heart drops,
 because nothing died), segment totals are conserved, both halves feel separation immediately and
 shoulder apart, and each regrows its missing end on its own next cycle (front half a tail, rear
 half a head — head regrowth is ungated, §23.9). Wither and starvation are untouched.
@@ -11466,9 +11467,11 @@ Masterplan Phase 3's open TODO. Every lifeform's `LifeformVariantPick` now carri
 (`LifeformGenome`: Tempo, Reach, Fecundity, Cohesion, each in [-1, 1], gene 0 = the species as its element
 authored it), rolled for a founder by the SEEDER (`Cell.GenomeForFounder`, spread `FounderSpread`) and **mutated
 on every birth** (`Cell.OffspringPick` → `GenomeMutation.Mutate`, Gaussian steps of `MutationSigma`, clamped), in
-the same inherit channel §17 built for the element. A worm split passes its pick verbatim (the halves are one
-animal); a replicated puppet receives the server's genome on the spawn payload (`FaunaIdentity.Genome`, one uint)
-and never rolls. Expression (`GenomeExpression`) is a piecewise-rational map with `f(−g) = 1/f(g)`: Tempo scales the
+the same inherit channel §17 built for the element. A worm's mid-body CUT passes its pick verbatim (the halves are
+one animal); its FISSION (§23.10) is its birth, so the half's pick goes through `Cell.OffspringPick` like any child's,
+and either half is filed in the ledger as a birth under its colony and expressed against the AUTHORED starvation clock
+(`Fauna.PrepareCloneAsDescendant`: `Instantiate(this)` copies the colony's already-expressed one); a replicated
+puppet receives the server's genome on the spawn payload (`FaunaIdentity.Genome`, one uint) and never rolls. Expression (`GenomeExpression`) is a piecewise-rational map with `f(−g) = 1/f(g)`: Tempo scales the
 speed band and COSTS upkeep (the stomach drains faster), Reach scales the graze radius and costs upkeep, Fecundity
 divides the feeds per birth and births hungrier children, Cohesion scales the boid's cohesion radius. **No locus
 touches size or the heart (§40 stands).** Everything is inert until `CellConfigDataSO.Evolution.Enabled`, which is
