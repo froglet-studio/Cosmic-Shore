@@ -14,7 +14,8 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--old-style id] [--new-style id]`
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
 - **Space squares (round 6):** `blender -b CrystalsRaw_V2.blend --python Tools/Build/bake_omni_space_squares.py -- Docs/Studios/data/omni_space_squares.json` (the `.blend` is the art team's, not in the repo); the extractor then maps it onto the body FBX
-- **What ships (since round 4):** "Breathe", see Round 4 below and `Docs/PALETTE.md` §2.10
+- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7)
+- **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py`
 
 ## How the effect works (measured from the assets)
 
@@ -38,6 +39,74 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 8 (2026-10-12): the Depth ratchet ships
+
+The designer recorded two decisions a minute apart (decision log, 22:00 and 22:01), both on the
+**Depth ratchet** with faces split 0.5 and thickness growing inward. The omni pick was thickness 8 and
+the Mass pick (Mass + effect) thickness 6.25; both had top of column at −0.88, sealed from 1, a 15°/s
+free turn and opaque prisms. They wrote "the omni crystal and the mass crystal are both looking
+excellent" and asked to fly with them. This round puts that look in the game.
+
+**What ships** (generators own every asset; `Docs/PALETTE.md` §2.10):
+
+| Piece | What it is |
+|---|---|
+| `OmniDepthPrismShader.shader` (new) | The body's look (colour formula, `_Spread`, `_Opacity` dissolve) plus the column vertex stage: `k = lerp(_Reach, 1, u)`, size `lerp(_PlateScaleStart, 1, u)`, thickness from the top face inward, faces split by `_FaceSplit × _SplitUnit × (1 − u)`. Two passes: the arriving prism and, during a reseat, the leaving one, dithered on complementary pixels. Undriven, every prism draws sealed and solid. |
+| `CrystalDepthPrisms.cs` (new) | Per visible crystal, each frame: turns the crystal's models (never the root), steps every column's ratchet against the main camera (`DepthRatchet.cs`, pure math), and writes `_DepthState[plate]` through a property block that composes with `Crystal`'s tint. On the omni it also cuts the body's 20 triangle plates into holes. |
+| `CrystalDepthPrismProfile.asset` (new) | open −0.88, seal 1, power 1, reseat −0.8, fade 0.6 s, turn 15°/s, tilt 25°, wobble 0. Shared by both crystals. |
+| `RhombusSkinBaker.TryCutPlates` | The body's holes: a cut twin of the skinned body that keeps every vertex, bone and bindpose, cached per mesh, and resolves to the FBX through `SourceOf`. |
+| Omni (`author_omni_crystal_triangles.py`) | `Crystal.prefab`: 2 slots (body, prisms); the second and third tone shells are removed. The prism prefab is now SEATED (scale 0.446 = the crystal's own triangles). TEXCOORD2 = (centre, plate index). `OmniDepthPrisms[Inactive].mat`, thickness 8. `OriginalMaterialSet.CrystalMaterial1` = `OmniDepthPrisms`, so team crystals match. |
+| Mass (`author_mass_crystal_look.py`) | `CrystalMass` / `ActiveCrystalMass`: the inner shell becomes the prism renderer (`MassCrystalPrisms.asset`, 60 prisms, seated) and the other three shells are deleted (every consumer references only the root objects; swept). `MassDepthPrisms[Inactive].mat`, thickness 6.25. |
+
+**The lab follows the assets.** The extractor reads the shipped look back: the prism materials, the
+profile, the Mass thickness, and the shell scale at s = 1 (the seated prefab × `_Reach` = 0.89219, as
+before). `SHIPPED` is now the Depth ratchet. The Breathe look is the pinned base `BREATHE_LOOK`, read
+from its still-authored materials. The "Breathe" style and its riffs moved onto it, and team saves from
+before round 8 count as Breathe diffs. New knob: **Thickness on the Mass** (6.25). The crystal switch
+reads Omni / Mass (old shells) / Mass + effect: with the Shipped style, Mass + effect is the Mass
+crystal as it ships.
+
+**Checked**
+- **Graduation, knob level:** the round-7 page's Shipped with the recorded recipe applied equals the
+  new `SHIPPED` on all 61 knobs. Negative control: dropping one recipe key is named.
+- **Graduation, pixels:** 0 px over 2/255 at all five times, for omni and Mass. This is measured in
+  the stateless mode (depth 1) on both pages, which exercises everything the assets encode: scale,
+  thickness, split, anchor, turn and the Mass thickness.
+- **The ratchet itself cannot be pixel-compared across two pages,** because its state depends on what
+  was drawn before (see Found 1).
+- The Breathe style is 0 px against the round-7 Shipped.
+- **Shader vs lab:** `omni_depth_prism_shader_parity.py` compiles the shipped `DepthPrismPosition`
+  with clang. On every vertex at five column places it matches the lab's `vertexAt` to 2.1e-5 (omni)
+  and 2.4e-5 (Mass); that is the lab mesh's 5-decimal bake, stretched by thickness. Sealed top faces
+  are exact (5e-6). Negative controls with inward thickness off or face split off fail by 5e-2–1e-1.
+  The Breathe tool (`omni_shepard_shader_parity.py`) still passes 7/7, now on the Breathe style.
+- **The whole shader compiles with DXC:** both passes, vertex and fragment. Negative control: a
+  missing `_Opacity` is named.
+- **C#:**
+  - `unity_refcompile` player and editor configs report 0 errors in project code. It found one
+    real error first: an unassigned `out` local.
+  - Negative control: one planted error each in the component and the test is named.
+  - The ratchet tests ran headlessly against the shipped `DepthRatchet.cs` (3/3). A mutant that
+    reseats in view fails.
+- `verify_lab.cjs` PASS; extractor `--check` OK and `--self-test` 12/12; omni generator `--check` OK.
+
+**Found**
+1. **A stateful look cannot be pixel-compared across pages that drew different histories.** The
+   first pixel comparison differed by up to 4,924 px, shrinking with time (to 498 px by 7.7 s): the
+   ratchet's state carried frames drawn before the manual clock took over. The proof moved to the
+   knob level plus the stateless mode. The lab now restarts the ratchet on `reset()` and on any change
+   to a dial it reads, so from this round on a run's state depends only on (dials, clock, camera).
+2. **The Mass generator's shell materials were already drifting.** The Unity Editor had re-saved them
+   in its own property order. That is pre-existing, so this round wrote only its new outputs and left
+   those eight files alone; the generator's docstring records it.
+3. **The prism prefab had to move to the SEATED scale** (0.446, the crystal's own triangles; it was
+   0.892, the top of the column). Two reasons: anything that draws the mesh without the driver (a
+   husk, a codex model, a wrong material) shows the crystal at rest instead of a halo twice its size,
+   and the culling bounds can be widened by `_Reach` from a true base.
+
+**Not in this round:** the Space squares (lab-only, needs the body re-exported with blend shapes) and
+the other depth modes (seal by depth, depth columns), which still need code.
 
 ## Round 7 (2026-10-12): sealed by depth
 

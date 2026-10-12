@@ -10,6 +10,16 @@ Each family of plates is the shape that stands for one element, and each element
 expresses ITS OWN effect on ITS OWN shapes. Mass owns the SHEPARD TONE, so the
 tone belongs on the 20 triangles and on nothing else.
 
+SINCE 2026-10-12 (Omni Shepard Lab round 8, the "Depth ratchet"): the tone shells are retired from the
+crystal. Slot 1 is ONE opaque prism renderer (`OmniCrystalTriangles.prefab`, now SEATED: the mesh at its
+prefab scale is the crystal's own triangles) on `OmniDepthPrismShader` (`OmniDepthPrisms[Inactive].mat`),
+driven by `CrystalDepthPrisms` (`CrystalDepthPrismProfile.asset`, authored here too): each prism rides a
+column over its own hole by its depth from the camera, faces parting at the top, thickness growing inward,
+and the crystal turning; `CrystalDepthPrisms` cuts the body's 20 triangle plates into the holes at runtime.
+The mesh's TEXCOORD2 carries (plate centre xyz, plate index). `OriginalMaterialSet.CrystalMaterial1` names
+`OmniDepthPrisms`; slots 2-4 still name the retired tone materials, which this script keeps authoring (the
+lab's Breathe styles read them). The history below describes the looks this one replaced.
+
 Before this, `Crystal.prefab` ran the Shepard shader over FOUR copies of the
 WHOLE omni model, so the tone dragged the entire crystal - squares and pentagons
 included - through every pulse, and the crystal had no body of its own: the one
@@ -156,6 +166,32 @@ def mat_guid(name):
     return hashlib.md5(f"CosmicShore/OmniCrystal/{name}.mat".encode()).hexdigest()
 
 
+# THE LOOK since the Omni Shepard Lab round 7 (decision 2026-10-12): "Depth ratchet". The tone shells
+# are retired from the crystal; ONE opaque prism renderer fills the body's 20 triangle holes, each prism
+# riding its column by its depth from the camera (CrystalDepthPrisms + OmniDepthPrismShader). The lab's
+# recipe: {depth 2 (ratchet), depthOpen -0.88, depthSeal 1, faceSplit 0.5, thickAnchor 1 (inward),
+# thickness 8 (omni; the Mass crystal 6.25), turn 15} on top of start 1 / stop 0.5 / sizeStart 0.5.
+DEPTH_SHADER = "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader"
+DEPTH_SHADER_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniDepthPrismShader.shader").hexdigest()
+DEPTH_NAME = "OmniDepthPrisms"
+MAT_DEPTH = mat_guid(DEPTH_NAME)
+MAT_DEPTH_INACTIVE = mat_guid(DEPTH_NAME + "Inactive")
+DEPTH_REACH = OUTER_REACH                # the top of a column, x the prism's seated radius (lab start / stop)
+DEPTH_PLATE_SCALE_START = 0.5            # a prism's size at the top of its column, x its seated size
+DEPTH_THICKNESS = 8                      # the omni's pick (thickness grows INWARD, so a sealed prism is flush)
+DEPTH_THICKNESS_INWARD = 1
+DEPTH_FACE_SPLIT = 0.5                   # the faces part by half a plate radius at the top of the column
+DEPTH_PRISMS_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrisms.cs").hexdigest()
+DEPTH_PROFILE_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfileSO.cs").hexdigest()
+DEPTH_RATCHET_GUID = hashlib.md5(b"CosmicShore/Utility/DepthRatchet.cs").hexdigest()
+DEPTH_PROFILE = "Assets/_SO_Assets/Environment/CrystalDepthPrismProfile.asset"
+DEPTH_PROFILE_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfile.asset").hexdigest()
+# CrystalDepthPrismProfileSO's fields, as the lab picked them (the SO's own defaults match).
+DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.8),
+                        ("reseatFadeSeconds", 0.6), ("turnDegreesPerSecond", 15), ("turnTiltDegrees", 25),
+                        ("axisWobbleDegreesPerSecond", 0)]
+
+
 def shepard_bands():
     """(start, stop, phase) per shell. Breathing, every shell spans the WHOLE trip, from s = 1 to
     1/OUTER_REACH and back, and the shells differ only in their clock: a third of a trip apart."""
@@ -235,6 +271,19 @@ def _tone_material(name, body_name, body_text, start, stop, scale_distance, queu
     return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
 
 
+def depth_material(name, body_name, body_text, thickness, top_height, split_unit):
+    """A depth-prism material: the body material (same colours, same _Spread) moved onto
+    OmniDepthPrismShader, plus the prism's shape dials. OPAQUE (queue Geometry), like the body."""
+    t = _sub1(body_text, rf"^  m_Name: {re.escape(body_name)}$", f"  m_Name: {name}", name + " m_Name")
+    t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
+              f"  m_Shader: {{fileID: 4800000, guid: {DEPTH_SHADER_GUID}, type: 3}}", name + " m_Shader")
+    floats = (f"    - _DepthDriven: 0\n    - _FaceSplit: {DEPTH_FACE_SPLIT}\n"
+              f"    - _PlateScaleStart: {DEPTH_PLATE_SCALE_START}\n    - _Reach: {DEPTH_REACH}\n"
+              f"    - _SplitUnit: {split_unit}\n    - _Thickness: {thickness}\n"
+              f"    - _ThicknessInward: {DEPTH_THICKNESS_INWARD}\n    - _TopHeight: {top_height}\n")
+    return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
+
+
 def material_texts():
     out = {}
     for name, donor in BODY_DONORS:
@@ -251,6 +300,10 @@ def material_texts():
     out[RIM_NAME] = _tone_material(RIM_NAME, "OmniCrystalBody", body, *RIM_BAND, 0, RIM_QUEUE)
     out[RIM_NAME + "Inactive"] = _tone_material(RIM_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive, *RIM_BAND, 0, RIM_QUEUE)
     out[CHARGE_MAT_NAME] = charge_material_text(body)
+    top_h, split = prism_shape(bake_tri_mesh()[0])
+    out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, DEPTH_THICKNESS, top_h, split)
+    out[DEPTH_NAME + "Inactive"] = depth_material(DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive,
+                                                  DEPTH_THICKNESS, top_h, split)
     return {f"{MAT_DIR}/{n}.mat": t for n, t in out.items()}
 
 
@@ -288,9 +341,9 @@ def material_meta(name):
 
 
 # Stable ids inside OmniCrystalTriangles.prefab.
-SHELL_GO, SHELL_TR, SHELL_MF, SHELL_MR, SHELL_FADE = (
+SHELL_GO, SHELL_TR, SHELL_MF, SHELL_MR, SHELL_FADE, SHELL_DEPTH = (
     3086241560104200011, 3086241560104200012, 3086241560104200013,
-    3086241560104200014, 3086241560104200015)
+    3086241560104200014, 3086241560104200015, 3086241560104200016)
 # Ids inside TrucatedOctahedron.prefab, for the body instance.
 OCTA_GO, OCTA_TR, OCTA_MR = 2448508127246415652, 1114034561007818392, 2073129193669181770
 
@@ -305,11 +358,10 @@ OCTA_GO, OCTA_TR, OCTA_MR = 2448508127246415652, 1114034561007818392, 2073129193
 SLOTS = [
     # (PrefabInstance id, stripped Transform id, stripped GameObject id, name)
     (302729943389656567,  812437664975045487,  2722806873126380243, "OmniCrystalBody"),
-    (693643822389642704,  492451356381860680,  2907786364588143348, "OmniShepardTriangles"),
-    (3428511433788108504, 2369276566672717888, 1039871714678528508, "OmniShepardTriangles (1)"),
-    (5888802945109814545, 6831084959271910281, 8089558117201123893, "OmniShepardTriangles (2)"),
-    # Slot 4, the stationary rim (3086241560104200021/22/23), was retired with the Breathe look:
-    # a breathing shell turns round at alpha 0.05 and has no pop for a rim to hide.
+    (693643822389642704,  492451356381860680,  2907786364588143348, DEPTH_NAME),
+    # Slots 2 and 3, the second and third breathing tone shells (3428511433788108504 and 5888802945109814545),
+    # were retired with the Depth ratchet (2026-10-12): one prism renderer draws every column. Slot 4, the
+    # stationary rim (3086241560104200021/22/23), went with the Breathe look before it.
 ]
 
 # The charge-edges overlay: a sixth child of Crystal.prefab that is deliberately NOT a crystalModels
@@ -320,9 +372,8 @@ CHARGE_GO, CHARGE_TR, CHARGE_MF, CHARGE_MR, CHARGE_ARCS, CHARGE_TINT = (
     3086241560104200034, 3086241560104200035, 3086241560104200036)
 CHARGE_CHILD = (3086241560104200041, 3086241560104200042, 3086241560104200043, "OmniCrystalChargeEdges")
 
-# Per slot: (default, inactive). Slot 0 is the body; 1..3 the breathing tone shells.
-SLOT_MATERIALS = ([(MAT_BODY, MAT_BODY_INACTIVE)]
-                  + list(zip(MAT_SHEPARD, MAT_SHEPARD_INACTIVE)))
+# Per slot: (default, inactive). Slot 0 is the body; slot 1 the depth prisms.
+SLOT_MATERIALS = [(MAT_BODY, MAT_BODY_INACTIVE), (MAT_DEPTH, MAT_DEPTH_INACTIVE)]
 
 
 # ── measurement ──────────────────────────────────────────────────────────────
@@ -429,13 +480,24 @@ def _layer(geo, name, data, index):
 
 def bake_tri_mesh():
     """The triangle FBX as Unity imports it, flattened to one vertex per polygon corner."""
-    nodes, _, _ = F.read(os.path.join(ROOT, TRI_FBX))
+    verts, tangents, indices = bake_prism_mesh(TRI_FBX, 20)
+    assert len(verts) == 360 and len(indices) == 3 * 160, (len(verts), len(indices))
+    return verts, tangents, indices
+
+
+def bake_prism_mesh(fbx, plates_expected):
+    """An FBX of disjoint triangular prisms as Unity imports it, flattened to one vertex per polygon corner,
+    each vertex carrying its plate's centre and index: (position, normal, uv, (cx, cy, cz, plate))."""
+    nodes, _, _ = F.read(os.path.join(ROOT, fbx))
     objs = [n for n in nodes if n.name == "Objects"][0]
     geo = [c for c in objs.children if c.name == "Geometry"][0]
     flat = geo.first("Vertices").props[0][1]
     pvi = geo.first("PolygonVertexIndex").props[0][1]
     normals, n_index = _layer(geo, "LayerElementNormal", "Normals", "NormalsIndex")
-    uvs, uv_index = _layer(geo, "LayerElementUV", "UV", "UVIndex")
+    if geo.first("LayerElementUV") is not None:
+        uvs, uv_index = _layer(geo, "LayerElementUV", "UV", "UVIndex")
+    else:
+        uvs, uv_index = [0.0, 0.0], None
 
     # Each plate's centre: the plates are disjoint prisms, so a plate is a connected component of
     # control points, and its centre the mean of its DISTINCT corners (in Unity's space, x negated).
@@ -458,12 +520,13 @@ def bake_tri_mesh():
     for cp in range(len(parent)):
         members[find(cp)].append(cp)
     centre = {}
-    for group in members.values():
+    # Plate index: plates in order of their first control point, so the index is stable across runs.
+    for index, group in enumerate(sorted(members.values(), key=min)):
         c = [sum(flat[3 * cp + k] for cp in group) / len(group) for k in range(3)]
         for cp in group:
-            centre[cp] = (-c[0], c[1], c[2])
-    assert len(members) == 20 and all(len(g) == 6 for g in members.values()), \
-        f"expected 20 triangular prisms of 6 corners, got {sorted(len(g) for g in members.values())}"
+            centre[cp] = (-c[0], c[1], c[2], float(index))
+    assert len(members) == plates_expected and all(len(g) == 6 for g in members.values()), \
+        f"{fbx}: expected {plates_expected} triangular prisms of 6 corners, got {sorted(len(g) for g in members.values())}"
 
     verts, indices, corner, poly = [], [], 0, []
     for raw in pvi:
@@ -477,7 +540,7 @@ def bake_tri_mesh():
             x, y, z = flat[3 * cp: 3 * cp + 3]
             n = n_index[c]
             nx, ny, nz = normals[3 * n: 3 * n + 3]
-            u = uv_index[c]
+            u = uv_index[c] if uv_index is not None else 0
             # Right-handed FBX -> left-handed Unity: negate x (positions AND normals).
             verts.append([(-x, y, z), (-nx, ny, nz), (uvs[2 * u], uvs[2 * u + 1]), centre[cp]])
         # Fan-triangulate (every polygon here is a convex tri or quad), and reverse
@@ -504,17 +567,41 @@ def bake_tri_mesh():
             if tangents[i] is None:
                 tangents[i] = (tan[0] / m, tan[1] / m, tan[2] / m, 1.0)
 
-    assert len(verts) == 360 and len(indices) == 3 * 160, (len(verts), len(indices))
     assert all(t is not None for t in tangents)
     return verts, tangents, indices
 
 
+def prism_shape(verts):
+    """(top height, plate radius) of a baked prism mesh, in mesh units: how far each prism's top face sits
+    above its centre along its column, and its mean corner distance from its centre (the face split's unit).
+    Both are the same for every plate of these meshes; fails loud if they ever are not."""
+    by_plate = defaultdict(list)
+    for p, _n, _uv, c in verts:
+        by_plate[int(c[3])].append((p, c))
+    tops, radii = [], []
+    for rows in by_plate.values():
+        c = rows[0][1][:3]
+        r = math.sqrt(sum(x * x for x in c))
+        d = [x / r for x in c]
+        tops.append(max(sum((p[k] - c[k]) * d[k] for k in range(3)) for p, _ in rows))
+        radii.append(sum(math.dist(p, c) for p, _ in rows) / len(rows))
+    for name, vals in (("top height", tops), ("plate radius", radii)):
+        if max(vals) - min(vals) > 1e-4 * max(vals):
+            raise SystemExit(f"prism {name} differs between plates ({min(vals)}..{max(vals)}); "
+                             "OmniDepthPrismShader carries ONE value per material")
+    return round(sum(tops) / len(tops), 6), round(sum(radii) / len(radii), 6)
+
+
 def tri_mesh_text():
-    verts, tangents, indices = bake_tri_mesh()
+    return prism_mesh_text(*bake_tri_mesh(), "OmniCrystalTriangles")
+
+
+def prism_mesh_text(verts, tangents, indices, name):
     vbuf = bytearray()
     for (p, n, uv, c), t in zip(verts, tangents):
-        # stride 60: Prism.asset's layout, then the plate centre in TEXCOORD2 (OmniShepardFresnelShader)
-        vbuf += struct.pack("<3f3f4f2f3f", *p, *n, *t, *uv, *c)
+        # stride 64: Prism.asset's layout, then TEXCOORD2 = (plate centre xyz, plate index) - what
+        # OmniDepthPrismShader and CrystalDepthPrisms read (OmniShepardFresnelShader reads the xyz).
+        vbuf += struct.pack("<3f3f4f2f4f", *p, *n, *t, *uv, *c)
     ibuf = struct.pack("<%dH" % len(indices), *indices)
     lo = [min(v[0][k] for v in verts) for k in range(3)]
     hi = [max(v[0][k] for v in verts) for k in range(3)]
@@ -525,13 +612,13 @@ def tri_mesh_text():
         return "{x: %s, y: %s, z: %s}" % tuple(repr(float(struct.unpack("<f", struct.pack("<f", c))[0])) for c in a)
 
     # Channel table: position, normal, tangent, colour, uv0..7, blend weights, blend indices.
-    # Channel 6 is uv2 = TEXCOORD2, the plate centre.
-    used = {0: (0, 3), 1: (12, 3), 2: (24, 4), 4: (40, 2), 6: (48, 3)}
+    # Channel 6 is uv2 = TEXCOORD2, the plate centre and index.
+    used = {0: (0, 3), 1: (12, 3), 2: (24, 4), 4: (40, 2), 6: (48, 4)}
     channels = "".join(
         "    - stream: 0\n      offset: %d\n      format: 0\n      dimension: %d\n"
         % used.get(i, (0, 0)) for i in range(14))
     donor = open(os.path.join(ROOT, "Assets/_Models/Testing/Prism.asset")).read()
-    head = donor[:donor.index("  m_SubMeshes:")].replace("m_Name: Prism", "m_Name: OmniCrystalTriangles")
+    head = donor[:donor.index("  m_SubMeshes:")].replace("m_Name: Prism", f"m_Name: {name}")
     tail = donor[donor.index("  m_CompressedMesh:"):]
     tail = re.sub(r"  m_LocalAABB:\n    m_Center: .*\n    m_Extent: .*\n",
                   f"  m_LocalAABB:\n    m_Center: {v3(ctr)}\n    m_Extent: {v3(ext)}\n", tail)
@@ -576,6 +663,7 @@ GameObject:
   - component: {{fileID: {SHELL_MF}}}
   - component: {{fileID: {SHELL_MR}}}
   - component: {{fileID: {SHELL_FADE}}}
+  - component: {{fileID: {SHELL_DEPTH}}}
   m_Layer: 0
   m_Name: OmniCrystalTriangles
   m_TagString: Untagged
@@ -629,7 +717,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {{fileID: 2100000, guid: {MAT_SHEPARD[0]}, type: 2}}
+  - {{fileID: 2100000, guid: {MAT_DEPTH}, type: 2}}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -664,6 +752,57 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fadeInRate: 0
+{depth_prisms_doc(SHELL_DEPTH, SHELL_GO, True)}"""
+
+
+def depth_prisms_doc(fid, go, cut_body_holes):
+    """The CrystalDepthPrisms component on a prism renderer (omni: cuts the body's triangle holes)."""
+    return (f"--- !u!114 &{fid}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+            f"  m_CorrespondingSourceObject: {{fileID: 0}}\n  m_PrefabInstance: {{fileID: 0}}\n"
+            f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n  m_Enabled: 1\n"
+            f"  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {DEPTH_PRISMS_GUID}, type: 3}}\n"
+            f"  m_Name: \n  m_EditorClassIdentifier: \n"
+            f"  profile: {{fileID: 11400000, guid: {DEPTH_PROFILE_GUID}, type: 2}}\n"
+            f"  cutBodyHoles: {1 if cut_body_holes else 0}\n")
+
+
+def depth_profile_text():
+    fields = "".join(f"  {k}: {v}\n" for k, v in DEPTH_PROFILE_VALUES)
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n"
+            "  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {DEPTH_PROFILE_SO_GUID}, type: 3}}\n"
+            "  m_Name: CrystalDepthPrismProfile\n  m_EditorClassIdentifier: \n" + fields)
+
+
+DEPTH_PROFILE_META = f"""fileFormatVersion: 2
+guid: {DEPTH_PROFILE_GUID}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
+def script_meta(guid):
+    return (f"fileFormatVersion: 2\nguid: {guid}\nMonoImporter:\n  externalObjects: {{}}\n"
+            "  serializedVersion: 2\n  defaultReferences: []\n  executionOrder: 0\n"
+            "  icon: {instanceID: 0}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+DEPTH_SHADER_META = f"""fileFormatVersion: 2
+guid: {DEPTH_SHADER_GUID}
+ShaderImporter:
+  externalObjects: {{}}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
 """
 
 
@@ -688,7 +827,7 @@ def charge_prefab_text():
         f"m_GameObject: {{fileID: {SHELL_GO}}}", f"m_GameObject: {{fileID: {CHARGE_GO}}}")
     renderer = _sub1(renderer, r"^  m_CastShadows: 1$", "  m_CastShadows: 0", "charge shadows")
     renderer = _sub1(renderer, r"^  m_ReceiveShadows: 1$", "  m_ReceiveShadows: 0", "charge receive")
-    renderer = _sub1(renderer, rf"^  - \{{fileID: 2100000, guid: {MAT_SHEPARD[0]}, type: 2\}}$",
+    renderer = _sub1(renderer, rf"^  - \{{fileID: 2100000, guid: {MAT_DEPTH}, type: 2\}}$",
                      f"  - {{fileID: 2100000, guid: {MAT_CHARGE}, type: 2}}", "charge material")
 
     def behaviour(fid, guid, fields):
@@ -978,7 +1117,7 @@ def crystal_children_text():
 
 
 def crystal_models_text():
-    """The Crystal component's crystalModels list - the body and the three breathing tone shells.
+    """The Crystal component's crystalModels list - the body and the depth prisms.
 
     Every slot explodes on CrystalMaterial: the spent husk animates CrystalGraph's _velocity, which
     neither Fresnel shader carries, and a tone material on a husk would play its band, not burst."""
@@ -1031,10 +1170,10 @@ def build_crystal_prefab(existing):
     head = existing[:CHILDREN_START.search(existing).start()]
     head, n = MODELS_BLOCK.subn(crystal_models_text(), head)
     children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS + [CHARGE_CHILD])
-    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){4,6}", lambda x: x.group(1) + children,
+    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){3,6}", lambda x: x.group(1) + children,
                       head, count=1, flags=re.M)
     if m != 1:
-        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (4-6 entries) not found")
+        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (3-6 entries) not found")
     if n != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: expected exactly one crystalModels block, found {n}")
     return head + crystal_children_text()
@@ -1050,11 +1189,14 @@ def main():
     args = ap.parse_args()
 
     scale, residual = measure()
-    shell_scale = round(OUTER_REACH / scale, 9)
+    shell_scale = round(1.0 / scale, 9)
     print(f"omni triangles -> triangle model: uniform scale {scale:.9f} "
           f"(max residual {residual:.3e})")
-    print(f"shell localScale: {shell_scale}  (s = 1 is {OUTER_REACH}x the crystal's triangles)")
-    print(f"tone shells (start, stop, phase), breathing over {TONE_TRIP} s: {shepard_bands()}")
+    print(f"prism localScale: {shell_scale}  (the mesh SEATED on the crystal's triangles; the top of a column "
+          f"is {DEPTH_REACH}x out)")
+    top_h, split = prism_shape(bake_tri_mesh()[0])
+    print(f"depth prisms: thickness {DEPTH_THICKNESS} inward (top face {top_h} above the plate centre), "
+          f"face split {DEPTH_FACE_SPLIT} x plate radius {split}; profile {dict(DEPTH_PROFILE_VALUES)}")
 
     want = {
         TRI_MESH_ASSET: tri_mesh_text(),
@@ -1065,6 +1207,12 @@ def main():
         CHARGE_PREFAB + ".meta": CHARGE_META,
         BODY_PREFAB: body_prefab_text(),
         BODY_PREFAB + ".meta": BODY_META,
+        DEPTH_PROFILE: depth_profile_text(),
+        DEPTH_PROFILE + ".meta": DEPTH_PROFILE_META,
+        DEPTH_SHADER + ".meta": DEPTH_SHADER_META,
+        "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs.meta": script_meta(DEPTH_PRISMS_GUID),
+        "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrismProfileSO.cs.meta": script_meta(DEPTH_PROFILE_SO_GUID),
+        "Assets/_Scripts/Utility/DepthRatchet.cs.meta": script_meta(DEPTH_RATCHET_GUID),
     }
     for path, text in material_texts().items():
         want[path] = text

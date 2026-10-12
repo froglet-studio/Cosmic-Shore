@@ -125,8 +125,8 @@ def mesh_vertices(zero_centres=False):
         r"- stream: (\d+)\n\s+offset: (\d+)\n\s+format: (\d+)\n\s+dimension: (\d+)",
         t.split("m_Channels:")[1].split("m_DataSize")[0])]
     stride = len(vd) // n
-    if not (chans[6][3] == 3 and chans[6][2] == 0):
-        raise SystemExit("OmniCrystalTriangles.asset has no float3 TEXCOORD2 (plate centre) - re-run author_omni_crystal_triangles.py")
+    if not (chans[6][3] in (3, 4) and chans[6][2] == 0):   # (centre xyz[, plate index]) since round 8
+        raise SystemExit("OmniCrystalTriangles.asset has no float TEXCOORD2 (plate centre) - re-run author_omni_crystal_triangles.py")
     out = []
     for i in range(n):
         p = struct.unpack_from("<3f", vd, i * stride + chans[0][1])
@@ -173,7 +173,9 @@ const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage(); await p.goto('file://' + process.argv[2], { waitUntil: 'load' });
-  const out = await p.evaluate((T) => { const L = window.__lab, S = L.SHIPPED, n = L.ASSETS.triMesh.p.length / 3, res = [];
+  // The Breathe look: shipped rounds 4-7, its materials still authored (OriginalMaterialSet slots 2-3) and the
+  // lab's 'breathe' style since the Depth ratchet shipped (round 8).
+  const out = await p.evaluate((T) => { const L = window.__lab, br = L.STYLES.find((x) => x.id === 'breathe'), S = br ? L.styleParams(br) : L.SHIPPED, n = L.ASSETS.triMesh.p.length / 3, res = [];
     for (let k = 0; k < S.layers; k++) { const layer = []; for (const t of T) { const f = []; for (let v = 0; v < n; v++) f.push(L.vertexAt(S, v, k, t)); layer.push(f); } res.push(layer); }
     return res; }, JSON.parse(process.argv[3]));
   console.log(JSON.stringify(out)); await b.close();

@@ -225,6 +225,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `render()` in `OmniShepardLab.html`.
 - Promoted: no
 
+### L-STU-23 — Graduating a STATEFUL look: prove it at the knob level and in a stateless mode, and make the lab's state a function of (dials, clock, camera)
+- Lab: Omni Shepard Lab, round 8 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: the pick was the Depth ratchet, whose per-prism state depends on what was drawn before. The L-STU-18 proof (old page + exported recipe vs new page, pixel-diffed) showed up to 4,924 px of difference, shrinking with time (498 px by 7.7 s): the two pages had drawn different frames before the manual clock took over, including free-running frames during load, so their ratchets held different histories. The assets were right. The proof moved to two history-free forms. (1) KNOBS: the old page's Shipped plus the recorded recipe equals the new `SHIPPED` on all 61 knobs, and dropping one recipe key is named. (2) PIXELS in the stateless sibling mode (seal by depth), which exercises everything the assets encode: 0 px on omni and Mass. The lab also now restarts its ratchet on `reset()` and when a dial it reads changes, so later rounds can pixel-compare the ratchet too. The graduation also kept the old look as a PINNED base (`BREATHE_LOOK`, read from its still-authored materials): its styles, riffs and pre-round-8 team saves moved onto it, and the old Breathe draws 0 px against the round-7 Shipped.
+- Do instead: before pixel-diffing a graduation, ask whether the look has state. If it does, prove the knobs and a stateless mode, and make the lab's state reset with the clock and with every dial it reads. When the shipped look changes, pin the previous one as a named base first (L-STU-18), then repoint every style, control and saved diff that was relative to SHIPPED.
+- Evidence: `OMNI_SHEPARD_LAB.md` "Round 8"; `depthState()`/`reset()` in the page; `Tools/Build/omni_shepard_lab_parity.cjs --new-set`.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

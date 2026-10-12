@@ -65,6 +65,49 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni + Mass crystals: triangles SEALED BY DEPTH (the Depth ratchet) (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/PALETTE.md §2.10`, `Docs/Studios/OMNI_SHEPARD_LAB.md` round 8; generators
+`author_omni_crystal_triangles.py --check` and `author_mass_crystal_look.py`): the omni's three
+breathing tone shells and the Mass crystal's four shells are replaced by ONE opaque prism renderer per
+crystal on the new `OmniDepthPrismShader`, driven by the new `CrystalDepthPrisms`
+(`CrystalDepthPrismProfile.asset`, pure math in `DepthRatchet`). Each prism rides a column over its
+own hole by its DEPTH from the camera: the far side stands open at the top of its columns, the near
+side is sealed, and in view a prism only ever moves down (it reseats at the top of its column only
+behind the crystal). Faces split at the top (0.5 plate radius), thickness grows inward (omni 8, Mass
+6.25), and the whole crystal turns 15°/s about an axis tipped 25° (the crystal ROOT is not turned).
+The omni body loses its 20 triangle plates at runtime (`RhombusSkinBaker.TryCutPlates`, a cut twin of
+the skinned body). `Crystal.prefab` now has two `crystalModels` slots (body, prisms);
+`OriginalMaterialSet.CrystalMaterial1` is `OmniDepthPrisms`.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player
+and editor configs 0 errors in project code (negative-controlled); the ratchet tests run headlessly
+against the shipped `DepthRatchet.cs` (3/3, a mutant that reseats in view fails); the shader compiles
+with DXC (both passes, vertex + fragment) and its vertex function matches the lab to 2e-5 on both
+meshes (`Tools/Build/omni_depth_prism_shader_parity.py`); the lab's Shipped style equals the recorded
+pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
+
+**Verify in editor:**
+1. Any mode with omni crystals (Skim Race, freestyle): fly round a crystal. The side facing you is
+   sealed (flush triangles, no holes); the far side's triangles stand out from the silhouette with
+   their faces parted; as the crystal turns, triangles coming toward you drop into their holes and
+   never rise while in view. No triangle pops in or out in view.
+2. The body's 30 rhombi still flip (Time wave) and the pentagons still crackle (charge edges), and
+   both turn WITH the body - nothing slides against the holes.
+3. Collect an omni crystal: the husk bursts as before; a respawned crystal appears at once.
+4. A team crystal (Skim Race track, or a Dolphin team crystal): the prisms wear the domain colour and
+   still ride their columns (slot 1 = `OmniDepthPrisms` clone).
+5. A Mass crystal (free pickup, a Gyroid / Tadpole / Mass Shark / Brittlestar heart): one solid prism
+   crystal, prisms riding by depth; blue while embedded, lime once free; collect bursts the husk.
+6. The Scarab forge and the Squirrel ring morph on an omni pickup: the body folds; the prisms fade as
+   an overlay (they carry their frozen state).
+7. Console: no `CrystalDepthPrisms` errors (they name a missing profile, an unreadable mesh, or a body
+   that could not be cut).
+8. Profile with many crystals on screen: `CrystalDepthPrisms.LateUpdate` should be a few µs per
+   visible crystal.
+
+---
+
 ### 🔴 Butterfly collects elemental crystals again — always-on crystal catcher (`cece/dazzling-ramanujan-hz5caq`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/BUTTERFLY.md §3.1a`, generator `Tools/Build/author_butterfly_dust.py --check`):

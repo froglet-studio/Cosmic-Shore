@@ -6,9 +6,12 @@ Bakes the omni crystal's SHIPPED Shepard-triangle numbers and meshes into the Om
 The lab is a READER of these assets, never their authority (/labmaker §2.1). Everything the page
 calls "shipped" comes from here:
 
-  Crystal.prefab                      which OmniShepardTriangles layers the crystal carries, in order,
-                                      and the root scale (10)
+  Crystal.prefab                      the root scale (10); the depth-prism slot (since round 8) or the
+                                      OmniShepardTriangles tone layers it carried before
+  OmniDepthPrisms.mat, MassDepthPrisms.mat   the SHIPPED look since round 8: the prisms' shape dials
+  CrystalDepthPrismProfile.asset      its depths, ratchet and free turn
   OmniShepardTriangles {0,1,2}.mat    _Start / _Stop / _Period / _Opacity / _ScaleDistance, colours
+                                      (the Breathe look, shipped rounds 4-7; read by name once retired)
   OmniShepardTrianglesInactive*.mat   the inactive (blue) palette
   OmniShepardTrianglesRim.mat         the static outer shell
   OmniCrystalBody{,Inactive}.mat      the body's colours
@@ -52,6 +55,14 @@ MASS_SHELLS = [("innerShell", "ActiveMassCrystalMaterial", "BlueMassCrystalMater
                ("easedShell", "ActiveMassCrystalMaterial 2", "BlueMassCrystalMaterial 2"),
                ("outerShell", "ActiveMassCrystalMaterial 3", "BlueMassCrystalMaterial 3")]
 SHEPARD_SHADER_GUID = "b55e562cd5045859607550ce7ba8267f"   # OmniShepardFresnelShader.shader
+DEPTH_SHADER = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "Shaders", "OmniDepthPrismShader.shader")
+DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
+MASS_DEPTH_MAT = "MassDepthPrisms"
+# The Breathe tone layers, shipped rounds 4-7 and retired from Crystal.prefab by the Depth ratchet (round 8):
+# still authored (OriginalMaterialSet's slots 2-3), so the lab keeps its Breathe styles on their real numbers.
+BREATHE_MATERIALS = [("OmniShepardTriangles 0", "OmniShepardTrianglesInactive 0"),
+                     ("OmniShepardTriangles 1", "OmniShepardTrianglesInactive 1"),
+                     ("OmniShepardTriangles 2", "OmniShepardTrianglesInactive 2")]
 BEGIN, END = "// <assets>", "// </assets>"
 
 
@@ -113,7 +124,49 @@ def crystal_layers():
         layer["inactiveBright"], layer["inactiveDark"] = inactive["bright"], inactive["dark"]
         (moving if layer["scaleDistance"] > 0.5 else rims).append(layer)
     root_scale = float(re.search(r"m_LocalScale: \{x: ([0-9.]+)", t).group(1))
+    if not moving:
+        # Since round 8 the crystal carries no tone layer: the Breathe layers are read by name.
+        for active, inactive in BREATHE_MATERIALS:
+            layer = shepard_layer(os.path.join(MATS, active + ".mat"))
+            layer["material"] = active
+            li = shepard_layer(os.path.join(MATS, inactive + ".mat"))
+            layer["inactiveBright"], layer["inactiveDark"] = li["bright"], li["dark"]
+            layer["retired"] = True
+            moving.append(layer)
     return moving, rims, root_scale
+
+
+def depth_material(name):
+    """A depth-prism material's shape dials (OmniDepthPrismShader), or None when it is not on that shader."""
+    path = os.path.join(MATS, name + ".mat")
+    if not os.path.exists(path):
+        return None
+    f, c, shader = mat_props(path)
+    if shader != guid_of(DEPTH_SHADER):
+        return None
+    return {"material": name, "reach": f["_Reach"], "plateScaleStart": f["_PlateScaleStart"],
+            "thickness": f["_Thickness"], "thicknessInward": f["_ThicknessInward"], "topHeight": f["_TopHeight"],
+            "faceSplit": f["_FaceSplit"], "splitUnit": f["_SplitUnit"], "bright": c["_BrightColor"], "dark": c["_DarkColor"]}
+
+
+def depth_look():
+    """The shipped Depth ratchet (round 8): Crystal.prefab's prism slot material, the Mass crystal's, and the
+    profile they share. None while the crystal still ships tone layers."""
+    t = read(CRYSTAL_PREFAB)
+    names = {guid_of(os.path.join(MATS, n)): n[:-4] for n in os.listdir(MATS) if n.endswith(".mat")}
+    omni = None
+    for g in re.findall(r"defaultMaterial: \{fileID: 2100000, guid: ([0-9a-f]+), type: 2\}", t):
+        omni = omni or (depth_material(names[g]) if g in names else None)
+    if omni is None:
+        return None
+    mass = depth_material(MASS_DEPTH_MAT)
+    prof = {k: float(v) for k, v in re.findall(r"^  (\w+): (-?[0-9.eE+-]+)$", read(DEPTH_PROFILE), re.M)}
+    keys = ["openDepth", "sealDepth", "profilePower", "reseatDepth", "reseatFadeSeconds",
+            "turnDegreesPerSecond", "turnTiltDegrees", "axisWobbleDegreesPerSecond"]
+    missing = [k for k in keys if k not in prof]
+    if missing:
+        raise SystemExit(f"CrystalDepthPrismProfile.asset lacks {missing}")
+    return {"omni": omni, "mass": mass, "profile": {k: prof[k] for k in keys}}
 
 
 def tri_mesh():
@@ -129,7 +182,7 @@ def tri_mesh():
     for ch in (0, 1):
         if chans[ch][0] != 0 or chans[ch][2] != 0 or chans[ch][3] != 3:
             raise SystemExit(f"OmniCrystalTriangles.asset channel {ch} is not float3 on stream 0")
-    has_centre = len(chans) > 6 and chans[6][3] == 3 and chans[6][2] == 0
+    has_centre = len(chans) > 6 and chans[6][3] in (3, 4) and chans[6][2] == 0   # (centre xyz[, plate index])
     idx = list(struct.unpack("<%dH" % (len(ib) // 2), ib))
     pos, nrm, cen = [], [], []
     for i in range(n):
@@ -260,7 +313,9 @@ def mass_crystal():
         L["inactiveBright"], L["inactiveDark"] = Li["bright"], Li["dark"]
         L["material"] = active
         L["queue"] = int(re.search(r"m_CustomRenderQueue: (-?\d+)", read(os.path.join(MATS, active + ".mat"))).group(1))
-        m = re.search(r"m_Name: " + re.escape(name) + r"\n(?:.*\n)*?--- !u!4 [^\n]*\nTransform:\n(?:.*\n)*?  m_LocalScale: \{x: ([0-9.]+)", pre)
+        # Since round 8 the shells are retired; the prism renderer kept the inner shell's transform.
+        m = (re.search(r"m_Name: " + re.escape(name) + r"\n(?:.*\n)*?--- !u!4 [^\n]*\nTransform:\n(?:.*\n)*?  m_LocalScale: \{x: ([0-9.]+)", pre)
+             or re.search(r"m_Name: " + re.escape(MASS_DEPTH_MAT) + r"\n(?:.*\n)*?--- !u!4 [^\n]*\nTransform:\n(?:.*\n)*?  m_LocalScale: \{x: ([0-9.]+)", pre))
         L["localScale"] = float(m.group(1)) if m else 1.0
         shells.append(L)
     r5 = lambda v: round(v, 5)
@@ -309,6 +364,11 @@ def build():
     if not moving:
         raise SystemExit("Crystal.prefab carries no moving Shepard layer")
     tri_scale = float(re.search(r"m_LocalScale: \{x: ([0-9.]+)", read(TRI_PREFAB)).group(1))
+    depth = depth_look()
+    if depth:
+        # The prism prefab sits SEATED (the mesh on the crystal's triangles); the lab's triScale is the shell's
+        # scale at s = 1, the top of a column: _Reach times that.
+        tri_scale *= depth["omni"]["reach"]
     _, body_c, _ = mat_props(os.path.join(MATS, "OmniCrystalBody.mat"))
     _, body_ic, _ = mat_props(os.path.join(MATS, "OmniCrystalBodyInactive.mat"))
     pos, nrm, plates, cen = tri_mesh()
@@ -340,6 +400,7 @@ def build():
         "bodyMesh": {"p": [r5(c) for p in bpos for c in p], "i": btris, "n": [round(c, 4) for c in bnrm]},
         "mass": mass_crystal(),
         "squares": space_squares(bpos),
+        "depth": depth,
     }
 
 
@@ -360,7 +421,12 @@ def splice(html, data):
 
 def summary(d):
     L = d["layers"]
-    return (f"{len(L)} moving layers " + ", ".join(f"{x['material']} {x['start']}->{x['stop']} / {x['period']}s"
+    dp = d.get("depth")
+    ships = (f"ships the Depth ratchet ({dp['omni']['material']} thickness {dp['omni']['thickness']}, "
+             f"{dp['mass']['material'] if dp['mass'] else 'no Mass'} thickness {dp['mass']['thickness'] if dp['mass'] else '-'}, "
+             f"open {dp['profile']['openDepth']} / seal {dp['profile']['sealDepth']} / reseat {dp['profile']['reseatDepth']}); "
+             if dp else "")
+    return (ships + f"{len(L)} {'retired Breathe' if L and L[0].get('retired') else 'moving'} layers " + ", ".join(f"{x['material']} {x['start']}->{x['stop']} / {x['period']}s"
                                                    + (f" breathe phase {x['phaseOffset']}" if x['breathe'] else "") for x in L)
             + f"; {len(d['rims'])} rim; triScale {d['triScale']}; root {d['rootScale']}; "
             f"{len(d['triMesh']['plates'])} plates; body {len(d['bodyMesh']['i']) // 3} tris")
@@ -375,7 +441,16 @@ def self_test():
         print(("PASS  " if cond else "FAIL  ") + name)
         ok = ok and cond
     L = d["layers"]
-    check("three moving layers read from Crystal.prefab", len(L) == 3)
+    check("three Breathe layers (Crystal.prefab's, or by name once retired)", len(L) == 3)
+    dp = d["depth"]
+    check("the crystal ships the Depth ratchet: an OmniDepthPrisms slot, the Mass prisms and the profile",
+          dp is not None and dp["mass"] is not None and dp["omni"]["material"] == "OmniDepthPrisms")
+    if dp:
+        check("the lab's shell scale at s = 1 is unchanged by the seated prism prefab (0.89219)",
+              abs(d["triScale"] - 0.89219) < 1e-4)
+        check("the shipped prisms are the lab's pick: omni thickness 8, Mass 6.25, inward, split 0.5, open -0.88, seal 1",
+              dp["omni"]["thickness"] == 8 and dp["mass"]["thickness"] == 6.25 and dp["omni"]["thicknessInward"] == 1
+              and dp["omni"]["faceSplit"] == 0.5 and dp["profile"]["openDepth"] == -0.88 and dp["profile"]["sealDepth"] == 1)
     if L[0]["breathe"]:
         check("breathing layers share one band and sit 1/N of a trip apart",
               all(abs(x["start"] - L[0]["start"]) < 1e-6 and abs(x["stop"] - L[0]["stop"]) < 1e-6

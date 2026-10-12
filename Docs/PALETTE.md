@@ -480,7 +480,7 @@ colour is barely affected.
 (convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
 hue separation.
 
-### 2.10 The omni crystal is a BODY plus three tone shells — an element's effect belongs on that element's SHAPES (2026-10-07)
+### 2.10 The omni crystal is a BODY plus its triangle prisms — an element's effect belongs on that element's SHAPES (2026-10-07; prisms sealed by depth since 2026-10-12)
 
 The omni crystal is an **exploded polyhedron**: 122 disjoint plates, one component per face of the
 solid it was blown apart from — **20 triangular prisms, 90 boxes, 12 pentagonal prisms**
@@ -500,16 +500,41 @@ had two consequences and neither was authored:
    **0.02–0.07** — a ghost, one hundredth above the graph's own 0.01 clip. Everything you could see
    of an omni crystal was the pulse.
 
-What ships is a body plus three BREATHING tone shells, authored by
-`Tools/Build/author_omni_crystal_triangles.py` (`--check`):
+What ships (since 2026-10-12) is a body plus ONE renderer of opaque triangle prisms SEALED BY DEPTH,
+authored by `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
 
-| slot | geometry | default / inactive material | band (s) |
+| slot | geometry | default / inactive material | motion |
 |---|---|---|---|
-| 0 | **the whole omni model** (`OmniCrystalBody.prefab`); its 30 rhombi flip, the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
-| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`OmniShepardFresnelShader`) | 1.0 ↔ 0.5, breathing, phase 0 |
-| 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 1.0 ↔ 0.5, breathing, phase 1/3 |
-| 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 1.0 ↔ 0.5, breathing, phase 2/3 |
-| child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | — |
+| 0 | **the whole omni model** (`OmniCrystalBody.prefab`) minus its 20 triangle plates at runtime (the holes); its 30 rhombi flip, the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | turns with the crystal |
+| 1 | the 20 triangular prisms (`OmniCrystalTriangles.asset`, SEATED at the prefab's scale) | `OmniDepthPrisms` / `…Inactive` (`OmniDepthPrismShader`, opaque) | each rides its column by depth (`CrystalDepthPrisms`) |
+| child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | turns with the crystal |
+
+**The triangles are SEALED BY DEPTH (2026-10-12, the Omni Shepard Lab's pick, round 8).** Each prism
+sits in a column over its own hole, and WHERE in the column is set by its depth from the camera, not
+by a clock: `d = plate direction · camera direction` in the crystal's own space, `seat =
+smoothstep(-0.88, 1, d)`. So the far side of the crystal stands open at the tops of its columns
+(twice the crystal's radius, half size, faces parted by half a plate radius) and the near side is
+sealed, whichever way the crystal faces - the separation reads as depth. The shipped mode is the
+RATCHET: in view a prism only ever moves DOWN; going away it holds; once it is behind `d = -0.8`
+(hidden by the body - the lab measured the cliff at about -0.75) it fades out in its hole while a new
+one fades in at the top of its column, on complementary dither pixels so the swap never shows a gap.
+That is the Shepard tone on a crystal you can turn any way: the whole crystal (body, prisms, charge
+edges - never the root, whose rotation belongs to the capture flourish) turns 15°/s about an axis
+tipped 25°. Thickness grows INWARD (8 on the omni), so a sealed prism's top face is flush with the
+body at any thickness. The Mass crystal wears the same look on its 60 prisms (one renderer,
+`MassDepthPrisms`, thickness 6.25; it has no body, so no holes). The pieces: `OmniDepthPrismShader`
+(the body's colour formula, `_Spread` and `_Opacity` dissolve, plus the column vertex stage and two
+passes - arriving and leaving prism), `CrystalDepthPrisms` (steps the ratchet per visible crystal
+against the main camera and writes `_DepthState[plate]` through a property block; undriven, the
+shader draws every prism sealed and solid), `CrystalDepthPrismProfile.asset` (depths, ratchet, turn;
+shared), `DepthRatchet` (the pure math; JS twin in the lab), and `RhombusSkinBaker.TryCutPlates` (the
+body's holes, a cut twin of the skinned body that keeps every vertex and bone, resolving back to the
+FBX through `SourceOf`). Proved offline: `Tools/Build/omni_depth_prism_shader_parity.py` (the
+shader's vertex function vs the lab, both meshes, 2e-5) and `omni_shepard_lab_parity.cjs` (the lab's
+Shipped draws the recorded pick exactly).
+
+The Breathe look below shipped from 2026-10-10 to 2026-10-12; its materials stay authored
+(`OriginalMaterialSet` slots 2-3 still name them, and the lab's Breathe styles read them).
 
 **The tone BREATHES (2026-10-10, the Omni Shepard Lab's pick).** Until then the three shells were
 contiguous falling bands (1.000 → 0.833 → 0.667 → 0.500, 3 s each) that landed on the body and
@@ -603,7 +628,8 @@ black on Jade, Ruby and Gold, which is precisely the lime body's near-black face
 design: `MazeCrystal` (one model, the omni mesh) also reads slot 0 when domain-owned, so it now wears
 the omni body in its domain colour instead of a Shepard band.
 
-**Four slots; the rim was retired with the falling look.** Slot 4 was a stationary rim (the Mass
+**Slots; the rim was retired with the falling look, the tone shells with the Breathe look.** Since
+2026-10-12 the omni has two slots (body, depth prisms); before that, four. Slot 4 was a stationary rim (the Mass
 crystal's fourth shell, `_ScaleDistance 0`, alpha 0.02–0.07 at the full radius) that hid each
 falling shell's birth. A breathing shell has no birth: it turns round at the far end at alpha 0.05,
 so the rim went (2026-10-10). `SO_MaterialSet.CrystalMaterial4` and `GetTeamCrystalMaterial` case 4
