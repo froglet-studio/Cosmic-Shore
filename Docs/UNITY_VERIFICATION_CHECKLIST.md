@@ -149,6 +149,97 @@ pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
 
 ---
 
+### 🔴 Store readiness: production iOS id, Android API 36 + ARM64, Unity IAP removed, iOS export-compliance plist (`claude/serene-edison-lfv24f`, 2026-10-08)
+
+Step 1 and the store settings of `Docs/PLATFORM_UNIFICATION.md` (§3.9). The console walkthrough is
+the shared doc *Cosmic Shore — Google Play & App Store setup guide*. No editor and no `unity` CLI in
+the authoring session, so `/verify-unity` did NOT run. Out of editor:
+
+- `unity_refcompile` compiled the branch with the IAP package gone. Its package scan now compiles only
+  what the lock lists, so a stale cache cannot mask a removed package.
+- The conditional-compilation and console-logging gates pass.
+- The `UNITY_IOS` body of the new post-processor is compiled by nothing here. The first iOS build is
+  its proof.
+
+**What landed**
+
+1. **Player Settings:**
+   - iOS `com.FrogletGames.CosmicShore` (was `.dev`).
+   - Android target API 36 (was 35), ARM64 only (was ARMv7 + ARM64).
+   - The TailGlider keystore path and alias cleared.
+2. **`ios-unsigned-ipa.yml`** rewrites the sideload `.ipa`'s `CFBundleIdentifier` to `.dev`.
+3. **Gradle templates:** namespace and NDK lines outside the EDM4U block; Unity Ads gone (two commits
+   cherry-picked).
+4. **IAP removed:** `com.unity.purchasing` uninstalled, `BillingMode.json` deleted, the Purchasing
+   service off.
+5. **Legacy Unity Analytics** (engine-level, ran before consent) off.
+6. **`IosExportCompliancePostprocess`** writes `ITSAppUsesNonExemptEncryption = NO` into every iOS
+   `Info.plist`.
+
+**Verify in editor**
+
+1. Open the project. The Package Manager resolves without `com.unity.purchasing`, and the console has
+   no compile errors. Nothing in project code or asmdefs referenced it (grep); a reference that only
+   the editor resolves would show here.
+2. Build the Android App Bundle (Release, upload keystore selected). If Unity says the SDK is older
+   than API 36, install Android SDK Platform 36 and rebuild.
+3. Inspect the bundle with `bundletool`:
+   - `dump config` shows `PAGE_ALIGNMENT_16K`.
+   - `dump manifest` shows `android:appCategory="game"`. Android 16 exempts only games from forced
+     large-screen resizing under API 36.
+   - The bundle carries no `com.android.vending.BILLING`.
+   - Note whether `POST_NOTIFICATIONS` / `AD_ID` appear.
+4. Install the bundle on a phone (internal testing track or `bundletool install-apks`):
+   - It launches.
+   - The first-run consent screen appears.
+   - A match plays.
+   - Haptics fire. Nice Vibrations' `liblofelt_sdk.so` is still 4 KB-aligned; only Play's
+     1 Feb 2027 update gate cares, not the phone.
+5. iOS build (Release):
+   - In the exported Xcode project, `Info.plist` has `ITSAppUsesNonExemptEncryption` = NO, the
+     bundle id `com.FrogletGames.CosmicShore`, and both photo-library purpose strings reading
+     "Cosmic Shore saves the paintings and screenshots…" (from `ProjectSettings/NativeShare.json`).
+   - Archive and upload to TestFlight. The build appears **without** a "Missing Compliance" flag.
+6. Path A: run `ios-unsigned-ipa.yml` once. Its log prints `com.FrogletGames.CosmicShore.dev`, and
+   Sideloadly installs it with a free Apple ID.
+7. Windows: a Release build from `FrogletTools ▸ Build` still succeeds, and the game runs unchanged.
+   Nothing here touches Standalone settings, but the package removal re-resolves every platform.
+8. **Path C (2026-10-12):** after the one-time setup in `Docs/IOS_BUILD.md` §2 Path C, run **iOS
+   TestFlight** once.
+   - The job's summary names the version and build (`0.2.0 (14.<run>)`).
+   - The build appears in App Store Connect → TestFlight within about an hour.
+   - It installs through the TestFlight app on an iPhone.
+   - The workflow has never run. Its signing script was tested on a generated Xcode project with
+     the same three targets, and its profile check against good and bad profiles. Xcode 26 on a
+     real Unity export is untested.
+
+---
+
+### 🔴 PvP is petals only: one gate for scored hits and petal theft (`claude/pvp-petals-only`, 2026-10-10) — NOT EDITOR-VERIFIED
+
+**Landed** (rule: `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md` § "PvP is petals only"): every combat-hit
+reporter admits through `CombatHitDrain.TryAdmit`, which refuses a victim warded against the hit's
+class, so a ward blocks the score exactly when it blocks the petals (missiles used to score through
+a ward). Contact weapons take their petals through the reporter (`IContactPetalTake`), so a scored
+joust / sword / dusting and its steal are one event. The Serpent's sniper strip now scores
+(Debuff class), and so does the Butterfly's wormhole toll. The Butterfly's dust is a steal instead of a 4 s debuff. Removed: Grizzly blast
+knockback on other vessels (self-launch kept; the blast now scores a MissileBlast hit and ejects petals instead), the orphaned shrink effect, the Rhino sword's danger
+dome. The joust's danger ring stays (arena danger prisms).
+
+**Not opened in Unity** (no editor in the session). Reference compile: see the PR.
+
+**Verify in editor:**
+1. Serpent stops (weave stance); a Sparrow rockets it and a Squirrel jousts it: no score, no petals lost.
+2. A Sparrow at Time 5 boosting takes a rocket: no score (was scored before).
+3. Squirrel joust on an opponent: one Strike scored and petals stolen per joust; the danger ring still spawns.
+4. Rhino sword at speed: score and steal together; no danger dome on the victim.
+5. Butterfly dust on an opponent: petals move to the Butterfly permanently; bite sound still plays.
+6. Serpent sniper through an opponent: crystals eject and a Debuff hit scores (Broadside, Bends).
+7. Grizzly bomb next to an opponent: the opponent is not shoved, a MissileBlast hit scores for the Grizzly and the opponent ejects petals; the Grizzly still self-launches.
+8. A rival threads a Butterfly's wormhole: petals spill at the entry mouth and one Debuff hit scores for the Butterfly (once in a networked match, not once per peer); a Sparrow with an All ward rides free and unscored.
+
+---
+
 ### 🔴 Butterfly collects elemental crystals again — always-on crystal catcher (`cece/dazzling-ramanujan-hz5caq`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/BUTTERFLY.md §3.1a`, generator `Tools/Build/author_butterfly_dust.py --check`):

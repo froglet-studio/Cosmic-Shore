@@ -18,19 +18,25 @@ cleanup that deleted the selected Xcode.
 |---|---|---|
 | Standalone (Windows/Mac/Linux) | `com.FrogletGames.CosmicShore` | Since 2026-09-11 (`BUILD_AND_DELIVERY.md` §6) |
 | Android | `com.FrogletGames.CosmicShore` | Was `com.FrogletGames.TailGlider` until 2026-10-02 |
-| iOS | **`com.FrogletGames.CosmicShore.dev`** | The **TEST** id. Was `com.FrogletGames.Tail-Glider` until 2026-10-02 |
-| iOS (production, not yet used) | `com.FrogletGames.CosmicShore` | Flip to this when Froglet's **paid** Apple team ships TestFlight/App Store builds |
+| iOS (Player Settings) | **`com.FrogletGames.CosmicShore`** | The **production** id, since 2026-10-08, when Froglet's paid Apple team came online for TestFlight / App Store. Was the test id `.dev` from 2026-10-02, and `com.FrogletGames.Tail-Glider` before that |
+| iOS (Path A sideload `.ipa`) | **`com.FrogletGames.CosmicShore.dev`** | The **TEST** id. `ios-unsigned-ipa.yml` rewrites the app's `CFBundleIdentifier` to it whatever Player Settings exported |
 
-### Why iOS is on a test id
+### Why the free path stays on a test id
 
 An App ID is **globally unique across every Apple team**. A free Apple ID ("Personal Team") that
 builds `com.FrogletGames.CosmicShore` registers that identifier to the personal team, and Froglet's
 paid team then gets *"the app identifier cannot be registered to your development team because it
-is not available"* until the personal registration lapses. Testing on `.dev` keeps the production
-id clean. It also lets a dev build and a store build sit side by side on one phone.
+is not available"* until the personal registration lapses. So the store id lives only on the paid
+team, and the free sideload path never sees it:
 
-To go to production: Player Settings → iOS → Bundle Identifier → `com.FrogletGames.CosmicShore`
-(it is `applicationIdentifier.iPhone` in `ProjectSettings/ProjectSettings.asset`).
+- **Register the production App ID on the paid team first** (developer.apple.com → Identifiers).
+  Once the paid team owns it, no personal team can claim it.
+- **Path A's unsigned `.ipa` is always `.dev`.** The workflow sets the app's own
+  `CFBundleIdentifier` in the built (still unsigned) bundle, so a Windows export made with the
+  production id still sideloads as `.dev`. Embedded frameworks keep their own ids. It also lets a
+  dev build and a store build sit side by side on one phone.
+- **A borrowed Mac (3b) signing with a free team must change the id to `.dev` in Xcode's
+  Signing & Capabilities** before building. Player Settings now export the production id.
 
 ### What the change costs (stated, not hidden)
 
@@ -77,8 +83,8 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
    | | Development Build | ✔ | Keeps logs; also exempts the release-only build guards (`UnityPipelineReleaseGuard`, `CreditsReleaseGuard`) |
    | | Autoconnect Profiler / Deep Profiling / Script Debugging | off | All three slow the build and the game, and a sideloaded phone has nothing to connect them to |
    | | Compression Method | LZ4 | Smaller `Data` folder, so a smaller zip to upload. Loads fast |
-   | Player → iOS → Other Settings | Bundle Identifier | `com.FrogletGames.CosmicShore.dev` | Already set in `ProjectSettings.asset` (§1) |
-   | | Signing Team ID / Automatically Sign | empty / off | Path A builds unsigned; Sideloadly signs. On a borrowed Mac (3b), pick the team in Xcode instead |
+   | Player → iOS → Other Settings | Bundle Identifier | `com.FrogletGames.CosmicShore` (leave it) | The production id is what Player Settings carry. The CI job rewrites the `.ipa` to `.dev` itself (§1) |
+   | | Signing Team ID / Automatically Sign | `9959RFD7XD` / on (leave it) | Froglet's paid team, set 2026-10-12 for Path C. Path A builds unsigned and ignores both; Sideloadly signs. On a borrowed Mac (3b), pick your own team in Xcode instead |
    | | Target SDK | **Device SDK** | Already set. A Simulator build will not install on a phone |
    | | Target minimum iOS Version | 15.0 | Already set (Unity 6.3's floor) |
    | | Architecture | ARM64 | Default |
@@ -111,7 +117,8 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
      and it is kept for 3 days.
    - **3b. Any Mac you can borrow for an hour — free, and simpler.** With the phone plugged into
      that Mac, open `Unity-iPhone.xcodeproj`. Under Signing & Capabilities, add the free Apple ID
-     as the team. Press **Run**. That skips Sideloadly and step 4. The Mac needs a macOS version
+     as the team **and change the Bundle Identifier to `com.FrogletGames.CosmicShore.dev`** (the
+     export carries the production id, which a free team must never register; §1). Press **Run**. That skips Sideloadly and step 4. The Mac needs a macOS version
      that runs Xcode 16.
    - **3c. Codemagic** — a personal account gets 500 free macOS minutes a month. That is the same
      idea as 3a, on someone else's runner, and needs its own setup.
@@ -161,8 +168,8 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
 - No TestFlight.
 - No push, Game Center or In-App Purchase capabilities. Push is already off in
   `ProjectSettings/NotificationsSettings.asset`. If Xcode or Sideloadly complains about an
-  In-App Purchase entitlement (`com.unity.purchasing` is installed), remove that capability for
-  the test build.
+  In-App Purchase entitlement, remove that capability for the test build. (`com.unity.purchasing`
+  was uninstalled on 2026-10-08, so a fresh export should not carry one.)
 
 ### Path B — Unity Build Automation (needs the paid Apple Developer Program, $99/yr)
 
@@ -173,8 +180,10 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
 1. **Certificate on Windows with OpenSSL** (bundled with Git for Windows):
    ```
    openssl genrsa -out ios.key 2048
-   openssl req -new -key ios.key -out ios.csr -subj "/emailAddress=you@froglet.studio/CN=Name/C=US"
+   MSYS_NO_PATHCONV=1 openssl req -new -key ios.key -out ios.csr -subj "/emailAddress=you@froglet.studio/CN=Name/C=US"
    ```
+   (`MSYS_NO_PATHCONV=1`: without it Git Bash rewrites the `/emailAddress=…` subject into a Windows
+   path and `openssl req` rejects it.)
    Upload `ios.csr` at developer.apple.com → Certificates. Pick **Apple Development**, or
    **Apple Distribution** for TestFlight. Download the `.cer`, then:
    ```
@@ -182,7 +191,7 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
    openssl pkcs12 -export -legacy -inkey ios.key -in cert.pem -out ios.p12
    ```
    Keep `-legacy`. OpenSSL 3's default encryption produces `.p12` files Apple/Unity tooling rejects.
-2. **App ID** `com.FrogletGames.CosmicShore.dev` (or the production id).
+2. **App ID** `com.FrogletGames.CosmicShore` for TestFlight / App Store (register it on the paid team before anyone builds it; §1). A separate `com.FrogletGames.CosmicShore.dev` App ID is only for development-signed builds that should sit beside the store app.
 3. **Provisioning profile:**
    - *Development* — register the phone's UDID under Devices first. The **Apple Devices** app on
      Windows shows the UDID when you click the serial number.
@@ -193,9 +202,121 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
    - A development build installs from the build's share link opened in Safari on the phone.
    - An App Store build can be uploaded to TestFlight by Build Automation directly.
 
-Path A's GitHub Actions job could also do Path B's job. With the paid team's `.p12` and profile
-stored as secrets, it could sign and upload to TestFlight itself, at no cost on this public
-repository. Build Automation is the default because it already builds the other platforms.
+Path C below does Path B's job on a free GitHub-hosted Mac instead.
+
+### Path C — TestFlight from GitHub Actions (paid team, no Mac) — `ios-testflight.yml`
+
+Status: **written 2026-10-12, not yet run.** Its first run is the test. Froglet's paid team is
+Team ID `9959RFD7XD`; the membership renews 16 Aug 2027. Unity still exports the Xcode project
+on Windows. The job then works on a free `macos-26` runner with Xcode 26, which Apple has
+required for uploads since 28 Apr 2026. It compiles the project, signs it with the company's
+distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
+
+**One-time setup**
+
+1. **Distribution certificate, on Windows in Git Bash.** Prefix the second command with
+   `MSYS_NO_PATHCONV=1`; without it, Git Bash rewrites the `/emailAddress=…` subject into a
+   Windows path.
+   ```
+   openssl genrsa -out cosmicshore-dist.key 2048
+   MSYS_NO_PATHCONV=1 openssl req -new -key cosmicshore-dist.key -out cosmicshore-dist.csr -subj "/emailAddress=you@froglet.studio/CN=Froglet Games/C=US"
+   ```
+   Then go to developer.apple.com → Certificates, IDs & Profiles → Certificates → **+** →
+   **Apple Distribution**. Upload the `.csr` and download `distribution.cer`. Convert it:
+   ```
+   openssl x509 -in distribution.cer -inform DER -out cosmicshore-dist.pem -outform PEM
+   openssl pkcs12 -export -legacy -inkey cosmicshore-dist.key -in cosmicshore-dist.pem -out cosmicshore-dist.p12
+   ```
+   - Set a password when asked.
+   - Keep `-legacy`: macOS `security import` rejects OpenSSL 3's default `.p12` encryption.
+   - Store the `.key`, the `.p12` and the password in the password manager; never commit them.
+   - A team may hold only a few distribution certificates, so make this one once and reuse it.
+2. **App ID and App Store profile.**
+   - Identifiers → **+** → App IDs → App → explicit `com.FrogletGames.CosmicShore`, if it isn't
+     registered yet.
+   - Profiles → **+** → Distribution: **App Store Connect** → that App ID → the certificate from
+     step 1.
+   - Name it `Cosmic Shore App Store`, then Generate and download.
+3. **App record in App Store Connect.** Go to Apps → **+** → New App. An upload with no record
+   fails.
+4. **Upload credentials, one of these two:**
+   - **App Store Connect API key (preferred).**
+     - Go to App Store Connect → Users and Access → Integrations → App Store Connect API.
+     - If it shows **Request Access**, only the Account Holder can press it, and only once.
+     - Then Team Keys → **+** → name `GitHub TestFlight`, access **App Manager**.
+     - Download the `.p8`; Apple offers it once only.
+     - The Key ID is in the key's row; the Issuer ID is above the table.
+   - **Your own Apple ID (no Account Holder needed).**
+     - At appleid.apple.com → Sign-In and Security → App-Specific Passwords, generate one.
+     - You also need the app's numeric **Apple ID** from App Store Connect → the app → App
+       Information.
+     - If your Apple ID belongs to more than one team, add the provider short name too. A failed
+       upload's log lists them.
+5. **Add the repository secrets.** Go to GitHub → Settings → Secrets and variables → Actions →
+   New repository secret; this needs admin on the repo.
+   - Base64 in PowerShell:
+     `[Convert]::ToBase64String([IO.File]::ReadAllBytes((Get-Item .\cosmicshore-dist.p12).FullName)) | Set-Clipboard`
+     (the full path matters: .NET resolves a bare file name against the process directory, not the
+     folder PowerShell has `cd`-ed into).
+   - Base64 in Git Bash: `base64 -w0 cosmicshore-dist.p12`
+
+   | Secret | Value |
+   |---|---|
+   | `IOS_RELEASE_EXPORT_URL` | Share link to the zipped Release export (see below) |
+   | `IOS_DIST_CERT_P12_BASE64` | Base64 of `cosmicshore-dist.p12` |
+   | `IOS_DIST_CERT_PASSWORD` | Its password |
+   | `IOS_APPSTORE_PROFILE_BASE64` | Base64 of the `.mobileprovision` |
+   | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` | API-key route: the two ids, and the `.p8` file's text (base64 also accepted) |
+   | `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD`, `ASC_APP_ID`, optional `ASC_ITC_PROVIDER` | Apple ID route |
+
+   With neither upload set, the job still builds, signs and checks the `.ipa`, then stops. That
+   is a cheap way to prove the certificate and profile before an API key exists.
+
+**Each build**
+
+1. **Export from Unity on Windows,** on a branch whose Player Settings carry the production id.
+   - Build Profiles → iOS: **Development Build off**, Run in Xcode as Release.
+   - Build into an empty folder.
+   - Player Settings already hold Team ID `9959RFD7XD` with Automatically Sign on. The job
+     switches the export to manual App Store signing itself (`Tools/iOS/set_manual_signing.rb`).
+     It sets the profile on the `Unity-iPhone` target only, because UnityFramework refuses one.
+   - A release build passes the release guards (credits manifest, Unity Pipeline runtime); a
+     failure there names its own fix.
+2. **Share the export.** Zip the folder and upload it to Dropbox. Replacing the previous file
+   keeps the same link, so the secret rarely changes.
+3. **Start the job.** Use Actions → **iOS TestFlight** → Run workflow, and pick the branch the export
+   came from. That is the only trigger. A push trigger used to start it whenever a branch first
+   received a request file; every agent branch's first bleeding-edge merge did that, and with the
+   secrets set each run would have uploaded a build.
+4. **Wait for App Store Connect.** About 20–30 minutes later the build reaches App Store Connect,
+   and processing takes another 5–30. In TestFlight, add it to the internal group, or turn on
+   automatic distribution for that group.
+
+**What the job checks before it uploads** (each failure names its fix):
+- The export carries `com.FrogletGames.CosmicShore`.
+- `ITSAppUsesNonExemptEncryption` is in `Info.plist`; a missing key is a warning only.
+- The `.p12` holds an *Apple Distribution* identity with its private key.
+- The profile is an App Store profile for `9959RFD7XD.com.FrogletGames.CosmicShore`, and it
+  contains that certificate.
+- The signed app is not a development build (`get-task-allow`).
+
+**Security follow-up (open, flagged 2026-10-12).** The first uploads use the Apple-ID route, which
+is **tied to one person's Apple ID**. Separately, anyone with write access to this repo could, in
+principle, write a workflow that leaks any repository secret; that holds for every secret, not just
+these. The plan:
+
+1. **Switch to a team API key.** The Account Holder presses **Request Access** once. An Admin then
+   creates a team API key (App Manager), and the job prefers it automatically.
+2. **Remove the personal route.** Delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD` and
+   `ASC_APP_ID`, and revoke the app-specific password.
+3. **Restrict the iOS secrets.** Move them into a GitHub **Environment** (`testflight`) that releases
+   them only to runs on `bleeding-edge`, with a required reviewer, and add `environment: testflight`
+   to the job.
+4. **Protect `bleeding-edge`.** Require a pull request and a review, and audit who has write access.
+
+The build number becomes `<Unity build>.<run number>` (14 → `14.52`), so every upload is unique.
+Nothing secret is printed. The signed `.ipa` is not kept as an artifact, because the repo is
+public; only the xcodebuild logs are kept, for 7 days.
 
 ### Code that compiles ONLY in an iOS player build
 
