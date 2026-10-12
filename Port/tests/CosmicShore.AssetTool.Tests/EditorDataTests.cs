@@ -354,17 +354,42 @@ namespace CosmicShore.AssetTool.Tests
                 var models = Path.Combine(root, "Assets", "Models");
                 Directory.CreateDirectory(models);
                 File.WriteAllText(models + ".meta", "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n");
-                // Donors are chosen so the majority is NOT what the base donor (the shortest meta
-                // of the newest importer version) or Orb.fbx.meta itself carries: Crystal and
-                // SpaceCrystal are isReadable 0, ChargeCrystal and Orb are 1. The previous third
-                // donor, MassCrystalExport1_8-21-25, was flipped to readable on 2026-10-08 (the
-                // crystal hull fusion reads its vertices), which made the majority 1 and this
-                // test red for every push after it.
-                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/SpaceCrystalExport1_7-17-25.fbx" })
+                // Three donors with three DIFFERENT meta lengths, so the base donor (the shortest
+                // meta of the newest importer version) is one file whatever order the directory
+                // lists them in. The earlier pair at 2784 bytes each tied, and which one won
+                // depended on the filesystem.
+                var donorMetas = new System.Collections.Generic.List<string>();
+                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/Octagonal Sphere.fbx" })
                 {
                     File.Copy(Path.Combine(Root, donor), Path.Combine(models, Path.GetFileName(donor)));
                     File.Copy(Path.Combine(Root, donor + ".meta"), Path.Combine(models, Path.GetFileName(donor) + ".meta"));
+                    donorMetas.Add(Path.Combine(models, Path.GetFileName(donor) + ".meta"));
                 }
+                // The base donor by the importer's own rule.
+                static int ImporterVersion(string t) => Regex.Match(t, @"ModelImporter:\n  serializedVersion: (\d+)") is { Success: true } m ? int.Parse(m.Groups[1].Value) : 0;
+                var texts = donorMetas.ToDictionary(m => m, m => File.ReadAllText(m).Replace("\r\n", "\n"));
+                int newest = texts.Values.Max(ImporterVersion);
+                var newestByLength = texts.Where(t => ImporterVersion(t.Value) == newest).OrderBy(t => t.Value.Length).ToList();
+                Assert.True(newestByLength.Count == 1 || newestByLength[0].Value.Length != newestByLength[1].Value.Length,
+                    "two donor metas at the newest importer version tie on length; pick donors whose base donor is unambiguous");
+                string baseDonor = newestByLength[0].Key;
+                // The settings these donors carry are gameplay data (a crystal's isReadable flips
+                // when the hull fusion starts reading its mesh), so the test sets the one it proves
+                // the majority on: the base donor readable, the other two not. Without the majority
+                // pass the new model would inherit the base donor's 1.
+                foreach (var (m, text) in texts)
+                    File.WriteAllText(m, Regex.Replace(text, @"(\n\s+isReadable: )[^\n]*", "${1}" + (m == baseDonor ? "1" : "0")));
+                // Every tallied setting's expected value, computed from the copied metas: the strict
+                // majority (a split vote is left to the importer's tie-break and not asserted here).
+                var metasNow = donorMetas.Select(m => File.ReadAllText(m)).ToList();
+                var expected = new System.Collections.Generic.Dictionary<string, string>();
+                foreach (var key in CosmicShore.AssetTool.Program.MajorityKeys)
+                {
+                    var values = metasNow.Select(t => Regex.Match(t, @"\n\s+" + key + @": ([^\n]*)")).Where(m => m.Success).Select(m => m.Groups[1].Value.TrimEnd('\r')).ToList();
+                    var top = values.GroupBy(v => v).OrderByDescending(g => g.Count()).FirstOrDefault();
+                    if (top != null && top.Count() * 2 > values.Count && Regex.IsMatch(texts[baseDonor], @"\n\s+" + key + ": ")) expected[key] = top.Key;
+                }
+                Assert.Equal("0", expected["isReadable"]);
                 var db = new AssetDatabase(root);
                 var r = JsonSerializer.SerializeToElement(CosmicShore.AssetTool.Program.ModelImport(db, Path.Combine(Root, "Assets/_Models/Orb.fbx"),
                     new System.Collections.Generic.Dictionary<string, string> { ["to"] = "Assets/Imported/Orbs", ["name"] = "NewOrb", ["prefab"] = "1" }));
@@ -376,8 +401,9 @@ namespace CosmicShore.AssetTool.Tests
                 Assert.Equal("Assets/Imported/Orbs/NewOrb.prefab", prefab);
                 var meta = File.ReadAllText(Path.Combine(root, path + ".meta"));
                 Assert.Contains("guid: " + guid, meta);
-                Assert.Contains("serializedVersion: 22200", meta);         // the newest importer version among the donors
-                Assert.Contains("isReadable: 0", meta);                    // the majority (2 of 3), not Orb's own 1 nor the base donor's
+                Assert.Contains("ModelImporter:\n  serializedVersion: " + newest, meta.Replace("\r\n", "\n"));   // the newest importer version among the donors
+                foreach (var (key, value) in expected)
+                    Assert.Matches(@"\n\s+" + Regex.Escape(key) + ": " + Regex.Escape(value) + @"\r?\n", meta);      // isReadable: 0, the majority, not the base donor's 1
                 Assert.Contains("internalIDToNameTable: []", meta);
                 Assert.Contains("clipAnimations: []", meta);
                 Assert.True(File.Exists(Path.Combine(root, "Assets/Imported.meta")) && File.Exists(Path.Combine(root, "Assets/Imported/Orbs.meta")), "new folders get metas");

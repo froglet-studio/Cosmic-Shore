@@ -20,8 +20,8 @@ namespace CosmicShore.AssetTool
     /// </summary>
     static partial class Program
     {
-        /// <summary>Settings tallied across the project's model metas; the majority value wins.</summary>
-        static readonly string[] MajorityKeys =
+        /// <summary>Settings tallied across the project's model metas; the majority value wins (the tests read the list).</summary>
+        internal static readonly string[] MajorityKeys =
         {
             "globalScale", "useFileScale", "importAnimation", "importBlendShapes", "materialImportMode", "meshCompression",
             "isReadable", "weldVertices", "importCameras", "importLights", "animationType", "normalImportMode",
