@@ -16,13 +16,15 @@ using UnityEngine.SceneManagement;
 namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
-    /// Unattended load-time sweep: records the COLD BOOT, then launches every arcade card at every
-    /// intensity through the normal launch path (<see cref="GameDataSO.SyncFromArcadeGame"/> +
-    /// <see cref="GameDataSO.ConfigurePlayerCounts"/> + <see cref="GameDataSO.InvokeGameLaunch"/>,
-    /// exactly what the arcade modal does), lets Load Time Insights record each one to its own
-    /// report, returns to the menu, and finally writes one table a human reads top-down by worst
-    /// cell (<see cref="LoadSweepTable"/>), re-written after every cell so a killed sweep still
-    /// leaves its partial table.
+    /// Unattended load-time sweep: records the COLD BOOT, then launches every card on the menu's
+    /// Arcade and Arena rosters at every intensity through the normal launch path
+    /// (<see cref="GameDataSO.SyncFromArcadeGame"/> + <see cref="GameDataSO.ConfigurePlayerCounts"/> +
+    /// <see cref="GameDataSO.InvokeGameLaunch"/>, exactly what the arcade modal does), lets Load
+    /// Time Insights record each one to its own report, returns to the menu, and finally writes one
+    /// table a human reads top-down by worst cell (<see cref="LoadSweepTable"/>), re-written after
+    /// every cell so a killed sweep still leaves its partial table. If the menu never becomes ready (no cached sign-in, an unanswered
+    /// privacy prompt, a cell that never handed the session back), it stops there and says so in
+    /// the table instead of launching from whatever scene it is in.
     ///
     /// Started by <see cref="BenchmarkBuildAutoRunner"/> from <c>-csmloadsweep</c> before the first
     /// scene loads (options: <see cref="LoadSweepOptions"/>), so the Bootstrap scene already finds
@@ -44,6 +46,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         const float PollSeconds = 0.25f;
         const float MenuSettleSeconds = 1f;
 
+        /// <summary>
+        /// The rosters the menu offers, by asset name: the Arcade grid's and the Arena grid's
+        /// (<c>ArcadeExploreView.rosterOverride</c> in Menu_Main). <c>check_gamelist_scenes.py</c>
+        /// keeps every card on them launchable, so a retired card cannot reach the plan through
+        /// them the way it did through every SO_ArcadeGame the loaded vessels happen to reference.
+        /// </summary>
+        static readonly string[] RosterNames = { "ArcadeGames", "ArenaGames" };
+
         public static LoadSweepRunner Active { get; private set; }
 
         public bool Done { get; private set; }
@@ -53,6 +63,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         GameDataSO _gameData;
         string _stamp = "";
         bool _hasBoot;
+        bool _menuReady;
+        string _stopReason = "";
         LoadSweepCell _boot = new();
         readonly List<LoadSweepCell> _cells = new();
         bool _prevArmed, _prevBootArmed, _prefsRestored;
@@ -116,22 +128,29 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // 1) The cold boot. The recorder opened it at the first script hook (LoadInsightsRuntime)
             //    and closes it at the menu's OnClientReady; all this runner does is wait for the menu.
             yield return WaitForMenuReady("cold boot");
-            var bootReport = LoadInsights.LastReport;
-            if (bootReport != null && bootReport.IsColdBoot)
+            if (!_menuReady && LoadInsights.IsBootRecording)
+                LoadInsights.AbortLoad($"sweep: the menu was not ready within {MenuReadyTimeoutSeconds:F0}s");
+            CaptureBoot();
+
+            // A launch from anywhere but a ready menu measures nothing: with no cached sign-in the
+            // build is still on the username or privacy screen with no host started.
+            if (!_menuReady)
             {
-                _hasBoot = true;
-                _boot = LoadSweepTable.CellFromReport(bootReport, 0);
-                _boot.reportPath = LoadInsights.LastReportPath;
-                Debug.Log($"[LoadSweep] Cold boot recorded: {bootReport.totalMs / 1000f:F1}s → {LoadInsights.LastReportPath}");
-            }
-            else
-            {
-                Debug.LogWarning("[LoadSweep] No cold-boot report (the recorder host was not available at the " +
-                                 "first script hook, or the menu never raised OnClientReady). The cells still run.");
+                Stop($"The menu was not ready within {MenuReadyTimeoutSeconds:F0}s of the cold boot (active scene " +
+                     $"'{SceneManager.GetActiveScene().name}'), so no cell was launched. The sweep needs a cached " +
+                     "sign-in and an answered privacy prompt: start this build once by hand, sign in, quit, then sweep.");
+                yield break;
             }
 
             // 2) The cells.
-            var plan = BuildPlan(ResolveCards());
+            var cards = ResolveCards();
+            if (cards.Count == 0)
+            {
+                Stop("No card to sweep: neither roster (" + string.Join(", ", RosterNames) +
+                     ") is loaded, or none of their cards' scenes is in this build. See the log above.");
+                yield break;
+            }
+            var plan = BuildPlan(cards);
             Debug.Log($"[LoadSweep] {plan.Count} cell(s): intensities [{string.Join(",", _options.Intensities)}], " +
                       $"players '{_options.Players}', repeats {_options.Repeats}, per-cell timeout {_options.CellTimeoutSeconds:F0}s.");
             WriteSummary();
@@ -191,8 +210,45 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (loader != null) loader.ReturnToMainMenu();
                 else Debug.LogError("[LoadSweep] SceneLoader not found; cannot return to the menu.");
                 yield return WaitForMenuReady($"after {step.card.Mode} I{step.intensity}");
+                if (!_menuReady && i + 1 < plan.Count)
+                {
+                    Stop($"The menu did not come back within {MenuReadyTimeoutSeconds:F0}s after {step.card.Mode} " +
+                         $"I{step.intensity} (active scene '{SceneManager.GetActiveScene().name}'), so the remaining " +
+                         $"{plan.Count - i - 1} cell(s) were not launched. Re-run them with -csmloadsweep-modes.");
+                    yield break;
+                }
             }
 
+            Finish();
+        }
+
+        /// <summary>
+        /// Reads the cold-boot report into the boot row. A recovered in-flight snapshot from an
+        /// earlier, killed session can also be the last report; it is not this boot.
+        /// </summary>
+        void CaptureBoot()
+        {
+            var bootReport = LoadInsights.LastReport;
+            if (bootReport != null && bootReport.IsColdBoot && !bootReport.interrupted)
+            {
+                _hasBoot = true;
+                _boot = LoadSweepTable.CellFromReport(bootReport, 0);
+                _boot.reportPath = LoadInsights.LastReportPath;
+                Debug.Log($"[LoadSweep] Cold boot recorded: {bootReport.totalMs / 1000f:F1}s ({bootReport.completionReason}) → {LoadInsights.LastReportPath}");
+            }
+            else
+            {
+                Debug.LogWarning("[LoadSweep] No cold-boot report (the recorder host was not available at the " +
+                                 "first script hook, or the menu never raised OnClientReady).");
+            }
+        }
+
+        /// <summary>Ends the sweep early: the reason heads the table, which is written before the build quits.</summary>
+        void Stop(string reason)
+        {
+            _stopReason = reason;
+            Debug.LogWarning($"[LoadSweep] Stopped early: {reason}");
+            WriteSummary();
             Finish();
         }
 
@@ -207,20 +263,56 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// The launchable roster: the Arcade singleton's list (the same cards the menu offers,
-        /// arcade and arena alike). Every loaded card is the fallback when no roster is up.
+        /// The launchable roster: every card on the menu's Arcade and Arena rosters
+        /// (<see cref="RosterNames"/>, read from the loaded SO_GameList assets once Menu_Main is
+        /// up), minus any card whose scene this build cannot load by name. There is deliberately no
+        /// fallback to "every loaded SO_ArcadeGame": the vessels' Games and TrainingGames lists
+        /// load retired cards whose scenes left the build, and each one would sit out the full
+        /// cell timeout as a phantom FAIL row.
         /// </summary>
         static List<SO_ArcadeGame> ResolveCards()
         {
-            var cards = new List<SO_ArcadeGame>();
-            var roster = Arcade.Instance != null ? Arcade.Instance.ArcadeGames : null;
-            if (roster != null && roster.Games != null)
-                foreach (var g in roster.Games)
-                    if (g != null && !cards.Contains(g)) cards.Add(g);
+            var rosters = new List<SO_GameList>();
+            var loaded = Resources.FindObjectsOfTypeAll<SO_GameList>();
+            foreach (var rosterName in RosterNames)
+            {
+                SO_GameList found = null;
+                foreach (var list in loaded)
+                    if (list != null && list.name == rosterName) { found = list; break; }
+                if (found != null) rosters.Add(found);
+                else Debug.LogError($"[LoadSweep] Roster '{rosterName}' is not loaded, so none of its cards is swept. " +
+                                    "Menu_Main's arcade grids reference it by ArcadeExploreView.rosterOverride; was it renamed?");
+            }
 
-            if (cards.Count == 0)
-                foreach (var g in Resources.FindObjectsOfTypeAll<SO_ArcadeGame>())
-                    if (g != null && !string.IsNullOrEmpty(g.SceneName) && !cards.Contains(g)) cards.Add(g);
+            var skipped = new List<SO_ArcadeGame>();
+            var cards = CardsFromRosters(rosters, Application.CanStreamedLevelBeLoaded, skipped);
+            foreach (var card in skipped)
+                Debug.LogWarning($"[LoadSweep] Skipped '{card.name}' ({card.Mode}): its scene '{card.SceneName}' " +
+                                 "cannot be loaded in this build.");
+            Debug.Log($"[LoadSweep] Roster: {cards.Count} card(s) from {rosters.Count} of {RosterNames.Length} " +
+                      $"roster(s) ({string.Join(", ", RosterNames)}); {skipped.Count} skipped, scene not in the build.");
+            return cards;
+        }
+
+        /// <summary>
+        /// The rosters' cards in roster order, each once, keeping only those whose scene
+        /// <paramref name="canLoadScene"/> accepts; the others go to <paramref name="skipped"/>.
+        /// Null rosters, null lists and null entries are ignored. Internal for the edit-mode tests.
+        /// </summary>
+        internal static List<SO_ArcadeGame> CardsFromRosters(IEnumerable<SO_GameList> rosters,
+            Func<string, bool> canLoadScene, List<SO_ArcadeGame> skipped)
+        {
+            var cards = new List<SO_ArcadeGame>();
+            foreach (var roster in rosters)
+            {
+                if (roster == null || roster.Games == null) continue;
+                foreach (var card in roster.Games)
+                {
+                    if (card == null || cards.Contains(card) || skipped.Contains(card)) continue;
+                    if (string.IsNullOrEmpty(card.SceneName) || !canLoadScene(card.SceneName)) skipped.Add(card);
+                    else cards.Add(card);
+                }
+            }
             return cards;
         }
 
@@ -284,19 +376,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ── Waits ───────────────────────────────────────
 
+        /// <summary>Waits for Menu_Main with the menu vessel spawned; sets <see cref="_menuReady"/>.</summary>
         IEnumerator WaitForMenuReady(string what)
         {
+            _menuReady = false;
             float deadline = Time.unscaledTime + MenuReadyTimeoutSeconds;
-            while (Time.unscaledTime < deadline && SceneManager.GetActiveScene().name != MenuSceneName)
-                yield return new WaitForSecondsRealtime(PollSeconds);
-            while (Time.unscaledTime < deadline && !(_gameData.LocalPlayer != null && _gameData.LocalPlayer.Vessel != null))
+            while (Time.unscaledTime < deadline && !MenuIsReady())
                 yield return new WaitForSecondsRealtime(PollSeconds);
 
-            if (Time.unscaledTime >= deadline)
-                Debug.LogWarning($"[LoadSweep] The menu was not ready within {MenuReadyTimeoutSeconds:F0}s ({what}); continuing anyway.");
-            else
-                yield return new WaitForSecondsRealtime(MenuSettleSeconds); // the menu's own OnClientReady listeners settle
+            if (!MenuIsReady())
+            {
+                Debug.LogWarning($"[LoadSweep] The menu was not ready within {MenuReadyTimeoutSeconds:F0}s ({what}).");
+                yield break;
+            }
+            _menuReady = true;
+            yield return new WaitForSecondsRealtime(MenuSettleSeconds); // the menu's own OnClientReady listeners settle
         }
+
+        bool MenuIsReady() =>
+            SceneManager.GetActiveScene().name == MenuSceneName &&
+            _gameData.LocalPlayer != null && _gameData.LocalPlayer.Vessel != null;
 
         static IEnumerator WaitForScene(string sceneName, float timeoutSeconds)
         {
@@ -319,11 +418,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     gitCommitHash = any?.gitCommitHash ?? "",
                     platform = Application.platform.ToString(),
                     origin = Application.isEditor ? "Editor" : Debug.isDebugBuild ? "DevBuild" : "Release",
-                    coldBootTargetSeconds = ResolveConfig()?.ColdBootToMenuTargetSeconds ?? LoadTimeTargets.ColdBootToMenuSeconds,
-                    menuToPlayableTargetSeconds = ResolveConfig()?.MenuToPlayableTargetSeconds ?? LoadTimeTargets.MenuToPlayableSeconds,
+                    coldBootTargetSeconds = LoadTimeTargets.ColdBootToMenuSeconds,
+                    menuToPlayableTargetSeconds = LoadTimeTargets.MenuToPlayableSeconds,
                     playersPolicy = _options.Players,
                     notes = "Editor numbers are inflated 2-3x versus a development build; only same-source rows compare. " +
                             "Burst compilation must be ON for any row to count (Docs/PERFORMANCE_OPTIMIZATION.md §0).",
+                    stopReason = _stopReason,
                     hasBoot = _hasBoot,
                     boot = _boot,
                     cells = new List<LoadSweepCell>(_cells)
@@ -341,8 +441,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Debug.LogError($"[LoadSweep] Could not write the sweep table: {e.Message}");
             }
         }
-
-        static BenchmarkConfigSO ResolveConfig() => Resources.Load<BenchmarkConfigSO>("BenchmarkConfig");
 
         void Finish()
         {

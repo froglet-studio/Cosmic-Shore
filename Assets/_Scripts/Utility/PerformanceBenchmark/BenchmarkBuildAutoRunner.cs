@@ -14,9 +14,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// compile guard AND the launch argument.
     ///
     /// The same hook also starts the unattended LOAD-TIME SWEEP: launched with
-    /// <c>-csmloadsweep</c> the build records its own cold boot, then launches every arcade card at
-    /// every intensity through the normal launch path, records each load with Load Time Insights,
-    /// and writes one report per cell plus a worst-cell-first table
+    /// <c>-csmloadsweep</c> the build records its own cold boot, then launches every card on the
+    /// menu's Arcade and Arena rosters at every intensity through the normal launch path, records
+    /// each load with Load Time Insights, and writes one report per cell plus a worst-cell-first table
     /// (<see cref="LoadSweepRunner"/>, options in <see cref="LoadSweepOptions"/>). The two
     /// arguments are exclusive: a sweep owns the whole session.
     /// </summary>

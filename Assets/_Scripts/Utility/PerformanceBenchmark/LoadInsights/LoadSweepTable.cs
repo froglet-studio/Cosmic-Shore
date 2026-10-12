@@ -8,8 +8,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// The PUBLISHED load-time targets. <c>Docs/PERFORMANCE_OPTIMIZATION.md</c> §0.6 is the
-    /// publication and carries the reasoning; these constants are its machine-readable twin, and
-    /// <c>LoadSweepTableTests</c> asserts the two agree so neither can drift alone. Two numbers
+    /// publication and carries the reasoning; these constants are its machine-readable twin and the
+    /// only copy in code (the sweep's verdicts read them; no config asset overrides a published
+    /// number), and <c>LoadSweepTableTests</c> asserts the two agree so neither can drift alone. Two numbers
     /// because they are two problems with two owners: the boot is the app shell (bootstrap, DI,
     /// auth, Relay host, Menu_Main activation) and is broadly constant across modes; the launch is
     /// the arena build and is where the per-mode, per-intensity spread lives.
@@ -68,6 +69,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float menuToPlayableTargetSeconds = LoadTimeTargets.MenuToPlayableSeconds;
         public string playersPolicy = "";
         public string notes = "";
+        /// <summary>Why the sweep ended before its plan did (empty when it ran to the end).</summary>
+        public string stopReason = "";
         public bool hasBoot;
         public LoadSweepCell boot = new();
         public List<LoadSweepCell> cells = new();
@@ -268,21 +271,27 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                           "(Docs/PERFORMANCE_OPTIMIZATION.md §0.6)  ");
             sb.AppendLine($"Players per cell: {s.playersPolicy}  ");
             if (!string.IsNullOrEmpty(s.notes)) sb.AppendLine($"Notes: {s.notes}  ");
+            if (!string.IsNullOrEmpty(s.stopReason))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"**Stopped early:** {s.stopReason}");
+            }
             sb.AppendLine();
 
             sb.AppendLine("## Cold boot → main menu");
             sb.AppendLine();
-            sb.AppendLine("| Verdict | Total | Top cost | Unattributed | Worst frame | Report |");
-            sb.AppendLine("|---|---|---|---|---|---|");
+            sb.AppendLine("| Verdict | Total | Top cost | Unattributed | Worst frame | Report | Note |");
+            sb.AppendLine("|---|---|---|---|---|---|---|");
             if (s.hasBoot && s.boot != null && s.boot.recorded)
             {
                 var b = s.boot;
+                string bootNote = b.completed ? b.note ?? "" : b.completionReason;
                 sb.AppendLine($"| {Verdict(b, s.coldBootTargetSeconds)} | {Sec(b.totalMs)} | {Cost(b)} | " +
-                              $"{Sec(b.unattributedMs)} | {Ms(b.worstFrameMs)} | {b.reportPath} |");
+                              $"{Sec(b.unattributedMs)} | {Ms(b.worstFrameMs)} | {b.reportPath} | {Escape(bootNote)} |");
             }
             else
             {
-                sb.AppendLine("| NO DATA | — | — | — | — | the boot was not recorded (see notes) |");
+                sb.AppendLine("| NO DATA | — | — | — | — | — | the boot was not recorded (see the log) |");
             }
             sb.AppendLine();
 

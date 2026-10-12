@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -8,7 +9,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
 {
     /// <summary>
     /// Holds the load-time sweep's contract: the published target and the code's copy of it agree,
-    /// the options parse, the table ranks the worst cell first, and the verdicts read the target.
+    /// the options parse, the plan is the menu's rosters minus unbuildable scenes, the table ranks
+    /// the worst cell first, the verdicts read the target, and an early stop says why.
     /// </summary>
     [TestFixture]
     public class LoadSweepTableTests
@@ -37,21 +39,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
                 "The published cold-boot target and LoadTimeTargets.ColdBootToMenuSeconds disagree.");
             Assert.That(play, Is.EqualTo(LoadTimeTargets.MenuToPlayableSeconds).Within(0.001f),
                 "The published menu→playable target and LoadTimeTargets.MenuToPlayableSeconds disagree.");
-        }
-
-        [Test]
-        public void ConfigDefaults_MirrorThePublishedTargets()
-        {
-            var config = ScriptableObject.CreateInstance<BenchmarkConfigSO>();
-            try
-            {
-                Assert.That(config.ColdBootToMenuTargetSeconds, Is.EqualTo(LoadTimeTargets.ColdBootToMenuSeconds));
-                Assert.That(config.MenuToPlayableTargetSeconds, Is.EqualTo(LoadTimeTargets.MenuToPlayableSeconds));
-            }
-            finally
-            {
-                Object.DestroyImmediate(config);
-            }
         }
 
         [Test]
@@ -196,6 +183,79 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.That(md, Does.Contain("**1 pass · 1 fail · 1 no data**"));
             Assert.That(md, Does.Contain("| PASS | 7.2 s |"), "the boot row reads its own target");
             Assert.That(md, Does.Contain("+25.0 s"), "a failing row says how far over it is");
+        }
+
+        [Test]
+        public void BuildMarkdown_AnEarlyStopAndAnAbortedBootSayWhy()
+        {
+            var boot = Cell("Cold boot", 0, 240_500f);
+            boot.completed = false;
+            boot.completionReason = "Aborted: sweep: the menu was not ready within 240s";
+            var summary = new LoadSweepSummary
+            {
+                timestamp = "20261012_120000",
+                hasBoot = true,
+                boot = boot,
+                stopReason = "The menu was not ready within 240s of the cold boot (active scene 'Authentication'), so no cell was launched."
+            };
+
+            string md = LoadSweepTable.BuildMarkdown(summary);
+            Assert.That(md, Does.Contain("**Stopped early:** The menu was not ready within 240s of the cold boot"));
+            Assert.That(md, Does.Contain("| FAIL | 240.5 s |"), "an aborted boot is a FAIL with its time, not NO DATA");
+            Assert.That(md, Does.Contain("Aborted: sweep: the menu was not ready within 240s |"),
+                "the boot row carries the abort reason");
+            Assert.That(md, Does.Contain("0 cells:"));
+
+            summary.stopReason = "";
+            Assert.That(LoadSweepTable.BuildMarkdown(summary), Does.Not.Contain("Stopped early"),
+                "a sweep that ran to the end has no stop line");
+        }
+
+        [Test]
+        public void CardsFromRosters_ReadsBothRostersOnce_AndSkipsScenesNotInTheBuild()
+        {
+            var created = new List<Object>();
+            T Make<T>(string name) where T : ScriptableObject
+            {
+                var so = ScriptableObject.CreateInstance<T>();
+                so.name = name;
+                created.Add(so);
+                return so;
+            }
+            SO_ArcadeGame Card(string name, string scene)
+            {
+                var card = Make<SO_ArcadeGame>(name);
+                card.SceneName = scene;
+                return card;
+            }
+
+            try
+            {
+                var skim = Card("SkimRace", "MinigameSkimRace");
+                var joust = Card("Joust", "MinigameJoust_Gameplay");
+                var retired = Card("BlockBandit", "MinigameBlockBandit");
+                var blank = Card("NoScene", "");
+                var arenaCard = Card("Arena", "MinigameArena");
+                var arcade = Make<SO_GameList>("ArcadeGames");
+                arcade.Games = new List<SO_ArcadeGame> { skim, null, retired, joust, skim, blank };
+                var arena = Make<SO_GameList>("ArenaGames");
+                arena.Games = new List<SO_ArcadeGame> { arenaCard, joust };
+                var empty = Make<SO_GameList>("Empty");
+                empty.Games = null;
+
+                var inBuild = new HashSet<string> { "MinigameSkimRace", "MinigameJoust_Gameplay", "MinigameArena" };
+                var skipped = new List<SO_ArcadeGame>();
+                var cards = LoadSweepRunner.CardsFromRosters(new[] { arcade, null, empty, arena }, inBuild.Contains, skipped);
+
+                Assert.That(cards, Is.EqualTo(new[] { skim, joust, arenaCard }),
+                    "both rosters, roster order, each card once, null rosters and entries ignored");
+                Assert.That(skipped, Is.EqualTo(new[] { retired, blank }),
+                    "a card whose scene the build cannot load is skipped, not planned");
+            }
+            finally
+            {
+                foreach (var so in created) Object.DestroyImmediate(so);
+            }
         }
 
         static LoadSweepCell Cell(string mode, int intensity, float totalMs) => new()

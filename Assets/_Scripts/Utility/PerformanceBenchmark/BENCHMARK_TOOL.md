@@ -315,12 +315,22 @@ CosmicShore.exe -csmloadsweep -csmloadsweep-modes Rampage,Scurry -csmloadsweep-i
 ```
 
 What it does (`LoadSweepRunner`): arms the recorder before the first scene so the **cold boot** is
-recorded; waits for the menu; then for every card on the Arcade roster (`Arcade.ArcadeGames`, the
-27 arcade + 4 arena cards the menu offers) at every authored intensity it configures `GameDataSO`
-exactly as the launch modal does (`SyncFromArcadeGame` + `ConfigurePlayerCounts`, 1 human + AI
-backfill), raises the normal launch, waits for the Load Time Insights report (arena complete),
-returns to the menu through `SceneLoader.ReturnToMainMenu`, and moves on. It is a driver, not a
-mode: nothing about how a load runs is different under it.
+recorded; waits for the menu; then for every card on the menu's two rosters, `ArcadeGames.asset`
+(27 cards) and `ArenaGames.asset` (4), read by asset name once Menu_Main is up, at every authored
+intensity it configures `GameDataSO` exactly as the launch modal does (`SyncFromArcadeGame` +
+`ConfigurePlayerCounts`, 1 human + AI backfill), raises the normal launch, waits for the Load Time
+Insights report (arena complete), returns to the menu through `SceneLoader.ReturnToMainMenu`, and
+moves on. A card whose scene `Application.CanStreamedLevelBeLoaded` rejects is skipped with a
+warning naming it, and the log's `[LoadSweep] Roster: N card(s) …` line gives the count it will
+sweep (31 with today's rosters). It is a driver, not a mode: nothing about how a load runs is
+different under it.
+
+**It stops rather than launch from the wrong place.** If the menu is not ready (Menu_Main active,
+menu vessel spawned) within 240 s of the cold boot, or within 240 s of returning from a cell, the
+sweep launches nothing more: the table opens with a **Stopped early** line saying why, an unfinished
+boot is aborted so its row reads FAIL with the reason, and the build quits as usual. The common
+cause is a machine with no cached sign-in, where the build waits on the username or privacy screen:
+start the build once by hand, sign in, quit, then sweep.
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -337,14 +347,19 @@ Both `-name value` and `-name=value` shapes parse. Output, under `{persistentDat
 one `load_<scene>_*.json` + `.txt` per cell (the full attribution, stalls and hints),
 `load_boot_*` for the boot, and **`sweep_<stamp>.md`** (+ `.json`): one row per cell, **worst
 cell first** (no data, then aborted, then longest), each with a **PASS / FAIL / NO DATA** verdict
-against the published targets (`LoadTimeTargets`, mirrored on `BenchmarkConfigSO`), how far over
+against the published targets (`LoadTimeTargets`, the only copy in code; no config asset overrides
+them), how far over
 target it is, its top cost, unattributed share, worst frame, prisms laid and errors. The table is
 re-written after every cell, so a sweep killed at cell 40 still leaves rows 1–40.
 
 Two things to know before reading a row: **Burst compilation must be ON** or every number is
 managed IL (`Docs/PERFORMANCE_OPTIMIZATION.md` §0), and the arm flags persist in PlayerPrefs, so
-the runner snapshots them at start and restores them when it finishes or the app quits; a sweep
-that is force-killed mid-way leaves the build armed until the next sweep or a manual disarm.
+the runner snapshots them at start and restores them when it finishes, stops early, or the app
+quits normally. A sweep that is **force-killed** cannot restore them: the build stays armed, and
+records its boot and every game on every later launch, until the two PlayerPrefs keys
+`CSM.LoadInsights.Armed` and `CSM.LoadInsights.BootArmed` are deleted (Windows:
+`HKEY_CURRENT_USER\Software\Froglet Games\Cosmic Shore`). Running another sweep does **not** clear
+them: it snapshots the leaked armed state as what it found and puts that back.
 
 ---
 

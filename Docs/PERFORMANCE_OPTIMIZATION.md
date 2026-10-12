@@ -234,9 +234,9 @@ LOAD_TIME_TARGET cold_boot_to_menu_s=10 menu_to_playable_s=20
 ```
 
 The line above is machine-readable on purpose: `LoadSweepTableTests.PublishedTargets_MatchTheCodeConstants`
-parses it and asserts it equals `LoadTimeTargets` (`LoadSweepTable.cs`), which `BenchmarkConfigSO`'s
-defaults and the sweep's PASS/FAIL column read. Change the number here and the code's copy in the
-same commit, or the test says so.
+parses it and asserts it equals `LoadTimeTargets` (`LoadSweepTable.cs`), which the sweep's PASS/FAIL
+column reads. That is the only copy in code: no config asset overrides a published number. Change the
+number here and the code's copy in the same commit, or the test says so.
 
 ### The two targets
 
@@ -403,16 +403,21 @@ CosmicShore.exe -csmloadsweep -csmloadsweep-modes Rampage,Scurry -csmloadsweep-i
 
 `BenchmarkBuildAutoRunner` sees the flag before the first scene loads, arms the recorder (boot
 included) and starts `LoadSweepRunner`, which records the cold boot, then for every card on the
-Arcade roster (27 arcade + 4 arena cards, Maelstrom excluded unless `-csmloadsweep-include-maelstrom`)
-and every intensity it configures `GameDataSO` exactly as the launch modal does
+menu's two rosters (`ArcadeGames.asset`, 27 cards, and `ArenaGames.asset`, 4, read by asset name once
+Menu_Main is up; Maelstrom excluded unless `-csmloadsweep-include-maelstrom`; a card whose scene the
+build cannot load is skipped and logged) and every intensity it configures `GameDataSO` exactly as
+the launch modal does
 (`SyncFromArcadeGame` + `ConfigurePlayerCounts`), raises the normal launch, waits for the Load Time
 Insights report, returns to the menu, and moves on. Output, under
 `{persistentDataPath}/Benchmarks/LoadInsights/`: one `load_<scene>_*.json` + `.txt` per cell,
 `load_boot_*` for the boot, and **`sweep_<stamp>.md`** (+ `.json`), the table a human reads
 top-down by worst cell, re-written after every cell so a killed run still leaves its partial table.
 Every row carries a PASS / FAIL / NO DATA verdict against the targets above, how far over it is,
-its top cost, its unattributed share, its worst frame and its prism count. Options and the arm-flag
-restore are documented in `BENCHMARK_TOOL.md` § Load-time sweep. The in-editor equivalent is the
+its top cost, its unattributed share, its worst frame and its prism count. If the menu is not ready
+within 240 s (after the boot or after a cell), the sweep launches nothing more and the table opens
+with a **Stopped early** line saying why; the run needs a cached sign-in on the machine. Options and
+the arm-flag restore (and why a force-killed sweep leaves the build armed) are documented in
+`BENCHMARK_TOOL.md` § Load-time sweep. The in-editor equivalent is the
 tab's arm button plus the new boot toggle, one launch at a time.
 
 **Verify Burst is ON before trusting a single row** (§0). A sweep taken with it off is a sweep of
