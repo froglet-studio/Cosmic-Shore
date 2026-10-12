@@ -211,6 +211,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `OMNI_SHEPARD_LAB.md` "Round 6" Found 1; the `fill-spin` style (`spiral: 0`).
 - Promoted: no
 
+### L-STU-21 — When the ask is a relationship ("X follows Y, from any angle"), score the relationship itself, with a control that breaks it
+- Lab: Omni Shepard Lab, round 7 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: the designer wanted the far side of the crystal open at the top of its columns and the near side sealed, at any orientation. The existing columns (births seen, arrivals) could not say whether a style did that. A new column, the correlation between how far behind a prism is and how far up its column it sits, did: 0.93 for the stateless "sealed by depth", 0.71 for the one-way ratchet, 0.01 for a control with the depth rule switched off. A second new column, the share of visible travel that goes outward, showed the cost of the stateless rule (50% of visible motion rises, because a rule with no direction lifts prisms going away) and that the ratchet removes it (0%). A sweep of the ratchet's reseat depth found a cliff at about −0.75: 98.8% of reseats seen at −0.7, 0% at −0.8.
+- Do instead: translate the designer's sentence into one number that would be high when the sentence is true, add a control that makes the sentence false, and check that the number collapses. Then add the number for the side effect you expect, before tuning by eye. For an "any orientation" claim, average over many cameras and prefer a rule with no clock in it, which holds by construction.
+- Evidence: `OMNI_SHEPARD_LAB.md` "Round 7"; `depthMetricsOf()` in the page.
+- Promoted: no
+
+### L-STU-22 — A preserved WebGL buffer plus scissored compare cells leaves the gutters stale
+- Lab: Omni Shepard Lab, round 7 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: the page creates its context with `preserveDrawingBuffer: true` (for screenshots), and each compare cell clears only inside its own scissor rectangle. The 2-px gutters between cells therefore kept whatever the last full-canvas frame drew, which showed as stray green lines across the grid. It shipped unnoticed for several rounds, because it appeared only after a single view had been drawn first.
+- Do instead: clear the whole canvas once before drawing a cell grid, or don't preserve the buffer. Look at a compare-grid screenshot at full size before publishing.
+- Evidence: `render()` in `OmniShepardLab.html`.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

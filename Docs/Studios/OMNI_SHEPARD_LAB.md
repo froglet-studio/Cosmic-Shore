@@ -39,6 +39,87 @@ opaque body hides it.
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
 
+## Round 7 (2026-10-12): sealed by depth
+
+The ask: something like "Hole fill, spin-hidden", but tied to the way the prisms separate with depth.
+**The back side should be at the top of its columns and the front should be sealed, and that must
+hold at any orientation as the crystal is spun around.**
+
+"Hole fill, spin-hidden" only gets that relation from the camera-locked spin, which runs on a clock.
+Turn the crystal any other way and the relation breaks.
+
+**The mechanism (new Depth tab)**
+- A prism's place in its column is a function of its **depth** from the camera, not of time:
+  d = (plate direction) · (camera direction), in object space. d = +1 faces you, 0 is on the
+  silhouette, −1 is straight behind.
+- seat = smoothstep(*Top of column at*, *Sealed from*, d)^*Profile curve*. Seat 0 is the top of the
+  column; seat 1 is sealed in the hole.
+- It is built on Hole fill: the body without its 20 triangle plates, with opaque prisms.
+- There is no clock in the rule, so it holds from any side by construction. Spin the crystal, tumble
+  it, or orbit the camera: the side you look at is sealed and the far side stands open.
+- **Free turn** (Depth tab: rate, axis tilt, axis wobble) turns the whole crystal about a fixed axis,
+  **not** camera-locked, so the prisms move.
+
+Three modes:
+
+| Mode | Rule | Ships as |
+|---|---|---|
+| **Seal by depth** | u = seat(d), always | shader only: the camera position is all it needs |
+| **Ratchet** | Coming toward you: ride seat(d) down. Going away: stay sealed. Once behind *Reseat* depth: the sealed prism fades out in its hole while a new one fades in at the top of its column | shader + a small per-plate state component |
+| **Depth columns** | Every column runs the hole-fill swap forever, with column length 1 − seat(d): tall behind, zero in front | shader only |
+
+In Ratchet and Depth columns the arriving and leaving prisms dither on **complementary pixels**
+(noise vs 1 − noise). A swap in place therefore shows no gap and no doubling, so the front's
+zero-length columns swap unseen.
+
+**Scorecard** (new columns, camera-averaged over 26 directions, 30 s each, fresh state per camera)
+- **Depth link r:** the correlation between how far behind a prism is (−d) and how far up its column
+  it is (1 − u). It measures the ask directly.
+- **Rises seen %:** the share of visible travel that goes outward, which is the anti-Shepard motion.
+
+| Style | Depth link r | Rises seen | Births seen | Seals in view /s | Holes open |
+|---|---|---|---|---|---|
+| **Sealed by depth** | **0.93** | 49.9% | 0% (no births) | 0.63 | 12.3 |
+| Sealed by depth, gradient | 0.98 | 49.9% | 0% | 0.49 | 16.6 |
+| **Depth ratchet** (reseat −0.8) | 0.71 | **0%** | **0%** | 0.43 | 7.5 |
+| Depth ratchet, tumbling | 0.67 | 0% | 0% | 0.60 | 6.6 |
+| Depth columns | 0.55 | 15.9% | 43.5% | 0.52 | 7.7 |
+| Depth columns, depth off (control) | 0.01 | 2% | 85.8% | 1.16 | 12.7 |
+| Hole fill, spin-hidden (round 6, for reference) | — | — | 0% | 2.0 | 12.8 |
+
+- **Sealed by depth is exactly the ask:** r = 0.93. Because the rule has no direction, prisms coming
+  toward you drop into their holes and prisms going away lift out. Half of the visible motion is
+  outward.
+- **The Ratchet keeps the depth relation (r = 0.71) and makes every visible move downward:** 0%
+  rises and 0% births seen. That is the Shepard illusion on a crystal you can spin any way.
+  Columns that never pass far enough behind stay sealed until they do; the tumbling variant
+  brings every face round.
+- *Sealed by depth, still* scores 0 motion because the scorecard's cameras do not move. On the page
+  the camera orbit (or a drag) moves it.
+
+**Found**
+1. **The Ratchet's reseat depth has a cliff at about −0.75.** At −0.7, 98.8% of reseats are seen;
+   at −0.8, 0%. The top of a column at the back stays outside the body's shadow until it is almost
+   straight behind (about 6.8 u above a 7.1 u body). The default is −0.8. A slower fade (1.5 s)
+   only halves the count at −0.7.
+2. **The compare grid's 2-px gutters were never cleared.** The canvas keeps its buffer and each
+   cell clears only inside its scissor, so the gutters kept the last full view as stray green lines.
+   This had been there since the grid was added. The grid now clears the whole canvas first.
+
+**Checked**
+- `verify_lab.cjs` PASS.
+- Pixel parity vs round 6 is 0 px for Shipped, Classic, Hole fill, Hole fill spin-hidden and
+  Spin-hidden columns, so the depth and turn paths are inert at their defaults.
+- The depth-off control scores r = 0.01 against 0.93, so the link column measures depth and not
+  the scene.
+- `omni_shepard_lab_assets.py --check` OK; `omni_shepard_shader_parity.py` PASS.
+- No C# or asset changed, so `/verify-unity` has nothing to run.
+
+**Not modelled / to build:** all lab-side. Seal by depth and Depth columns need only the shader
+(the object-space camera direction, the plate centre already baked, and hole fill). The Ratchet also
+needs per-plate state written from C# each frame (`MaterialPropertyBlock.SetVectorArray`) and a
+plate index baked into the mesh. The Ship-it tab lists each.
+
 ## Round 6 (2026-10-12): the Mass crystal, hole fill, and the Space squares
 
 The designer asked for three things:
