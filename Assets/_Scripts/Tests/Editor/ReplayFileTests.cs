@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -14,8 +15,15 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The parity harness's game half (Assets/_Scripts/Utility/Replay): the replay format round
     /// trips through JsonUtility, UnityEngine.Random is reproducible per seed (what the random
-    /// goldens assert), DeterministicSession hands every site a reproducible stream, and
-    /// ReplayPlayer writes a recorded frame into IInputStatus and raises its InputEvents.
+    /// goldens assert), DeterministicSession hands every site a reproducible stream and resets
+    /// every harness static, ReplayPlayer writes a recorded frame into IInputStatus and applies
+    /// its InputEvents, and ReplayRecorder snapshots the status and listens before a frame runs.
+    ///
+    /// SCOPE (what edit mode can honestly prove): Soap's ScriptableEvent.Raise() early-returns on
+    /// !Application.isPlaying, so a press or release the player raises is never DELIVERED here
+    /// (the trap ElementalComebackSystemTests documents). These tests assert the player's own
+    /// edge bookkeeping (IsHolding) and the recorder's subscription (IsListeningTo) instead;
+    /// the edges reaching a vessel is the in-editor verification step.
     /// </summary>
     [TestFixture]
     public class ReplayFileTests
@@ -77,8 +85,7 @@ namespace CosmicShore.Tests
         [TearDown]
         public void TearDown()
         {
-            ReplayPlayer.Stop();
-            DeterministicSession.End();
+            DeterministicSession.Reset();
             UnityEngine.Random.state = _savedRandomState;
         }
 
@@ -96,6 +103,8 @@ namespace CosmicShore.Tests
                 {
                     f = 2300, XSum = 0.25f, YSum = -0.5f, XDiff = 0.5f, YDiff = 0.125f, Throttle = 1f,
                     LeftTriggerAnalog = 0f, RightTriggerAnalog = 1f,
+                    EasedLeftJoystickPosition = new Vector2(0.75f, -0.25f), EasedRightJoystickPosition = new Vector2(-0.5f, 0.5f),
+                    LeftNormalizedJoystickPosition = new Vector2(1f, -0.5f), RightNormalizedJoystickPosition = new Vector2(-1f, 0.25f),
                     pressed = new[] { nameof(InputEvents.Button1Action) }, released = Array.Empty<string>(),
                 },
                 new ReplayStatusFrame
@@ -135,6 +144,10 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(a.Throttle, b.Throttle, 1e-6f, $"frame {i} Throttle");
                 Assert.AreEqual(a.LeftTriggerAnalog, b.LeftTriggerAnalog, 1e-6f, $"frame {i} LeftTriggerAnalog");
                 Assert.AreEqual(a.RightTriggerAnalog, b.RightTriggerAnalog, 1e-6f, $"frame {i} RightTriggerAnalog");
+                Assert.AreEqual(a.EasedLeftJoystickPosition, b.EasedLeftJoystickPosition, $"frame {i} EasedLeftJoystickPosition");
+                Assert.AreEqual(a.EasedRightJoystickPosition, b.EasedRightJoystickPosition, $"frame {i} EasedRightJoystickPosition");
+                Assert.AreEqual(a.LeftNormalizedJoystickPosition, b.LeftNormalizedJoystickPosition, $"frame {i} LeftNormalizedJoystickPosition");
+                Assert.AreEqual(a.RightNormalizedJoystickPosition, b.RightNormalizedJoystickPosition, $"frame {i} RightNormalizedJoystickPosition");
                 CollectionAssert.AreEqual(a.Pressed, b.Pressed, $"frame {i} pressed");
                 CollectionAssert.AreEqual(a.Released, b.Released, $"frame {i} released");
             }
@@ -162,6 +175,10 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, file.Status[0].Throttle);
             CollectionAssert.AreEqual(new[] { "Button1Action" }, file.Status[0].Pressed);
             CollectionAssert.IsEmpty(file.Status[0].Released);
+            // A frame written before the stick vectors existed (this example, the committed
+            // replays) still reads, with the sticks at zero: what the player wrote before.
+            Assert.AreEqual(Vector2.zero, file.Status[0].EasedLeftJoystickPosition);
+            Assert.AreEqual(Vector2.zero, file.Status[0].RightNormalizedJoystickPosition);
         }
 
         [Test]
@@ -293,6 +310,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void DeterministicSession_Reset_StopsTheReplayAndTheRecording_AndEndsTheSession()
+        {
+            DeterministicSession.Begin(42);
+            ReplayPlayer.Start(SampleReplay());
+            ReplayRecorder.Start();
+            Assert.IsTrue(DeterministicSession.IsActive && ReplayPlayer.Active && ReplayRecorder.Recording);
+
+            DeterministicSession.Reset();
+
+            Assert.IsFalse(DeterministicSession.IsActive, "the session ends");
+            Assert.IsFalse(ReplayPlayer.Active, "the replay no longer owns the input strategy slot");
+            Assert.IsNull(ReplayPlayer.Current);
+            Assert.IsFalse(ReplayRecorder.Recording, "the recording is dropped");
+        }
+
+        [Test]
+        public void DeterministicSession_ResetRunsAtSubsystemRegistration()
+        {
+            // Domain reload is disabled for Play mode in this project, so this attribute is the
+            // only thing that keeps a capture's last replay from owning the next Play's input.
+            var reset = typeof(DeterministicSession).GetMethod("ResetStatics", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.IsNotNull(reset, "DeterministicSession.ResetStatics");
+            var attribute = reset.GetCustomAttribute<RuntimeInitializeOnLoadMethodAttribute>();
+            Assert.IsNotNull(attribute, "ResetStatics carries [RuntimeInitializeOnLoadMethod]");
+            Assert.AreEqual(RuntimeInitializeLoadType.SubsystemRegistration, attribute.loadType);
+        }
+
+        [Test]
         public void DeterministicSession_SiteSeed_IsStableAndNonNegative()
         {
             Assert.AreEqual(DeterministicSession.SiteSeed(42, "AIPilot", 0), DeterministicSession.SiteSeed(42, "AIPilot", 0));
@@ -306,13 +351,9 @@ namespace CosmicShore.Tests
         #region ReplayPlayer
 
         [Test]
-        public void ReplayPlayer_WritesRecordedFrames_RaisesEvents_AndHoldsTheLast()
+        public void ReplayPlayer_WritesRecordedFrames_AppliesEdges_AndHoldsTheLast()
         {
             var status = new FakeInputStatus();
-            var pressed = new List<InputEvents>();
-            var released = new List<InputEvents>();
-            status.OnButtonPressed.OnRaised += e => pressed.Add(e);
-            status.OnButtonReleased.OnRaised += e => released.Add(e);
             try
             {
                 var player = ReplayPlayer.Start(SampleReplay());
@@ -330,21 +371,28 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(0.125f, status.YDiff);
                 Assert.AreEqual(1f, status.Throttle);
                 Assert.AreEqual(1f, status.RightTriggerAnalog);
-                CollectionAssert.AreEqual(new[] { InputEvents.Button1Action }, pressed);
-                CollectionAssert.IsEmpty(released);
+                Assert.AreEqual(new Vector2(0.75f, -0.25f), status.EasedLeftJoystickPosition, "single-stick hulls steer from this");
+                Assert.AreEqual(new Vector2(-0.5f, 0.5f), status.EasedRightJoystickPosition);
+                Assert.AreEqual(new Vector2(1f, -0.5f), status.LeftNormalizedJoystickPosition);
+                Assert.AreEqual(new Vector2(-1f, 0.25f), status.RightNormalizedJoystickPosition);
+                Assert.IsTrue(player.IsHolding(InputEvents.Button1Action), "frame 0's recorded press is applied");
                 Assert.AreEqual(1, player.Index);
 
                 strategy.ProcessInput();
                 Assert.AreEqual(0f, status.XSum);
                 Assert.AreEqual(0f, status.Throttle);
-                CollectionAssert.AreEqual(new[] { InputEvents.Button1Action }, released);
+                Assert.AreEqual(Vector2.zero, status.EasedLeftJoystickPosition, "the second frame's sticks replace the first's");
+                Assert.IsFalse(player.IsHolding(InputEvents.Button1Action), "frame 1's recorded release is applied");
                 Assert.IsTrue(player.Finished);
 
                 status.XSum = 9f;
+                status.EasedLeftJoystickPosition = Vector2.one;
                 strategy.ProcessInput();
                 Assert.AreEqual(0f, status.XSum, "the last frame is held once the recording ends");
-                Assert.AreEqual(1, pressed.Count, "edges are not re-raised while holding");
-                Assert.AreEqual(1, released.Count);
+                Assert.AreEqual(Vector2.zero, status.EasedLeftJoystickPosition, "so are its sticks");
+                // Edges are applied only on the path that also advances the index, so an index
+                // that stays put proves the held frame's edges were not applied again.
+                Assert.AreEqual(2, player.Index, "holding does not advance, and does not re-apply edges");
 
                 ReplayPlayer.Stop();
                 Assert.IsFalse(ReplayPlayer.Active);
@@ -361,19 +409,18 @@ namespace CosmicShore.Tests
         public void ReplayPlayer_Stop_ReleasesAButtonStillHeld()
         {
             var status = new FakeInputStatus();
-            var released = new List<InputEvents>();
-            status.OnButtonReleased.OnRaised += e => released.Add(e);
             try
             {
                 var file = SampleReplay();
                 file.status = new[] { file.status[0] };
-                var strategy = ReplayPlayer.Start(file).Bind(status);
-                strategy.ProcessInput();
-                CollectionAssert.IsEmpty(released);
+                var player = ReplayPlayer.Start(file);
+                player.Bind(status).ProcessInput();
+                Assert.IsTrue(player.IsHolding(InputEvents.Button1Action), "the one frame presses Button1 and never releases it");
 
                 ReplayPlayer.Stop();
 
-                CollectionAssert.AreEqual(new[] { InputEvents.Button1Action }, released);
+                Assert.IsFalse(player.IsHolding(InputEvents.Button1Action), "Stop releases what the replay still held");
+                Assert.IsFalse(ReplayPlayer.Active);
             }
             finally
             {
@@ -396,6 +443,70 @@ namespace CosmicShore.Tests
             finally
             {
                 if (File.Exists(path)) File.Delete(path);
+            }
+        }
+
+        #endregion
+
+        #region ReplayRecorder
+
+        [Test]
+        public void ReplayRecorder_ListensBeforeTheFirstFrame_AndCapturesFloatsAndSticks()
+        {
+            var status = new FakeInputStatus();
+            try
+            {
+                ReplayRecorder.Start(new ReplayFile { scene = "Bootstrap", seed = 9 });
+                Assert.IsFalse(ReplayRecorder.IsListeningTo(status), "Start has no status to listen to");
+
+                // InputController calls Listen before the strategy runs, so an edge the strategy
+                // raises during the first recorded frame is heard.
+                ReplayRecorder.Listen(status);
+                Assert.IsTrue(ReplayRecorder.IsListeningTo(status), "subscribed before the first ProcessInput");
+
+                status.XSum = 0.5f;
+                status.Throttle = 1f;
+                status.EasedLeftJoystickPosition = new Vector2(0.3f, -0.6f);
+                status.RightNormalizedJoystickPosition = new Vector2(-0.2f, 0.4f);
+                ReplayRecorder.Capture(status);
+                Assert.AreEqual(1, ReplayRecorder.FrameCount);
+
+                var file = ReplayRecorder.Stop();
+                Assert.IsFalse(ReplayRecorder.Recording);
+                Assert.IsFalse(ReplayRecorder.IsListeningTo(status), "Stop unsubscribes");
+                Assert.AreEqual(9, file.seed);
+                Assert.AreEqual(1, file.Status.Length);
+                Assert.AreEqual(1, file.frames, "a header with no frame count takes the recorded length");
+                var frame = file.Status[0];
+                Assert.AreEqual(0.5f, frame.XSum);
+                Assert.AreEqual(1f, frame.Throttle);
+                Assert.AreEqual(new Vector2(0.3f, -0.6f), frame.EasedLeftJoystickPosition);
+                Assert.AreEqual(new Vector2(-0.2f, 0.4f), frame.RightNormalizedJoystickPosition);
+                CollectionAssert.IsEmpty(frame.Pressed);
+            }
+            finally
+            {
+                ReplayRecorder.Stop();
+                status.Destroy();
+            }
+        }
+
+        [Test]
+        public void ReplayRecorder_IsInertUntilStarted()
+        {
+            var status = new FakeInputStatus();
+            try
+            {
+                ReplayRecorder.Stop();
+                ReplayRecorder.Listen(status);
+                ReplayRecorder.Capture(status);
+                Assert.IsFalse(ReplayRecorder.IsListeningTo(status));
+                Assert.AreEqual(0, ReplayRecorder.FrameCount);
+                Assert.IsNull(ReplayRecorder.Stop(), "nothing was recording");
+            }
+            finally
+            {
+                status.Destroy();
             }
         }
 
