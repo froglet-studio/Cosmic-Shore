@@ -11,7 +11,7 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Shipped numbers + meshes:** baked in by `Tools/Build/omni_shepard_lab_assets.py`
   (`--check` fails when the assets move and the page has not been rebaked; `--self-test`)
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniShepardLab.html`
-- **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--new-style classic]`
+- **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--old-style id] [--new-style id]`
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
 - **What ships (since round 4):** "Breathe", see Round 4 below and `Docs/PALETTE.md` §2.10
 
@@ -37,6 +37,73 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 5 (2026-10-12): one triangle per column, hidden births
+
+The designer recorded "Use the Shipped (Breathe) style" in the decision log and asked to go back to
+the Shepard illusion: **one triangle at a time in each column, each column on its own phase, and the
+whole crystal turned with respect to the camera so the side where triangles appear is always hidden
+by the rest of the object.** Also: riff more hypnotic options off the saved Breathe.
+
+**The mechanism ("Spin to hide", Hide tab)**
+- One layer. Each column's phase is its angle round the spin axis (the plate's longitude), plus a
+  small latitude tie-break, because eight pairs of columns on this mesh share a longitude.
+- The whole crystal (body and triangles) turns once per trip about the camera's up axis. The turn is
+  phase-locked so every column is born exactly as it passes behind the crystal: rotation
+  θ = −2π·t/T + offset, derived in the page source at `spinTheta`.
+- An opposing 180° swirl in each column means the triangle that was born behind lands on the side
+  facing you. Without it, the landing comes round behind too ("Spin, no swirl": 0 arrivals in view).
+- The four columns 69° from the spin axis cannot be hidden by any rotation: their far-side births sit
+  just above the silhouette. A half-strength column swing over the first 30% of the trip (the
+  "polar tuck") pulls them in behind the body.
+
+**Scorecard** (new camera-averaged columns, over 26 camera directions at 34 u; the body is treated
+as a sphere of 0.97 × its radius for the occlusion test). A birth is **seen** if the triangle turns
+solid (α ≥ 0.25) within the first 10% of its trip at a spot the body does not hide.
+
+| Style | Births seen | Landings seen | Arrivals in view /s | Trip |
+|---|---|---|---|---|
+| **Spin-hidden columns** (spin + polar tuck) | **0%** | 0% | **2.0** (all 20 per trip) | 10 s |
+| Spin only (no tuck), as first asked | 20% (the 4 polar columns) | 0% | 2.0 | 10 s |
+| Spin-hidden, spin and tuck off (control) | 86.9% | 0% | 1.14 | 10 s |
+| Hidden columns (per-column swing, no spin) | 0% | 0% | 1.42 (only front columns) | 8 s |
+| Columns, unhidden (control) | 89.2% | 0% | 1.42 | 8 s |
+| Shipped (Breathe) | 0% | 0% | 3.25 | 10.5 s |
+
+Spin-axis tilt only moves the problem: −45° to +45° gives 20–60% births seen without the tuck.
+
+**Also new**
+- **Breathe riffs:** Breathe wave (a ripple rolling pole to pole), Breathe spiral, Breathe turning
+  (phase-locked to the spin), slow tide, twisting, glowing contact.
+- **Column swing family:** the per-column alternative, with no spin.
+- **Generators:** "9 spin variants" and "9 hidden variants" seeded random generators.
+- **Phase pattern:** an "Even" stagger pattern.
+- **Hide tab:** spin, axis tilt, birth point, phase tie-break, column swing, swing mode, swing end.
+
+**Found**
+1. **The per-column swing measured its turn from the wrong vector.** It took the angle from the
+   column's landing direction but applied it after the swirl, so with any swirl it aimed at the
+   wrong place. "Hidden + swirl" read 80% births seen, and spin plus swing read 80%. Now it measures
+   from the current direction: 0% for both. Found by the parameter sweep, not by eye.
+2. **Mirror mode does not hide.** "Hidden, mirror" shows 78.5% of births. Mirroring only moves
+   FRONT columns behind; back columns are born in place at twice the crystal's radius, outside the
+   body's shadow cone. Kept as a measured negative.
+3. **A Shepard-style fade fights spin hiding:** "Spin-hidden, Shepard fade" shows 20%. The
+   triangle only turns solid after it has come round into view. Solid-from-birth (fade-in 4%) is
+   what makes hiding work.
+
+**Checked**
+- `verify_lab.cjs` PASS.
+- Shipped page vs round 4, pixel parity: 0 px over 2/255 at all 5 times. The same for Classic and
+  for Swirl, with `--old-style/--new-style` (new flag).
+- `omni_shepard_shader_parity.py` 7 of 7: the shipped materials still match the lab.
+- Both new controls fail as they must (86.9% and 89.2% births seen).
+
+**Not modelled / to build:** this is all lab-side, and every round-5 option is *needs shader*. The
+spin also needs a small C# component that turns the crystal transform to the camera each frame. That
+also turns the body, its flip wave and its charge edges. A triangle mid-flight shifts slightly when
+the camera moves. In multiplayer every client turns its own crystals to its own camera, which is
+purely visual. Pick a look first; the Ship-it tab lists what it would take.
 
 ## Round 4 (2026-10-10): Breathe ships
 

@@ -190,6 +190,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Tools/Build/omni_shepard_shader_parity.py`, `Tools/Build/omni_shepard_lab_parity.cjs --old-set/--new-style`, `OMNI_SHEPARD_LAB.md` "Round 4".
 - Promoted: no
 
+### L-STU-19 — Score an occlusion illusion over many cameras, and sweep its knobs before trusting a mechanism
+- Lab: Omni Shepard Lab, round 5 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-12
+- What happened: the ask was "hide each triangle's birth behind the crystal by turning the whole object to the camera". A camera-averaged score (26 directions, a ray-vs-sphere occlusion test, "seen" = solid within the first 10% of the trip at an unhidden spot) turned it into numbers. Spin alone: 20% of births seen (the four columns 69° from the spin axis, which no rotation can hide); control without spin: 87%. A parameter sweep (tilt, swing strength, swing end, launch height) then showed tilt only moves the problem (20–60%). It also exposed a real bug: the per-column swing measured its turn from the landing direction but applied it after the swirl, so spin + swing read 80% instead of 0%.
+- Do instead: for any "the viewer never sees X" effect, write the occlusion score first, average it over cameras, add a control with the mechanism off, and sweep each knob before tuning by eye. A combination that scores WORSE than either part alone is a bug until proven otherwise.
+- Evidence: `OMNI_SHEPARD_LAB.md` "Round 5"; `metrics()` / `centreAt()` / `steerRot()` in the page.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
