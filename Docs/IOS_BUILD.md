@@ -255,7 +255,9 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
 5. **Add the repository secrets.** Go to GitHub → Settings → Secrets and variables → Actions →
    New repository secret; this needs admin on the repo.
    - Base64 in PowerShell:
-     `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cosmicshore-dist.p12")) | Set-Clipboard`
+     `[Convert]::ToBase64String([IO.File]::ReadAllBytes((Get-Item .\cosmicshore-dist.p12).FullName)) | Set-Clipboard`
+     (the full path matters: .NET resolves a bare file name against the process directory, not the
+     folder PowerShell has `cd`-ed into).
    - Base64 in Git Bash: `base64 -w0 cosmicshore-dist.p12`
 
    | Secret | Value |
