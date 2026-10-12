@@ -89,20 +89,38 @@ namespace CosmicShore.Engine
             foreach (var kv in _vectorArrays) yield return new(kv.Key, kv.Value);
         }
 
-        public void SetColor(string name, Color value) => _colors[Shader.PropertyToID(name)] = value;
-        public void SetColor(int nameID, Color value) => _colors[nameID] = value;
+        // One slot per name, as in the original: a colour is sRGB and the GPU receives it converted
+        // to linear (the renderer converts; GetColor hands back what was set), a vector goes up raw,
+        // and SetVector on a slot SetColor made keeps treating it as a colour.
+        public void SetColor(string name, Color value) => SetColor(Shader.PropertyToID(name), value);
+        public void SetColor(int nameID, Color value) { _colors[nameID] = value; _vectors.Remove(nameID); }
         public Color GetColor(string name) => GetColor(Shader.PropertyToID(name));
-        public Color GetColor(int nameID) => _colors.TryGetValue(nameID, out var v) ? v : Color.clear;
+        public Color GetColor(int nameID)
+            => _colors.TryGetValue(nameID, out var v) ? v
+             : _vectors.TryGetValue(nameID, out var w) ? new Color(w.x, w.y, w.z, w.w) : Color.clear;
 
         public void SetFloat(string name, float value) => _floats[Shader.PropertyToID(name)] = value;
         public void SetFloat(int nameID, float value) => _floats[nameID] = value;
         public float GetFloat(string name) => GetFloat(Shader.PropertyToID(name));
         public float GetFloat(int nameID) => _floats.TryGetValue(nameID, out var v) ? v : 0f;
 
-        public void SetVector(string name, Vector4 value) => _vectors[Shader.PropertyToID(name)] = value;
-        public void SetVector(int nameID, Vector4 value) => _vectors[nameID] = value;
+        public void SetVector(string name, Vector4 value) => SetVector(Shader.PropertyToID(name), value);
+        public void SetVector(int nameID, Vector4 value)
+        {
+            if (_colors.ContainsKey(nameID)) _colors[nameID] = new Color(value.x, value.y, value.z, value.w);
+            else _vectors[nameID] = value;
+        }
         public Vector4 GetVector(string name) => GetVector(Shader.PropertyToID(name));
-        public Vector4 GetVector(int nameID) => _vectors.TryGetValue(nameID, out var v) ? v : Vector4.zero;
+        public Vector4 GetVector(int nameID)
+            => _vectors.TryGetValue(nameID, out var v) ? v
+             : _colors.TryGetValue(nameID, out var c) ? ColorSpaceRules.Linear(new Vector4(c.r, c.g, c.b, c.a)) : Vector4.zero;
+
+        /// <summary>Port helper: the value the GPU receives — a colour converted to linear, a vector raw. False when unset.</summary>
+        public bool TryGetShaderVector(int nameID, out Vector4 value)
+        {
+            if (_colors.TryGetValue(nameID, out var c)) { value = ColorSpaceRules.Linear(new Vector4(c.r, c.g, c.b, c.a)); return true; }
+            return _vectors.TryGetValue(nameID, out value);
+        }
 
         /// <summary>Overwrite this block's contents with <paramref name="source"/>'s (cleared if null).</summary>
         internal void CopyFrom(MaterialPropertyBlock source)

@@ -107,6 +107,9 @@ public class GlslEsTranslationTests : IDisposable
                 foreach (var f in type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
                     if (f.IsLiteral && f.FieldType == typeof(string) && f.GetRawConstantValue() is string s && s.StartsWith("#version 330 core", StringComparison.Ordinal))
                         yield return (type.Name + "." + f.Name, s);
+        // The translated UI shaders' fragment stages are assembled at run time.
+        foreach (var def in UiCustomShaders.ByName.Values)
+            yield return ("UiCustomShaders." + def.Name.Replace('/', '-'), UiCustomShaders.Fragment(def));
     }
 
     [Fact]

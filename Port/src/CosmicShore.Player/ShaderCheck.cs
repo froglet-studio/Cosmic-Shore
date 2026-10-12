@@ -16,7 +16,7 @@ namespace CosmicShore.Player
     /// </summary>
     static class ShaderCheck
     {
-        public static int Run(Func<CosmicShore.Engine.ShaderGraphProgram, bool, string> link)
+        public static int Run(Func<CosmicShore.Engine.ShaderGraphProgram, bool, string> link, Func<UiCustomShaders.Def, bool, string> linkUi)
         {
             var root = AssetDatabase.FindProjectRoot();
             if (root == null) { Console.WriteLine("[shader-check] no project root (set COSMIC_SHORE_PROJECT)"); return 1; }
@@ -51,7 +51,16 @@ namespace CosmicShore.Player
                 }
                 else failed++;
             }
-            Console.WriteLine($"[shader-check] {ok} of {ok + failed} graphs and hand shaders linked ({approximate} with approximations){(es ? ", desktop and ES" : ", desktop only (no GL_ARB_ES3_compatibility)")}; {failed} failed");
+            // The translated UI shaders (UiCustomShaders), over the uGUI vertex stage.
+            int uiOk = 0;
+            foreach (var def in UiCustomShaders.ByName.Values)
+            {
+                string error = null;
+                foreach (bool asEs in es ? new[] { false, true } : new[] { false })
+                    if ((error = linkUi(def, asEs)) != null) { Console.WriteLine($"[shader-check] FAIL {def.Name} ({(asEs ? "GLSL ES 3.00" : "GLSL 3.30")}): {error}"); break; }
+                if (error == null) uiOk++; else failed++;
+            }
+            Console.WriteLine($"[shader-check] {ok} of {ok + failed} graphs and hand shaders linked ({approximate} with approximations), {uiOk} of {UiCustomShaders.ByName.Count} UI shaders{(es ? ", desktop and ES" : ", desktop only (no GL_ARB_ES3_compatibility)")}; {failed} failed");
             return failed;
         }
     }

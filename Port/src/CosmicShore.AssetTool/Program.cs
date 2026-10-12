@@ -63,6 +63,7 @@ namespace CosmicShore.AssetTool
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
                     "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
                     "shadergraph-census" => ShaderCensus.Run(opts),
+                    "shadergraph-glsl" => ShaderGlsl.Run(Need(pos, 2)[1]),
                     "addall" => Scripts.AddAll(),
                     // Prisma's editor pages (TOOLS, DATA, MODELS) read these; JSON on stdout.
                     "tools" => EditorData.Tools(),
@@ -110,6 +111,8 @@ namespace CosmicShore.AssetTool
 
   roundtrip [path...]                       verify parse -> write is byte-identical (default: all of Assets/)
   serialization-audit [path...] [--json]    every script field Unity reads that Prisma drops (and the reverse)
+  shadergraph-glsl <file>                   the GLSL a .shadergraph (or a hand-translated .shader) draws with,
+                                            its render state and its approximations
   shadergraph-census [--json PATH]          Shader Graph compiler coverage: node types, custom functions, each
                                             shader's route (family / compiled / missing); writes Port/parity/shaders.json
   list   <file>                             GameObjects and their hierarchy paths

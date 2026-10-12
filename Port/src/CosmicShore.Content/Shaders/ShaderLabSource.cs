@@ -25,6 +25,8 @@ namespace CosmicShore.Content.Shaders
         public string ZWrite;
         /// <summary>"Off"/"Front"/"Back"/"[_Cull]", or null (Back).</summary>
         public string Cull;
+        /// <summary>The pass's depth Offset (factor, units); 0, 0 when it has none.</summary>
+        public float OffsetFactor, OffsetUnits;
         /// <summary>A <c>#pragma surface</c> shader with a lighting model other than NoLighting.</summary>
         public bool SurfaceLit;
         /// <summary>A <c>#pragma surface ... alpha</c> shader (blends like SrcAlpha OneMinusSrcAlpha).</summary>
@@ -69,6 +71,12 @@ namespace CosmicShore.Content.Shaders
             if (zw.Success) src.ZWrite = zw.Groups[1].Value;
             var cull = Regex.Match(state, @"^\s*Cull\s+(\S+)", RegexOptions.Multiline);
             if (cull.Success) src.Cull = cull.Groups[1].Value;
+            var offset = Regex.Match(state, @"^\s*Offset\s+(-?[\d.]+)\s*,\s*(-?[\d.]+)", RegexOptions.Multiline);
+            if (offset.Success)
+            {
+                src.OffsetFactor = float.Parse(offset.Groups[1].Value, CultureInfo.InvariantCulture);
+                src.OffsetUnits = float.Parse(offset.Groups[2].Value, CultureInfo.InvariantCulture);
+            }
             var surface = Regex.Match(body, @"#pragma\s+surface\s+\w+\s+(\w+)([^\n]*)");
             if (surface.Success)
             {
