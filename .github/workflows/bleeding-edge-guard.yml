@@ -563,11 +563,25 @@ jobs:
           prompt: |
             Commit ${{ github.sha }} broke verification on ${{ github.ref_name }}.
 
-            Reproduce first. Run, in this order, and read the output:
+            Reproduce first. Run, in this order, and read the output (the same
+            steps as the "Static validation" job; keep the two lists in step):
+              python3 Tools/CI/test_validate_project.py
+              python3 Tools/Build/check_conditional_compilation.py --self-test
+              python3 Tools/Build/check_gamelist_scenes.py --self-test
+              python3 Tools/Build/check_hud_onscreen.py --self-test
+              python3 Tools/Build/check_junie_skills.py --self-test
               python3 Tools/CI/validate_project.py
               python3 Tools/Build/check_conditional_compilation.py --root Assets
+              python3 Tools/Build/check_console_logging.py --self-test
+              python3 Tools/Build/check_console_logging.py
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
+              python3 Tools/Build/audit_vessel_skimmers.py --self-test
+              python3 Tools/Build/audit_lifeform_crystals.py --self-test
+              python3 Tools/Build/check_ai_no_state_writes.py --self-test
+              python3 Tools/Build/check_ai_no_state_writes.py --check
+              python3 Tools/Build/arcade_mode_lib.py --self-test
+              for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do python3 "$f" --check || echo "GENERATOR RED: $f"; done
               python3 Tools/Build/retire_call_to_action.py --check
               python3 Tools/Build/check_junie_skills.py
               python3 Tools/Shaders/wire_prism_backface_fade.py --check
@@ -580,6 +594,11 @@ jobs:
               python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
               python3 Tools/Shaders/wire_prism_suction_clock.py --check
               python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
+            A generator that reports DRIFT, or a self-test that reports FAILED, is
+            not one of the mechanical classes below: an asset generator owns its
+            assets, so drift means a hand edit or a schema change the generator
+            has not taken yet, and re-running the generator would erase the
+            first. Name the generator or the failing control and stop.
             If those pass, the failure came from the Unity compile stage instead.
             Read the "Unity compile" job's log in this workflow run; it prints the
             first 40 `error CS...` lines directly, and the full editor log is
