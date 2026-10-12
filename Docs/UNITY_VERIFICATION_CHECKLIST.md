@@ -65,6 +65,73 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at
+4:3: on HOME the next screen covered the right third of the display. No editor and no `unity` CLI
+in the authoring session, so `/verify-unity` did NOT run. Out of editor, `unity_refcompile` compiles
+the player and editor configs with 0 errors in project code, and the console-logging gate passes.
+
+**What landed**
+
+1. **`ScreenSwitcher` (the menu filmstrip).**
+   - The strip is wrapped at `Start` in a runtime `Screens Viewport`. This is a full-stretch child
+     of `Safe Area` carrying a `RectMask2D`.
+   - The panel width is read from that viewport, not from `Screens`. The ContentSizeFitter on
+     `Screens` zeroes its width after the first layout pass, so the old self-read fell back to the
+     canvas width.
+   - The strip's pivot is pinned to its left edge, and it slides by `anchoredPosition` instead of
+     an absolute `transform.position`.
+   - The strip re-lays out on the frame the viewport width changes. That covers the 4:3 case:
+     `AdaptiveCanvasScaler` flips the match after `Start`, and the canvas grows from 1440 to 1920
+     units.
+   - `Start` navigates from "no screen", so restoring HANGAR (serialized index 0) positions the
+     strip and builds the hangar grid.
+   - The empty `IDragHandler` / `IEndDragHandler` (bodies commented out) were removed. They took
+     drags from every button outside a scroll view and cancelled the tap.
+2. **`TouchDragThreshold` (new):** every EventSystem's `pixelDragThreshold` is scaled by
+   `Screen.dpi / 160`, never below the authored value. That is 10 → 29 px on a 460 ppi iPhone and
+   unchanged on a desktop. It runs at scene load. Tests: `TouchDragThresholdTests`.
+3. **`QuestTrackView`:** the two display-only progress Sliders are disabled, so a drag that starts
+   on the bar reaches the quest track's ScrollRect.
+4. **`Menu_Main.unity`:** Hangar `AbilitiesDescriptionScrollView` is `m_Horizontal: 0`. Its content
+   is exactly the viewport width, so horizontal scrolling could only rubber-band.
+5. **`GraphicsSettingsApplier.ApplyDisplay`** returns on `Application.isMobilePlatform`. It used to
+   call `Screen.SetResolution(Display.main.systemWidth, systemHeight)` at every boot.
+
+**Verify in editor**
+
+1. Open Menu_Main in the **Device Simulator**. Use an iPhone with a notch or Dynamic Island,
+   landscape, and also a 4:3 iPad. Then check Game view at 4:3 and 16:9.
+   - HOME fills the safe area with no other screen showing at either edge.
+   - Page through every screen with L1/R1 and with the nav bar. Each screen lands exactly in the
+     safe area.
+   - Resize the Game view mid-session. The current screen re-fits within a frame.
+2. In the Hierarchy at runtime, `Safe Area/Screens Viewport/Screens` exists, and there is exactly
+   one `Screens Viewport`.
+3. Quit while on HANGAR, then re-enter Play. HANGAR is shown full-width, and its vessel grid is
+   populated.
+4. On a device or Simulator, tap cards in the Arcade grid, the leaderboard and the friends list
+   with a slightly moving finger. The taps register. Drag the Profile quest track starting on the
+   progress bar; it scrolls. The bar still animates on claim.
+5. Desktop windowed: change the resolution in Settings. `SetResolution` still applies
+   (`isMobilePlatform` is false there).
+
+**Found and left open** (not phone-only, or a designer's call):
+
+- **Scroll content heights never resize.** These leave a long blank scroll:
+  - weekly leaderboard content: 5608 units, 10 rows;
+  - friends lists: 1813;
+  - avatar grid: 1809.
+- **Controls list can never scroll.** The ArcadeGameConfigureModal list has both axes off.
+- **Quest track snap ignores the finger.** Its 0.6 s snap tween is not killed when a new drag
+  starts. Inertia is off, so it only snaps after an elastic bounce.
+- **Hub modals overlap the NavBar.** The Arcade, Mission, Toybox and Arena modals overlap it by
+  38 units in the iPhone safe rect (9 on desktop).
+- **`PartyInviteNotificationPanel` sits outside `Safe Area`.**
+- **`DeviceOrientationHandler` locks LandscapeLeft for the session**, even though
+  `SafeAreaFitter`'s docs assume auto-rotation between the two landscapes.
+
 ### 🔴 Store readiness: production iOS id, Android API 36 + ARM64, Unity IAP removed, iOS export-compliance plist (`claude/serene-edison-lfv24f`, 2026-10-08)
 
 Step 1 and the store settings of `Docs/PLATFORM_UNIFICATION.md` (§3.9). The console walkthrough is

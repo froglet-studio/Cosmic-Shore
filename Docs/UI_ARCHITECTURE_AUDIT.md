@@ -436,12 +436,31 @@ component and others get a new parent instead:
 
 #### What the application changed beyond attaching a component
 
-- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` now reads the switcher's own rect, not the canvas
+- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` read the switcher's own rect, not the canvas
   rect.** `LayoutScreensToViewport` sizes every menu screen panel to that width and offsets panel *i*
-  by `i × width`; reading the canvas rect would have left the filmstrip full canvas width inside a
+  by `i × width`. Reading the canvas rect would have left the filmstrip full canvas width inside a
   horizontally-inset `Screens`, so the *vertical* half of the safe area would have been respected
   and the horizontal half silently not. On desktop the fitter is a no-op and `Screens.rect ==
-  canvas.rect`, so the value is unchanged — this cannot regress a non-notched display.
+  canvas.rect`, so the value was unchanged.
+  - **Superseded 2026-10-12, after the first iPhone build.** `Screens` carries a ContentSizeFitter
+    (horizontal Min Size) that zeroes its own width on the first layout pass. The self-read
+    therefore saw the safe width in `Start` and the canvas width ever after. Navigation also
+    positioned the strip with `transform.position` (absolute screen pixels), so the safe-area
+    origin was ignored.
+  - On a Dynamic Island iPhone (2556 px wide, 177 px inset each side, 63 px at the bottom), the
+    result was:
+    - panels laid out 2202 px apart but slid 2556 px per step, so each navigation left the screen
+      another 354 px off;
+    - the whole strip shifted 177 px into the cutout and 63 px down;
+    - neighbouring screens visible in the margins, with nothing clipping them.
+  - **Fix** (`ScreenSwitcher`): the strip now sits in a runtime `Screens Viewport`. That is a
+    full-stretch child of `Safe Area` carrying a `RectMask2D`, so neighbours are clipped. The
+    switcher measures that viewport, pins the strip's pivot to its left edge (so the fitter's zeroed
+    width moves nothing), and slides by `anchoredPosition`. It re-lays out whenever the viewport
+    width changes.
+  - **Second bug fixed with it:** `currentScreen` is serialized as 0 (HANGAR), so restoring HANGAR
+    from the `ReturnToScreen` pref hit NavigateTo's "already on this screen" return. The strip was
+    never positioned and the hangar grid never built. `Start` now navigates from no screen.
 
 #### Known limitations (deliberate, recorded rather than solved)
 
@@ -453,11 +472,9 @@ component and others get a new parent instead:
 - **The split is made one level below each canvas root.** Panels that bundle their own dimmer with
   their own content are inset as a unit. Only the four full-screen scrims listed above were checked
   descendant-by-descendant.
-- **The menu filmstrip is laid out once, at `Start()`.** `LayoutScreensToViewport` has no
-  re-layout hook on resolution change (already recorded above), and the safe area now shares that
-  limitation: a landscape-left ↔ landscape-right flip moves the cutout to the other end and resizes
-  `Screens`, but the panels keep the width they were given at `Start`. Pre-existing, not introduced
-  here — the fix is a re-layout on `OnRectTransformDimensionsChange`, which belongs with T2.
+- ~~**The menu filmstrip is laid out once, at `Start()`.**~~ Fixed 2026-10-12: `ScreenSwitcher`
+  re-lays out the strip on the frame its viewport's width changes, whether from a desktop window
+  resize, a split view, or a change in the safe area.
 - **Nothing enforces §8's 24-unit minimum edge inset** on a future content layer — it is authored
   padding, which is what lets it survive the desktop no-op (see `Docs/UI_REDESIGN_TASKS.md` T1,
   queue item #3).
@@ -484,7 +501,7 @@ The in-game Settings modal additionally exposes a resolution dropdown (built fro
 
 ### How the menu lays out across aspect ratios
 
-`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). ⚠ The layout runs once at `Start()` — no re-layout hook on resolution change was found, so a mid-session desktop window resize would leave the strip sized to the old viewport (UNVERIFIED at runtime, but no code path was found).
+`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). Since 2026-10-12 the panel width is read from the strip's clipped viewport (`Screens Viewport`, inside the safe area), the slide is in `anchoredPosition`, and the layout re-runs when the viewport width changes (see "What the application changed" above).
 
 The menu root also carries a `PhoneFlipDetector` and per-screen `FlipUI` components responding to device flip.
 

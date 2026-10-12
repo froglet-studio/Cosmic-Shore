@@ -6,6 +6,16 @@
 
 The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
 
+How the strip is positioned (fixed 2026-10-12 after it broke on the first iPhone build and at 4:3):
+- It sits in a runtime `Screens Viewport`, a `RectMask2D` child of `Safe Area`.
+- Panels are exactly one viewport width wide, measured from the viewport and never from `Screens`,
+  whose ContentSizeFitter zeroes its own width.
+- The strip slides by `anchoredPosition`. Never set `transform.position`, which is absolute screen
+  pixels and ignores the safe area.
+- It re-lays out whenever the viewport width changes.
+
+Details: `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3.
+
 #### IScreen Interface
 
 All menu screens that need lifecycle notifications implement `IScreen` (`Assets/_Scripts/UI/Interfaces/IScreen.cs`):
