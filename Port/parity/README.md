@@ -46,7 +46,13 @@ A channel without a golden reports MISSING and does not fail; FAIL names the fir
   and the inspector verbs `arcade`, `score` ...). Prisma plays these today.
 - `status`: per-frame `IInputStatus` snapshots plus the `InputEvents` pressed/released that
   frame. The game's own `ReplayPlayer` plays these, in both engines: Unity through the
-  `COSMIC_SHORE_REPLAY` hook, Prisma through `ParityRun.BeginSession` (below).
+  `COSMIC_SHORE_REPLAY` hook, Prisma through `ParityRun.BeginSession` (below). Besides the
+  example's fields a frame carries `XDiff`, `YDiff`, `LeftTriggerAnalog`, `RightTriggerAnalog`
+  and four stick vectors (`EasedLeftJoystickPosition`, which single-stick hulls steer from,
+  `EasedRightJoystickPosition`, `LeftNormalizedJoystickPosition`,
+  `RightNormalizedJoystickPosition`, each `{"x":..,"y":..}`). Every field is optional and reads
+  as zero; the vectors came later and are still version 1, because an older frame without them
+  plays back exactly as it did.
 - `record`: frames FROM-TO every N captured as `frames/fNNNNN.png` (a window is needed).
 
 **Channels**, JSON Lines:
@@ -118,7 +124,10 @@ inspector verb (`arcade`), so in Unity `ParityCapture` performs the same step th
 reseed, `ModePreviewPlantingModel` reseeds and restores); 7 unseeded `System.Random` (`AIPilot:1085`,
 `ToyShuffle`, `ProfileModal`, `ScreenshotDirector`, `AnimationRecorderWindow`, and `SpawnableBase` /
 `SpawnableCord` when their seed is 0) take `DeterministicSession`'s seed; 10 `Guid.NewGuid` sites are
-identity only and must never reach a compared channel.
+identity only and must never reach a compared channel. That measurement looked only for the
+parameterless constructor; three more sites seeded from `Environment.TickCount` when their seed is
+0 (`CellConveyor` and `MicrosceneConveyor`, the shipped Arkway and Wanderway toys, and
+`SpawnableRaceTrack`) and now take the session seed too, ten sites in all.
 
 The PR landed on this branch (`1a397c3e3`, the probe's reflection-free read in `646d599e0`). What
 is still owed for goldens is the editor capture run (`FrogletTools > Parity > Capture Goldens`):
@@ -133,8 +142,12 @@ one format and a version other than 1 is loud in both. The engine plays the `do`
 `PlayerBoot` right before the game's `BeforeSceneLoad` hooks, the phase in which a Unity player
 build's `COSMIC_SHORE_REPLAY` hook runs, so the seed lands at the same point in both engines:
 
-- `DeterministicSession.Begin(seed)` always: `Random.InitState`, the seven seeded
-  `System.Random` sites, `Time.captureFramerate`.
+- `DeterministicSession.Begin(seed)` always: `Random.InitState`, the ten seeded
+  `System.Random` sites, `Time.captureFramerate`. The game's own reset
+  (`DeterministicSession.ResetStatics`, `RuntimeInitializeOnLoadMethod(SubsystemRegistration)`,
+  which clears a replay and session left over from an earlier run in a Unity editor that keeps
+  statics across Play) runs in `PlayerBoot` BEFORE `BeginSession`, so it never undoes the
+  handoff.
 - `ReplayPlayer.Start(file)` when the file carries `status` frames; `InputController.SelectStrategy`
   then hands the strategy slot to the replay and the frames reach `IInputStatus` where a device's
   would. A file with an empty `status` (boot-menu, skimrace-fly, astroleague-strike, bloomrush-i4)

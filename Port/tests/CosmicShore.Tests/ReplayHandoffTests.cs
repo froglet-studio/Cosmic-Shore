@@ -23,6 +23,7 @@ public class ReplayHandoffTests
     {
         public int f;
         public float XSum, YSum, XDiff, YDiff, Throttle, LeftTriggerAnalog, RightTriggerAnalog;
+        public Vector2 EasedLeftJoystickPosition, EasedRightJoystickPosition, LeftNormalizedJoystickPosition, RightNormalizedJoystickPosition;
         public string[] pressed = Array.Empty<string>();
         public string[] released = Array.Empty<string>();
     }
@@ -73,6 +74,9 @@ public class ReplayHandoffTests
         // No frame is a full stop (XDiff 0 pins the vessel), and the yaw sweep reaches both sides.
         Assert.True(r.status.All(s => s.XDiff >= 0.5f));
         Assert.True(r.status.Any(s => s.XSum > 0.5f) && r.status.Any(s => s.XSum < -0.5f));
+        // Written before frames carried the stick vectors: they read as zero, which is what the
+        // player wrote before, so the committed case plays back unchanged (still version 1).
+        Assert.True(r.status.All(s => s.EasedLeftJoystickPosition == Vector2.zero && s.RightNormalizedJoystickPosition == Vector2.zero));
     }
 
     [Fact]
@@ -81,7 +85,11 @@ public class ReplayHandoffTests
         var replay = new Replay
         {
             seed = 7, frames = 120, @do = new[] { "10:key Enter" },
-            status = new[] { new StatusFrame { f = 0, XSum = 0.25f, Throttle = 1f, pressed = new[] { "Button2Action" } }, new StatusFrame { f = 1, YSum = -0.5f } },
+            status = new[]
+            {
+                new StatusFrame { f = 0, XSum = 0.25f, Throttle = 1f, EasedLeftJoystickPosition = new Vector2(0.75f, -0.25f), pressed = new[] { "Button2Action" } },
+                new StatusFrame { f = 1, YSum = -0.5f, RightNormalizedJoystickPosition = new Vector2(-1f, 0.5f) },
+            },
         };
         string json = JsonUtility.ToJson(replay);
         Assert.Contains("\"do\":[\"10:key Enter\"]", json);                    // @do writes under the keyword's name
@@ -94,6 +102,11 @@ public class ReplayHandoffTests
         Assert.Equal(new[] { "Button2Action" }, back.status[0].pressed);
         Assert.Empty(back.status[1].pressed);
         Assert.Equal(-0.5f, back.status[1].YSum);
+        // The stick vectors single-stick hulls steer from, as JsonUtility writes a Vector2.
+        Assert.Contains("\"EasedLeftJoystickPosition\":{\"x\":0.75,\"y\":-0.25}", json);
+        Assert.Equal(new Vector2(0.75f, -0.25f), back.status[0].EasedLeftJoystickPosition);
+        Assert.Equal(new Vector2(-1f, 0.5f), back.status[1].RightNormalizedJoystickPosition);
+        Assert.Equal(Vector2.zero, back.status[1].EasedLeftJoystickPosition);
     }
 
     [Fact]

@@ -94,11 +94,12 @@ namespace CosmicShore.Player
         /// <summary>
         /// Hands the loaded replay to the game, exactly what a Unity player build's
         /// COSMIC_SHORE_REPLAY hook does: DeterministicSession.Begin(seed) (Random.InitState, the
-        /// seven seeded System.Random sites, captureFramerate) and, when the file carries status
+        /// ten seeded System.Random sites, captureFramerate) and, when the file carries status
         /// frames, ReplayPlayer.Start(file), after which InputController hands the strategy slot to
         /// the replay. PlayerBoot calls this right before the game's BeforeSceneLoad hooks, the
-        /// phase that hook runs in, so the seed lands at the same point in both engines. A run with
-        /// no replay has nothing to do.
+        /// phase that hook runs in, so the seed lands at the same point in both engines. It must
+        /// stay after SubsystemRegistration: the game resets the session and any replay there
+        /// (DeterministicSession.ResetStatics). A run with no replay has nothing to do.
         /// </summary>
         public static void BeginSession()
         {
