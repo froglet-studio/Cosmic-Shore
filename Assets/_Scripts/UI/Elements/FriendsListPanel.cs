@@ -18,11 +18,15 @@ namespace CosmicShore.UI
     ///   • Online     - every online player in the presence lobby. Row background
     ///                  is the invite button; yellowish tint while the invite is
     ///                  pending.
-    ///   • Add Friend - a TMP_InputField for a pilot's exact display name plus a
-    ///                  Send button. The only place a player can SEND a friend
-    ///                  request from inside the game; goes through
-    ///                  <see cref="FriendsServiceFacade.SendFriendRequestByNameAsync"/>
-    ///                  (the single writer of FriendsDataSO), behind the same
+    ///   • Add Friend - a TMP_InputField plus a Send button, and a status line
+    ///                  that shows the player's own full Name#1234 while idle.
+    ///                  A typed full Name#1234 goes to UGS by name
+    ///                  (<see cref="FriendsServiceFacade.SendFriendRequestByNameAsync"/>);
+    ///                  a name without the #1234 is resolved against the pilots
+    ///                  this panel knows (<see cref="FriendNameResolver"/>) and
+    ///                  sent by id (<see cref="FriendsServiceFacade.SendFriendRequestAsync"/>),
+    ///                  or refused with a line asking for the full Name#1234. The
+    ///                  facade stays the single writer of FriendsDataSO; the same
     ///                  anti-spam cooldown the Online row's Invite/Cancel/Kick use.
     ///   • Recent     - the other humans of your last online matches
     ///                  (<see cref="RecentPlayersStore"/>), newest first, each with an
@@ -60,17 +64,19 @@ namespace CosmicShore.UI
         [Header("Actions")]
         [SerializeField] private Button closeButton;
 
-        [Header("Add Friend (send a friend request by exact display name)")]
-        [Tooltip("Where the player types the exact display name of the pilot to befriend. The three " +
-                 "Add Friend fields are wired together or not at all: leave all three empty and the " +
-                 "panel simply has no send surface (Online + Requests still work); wire only some " +
-                 "of them and ValidateSceneWiring says so.")]
+        [Header("Add Friend (send a friend request by name or by Name#1234)")]
+        [Tooltip("Where the player types who to befriend: a full UGS Name#1234 (sent by name), or a name " +
+                 "without the #1234, which is matched against the pilots this panel knows (online, party, " +
+                 "recently played with, friend lists) and sent by player id. The three Add Friend fields " +
+                 "are wired together or not at all: leave all three empty and the panel simply has no send " +
+                 "surface (Online + Requests still work); wire only some of them and ValidateSceneWiring says so.")]
         [SerializeField] private TMP_InputField addFriendNameInput;
-        [Tooltip("Sends the typed name through FriendsServiceFacade.SendFriendRequestByNameAsync, the " +
-                 "single writer of FriendsDataSO. Disabled while a send is in flight.")]
+        [Tooltip("Sends the typed name through FriendsServiceFacade (by name for a Name#1234, by id for a " +
+                 "known pilot), the single writer of FriendsDataSO. Disabled while a send is in flight.")]
         [SerializeField] private Button addFriendSendButton;
-        [Tooltip("One readable line about the last send: sent, or why it did not go. When unwired the " +
-                 "line goes to the toast instead, like the Accept/Decline feedback does.")]
+        [Tooltip("One readable line: while idle, the player's own full Name#1234 (what a friend types to add " +
+                 "them); after a send, whether it went or why not. When unwired, send feedback goes to the " +
+                 "toast instead, like the Accept/Decline feedback does, and the own tag is not shown.")]
         [SerializeField] private TMP_Text addFriendStatusText;
 
         [Header("Recent (pilots from your last online matches)")]
@@ -165,6 +171,15 @@ namespace CosmicShore.UI
 
         /// <summary>Unscaled time before which the next Send press is ignored (anti-spam gate).</summary>
         float _nextSendAllowedTime;
+
+        /// <summary>True while the status line shows the idle own-tag line rather than send feedback.</summary>
+        bool _addFriendLineIsIdle;
+
+        /// <summary>True while the own tag is being fetched from UGS (one fetch at a time).</summary>
+        bool _ownTagFetchInFlight;
+
+        /// <summary>Scratch for the pilots a typed name is matched against (no allocation per send).</summary>
+        readonly List<FriendNameResolver.KnownPilot> _knownPilotsScratch = new();
 
         #region Unity Lifecycle
 
@@ -1077,21 +1092,54 @@ namespace CosmicShore.UI
         void OnAddFriendNameSubmitted(string _) => OnSendFriendRequestClicked();
 
         /// <summary>
-        /// The Send button (or Enter in the name field): send a friend request to the pilot whose
-        /// exact display name is typed, through the facade. Anti-spam gate first (same discipline as
-        /// Invite/Cancel/Kick), then one request at a time - the button is disabled while the
-        /// facade call is in flight. Every outcome lands on the status line the player can read; the
-        /// facade's own await carries .AsMainThread(), so the continuation here is on the main thread.
+        /// The Send button (or Enter in the name field): send a friend request to whoever the typed
+        /// text names. Anti-spam gate first (same discipline as Invite/Cancel/Kick), then the text is
+        /// resolved (<see cref="FriendNameResolver"/>): a full Name#1234 goes to UGS by name, a name
+        /// without the #1234 that exactly one known pilot carries goes by that pilot's id, and
+        /// anything else (nothing typed, yourself, nobody or several pilots by that name) is refused
+        /// here with a line asking for the full Name#1234, since UGS resolves no other form of a
+        /// name. One request at a time - the button is disabled while the facade call is in flight.
+        /// Every outcome lands on the status line; the facade's own await carries .AsMainThread(), so
+        /// the continuation here is on the main thread.
         /// </summary>
         async void OnSendFriendRequestClicked()
         {
             if (_sendRequestInFlight) return;
             if (!TryBeginSendAction()) return;
 
-            string pilotName = addFriendNameInput ? addFriendNameInput.text?.Trim() : null;
-            if (string.IsNullOrEmpty(pilotName))
+            string typed = addFriendNameInput ? addFriendNameInput.text?.Trim() : null;
+            var target = FriendNameResolver.Resolve(typed, CollectKnownPilots(), LocalPlayerId,
+                friendsService != null ? friendsService.CachedLocalFriendTag : null);
+
+            switch (target.Outcome)
             {
-                ShowAddFriendStatus("Type a pilot's exact display name first.");
+                case FriendNameResolver.Outcome.Empty:
+                    ShowAddFriendStatus("Type a pilot's name or their Name#1234.");
+                    return;
+                case FriendNameResolver.Outcome.Self:
+                    ShowAddFriendStatus("That's you. Friends add you by your tag.");
+                    return;
+                case FriendNameResolver.Outcome.Ambiguous:
+                    ShowAddFriendStatus($"More than one {typed}. Type their full Name#1234.");
+                    return;
+                case FriendNameResolver.Outcome.Unknown:
+                    ShowAddFriendStatus($"Don't know {typed}. Type their full Name#1234.");
+                    return;
+            }
+
+            bool byId = target.Outcome == FriendNameResolver.Outcome.KnownPilot;
+            string pilotName = target.DisplayName;
+
+            // A known pilot's relationship is already on record: say so instead of a round trip
+            // UGS would refuse (the same states the RECENT rows read).
+            if (byId && ListHasPlayer(friendsData ? friendsData.Friends : null, target.PlayerId))
+            {
+                ShowAddFriendStatus($"{pilotName} is already your friend.");
+                return;
+            }
+            if (byId && ListHasPlayer(friendsData ? friendsData.OutgoingRequests : null, target.PlayerId))
+            {
+                ShowAddFriendStatus($"Request to {pilotName} already sent.");
                 return;
             }
 
@@ -1111,8 +1159,13 @@ namespace CosmicShore.UI
 
             try
             {
-                await friendsService.SendFriendRequestByNameAsync(pilotName);
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Friend request sent to '{pilotName}'");
+                if (byId)
+                    await friendsService.SendFriendRequestAsync(target.PlayerId);
+                else
+                    await friendsService.SendFriendRequestByNameAsync(target.FullName);
+
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[FriendsListPanel] Friend request sent to '{pilotName}' ({(byId ? "by id " + target.PlayerId : "by name")})");
 
                 if (addFriendNameInput) addFriendNameInput.SetTextWithoutNotify(string.Empty);
                 ShowAddFriendStatus($"Friend request sent to {pilotName}.");
@@ -1129,6 +1182,51 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>The local player's UGS id, as the presence layer knows it; null before it does.</summary>
+        string LocalPlayerId => connectionData ? connectionData.LocalPlayerId : null;
+
+        /// <summary>
+        /// Every pilot this panel knows by id and name, for a typed name to be matched against: the
+        /// presence lobby, the party, recently played with, and the friend, incoming and outgoing
+        /// request lists. Duplicates of one pilot are fine (the resolver keys on the id).
+        /// </summary>
+        List<FriendNameResolver.KnownPilot> CollectKnownPilots()
+        {
+            _knownPilotsScratch.Clear();
+
+            if (connectionData)
+            {
+                AddPartyPilots(connectionData.OnlinePlayers);
+                AddPartyPilots(connectionData.PartyMembers);
+            }
+
+            foreach (var record in RecentPlayersStore.Entries)
+                _knownPilotsScratch.Add(new FriendNameResolver.KnownPilot(record.PlayerId, record.DisplayName));
+
+            if (friendsData)
+            {
+                AddFriendPilots(friendsData.Friends);
+                AddFriendPilots(friendsData.IncomingRequests);
+                AddFriendPilots(friendsData.OutgoingRequests);
+            }
+
+            return _knownPilotsScratch;
+        }
+
+        void AddPartyPilots(ScriptableListPartyPlayerData list)
+        {
+            if (list == null) return;
+            foreach (var player in list)
+                _knownPilotsScratch.Add(new FriendNameResolver.KnownPilot(player.PlayerId, player.DisplayName));
+        }
+
+        void AddFriendPilots(ScriptableListFriendData list)
+        {
+            if (list == null) return;
+            foreach (var friend in list)
+                _knownPilotsScratch.Add(new FriendNameResolver.KnownPilot(friend.PlayerId, friend.DisplayName));
+        }
+
         /// <summary>
         /// Anti-spam gate for the Send button, the twin of OnlineInfoEntry.TryBeginAction. Returns
         /// false (and the press is ignored) within <see cref="sendRequestCooldownSeconds"/> of the
@@ -1143,14 +1241,54 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// On every open: a clean status line and a Send button that reflects whether a send is still
-        /// in flight from before the panel was hidden (the typed name is kept).
+        /// On every open: the status line back to its idle own-tag line and a Send button that
+        /// reflects whether a send is still in flight from before the panel was hidden (the typed
+        /// name is kept).
         /// </summary>
         void ResetAddFriendSection()
         {
-            if (addFriendStatusText) addFriendStatusText.text = string.Empty;
+            ShowOwnTagLine();
             SetSendButtonInteractable(!_sendRequestInFlight);
         }
+
+        /// <summary>
+        /// The status line's idle state: "Your tag: Name#1234", the player's own full UGS name, which
+        /// is what a friend types to add them and which the game shows nowhere else (every other
+        /// surface strips the #1234). Empty until the tag is known; when the Authentication cache
+        /// has none yet it is fetched once and filled in, unless send feedback took the line first.
+        /// </summary>
+        void ShowOwnTagLine()
+        {
+            if (!addFriendStatusText) return;
+
+            string tag = friendsService != null ? friendsService.CachedLocalFriendTag : null;
+            addFriendStatusText.text = FormatOwnTag(tag);
+            _addFriendLineIsIdle = true;
+
+            if (string.IsNullOrEmpty(tag) && friendsService != null && !_ownTagFetchInFlight)
+                FetchOwnTagIntoIdleLine();
+        }
+
+        async void FetchOwnTagIntoIdleLine()
+        {
+            _ownTagFetchInFlight = true;
+            string tag;
+            try
+            {
+                tag = await friendsService.FetchLocalFriendTagAsync();
+            }
+            finally
+            {
+                _ownTagFetchInFlight = false;
+            }
+
+            // The panel may be gone (Menu_Main unloaded during the fetch), or a send's feedback may
+            // own the line by now. `this` first: Unity's null check on a destroyed panel.
+            if (!this || !addFriendStatusText || !_addFriendLineIsIdle || string.IsNullOrEmpty(tag)) return;
+            addFriendStatusText.text = FormatOwnTag(tag);
+        }
+
+        static string FormatOwnTag(string tag) => string.IsNullOrEmpty(tag) ? string.Empty : $"Your tag: {tag}";
 
         void SetSendButtonInteractable(bool interactable)
         {
@@ -1166,6 +1304,7 @@ namespace CosmicShore.UI
             if (addFriendStatusText)
             {
                 addFriendStatusText.text = line;
+                _addFriendLineIsIdle = false;
                 return;
             }
 

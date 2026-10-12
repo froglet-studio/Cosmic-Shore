@@ -22,7 +22,7 @@ Read `Docs/PartySystem/UI.md` first — it is the inventory of this surface — 
 
 ## Measured 10 Sep 2026 — re-verify each before acting
 
-### 1 · A player cannot send a friend request · **severe** · ✅ landed 2026-10-10 (Add Friend section, commit d70061b42; not yet opened in Unity)
+### 1 · A player cannot send a friend request · **severe** · ✅ landed 2026-10-10 (Add Friend section, commit d70061b42), corrected 2026-10-12 (UGS needs the full `Name#1234`: `FriendNameResolver`, own tag on the status line); not yet opened in Unity
 
 `FriendsServiceFacade` exposes `SendFriendRequestByNameAsync(name)` and
 `SendFriendRequestAsync(playerId)`. Grepping all of `Assets/_Scripts` for either, excluding the

@@ -24,7 +24,7 @@ Friend + Recent + Requests). They share the same component family:
 | `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. Also **ensures its own `PartySlotDomainGlow`** at `Awake` (see "Seating"). |
 | `PartyRoster` | Pure static. THE party seating order, and the only place it is decided. No Unity, UGS or Netcode types — the caller supplies the client-id lookup, which is what makes it edit-mode testable (`PartyRosterTests`). |
 | `PartySlotDomainGlow` | The animated halo behind a slot's avatar, tinted with that pilot's live domain. Generated (GameObject, sprite and rect) rather than authored, so it needs no scene wiring and no party surface can ship without it. |
-| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's exact display name, a Send button and a one-line status label; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites; the party-invite rows are the **invite inbox**, re-read from `HostConnectionService`'s `IncomingInviteInbox` every time the panel opens, see "Invite inbox and badge" below). Auto-opens when a party invite arrives; opening it marks the inbox seen, which clears the party panel's `PartyInviteBadge`. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade` (and `MarkIncomingInvitesSeen`). There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
+| `FriendsListPanel` | Combined social panel — **no tabs; all four sections render at once**: **Online** (every presence-lobby player) + **Add Friend** (a `TMP_InputField` for a pilot's name or full `Name#1234`, a Send button and a one-line status label that shows the player's own `Name#1234` while idle; see "Add Friend section" below) + **Recent** (the other humans of your last online matches from `RecentPlayersStore`, newest first, an add-friend button per row; see "Recent section" below) + **Requests** (incoming friend requests AND incoming party invites; the party-invite rows are the **invite inbox**, re-read from `HostConnectionService`'s `IncomingInviteInbox` every time the panel opens, see "Invite inbox and badge" below). Auto-opens when a party invite arrives; opening it marks the inbox seen, which clears the party panel's `PartyInviteBadge`. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists; the only thing it WRITES goes through `FriendsServiceFacade` (and `MarkIncomingInvitesSeen`). There are four scene-placed copies in Menu_Main (Arcade, Arena, Mission and Toybox screen modals), all wired alike. |
 | `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. A third button, **Join** (`joinButton` + `joinButtonIcon`), is one control with two faces resolved by `FriendsListPanel.ResolveJoinMode`: a blue doorway icon that walks you into that player's party with no invite (drawn disabled when the party is full), or — while the player is IN A MATCH — an amber eye icon that is the row's ONLY enabled button and **spectates** the match (`SPECTATOR.md`). On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
 | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite, RecentPlayer }` — one row type serves all three (delegates to `FriendsServiceFacade` / `PartyInviteController`); in its `RecentPlayer` shape (`PopulateRecentPlayer`) the Accept glyph is the add-friend button, Decline is hidden, the label is the resolved state and nothing expires. Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
 | `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup**: a small bottom-left card (avatar + inviter name + a detail line + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, and on `OnInviteResolved` asks the service whether the invite it shows is still open: if not it moves on to the next open invite or hides. **Auto-hide after `autoHideSeconds` (3 s, serialized)** hides only; the detail line says so: "Also in your friends list for 58 s", prefixed "2 invites waiting." when more than one is open (`Notice.Compose`, edit-mode tested). **Newest wins on the card only**: an earlier invite stays in the inbox and is counted on the card. Decline answers the shown sender's invite alone. Lives as **`PartyInviteNotificationPanel Variant.prefab`**, a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline; `detailText` is the row's status label). Instanced bottom-left under `Screens/HomeScreen` in Menu_Main. |
@@ -182,11 +182,39 @@ as a spectator with no Player object (`SpectateAsync`). Record: `SPECTATOR.md`.
 ### Add Friend section (the send half, 2026-10-10)
 
 **Friend requests are sent from the `FriendsListPanel`'s Add Friend section**, the third
-section between Online and Recent. It is by exact display name, which is what the retired
-`AddFriendPanel` did and what the facade's by-name method supports; the RECENT section below
-is the other source (a pilot you just played with, sent by id through
-`.SendFriendRequestAsync(playerId)`), and the two share the gate, the in-flight lock and the
-status line.
+section between Online and Recent. The RECENT section below is the other source (a pilot you
+just played with, sent by id through `.SendFriendRequestAsync(playerId)`), and the two share the
+gate, the in-flight lock and the status line.
+
+**What a typed name can reach (corrected 2026-10-12).** UGS resolves a friend request by NAME only
+in its full `Name#1234` form: the Friends SDK (`com.unity.services.friends` 1.1.1,
+`WrappedFriendsApi.AddFriendByNameAsync`) sends the text verbatim as the target's `profileName`,
+the player-names service stores every name with its `#1234` discriminator, and names are
+case-sensitive. The game strips that discriminator from every name it shows (friend rows,
+`Player.NetName`, invites, leaderboards), and `PlayerDataService` also compacts a display name to
+letters and digits before mirroring it into UGS ("Sky Walker" is `SkyWalker#NNNN`). The first
+version of this section sent the typed name straight to `SendFriendRequestByNameAsync`, so a
+player typing the name they could see on a row reached nobody. Now `FriendNameResolver` decides:
+
+- **Text with a `#` and something on both sides** is a full name and goes to UGS by name, as
+  typed (whitespace removed; a UGS name has none).
+- **Text without one** is matched against every pilot the panel knows: the presence lobby
+  (`OnlinePlayers`), the party (`PartyMembers`), `RecentPlayersStore`, and the `Friends`,
+  `IncomingRequests` and `OutgoingRequests` lists. Names compare by letters and digits only,
+  ignoring case (the same compaction UGS names get), so "Sky Walker", "SkyWalker" and "skywalker"
+  are one pilot. Exactly one other pilot by that name: the request goes to that pilot's player id
+  through `SendFriendRequestAsync`. Two or more: "More than one NAME. Type their full Name#1234."
+  None: "Don't know NAME. Type their full Name#1234." The local player's own name: "That's you."
+  Nothing is sent in those three cases, nor for a matched pilot who is already a friend ("NAME is
+  already your friend.") or already has your request ("Request to NAME already sent.").
+- **The player's own `Name#1234`** is the status line's idle text ("Your tag: Name#1234"),
+  read from `FriendsServiceFacade.CachedLocalFriendTag` (the Authentication SDK's cached
+  `PlayerName`) and fetched once through `FetchLocalFriendTagAsync` (`GetPlayerNameAsync`, the
+  call the session setup already makes) when the cache is empty. It is the only place the game
+  shows a discriminator, so it is what a player tells a friend to type. The field's placeholder
+  reads "Pilot name or Name#1234" on all four panels (set with `cs-asset`).
+- Pinned by `FriendNameResolverTests` (full name by name, own name refused, bare name of one known
+  pilot by id across spellings, two pilots with one name ambiguous, unknown name never sent).
 
 - **Objects** (children of each `FriendListPanel`, scene-authored, not a prefab):
   `AddFriendHeader` (the ONLINE / REQUESTS header bar and text treatment, reading ADD FRIEND),
@@ -199,23 +227,27 @@ status line.
   panel still works), a partial trio is reported by `ValidateSceneWiring` on enable.
 - **Flow**: Send press or Enter in the field -> `TryBeginSendAction` (the same 0.4 s unscaled
   anti-spam gate `OnlineInfoEntry` puts on Invite / Cancel / Kick, `sendRequestCooldownSeconds`)
-  -> empty name is refused on the status line -> facade not initialized (offline, not signed in)
-  is refused on the status line ("Friends service isn't ready...") -> otherwise ONE request at a
-  time: the button is disabled while `FriendsServiceFacade.SendFriendRequestByNameAsync(name)`
+  -> `FriendNameResolver` (above): empty, self, ambiguous and unknown names are refused on the
+  status line -> facade not initialized (offline, not signed in) is refused on the status line
+  ("Friends service isn't ready...") -> otherwise ONE request at a time: the button is disabled
+  while `SendFriendRequestAsync(playerId)` (a known pilot) or `SendFriendRequestByNameAsync(Name#1234)`
   is in flight (the facade's own UGS await carries `.AsMainThread()` and calls
   `SyncAllRelationships()` afterwards), then "Friend request sent to NAME." and the field clears,
-  or "Couldn't send to NAME: <reason>" with a `CSDebug.LogWarning`. Traces go to the `Party`
+  or "Couldn't send to NAME: <reason>" with a `CSDebug.LogWarning`. Reopening the panel puts the
+  status line back to the own-tag line; the typed text is kept. Traces go to the `Party`
   log channel. When no status label is wired the line goes to `ToastNotificationAPI`, the
   panel's existing Accept/Decline feedback path. The UI never touches the UGS SDK.
 - **Layout**: the panel has no layout group; the section is anchored into the gap made by
-  shrinking the Online scroll view (now 280 tall, top edge at the value the Arena panel
+  shrinking the Online scroll view (280 tall when this section landed, then 210 and anchored by
+  fraction when the RECENT section below made room; top edge at the value the Arena panel
   already used, clear of the ONLINE header). Incoming friend requests still arrive in the
   Requests section as `RequestInfoEntry` rows (Accept/Decline).
 - **Seen in Prisma** (xvfb, `COSMIC_SHORE_NET=off`): the section renders between ONLINE and
   REQUESTS, an empty Send only writes the nudge line, and a name reaches the facade (the Party
   channel logs `[UGS Friends] Sending friend request to 'NAME'...`) and comes back on the status
   line as "Couldn't send to NAME: No player named 'NAME' could be found." (Prisma's in-engine
-  Friends stand-in answers that offline, so the not-ready refusal was not exercised there).
+  Friends stand-in answers that offline, so the not-ready refusal was not exercised there). That
+  run predates the 2026-10-12 resolver: a bare unknown name is now refused before any send.
   **Not yet opened in the Unity Editor**: the scene objects were authored with `cs-asset`, so the
   first editor pass should open Menu_Main, confirm the four panels show the section, and send a
   real request between two signed-in accounts.

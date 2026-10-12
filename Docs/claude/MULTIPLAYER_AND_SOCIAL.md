@@ -458,7 +458,7 @@ The facade (`_Scripts/System/FriendsServiceFacade.cs`) exposes these operations.
 | Method | UGS SDK Call | Effect |
 |---|---|---|
 | `InitializeAsync()` | `FriendsService.InitializeAsync()` | Wire events, sync all lists, raise `OnFriendsServiceReady` |
-| `SendFriendRequestByNameAsync(name)` | `AddFriendByNameAsync(name)` | Adds to `OutgoingRequests` list |
+| `SendFriendRequestByNameAsync(name)` | `AddFriendByNameAsync(name)` | Adds to `OutgoingRequests` list. UGS resolves only the full, case-sensitive `Name#1234`; every name the game shows has the `#1234` stripped |
 | `SendFriendRequestAsync(playerId)` | `AddFriendAsync(playerId)` | Adds to `OutgoingRequests` list |
 | `AcceptFriendRequestAsync(playerId)` | `AddFriendAsync(playerId)` | Moves from `IncomingRequests` to `Friends`, raises `OnFriendAdded` |
 | `DeclineFriendRequestAsync(playerId)` | `DeleteIncomingFriendRequestAsync(playerId)` | Removes from `IncomingRequests` |
@@ -508,14 +508,17 @@ table below.
 | Request row UI (friend request + party invite) | `RequestInfoEntry.cs` | `_Scripts/UI/Elements/` |
 | SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
 
-#### Friend Requests (no UI entry point today)
+#### Friend Requests (the Add Friend and RECENT sections of `FriendsListPanel`)
 
-The by-name `AddFriendPanel` and the confirmed-friend row `FriendInfoEntry` were
-retired, so there is currently **no UI control to send a friend request** —
-`FriendsListPanel` renders only the Online + Requests sections. The single-writer
-facade methods remain for re-introducing one: `FriendsServiceFacade.SendFriendRequestByNameAsync(name)`
-(by name) and `.SendFriendRequestAsync(playerId)` (by ID). Incoming requests still
-arrive as `RequestInfoEntry` rows (Accept/Decline). Friend-request (persistent UGS
+Requests are sent from `FriendsListPanel`'s **Add Friend** section and from each **RECENT** row
+(`.SendFriendRequestAsync(playerId)`). Add Friend goes through `FriendNameResolver`
+(`_Scripts/System/`): a typed full `Name#1234` goes by name
+(`FriendsServiceFacade.SendFriendRequestByNameAsync`), a name without the `#1234` is matched
+against the pilots the panel knows (online, party, recently played with, friend lists) and sent by
+that pilot's id, and anything else is refused with a line asking for the full `Name#1234`, because
+UGS resolves no other form of a name. The idle status line shows the player's own `Name#1234`
+(`FriendsServiceFacade.CachedLocalFriendTag` / `FetchLocalFriendTagAsync`), the one place the game
+shows a discriminator. Incoming requests still arrive as `RequestInfoEntry` rows (Accept/Decline). Friend-request (persistent UGS
 relationship) and party-invite (ephemeral session property) stay separate systems.
 Detail: **`Docs/PartySystem/UI.md`** § "Friend requests vs. party invites".
 

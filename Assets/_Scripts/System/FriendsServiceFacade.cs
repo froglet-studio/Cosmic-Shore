@@ -2,6 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Services.Authentication;
 using Unity.Services.Friends;
 using Unity.Services.Friends.Exceptions;
 using Unity.Services.Friends.Models;
@@ -94,8 +95,15 @@ namespace CosmicShore.Core
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Sends a friend request to a player by their display name.
+        /// Sends a friend request to a player by their FULL UGS name, "Name#1234".
         /// If the target already sent a request to us, this creates a mutual friendship.
+        ///
+        /// <para>The SDK sends the text verbatim as the target's profile name, and UGS resolves only
+        /// the full form with its discriminator (case-sensitive). The name the game shows anywhere
+        /// has that discriminator stripped (<see cref="StripUgsDiscriminator"/>), so a shown name
+        /// sent here finds nobody: resolve it to a player id first and use
+        /// <see cref="SendFriendRequestAsync"/> (the friends panel does, through
+        /// <see cref="FriendNameResolver"/>).</para>
         /// </summary>
         public async UniTask SendFriendRequestByNameAsync(string playerName)
         {
@@ -202,6 +210,59 @@ namespace CosmicShore.Core
             {
                 CSDebug.LogWarning($"[FriendsServiceFacade] CancelFriendRequest error: {e.Message}");
                 throw;
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Public API: the local player's own friend tag
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The local player's own UGS name WITH its "#1234" discriminator: the only form
+        /// <see cref="SendFriendRequestByNameAsync"/> resolves, and the form every friend row,
+        /// scoreboard and invite strips. The friends panel shows it so a player can tell a friend
+        /// what to type. Read from the Authentication SDK's cache; empty while signed out, before
+        /// Unity Services are up, or until the name has been fetched once
+        /// (<see cref="FetchLocalFriendTagAsync"/>).
+        /// </summary>
+        public string CachedLocalFriendTag
+        {
+            get
+            {
+                try
+                {
+                    var auth = AuthenticationService.Instance;
+                    return auth != null && auth.IsSignedIn ? auth.PlayerName ?? string.Empty : string.Empty;
+                }
+                catch (Exception)
+                {
+                    // AuthenticationService.Instance throws before Unity Services are initialised;
+                    // "no tag yet" is the honest answer then.
+                    return string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="CachedLocalFriendTag"/>, fetching the name from UGS when the cache is empty
+        /// (the same <c>GetPlayerNameAsync</c> the session setup already calls). Empty when signed
+        /// out or when the read fails; never throws.
+        /// </summary>
+        public async UniTask<string> FetchLocalFriendTagAsync()
+        {
+            string cached = CachedLocalFriendTag;
+            if (!string.IsNullOrEmpty(cached)) return cached;
+
+            try
+            {
+                var auth = AuthenticationService.Instance;
+                if (auth == null || !auth.IsSignedIn) return string.Empty;
+                return await auth.GetPlayerNameAsync().AsMainThread() ?? string.Empty;
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsServiceFacade] Reading the local player's UGS name failed: {e.Message}");
+                return string.Empty;
             }
         }
 
