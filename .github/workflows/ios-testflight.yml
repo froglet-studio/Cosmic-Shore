@@ -203,6 +203,27 @@ jobs:
             echo "::warning::Info.plist has no ITSAppUsesNonExemptEncryption, so App Store Connect will ask the export-compliance questions for this build. IosExportCompliancePostprocess did not run on this export."
           fi
 
+      - name: Remove the alpha channel from the app icons
+        run: |
+          # App Store Connect refuses an app icon that has an alpha channel (ITMS-90717), even a
+          # fully opaque one. The project's icon source (CSThumbApp.png) is RGBA, so flatten every
+          # PNG in the exported AppIcon set onto an opaque background before the archive.
+          python3 -m pip install --quiet --break-system-packages Pillow
+          python3 - "$PROJ" <<'PY'
+          import glob, os, sys
+          from PIL import Image
+          flattened = 0
+          for path in glob.glob(os.path.join(sys.argv[1], "**", "*.appiconset", "*.png"), recursive=True):
+              im = Image.open(path)
+              if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                  rgba = im.convert("RGBA")
+                  flat = Image.new("RGB", rgba.size, (0, 0, 0))
+                  flat.paste(rgba, mask=rgba.getchannel("A"))
+                  flat.save(path)
+                  flattened += 1
+          print(f"Removed the alpha channel from {flattened} app icon file(s).")
+          PY
+
       - name: Install the signing certificate and profile
         env:
           P12_B64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
