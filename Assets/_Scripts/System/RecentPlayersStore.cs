@@ -103,8 +103,10 @@ namespace CosmicShore.Core
         /// </summary>
         static bool EnsureLoadedForSignedInAccount()
         {
+            _config ??= RecentPlayersConfigSO.LoadOrDefault();
             string owner = SignedInPlayerId();
-            if (string.IsNullOrEmpty(owner))
+            string fileName = SaveFileNameFor(_config.SaveFileName, owner);
+            if (fileName == null)
             {
                 _records = null;
                 _ownerPlayerId = null;
@@ -113,9 +115,7 @@ namespace CosmicShore.Core
 
             if (_records != null && owner == _ownerPlayerId) return true;
 
-            _config ??= RecentPlayersConfigSO.LoadOrDefault();
-            _records = DataAccessor.Load<List<RecentPlayerRecord>>(SaveFileNameFor(_config.SaveFileName, owner))
-                       ?? new List<RecentPlayerRecord>();
+            _records = DataAccessor.Load<List<RecentPlayerRecord>>(fileName) ?? new List<RecentPlayerRecord>();
             DropUnusable(_records, owner);
             _ownerPlayerId = owner;
             return true;
@@ -192,7 +192,7 @@ namespace CosmicShore.Core
             if (others.Count == 0) return 0;
 
             int recorded = Merge(_records, others, nowUtc, _config.MaxEntries);
-            DataAccessor.Save(SaveFileNameFor(_config.SaveFileName, _ownerPlayerId), _records);
+            DataAccessor.Save(OwnerFileName, _records);
 
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[RecentPlayers] Recorded {recorded} pilot(s) from the match; list holds {_records.Count}/{_config.MaxEntries}.");
@@ -204,8 +204,11 @@ namespace CosmicShore.Core
         {
             if (!EnsureLoadedForSignedInAccount()) return;
             _records.Clear();
-            DataAccessor.Save(SaveFileNameFor(_config.SaveFileName, _ownerPlayerId), _records);
+            DataAccessor.Save(OwnerFileName, _records);
         }
+
+        /// <summary>The loaded account's save file (only meaningful after a true <see cref="EnsureLoadedForSignedInAccount"/>).</summary>
+        static string OwnerFileName => SaveFileNameFor(_config.SaveFileName, _ownerPlayerId);
 
         // ─────────────────────────────────────────────────────────────────────
         // Pure list shaping (edit-mode tested)
@@ -215,7 +218,8 @@ namespace CosmicShore.Core
         /// The account's own save file: <paramref name="baseFileName"/> with the owner's player id
         /// before the extension ("recent_players.data" for "AbC123" is
         /// "recent_players_AbC123.data"). Only letters, digits, '-' and '_' of the id are kept, so
-        /// the name is always a plain file name.
+        /// the name is always a plain file name. Null when there is no usable id (signed out): no
+        /// account, no list, and never the shared pre-account file.
         /// </summary>
         public static string SaveFileNameFor(string baseFileName, string ownerPlayerId)
         {
@@ -225,7 +229,7 @@ namespace CosmicShore.Core
                     if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
                         id.Append(c);
 
-            if (id.Length == 0) return baseFileName;
+            if (id.Length == 0) return null;
 
             int dot = baseFileName.LastIndexOf('.');
             return dot > 0

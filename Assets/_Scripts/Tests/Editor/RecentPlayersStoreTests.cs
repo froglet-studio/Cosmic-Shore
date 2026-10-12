@@ -213,6 +213,16 @@ namespace CosmicShore.Tests
                 RecentPlayersStore.SaveFileNameFor("recent_players.data", "a/b_c-d:"));
         }
 
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("/:")]
+        public void SaveFileNameFor_NoUsableId_IsNoFile_NeverTheSharedPreAccountOne(string ownerId)
+        {
+            // Signed out there is no list at all; falling back to the base name would read and
+            // write the one file every account on the machine used to share.
+            Assert.IsNull(RecentPlayersStore.SaveFileNameFor("recent_players.data", ownerId));
+        }
+
         [Test]
         public void DropUnusable_RemovesTheOwnerAndIdlessRecords()
         {
