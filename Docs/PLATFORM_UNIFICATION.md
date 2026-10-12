@@ -505,12 +505,13 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 - **Unity Engine diagnostics is on.**
 - **`com.unity.mobile.notifications` is installed and unused.**
 - **iPad:**
-  - At 4:3, the 13 match-height canvases lose a quarter of their width. Expand mode on handheld would
-    be identical at 16:9 and wider.
-  - Cameras hold vertical field of view.
-  - The iOS 27 SDK will stop honouring `UIRequiresFullScreen` (TN3192).
-
-  These are planned in guide §3, not changed blind.
+  - ~~At 4:3, the match-height canvases lose a quarter of their width.~~ Fixed 2026-10-12: the 12
+    without `AdaptiveCanvasScaler` use Expand. That is identical at 16:9 and wider, and matches
+    width below; most of them are the vessel HUDs.
+  - ~~Cameras hold vertical field of view.~~ Fixed 2026-10-12: `CameraAspectFit` puts every
+    on-screen game camera on a 16:9 overscan gate. Narrower screens keep the 16:9 width and gain
+    height; 16:9 and wider are unchanged.
+  - The iOS 27 SDK will stop honouring `UIRequiresFullScreen` (TN3192). Still open.
 
 **Debt this branch created or walked past** (rows, not fixes; each needs its own change):
 

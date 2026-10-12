@@ -107,6 +107,20 @@ the player and editor configs with 0 errors in project code, and the console-log
 7. **Home hub row** (`HomeScreen/Main_Menu_Panel/ButtonLayouts`) is MiddleCenter with zero padding.
    It was MiddleLeft with 171 left padding, which only looked centred at 1920 wide; on a phone the
    extra width all collected on the right. On desktop it moves 14 units to true centre.
+8. **Screens and backgrounds look like the desktop on a phone.** The strip moved to a full-canvas
+   viewport: one full-screen slot per screen, content in the safe rect inside it.
+   - `SafeAreaBleed` copies carry full-width background images out to the screen edges: Profile
+     `Background`, Hangar `GridPanel`/`DetailPanel`, the NavBar gradient and line, modal
+     backgrounds, and the 1920-wide hub modals.
+   - It replaces the earlier clip-to-safe-area, which left every screen a box with the 3D scene
+     leaking round the corners and the NavBar band short of the edges.
+9. **`CameraAspectFit`** puts every on-screen game camera (no RenderTexture, not orthographic) on a
+   16:9 physical-camera gate with Overscan. Below 16:9 (iPad 4:3, 16:10) the 16:9 width is kept
+   and height is gained; 16:9 and wider are unchanged. Tests: `CameraAspectFitTests`, including
+   Unity's projection matrix at 4:3, 16:9 and 21:9.
+10. **The 12 match-height canvases** without `AdaptiveCanvasScaler` use Expand: the 9 vessel
+    `ShipHUDContainer`s, `VesselHUDContainer`, `Duel Cell Stats Canvas` and `FTUE_Canvas`.
+    Identical at 16:9 and wider; matches width below 16:9.
 
 **Verify in editor**
 
@@ -132,6 +146,19 @@ the player and editor configs with 0 errors in project code, and the console-log
    - At runtime, `SceneTransitionModal` is a direct child of `UI_Refactored`, right after
      `Safe Area`.
 7. HOME's four hub buttons are centred under the nav bar on a phone, an iPad and a 16:9 desktop.
+8. On a notch or Dynamic Island iPhone (Device Simulator), there are no 3D gaps at the sides,
+   the corners or the bottom.
+   - Profile and Hangar fill the screen edge to edge.
+   - The NavBar's dark band runs the full width.
+   - The Arcade, Mission, Toybox and Arena windows reach both edges.
+   - Buttons and text stay inside the safe area.
+   - On a 16:9 desktop, the hierarchy has no `Safe Area Bleed` objects.
+9. iPad Air / Pro (4:3) in the Simulator:
+   - the menu's background flight shows the same width as on a 16:9 desktop, plus more top and
+     bottom, not zoomed in;
+   - in a match, the vessel HUD fits the screen width;
+   - `CameraAspectFitTests` passes in the Test Runner;
+   - tapping the menu crystal still hits it.
 
 **Found and left open** (not phone-only, or a designer's call):
 
