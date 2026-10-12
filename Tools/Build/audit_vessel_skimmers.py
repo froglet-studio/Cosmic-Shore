@@ -21,8 +21,11 @@ and applies each instance level's m_Modifications on top of the base values, so 
 override that nulls a container or deactivates a GameObject is seen where the
 inspector would show it.
 
-WHAT IT CHECKS, per hull prefab under Assets/_Prefabs/Spacevessels, mirroring
-Assets/_Scripts/Editor/VesselSkimmerAudit.cs check for check:
+WHAT IT CHECKS, per hull prefab under Assets/_Prefabs/Spacevessels (any depth, as the editor's
+FindAssets recurses; a hull is a prefab whose ROOT carries a VesselStatus, declared there or
+inherited from the base hull a Prefab Variant is made from), mirroring
+Assets/_Scripts/Editor/VesselSkimmerAudit.cs check for check. A prefab with no VesselStatus is
+listed at the end as not audited, never silently dropped:
   - the slot is assigned (the far field is optional);
   - every GameObject from the skimmer up to the hull root is active;
   - the skimmer's GameObject carries a SkimmerImpactor whose `skimmer` reference is
@@ -73,6 +76,7 @@ COLLIDER_CLASSES = {64, 65, 135, 136}   # Mesh, Box, Sphere, Capsule
 RIGIDBODY = 54
 GAMEOBJECT = 1
 TRANSFORM = 4
+RECT_TRANSFORM = 224
 MONO = 114
 PREFAB_INSTANCE = 1001
 
@@ -293,30 +297,69 @@ def removed_at_some_level(obj: Obj) -> bool:
 
 
 def sibling_components(index: AssetIndex, obj: Obj) -> list[Obj]:
-    """Every component on the object's GameObject, including ones ADDED at an outer level and
-    excluding ones an outer level REMOVED."""
+    """Every component on the object's GameObject (see components_on)."""
     go = game_object(index, obj)
-    if go is None:
-        return []
+    return components_on(index, go) if go is not None else []
+
+
+def components_on(index: AssetIndex, go: Obj) -> list[Obj]:
+    """Every component on this GameObject as the hull sees it: the declaring prefab's own list,
+    plus the ones ADDED at any outer level, minus the ones an outer level REMOVED.
+
+    Every component is resolved FROM THE HULL, whatever level declares it, so each one carries
+    the full chain of instance levels: the hull's overrides apply to it, the hull's removals
+    are honoured, and its object references compose into the hull's id space. A component
+    added on an intermediate prefab (the Rhino's ForceFieldSkimmer Variant adds two) used to be
+    resolved from that prefab alone, which read its base values and compared its references
+    in the wrong id space; the self-test plants both shapes."""
+    hull = go.levels[0][0]
     out: list[Obj] = []
     base_p, base_f = go.base
     for comp in re.findall(r"- component: \{fileID: (-?\d+)\}", base_p.body(base_f)):
-        c = int(comp)
-        top = go._compose(c, len(go.levels) - 1)
-        r = resolve(index, go.levels[0][0], top) if len(go.levels) > 1 else resolve(index, base_p, c)
+        r = resolve(index, hull, go._compose(int(comp), len(go.levels) - 1))
         if r is not None and not removed_at_some_level(r):
             out.append(r)
-    # Components added on an outer prefab point their m_GameObject at the stripped GO there.
+    # Components added on an outer prefab point their m_GameObject at the stripped GO there,
+    # and their own fid is in THAT prefab's id space: compose it up to the hull's.
     for i in range(len(go.levels) - 1):
         outer, go_fid, _inst = go.levels[i]
         for fid, (cls, body, stripped) in outer.docs.items():
             if stripped or cls in (GAMEOBJECT, TRANSFORM, PREFAB_INSTANCE):
                 continue
             if fileid(field(body, "m_GameObject")) == go_fid:
-                r = resolve(index, go.levels[0][0], fid) if i == 0 else resolve(index, outer, fid)
-                if r is not None:
+                r = resolve(index, hull, go._compose(fid, i))
+                if r is not None and not removed_at_some_level(r):
                     out.append(r)
     return out
+
+
+def root_game_object(index: AssetIndex, prefab: Prefab) -> Obj | None:
+    """The prefab's root GameObject. In a Prefab Variant (or any prefab whose root is itself
+    a nested instance) the root is the source's root seen through the one instance with no
+    parent transform; otherwise it is the GameObject of the Transform with no father."""
+    for fid, (cls, body, stripped) in prefab.docs.items():
+        if cls in (TRANSFORM, RECT_TRANSFORM) and not stripped and not fileid(field(body, "m_Father")):
+            return resolve(index, prefab, fileid(field(body, "m_GameObject")))
+    for inst, (src_guid, _mods) in prefab.instances.items():
+        if fileid(field(prefab.body(inst), "m_TransformParent")):
+            continue
+        src = index.prefab(src_guid)
+        inner = root_game_object(index, src) if src is not None else None
+        if inner is None:
+            return None
+        return resolve(index, prefab, (inner.levels[0][1] ^ inst) & MASK)
+    return None
+
+
+def vessel_status(index: AssetIndex, prefab: Prefab) -> Obj | None:
+    """The VesselStatus on the prefab's ROOT, as the editor audit's root.TryGetComponent finds
+    it: declared in the file, or inherited from a base hull this prefab is a variant of."""
+    go = root_game_object(index, prefab)
+    if go is None:
+        return None
+    status_guid = index.script_guid.get("VesselStatus")
+    return next((c for c in components_on(index, go)
+                 if c.cls == MONO and guid_of(c.value("m_Script")[0]) == status_guid), None)
 
 
 def game_object(index: AssetIndex, comp: Obj) -> Obj | None:
@@ -456,99 +499,274 @@ def audit_slot(index: AssetIndex, hull: Prefab, hull_name: str, status: Obj, slo
 
 
 def audit(index: AssetIndex, hull_folder: Path) -> tuple[int, dict[str, int], list[str]]:
+    """Every prefab under the hull folder, at any depth, as the editor's FindAssets does. A
+    prefab with no VesselStatus on its root is not a hull (the Components/ parts); it is named
+    after the hulls rather than dropped, so a hull the twin cannot read never just vanishes
+    from the report."""
     lines: list[str] = []
+    not_hulls: list[str] = []
     per_hull: dict[str, int] = {}
     total = 0
-    status_guid = index.script_guid.get("VesselStatus")
-    for path in sorted(hull_folder.glob("*.prefab")):
+    for path in sorted(hull_folder.rglob("*.prefab")):
+        name = path.relative_to(hull_folder).with_suffix("").as_posix()
         hull = Prefab(path)
-        status_fid = next((f for f, (c, b, s) in hull.docs.items()
-                           if c == MONO and not s and guid_of(field(b, "m_Script")) == status_guid), 0)
-        if not status_fid:
+        status = vessel_status(index, hull)
+        if status is None:
+            not_hulls.append(f"-- {name}: no VesselStatus found")
             continue
-        status = resolve(index, hull, status_fid)
-        lines.append(f"-- {path.stem}")
-        n1, l1 = audit_slot(index, hull, path.stem, status, "_nearFieldSkimmer", optional=False)
-        n2, l2 = audit_slot(index, hull, path.stem, status, "_farFieldSkimmer", optional=True)
+        lines.append(f"-- {name}")
+        n1, l1 = audit_slot(index, hull, name, status, "_nearFieldSkimmer", optional=False)
+        n2, l2 = audit_slot(index, hull, name, status, "_farFieldSkimmer", optional=True)
         lines += [l1, l2, ""]
-        per_hull[path.stem] = n1 + n2
+        per_hull[name] = n1 + n2
         total += n1 + n2
+    if not_hulls:
+        lines += ["Not audited (no VesselStatus on the prefab root; the editor skips these too):"]
+        lines += not_hulls + [""]
     return total, per_hull, lines
 
 
 # ------------------------------------------------------------ self-test -----
+#
+# The fixtures are SYNTHETIC: small Unity-shaped prefabs and assets written into a temp project,
+# with their own script guids. The self-test gates both static CI jobs, so it must not move when
+# a hull is re-wired, renamed or flattened; an earlier version pinned the shipped Squirrel and
+# read its skimmer one nested level deep, so an unrelated gameplay edit could turn CI red.
+
+def _g(n: int) -> str:
+    return f"{n:032x}"
+
+
+SYN_SCRIPTS = {name: _g(0x5C0 + i) for i, name in enumerate(sorted(SCRIPTS | {
+    "SkimmerImpactorDataContainerSO", "SomePrismEffectSO"}))}
+SYN_GUID = {"skimmer": _g(0xA1), "bare": _g(0xA2), "variant": _g(0xA3), "alpha": _g(0xB1),
+            "beta": _g(0xB2), "gamma": _g(0xB3), "delta": _g(0xB4), "loose": _g(0xB5),
+            "effects": _g(0xC1), "empty": _g(0xC2), "crackle": _g(0xC3), "effect": _g(0xD1),
+            "crackle_effect": _g(0xD2)}
+YAML_HEAD = "%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n"
+
+
+def _doc(cls: int, fid: int, kind: str, lines: list[str]) -> str:
+    head = [f"--- !u!{cls} &{fid}", f"{kind}:", "  m_ObjectHideFlags: 0",
+            "  m_CorrespondingSourceObject: {fileID: 0}", "  m_PrefabInstance: {fileID: 0}",
+            "  m_PrefabAsset: {fileID: 0}"]
+    return "\n".join(head + lines) + "\n"
+
+
+def _go(fid: int, name: str, comps: list[int], active: int = 1) -> str:
+    return _doc(GAMEOBJECT, fid, "GameObject", ["  serializedVersion: 6", "  m_Component:"]
+                + [f"  - component: {{fileID: {c}}}" for c in comps]
+                + ["  m_Layer: 0", f"  m_Name: {name}", "  m_TagString: Untagged", f"  m_IsActive: {active}"])
+
+
+def _transform(fid: int, go: int, father: int) -> str:
+    return _doc(TRANSFORM, fid, "Transform", [f"  m_GameObject: {{fileID: {go}}}", "  serializedVersion: 2",
+                                              "  m_Children: []", f"  m_Father: {{fileID: {father}}}"])
+
+
+def _mono(fid: int, go: int, script: str, fields: list[str]) -> str:
+    return _doc(MONO, fid, "MonoBehaviour", [f"  m_GameObject: {{fileID: {go}}}", "  m_Enabled: 1",
+                                             f"  m_Script: {{fileID: 11500000, guid: {SYN_SCRIPTS[script]}, type: 3}}",
+                                             "  m_Name: ", "  m_EditorClassIdentifier: "] + fields)
+
+
+def _physics(rb: int, col: int, go: int, trigger: int = 1) -> str:
+    return (_doc(RIGIDBODY, rb, "Rigidbody", [f"  m_GameObject: {{fileID: {go}}}", "  m_IsKinematic: 1"])
+            + _doc(135, col, "SphereCollider", [f"  m_GameObject: {{fileID: {go}}}", f"  m_IsTrigger: {trigger}"]))
+
+
+def _stripped(cls: int, kind: str, fid: int, src_fid: int, src_guid: str, inst: int) -> str:
+    return (f"--- !u!{cls} &{fid} stripped\n{kind}:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {src_fid}, guid: {src_guid}, type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {inst}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+
+
+def _instance(inst: int, parent: int, src_guid: str, mods: list[tuple[int, str, str, str]],
+              removed: list[int]) -> str:
+    """A PrefabInstance; mods are (source fid, propertyPath, value, objectReference), written in
+    Unity's wrapped form; removed are source component fids."""
+    out = [f"--- !u!{PREFAB_INSTANCE} &{inst}", "PrefabInstance:", "  m_ObjectHideFlags: 0",
+           "  serializedVersion: 2", "  m_Modification:", "    serializedVersion: 3",
+           f"    m_TransformParent: {{fileID: {parent}}}"]
+    out += ["    m_Modifications:"] if mods else ["    m_Modifications: []"]
+    for t, prop, val, ref in mods:
+        out += [f"    - target: {{fileID: {t}, guid: {src_guid},", "        type: 3}",
+                f"      propertyPath: {prop}", f"      value: {val}", f"      objectReference: {ref}"]
+    out += ["    m_RemovedComponents:"] if removed else ["    m_RemovedComponents: []"]
+    out += [f"    - {{fileID: {r}, guid: {src_guid}, type: 3}}" for r in removed]
+    out += ["    m_RemovedGameObjects: []", "    m_AddedGameObjects: []", "    m_AddedComponents: []",
+            f"  m_SourcePrefab: {{fileID: 100100000, guid: {src_guid}, type: 3}}"]
+    return "\n".join(out) + "\n"
+
+
+def _container(script: str, effects: list[str]) -> str:
+    body = _doc(MONO, 11400000, "MonoBehaviour", [
+        "  m_GameObject: {fileID: 0}", "  m_Enabled: 1",
+        f"  m_Script: {{fileID: 11500000, guid: {SYN_SCRIPTS[script]}, type: 3}}", "  m_Name: Synthetic"])
+    if script == "SkimmerImpactorDataContainerSO":
+        body += ("  skimmerPrismEffectsSO:\n" + "".join(f"  - {{fileID: 11400000, guid: {e}, type: 2}}\n"
+                                                     for e in effects)) if effects else "  skimmerPrismEffectsSO: []\n"
+    return YAML_HEAD + body
+
+
+def _asset_ref(key: str) -> str:
+    return f"{{fileID: 11400000, guid: {SYN_GUID[key]}, type: 2}}"
+
+
+# fids of the synthetic parts, and of the instances that nest them
+SK_GO, SK_T, SK_SKIM, SK_IMP, SK_IC, SK_RB, SK_COL = 100, 101, 102, 103, 104, 105, 106
+BARE_GO, BARE_T, BARE_SKIM, BARE_IC, BARE_RB, BARE_COL = 300, 301, 302, 304, 305, 306
+VAR_INST, VAR_IMP = 7000, 400        # ImpactorVariant: an instance of BareSkimmer + an ADDED impactor
+HULL_GO, HULL_T, HULL_STATUS = 1, 2, 3
+ALPHA_INST, BETA_INST, GAMMA_INST = 5000, 6000, 8000
+
+
+def _hull(name: str, src: str, inst: int, skimmer_fid_in_src: int, near: bool = True,
+          mods: list | None = None, removed: list | None = None) -> str:
+    """A hull: root GameObject + VesselStatus, its near field a stripped Skimmer of a nested
+    instance of `src`."""
+    top = (skimmer_fid_in_src ^ inst) & MASK
+    return (YAML_HEAD
+            + _go(HULL_GO, name, [HULL_T, HULL_STATUS])
+            + _transform(HULL_T, HULL_GO, 0)
+            + _mono(HULL_STATUS, HULL_GO, "VesselStatus",
+                    [f"  _nearFieldSkimmer: {{fileID: {top if near else 0}}}", "  _farFieldSkimmer: {fileID: 0}"])
+            + _instance(inst, HULL_T, SYN_GUID[src], mods or [], removed or [])
+            + _stripped(MONO, "MonoBehaviour", top, skimmer_fid_in_src, SYN_GUID[src], inst))
+
+
+def _write(root: Path, rel: str, text: str, guid: str) -> None:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    Path(str(path) + ".meta").write_text(f"fileFormatVersion: 2\nguid: {guid}\n", encoding="utf-8")
+
+
+def _synthetic_project(root: Path, alpha: dict | None = None, beta: dict | None = None,
+                       gamma_mods: list | None = None) -> Path:
+    """Write the synthetic project; return its hull folder. Every hull passes by default:
+
+      Alpha        a skimmer nested one instance deep (Skimmer.prefab), the plain case
+      Beta         nests ImpactorVariant, which ADDS the SkimmerImpactor on top of BareSkimmer:
+                   a component declared one level below the hull, in that prefab's id space
+      Gamma        a Prefab Variant of Alpha: its VesselStatus lives in the base hull
+      Sub/Delta    a byte copy of Alpha in a subfolder
+      Loose        a prefab with no VesselStatus at the top of the hull folder (not a hull)
+    """
+    for name, guid in SYN_SCRIPTS.items():
+        _write(root, f"Assets/Scripts/{name}.cs", "", guid)
+    _write(root, "Assets/SO/Effect.asset", _container("SomePrismEffectSO", []), SYN_GUID["effect"])
+    _write(root, "Assets/SO/CrackleEffect.asset", _container("SkimmerForcefieldCracklePrismEffectSO", []),
+           SYN_GUID["crackle_effect"])
+    _write(root, "Assets/SO/Effects.asset", _container("SkimmerImpactorDataContainerSO", [SYN_GUID["effect"]]),
+           SYN_GUID["effects"])
+    _write(root, "Assets/SO/Empty.asset", _container("SkimmerImpactorDataContainerSO", []), SYN_GUID["empty"])
+    _write(root, "Assets/SO/Crackle.asset", _container("SkimmerImpactorDataContainerSO",
+                                                       [SYN_GUID["crackle_effect"]]), SYN_GUID["crackle"])
+    _write(root, "Assets/Parts/Skimmer.prefab", YAML_HEAD
+           + _go(SK_GO, "Skimmer", [SK_T, SK_SKIM, SK_IMP, SK_IC, SK_RB, SK_COL])
+           + _transform(SK_T, SK_GO, 0)
+           + _mono(SK_SKIM, SK_GO, "Skimmer", [])
+           + _mono(SK_IMP, SK_GO, "SkimmerImpactor", [f"  skimmer: {{fileID: {SK_SKIM}}}",
+                                                       f"  skimmerImpactorDataContainer: {_asset_ref('effects')}"])
+           + _mono(SK_IC, SK_GO, "ImpactCollider", [])
+           + _physics(SK_RB, SK_COL, SK_GO), SYN_GUID["skimmer"])
+    bare = (YAML_HEAD + _go(BARE_GO, "BareSkimmer", [BARE_T, BARE_SKIM, BARE_IC, BARE_RB, BARE_COL])
+            + _transform(BARE_T, BARE_GO, 0) + _mono(BARE_SKIM, BARE_GO, "Skimmer", [])
+            + _mono(BARE_IC, BARE_GO, "ImpactCollider", []) + _physics(BARE_RB, BARE_COL, BARE_GO))
+    _write(root, "Assets/Parts/BareSkimmer.prefab", bare, SYN_GUID["bare"])
+    v_go, v_skim = (BARE_GO ^ VAR_INST) & MASK, (BARE_SKIM ^ VAR_INST) & MASK
+    _write(root, "Assets/Parts/ImpactorVariant.prefab", YAML_HEAD
+           + _instance(VAR_INST, 0, SYN_GUID["bare"], [(BARE_GO, "m_Name", "ImpactorVariant", "{fileID: 0}")], [])
+           + _stripped(GAMEOBJECT, "GameObject", v_go, BARE_GO, SYN_GUID["bare"], VAR_INST)
+           + _stripped(MONO, "MonoBehaviour", v_skim, BARE_SKIM, SYN_GUID["bare"], VAR_INST)
+           + _mono(VAR_IMP, v_go, "SkimmerImpactor", [f"  skimmer: {{fileID: {v_skim}}}",
+                                                      f"  skimmerImpactorDataContainer: {_asset_ref('effects')}"]),
+           SYN_GUID["variant"])
+    folder = root / "Assets/Spacevessels"
+    alpha_text = _hull("Alpha", "skimmer", ALPHA_INST, SK_SKIM, **(alpha or {}))
+    _write(root, "Assets/Spacevessels/Alpha.prefab", alpha_text, SYN_GUID["alpha"])
+    _write(root, "Assets/Spacevessels/Beta.prefab", _hull("Beta", "variant", BETA_INST, v_skim, **(beta or {})),
+           SYN_GUID["beta"])
+    _write(root, "Assets/Spacevessels/Gamma.prefab", YAML_HEAD
+           + _instance(GAMMA_INST, 0, SYN_GUID["alpha"],
+                       [(HULL_GO, "m_Name", "Gamma", "{fileID: 0}")] + (gamma_mods or []), []),
+           SYN_GUID["gamma"])
+    _write(root, "Assets/Spacevessels/Sub/Delta.prefab", alpha_text.replace("m_Name: Alpha", "m_Name: Delta"),
+           SYN_GUID["delta"])
+    _write(root, "Assets/Spacevessels/Loose.prefab", bare, SYN_GUID["loose"])
+    return folder
+
 
 def self_test() -> int:
-    """Negative controls on a synthetic hull: the audit must see each planted fault."""
-    import shutil
+    """Negative controls on synthetic hulls: the audit must pass the clean ones and see each
+    planted fault, including the shapes the editor audit sees and a naive YAML reader does not
+    (a component added on an intermediate prefab, a hull authored as a Prefab Variant, a hull
+    in a subfolder)."""
     ok = True
-    src = ROOT / HULL_FOLDER / "Squirrel.prefab"
-    index = AssetIndex(ROOT)
-    base_total, _, _ = audit(index, ROOT / HULL_FOLDER)
-    print(f"  live tree: {base_total} fault(s) across the fleet (informational)")
+    total, _, _ = audit(AssetIndex(ROOT), ROOT / HULL_FOLDER)
+    print(f"  live tree: {total} fault(s) across the fleet (informational, not asserted)")
 
-    with tempfile.TemporaryDirectory() as td:
-        folder = Path(td) / "Spacevessels"
-        folder.mkdir()
-        shutil.copy(src, folder / "Squirrel.prefab")
-        t0, per, _ = audit(index, folder)
-        ok &= _expect("the shipped Squirrel passes", per.get("Squirrel") == 0)
+    def run(**kw) -> tuple[int, dict[str, int], list[str]]:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = _synthetic_project(root, **kw)
+            return audit(AssetIndex(root), folder)
 
-        # Null the near-field reference: a hull with no skimmer is reported, not faulted.
-        text = src.read_text(encoding="utf-8")
-        nulled = re.sub(r"_nearFieldSkimmer: \{fileID: -?\d+\}", "_nearFieldSkimmer: {fileID: 0}", text)
-        (folder / "Squirrel.prefab").write_text(nulled, encoding="utf-8")
-        _t, per, lines = audit(index, folder)
-        ok &= _expect("an unassigned near field is reported as none, not a fault",
-                      per.get("Squirrel") == 0 and any("no skimmer at all" in l for l in lines))
+    def slot(lines: list[str], hull: str) -> str:
+        i = lines.index(f"-- {hull}") if f"-- {hull}" in lines else -1
+        return lines[i + 1] if i >= 0 else f"(no '-- {hull}' block)"
 
-        # Deactivate the nested skimmer's GameObject through an instance override, planted
-        # inside THAT instance's own m_Modifications block (the hull has several instances).
-        m = re.search(r"_nearFieldSkimmer: \{fileID: (-?\d+)\}", text)
-        hull = Prefab(src)
-        sk = resolve(index, hull, int(m.group(1)))
-        go = game_object(index, sk)
-        outer, _f, inst = go.levels[0]
-        inner_fid = go.levels[1][1]
-        src_guid, _ = outer.instances[inst]
+    t, per, lines = run()
+    ok &= _expect("every clean synthetic hull passes",
+                  t == 0 and per == {"Alpha": 0, "Beta": 0, "Gamma": 0, "Sub/Delta": 0})
+    ok &= _expect("an impactor ADDED on an intermediate prefab is read in the hull's id space",
+                  slot(lines, "Beta").endswith("OK"))
+    ok &= _expect("a hull authored as a Prefab Variant is audited through its base's VesselStatus",
+                  slot(lines, "Gamma").endswith("OK"))
+    ok &= _expect("a hull in a subfolder is audited", slot(lines, "Sub/Delta").endswith("OK"))
+    ok &= _expect("a prefab with no VesselStatus is named, not dropped",
+                  "-- Loose: no VesselStatus found" in lines)
 
-        def plant(target: int, prop: str, value: str, ref: str) -> str:
-            """Set one override on the skimmer's instance: replace the existing entry for
-            (target, prop) when the shipped file already carries one (one property has one
-            override per instance), else insert a fresh one at the top of the list."""
-            head = f"--- !u!1001 &{inst}\n"
-            i = text.index(head)
-            end = text.find("\n--- !u!", i + 1)
-            block = text[i:end if end > 0 else len(text)]
-            entry = re.compile(
-                rf"    - target: \{{fileID: {target}, guid: {src_guid},\s*type: 3\}}\n"
-                rf"      propertyPath: {re.escape(prop)}\n      value: ?.*?\n      objectReference: \{{[^}}]*\}}\n", re.S)
-            fresh = (f"    - target: {{fileID: {target}, guid: {src_guid}, type: 3}}\n"
-                     f"      propertyPath: {prop}\n      value: {value}\n      objectReference: {ref}\n")
-            if entry.search(block):
-                block = entry.sub(fresh, block, count=1)
-            else:
-                k = block.index("    m_Modifications:\n") + len("    m_Modifications:\n")
-                block = block[:k] + fresh + block[k:]
-            return text[:i] + block + text[end if end > 0 else len(text):]
+    _t, per, lines = run(alpha={"near": False})
+    ok &= _expect("an unassigned near field is reported as none, not a fault",
+                  per.get("Alpha") == 0 and "no skimmer at all" in slot(lines, "Alpha"))
 
-        (folder / "Squirrel.prefab").write_text(plant(inner_fid, "m_IsActive", "0", "{fileID: 0}"), encoding="utf-8")
-        _t, per, lines = audit(index, folder)
-        ok &= _expect("an m_IsActive=0 override on the nested skimmer is a fault",
-                      per.get("Squirrel") == 1 and any("INACTIVE" in l for l in lines))
+    _t, per, lines = run(alpha={"mods": [(SK_GO, "m_IsActive", "0", "{fileID: 0}")]})
+    ok &= _expect("an m_IsActive=0 override on the nested skimmer is a fault",
+                  per.get("Alpha") == 1 and "INACTIVE" in slot(lines, "Alpha"))
 
-        # Null the container through an override on the nested impactor.
-        comps = sibling_components(index, sk)
-        imp = next(c for c in comps if index.script_name(guid_of(c.value("m_Script")[0])) == "SkimmerImpactor")
-        imp_inner = imp.levels[1][1]
-        # The shipped Squirrel already overrides the container on this impactor; a planted
-        # override earlier in the list wins in this reader (outermost-first, first match), which
-        # is also the editor's reading: one property has one override per instance.
-        (folder / "Squirrel.prefab").write_text(
-            plant(imp_inner, "skimmerImpactorDataContainer", "", "{fileID: 0}"), encoding="utf-8")
-        _t, per, lines = audit(index, folder)
-        ok &= _expect("a nulled container override on the nested impactor is a fault",
-                      per.get("Squirrel") == 1 and any("no effect container" in l for l in lines))
+    _t, per, lines = run(alpha={"mods": [(SK_IMP, "skimmerImpactorDataContainer", "", "{fileID: 0}")]})
+    ok &= _expect("a nulled container override on the nested impactor is a fault",
+                  per.get("Alpha") == 1 and "no effect container" in slot(lines, "Alpha"))
+
+    _t, per, lines = run(alpha={"mods": [(SK_IMP, "skimmerImpactorDataContainer", "", _asset_ref("empty"))]})
+    ok &= _expect("a near field whose container holds no prism effects is a fault",
+                  per.get("Alpha") == 1 and "has no prism effects" in slot(lines, "Alpha"))
+
+    _t, per, lines = run(alpha={"mods": [(SK_IMP, "skimmerImpactorDataContainer", "", _asset_ref("crackle"))]})
+    ok &= _expect("a crackle container with no ForcefieldCrackleController is a fault",
+                  per.get("Alpha") == 1 and "ForcefieldCrackleController" in slot(lines, "Alpha"))
+
+    _t, per, lines = run(alpha={"removed": [SK_IMP]})
+    ok &= _expect("an impactor the hull's instance REMOVES is gone",
+                  per.get("Alpha") == 1 and "no SkimmerImpactor" in slot(lines, "Alpha"))
+
+    _t, per, lines = run(alpha={"removed": [SK_COL]})
+    ok &= _expect("a removed trigger collider is a fault",
+                  per.get("Alpha") == 1 and "no trigger collider" in slot(lines, "Alpha"))
+
+    _t, per, lines = run(beta={"mods": [(VAR_IMP, "skimmerImpactorDataContainer", "", "{fileID: 0}")]})
+    ok &= _expect("the hull's override on an impactor added one level down applies",
+                  per.get("Beta") == 1 and "no effect container" in slot(lines, "Beta"))
+
+    _t, per, lines = run(beta={"removed": [VAR_IMP]})
+    ok &= _expect("the hull's removal of an impactor added one level down is honoured",
+                  per.get("Beta") == 1 and "no SkimmerImpactor" in slot(lines, "Beta"))
+
+    _t, per, lines = run(gamma_mods=[(HULL_STATUS, "_nearFieldSkimmer", "", "{fileID: 0}")])
+    ok &= _expect("a variant hull's override on the inherited VesselStatus applies",
+                  per.get("Gamma") == 0 and "no skimmer at all" in slot(lines, "Gamma"))
     print("self-test:", "OK" if ok else "FAILED")
     return 0 if ok else 1
 

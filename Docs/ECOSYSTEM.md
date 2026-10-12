@@ -7397,7 +7397,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    not the feel).
 7. Re-run `python3 Tools/Build/author_lifeform_heart_sizes.py --check` (must print
    *"every lifeform heart matches the authored band"*), then
-   `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` and
+   `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` and
    `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for Rampage per consequence 1.
 
 ## 41. The Arkway and the Ark — a voyage whose fights are the shipped ecology (Sep 2026)
