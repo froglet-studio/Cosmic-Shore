@@ -125,6 +125,12 @@ zero-length columns swap unseen.
   - Shader parity is 7 of 7.
 - New styles: Sealed by depth, faces split; Depth ratchet, faces split; Depth columns, faces split; Sealed by depth, gradient, faces split.
 
+**Thickness grows inward (Shape ▸ Thickness grows)**
+- The shipped shader stretches a plate about its own centre. A thicker prism therefore stands proud of the body when it lands: its top face is at 7.138 u at thickness 1 (exactly flush with the body's own triangle plate, on all 20 slots), 7.18 at 1.25, 7.31 at 2 and 7.65 at 4.
+- *Inward* anchors the stretch at the top face instead: local += dir · (dot(local, dir) − topH) · (thickness − 1), where topH is the top face's height above the plate centre. It is the same for every plate of a mesh.
+- A seated prism is then flush at any thickness: the top face measures 7.138 at 1, 1.25, 2 and 4, and only the bottom face goes deeper (6.80 → 5.78). On the Mass the prisms stay flush with their neighbours the same way.
+- On for the Hole fill and depth styles, where the prisms fill holes. Shipped, Classic and Spin-hidden are unchanged (0 px against the previous page), and shader parity is 7 of 7.
+
 **Also:** the Thickness slider now goes to 8, up from 3. `OmniShepardFresnelShader`'s `_Thickness` inspector range was raised to `Range(0.2, 8)` to match, so a lab pick can be typed into the material. That is a property-range change only: the shipped value stays 1.25 and the vertex code is untouched (shader parity 7 of 7).
 
 **Not modelled / to build:** all lab-side. Seal by depth and Depth columns need only the shader
