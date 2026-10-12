@@ -121,6 +121,14 @@ the player and editor configs with 0 errors in project code, and the console-log
 10. **The 12 match-height canvases** without `AdaptiveCanvasScaler` use Expand: the 9 vessel
     `ShipHUDContainer`s, `VesselHUDContainer`, `Duel Cell Stats Canvas` and `FTUE_Canvas`.
     Identical at 16:9 and wider; matches width below 16:9.
+11. **The Arcade, Mission, Toybox and Arena windows fill the safe area below the NavBar.**
+    - They were fixed 1920 × 908.7 rects, centred, which is the whole screen under the nav bar
+      only at 1920 × 1080. On a phone they floated 47 units in from each side, overlapped the
+      NavBar by 37 and ran 29 past the safe bottom.
+    - They are now stretch-anchored. The rect at 1920 × 1080 is identical, checked numerically.
+    - Their party panel is a "side panel": as tall as its parent and docked on an edge. Its frame
+      now bleeds out to the screen edge (`ScreenSwitcher.TryBleedSidePanel`); its content stays in
+      the safe area.
 
 **Verify in editor**
 
@@ -151,6 +159,9 @@ the player and editor configs with 0 errors in project code, and the console-log
    - Profile and Hangar fill the screen edge to edge.
    - The NavBar's dark band runs the full width.
    - The Arcade, Mission, Toybox and Arena windows reach both edges.
+   - In each of those windows, the party panel's grey frame reaches the left screen edge behind the
+     notch, and its avatars and buttons stay clear of it.
+   - The window sits under the NavBar, as on desktop.
    - Buttons and text stay inside the safe area.
    - On a 16:9 desktop, the hierarchy has no `Safe Area Bleed` objects.
 9. iPad Air / Pro (4:3) in the Simulator:

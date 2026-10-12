@@ -906,7 +906,8 @@ namespace CosmicShore.UI
         /// <item>the content layer's own children (NavBar, ModalWindows, ...), against the content
         /// layer's rect.</item>
         /// </list>
-        /// Anything narrower is content and stays where it is.
+        /// A narrower image bleeds only if it is a side panel (<see cref="TryBleedSidePanel"/>);
+        /// anything else is content and stays where it is.
         /// </summary>
         private void BuildBleeds()
         {
@@ -935,10 +936,13 @@ namespace CosmicShore.UI
             Vector2 max = reference.InverseTransformPoint(Corners[2]);
 
             // Full width means full width on the screen it was authored for: the whole safe rect,
-            // or the design width (1920) where the safe rect is wider. The hub modals are 1920-wide
-            // panels centred in a 2017-wide phone safe area, so they count.
+            // or the design width (1920) where the safe rect is wider.
             float fullWidth = Mathf.Min(r.width, _designWidth);
-            if (max.x - min.x < fullWidth - tolerance) return;
+            if (max.x - min.x < fullWidth - tolerance)
+            {
+                TryBleedSidePanel(node, reference, min, max);
+                return;
+            }
 
             if (node.TryGetComponent<Image>(out var image) && SafeAreaBleed.CanBleed(image))
             {
@@ -954,6 +958,34 @@ namespace CosmicShore.UI
                 if (node.GetChild(i) is RectTransform child && child.name != SafeAreaBleed.CopyName)
                     CollectBleeds(child, reference, depth + 1);
             }
+        }
+
+        /// <summary>
+        /// A side panel is as tall as its parent and docked on the safe rect's left or right edge,
+        /// like the party panel of the Arcade/Arena windows. On a desktop it sits on the screen
+        /// edge; on a phone its frame bleeds out to that edge, and its content stays where it is.
+        /// Not searched further: what is inside it is content.
+        /// </summary>
+        private void TryBleedSidePanel(RectTransform node, RectTransform reference, Vector2 min, Vector2 max)
+        {
+            const float tolerance = 1f;
+
+            if (!node.TryGetComponent<Image>(out var image) || !SafeAreaBleed.CanBleed(image)) return;
+            if (node.parent is not RectTransform parent) return;
+
+            Rect r = reference.rect;
+            bool left = min.x - r.xMin <= tolerance;
+            bool right = r.xMax - max.x <= tolerance;
+            if (!left && !right) return;
+
+            parent.GetWorldCorners(Corners);
+            float parentHeight = reference.InverseTransformPoint(Corners[2]).y
+                                 - reference.InverseTransformPoint(Corners[0]).y;
+            if (max.y - min.y < parentHeight - tolerance) return;
+
+            bool bottom = min.y - r.yMin <= tolerance;
+            bool top = r.yMax - max.y <= tolerance;
+            _bleeds.Add(SafeAreaBleed.Create(image, reference, left, bottom, right, top));
         }
 
         /// <summary>The strip's anchoredPosition that puts screen <paramref name="index"/> in the viewport.</summary>

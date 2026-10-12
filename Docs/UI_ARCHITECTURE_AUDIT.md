@@ -469,6 +469,10 @@ component and others get a new parent instead:
       in the NavBar, and in the modals, including 1920-wide panels centred in a wider safe area.
     - The source keeps its rect and its raycast area; its CanvasRenderer alpha is 0.
     - Only built when a display has margins, so a desktop never gets one.
+    - Full-height side panels docked on an edge also bleed out to that edge: the party panel of
+      the Arcade, Mission, Toybox and Arena windows.
+    - Those four windows were fixed 1920 × 908.7 rects and are now stretch-anchored. They fill the
+      safe area under the NavBar, with the same rect at 1920 × 1080.
   - **Second bug fixed with it:** `currentScreen` is serialized as 0 (HANGAR), so restoring HANGAR
     from the `ReturnToScreen` pref hit NavigateTo's "already on this screen" return. The strip was
     never positioned and the hangar grid never built. `Start` now navigates from no screen.
