@@ -65,7 +65,19 @@ dotnet ../binBE/CosmicShore.dll --train eval --population out/KEY.state.json --g
 (a tournament's `eval_best.json`) into the archive without flying anything: the scenario's entry
 is upserted with the genome, the fitness you name (the tournament mean, not the in-training
 number) and the genome's own generation, and `KEY.Archive.asset` + `KEY.archive.json` are
-written, the same drop-ins the trainer writes for its hall of fame.
+written, the same drop-ins the trainer writes for its hall of fame. It also writes
+`KEY.SessionState.asset` + `KEY.state.json`: the project's session state with the pick as its
+hall of fame at that fitness. **Copy both `.asset` drop-ins.** The editor's Learn re-deploys the
+session's hall of fame into the archive after every rollout
+(`TrainingSessionRunner.DeployBestToArchive` is an unconditional upsert), so an archive pick
+whose session still names the trainer's lucky flight is undone when Learn's first match ends;
+with the pick as the hall of fame, Learn deploys it until a genome's in-training running mean
+beats the fitness you named. That is the editor trainer's own rule, and it compares the tournament
+mean with in-training means, which are noisier: an elite carries its in-training mean into the
+next generation, and a new child's first flight is its whole mean, so Learn can replace the pick
+in its first match. What the export guarantees is that Learn deploys its own current best, not a
+stale hall of fame no genome can beat. A session state that holds another scenario is not written
+(a warning says so).
 `--seed` makes a run reproducible (two runs with one seed are bit-identical). A train run always
 has one; its workers fly different matches (the gameplay seed is offset per worker) but evolve
 under the shared seed.
@@ -107,7 +119,12 @@ through `TrainingPopulation.ReturnFitness` and `TrainingSessionStateSO.RecordEpi
 process therefore ends the generation holding the identical population, novelty archive and
 hall of fame, with no population ever shipped between them. The runner's own
 end-of-generation evolve is held off (its evaluation counter is parked far below the population
-size) so the merge is the only thing that evolves.
+size) so the merge is the only thing that evolves. The merge restarts that counter and the
+checkout cursor at zero before it replays, so the state worker 0 exports counts the generation's
+flights (`evaluationsThisGen` = genomes × `--evals`): a fully scored generation, which Unity's
+`TrainingPopulation.Checkout` evolves on Learn's first match. Before 2026-10-12 the export kept
+the parked counter (-1,000,000 plus the flights), and Learn on that asset re-scored the same
+generation for about a million rollouts; `--train export` restores a parked counter it finds.
 
 ## Long runs: supervision and recycling
 
@@ -288,9 +305,21 @@ four shared cores; the editor would need about 26 hours for the same flights at 
 **Deployed 2026-10-10** with `--train export` (fitness 221.4, the tournament note): the project's
 `Archive.asset` entry for Squirrel_SkimRace_I4 is now pop13 (born generation 7), replacing the
 hall-of-fame genome that scored 47.2 in the same tournament; `SessionState.asset` is the
-generation-7 population, so the editor's Learn continues from generation 8; and
-`Exports/SkimRace_Squirrel_I4.json` is pop13 for a manual Import JSON. Both assets parse and
-re-write losslessly (`cs-asset roundtrip`, `serialization-audit` 0 dropped, 0 extra). What this
+generation-7 population; and `Exports/SkimRace_Squirrel_I4.json` is pop13 for a manual Import
+JSON. As first committed, `SessionState.asset` was worker 0's train export unchanged: it kept the
+parked counter (`evaluationsThisGen` -999808, so Learn never left generation 7) and the trainer's
+680 hall of fame (so Learn's first finished match re-deployed that genome over pop13). Corrected
+2026-10-12 by re-running the fixed `--train export` on the committed assets with the same genome,
+fitness and note: `evaluationsThisGen` 192 (24 genomes × 8 flights, so Learn evolves to
+generation 8 first) and the hall of fame pop13 at 221.4. The re-run's archive drop-in matched
+the committed `Archive.asset` except `TrainedUtc`, so the archive was left as it was. Both assets
+parse and re-write losslessly (`cs-asset roundtrip`, `serialization-audit` 0 dropped, 0 extra,
+and `--yaml-roundtrip` byte-identical for the corrected session state). On this asset Learn's
+first match will very likely still replace pop13: the first genome it serves is the top elite,
+pop06, which carries an 8-flight in-training mean of 250.6 (it scored 104.8 in the tournament),
+and any flight above about -12 keeps that mean over 221.4. Keeping a tournament pick deployed
+while Learn runs needs a runner change (an archive entry Learn does not overwrite), not made here.
+What this
 changes in play: nothing in Skim Race itself yet, because `SkimRaceAIDeployment.Claims` hands
 Skim Race and Regatta seats to the rule-based Skim Race pilot while its config's
 `DeployInNormalPlay` is on, and `TrainingDeploymentService` stands down for a claimed seat; the

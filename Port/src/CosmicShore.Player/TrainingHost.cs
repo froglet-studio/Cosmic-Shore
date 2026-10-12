@@ -142,7 +142,8 @@ namespace CosmicShore.Player
         /// project's Archive.asset) and KEY.archive.json are written. The trainer's own export
         /// records the hall of fame, which is one lucky flight; the pick a tournament names
         /// (eval_best.json, a mean over many flights) is what the doc says to deploy, and this is
-        /// how it gets into the asset on a machine with no editor.
+        /// how it gets into the asset on a machine with no editor. The session state is written
+        /// beside it with the pick as its hall of fame (see <see cref="ExportSessionWithPick"/>).
         /// </summary>
         void ExportGenome(object scenario)
         {
@@ -165,9 +166,62 @@ namespace CosmicShore.Player
             string archivePath = Path.Combine(_outDir, key + ".archive.json");
             File.WriteAllText(archivePath, JsonUtility.ToJson(_archive, true));
             sb.AppendLine($"[train] wrote {archivePath}");
+            ExportSessionWithPick(sb, genome, key);
             Done = true;
             Summary = sb.ToString();
             Console.Write(Summary);
+        }
+
+        /// <summary>
+        /// Writes the session state with the deployed pick as its hall of fame, as KEY.SessionState.asset
+        /// and KEY.state.json. The editor's Learn re-deploys the session's hall of fame into the
+        /// archive after every rollout (TrainingSessionRunner.DeployBestToArchive, an unconditional
+        /// upsert), so a session that still holds the trainer's lucky-flight genome puts it back over
+        /// the pick when Learn's first match ends. With the pick and the fitness named here as the hall
+        /// of fame, Learn deploys the pick until a genome's in-training running mean beats that
+        /// fitness; an elite's mean can already do so, and then Learn deploys its own best, which is
+        /// the trainer's rule. A state that holds another scenario is not written: Learn resets it.
+        /// </summary>
+        void ExportSessionWithPick(StringBuilder sb, object genome, string key)
+        {
+            if (_state == null)
+            {
+                sb.AppendLine("[train] WARNING: the control asset references no session state; only the archive was written");
+                return;
+            }
+            if ((string)Get(_state, "ScenarioKey") != key)
+            {
+                sb.AppendLine($"[train] WARNING: the session state holds '{Get(_state, "ScenarioKey")}', not '{key}', so it was not written. " +
+                              $"Learn on {key} starts a fresh population, and its first rollout deploys that population's best over this pick.");
+                return;
+            }
+            Set(_state, "HallOfFameBest", genome.GetType().GetMethod("Clone")!.Invoke(genome, null));
+            Set(_state, "HallOfFameBestFitness", _exportFitness);
+            RestoreHeldOffCounter(sb);
+            Set(_state, "LastWriteUtc", DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
+            sb.AppendLine($"[train] session hall of fame -> {Path.GetFileName(_exportGenomeFile)} at fitness {_exportFitness:0.0}");
+            ExportAsset(sb, _state, _statePath, key + ".SessionState.asset");
+            string statePath = Path.Combine(_outDir, key + ".state.json");
+            File.WriteAllText(statePath, JsonUtility.ToJson(_state, true));
+            sb.AppendLine($"[train] wrote {statePath}");
+        }
+
+        /// <summary>
+        /// A state a train run exported before its merge counted from zero carries the worker's
+        /// held-off counter (<see cref="HeldOffEvaluations"/> plus the generation's flights). Unity's
+        /// TrainingPopulation.Checkout evolves only once evaluationsThisGen reaches the population
+        /// size, so Learn on that state re-scores the same generation for a million rollouts. No
+        /// population counts below zero on its own, so a negative count is always that counter, and
+        /// the flights it carries are what the fixed merge would have written.
+        /// </summary>
+        void RestoreHeldOffCounter(StringBuilder sb)
+        {
+            var population = Get(_state, "Population");
+            int evaluations = (int)Get(population, "evaluationsThisGen");
+            if (evaluations >= 0) return;
+            int flights = evaluations - HeldOffEvaluations;
+            Set(population, "evaluationsThisGen", flights);
+            sb.AppendLine($"[train] session evaluationsThisGen {evaluations} -> {flights} (a train worker's held-off counter, restored to the generation's flights)");
         }
 
         /// <summary>

@@ -131,13 +131,19 @@ namespace CosmicShore.Player
             BeginGeneration();
         }
 
+        /// <summary>
+        /// Where a worker parks <c>evaluationsThisGen</c> while it flies its slice: far below the
+        /// population size, so the runner's own Checkout never decides the generation is complete
+        /// and evolves on its own; the merge decides that. Only a worker's in-run state holds it.
+        /// The merge counts the generation from zero, so no exported or checkpointed state does.
+        /// </summary>
+        const int HeldOffEvaluations = -1_000_000;
+
         /// <summary>Rewinds the cursor onto this worker's slice and records where every genome starts.</summary>
         void BeginGeneration()
         {
             var population = Get(_state, "Population");
-            // Far below the population size, so the runner's own Checkout never decides the
-            // generation is complete and evolves on its own; the merge decides that.
-            Set(population, "evaluationsThisGen", -1_000_000);
+            Set(population, "evaluationsThisGen", HeldOffEvaluations);
             Set(population, "nextCheckoutIndex", _rangeStart);
             Set(population, "inflightCheckouts", 0);
             _genStart = JsonUtility.ToJson(_state);
@@ -245,8 +251,16 @@ namespace CosmicShore.Player
                 }
 
             // Canonical: the generation as it started, then every flight in (genome, flight) order.
+            // The snapshot still holds this worker's held-off counter and slice cursor, so both
+            // restart at zero: after the replay they count the generation's flights, exactly as
+            // one process returning them would. The state worker 0 exports below is then a fully
+            // scored generation (evaluationsThisGen >= population size), which Unity's
+            // TrainingPopulation.Checkout evolves on Learn's first match. Exported with the
+            // held-off counter, it kept Learn re-scoring this generation for a million rollouts.
             JsonUtility.FromJsonOverwrite(_genStart, _state);
             var population = Get(_state, "Population");
+            Set(population, "evaluationsThisGen", 0);
+            Set(population, "nextCheckoutIndex", 0);
             Set(population, "inflightCheckouts", 0);
             var genomes = Genomes();
             var fitnessType = _game.GetType(Ns + "TrainingFitness")!;
