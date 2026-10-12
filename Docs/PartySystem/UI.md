@@ -230,10 +230,19 @@ play at all.
 - **Store**: `RecentPlayersStore` (`_Scripts/System/`, static, like the preference stores). One
   `RecentPlayerRecord` per pilot (UGS player id, display name, avatar id, last-played UTC ticks),
   de-duplicated by id (a pilot met again moves to the front with fresh facts) and capped. Local
-  JSON through `DataAccessor` (`recent_players.data` under `persistentDataPath`): a memory of who
-  you met, not a relationship, so it is not Cloud Save data. **Config**: `RecentPlayersConfigSO`
-  at `Resources/RecentPlayersConfig.asset` holds the cap (20) and the file name; a missing asset
+  JSON through `DataAccessor` under `persistentDataPath`: a memory of who you met, not a
+  relationship, so it is not Cloud Save data. **Config**: `RecentPlayersConfigSO` at
+  `Resources/RecentPlayersConfig.asset` holds the cap (20) and the base file name; a missing asset
   falls back to the same defaults.
+- **Per account** (2026-10-12): the file is `recent_players_<signed-in UGS player id>.data`
+  (`SaveFileNameFor`), reloaded whenever the signed-in id changes, and the owner's own id is dropped
+  from whatever loads (`DropUnusable`). One shared `recent_players.data` was per INSTALL: an account
+  switch, two instances on one PC and MPPM's virtual players share `persistentDataPath`, so one
+  account saw another's pilots, and with two accounts saving in turn the last save won and an
+  account could load a list holding itself, with a friend-request button on its own row. Signed
+  out, the list is empty and a match is not recorded. The pre-account file is never read (its
+  pilots cannot be attributed to an account). The panel also skips the local id when it draws the
+  rows, as the Online section does.
 - **Recording**: `GameDataSO.InvokeMiniGameEnd` calls `RecentPlayersStore.RecordMatchEnd(Players)`
   next to `FlightClock.EndGame()`, inside a try/catch: the record is a disk write, and a failure
   there (disk full, a locked or read-only file) logs a warning and costs the list one match, never

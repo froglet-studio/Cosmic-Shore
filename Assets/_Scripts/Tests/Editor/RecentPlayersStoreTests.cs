@@ -184,6 +184,63 @@ namespace CosmicShore.Tests
 
         #endregion
 
+        #region Per account: file name and load filter
+
+        [Test]
+        public void SaveFileNameFor_PutsTheOwnerIdBeforeTheExtension()
+        {
+            Assert.AreEqual("recent_players_AbC123.data",
+                RecentPlayersStore.SaveFileNameFor("recent_players.data", "AbC123"));
+            Assert.AreEqual("recent_players_AbC123",
+                RecentPlayersStore.SaveFileNameFor("recent_players", "AbC123"));
+        }
+
+        [Test]
+        public void SaveFileNameFor_TwoAccountsNeverShareAFile()
+        {
+            // MPPM virtual players, two instances on one PC and an account switch all share one
+            // persistentDataPath: one file for all of them leaked lists across accounts and let an
+            // account load a list holding itself.
+            Assert.AreNotEqual(
+                RecentPlayersStore.SaveFileNameFor("recent_players.data", "alpha-1"),
+                RecentPlayersStore.SaveFileNameFor("recent_players.data", "bravo-2"));
+        }
+
+        [Test]
+        public void SaveFileNameFor_KeepsOnlyFileSafeCharactersOfTheId()
+        {
+            Assert.AreEqual("recent_players_ab_c-d.data",
+                RecentPlayersStore.SaveFileNameFor("recent_players.data", "a/b_c-d:"));
+        }
+
+        [Test]
+        public void DropUnusable_RemovesTheOwnerAndIdlessRecords()
+        {
+            // The shape a shared file used to load into: another account saved a list that holds
+            // the account now signed in.
+            var records = new List<RecentPlayerRecord>();
+            RecentPlayersStore.Merge(records, new[] { Human("me-id"), Human("a"), Human("b") }, T0, 20);
+            records.Add(new RecentPlayerRecord { PlayerId = "", DisplayName = "ghost" });
+
+            RecentPlayersStore.DropUnusable(records, "me-id");
+
+            Assert.AreEqual(new[] { "a", "b" }, Ids(records).ToArray());
+        }
+
+        [Test]
+        public void DropUnusable_WithNoOwnerOnlyDropsIdlessRecords()
+        {
+            var records = new List<RecentPlayerRecord>();
+            RecentPlayersStore.Merge(records, new[] { Human("a") }, T0, 20);
+            records.Add(new RecentPlayerRecord { PlayerId = null, DisplayName = "ghost" });
+
+            RecentPlayersStore.DropUnusable(records, null);
+
+            Assert.AreEqual(new[] { "a" }, Ids(records).ToArray());
+        }
+
+        #endregion
+
         #region Config
 
         [Test]

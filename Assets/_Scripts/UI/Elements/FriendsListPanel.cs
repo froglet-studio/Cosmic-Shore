@@ -1189,12 +1189,20 @@ namespace CosmicShore.UI
                 return;
             }
 
-            var entries = RecentPlayersStore.Entries;
-            if (recentEmptyText) recentEmptyText.gameObject.SetActive(entries.Count == 0);
-
+            // The store is the signed-in account's own list and drops that account's id on load;
+            // the local id is skipped here as well, the way the Online section skips it, so no
+            // path can draw the pilot a row offering a friend request to themselves.
+            string localId = connectionData ? connectionData.LocalPlayerId : null;
             var nowUtc = DateTime.UtcNow;
-            foreach (var record in entries)
+            int shown = 0;
+            foreach (var record in RecentPlayersStore.Entries)
+            {
+                if (!string.IsNullOrEmpty(localId) && record.PlayerId == localId) continue;
                 SpawnRecentEntry(record, nowUtc);
+                shown++;
+            }
+
+            if (recentEmptyText) recentEmptyText.gameObject.SetActive(shown == 0);
         }
 
         void SpawnRecentEntry(RecentPlayerRecord record, DateTime nowUtc)

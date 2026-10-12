@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Services.Authentication;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -63,41 +64,86 @@ namespace CosmicShore.Core
     ///
     /// <para>Local JSON through <see cref="DataAccessor"/>, like the favourites and loadouts: this
     /// is a memory of who you met, not a relationship, so it is not Cloud Save data. The cap and
-    /// file name live on <see cref="RecentPlayersConfigSO"/>. The list-shaping functions
-    /// (<see cref="SelectOthers"/>, <see cref="Merge"/>, <see cref="FormatLastPlayed"/>) are pure
-    /// and static so the edit-mode tests cover them without touching the disk.</para>
+    /// base file name live on <see cref="RecentPlayersConfigSO"/>. The list-shaping functions
+    /// (<see cref="SelectOthers"/>, <see cref="Merge"/>, <see cref="FormatLastPlayed"/>,
+    /// <see cref="SaveFileNameFor"/>, <see cref="DropUnusable"/>) are pure and static so the
+    /// edit-mode tests cover them without touching the disk.</para>
+    ///
+    /// <para><b>One list per account, not per install.</b> <c>persistentDataPath</c> is shared by
+    /// every account that signs in on the machine (an account switch, two instances on one PC, and
+    /// the MPPM virtual players, which DataAccessor's own comments note share it). One shared file
+    /// leaked one account's recent pilots to the next, and with two accounts saving in turn the last
+    /// save won, so an account could load a list holding ITSELF and offer a friend request to its
+    /// own row. The file name therefore carries the signed-in UGS player id
+    /// (<see cref="SaveFileNameFor"/>), the list is reloaded when that id changes, and the owner's
+    /// own id is dropped from whatever is loaded. Signed out, the list is empty and nothing is
+    /// recorded. The pre-account file (<c>recent_players.data</c>) is never read: its pilots
+    /// cannot be attributed to an account.</para>
     /// </summary>
     public static class RecentPlayersStore
     {
+        static readonly IReadOnlyList<RecentPlayerRecord> NoRecords = Array.Empty<RecentPlayerRecord>();
+
         static List<RecentPlayerRecord> _records;
         static RecentPlayersConfigSO _config;
-        static bool _initialized;
+        /// <summary>The UGS player id whose list <see cref="_records"/> is; null while nothing is loaded.</summary>
+        static string _ownerPlayerId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
             _records = null;
             _config = null;
-            _initialized = false;
+            _ownerPlayerId = null;
         }
 
-        static void Init()
+        /// <summary>
+        /// Makes <see cref="_records"/> the signed-in account's list, loading it when that account
+        /// is not the one loaded. Returns false (and leaves nothing loaded) while signed out.
+        /// </summary>
+        static bool EnsureLoadedForSignedInAccount()
         {
-            _config = RecentPlayersConfigSO.LoadOrDefault();
-            _records = DataAccessor.Load<List<RecentPlayerRecord>>(_config.SaveFileName) ?? new List<RecentPlayerRecord>();
-            _records.RemoveAll(r => string.IsNullOrEmpty(r.PlayerId));
-            _initialized = true;
-        }
-
-        /// <summary>Every remembered pilot, newest first. Never null; empty until the first online match.</summary>
-        public static IReadOnlyList<RecentPlayerRecord> Entries
-        {
-            get
+            string owner = SignedInPlayerId();
+            if (string.IsNullOrEmpty(owner))
             {
-                if (!_initialized) Init();
-                return _records;
+                _records = null;
+                _ownerPlayerId = null;
+                return false;
+            }
+
+            if (_records != null && owner == _ownerPlayerId) return true;
+
+            _config ??= RecentPlayersConfigSO.LoadOrDefault();
+            _records = DataAccessor.Load<List<RecentPlayerRecord>>(SaveFileNameFor(_config.SaveFileName, owner))
+                       ?? new List<RecentPlayerRecord>();
+            DropUnusable(_records, owner);
+            _ownerPlayerId = owner;
+            return true;
+        }
+
+        /// <summary>
+        /// The signed-in UGS player id, or null while signed out or before Unity Services are up
+        /// (the SDK's Instance throws then; nothing here may stop a match end).
+        /// </summary>
+        static string SignedInPlayerId()
+        {
+            try
+            {
+                var auth = AuthenticationService.Instance;
+                return auth != null && auth.IsSignedIn ? auth.PlayerId : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
+
+        /// <summary>
+        /// The signed-in account's remembered pilots, newest first. Never null; empty while signed
+        /// out and until that account's first online match.
+        /// </summary>
+        public static IReadOnlyList<RecentPlayerRecord> Entries
+            => EnsureLoadedForSignedInAccount() ? _records : NoRecords;
 
         /// <summary>
         /// Match-end entry point: remember every other human on <paramref name="roster"/>.
@@ -130,30 +176,72 @@ namespace CosmicShore.Core
         /// </summary>
         public static int RecordMatch(IEnumerable<MatchParticipant> seats, DateTime nowUtc)
         {
-            if (!_initialized) Init();
-
             var others = SelectOthers(seats);
             if (others.Count == 0) return 0;
 
+            if (!EnsureLoadedForSignedInAccount())
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    "[RecentPlayers] Not signed in: the match is not recorded (the list is per account).");
+                return 0;
+            }
+
+            // The roster's local flag already dropped this machine's seat; the owner id catches a
+            // seat for the same account that is not flagged local.
+            others.RemoveAll(seat => seat.PlayerId == _ownerPlayerId);
+            if (others.Count == 0) return 0;
+
             int recorded = Merge(_records, others, nowUtc, _config.MaxEntries);
-            DataAccessor.Save(_config.SaveFileName, _records);
+            DataAccessor.Save(SaveFileNameFor(_config.SaveFileName, _ownerPlayerId), _records);
 
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[RecentPlayers] Recorded {recorded} pilot(s) from the match; list holds {_records.Count}/{_config.MaxEntries}.");
             return recorded;
         }
 
-        /// <summary>Forget everything. Tooling and test hygiene; nothing in the UI calls it.</summary>
+        /// <summary>Forget the signed-in account's list. Tooling and test hygiene; nothing in the UI calls it.</summary>
         public static void Clear()
         {
-            if (!_initialized) Init();
+            if (!EnsureLoadedForSignedInAccount()) return;
             _records.Clear();
-            DataAccessor.Save(_config.SaveFileName, _records);
+            DataAccessor.Save(SaveFileNameFor(_config.SaveFileName, _ownerPlayerId), _records);
         }
 
         // ─────────────────────────────────────────────────────────────────────
         // Pure list shaping (edit-mode tested)
         // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The account's own save file: <paramref name="baseFileName"/> with the owner's player id
+        /// before the extension ("recent_players.data" for "AbC123" is
+        /// "recent_players_AbC123.data"). Only letters, digits, '-' and '_' of the id are kept, so
+        /// the name is always a plain file name.
+        /// </summary>
+        public static string SaveFileNameFor(string baseFileName, string ownerPlayerId)
+        {
+            var id = new System.Text.StringBuilder(ownerPlayerId?.Length ?? 0);
+            if (ownerPlayerId != null)
+                foreach (char c in ownerPlayerId)
+                    if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
+                        id.Append(c);
+
+            if (id.Length == 0) return baseFileName;
+
+            int dot = baseFileName.LastIndexOf('.');
+            return dot > 0
+                ? baseFileName.Substring(0, dot) + "_" + id + baseFileName.Substring(dot)
+                : baseFileName + "_" + id;
+        }
+
+        /// <summary>
+        /// Drops, from a loaded list, every record that cannot be a row: one with no player id, and
+        /// the owner's own (you are not somebody you played with).
+        /// </summary>
+        public static void DropUnusable(List<RecentPlayerRecord> records, string ownerPlayerId)
+        {
+            records?.RemoveAll(r => string.IsNullOrEmpty(r.PlayerId) ||
+                                    (!string.IsNullOrEmpty(ownerPlayerId) && r.PlayerId == ownerPlayerId));
+        }
 
         /// <summary>
         /// The seats worth remembering: humans with a UGS id that are not the local pilot. The local

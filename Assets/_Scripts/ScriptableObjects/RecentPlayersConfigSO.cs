@@ -4,7 +4,7 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// Config for the "recently played with" list (<see cref="CosmicShore.Core.RecentPlayersStore"/>):
-    /// how many pilots the list remembers and the save file it lives in. The numbers live here, not
+    /// how many pilots the list remembers and the base name of the per-account save file. The numbers live here, not
     /// in the store, so a designer can retune the cap without a code change.
     ///
     /// Loaded from <c>Resources/RecentPlayersConfig</c>; a missing asset falls back to these
@@ -22,9 +22,11 @@ namespace CosmicShore.ScriptableObjects
         [Min(1)] [SerializeField] int maxEntries = 20;
 
         [Header("Persistence")]
-        [Tooltip("File under Application.persistentDataPath the list is saved to (JSON, through DataAccessor, " +
-                 "like the favourites and loadouts). Local only: it is a memory of who you met, not a " +
-                 "relationship, so it is not Cloud Save data.")]
+        [Tooltip("BASE name of the file under Application.persistentDataPath the list is saved to (JSON, through " +
+                 "DataAccessor, like the favourites and loadouts). The list is per account: the signed-in UGS " +
+                 "player id goes before the extension (recent_players_<id>.data), so accounts sharing a machine " +
+                 "never see each other's pilots. Local only: it is a memory of who you met, not a relationship, " +
+                 "so it is not Cloud Save data.")]
         [SerializeField] string saveFileName = "recent_players.data";
 
         public int MaxEntries => Mathf.Max(1, maxEntries);
