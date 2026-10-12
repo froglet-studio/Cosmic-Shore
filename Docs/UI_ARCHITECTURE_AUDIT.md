@@ -428,6 +428,7 @@ component and others get a new parent instead:
 | ″ | splash content | **Content.** `Status Text` sits at `y = -460` with height 92 → bottom edge at −506, i.e. 34 units off the screen bottom and inside the inset | New `Safe Area` layer inside `LoadingPanel` holding `Status Text`, `Loader`, `Button` |
 | `Canvas` (Authentication) | `Background` | **Full-bleed.** Full-stretch `Image` | no change |
 | ″ | `AuthPanel`, `UsernameSetupPanel`, `Status Text`, `Loader` | **Content.** `LoginStatusText` is anchored `(0.1, 0) → (0.9, 0.2)` — its lower edge *is* the screen bottom | New `Safe Area` layer holding all four |
+| Menu_Main `SceneTransitionModal` | `LeftDoor` / `RightDoor` | **Full-bleed.** A curtain. Its doors rest just outside the modal rect when open, so under the inset `Safe Area` they showed in the cutout margins as grey plates; closed, they left the margins uncovered | Hoisted to the root canvas in `SceneTransitionModal.Awake` (2026-10-12) |
 | Environment load veil (runtime) | `Backdrop` | **Full-bleed.** An occluding veil; strips of a half-built world showing under the notch is exactly what it exists to prevent | no change |
 | ″ | `Title`, `Progress` | **Content.** Both are full-stretch with centred text, so a long world name reaches the cutout | New `Safe Area` layer built in `EnvironmentLoadVeil.Awake` |
 | Privacy consent overlay (runtime) | `Scrim` | **Full-bleed.** Dims the game behind and swallows clicks | no change |

@@ -98,6 +98,15 @@ the player and editor configs with 0 errors in project code, and the console-log
    is exactly the viewport width, so horizontal scrolling could only rubber-band.
 5. **`GraphicsSettingsApplier.ApplyDisplay`** returns on `Application.isMobilePlatform`. It used to
    call `Screen.SetResolution(Display.main.systemWidth, systemHeight)` at every boot.
+6. **`SceneTransitionModal`** hoists itself to the root canvas in `Awake`, just above the layer it
+   came from. Menu_Main nested it in `Safe Area/ModalWindows`. On a notched phone the open doors
+   rested just outside the inset rect and showed in the cutout margins as grey metal plates (seen
+   in the Device Simulator on every notch and Dynamic Island iPhone, and on the Pixel 5). Closed,
+   they left the margins uncovered. It is a no-op in GameCanvas, where the modal is already a root
+   child.
+7. **Home hub row** (`HomeScreen/Main_Menu_Panel/ButtonLayouts`) is MiddleCenter with zero padding.
+   It was MiddleLeft with 171 left padding, which only looked centred at 1920 wide; on a phone the
+   extra width all collected on the right. On desktop it moves 14 units to true centre.
 
 **Verify in editor**
 
@@ -116,6 +125,13 @@ the player and editor configs with 0 errors in project code, and the console-log
    progress bar; it scrolls. The bar still animates on claim.
 5. Desktop windowed: change the resolution in Settings. `SetResolution` still applies
    (`isMobilePlatform` is false there).
+6. In the Device Simulator on any notch or Dynamic Island iPhone, no grey plates show in the side
+   margins.
+   - Start a game from the menu: the transition doors close over the whole screen, margins
+     included, and open again.
+   - At runtime, `SceneTransitionModal` is a direct child of `UI_Refactored`, right after
+     `Safe Area`.
+7. HOME's four hub buttons are centred under the nav bar on a phone, an iPad and a 16:9 desktop.
 
 **Found and left open** (not phone-only, or a designer's call):
 
