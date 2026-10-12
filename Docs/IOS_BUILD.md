@@ -180,8 +180,10 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
 1. **Certificate on Windows with OpenSSL** (bundled with Git for Windows):
    ```
    openssl genrsa -out ios.key 2048
-   openssl req -new -key ios.key -out ios.csr -subj "/emailAddress=you@froglet.studio/CN=Name/C=US"
+   MSYS_NO_PATHCONV=1 openssl req -new -key ios.key -out ios.csr -subj "/emailAddress=you@froglet.studio/CN=Name/C=US"
    ```
+   (`MSYS_NO_PATHCONV=1`: without it Git Bash rewrites the `/emailAddress=…` subject into a Windows
+   path and `openssl req` rejects it.)
    Upload `ios.csr` at developer.apple.com → Certificates. Pick **Apple Development**, or
    **Apple Distribution** for TestFlight. Download the `.cer`, then:
    ```

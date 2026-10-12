@@ -512,6 +512,24 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 
   These are planned in guide §3, not changed blind.
 
+**Debt this branch created or walked past** (rows, not fixes; each needs its own change):
+
+- **The two iOS workflows duplicate their download-and-extract steps.**
+  `ios-testflight.yml` copies about 80 lines from `ios-unsigned-ipa.yml`, under a comment saying
+  "kept identical, change both". A composite action (`.github/actions/fetch-xcode-export`) would
+  give them one copy. It was left alone because Path A was run and verified on 2026-10-02 and
+  edits to it are not re-verified.
+- **`IAPManager` is a dormant web checkout.**
+  - What it is: `Assets/_Scripts/System/IAPManager.cs` sends players to a browser checkout.
+    Commerce is switched off (`CommerceAvailability.asset`).
+  - Why it matters: on mobile it would break Apple guideline 3.1.1 and Play's billing policy the
+    day someone switched it on.
+  - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
+    at that time; don't rely on an old claim that it's unused.
+- **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
+  `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, the two iOS workflows and
+  the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
+
 ---
 
 ## 4. Step plan
