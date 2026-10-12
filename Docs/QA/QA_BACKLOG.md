@@ -372,7 +372,7 @@ Run each and paste its report into your results file:
 5. **Vessels ▸ Audit Corridor Vessel Radii** *(new — re-run after the skimmer-exclusion
    fix; every hull radius must read ship-sized)*
 6. **Ecology ▸ Audit Cell-Owned Visuals**
-7. **Ecology ▸ Validate Lifeform Crystals** (compare with
+7. **Validation ▸ Validate Lifeform Crystals** (compare with
    `python3 Tools/Build/audit_lifeform_crystals.py`, its offline twin: 34 is the expected count
    until DT-002 is resolved, 32 findings plus two summary lines; QA-AUDIT-OFFLINE-TWINS)
 8. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
@@ -2558,7 +2558,7 @@ None of these files has ever been imported by Unity. A bad import fails quietly:
 6. In the Project window search `t:Scene`, open `MinigameWildlifeBlitzMultuplayerCoOp`: its
    controller component is present with no "Missing (Mono Script)". Open `Menu_Main` and search
    the Hierarchy for any object whose component list says "Missing (Mono Script)".
-7. Select `Assets/Resources/ModeControlsLibrary.asset` and `Assets/Resources/SceneNameList.asset`,
+7. Select `Assets/Resources/ModeControlsLibrary.asset` and `Assets/_SO_Assets/SceneNameList.asset`,
    press Ctrl+S, then run `git status` in a terminal at the repo root: neither file is listed.
 8. Select `Assets/_SO_Assets/Games/ArcadeGameJoust.asset`, toggle any checkbox and toggle it
    back, press Ctrl+S, run `git diff -- "Assets/_SO_Assets/Games/ArcadeGameJoust.asset"`: the
@@ -3179,17 +3179,33 @@ tracks are unchanged. (added 2026-10-10)
 7. Race intensities 1, 2 and 3 once each: same tracks as before, markers on every waypoint,
    targets 24, 30 and 56.
 8. Arcade screen, Skim Race card, intensity 4 preview: the knot with 26 markers.
-9. The AI matrix: run intensity 4 with **2** AI seats and then with **3**, twice each, and write
-   down each seat's finish time. Expect first-finisher times around 140 s and every seat
-   finishing most races; 70 s is not expected on this course.
+9. The AI matrix. A Skim Race ends at the FIRST finisher, so only the winner has a finish time;
+   the other seats are judged by their crystal count at the end. Open **FrogletTools ▸ AI ▸ Skim
+   Race AI Benchmark**, set Races 10, Intensity 4, Total players (host + AI) 3, Benchmark limit 0
+   and **Per-race timeout 240** (the default 150 cuts off about a quarter of these races, which the
+   report then counts as timeouts), press Run benchmark and keep Unity in front for the whole run
+   (about 30 min). Then run
+   `python3 Tools/Build/skimrace_benchmark_report.py BenchmarkResults/SkimRaceAI/skimrace_I4_<stamp>.jsonl --markdown`.
+   Repeat with Total players 4. Expect, for each run: full-sequence completion 10/10, timeouts
+   0/10, a finish-time median of 150 s or less (the simulator predicts about 141 s), and, at
+   Total players 3, the 'other AI at end' column at 44/52 or more in at least 8 races. 'completed
+   within limit: 0/10' and every row's 'FAIL: finish ... > limit' are expected: 70 s is not
+   reachable on this course. At Total players 4, two seats share a domain, so judge '(team win)'
+   rows on completion and timeouts only.
 
 **PASS:** the track fields are as listed and the gizmo is a five-lobed knot; the suite is green;
 target 52; markers only at crystals; the pass-4 snake and the five distinct crossings are there;
-I1 to I3 unchanged; the card preview shows the knot; AI seats finish.
+I1 to I3 unchanged; the card preview shows the knot; both benchmark runs complete 10/10 with no
+timeout and a median of 150 s or less, and the second AI stays close (step 9).
 **FAIL:** a target of 364 · markers along the ribbon · a symmetric knot or crossings piled at the
-centre · a changed I1 to I3 track or target · an AI seat that stalls, orbits or never finishes.
-**Report:** the finish times from step 9, and whether each lobe feels like its own corner and 52
-crystals is the right length (about 82 s for a perfect race).
+centre · a changed I1 to I3 track or target · an AI seat that stalls or orbits · a benchmark
+timeout at the 240 s setting · a median over 160 s · 'other AI at end' at 40/52 or less in 3 or
+more races (the second seat falling away, the old policy's failure). If the report's mean frame
+time is above 40 ms, write it down and do not fail on time alone (the simulator assumed 26 ms
+frames).
+**Report:** both benchmark reports from step 9 (completion, timeouts, finish-time median, the
+'other AI at end' column and the mean frame time), and whether each lobe feels like its own corner
+and 52 crystals is the right length (about 82 s for a perfect race).
 
 ### QA-REGATTA-AI-ALLIES ⬜ — Regatta: Squirrel opponents on the racing AI, an ally hull picker, team-sum scoring, race-beat toasts, an AI Urchin that picks its rail
 **Source:** PR #980 (`REGATTA.md` §8; `AIHullSeating`; `RegattaTeamPlayTests`), PR #985
@@ -3481,9 +3497,16 @@ sees trail during the 0.6 s its collider is still off. (added 2026-10-10)
 
 1. Open **Window ▸ General ▸ Test Runner ▸ EditMode** and run `AITrainingCoreTests`,
    `InputOnlyContractTests`, `SkimRaceAITests` and `ToastChannelHoldTests`.
-2. Hangar ▸ Training ▸ Skim Race at intensity 1 with one AI seat: the AI Squirrel collects crystals
-   along the track (it races). Turn on **FrogletTools ▸ Toolbox ▸ Logging ▸ AITraining** to see
-   its `[SkimRaceAI]` line.
+2. Skim Race is not a Hangar practice game: no training game exists for it, and the Hangar lists
+   only the selected vessel's own practice games. What the fix guards is the practice flag a
+   practice game leaves behind. Press Play in `Menu_Main`, open the
+   Hangar, pick a vessel with practice games (the Squirrel lists Slip N Stride) and launch one from
+   its Training panel; press **Esc** and return to the menu. Select
+   `Assets/_SO_Assets/Game Data/Runtime GameData.asset`: **Is Training** is ticked. Without stopping
+   Play, turn on **FrogletTools ▸ Toolbox ▸ Logging ▸ AITraining**, then launch **Arcade ▸ Skim
+   Race**, intensity 1, Squirrel, Players 2 (you plus one AI seat). The Console prints
+   `[SkimRaceAI] <AI name> flies the Skim Race pilot (skimrace-v4-i1, I1, CrystalTrackObjective).`
+   and the AI Squirrel collects crystals along the track (it races).
 3. Open **FrogletTools ▸ AI Training**, pick `Scenario_HexRace` and press Learn: the rollout runs;
    while in Play, `Assets/_SO_Assets/Game Data/Runtime GameData.asset` shows Is Genetic Training
    Session ticked and Is Training unticked; an AI seat has one TrainingPilot and its AIPilot
@@ -3491,11 +3514,14 @@ sees trail during the 0.6 s its collider is still off. (added 2026-10-10)
 4. Run a Learn rollout in a dense cell and lay a rail in front of a training pilot: it steers
    around it within a second of the lay.
 
-**PASS:** the four suites green; the practice AI races; the trainer flag is set during a rollout
-and cleared on exit, with Is Training false throughout; a training pilot avoids fresh trail.
-**FAIL:** a red test · a practice-game AI that sits still or wanders (the old legacy pilot) · the
-trainer flag left set after Play · Is Training set by a Learn rollout · a training pilot flying
-straight into trail laid in front of it.
+**PASS:** the four suites green; after a practice game, with Is Training still ticked, the Skim
+Race AI prints its `[SkimRaceAI]` line and races; the trainer flag is set during a rollout and
+cleared on exit, with Is Training false throughout; a training pilot avoids fresh trail.
+**FAIL:** a red test · in the Skim Race launched after a practice game, no `[SkimRaceAI]` line or an
+AI Squirrel that sits still or wanders off the track (the old legacy pilot) · the trainer flag
+left set after Play · Is Training set by a Learn rollout · a training pilot flying straight into
+trail laid in front of it. If Is Training is NOT ticked after the practice game, record step 2
+PARTIAL: the stale-flag case was not reproduced.
 
 ### QA-PARTY-JOIN-FAILED-TOAST ⬜ — a failed party join tells you so on the menu that comes back (two players)
 **Source:** this branch, commit `75b764375` (`ToastChannel.ShowPrefixOrHold`;
@@ -5837,7 +5863,7 @@ designer inspected it in game on 2026-10-08 ("looks great"). (added 2026-10-10)
    0.4 to 0.9% of the radius).
 2. Watch a Time crystal for 10 seconds: it never turns, jumps or twitches as a whole; each wave
    starts from a new vertex; no Console error. Capture one: the flourish looks as before.
-3. Run **FrogletTools ▸ Benchmarks ▸ Crystal Flip Wave Benchmark** and record its numbers (an
+3. Run **FrogletTools ▸ Performance ▸ Crystal Flip Wave Benchmark** and record its numbers (an
    earlier run printed n/a for every stat; that is fixed).
 
 **PASS:** the suite green with a parity error under 1%; the crystal still with a wave from a new
@@ -5906,21 +5932,29 @@ joust or drops nothing · a red error naming it.
 `Editor/Parity/ParityCapture`; `Port/parity/README.md`). The recorder, player and probe hook the
 input strategy; the editor capture run has never happened. (added 2026-10-10)
 
-1. Open **Window ▸ General ▸ Test Runner ▸ EditMode** and run `ReplayFileTests` (14).
-2. Press Play in `Menu_Main` normally, enter freestyle and launch one arcade game: everything
-   behaves as before and the Console shows no `Parity` or `Replay` lines (the harness is inert
-   with no replay and no environment variable).
-3. Run **FrogletTools ▸ Parity ▸ Capture Goldens**: it plays each case in
+1. Open **Window ▸ General ▸ Test Runner ▸ EditMode** and run `ReplayFileTests`: 15 tests, which
+   the runner shows as 19 cases (one test runs over 5 seeds).
+2. Turn on **FrogletTools ▸ Toolbox ▸ Logging ▸ Parity**. Press Play in `Menu_Main` normally, enter
+   freestyle and launch one arcade game: everything behaves as before and the Console shows no
+   `[ReplayPlayer]`, `[ReplayRecorder]`, `[ParityProbe]` or `[DeterministicSession]` line (the
+   harness is inert with no replay and no environment variable).
+3. Stop Play and run **FrogletTools ▸ Parity ▸ Capture Goldens**: it plays each of the 5 cases in
    `Port/parity/manifest.json` in Play mode and writes `Port/parity/goldens/<case>/state.jsonl`,
-   `events.jsonl`, `transforms.jsonl` and `goldens/random/random_<seed>.json`. With
-   **FrogletTools ▸ Toolbox ▸ Logging ▸ Parity** on, the capture logs each `do` verb (`arcade
-   SkimRace`, `start`, `ready`) as it reaches the match.
-4. Open one `state.jsonl`: it is non-empty and its first lines are JSON.
+   `events.jsonl`, `transforms.jsonl` and `goldens/random/random_<seed>.json`. The capture logs
+   nothing per `do` verb; judge the verbs on screen and by warnings: in each arcade case (Skim Race
+   twice, Astro League, Bloomrush at intensity 4) that card is selected, the match starts and Ready
+   is pressed with no input from you; there is no
+   `[ParityCapture] ... is not played in Unity; skipped` or `[ParityCapture] arcade: no card for`
+   warning; and the run ends `[ParityCapture] done: 5/5 case(s) written`.
+4. Open one `state.jsonl`: it is non-empty and its first lines are JSON. The goldens are untracked
+   files: hand them to the parity owner and do not commit them.
 
-**PASS:** 14 green; a plain Play is unchanged and silent; the capture writes every file for every
-case and the verbs reach the match.
-**FAIL:** a red test · any change to a plain Play · a case with no files or an empty state file · a
-`do` verb that never reaches the match.
+**PASS:** 19 cases green; a plain Play is unchanged and prints none of the harness lines; the
+capture ends `done: 5/5`, writes every file for every case, and drives each arcade case to the
+match with no skipped-verb or no-card warning.
+**FAIL:** a red test · any change to a plain Play, or a harness line during it · a case with no
+files or an empty state file · a `skipped` or `no card for` warning, or an arcade case that never
+reaches the match · a done line below 5/5.
 
 ### QA-LOAD-TIME-INSIGHTS ⬜ — cold-boot and arcade-launch load recording, and the unattended 124-cell sweep (numbers wanted)
 **Source:** this branch, commit `766b14800` (`Docs/PERFORMANCE_OPTIMIZATION.md` §0.6: cold boot to
@@ -5953,7 +5987,7 @@ warnings from the YAML; a difference between a twin and the editor tool is a fin
 1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers** and copy the hull names and reasons.
    In a terminal at the repo root run `python3 Tools/Build/audit_vessel_skimmers.py` and compare:
    the same hulls with the same reasons (the Butterfly far field reads OK, crystal pickup only).
-2. Run **FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals** and count its warnings; run
+2. Run **FrogletTools ▸ Validation ▸ Validate Lifeform Crystals** and count its warnings; run
    `python3 Tools/Build/audit_lifeform_crystals.py` and compare: 32 findings plus the two summary
    lines, 34 in the editor.
 
