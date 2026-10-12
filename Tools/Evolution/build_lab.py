@@ -112,7 +112,7 @@ FONTS = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=
          '&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">')
 
 
-def bake(out_dir, build_date=None):
+def bake(out_dir, build_date=None, build_branch=None):
     tpl = read("Tools/Evolution/lab_template.html")
     sim = read("Tools/Evolution/sim.js")
     shipped = json.loads(read("Tools/Evolution/results/shipped.json"))
@@ -137,7 +137,7 @@ def bake(out_dir, build_date=None):
                .replace("/*__SHIPPED_DRIFT__*/ []", js(moved))
                .replace("/*__RESULTS_JSON__*/ {}", js(results))
                .replace("/*__GOLDEN_JSON__*/ {}", js(golden))
-               .replace("__BRANCH__", branch())
+               .replace("__BRANCH__", build_branch or branch())
                .replace("__BUILD_DATE__", build_date or datetime.date.today().isoformat()))
 
     start, end = page.index("<!--ARTIFACT-START-->"), page.index("<!--ARTIFACT-END-->")
@@ -162,10 +162,14 @@ def main():
     if args.check:
         import tempfile
         committed = read("Tools/Evolution/DarwinLab.html")
+        # Re-bake with the committed page's OWN stamps (date and branch): the check asks whether the
+        # page's content is current, not whether it was baked today on this branch. Stamping the current
+        # branch made the check fail on every branch but the authoring one, bleeding-edge included.
         m = re.search(r"built: '([0-9-]+)'", committed)
         stamp = m.group(1) if m else datetime.date.today().isoformat()
+        b = re.search(r"branch: '([^']*)'", committed)
         with tempfile.TemporaryDirectory() as tmp:
-            moved, size = bake(tmp, stamp)
+            moved, size = bake(tmp, stamp, b.group(1) if b else None)
             fresh = open(os.path.join(tmp, "DarwinLab.html"), encoding="utf-8").read()
         ok = True
         if moved:
