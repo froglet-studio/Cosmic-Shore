@@ -284,9 +284,10 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
      failure there names its own fix.
 2. **Share the export.** Zip the folder and upload it to Dropbox. Replacing the previous file
    keeps the same link, so the secret rarely changes.
-3. **Start the job.** Use Actions → **iOS TestFlight** → Run workflow once this file is on
-   bleeding-edge. Until then, bump `Tools/iOS/testflight-request.txt` on a feature branch outside
-   `claude/` and push.
+3. **Start the job.** Use Actions → **iOS TestFlight** → Run workflow, and pick the branch the export
+   came from. That is the only trigger. A push trigger used to start it whenever a branch first
+   received a request file; every agent branch's first bleeding-edge merge did that, and with the
+   secrets set each run would have uploaded a build.
 4. **Wait for App Store Connect.** About 20–30 minutes later the build reaches App Store Connect,
    and processing takes another 5–30. In TestFlight, add it to the internal group, or turn on
    automatic distribution for that group.
