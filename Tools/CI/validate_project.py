@@ -196,10 +196,16 @@ def blank_literals(line: str) -> str:
     again (nested literals included; {{ and }} are text), '...' char literals,
     and // and /* */ comments so a quote in a comment opens nothing.
 
-    It is per line, like the check it serves. A literal or block comment that
-    does not close on its line is blanked to the end of the line, and the next
-    line is read as code, so a multi-line verbatim string can at worst produce
-    a finding to look at, never hide one.
+    It is per line, like the check it serves, so a mistake stays on its line.
+    A literal or block comment that does not close on its line is blanked to
+    the end of the line, and the next line is read as code. The one shape that
+    cannot be read this way is a verbatim string spanning lines: its middle
+    lines are read as code (at worst a finding to look at), and on its closing
+    line the quote that ends it reads as opening a new literal, which hides
+    anything after it on that line. The regex this replaces had the same blind
+    spot. Four runtime files carry such a string today (three input-action
+    JSON blobs and the painting viewer's HTML template); each closing line ends
+    in `");` or `";`, so nothing is hidden.
     """
     out: list[str] = []
     _lex_code(line, 0, out, in_hole=False)
