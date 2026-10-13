@@ -51,6 +51,12 @@ namespace CosmicShore.ScriptableObjects
     /// the UI so a player is never offered something that cannot work, and never rely on the UI
     /// alone to enforce it.</para>
     ///
+    /// <para><b>The checkout switch only matters on desktop.</b> <see cref="AllowRealMoneyCheckout"/>
+    /// can open the browser checkout only in a desktop (<c>UNITY_STANDALONE</c>) build.
+    /// <c>IAPManager</c> refuses it in iOS and Android builds whatever this asset says, because
+    /// those stores require their own billing for digital goods. That fence is compiled in and is
+    /// not part of this posture.</para>
+    ///
     /// <para><b>Not the soft-currency loop.</b> Crystals earned from match placement
     /// (<c>Scoreboard</c> → <c>PlayerDataService.AddCrystals</c>) and spent on vessel unlocks
     /// (<c>VesselUnlockSystem.TryPurchaseVessel</c> → <c>TrySpendCrystals</c>) run through UGS and
@@ -96,7 +102,9 @@ namespace CosmicShore.ScriptableObjects
                                  "point BOTH of its entry points share, so an un-gated screen " +
                                  "still cannot open a payment page. This is the action layer, not " +
                                  "a look - leave it off until a backend verifies orders " +
-                                 "(Docs/MENU_PROGRESSION_AND_IAP.md, section 5).")]
+                                 "(Docs/MENU_PROGRESSION_AND_IAP.md, section 5). Desktop builds " +
+                                 "only: iOS and Android builds refuse the browser checkout even " +
+                                 "with this on.")]
         bool allowRealMoneyCheckout = false;
 
         /// <summary>What <paramref name="surface"/> currently does when pressed.</summary>
@@ -121,7 +129,9 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// True while <c>IAPManager</c> may open a hosted checkout page. The service gate, read
-        /// where both purchase entry points meet rather than at either of them.
+        /// where both purchase entry points meet rather than at either of them. It has effect only in
+        /// a desktop (<c>UNITY_STANDALONE</c>) build: <c>IAPManager</c> declines on every other
+        /// platform without reading it.
         /// </summary>
         public bool AllowRealMoneyCheckout => allowRealMoneyCheckout;
 

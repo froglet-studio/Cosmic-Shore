@@ -153,7 +153,7 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
 > reaches `PurchaseConfirmationModal`. Read §6 before changing anything here. The verification gap
 > below is *why* it is off, not merely a scheduling accident.
 
-There is **no in-app store SDK** and (deliberately) no new dependency. Purchases open a hosted checkout page in the **system browser** via `Application.OpenURL`, which works on Steam/PC and mobile.
+There is **no in-app store SDK** and (deliberately) no new dependency. Purchases open a hosted checkout page in the **system browser** via `Application.OpenURL`. That path is **desktop builds only**: `IAPManager` opens it only where `UNITY_STANDALONE` is defined and refuses it on iOS and Android, where Apple App Review Guideline 3.1.1 and Google Play's payments policy require the platform's own billing. The refusal is compiled in, so `CommerceAvailability` cannot re-open it there.
 
 ### Pieces
 
@@ -242,7 +242,8 @@ so the panel does not open.
 - `PurchaseCard.OnClickBuy` and `HangarCaptainsView.OnClickBuy` — the **only** two paths to
   `PurchaseConfirmationModal`, asserted by `CommerceDeScopeTests.OnlyTheKnownPathsOpenThePurchaseModal`;
 - `HangarCaptainsView.PurchaseUpgrade`, because it is public and a scene could wire a button to it;
-- `IAPManager.OpenCheckout`, the choke point both checkout entry points share.
+- `IAPManager.OpenCheckout`, the choke point both checkout entry points share. Outside a desktop
+  (`UNITY_STANDALONE`) build it refuses before reading the posture (§5).
 
 Same split `OfflineUIGate` records: gate the UI so a player is never offered something that cannot
 work, and never rely on the UI alone to enforce it.
