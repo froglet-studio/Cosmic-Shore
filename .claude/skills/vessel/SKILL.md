@@ -761,6 +761,29 @@ inherits two traps that have each cost a round-trip:
   its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
   which is only the outline of an AXIS-ALIGNED sun.
 
+### 4.x1 MOVING a live prism from an impact effect (the Rhino plough, 2026-10-13)
+
+An effect that relocates a prism it touched, rather than destroying it, uses the platform's mover
+contract — the one `ThreatGrove.PoseAndFly` and `BuilderPrismWorld.Settle` already follow — and
+copying only half of it fails silently:
+
+- **Set the transform to the END pose, then `Prism.NotifyPositionChanged()`** — the spatial index,
+  the shield shell's pose and the companion render entity all track the transform only through
+  that call. Skip it and AOE queries, growth probes and the shell keep the old position.
+- **Animate with `PrismRenderService.StampFlight`, never per-frame transform writes.** The visual
+  walks in from the start while gameplay is already final; the stamp's velocity is
+  `delta × π / (2T)` (its full vector is `v·2T/π`). Then `EncapsulateBoundsPoint` the START in
+  object space, or the sliding visual frustum-culls against its resting box.
+- **Keep `prismProperties.position` in step** (the sibling mover does) even though nothing reads it.
+- **Make the move idempotent.** A multi-collider hull, or the shell tier plus the box tier, reports
+  one contact more than once in a frame; a move written as "+N" applies twice. Write it as "land
+  at X unless already there" (`RhinoPlough.LateralShove`).
+- **Super-shielded mass answers through `Prism.AbsorbSuperShieldHit`** and does not move — that is
+  the immovable tier, and arena edge linings are built from it.
+- **Removing a destroy is a SCORING change wherever that vessel is mandatory.** The plough stopped
+  hull rams counting in Cleave (Rhino-only, scored on destruction) — check the mono-vessel modes'
+  scoring the same way rule 31 asks of a defensive ability.
+
 ### 4.x2 A `[Range]` on a vessel action's SO is a drawer, not a constraint
 
 `RangeAttribute` is a **property drawer**: it clamps in the inspector and not at deserialization.

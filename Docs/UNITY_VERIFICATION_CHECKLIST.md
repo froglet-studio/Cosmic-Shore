@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While
+`IsUpgradeActive(Space)`, a SHIELDED prism's shield is shed and its core cut in the same sword hit;
+below the upgrade the first hit pops the shield and the second kills, as before. Super-shielded
+mass is unchanged (energized blade only). The map's Space entry names the upgrade; its ability slot
+stays open.
+
+**Verify:** (1) Rhino below Space 5: slice a shielded prism — shield pops, prism survives; slice
+again — it dies. (2) Raise Space to 5 (comeback or the element charger toy): one slice sheds the
+shield and cuts the prism; the sword banks energy for the kill. (3) Super-shielded prism at Space 5
+with a non-energized blade still binds. (4) MPPM two clients: with the upgrade active on one Rhino,
+both clients see the prism die in one slice.
+
+### 🔴 Rhino hull plough — rammed prisms are shoved aside, not destroyed (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:** `RhinoPloughPrismEffectSO` replaces `VesselDamagePrismEffect` in
+`RhinoImpactorDataContainer` only. A prism the Rhino's HULL touches is moved sideways to its own side
+of the centreline until it clears the hull (+ a speed-scaled throw, ≤ 30 u); super-shielded prisms
+only jiggle. The sword is unchanged. No `unity` binary was available, so `/verify-unity` did not run;
+the out-of-editor reference compile did (see the commit).
+
+**Verify:** the seven steps in `Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md`
+§ "In-editor verification" — plough not destroy, wider at boost, shielded/super-shielded, Cleave AI
+still scores with the sword, danger debuff still lands, no snap-back, MPPM sides agree.
+
+**First-pass tuning** (`RhinoPloughPrismEffect.asset`): `clearanceMargin` 1 u ·
+`throwSecondsOfSpeed` 0.04 s · `maxThrowDistance` 30 u · `slideSeconds` 0.25 s.
+
 ### 🔴 The Stoat becomes its own vessel: Mass / Time modes, the 90° slingshot, the Ripple, Accretion, Foresight, own HUD (`cece/zen-fermat-wu03hr`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5, §8; `STOAT.md` §4, §6. No editor and no `unity` CLI in the authoring

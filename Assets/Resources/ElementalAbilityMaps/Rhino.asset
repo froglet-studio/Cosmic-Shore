@@ -43,8 +43,11 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Breaker
+    UpgradeDescription: The sword cuts a SHIELDED prism in one slice instead of two -
+      the shield sheds and the core is cut in the same hit. Super-shielded prisms
+      still need an energized blade. RhinoSkimmerDamagePrismEffectSO.breakerElement,
+      gated on IsUpgradeActive(Space).
   - Element: 4
     AbilityLabel: Ramp Spool
     AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its
