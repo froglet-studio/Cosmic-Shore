@@ -138,9 +138,17 @@ namespace CosmicShore.Launcher
             if (message.Length > 0) Add(ok ? ChatRole.System : ChatRole.Error, message);
         }
 
+        /// <summary>
+        /// AUTO (Claude Code with its permission checks off) for this chat, until Amoebius closes. Only
+        /// the user's confirmation sets it, and it is never saved: a restored chat starts without it.
+        /// </summary>
+        public bool AutoAllowed { get; set; }
+
         public void Send(string text, string workDir, Mode mode, string? extraDir = null)
         {
             if (Busy || string.IsNullOrWhiteSpace(text)) return;
+            // Permission checks are bypassed only for a chat the user opted in this session.
+            if (mode == Mode.Auto && !AutoAllowed) mode = Mode.Edit;
             if (Cli == null && Detect() == null) { Add(ChatRole.Error, "Claude Code is not installed."); return; }
             Add(ChatRole.User, text.Trim());
             if (Title.Length == 0) Title = TitleFrom(text);

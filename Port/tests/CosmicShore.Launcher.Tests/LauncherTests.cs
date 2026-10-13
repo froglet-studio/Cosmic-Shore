@@ -366,6 +366,67 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void Secrets_move_out_of_launcher_json_into_the_credential_store()
+        {
+            var file = Path.Combine(LauncherSettings.DataDir, "launcher.json");
+            var saved = File.Exists(file) ? File.ReadAllText(file) : null;
+            try
+            {
+                File.WriteAllText(file, "{\"Branch\":\"x\",\"GitHubToken\":\"ghp_test_123\",\"AnthropicApiKey\":\"sk-ant-test-456\",\"ChatMode\":2}");
+                var s = LauncherSettings.Load();
+                Assert.Equal("ghp_test_123", s.GitHubToken);
+                Assert.Equal("sk-ant-test-456", s.AnthropicApiKey);
+                Assert.Equal(1, s.ChatMode);                         // a saved AUTO comes back as EDIT
+                var json = File.ReadAllText(file);
+                Assert.DoesNotContain("ghp_test_123", json);         // rewritten without them
+                Assert.DoesNotContain("sk-ant-test-456", json);
+                Assert.Equal("ghp_test_123", SecretStore.Get(SecretStore.GitHubToken));
+
+                // A changed secret goes to the store on Save, never back into the file.
+                s.AnthropicApiKey = "sk-ant-changed";
+                s.Save();
+                Assert.DoesNotContain("sk-ant-changed", File.ReadAllText(file));
+                Assert.Equal("sk-ant-changed", LauncherSettings.Load().AnthropicApiKey);
+            }
+            finally
+            {
+                SecretStore.Set(SecretStore.GitHubToken, null);
+                SecretStore.Set(SecretStore.AnthropicApiKey, null);
+                if (saved != null) File.WriteAllText(file, saved); else File.Delete(file);
+            }
+            Assert.Null(SecretStore.Get(SecretStore.GitHubToken));
+        }
+
+        [Fact]
+        public void Auto_runs_without_permission_checks_only_for_a_chat_the_user_opted_in()
+        {
+            if (OperatingSystem.IsWindows()) return; // the fake CLI is a shell script
+            var dir = Path.Combine(Setup.Data, "fake-claude");
+            Directory.CreateDirectory(dir);
+            var argsFile = Path.Combine(dir, "args.txt");
+            var fake = Path.Combine(dir, "claude");
+            File.WriteAllText(fake, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"" + argsFile + "\"\necho '{\"type\":\"result\",\"subtype\":\"success\"}'\n");
+            File.SetUnixFileMode(fake, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var s = new LauncherSettings { ClaudePath = fake };
+            var chat = new ChatStore(s, new Toolchain(), _ => { }).New();
+
+            string ModeSent(ClaudeChat.Mode mode)
+            {
+                File.Delete(argsFile);
+                chat.Send("hi", dir, mode);
+                for (int i = 0; i < 200 && (chat.Busy || !File.Exists(argsFile)); i++) System.Threading.Thread.Sleep(25);
+                var a = File.ReadAllLines(argsFile);
+                return a[Array.IndexOf(a, "--permission-mode") + 1];
+            }
+
+            Assert.False(chat.AutoAllowed);
+            Assert.Equal("acceptEdits", ModeSent(ClaudeChat.Mode.Auto));      // not opted in: EDIT
+            chat.AutoAllowed = true;
+            Assert.Equal("bypassPermissions", ModeSent(ClaudeChat.Mode.Auto));
+            Assert.Equal("plan", ModeSent(ClaudeChat.Mode.Plan));
+        }
+
+        [Fact]
         public void Project_settings_fall_back_to_the_file_under_the_engines_earlier_name()
         {
             var root = Path.Combine(Setup.Data, "upgrade", "project");

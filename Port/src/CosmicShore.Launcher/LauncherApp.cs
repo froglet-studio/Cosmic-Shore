@@ -1042,7 +1042,7 @@ namespace CosmicShore.Launcher
                 Row("GitHub token", () =>
                 {
                     SecretField("##token", "optional", () => _s.GitHubToken, v => _s.GitHubToken = v);
-                    Neon.Tooltip("Only if git has no GitHub sign-in.\nStored only on this PC.");
+                    Neon.Tooltip("Only if git has no GitHub sign-in.\nKept in " + SecretStore.Where + ", not in launcher.json.");
                 });
                 Row("Workspace", () =>
                     Segmented("wsmode", new[] { "OWN COPY", "BESIDE MY CLONE" }, (int)_s.Workspace, i => _s.Workspace = (WorkspaceMode)i, Neon.Cyan));
@@ -1068,7 +1068,7 @@ namespace CosmicShore.Launcher
                 Row("API key", () =>
                 {
                     SecretField("##akey", "empty = use your Claude plan", () => _s.AnthropicApiKey, v => _s.AnthropicApiKey = v);
-                    Neon.Tooltip("Only for pay-as-you-go API billing. When set it is used INSTEAD of your\nClaude Pro/Max plan. Passed only to the claude process; stored only on this PC.");
+                    Neon.Tooltip("Only for pay-as-you-go API billing. When set it is used INSTEAD of your\nClaude Pro/Max plan. Passed only to the claude process; kept in " + SecretStore.Where + ", not in launcher.json.");
                 });
                 Row("Model", () => Text("##cmodel", "default", () => _s.ClaudeModel, v => _s.ClaudeModel = v));
                 Row("CLI path", () => Text("##cpath", "auto-detect", () => _s.ClaudePath, v => _s.ClaudePath = v));

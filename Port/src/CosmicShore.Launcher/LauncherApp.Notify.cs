@@ -61,7 +61,7 @@ namespace CosmicShore.Launcher
                         _page = Page.Chat;
                         SendChat("Clean up the new problems from my last play run (amoebius_tracks has them with counts):\n" +
                                  string.Join("\n", problems.Take(8).Select(i => $"- [{i.Kind}] {i.Message}")) +
-                                 "\nFix the ones whose cause is in the game, prove each fix, and suggest the rest as board items.", (ClaudeChat.Mode)_s.ChatMode);
+                                 "\nFix the ones whose cause is in the game, prove each fix, and suggest the rest as board items.", ChatModeNow);
                     }),
                     ("REVIEW", () => { _page = Page.Tracks; _tracksTab = 0; }));
             }

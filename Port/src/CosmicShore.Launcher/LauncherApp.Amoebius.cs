@@ -386,7 +386,7 @@ namespace CosmicShore.Launcher
             _chats.New();
             _page = Page.Chat;
             SendChat($"Fix this {kind} in Cosmic Shore - Amoebius has seen it in {runs} run(s):\n{message}\n\nFind it in the tracks (amoebius_tracks) and the game's code, reproduce it, fix it in the game, and prove the fix with the amoebius tools. If its cause is in Amoebius itself, say which milestone it belongs to instead.",
-                (ClaudeChat.Mode)_s.ChatMode);
+                ChatModeNow);
         }
 
         static string PrettyScene(string s) => s.StartsWith("Minigame") ? System.Text.RegularExpressions.Regex.Replace(s["Minigame".Length..].Replace("_Gameplay", ""), "([a-z])([A-Z])", "$1 $2") : s;
@@ -518,7 +518,7 @@ namespace CosmicShore.Launcher
                     _page = Page.Chat;
                     SendChat($"Work on board item {it.Id} ({it.Type}): {it.Title}\n{it.Detail}\n\n" +
                              (it.Criterion.Length > 0 ? $"Acceptance criterion: {it.Criterion}\nRun that check (engine_smoke, game_* or a test) and show its result before saying the work is done. " : "Say how you proved it before saying it is done. ") +
-                             "The user moves the card.", (ClaudeChat.Mode)_s.ChatMode);
+                             "The user moves the card.", ChatModeNow);
                 }
             }
             ImGui.PopID();

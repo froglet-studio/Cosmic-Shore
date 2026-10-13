@@ -210,7 +210,10 @@ every reply, so they appear after the first one and are remembered.
 - **Model** and **effort** on the bar (default / fable / opus / sonnet / haiku; low to max).
 - **PLAN**: Claude investigates (it may build, test and run the game) and answers with a plan
   card. **APPROVE + EDIT** or **APPROVE + AUTO** lets it build the plan; typing keeps planning.
-  **EDIT** edits files directly; **AUTO** may also run any command. **CLEAR** starts this chat over.
+  **EDIT** edits files directly; **AUTO** may also run any command, with Claude Code's permission
+  checks off. AUTO is opt-in **per chat, per session**: choosing it (or APPROVE + AUTO, or `/auto`)
+  asks first, the answer holds for that chat until Amoebius closes, and it is never saved - a
+  restored chat, a new chat and a restart all start in PLAN or EDIT. **CLEAR** starts this chat over.
 - **Chips**: RUN TESTS, SMOKE TEST (boots the game headless and reports every error), LAST
   SESSION, PARITY CHECK (compares one system with the Unity game, in plan mode).
 - **Commands**: `/new /clear /rename TITLE /usage /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`.
@@ -226,8 +229,11 @@ needed.
 **SIGN IN** (SETTINGS > Claude, or on the AGENT page): a window opens for the browser sign-in,
 and chat then runs on your plan. An **API key** is only for pay-as-you-go billing from
 console.anthropic.com; when one is set it is used *instead of* the plan. Keys and tokens are shown
-as dots; SHOW reveals them to check a paste. A key is stored only on this PC and passed only to
-the `claude` process.
+as dots; SHOW reveals them to check a paste. The API key and the GitHub token are kept in the OS's
+credential store (Windows Credential Manager, the macOS Keychain, or the Secret Service on Linux;
+`secrets.json`, readable by you only, where there is none), never in `launcher.json`, and the key
+is passed only to the `claude` process. A `launcher.json` from before that moves its two secrets
+into the store on the first start and is rewritten without them.
 
 It is connected to the engine itself (the `amoebius` tools, `Port/CLAUDE.md`): Claude can
 build the engine, start the game, take screenshots, click and type, and read or change live
@@ -338,7 +344,7 @@ git fetch <branch>  ->  FMOD library from Git LFS  ->  dotnet build Port/src/Cos
                     ->  CosmicShore.exe --size ... [--fullscreen] [--scene ...]
 ```
 
-Settings live in `%LOCALAPPDATA%\Amoebius\launcher.json`. The launcher never writes to your
+Settings live in `%LOCALAPPDATA%\Amoebius\launcher.json` (its secrets in the credential store, above). The launcher never writes to your
 own clone: *Beside my clone* uses a git worktree next to it.
 
 **From the engine's earlier names (Prisma, before that FrogletEngine).** Nothing is lost on the

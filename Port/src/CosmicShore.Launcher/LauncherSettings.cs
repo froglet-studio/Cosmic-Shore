@@ -44,8 +44,11 @@ namespace CosmicShore.Launcher
         public string UnityClonePath { get; set; } = "";
         /// <summary>PLAY's branch follows the branch Unity / GitHub Desktop has checked out, until another is picked.</summary>
         public bool FollowClone { get; set; } = true;
-        /// <summary>Optional GitHub token (read-only is enough) for testers whose git has no stored sign-in.</summary>
-        public string GitHubToken { get; set; } = "";
+        /// <summary>
+        /// Optional GitHub token (read-only is enough) for testers whose git has no stored sign-in. Kept in
+        /// the OS credential store (<see cref="SecretStore"/>), never in launcher.json.
+        /// </summary>
+        [JsonIgnore] public string GitHubToken { get; set; } = "";
         public string ManagedPath { get; set; } = "";
 
         // Play
@@ -81,7 +84,18 @@ namespace CosmicShore.Launcher
         public bool Animations { get; set; } = true;
         public bool TourDone { get; set; }
 
-        public string AnthropicApiKey { get; set; } = "";
+        /// <summary>Optional Anthropic API key for the agent (empty = the user's Claude plan). Kept like <see cref="GitHubToken"/>.</summary>
+        [JsonIgnore] public string AnthropicApiKey { get; set; } = "";
+
+        // Where launcher.json held the two secrets before they moved to the credential store: read once,
+        // moved on load, then written out as nothing.
+        [JsonPropertyName("GitHubToken"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LegacyGitHubToken { get; set; }
+        [JsonPropertyName("AnthropicApiKey"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LegacyAnthropicApiKey { get; set; }
+
+        // The secrets as last stored, so Save writes the store only when one changed.
+        string? _storedGitHubToken, _storedAnthropicApiKey;
         public string ClaudeModel { get; set; } = "";
         public string ClaudeEffort { get; set; } = "";
         public bool VoiceReplies { get; set; }
@@ -90,6 +104,7 @@ namespace CosmicShore.Launcher
         public string BlenderPath { get; set; } = "";
         /// <summary>Maya's mayapy for .ma/.mb models (empty = search). Exported as AMOEBIUS_MAYAPY.</summary>
         public string MayaPyPath { get; set; } = "";
+        /// <summary>The agent's mode for new messages: 0 PLAN or 1 EDIT. AUTO is per chat and never saved (ClaudeChat.AutoAllowed).</summary>
         public int ChatMode { get; set; }
 
         // TIME page: the benchmark's scenes and run shape, and local multiplayer.
@@ -159,6 +174,8 @@ namespace CosmicShore.Launcher
                 {
                     var s = JsonSerializer.Deserialize<LauncherSettings>(File.ReadAllText(FilePath), Json) ?? new();
                     if (s.Ios == IosMode.GitHub) s.Ios = DefaultIosMode;
+                    if (s.ChatMode > 1) s.ChatMode = 1;   // an AUTO saved by an older launcher starts as EDIT
+                    if (s.LoadSecrets()) s.Save();        // moved out of launcher.json: rewrite it without them
                     return s;
                 }
             }
@@ -169,8 +186,35 @@ namespace CosmicShore.Launcher
             return new LauncherSettings();
         }
 
+        /// <summary>
+        /// Reads the two secrets from the credential store, first moving any that launcher.json still
+        /// holds into it. True when the file held one and must be written again without it.
+        /// </summary>
+        bool LoadSecrets()
+        {
+            bool moved = false;
+            if (!string.IsNullOrWhiteSpace(LegacyGitHubToken) && SecretStore.Set(SecretStore.GitHubToken, LegacyGitHubToken))
+            { LegacyGitHubToken = null; moved = true; }
+            if (!string.IsNullOrWhiteSpace(LegacyAnthropicApiKey) && SecretStore.Set(SecretStore.AnthropicApiKey, LegacyAnthropicApiKey))
+            { LegacyAnthropicApiKey = null; moved = true; }
+            // A store that refused keeps the file's value working until it accepts it.
+            GitHubToken = _storedGitHubToken = SecretStore.Get(SecretStore.GitHubToken) ?? LegacyGitHubToken ?? "";
+            AnthropicApiKey = _storedAnthropicApiKey = SecretStore.Get(SecretStore.AnthropicApiKey) ?? LegacyAnthropicApiKey ?? "";
+            return moved;
+        }
+
+        /// <summary>A changed secret goes to the store; one the store refuses stays in memory and is retried next Save.</summary>
+        void SaveSecrets()
+        {
+            if ((GitHubToken ?? "") != (_storedGitHubToken ?? "") && SecretStore.Set(SecretStore.GitHubToken, GitHubToken))
+            { _storedGitHubToken = GitHubToken; LegacyGitHubToken = null; }
+            if ((AnthropicApiKey ?? "") != (_storedAnthropicApiKey ?? "") && SecretStore.Set(SecretStore.AnthropicApiKey, AnthropicApiKey))
+            { _storedAnthropicApiKey = AnthropicApiKey; LegacyAnthropicApiKey = null; }
+        }
+
         public void Save()
         {
+            SaveSecrets();
             try { File.WriteAllText(FilePath, JsonSerializer.Serialize(this, Json)); }
             catch (Exception) { /* read-only profile: settings simply do not persist */ }
         }
