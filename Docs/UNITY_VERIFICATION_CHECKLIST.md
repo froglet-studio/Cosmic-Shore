@@ -70,8 +70,10 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md`): the stance and cloak
 seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 5 x
 short so shielded octahedra - 3x the box's half-extents - point long vertex at short vertex with half a short side of air), Mass-scaled and snapshotted at
-placement. Omni crystals beam to every live seed (`SerpentWallShieldByCrystalEffectSO`) and ripple a
-shield through each wall; a Mass-5 wall seals its holes with danger panels (it twisted first and
+placement. The wall steals from its edge (`SerpentWallStealPlanner`), the cloak's super-shielded
+seed outlives the cloak, and the stance's plain-shielded seed grows only while the Serpent stays
+stopped. Any crystal beams to every active wall's seed (`SerpentWallShieldByCrystalEffectSO`) and
+ripples a shield through each wall; a Mass-5 wall seals its holes with danger panels (it twisted first and
 panelled half of them, until the fourth playtest). Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
 
 **Garrett's first playtest (2026-10-10):** the wall stopped after barely any growth and its prisms
@@ -136,13 +138,20 @@ the wall; `SerpentWallAssembler.IsActive` is `seed alive && (held || super-shiel
 stance, the turn ending or the executor's `End` calls `ReleaseHeldWall`. A plain shield no longer
 lands on an already super-shielded seed. Re-test steps 1 and 2.
 
+**Ship pass (2026-10-13):** an ended wall now releases shot-out bricks on its sweep cadence; a
+DESTROYED brick reopens its site (Unity's `if (prism)` had skipped it); a wall whose vessel is gone
+stops sweeping instead of throwing every 0.3 s; Lockdown reuses one cell set per landing. Re-test:
+despawn a Serpent with a cloak wall standing and check the console stays clean. Open rows:
+`Docs/ElementalAbilitySystem/BACKLOG.md`, "From the Serpent Seed Wall branch" (the stance wall is
+built only on the owner and server).
+
 **Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
 result.
 
 **Verify in editor:** the eight steps in SERPENT_SEED_WALL.md § "Editor checks".
 
-**First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, claim every
-0.15 s, recruit radius 40, pull 20 / 6 u/s, ripple 0.08 s per ring, panel clearance 0.25 x short,
+**First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, a steal sweep
+every 0.3 s (up to 48 claims in 4 waves), steal radius 40 (x2 at Space 10), pull 20 / 6 u/s, ripple 0.08 s per ring, panel clearance 0.25 x short,
 panel thickness 0.15. `CloakSeedWallAction.asset` - pilot trail alpha 0.4, fade in 0.4 s, reveal 0.7 s,
 flare 1.5, illusion morph 0.6 s.
 

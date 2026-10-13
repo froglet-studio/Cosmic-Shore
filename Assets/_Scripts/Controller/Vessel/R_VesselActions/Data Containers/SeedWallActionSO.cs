@@ -32,13 +32,15 @@ namespace CosmicShore.Gameplay
                  "stance wall grows while the Serpent stays stopped and ends, like a wall whose " +
                  "super-shield was broken, when it flies again.")]
         [SerializeField] private ShieldMode stanceShieldOnSeed = ShieldMode.Shield;
-        [Tooltip("How many bricks the wall may claim, the seed excluded.")]
+        [Tooltip("Legacy Wall / Gyroid assemblers only: how many bricks the wall may claim, the seed " +
+                 "excluded. The Serpent lattice ignores it (it has no brick limit).")]
         [SerializeField] private int bondingDepth = 50;
 
         [Header("Serpent lattice - bricks (MASS scales size AND spacing)")]
         [Tooltip("Short side of a wall brick at the resting Mass level, in world units. The long " +
-                 "side is twice this (SerpentWallLattice.Aspect) and the lattice pitch is 1.5x it, " +
-                 "so shielded bricks touch long vertex to short vertex. 3 matches the Serpent's " +
+                 "side is twice this (SerpentWallLattice.Aspect) and the lattice pitch is 5x it, " +
+                 "so shielded bricks point long vertex at short vertex with half a short side of " +
+                 "air between them. 3 matches the Serpent's " +
                  "trail BaseScale (3 x 6 x 0.5), so a resting wall is made of trail-sized bricks.")]
         [SerializeField, Min(0.1f)] private float brickShortSide = 3f;
         [Tooltip("Brick thickness along the wall's normal at the resting Mass level.")]
@@ -105,6 +107,8 @@ namespace CosmicShore.Gameplay
         public bool RequireExistingTrailBlock => requireExistingTrailBlock;
         public AssemblerKind AssemblerType => assemblerType;
         public ShieldMode ShieldOnSeed => shieldOnSeed;
+        /// <summary>Never SuperShield: <see cref="OnValidate"/> corrects an authored one in the
+        /// inspector, and this guards an asset that was written without passing through it.</summary>
         public ShieldMode StanceShieldOnSeed => stanceShieldOnSeed == ShieldMode.SuperShield
             ? ShieldMode.Shield
             : stanceShieldOnSeed;
@@ -129,6 +133,12 @@ namespace CosmicShore.Gameplay
         public float LockPanelClearance => lockPanelClearance;
         public float LockPanelThickness => lockPanelThickness;
         public PrismEventChannelWithReturnSO PrismSpawnChannel => prismSpawnChannel;
+
+        void OnValidate()
+        {
+            // The super-shield is the cloak's alone (SERPENT_SEED_WALL.md, "The stance's wall").
+            if (stanceShieldOnSeed == ShieldMode.SuperShield) stanceShieldOnSeed = ShieldMode.Shield;
+        }
 
         public float ComputeCost(ResourceSystem rs)
         {

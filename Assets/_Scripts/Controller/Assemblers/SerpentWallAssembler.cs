@@ -115,6 +115,7 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _candidateLocal = new();
         readonly List<SerpentWallStealPlanner.Claim> _claims = new();
         readonly Dictionary<Vector2Int, Panel> _panels = new();
+        readonly HashSet<Vector2Int> _cellScratch = new();
 
         bool _locked;
         bool _held;
@@ -127,10 +128,16 @@ namespace CosmicShore.Gameplay
         public IVesselStatus Owner => _shape.Owner;
         public Snapshot Shape => _shape;
 
-        /// <summary>The seed is alive (not destroyed, not recycled by the pool) and either still
-        /// super-shielded (the cloak's wall) or still held by the stopped stance. Only an active
-        /// wall grows and answers a crystal.</summary>
-        public bool IsActive => IsSeedAlive && (_held || Prism.prismProperties is { IsSuperShielded: true });
+        /// <summary>The seed is alive (not destroyed, not sitting in the pool), the vessel that
+        /// laid it still exists, and the seed is either still super-shielded (the cloak's wall) or
+        /// still held by the stopped stance. Only an active wall grows and answers a crystal.</summary>
+        public bool IsActive => IsSeedAlive && IsOwnerAlive &&
+                                (_held || Prism.prismProperties is { IsSuperShielded: true });
+
+        /// <summary>A sweep reads the owner's Space level and upgrade, and a destroyed vessel's
+        /// getters throw; <c>?.</c> does not see a destroyed Unity object. A wall whose pilot
+        /// left (despawn, disconnect) stops growing and stands, like any ended wall.</summary>
+        bool IsOwnerAlive => _shape.Owner is UnityEngine.Object o ? o != null : _shape.Owner != null;
 
         bool IsSeedAlive =>
             Prism && !Prism.destroyed && Prism.gameObject.activeInHierarchy &&
@@ -211,7 +218,7 @@ namespace CosmicShore.Gameplay
         {
             Live.Remove(this);
             foreach (var m in _members.Values)
-                if (m.Prism) s_claimed.Remove(m.Prism);
+                if (HasRef(m.Prism)) s_claimed.Remove(m.Prism);
             _members.Clear();
             _inFlight.Clear();
             _filled.Clear();
@@ -235,10 +242,13 @@ namespace CosmicShore.Gameplay
 
             if (_growing && !IsActive) _growing = false;
 
-            if (_growing && Time.time >= _nextSweepAt)
+            if (Time.time >= _nextSweepAt)
             {
                 _nextSweepAt = Time.time + _shape.Config.StealSweepInterval;
-                Sweep();
+                // An ended wall steals nothing, but still lets go of bricks that were shot out, so
+                // they do not stay claimed (and out of every other wall's reach) until its seed dies.
+                if (_growing) Sweep();
+                else ReleaseLostBricks();
             }
 
             // A Lockdown wall seals each hole as soon as its four bricks stand, not only on the
@@ -315,14 +325,21 @@ namespace CosmicShore.Gameplay
             _maxRing = Mathf.Max(_maxRing, SerpentWallLattice.Ring(site));
         }
 
-        /// <summary>Standing bricks that were shot out, or recycled by the pool into someone
-        /// else's prism, since the last sweep: their sites reopen and become edge again.</summary>
+        /// <summary>Standing bricks that were shot out (destroyed, or returned to the pool) since
+        /// the last sweep: their sites reopen and become edge again. A pooled prism REUSED between
+        /// two sweeps is not caught: <c>TimeCreated</c> is stamped in <c>Prism.Awake</c> only
+        /// (BACKLOG.md, Seed Wall rows).</summary>
         void ReleaseLostBricks()
         {
             foreach (var m in _members.Values)
-                if (m.Prism && m.Landed && !IsAlive(m.Prism, m.BornAt))
+                if (HasRef(m.Prism) && m.Landed && !IsAlive(m.Prism, m.BornAt))
                     Release(m);
         }
+
+        /// <summary>The member still holds a reference, even to a destroyed prism: Unity's
+        /// <c>if (prism)</c> is false for a destroyed object, which used to skip its release and
+        /// leave its site filled.</summary>
+        static bool HasRef(Prism p) => (object)p != null;
 
         void Release(Member m)
         {
@@ -362,8 +379,8 @@ namespace CosmicShore.Gameplay
                 var m = _inFlight[i];
                 if (!m.Prism || !IsAlive(m.Prism, m.BornAt))
                 {
-                    // Shot down in flight, or recycled by the pool: the site is edge again.
-                    if (m.Prism) Release(m);
+                    // Shot down in flight, or returned to the pool: the site is edge again.
+                    if (HasRef(m.Prism)) Release(m);
                     RemoveInFlight(i);
                     continue;
                 }
@@ -477,7 +494,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var cells = new HashSet<Vector2Int>();
+            // Runs on every brick landing once a wall is locked: reuse one set, no allocation.
+            var cells = _cellScratch;
+            cells.Clear();
             foreach (var site in _members.Keys)
                 for (int dx = -1; dx <= 0; dx++)
                 for (int dy = -1; dy <= 0; dy++)
