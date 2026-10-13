@@ -289,6 +289,10 @@ New rows found while closing these:
 - **R2:** `ThemeManager.prefab` serializes `BaseMaterialSet: GreenMaterialSet` and `ColorSet`, which the script no
   longer has (the live set comes from `ThemeManagerDataContainer.asset`). They are dead overrides.
 - **R3:** the anti-aliasing and background-colour reads above (F4, settings side).
+- **R4:** the Prisma port mirrors the OLD team lookup. `Port/src/CosmicShore.Game/.../ThemeManagerDataContainerSO.cs`
+  and its `Crystal.cs` still key the team crystal material by slot index, and `Port/src/CosmicShore.Client/SkimRaceTheme.cs`
+  names the deleted `OmniShepardTriangles*` materials, as labels only. Nothing in the port breaks (it does not
+  load these assets), but the mirror now disagrees with F1/F2. An engine session ports it.
 
 ## Follow-ups (refactor rows, measured at ship time 2026-10-12, round 9)
 
