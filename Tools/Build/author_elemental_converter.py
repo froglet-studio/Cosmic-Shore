@@ -138,7 +138,6 @@ def config_asset(guids):
              f"  m_Script: {{fileID: 11500000, guid: {guids['OmniCombineConfigSO']}, type: 3}}",
              "  m_Name: OmniCombineConfig", "  m_EditorClassIdentifier: ",
              f"  combineData: {{fileID: 4900000, guid: {meta_guid(DATA_META[:-5])}, type: 3}}",
-             f"  chargeMaterial: {mat('ChargeCrystalMaterial')}",
              f"  shellMaterial: {mat('OmniCrystalBody')}",
              f"  omniMaterial: {mat('OmniCrystalBody')}",
              f"  massMaterial: {mat('MassDepthPrisms')}",
@@ -148,7 +147,6 @@ def config_asset(guids):
              # Omni Motion Lab round 5 (2026-10-13): the woken omni and the Charge light are the game's.
              f"  cadence: {{fileID: 11400000, guid: {meta_guid(CADENCE)}, type: 2}}",
              f"  chargeArcs: {{fileID: 11400000, guid: {meta_guid(CHARGE_ARCS_PROFILE)}, type: 2}}",
-             f"  chargeArcsMaterial: {mat('ChargeCrystalArcs')}",
              f"  omniArcsMaterial: {mat('OmniChargeArcs')}"]
     lines += [f"  {k}: {v}" for k, v in CONFIG_VALUES]
     return "\n".join(lines) + "\n"
@@ -278,8 +276,8 @@ def planned():
     if not os.path.exists(DATA_META):
         raise SystemExit("OmniCombineData.json is not authored: run Tools/Build/author_omni_combine_asset.py first")
     fields = set(serialized_fields(os.path.join(ROOT, SCRIPTS["OmniCombineConfigSO"])))
-    keys = {"combineData", "chargeMaterial", "shellMaterial", "omniMaterial", "massMaterial",
-            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile", "cadence", "chargeArcs", "chargeArcsMaterial",
+    keys = {"combineData", "shellMaterial", "omniMaterial", "massMaterial",
+            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile", "cadence", "chargeArcs",
             "omniArcsMaterial"} | {k for k, _ in CONFIG_VALUES}
     if fields != keys:
         raise SystemExit(f"OmniCombineConfig keys and OmniCombineConfigSO's fields disagree: "
@@ -354,7 +352,8 @@ def self_test():
     check("an OfflineUIGate referenced from elsewhere is not removed", refused(lambda: edit_scene(gated, g)))
     out, _ = planned()
     check("the config asset carries every OmniCombineConfigSO field",
-          all(f"  {k}: {{fileID: " in out[CONFIG] for k in ("cadence", "chargeArcs", "chargeArcsMaterial", "omniArcsMaterial")))
+          all(f"  {k}: {{fileID: " in out[CONFIG] for k in ("cadence", "chargeArcs", "omniArcsMaterial")))
+    check("the Charge crystal wears the omni's body (one hue at the hand-off)", "chargeMaterial" not in out[CONFIG])
     check("the retired edge-crawl material is not wired", "omniChargeEdgesMaterial" not in out[CONFIG])
     sys.exit(0 if ok else 1)
 

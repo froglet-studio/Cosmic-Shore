@@ -12,7 +12,10 @@
 //     and are paired one to one;
 //  8. a discharge lights only its source and sink pentagons;
 //  9. the omni's pentagon arc ends sit on the 1.1x thicker pentagons (CrystalSpaceSquares' thickening);
-// 10. the mesh writer: a thick beam is three strips (halo, body, core), a thin bolt two; nothing non-finite.
+// 10. the plasma (the Squirrel's skim crackle is the reference): one continuous strip per bolt with shared joints, ends
+//     pinned, bending smoothly, flowing between frames without a jump; the seam trail never jumps as its tail falls away;
+// 11. a flux arc passing through a raised Mass column lights it; sealed prisms are never struck; a prism planted on the
+//     beam lights and one off it does not.
 // Negative controls: a crystal with one petal missing is refused; a walk with the fifth-seam rule's state cleared would
 // circle (checked by counting how often a plain random walk does).
 using System;
@@ -200,15 +203,124 @@ static class Program
         Check("the omni's arc ends sit on the 1.1x thicker pentagons (moved out along the plate)", built && moved > 1e-4f * omni.Radius && along > 0.95f,
             $"moved {moved / omni.Radius:E2} R, cos to the axis {along:F3}");
 
-        // ── 10: the writer ──
+        // ── 10: the plasma (the Squirrel's skim crackle is the reference) ──
+        var straight = new List<Vector3> { Vector3.zero, new Vector3(1f, 0f, 0f) };
+        var eyeZ = new Vector3(0.5f, 0f, 10f);
         writer.Clear();
-        var line = new List<Vector3> { Vector3.zero, new Vector3(0.001f, 0f, 0f) };
-        writer.Bolt(line, 2, 1f, 0f, 3f, 1, new Vector3(0, 0, 10), 1f, 0.012f, 0);
-        int thick = writer.Positions.Count;
+        writer.Plasma(straight, 2, null, null, 1f, 3f, 0.025f, 1, 3.3f, settings, eyeZ, 1f);
+        int verts = writer.Positions.Count, ribbonTris = writer.Indices.Count / 3;
+        // two ribbons (the bolt and its sub-filament), each one strip of shared vertex pairs: 2(n+1) vertices, 2n triangles
+        int n1 = verts / 4 - 1;
+        Check("a bolt is one continuous strip (+ its sub-filament): every joint's vertices are shared", verts % 4 == 0 && ribbonTris == 4 * n1 && n1 >= 30,
+              $"{verts} vertices, {ribbonTris} triangles, {n1} pieces per ribbon");
+        var mid = Enumerable.Range(0, n1 + 1).Select(k => (writer.Positions[2 * k] + writer.Positions[2 * k + 1]) * 0.5f).ToList();
+        Check("its ends are pinned where it is aimed", (mid[0] - straight[0]).magnitude < 1e-5f && (mid[n1] - straight[1]).magnitude < 1e-5f,
+              $"{(mid[0] - straight[0]).magnitude:E1} / {(mid[n1] - straight[1]).magnitude:E1}");
+        float worstTurn = 0f;
+        for (int k = 1; k < n1; k++) worstTurn = Math.Max(worstTurn, Vector3.Angle(mid[k] - mid[k - 1], mid[k + 1] - mid[k]));
+        float bend = mid.Max(q => Math.Abs(q.y) + Math.Abs(q.z));
+        Check("it bends smoothly (no kink between neighbouring pieces) but does bend", worstTurn < 20f && bend > 0.003f,
+              $"sharpest turn {worstTurn:F1} deg, off the line by up to {bend:F3}");
         writer.Clear();
-        writer.Bolt(line, 2, 1f, 0f, 2f, 1, new Vector3(0, 0, 10), 1f, 0.012f, 0);
-        int thin = writer.Positions.Count;
-        Check("a thick beam is three strips (halo, body, core); a thin bolt two", thick == 12 && thin == 8, $"{thick} / {thin} vertices");
+        writer.Plasma(straight, 2, null, null, 1f, 3f, 0.025f, 1, 3.3f + 1f / 60f, settings, eyeZ, 1f);
+        float jump = Enumerable.Range(0, n1 + 1).Max(k => ((writer.Positions[2 * k] + writer.Positions[2 * k + 1]) * 0.5f - mid[k]).magnitude);
+        Check("from one frame to the next the plasma flows, never jumps", jump < 0.004f, $"worst move {jump:E2} radii in 1/60 s");
+
+        // the seam trail: one ribbon whose shape never jumps between frames, even as its tail falls away
+        var trailWalker = new ChargeSeamWalker(charge, 99, 0f);
+        List<Vector3> prevTrail = null;
+        float worstTrail = 0f, worstTailStart = 0f;
+        int trailFrames = 0;
+        for (float t = 0f; t < 30f; t += 1f / 60f)
+        {
+            trailWalker.Advance(t, settings);
+            writer.Clear();
+            ChargeArcs.SeamWalk(charge, trailWalker, t, settings, writer, eyeZ * charge.Radius, light);
+            int v = writer.Positions.Count;
+            int faceVerts = 0;   // SeamWalk writes no faces; the player adds them after
+            int ribbon = (v - faceVerts) / 2;   // the main ribbon is the first half
+            var centres = Enumerable.Range(0, ribbon / 2).Select(k => (writer.Positions[2 * k] + writer.Positions[2 * k + 1]) * 0.5f).ToList();
+            var brightness = Enumerable.Range(0, ribbon / 2).Select(k => writer.Data[2 * k].w).ToList();
+            float peak = brightness.Count > 0 ? brightness.Max() : 0f;
+            if (prevTrail != null && centres.Count > 2 && prevTrail.Count > 2)
+            {
+                // the trail BEHIND the head (the head legitimately races a whole seam in 0.07 s) lies where it lay last
+                // frame: dropping the tail must not slide the plasma's shape along it
+                float w = 0f; int wi = -1;
+                for (int ci = 0; ci < centres.Count / 2; ci++)
+                {
+                    if (brightness[ci] < 0.2f * peak) continue;   // only plasma that can be seen
+                    var c = centres[ci];
+                    float dd = Enumerable.Range(0, prevTrail.Count - 1).Min(i => SegmentDistance(c, prevTrail[i], prevTrail[i + 1]));
+                    if (dd > w) { w = dd; wi = ci; }
+                }
+                if (w > worstTrail && Environment.GetEnvironmentVariable("TRAIL_DEBUG") != null)
+                    Console.WriteLine($"  t={t:F3} worst {w / charge.Radius:E2} R at {wi}/{centres.Count} b={brightness[Math.Max(wi,0)]/peak:F2} b1={brightness[Math.Min(1,brightness.Count-1)]/peak:F2} (prev {prevTrail.Count}), legs {string.Join(",", trailWalker.Legs.Select(l => $"{l.Serial}:{l.Start:F2}-{l.Struck:F2}"))}");
+                worstTrail = Math.Max(worstTrail, w);
+                trailFrames++;
+            }
+            prevTrail = centres;
+            if (t > 2f && brightness.Count > 2 && peak > 0f) worstTailStart = Math.Max(worstTailStart, brightness[0] / peak);
+        }
+        Check("the visible seam trail never jumps between frames, even as its tail falls away", worstTrail < 0.005f * charge.Radius && trailFrames > 1000,
+              $"worst {worstTrail / charge.Radius:E2} R over {trailFrames} frames");
+
+        Check("the seam trail's tail always fades to nothing (no cut-off end)", worstTailStart < 0.05f, $"brightest tail end {worstTailStart:F3} of the peak");
+
+        // ── 11: a flux arc through a raised Mass column lights it ──
+        // The omni's triangular prisms (6 corners), each at the top of its column as the shader carries it (reach 3, size 0.6).
+        var omniTris = TriangularPrisms(op, ot);
+        Check("the omni has its 20 triangular prisms", omniTris.Count == 20, $"{omniTris.Count}");
+        // A prism at column place u stands at k = lerp(3, 1, u) times its plate centre, scaled k * lerp(0.6, 1, u)
+        // (OmniDepthPrismShader / CrystalDepthPrisms.ColumnBody). Fully up (u = 0) it is 3 radii out, far above the arcs
+        // (they bow out at most ~1.46 R); the ones an arc can run through are part-way up, near the silhouette.
+        var strike = new float[omniTris.Count];
+        int struckFrames = 0, beamFrames = 0;
+        float strongest = 0f;
+        var topStruck = 0;
+        foreach (float u in new[] { 0f, 0.6f, 0.7f, 0.8f, 0.9f })
+        {
+            float k = 3f + (1f - 3f) * u, size = k * (0.6f + 0.4f * u);
+            var centresUp = omniTris.Select(p => p.centre * k).ToArray();
+            var radiiUp = omniTris.Select(p => p.bound * size).ToArray();
+            var strikeChain = new ChargeFluxChain(omni, 5);
+            for (float t = 0f; t < 120f; t += 0.05f)
+            {
+                ChargeArcs.FluxStrikes(omni, strikeChain, t, settings, centresUp, radiiUp, centresUp.Length, strike);
+                bool any = strike.Any(x => x > 0f);
+                if (u == 0f) { if (any) topStruck++; continue; }
+                if (any) struckFrames++;
+                strongest = Math.Max(strongest, strike.Max());
+                beamFrames++;
+            }
+        }
+        Check("flux arcs do pass through Mass prisms part-way up their columns, and those frames light the prisms", struckFrames > 0 && strongest > 1f,
+              $"{struckFrames} of {beamFrames} frames strike one, strongest {strongest:F2}");
+        Check("a prism at the very top of its column is above every arc", topStruck == 0, $"{topStruck} frames");
+        var seated = omniTris.Select(p => p.centre).ToArray();
+        var seatedRadii = omniTris.Select(p => p.bound).ToArray();
+        int seatedStruck = 0;
+        var chain3 = new ChargeFluxChain(omni, 5);
+        for (float t = 0f; t < 120f; t += 0.05f)
+        {
+            ChargeArcs.FluxStrikes(omni, chain3, t, settings, seated, seatedRadii, seated.Length, strike);
+            if (strike.Any(x => x > 0f)) seatedStruck++;
+        }
+        Check("negative control: sealed in their holes, no prism is ever struck (the arcs bow over the shell)", seatedStruck == 0,
+              $"{seatedStruck} frames");
+        // a prism planted on the beam's middle is struck at full; moved off by twice its radius, not at all
+        var plantChain = new ChargeFluxChain(omni, 8);
+        plantChain.TryGet(0, settings, out var firstDischarge);
+        var plantPath = omni.PathOf(firstDischarge.Source, firstDischarge.Sink);
+        float tHold = settings.FluxCharge + settings.FluxStrike + 0.1f;
+        var on = new[] { plantPath.Centre(0.5f) };
+        var off = new[] { plantPath.Centre(0.5f) * 1.6f };
+        var r1 = new[] { 0.05f * omni.Radius };
+        var one = new float[1];
+        ChargeArcs.FluxStrikes(omni, plantChain, tHold, settings, on, r1, 1, one);
+        float onValue = one[0];
+        ChargeArcs.FluxStrikes(omni, plantChain, tHold, settings, off, r1, 1, one);
+        Check("a prism on the beam lights; one well off it does not", onValue > 2f && one[0] == 0f, $"{onValue:F2} / {one[0]:F2}");
 
         // negative control: one petal missing is refused
         var keep = new List<int>();
@@ -220,6 +332,35 @@ static class Program
         bool refused = !ChargeSites.TryBuild(cp, keep.ToArray(), 1f, out _, out var why);
         Check("negative control: a crystal with a petal missing is refused", refused, why ?? "accepted");
         return Finish();
+    }
+
+    static float SegmentDistance(Vector3 p, Vector3 a, Vector3 b)
+    {
+        var ab = b - a;
+        float u = Math.Clamp(Vector3.Dot(p - a, ab) / Math.Max(1e-12f, Vector3.Dot(ab, ab)), 0f, 1f);
+        return (a + ab * u - p).magnitude;
+    }
+
+    /// <summary>The 6-corner plates (triangular prisms) of a mesh: centre and farthest corner from it.</summary>
+    static List<(Vector3 centre, float bound)> TriangularPrisms(Vector3[] p, int[] t)
+    {
+        var weld = new Dictionary<(int, int, int), int>();
+        var welds = new List<Vector3>();
+        var of = new int[p.Length];
+        for (int i = 0; i < p.Length; i++)
+        {
+            var key = ((int)Math.Round(p[i].x * 1e5), (int)Math.Round(p[i].y * 1e5), (int)Math.Round(p[i].z * 1e5));
+            if (!weld.TryGetValue(key, out int w)) { weld[key] = w = welds.Count; welds.Add(p[i]); }
+            of[i] = w;
+        }
+        var parent = Enumerable.Range(0, welds.Count).ToArray();
+        int Find(int x) { while (parent[x] != x) x = parent[x] = parent[parent[x]]; return x; }
+        for (int i = 0; i + 2 < t.Length; i += 3) { parent[Find(of[t[i]])] = Find(of[t[i + 1]]); parent[Find(of[t[i + 2]])] = Find(of[t[i + 1]]); }
+        return Enumerable.Range(0, welds.Count).GroupBy(Find).Where(g => g.Count() == 6).Select(g =>
+        {
+            var c = g.Aggregate(Vector3.zero, (a, w) => a + welds[w]) / 6f;
+            return (c, g.Max(w => (welds[w] - c).magnitude));
+        }).ToList();
     }
 
     static int Finish()

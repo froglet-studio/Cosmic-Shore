@@ -24,6 +24,7 @@ namespace UnityEngine
         public static float Repeat(float t, float l) => t - (float)Math.Floor(t / l) * l;
         public static int RoundToInt(float v) => (int)Math.Round(v, MidpointRounding.ToEven);
         public static int FloorToInt(float v) => (int)Math.Floor(v);
+        public static int CeilToInt(float v) => (int)Math.Ceiling(v);
         public const float Deg2Rad = (float)(Math.PI / 180.0);
         public const float Rad2Deg = (float)(180.0 / Math.PI);
         public static float Round(float v) => (float)Math.Round(v, MidpointRounding.ToEven);
@@ -49,6 +50,7 @@ namespace UnityEngine
         public static Vector3 Scale(Vector3 a, Vector3 b) => new(a.x * b.x, a.y * b.y, a.z * b.z);
         public static float Distance(Vector3 a, Vector3 b) => (a - b).magnitude;
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a + (b - a) * Mathf.Clamp01(t);
+        public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t) => a + (b - a) * t;
         public static float Angle(Vector3 a, Vector3 b) { float d = Dot(a.normalized, b.normalized); d = d > 1f ? 1f : d < -1f ? -1f : d; return (float)(Math.Acos(d) * 180.0 / Math.PI); }
         public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x - b.x, a.y - b.y, a.z - b.z);

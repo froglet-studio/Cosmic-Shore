@@ -445,6 +445,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Tools/Build/omni_turns_harness/Program.cs` ("anchors with x 1: 1440 body vertices matched"); the round-5 graduation section of `Docs/Studios/OMNI_MOTION_LAB.md`.
 - Promoted: no
 
+### L-STU-49 — A trail that fades per point from its STRIKE steps at every hold; fade from when the bolt LEFT the point
+- Lab: Omni Motion Lab round 5, after graduation · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the seam walk struck each seam in 0.07 s and then HELD 0.1–0.28 s before the next. Each point faded
+  from when it was struck, so at every junction the brightness stepped by the hold's worth of fade (about 0 → 0.3).
+  When the old seam died, the trail's tail began at a third of its brightness: a hard, popping end. The designer saw it
+  as "discrete units separating". The harness's frame-to-frame check found it only once it measured what is visible.
+  The first measurements blamed resampling and pinning.
+- Do instead: fade each point from when the bolt LEFT it (`min(now, start + (leaves - start) * place)`), so consecutive
+  points across a hold are the same moment. Check the trail's tail brightness and frame-to-frame motion over visible
+  points, and keep the old rule as the negative control.
+- Evidence: `ChargeArcs.SeamWalk` (`leftAt`); `Tools/Build/charge_arcs_harness` ("the seam trail's tail always fades
+  to nothing", 0.014 vs 0.327 with the old rule).
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

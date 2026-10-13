@@ -3,9 +3,11 @@
 // camera-facing bolt strips and the lit plates' faces. This pass draws both, additively, over the crystal already there.
 //
 // TEXCOORD0 = (across the strip -1..1, falloff from the light's centre 0..1, kind, intensity):
-//   kind 0 - a bolt strip. Brightest down its middle, falling to nothing at its edges (the lab's ribbon). A bolt is a
-//            halo strip and a body strip; a flux arc's thick middle also a narrow hot core, so under bloom it reads as a
-//            glowing tube rather than a flat band.
+//   kind 0 - a plasma strip: ONE continuous ribbon per bolt (and its sub-filament), shaped across its width the way
+//            the Squirrel's skim crackle shapes an arc (ForcefieldCrackle.hlsl): a Gaussian glow and a narrow Gaussian
+//            hot core, the colour running from the glow colour (the crystal's bright colour, toward the arc core) to the
+//            arc core colour by heat squared, and brightened by the heat. Under bloom it reads as a glowing tube of
+//            plasma, not a flat band.
 //   kind 1 - a lit face (a petal beside the seam walk, a pentagon charging or taking a discharge), brighter toward its
 //            rim, in the crystal's bright colour mixed toward the arc core colour.
 //
@@ -96,9 +98,13 @@ Shader "Custom/CrystalChargeArcsShader"
                 float3 color;
                 if (input.data.z < 0.5)
                 {
-                    // a strip: bright down the middle, nothing at the edges
-                    float a = intensity * pow(saturate(1.0 - abs(input.data.x)), 1.6);
-                    color = _ArcCoreColor.rgb * (a * _BoltIntensity);
+                    // plasma across the strip: a wide Gaussian glow and a narrow hot core (the crackle's arcLine)
+                    float x = input.data.x;
+                    float heat = exp(-x * x / 0.03);
+                    float glow = exp(-x * x / 0.16);
+                    float a = intensity * max(heat, glow * 0.45) * 0.6;
+                    float3 glowColor = lerp(_BrightColor.rgb, _ArcCoreColor.rgb, 0.3);
+                    color = lerp(glowColor, _ArcCoreColor.rgb, heat * heat) * (1.0 + 1.5 * heat) * (a * _BoltIntensity);
                 }
                 else
                 {

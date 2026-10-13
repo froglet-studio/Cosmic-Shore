@@ -63,14 +63,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 180f)] float fluxMaxDegrees = 125f;
 
         [Header("Bolts")]
-        [Tooltip("A bolt's body width, x the crystal's radius (the halo is wider, a thick beam's core narrower).")]
+        [Tooltip("A bolt's core width, x the crystal's radius (its glow is wider; the flux beam is 3 of these, a strand 0.9).")]
         [SerializeField, Range(0.001f, 0.05f)] float coreWidth = 0.012f;
 
-        [Tooltip("How often per second a bolt's kinks re-roll.")]
-        [SerializeField, Range(1f, 60f)] float jagHz = 20f;
+        [Tooltip("How fast the plasma writhes: the smooth noise that bends each bolt scrolls this many noise cells a second along it (the Squirrel's skim crackle is the reference: one smooth curve, never re-rolled).")]
+        [SerializeField, Range(0f, 20f)] float writheSpeed = 3f;
 
-        [Tooltip("How often per second a bolt's brightness flickers.")]
-        [SerializeField, Range(1f, 60f)] float flickerHz = 18f;
+        [Tooltip("How fast a bolt's brightness breathes (smooth noise, +-20%).")]
+        [SerializeField, Range(0f, 20f)] float flickerSpeed = 4f;
 
         public ChargeArcSettings Settings => new()
         {
@@ -79,7 +79,7 @@ namespace CosmicShore.Gameplay
             SeamFade = seamFadeSeconds,
             FluxGap = fluxGapSeconds, FluxCharge = fluxChargeSeconds, FluxStrike = fluxStrikeSeconds, FluxHold = fluxHoldSeconds,
             FluxFade = fluxFadeSeconds, FluxFork = fluxFork, FluxMinDegrees = fluxMinDegrees, FluxMaxDegrees = Mathf.Max(fluxMinDegrees, fluxMaxDegrees),
-            CoreWidth = coreWidth, JagHz = jagHz, FlickerHz = flickerHz,
+            CoreWidth = coreWidth, WritheSpeed = writheSpeed, FlickerSpeed = flickerSpeed,
         };
     }
 }

@@ -48,6 +48,11 @@ its width in `CrystalChargeArcsShader`, and the thick middle as halo + body + ho
 **Not carried:** the lab's other 18 Charge effects and the Charge beat. The Mass crystal shares the depth profile, so it
 takes the round-3 Mass rules as well.
 
+**After graduation (same day):**
+- every bolt is a continuous plasma ribbon modelled on the Squirrel's skim crackle;
+- a flux arc through a raised Mass column lights the prism (`_DepthState.w`, `_StrikeColor`);
+- the converter's Charge crystal wears the omni's body hue (`OMNI_COMBINE_LAB.md`, revision 5).
+
 **The Elemental Converter follows** (same day): its crystals and woken omni play all of the above, through the same code
 (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 4).
 

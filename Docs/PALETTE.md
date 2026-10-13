@@ -591,7 +591,10 @@ page draws exactly what the designer exported.
 `CrystalChargeArcsShader`) replaces `OmniCrystalChargeEdges`: a pentagon charges, an arc leaps to one 55-125 degrees
 away, forks onto its five corners at both ends with one thick beam between, and the next leaps on from the sink. Only
 those two pentagons light, in the body's bright colour mixed toward the arc core colour (`CrystalAccentTint` repaints
-it per domain). The Charge crystal wears the same component in SeamWalk mode, so the element keeps ONE look on both
+it per domain). Every bolt is one continuous
+plasma ribbon after the Squirrel's skim crackle (`ForcefieldCrackle.hlsl`): a Gaussian glow running to a hot core in the
+arc core colour. Where a flux arc's path runs through a raised Mass prism, the prism glows in `_StrikeColor` (the arc
+core colour, `OmniDepthPrismShader`'s `_DepthState.w`), so the bolt reads as conducting through it. The Charge crystal wears the same component in SeamWalk mode, so the element keeps ONE look on both
 crystals. The paragraph below describes the crawl as it shipped from 2026-10-08 to 2026-10-13. Its material and shader
 (`OmniChargeEdges.mat`, `OmniChargeEdgesShader`) were deleted the same day, once the Elemental Converter moved to the
 flux arcs too.

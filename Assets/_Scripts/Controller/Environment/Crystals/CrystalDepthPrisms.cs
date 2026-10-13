@@ -70,6 +70,9 @@ namespace CosmicShore.Gameplay
         Vector3[] plateCentres;      // seated, mesh space (TEXCOORD2)
         float[] topHeights;          // each prism's top face above its centre, along its direction
         float plateRadius;           // the plates' mean centre radius: the horizon and the occluder are measured by it
+        float[] plateBounds;         // each prism's farthest vertex from its plate centre, seated
+        float[] strike;              // the Charge strike on each prism (CrystalChargeArcs writes it; _DepthState.w)
+        float reach = 1f, sizeAtTop = 1f, faceSplit, splitUnit;
         DepthRatchet.Column[] columns;
         readonly Vector4[] state = new Vector4[MaxPlates];
         MaterialPropertyBlock block;
@@ -87,13 +90,14 @@ namespace CosmicShore.Gameplay
             }
             var mesh = TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
             if (!PlateDirections.TryGet(mesh, out plateDirections, out var problem)
-                || !PlateDirections.TryGetShape(mesh, out plateCentres, out topHeights, out plateRadius, out problem))
+                || !PlateDirections.TryGetShape(mesh, out plateCentres, out topHeights, out plateBounds, out plateRadius, out problem))
             {
                 CSDebug.LogError($"CrystalDepthPrisms on '{name}': {problem}. Re-run the generator that bakes this mesh. The prisms will sit sealed and still.", this);
                 enabled = false;
                 return;
             }
             columns = new DepthRatchet.Column[plateDirections.Length];
+            strike = new float[plateDirections.Length];
             block = new MaterialPropertyBlock();
             WidenBounds(mesh);
 
@@ -177,11 +181,13 @@ namespace CosmicShore.Gameplay
             float now = Time.time, dt = fresh ? 0f : Mathf.Max(0f, now - lastStep);
             lastStep = now;
             var material = prisms.sharedMaterial;
-            float reach = material && material.HasProperty(ReachID) ? material.GetFloat(ReachID) : 1f;
-            float sizeAtTop = material && material.HasProperty(PlateScaleStartID) ? material.GetFloat(PlateScaleStartID) : 1f;
+            reach = material && material.HasProperty(ReachID) ? material.GetFloat(ReachID) : 1f;
+            sizeAtTop = material && material.HasProperty(PlateScaleStartID) ? material.GetFloat(PlateScaleStartID) : 1f;
+            faceSplit = material && material.HasProperty(FaceSplitID) ? material.GetFloat(FaceSplitID) : 0f;
+            splitUnit = material && material.HasProperty(SplitUnitID) ? material.GetFloat(SplitUnitID) : 0f;
             StepColumns(columns, plateDirections, plateCentres, topHeights, plateRadius, eye, dt, fresh, profile, reach, sizeAtTop);
             for (int j = 0; j < columns.Length; j++)
-                state[j] = new Vector4(columns[j].Place, columns[j].Fade, columns[j].LeavingPlace, 0f);
+                state[j] = new Vector4(columns[j].Place, columns[j].Fade, columns[j].LeavingPlace, strike[j]);
             fresh = false;
 
             prisms.GetPropertyBlock(block);
@@ -229,13 +235,48 @@ namespace CosmicShore.Gameplay
         /// <summary>A baked prism mesh's plates (TEXCOORD2: centre xyz, index w): each one's direction, seated centre and
         /// top-face height, and the plates' mean centre radius. Read once per mesh and shared.</summary>
         public static bool TryGetPlates(Mesh mesh, out Vector3[] directions, out Vector3[] centres, out float[] tops,
-            out float plateRadius, out string problem)
+            out float[] bounds, out float plateRadius, out string problem)
         {
             centres = null;
             tops = null;
+            bounds = null;
             plateRadius = 0f;
             return PlateDirections.TryGet(mesh, out directions, out problem)
-                && PlateDirections.TryGetShape(mesh, out centres, out tops, out plateRadius, out problem);
+                && PlateDirections.TryGetShape(mesh, out centres, out tops, out bounds, out plateRadius, out problem);
+        }
+
+        /// <summary>How many prisms (columns) this renderer drives; 0 before it has read its mesh.</summary>
+        public int PrismCount => columns?.Length ?? 0;
+
+        /// <summary>The Charge strike on each prism, written by <see cref="CrystalChargeArcs"/> when a flux arc passes
+        /// through it and drawn as a glow (<c>_DepthState.w</c>). Indexed like <see cref="TryGetPrism"/>.</summary>
+        public float[] Strike => strike;
+
+        /// <summary>
+        /// Where prism <paramref name="j"/> stands now, in this object's space: its plate centre carried up its column, and a
+        /// radius that holds its whole body (its seated reach scaled as the shader scales it at its place, plus the faces'
+        /// split). What <see cref="CrystalChargeArcs"/> tests a flux arc's path against.
+        /// </summary>
+        public bool TryGetPrism(int j, out Vector3 centre, out float radius)
+        {
+            centre = default;
+            radius = 0f;
+            if (columns == null || j < 0 || j >= columns.Length) return false;
+            ColumnBody(plateCentres[j], plateBounds[j], columns[j].Place, reach, sizeAtTop, faceSplit * splitUnit, out centre, out radius);
+            return true;
+        }
+
+        /// <summary>A prism's body at column place <paramref name="place"/>: <c>OmniDepthPrismShader</c>'s
+        /// <c>DepthPrismPosition</c> for the plate centre (out to <c>k = lerp(reach, 1, place)</c> times it) and the scale
+        /// it gives the prism about it (<c>k * lerp(sizeAtTop, 1, place)</c>), with the faces parted by
+        /// <paramref name="split"/> mesh units toward the top.</summary>
+        public static void ColumnBody(Vector3 plateCentre, float bound, float place, float reach, float sizeAtTop, float split,
+            out Vector3 centre, out float radius)
+        {
+            float k = Mathf.Lerp(reach, 1f, place);
+            float scale = k * Mathf.Lerp(sizeAtTop, 1f, place);
+            centre = plateCentre * k;
+            radius = (bound + split * (1f - place)) * scale;
         }
 
         /// <summary>The gameplay camera (<see cref="CameraManager.ViewCamera"/>), NOT <c>Camera.main</c>: a ratchet run
@@ -262,7 +303,7 @@ namespace CosmicShore.Gameplay
         static class PlateDirections
         {
             static readonly Dictionary<Mesh, Vector3[]> s_cache = new();
-            static readonly Dictionary<Mesh, (Vector3[] centres, float[] tops, float radius)> s_shape = new();
+            static readonly Dictionary<Mesh, (Vector3[] centres, float[] tops, float[] bounds, float radius)> s_shape = new();
 
             [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
             static void ResetCache()
@@ -276,11 +317,12 @@ namespace CosmicShore.Gameplay
             /// and the plates' mean centre radius - what the horizon seal and the hidden-rise test measure with. Read
             /// once per mesh; call after <see cref="TryGet"/> succeeded.
             /// </summary>
-            public static bool TryGetShape(Mesh mesh, out Vector3[] centres, out float[] tops, out float radius, out string problem)
+            public static bool TryGetShape(Mesh mesh, out Vector3[] centres, out float[] tops, out float[] bounds, out float radius,
+                out string problem)
             {
                 if (s_shape.TryGetValue(mesh, out var shape))
                 {
-                    (centres, tops, radius) = shape;
+                    (centres, tops, bounds, radius) = shape;
                     problem = null;
                     return true;
                 }
@@ -291,6 +333,7 @@ namespace CosmicShore.Gameplay
                 int count = directions.Length;
                 centres = new Vector3[count];
                 tops = new float[count];
+                bounds = new float[count];
                 for (int j = 0; j < count; j++) tops[j] = float.NegativeInfinity;
                 for (int i = 0; i < plates.Count; i++)
                 {
@@ -298,6 +341,7 @@ namespace CosmicShore.Gameplay
                     var centre = new Vector3(plates[i].x, plates[i].y, plates[i].z);
                     centres[j] = centre;
                     tops[j] = Mathf.Max(tops[j], Vector3.Dot(verts[i] - centre, directions[j]));
+                    bounds[j] = Mathf.Max(bounds[j], (verts[i] - centre).magnitude);
                 }
                 radius = 0f;
                 foreach (var c in centres) radius += c.magnitude;
@@ -307,7 +351,7 @@ namespace CosmicShore.Gameplay
                     problem = $"mesh '{mesh.name}' has its plate centres at the origin";
                     return false;
                 }
-                s_shape[mesh] = (centres, tops, radius);
+                s_shape[mesh] = (centres, tops, bounds, radius);
                 problem = null;
                 return true;
             }

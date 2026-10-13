@@ -37,11 +37,10 @@ namespace CosmicShore.Gameplay
     /// wake, so the hand-off from the thin landed plates is continuous, and the first beat starts once it is awake.</para>
     ///
     /// <para><b>Meshes are unwelded per triangle with one normal per FACE.</b> The art data shares a slab's
-    /// corners between its faces; drawn welded, the crystals would shade smooth, and the Charge discharge -
-    /// whose bake (<see cref="CrystalEdgeArcMeshBaker"/>) decides a crease by "two triangles that do NOT
-    /// share raw vertices" - would find no crease at all and draw nothing. So each plate's triangles are
-    /// grouped into faces first (adjacent and within the baker's own 20 degrees), every face gets its own
-    /// corners, and the Charge crystal and the omni's pentagons go through the game's own bake.</para>
+    /// corners between its faces; drawn welded, the crystals would shade smooth. So each plate's triangles are
+    /// grouped into faces first (adjacent and within 20 degrees: the art file's quads are not all planar) and every
+    /// face gets its own corners. (Until 2026-10-13 the Charge crystal and the omni's pentagons also went through the
+    /// edge-crawl bake; the Charge light is now drawn on the CPU, and Charge wears the omni's body material.)</para>
     ///
     /// <para><b>Stepped by its owner, on unscaled time.</b> Every menu screen but HOME runs at
     /// <c>Time.timeScale = 0</c> (<c>ScreenSwitcher.NavigateTo</c>), so <see cref="Tick"/> takes its
@@ -49,11 +48,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class OmniCombinePlayer : MonoBehaviour
     {
-        static readonly int OpacityLower = Shader.PropertyToID("_opacity");     // ChargeCrystal (FadeIn's name)
         static readonly int OpacityUpper = Shader.PropertyToID("_Opacity");     // OmniCrystalFresnel / OmniDepthPrism
-        static readonly int ArcIntensity = Shader.PropertyToID("_ArcIntensity");
-        static readonly int NodeIntensity = Shader.PropertyToID("_NodeIntensity");
-        static readonly int ArcClockID = Shader.PropertyToID("_ArcClock");
         static readonly int DepthStateID = Shader.PropertyToID("_DepthState");
         static readonly int DepthDrivenID = Shader.PropertyToID("_DepthDriven");
         static readonly int ThicknessID = Shader.PropertyToID("_Thickness");
@@ -70,6 +65,8 @@ namespace CosmicShore.Gameplay
         readonly Piece[] _crystals = new Piece[4];
         Piece _omni;
         ArcLayer _chargeArcs, _omniArcs;
+        Vector3[] _strikeCentres;
+        float[] _strikeRadii;
         ChargeSeamWalker _walker;
         ChargeFluxChain _chain;
         ChargeArcSettings _arcSettings;
@@ -113,8 +110,7 @@ namespace CosmicShore.Gameplay
                                  "Run Tools/Build/author_elemental_converter.py.");
                 return null;
             }
-            if (!config.ChargeMaterial || !config.ShellMaterial || !config.OmniMaterial || !config.ChargeArcsMaterial ||
-                !config.OmniArcsMaterial || !config.MassMaterial || !config.OmniTrianglesMaterial || !config.OmniTrianglesMesh ||
+            if (!config.ShellMaterial || !config.OmniMaterial || !config.OmniArcsMaterial || !config.MassMaterial || !config.OmniTrianglesMaterial || !config.OmniTrianglesMesh ||
                 !config.DepthProfile || !config.Cadence || !config.ChargeArcs)
             {
                 CSDebug.LogError("[OmniCombinePlayer] OmniCombineConfig is missing a material, the omni triangles mesh, the depth profile, " +
@@ -168,11 +164,11 @@ namespace CosmicShore.Gameplay
                 int plates = 0;
                 foreach (int q in d.plate) plates = Mathf.Max(plates, q + 1);
                 _morph[k] = new float[plates];
-                var material = k == OmniCombineCore.Charge ? config.ChargeMaterial
-                             : k == OmniCombineCore.Mass ? config.MassMaterial
-                             : config.ShellMaterial;
+                // Charge, Space and Time wear the omni's own body material, so the plates they land as are the omni's hue
+                // from the start: the hand-off changes nothing at base, and Charge's only contrast is its lit state.
+                var material = k == OmniCombineCore.Mass ? config.MassMaterial : config.ShellMaterial;
                 _crystals[k] = Piece.Build(transform, OmniCombineCore.Order[k], d.basis, d.tris, d.plate, material,
-                                           k == OmniCombineCore.Charge, k == OmniCombineCore.Mass, bounds);
+                                           k == OmniCombineCore.Mass, bounds);
                 if (_crystals[k] == null)
                 {
                     CSDebug.LogError($"[OmniCombinePlayer] The {OmniCombineCore.Order[k]} crystal did not build.", config);
@@ -209,7 +205,7 @@ namespace CosmicShore.Gameplay
             for (int t = 0; t < data.omni.tris.Length; t += 3)
                 if (data.omni.plateOwner[data.omni.plate[data.omni.tris[t]]] != OmniCombineCore.Mass)
                     bodyTris.AddRange(new[] { data.omni.tris[t], data.omni.tris[t + 1], data.omni.tris[t + 2] });
-            _omni = Piece.Build(transform, "Omni", data.omni.verts, bodyTris.ToArray(), data.omni.plate, config.OmniMaterial, false, false, bounds);
+            _omni = Piece.Build(transform, "Omni", data.omni.verts, bodyTris.ToArray(), data.omni.plate, config.OmniMaterial, false, bounds);
             if (_omni == null)
             {
                 CSDebug.LogError("[OmniCombinePlayer] The omni crystal did not build.", config);
@@ -252,7 +248,8 @@ namespace CosmicShore.Gameplay
                 problem = $"the combine's omni: {problem}";
                 return false;
             }
-            _chargeArcs = new ArcLayer(transform, "ChargeSeamWalk", chargeSites, _config.ChargeArcsMaterial, bounds, ownCentre: true);
+            // The seam walk lights the petals in the omni's colours too, so they land lit the way the omni lights them.
+            _chargeArcs = new ArcLayer(transform, "ChargeSeamWalk", chargeSites, _config.OmniArcsMaterial, bounds, ownCentre: true);
             _omniArcs = new ArcLayer(transform, "OmniFluxArcs", omniSites, _config.OmniArcsMaterial, bounds, ownCentre: false);
             problem = null;
             return true;
@@ -268,7 +265,8 @@ namespace CosmicShore.Gameplay
         bool BuildTriangles(OmniCombineConfigSO config, float[] r)
         {
             var mesh = config.OmniTrianglesMesh;
-            if (!CrystalDepthPrisms.TryGetPlates(mesh, out var directions, out var centres, out var tops, out float plateRadius, out var problem))
+            if (!CrystalDepthPrisms.TryGetPlates(mesh, out var directions, out var centres, out var tops, out var plateBounds,
+                                                 out float plateRadius, out var problem))
             {
                 CSDebug.LogError($"[OmniCombinePlayer] {problem}", config);
                 return false;
@@ -285,7 +283,9 @@ namespace CosmicShore.Gameplay
             var b = mesh.bounds;
             float radius = (b.extents.magnitude + b.center.magnitude) * Mathf.Max(1f, _triShape.Reach) + _triShape.FaceSplit * _triShape.SplitUnit * 2f;
             _triangles.localBounds = new Bounds(Vector3.zero, Vector3.one * 2f * radius);
-            _triColumns = new DepthColumns(directions.Length, directions, centres, tops, plateRadius);
+            _triColumns = new DepthColumns(directions.Length, directions, centres, tops, plateBounds, plateRadius);
+            _strikeCentres = new Vector3[directions.Length];
+            _strikeRadii = new float[directions.Length];
             return true;
         }
 
@@ -357,9 +357,7 @@ namespace CosmicShore.Gameplay
                     reach = Mathf.Max(reach, Reach(_poses[k]));
                     if (k == OmniCombineCore.Mass) continue;
                     _crystals[k].Write(_poses[k], Vector3.zero, null);
-                    // The Charge crystal's light is the seam walk (as in play): its own edge crawl is held at zero.
-                    bool charge = k == OmniCombineCore.Charge;
-                    SetBlock(_crystals[k].Renderer, charge ? OpacityLower : OpacityUpper, fadeIn, charge ? 0f : -1f, charge ? 0f : -1f);
+                    SetOpacity(_crystals[k].Renderer, fadeIn);
                 }
                 WriteMass(dt, cameraWorld, fadeIn);
                 WriteSeamWalk(cameraWorld, fadeIn);
@@ -382,7 +380,7 @@ namespace CosmicShore.Gameplay
             PoseOmni(fx, _t - (m + handOff + _params.EffectFade), camDir);
             _omni.Write(_omniPose, Vector3.zero, null);
             if (!crystalsVisible) StageRadius = Reach(_omniPose) * transform.lossyScale.x;
-            SetBlock(_omni.Renderer, OpacityUpper, appear, -1f, -1f);
+            SetOpacity(_omni.Renderer, appear);
             // The first discharge starts charging as the omni wakes.
             WriteFlux(cameraWorld, (float)fx, _t - (m + handOff));
             _triColumns.Step(_triangles.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile,
@@ -509,12 +507,36 @@ namespace CosmicShore.Gameplay
         {
             var layer = _omniArcs;
             layer.Renderer.enabled = fx > 0.001f;
-            if (!layer.Renderer.enabled) return;
+            if (!layer.Renderer.enabled)
+            {
+                System.Array.Clear(_triColumns.Strike, 0, _triColumns.Strike.Length);
+                return;
+            }
             var settings = _arcSettings;
             settings.Bolts *= fx;
             settings.Glow *= fx;
             ChargeArcs.Flux(layer.Sites, _chain, (float)seconds, settings, layer.Writer, layer.Transform.InverseTransformPoint(cameraWorld), layer.Light);
             layer.Upload();
+            StrikeTriangles((float)seconds, settings);
+        }
+
+        /// <summary>
+        /// Lights every raised triangle prism a flux arc passes through (<see cref="ChargeArcs.FluxStrikes"/>), as
+        /// <see cref="CrystalChargeArcs"/> lights the omni's Mass columns in play: each prism's body, at its column's place,
+        /// carried from the triangles' turned frame into the stage's (where the arcs are drawn).
+        /// </summary>
+        void StrikeTriangles(float seconds, in ChargeArcSettings settings)
+        {
+            var c = _triColumns;
+            var turn = _triangles.transform.localRotation;
+            float split = _triShape.FaceSplit * _triShape.SplitUnit;
+            for (int j = 0; j < c.Count; j++)
+            {
+                CrystalDepthPrisms.ColumnBody(c.Centres[j], c.Bounds[j], c.Place(j), _triShape.Reach, _triShape.SizeStart, split,
+                                              out var centre, out _strikeRadii[j]);
+                _strikeCentres[j] = turn * centre;
+            }
+            ChargeArcs.FluxStrikes(_omniArcs.Sites, _chain, seconds, settings, _strikeCentres, _strikeRadii, c.Count, c.Strike);
         }
 
         static Vector3 ToVector(D3 d) => new((float)d.X, (float)d.Y, (float)d.Z);
@@ -542,7 +564,7 @@ namespace CosmicShore.Gameplay
             return Mathf.Sqrt(best);
         }
 
-        /// <summary>The face-split rest mesh the discharge bake reads (see <c>Piece.FaceSplitSource</c>); for the tests.</summary>
+        /// <summary>The face-split rest mesh every piece is built from (see <c>Piece.FaceSplitSource</c>); for the tests.</summary>
         internal static Mesh BuildFaceSplitSource(float[] points, int[] tris, int[] plate, out int[] faceOfTri) =>
             Piece.FaceSplitSource(points, tris, plate, out faceOfTri);
 
@@ -560,18 +582,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Read-modify-write, so another writer's override on the same renderer survives (FadeIn's lesson).
-        /// A negative id or value leaves that property alone. A discharge also gets the converter's own clock: the
-        /// menu runs at timeScale 0 off the HOME screen, which freezes the shader's _Time.y and with it every bolt.</summary>
-        void SetBlock(Renderer r, int opacityId, float opacity, float arcs, float nodes)
+        /// (Every bolt is drawn on the CPU on the converter's own unscaled clock, so the menu's timeScale 0 freezes none.)</summary>
+        void SetOpacity(Renderer r, float opacity)
         {
             r.GetPropertyBlock(_block);
-            if (opacityId >= 0) _block.SetFloat(opacityId, opacity);
-            if (arcs >= 0f)
-            {
-                _block.SetFloat(ArcIntensity, arcs);
-                _block.SetFloat(ArcClockID, (float)((_t + _params.EffectPhase) % 3600.0));
-            }
-            if (nodes >= 0f) _block.SetFloat(NodeIntensity, nodes);
+            _block.SetFloat(OpacityUpper, opacity);
             r.SetPropertyBlock(_block);
         }
 
@@ -592,22 +607,27 @@ namespace CosmicShore.Gameplay
         sealed class DepthColumns
         {
             public readonly Vector3[] Directions, Centres;
-            public readonly float[] Tops;
+            public readonly float[] Tops, Bounds, Strike;
             public float PlateRadius;
             public readonly Vector4[] State = new Vector4[CrystalDepthPrisms.MaxPlates];
             public bool Fresh = true;
             readonly DepthRatchet.Column[] _columns;
 
-            public DepthColumns(int plates) : this(plates, new Vector3[plates], new Vector3[plates], new float[plates], 0f) { }
+            public DepthColumns(int plates) : this(plates, new Vector3[plates], new Vector3[plates], new float[plates], new float[plates], 0f) { }
 
-            public DepthColumns(int plates, Vector3[] directions, Vector3[] centres, float[] tops, float plateRadius)
+            public DepthColumns(int plates, Vector3[] directions, Vector3[] centres, float[] tops, float[] bounds, float plateRadius)
             {
                 _columns = new DepthRatchet.Column[plates];
                 Directions = directions;
                 Centres = centres;
                 Tops = tops;
+                Bounds = bounds;
+                Strike = new float[plates];
                 PlateRadius = plateRadius;
             }
+
+            public int Count => _columns.Length;
+            public float Place(int j) => _columns[j].Place;
 
             public void Step(Vector3 eye, float dt, CrystalDepthPrismProfileSO profile, float reach, float sizeAtTop, float strength)
             {
@@ -617,7 +637,7 @@ namespace CosmicShore.Gameplay
                 {
                     var c = _columns[j];
                     State[j] = new Vector4(Mathf.Lerp(1f, c.Place, strength), Mathf.Lerp(1f, c.Fade, strength),
-                                           Mathf.Lerp(1f, c.LeavingPlace, strength), 0f);
+                                           Mathf.Lerp(1f, c.LeavingPlace, strength), Strike[j]);
                 }
                 Fresh = false;
             }
@@ -715,17 +735,10 @@ namespace CosmicShore.Gameplay
             Vector4[] _uv2;
 
             public static Piece Build(Transform parent, string name, float[] points, int[] tris, int[] plate,
-                                      Material material, bool chargeBake, bool depth, Bounds bounds)
+                                      Material material, bool depth, Bounds bounds)
             {
                 var source = FaceSplitSource(points, tris, plate, out var faceOfTri);
-                Mesh mesh;
-                if (chargeBake)
-                {
-                    // The game's bake keeps one vertex per triangle corner, in triangle order - the order used here.
-                    mesh = CrystalEdgeArcMeshBaker.Bake(source, 0);
-                    if (!mesh) { Destroy(source); return null; }
-                }
-                else mesh = Unweld(source);
+                var mesh = Unweld(source);
                 Destroy(source);
                 mesh.name = $"OmniCombine {name}";
                 mesh.MarkDynamic();
@@ -815,9 +828,9 @@ namespace CosmicShore.Gameplay
 
             /// <summary>
             /// A mesh whose every FACE has its own corners (shared within the face, never across faces), with
-            /// per-face normals and outward winding - the shape an FBX import has, which is what the discharge
-            /// bake reads. Faces are found per plate: triangles that share an edge and sit within the bake's
-            /// own coplanar angle (the art file's quads are not all planar).
+            /// per-face normals and outward winding - the shape an FBX import has. Faces are found per plate:
+            /// triangles that share an edge and sit within <c>CoplanarDegrees</c> (the art file's quads are not all
+            /// planar).
             /// </summary>
             public static Mesh FaceSplitSource(float[] p, int[] tris, int[] plate, out int[] faceOfTri)
             {
@@ -885,7 +898,7 @@ namespace CosmicShore.Gameplay
                 return mesh;
             }
 
-            /// <summary>One vertex per triangle corner, in triangle order (the order the discharge bake writes).</summary>
+            /// <summary>One vertex per triangle corner, in triangle order (the order <c>Write</c> fills).</summary>
             static Mesh Unweld(Mesh source)
             {
                 var sv = source.vertices;

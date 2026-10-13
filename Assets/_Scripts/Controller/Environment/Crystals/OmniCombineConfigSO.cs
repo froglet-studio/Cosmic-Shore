@@ -26,9 +26,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] TextAsset combineData;
 
         [Header("Materials")]
-        [Tooltip("The Charge crystal's body. ChargeCrystalMaterial, with its edge crawl held at zero: the Charge light is the seam walk, as in play.")]
-        [SerializeField] Material chargeMaterial;
-        [Tooltip("The Space and Time crystals. OmniCrystalBody: the omni's own body material - the same lime pair every elemental crystal ships in - so those plates do not change look when the omni takes over.")]
+        [Tooltip("The Space, Time and Charge crystals. OmniCrystalBody: the omni's own body material, so the plates they land as are already the omni's hue and nothing changes at the hand-off (Charge's own lime differed, and its pentagons came in the wrong hue; its contrast is its lit state, the seam walk).")]
         [SerializeField] Material shellMaterial;
         [Tooltip("The Mass crystal, as it is drawn in play: MassDepthPrisms (the depth-prism shader). The crystal itself is the game's MassCrystalPrisms mesh, carried in the combine data.")]
         [SerializeField] Material massMaterial;
@@ -48,9 +46,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] OmniCrystalCadenceSO cadence;
         [Tooltip("The Charge light's timing and brightness: CrystalChargeArcsProfile.asset, shared with the game.")]
         [SerializeField] CrystalChargeArcsProfileSO chargeArcs;
-        [Tooltip("The Charge crystal's seam walk, while it waits: ChargeCrystalArcs (CrystalChargeArcsShader).")]
-        [SerializeField] Material chargeArcsMaterial;
-        [Tooltip("The woken omni's flux arcs: OmniChargeArcs (CrystalChargeArcsShader).")]
+        [Tooltip("The Charge light on both: the waiting Charge crystal's seam walk and the woken omni's flux arcs. OmniChargeArcs (CrystalChargeArcsShader), in the omni's colours, so a petal lands lit the way the omni lights it.")]
         [SerializeField] Material omniArcsMaterial;
 
         [Header("Choreography - drawn per play from each range (min, max)")]
@@ -96,7 +92,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float omniWorldRadius = 40f;
 
         public TextAsset CombineData => combineData;
-        public Material ChargeMaterial => chargeMaterial;
         public Material ShellMaterial => shellMaterial;
         public Material OmniMaterial => omniMaterial;
         public Material MassMaterial => massMaterial;
@@ -105,7 +100,6 @@ namespace CosmicShore.Gameplay
         public CrystalDepthPrismProfileSO DepthProfile => depthProfile;
         public OmniCrystalCadenceSO Cadence => cadence;
         public CrystalChargeArcsProfileSO ChargeArcs => chargeArcs;
-        public Material ChargeArcsMaterial => chargeArcsMaterial;
         public Material OmniArcsMaterial => omniArcsMaterial;
         public float FadeInSeconds => fadeInSeconds;
         public float HandOffSeconds => handOffSeconds;

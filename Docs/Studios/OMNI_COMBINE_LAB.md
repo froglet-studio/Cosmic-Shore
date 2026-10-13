@@ -373,6 +373,36 @@ user).
   scene" was already edited and two refusals never reached the code they guard. Both were red. It now edits the scene
   from before the converter landed and asserts that it does; 11/11.
 
+**Revision 5 (2026-10-13): one hue, conducting columns, plasma.** The designer: "the charge pentagons come in with the
+wrong hue ... unify the starting hue so the charge matches at base and still has the contrast with the lit state. detect
+when a charge effect will bolt through a mass column on the omni crystal and light it up appropriately instead of
+reading as a clip. the discrete units along the lighting bolt are separating in a way that reads as an effect not
+plasma. use the plasma effect that triggers when the squirrel skims a prism as a reference."
+
+- **One hue.** The Charge crystal wore `ChargeCrystalMaterial` (its own lime, 0.59 / 0.92 / 0.16). The omni body then
+  dithered over its landed pentagons in the omni's lime (0.49 / 0.99 / 0), so they came in the wrong hue. Charge now
+  wears `OmniCrystalBody` like Space and Time, and its seam walk draws on `OmniChargeArcs`. The base matches at the
+  hand-off, and the only contrast is the lit state. The edge-crawl bake on the converter's Charge mesh is gone with
+  it (`chargeMaterial` and `chargeArcsMaterial` left `OmniCombineConfigSO`).
+- **Conducting columns.** `ChargeArcs.FluxStrikes` tests each flux arc's path against every triangle prism's body at
+  its column's place (`CrystalDepthPrisms.ColumnBody`). A prism the path runs through glows in `_StrikeColor` while the
+  arc holds: full where the path runs through its middle, nothing at its edge. `OmniDepthPrismShader` reads the glow
+  from `_DepthState.w`. In play `CrystalChargeArcs` writes it through `CrystalDepthPrisms.Strike`; here
+  `OmniCombinePlayer.StrikeTriangles` does. Measured on the real omni: a prism at the top of its column is three radii
+  out, above every arc. The hits are prisms part-way up near the silhouette: 2,664 of 9,600 frames at places 0.6–0.9.
+  Sealed prisms are never struck.
+- **Plasma** (`ChargeArcMeshWriter.Plasma`, after `ForcefieldCrackle.hlsl`):
+  - each bolt is ONE continuous ribbon whose vertices are shared from piece to piece, so it never parts;
+  - it bends on smooth FBM value noise that flows along it instead of re-rolling, held to zero only near the ends of
+    a bolt that must land;
+  - its cross-section is the crackle's: a Gaussian glow and a hot core, the colour running glow → core by heat²;
+  - a thinner sub-filament rides beside it at 0.4.
+
+  The seam walk is one trail through every lit seam. Each point fades from when the bolt LEFT it, so it fades
+  smoothly to nothing at its tail. Fading from when a point was struck stepped the brightness at every hold, and cut
+  the tail off at a third of its brightness when the old seam died.
+
+
 **Picture quality (revision 2).** The first build rendered 1280 px along the picture's long edge and stretched
 it over the screen with no anti-aliasing: low resolution and jagged. It now renders at the picture's
 on-screen PIXEL size times 2 (an exact box filter on the way down), with 4× MSAA on the target. It uses the

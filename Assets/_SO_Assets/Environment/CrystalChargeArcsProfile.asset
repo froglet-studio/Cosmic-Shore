@@ -28,5 +28,5 @@ MonoBehaviour:
   fluxMinDegrees: 55
   fluxMaxDegrees: 125
   coreWidth: 0.012
-  jagHz: 20
-  flickerHz: 18
+  writheSpeed: 3
+  flickerSpeed: 4

@@ -16,7 +16,12 @@ namespace CosmicShore.Gameplay
     ///   the hull fusion that copies it - keeps its crawl).
     ///   FLUX (the omni) - a pentagon charges, an arc leaps to a pentagon 55-125 degrees away and lands, both fade, and the
     ///   next discharge leaps on from the one it landed on. Only those two pentagons light. At each end the arc forks
-    ///   smoothly onto the pentagon's five corners; through the middle it is one thick beam (halo, body, hot core).
+    ///   smoothly onto the pentagon's five corners; through the middle it is one thick beam. Where the arc's path runs
+    ///   through a raised Mass prism (the sibling <see cref="CrystalDepthPrisms"/>), that prism lights up while the arc
+    ///   holds (<see cref="ChargeArcs.FluxStrikes"/>), so the bolt reads as conducting through it, not clipping.
+    ///
+    /// Every bolt is ONE continuous plasma ribbon (<see cref="ChargeArcMeshWriter.Plasma"/>), modelled on the Squirrel's
+    /// skim crackle: a smooth curve bent by flowing noise, a Gaussian glow with a hot core, a sub-filament beside it.
     ///
     /// The sites are read once from <see cref="sourceMesh"/> (the crystal model this object overlays, in the same space)
     /// and shared by every crystal on that mesh (<see cref="ChargeSites"/>); the omni's pentagons are read at the
@@ -65,6 +70,9 @@ namespace CosmicShore.Gameplay
         float[] faceLight;
         float clockStart;
         Crystal crystal;
+        CrystalDepthPrisms depthPrisms;   // the omni's Mass columns a flux arc can pass through
+        Vector3[] prismCentres;
+        float[] prismRadii, prismStrike;
 
         void Awake()
         {
@@ -92,6 +100,8 @@ namespace CosmicShore.Gameplay
             mesh.MarkDynamic();
             GetComponent<MeshFilter>().sharedMesh = mesh;
             crystal = GetComponentInParent<Crystal>();
+            if (effect == Effect.Flux && transform.parent)
+                depthPrisms = transform.parent.GetComponentInChildren<CrystalDepthPrisms>(true);
         }
 
         void OnEnable()
@@ -112,6 +122,7 @@ namespace CosmicShore.Gameplay
         {
             if (crystal) crystal.ModelMaterialSettled -= SilenceCrawl;
             RestoreCrawl();
+            if (depthPrisms && depthPrisms.Strike != null) System.Array.Clear(depthPrisms.Strike, 0, depthPrisms.Strike.Length);
         }
 
         void OnDestroy()
@@ -131,8 +142,36 @@ namespace CosmicShore.Gameplay
 
             writer.Clear();
             if (effect == Effect.SeamWalk) ChargeArcs.SeamWalk(sites, walker, seconds, settings, writer, eye, faceLight);
-            else ChargeArcs.Flux(sites, chain, seconds, settings, writer, eye, faceLight);
+            else
+            {
+                ChargeArcs.Flux(sites, chain, seconds, settings, writer, eye, faceLight);
+                StrikePrisms(seconds);
+            }
             Upload();
+        }
+
+        /// <summary>Lights every raised Mass prism a flux arc is passing through: each prism's body is carried from the
+        /// prisms' space into this one and tested against the arcs' paths.</summary>
+        void StrikePrisms(float seconds)
+        {
+            if (!depthPrisms || !depthPrisms.isActiveAndEnabled || depthPrisms.Strike == null) return;
+            int count = depthPrisms.PrismCount;
+            if (prismCentres == null || prismCentres.Length != count)
+            {
+                prismCentres = new Vector3[count];
+                prismRadii = new float[count];
+                prismStrike = new float[count];
+            }
+            var from = depthPrisms.transform;
+            float scale = from.lossyScale.x / Mathf.Max(1e-6f, transform.lossyScale.x);
+            for (int j = 0; j < count; j++)
+            {
+                depthPrisms.TryGetPrism(j, out var centre, out float radius);
+                prismCentres[j] = transform.InverseTransformPoint(from.TransformPoint(centre));
+                prismRadii[j] = radius * scale;
+            }
+            ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, count, prismStrike);
+            System.Array.Copy(prismStrike, depthPrisms.Strike, count);
         }
 
         /// <summary>The lit faces (after the bolts already in the writer), then the whole mesh to the GPU.</summary>

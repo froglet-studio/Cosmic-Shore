@@ -65,6 +65,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Charge polish: one hue in the converter, flux arcs light the Mass columns they pass through, plasma bolts (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor;
+- DXC (v1.8.2407) compiling `CrystalChargeArcsShader` against the real URP ShaderLibrary and `OmniDepthPrismShader`
+  against a `UnityCG` stub, both stages and both passes, each with a negative control;
+- `omni_depth_prism_shader_parity.py`;
+- `charge_arcs_harness`, all pass. New checks: continuous strip, pinned ends, smooth bends, no frame-to-frame jump,
+  the seam trail's tail fading to nothing, strikes on raised and never on sealed prisms. Negative controls: the old
+  fade rule fails both trail checks;
+- `converter_round5_harness`;
+- every generator `--check`, and `author_elemental_converter.py --self-test`.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 5):
+1. The converter's Charge crystal wears `OmniCrystalBody`, and its seam walk draws on `OmniChargeArcs`.
+2. `ChargeArcs.FluxStrikes` lights struck prisms through `_DepthState.w` / `_StrikeColor`. This applies in play
+   (`CrystalChargeArcs` → `CrystalDepthPrisms.Strike`) and in the converter.
+3. Every bolt is one plasma ribbon (`ChargeArcMeshWriter.Plasma`). The profile's `jagHz` / `flickerHz` became
+   `writheSpeed` / `flickerSpeed`.
+
+**Verify in editor:**
+1. Ark → CONVERT: Charge's pentagons land in the same lime as the omni's body, with no hue change as the omni dithers
+   in. Lit petals and pentagons still stand out clearly.
+2. An omni in play, orbited so prisms stand part-way up near the silhouette: when a flux arc passes through one, the
+   prism glows in the arc's colour for the arc's hold. It reads as conducting, not clipping. Same on the Ark after
+   CONVERT.
+3. Bolts, in play and on the Ark:
+   - one continuous glowing filament with a hot core, writhing smoothly;
+   - no pieces separating, no 20 Hz jitter;
+   - the seam walk's trail fading smoothly to nothing at its tail.
+4. Bloom: tune `_BoltIntensity` / `_GlowIntensity` on `OmniChargeArcs.mat` / `ChargeCrystalArcs.mat`, and
+   `_StrikeColor` on the depth materials (it ships as the arc core colour, at 1).
+5. The Mass crystal (no flux arcs) and the hull fusion's Mass faces (undriven) show no glow.
+
 ### 🔴 Elemental Converter polish: the game's round-5 effects in the omni combine (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI in the session). Offline: `unity_refcompile` player and

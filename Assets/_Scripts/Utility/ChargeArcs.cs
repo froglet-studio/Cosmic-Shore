@@ -33,9 +33,9 @@ namespace CosmicShore.Utility
         /// sink is drawn from.</summary>
         public float FluxGap, FluxCharge, FluxStrike, FluxHold, FluxFade, FluxFork, FluxMinDegrees, FluxMaxDegrees;
 
-        /// <summary>A bolt's body width (x the crystal's radius), how often its kinks re-roll and how often its
-        /// brightness flickers (per second).</summary>
-        public float CoreWidth, JagHz, FlickerHz;
+        /// <summary>A bolt's core width (x the crystal's radius); how fast its plasma writhes (the smooth noise that bends
+        /// it scrolls this many noise cells a second along the bolt); how fast its brightness breathes.</summary>
+        public float CoreWidth, WritheSpeed, FlickerSpeed;
 
         public static ChargeArcSettings Lab => new()
         {
@@ -43,7 +43,7 @@ namespace CosmicShore.Utility
             SeamStrike = 0.07f, SeamDwellMin = 0.1f, SeamDwellMax = 0.28f, SeamFade = 0.85f,
             FluxGap = 0.9f, FluxCharge = 0.45f, FluxStrike = 0.06f, FluxHold = 0.45f, FluxFade = 0.45f, FluxFork = 0.3f,
             FluxMinDegrees = 55f, FluxMaxDegrees = 125f,
-            CoreWidth = 0.012f, JagHz = 20f, FlickerHz = 18f,
+            CoreWidth = 0.012f, WritheSpeed = 3f, FlickerSpeed = 4f,
         };
 
         /// <summary>Seconds per lab-second: every duration is divided by the rate.</summary>
@@ -72,6 +72,8 @@ namespace CosmicShore.Utility
     {
         public int A, B, SiteA, SiteB;
         public Vector3[] Points;
+        /// <summary>The seam's length along its points.</summary>
+        public float Length;
         public bool Touches(int site) => SiteA == site || SiteB == site;
     }
 
@@ -438,7 +440,9 @@ namespace CosmicShore.Utility
                     points[(int)SeamSamples] = Junctions[j];
                     ofJunction[i].Add(seams.Count);
                     ofJunction[j].Add(seams.Count);
-                    seams.Add(new ChargeSeam { A = i, B = j, SiteA = pair[0], SiteB = pair[1], Points = points });
+                    float length = 0f;
+                    for (int k = 1; k < points.Length; k++) length += (points[k] - points[k - 1]).magnitude;
+                    seams.Add(new ChargeSeam { A = i, B = j, SiteA = pair[0], SiteB = pair[1], Points = points, Length = length });
                 }
             Seams = seams.ToArray();
             SeamsOfJunction = new int[triples.Count][];
@@ -569,6 +573,11 @@ namespace CosmicShore.Utility
             public int Seam, Serial;
             public bool Forward;
             public float Start, Struck;
+            /// <summary>When the bolt moves on to the next seam (the end of its hold here).</summary>
+            public float Leaves;
+            /// <summary>How far the walk had gone before this seam (sum of the seams' lengths): a fixed place along the
+            /// walk for the plasma's noise.</summary>
+            public float Odometer;
         }
 
         readonly ChargeSites sites;
@@ -577,7 +586,7 @@ namespace CosmicShore.Utility
         readonly List<int> recent = new(4);
         readonly List<int> options = new(3);
         int at, previous = -1, serial;
-        float end;
+        float end, odometer;
 
         public ChargeSeamWalker(ChargeSites sites, int seed, float startSeconds)
         {
@@ -612,15 +621,18 @@ namespace CosmicShore.Utility
                 var edge = sites.Seams[seam];
                 bool forward = edge.A == at;
                 float struck = end + settings.SeamStrike * span;
-                legs.Add(new Leg { Seam = seam, Serial = serial++, Forward = forward, Start = end, Struck = struck });
-                end = struck + Mathf.Lerp(settings.SeamDwellMin, settings.SeamDwellMax, (float)random.NextDouble()) * span;
+                float leaves = struck + Mathf.Lerp(settings.SeamDwellMin, settings.SeamDwellMax, (float)random.NextDouble()) * span;
+                legs.Add(new Leg { Seam = seam, Serial = serial++, Forward = forward, Start = end, Struck = struck, Leaves = leaves,
+                                   Odometer = odometer });
+                odometer += edge.Length;
+                end = leaves;
                 at = forward ? edge.B : edge.A;
                 previous = seam;
                 recent.Add(seam);
                 if (recent.Count > 4) recent.RemoveAt(0);
             }
             int drop = 0;
-            while (drop < legs.Count && seconds - legs[drop].Struck > settings.SeamFade * span) drop++;
+            while (drop < legs.Count && seconds - legs[drop].Leaves > settings.SeamFade * span) drop++;
             if (drop > 0) legs.RemoveRange(0, drop);
         }
     }
@@ -680,8 +692,8 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// Writes the Charge light into one mesh, in the crystal's own space: camera-facing bolt strips (a halo and a body; a
-    /// thick beam also a hot narrow core) and the lit plates' faces. TEXCOORD0 = (across the strip -1..1, falloff from
+    /// Writes the Charge light into one mesh, in the crystal's own space: camera-facing plasma ribbons (one continuous
+    /// strip per bolt, plus its sub-filament) and the lit plates' faces. TEXCOORD0 = (across the strip -1..1, falloff from
     /// the light's centre 0..1, kind: 0 strip / 1 face, intensity) - read by <c>CrystalChargeArcsShader</c>.
     /// Nothing is allocated per frame once the lists have grown.
     /// </summary>
@@ -690,7 +702,6 @@ namespace CosmicShore.Utility
         public readonly List<Vector3> Positions = new();
         public readonly List<Vector4> Data = new();
         public readonly List<int> Indices = new();
-        readonly List<Vector3> kinked = new(64);
 
         public void Clear()
         {
@@ -721,61 +732,116 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// One bolt along <paramref name="points"/>: each stretch cut into pieces about 0.07 radii long, each inner joint
-        /// kicked sideways by a seeded amount (x <paramref name="jag"/> of the piece) that re-rolls with
-        /// <paramref name="jagFrame"/>, then drawn as camera-facing strips <paramref name="width"/> body widths wide.
+        /// One bolt along <paramref name="points"/> as a single continuous PLASMA ribbon. The reference is the Squirrel's
+        /// skim crackle (<c>ForcefieldCrackle.hlsl</c>): one smooth curve bent by FBM value noise, a Gaussian
+        /// cross-section that runs from the glow colour to a hot core, and a thinner sub-filament at 0.4 beside it.
+        /// <list type="bullet">
+        /// <item>The path is resampled every 0.0125 radii, on a grid fixed along the bolt. Each sample is bent off the path by smooth noise that is
+        /// continuous along the bolt and in time (it scrolls at <see cref="ChargeArcSettings.WritheSpeed"/>; nothing is
+        /// re-rolled), held to zero within ~0.06 radii of each end when <paramref name="pinned"/>, so a bolt still lands
+        /// where it is aimed.</item>
+        /// <item>One camera-facing strip whose two vertices per sample are SHARED with the next sample's, so it never
+        /// parts at a joint. The shader shapes the cross-section from the across coordinate.</item>
+        /// <item><paramref name="weights"/> (one per input point, null = 1) scales the brightness along the bolt: the
+        /// seam walk's fading tail.</item>
+        /// </list>
         /// </summary>
-        public void Bolt(IReadOnlyList<Vector3> points, int count, float intensity, float jag, float width, int seed,
-            Vector3 eye, float radius, float coreWidth, int jagFrame)
+        public void Plasma(IReadOnlyList<Vector3> points, int count, IReadOnlyList<float> weights, IReadOnlyList<float> coords,
+            float intensity, float width, float wobble, int seed, float seconds, in ChargeArcSettings settings, Vector3 eye, float radius,
+            bool pinned = true)
         {
             if (count < 2 || intensity <= 0.01f) return;
-            kinked.Clear();
-            kinked.Add(points[0]);
-            for (int s = 0; s + 1 < count; s++)
+            float breath = 0.8f + 0.2f * ChargeArcs.Fbm(seconds * settings.FlickerSpeed + seed * 0.731f, 2);
+            Ribbon(points, count, weights, coords, intensity * breath, width, wobble, seed, seconds, settings, eye, radius, pinned);
+            // the sub-filament: thinner, fainter, bent further on its own noise (the crackle's subLine)
+            Ribbon(points, count, weights, coords, intensity * breath * 0.4f, width * 0.45f, wobble * 1.7f, seed + 101, seconds, settings,
+                   eye, radius, pinned);
+        }
+
+        /// <param name="coords">Each input point's place along the bolt for the noise, in radii (null = its arc length from
+        /// the first point). A bolt whose tail falls away (the seam walk) gives each point a fixed one, so the plasma's
+        /// shape does not slide along it as the tail goes.</param>
+        void Ribbon(IReadOnlyList<Vector3> points, int count, IReadOnlyList<float> weights, IReadOnlyList<float> coords,
+            float intensity, float width, float wobble, int seed, float seconds, in ChargeArcSettings settings, Vector3 eye, float radius,
+            bool pinned)
+        {
+            // each input point's arc length, and its place along the bolt (its coord, or its arc length)
+            arcAt.Clear();
+            placeAt.Clear();
+            float total = 0f;
+            for (int i = 0; i < count; i++)
             {
-                Vector3 a = points[s], c = points[s + 1];
-                float length = (c - a).magnitude;
-                int pieces = Mathf.Clamp(Mathf.RoundToInt(length / (0.07f * radius)), 1, 10);
-                var side = Vector3.Cross(c - a, eye - a).normalized;
-                for (int k = 1; k <= pieces; k++)
-                {
-                    var v = Vector3.Lerp(a, c, (float)k / pieces);
-                    if (k < pieces && jag > 0f)
-                        v += side * ((ChargeArcs.Hash(seed * 131 + s * 17 + k, jagFrame) - 0.5f) * 2f * jag * length / pieces);
-                    kinked.Add(v);
-                }
+                if (i > 0) total += (points[i] - points[i - 1]).magnitude;
+                arcAt.Add(total);
+                placeAt.Add(coords == null ? total : coords[i] * radius);
             }
-            float body = coreWidth * radius * width;
-            for (int k = 0; k + 1 < kinked.Count; k++)
+            if (total < 1e-6f) return;
+            float step = SampleSpacing * radius;
+            float from = placeAt[0], to = placeAt[count - 1];
+            if (to <= from) return;
+            // Samples sit on a grid FIXED in the bolt's own place (multiples of the spacing), plus its two ends: a trail
+            // whose tail falls away keeps every sample where it was, so the finer octaves of the noise never alias into
+            // a shimmer as the grid slides along.
+            bent.Clear();
+            weight.Clear();
+            float flow = seconds * settings.WritheSpeed, phase1 = seed * 1.37f, phase2 = seed * 2.91f + 50f;
+            int seg = 0;
+            float next = Mathf.Floor(from / step) * step + step;
+            if (next - from < 0.25f * step) next += step;   // no sliver piece at either end
+            int guard = 0;
+            for (float place = from; guard++ < 512; place = to - next < 0.25f * step ? to : next, next += step)
             {
-                Vector3 a = kinked[k], c = kinked[k + 1];
-                var side = Vector3.Cross(c - a, eye - (a + c) * 0.5f).normalized;
-                if (width >= 2.5f)
-                {
-                    // a thick beam: a soft halo, a body and a hot narrow core (a tube under bloom)
-                    Strip(a, c, side * (body * 1.9f), intensity * 0.14f);
-                    Strip(a, c, side * body, intensity * 0.55f);
-                    Strip(a, c, side * (body * 0.32f), intensity * 1.5f);
-                }
-                else
-                {
-                    // the halo is narrower on wider bolts, or its short strips fan out into fins at every kink
-                    Strip(a, c, side * (body * Mathf.Max(1.8f, 4f - 0.8f * (width - 1f))), intensity * 0.22f);
-                    Strip(a, c, side * body, intensity * 1.2f);
-                }
+                while (seg < count - 2 && place > placeAt[seg + 1]) seg++;
+                float span = placeAt[seg + 1] - placeAt[seg];
+                float f = span > 1e-9f ? Mathf.Clamp01((place - placeAt[seg]) / span) : 0f;
+                var p = Vector3.LerpUnclamped(points[seg], points[seg + 1], f);
+                // the tangent blended between the input points' own (each the mean of its two segments), so the
+                // directions the plasma bends in turn smoothly through every joint of the path, a seam junction too
+                var tangent = Vector3.Lerp(PointTangent(points, count, seg), PointTangent(points, count, seg + 1), f).normalized;
+                var n1 = Vector3.Cross(tangent, eye - p).normalized;
+                var n2 = Vector3.Cross(tangent, n1);
+                float at = Mathf.Lerp(arcAt[seg], arcAt[seg + 1], f);
+                float x = 6f * place / radius;
+                // pinned only near the ends, so a bolt lands where it is aimed (a whole-length envelope would re-scale the
+                // shape every time the length changed); a trail that is aimed at nothing (the seam walk) is not pinned, so
+                // its shape stays put as its tail falls away
+                float pin = !pinned ? 1f
+                    : ChargeArcs.Smooth(at / (PinLength * radius)) * ChargeArcs.Smooth((total - at) / (PinLength * radius));
+                float d1 = ChargeArcs.Fbm(x + phase1 - flow, 3), d2 = ChargeArcs.Fbm(x + phase2 + flow * 0.8f, 3);
+                bent.Add(p + (n1 * d1 + n2 * (0.6f * d2)) * (wobble * radius * pin));
+                weight.Add(weights == null ? 1f : Mathf.Lerp(weights[seg], weights[seg + 1], f));
+                if (place >= to) break;
+            }
+            float half = ChargeArcs.StripHalfWidth(settings.CoreWidth, width) * radius;
+            int first = Positions.Count;
+            for (int k = 0; k < bent.Count; k++)
+            {
+                var p = bent[k];
+                var along = bent[Mathf.Min(k + 1, bent.Count - 1)] - bent[Mathf.Max(k - 1, 0)];
+                var side = Vector3.Cross(along, eye - p).normalized * half;
+                float v = intensity * weight[k];
+                Positions.Add(p + side); Data.Add(new Vector4(1f, 0f, 0f, v));
+                Positions.Add(p - side); Data.Add(new Vector4(-1f, 0f, 0f, v));
+                if (k == 0) continue;
+                int i = first + 2 * (k - 1);
+                Indices.Add(i); Indices.Add(i + 1); Indices.Add(i + 2);
+                Indices.Add(i + 2); Indices.Add(i + 1); Indices.Add(i + 3);
             }
         }
 
-        void Strip(Vector3 a, Vector3 c, Vector3 side, float intensity)
+        static Vector3 PointTangent(IReadOnlyList<Vector3> points, int count, int i)
         {
-            int i = Positions.Count;
-            Positions.Add(a + side); Data.Add(new Vector4(1f, 0f, 0f, intensity));
-            Positions.Add(a - side); Data.Add(new Vector4(-1f, 0f, 0f, intensity));
-            Positions.Add(c + side); Data.Add(new Vector4(1f, 0f, 0f, intensity));
-            Positions.Add(c - side); Data.Add(new Vector4(-1f, 0f, 0f, intensity));
-            Indices.Add(i); Indices.Add(i + 1); Indices.Add(i + 2);
-            Indices.Add(i + 2); Indices.Add(i + 1); Indices.Add(i + 3);
+            var before = i > 0 ? (points[i] - points[i - 1]).normalized : Vector3.zero;
+            var after = i + 1 < count ? (points[i + 1] - points[i]).normalized : Vector3.zero;
+            var t = before + after;
+            return t.sqrMagnitude > 1e-12f ? t.normalized : (after.sqrMagnitude > 0f ? after : before);
         }
+
+        const float PinLength = 0.06f;       // x the radius: how far in from each end the plasma is held to its path
+        const float SampleSpacing = 0.0125f; // x the radius: finer than the noise's finest octave (~0.035), so it never aliases
+        readonly List<float> arcAt = new(129), placeAt = new(129);
+        readonly List<Vector3> bent = new(257);
+        readonly List<float> weight = new(257);
     }
 
     /// <summary>
@@ -792,7 +858,6 @@ namespace CosmicShore.Utility
     /// </summary>
     public static class ChargeArcs
     {
-        const int SeamPointsPerLeg = 9;
         const int FluxSteps = 24;
 
         public static float Smooth(float x)
@@ -812,42 +877,93 @@ namespace CosmicShore.Utility
             }
         }
 
-        static readonly List<Vector3> s_points = new(FluxSteps + 1);
-        static readonly List<Vector4> s_lit = new(64);   // (point, life)
+        /// <summary>Smooth 1-D value noise (0..1), C1-continuous: the crackle's <c>ValueNoise1D</c> on an integer hash.</summary>
+        public static float ValueNoise(float x)
+        {
+            float i = Mathf.Floor(x), f = x - i;
+            f = f * f * (3f - 2f * f);
+            int n = (int)i;
+            return Mathf.Lerp(Hash(n, 977), Hash(n + 1, 977), f);
+        }
 
-        /// <summary>The seam walk at <paramref name="seconds"/>: its bolts, and its petal light into
-        /// <paramref name="faceLight"/> (one per face). Returns the number of bolts drawn.</summary>
+        /// <summary>Fractal value noise, about -0.9..0.9: the crackle's <c>FBM1D</c> (x2.17 per octave, half the amplitude).</summary>
+        public static float Fbm(float x, int octaves)
+        {
+            float value = 0f, amplitude = 0.5f, frequency = 1f;
+            for (int o = 0; o < octaves; o++)
+            {
+                value += amplitude * (ValueNoise(x * frequency + o * 19.1f) * 2f - 1f);
+                frequency *= 2.17f;
+                amplitude *= 0.5f;
+            }
+            return value;
+        }
+
+        /// <summary>A plasma strip's half-width, x the crystal's radius: wide enough for the shader's glow to fall to
+        /// nothing before the strip's edge.</summary>
+        public static float StripHalfWidth(float coreWidth, float width) => coreWidth * width * 2.2f;
+
+        static readonly List<Vector3> s_points = new(FluxSteps + 1);
+        static readonly List<float> s_weights = new(128);
+        static readonly List<float> s_coords = new(128);
+        static readonly List<Vector4> s_lit = new(128);   // (point, life)
+
+        // The looks, x the crystal's radius: how far each kind of bolt bends off its path.
+        const float SeamWobble = 0.02f, StrandWobble = 0.012f, BeamWobble = 0.025f;
+
+        /// <summary>
+        /// The seam walk at <paramref name="seconds"/>: ONE continuous plasma trail through every seam still lit, oldest
+        /// first (each seam starts where the last ended), its brightness falling off smoothly toward the tail by how long
+        /// ago each point was struck; and its petal light into <paramref name="faceLight"/> (one per face). Returns the
+        /// number of points on the trail.
+        /// </summary>
         public static int SeamWalk(ChargeSites sites, ChargeSeamWalker walker, float seconds, in ChargeArcSettings settings,
             ChargeArcMeshWriter writer, Vector3 eye, float[] faceLight)
         {
             System.Array.Clear(faceLight, 0, faceLight.Length);
             float span = settings.Span, fade = settings.SeamFade * span;
-            int flicker = Mathf.FloorToInt(seconds * settings.FlickerHz), jagFrame = Mathf.FloorToInt(seconds * settings.JagHz);
-            int bolts = 0;
+            s_points.Clear();
+            s_weights.Clear();
+            s_coords.Clear();
             s_lit.Clear();
             var legs = walker.Legs;
-            for (int l = legs.Count - 1; l >= 0; l--)
+            for (int l = 0; l < legs.Count; l++)
             {
                 var leg = legs[l];
-                if (leg.Start > seconds || seconds - leg.Struck > fade) continue;
+                if (leg.Start > seconds) break;
                 var pts = sites.Seams[leg.Seam].Points;
                 int n = pts.Length - 1;
-                float reach = Mathf.Clamp01((seconds - leg.Start) / Mathf.Max(1e-6f, leg.Struck - leg.Start)) * n;
-                float life = 1f - Smooth(Mathf.Max(0f, seconds - leg.Struck) / fade);
-                for (int i = 0; i < n && i < reach; i++)
+                float seamLength = sites.Seams[leg.Seam].Length;
+                float strike = Mathf.Max(1e-6f, leg.Struck - leg.Start);
+                float reach = Mathf.Clamp01((seconds - leg.Start) / strike) * n;
+                for (int i = 0; i <= n; i++)
                 {
-                    var a = pts[leg.Forward ? i : n - i];
-                    var next = pts[leg.Forward ? i + 1 : n - i - 1];
-                    var b = i + 1 <= reach ? next : Vector3.Lerp(a, next, reach - i);
-                    s_points.Clear();
-                    s_points.Add(a);
-                    s_points.Add(b);
-                    float intensity = settings.Bolts * 2.4f * life * (0.55f + 0.45f * Hash(leg.Serial * 31 + i, flicker));
-                    writer.Bolt(s_points, 2, intensity, 0.4f, 2f, leg.Serial * 977 + i, eye, sites.Radius, settings.CoreWidth, jagFrame);
-                    s_lit.Add(new Vector4(b.x, b.y, b.z, life));
-                    bolts++;
+                    if (i == 0 && s_points.Count > 0) continue;   // the junction the last seam ended on
+                    bool partial = i > reach;
+                    float at = partial ? reach : i;
+                    int lo = Mathf.Min((int)at, n - 1);
+                    var a = pts[leg.Forward ? lo : n - lo];
+                    var b = pts[leg.Forward ? lo + 1 : n - lo - 1];
+                    var point = Vector3.Lerp(a, b, at - lo);
+                    // Each point fades from when the bolt LEFT it: a seam's hold is spread across its points, so the last
+                    // point of one seam and the first of the next are the same moment and the brightness runs on without a
+                    // step (a step there cut the trail's tail off at a third of its brightness when the old seam died).
+                    // A point the bolt has not left yet (it is still holding on this seam) is at full brightness.
+                    float leftAt = Mathf.Min(seconds, leg.Start + (leg.Leaves - leg.Start) * at / n);
+                    float life = 1f - Smooth(Mathf.Max(0f, seconds - leftAt) / fade);
+                    if (life > 0.001f || s_points.Count > 0)
+                    {
+                        s_points.Add(point);
+                        s_weights.Add(life);
+                        // a fixed place along the walk for the noise, so the trail's shape does not slide as its tail goes
+                        s_coords.Add((leg.Odometer + seamLength * at / n) / sites.Radius);
+                        s_lit.Add(new Vector4(point.x, point.y, point.z, life));
+                    }
+                    if (partial) break;
                 }
             }
+            writer.Plasma(s_points, s_points.Count, s_weights, s_coords, settings.Bolts * 2.4f, 2f, SeamWobble, 7, seconds,
+                          settings, eye, sites.Radius, pinned: false);
             // a petal glows by how near the bolt runs to its short sides, and how fresh that stretch of bolt is
             for (int f = 0; f < sites.Faces.Length; f++)
             {
@@ -864,35 +980,26 @@ namespace CosmicShore.Utility
                 }
                 if (g > 0.01f) faceLight[f] = settings.Glow * 2.4f * g;
             }
-            return bolts;
+            return s_points.Count;
         }
 
-        /// <summary>The flux arcs at <paramref name="seconds"/>: their bolts, and the source and sink light into
+        /// <summary>The flux arcs at <paramref name="seconds"/>: their plasma, and the source and sink light into
         /// <paramref name="faceLight"/>. Returns the number of discharges drawn.</summary>
         public static int Flux(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
             ChargeArcMeshWriter writer, Vector3 eye, float[] faceLight)
         {
             System.Array.Clear(faceLight, 0, faceLight.Length);
             if (seconds < 0f) return 0;
-            float span = settings.Span, gap = settings.FluxGap * span, fork = settings.FluxFork;
-            float charge = settings.FluxCharge * span, struck = charge + settings.FluxStrike * span;
-            float held = struck + settings.FluxHold * span, gone = held + settings.FluxFade * span;
-            int flicker = Mathf.FloorToInt(seconds * settings.FlickerHz), jagFrame = Mathf.FloorToInt(seconds * settings.JagHz);
-            long now = (long)Mathf.Floor(seconds / gap);
+            float fork = settings.FluxFork;
             int drawn = 0;
+            long now = Now(seconds, settings);
             for (long k = now; k >= 0 && k > now - 4; k--)
             {
-                float t = seconds - k * gap;
-                if (t > gone || !chain.TryGet(k, settings, out var discharge)) continue;
-                float fading = 1f - Smooth((t - held) / (gone - held));
-                // the source charges, flares as it discharges, fades; the sink lights as the arc lands
-                Light(sites, faceLight, discharge.Source,
-                    settings.Glow * (t < charge ? 1.4f * Smooth(t / charge) : t < held ? 2.2f : 2.2f * fading));
-                if (t < charge) continue;
-                Light(sites, faceLight, discharge.Sink,
-                    settings.Glow * (t < held ? 2.4f * Smooth((t - charge) / (struck - charge)) : 2.4f * fading));
-                float grow = Mathf.Clamp01((t - charge) / (struck - charge));
-                float intensity = settings.Bolts * (t < held ? 1f : fading) * (0.75f + 0.25f * Hash((int)k, flicker));
+                if (!Discharge(chain, k, seconds, settings, out var discharge, out float sourceLight, out float sinkLight,
+                               out float grow, out float intensity))
+                    continue;
+                Light(sites, faceLight, discharge.Source, settings.Glow * sourceLight);
+                if (sinkLight > 0f) Light(sites, faceLight, discharge.Sink, settings.Glow * sinkLight);
                 if (intensity <= 0.01f) continue;
                 var path = sites.PathOf(discharge.Source, discharge.Sink);
                 int upto = Mathf.RoundToInt(grow * FluxSteps);
@@ -900,32 +1007,116 @@ namespace CosmicShore.Utility
                 // five strands fork onto the corners at each end...
                 for (int q = 0; q < path.SourceOffsets.Length; q++)
                 {
-                    s_points.Clear();
-                    for (int i = 0; i <= upto; i++)
-                    {
-                        float u = (float)i / FluxSteps;
-                        if (u <= fork + 0.06f) s_points.Add(path.Strand(q, u, fork));
-                    }
-                    writer.Bolt(s_points, s_points.Count, intensity * 1.1f, 0.22f, 0.9f, seed + q, eye, sites.Radius, settings.CoreWidth, jagFrame);
-                    s_points.Clear();
-                    for (int i = 0; i <= upto; i++)
-                    {
-                        float u = (float)i / FluxSteps;
-                        if (u >= 1f - fork - 0.06f) s_points.Add(path.Strand(q, u, fork));
-                    }
-                    writer.Bolt(s_points, s_points.Count, intensity * 1.1f, 0.22f, 0.9f, seed + 7 + q, eye, sites.Radius, settings.CoreWidth, jagFrame);
+                    StrandPoints(path, q, upto, fork, head: true);
+                    writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.1f, 0.9f, StrandWobble, seed + q, seconds, settings, eye, sites.Radius);
+                    StrandPoints(path, q, upto, fork, head: false);
+                    writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.1f, 0.9f, StrandWobble, seed + 7 + q, seconds, settings, eye, sites.Radius);
                 }
                 // ...and are one thick beam between
-                s_points.Clear();
-                for (int i = 0; i <= upto; i++)
-                {
-                    float u = (float)i / FluxSteps;
-                    if (u >= fork - 0.04f && u <= 1f - fork + 0.04f) s_points.Add(path.Centre(u));
-                }
-                writer.Bolt(s_points, s_points.Count, intensity * 1.6f, 0.3f, 3f, seed + 31, eye, sites.Radius, settings.CoreWidth, jagFrame);
+                BeamPoints(path, upto, fork);
+                writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.6f, 3f, BeamWobble, seed + 31, seconds, settings, eye, sites.Radius);
                 drawn++;
             }
             return drawn;
+        }
+
+        /// <summary>
+        /// How hard the flux arcs strike each prism standing in their way at <paramref name="seconds"/>, into
+        /// <paramref name="strike"/>: a prism whose body (a sphere at <paramref name="centres"/>[j] of radius
+        /// <paramref name="radii"/>[j], in the sites' space) the arc's path passes through lights up while the arc holds,
+        /// so a bolt through a raised Mass column reads as conducting, not clipping. Full where the path runs through the
+        /// prism's middle, nothing once it only grazes the edge.
+        /// </summary>
+        public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
+            Vector3[] centres, float[] radii, int count, float[] strike)
+        {
+            System.Array.Clear(strike, 0, count);
+            if (seconds < 0f) return;
+            float fork = settings.FluxFork;
+            long now = Now(seconds, settings);
+            for (long k = now; k >= 0 && k > now - 4; k--)
+            {
+                if (!Discharge(chain, k, seconds, settings, out var discharge, out _, out _, out float grow, out float intensity)
+                    || intensity <= 0.01f)
+                    continue;
+                var path = sites.PathOf(discharge.Source, discharge.Sink);
+                int upto = Mathf.RoundToInt(grow * FluxSteps);
+                BeamPoints(path, upto, fork);
+                StrikeAlong(s_points, centres, radii, count, intensity * 1.6f, settings, strike);
+                for (int q = 0; q < path.SourceOffsets.Length; q++)
+                {
+                    StrandPoints(path, q, upto, fork, head: true);
+                    StrikeAlong(s_points, centres, radii, count, intensity * 1.1f, settings, strike);
+                    StrandPoints(path, q, upto, fork, head: false);
+                    StrikeAlong(s_points, centres, radii, count, intensity * 1.1f, settings, strike);
+                }
+            }
+        }
+
+        static void StrikeAlong(List<Vector3> path, Vector3[] centres, float[] radii, int count, float intensity,
+            in ChargeArcSettings settings, float[] strike)
+        {
+            if (path.Count < 2) return;
+            for (int j = 0; j < count; j++)
+            {
+                float r = radii[j];
+                if (r <= 0f) continue;
+                float d = float.MaxValue;
+                for (int i = 0; i + 1 < path.Count; i++) d = Mathf.Min(d, DistanceToSegment(centres[j], path[i], path[i + 1]));
+                if (d >= r) continue;
+                float v = settings.Glow * 2.4f * intensity * (1f - Smooth((d / r - 0.6f) / 0.4f));
+                strike[j] = Mathf.Max(strike[j], v);
+            }
+        }
+
+        static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)
+        {
+            var ab = b - a;
+            float u = Mathf.Clamp01(Vector3.Dot(p - a, ab) / Mathf.Max(1e-12f, Vector3.Dot(ab, ab)));
+            return (a + ab * u - p).magnitude;
+        }
+
+        static long Now(float seconds, in ChargeArcSettings settings) => (long)Mathf.Floor(seconds / (settings.FluxGap * settings.Span));
+
+        /// <summary>Discharge <paramref name="k"/> at <paramref name="seconds"/>: its source and sink light, how far its
+        /// arc has grown, and how bright the arc is. False once it has faded.</summary>
+        static bool Discharge(ChargeFluxChain chain, long k, float seconds, in ChargeArcSettings settings,
+            out ChargeFluxChain.Discharge discharge, out float sourceLight, out float sinkLight, out float grow, out float intensity)
+        {
+            float span = settings.Span, gap = settings.FluxGap * span;
+            float charge = settings.FluxCharge * span, struck = charge + settings.FluxStrike * span;
+            float held = struck + settings.FluxHold * span, gone = held + settings.FluxFade * span;
+            float t = seconds - k * gap;
+            sourceLight = sinkLight = grow = intensity = 0f;
+            if (t > gone || !chain.TryGet(k, settings, out discharge)) { discharge = default; return false; }
+            float fading = 1f - Smooth((t - held) / (gone - held));
+            // the source charges, flares as it discharges, fades; the sink lights as the arc lands
+            sourceLight = t < charge ? 1.4f * Smooth(t / charge) : t < held ? 2.2f : 2.2f * fading;
+            if (t < charge) return true;
+            sinkLight = t < held ? 2.4f * Smooth((t - charge) / (struck - charge)) : 2.4f * fading;
+            grow = Mathf.Clamp01((t - charge) / (struck - charge));
+            intensity = settings.Bolts * (t < held ? 1f : fading);
+            return true;
+        }
+
+        static void StrandPoints(ChargeFluxPath path, int q, int upto, float fork, bool head)
+        {
+            s_points.Clear();
+            for (int i = 0; i <= upto; i++)
+            {
+                float u = (float)i / FluxSteps;
+                if (head ? u <= fork + 0.06f : u >= 1f - fork - 0.06f) s_points.Add(path.Strand(q, u, fork));
+            }
+        }
+
+        static void BeamPoints(ChargeFluxPath path, int upto, float fork)
+        {
+            s_points.Clear();
+            for (int i = 0; i <= upto; i++)
+            {
+                float u = (float)i / FluxSteps;
+                if (u >= fork - 0.04f && u <= 1f - fork + 0.04f) s_points.Add(path.Centre(u));
+            }
         }
 
         static void Light(ChargeSites sites, float[] faceLight, int site, float value)

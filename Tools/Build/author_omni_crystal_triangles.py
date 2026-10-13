@@ -230,7 +230,7 @@ ARCS_PROFILE_VALUES = [("rate", 1), ("boltIntensity", 1), ("glowIntensity", 1),
                        ("seamStrikeSeconds", 0.07), ("seamDwellMinSeconds", 0.1), ("seamDwellMaxSeconds", 0.28),
                        ("seamFadeSeconds", 0.85), ("fluxGapSeconds", 0.9), ("fluxChargeSeconds", 0.45),
                        ("fluxStrikeSeconds", 0.06), ("fluxHoldSeconds", 0.45), ("fluxFadeSeconds", 0.45), ("fluxFork", 0.3),
-                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("coreWidth", 0.012), ("jagHz", 20), ("flickerHz", 18)]
+                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4)]
 # The omni's light: a plain child of Crystal.prefab (GameObject, Transform, MeshFilter, MeshRenderer, CrystalChargeArcs,
 # CrystalAccentTint). The Charge crystal's: a plain child of CrystalCharge.prefab (no tint: its body has no _BrightColor).
 OMNI_ARCS_IDS = (3086241560104200061, 3086241560104200062, 3086241560104200063, 3086241560104200064,
@@ -265,7 +265,15 @@ def depth_material(name, body_name, body_text, thickness, top_height, split_unit
               f"    - _PlateScaleStart: {DEPTH_PLATE_SCALE_START}\n    - _Reach: {DEPTH_REACH}\n"
               f"    - _SplitUnit: {split_unit}\n    - _Thickness: {thickness}\n"
               f"    - _ThicknessInward: {DEPTH_THICKNESS_INWARD}\n    - _TopHeight: {top_height}\n")
-    return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
+    t = _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
+    # The Charge strike glow (OmniDepthPrismShader's _StrikeColor): ChargeCrystalMaterial's arc core colour, so a bolt
+    # through a Mass column lights the prism in the bolt's own colour. Kept in Unity's sorted order.
+    strike = f"    - _StrikeColor: {_saved(_donor(CHARGE_DONOR), '_ArcCoreColor', 'c')}\n"
+
+    def with_strike(m):
+        rows = [r + "\n" for r in m.group(1).splitlines() if not r.startswith("    - _StrikeColor:")] + [strike]
+        return "    m_Colors:\n" + "".join(sorted(rows, key=lambda r: r.split(":")[0]))
+    return _sub1(t, r"^    m_Colors:\n((?:    - .*\n)+)", with_strike, name + " m_Colors")
 
 
 def material_texts():

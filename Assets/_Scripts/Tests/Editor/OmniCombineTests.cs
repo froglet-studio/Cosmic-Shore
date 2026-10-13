@@ -13,7 +13,7 @@ namespace CosmicShore.Tests
     /// The Elemental Converter's OMNI COMBINE (<see cref="OmniCombineCore"/>, <see cref="OmniCombinePlayer"/>,
     /// <see cref="ElementalConverterView"/>): the shipped data loads through JsonUtility, every crystal lands
     /// exactly on its share of the omni, a play is a pure function of its seed, waiting never sets anything
-    /// off, the discharge bakes find real creases on the meshes the player builds, and the Ark screen is open
+    /// off, the meshes the player builds split by face, the round-5 effects fit the data, and the Ark screen is open
     /// and wired.
     ///
     /// Parity with the Omni Combine Lab itself is held out of editor, vertex for vertex, by
@@ -198,36 +198,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheDischargeBakesFindRealCreasesOnTheBuiltMeshes()
+        public void TheBuiltMeshesSplitByFace_SoEachFaceShadesFlat()
         {
+            // The converter draws every crystal on the Fresnel body with one normal per FACE (the art data shares a slab's
+            // corners across its faces; drawn welded, the plates would shade smooth). Since 2026-10-13 nothing is baked for
+            // a discharge: the Charge light is the seam walk and the flux arcs, drawn on the CPU.
             var data = LoadData();
             var charge = data.crystals[OmniCombineCore.Charge];
             var source = OmniCombinePlayer.BuildFaceSplitSource(charge.basis, charge.tris, charge.plate, out var faces);
-            var baked = CrystalEdgeArcMeshBaker.Bake(source, 0);
             var omniSource = OmniCombinePlayer.BuildFaceSplitSource(data.omni.verts, data.omni.tris, data.omni.plate, out var omniFaces);
-            var pentagons = CrystalEdgeArcMeshBaker.Bake(omniSource, 10);
             try
             {
                 // 60 pentagonal slabs of 7 faces (5 sides + 2 caps): split by face, never welded across one.
                 Assert.AreEqual(420, faces.Max() + 1, "Charge faces");
                 Assert.AreEqual(724, omniFaces.Max() + 1, "omni faces (30x6 + 20x5 + 12x7 + 60x6)");
-                Assert.IsNotNull(baked, "the Charge crystal did not bake");
-                Assert.AreEqual(charge.tris.Length, baked.vertexCount, "one baked vertex per triangle corner, in triangle order");
-                var heights = new System.Collections.Generic.List<Vector3>();
-                baked.GetUVs(2, heights);
-                int creases = heights.Sum(h => (h.x > 0 ? 1 : 0) + (h.y > 0 ? 1 : 0) + (h.z > 0 ? 1 : 0));
-                int diagonals = heights.Sum(h => (h.x < 0 ? 1 : 0) + (h.y < 0 ? 1 : 0) + (h.z < 0 ? 1 : 0));
-                Assert.Greater(creases, 0, "no crease: the discharge would never draw");
-                Assert.Greater(diagonals, 0, "no triangulation diagonal: faces were not grouped");
-                Assert.IsNotNull(pentagons, "the omni's pentagons did not bake");
-                Assert.AreEqual(12 * 16 * 3, pentagons.vertexCount, "the twelve pentagonal prisms (16 triangles each)");
             }
             finally
             {
                 Object.DestroyImmediate(source);
                 Object.DestroyImmediate(omniSource);
-                if (baked) Object.DestroyImmediate(baked);
-                if (pentagons) Object.DestroyImmediate(pentagons);
             }
         }
 
@@ -265,12 +254,10 @@ namespace CosmicShore.Tests
             var config = AssetDatabase.LoadAssetAtPath<OmniCombineConfigSO>(ConfigPath);
             Assert.IsNotNull(config, $"{ConfigPath}: run Tools/Build/author_elemental_converter.py");
             Assert.IsNotNull(config.CombineData);
-            Assert.IsNotNull(config.ChargeMaterial);
             Assert.IsNotNull(config.ShellMaterial);
             Assert.IsNotNull(config.OmniMaterial);
             Assert.IsNotNull(config.Cadence, "the woken omni plays the game's cadence");
             Assert.IsNotNull(config.ChargeArcs, "the Charge light is the game's");
-            Assert.IsNotNull(config.ChargeArcsMaterial);
             Assert.IsNotNull(config.OmniArcsMaterial);
             Assert.IsNotNull(config.MassMaterial, "the Mass crystal draws with the game's depth-prism material");
             Assert.IsNotNull(config.OmniTrianglesMaterial);
