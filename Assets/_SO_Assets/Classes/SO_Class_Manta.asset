@@ -42,6 +42,9 @@ MonoBehaviour:
   TrainingGames:
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
+  keywords:
+  - 1
+  - 5
   gameplayParameter1:
     LeftHandLabel: Casual
     RightHandLabel: Challenging

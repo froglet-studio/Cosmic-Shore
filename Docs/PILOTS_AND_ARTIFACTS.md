@@ -4,8 +4,8 @@
 Shombit on 2026-10-12, dictated live and written up here. The sections marked **DECIDED** record
 what that conversation settled; the sections marked **PROPOSED** are this write-up's own
 suggestions for how to land it and are for Garrett and Shombit to accept, strike or amend.
-**Implementation is under way:** slice 1 of milestone 1 (the data foundation) has landed and is
-not yet editor-verified. §10 has the slice plan, what was measured before building, and what the
+**Implementation is under way:** slices 1 and 2 of milestone 1 (the data foundation and the
+authored default pilots and keywords) have landed and are not yet editor-verified. §10 has the slice plan, what was measured before building, and what the
 code does differently from the sketch in §7.
 
 **Read first:** `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` (the fundamentals, *Elementals
@@ -366,8 +366,8 @@ to stand on. The design page that tracks this live is the Pilots & Artifacts art
 |---|---|---|
 | 0 | Measure the legacy Captain and Squad code before reshaping anything (§5.1's claims) | **Done** 2026-10-13, §10.2 |
 | 1 | Data foundation: `VesselKeyword`, `VesselRequirement`, `ElementalBoost`, `PilotSO`, `ArtifactSO`, `PilotArtifactCatalogSO`, `SO_Vessel.Keywords`, the squad book in `SQUAD_DATA`, edit-mode tests | **Landed** 2026-10-13, not editor-verified (`Docs/UNITY_VERIFICATION_CHECKLIST.md`) |
-| 2 | Author the nine default pilots, every milestone vessel's keywords and the catalog asset, from a generator with a `--check` gate | Next |
-| 3 | Match start: a slot's starting element level plus the pilot's `ElementalBoost` through the `StartingElements` seam (§5.2); bind an artifact to its one parameter | Queued |
+| 2 | Author the nine default pilots, every milestone vessel's keywords and the catalog asset, from a generator with a `--check` gate | **Landed** 2026-10-13, not editor-verified, §10.4 |
+| 3 | Match start: a slot's starting element level plus the pilot's `ElementalBoost` through the `StartingElements` seam (§5.2); bind an artifact to its one parameter | Next |
 | 4 | Pilot kit swap through the action/executor path, so AI squad mates get it for free; replicated where the result is a world outcome | Queued |
 | 5 | Squad screen: four pickers per slot, named squads, one active, the pre-game "which squad" question; retire `PortSquadView`, `SquadSystem`, `Squad` and the captain screens in the same change | Queued |
 | 6 | Content: nine side-grade pilots and eighteen artifacts, each artifact checked against its vessel's element map (`element_ability_table.py --json`) | Queued |
@@ -426,3 +426,29 @@ Differences from the §7 sketch, each the simpler of two options:
 
 Out of slice 1 on purpose: no asset is authored, nothing in a scene reads any of this, and
 `PortSquadView` still runs the legacy squad.
+
+### 10.4 Slice 2: the authored assets
+
+`Tools/Build/author_pilot_assets.py` writes them and is their source; edit its `MILESTONE` table
+and re-run rather than editing an asset. `--check` reports drift and writes nothing, `--self-test`
+holds its negative controls. It owns:
+
+| Asset | What |
+|---|---|
+| `_SO_Assets/Pilots/Default/Pilot_<Vessel>_Default.asset` × 9 | Each milestone vessel's default pilot: id `pilot.<vessel>.default`, bound to its class, no keywords, no boost |
+| `_SO_Assets/Pilots/PilotArtifactCatalog.asset` | The nine default pilots in fleet order; no artifacts yet |
+| `keywords` on `_SO_Assets/Classes/SO_Class_<Vessel>.asset` × 9 | §4's table as written; only that key is touched |
+
+Three things to know:
+
+- **The keyword table is §4's PROPOSED one, transcribed.** It is now live data, so the content pass
+  (slice 6) must confirm each keyword against the vessel's real kit before a pilot or artifact
+  leans on it.
+- **A default pilot's display name is its kit's name** (Yastri Trail, Echo Sight, …), from §6's
+  "Pilot A (default kit, named)" column. Character names and portraits are a content decision;
+  the 24 legacy portraits in `_Graphics/Pilots/` are the obvious pool.
+- **Nothing references the catalog yet,** so it does not ship in a build. Slice 3 (match start)
+  or slice 5 (squad screen) wires it, whichever lands first.
+
+`PilotCatalogAssetTests` loads the real assets: the catalog validates clean, and every milestone
+vessel declares `BasePrismProduction` and resolves to its own default pilot, listed first.
