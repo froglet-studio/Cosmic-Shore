@@ -757,9 +757,8 @@ namespace CosmicShore.Core
             // because "the player has no network" and "UGS is having a bad day" deserve the
             // attempts.
             bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
-            bool attemptRelay = !offlinePreferred
-                                && !IsOffline
-                                && !(_offlineMode?.IsOfflineSession ?? false);
+            var plan = PlanBootNetwork(offlinePreferred, IsOffline, _offlineMode?.IsOfflineSession ?? false);
+            bool attemptRelay = plan.AttemptRelay;
 
             if (offlinePreferred)
                 CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Offline preferred by the player - going straight to the local host.");
@@ -797,7 +796,21 @@ namespace CosmicShore.Core
                         {
                             var hcs = HostConnectionService.Instance;
                             if (hcs != null)
-                                await hcs.EnsurePartySessionAsync().AsMainThread();
+                            {
+                                // Bounded by the same per-attempt timeout. Unbounded, a create that
+                                // hangs (UGS reachable but not answering) held the gate as long as it
+                                // liked, so "three attempts" was a minimum and the offline fallback
+                                // could arrive minutes late. Abandoning the wait is safe: the call
+                                // keeps running, and EnsurePartySessionAsync re-checks the offline
+                                // flag before it touches the NetworkManager.
+                                using var retryCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                                retryCts.CancelAfter(TimeSpan.FromSeconds(timeout));
+                                await hcs.EnsurePartySessionAsync().AttachExternalCancellation(retryCts.Token).AsMainThread();
+                            }
+                        }
+                        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                        {
+                            CSDebug.LogWarning($"[AuthScene] HCS retry did not finish within {timeout:F0}s - counting the attempt as failed.");
                         }
                         catch (Exception hcsEx)
                         {
@@ -826,10 +839,13 @@ namespace CosmicShore.Core
                 // Netcode spawn chain and every AI-backfilled mode runs unchanged, and the
                 // player's last-known-good profile / unlocks load from the local
                 // cloud-cache. The session stays offline until the app restarts.
-                if (offlinePreferred)
-                    ShowLoading("Starting offline…");
-                else
+                // Counted: an unwanted offline start is the failure the request policy exists to prevent
+                // (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md, B24).
+                if (plan.UnwantedFallback) UgsRequestTelemetry.Count(UgsRequestCounter.OfflineFallback);
+                if (plan.UnwantedFallback)
                     await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
+                else
+                    ShowLoading("Starting offline…");
 
                 ShowLoading("Starting offline…");
 
@@ -885,6 +901,39 @@ namespace CosmicShore.Core
             CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} via network scene management...");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
+
+        /// <summary>What the boot gate does about the network. See <see cref="PlanBootNetwork"/>.</summary>
+        internal readonly struct BootNetworkPlan
+        {
+            /// <summary>Walk the bounded Relay attempts before falling back.</summary>
+            public readonly bool AttemptRelay;
+
+            /// <summary>
+            /// If the session ends up offline, nobody asked for it: count it
+            /// (<see cref="UgsRequestCounter.OfflineFallback"/>) and say why on screen. False only for
+            /// the player's own choice, which gets neither.
+            /// </summary>
+            public readonly bool UnwantedFallback;
+
+            public BootNetworkPlan(bool attemptRelay, bool unwantedFallback)
+            {
+                AttemptRelay = attemptRelay;
+                UnwantedFallback = unwantedFallback;
+            }
+        }
+
+        /// <summary>
+        /// The boot gate's network decision, from the three facts it has
+        /// (HARDENING_PLAN_STEAM_LAUNCH.md §4.1 cases 1-3). No attempts when the player chose
+        /// offline (a deliberate choice must not cost them 45 s of attempts they asked not to
+        /// make), when the device reports no network (they cannot succeed), or when an offline
+        /// session is already live. A REACHABLE device whose UGS calls merely fail still walks the
+        /// attempts - "no network" and "UGS is having a bad day" are different failures.
+        /// </summary>
+        internal static BootNetworkPlan PlanBootNetwork(bool offlinePreferred, bool deviceOffline, bool offlineSessionLive) =>
+            new BootNetworkPlan(
+                attemptRelay: !offlinePreferred && !deviceOffline && !offlineSessionLive,
+                unwantedFallback: !offlinePreferred);
 
         /// <summary>
         /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires

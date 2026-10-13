@@ -1100,6 +1100,11 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   the same file as an `m_Script` is a package script. Measured 2026-10-13 on
   `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
   from `git ls-tree` plus the refcompile package cache), not in a habit.
+- **`check_generated_assets.py` reports a guid-KEEPING RENAME as a `[deleted]` reference.** `git mv a.png b.png`
+  with its `.meta` keeps the guid, so every reference still resolves — but the audit sees `a.png` deleted since the
+  base and reports `b.png.meta: references a.png (guid …), deleted since the base`. The file it names IS the owner
+  now. Confirm with `grep -c "^guid: <g>$"` over the `.meta` set (exactly one owner, the new path) and call it out
+  as the tool's false positive (Thresher Heavy Iron → Mass Mode icon, 2026-10-13).
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
@@ -3333,7 +3338,7 @@ never fold it into a fix for something else.
   a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
   `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
   SO type is unavoidable, have the human open its first asset once before the playtest.
-- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+- **The Amoebius port is a real compile of `Assets/_Scripts`, available in about a minute.**
   `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
   surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
   syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL
@@ -3449,6 +3454,14 @@ never fold it into a fix for something else.
   only when the base is byte-identical and the diff is purely additive (the Sparrow animator
   controller was; the Sparrow prefab was NOT — it had swapped the visible model, which trunk
   must not).
+- **A port that skips a hunk because "the asset it names is gone" must resolve the GUID, not the
+  name.** The Stoat port (`16b41b045`) left out the source branch's Cell Selector entry in
+  Menu_Main, reasoning that it named a "Black Hole cell" the branch no longer carried. That cell had
+  been RENAMED to the Crystal Wormhole Cell with its guid kept (`git log --name-status` shows
+  `R100`), so the entry named the very config the port brought over. The cell then sat selectable
+  by nothing until `CrystalWormholeTests` went red. Before dropping a hunk as dangling, grep the
+  hunk's `guid:` against the source branch's `.meta` files (`git grep <guid> <branch> -- '*.meta'`).
+  A hit means the reference is live, whatever the folder is called now.
 
 - **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
   fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but

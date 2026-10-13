@@ -11,7 +11,7 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// The EDITOR page's engine: <c>cs-asset</c> built from the workspace's own source (so it reads
     /// the checkout it shows, with that branch's scripts), run per request with JSON on stdout.
-    /// It is built once per Prisma session (incrementally, and again on REBUILD); every call after
+    /// It is built once per Amoebius session (incrementally, and again on REBUILD); every call after
     /// that is a short process run.
     /// </summary>
     public sealed class EditorTool
@@ -47,7 +47,7 @@ namespace CosmicShore.Launcher
                 Error = null;
                 if (!_ws.Exists) { Error = "No workspace yet: press START on PLAY once."; return false; }
                 if (_tools.Dotnet == null) { Error = ".NET is not set up yet: press START on PLAY once."; return false; }
-                if (!Supported) { Error = "This branch's Prisma has no editor commands yet (pick a branch that has Port/src/CosmicShore.AssetTool/EditorData.cs)."; return false; }
+                if (!Supported) { Error = "This branch's Amoebius has no editor commands yet (pick a branch that has Port/src/CosmicShore.AssetTool/EditorData.cs)."; return false; }
                 Building = true;
                 _log.Add(LogKind.Info, "---- Build the editor tools (cs-asset) ----");
                 var r = await ProcessRunner.Run(_tools.Dotnet, new[] { "build", Project, "-c", "Debug", "-nologo", "-v:minimal", "-clp:NoSummary" },

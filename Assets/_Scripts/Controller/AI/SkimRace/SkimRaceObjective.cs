@@ -48,6 +48,11 @@ namespace CosmicShore.Gameplay
 
         protected SkimRaceObjective(GameDataSO gameData) => GameData = gameData;
 
+        /// <summary>The pilot this objective races for, set by <see cref="SkimRacePilot.Bind"/>. Read by
+        /// an objective that coordinates a TEAM of pilots (<see cref="CrystalTrackObjective"/> and
+        /// <see cref="SkimRaceTeamPlan"/>); null when an objective is driven without a pilot.</summary>
+        public SkimRacePilot Pilot { get; internal set; }
+
         /// <summary>The racing line, from what the game actually laid. False until it exists
         /// (tracks lay over several frames); the pilot retries.</summary>
         public abstract bool TryBuildCourse(IVesselStatus status, out SkimRaceCourse course);
@@ -74,8 +79,9 @@ namespace CosmicShore.Gameplay
         public virtual bool RecordsManualRaces => false;
     }
 
-    /// <summary>Skim Race: the domain's crystal along the waypoint track. Exactly the behaviour
-    /// the pilot had before the objective was split out.</summary>
+    /// <summary>Skim Race: the domain's crystal along the waypoint track - the pilot's own Skim Race
+    /// behaviour, split out of it: nearest crystal for a lone AI, and the team plan's crystal when
+    /// two or more AI fly for one team (<see cref="SkimRaceTeamPlan"/>).</summary>
     public sealed class CrystalTrackObjective : SkimRaceObjective
     {
         Crystal _target;
@@ -93,8 +99,11 @@ namespace CosmicShore.Gameplay
 
         public override bool TryGetTarget(IVesselStatus status, Vector3 position, out SkimRaceTarget target)
         {
-            // The authoritative active crystal for this domain.
-            _target = SkimRaceTargetTracker.Select(status.Domain, position, _target);
+            // The authoritative active crystal for this domain. When other AI fly for the same team,
+            // the team plan shares the crystals out so no two chase the same one (SkimRaceTeamPlan); a
+            // lone AI - or one the plan has no crystal for - flies the nearest.
+            var planned = Pilot != null ? SkimRaceTeamPlan.TargetFor(Pilot, status.Domain) : null;
+            _target = planned != null ? planned : SkimRaceTargetTracker.Select(status.Domain, position, _target);
             target = default;
             if (_target == null) return false;
             target.Position = _target.transform.position;
@@ -130,7 +139,7 @@ namespace CosmicShore.Gameplay
             if (c != null && c.TryGetComponent(out SphereCollider sc))
             {
                 var s = sc.transform.lossyScale;
-                _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
+                _radius = sc.radius * MathfNoAlloc.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
             }
             return _radius;
         }

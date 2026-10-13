@@ -23,12 +23,16 @@ namespace CosmicShore.Render
     ///     (_DarkColor/_BrightColor, power 4 via FresnelPower4), the crystal graphs
     ///     (_DullCrystalColor/_BrightCrystalColor), spindles (_DullColor/_BrightColor),
     ///     vessels (_Color1/_Color2) and SpreadFresnel (_FresnelPower). Unlit, HDR.
-    ///   Lit — URP Lit / Standard: base × texture × (N·L sun + ambient) + emission.
+    ///   Lit — URP Lit / Standard: URP's PBR (UrpLitGlsl) on base × texture, with the ambient
+    ///     probe and default reflection (EnvironmentLighting) and the main light, + emission.
+    ///   Built-in — Unity's particle and sprite shaders and URP's unlit ones, each by its own
+    ///     formula (BuiltinShader).
     ///   Unlit — anything else: base colour × texture.
     ///
     /// Opaque geometry is instanced per (mesh, submesh, material); transparent geometry is
-    /// sorted back to front and drawn one renderer at a time. Colour properties are authored
-    /// in gamma space and linearised here (Unity's linear colour space).
+    /// sorted back to front and drawn one renderer at a time. Colours reach the shaders as the
+    /// GPU receives them in Unity's linear colour space (<see cref="ColorSpaceRules"/>): a plain
+    /// colour property linearised, an HDR one as stored, a property block's colour linearised.
     /// </summary>
     public sealed class SceneRenderer : IDisposable
     {
@@ -69,6 +73,9 @@ uniform float uClock;
 uniform vec4 uCradleCentre[4];   // _PrismCradleCentre: xyz hull centre, w hull radius
 uniform vec4 uCradleWeight[4];   // _PrismCradleWeight: x strength
 uniform vec4 uCradleParams;      // _PrismCradleParams: (drape reach, exponent, live slots, -)
+uniform vec4 uWarpCentre[4];     // _PrismGravityWarpCentre: xyz hole centre, w horizon radius
+uniform vec4 uWarpWeight[4];     // _PrismGravityWarpWeight: x GM*tau^2 (eased), y reach, z softening
+uniform vec4 uWarpParams;        // _PrismGravityWarpParams: (ln max stretch, live slots, -, -)
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3; // PrismSlice material constants (see SetSliceUniforms)
 uniform int uFamily;
 // PrismCradle.hlsl, translated: the last vertex node of both prism graphs. Every vertex inside
@@ -119,6 +126,55 @@ void cradle(inout vec3 pW, inout vec3 nrm){
   vec3 nNew = bestDir * (nr / ra) + (nW - bestDir * nr) / rb;
   if (!(dot(nNew, nNew) > 1e-12)) nNew = bestDir * (nr >= 0.0 ? 1.0 : -1.0);
   if (!(dot(pNew, pNew) < 1e12)) return;
+  pW = pNew;
+  nrm = normalize(nNew);
+}
+// PrismGravityWarp.hlsl, translated: spaghettification, the node just before the cradle. A prism
+// within a hole's reach is stretched along the line to it (log-stretch GM*tau^2/r^3, eased into
+// ln(max stretch)) and squeezed across it, one affine map about the prism's centre c; the normal
+// through its inverse transpose. World space (equivalent: an affine map about c).
+float warpWindow(float s, float reach){
+  if (s >= reach) return 0.0;
+  float u = clamp(2.0 * s / reach - 1.0, 0.0, 1.0);
+  return 1.0 - u * u * (3.0 - 2.0 * u);
+}
+float warpTide(float d, float rs, float k, float reach, float soft){
+  if (soft > 0.0) { float q = d * d + soft * soft; return k / (q * sqrt(q)) * warpWindow(max(d - rs, 0.0), reach); }
+  float r = max(d, rs);
+  return k / (r * r * r) * warpWindow(d - rs, reach);
+}
+void gravityWarp(inout vec3 pW, inout vec3 nrm, vec3 c){
+  int count = int(uWarpParams.y);
+  if (count <= 0) return;
+  float nl = dot(nrm, nrm);
+  if (!(nl > 1e-12) || !(nl < 1e12)) return;
+  vec3 nW = nrm * inversesqrt(nl);
+  float bestTide = 0.0;
+  vec3 bestDir = vec3(0.0, 0.0, 1.0);
+  for (int i = 0; i < 4; i++) {
+    if (i >= count) break;
+    vec4 slot = uWarpCentre[i];
+    vec4 wt = uWarpWeight[i];
+    if (!(abs(wt.x) > 0.0) || !(slot.w > 0.0) || !(wt.y > 0.0)) continue;
+    vec3 rad = c - slot.xyz;
+    float d = length(rad);
+    if (!(d > 1e-4) || d - slot.w >= wt.y) continue;
+    float tide = warpTide(d, slot.w, wt.x, wt.y, wt.z);
+    if (abs(tide) <= abs(bestTide)) continue;
+    bestTide = tide;
+    bestDir = rad / d;
+  }
+  if (!(abs(bestTide) > 0.0)) return;
+  float ceiling = max(uWarpParams.x, 1e-3);
+  float x = min(abs(bestTide) / ceiling, 1e4);
+  float eps = sign(bestTide) * ceiling * x * inversesqrt(sqrt(1.0 + x * x * x * x));
+  float radial = exp(eps), across = exp(-0.5 * eps);
+  vec3 q = pW - c;
+  float qr = dot(q, bestDir);
+  vec3 pNew = c + bestDir * (qr * radial) + (q - bestDir * qr) * across;
+  float nr = dot(nW, bestDir);
+  vec3 nNew = bestDir * (nr / radial) + (nW - bestDir * nr) / across;
+  if (!(dot(pNew, pNew) < 1e12) || !(dot(nNew, nNew) > 1e-12)) return;
   pW = pNew;
   nrm = normalize(nNew);
 }
@@ -333,7 +389,7 @@ void main(){
   } else {
     w = M * vec4(p, 1.0);
     nrm = transpose(inverse(mat3(M))) * nO;
-    if (uPrismGraph != 0) { vec3 cw = w.xyz; cradle(cw, nrm); w.xyz = cw; }
+    if (uPrismGraph != 0) { vec3 cw = w.xyz; gravityWarp(cw, nrm, M[3].xyz); cradle(cw, nrm); w.xyz = cw; }
   }
   vWorld = w.xyz;
   vNormal = nrm;
@@ -350,8 +406,10 @@ void main(){
   gl_Position = uViewProj * w;
 }";
 
-        const string Frag = @"#version 330 core
-in vec3 vWorld;
+        // The fragment stage: its declarations, URP's Lit lighting (shared with the compiled graphs), then the families.
+        const string Frag = "#version 330 core\n" + FragDeclarations + UrpLitGlsl.Source + FragFamilies;
+
+        const string FragDeclarations = @"in vec3 vWorld;
 in vec3 vNormal;
 in vec2 vUv;
 in vec4 vColor;
@@ -370,8 +428,10 @@ flat in vec2 vPhase;
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3;
 uniform vec4 uSliceHot;       // _CutHotColor
 uniform int uPrismGraph;
-uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal
+uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in
 uniform vec4 uParam;          // family-specific
+uniform vec4 uParam2;         // family-specific (9: camera fade near, inverse fade distance, alpha clip, fade flags)
+uniform vec3 uCamFwd;
 uniform vec4 uColorC;         // family-specific extra colour
 uniform float uAlpha;         // family-specific alpha
 uniform float uTime;
@@ -383,10 +443,11 @@ uniform vec3 uEmission;
 uniform float uCutoff;
 uniform int uVertexColor;
 uniform vec3 uCamPos;
-uniform vec3 uLightDir;       // toward the light
-uniform vec3 uLightColor;
-uniform vec3 uAmbient;
-uniform vec4 uFogColor;
+uniform vec3 uLightDir;       // toward the main light
+uniform vec3 uLightColor;     // the main light's linear colour x intensity (0 with no directional light)
+";
+
+        const string FragFamilies = @"uniform vec4 uFogColor;
 uniform vec4 uFog;            // mode, density, start, end (mode 0 = off)
 // ForcefieldCrackle (first-party ForcefieldCrackle.hlsl, translated): impacts from the controller's property block.
 uniform vec4 uImpactPos[16];
@@ -689,6 +750,53 @@ vec4 sliceColor(){
   }
   return vec4(color, 1.0);
 }
+// Family 9: Unity's built-in particle and sprite shaders and URP's unlit ones, each by its own
+// formula (SceneRenderer.ApplyBuiltinState sets the parameters). uParam: (colour scale (2 for the
+// legacy tinted pair), alpha mode (1 straight, 2 premultiplied in the shader, 3 modulate, 4 the
+// legacy premultiply shader's x vertex alpha), colour mode (0 multiply, 1 overlay, 2 colour,
+// 3 add/subtract/difference, 4 no vertex colour), opaque output alpha). uParam2: (camera fade
+// near, inverse fade distance (0 off), alpha clip (< 0 off), flags: 1 fade all channels,
+// 2 fade emission). uColorC: the add/subtract/difference factors.
+vec3 bRgbToHsv(vec3 c){
+  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 P = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 Q = mix(vec4(P.xyw, c.r), vec4(c.r, P.yzx), step(P.x, c.r));
+  float D = Q.x - min(Q.w, Q.y);
+  return vec3(abs(Q.z + (Q.w - Q.y) / (6.0 * D + 1e-4)), D / (Q.x + 1e-4), Q.x);
+}
+vec3 bHsvToRgb(vec3 c){
+  vec3 P = abs(fract(c.xxx + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+  return c.z * mix(vec3(1.0), clamp(P - 1.0, 0.0, 1.0), c.y);
+}
+vec4 builtinColor(vec4 tex){
+  vec4 vc = uVertexColor == 1 ? vColor : vec4(1.0);
+  vec4 albedo = tex * vDark * uParam.x;
+  int colorMode = int(uParam.z + 0.5), alphaMode = int(uParam.y + 0.5), flags = int(uParam2.w + 0.5);
+  if (colorMode == 0) albedo *= vc;
+  else if (colorMode == 1) {
+    albedo.rgb = mix(1.0 - 2.0 * (1.0 - albedo.rgb) * (1.0 - vc.rgb), 2.0 * albedo.rgb * vc.rgb, step(albedo.rgb, vec3(0.5)));
+    albedo.a *= vc.a;
+  } else if (colorMode == 2) {
+    vec3 a = bRgbToHsv(albedo.rgb), b = bRgbToHsv(vc.rgb);
+    albedo = vec4(bHsvToRgb(vec3(b.x, b.y, a.z)), albedo.a * vc.a);
+  } else if (colorMode == 3) {
+    albedo.rgb = albedo.rgb + vc.rgb * uColorC.x;
+    albedo.rgb = mix(albedo.rgb, abs(albedo.rgb), uColorC.y);
+    albedo.a *= vc.a;
+  }
+  if (uParam2.z >= 0.0 && albedo.a < uParam2.z) discard;
+  if (alphaMode == 2) albedo.rgb *= albedo.a;
+  else if (alphaMode == 3) albedo.rgb = mix(vec3(1.0), albedo.rgb, albedo.a);
+  else if (alphaMode == 4) albedo *= vc.a;
+  float fade = 1.0;
+  if (uParam2.y > 0.0) {
+    fade = clamp((dot(vWorld - uCamPos, uCamFwd) - uParam2.x) * uParam2.y, 0.0, 1.0);
+    if ((flags & 1) != 0) albedo *= fade; else albedo.a *= fade;
+  }
+  albedo.rgb += uEmission * ((flags & 2) != 0 ? fade : 1.0);
+  if (uParam.w > 0.5) albedo.a = 1.0;
+  return albedo;
+}
 void main(){
   if (uPrismGraph != 0) {
     // BlockGraph: corridor(material alpha). ExplodingBlockGraph: the erosion wipe feeds the
@@ -742,16 +850,18 @@ void main(){
     vec3 over = mix(vDark.rgb, mix(vec3(1.0), 2.0 * vDark.rgb, step(vDark.rgb, vec3(0.5))), fr);
     float t = clamp(length(uCamPos - vWorld) / 1000.0 - 0.2, 0.0, 1.0);
     col = vec4(mix(over, vBright.rgb, t), 1.0 - t);
+  } else if (uFamily == 9) {
+    col = builtinColor(tex);
   } else if (uFamily == 1) {
+    // URP Lit, metallic workflow (UrpLitGlsl). uParam: metallic, smoothness, specular highlights, environment reflections.
     vec4 base = vDark * tex;
-    float ndl = max(dot(N, uLightDir), 0.0);
-    col = vec4(base.rgb * (uLightColor * ndl + uAmbient) + uEmission, base.a);
+    col = vec4(urpLit(base.rgb, uParam.x, uParam.y, 1.0, N, V, uLightDir, uLightColor, uParam.z > 0.5, uParam.w > 0.5) + uEmission, base.a);
   } else {
     col = vDark * tex;
     col.rgb += uEmission;
   }
   if (uVesselVision == 1) col.rgb = vesselVision(col.rgb, vWorld, vNormal, vBright, vOrigin, vObj);
-  if (uVertexColor == 1) col *= vColor;
+  if (uVertexColor == 1 && uFamily != 9 && uFamily != 1) col *= vColor; // URP Lit ignores a mesh's vertex colours
   if (col.a < uCutoff) discard;
   if (uFog.x > 0.5) {
     float d = length(uCamPos - vWorld);
@@ -773,6 +883,10 @@ void main(){
             public uint SkinVbo;
             public object SkinRef;
             public int Frame;
+            /// <summary>TEXCOORD2/3 (vec4 each) in their own buffer, for compiled graphs and hand translations that read them.</summary>
+            public uint Uv23Vbo;
+            public object Uv2Ref, Uv3Ref;
+            public bool HasUv23;
         }
 
         sealed class MatState
@@ -806,7 +920,9 @@ void main(){
             public GraphProgramCache.Entry Graph; // a compiled Shader Graph draws this material (null = the scene program)
             public int AlphaMode;                 // compiled graph: 0 alpha, 1 premultiply, 2 additive, 3 multiply
             public bool GraphAlphaClip;           // compiled graph: clip against the graph's AlphaClipThreshold
-            public string Route;                  // family | compiled | fallback (ShaderDrawStats)
+            public string Route;                  // family | compiled | hand | builtin | fallback (ShaderDrawStats)
+            public BuiltinShader Builtin;         // family 9: which built-in formula
+            public Vector4 Param2;                // family-specific (9: camera fade, alpha clip, fade flags)
         }
 
         // The clock / animation properties the prism graphs read beyond the vertex attributes,
@@ -995,6 +1111,8 @@ void main(){
         };
         static readonly int IdCradleCentre = Shader.PropertyToID("_PrismCradleCentre"), IdCradleWeight = Shader.PropertyToID("_PrismCradleWeight"),
             IdCradleParams = Shader.PropertyToID("_PrismCradleParams");
+        static readonly int IdWarpCentre = Shader.PropertyToID("_PrismGravityWarpCentre"), IdWarpWeight = Shader.PropertyToID("_PrismGravityWarpWeight"),
+            IdWarpParams = Shader.PropertyToID("_PrismGravityWarpParams");
         static readonly int IdVisionTint = Shader.PropertyToID("_VesselVisionTint");
         static readonly int IdOccTarget = Shader.PropertyToID("_PrismOcclusionTarget"), IdOccParams = Shader.PropertyToID("_PrismOcclusionParams"), IdOccNear = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
@@ -1053,6 +1171,7 @@ void main(){
             _program.Set("uClock", Shader.GetGlobalFloat(IdPrismClock) is var clk && clk > 0 ? clk : Time.time);
             _program.Set("uTime", Time.time);
             SetVec3("uCamPos", camPos);
+            SetVec3("uCamFwd", camera.transform.forward);
             SetLighting();
             SetFog();
             BeginGraphFrame(camera, view, proj, viewProj, camPos, width, height);
@@ -1069,6 +1188,10 @@ void main(){
             SetGlobalVec4Array("uCradleWeight", IdCradleWeight, 4);
             var cp = Shader.GetGlobalVector(IdCradleParams);
             _program.Set("uCradleParams", cp.x, cp.y, cp.z, cp.w);
+            SetGlobalVec4Array("uWarpCentre", IdWarpCentre, 4);
+            SetGlobalVec4Array("uWarpWeight", IdWarpWeight, 4);
+            var wp = Shader.GetGlobalVector(IdWarpParams);
+            _program.Set("uWarpParams", wp.x, wp.y, wp.z, wp.w);
             foreach (var (u, id) in s_visionGlobals)
             {
                 var v = Shader.GetGlobalVector(id);
@@ -1172,7 +1295,7 @@ void main(){
                 Time = Time.time, DeltaTime = Time.deltaTime,
                 Width = width, Height = height, Near = camera.nearClipPlane, Far = camera.farClipPlane,
                 Orthographic = camera.orthographic, OrthoSize = camera.orthographicSize, Aspect = height > 0 ? (float)width / height : 1f,
-                LightDir = _lightDir, LightColor = _lightColor, Ambient = _ambient,
+                LightDir = _lightDir, LightColor = _lightColor, SH = _sh, EnvParams = _envParams,
                 FogColor = _fogColor, Fog = _fog,
             });
             ShaderDrawStats.BeginFrame(SceneManager.GetActiveScene().name);
@@ -1564,8 +1687,35 @@ void main(){
         {
             var st = new MatState { Revision = m.Revision, FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue, Alpha = 1f, Route = "family" };
             // Hand-tuned families are keyed by the shader asset's guid (a renamed graph keeps its family).
+            // Only the prism graphs (instanced, entity overrides, the clock block), the slice and the
+            // forcefield win over a compilation; every other shader draws from its own graph or hand
+            // translation, with the approximations further down as the fallback when that fails.
             var family = MaterialFamilies.For(m.shader);
-            if (family == MaterialFamilies.Kind.Snow)
+            string why = null;
+            if (family is MaterialFamilies.Kind.BlockGraph or MaterialFamilies.Kind.ExplodingBlockGraph)
+            {
+                // FresnelColors -> FresnelPower4 (a fixed fourth power); the rim sinks toward the base
+                // over _SqrDistance (DistanceSpreadAndColors).
+                st.Family = 2; st.DarkId = IdDark; st.BrightId = IdBright;
+                st.MaxSqrDist = m.GetFloat(IdSqrDistance);
+            }
+            else if (family == MaterialFamilies.Kind.PrismSlice)
+            {
+                st.Family = 8; st.DarkId = IdDark; st.BrightId = IdBright;
+                var mt = m.GetVector("_SliceMotionTimes");
+                var dw = m.GetVector("_SliceDissolveWindow");
+                st.SliceP0 = new Vector4(mt.x, mt.y, mt.z, 0f);
+                st.SliceP1 = new Vector4(dw.x, dw.y, m.GetFloat("_FresnelPower"), m.GetFloat("_CutGlow"));
+                st.SliceP2 = new Vector4(m.GetFloat("_CutShade"), m.GetFloat("_SeamCool"), m.GetFloat("_RimWidth"), m.GetFloat("_DissolveNoiseScale"));
+                st.SliceP3 = new Vector4(m.GetFloat("_DissolveNoise"), m.GetFloat("_EmberBand"), m.GetFloat("_EmberGlow"), m.GetFloat("_EmberWhite"));
+                st.SliceHot = m.GetShaderColor(IdCutHot);
+            }
+            else if (family == MaterialFamilies.Kind.Forcefield)
+            {
+                st.Family = 7; // hand-written: Blend One One, ZWrite Off, Cull Off (see the fix-up below)
+            }
+            else if (TryCompiledGraph(m, st, out why)) { }
+            else if (family == MaterialFamilies.Kind.Snow)
             {
                 st.Family = 3; st.DarkId = st.BrightId = IdColor;
                 st.Alpha = m.GetFloat("_Opacity");
@@ -1577,27 +1727,12 @@ void main(){
                 st.Family = 4; st.DarkId = st.BrightId = Shader.PropertyToID("_Straight_Color");
                 st.Alpha = m.GetFloat("_alpha");
                 st.Param = new Vector4(1.91f, 0, 0, 0);
-                st.ColorC = new Color(0.1086654f, 0.5329778f, 1.0504318f, 1f); // the graph's rim ColorNode
+                st.ColorC = new Color(0.0063706073f, 0.0071669333f, 0.02309345f, 0.4117647f); // the graph's rim ColorNode
             }
             else if (family == MaterialFamilies.Kind.Spindle)
             {
                 st.Family = 5; st.DarkId = IdDullColor; st.BrightId = IdBright;
                 st.Param = new Vector4(m.GetFloat("_CellDensity"), m.GetFloat("_Distance"), m.GetFloat("_Phase"), 0);
-            }
-            else if (family == MaterialFamilies.Kind.PrismSlice)
-            {
-                st.Family = 8; st.DarkId = IdDark; st.BrightId = IdBright;
-                var mt = m.GetVector("_SliceMotionTimes");
-                var dw = m.GetVector("_SliceDissolveWindow");
-                st.SliceP0 = new Vector4(mt.x, mt.y, mt.z, 0f);
-                st.SliceP1 = new Vector4(dw.x, dw.y, m.GetFloat("_FresnelPower"), m.GetFloat("_CutGlow"));
-                st.SliceP2 = new Vector4(m.GetFloat("_CutShade"), m.GetFloat("_SeamCool"), m.GetFloat("_RimWidth"), m.GetFloat("_DissolveNoiseScale"));
-                st.SliceP3 = new Vector4(m.GetFloat("_DissolveNoise"), m.GetFloat("_EmberBand"), m.GetFloat("_EmberGlow"), m.GetFloat("_EmberWhite"));
-                st.SliceHot = m.GetColor("_CutHotColor");
-            }
-            else if (family == MaterialFamilies.Kind.Forcefield)
-            {
-                st.Family = 7; // hand-written: Blend One One, ZWrite Off, Cull Off (see the fix-up below)
             }
             else if (family == MaterialFamilies.Kind.Crystal)
             {
@@ -1605,11 +1740,23 @@ void main(){
             }
             else if (family == MaterialFamilies.Kind.Vessel)
             {
-                // Base = lerp(Color1, Color2, dot(N,N)) = Color2, times _ColorMultiplier.
                 st.Family = 0; st.DarkId = st.BrightId = IdColor2;
                 st.VesselMultiplier = m.HasStoredProperty(IdColorMul) ? m.GetFloat(IdColorMul) : 1f;
                 st.VesselVision = true;
             }
+            // Unity's built-in particle and sprite shaders and URP's unlit ones: no project source,
+            // so each is drawn by name with its own formula (family 9, ApplyBuiltinState).
+            else if (BuiltinFor(m.shader?.name) is var builtin && builtin != BuiltinShader.None)
+            {
+                st.Family = 9; st.Builtin = builtin; st.Route = "builtin";
+            }
+            else if (IsUrpLit(m.shader?.name))
+            {
+                st.Family = 1; st.Route = "builtin";
+                st.DarkId = st.BrightId = m.HasProperty(IdBaseColor) ? IdBaseColor : IdColor;
+                st.Param = LitParams(m);
+            }
+            // Untranslated shaders whose property names say which pair they shade with.
             else if (m.HasStoredProperty(IdDark) && m.HasStoredProperty(IdBright))
             {
                 st.Family = 2; st.DarkId = IdDark; st.BrightId = IdBright;
@@ -1619,19 +1766,23 @@ void main(){
             else if (m.HasStoredProperty(IdDull) && m.HasStoredProperty(IdBrightCrystal)) { st.Family = 2; st.DarkId = IdDull; st.BrightId = IdBrightCrystal; }
             else if (m.HasStoredProperty(IdDullColor) && m.HasStoredProperty(IdBright)) { st.Family = 2; st.DarkId = IdDullColor; st.BrightId = IdBright; }
             else if (m.HasStoredProperty(IdColor1) && m.HasStoredProperty(IdColor2)) { st.Family = 2; st.DarkId = IdColor1; st.BrightId = IdColor2; st.FresPow = 2f; }
-            else if (TryCompiledGraph(m, st, out var why)) { }
             else
             {
                 string sh = m.shader?.name ?? "";
-                st.Family = sh.Contains("Lit") && !sh.Contains("Unlit") || sh == "Standard" || sh.StartsWith("Legacy Shaders/Diffuse") ? 1 : 0;
+                st.Family = sh.Contains("Lit") && !sh.Contains("Unlit") || sh.StartsWith("Legacy Shaders/Diffuse") ? 1 : 0;
                 st.DarkId = m.HasStoredProperty(IdBaseColor) ? IdBaseColor : m.HasStoredProperty(IdColor) ? IdColor : 0;
                 st.BrightId = st.DarkId;
+                if (st.Family == 1) st.Param = LitParams(m);
                 st.Route = "fallback";
                 MaterialFamilies.WarnUntranslated(m.shader, st.Family == 1 ? "Lit (base colour x texture, N.L)" : "Unlit (base colour x texture)", why);
             }
+            if (st.Graph == null && family is not (MaterialFamilies.Kind.None or MaterialFamilies.Kind.BlockGraph or MaterialFamilies.Kind.ExplodingBlockGraph
+                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.Forcefield))
+                st.Route = "family-fallback";
 
-            st.Dark = st.DarkId != 0 ? m.GetColor(st.DarkId) : Color.white;
-            st.Bright = st.BrightId != 0 ? m.GetColor(st.BrightId) : Color.white;
+            // The GPU's values: a plain colour property linearised, an HDR one as stored (ColorSpaceRules).
+            st.Dark = st.DarkId != 0 ? m.GetShaderColor(st.DarkId) : Color.white;
+            st.Bright = st.BrightId != 0 ? m.GetShaderColor(st.BrightId) : Color.white;
             if (st.VesselMultiplier > 0f) { st.Dark = Mul(st.Dark, st.VesselMultiplier); st.Bright = st.Dark; }
 
             st.Tex = m.HasStoredProperty(IdBaseMap) ? m.GetTexture(IdBaseMap) : m.GetTexture(IdMainTex);
@@ -1642,7 +1793,7 @@ void main(){
             }
             if (m.HasStoredProperty(IdEmission) && (m.IsKeywordEnabled("_EMISSION") || st.Family == 0))
             {
-                var e = m.GetColor(IdEmission);
+                var e = m.GetShaderColor(IdEmission);
                 st.Emission = new EVector3(e.r, e.g, e.b);
             }
 
@@ -1670,6 +1821,7 @@ void main(){
                 st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
                 st.ZWrite = false; st.Cull = 0; st.Cutoff = -1f;
             }
+            if (st.Builtin != BuiltinShader.None) ApplyBuiltinState(m, st);
             if (st.Graph != null) ApplyGraphState(m, st);
             else if (family == MaterialFamilies.Kind.None && st.Route == "family") st.Route = "heuristic"; // matched by its property names, not its guid
             st.PrismGraph = family == MaterialFamilies.Kind.BlockGraph ? 1 : family == MaterialFamilies.Kind.ExplodingBlockGraph ? 2 : 0;
@@ -1682,13 +1834,156 @@ void main(){
             st.Layout = st.Family == 8 ? SliceLayout : ExtLayout;
             foreach (var p in st.Layout)
             {
-                var v = p.Count == 1 ? new Vector4(m.GetFloat(p.Id), 0, 0, 0) : p.IsColor ? ToV4(m.GetColor(p.Id)) : m.GetVector(p.Id);
+                var v = p.Count == 1 ? new Vector4(m.GetFloat(p.Id), 0, 0, 0) : m.GetShaderVector(p.Id);
                 for (int k = 0; k < p.Count; k++) st.Ext[p.Offset + k] = Comp(v, k);
             }
             return st;
         }
 
         static readonly int IdBlendMode = Shader.PropertyToID("_Blend");
+        static readonly int IdCutHot = Shader.PropertyToID("_CutHotColor");
+        static readonly int IdTintColor = Shader.PropertyToID("_TintColor");
+        static readonly int IdColorAddSubDiff = Shader.PropertyToID("_ColorAddSubDiff"), IdBaseColorAddSubDiff = Shader.PropertyToID("_BaseColorAddSubDiff");
+        static readonly int IdCameraFadeParams = Shader.PropertyToID("_CameraFadeParams");
+
+        static readonly int IdMetallic = Shader.PropertyToID("_Metallic"), IdSmoothness = Shader.PropertyToID("_Smoothness"), IdGlossiness = Shader.PropertyToID("_Glossiness");
+
+        /// <summary>The shaders family 1 draws with URP's Lit lighting (UrpLitGlsl): URP Lit, and the built-in Standard as its nearest.</summary>
+        static bool IsUrpLit(string shaderName) => shaderName is "Universal Render Pipeline/Lit" or "Universal Render Pipeline/Simple Lit"
+            or "Universal Render Pipeline/Particles/Lit" or "Standard" or "Standard (Specular setup)";
+
+        /// <summary>Family 1's uParam: metallic, smoothness, specular highlights on, environment reflections on (texture maps not read).</summary>
+        static Vector4 LitParams(Material m)
+        {
+            float metallic = m.HasProperty(IdMetallic) ? m.GetFloat(IdMetallic) : 0f;
+            float smoothness = m.HasProperty(IdSmoothness) ? m.GetFloat(IdSmoothness) : m.HasProperty(IdGlossiness) ? m.GetFloat(IdGlossiness) : 0f;
+            bool highlights = !m.IsKeywordEnabled("_SPECULARHIGHLIGHTS_OFF");
+            bool reflections = !m.IsKeywordEnabled("_ENVIRONMENTREFLECTIONS_OFF") && !m.IsKeywordEnabled("_GLOSSYREFLECTIONS_OFF");
+            if (m.shader?.name?.StartsWith("Legacy Shaders/Diffuse", StringComparison.Ordinal) == true) { metallic = 0f; smoothness = 0f; highlights = false; reflections = false; }
+            return new Vector4(Math.Clamp(metallic, 0f, 1f), Math.Clamp(smoothness, 0f, 1f), highlights ? 1f : 0f, reflections ? 1f : 0f);
+        }
+
+        /// <summary>The built-in shaders family 9 draws, each by its source's own formula.</summary>
+        public enum BuiltinShader
+        {
+            None,
+            /// <summary>Particles/Standard Unlit: _MainTex x _Color mixed with the vertex colour by the colour mode; blend state from the material.</summary>
+            StandardParticlesUnlit,
+            /// <summary>Legacy Shaders/Particles/Alpha Blended: 2 x vertex colour x _TintColor x _MainTex, SrcAlpha OneMinusSrcAlpha.</summary>
+            LegacyAlphaBlended,
+            /// <summary>Legacy Shaders/Particles/Additive: the same colour, SrcAlpha One.</summary>
+            LegacyAdditive,
+            /// <summary>Legacy Shaders/Particles/Alpha Blended Premultiply (Default-Line, Default-Particle): vertex colour x _MainTex x vertex alpha, One OneMinusSrcAlpha.</summary>
+            LegacyPremultiply,
+            /// <summary>Sprites/Default: _MainTex x vertex colour x _Color, premultiplied in the shader, One OneMinusSrcAlpha.</summary>
+            SpritesDefault,
+            /// <summary>URP Unlit: _BaseMap x _BaseColor, no vertex colour; surface and blend from the material.</summary>
+            UrpUnlit,
+            /// <summary>URP Particles/Unlit: _BaseMap x _BaseColor mixed with the vertex colour; surface and blend from the material.</summary>
+            UrpParticlesUnlit,
+        }
+
+        public static BuiltinShader BuiltinFor(string shaderName) => shaderName switch
+        {
+            "Particles/Standard Unlit" => BuiltinShader.StandardParticlesUnlit,
+            "Legacy Shaders/Particles/Alpha Blended" => BuiltinShader.LegacyAlphaBlended,
+            "Legacy Shaders/Particles/Additive" => BuiltinShader.LegacyAdditive,
+            BuiltinMaterials.ShaderName => BuiltinShader.LegacyPremultiply,
+            "Sprites/Default" => BuiltinShader.SpritesDefault,
+            "Universal Render Pipeline/Unlit" => BuiltinShader.UrpUnlit,
+            "Universal Render Pipeline/Particles/Unlit" => BuiltinShader.UrpParticlesUnlit,
+            _ => BuiltinShader.None,
+        };
+
+        /// <summary>
+        /// A built-in shader's inputs and render state as its source declares them (family 9). The
+        /// legacy and sprite shaders fix Blend, ZWrite and Cull in ShaderLab; Standard Particles and
+        /// URP's take them from the material (read above) and their keywords. Soft particles (a
+        /// fade against the scene's depth) and flipbook blending are not drawn.
+        /// </summary>
+        static void ApplyBuiltinState(Material m, MatState st)
+        {
+            var k = st.Builtin;
+            bool urp = k is BuiltinShader.UrpUnlit or BuiltinShader.UrpParticlesUnlit;
+            bool particles = k is BuiltinShader.StandardParticlesUnlit or BuiltinShader.UrpParticlesUnlit;
+            int texId = urp ? IdBaseMap : IdMainTex;
+            st.Tex = m.GetTexture(texId);
+            st.TexST = st.Tex != null ? m.GetTextureScaleOffset(urp ? "_BaseMap" : "_MainTex") : new Vector4(1, 1, 0, 0);
+            st.DarkId = k switch
+            {
+                BuiltinShader.LegacyAlphaBlended or BuiltinShader.LegacyAdditive => IdTintColor,
+                BuiltinShader.LegacyPremultiply => 0,
+                _ => urp ? IdBaseColor : IdColor,
+            };
+            st.BrightId = st.DarkId;
+            st.Dark = st.Bright = st.DarkId != 0 ? m.GetShaderColor(st.DarkId) : Color.white;
+            if (k is BuiltinShader.UrpUnlit or BuiltinShader.SpritesDefault or BuiltinShader.LegacyAlphaBlended
+                    or BuiltinShader.LegacyAdditive or BuiltinShader.LegacyPremultiply)
+                st.Emission = default; // no emission in these sources
+
+            int colorMode = k == BuiltinShader.UrpUnlit ? 4
+                : !particles ? 0
+                : m.IsKeywordEnabled("_COLOROVERLAY_ON") ? 1 : m.IsKeywordEnabled("_COLORCOLOR_ON") ? 2 : m.IsKeywordEnabled("_COLORADDSUBDIFF_ON") ? 3 : 0;
+            if (colorMode == 3)
+            {
+                var asd = m.GetVector(urp ? IdBaseColorAddSubDiff : IdColorAddSubDiff);
+                st.ColorC = new Color(asd.x, asd.y, asd.z, asd.w);
+            }
+            bool premultiply = m.IsKeywordEnabled("_ALPHAPREMULTIPLY_ON"), modulate = m.IsKeywordEnabled("_ALPHAMODULATE_ON");
+            int alphaMode = 1, flags = 0;
+            bool opaqueAlpha = false;
+            float clip = -1f;
+            switch (k)
+            {
+                case BuiltinShader.StandardParticlesUnlit:
+                {
+                    // fragParticleUnlit: alpha survives only under _ALPHABLEND_ON / _ALPHAPREMULTIPLY_ON;
+                    // a premultiplied material is premultiplied in its texture, not in the shader.
+                    alphaMode = modulate ? 3 : 1;
+                    opaqueAlpha = !m.IsKeywordEnabled("_ALPHABLEND_ON") && !premultiply;
+                    flags = (premultiply ? 1 : 0) | 2;
+                    if (m.IsKeywordEnabled("_ALPHATEST_ON")) clip = m.GetFloat(IdCutoff) - 0.0001f;
+                    st.Src = Blend((int)m.GetFloat(IdSrc));
+                    st.Dst = Blend((int)m.GetFloat(IdDst));
+                    st.Transparent = m.renderQueue >= 2501 || st.Src != BlendingFactor.One || st.Dst != BlendingFactor.Zero;
+                    st.ZWrite = m.GetFloat(IdZWrite) >= 0.5f;
+                    st.Cull = (int)m.GetFloat(IdCull);
+                    break;
+                }
+                case BuiltinShader.UrpUnlit:
+                case BuiltinShader.UrpParticlesUnlit:
+                    // SampleAlbedo / UnlitPassFragment: AlphaModulate, and (particles only) AlphaPremultiply;
+                    // OutputAlpha drops alpha on an opaque surface.
+                    alphaMode = modulate ? 3 : premultiply && k == BuiltinShader.UrpParticlesUnlit ? 2 : 1;
+                    opaqueAlpha = !(m.HasStoredProperty(IdSurface) ? m.GetFloat(IdSurface) >= 0.5f : st.Transparent);
+                    flags = premultiply ? 1 : 0;
+                    if (m.IsKeywordEnabled("_ALPHATEST_ON") || m.GetFloat(IdAlphaClip) >= 0.5f) clip = m.GetFloat(IdCutoff);
+                    break;
+                case BuiltinShader.SpritesDefault:
+                    alphaMode = 2; flags = 1;
+                    st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; st.Cull = 0;
+                    break;
+                case BuiltinShader.LegacyPremultiply:
+                    alphaMode = 4; flags = 1;
+                    st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; st.Cull = 0;
+                    break;
+                default: // the legacy tinted pair
+                    st.Transparent = true; st.Src = BlendingFactor.SrcAlpha;
+                    st.Dst = k == BuiltinShader.LegacyAdditive ? BlendingFactor.One : BlendingFactor.OneMinusSrcAlpha;
+                    st.ZWrite = false; st.Cull = 0;
+                    break;
+            }
+            float fadeNear = 0f, fadeInv = 0f;
+            if (particles && m.IsKeywordEnabled("_FADING_ON"))
+            {
+                var cf = m.GetVector(IdCameraFadeParams);
+                if (float.IsFinite(cf.y) && cf.y > 0f) { fadeNear = cf.x; fadeInv = cf.y; }
+            }
+            float scale = k is BuiltinShader.LegacyAlphaBlended or BuiltinShader.LegacyAdditive ? 2f : 1f;
+            st.Param = new Vector4(scale, alphaMode, colorMode, opaqueAlpha ? 1f : 0f);
+            st.Param2 = new Vector4(fadeNear, fadeInv, clip, flags);
+            st.Cutoff = -1f; // clipped in builtinColor, before the alpha mode
+        }
 
         /// <summary>
         /// The Shader Graph compiler's route: a material whose shader is a graph no family covers
@@ -1730,8 +2025,8 @@ void main(){
             st.ZWrite = over && m.HasStoredProperty(IdZWrite) ? m.GetFloat(IdZWrite) >= 0.5f : g.ZWrite >= 0 ? g.ZWrite == 1 : !transparent;
             st.GraphAlphaClip = over && m.HasStoredProperty(IdAlphaClip) ? m.GetFloat(IdAlphaClip) >= 0.5f : g.AlphaClip;
             st.Cutoff = -1f; // the graph clips against its own threshold
-            // A material saved with the shader's queue (-1) loads as 2000: take the queue the graph implies.
-            if (m.renderQueue == 2000) st.Queue = g.Queue >= 0 ? g.Queue : transparent ? 3000 : st.GraphAlphaClip ? 2450 : 2000;
+            // A material on the shader's queue (-1) takes the one the graph implies, with its surface override.
+            if (!m.HasCustomRenderQueue || m.renderQueue == 2000) st.Queue = g.Queue >= 0 ? g.Queue : transparent ? 3000 : st.GraphAlphaClip ? 2450 : 2000;
         }
 
         static Color Mul(Color c, float k) => new(c.r * k, c.g * k, c.b * k, c.a);
@@ -1810,6 +2105,7 @@ void main(){
             _program.Set("uMaxSqrDist", st.MaxSqrDist);
             _program.Set("uAlpha", st.Alpha);
             _program.Set("uParam", st.Param.x, st.Param.y, st.Param.z, st.Param.w);
+            _program.Set("uParam2", st.Param2.x, st.Param2.y, st.Param2.z, st.Param2.w);
             _program.Set("uColorC", st.ColorC.r, st.ColorC.g, st.ColorC.b, st.ColorC.a);
             _program.Set("uCutoff", st.Cutoff);
             _program.Set("uTexST", st.TexST.x, st.TexST.y, st.TexST.z, st.TexST.w);
@@ -1860,8 +2156,15 @@ void main(){
             bool perItem = false;
             foreach (var it in items)
                 if (it.Renderer != null && it.Renderer.HasPropertyBlock()) { perItem = true; break; }
+            bool offsetDepth = e.Graph.OffsetFactor != 0f || e.Graph.OffsetUnits != 0f;
+            if (offsetDepth)
+            {
+                _gl.Enable(EnableCap.PolygonOffsetFill);
+                _gl.PolygonOffset(e.Graph.OffsetFactor, e.Graph.OffsetUnits);
+            }
             if (!perItem)
             {
+                BindGraphUv23(entry);
                 _graphs.Bind(e, first.Material, null, st.Transparent, st.GraphAlphaClip, st.AlphaMode);
                 _gl.DrawElementsInstanced(GlPrimitive.Triangles, count, DrawElementsType.UnsignedInt, offset, (uint)items.Count);
                 DrawCalls++;
@@ -1874,11 +2177,13 @@ void main(){
                     var block = it.Renderer != null && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
                     _graphs.Bind(e, it.Material, block, st.Transparent, st.GraphAlphaClip, st.AlphaMode);
                     BindInstanceAttributes(i);
+                    BindGraphUv23(entry);
                     _gl.DrawElementsInstanced(GlPrimitive.Triangles, count, DrawElementsType.UnsignedInt, offset, 1);
                     DrawCalls++;
                 }
-                BindInstanceAttributes();
             }
+            if (offsetDepth) _gl.Disable(EnableCap.PolygonOffsetFill);
+            BindInstanceAttributes();
             Instances += items.Count;
             _program.Use();
         }
@@ -1898,7 +2203,7 @@ void main(){
             var m = it.Material;
             var b = it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
             float F(int id) => b != null && b.HasFloat(id) ? b.GetFloat(id) : m.HasStoredProperty(id) ? m.GetFloat(id) : 0f;
-            Color C(int id) => b != null && b.HasColor(id) ? b.GetColor(id) : m.HasStoredProperty(id) ? m.GetColor(id) : Color.black;
+            Color C(int id) => b != null && b.TryGetShaderVector(id, out var v) ? new Color(v.x, v.y, v.z, v.w) : m.HasStoredProperty(id) ? m.GetShaderColor(id) : Color.black;
             var f = IdCrackleFloats;
             _program.Set("uCrackleP0", F(f[0]), F(f[1]), F(f[2]), F(f[3]));
             _program.Set("uCrackleP1", F(f[4]), F(f[5]), F(f[6]), 0f);
@@ -1977,7 +2282,8 @@ void main(){
                 float halfWidth = 0.5f * widthMul * (curve != null ? curve.Evaluate(u) : 1f);
                 verts[i * 2] = p - side * halfWidth;
                 verts[i * 2 + 1] = p + side * halfWidth;
-                var c = gradient != null ? gradient.Evaluate(u) : Color.white;
+                // A line's or trail's colour is sRGB; its vertices reach the GPU linear (ColorSpaceRules).
+                var c = ColorSpaceRules.Linear(gradient != null ? gradient.Evaluate(u) : Color.white);
                 cols[i * 2] = c; cols[i * 2 + 1] = c;
                 uvs[i * 2] = new Vector2(u, 0f); uvs[i * 2 + 1] = new Vector2(u, 1f);
                 if (i < n - 1)
@@ -2073,7 +2379,7 @@ void main(){
                 int o = i * 4;
                 verts[o] = p.Position - a - b; verts[o + 1] = p.Position + a - b;
                 verts[o + 2] = p.Position + a + b; verts[o + 3] = p.Position - a + b;
-                cols[o] = cols[o + 1] = cols[o + 2] = cols[o + 3] = p.Color;
+                cols[o] = cols[o + 1] = cols[o + 2] = cols[o + 3] = ColorSpaceRules.Linear(p.Color);
                 uvs[o] = new Vector2(0f, 0f); uvs[o + 1] = new Vector2(1f, 0f); uvs[o + 2] = new Vector2(1f, 1f); uvs[o + 3] = new Vector2(0f, 1f);
                 int t = i * 6;
                 tris[t] = o; tris[t + 1] = o + 2; tris[t + 2] = o + 1;
@@ -2104,7 +2410,22 @@ void main(){
 
         readonly List<Mesh> _procMeshes = new();
         static Material s_additiveLine;
-        static Material AdditiveLineMaterial => s_additiveLine ??= new Material(Shader.Find("Legacy Shaders/Particles/Additive")) { name = "Procedural-Additive", renderQueue = 3000 };
+        /// <summary>
+        /// The procedural lines' material: the legacy additive particle shader (2 x vertex colour x
+        /// _TintColor x texture) with the tint that makes it exactly the line's own colour (linear 0.5,
+        /// alpha 0.5), since these lines stand in for VFX Graph output, not for an authored material.
+        /// </summary>
+        static Material AdditiveLineMaterial
+        {
+            get
+            {
+                if (s_additiveLine != null) return s_additiveLine;
+                s_additiveLine = new Material(Shader.Find("Legacy Shaders/Particles/Additive")) { name = "Procedural-Additive", renderQueue = 3000 };
+                float g = Mathf.LinearToGammaSpace(0.5f);
+                s_additiveLine.SetColor("_TintColor", new Color(g, g, g, 0.5f));
+                return s_additiveLine;
+            }
+        }
 
         void CollectProceduralLines(int mask, EVector3 camPos)
         {
@@ -2286,21 +2607,23 @@ void main(){
                 var b = it.Renderer.PropertyBlockFor(it.Submesh);
                 if (b != null)
                 {
-                    if (st.DarkId != 0 && b.HasColor(st.DarkId)) dark = b.GetColor(st.DarkId);
-                    if (st.BrightId != 0 && b.HasColor(st.BrightId)) bright = b.GetColor(st.BrightId);
+                    // A block's colour reaches the GPU linearised, its vector raw (ColorSpaceRules).
+                    if (st.DarkId != 0 && b.TryGetShaderVector(st.DarkId, out var dv)) dark = new Color(dv.x, dv.y, dv.z, dv.w);
+                    if (st.BrightId != 0 && b.TryGetShaderVector(st.BrightId, out var bv)) bright = new Color(bv.x, bv.y, bv.z, bv.w);
                     if (b.HasFloat(IdGrowRate)) { growRate = b.GetFloat(IdGrowRate); growStart = b.GetFloat(IdGrowStart); }
                     if (b.HasVector(IdGrowFrac)) frac = b.GetVector(IdGrowFrac);
                 }
             }
-            if (!st.Transparent && st.Cutoff < 0f) { dark.a = 1f; bright.a = 1f; }
-            // Material colours are the linear intensities the GPU receives (Docs/PALETTE.md §3,
-            // measured on screen): no de-gamma step.
+            if (!st.Transparent && st.Cutoff < 0f && st.Family != 9) { dark.a = 1f; bright.a = 1f; }
+            // dark/bright are already the GPU's values: the material's through GetShaderColor, a
+            // block's linearised, an entity override verbatim (the game converts those itself,
+            // PrismRenderService.ApplyColorSpace).
             if (st.VesselVision)
             {
                 // _VesselVisionTint (a per-material-index property block, VesselVisionShading.Stamp);
                 // alpha 0 = nobody stamped this object, so the law leaves it alone.
                 var tb = ent < 0 && it.Renderer != null && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
-                bright = tb != null && tb.HasColor(IdVisionTint) ? tb.GetColor(IdVisionTint) : new Color(0, 0, 0, 0);
+                bright = tb != null && tb.TryGetShaderVector(IdVisionTint, out var tv) ? new Color(tv.x, tv.y, tv.z, tv.w) : new Color(0, 0, 0, 0);
             }
             d[o + 16] = dark.r; d[o + 17] = dark.g; d[o + 18] = dark.b; d[o + 19] = dark.a;
             d[o + 20] = bright.r; d[o + 21] = bright.g; d[o + 22] = bright.b; d[o + 23] = bright.a;
@@ -2345,16 +2668,18 @@ void main(){
             var cols = mesh.RenderColors;
             var tans = mesh.RenderTangents;
             var uv1 = mesh.RenderUv1Wide;
+            var uv2 = mesh.RenderUvWide(2);
+            var uv3 = mesh.RenderUvWide(3);
             int subs = mesh.RenderSubmeshCount;
             bool dirty = e.Vao == 0 || !ReferenceEquals(e.VertsRef, verts) || !ReferenceEquals(e.NormRef, norms) || !ReferenceEquals(e.TanRef, tans) || !ReferenceEquals(e.Uv1Ref, uv1)
                 || !ReferenceEquals(e.UvRef, uvs) || !ReferenceEquals(e.ColRef, cols) || e.SubRefs.Length != subs
-                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights);
+                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights) || !ReferenceEquals(e.Uv2Ref, uv2) || !ReferenceEquals(e.Uv3Ref, uv3);
             if (!dirty)
                 for (int i = 0; i < subs; i++)
                     if (!ReferenceEquals(e.SubRefs[i], mesh.RenderSubmesh(i))) { dirty = true; break; }
             if (!dirty) return e;
 
-            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1;
+            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1; e.Uv2Ref = uv2; e.Uv3Ref = uv3;
             e.SubRefs = new object[subs];
             int n = verts.Length;
             if (n == 0) return null;
@@ -2437,17 +2762,64 @@ void main(){
                 _gl.DisableVertexAttribArray(12);
                 _gl.DisableVertexAttribArray(13);
             }
+            e.HasUv23 = uv2 != null || uv3 != null;
+            if (e.HasUv23)
+            {
+                var extra = new float[n * 8];
+                for (int i = 0; i < n; i++)
+                {
+                    int o = i * 8;
+                    if (uv2 != null) { extra[o] = uv2[i].x; extra[o + 1] = uv2[i].y; extra[o + 2] = uv2[i].z; extra[o + 3] = uv2[i].w; }
+                    if (uv3 != null) { extra[o + 4] = uv3[i].x; extra[o + 5] = uv3[i].y; extra[o + 6] = uv3[i].z; extra[o + 7] = uv3[i].w; }
+                }
+                if (e.Uv23Vbo == 0) e.Uv23Vbo = _gl.GenBuffer();
+                _gl.BindBuffer(BufferTargetARB.ArrayBuffer, e.Uv23Vbo);
+                fixed (float* xp = extra) _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(extra.Length * sizeof(float)), xp, BufferUsageARB.StaticDraw);
+            }
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, e.Ebo);
             fixed (uint* p = idx) _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(idx.Length * sizeof(uint)), p, BufferUsageARB.StaticDraw);
             _gl.BindVertexArray(0);
             return e;
         }
 
+        /// <summary>
+        /// A compiled graph reads TEXCOORD2/3 at locations 10/11, which the scene program uses for
+        /// per-instance data: point them at the mesh's own channels (or a constant zero, as a mesh
+        /// without the channel reads), leaving the instance buffer bound for the next pointer.
+        /// <see cref="BindInstanceAttributes"/> restores them.
+        /// </summary>
+        unsafe void BindGraphUv23(MeshEntry entry)
+        {
+            if (entry.HasUv23)
+            {
+                _gl.BindBuffer(BufferTargetARB.ArrayBuffer, entry.Uv23Vbo);
+                _gl.EnableVertexAttribArray(10); _gl.VertexAttribPointer(10, 4, VertexAttribPointerType.Float, false, 8 * sizeof(float), (void*)0);
+                _gl.EnableVertexAttribArray(11); _gl.VertexAttribPointer(11, 4, VertexAttribPointerType.Float, false, 8 * sizeof(float), (void*)(4 * sizeof(float)));
+                _gl.VertexAttribDivisor(10, 0);
+                _gl.VertexAttribDivisor(11, 0);
+                _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _instanceVbo);
+            }
+            else
+            {
+                _gl.DisableVertexAttribArray(10);
+                _gl.DisableVertexAttribArray(11);
+                _gl.VertexAttrib4(10, 0f, 0f, 0f, 0f);
+                _gl.VertexAttrib4(11, 0f, 0f, 0f, 0f);
+            }
+        }
+
         readonly List<Light> _lights = new();
 
-        void SetLighting()
+        /// <summary>
+        /// The ambient probe and default reflection the Lit shading reads (<see cref="EnvironmentLighting"/>,
+        /// updated by the host each frame); null draws with a flat ambient of the sky colour and no reflection.
+        /// </summary>
+        public EnvironmentLighting EnvironmentLight { get; set; }
+
+        unsafe void SetLighting()
         {
-            // The strongest enabled directional light is the sun; otherwise a soft key light.
+            // URP's main light: RenderSettings.sun, else the brightest enabled directional light.
+            // None (every gameplay scene) means no direct light, as in Unity.
             Light sun = RenderSettings.sun;
             if (sun == null || !sun.isActiveAndEnabled)
             {
@@ -2456,20 +2828,37 @@ void main(){
                 foreach (var l in _lights)
                     if (l.type == LightType.Directional && l.isActiveAndEnabled && (sun == null || l.intensity > sun.intensity)) sun = l;
             }
-            EVector3 toLight = sun != null ? -sun.transform.forward : new EVector3(0.3f, 0.8f, -0.5f).normalized;
-            var lc = sun != null ? sun.color : Color.white;
-            float li = sun != null ? sun.intensity : 1f;
-            _lightDir = toLight;
+            _lightDir = sun != null ? -sun.transform.forward : EVector3.up;
+            var lc = sun != null ? sun.color : Color.black;
+            float li = sun != null ? sun.intensity : 0f;
             _lightColor = new EVector3(ColorSpace.ToLinear(lc.r) * li, ColorSpace.ToLinear(lc.g) * li, ColorSpace.ToLinear(lc.b) * li);
-            var a = RenderSettings.ambientSkyColor;
-            float ai = RenderSettings.ambientMode == CosmicShore.Engine.Rendering.AmbientMode.Skybox ? 0.15f : 1f;
-            _ambient = new EVector3(ColorSpace.ToLinear(a.r) * ai + 0.02f, ColorSpace.ToLinear(a.g) * ai + 0.02f, ColorSpace.ToLinear(a.b) * ai + 0.03f);
             _gl.Uniform3(_program.Loc("uLightDir"), _lightDir.x, _lightDir.y, _lightDir.z);
             _gl.Uniform3(_program.Loc("uLightColor"), _lightColor.x, _lightColor.y, _lightColor.z);
-            _gl.Uniform3(_program.Loc("uAmbient"), _ambient.x, _ambient.y, _ambient.z);
+
+            var env = EnvironmentLight;
+            Array.Clear(_sh);
+            if (env != null) for (int i = 0; i < 9; i++) { var c = env.SH[i]; _sh[i * 3] = c.X; _sh[i * 3 + 1] = c.Y; _sh[i * 3 + 2] = c.Z; }
+            else
+            {
+                var a = RenderSettings.ambientSkyColor;
+                _sh[0] = ColorSpace.ToLinear(a.r); _sh[1] = ColorSpace.ToLinear(a.g); _sh[2] = ColorSpace.ToLinear(a.b);
+            }
+            _envParams = new Vector4(env?.ReflectionIntensity ?? RenderSettings.reflectionIntensity, env is { HasReflection: true } ? 1f : 0f, 0f, 0f);
+            fixed (float* p = _sh) _gl.Uniform3(_program.Loc("uSH"), 9, p);
+            _program.Set("uEnvParams", _envParams.x, _envParams.y, _envParams.z, _envParams.w);
+            _program.Set("uEnvCube", EnvironmentLighting.CubeUnit);
+            if (env != null) env.Bind();
+            else
+            {
+                _gl.ActiveTexture(TextureUnit.Texture0 + EnvironmentLighting.CubeUnit);
+                _gl.BindTexture(TextureTarget.TextureCubeMap, 0);
+                _gl.ActiveTexture(TextureUnit.Texture0);
+            }
         }
 
-        EVector3 _lightDir, _lightColor, _ambient;
+        EVector3 _lightDir, _lightColor;
+        readonly float[] _sh = new float[27];
+        Vector4 _envParams;
         Vector4 _fogColor, _fog;
 
         void SetFog()

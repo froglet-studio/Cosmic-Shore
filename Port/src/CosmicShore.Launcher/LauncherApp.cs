@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time, Net, Studios }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1, string? ClonePathArg = null);
 
@@ -65,7 +65,7 @@ namespace CosmicShore.Launcher
         {
             _args = args;
             _s = LauncherSettings.Load();
-            // Opened from Unity (FrogletTools > Prisma > Launch Prisma): remember which clone Unity has open.
+            // Opened from Unity (FrogletTools > Amoebius > Launch Amoebius): remember which clone Unity has open.
             if (!string.IsNullOrWhiteSpace(args.ClonePathArg) && Directory.Exists(args.ClonePathArg)) { _s.UnityClonePath = Path.GetFullPath(args.ClonePathArg); _s.Save(); }
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
@@ -76,7 +76,7 @@ namespace CosmicShore.Launcher
                 c.Saved += () => _ui.Enqueue(() => OnChatRunEnded(c));
             });
             _updater = new LauncherUpdater(_s, _tools, _ws);
-            // A play session that ends is folded into the tracks, and Prisma says what it found.
+            // A play session that ends is folded into the tracks, and Amoebius says what it found.
             _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
@@ -84,6 +84,8 @@ namespace CosmicShore.Launcher
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) { _projTab = tab; _edTab = tab; }
             if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
             if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios && pageArg[1] == "artifacts") _artScrollFrames = 10; // --page studios:artifacts
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios) _studioOpenAtStart = pageArg[1]; // --page studios:hub|stoat (Unity's Vessel Studio)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -113,7 +115,7 @@ namespace CosmicShore.Launcher
             var options = WindowOptions.Default with
             {
                 Size = new Vector2D<int>(1360, 820),
-                Title = "Prisma - Cosmic Shore",
+                Title = "Amoebius - Cosmic Shore",
                 VSync = true,
                 PreferredStencilBufferBits = 8,
                 Samples = 4,
@@ -122,7 +124,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _chats.StopAll(); _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chats.StopAll(); _jobs.StopServer(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -155,7 +157,7 @@ namespace CosmicShore.Launcher
                 Neon.Heading = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 24);
                 Neon.Title = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 30);
                 Neon.Hero = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 46);
-                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15);
+                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15, null, ranges);   // the studio cards' spec rows: – × ·
                 unsafe { io.NativePtr->FontDefault = Neon.Body.NativePtr; }
             });
             Neon.ApplyStyle();
@@ -171,7 +173,8 @@ namespace CosmicShore.Launcher
                 _toolsScanned = true;
                 _jobs.RefreshLocalState();
                 if (!_args.Offline) _jobs.LoadBranches();
-                IngestSessions(notify: true); // runs that ended while Prisma was closed are news too
+                ReportBoardLoad();
+                IngestSessions(notify: true); // runs that ended while Amoebius was closed are news too
                 RunDoctor();
                 // Only LOOK for a newer launcher; installing it is the user's call (UPDATE).
                 if (!_args.Offline) _ = _updater.Check();
@@ -266,6 +269,7 @@ namespace CosmicShore.Launcher
             _imgui.Render();
 
             SaveProjectIfDirty(dt);
+            PollBoard(dt);
             _saveTimer += dt;
             if (_dirty && _saveTimer > 0.75) { _s.Save(); _dirty = false; _saveTimer = 0; }
 
@@ -307,6 +311,8 @@ namespace CosmicShore.Launcher
                 case Page.Git: DrawGit(contentA, contentB); break;
                 case Page.Editor: DrawEditor(contentA, contentB); break;
                 case Page.Time: DrawTime(contentA, contentB); break;
+                case Page.Studios: DrawStudios(contentA, contentB); break;
+                case Page.Net: DrawNet(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -395,7 +401,7 @@ namespace CosmicShore.Launcher
         void DrawRail(Vector2 size)
         {
             var dl = ImGui.GetWindowDrawList();
-            // macOS sidebar: translucent, with the Prisma mark where the traffic lights would be.
+            // macOS sidebar: translucent, with the Amoebius mark where the traffic lights would be.
             dl.AddRectFilled(Vector2.Zero, new Vector2(RailW, size.Y), Neon.U(Neon.Space0, 0.62f));
             dl.AddRectFilledMultiColor(Vector2.Zero, new Vector2(RailW, size.Y), Neon.U(Neon.Ink, 0.035f), Neon.U(Neon.Ink, 0.01f), Neon.U(Neon.Ink, 0.0f), Neon.U(Neon.Ink, 0.02f));
             dl.AddLine(new Vector2(RailW, 0), new Vector2(RailW, size.Y), Neon.U(Neon.Ink, 0.08f), 1f);
@@ -410,7 +416,9 @@ namespace CosmicShore.Launcher
                 (Page.Chat, "AGENT", Neon.IconChat),
                 (Page.Git, "GIT", IconBranch),
                 (Page.Editor, "EDITOR", IconCube),
+                (Page.Studios, "VESSEL\nSTUDIO", IconStudio),
                 (Page.Time, "TIME", IconClock),
+                (Page.Net, "NET", IconNet),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Options, "SETTINGS", Neon.IconGear),
@@ -442,7 +450,7 @@ namespace CosmicShore.Launcher
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
                 ImGui.PopFont();
-                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 38), Neon.U(col), it.name);
+                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + (it.name.Contains('\n') ? 33 : 38)), Neon.U(col), it.name);   // a two-line name sits higher
                 int badge = RailBadge(it.page);
                 if (badge > 0 && !on)
                 {
@@ -544,7 +552,7 @@ namespace CosmicShore.Launcher
             ImGui.SameLine(0, 26);
             Toggle("Audio", () => _s.Audio, v => _s.Audio = v);
             ImGui.SameLine(0, 26);
-            Toggle("Online", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud services");
+            Toggle("Online", () => _s.Network, v => _s.Network = v, "Play with others: parties and matches through an online server\n(SETTINGS > ONLINE picks it; by default one on this network)");
             ImGui.SameLine(0, 26);
             Toggle("Pull first", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v, "Fetch the branch's newest commit on every START");
 
@@ -554,7 +562,8 @@ namespace CosmicShore.Launcher
             Neon.Tooltip("Update: fetch the branch without starting");
             ImGui.SameLine(0, 8);
             if (Neon.IconButton("ws", Neon.IconFolder, 40, _ws.Exists)) OpenFolder(_ws.Dir);
-            Neon.Tooltip("Open the workspace folder");
+            Neon.Tooltip(_ws.Exists ? "Open the workspace folder: " + _ws.Dir
+                : "No workspace yet: Amoebius plays from its own copy of the repo, made the first time you press START.");
 
             // pipeline, only while launching
             if (_jobs.Busy && _jobs.JobName == "Start game") DrawPipeline(dl, new Vector2(x0, y + 62), colW);
@@ -584,13 +593,13 @@ namespace CosmicShore.Launcher
             }
         }
 
-        // ---- is Prisma's own copy behind its branch?
+        // ---- is Amoebius's own copy behind its branch?
 
         int _pendingSeen = -1;
         DateTime _pendingChecked;
 
         /// <summary>
-        /// A banner when Prisma's workspace is not at the tip of its branch on GitHub (so TOOLS, DATA,
+        /// A banner when Amoebius's workspace is not at the tip of its branch on GitHub (so TOOLS, DATA,
         /// MODELS and PLAY run older code), with UPDATE. Unsaved changes in the workspace block the
         /// update, and the banner says so instead of offering it: they are never thrown away.
         /// Returns the height it used (0 when up to date).
@@ -610,9 +619,9 @@ namespace CosmicShore.Launcher
             string head = _jobs.HeadSha?[..Math.Min(7, _jobs.HeadSha.Length)] ?? "?";
             string tip = _jobs.RemoteTip?[..Math.Min(7, _jobs.RemoteTip.Length)] ?? "?";
             ImGui.PushFont(Neon.Small);
-            dl.AddText(Neon.Small, 13, p + new Vector2(12, 4), Neon.U(Neon.Amber), $"Prisma's copy is behind {Trim(_s.Branch, 40)}: it has #{head}, GitHub has #{tip}.");
+            dl.AddText(Neon.Small, 13, p + new Vector2(12, 4), Neon.U(Neon.Amber), $"Amoebius's copy is behind {Trim(_s.Branch, 40)}: it has #{head}, GitHub has #{tip}.");
             string sub = _pendingSeen > 0
-                ? $"{_pendingSeen} unsaved change{(_pendingSeen == 1 ? "" : "s")} in Prisma's copy block the update: commit or discard them on GIT first."
+                ? $"{_pendingSeen} unsaved change{(_pendingSeen == 1 ? "" : "s")} in Amoebius's copy block the update: commit or discard them on GIT first."
                 : "The editor tools and the game run the older code until you update.";
             dl.AddText(Neon.Small, 13, p + new Vector2(12, 21), Neon.U(Neon.Dim), sub);
             ImGui.PopFont();
@@ -623,7 +632,7 @@ namespace CosmicShore.Launcher
             }
             else if (SmallButton(_jobs.Busy && _jobs.JobName == "Update workspace" ? "UPDATING" : "UPDATE", 104, !_jobs.Busy && !_jobs.GameRunning))
                 _jobs.Update();
-            Neon.Tooltip(_jobs.GameRunning ? "Close the game first." : "Fetch the branch's tip into Prisma's own copy (your Unity checkout is not touched).");
+            Neon.Tooltip(_jobs.GameRunning ? "Close the game first." : "Fetch the branch's tip into Amoebius's own copy (your Unity checkout is not touched).");
             return h + 12;
         }
 
@@ -633,7 +642,7 @@ namespace CosmicShore.Launcher
         DateTime _clonePolled;
         bool _clonePolling;
 
-        /// <summary>The user's own clone: the one Unity opened Prisma from, else the one set for "beside my clone".</summary>
+        /// <summary>The user's own clone: the one Unity opened Amoebius from, else the one set for "beside my clone".</summary>
         string? ClonePath => !string.IsNullOrWhiteSpace(_s.UnityClonePath) && Directory.Exists(_s.UnityClonePath) ? _s.UnityClonePath
             : !string.IsNullOrWhiteSpace(_s.MyClonePath) && Directory.Exists(_s.MyClonePath) ? _s.MyClonePath : null;
 
@@ -668,12 +677,12 @@ namespace CosmicShore.Launcher
         void PickBranch(string br)
         {
             _s.Branch = br;
-            // Picking Unity's own branch follows it again; any other branch is Prisma's own choice.
+            // Picking Unity's own branch follows it again; any other branch is Amoebius's own choice.
             _s.FollowClone = _cloneBranch == null || br == _cloneBranch;
             _dirty = true;
         }
 
-        /// <summary>The line under the branch: which branch Unity has, and that Prisma may use another one.</summary>
+        /// <summary>The line under the branch: which branch Unity has, and that Amoebius may use another one.</summary>
         void DrawCloneBranch(ImDrawListPtr dl, Vector2 p, float w)
         {
             PollCloneBranch();
@@ -681,7 +690,7 @@ namespace CosmicShore.Launcher
             if (ClonePath == null)
             {
                 dl.AddText(Neon.Small, 13, p + new Vector2(4, 4), Neon.U(Neon.Dim),
-                    "Open Prisma from Unity (FrogletTools > Prisma > Launch Prisma) and PLAY follows the branch Unity is on.");
+                    "Open Amoebius from Unity (FrogletTools > Amoebius > Launch Amoebius) and PLAY follows the branch Unity is on.");
             }
             else if (_cloneBranch == null)
             {
@@ -692,20 +701,20 @@ namespace CosmicShore.Launcher
                 IconBranch(dl, p + new Vector2(10, 12), Neon.U(Neon.Lime));
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 4), Neon.U(Neon.Lime), "Same branch as Unity / GitHub Desktop");
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim),
-                    "Prisma plays its own copy, so you can pick any other branch here without touching Unity's.");
+                    "Amoebius plays its own copy, so you can pick any other branch here without touching Unity's.");
             }
             else
             {
                 IconBranch(dl, p + new Vector2(10, 12), Neon.U(Neon.Amber));
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 4), Neon.U(Neon.Amber), Trim($"Unity / GitHub Desktop is on {_cloneBranch}", 60));
-                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim), "Prisma plays its own copy of this branch - your Unity checkout is not touched.");
+                dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Dim), "Amoebius plays its own copy of this branch - your Unity checkout is not touched.");
                 ImGui.SetCursorScreenPos(new Vector2(p.X + w - 150, p.Y));
                 if (SmallButton("FOLLOW UNITY", 150, !_jobs.Busy)) PickBranch(_cloneBranch);
                 Neon.Tooltip($"Switch PLAY to {_cloneBranch}, and keep following Unity / GitHub Desktop when it changes branch.");
             }
             if (_cloneBranch != null && _jobs.Branches.Count > 0 && !_jobs.Branches.Contains(_cloneBranch) && _s.Branch == _cloneBranch)
                 dl.AddText(Neon.Small, 13, p + new Vector2(24, 21), Neon.U(Neon.Red),
-                    $"{_cloneBranch} is not on GitHub yet: push it from GitHub Desktop so Prisma can fetch it.");
+                    $"{_cloneBranch} is not on GitHub yet: push it from GitHub Desktop so Amoebius can fetch it.");
             ImGui.PopFont();
         }
 
@@ -769,40 +778,24 @@ namespace CosmicShore.Launcher
 
             // iOS
             bool mac = OperatingSystem.IsMacOS();
-            string[] modes = mac ? new[] { "GITHUB", "XCODE", "THIS MAC" } : new[] { "GITHUB", "XCODE" };
-            if (!mac && _s.Ios == IosMode.ThisMac) _s.Ios = IosMode.GitHub;
-            string action = _s.Ios switch { IosMode.GitHub => "BUILD .IPA", IosMode.Xcode => "EXPORT XCODE", _ => "BUILD .IPA" };
+            // Xcode and This Mac only: TestFlight (ios-testflight.yml) is the one route onto a phone.
+            string[] modes = mac ? new[] { "XCODE", "THIS MAC" } : new[] { "XCODE" };
+            if (_s.Ios == IosMode.GitHub || (!mac && _s.Ios == IosMode.ThisMac)) _s.Ios = IosMode.Xcode;
+            string action = _s.Ios == IosMode.Xcode ? "EXPORT XCODE" : "BUILD .IPA";
             BuildCard(dl, ia, ib, Neon.Violet, "iOS", _s.Ios == IosMode.Xcode ? ".xcodeproj" : ".ipa",
                 () =>
                 {
-                    Segmented("iosmode", modes, (int)_s.Ios, i => _s.Ios = (IosMode)i, Neon.Violet);
-                    Neon.Tooltip(_s.Ios switch
-                    {
-                        IosMode.GitHub => "GitHub's free Mac compiles an unsigned .ipa from the branch.\nSign and install it with Sideloadly. No Mac needed.",
-                        IosMode.Xcode => "An Xcode project, like Unity's iOS export.\nOpen it on a Mac, pick a team, Run or Archive.",
-                        _ => "This Mac builds and signs the .ipa.",
-                    });
+                    Segmented("iosmode", modes, (int)_s.Ios - 1, i => _s.Ios = (IosMode)(i + 1), Neon.Violet);
+                    Neon.Tooltip(_s.Ios == IosMode.Xcode
+                        ? "An Xcode project, like Unity's iOS export.\nOpen it on a Mac, pick a team, Run or Archive."
+                        : "This Mac builds and signs the .ipa.");
                 },
                 ref _iosMore,
                 () =>
                 {
                     Toggle("Debug build", () => _s.DebugBuild, v => _s.DebugBuild = v);
-                    if (_s.Ios == IosMode.GitHub)
-                    {
-                        ImGui.PushFont(Neon.Small);
-                        ImGui.TextColored(Neon.Dim, "Uses your GitHub sign-in (or the token in SETTINGS).");
-                        ImGui.TextColored(Neon.Dim, "Takes ~15-25 min on GitHub's Mac.");
-                        ImGui.PopFont();
-                        if (SmallButton("SIDELOADLY", 160, true)) OpenUrl("https://sideloadly.io");
-                    }
                 },
                 action, can, () => _jobs.BuildIos(), _jobs.JobName.StartsWith("Build iOS"));
-
-            if (_jobs.IosRunUrl != null && _jobs.JobName.StartsWith("Build iOS"))
-            {
-                ImGui.SetCursorScreenPos(new Vector2(ia.X + 24, ib.Y - 44));
-                if (SmallButton("OPEN RUN", 140, true)) OpenUrl(_jobs.IosRunUrl);
-            }
         }
 
         /// <summary>One build target: name, its one choice, a primary button, the rest folded away, the result.</summary>
@@ -847,8 +840,8 @@ namespace CosmicShore.Launcher
 
         // ---------------------------------------------------------------- PROJECT (the engine's own Project Settings)
 
-        Prisma.PrismaProjectSettings? _proj;
-        Prisma.PrismaProjectSettings.UnityDefaults? _unity;
+        Amoebius.AmoebiusProjectSettings? _proj;
+        Amoebius.AmoebiusProjectSettings.UnityDefaults? _unity;
         string? _projRoot;
         bool _projDirty;
         double _projTimer;
@@ -858,8 +851,8 @@ namespace CosmicShore.Launcher
         {
             if (_projRoot == _ws.Dir && _proj != null) return;
             _projRoot = _ws.Dir;
-            _proj = Prisma.PrismaProjectSettings.Load(_ws.Dir);
-            _unity = new Prisma.PrismaProjectSettings.UnityDefaults(_ws.Dir);
+            _proj = Amoebius.AmoebiusProjectSettings.Load(_ws.Dir);
+            _unity = new Amoebius.AmoebiusProjectSettings.UnityDefaults(_ws.Dir);
         }
 
         void SaveProjectIfDirty(double dt)
@@ -874,7 +867,7 @@ namespace CosmicShore.Launcher
 
         void DrawProject(Vector2 a, Vector2 b)
         {
-            PageHeader(a, "PROJECT", "Engine settings for this branch  ·  " + Prisma.PrismaProjectSettings.RelativePath);
+            PageHeader(a, "PROJECT", "Engine settings for this branch  ·  " + Amoebius.AmoebiusProjectSettings.RelativePath);
             if (!_ws.Exists || !File.Exists(Path.Combine(_ws.Dir, "ProjectSettings", "ProjectSettings.asset")))
             {
                 ImGui.GetWindowDrawList().AddText(Neon.Body, 19, a + new Vector2(0, 110), Neon.U(Neon.Dim), "Download the branch first - press START or UPDATE on PLAY.");
@@ -941,7 +934,7 @@ namespace CosmicShore.Launcher
             ImGui.EndChild();
         }
 
-        void DrawSceneList(Prisma.PrismaProjectSettings p, Prisma.PrismaProjectSettings.UnityDefaults u, float w)
+        void DrawSceneList(Amoebius.AmoebiusProjectSettings p, Amoebius.AmoebiusProjectSettings.UnityDefaults u, float w)
         {
             var list = p.BuildScenes(u);
             bool own = p.Scenes is { Count: > 0 };
@@ -982,11 +975,11 @@ namespace CosmicShore.Launcher
             Hint("Scene 0 boots. The build tool, the player and phone builds all use this list.");
         }
 
-        static List<Prisma.PrismaProjectSettings.SceneEntry> MakeOwn(
-            Prisma.PrismaProjectSettings p, List<Prisma.PrismaProjectSettings.SceneEntry> current)
+        static List<Amoebius.AmoebiusProjectSettings.SceneEntry> MakeOwn(
+            Amoebius.AmoebiusProjectSettings p, List<Amoebius.AmoebiusProjectSettings.SceneEntry> current)
         {
             if (p.Scenes is not { Count: > 0 })
-                p.Scenes = current.Select(s => new Prisma.PrismaProjectSettings.SceneEntry { Path = s.Path, Guid = s.Guid, Enabled = s.Enabled }).ToList();
+                p.Scenes = current.Select(s => new Amoebius.AmoebiusProjectSettings.SceneEntry { Path = s.Path, Guid = s.Guid, Enabled = s.Enabled }).ToList();
             return p.Scenes;
         }
 
@@ -1047,10 +1040,11 @@ namespace CosmicShore.Launcher
                     _s.Resolution, v => _s.Resolution = v));
                 Row("", () => Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v, "F11 toggles in game"));
                 Row("", () => Toggle("Audio", () => _s.Audio, v => _s.Audio = v));
-                Row("", () => Toggle("Online services", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud saves"));
+                Row("", () => Toggle("Online play", () => _s.Network, v => _s.Network = v, "Parties and matches with other players (ONLINE below picks the server)"));
                 Row("", () => Toggle("Pull before play", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v));
                 Row("", () => Toggle("Phone render path", () => _s.MobileRenderPath, v => _s.MobileRenderPath = v, "OpenGL ES 3.0, exactly as a phone renders"));
             }
+            if (Section("ONLINE")) DrawOnlineSettings();
             if (Section("SOURCE"))
             {
                 Row("Repository", () => Text("##remote", "https://github.com/.../Cosmic-Shore.git", () => _s.RemoteUrl, v => _s.RemoteUrl = v));
@@ -1058,7 +1052,7 @@ namespace CosmicShore.Launcher
                 Row("GitHub token", () =>
                 {
                     SecretField("##token", "optional", () => _s.GitHubToken, v => _s.GitHubToken = v);
-                    Neon.Tooltip("Only if git has no GitHub sign-in. iOS builds need Actions: read & write.\nStored only on this PC.");
+                    Neon.Tooltip("Only if git has no GitHub sign-in.\nKept in " + SecretStore.Where + ", not in launcher.json.");
                 });
                 Row("Workspace", () =>
                     Segmented("wsmode", new[] { "OWN COPY", "BESIDE MY CLONE" }, (int)_s.Workspace, i => _s.Workspace = (WorkspaceMode)i, Neon.Cyan));
@@ -1084,7 +1078,7 @@ namespace CosmicShore.Launcher
                 Row("API key", () =>
                 {
                     SecretField("##akey", "empty = use your Claude plan", () => _s.AnthropicApiKey, v => _s.AnthropicApiKey = v);
-                    Neon.Tooltip("Only for pay-as-you-go API billing. When set it is used INSTEAD of your\nClaude Pro/Max plan. Passed only to the claude process; stored only on this PC.");
+                    Neon.Tooltip("Only for pay-as-you-go API billing. When set it is used INSTEAD of your\nClaude Pro/Max plan. Passed only to the claude process; kept in " + SecretStore.Where + ", not in launcher.json.");
                 });
                 Row("Model", () => Text("##cmodel", "default", () => _s.ClaudeModel, v => _s.ClaudeModel = v));
                 Row("CLI path", () => Text("##cpath", "auto-detect", () => _s.ClaudePath, v => _s.ClaudePath = v));
@@ -1118,7 +1112,7 @@ namespace CosmicShore.Launcher
                 DrawAboutVersions();
                 ImGui.Dummy(new Vector2(0, 8));
                 ImGui.PushFont(Neon.Small);
-                ImGui.TextColored(Neon.Ink, "Prisma v0.1  -  Froglet Inc.");
+                ImGui.TextColored(Neon.Ink, "Amoebius v0.1  -  Froglet Inc.");
                 ImGui.TextColored(Neon.Dim, "Cosmic Shore's own C# on our own renderer, physics, UI, audio and netcode.");
                 ImGui.TextColored(Neon.Dim, "Dear ImGui, Silk.NET (MIT)  ·  Chakra Petch, Aldrich (OFL)  ·  Roboto Mono (Apache 2.0)");
                 ImGui.PopFont();
@@ -1134,6 +1128,41 @@ namespace CosmicShore.Launcher
             var n = s.Replace("_Gameplay", "").Replace("Minigame", "").Replace("_", " ");
             n = System.Text.RegularExpressions.Regex.Replace(n, "(?<=[a-z])(?=[A-Z])", " ").Trim();
             return n.Length == 0 ? s : n;
+        }
+
+        /// <summary>
+        /// SETTINGS > ONLINE: which online server the games use (empty: one on this network, or the
+        /// first game hosts one), its key, and hosting the server on this PC for everyone else.
+        /// </summary>
+        void DrawOnlineSettings()
+        {
+            Row("Server", () =>
+            {
+                Text("##netserver", "automatic: a server on this network, else the first game hosts one", () => _s.NetServer, v => _s.NetServer = v);
+                Neon.Tooltip("host:port of an Amoebius online server, for playing over the internet\n" +
+                             "(port 47777 when left out). Empty: games find a server on the local network,\n" +
+                             "or the first game started hosts one for the others.");
+            });
+            Row("Server key", () =>
+            {
+                SecretField("##netkey", "only if the server has one", () => _s.NetKey, v => _s.NetKey = v);
+                Neon.Tooltip("The key the server was started with. Kept in " + SecretStore.Where + ", not in launcher.json.");
+            });
+            Row("", () => Toggle("Host the online server on this PC", () => _jobs.ServerRunning,
+                v => { if (v) _jobs.StartServer(); else _jobs.StopServer(); },
+                "Lobby and relay for every game on this network while the launcher is open.\n" +
+                "For players elsewhere, forward TCP " + _s.HostServerPort + " on your router to this PC\nand give them your public address."));
+            if (_jobs.ServerRunning)
+            {
+                Row("", () =>
+                {
+                    ImGui.PushFont(Neon.Small);
+                    var addresses = _jobs.ServerAddresses;
+                    ImGui.TextColored(Neon.Lime, addresses.Count > 0 ? "Players on this network use  " + string.Join("   ", addresses) : "Starting...");
+                    ImGui.TextColored(Neon.Dim, _jobs.ServerStatus);
+                    ImGui.PopFont();
+                });
+            }
         }
 
         bool Section(string name)

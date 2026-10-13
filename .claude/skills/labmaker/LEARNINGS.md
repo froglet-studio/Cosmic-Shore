@@ -69,6 +69,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-GEN-7 — A parity gate against a float32 reference needs a tolerance that grows with distance, and planted controls to show it can still fail
+- Lab: Thresher Plant Lab (`Tools/Build/thresher_plant_lab/parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the page's float64 port of `ThresherChainSolver` drifted from the C# solver (float32, compiled from its real path with the chain harness's stubs) by up to 0.06 u after ~600 u of a spun-up launch. The gap grew smoothly and never stepped, and the mode sequence matched on all 1 224 frames, so it was rounding, not a divergence. A fixed 0.02 u tolerance failed it; a per-coordinate relative tolerance failed it too, on a coordinate near zero while the ship was far from the origin. 0.02 u + 2·10⁻⁴ × the ship's distance from the origin passed at 0.80× of tolerance.
+- Do instead: before widening a parity tolerance, print the gap every N frames. Widen only if it grows smoothly with distance or time, and then scale it by that quantity, not by the coordinate itself. Keep planted dial changes in the gate (here a 7% skid change misses by 46×) to show the wider tolerance still fails a real change.
+- Evidence: `parity.cjs` (TOL, REL, the three negative controls).
+- Promoted: no
+
+### L-GEN-8 — Graduate through a SHARED per-frame entry point, and check the asset against the preset in the same gate
+- Lab: Thresher Plant Lab graduation · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: round 2's control logic (the trigger thresholds, the slew, when to stop and when to let go) lived in the lab's `Vessel` class, outside the solver the parity gate measured. Graduating it as `ThresherChainSolver.AnalogTriggers` and refactoring the lab to call the same method put the controls, not just the physics, under the frame-parity gate (5 analog flights). A third check in the same gate parses `ThresherConfig.asset` and requires its 20 analog dials to equal the lab's preset, so an asset retune that the lab does not follow (L-STU-29) fails a gate instead of drifting silently.
+- Do instead: when a lab graduates, move every per-frame decision the pick depends on into the ported module, call it from both sides, and add an asset-equals-preset check to the parity gate, with a planted asset change that must fail it.
+- Evidence: `parity.cjs` step 5; `analogTriggers` in the page.
+- Promoted: §7 (with L-STU-35)
+
+### L-GEN-9 — Two batch calls in one page cannot see a load-time `Math.random`; reload and compare
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the Stoat's prism field (2,400 homes) was placed with `Math.random` at load. Every scorecard column was reproducible except "prisms pulled per sling", which differed per page load (Balanced 984.1 against 986.3). `verify_lab`'s determinism check called `runBatch()` twice in one page, so both calls saw the same random field and it passed for 14 rounds. It was found by comparing the round-14 file's batch with round 15's across two loads.
+- Do instead: seed everything a batch can read, scene setup included (`mulberry32(20261009)` for the field). `verify_lab` now opens a second, fresh page and requires the same `runBatch()` rows. Its `--self-test` plants a load-time salt that must be named, and a copy of the Stoat with the old `Math.random` fails the check.
+- Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
+- Promoted: §3
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -150,7 +171,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ### L-STU-12 — Graduate a studio to a hub plus a catalog, not to a copy per surface
 - Lab: Vessel Studio · Branch: `vessel-studio` → `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
-- What happened: `studios.json` (`{id, name, file, kind, summary, docs, engineMode?}`) drives the web hub, Prisma's STUDIOS page (`StudioCatalog.cs`, with tests) and `FrogletTools ▸ Vessels ▸ Vessel Studio`. `stoat.html` in the hub is a COPY of the source page, so the two can drift.
+- What happened: `studios.json` (`{id, name, file, kind, summary, docs, engineMode?}`) drives the web hub, Amoebius's STUDIOS page (`StudioCatalog.cs`, with tests) and `FrogletTools ▸ Vessels ▸ Vessel Studio`. `stoat.html` in the hub is a COPY of the source page, so the two can drift.
 - Do instead: one catalog file feeds every surface. When a page is copied into a hub, record which file is the source and re-copy it every round, or build the copy rather than hand-copying it.
 - Evidence: Docs/Studios/VesselStudio/README.md, VESSEL_STUDIO_PLAN.md §4.
 - Promoted: §7
@@ -293,7 +314,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the first "clearance" column (how close two crystals' centres come in flight, x their combined radii) read 0.09-0.13 for every style, the controls included, because all four crystals converge on one centre and are SUPPOSED to overlap as they merge. Excluding the merge zone (inside 1.5 omni radii) made it discriminate: the art file's straight-line row 0.44, the proposals 1.75-3.29.
 - Do instead: before trusting a column, check it varies across the variants. If it doesn't, ask whether it is measuring the moment the design intends; restrict it to where the event is a fault.
 - Evidence: `measure()` (`MEET`) in the page; the round-1 scorecard in `OMNI_COMBINE_LAB.md`.
-- Promoted: no
+- Promoted: §2.3 (recurred as L-STU-42)
 
 ### L-STU-33 — A nearest-vertex "lands" check passes a SWAPPED pair; fit the plate rigidly to catch it
 - Lab: Omni Combine Lab round 2 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
@@ -314,7 +335,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the lab's `pose` (flight, four idle effects, three derived morphs, seeded RNG, an integer hash) was ported to pure C# and compiled in .NET beside a driver that loads the page in headless Chromium and asks `__lab.pose` / `omniPose` for the same times, seed and camera. The first run matched to 7e-7 per vertex. Planting a wrong flip salt or a different seeding order failed it by 0.7 and 2.5.
 - Do instead: when a lab graduates, keep its pose a PURE function (time, params, camera → vertices), port it with no engine types, and hold the port to the page with a parity harness that compiles the shipped file in place. Port the RNG bit for bit (mulberry32, Math.imul, >>>) and keep the lab's draw ORDER, or one seed means two films.
 - Evidence: `Tools/Build/omni_combine_parity/` (`run.sh`, `Driver.cs`, `lab_poses.cjs`); `Assets/_Scripts/Utility/OmniCombineCore.cs`.
-- Promoted: no
+- Promoted: §7 (recurred as L-GEN-8)
 
 ### L-STU-36 — A lab drawn in a right-handed frame graduates through a REFLECTION: map rotation axes as pseudovectors
 - Lab: Omni Combine Lab → the Elemental Converter · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
@@ -359,6 +380,172 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Promoted: no
 
 ---
+
+### L-STU-41 — When a constraint, not a dial, sets the value, no tuning of the dial fixes it: run the tuning-only variant as a control
+- Lab: Thresher Plant Lab (`Docs/Studios/ThresherPlantLab.html`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the ask was "a quick deceleration instead of an instant stop". The shipped plant already HAS a deceleration (a 7/s skid for 0.3 s), but the C# reference trace showed the ball still doing 62.8 u/s when it was pinned: the taut rope re-imposes the ship's speed every frame, so the brake barely acts. A "Longer skid" variant (`skid` 12, `skidSeconds` 0.5, shipped dials only) moved the ball-stop column 24.4 → 23.4 u/s and cost 0.2 s of catch time. The fix had to move the ball kinematically and let the rope pay out (`bkMode`).
+- Do instead: when the request is "make X gentler" and X already has a gentleness dial, put a tuning-only variant in the scorecard first. If it doesn't move the column, find the constraint that overrides the dial before designing approaches.
+- Evidence: `THRESHER_PLANT_LAB.md` round 1 scorecard (Longer skid row); `Tools/Build/thresher_plant_lab/trace.sh` reference trace.
+- Promoted: no
+
+### L-STU-42 — Probe the worst run of a column frame by frame before trusting it; three of round 1's columns were the yardstick, not the approach
+- Lab: Thresher Plant Lab · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: three first-draft columns misled. (1) The catch window overlapped the scripted wind-in, so the No-plant control read 14 u/s of "ball stop" and the wind-in's 1 600 °/s hull whip masked the hook (L-STU-32 recurring: a window that spans a second event measures that event). (2) The first "rope give" spring could pull the ball but not brake it, so the ball overshot the ship and the hard rope snapped it at 596 u/s, and the approach read WORSE than shipped. (3) The lab's own camera limiter chattered at its cap (bang-bang around zero error), so the camera column read exactly 1 500 for every run. Each was found with one probe that runs every seed, finds the frame where the column peaks, and prints ±6 frames around it.
+- Do instead: before quoting a scorecard, open the worst run of each column at its peak frame. A column that equals a cap or limit on every run, or a control that is not ~0, is a yardstick bug until shown otherwise. Give the page a `runRows(overrides, seed, kind)` hook so the probe needs no copy of the model.
+- Evidence: `window.__lab.runRows` in the page; the three fixes in `THRESHER_PLANT_LAB.md` "Checked".
+- Promoted: §2.3 (with L-STU-32, now recurred in a second lab)
+
+### L-STU-43 — A frame-rate change can decide which frame a state cut lands on, and so whether a jolt exists
+- Lab: Thresher Plant Lab · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the shipped spectate camera eases in from a pose captured at the cut, dropping the camera's turn: 14 400 °/s² at 60 Hz on every run. At 30 Hz the same column read 622 °/s², because the cut landed on the frame before the chase camera had started turning, so there was nothing to drop. Every other jolt column kept its ordering. (A recurrence of L-ECO-4, "a fixed timestep is a sample".)
+- Do instead: re-run the scorecard at a second frame rate and report any column whose ORDER changes. A one-frame race between two state changes is a finding in its own right; here it argued for carrying the camera's turn into the entry.
+- Evidence: `THRESHER_PLANT_LAB.md` "Frame rate"; `runBatch({ dt: 1/30 })`.
+- Promoted: no (L-ECO-4 is already §8)
+
+### L-STU-44 — Every handoff between two motion models is a one-frame jolt until it carries position, rate AND force across
+- Lab: Thresher Plant Lab round 2 (`Docs/Studios/ThresherPlantLab.html`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the analog plant chains four models: towing on an elastic chain, a braking anchor, a kinematic hook, and an elastic orbit. Five of round 2's eight findings were seams between them, each found by probing a column's worst run frame by frame. A rigid chain yanked a ship flying away from its anchor (2 100 °/s). The hook restarted the turn from zero (−125 → 0 °/s). The hook's stretch was reeled back by the rigid chain in two frames (87 000 °/s²). A slack chain's outward pull switched on at once. The orbit direction was read from a near-zero sideways velocity, so it flipped mid-hook. Each fix made the next model start from the previous one's state: start the hook at the full pull, carry the incoming turn rate, start the elastic state at the ship's real stretch and radial speed, and ease the new force in.
+- Do instead: when a mechanic switches models, list for every handoff what the second model needs (position, velocity, turn rate, force) and seed it from the first. Probe the handoff frame of every pilot style, not just the default.
+- Evidence: `THRESHER_PLANT_LAB.md` round 2 "Found" 1–5; `stepPivot` analog branches, `anBeginStop`.
+- Promoted: no
+
+### L-STU-45 — A stiff spring in a lab is a frame-rate bug: sub-step it and say so in the graduation notes
+- Lab: Thresher Plant Lab round 2 · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the rigid end of the elastic chain is a 30 rad/s spring. With semi-implicit Euler at 30 fps (ω·dt = 1, plus damping) it sat at the edge of stability. The 30 Hz scorecard read 65 000 °/s² on the wind-in, against 10 000 at 60 Hz. Sub-stepping (ω·h ≤ 0.15) made the two rates agree (8 900 vs 9 300). Only the second-frame-rate run showed it; the 60 Hz scorecard looked fine.
+- Do instead: whenever a lab adds a spring, give it sub-steps from the start, run the scorecard at 30 Hz as well as 60 Hz, and write "must be sub-stepped or integrated implicitly" into the graduation notes, because the game's frame time varies. (Recurrence of L-ECO-4 / L-STU-43.)
+- Evidence: `stepAnalog` and the analog `stepPivot` branch (`nSub`); round 2 "Found" 8.
+- Promoted: no (§8's fixed-timestep trap covers it)
+
+### L-STU-46 — A float32 game clock ends a curve a frame before (or after) a float64 lab; end curves at 1 − ε, and expect a peak column to move
+- Lab: Thresher Plant Lab graduation (`ThresherChainSolver`, `parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the analog hook ends at `u = hookT / hookSeconds >= 1`. Adding 1/60 thirty times is 0.49999997 in C# float32 and 0.5000000000000001 in JS float64, so the game's hook ran one frame longer than the lab's, and parity diverged from 1e-3 u to a mode mismatch within 50 frames. Ending every curve at `u >= 1 − 1e-4` on both sides fixed parity, and it moved the lab's analog catch column ~20% (2 620 → 3 183 °/s²), because a peak column reads the one frame where two models hand over.
+- Do instead: when a lab will be ported to a float32 engine, end time-driven curves at `1 − ε` from the start. When a one-frame shift moves a scorecard column, treat that as a sign that the column is reading a hand-over seam, and say so rather than quoting the better number.
+- Evidence: `ThresherChainSolver.EndOfCurve`, `END_OF_CURVE` in the page; `THRESHER_PLANT_LAB.md` "Graduated".
+- Promoted: no
+
+### L-STU-47 — Mutate the code a new test guards before trusting it: one of ten graduation tests passed with its rule deleted
+- Lab: Thresher Plant Lab graduation (`ThresherAnalogTriggerTests`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: all ten analog tests passed on their first run. Planting two mutations showed that the full-pull test caught a near-instant stop, but the ambiguous-plant test still passed with the turn-direction rule removed: its one scripted flight never produced the case the rule exists for (a sideways velocity that disagrees with the turn). A sweep over 80 turn patterns produced it (`(-90,-60,20)`), and with the sweep the rule's deletion fails.
+- Do instead: for every test written for a lab finding, delete or break the line it guards and run it once. If it still passes, the scenario does not reach the case; sweep the scenario until it does, and assert that the sweep produced enough qualifying cases.
+- Evidence: `AmbiguousPlant_OrbitsInTheFlightPlane_TheWayTheShipIsTurning` (the sweep and its `ambiguous > 10` guard).
+- Promoted: no
+
+### L-STU-48 — A harder course measures the AI's failures unless the AI learns the harder skill
+- Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the new intensity ladder grades turning (1 plain circle → 4 side-on and dive rings). The
+  round-12 AI was caught on only 3 of 15 slings at intensity 4, for two reasons: it steered for the ring
+  before the hole held it, and the pair is always laid along the wings, so a climb could not use it. The
+  ladder then measured an AI that couldn't fly it, not the course. Three changes fixed it:
+  - **bank to sling:** roll until the turn lies off one wing;
+  - **pass on the circle:** aim at the hold radius until caught;
+  - **release at the best heading:** let go when the nose stops closing on the ring.
+
+  Catches went to 19 of 19, and grip turn per race rose 766° → 1,382° → 2,420° → 2,209° across the levels.
+- Do instead: when a lab adds difficulty, check the AI's own success rate (here, catches per sling) per
+  level before reading any other column. Then teach the AI the skill the level demands.
+- Evidence: `aiInput` in `StoatFlightStudio.html` (the `bank` / `lay` phases, `aiAim`, `ai.prevOff`);
+  `STOAT_SIM_LAB_PLAN.md` §2 "The intensity ladder and the round-14 AI".
+- Promoted: no
+
+### L-STU-49 — Improving the AI moves every scorecard column; the rookie must keep the rookie's mistakes
+- Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the smarter catch logic also reached the rookie (`aiNoise`), so every style's rookie catch
+  rate became 100% and Anchor lost its column. Comet, now catching reliably, also overtook Flare on top
+  speed. The fix:
+  - the rookie keeps steering for the ring before the catch (its classic miss);
+  - Flare's buried boost rose from +2.1 to +3.1 (slider ceiling 3 → 5).
+- Do instead: re-run the whole scorecard after ANY change to the AI, not only the column it was meant for.
+  Model skill differences as specific mistakes the skilled pilot does not make.
+- Evidence: round-14 scorecard in `STOAT_SIM_LAB_PLAN.md`; `aiInput` `P.aiNoise < 0.5` gate.
+- Promoted: no
+
+### L-STU-50 — A lab's vessel can be in the game and still not run in Amoebius: compile the engine before you call it portable
+- Lab: Stoat (game side) and Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the game on this branch did not compile in Amoebius at all. Its black-hole code used:
+  - `UnityEngine.Jobs` transform jobs;
+  - URP's script-injected render-graph pass and `CommandBuffer`;
+  - `typeof(SerializeField)` (the engine called it `SerializeFieldAttribute`);
+  - a fully qualified `InputSystem.Controls.ButtonControl` (the engine had it one namespace up);
+  - and the engine had no GLSL port of a new shader-graph custom function.
+
+  All of it was filled as engine API. Engine 1,691/1,691, ported game tests 352/352.
+- Do instead: before saying "test it in Amoebius", run `dotnet build Port/src/CosmicShore.Player` on the
+  branch. A Unity-only API in new game code fails there first. Fill gaps in the engine (`Port/src`),
+  never in `Assets/`.
+- Evidence: commit `84898d17a`; `Port/src/CosmicShore.Engine/Jobs/TransformAccess.cs`, `Rendering/RenderGraph.cs`.
+- Promoted: no
+
+### L-STU-51 — One-click "play the real thing" from a studio: a catalog field plus a player flag
+- Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: Amoebius's STUDIOS page gained two buttons:
+  - **OPEN IN AMOEBIUS**: Edge or Chrome app mode, opening the page as `#prisma` with its own window profile.
+  - **PLAY IN ENGINE**: `studios.json` `engineMode`. The player's `--arcade MODE` waits for `Menu_Main`,
+    opens that card and presses Start (`ArcadeAutoStart`, through the existing `arcade` input verb).
+
+  Headless, `--arcade Slingshot` reached the race at frame 258. Entering the race scene directly (`--scene`)
+  does NOT work: there is no Bootstrap camera rig or app services.
+- Do instead: reach a game mode through the menu path players use, driven by the same verbs the control
+  port uses. Never boot a gameplay scene directly to "save time". Put the per-studio fact (which mode) in
+  the catalog, not in launcher code.
+- Evidence: commit `30a890606`; `StudioCatalogTests.TheShippedCatalogsEngineModesAreGameModes`.
+- Promoted: no
+
+### L-STU-52 — Two people on one studio: the artifact refreshes itself from GitHub
+- Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: two designers pushed studio rounds from two sessions, and the published artifact fell
+  behind within the hour. A Sync panel now does the loop inside the artifact:
+  - it reads GitHub through the viewer's own connector (`mcp`);
+  - it republishes the hub with the files form of `artifact.publish`;
+  - it merges branches through a PR, then asks whether to delete the merged branch;
+  - it keeps a shared `decisions` collection (`db`).
+- Do instead: give every shared studio artifact the panel (`build_artifact.py`), share it with edit access,
+  and record decisions in it, not in chat. Remember the connector cannot delete branches,
+  `get_file_contents` returns the file in a `resource` block, and a files publish leaves the publishing
+  view on the old files until it reloads.
+- Evidence: `.claude/skills/vessel-studio/` (SKILL.md §4-§6, `build_artifact.py --self-test`);
+  `Docs/Studios/VesselStudio/SYNC_PANEL.md`.
+- Promoted: yes, into the `/vessel-studio` skill
+
+### L-STU-53 — Draw a predicted path on the HUD, after the lens, or the black hole bends and doubles it
+- Lab: Stoat Flight Studio, round 15 (field trajectory) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the first trajectory line was a `THREE.Line` in the scene. The lens post-pass bent it like any light, so near the pair it showed up twice, once on each side of the hole (the same thin-lens map that doubles the stars). That reads as two trajectories. A prediction is information, not light.
+- Do instead: project the points with the camera and stroke them on the 2D HUD canvas after the post-pass. That is also thicker than WebGL's 1 px lines.
+- Evidence: `drawFieldPath` (HUD); screenshots before and after in the round-15 session.
+- Promoted: §8
+
+### L-STU-54 — Check a predicted path against the flight it predicts; three bugs hid in "the line looks right"
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: a parity probe laid a pair, set the hull on a looping heading, flew it with no input and measured each flown point's distance to the drawn path. It found three bugs:
+  - the prediction held the engine at its current speed while the engine was still spooling up;
+  - it STARTED the path 8 u ahead of the nose instead of flying from the hull and DRAWING from 8 u ahead (near a hole, a path 8 u further on is a different path);
+  - it tested the horizon every 3 u, so a 3 u horizon slipped between two points while the flight's 4 ms step fell in.
+
+  After the fixes, paths clear of the horizon agree to 1.7–3.1 u. Whirls that graze the horizon still diverge by 11–78 u, and the shipped 4 ms integrator diverges as much, so that part is the chaotic orbit, not a bug.
+- Do instead: share one step function between the flight and the prediction, and run the parity probe before trusting the colours. Also run it with the prediction forced onto the flight's own step: when that diverges just as much, the divergence is the system, not the integrator.
+- Evidence: `fieldSubstep` / `fieldPath` (`stepBy` checks the horizon every substep; the pre-roll to `ftNose`); `Pv.ftExact`; README round 15 "Checked".
+- Promoted: no
+
+### L-STU-55 — A reward computed from a prediction that includes the reward can cancel itself
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the field trajectory boosts you 3× while the predicted path loops. Flown at the boosted speed (the literal request), the boost straightens the loop that earned it within about 2 frames. The lime flickered: lime 3.8% of the race against 14% with the path at engine speed, with the most loop onsets per minute (37.8). The same literal rule also made a held turn alone a permanent 3×, because a full-stick circle (about 180 u) is shorter than the 600 u path.
+- Do instead: when a mechanic's trigger reads state the mechanic changes, measure it both ways (here `ftBoostInPath` 0/1) and put a pure-input control row in the scorecard ("steering only, not in path" must equal No sling). Leave the reading to the designer as **Decision needed**.
+- Evidence: README round 15 field scorecard and "Decision needed".
+- Promoted: no
+- Superseded (same day): the designer chose a boost that cannot touch the path (L-STU-56), so the 0/1 row is gone.
+
+### L-STU-56 — To make a boost that never changes the predicted path, warp the vessel's own clock
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the designer wanted the field trajectory's 3× to move the Stoat along the drawn path sooner without bending it, so the line "always shows where you go if you hold your inputs". Adding speed changes a field path, because the bend per unit length is acceleration over speed squared. Running the hull's whole flight (steering, engine spool, momentum fade, field substeps) at `ftMul` × the clock (`kdt` in `stepFly`) keeps the curve and only reparametrises time. The race clock, the pair's life and the squeeze stay on real time. Measured: a looping heading flown with no input at boost 1 and boost 3 stays 4.5 u and 3.6 u from the drawn loop, and the boosted run is 2.9× quicker. Outside the mode the warp is 1, and the dipole scorecard stays byte-identical.
+- Do instead: when a reward must not change what a prediction shows, scale the time the prediction is parametrised by, not a state the prediction reads. Then prove it with the same heading flown at both settings against the drawn path.
+- Evidence: `stepFly` (`inField`, `warp`, `kdt`); `stepFieldFlight(kdt, dt)`; README round 15 "Checked".
+- Promoted: no
+
+### L-STU-57 — A prediction past a teleport is only as good as the exit's sensitivity; measure where the flight leaves the line
+- Lab: Stoat Flight Studio, round 15 (dipole field) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
+- Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
+- Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 

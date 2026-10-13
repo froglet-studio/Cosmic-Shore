@@ -1,0 +1,453 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using CosmicShore.Editor.Froglet;
+using UnityEditor;
+using UnityEngine;
+using Rgba = CosmicShore.Editor.Studios.StudioPreviewCanvas.Rgba;
+
+namespace CosmicShore.Editor.Studios
+{
+    /// <summary>
+    /// The Vessel Studio HOME: the web hub's front page (<c>Docs/Studios/VesselStudio/index.html</c>) in Unity, read
+    /// from the same files, so a studio added to <c>studios.json</c> shows up here with nothing else to change. Its cards
+    /// are the hub's (/vessel-studio D35): the text, the spec rows and the buttons all come from <c>studios.json</c>
+    /// (<c>cardActions</c>: Open studio, PLAY IN ENGINE, OPEN LIVE IN BROWSER, the same order as Amoebius's
+    /// VESSEL STUDIO page), never spelled here; <c>parity_gate.py</c> checks it. The
+    /// colours are the studio's (<c>studio-theme.js</c>: the Stoat's night tokens and amber chrome; card accents from
+    /// <c>studio-domains.js</c>), not the editor skin's: this page is a studio page.
+    /// </summary>
+    public sealed partial class VesselStudioWindow
+    {
+        const string StudioDir = "Docs/Studios/VesselStudio";
+        const float PreviewHeight = 150f, CardMinWidth = 300f, Gap = 14f, Pad = 16f;
+        const int PreviewPixelsW = 320, PreviewPixelsH = 150;   // the web canvas is 640×300 at half scale
+        const double FrameSeconds = 1.0 / 30.0;
+
+        /// <summary>studios.json, as JsonUtility reads it (fields the page does not use are skipped).</summary>
+        [Serializable]
+        public sealed class Catalog
+        {
+            public string web, mirror, hub, lede, fleetNote;
+            public StudioEntry[] studios;
+            public string[] fleet;
+            public CardAction[] cardActions;
+        }
+
+        [Serializable]
+        public sealed class StudioEntry
+        {
+            public string id, name, file, kind, chip, summary, accent, docs, engineMode, engineNote, preview;
+            public SpecRow[] spec;
+        }
+
+        /// <summary>A row under the card's summary (<c>spec</c>).</summary>
+        [Serializable]
+        public sealed class SpecRow { public string k, v; }
+
+        /// <summary>One of the card's buttons (<c>cardActions</c>): the hosts it works on, what the studio needs for it.</summary>
+        [Serializable]
+        public sealed class CardAction { public string id, label, on, needs, tip; }
+
+        /// <summary>A card button as this home shows it: in its place always; disabled with the reason when it does not apply.</summary>
+        public readonly struct CardButton
+        {
+            public readonly string Id, Label, Tip;
+            public readonly bool Enabled;
+            public CardButton(string id, string label, bool enabled, string tip) { Id = id; Label = label; Enabled = enabled; Tip = tip; }
+        }
+
+        /// <summary>
+        /// The card's buttons for <paramref name="s"/> on Unity, from the catalog's <c>cardActions</c> in their order (the same
+        /// rule as Amoebius's <c>StudioCatalog.Applies</c>). Unity has no tuner (/vessel-studio D33). Pure, tested.
+        /// </summary>
+        public static List<CardButton> CardButtons(Catalog cat, StudioEntry s)
+        {
+            var list = new List<CardButton>();
+            foreach (var a in cat?.cardActions ?? Array.Empty<CardAction>())
+            {
+                if (a == null || string.IsNullOrEmpty(a.label)) continue;
+                bool here = Array.IndexOf((a.on ?? "").Split(','), "unity") >= 0;
+                string why = !here ? "Not in Unity." :
+                    a.needs == "engineMode" && string.IsNullOrEmpty(s.engineMode) ? "This vessel has no game mode in the engine yet." :
+                    a.needs == "mirror" && string.IsNullOrEmpty(cat.mirror) ? "No live mirror in the catalog." : null;
+                list.Add(new CardButton(a.id, a.label.ToUpperInvariant(), why == null, why ?? a.tip ?? ""));   // capitals, as the hub's CSS shows them
+            }
+            return list;
+        }
+
+        // The studio look (studio-theme.js), night only: the stage and the hub are night whatever the editor skin.
+        static class Look
+        {
+            public static readonly Color Bg = C("#0b1026"), Panel = C("#121a3a"), Line = C("#27336a");
+            public static readonly Color Fg = C("#e8ecff"), Dim = C("#9aa6d6"), Accent = C("#ffb347"), Off = C("#5d6488");
+            public static readonly Color OnAccent = C("#1a1200"), Bad = C("#ff7a8a");
+
+            public static Color C(string hex) => ToColor(Rgba.Hex(hex));
+            public static Color ToColor(Rgba c) => new(c.R, c.G, c.B, c.A);
+
+            static GUIStyle _eyebrow, _h1, _h2, _lede, _name, _body, _chip, _button, _note;
+            public static GUIStyle Eyebrow => _eyebrow ??= Make(11, FontStyle.Bold, Dim);
+            public static GUIStyle H1 => _h1 ??= Make(40, FontStyle.Bold, Fg);
+            public static GUIStyle H2 => _h2 ??= Make(17, FontStyle.Bold, Fg);
+            public static GUIStyle Lede => _lede ??= Make(13, FontStyle.Normal, Dim, wrap: true);
+            public static GUIStyle Name => _name ??= Make(26, FontStyle.Bold, Fg);
+            public static GUIStyle Body => _body ??= Make(12, FontStyle.Normal, Dim, wrap: true);
+            public static GUIStyle Chip => _chip ??= Make(10, FontStyle.Normal, Fg, TextAnchor.MiddleCenter);
+            public static GUIStyle Button => _button ??= Make(11, FontStyle.Bold, Fg, TextAnchor.MiddleCenter);
+            public static GUIStyle Note => _note ??= Make(11, FontStyle.Normal, Dim, wrap: true);
+
+            static GUIStyle Make(int size, FontStyle style, Color color, TextAnchor anchor = TextAnchor.UpperLeft, bool wrap = false) =>
+                new(EditorStyles.label)
+                {
+                    fontSize = size, fontStyle = style, alignment = anchor, wordWrap = wrap, richText = false,
+                    padding = new RectOffset(0, 0, 0, 0), margin = new RectOffset(0, 0, 0, 0),
+                    normal = { textColor = color }, hover = { textColor = color },
+                };
+
+            static readonly Dictionary<(GUIStyle, Color), GUIStyle> Tints = new();
+
+            /// <summary>Text in a colour other than the style's (made once per style and colour, not per frame).</summary>
+            public static GUIStyle Tinted(GUIStyle s, Color c)
+            {
+                if (!Tints.TryGetValue((s, c), out var t))
+                    Tints[(s, c)] = t = new GUIStyle(s) { normal = { textColor = c }, hover = { textColor = c } };
+                return t;
+            }
+        }
+
+        Catalog _catalog;
+        string _homeError;
+        Dictionary<string, Color> _domains = new();
+        string[] _fleet = Array.Empty<string>();
+        readonly Dictionary<string, Texture2D> _previewTex = new();
+        readonly Dictionary<string, StudioPreviewCanvas> _previewCanvas = new();
+        readonly Dictionary<string, Texture2D> _thumbs = new();   // the baked previews (studios.json "preview")
+        Vector2 _homeScroll;
+        float _homeHeight = 900f;
+        double _lastFrame;
+
+        static string Root => Path.GetDirectoryName(Application.dataPath) ?? ".";
+        static string StudioPath(string file) => Path.Combine(Root, StudioDir, file);
+
+        void LoadHome()
+        {
+            _homeError = null;
+            try
+            {
+                _catalog = JsonUtility.FromJson<Catalog>(File.ReadAllText(StudioPath("studios.json")));
+                _domains = ParseDomains(File.ReadAllText(StudioPath("studio-domains.js")));
+                string hub = StudioPath("index.html");
+                _fleet = _catalog.fleet is { Length: > 0 } f ? f : File.Exists(hub) ? ParseFleet(File.ReadAllText(hub)) : Array.Empty<string>();
+                foreach (var t in _thumbs.Values) if (t) DestroyImmediate(t);
+                _thumbs.Clear();
+            }
+            catch (Exception e)
+            {
+                _catalog = null;
+                _homeError = $"Could not read the Vessel Studio from {StudioDir}: {e.Message}. Pull Ys-bleeding-edge.";
+            }
+        }
+
+        /// <summary>The game's domain colours from the generated <c>studio-domains.js</c>, by key. Pure, tested.</summary>
+        public static Dictionary<string, Color> ParseDomains(string js)
+        {
+            var result = new Dictionary<string, Color>();
+            foreach (Match m in Regex.Matches(js, @"key:\s*'(\w+)'[^}]*?color:\s*'(#[0-9a-fA-F]{6})'"))
+                result[m.Groups[1].Value] = Look.C(m.Groups[2].Value);
+            return result;
+        }
+
+        /// <summary>The hub's "no studio yet" fleet list (<c>&lt;div class="fleet"&gt;</c>), in order. Pure, tested.</summary>
+        public static string[] ParseFleet(string html)
+        {
+            var block = Regex.Match(html, @"<div class=""fleet""[^>]*>(.*?)</div>", RegexOptions.Singleline);
+            if (!block.Success) return Array.Empty<string>();
+            var names = new List<string>();
+            foreach (Match m in Regex.Matches(block.Groups[1].Value, @"<span>([^<]+)</span>")) names.Add(m.Groups[1].Value.Trim());
+            return names.ToArray();
+        }
+
+        /// <summary>A studio's card colour: a domain key (studio-domains.js), a #hex, or the studio amber.</summary>
+        Color AccentOf(StudioEntry s)
+        {
+            if (string.IsNullOrEmpty(s.accent)) return Look.Accent;
+            if (_domains.TryGetValue(s.accent, out var d)) return d;
+            try { return Look.C(s.accent); }
+            catch (FormatException) { return Look.Accent; }
+        }
+
+        static void OpenPage(string file)
+        {
+            string path = StudioPath(file);
+            if (!File.Exists(path))
+            {
+                EditorUtility.DisplayDialog("Vessel Studio", $"{StudioDir}/{file} is not in this checkout. Pull Ys-bleeding-edge.", "OK");
+                return;
+            }
+            LaunchAmoebius.OpenStudio(file);   // the build of this checkout, served by Amoebius (/vessel-studio D34)
+        }
+
+        /// <summary>Keeps the previews moving: a repaint at most 30 times a second.</summary>
+        void Animate()
+        {
+            double now = EditorApplication.timeSinceStartup;
+            if (now - _lastFrame < FrameSeconds) return;
+            _lastFrame = now;
+            Repaint();
+        }
+
+        // ------------------------------------------------------------------ the page
+
+        void DrawHome()
+        {
+            var full = new Rect(0f, 0f, position.width, position.height);
+            FrogletEditorPalette.DrawRect(full, Look.Bg);
+
+            float viewW = position.width - 14f;   // the scrollbar's lane is always kept, so the layout never flips between widths
+            _homeScroll = GUI.BeginScrollView(full, _homeScroll, new Rect(0f, 0f, viewW, _homeHeight), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
+            float cw = Mathf.Min(1120f, viewW - 2f * Pad), x = (viewW - cw) * 0.5f, y = 26f;
+
+            // ---- header: eyebrow, VESSEL STUDIO, the lede, the page's own links ----
+            GUI.Label(new Rect(x, y, cw, 14f), "COSMIC SHORE · FROGLET", Look.Eyebrow);
+            y += 20f;
+            var vessel = new GUIContent("VESSEL ");
+            float vw = Look.H1.CalcSize(vessel).x;
+            GUI.Label(new Rect(x, y, vw, 46f), vessel, Look.H1);
+            GUI.Label(new Rect(x + vw, y, cw - vw, 46f), "STUDIO", Look.Tinted(Look.H1, Look.Accent));
+            y += 52f;
+            string lede = _catalog?.lede ?? "Pick a vessel and its studio opens.";
+            float lh = Look.Lede.CalcHeight(new GUIContent(lede), Mathf.Min(cw, 640f));
+            GUI.Label(new Rect(x, y, Mathf.Min(cw, 640f), lh), lede, Look.Lede);
+            y += lh + 12f;
+
+            float bx = x;
+            if (Button(ref bx, y, "OPEN THE HUB", Look.Accent, true, "The web hub itself, built from this checkout and served by Amoebius, in its own window"))
+                OpenPage(_catalog?.hub ?? "index.html");
+            if (Button(ref bx, y, "CLAUDE.AI ARTIFACT", Look.Accent, false, "The one Vessel Studio artifact: Ask, shared requests, the decision log and Sync live there"))
+                Application.OpenURL(_catalog?.web ?? StudioUrl);
+            if (Button(ref bx, y, "AMOEBIUS", Look.Accent, false, "Amoebius's VESSEL STUDIO page: PLAY IN ENGINE flies the game's own vessel"))
+                EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage;
+            y += 26f + 26f;
+
+            if (_homeError != null)
+            {
+                GUI.Label(new Rect(x, y, cw, 40f), _homeError, Look.Tinted(Look.Body, Look.Bad));
+                y += 48f;
+            }
+
+            // ---- the studios ----
+            GUI.Label(new Rect(x, y, cw, 22f), "STUDIOS", Look.H2);
+            y += 30f;
+            var studios = _catalog?.studios ?? Array.Empty<StudioEntry>();
+            int cols = Mathf.Max(1, Mathf.FloorToInt((cw + Gap) / (CardMinWidth + Gap)));
+            float cardW = (cw - Gap * (cols - 1)) / cols;
+            for (int i = 0; i < studios.Length; i += cols)
+            {
+                float rowH = 0f;
+                for (int c = 0; c < cols && i + c < studios.Length; c++) rowH = Mathf.Max(rowH, CardHeight(studios[i + c], cardW));
+                for (int c = 0; c < cols && i + c < studios.Length; c++)
+                    DrawCard(new Rect(x + c * (cardW + Gap), y, cardW, rowH), studios[i + c]);
+                y += rowH + Gap;
+            }
+
+            // ---- the fleet without a studio ----
+            if (_fleet.Length > 0)
+            {
+                float fx = x;
+                foreach (var v in _fleet)
+                {
+                    float w = Look.Chip.CalcSize(new GUIContent(v)).x + 18f;
+                    if (fx + w > x + cw) { fx = x; y += 30f; }
+                    var r = new Rect(fx, y, w, 24f);
+                    FrogletEditorPalette.DrawCard(r, Color.clear, Look.Line);
+                    GUI.Label(r, v, Look.Tinted(Look.Chip, Look.Off));
+                    fx += w + 6f;
+                }
+                y += 32f;
+                string none = _catalog?.fleetNote ?? "No studio yet.";
+                float nh = Look.Note.CalcHeight(new GUIContent(none), cw);
+                GUI.Label(new Rect(x, y, cw, nh), none, Look.Note);
+                y += nh + 18f;
+            }
+
+            const string foot = "A studio opens in its own window: this checkout's build, served by Amoebius, so it looks and plays exactly as on claude.ai " +
+                                "(Unity has no web view, so it is an Edge or Chrome app window), with Sync, Ask, Requests and Decisions working. " +
+                                "The cards are the web hub's (studios.json). The artifact is the one source of truth: its numbers reach the game through /artifact-to-unity, never a second set of tabs here.";
+            float fh = Look.Note.CalcHeight(new GUIContent(foot), cw);
+            GUI.Label(new Rect(x, y, cw, fh), foot, Look.Note);
+            y += fh + 28f;
+
+            GUI.EndScrollView();
+            if (Event.current.type == EventType.Repaint && !Mathf.Approximately(_homeHeight, y)) { _homeHeight = y; Repaint(); }
+        }
+
+        const float SpecLine = 16f, ButtonH = 26f;
+
+        static GUIStyle _specKey, _specVal;
+        static GUIStyle SpecKey => _specKey ??= new GUIStyle(Look.Note) { wordWrap = false, font = EditorStyles.miniFont };
+        static GUIStyle SpecVal => _specVal ??= new GUIStyle(Look.Tinted(Look.Note, Look.Fg)) { wordWrap = true };
+
+        float SpecKeyWidth(StudioEntry s)
+        {
+            float w = 0f;
+            foreach (var r in s.spec ?? Array.Empty<SpecRow>()) w = Mathf.Max(w, SpecKey.CalcSize(new GUIContent(r.k)).x);
+            return w > 0f ? w + 12f : 0f;
+        }
+
+        float SpecHeight(StudioEntry s, float w)
+        {
+            float h = 0f, kw = SpecKeyWidth(s);
+            foreach (var r in s.spec ?? Array.Empty<SpecRow>()) h += Mathf.Max(SpecLine, SpecVal.CalcHeight(new GUIContent(r.v), w - kw)) + 2f;
+            return h;
+        }
+
+        static int ButtonRows(List<CardButton> buttons, float width)
+        {
+            int rows = 1; float x = 0f;
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                float bw = Look.Button.CalcSize(new GUIContent(buttons[i].Label)).x + 24f;
+                if (i > 0 && x + bw > width) { rows++; x = 0f; }
+                x += bw + 8f;
+            }
+            return rows;
+        }
+
+        float CardHeight(StudioEntry s, float w)
+        {
+            float inner = w - 2f * Pad;
+            return Pad + PreviewHeight + 12f + 32f + 26f + Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), inner) + 10f + SpecHeight(s, inner)
+                   + 14f + ButtonRows(CardButtons(_catalog, s), inner) * (ButtonH + 6f) + Pad;
+        }
+
+        void DrawCard(Rect r, StudioEntry s)
+        {
+            var accent = AccentOf(s);
+            bool hover = r.Contains(Event.current.mousePosition);
+            FrogletEditorPalette.DrawCard(r, Look.Panel, hover ? accent : Look.Line);
+            float x = r.x + Pad, w = r.width - 2f * Pad, y = r.y + Pad;
+
+            // the preview: Unity's line-for-line port of the hub's canvas where it has one, else the baked thumbnail (studios.json preview)
+            var preview = new Rect(x, y, w, PreviewHeight);
+            if (Event.current.type == EventType.Repaint)
+            {
+                if (!StudioPreviews.Has(s.id) && Thumb(s.preview) is { } thumb) GUI.DrawTexture(preview, thumb, ScaleMode.ScaleAndCrop);
+                else GUI.DrawTextureWithTexCoords(preview, Preview(s, accent), new Rect(0f, 1f, 1f, -1f));   // the canvas is top-down
+            }
+            y += PreviewHeight + 12f;
+
+            GUI.Label(new Rect(x, y, w, 30f), (s.name ?? s.id).ToUpperInvariant(), Look.Tinted(Look.Name, accent));
+            y += 32f;
+            string chip = string.IsNullOrEmpty(s.chip) ? s.kind ?? "" : s.chip;
+            float kw = Mathf.Min(w, Look.Chip.CalcSize(new GUIContent(chip)).x + 16f);
+            var chipRect = new Rect(x, y, kw, 20f);
+            FrogletEditorPalette.DrawCard(chipRect, accent.WithAlpha(0.08f), accent);
+            GUI.Label(chipRect, chip, Look.Tinted(Look.Chip, accent));
+            y += 26f;
+            float sh = Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), w);
+            GUI.Label(new Rect(x, y, w, sh), s.summary ?? "", Look.Body);
+            y += sh + 10f;
+
+            // the spec rows, key and value, as on the hub card
+            float skw = SpecKeyWidth(s);
+            foreach (var row in s.spec ?? Array.Empty<SpecRow>())
+            {
+                float vh = Mathf.Max(SpecLine, SpecVal.CalcHeight(new GUIContent(row.v), w - skw));
+                GUI.Label(new Rect(x, y, skw, SpecLine), row.k, SpecKey);
+                GUI.Label(new Rect(x + skw, y, w - skw, vh), row.v, SpecVal);
+                y += vh + 2f;
+            }
+
+            // the card's buttons (studios.json cardActions, every one in its place) sit on the card's floor, so cards in a row line up
+            var buttons = CardButtons(_catalog, s);
+            int rows = ButtonRows(buttons, w);
+            float by = r.yMax - Pad - rows * (ButtonH + 6f) + 6f, bx = x;
+            var btnRow = new Rect(x, by, w, r.yMax - Pad - by);   // a disabled button's click is not the card's
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                var b = buttons[i];
+                float bw = Look.Button.CalcSize(new GUIContent(b.Label)).x + 24f;
+                if (i > 0 && bx + bw > x + w) { bx = x; by += ButtonH + 6f; }
+                if (Button(ref bx, by, b.Label, accent, i == 0, b.Tip, b.Enabled)) RunCardButton(b.Id, s);
+            }
+
+            // the whole card opens the studio, as on the web hub (drawn after the buttons, so they keep their clicks)
+            if (!btnRow.Contains(Event.current.mousePosition) && GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
+            EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
+        }
+
+        void RunCardButton(string id, StudioEntry s)
+        {
+            switch (id)
+            {
+                case "open": OpenPage(s.file); break;
+                case "engine": EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage; break;   // Amoebius's VESSEL STUDIO page: PLAY IN ENGINE there
+                case "live":
+                    var m = _catalog?.mirror ?? "";
+                    Application.OpenURL((m.EndsWith("/") ? m : m + "/") + (s.file == (_catalog?.hub ?? "index.html") ? "" : Uri.EscapeDataString(s.file)));
+                    break;
+            }
+        }
+
+        /// <summary>A baked preview thumbnail (studios.json <c>preview</c>, made by bake_previews.cjs), loaded once.</summary>
+        Texture2D Thumb(string rel)
+        {
+            if (string.IsNullOrEmpty(rel) || rel.Contains("..")) return null;
+            if (_thumbs.TryGetValue(rel, out var t)) return t;
+            t = null;
+            string p = StudioPath(rel);
+            if (File.Exists(p))
+            {
+                t = new Texture2D(2, 2, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                if (!t.LoadImage(File.ReadAllBytes(p))) { DestroyImmediate(t); t = null; }
+            }
+            _thumbs[rel] = t;
+            return t;
+        }
+
+        /// <summary>This frame of a studio's preview, drawn on the CPU (well under a millisecond) and uploaded.</summary>
+        Texture2D Preview(StudioEntry s, Color accent)
+        {
+            if (!_previewTex.TryGetValue(s.id, out var tex) || !tex)
+            {
+                tex = new Texture2D(PreviewPixelsW, PreviewPixelsH, TextureFormat.RGBA32, false)
+                {
+                    hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp,
+                };
+                _previewTex[s.id] = tex;
+                _previewCanvas[s.id] = new StudioPreviewCanvas(PreviewPixelsW, PreviewPixelsH, 0.5f);
+            }
+            var canvas = _previewCanvas[s.id];
+            Rgba Domain(string key) => _domains.TryGetValue(key, out var c) ? new Rgba(c.r, c.g, c.b) : new Rgba(accent.r, accent.g, accent.b);
+            StudioPreviews.Draw(s.id, canvas, (float)EditorApplication.timeSinceStartup, Domain, new Rgba(accent.r, accent.g, accent.b));
+            tex.SetPixelData(canvas.Pixels, 0);
+            tex.Apply(false);
+            return tex;
+        }
+
+        /// <summary>A studio button (the page's own, not the editor skin's): filled when primary, outlined otherwise. Advances <paramref name="x"/>.</summary>
+        static bool Button(ref float x, float y, string label, Color accent, bool primary, string tooltip, bool enabled = true)
+        {
+            if (!enabled)
+            {
+                float dw = Look.Button.CalcSize(new GUIContent(label)).x + 24f;
+                var dr = new Rect(x, y, dw, 26f);
+                x += dw + 8f;
+                FrogletEditorPalette.DrawCard(dr, Color.clear, Look.Line);
+                GUI.Label(dr, new GUIContent(label, tooltip), Look.Tinted(Look.Button, Look.Off));
+                return false;
+            }
+            float w = Look.Button.CalcSize(new GUIContent(label)).x + 24f;
+            var r = new Rect(x, y, w, 26f);
+            x += w + 8f;
+            bool hover = r.Contains(Event.current.mousePosition);
+            if (primary) FrogletEditorPalette.DrawCard(r, hover ? Color.Lerp(accent, Color.white, 0.15f) : accent, accent);
+            else FrogletEditorPalette.DrawCard(r, accent.WithAlpha(hover ? 0.18f : 0.06f), hover ? accent : Look.Line);
+            GUI.Label(r, label, Look.Tinted(Look.Button, primary ? Look.OnAccent : Look.Fg));
+            EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
+            return GUI.Button(r, new GUIContent("", tooltip), GUIStyle.none);
+        }
+    }
+}

@@ -110,6 +110,10 @@ namespace CosmicShore.Gameplay
         bool _seeded;
         bool _payOut;
         bool _plantHeld;
+        // Analog triggers: this frame's LT and RT depths (0..1), read by PollTriggers.
+        float _ltDepth, _rtDepth;
+        bool _launchedThisStep;
+        int _lastPollFrame = -1;
         bool _massMode;
         float _energy;
         /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
@@ -142,6 +146,29 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ public surface
 
         public bool IsPivoting => _solver != null && _solver.Mode == ThresherMode.Pivot;
+        /// <summary>Every Thresher dial (the transformer reads its release and planted-hull seams here).</summary>
+        public ThresherConfigSO Config => config;
+        /// <summary>Analog triggers are on (<c>dials.analogTriggers</c>): LT is a brake, RT the chain's rigidity.</summary>
+        public bool AnalogTriggers => _settings.Analog;
+        /// <summary>An armed launch left the orbit in this frame's chain step.</summary>
+        public bool LaunchedThisStep => _launchedThisStep;
+        /// <summary>An aimed launch is armed and waiting for its launch point.</summary>
+        public bool LaunchArmed => _solver != null && _solver.LaunchArmed;
+        /// <summary>The planted orbit's spin: the axis it turns about (the orbit normal, travel sense) and its
+        /// rate (rad/s). False when not planted. The transformer winds this down on release.</summary>
+        public bool TryGetOrbitSpin(Vector3 shipPosition, out Vector3 axis, out float rate)
+        {
+            axis = Vector3.zero; rate = 0f;
+            if (!IsPivoting) return false;
+            axis = _solver.OrbitNormal(shipPosition);
+            float r = (shipPosition - _solver.Pivot).magnitude;
+            if (axis.sqrMagnitude < 0.5f || r < 1e-3f) return false;
+            rate = _solver.LockSpeed / r;
+            return true;
+        }
+        /// <summary>How far an armed launch leaves before its point (radians); the transformer sets it each
+        /// frame so a spin wound down after the launch lands on the aim.</summary>
+        public void SetLaunchLead(float radians) { if (_solver != null) _solver.LaunchLeadRadians = Mathf.Max(0f, radians); }
         public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
@@ -245,13 +272,46 @@ namespace CosmicShore.Gameplay
         {
             if (_solver == null) return;
             _plantHeld = true;
-            _solver.Plant();
+            // Analog triggers: the press is only a fallback depth (a source with no analog channel, a remote
+            // replica); PollTriggers decides when the ball stops.
+            if (!_settings.Analog) _solver.Plant();
         }
 
         public void EndPlant()
         {
             if (_solver == null) return;
             _plantHeld = false;
+            if (_settings.Analog) return;   // PollTriggers lets go when LT falls below letGoBelow
+            LetGo();
+        }
+
+        /// <summary>
+        /// ANALOG TRIGGERS, once per frame before the hull moves (<see cref="ThresherVesselTransformer"/>; the
+        /// fallback step in <see cref="LateUpdate"/> otherwise). Reads the triggers' DEPTHS - from the input
+        /// when it reports one, else the press state as a full pull (touch, one-thumb mouse, and remote
+        /// replicas, which only see press and release) - and hands them to
+        /// <see cref="ThresherChainSolver.AnalogTriggers"/>: RT is the chain's rigidity, LT's depth brakes the
+        /// ball, a full pull stops it, and letting go below <c>letGoBelow</c> lets go (or arms the aimed
+        /// launch) exactly as the digital LT-up does.
+        /// </summary>
+        public void PollTriggers(Vector3 shipPosition, Vector3 shipUp, float dt)
+        {
+            if (_solver == null || !_settings.Analog || !_seeded || dt <= 0f) return;
+            if (_lastPollFrame == Time.frameCount) return;   // once per frame (the transformer, or the fallback)
+            _lastPollFrame = Time.frameCount;
+            var input = _status?.InputStatus;
+            float lt = input != null ? input.LeftTriggerAnalog : 0f;
+            float rt = input != null ? input.RightTriggerAnalog : 0f;
+            _ltDepth = lt > 1e-3f ? Mathf.Clamp01(lt) : (_plantHeld ? 1f : 0f);
+            _rtDepth = rt > 1e-3f ? Mathf.Clamp01(rt) : (_payOut ? 1f : 0f);
+            float full = config ? config.FullPull : 0.97f, letGo = config ? config.LetGoBelow : 0.9f;
+            var edge = _solver.AnalogTriggers(_ltDepth, _rtDepth, full, letGo, shipPosition, _lastShipVelocity, shipUp, dt);
+            if (edge == ThresherTriggerEdge.LetGo) LetGo();
+        }
+
+        /// <summary>LT up (digital) or below letGoBelow (analog).</summary>
+        void LetGo()
+        {
             bool wasPivot = _solver.Mode == ThresherMode.Pivot;
 
             // AIMED release: while the camera spectates, the aim names ONE point on the circle (the
@@ -309,8 +369,10 @@ namespace CosmicShore.Gameplay
             // The release edge never arrives for a vessel whose input is paused or handed to the
             // autopilot, so a held trigger must not stay held across a disable.
             _payOut = false;
-            if (_solver != null && (_plantHeld || _solver.LaunchArmed)) _solver.Release(_lastShipVelocity);
+            if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
+                _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            _ltDepth = 0f; _rtDepth = 0f;
             _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
@@ -342,7 +404,10 @@ namespace CosmicShore.Gameplay
             EnsureSeeded(shipPosition, shipVelocity);
 
             if (MagnetActive) PullBallToEnemy(dt);
-            var result = _solver.Step(shipPosition, shipVelocity, _payOut, shipCruise, dt, pivotSteer);
+            // (analog: no winch; only the windmill still reads "let out", as the chain going slack)
+            bool payOut = _settings.Analog ? _solver.Rigidity < 0.5f : _payOut;
+            var result = _solver.Step(shipPosition, shipVelocity, payOut, shipCruise, dt, pivotSteer);
+            _launchedThisStep = result.Launched;
             _lastStepFrame = Time.frameCount;
             _lastShipPosition = shipPosition;
             _lastShipVelocity = result.ShipVelocity;
@@ -368,7 +433,10 @@ namespace CosmicShore.Gameplay
                               _solver.SecondsToLaunchPoint(shipPosition, _aimDir) <= config.PerfectWindowSeconds;
 
             UpdateCombo(dt);
-            IsReady = _payOut && _solver.Mode == ThresherMode.Free &&
+            // READY: tightening the chain now (analog: pulling RT to rigid; digital: releasing it) would crack
+            // the ball past smash speed - both reel the ball in to rest length by spin conservation.
+            bool ready = _settings.Analog ? _solver.Rigidity < (config ? config.FullPull : 0.97f) : _payOut;
+            IsReady = ready && _solver.Mode == ThresherMode.Free &&
                       _solver.PredictReelCrackSpeed(shipPosition, result.ShipVelocity)
                           >= _settings.SmashSpeed * (config ? config.ReadyMargin : 1f);
             return result.ShipVelocity;
@@ -398,6 +466,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 pos = _status.Transform.position;
                 Vector3 vel = _seeded ? (pos - _lastShipPosition) / Time.deltaTime : Vector3.zero;
+                PollTriggers(pos, _status.Transform.up, Time.deltaTime);
                 StepChain(pos, vel, _status.Speed, Time.deltaTime);
             }
 
@@ -899,6 +968,9 @@ namespace CosmicShore.Gameplay
         float _spectateQualifyTime;
         // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
         Vector3 _aimDir, _aimUp;
+        // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
+        Quaternion _lastCamRotation = Quaternion.identity;
+        float _carryRate;
 
         /// <summary>
         /// The local pilot's camera, two jobs (<c>THRESHER.md</c> § Camera):
@@ -955,7 +1027,7 @@ namespace CosmicShore.Gameplay
             // tracked the ball round every swing (abeam 161 u, ahead 15 u at full let-out) and the
             // camera pumped in and out at the swing's rhythm; with it the distance follows the
             // winch, and the ball's own position only adds (a ball looped overhead).
-            need = Mathf.Max(need, ThresherCameraFraming.ReachDistance(_solver.Length,
+            need = Mathf.Max(need, ThresherCameraFraming.ReachDistance(_solver.Extent,
                 ballRadius, height, halfFovV, halfFovH, config.CameraFramingMargin, config.CameraMinAhead));
             float target = Mathf.Clamp(need, neutral, Mathf.Max(neutral, config.CameraMaxDistance));
             _camDistance = ThresherCameraFraming.Ease(_camDistance, target,
@@ -963,21 +1035,29 @@ namespace CosmicShore.Gameplay
             _camWritten = -_camDistance;
             _cam.SetCameraDistance(_camWritten);
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
+            _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
 
             // Spectate.
-            float spin = IsPivoting ? ThresherCameraFraming.SpinRate(_solver.LockSpeed, _solver.Length) : 0f;
+            float spin = IsPivoting ? ThresherCameraFraming.SpinRate(_solver.LockSpeed, _solver.Extent) : 0f;
+            // Analog triggers: the camera switches only with the ball STOPPED and the chain fully RIGID - both
+            // triggers at a full pull (RT read as the chain's slew-limited rigidity) - and RT eased below
+            // letGoBelow hands it back unless a launch is armed.
+            bool analog = _settings.Analog;
+            bool bothFull = !analog || (!_solver.IsBraking && _ltDepth >= config.FullPull && _solver.Rigidity >= config.FullPull);
+            bool slackened = analog && !_solver.LaunchArmed && _solver.Rigidity < config.LetGoBelow;
             // Detach only once the spin has held over the threshold for spectateEngageSeconds, so a
             // tap of LT does not bob the camera up toward the vantage and straight back down.
-            bool qualifies = IsPivoting && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
+            bool qualifies = IsPivoting && bothFull && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
             _spectateQualifyTime = qualifies ? _spectateQualifyTime + dt : 0f;
             if (!_spectating && qualifies && _spectateQualifyTime >= config.SpectateEngageSeconds)
-                BeginSpectate(ship.position);
-            else if (_spectating && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction))
+                BeginSpectate(ship.position, dt);
+            else if (_spectating && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction || slackened))
                 EndSpectate(smooth: true);
 
             if (!_spectating)
             {
                 if (_exiting) TickExit(dt);
+                _lastCamRotation = _cam.transform.rotation;
                 return;
             }
 
@@ -1006,12 +1086,24 @@ namespace CosmicShore.Gameplay
             // hands over (spectateBlendSeconds, short) from a vantage that starts exactly where the
             // camera already is - so the still-spinning chase pose underneath never leaks in.
             _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateEnterSeconds));
-            ShowVantage(_easeFromPos, _easeFromRot, eye, look, _camEase);
+            // The carried turn (spectateCarrySeconds): the start pose keeps turning at the camera's own rate
+            // about the orbit's axis and glides to a stop, so a camera that was turning does not freeze.
+            Quaternion fromRot = _easeFromRot;
+            float carryT = config.SpectateCarrySeconds;
+            if (carryT > 0f && Mathf.Abs(_carryRate) > 1e-4f)
+            {
+                float u = Mathf.Clamp01(_camEase * config.SpectateEnterSeconds / carryT);
+                fromRot = Quaternion.AngleAxis(_carryRate * carryT * (u - (u * u * u - u * u * u * u * 0.5f)) * Mathf.Rad2Deg, _aimUp) * _easeFromRot;
+            }
+            ShowVantage(_easeFromPos, fromRot, eye, look, _camEase);
+            _lastCamRotation = _cam.transform.rotation;
 
             // The launch sight: the crosshair (lime while the timing is right) and the Time-petal
-            // zoom window down the same trajectory, zoomed by LT's depth alone.
+            // zoom window down the same trajectory, zoomed by LT's depth alone. (Analog triggers: LT is at a
+            // full pull whenever this view is up, so its depth cannot zoom; the window stays wide.)
+            float zoomDepth = analog ? 0f : (input != null ? input.LeftTriggerAnalog : 0f);
             _sightZoom01 = Mathf.MoveTowards(_sightZoom01,
-                ThresherCameraFraming.ZoomTarget(input != null ? input.LeftTriggerAnalog : 0f, config.SightZoomDeadzone),
+                ThresherCameraFraming.ZoomTarget(zoomDepth, config.SightZoomDeadzone),
                 config.SightZoomResponse * dt);
             if (!_sight) _sight = ThresherLaunchSight.Create(name);
             _sight.Tick(launch, _aimDir, _aimUp,
@@ -1023,7 +1115,7 @@ namespace CosmicShore.Gameplay
         /// was facing laid into the orbit plane (so the launch camera looks the way the chase camera
         /// did), and the aim's "above" is the orbit's axis on the camera's own side, so the launch
         /// camera rises over the orbit rather than dropping under it.</summary>
-        void BeginSpectate(Vector3 shipPosition)
+        void BeginSpectate(Vector3 shipPosition, float dt)
         {
             Vector3 pivot = _solver.Pivot;
             Vector3 outward = shipPosition - pivot;
@@ -1038,6 +1130,18 @@ namespace CosmicShore.Gameplay
 
             _aimDir = aim.normalized;
             _aimUp = normal;
+            // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose.
+            // The aim (and so the vantage) is where a turn at that rate gliding to a stop over
+            // spectateCarrySeconds ends - half the rate x the time further round.
+            _carryRate = 0f;
+            if (config.SpectateCarrySeconds > 0f && dt > 0f)
+            {
+                Vector3 was = Vector3.ProjectOnPlane(_lastCamRotation * Vector3.forward, normal);
+                Vector3 now = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+                if (was.sqrMagnitude > 1e-6f && now.sqrMagnitude > 1e-6f)
+                    _carryRate = Vector3.SignedAngle(was, now, normal) * Mathf.Deg2Rad / dt;
+                _aimDir = Quaternion.AngleAxis(_carryRate * config.SpectateCarrySeconds * 0.5f * Mathf.Rad2Deg, normal) * _aimDir;
+            }
             _sightZoom01 = 0f;
             CaptureEaseStart();
             _exiting = false;
@@ -1124,6 +1228,7 @@ namespace CosmicShore.Gameplay
             if (!_cam) { _cam = null; _spectating = false; _exiting = false; _camWritten = float.NaN; if (_sight) _sight.Hide(); return; }
             EndSpectate();
             _cam.MaxFollowTurnRate = 0f;
+            _cam.MaxFollowAngularAcceleration = 0f;
             float neutral = _cam.NeutralOffsetZ;
             if (neutral < 0f && _cam.GetCameraDistance() == _camWritten) _cam.SetCameraDistance(neutral);
             _cam = null;
@@ -1281,6 +1386,8 @@ namespace CosmicShore.Gameplay
         int _comboShown;
 
         static Material s_lineMaterial, s_ballMaterial;
+        static Mesh s_ballMesh;
+        ThresherHullBuilder _hullBuilder;
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -1297,16 +1404,17 @@ namespace CosmicShore.Gameplay
             _root = new GameObject($"ThresherVisuals::{name}");
             _mpb = new MaterialPropertyBlock();
 
-            // The ball: a heavy core plus six studs, so it reads as a chunky wrecking ball and its
-            // roll is visible.
+            // The ball: a faceted morning star (ThresherBallForm) — an 80-facet core and twelve spikes — so
+            // it reads as a heavy wrecking ball and its roll is visible. One shared mesh, one renderer.
             _ball = new GameObject("Ball").transform;
             _ball.SetParent(_root.transform, false);
-            var parts = new List<MeshRenderer>();
-            parts.Add(MakePrimitive(PrimitiveType.Sphere, _ball, Vector3.zero, Vector3.one, ballMat));
-            Vector3[] axes = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
-            foreach (var a in axes)
-                parts.Add(MakePrimitive(PrimitiveType.Cube, _ball, a * 0.5f, Vector3.one * 0.32f, ballMat));
-            _ballRenderers = parts.ToArray();
+            var ballGo = new GameObject("MorningStar");
+            ballGo.transform.SetParent(_ball, false);
+            ballGo.AddComponent<MeshFilter>().sharedMesh = BallMesh();
+            var ballRenderer = ballGo.AddComponent<MeshRenderer>();
+            ballRenderer.sharedMaterial = ballMat;
+            ballRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _ballRenderers = new[] { ballRenderer };
 
             _chain = MakeLine("Chain", chainMaterial ? chainMaterial : lineMat, false);
             _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
@@ -1329,17 +1437,33 @@ namespace CosmicShore.Gameplay
             if (TMP_Settings.defaultFontAsset) _comboLabel.font = TMP_Settings.defaultFontAsset;
         }
 
-        static MeshRenderer MakePrimitive(PrimitiveType type, Transform parent, Vector3 localPos, Vector3 localScale, Material mat)
+        /// <summary>This vessel's own shark hull, for the hitch the chain is drawn from. Resolved lazily and
+        /// retried until found (the hull is built in its own Awake); null on a hull without one, which then
+        /// draws the chain from the ship's centre as before.</summary>
+        bool TryHull(out ThresherHullBuilder hull)
         {
-            var go = GameObject.CreatePrimitive(type);
-            if (go.TryGetComponent(out Collider c)) Destroy(c);   // cosmetic: the sweep is the physics
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = localScale;
-            var mr = go.GetComponent<MeshRenderer>();
-            mr.sharedMaterial = mat;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return mr;
+            if (!_hullBuilder && _status != null && _status.Transform)
+                _hullBuilder = _status.Transform.GetComponentInChildren<ThresherHullBuilder>(true);
+            hull = _hullBuilder;
+            return hull;
+        }
+
+        /// <summary>The morning star, built once and shared by every Thresher (the geometry is identical; size
+        /// is the ball transform's scale). Static and never destroyed on purpose — one small mesh for the
+        /// session, not one per vessel.</summary>
+        static Mesh BallMesh()
+        {
+            if (s_ballMesh) return s_ballMesh;
+            var verts = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var tris = new List<int>();
+            ThresherBallForm.Build(verts, normals, tris);
+            s_ballMesh = new Mesh { name = "ThresherMorningStar" };
+            s_ballMesh.SetVertices(verts);
+            s_ballMesh.SetNormals(normals);
+            s_ballMesh.SetTriangles(tris, 0);
+            s_ballMesh.RecalculateBounds();
+            return s_ballMesh;
         }
 
         LineRenderer MakeLine(string label, Material mat, bool loop)
@@ -1464,6 +1588,19 @@ namespace CosmicShore.Gameplay
             int drawn = ThresherChainLinks.SmoothedCount(_links.Count, config.ChainRenderSubdivisions);
             if (_chainDrawn == null || _chainDrawn.Length != drawn) _chainDrawn = new Vector3[drawn];
             int written = ThresherChainLinks.Smooth(_links.Points, config.ChainRenderSubdivisions, _chainDrawn);
+            // DRAWN from the hull's hitch ring at the tail fork (THRESHER.md §5b), the offset eased out over
+            // the first link so the curve leaves the ring without a kink. Drawing only: the gameplay chain,
+            // its sweep and its physics still hang from the ship's centre.
+            if (written > 1 && TryHull(out var hull))
+            {
+                Vector3 offset = hull.HitchWorldPosition - ship;
+                int span = Mathf.Min(written - 1, Mathf.Max(1, config.ChainRenderSubdivisions));
+                for (int i = 0; i <= span; i++)
+                {
+                    float f = 1f - i / (float)span;
+                    _chainDrawn[i] += offset * (f * f * (3f - 2f * f));
+                }
+            }
             if (_chain.positionCount != written) _chain.positionCount = written;
             _chain.SetPositions(_chainDrawn);
 

@@ -18,7 +18,9 @@ FORBIDDEN = [
     (r"\bVector3\.\w+\(", "a System.Numerics.Vector3 method (Lerp/Cross/Dot/Normalize...)"),
     (r"\.Length\(\)|\.LengthSquared\(\)", "Vector3.Length()"),
     (r"\bnew\s+\w", "an allocation or a constructor call"),
-    (r"(?<![\w.])Math\.", "System.Math (use MathF or a comparison)"),
+    (r"(?<![\w.])Math\.", "System.Math (use KernelMath or a comparison)"),
+    (r"\bMathF\.", "System.MathF - Burst cannot find its internal calls ('Unable to find internal function "
+                   "System.MathF::Sqrt'); use KernelMath (Unity.Mathematics in Unity, MathF in the harness)"),
     (r"\bstring\b|\bobject\b|\bclass\b|\bdynamic\b", "a managed type"),
     (r"\btry\b|\bthrow\b|\bforeach\b|\?\.|\block\b", "a managed construct"),
     (r"\w+\s*\[\s*\]", "a managed array"),
@@ -82,7 +84,7 @@ def main():
             print(f"  FAIL SubstrateKernel.{name}: not found as a one-line scalar helper")
             bad += 1
             continue
-        for pat, why in FORBIDDEN[:9]:
+        for pat, why in FORBIDDEN[:10]:
             if re.search(pat, strip(m.group(1) + m.group(2))):
                 print(f"  FAIL SubstrateKernel.{name}: {why}")
                 bad += 1

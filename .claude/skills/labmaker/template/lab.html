@@ -193,7 +193,7 @@
   }
 
   // ================= platform: shell + device, answered once =================
-  // A native host (Prisma) sets window.__labHost = { shell, device } before this script runs; the
+  // A native host (Amoebius) sets window.__labHost = { shell, device } before this script runs; the
   // page never sniffs inside a native host. Touchscreen laptops keep a fine pointer → PC.
   function detectPlatform() {
     const host = window.__labHost || {};

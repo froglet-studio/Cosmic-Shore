@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'The prisms the ball lays in Mass Mode are laid SHIELDED (per-lay snapshot). Gated on IsUpgradeActive(Mass) in ThresherExecutor.LayTrailPrism (ArmouredTrailActive).'
   - Element: 3
     AbilityLabel: Winch
-    AbilityDescription: 'The RIGHT trigger. Hold to let chain out (longer reach, slower whip); release and it reels in fast, conserving the ball''s spin - the crack. The chain, taut or slack, SLICES rival prisms it touches and SHIELDS your own; each kill banks energy for the ball''s next explosion (the Space card shows how much radius is banked). Space scales the LARGEST explosion the bank can buy: ThresherConfigSO.energyMaxDiameterScale, x4 diameter at rest -> x8 at level 10 (floor x2).'
+    AbilityDescription: 'The RIGHT trigger is the chain''s RIGIDITY (analog): released, the chain is a slack bungee the turns and the spin carry the ball out on; pulled, it is rigid. Tightening reels the ball in and spins it up - the crack - and the chain eases to lime when a tighten now would crack it past smash speed. The chain, taut or slack, SLICES rival prisms it touches and SHIELDS your own; each kill banks energy for the ball''s next explosion (the Space card shows how much radius is banked). Space scales the LARGEST explosion the bank can buy: ThresherConfigSO.energyMaxDiameterScale, x4 diameter at rest -> x8 at level 10 (floor x2).'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -43,10 +43,10 @@ MonoBehaviour:
     UpgradeDescription: 'A RED (smash-speed) ball''s direct hit destroys super-shielded prisms, through the sanctioned DeactivateShields -> Damage(devastate) sequence. Gated on IsUpgradeActive(Space) in ThresherExecutor.SweepBall (BreakerActive). (Until 2026-10-13 Space 5 was Reaper Chain.)'
   - Element: 4
     AbilityLabel: Plant
-    AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it, faster every lap (right trigger up winds you in and spins you faster). A fast spin hands the camera to the launch view: the sticks pick a launch point on the circle and releasing LT launches from it, through the crosshair, as the ship comes round; pulling LT deeper zooms the Time-petal sight window. Time scales how fast the spin winds up to launch speed: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    AbilityDescription: 'The LEFT trigger is a BRAKE (analog): a partial pull slows the ball and swings you round it like a sliding anchor; only a FULL pull stops it, smoothly, and makes it the pivot you orbit, faster every lap (pull RT to wind in and spin faster). With both triggers at a full pull the camera hands over to the launch view: the sticks pick a launch point on the circle and easing LT off launches from it, through the crosshair, as the ship comes round. Time scales how fast the spin winds up to launch speed: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Perfect Release
-    UpgradeDescription: 'A release timed inside the window - the ship reaches the launch point within perfectWindowSeconds (0.25 s) of LT coming up, while the crosshair is lime - launches perfectBoost (x1.6) faster than the orbit. Gated on IsUpgradeActive(Time) in ThresherExecutor.EndPlant (PerfectReleaseActive -> ThresherChainSolver.ArmLaunch).'
+    UpgradeDescription: 'A release timed inside the window - the ship reaches the launch point within perfectWindowSeconds (0.25 s) of LT coming up, while the crosshair is lime - launches perfectBoost (x1.6) faster than the orbit. Gated on IsUpgradeActive(Time) in ThresherExecutor.LetGo (PerfectReleaseActive -> ThresherChainSolver.ArmLaunch).'

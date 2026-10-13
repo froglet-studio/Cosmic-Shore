@@ -36,6 +36,9 @@ What it proves:
  12. DOMINANT SLOT: with two holes live, the one with the larger tide at the prism stretches it.
  13. NEGATIVE CONTROL: rebuilt with the normal correction switched off (-D override of the file's
      own #ifndef dial), test 9 FAILS — the inverse transpose is what holds it.
+ 16. THE GRAVITATIONAL WAVE (the Vessel Studio's): the strain is the page's own gwStrainAt (extracted from
+     Docs/Studios/StoatFlightStudio.html and run in node), and a prism it crosses is stretched 1 + gh along its own x
+     and squeezed 1 - gh along its own y, gh = clamp(gwPrism·h, ±0.8). Needs node.
 
 Exit 0 on pass. Needs clang++; nothing else, and no Unity.
 Usage:  python3 Tools/Shaders/verify_prism_gravity_warp.py [--keep]
@@ -89,6 +92,9 @@ static inline float abs(float a){return a<0?-a:a;}
 static inline float sign(float a){return a>0?1.0f:(a<0?-1.0f:0.0f);}
 static inline float3 operator-(float3 a){return float3(-a.x,-a.y,-a.z);}
 static inline float smoothstep(float e0,float e1,float x){float t=saturate((x-e0)/(e1-e0));return t*t*(3.0f-2.0f*t);}
+static inline float clamp(float v,float a,float b){return v<a?a:(v>b?b:v);}
+static inline float3 normalize(float3 a){return a/std::sqrt(dot(a,a));}
+using std::sin;
 using std::pow; using std::sqrt; using std::exp;
 
 // HLSL matrix convention as Unity uses it: mul(M, v) is M * column(v);
@@ -114,6 +120,7 @@ static inline float4x4 GetWorldToObjectMatrix(){ return g_worldToObject; }
 """
 
 COMMON = r"""#include "shipped.h"
+#include "wave_golden.h"
 #include <cstdio>
 #include <cstdlib>
 #include <random>
@@ -435,11 +442,88 @@ int main()
         printf("15. smooth well: tide = k/(d^2+eps^2)^1.5 through the core (worst %.2g)\n", worst);
     }
 
+    // 16. THE GRAVITATIONAL WAVE (the Vessel Studio's, Docs/BLACK_HOLE.md §5.2): the strain is the page's own
+    //     gwStrainAt (run in node on the same inputs, wave_golden.h), and a prism the wave crosses is stretched by
+    //     1 + gh along its own x and squeezed by 1 - gh along its own y, gh = clamp(gwPrism·h, ±0.8), h < 0.002 = 0.
+    //     With no hole and no wave the map stays the identity (test 1); with only a wave it is the wave alone.
+    {
+        float worstStrain = 0, worstMap = 0; int moved = 0;
+        for (int i = 0; i < WAVE_CASES; i++) {
+            const WaveCase& w = WAVE[i];
+            float4 centre(w.cx, w.cy, w.cz, w.age), axis(w.ax, w.ay, w.az, w.mass), prm(w.speed, w.period, w.ringdown, w.prism);
+            float h = PrismGravityWaveStrain(float3(w.px, w.py, w.pz), centre, axis, prm);
+            worstStrain = std::max(worstStrain, std::fabs(h - w.h));
+            // the prism at that point, only this wave live
+            setBank(0, float3(0,0,0), RS, K, REACH);
+            _PrismGravityWaveCentre[0] = centre; _PrismGravityWaveAxis[0] = axis; _PrismGravityWaveParams = prm;
+            _PrismGravityWarpParams.z = 1.0f;
+            setModel(float3(w.px, w.py, w.pz), rndDir(), rnd(0, 6.28f), float3(3, 1, 6));
+            float3 c = toWorld(float3(0,0,0));
+            float3 xA = toWorld(float3(1,0,0)) - c, yA = toWorld(float3(0,1,0)) - c;
+            xA = xA / length(xA); yA = yA / length(yA);
+            float hh = std::fabs(w.h) < 0.002f ? 0.0f : w.h;
+            float gh = std::min(0.8f, std::max(-0.8f, w.prism * hh));
+            float sx = stretchAlong(c, xA, 3.0f), sy = stretchAlong(c, yA, 3.0f);
+            worstMap = std::max(worstMap, std::max(std::fabs(sx - (1 + gh)), std::fabs(sy - (1 - gh))));
+            if (gh != 0.0f) moved++;
+            _PrismGravityWarpParams.z = 0.0f;
+        }
+        CHECK(worstStrain < 2e-5f, "the strain is not the studio's gwStrainAt (worst %.3g)", worstStrain);
+        CHECK(worstMap < 2e-4f, "the wave's stretch is not 1 +/- gh along the prism's own x / y (worst %.3g)", worstMap);
+        CHECK(moved > WAVE_CASES / 4, "too few cases inside the wave (%d) to mean anything", moved);
+        printf("16. gravitational wave: strain = the page's gwStrainAt on %d points (worst %.2g); "
+               "stretch 1+gh / 1-gh along the prism's own axes (worst %.2g, %d stretched)\n", WAVE_CASES, worstStrain, worstMap, moved);
+    }
+
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }
     printf("\nall properties hold\n");
     return 0;
 }
 """
+
+STUDIO = os.path.join(ROOT, "Docs/Studios/StoatFlightStudio.html")
+
+GOLDEN_JS = r"""
+const page = require('fs').readFileSync(process.argv[2], 'utf8');
+const src = page.match(/function gwStrainAt\(x, y, z, w\) \{[\s\S]*?\n  \}/)[0];
+const GW_R0 = Number(page.match(/const GW_R0 = (\d+(?:\.\d+)?)/)[1]), TAU_W = Math.PI * 2;
+let simT = 0; const P = {};
+const gwStrainAt = eval('(' + src.replace('function gwStrainAt', 'function') + ')');
+let seed = 9; const rnd = (a, b) => { seed = (seed * 16807) % 2147483647; return a + (b - a) * (seed / 2147483647); };
+const out = [];
+for (let i = 0; i < 400; i++) {
+  P.gwSpeed = [60, 120, 400][i % 3]; P.gwPeriod = [0.2, 0.35, 0.9][i % 3]; P.gwRingdown = [0.4, 1, 2][(i >> 1) % 3];
+  const prism = [0.3, 0.6, 1.4][i % 3];
+  const c = { x: rnd(-200, 200), y: rnd(-200, 200), z: rnd(-200, 200) };
+  let ax = { x: rnd(-1, 1), y: rnd(-1, 1), z: rnd(-1, 1) }; const l = Math.hypot(ax.x, ax.y, ax.z); ax = { x: ax.x / l, y: ax.y / l, z: ax.z / l };
+  const mass = rnd(0.3, 2), t0 = 0;
+  const r = rnd(5, 600), d = { x: rnd(-1, 1), y: rnd(-1, 1), z: rnd(-1, 1) }, dl = Math.hypot(d.x, d.y, d.z);
+  const p = { x: c.x + d.x / dl * r, y: c.y + d.y / dl * r, z: c.z + d.z / dl * r };
+  simT = r / P.gwSpeed + rnd(-0.3, 3 * P.gwRingdown);   // mostly inside the burst, some before its front
+  const w = { c, axis: i % 5 === 0 ? null : ax, mass, t0 };
+  const h = gwStrainAt(p.x, p.y, p.z, w);
+  const a = w.axis || { x: 0, y: 0, z: 0 };
+  out.push([c.x, c.y, c.z, simT - t0, a.x, a.y, a.z, mass, P.gwSpeed, P.gwPeriod, P.gwRingdown, prism, p.x, p.y, p.z, h]
+    .map((v) => v.toPrecision(9)).join(', '));
+}
+console.log('struct WaveCase { float cx, cy, cz, age, ax, ay, az, mass, speed, period, ringdown, prism, px, py, pz, h; };');
+console.log('static const WaveCase WAVE[] = {\n' + out.map((s) => '  { ' + s + ' },').join('\n') + '\n};');
+console.log('static const int WAVE_CASES = ' + out.length + ';');
+"""
+
+
+def wave_golden(work):
+    """The studio's gwStrainAt, cut out of the page and run in node: the golden strains test 16 checks against."""
+    node = shutil.which("node")
+    if not node:
+        raise SystemExit("node not found - test 16 runs the studio page's own gwStrainAt")
+    js = os.path.join(work, "golden.js")
+    with open(js, "w") as f:
+        f.write(GOLDEN_JS)
+    r = subprocess.run([node, js, STUDIO], capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit("the studio's gwStrainAt did not run:\n" + r.stderr)
+    return r.stdout
 
 # The negative control runs test 9 with the normal correction switched off via the shipped file's
 # own #ifndef dial. It must FAIL — otherwise test 9 passes for some reason other than the
@@ -510,6 +594,8 @@ def main():
             f.write(SHIM)
         with open(os.path.join(work, "shipped.h"), "w") as f:
             f.write('#include "shim.h"\n' + translate(open(HLSL).read()))
+        with open(os.path.join(work, "wave_golden.h"), "w") as f:
+            f.write("#pragma once\n" + wave_golden(work))
 
         rc = build_and_run(work, HARNESS, [], "verify")
         if rc is None or rc != 0:

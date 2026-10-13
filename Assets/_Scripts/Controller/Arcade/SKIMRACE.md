@@ -288,13 +288,13 @@ are ~23,500 u (78 s at the Squirrel's 300 u/s top speed); the ribbon is 24,700 u
   sim. A change to one that misses the others makes the generator validate, or the AI train on, a
   track the game does not lay. Candidate: have the sim compile `SpawnableWaypointTrack`'s pose code
   (the card-art harness already compiles the file against a shim). *Debt this branch created.*
-- **Prisma (`Port/`) is a snapshot behind.** `Port/src/.../SpawnableWaypointTrack.cs` and its
+- **Amoebius (`Port/`) is a snapshot behind.** `Port/src/.../SpawnableWaypointTrack.cs` and its
   `CrystalCollisionTurnMonitor` predate `lapsPerIntensity`, and know none of `waypointUps`,
   `crystalsPerLap` or `markedWaypoints`; run in the port, I4 would lay world-up prisms with a
   marker on all 182 waypoints and a target of 182 × `optionalLaps`. Port it with the next
   arcade-content pass.
 - **The I4 AI benchmark limit (70 s) is below the course's physical floor** (~78 s on crystal
-  chords): a product decision, recorded in `Docs/SKIM_RACE_AI.md` §6.12.
+  chords): a product decision, recorded in `Docs/SKIM_RACE_AI.md` §6.13.
 
 ### 6. Ready State & Countdown
 

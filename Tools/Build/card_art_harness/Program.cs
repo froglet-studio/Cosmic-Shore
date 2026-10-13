@@ -107,6 +107,7 @@ static class Program
             case "redline":
             case "grizzlytime":
             case "slingshot":
+            case "threshertime":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -118,6 +119,7 @@ static class Program
                     "redline" => HeadlongCircuit.Generate(seed, Apply(RedlineCourse.ForIntensity(intensity), layer)),
                     "grizzlytime" => HeadlongCircuit.Generate(seed, Apply(GrizzlyTimeCourse.ForIntensity(intensity), layer)),
                     "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
+                    "threshertime" => HeadlongCircuit.Generate(seed, Apply(ThresherTimeCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -127,6 +129,7 @@ static class Program
                     scene.Ring(ToV(g.Position), ToV(g.Axis), g.Radius, g.Radius * tube, gm, 56, 8);
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
                     DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback", pal, layer);
+                if (kind == "threshertime") StageSling(scene, gates);
                 return 0;
             }
             case "breakwater":
@@ -285,6 +288,46 @@ static class Program
                 scene.Box(c, f * 6, r * 1.2, u * 1.2, m, false);
             }
         }
+    }
+
+    /// <summary>
+    /// Thresher Time's signature act, STAGED (not simulated): the wrecking ball planted inside the
+    /// lap's tightest corner with the ship's orbit round it drawn as a dotted circle and the chain
+    /// from ball to ship - the sling that corner asks for. Sizes are card-scale, not the game's
+    /// (the real ball is ~3 u across, invisible at 313x208); the corner is the shipped course's own.
+    /// </summary>
+    static void StageSling(Scene scene, List<RaceGate> gates)
+    {
+        int n = gates.Count, k = 0;
+        float best = float.MaxValue;
+        for (int i = 0; i < n; i++)
+        {
+            float r = RaceCourseGeometry.CornerRadius(gates[(i - 1 + n) % n].Position, gates[i].Position, gates[(i + 1) % n].Position);
+            if (r < best) { best = r; k = i; }
+        }
+        V3 p0 = ToV(gates[(k - 1 + n) % n].Position), p1 = ToV(gates[k].Position), p2 = ToV(gates[(k + 1) % n].Position);
+        V3 inside = ((p0 - p1).Norm + (p2 - p1).Norm).Norm;
+        V3 normal = V3.Cross(p0 - p1, p2 - p1).Norm;
+        const double orbit = 70, ballR = 22;
+        V3 ball = p1 + inside * (orbit + gates[k].Radius * 0.6);
+        var hot = new Material { Base = new V3(0.07, 0.065, 0.065), Rim = new V3(1.7, 0.4, 0.1), Emissive = new V3(0.9, 0.18, 0.04), EdgeGlow = 0.3, RimPower = 1.5 };
+        scene.Sphere(ball, ballR, hot, 28, 56, false);
+        // The orbit: dots round the ball in the corner's plane, so it never reads as another gate ring.
+        V3 a = (p1 - ball).Norm, b = V3.Cross(normal, a).Norm;
+        var dot = new Material { Base = new V3(0.2, 0.3, 0.06), Rim = new V3(0.8, 1.8, 0.3), Emissive = new V3(0.45, 1.0, 0.18), EdgeGlow = 0.2 };
+        for (int j = 0; j < 28; j++)
+        {
+            double t = 2 * Math.PI * j / 28;
+            scene.Sphere(ball + (a * Math.Cos(t) + b * Math.Sin(t)) * orbit, 4.0, dot, 8, 16, false);
+        }
+        // The chain, taut from the ball to the ship's point on the orbit (the corner side).
+        V3 ship = ball + a * orbit;
+        var iron = new Material { Base = new V3(0.07, 0.065, 0.065), Rim = new V3(0.7, 0.7, 0.75), Emissive = new V3(0.05, 0.05, 0.05), EdgeGlow = 0.1 };
+        V3 up = Math.Abs(a.y) < 0.9 ? new V3(0, 1, 0) : new V3(1, 0, 0);
+        V3 r1 = V3.Cross(up, a).Norm, u1 = V3.Cross(a, r1);
+        for (int j = 1; j < 12; j++)
+            scene.Box(ball + a * (orbit * j / 12.0), a * 2.4, r1 * 1.3, u1 * 1.3, iron, false);
+        scene.Sphere(ship, 6, new Material { Base = new V3(0.15, 0.4, 0.38), Rim = new V3(0.6, 1.6, 1.5), Emissive = new V3(0.2, 0.6, 0.55), EdgeGlow = 0.2 }, 12, 24, false);
     }
 
     static Material GateMaterial(JsonElement layer)

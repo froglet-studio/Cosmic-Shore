@@ -331,8 +331,9 @@ namespace CosmicShore.Tests
         public void Shaders_SumTheSmoothWells_AndSoftenTheTides()
         {
             string lens = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
-            Assert.IsTrue(lens.Contains("_SmoothWellCentre") && lens.Contains("BlackHoleSmoothLensDeflection("),
-                "the lens no longer sums every smooth well — overlapping poles would leave a seam and never cancel.");
+            string lensHlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
+            Assert.IsTrue(lens.Contains("BlackHoleLensWell(") && lensHlsl.Contains("w.z * rc * u * exp(-0.5 * u * u)"),
+                "the lens no longer sums every smooth well's graded bend — overlapping poles would leave a seam and never cancel.");
             string warp = File.ReadAllText("Assets/_Graphics/Materials/Graphs/PrismGravityWarp.hlsl");
             Assert.IsTrue(warp.Contains("PrismGravityWarpTideSoft(") && warp.Contains("abs(k)"),
                 "the tidal warp lost the soft core or the sign — a smooth well's tide would have an edge.");

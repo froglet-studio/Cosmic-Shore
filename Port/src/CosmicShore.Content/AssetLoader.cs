@@ -243,7 +243,7 @@ namespace CosmicShore.Content
             var shaderPath = builtin ? null : loader.Db.PathOf(shaderRef.Guid);
             var shader = shaderPath == null ? Shader.Find(shaderName) : Shader.Find(shaderName, shaderRef.Guid, loader.Db.ProjectRelative(shaderPath));
             var mat = new Material(shader) { name = body.Str("m_Name") ?? "Material" };
-            mat.renderQueue = body.Int("m_CustomRenderQueue", -1) is int q && q >= 0 ? q : 2000;
+            mat.renderQueue = body.Int("m_CustomRenderQueue", -1); // -1: the shader's queue (Material.renderQueue)
 
             var props = body["m_SavedProperties"];
             foreach (var entry in props?["m_TexEnvs"]?.Items ?? Array.Empty<YNode>())
@@ -266,11 +266,12 @@ namespace CosmicShore.Content
             foreach (var entry in props?["m_Ints"]?.Items ?? Array.Empty<YNode>())
                 if (entry is YMap m && m.Entries.Count == 1 && YScalar.TryLong(m.Entries[0].Value.Scalar, out var iv))
                     mat.SetInt(m.Entries[0].Key, (int)iv);
+            // m_Colors holds colour AND vector properties, each as the property stores it (sRGB for a
+            // plain colour, linear for an [HDR] one): taken verbatim (Material's colour-space rules).
             foreach (var entry in props?["m_Colors"]?.Items ?? Array.Empty<YNode>())
                 if (entry is YMap m && m.Entries.Count == 1)
                 {
                     var c = SerializedReader.ReadColor(m.Entries[0].Value);
-                    mat.SetColor(m.Entries[0].Key, c);
                     mat.SetVector(m.Entries[0].Key, new Vector4(c.r, c.g, c.b, c.a));
                 }
             foreach (var kw in (body.Str("m_ShaderKeywords") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries))
@@ -280,9 +281,22 @@ namespace CosmicShore.Content
             return mat;
         }
 
+        /// <summary>Shaders that ship in the URP package (not in the project), by their .meta guid.</summary>
+        static readonly Dictionary<string, string> PackageShaders = new(StringComparer.Ordinal)
+        {
+            ["933532a4fcc9baf4fa0491de14d08ed7"] = "Universal Render Pipeline/Lit",
+            ["650dd9526735d5b46b79224bc6e94025"] = "Universal Render Pipeline/Unlit",
+            ["8d2bb70cbf9db8d4da26e15b26e74248"] = "Universal Render Pipeline/Simple Lit",
+            ["0ca6dca7396eb48e5849247ffd444914"] = "Universal Render Pipeline/Baked Lit",
+            ["0406db5a14f94604a8c57ccfbc9f3b46"] = "Universal Render Pipeline/Particles/Unlit",
+            ["b7839dad95683814aa64166edc107ae2"] = "Universal Render Pipeline/Particles/Lit",
+            ["8516d7a69675844a7a0b7095af7c46af"] = "Universal Render Pipeline/Particles/Simple Lit",
+        };
+
         /// <summary>
         /// Shader identity: built-ins by fileID (the handful the project uses), project
-        /// shaders by their file's declared name (.shader "Shader \"Name\"") or graph name.
+        /// shaders by their file's declared name (.shader "Shader \"Name\"") or graph name,
+        /// URP's own shaders by their package guid.
         /// </summary>
         public static string ShaderNameFor(ObjRef r, AssetDatabase db)
         {
@@ -298,10 +312,14 @@ namespace CosmicShore.Content
                     10750 => "Unlit/Transparent",
                     10755 => "Unlit/Color",
                     10752 => "Unlit/Texture",
+                    // The ten Froglet Stuff particle materials (the vessel jet's flares): their saved
+                    // properties are the Standard Particles set with _LightingEnabled 0, which the
+                    // shader GUI writes only for the Unlit variant.
+                    211 => "Particles/Standard Unlit",
                     _ => $"Builtin/{r.FileId}",
                 };
             var path = db.PathOf(r.Guid);
-            if (path == null) return $"Missing/{r.Guid}";
+            if (path == null) return PackageShaders.TryGetValue(r.Guid, out var package) ? package : $"Missing/{r.Guid}";
             if (path.EndsWith(".shader", StringComparison.OrdinalIgnoreCase))
             {
                 try

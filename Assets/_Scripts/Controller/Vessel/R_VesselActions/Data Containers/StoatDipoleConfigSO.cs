@@ -37,6 +37,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Keyboard / mouse / touch have no analog trigger: seconds of hold that count as a full squeeze.")]
         [SerializeField, Range(0.1f, 5f)] float holdRampSeconds = 1.5f;
 
+        [Tooltip("A KEY (no analog trigger) squeezes this far the moment it is pressed, and holds it (the studio's " +
+                 "dpKeySqueeze). One key: the poles 70 u apart sideways at once, as in the studio. 0 = the old ramp " +
+                 "over Hold Ramp Seconds, which left the two poles on top of each other for the first half second.")]
+        [SerializeField, Range(0f, 1f)] float keySqueeze = 0.5f;
+
         [Header("Placement (Space)")]
         [Tooltip("How far in front of the hull the pair's middle is laid, world units (the studio's ftAhead).")]
         [SerializeField, Min(0f)] float aheadDistance = 250f;
@@ -89,6 +94,15 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds the source takes to grow in (whInS); it starts at 55% of this, so a fresh pair pulls before it pushes.")]
         [SerializeField, Range(0.05f, 5f)] float sourceGrowSeconds = 1.1f;
 
+        [Tooltip("Black hole sinks back to a point (s) (dieS). The pair's annihilation: both poles shrink to a point along " +
+                 "1 − smoothstep(t / dieS) while the gravitational wave and the white hole's light leave (Docs/BLACK_HOLE.md §5.2). " +
+                 "The studio's knob, kept for /artifact-to-unity: in the game a release now SLAMS the poles together over " +
+                 "annihilateSeconds and neutralizes them (StoatDipoleExecutor.StepCollapses), and the waves leave where they meet.")]
+        [SerializeField, Range(0.05f, 4f)] float dieSeconds = 0.7f;
+
+        [Tooltip("Size (× the black hole) (whSizeX): the white hole's horizon as a multiple of the black hole's — the lens " +
+                 "draws its core this much bigger or smaller.")]
+        [SerializeField, Range(0.3f, 3f)] float sourceSizeX = 1f;
         [Header("Fly-through zone (the sink takes a hull that loops it)")]
         [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles; 90, " +
                  "then 135 with the 1.5× bigger, softened poles — the smallest that holds a stick-held orbit at 60 u/s). " +
@@ -114,8 +128,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.05f, 10f)] float gravityFadeSeconds = 2f;
 
         [Header("Domain colour")]
-        [Tooltip("How far the pair is drawn toward its owner's domain: the sink's shadow toward the DARK colour, the source's core toward the LIGHT.")]
-        [SerializeField, Range(0f, 1f)] float domainTintAmount = 0.7f;
+        [Tooltip("How far the pair is drawn toward its owner's domain: the sink's shadow toward the DARK colour, the source's core toward the LIGHT. " +
+                 "0 = the Vessel Studio's look (a black shadow, a white-hot core); at 0.7 the shadow read as jade, not black.")]
+        [SerializeField, Range(0f, 1f)] float domainTintAmount = 0f;
 
         [Header("What the sink takes")]
         [Tooltip("A share of every element a rival vessel holds that the sink strips when the vessel passes through it, left as crystals on the sink's side. 1 = everything.")]
@@ -123,6 +138,14 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("A creature whose centre comes within this many sink horizons is swallowed (killed, its body suctioned into the sink).")]
         [SerializeField, Range(1f, 10f)] float faunaSwallowHorizons = 1.5f;
+
+        [Header("Accretion (Space level 5)")]
+        [Tooltip("SPACE level 5 — Accretion: every prism the sink swallows grows BOTH poles (horizon and GM) by this share of " +
+                 "their size, held until the pair annihilates. Gated on the replicated Space unlock bit; the grown size " +
+                 "reaches peers as the replicated horizon.")]
+        [SerializeField, Range(0f, 0.5f)] float accretionPerPrism = 0.04f;
+        [Tooltip("The most accretion can add, as a share of the poles' size (1 = a fed pair grows to twice its size).")]
+        [SerializeField, Range(0f, 4f)] float accretionMax = 1f;
 
         [Header("Pathfinder (Time)")]
         [Tooltip("How far ahead the path is run, world units (the studio's ftLength 600, doubled 2026-10-13 so a held turn shows " +
@@ -168,15 +191,39 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Depth: how much of a dot's opacity the far end of the path loses (0 = none). Rides the same depth scale.")]
         [SerializeField, Range(0f, 1f)] float dotDepthFade = 0.15f;
 
+        [Tooltip("Draw the path as dots placed IN THE SCENE along the 3D path (they recede with depth, pass behind " +
+                 "prisms and bend through the lens). Off = the flat screen overlay (Dot Pixels, Dot Gap), the studio's 2D line.")]
+        [SerializeField] bool dotsInWorld = true;
+
+        [Tooltip("A 3D dot's diameter, world units (the hull is 4 u long).")]
+        [SerializeField, Range(0.05f, 5f)] float worldDotSize = 0.7f;
+
+        [Tooltip("World units of path between two 3D dots: smaller = denser. The 600 u path at 3 u carries 200 dots.")]
+        [SerializeField, Range(0.5f, 40f)] float worldDotSpacing = 3f;
+
+        [Tooltip("The smallest a far 3D dot may get on screen, pixels, so the far end of the path stays readable.")]
+        [SerializeField, Range(0f, 10f)] float worldDotMinPixels = 2.5f;
+
         [Tooltip("The path's colour while it is open (blue-grey).")]
         [SerializeField] Color openColor = new(150f / 255f, 166f / 255f, 194f / 255f, 1f);
 
         [Tooltip("The path's colour while the poles warp it (lime).")]
         [SerializeField] Color warpedColor = new(157f / 255f, 1f, 46f / 255f, 1f);
 
+        [Header("Foresight (Time level 5)")]
+        [Tooltip("TIME level 5 — Foresight: the pathfinder also draws the predicted paths of the nearest rival vessels, " +
+                 "in their domain colours — each flown forward on the turn and speed it is holding right now. Gated on " +
+                 "the replicated Time unlock bit; drawn for the local pilot only.")]
+        [SerializeField, Range(50f, 1500f)] float foresightLength = 500f;
+        [Tooltip("Rivals further than this are not drawn, world units.")]
+        [SerializeField, Range(100f, 5000f)] float foresightRange = 1500f;
+        [Tooltip("At most this many rivals' paths are drawn (the nearest).")]
+        [SerializeField, Range(1, 6)] int foresightMaxRivals = 3;
+
         [Header("Autopilot")]
-        [Tooltip("The autopilot's squeeze on each trigger it pulls, 0..1.")]
-        [SerializeField, Range(0f, 1f)] float autopilotHold01 = 0.8f;
+        [Tooltip("The autopilot's squeeze on each trigger it pulls, 0..1. The studio's aiWarpQ: 1 (a full squeeze) " +
+                 "measured fastest on every course.")]
+        [SerializeField, Range(0f, 1f)] float autopilotHold01 = 1f;
 
         [Tooltip("The autopilot lays a pair only when its target is at least this far away, world units.")]
         [SerializeField, Min(0f)] float autopilotMinDistance = 300f;
@@ -186,6 +233,36 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Seconds between two of the autopilot's pairs.")]
         [SerializeField, Range(0f, 20f)] float autopilotIntervalSeconds = 2f;
+
+        [Header("Autopilot - watching the path (the studio's measured best)")]
+        [Tooltip("On: the autopilot holds the poles while they WARP its path (the pathfinder's lime: the flight runs " +
+                 "faster), lets go as its target comes close, and lays the next pair almost at once. Off: the timed " +
+                 "hold above (Autopilot Hold Seconds). Measured in the Stoat Flight Studio: Hard went from 70-89 s to " +
+                 "49-59 s over the four courses, warped 79-95% of the race (Docs/Studios/VesselStudio/README.md).")]
+        [SerializeField] bool autopilotWatchPath = true;
+
+        [Tooltip("Watching the path: lay a pair only when the target is further than this, and let go once it is " +
+                 "closer, so the bend does not throw the hull past the ring's mouth. World units.")]
+        [SerializeField, Range(0f, 400f)] float autopilotLetGoNear = 60f;
+
+        [Tooltip("Watching the path: let go once the path has not been warped for this long, seconds.")]
+        [SerializeField, Range(0.05f, 3f)] float autopilotDrySeconds = 0.5f;
+
+        [Tooltip("Watching the path: always hold at least this long before judging the warp, seconds.")]
+        [SerializeField, Range(0f, 3f)] float autopilotMinHoldSeconds = 0.8f;
+
+        [Tooltip("Watching the path: never hold one pair longer than this, seconds.")]
+        [SerializeField, Range(1f, 60f)] float autopilotMaxHoldSeconds = 15f;
+
+        [Tooltip("Watching the path: seconds between letting go and laying the next pair.")]
+        [SerializeField, Range(0f, 5f)] float autopilotRelaySeconds = 0.25f;
+
+        [Header("Autopilot - orbit cap")]
+        [Tooltip("The most the autopilot may circle its own sink on one pair, in degrees swept round it; then it lets " +
+                 "go and waits Autopilot Interval Seconds before the next pair. A hull circling the sink keeps its " +
+                 "path warped every frame, so without this the watching hold only ended at Max Hold Seconds - four " +
+                 "to six laps round the hole. 360 = one lap. 0 = no cap.")]
+        [SerializeField, Range(0f, 1080f)] float autopilotMaxOrbitDegrees = 360f;
 
         [Header("Audio (FMOD) — every sound is an exposed, editable field")]
         [Tooltip("Played when a squeeze opens the pair. Ships empty until a sound is chosen.")]
@@ -199,6 +276,7 @@ namespace CosmicShore.ScriptableObjects
 
         public float HoldExponent => holdExponent;
         public float HoldRampSeconds => holdRampSeconds;
+        public float KeySqueeze => keySqueeze;
         public float AheadDistance => aheadDistance;
         public float SidewaysMax => sidewaysMax;
         public float LengthwaysMax => lengthwaysMax;
@@ -213,6 +291,8 @@ namespace CosmicShore.ScriptableObjects
         public float AccelerationCap => accelerationCap;
         public float SinkGrowSeconds => sinkGrowSeconds;
         public float SourceGrowSeconds => sourceGrowSeconds;
+        public float DieSeconds => dieSeconds;
+        public float SourceSizeX => sourceSizeX;
         public float ThroughZoneRadius => throughZoneRadius;
         public float ThroughDegrees => throughDegrees;
         public float TurnCap => turnCap;
@@ -222,6 +302,8 @@ namespace CosmicShore.ScriptableObjects
         public float DomainTintAmount => domainTintAmount;
         public float CrystalStripShare => crystalStripShare;
         public float FaunaSwallowHorizons => faunaSwallowHorizons;
+        public float AccretionPerPrism => Mathf.Max(0f, accretionPerPrism);
+        public float AccretionMax => Mathf.Max(0f, accretionMax);
         public float PathLength => pathLength;
         public float PathStep => pathStep;
         public float PathNoseOffset => pathNoseOffset;
@@ -233,17 +315,39 @@ namespace CosmicShore.ScriptableObjects
         public float BoostFadeSeconds => boostFadeSeconds;
         public float DotPixels => dotPixels;
         public float DotGap => dotGap;
+        public bool DotsInWorld => dotsInWorld;
+        public float WorldDotSize => worldDotSize;
+        public float WorldDotSpacing => worldDotSpacing;
+        public float WorldDotMinPixels => worldDotMinPixels;
         public float DotDepthMinScale => dotDepthMinScale;
         public float DotDepthFade => dotDepthFade;
         public Color OpenColor => openColor;
         public Color WarpedColor => warpedColor;
+        public float ForesightLength => foresightLength;
+        public float ForesightRange => foresightRange;
+        public int ForesightMaxRivals => Mathf.Clamp(foresightMaxRivals, 1, 6);
         public float AutopilotHold01 => autopilotHold01;
         public float AutopilotMinDistance => autopilotMinDistance;
         public float AutopilotHoldSeconds => autopilotHoldSeconds;
         public float AutopilotIntervalSeconds => autopilotIntervalSeconds;
+        public bool AutopilotWatchPath => autopilotWatchPath;
+        public float AutopilotLetGoNear => autopilotLetGoNear;
+        public float AutopilotDrySeconds => autopilotDrySeconds;
+        public float AutopilotMinHoldSeconds => autopilotMinHoldSeconds;
+        public float AutopilotMaxHoldSeconds => autopilotMaxHoldSeconds;
+        public float AutopilotRelaySeconds => autopilotRelaySeconds;
+        public float AutopilotMaxOrbitDegrees => autopilotMaxOrbitDegrees;
         public EventReference OpenEvent => openEvent;
         public EventReference AnnihilateEvent => annihilateEvent;
         public EventReference WarpEvent => warpEvent;
+
+        /// <summary>
+        /// Time's one number as a RATIO: the boost at the pilot's live Time level over the boost at rest (1 at rest, 2 at
+        /// level 10). The pathfinder's warp boost IS <see cref="Boost"/>; Time mode's timed slingshot reads this ratio, so
+        /// both of the Stoat's speed-ups move with the one Time parameter (one parameter per element).
+        /// </summary>
+        public float BoostRatio(IVesselStatus status) =>
+            Mathf.Max(1f, boost.EvaluateLive(status) / Mathf.Max(1e-3f, boost.EvaluateAtNormalizedLevel(0f)));
 
         /// <summary>The flight settings one step of field flight reads (the prediction and the flight share them).</summary>
         public StoatDipoleMath.FlightSettings Flight(float cruise) => new()

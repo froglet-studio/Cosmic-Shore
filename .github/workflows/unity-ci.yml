@@ -1,28 +1,41 @@
 # Unity CI - tiered build verification.
 #
 # Tiers (chosen deliberately for cost-to-coverage):
-#   compile  - edit-mode tests, which force a full script compile. Runs on every PR. ~5-15 min.
-#   mono     - Mono standalone player build. Nightly. Proves scenes, assets, and build settings
-#              actually produce a player. ~20-40 min.
-#   il2cpp   - Full IL2CPP release build. Weekly. The only tier that catches AOT/generic failures
-#              and native link errors, i.e. the ones that only appear in a shipping build.
+#   compile  - edit-mode tests, which force a full script compile. Manual dispatch only; post-merge
+#              compiles are bleeding-edge-guard.yml's job. ~5-15 min.
+#   mono     - Mono standalone player build. Manual dispatch only, never a gate. Proves scenes,
+#              assets, and build settings actually produce a player. ~20-40 min.
+#   il2cpp   - Full IL2CPP release build. Thursday against bleeding-edge, and the Tuesday before a
+#              promotion Wednesday against development. The only tier that catches AOT/generic
+#              failures and native link errors, i.e. the ones that only appear in a shipping build.
 #   static   - The ubuntu static checks alone (no Unity runner). What a pull request gets, and what
 #              the /ship commands dispatch for a claude/** branch.
+# compile, mono and il2cpp need the Unity runner; static never does.
 #
 # claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
 # pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
 # a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml and
-# prisma-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
+# amoebius-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
 # command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
 #
-# RUNNER IS NOT DECIDED YET. The `unity` job is SKIPPED until the repository variable
-# UNITY_RUNNER_LABEL is set, and then targets whatever label it names. Skipping (rather than
-# defaulting to a label that may not exist) matters: a job queued for a non-existent runner shows as
-# a permanently pending check on every PR and is only reaped by GitHub after ~24h - `timeout-minutes`
-# does not apply to queue time. Set the variable the day a runner is registered; no other edit is
-# needed. See Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option requires (a
-# GitHub-hosted runner additionally needs Unity license secrets and almost certainly more disk than
-# the standard image provides).
+# NO RUNNER IS ATTACHED (since 2026-10-13). The `unity` job is SKIPPED while the repository variable
+# UNITY_RUNNER_LABEL is unset, and when set it targets whatever label it names. The self-hosted
+# runner that served it was removed on 2026-10-13 and the variable deleted, so today only the
+# ubuntu jobs run and nothing here compiles Unity. Skipping (rather than defaulting to a label that
+# may not exist) matters: a job queued for a non-existent runner shows as a permanently pending
+# check on every PR and is only reaped by GitHub after ~24h - `timeout-minutes` does not apply to
+# queue time. Set the variable the day a runner is registered; no other edit is needed. See
+# Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option requires (a GitHub-hosted
+# runner additionally needs Unity license secrets and almost certainly more disk than the standard
+# image provides).
+#
+# SECURITY: this repository is public, and any workflow that names the runner's label reaches the
+# runner - from any branch a writer pushes or any fork pull request - whatever the triggers in this
+# file say. So a self-hosted runner may only be an isolated machine or VM holding no credentials,
+# signing material, personal accounts or browser sessions - never anyone's everyday PC - with its
+# service on a dedicated low-privilege local account, and only after fork pull request approval is
+# set to "Require approval for all external contributors" and the default branches are protected.
+# Docs/BUILD_AND_DELIVERY.md section 10 (Security) and the section 10.2 checklist.
 #
 # The runner is expected to have Unity 6000.3.17f1 installed and activated, with UNITY_PATH set
 # as an environment variable or repository variable pointing at the editor executable.
@@ -172,8 +185,8 @@ jobs:
   #  Release-build static checks (no Unity, no license)
   #
   #  Deliberately on ubuntu-latest, NOT the Unity runner: this must actually run
-  #  on every PR, including while the Unity tiers sit queued waiting for a
-  #  self-hosted runner to exist. It reproduces the Release preprocessor in
+  #  on every PR, including while there is no self-hosted runner at all and the
+  #  Unity tiers skip. It reproduces the Release preprocessor in
   #  Python and catches the guard mistakes that are invisible in the Editor and
   #  only ever surface as a red automated build.
   #
@@ -433,7 +446,8 @@ jobs:
 
       # ── artifacts ───────────────────────────────
       # Test results and the manifest only. The player itself is multiple GB and is not worth
-      # pushing through artifact storage nightly; SteamPipe uploads come from the build machine.
+      # pushing through artifact storage nightly. SteamPipe uploads never run on this runner, which
+      # must hold no credentials (Docs/BUILD_AND_DELIVERY.md sections 4 and 10).
       # The full editor log, on failure only. This is the artifact that makes a
       # red player build diagnosable without anyone copying lines out of a web page.
       - name: Upload build log

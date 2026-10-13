@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   holdExponent: 1.5
   holdRampSeconds: 1.5
+  keySqueeze: 0.5
   aheadDistance: 250
   sidewaysMax: 200
   lengthwaysMax: 120
@@ -35,15 +36,19 @@ MonoBehaviour:
   annihilateSeconds: 0.3
   sinkGrowSeconds: 0.9
   sourceGrowSeconds: 1.1
+  dieSeconds: 0.7
+  sourceSizeX: 1
   throughZoneRadius: 135
   throughDegrees: 200
   turnCap: 12
   grip: 0.5
   gravitySpeedCeilingCruises: 4
   gravityFadeSeconds: 2
-  domainTintAmount: 0.7
+  domainTintAmount: 0
   crystalStripShare: 1
   faunaSwallowHorizons: 1.5
+  accretionPerPrism: 0.04
+  accretionMax: 1
   pathLength: 1200
   pathStep: 3
   pathNoseOffset: 8
@@ -64,12 +69,25 @@ MonoBehaviour:
   dotGap: 2.5
   dotDepthMinScale: 0.75
   dotDepthFade: 0.15
+  dotsInWorld: 1
+  worldDotSize: 0.7
+  worldDotSpacing: 3
+  worldDotMinPixels: 2.5
   openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
   warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
-  autopilotHold01: 0.8
+  foresightLength: 500
+  foresightRange: 1500
+  foresightMaxRivals: 3
+  autopilotHold01: 1
   autopilotMinDistance: 300
   autopilotHoldSeconds: 4
   autopilotIntervalSeconds: 2
+  autopilotWatchPath: 1
+  autopilotLetGoNear: 60
+  autopilotDrySeconds: 0.5
+  autopilotMinHoldSeconds: 0.8
+  autopilotMaxHoldSeconds: 15
+  autopilotRelaySeconds: 0.25
   openEvent:
     Guid:
       Data1: 0

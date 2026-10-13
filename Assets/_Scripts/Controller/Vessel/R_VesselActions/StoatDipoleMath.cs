@@ -400,6 +400,40 @@ namespace CosmicShore.Gameplay
         /// shoots the hull at the target and the warp boosts it; otherwise the trigger on the target's
         /// side, so the sink sits that way and the field turns the nose toward it.
         /// </summary>
+        /// <summary>
+        /// Degrees the hull has swept round <paramref name="centre"/> between two positions (unsigned). Summed
+        /// over a hold it is how far the autopilot has circled its sink — the orbit cap's measure
+        /// (<see cref="StoatDipoleConfigSO.AutopilotMaxOrbitDegrees"/>). 0 when either position sits on the centre.
+        /// </summary>
+        public static float SweptAround(Vector3 centre, Vector3 from, Vector3 to)
+        {
+            var a = from - centre;
+            var b = to - centre;
+            if (a.sqrMagnitude < 1e-6f || b.sqrMagnitude < 1e-6f) return 0f;
+            return Vector3.Angle(a, b);
+        }
+
+        /// <summary>
+        /// Seconds the poles take to meet once both triggers are let go: the separation decays at
+        /// <paramref name="followRate"/> (<see cref="Follow"/>) until <see cref="ShouldAnnihilate"/>'s threshold.
+        /// The pair keeps pulling all that time, so a hull circling the sink keeps circling.
+        /// </summary>
+        public static float ClosingSeconds(float separation, float sinkHorizon, float sourceHorizon, float followRate)
+        {
+            float threshold = Mathf.Max(1f, 0.5f * (sinkHorizon + sourceHorizon));
+            return separation > threshold ? Mathf.Log(separation / threshold) / Mathf.Max(0.1f, followRate) : 0f;
+        }
+
+        /// <summary>
+        /// True once the autopilot must let go for its orbit to END at <paramref name="maxDegrees"/>: what it has
+        /// swept round its sink plus what it will still sweep at <paramref name="sweepRateDegreesPerSecond"/> while
+        /// the poles close (<paramref name="closingSeconds"/>). Letting go AT the cap left the hull another half lap
+        /// round the closing pair (measured in the Stoat Flight Studio). <paramref name="maxDegrees"/> ≤ 0 is no cap.
+        /// </summary>
+        public static bool OrbitCapReached(float sweptDegrees, float maxDegrees, float sweepRateDegreesPerSecond = 0f,
+            float closingSeconds = 0f) =>
+            maxDegrees > 0f && sweptDegrees + Mathf.Max(0f, sweepRateDegreesPerSecond) * Mathf.Max(0f, closingSeconds) >= maxDegrees;
+
         public static bool AutopilotTriggers(Vector3 localTarget, float minDistance, float straightDegrees, float maxDegrees,
             out bool left, out bool right)
         {

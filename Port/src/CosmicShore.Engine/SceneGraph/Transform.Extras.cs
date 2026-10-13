@@ -66,8 +66,11 @@ namespace CosmicShore.Engine
         {
             if (parent is null) return;
             var list = parent._children;
+            int from = list.IndexOf(this);
             list.Remove(this);
-            list.Insert(System.Math.Clamp(index, 0, list.Count), this);
+            int to = System.Math.Clamp(index, 0, list.Count);
+            list.Insert(to, this);
+            if (from != to) TransformMessages.ChildrenChanged(parent);
         }
 
         public void DetachChildren()

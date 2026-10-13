@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using CosmicShore.Engine.InputSystem;
+using CosmicShore.Engine.InputSystem.Controls;
 using Silk.NET.Input;
 using Silk.NET.Windowing;
 using EKey = CosmicShore.Engine.InputSystem.Key;

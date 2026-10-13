@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Prisma.Bisect
+namespace Amoebius.Bisect
 {
     /// <summary>
     /// How one bisect candidate is judged (ROADMAP C1b). The answer is a <c>git bisect run</c> exit
