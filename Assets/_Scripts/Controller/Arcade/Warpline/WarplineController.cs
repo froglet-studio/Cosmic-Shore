@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -28,32 +26,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
                  "once, in the end-condition overrides, and the two can never disagree.")]
-        [SerializeField, Min(1)] int laps = 2;
+        [SerializeField, Min(1)] int laps = WarplineCourseSource.DefaultLaps;
 
         protected override string ModeName => "Warpline";
 
-        protected override int LapsPerRace => Mathf.Max(1, laps);
-
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetWarplineGateTarget()
-                : EndConditionOverridesSO.DefaultWarplineGateTarget;
-        }
-
-        /// <summary>The Stoat's circuit (<see cref="SlingshotCourse.ForIntensity"/>) with the race's own ring
-        /// count: target/laps rings, so the same base circle is cut into fewer, longer legs.</summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
-        {
-            var settings = SlingshotCourse.ForIntensity(Intensity);
-            settings.InnerRadius = inner;
-            settings.OuterRadius = outer;
-            settings.FirstGateDirection = Vector3.up;   // the equatorial spawn ring's pole
-
-            // Round UP so a target that does not divide by the lap count still yields a whole circuit.
-            settings.GateCount = Mathf.Max(3, Mathf.CeilToInt(gateCount / (float)LapsPerRace));
-            return HeadlongCircuit.Generate(seed, settings);
-        }
+        protected override RaceCourseSource CreateCourseSource() =>
+            new WarplineCourseSource { Laps = laps };
     }
 }
