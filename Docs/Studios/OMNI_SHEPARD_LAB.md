@@ -15,7 +15,8 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
 - **Space squares (round 6):** `blender -b CrystalsRaw_V2.blend --python Tools/Build/bake_omni_space_squares.py -- Docs/Studios/data/omni_space_squares.json` (the `.blend` is the art team's, not in the repo); the extractor then maps it onto the body FBX
 - **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7); since round 9 the crystal holds still and the body plays the Space squares
-- **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py`
+- **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py` (since 2026-10-13 also the hull-fusion identity: undriven, any moved vertex draws where fusion put it)
+- **Field scorecard (round 10):** `window.__lab.runFieldBatch()` / `fieldScore(p)` / `fieldMetricsOf(p, kind, dist, subject)`
 
 ## How the effect works (measured from the assets)
 
@@ -39,6 +40,105 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 10 (2026-10-13): a field of Mass crystals, per-crystal randomness, and reseats seen from far away
+
+The ask: many Mass crystals in parallel (lifeform hearts, rows of pickups) read like one shared
+animation. A crystal's columns are a pure function of the camera direction in its own space, so crystals
+that share an orientation and sit far from the camera show identical columns. Give the designer knobs
+that break that, each seeded per crystal, each keeping the ratchet's promises, and a number for "how
+alike neighbours look".
+
+Opened by reading the shared decision log: still the five entries from rounds 7–8. The designer
+confirmed the round-9 ship (round-8 recipe, no turn, squares at 1x) is the decision, so there is
+nothing to apply.
+
+**New on the page**
+- **View ▸ Field** (Off / Rows / Cluster), count, spacing, field camera distance. Each crystal has its
+  own pose, centre and ratchet. The shell shader gained `uOffset` (inert at 0).
+- **Vary tab** (lab-only, chip "needs code": C# and profile fields, no shader change):
+  - *Random orientation*: a uniformly random pose per crystal, scaled by the knob. The depth rule holds
+    exactly, because depth is read in each crystal's own space.
+  - *Per-prism depth jitter*: each prism's Top-of-column depth ± the knob, its Sealed-from depth up to
+    the knob lower.
+  - *Reseat depth jitter*: per crystal, only ever DEEPER than the dial. A shallower reseat is seen.
+  - *Reseat fade jitter*: per crystal, ± a fraction.
+- Every crystal draws from its own `mulberry32` stream in a fixed order and count, so one knob never
+  reshuffles another's. Every knob at 0 is the shipped crystal exactly (0 px, below).
+- **Scorecard ▸ Score the field**: 20 crystals, rows and a cluster, the camera orbiting 90° over 20 s
+  at 250 u (far) and 60 u (near). Every crystal ratchets at 15 Hz from a fresh state.
+  - *Look r*: each crystal rendered alone from its own camera direction (48×48), pixels correlated with
+    its two nearest neighbours over the pixels either covers.
+  - *Picture r*: the prism heights, matched by view direction.
+  - *Motion r*: those heights' change, i.e. moving in step.
+  - *Same-prism r*: matched by plate index.
+  - *Rises / Reseats seen %*: the promises, worst of the four runs.
+- Seven new styles: the four knobs, all three together, reseat −0.87, and random orientation + reseat −0.87.
+- The Ship-it tab names the depth profile values and the randomness fields.
+
+**Field scorecard** (`window.__lab.runFieldBatch()`, seed 7):
+
+| Style | Look r far | Look r near | Picture r far | Motion r far | Same-prism r far | Rises seen % | Reseats seen % | Reseats |
+|---|---|---|---|---|---|---|---|---|
+| **Shipped, every knob 0 (control)** | 0.60 | 0.17 | 0.99 | 0.90 | 0.99 | 0.1 | **73** | 3487 |
+| Random orientation | **0.12** | 0.08 | 0.97 | 0.87 | 0.01 | 0.1 | 71.3 | 3341 |
+| Per-prism depth jitter 0.15 | 0.50 | 0.15 | 0.99 | 0.89 | 0.99 | 0.2 | 52.9 | 3885 |
+| Reseat jitter 0.15, fade ±50% | 0.61 | 0.17 | 0.99 | 0.92 | 0.99 | 0 | 53.4 | 1330 |
+| All three | 0.11 | 0.08 | 0.96 | 0.88 | 0.01 | 0 | 28.3 | 1809 |
+| Reseat −0.87 | 0.61 | 0.17 | 0.99 | 0.93 | 0.99 | 0 | **0.6** | 668 |
+| Random orientation, reseat −0.87 | 0.12 | 0.08 | 0.97 | 0.89 | 0.01 | 0 | 1.8 | 676 |
+
+Noise band: seeds 7, 11 and 23 give look r far 0.58–0.60 for the control and 0.10–0.12 with random
+orientation (±0.02).
+
+- **Orientation is the knob that changes what you see**: look r far 0.60 → 0.12, and 0.17 → 0.08 near.
+- Per-prism depth jitter moves it a little (0.50). Reseat jitter does not move it at all.
+- **Picture r and motion r stay at 0.87–0.99 for every variant.** That is the depth rule doing its
+  job: every crystal shows its far side open and its near side sealed, and prisms drop as they come
+  toward you. No randomness that keeps the rule can change that, and none should.
+
+**Found**
+1. **The shipped reseat (−0.8) is seen once the camera moves round a still crystal**, on both crystals,
+   worst from far away. Measured with the field metric and one row of crystals:
+
+   | Reseat at | Omni 34 u | Omni 250 u | Mass 34 u | Mass 250 u |
+   |---|---|---|---|---|
+   | −0.75 | 25% | 70.5% | 32.9% | 82.8% |
+   | **−0.8 (shipped)** | 8.6% | 56.5% | 13.8% | 73% |
+   | −0.85 | 0 | 3.2% | 0 | 32.5% |
+   | **−0.87** | 0 | 0 | 0 | 0 |
+   | −0.9 | 0 | 0 | 0 | 0 |
+
+   Mechanism: a column top sits 2× the plate radius out (`_Reach` 2). Seen nearly orthographically from
+   far away, it clears the silhouette whenever √(1−d²) > body / top ≈ 0.5, which is every reseat
+   shallower than d ≈ −0.87. Round 7's "cliff near −0.75, 0% at −0.8" was measured at 34 u on a
+   crystal turning 15°/s, a different motion from a camera orbiting a still crystal.
+
+   The cost of going deeper: fewer reseats. The omni at 34 u reseats 209 times over the 20 s orbit at
+   −0.8 and 42 times at −0.87, so columns stay sealed longer until they pass far enough behind.
+2. **The single-crystal scorecard could no longer see a reseat.** Its 26 cameras are fixed, and since
+   round 9 the crystal does not turn, so the ratchet never reseats and "Births seen 0%" is true by
+   default. The field scorecard moves the camera; it is now the one that tests the promise.
+3. **The shader's face-split sign test is gone, in the game and in both lab twins** (`VS_SHELL`,
+   `vertexAt`). On the Mass prisms baked thick (§1 of this branch), the test flipped for the outward
+   face's deep corners. Every normal of both meshes faces out (min n·(v−c) is 0.038 on the omni and 0.018
+   on the Mass; the generator asserts it), so the test was always +1 on the lab's meshes.
+
+**Checked**
+- `verify_lab.cjs` PASS (desktop and phone; screenshots read).
+- Pixel parity against round 9 (`omni_shepard_lab_parity.cjs`): 0 px at all five times for Shipped,
+  Classic, Depth ratchet faces split and Sealed by depth faces split, and for Shipped and faces split on
+  the Mass. Negative control: random orientation on the Mass changes 127k pixels.
+- Field scorecard deterministic per seed; noise band as above.
+- Omni and Mass reseat sweep: `fieldMetricsOf(p, 1, dist, subject)`.
+
+**Decision needed (designer):**
+1. Which randomness ships: orientation, depth jitter, reseat jitter, or a combination.
+2. Whether the reseat moves to −0.87 (or −0.9 for margin) on both crystals. They share one profile.
+3. Whether the omni gets the same randomness as the Mass.
+
+**Not modelled:** crystals hiding each other (only their own prisms hide a reseat), fog, LOD, culling,
+and a ratchet that skips frames on distant crystals.
 
 ## Round 9 (2026-10-12): no free turn, the ratchet unfrozen, the Space squares ship
 
