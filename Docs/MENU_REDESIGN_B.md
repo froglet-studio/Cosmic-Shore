@@ -25,7 +25,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 
 | # | Item | Status | Mockup board | Commits |
 |---|---|---|---|---|
-| 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Mockup | `MenuKit.dc.html` | |
+| 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
 | 1 | Top nav (`Safe Area/NavBar`) | Planned | | |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Planned | | |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
@@ -264,3 +264,56 @@ Assets are authored offline:
   `blocksRaycasts = 1` at alpha 0. Its position on screen has not been checked.
 - **The invite popup's RectTransform has two parents.** It is listed in the `m_Children` of both
   `HomeScreen` and `UI_Refactored`.
+
+---
+
+## 8. The component kit as built (item 0)
+
+Generated, not hand-authored: re-run the generator rather than editing its output.
+
+| Piece | Where | Generator |
+|---|---|---|
+| Role colour tokens | `UIThemeSO.controlActive` / `purchase` / `tooltip`, `UIColorToken` 10-12 | — |
+| Sprites (19) | `Assets/_Graphics/UI/Kit/kit_*` | `Tools/Build/author_ui_kit_sprites.py` |
+| Lock and currency glyphs | `Assets/_Graphics/UI/Chrome/chrome_lock`, `chrome_crystal` | `Tools/Build/author_ui_chrome_icons.py` |
+| Button / label face | `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset` (dynamic) | `Tools/Build/author_chakra_petch_semibold.py` |
+| Components | `Assets/_Scripts/UI/Kit/` | — |
+| Prefabs, type roles, test scene | `Assets/_Prefabs/UI Elements/Kit/`, `Assets/_SO_Assets/UI/UITypeRoles.asset`, `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity` | `Tools/Build/author_ui_kit_prefabs.py` |
+
+How the later items use it:
+
+- **A button** is a `KitButton` instance. Set `Variant` and `Fill` on the instance; that is a
+  genuine per-instance value, not a fork. `KitButtonSmall` is the 14-point Prefab Variant.
+  `onClick` wiring is untouched: `KitButton` is a `Button`.
+- **An existing scene Button can become a kit button** by swapping its script reference, keeping its
+  serialized fields. `KitButton` derives from `Button`.
+- **A list tile, class card or configure tile** is a `KitTile`. The owning screen sets `IsSelected`
+  and `IsLocked`. Gamepad focus is the separate CTA ring, so focus can move without moving the
+  selection.
+- **A hex section tab** is a `KitHexNavTile`, which is a `KitTile` on hexagon sprites.
+- **A top-nav tab** is a `KitTopNavTab`. Its `InactiveImage` and `ActiveImage` children are what
+  `ScreenSwitcher.UpdateNavBar` already toggles, so the nav restyle needs no navigation code.
+- **Every label** carries `KitText` (§4 role + §11 token). Live numbers go through
+  `KitText.SetText` so they get per-face `<mspace>`.
+- **Static chrome** carries `KitThemedGraphic`.
+
+Not built in item 0, because the items that need them will settle their shape:
+
+- the party panel prefab (item 3);
+- the two-label toggle and the slider prefab (item 9; the hex handle sprite exists).
+
+## 9. Retirement list: what the kit supersedes
+
+Each line is retired when the item that restyles its last consumer lands. Consumer counts are from
+the Gate 1 measurement of `Menu_Main.unity`.
+
+| Old sprite / style | Consumers | Replaced by | Retired at item |
+|---|---|---|---|
+| `_Graphics/UI/Frames/frame_cut_filled_200` / `_300` | ArcadeLobbyList, FriendListPanel, UsernameInputField (4 + 4 refs) | `kit_sliver14_fill` + `line1` | 3 |
+| `_Graphics/UI/Frames/frame_cut_outline_200` | settings tab buttons (2 prefabs) | `KitHexNavTile` | 9 |
+| `ArcadeScreen/Group 1585.png` (card PLATE), `Rectangle 1127 (2).png` (card RIM) | 40 + 77 refs | `kit_sliver14_*`, `KitTile` | 3, 8 |
+| `HomeScreen/Play Button.png` (hub button plate) | 8 refs | `KitButton` Play/Opaque | 6 |
+| `{LEGACY}/Cut Frame Corner.png`, `Cut Frame Corner Glow.png` | 10 + 10 refs | `kit_sliver*` | as found |
+| NavBar `nav line*` (5), `Component 1/2.png` (L1/R1), `Polygon 165/166.png` (arrows) | NavBar | `KitTopNavTab`, `KitKeycap` | 1 |
+| Button `ColorTint` transitions with literal colours | per screen | `KitButton` states from tokens | per item |
+

@@ -66,6 +66,20 @@ public interface IScreen
 - **`NavLink` / `NavGroup`** (`Assets/_Scripts/UI/Elements/`) — Tab navigation within a screen. `NavGroup` discovers child `NavLink` components and manages selection state with crossfade animations.
 - **`ModalWindowManager`** (`Assets/_Scripts/UI/Modals/ModalWindowManager.cs`) — Base class for modal windows. Caches `ScreenSwitcher` reference at startup. Handles open/close animations, audio, and modal stack integration.
 
+#### Style-B component kit (the menu redesign)
+
+The menu is being rebuilt in the style-B "Hangar bay" look one item at a time. Status and rules
+live in `Docs/MENU_REDESIGN_B.md`. Build new menu UI from the kit:
+
+- **Buttons:** `KitButton` / `KitButtonSmall` (§10.1 variants × transparent/opaque).
+- **Selectable tiles:** `KitTile` / `KitHexNavTile`.
+- **Labels:** `KitText`, a §4 role plus a §11 colour token.
+- **Static chrome:** `KitThemedGraphic`.
+
+All of these are in `Assets/_Scripts/UI/Kit/` and `Assets/_Prefabs/UI Elements/Kit/`. Colours
+come from `UIThemeSO` tokens, never literals. The kit owns every interaction state, including the
+CTA gamepad focus ring.
+
 #### Menu Screen Patterns to Follow
 
 - **Implement `IScreen`** for any screen that needs to refresh data when navigated to — do not add direct screen references to `ScreenSwitcher`

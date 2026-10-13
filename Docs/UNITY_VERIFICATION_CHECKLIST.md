@@ -65,6 +65,62 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 0: the component kit (`claude/new-session-76hnyc`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+The reusable kit every later style-B item is built from (`Docs/MENU_REDESIGN_B.md`). No editor and no
+`unity` CLI in the authoring session, so `/verify-unity` did NOT run. Offline: `unity_refcompile`
+player and editor configs report 0 project errors and 0 diagnostics in the changed files (a planted
+CS1061 failed the gate first); `check_generated_assets.py` reports only its known limits on new
+files (package script guids, UnityEvent's private `m_PersistentCalls`, variant-derived fileIDs - the
+XOR rule was proved 12/12 against Menu_Main's shipped variant instance), and its negative control
+fires; the three generators hold their output under `--check`. **No shipping prefab or scene is
+touched.**
+
+**What landed**
+
+1. `UIThemeSO` gains `controlActive` 00D4FF, `purchase` FFAE00, `tooltip` A600FF (UI roles, not team
+   identity) and `UIColorToken` 10-12.
+2. `_Graphics/UI/Kit/` - 19 white+alpha sprites (slivers 14/10 as fill, 1px, 2px, normal and
+   flipped; hexagon tile and handle; end-game banner and caps). PPU 480 against the canvas' 240.
+3. `_Graphics/Fonts/ChakraPetch/` - Chakra Petch SemiBold TTF + OFL and a DYNAMIC TMP asset.
+4. `_Scripts/UI/Kit/` - `KitButton`, `KitTile` (Button subclasses painting every state from tokens),
+   `KitText` + `UITypeRolesSO`, `TabularText`, `KitThemedGraphic`, `KitGradient`, and an inspector.
+5. `_Prefabs/UI Elements/Kit/` - 12 prefabs (KitButtonSmall is a Prefab Variant of KitButton) and
+   `_SO_Assets/UI/UITypeRoles.asset`.
+6. `_Scenes/Game_TestDesign/UIKitTestScene.unity` - not in Build Settings.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect **no** console errors, in particular none naming
+   `KitSelectableBase` (it overrides `Selectable.Awake` / `OnDisable` / `DoStateTransition`, whose
+   access the offline compile could only take from uGUI's documentation).
+2. Open `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity`, Game view at 1920x1080.
+   - Left half: every kit sprite at three widths. The corner cuts stay the same size at every width
+     (14 on the `kit_sliver14_*` rows, 10 on `kit_sliver10_*`); `_flip` rows cut the other two
+     corners; the outlines are hollow; the hexagons are flat-topped.
+   - Right half: the top-nav strip (HANGAR in Jade with an underline, PORT grey), the button matrix,
+     three vessel tiles (Squirrel selected with a 2px light border; Dolphin and Manta dimmed with a
+     lock), four hex tiles (GENERAL selected), chips, a currency pill, a panel and a popup whose two
+     buttons sit ON its bottom edge, CONFIRM left of CANCEL.
+3. Compare against the approved board `Menu B · Item 0 · Component kit` on
+   https://claude.ai/artifact/KtM3MAtYnrwu9biej4uXuM - colours and shapes should match.
+4. **Chakra Petch SemiBold renders**: every caps label/button text is a semibold face, not a
+   fallback box or Liberation Sans. (Dynamic font: the first play fills
+   `ChakraPetch-SemiBold SDF.asset`, which then shows as modified - commit it, or flip it to Static.)
+5. Enter Play mode. **Mouse:** hover a button (fill brightens), press (opaque darkens), release -
+   no CTA ring after a click. **Gamepad / keyboard:** the test scene has no first-selected object, so
+   click any button once, then move with the D-pad / arrow keys - a CTA green ring appears and
+   follows focus around buttons and tiles; the disabled UNLOCKED buttons are skipped.
+6. Select `KitButton.prefab`: the inspector shows Variant / Fill / Parts and no Transition block.
+   Change Variant on a scene button - it repaints immediately.
+7. Run **FrogletTools > Game Modes > Game Mode Prefab Kit > Validate** with the test scene open
+   (the scene instances the new kit prefabs; it contains no shared game prefab).
+
+**Known gaps (by design, item 0):** no shipping screen uses the kit yet; the party panel prefab, the
+two-label toggle and the slider prefab arrive with the items that need them (3 and 9).
+
+---
+
 ### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at

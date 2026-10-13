@@ -16,9 +16,9 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T2 | Finish canvas resolution migration | TODO | — | | | |
 | T3 | Unify GameCanvas fork | DONE | T2 | via the GameCanvas Unifier (`5a4a003a`, `7e7494ea`) | | 2026-09-08 |
 | T4 | UIThemeSO + literal inventory | DONE | — | `claude/uithemeso-style-foundation-00fll9` | #795 | 2026-08-25 |
-| T5 | Download & install TMP fonts | TODO | — | | | |
-| T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
-| T7 | Component sprite kit | TODO | — | | | |
+| T5 | Download & install TMP fonts | IN PROGRESS | — | `claude/new-session-76hnyc` | | |
+| T6 | TMP Style Sheet + Aldrich audit | IN PROGRESS | T5 | `claude/new-session-76hnyc` | | |
+| T7 | Component sprite kit | IN PROGRESS | — | `claude/new-session-76hnyc` | | |
 | T8 | SO_ColorSet consumer audit | TODO | — | | | |
 
 **Critical path:** ~~T2 → T3 is the long pole.~~ **T3 is done and T2 is not** — the Unifier delivered T3's end state and T2's GameCanvas criterion with it, so what remains of T2 (SplashScreen, Loadout Container, three sign prefabs, PhotoBooth) no longer blocks anything and is independent work. T5 → T6 is now the only real chain. T1 and T4 are closed.
@@ -338,19 +338,19 @@ Acceptance criteria:
 **Spec:** Style Foundation §4
 
 Acceptance criteria:
-- [ ] Chakra Petch (400/500/600/700) TTFs in `Assets/_Graphics/Fonts/ChakraPetch/`
-- [ ] Space Grotesk (300/400/500/600) in `Assets/_Graphics/Fonts/SpaceGrotesk/`
-- [ ] JetBrains Mono (400/500/700) in `Assets/_Graphics/Fonts/JetBrainsMono/`
-- [ ] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
-- [ ] `OFL.txt` shipped per family; credits attribution added
-- [ ] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024²
-- [ ] Charset: ASCII + Latin-1 Supplement + `× · — – ‑ … ← → ↑ ↓ ✕ + −`
-- [ ] Multi Atlas Textures on; dynamic overflow fallback set
-- [ ] Fallback chain: Space Grotesk → Chakra Petch → Liberation Sans
-- [ ] TMP Settings default font asset = Space Grotesk 400
-- [ ] Base material presets only — no outline, glow, or bevel
+- [ ] Chakra Petch (400/500/600/700) TTFs in `Assets/_Graphics/Fonts/ChakraPetch/` — **600 only** (the one v0.3 §4 uses); 400 already ships beside TMP; 500/700 unused by §4
+- [ ] Space Grotesk (300/400/500/600) in `Assets/_Graphics/Fonts/SpaceGrotesk/` — cancelled by v0.3 §0-C
+- [ ] JetBrains Mono (400/500/700) in `Assets/_Graphics/Fonts/JetBrainsMono/` — cancelled by v0.3 §0-C
+- [x] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
+- [ ] `OFL.txt` shipped per family; credits attribution added — `OFL.txt` ships beside the TTF; **no `CreditsManifest.asset` entry yet** (register row added)
+- [~] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024² — authored as a DYNAMIC asset with exactly these settings; renders only checkable in the editor
+- [~] Charset: ASCII + Latin-1 Supplement + `× · — – ‑ … ← → ↑ ↓ ✕ + −` — dynamic, so any glyph in the TTF; editor check
+- [ ] Multi Atlas Textures on; dynamic overflow fallback set — off; one 1024² atlas holds the menu's ASCII set
+- [ ] Fallback chain: Space Grotesk → Chakra Petch → Liberation Sans — cancelled by v0.3
+- [ ] TMP Settings default font asset = Space Grotesk 400 — cancelled by v0.3
+- [x] Base material presets only — no outline, glow, or bevel
 - [ ] Type-scale test scene screenshot captured at 1920×1080
-- [ ] Tabular figure check: `0123456789` over `1111111111` columns align
+- [ ] Tabular figure check: `0123456789` over `1111111111` columns align — `TabularText` built; check not run
 
 > **Re-scoped against Style Foundation v0.3.** §4 is still §4 but the family set changed
 > fundamentally: v0.3 §0-C **cancels JetBrains Mono and Space Grotesk**, retains **Aldrich** for
@@ -363,9 +363,26 @@ Acceptance criteria:
 > **both Aldrich and Chakra Petch SemiBold**, since v0.3.1 scopes `<mspace>` per face rather than
 > to Aldrich alone (queue #9). Status and criteria are left as written pending that pass.
 
-**Deliverables:**
+**Deliverables:** (style-B menu redesign, item 0 — `Docs/MENU_REDESIGN_B.md`)
+- `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold.ttf` + `OFL.txt` (Google Fonts release,
+  "Version 1.000", the same build as the Regular beside TMP).
+- `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset` — DYNAMIC, authored by
+  `Tools/Build/author_chakra_petch_semibold.py` (`--check`), donor-cloned from the shipped dynamic
+  `Bangers SDF.asset`.
+- **The T5 output v0.3.1 asked for — widest digit advance:** Aldrich **0.730 em** (`0`, 1495/2048),
+  Chakra Petch SemiBold **0.644 em** (`0`, 644/1000), measured from the TTFs.
+  `Assets/_Scripts/UI/Kit/TabularText.cs` reads the same value off the font asset at runtime.
+- `Docs/THIRD_PARTY_REGISTER.md` row.
+
 **Findings:**
+- Neither Chakra Petch Regular nor Aldrich has a `CreditsManifest.asset` entry or a register row; the
+  new register row names all three.
+- A dynamic font asset writes the glyphs it rasterises back into itself in the editor, so the asset
+  shows as modified after the first play session — a one-time fill (commit it, or flip it to Static).
+
 **Deviations from spec:**
+- Dynamic population instead of a baked static atlas: only TMP's Font Asset Creator can bake an SDF
+  atlas faithfully, and the session had no editor. Multi-atlas off.
 
 ---
 
@@ -374,11 +391,11 @@ Acceptance criteria:
 **Spec:** Style Foundation §4
 
 Acceptance criteria:
-- [ ] TMP Style Sheet with all 10 named styles from §4
-- [ ] Each style carries family, weight, size @1920, tracking
-- [ ] Aldrich migration cost report: reassignable vs per-component
+- [ ] TMP Style Sheet with all 10 named styles from §4 — delivered as a role table instead (deviation below)
+- [x] Each style carries family, weight, size @1920, tracking — `UITypeRolesSO` rows: face, size, tracking, case, tabular
+- [ ] Aldrich migration cost report: reassignable vs per-component — obsolete under v0.3 (Aldrich retained)
 - [ ] Liberation Sans leak list produced (~174 refs)
-- [ ] Migration **not** executed — estimate only
+- [x] Migration **not** executed — estimate only (no existing text component was touched)
 
 > **Re-scoped against Style Foundation v0.3.** §4 is still §4, but v0.3 makes **Aldrich the
 > retained brand font**, not a font to migrate off — which inverts this task's premise. The
@@ -388,9 +405,20 @@ Acceptance criteria:
 > The Liberation Sans leak list still stands. Status and criteria are left as written pending a
 > re-derive against v0.3 §4.
 
-**Deliverables:**
+**Deliverables:** (style-B menu redesign, item 0)
+- `Assets/_Scripts/UI/Kit/UITypeRolesSO.cs` + `Assets/_SO_Assets/UI/UITypeRoles.asset` — the 11 §4
+  roles plus `Label` (Chakra Petch SemiBold 14, 0.14 em tracking, caps; the style-B section label).
+- `Assets/_Scripts/UI/Kit/KitText.cs` — applies a role and a §11 colour token to a TMP text, and
+  `SetText` wraps live numerals with `TabularText` for the tabular roles.
+
 **Findings:**
+- §4 lists 11 roles, not 10 (v0.3 intake note above); the table carries 12 with `Label`.
+
 **Deviations from spec:**
+- **A role table + component, not a TMP Style Sheet.** A style sheet can only reach a font by NAME
+  through a Resources path, and its styles are opening tags invisible in the inspector; `KitText`
+  binds the font asset by reference and shows the role on every label it drives.
+- `Label` is a style-B addition with no §4 row (design queue #15).
 
 ---
 
@@ -399,19 +427,40 @@ Acceptance criteria:
 **Spec:** Style Foundation §5 (geometry) · §10 (components)
 
 Acceptance criteria:
-- [ ] 9-slice sprites authored for: button (two sliver sizes + flipped), panel/popup (border and
+- [x] 9-slice sprites authored for: button (two sliver sizes + flipped), panel/popup (border and
       fill variants), card, hexagon tile, hexagon slider handle, currency pill, end-game banner +
-      end caps
-- [ ] Corner sliver is a **diagonal cut on two opposite corners, flippable** — not a rounded rect,
-      not a single chamfer
-- [ ] Border insets correct — slivers hold their shape at any width
-- [ ] All sprites **white + alpha, no baked colour** — tinted from `UIThemeSO` at runtime
-- [ ] Test scene shows each sprite at three widths
-- [ ] **No shipping prefab touched**
+      end caps — the currency pill and the card reuse the sliver sets (deviation below)
+- [x] Corner sliver is a **diagonal cut on two opposite corners, flippable** — not a rounded rect,
+      not a single chamfer — asserted on the rendered alpha for all 12 sliver sprites
+- [x] Border insets correct — slivers hold their shape at any width — each cut sits inside its
+      corner tile and the stretch band is uniform (asserted; `--self-test` proves the asserts fire)
+- [x] All sprites **white + alpha, no baked colour** — tinted from `UIThemeSO` at runtime
+- [~] Test scene shows each sprite at three widths — `UIKitTestScene.unity` authored and its rects
+      solved offline (nothing off the 1920×1080 canvas); rendering is an editor check
+- [x] **No shipping prefab touched** — only new prefabs and a new test scene
 
-**Deliverables:**
+**Deliverables:** (style-B menu redesign, item 0 — `Docs/MENU_REDESIGN_B.md`)
+- `Tools/Build/author_ui_kit_sprites.py` (`--check`, `--self-test`) → 19 sprites in
+  `Assets/_Graphics/UI/Kit/`: `kit_sliver14_*` / `kit_sliver10_*` (fill, line1, line2, each normal and
+  `_flip`), `kit_hex_fill` / `_line1` / `_line2`, `kit_hex_handle`, `kit_banner_body` / `_cap_left` /
+  `_cap_right`. Two texels per canvas unit (PPU 480 against the canvas' 240).
+- `chrome_lock` and `chrome_crystal` added to `Tools/Build/author_ui_chrome_icons.py`.
+- Components and prefabs that consume the kit: `Assets/_Scripts/UI/Kit/`,
+  `Assets/_Prefabs/UI Elements/Kit/` (generated by `Tools/Build/author_ui_kit_prefabs.py`).
+- `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity` (not in Build Settings).
+
 **Findings:**
+- The existing cut-corner frames (`_Graphics/UI/Frames/frame_cut_*`) have cut sizes fitted to vendor
+  art (25.75 / 24.38 px) and mixed PPU, so they are not the §5 14 / 10 sliver; the kit does not reuse
+  them. Their consumers are listed for retirement in `Docs/MENU_REDESIGN_B.md`.
+- A sliced border wider than half the rect is shrunk by Unity, so the slivers' corner tiles are kept
+  at cut + 2 units (a 24-unit keycap still gets its full 10-unit cut).
+
 **Deviations from spec:**
+- No separate currency-pill or card sprite: §10.4's pill is the 10-unit sliver pair and a card is the
+  14-unit pair. A dedicated sprite would only duplicate them.
+- The hexagons and the banner caps are SIMPLE sprites at a design size, not 9-sliced — a hexagon's
+  slanted sides run its full height, so no slice preserves them.
 
 ---
 
@@ -460,6 +509,11 @@ Anything found during implementation that needs a design decision. The implement
 | 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal — 3 sites in `LeaderboardsMenu`, since `DailyChallengeLeaderboardView` (the other 3) was deleted with the PlayFab-era daily challenge. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
 | 11 | T4 impl | T8 | **No positive/gain hue.** `#33FF66` in `ScoreNumberAnimator` / `HUDAnimationSettingsSO` for a score increase. §2's gap table proposes `danger` and reuses CTA for *attention*, but never names a **gain** green distinct from CTA. Does gain reuse CTA, or is CTA reserved for interactivity? | OPEN |
 | 12 | T4 impl | T8 | **§11 has one text colour and the UI uses four.** `PrivacyConsentOverlay` needs secondary (`#C2C7D4`), tertiary (`#99A1B2`), placeholder (`#737887`) and a hyperlink (`#59B8F2`); `ToastNotificationManager` needs a neutral toast surface (`#1A1A26`, where both §11 surfaces are blue-tinted); `ResourceDisplay` needs gauge normal + threshold; `GameCard` needs the locked-card tint §10.6 calls "grey" without a value. 16 literals total. Add tokens, or re-theme these onto the existing eight? | OPEN |
+| 13 | Menu B / T7 | T4 | **§11 has no token for Jade, Gold or Ruby's UI JOBS** (§3: active controls + Play; currency/purchase; tooltips). Approved for the style-B redesign (D2): `controlActive` 00D4FF, `purchase` FFAE00, `tooltip` A600FF on `UIThemeSO`, named for the role so they cannot read as team identity. This is a deviation from T4's "exactly the §11 fields" — please ratify into §11 or redirect. | OPEN |
+| 14 | Menu B / T7 | — | **§10.11 "selected tile takes a white border and light fill"** — built as `surfaceDark` 222645 (the approved mockup). Is "light" meant as `surfaceLight` 434C89? | OPEN |
+| 15 | Menu B / T6 | — | **A `Label` role** (Chakra Petch SemiBold 14, caps, 0.14 em tracking) for section and field labels — §4's smallest Chakra role is Button small 14 with no tracking given. Adopt as a §4 row? | OPEN |
+| 16 | Menu B / T7 | — | **§10.1 transparent fills have no values** ("dark teal / green / amber tint"). Built as the role colour at 12% alpha (Play 24%), §3's "Team (Dark) @ 12%" idiom. Confirm. | OPEN |
+| 17 | Menu B | — | **The primary (top) nav has no spec rule.** Built as the brief and mockup specify: active tab Jade text + 2 px Jade underline. §10.8's nearest analogue would make the label Light with a Jade underline. Confirm. | OPEN |
 
 ---
 
