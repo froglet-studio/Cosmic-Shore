@@ -31,7 +31,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Physics | Triggers and queries over spheres, oriented boxes and capsules; a contact pass for dynamic spheres (the Astro League ball) fires `OnCollision*`. **No general solver** and no physics library: the census needs none | ARCHITECTURE §13.1 (census, C3) |
 | Animation | Animator, blend trees, FBX takes; **Animation Rigging is data only** | |
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |
-| Networking | Netcode model over TCP or Froglet's own UDP transport (reliable stream plus an unreliable channel); LAN parties work; built-in test tools: network simulator, stats, session faults, the Launcher's NET page, MCP `net_*` (2026-10-08). **No internet relay, no real UGS** | `MULTIPLAYER.md`; PROGRESS §Known gaps 1 |
+| Networking | Netcode model over TCP, directly or through Amoebius's own online server (lobby + relay): parties and matches between machines on a LAN (found automatically) or over the internet (one reachable server). **No real UGS; no unreliable channels** | ARCHITECTURE §8; `OnlineMultiplayerTests` |
 | Performance | Heavy Bloomrush: collect 22-26 ms (was ~150 ms). Not yet at Unity's level on the GTX 1060 floor | PROGRESS §2 |
 | Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS Xcode project export and a signed .ipa on a Mac (the GitHub CI + Sideloadly route was retired 2026-10-13) | |
 | Tooling | Launcher (play, phone builds, Project Settings, Claude, tracks, board, milestones), `cs-asset` (scene/prefab writes, `serialization-audit`), `cs-build`, MCP server, session reports with CPU/GC per phase, `engine_smoke` | `docs/LAUNCHER.md` |
@@ -50,9 +50,11 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
    visible gap.
 4. **The remaining 62 shaders.** Each one is a visible difference waiting to be noticed.
 5. **Contact physics,** limited to what the 17 Rigidbody scripts use. No general-purpose solver.
-6. **Online play over the internet.** We need a backend decision (see External factors). The
-   UDP transport and its unreliable channel landed 2026-10-08 (`MULTIPLAYER.md` §6.6); the
-   netcode still lacks delta compression (NetworkVariable writes dominate measured traffic).
+6. **Online play at launch scale.** Amoebius's own online server (2026-10-13) already carries
+   parties and matches between machines on a LAN or over the internet, through one reachable server
+   (a player's PC with the port forwarded, or any host with a public address). What it is not yet:
+   the shipping backend. Gate G2 still decides Steam lobbies + Datagram Relay or UGS over REST for
+   the Steam build, and the netcode still lacks delta compression and unreliable channels.
 7. **Parity CI.** Every bleeding-edge push should compile the port against the new `Assets/`
    and smoke-run every mode headless on a Linux runner. Today a Unity-side change that breaks
    the port is found by hand.
@@ -71,21 +73,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 12. **Editor.** Everything in M2, scoped by the 2026-10-08 decision below: FrogletTools, data
     sets and models first; scene and hierarchy editing stay with the agent. The launcher's Dear
     ImGui shell (its EDITOR page) is where it grows.
-13. **Amoebius in the browser (WebAssembly) — FUTURE TO-DO, not scheduled** (the owner, 2026-10-10). .NET compiles to
-    WebAssembly and OpenGL ES 3.0 maps onto WebGL 2, so the real game (its C#, its assets, its graphics) could run in a
-    browser tab, and the web Vessel Studio would then run the SAME code as the game instead of a JavaScript model of
-    it. Large: file access, threads, audio, input and load size each need work. Scope it as its own milestone before
-    any work starts. Until then the JavaScript studio is the browser path, kept honest by parameter export and
-    mechanics parity tests (`Docs/Studios/VESSEL_STUDIO_PLAN.md` §4a).
-14. **What the Amoebius studio needs from the renderer** (`VESSEL_STUDIO_PLAN.md` §4a, measured 2026-10-10 on the
-    Stoat): `Graphics.RenderMeshInstanced` is RECORDED but never drawn (`Graphics.InstancedSubmissions` has no
-    consumer), so the Stoat's 3D path dots and the capsule membrane are invisible; and `CosmicShore/BlackHoleLens`
-    has no translation, so the holes draw nothing like the game. Since 2026-10-10 that shader IS the Vessel Studio's
-    lens (one full-screen pass for every hole, `Docs/BLACK_HOLE.md` §5.1): `BlackHoleLensPass` records a colour copy
-    and one `RasterCommandBuffer.DrawProcedural` (recorded, not drawn, here), so the translation is the studio's own
-    GLSL (`lensMat` in `Docs/Studios/StoatFlightStudio.html`) fed by `BlackHoleLens.ScreenWells`. Both must land
-    before the studio can be judged by eye in Amoebius.
-15. **UI parity loose ends (2026-10-13 pass).** The menus now follow uGUI's rules (layout
+13. **UI parity loose ends (2026-10-13 pass).** The menus now follow uGUI's rules (layout
     messages, dimension changes, ScrollRect/Slider/Scrollbar ports, clone anchors, canvas text).
     Still open:
     - The Profile quest track opens on its last card. `QuestTrackView` snaps once, a frame after
@@ -243,6 +231,7 @@ Next items, by on-screen use (rank with `render.shaders` from each mode's report
 > For every screen in Menu_Main and the in-game HUD, capture the engine at 1920x1080, 2560x1080 and 1024x768, then list layout differences against the Unity goldens with game_ui_at / game_dump_ui evidence. Fix in the engine's RectTransform/layout/TMP code. Separately, plan the clean-room TMP SDF rewrite from docs/LEGAL_REVIEW.md.
 
 **C6 - Online**
+> Done before G2 (2026-10-13): the `INetTransport` seam, and Amoebius's own online server - lobby + relay, LAN discovery, `CosmicShore --server`, the launcher's SETTINGS > ONLINE - proven by two games on separate profiles completing the party invite and a Bloomrush match through it (ARCHITECTURE §8).
 > Before G2: put an `INetTransport` seam between NetDriver and NetSocket (TCP stays the first implementation) with tests. After G2: implement the chosen backend from the boundary table in docs/ARCHITECTURE_REVIEW_2026-10-06.md (F14): transport over the internet with relay, Steam auth/achievements via Steamworks.NET, cloud save and leaderboards. Prove it with two machines in different networks (or two GitHub runners) completing a Bloomrush match.
 
 **C7 - Performance**

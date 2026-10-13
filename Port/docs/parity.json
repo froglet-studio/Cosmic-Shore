@@ -11,7 +11,7 @@
   "summary": {
     "subsystems": {
       "Faithful": 0,
-      "Approximate": 26,
+      "Approximate": 27,
       "Missing": 6
     },
     "shaders": {
@@ -440,20 +440,34 @@
     {
       "id": "netcode-lan",
       "area": "Networking",
-      "name": "Netcode over TCP, LAN parties",
+      "name": "Netcode over TCP, direct or through the relay",
       "status": "Approximate",
       "why": "no parity channel covers it yet",
       "tests": [
         "NetworkingTests",
         "NetWireTests",
-        "MultiplayerSessionTests"
+        "MultiplayerSessionTests",
+        "NetTransportContractTests",
+        "NetDriverTransportTests"
       ],
       "parity": []
     },
     {
       "id": "internet-relay",
       "area": "Networking",
-      "name": "Internet relay and real UGS (gate G2)",
+      "name": "Online server: lobby + relay between machines (LAN discovery, internet)",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "OnlineMultiplayerTests",
+        "SessionRulesTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "ugs-steam",
+      "area": "Networking",
+      "name": "Shipping online backend: real UGS or Steam (gate G2)",
       "status": "Missing",
       "why": "not implemented",
       "tests": [],

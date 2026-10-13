@@ -122,7 +122,8 @@ namespace CosmicShore.Mcp
                     ["scene"] = P("string", "start in this scene instead of build scene 0 (Bootstrap)"),
                     ["size"] = P("string", "window size WxH (default 1280x720)"),
                     ["headless"] = P("boolean", "no window: fast ticks, no screenshots"),
-                    ["online"] = P("boolean", "real networking (default false: one offline process)"),
+                    ["online"] = P("boolean", "real networking (default false: one offline process). Online, the game finds an Amoebius online server on the network, or hosts one"),
+                    ["server"] = P("string", "with online: the online server host[:port] to use instead (another game, or CosmicShore --server)"),
                     ["audio"] = P("boolean", "FMOD audio (default false)"),
                     ["profile"] = P("string", "save profile name (COSMIC_SHORE_PROFILE); a new name is a first-time user"),
                     ["build"] = P("boolean", "compile first (default true)"),
@@ -396,6 +397,7 @@ namespace CosmicShore.Mcp
             };
             foreach (var x in args) psi.ArgumentList.Add(x);
             if (!Bool(a, "online", false)) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            else if (Str(a, "server").Length > 0) psi.Environment["COSMIC_SHORE_NET_SERVER"] = Str(a, "server");
             if (!Bool(a, "audio", false)) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
             if (Str(a, "profile").Length > 0) psi.Environment["COSMIC_SHORE_PROFILE"] = Str(a, "profile");
 
