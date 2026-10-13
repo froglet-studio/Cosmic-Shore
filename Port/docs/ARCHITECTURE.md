@@ -305,7 +305,10 @@ offline paths handle.
    port is the election lock, so one machine hosts one server. Servers announce themselves every 3 s;
    a server hosted inside a game stands down for a better one it hears (a standalone server, else
    the older), after checking it can reach it and that the key is the same, telling its games to
-   move. Relay links already running keep running until they close.
+   move. Relay links already running keep running until they close. A server hosted by a game
+   lives in that game: when the game quits, another game takes over (hosts one and re-asserts its
+   sessions), but a match relayed through the old server ends with it. A standalone server does
+   not have that problem.
 
 `CosmicShore --server [PORT] [--key KEY] [--name NAME] [--no-discovery]` runs the server alone, with
 no window or content (`ServerMode`); the launcher's "Host the online server on this PC" runs exactly
