@@ -65,20 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Scarab balls: 5 seeded per domain, 3× explosion radius (`cece/happy-ride-f7op1j`, 2026-10-13) — NOT EDITOR-VERIFIED
+### 🔴 Scarab balls: overload at 5 per Scarab, 3× blast radius, blast runs on every peer (`cece/happy-ride-f7op1j`, 2026-10-13) — NOT EDITOR-VERIFIED
 
-Tuning only, no logic change. No `unity` CLI in the authoring session, so `/verify-unity` did not run.
+No `unity` CLI in the authoring session, so `/verify-unity` did not run. Compiled headless with
+`Tools/Build/unity_refcompile` (player config) instead — see the commit message for its result.
 
 | Knob | Was → Now | Where it lives |
 |---|---|---|
-| Embedded balls one domain may stud the nucleus with | **3 → 5** | `ScarabNucleusFieldConfigSO.maxEmbeddedPerDomain` (`Resources/ScarabNucleusFieldConfig.asset`) |
+| Cell overload: loose balls one Scarab (domain) may have in a cell | **3 any-domain (limit 4) → 5 per domain**, the 6th detonates the whole cell | `AstroLeagueBall.cellBallLimit` (prefab uses the C# default; Astro League scene 4 → 5) |
+| Nucleus overload: balls one Scarab (domain) may bank | **3 any-domain → 5 per domain**, the 6th detonates | `ScarabNucleusFieldConfigSO.nucleusEntryLimit` (`Resources/ScarabNucleusFieldConfig.asset`) |
 | Nucleus-overload blast, × ball radius | **2 → 6** | `ScarabNucleusFieldConfigSO.detonationRadiusScale` (same asset) |
-| Cell-overload blast, × ball radius | **2 → 6** | `AstroLeagueBall.cellOverloadRadiusScale` C# default (`AstroLeagueBall.prefab` does not serialize it). The Astro League scene's match ball keeps its serialized 2 |
+| Cell-overload blast, × ball radius | **2 → 6** | `AstroLeagueBall.cellOverloadRadiusScale` C# default. The Astro League scene's match ball keeps its serialized 2 |
+| Seeded (embedded) balls per domain | unchanged, 3 | `maxEmbeddedPerDomain` |
 
-1. Compile clean; `ScarabNucleusFieldConfig` shows 5 / 6 in the inspector.
-2. Fly a Scarab in a cell with a nucleus for ~70 s: five balls of its domain embed, the sixth does not.
-3. Knock balls into the nucleus past `nucleusEntryLimit` (unchanged, 3): the overload blast is visibly 3× wider than before and clears own-domain-lit / other-domain prisms out to that radius.
-4. Particle burst and camera shake scale with the radius multiplier (`Detonate_ClientRpc`), so both are 3× what they were — check the shake isn't nauseating. If it is, cap the shake factor there rather than shrinking the blast.
+**Behaviour change:** the ball's domain blast (`SpawnDomainBlast`) used to spawn on the server only.
+Prisms are simulated per peer, so a client never saw opposing prisms destroyed or their shields
+popped. It now spawns from `Detonate_ClientRpc` on every peer; ball kicks stay server-only
+(`RequestBlast` from a vessel-less blast on a client is a no-op).
+
+1. Compile clean; `ScarabNucleusFieldConfig` shows embedded 3 / entry 5 / radius 6.
+2. One Scarab, one cell: forge balls. Five sit loose; the sixth detonates all of them.
+3. Two Scarabs on different domains in one cell: each can hold five; either one's sixth detonates
+   every loose ball in the cell, the other domain's included.
+4. Nucleus: bank five of one domain's balls; the sixth overloads.
+5. **MPPM, two peers:** a ball detonating next to an opposing domain's trail destroys those prisms
+   and pops shielded ones (not super-shielded) **on both the host and the client**. Own-domain
+   prisms are drawn lit, not destroyed. Ball kicks from the blast are not doubled.
+6. Particle burst and camera shake scale with the radius multiplier (`Detonate_ClientRpc`), so both
+   are 3× what they were. Check the shake isn't nauseating. If it is, cap the shake factor there
+   rather than shrinking the blast.
 
 ### 🔴 EditMode triage of the 14 failures new on 2026-10-13 (`claude/compassionate-hopper-rqat4d`, 2026-10-13) — NOT EDITOR-VERIFIED
 

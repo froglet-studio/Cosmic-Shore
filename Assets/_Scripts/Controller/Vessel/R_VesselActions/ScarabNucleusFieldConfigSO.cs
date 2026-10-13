@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Most embedded (not yet knocked loose) balls one DOMAIN may have studding the " +
                  "nucleus at once. The clock PAUSES at the cap rather than culling anything — not " +
                  "creating mass is allowed, aging it out is not.")]
-        [Min(1)] public int maxEmbeddedPerDomain = 5;
+        [Min(1)] public int maxEmbeddedPerDomain = 3;
 
         [Tooltip("How far the ball sinks into the nucleus surface, as a fraction of its own radius. " +
                  "0 = sitting on the surface, 1 = fully swallowed. ~0.4 reads as embedded.")]
@@ -31,9 +31,10 @@ namespace CosmicShore.Gameplay
         public AstroLeagueBall ballPrefab;
 
         [Header("Nucleus overload")]
-        [Tooltip("How many balls may be knocked INTO the nucleus before the next one overloads it. " +
-                 "The Nth entry detonates instead of entering, so this many can be banked safely.")]
-        [Min(1)] public int nucleusEntryLimit = 3;
+        [Tooltip("How many of ONE SCARAB's balls (counted by domain) may be knocked INTO the nucleus " +
+                 "before the next one overloads it. One more of that domain's balls detonates " +
+                 "instead of entering, so this many can be banked safely per Scarab.")]
+        [Min(1)] public int nucleusEntryLimit = 5;
 
         [Tooltip("Explosion radius of the overload detonation, as a multiple of each ball's own " +
                  "radius.")]

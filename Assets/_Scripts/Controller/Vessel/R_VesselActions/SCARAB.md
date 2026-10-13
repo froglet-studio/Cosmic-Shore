@@ -1372,7 +1372,7 @@ The loop, and what each direction means:
 | Scarab flies (passive, `seedIntervalSeconds`) | One ball of its domain embeds in the nucleus surface, up to `maxEmbeddedPerDomain` |
 | Anyone dislodges it **outward** (hull, blade, or any blast — the dash's cavitation punch included) | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside (the ball's own containment, below). Deliberately inconsequential: a toy, not a scoring path |
 | Anyone dislodges it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
-| One ball too many goes in (`nucleusEntryLimit`) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
+| One of a Scarab's balls too many goes in (`nucleusEntryLimit`, 5 **per Scarab** — counted by domain) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
 
 **Leaving the nucleus is a HIT, not a shove.** An embedded ball sits part-sunk in the shell, which
 is on the wrong side of BOTH the court and the cytoplasm volumes — so the frame it is released,
@@ -1381,10 +1381,11 @@ suspends its boundary so the strike's own velocity carries it across that band; 
 engages on a ball that is already where it belongs. This is presentation-only: the ball is a normal
 body the whole time, and nothing else about the release changes.
 
-**Too many balls is ONE event with one look, and the count is per CELL.** A **cell** holds at most
-`AstroLeagueBall.cellBallLimit` (4) LOOSE balls (`!n_Embedded && !n_Hidden`, position inside
-`Cell.ContainsPosition`): the moment a further one enters, every loose ball in that cell detonates
-**regardless of domain**, the arriving one included — `TickCellMembershipServer` →
+**Too many balls is ONE event with one look, and the count is per CELL, per Scarab.** A **cell**
+holds at most `AstroLeagueBall.cellBallLimit` (5) LOOSE balls of one domain — one Scarab's share
+(`!n_Embedded && !n_Hidden`, position inside `Cell.ContainsPosition`): the moment that domain's
+sixth enters, every loose ball in that cell detonates **regardless of domain**, the arriving one
+included — `TickCellMembershipServer` →
 `DetonateAllLooseInCellServer` → `CellOverload_ClientRpc`, one networked event on every peer, using
 the same per-ball `DetonateWithRadiusServer` the nucleus overload uses, so the two cannot drift into
 different-looking detonations.
