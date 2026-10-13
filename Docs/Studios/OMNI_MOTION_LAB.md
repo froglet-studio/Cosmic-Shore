@@ -1,6 +1,6 @@
 # Omni Motion Lab
 
-A browser lab for the next round of the omni crystal's element effects (round 4: the Charge crystal seam walk and the omni flux arc; round 3: hop clear for Space and Time, bolder Mass that rises while hidden, the Wandering arc in the seams between the Charge blooms). It covers four asks:
+A browser lab for the next round of the omni crystal's element effects (round 5: thicker plates and chained flux arcs; round 4: the Charge crystal seam walk and the omni flux arc; round 3: hop clear for Space and Time, bolder Mass that rises while hidden, the Wandering arc in the seams between the Charge blooms). It covers four asks:
 
 1. **Mass:** the triangle prisms seal fully once they cross into the camera's visible hemisphere.
 2. **Space:** the squares make two moves per loop instead of three. The two triangle steps become one smooth move.
@@ -14,6 +14,37 @@ The lab has styles, sliders for each ask, a beat timeline and a side-by-side omn
 - **Data:** the same block as the Omni Combine Lab, stamped into both pages by `python3 Tools/Build/omni_combine_lab_assets.py`. `--check` fails if either page is stale. The omni prism thickness is imported from `author_omni_crystal_triangles.DEPTH_THICKNESS`.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniMotionLab.html`
 - **Hooks:** `window.__lab.runFullBatch()`, `runChargeBatch()`, `clipTimeline(p)`, `clipSelfTest()`, `beatsOf(p)`, `squaresAt(p, t)`, `wavesAt(p, t)`, `sealOf(p, D)`
+
+## Round 5 (2026-10-13): thicker plates, chained flux arcs
+
+The designer: "This is near perfect. Let's thicken the squares, rhombuses and pentagons (not the triangles) on the omni crystals by 10%. The omni crystal arcs should always use the previous sink as the new source, to keep a continuity of hopping arcs. When this translates to Unity, I hope the thick part of the beam looks better."
+
+**The option:** style **"Round 5: thicker plates, chained arcs"** is Round 4 with two changes:
+- **Plate thickness 1.1** (Squares tab). Each square, rhombus and pentagon (or wedge) is thickened about its own centre along its own current normal, AFTER it is posed, so a square mid-hop and a rhombus mid-flip thicken the right way.
+  - Measured with `plateThicknessAt`: exactly 1.1000 for squares, rhombi and pentagons at rest, mid pentagon turn and mid wave; triangle prisms 1.0000.
+- **Chained flux arcs:** each discharge starts from the pentagon the previous one landed on (never straight back to the one before). The arcs hop on round the crystal, and the landing pentagon stays lit through its own recharge.
+  - It is one seeded sequence, extended as needed.
+  - This is now how the Flux arc behaves everywhere, so Round 4 chains too.
+
+**The thick beam.** The lab now draws it as three layers on one strip:
+- a soft halo about 1.9× the beam width at low intensity;
+- the body at beam width;
+- a hot core about ⅓ of it at the top intensity.
+
+The **Ship it** tab says how to carry that into Unity. Use one strip with the falloff computed across its width in the shader, so the beam reads round rather than flat, in HDR so bloom catches the core. Do not draw it as one wide flat quad, which is what made the round-4 beam read thin and flat.
+
+**Measured** (`runFullBatch`, deterministic):
+
+| | Overlap % | Min square size | Visible clips % | Height seen | Rises seen |
+|---|---|---|---|---|---|
+| Round 4 | 0 | 1 | 3.0 (Mass×Space, limb) | 7.35 | 0 |
+| Round 5 | 0 | 1 | 3.0 (Mass×Space, limb) | 7.35 | 0 |
+
+The 10% thicker plates add no clips. The hop-clear lifts already clear with that much margin, and nothing touches at rest (`clipTimeline` at t = 0: none).
+
+**Ship it, new row:** re-cut `OmniCrystalBody`'s plates thicker in `author_omni_crystal_triangles.py`, then re-bake `OmniSpaceSquares` (its anchors move with the plates) and re-run the flip-wave and hull-fusion parity tests.
+
+**Checked:** `verify_lab.cjs` PASS. An eight-frame contact sheet of the chained arcs and the layered beam on the omni was read.
 
 ## Round 4 (2026-10-13): seam walk on the Charge crystal, flux arc on the omni
 

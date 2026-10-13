@@ -164,6 +164,7 @@
     depthRise: 0,                 // lab: 1 = a prism may also climb its column while its column top is hidden by the body (never seen rising)
     depthRiseRate: 1.5,           // lab: how fast a hidden prism climbs, in column-heights per second
     faceSplit: FX.depth.omni.faceSplit, // OmniDepthPrisms.mat _FaceSplit
+    plateThick: 1,                // lab: the omni's squares, rhombi and pentagons, x their thickness (the body FBX); triangles untouched
     depthReach: FX.depth.omni.reach,      // OmniDepthPrisms.mat _Reach: the top of a column, x the plate's own radius
     depthSizeStart: FX.depth.omni.sizeStart, // OmniDepthPrisms.mat _PlateScaleStart: a prism's size at the top of its column
     thickness: FX.depth.omni.thickness, // author_omni_crystal_triangles.py DEPTH_THICKNESS (baked into the prism mesh, grows inward)
@@ -241,6 +242,7 @@
     ['Triangles', 'depthRiseRate', 0.2, 6, 0.1, 'Hidden rise rate', 'Rise while hidden: column-heights per second a hidden prism climbs.'],
     ['Triangles', 'depthReach', 1.2, 4, 0.05, 'Column height', 'OmniDepthPrisms.mat _Reach: how far out the top of a column stands, x the plate\'s radius. Higher reads from further away, and needs a deeper reseat to stay hidden (a column top clears the silhouette while sqrt(1 - d^2) > 1 / height).'],
     ['Triangles', 'depthSizeStart', 0.2, 1, 0.05, 'Size at the top', 'OmniDepthPrisms.mat _PlateScaleStart: a prism\'s size at the top of its column (it grows to full size as it seals).'],
+    ['Squares', 'plateThick', 0.8, 1.5, 0.01, 'Plate thickness', 'Round 5: the omni\'s squares, rhombi and pentagons (not the triangle prisms), x their thickness, about each plate\'s own centre and along its own normal, applied after the plate is posed.'],
     ['Triangles', 'faceSplit', 0, 1, 0.05, 'Face split', 'OmniDepthPrisms.mat _FaceSplit: the faces part by this x the plate radius at the top of the column.'],
     ['Triangles', 'thickness', 1, 10, 0.25, 'Thickness', 'The omni prism mesh\'s thickness (author_omni_crystal_triangles.py, grows inward from the top face).'],
     ['Cadence', 'cadence', 0, 2, 1, 'Cadence', '0: as shipped - the squares loop their three moves every 4.8 s and the rhombi flip a wave every 2 s, on separate clocks, so they often move at once. 1: interleaved beats - squares (pentagon turn), Time wave, squares (triangle turn), Time wave - and nothing moves while another moves. 2 (control): the squares\' two moves, but Time keeps its own clock.'],
@@ -283,11 +285,14 @@
   // Round 4 (designer, after round 3): everything as round 3, the seam walk on the Charge crystal, the flux arc on the
   // omni, and the squares' pentagon turn 10% slower.
   const R4 = Object.assign({}, R3, { chMode: 19, chModeOmni: 20, sqPentDur: +(1.56 / 0.9).toFixed(3) });
+  // Round 5 (designer: "near perfect"): the omni's squares, rhombi and pentagons 10% thicker; the flux arcs chain.
+  const R5 = Object.assign({}, R4, { plateThick: 1.1 });
   const STYLES = [
     { id: 'shipped', name: 'Shipped today', blurb: 'The game as it is: prisms seal only when facing you, the squares move three times on their 4.8 s loop and the rhombi flip every 2 s on their own clock, the pentagons crawl.', v: {} },
     { id: 'r3', name: 'Round 3: hop clear, bolder Mass, seam arc', blurb: 'The designer\'s round-2 pick for Space and Time (rigid arcs that hop clear, a Time wave in each stop). Mass: columns 3x the plate radius, prisms climb back up whenever their column top is hidden (never seen rising), and descend late, from d = -0.25 to the horizon, so you see them come in. Charge: the Wandering arc, crawling the seams between the blooms.', v: R3 },
     { id: 'r3-bold', name: 'Round 3, Mass bolder', blurb: 'Round 3 with columns 3.5x and bigger prisms at the top (0.75).', v: Object.assign({}, R3, { depthReach: 3.5, depthSizeStart: 0.75 }) },
     { id: 'r3-mass2', name: 'Round 3 with round-2 Mass', blurb: 'Round 3, but Mass as round 2 had it (columns 2x, the shipped ratchet, descent from -0.88): the subtler look, to compare.', v: Object.assign({}, R3, { depthRise: 0, depthReach: 2, depthOpen: -0.88, depthSizeStart: 0.5, depthSwap: -0.87 }) },
+    { id: 'r5', name: 'Round 5: thicker plates, chained arcs', blurb: 'Round 4 with the omni\'s squares, rhombi and pentagons 10% thicker (the triangle prisms as they were), and the flux arcs chained: each discharge starts from the pentagon the last one landed on, so the arcs hop on round the crystal.', v: R5 },
     { id: 'r4', name: 'Round 4: seam walk + flux arc', blurb: 'Round 3 with: on the Charge crystal, one bolt walking the seams between the blooms forever (no core, no discharge); on the omni, the Flux arc (a pentagon charges, an arc leaps to another pentagon, forking onto all five corners at each end with one thick beam between; only those two light); and the squares\' pentagon turn 10% slower (1.56 s -> 1.73 s).', v: R4 },
     { id: 'r3-beat', name: 'Round 3 + a Charge beat', blurb: 'Round 3 with the Charge beat on: one arc journey per beat, after the second Time wave.', v: Object.assign({}, R3, { chSlot: 1, chSlotDur: 2.4 }) },
     { archive: true, id: 'p1', name: 'Proposal: the brief, as keys', blurb: 'Prisms flush in the visible hemisphere; the squares make two moves (the art file\'s keys, the triangle move as one 2.4 s ease); a Time wave plays in each stop; nothing moves at once.', v: PROPOSAL },
@@ -938,10 +943,17 @@
     if (U.kind === 'crystal') { const net = seamNet(U); return net.nodes.filter((n) => n.sites.includes(s)).map((n) => n.p); }
     const pl = UNITS.solid.sites[s].members[0].pl; return pl.outer.map((i) => add(v3(OMNI.verts, i), mul(pl.dir, 0.012 * OMNI_R)));
   }
+  // Round 5: the arcs CHAIN - each discharge starts from the pentagon the last one landed on (never straight back), so
+  // the arcs hop on round the crystal. One seeded sequence, extended as needed: any t gives the same picture.
+  const FLUX_CHAIN = [];
   function fluxEvent(U, k) {
-    const rnd = mulberry32((Math.imul(k + 1, 2654435761) ^ 0x5bd1e995) >>> 0), s = Math.floor(rnd() * 12);
-    const cands = SITE_AXES.map((a, i) => i).filter((i) => { const d = dot(SITE_AXES[s], SITE_AXES[i]); return i !== s && d < Math.cos(55 * Math.PI / 180) && d > Math.cos(125 * Math.PI / 180); });
-    return { s, d: cands[Math.floor(rnd() * cands.length)], seed: k };
+    while (FLUX_CHAIN.length <= k) {
+      const n = FLUX_CHAIN.length, rnd = mulberry32((Math.imul(n + 1, 2654435761) ^ 0x5bd1e995) >>> 0), prev = FLUX_CHAIN[n - 1];
+      const s = prev ? prev.d : Math.floor(rnd() * 12);
+      const cands = SITE_AXES.map((a, i) => i).filter((i) => { const d = dot(SITE_AXES[s], SITE_AXES[i]); return i !== s && (!prev || i !== prev.s) && d < Math.cos(55 * Math.PI / 180) && d > Math.cos(125 * Math.PI / 180); });
+      FLUX_CHAIN.push({ s, d: cands[Math.floor(rnd() * cands.length)], seed: n });
+    }
+    return FLUX_CHAIN[k];
   }
   const FLUX_GEO = new Map();
   function fluxGeo(U, s, d) {
@@ -1049,7 +1061,18 @@
     const wedges = wedgesOn(p, mi), U = wedges ? UNITS.wedge : UNITS.solid;
     const wpos = wedges ? new Float32Array(CH.wedge) : null;
     const ch = poseCharge(p, t, U, mi, wedges ? wpos : pos);
+    if (p.plateThick !== 1) { thicken(pos, OP, (pl) => pl.owner !== 'Mass' && !(wedges && pl.owner === 'Charge'), p.plateThick); if (wedges) thicken(wpos, CH.wedgePlates, () => true, p.plateThick); }
     return { kind: 'omni', pos, wpos, wedges, U, ch, split, fade, leaving, sq, waves, st, R: OMNI_R };
+  }
+  // Round 5: thicken plates by k along their OWN current normal (outer face centre - inner face centre), about their
+  // current centre, after every motion is applied - so a square mid-hop or a rhombus mid-flip thickens the right way.
+  function thicken(P3, plates, which, k) {
+    for (const pl of plates) {
+      if (!which(pl)) continue;
+      const cen = (ids) => mul(ids.map((i) => v3(P3, i)).reduce(add, [0, 0, 0]), 1 / ids.length);
+      const co = cen(pl.outer), ci = cen(pl.inner), c = lerp3(co, ci, 0.5), n = unit(sub(co, ci));
+      for (const i of pl.idx) { const v = v3(P3, i); put(P3, i, add(v, mul(n, dot(sub(v, c), n) * (k - 1)))); }
+    }
   }
   function crystalFrame(p, t, mi) {
     const pos = new Float32Array(CH.basis);
@@ -1319,7 +1342,9 @@
       for (let k = 0; k + 1 < pts.length; k++) {
         const a = pts[k], c = pts[k + 1], side = unit(cross(sub(c, a), sub(eye, mul(add(a, c), 0.5))));
         // the halo is narrower on wide bolts, or its short quads fan out into fins at every kink
-        if (p.boltLook > 0.5) { quad(a, c, mul(side, wCore * b.w * Math.max(1.8, 4 - 0.8 * (b.w - 1))), b.I * 0.22, 0); quad(a, c, mul(side, wCore * b.w), b.I * 1.2, 0); }
+        if (p.boltLook > 0.5 && b.w >= 2.5) {   // a thick beam: a soft halo, a body, and a hot narrow core (what a tube with bloom gives in Unity)
+          quad(a, c, mul(side, wCore * b.w * 1.9), b.I * 0.14, 0); quad(a, c, mul(side, wCore * b.w), b.I * 0.55, 0); quad(a, c, mul(side, wCore * b.w * 0.32), b.I * 1.5, 0);
+        } else if (p.boltLook > 0.5) { quad(a, c, mul(side, wCore * b.w * Math.max(1.8, 4 - 0.8 * (b.w - 1))), b.I * 0.22, 0); quad(a, c, mul(side, wCore * b.w), b.I * 1.2, 0); }
         else quad(a, c, mul(side, R * 0.0035), b.I * 1.4, 0);
       }
     }
@@ -1663,9 +1688,11 @@
       L.push('- Pentagon path: ' + (p.pentPath === 1 ? 'rigid 72-degree turn' + (p.pentLift ? ' lifted ' + p.pentLift : '') + ': re-bake SquareRotateAroundPentagon with in-between frames sampled along the turn (OmniSpaceSquares, author_omni_crystal_triangles.py; the runtime already plays multi-frame blend shapes).' : 'the art file\'s key, as is.'));
       L.push('- Triangle path: ' + (p.triPath === 2 ? 'one rigid 120-degree turn through Step1 (lift x' + p.triLift + '): bake ONE key "SquareOverTri" with in-between frames along the arc, replacing Step1/Step2.' : p.triPath === 1 ? 'Step1 and Step2 overlapped by ' + p.triOverlap + ': weights only, no new frames.' : 'Step1 then Step2 under one ease: weights only, no new frames.'));
     }
+    if (p.plateThick !== 1) L.push('', 'PLATES', '- The omni body\'s squares, rhombi and pentagons x' + p.plateThick + ' thick (about each plate\'s centre; triangles untouched): re-cut OmniCrystalBody\'s mesh in author_omni_crystal_triangles.py (the extractor already splits it per plate), then re-bake OmniSpaceSquares (its anchors move) and re-run the flip-wave and hull-fusion parity tests.');
     L.push('', 'CHARGE');
     L.push('- Effect: ' + m.name + '. ' + m.blurb);
     L.push('- Needs: ' + (m.needs.join(', ') || 'nothing') + '. "bones": the pentagons skinned to their own bones (RhombusSkinBaker does this for the 30 rhombi; the same baker would take the 12 pentagons, and the Charge crystal\'s 60 petals). "wedge mesh": the omni\'s pentagons re-cut as five wedges (the Combine lab\'s landed petals). "bolts"/"sprites": a GPU ribbon / billboard pass in the arc core colour.');
+    if ([19, 20].includes(modeOf(p)) || [19, 20].includes(modeFor(p, 'omni'))) L.push('- Bolts in Unity: one GPU ribbon pass (camera-facing strips built per frame from the seam / arc polylines, or a LineRenderer per bolt) in the arc core colour, additive, HDR so bloom catches it. The flux arc\'s THICK middle beam should be three layers on one strip, not one wide quad: a soft halo ~2x the beam width at low intensity, the body at beam width, and a hot core ~1/3 of it at the top intensity (the lab draws exactly that), with the UV-across falloff in the shader so the beam reads round, not flat. The five fork strands taper into it over the first and last 30% of the arc.');
     if (Object.keys(d).some((k) => k.startsWith('ch'))) L.push('- Charge knobs: ' + JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k]) => k.startsWith('ch')))));
     L.push('', 'Nothing here is verified in Unity. Each graduation needs /verify-unity and its own parity test.');
     return L.join('\n');
@@ -1708,7 +1735,8 @@
     LAB, SHIPPED, SPEC, P, PLATFORM, STYLES, CH_MODES, ASSETS: A, SQFIT,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) simStep(dt == null ? 1 / 60 : dt); resize(); render(); },
-    reset, score: () => measure(P, { secs: 8, hz: 8 }), runBatch: (o) => runBatch(Object.assign({ secs: 10, hz: 8 }, o || {})), runFullBatch: runBatch, runChargeBatch, measure, clipSelfTest, clipTimeline, seamFacts: () => Object.fromEntries(Object.entries(UNITS).map(([k, U]) => { const n = seamNet(U); return [k, { junctions: n.nodes.length, seams: n.edges.length, outlineSegs: n.outline.reduce((a, o) => a + o.length, 0), worstGapLift: +Math.max(...n.edges.flatMap((e) => e.pts.map((q) => len(q) / U.R))).toFixed(3) }]; })), TRI_ART_LIFT: () => TRI_ART_LIFT,
+    reset, score: () => measure(P, { secs: 8, hz: 8 }), runBatch: (o) => runBatch(Object.assign({ secs: 10, hz: 8 }, o || {})), runFullBatch: runBatch, runChargeBatch, measure, clipSelfTest, clipTimeline,
+    plateThicknessAt: (p, t, owner) => { const st = {}; depthStep(p, st, t, [0, 0, 6.5 * OMNI_R]); const fr = omniFrame(p, t, [0, 0, 6.5 * OMNI_R], st, modeFor(p, 'omni')); const pl = OP[IDS[owner][0]]; const c = (ids) => mul(ids.map((i) => v3(fr.pos, i)).reduce(add, [0, 0, 0]), 1 / ids.length); return len(sub(c(pl.outer), c(pl.inner))); }, seamFacts: () => Object.fromEntries(Object.entries(UNITS).map(([k, U]) => { const n = seamNet(U); return [k, { junctions: n.nodes.length, seams: n.edges.length, outlineSegs: n.outline.reduce((a, o) => a + o.length, 0), worstGapLift: +Math.max(...n.edges.flatMap((e) => e.pts.map((q) => len(q) / U.R))).toFixed(3) }]; })), TRI_ART_LIFT: () => TRI_ART_LIFT,
     setParam, applyStyle, record, beatsOf, squaresAt, wavesAt, sealOf, compare: (s) => (s ? startCompare(s) : stopCompare()),
     setCamera(yaw, pitch) { cam.yaw = yaw; cam.pitch = pitch; },
     state: () => ({ t: sim.t, seed, style: currentStyle, chMode: CH_MODES[modeOf(P)].id, compare: compare ? compare.subject : null, beats: beatsOf(P), restClips: REST_CLIPS.length }),
