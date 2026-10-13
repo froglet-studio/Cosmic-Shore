@@ -28,6 +28,11 @@ before, all of which are visible without compiling:
                       GUID on whichever machine opens the project first, which
                       silently breaks every reference to that asset.
 
+The two C# checks read only what Unity compiles: Assets/ and embedded packages
+under Packages/. The rest of the repository's C# (Port/, Tools/) is built by
+dotnet and never reaches a player, so a UnityEditor or MonoBehaviour there is
+not a finding.
+
 Exit code is 0 when clean, 1 when any check fails. Run with --list to see the
 checks, or --skip CHECK to disable one.
 """
@@ -54,6 +59,17 @@ EXCLUDED_PREFIXES = (
     "Assets/Unity Assests/",   # sic: vendored Unity sample assets
     "Assets/StreamingAssets/",
 )
+
+# Unity compiles C# from exactly two places: the project's Assets/ tree and
+# embedded packages under Packages/ (registry packages are in Library/, excluded
+# above). Every other .cs in the repository is built by dotnet and Unity never
+# sees it: Port/ is Prisma, the .NET port, which carries its own MonoBehaviour
+# and parses Shader Graph JSON whose m_Type is the string
+# "UnityEditor.ShaderGraph.GraphData"; Tools/ holds standalone harnesses with
+# Unity shims. The C# checks are about what a player build compiles, so they
+# look only here. An allow-list rather than another exclusion, because a new
+# non-Unity C# tree should be out of scope without anyone remembering to add it.
+UNITY_COMPILE_ROOTS = ("Assets/", "Packages/")
 
 # Severity decides whether a check can block a promotion. Only breaks-the-build
 # problems are errors; everything else reports and gets out of the way, because
@@ -92,6 +108,10 @@ def is_excluded(rel: str) -> bool:
     if any(p in EXCLUDED_DIRS for p in parts):
         return True
     return rel.startswith(EXCLUDED_PREFIXES)
+
+
+def unity_compiles(rel: str) -> bool:
+    return rel.endswith(".cs") and rel.startswith(UNITY_COMPILE_ROOTS)
 
 
 def in_editor_folder(rel: str) -> bool:
@@ -167,7 +187,7 @@ def _is_editor_only(cond: str) -> bool:
 def check_editor_in_runtime(root: Path, files: list[str]) -> list[Finding]:
     out = []
     for rel in files:
-        if not rel.endswith(".cs") or in_editor_folder(rel):
+        if not unity_compiles(rel) or in_editor_folder(rel):
             continue
         try:
             # utf-8-sig, not utf-8: a BOM left on line 1 would otherwise hide a
@@ -198,7 +218,7 @@ def check_editor_in_runtime(root: Path, files: list[str]) -> list[Finding]:
 def check_monobehaviour_names(root: Path, files: list[str]) -> list[Finding]:
     out = []
     for rel in files:
-        if not rel.endswith(".cs"):
+        if not unity_compiles(rel):
             continue
         try:
             # utf-8-sig, not utf-8: a BOM left on line 1 would otherwise hide a
