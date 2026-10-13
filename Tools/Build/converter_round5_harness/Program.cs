@@ -9,8 +9,11 @@
 //     (AngleAxis(tumble) * AngleAxis(spin), then the centre) - with the idle spin ON, so the order is exercised;
 //  6. the Charge light reads both combine crystals (12 blooms; 12 pentagons) and the flux arcs' ends sit on the
 //     pentagons as OmniCombineMotion swells them;
-//  7. the lab path is untouched: GameMotion off gives the lab's OmniPose (the parity harness holds the lab itself).
-// Negative controls: the square keys out of order are refused; composing the frame the other way round fails check 5.
+//  7. the lab path is untouched: GameMotion off gives the lab's OmniPose (the parity harness holds the lab itself);
+//  8. every crystal but the first comes in with a bit of extra spacing that settles to nothing as it lands, and arrives
+//     from the camera's side (FaceCamera), so the rhombi that must cross the omni do it behind it.
+// Negative controls: the square keys out of order are refused; composing the frame the other way round fails check 5;
+// arriving straight in (no FaceCamera), Time's camera-facing rhombi come in from inside.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -166,19 +169,52 @@ static class Program
         core.OmniPose(13.3, lab, 1, cam, a2, swelled, 0.5, 3);
         Check("GameMotion off ignores the game-motion arguments (the lab path)", a1.SequenceEqual(a2));
 
-        // 8: every crystal but the first sockets in from OUTSIDE
+        // 8: a bit of extra spacing that settles, and every crystal but the first arriving from the camera's side
         var sp = OmniCombineParams.LabDefault;
-        sp.GameMotion = true; sp.ShaderDepth = true; sp.IdleTumble = false; sp.SocketLift = 0.5;
-        var straightP = sp; straightP.SocketLift = 0;
-        var (inside, approach, landed, spaceMoved) = SocketStats(core, data, sp);
-        Check("crystals 2-4: no plate comes in from inside (each stays at or beyond its slot's radius while it morphs)", inside[1] < 0.02f && inside[2] < 0.02f && inside[3] < 0.02f,
-              $"deepest below the slot radius: Charge {inside[1]:P1}, Mass {inside[2]:P1}, Time {inside[3]:P1}");
-        Check("crystals 2-4: the last approach is radial, from outside", approach < 10f, $"worst {approach:F1} deg off the slot's direction");
-        Check("every plate still lands exactly in its slot", landed < 1e-4f * R, $"worst {landed / R:E2} R");
-        Check("the first crystal (Space) is unchanged", spaceMoved == 0f, $"{spaceMoved:E2}");
-        var (insideStraight, _, _, _) = SocketStats(core, data, straightP);
-        Check("negative control: on the straight path Time comes in from inside (the reported fault)", insideStraight[3] > 0.1f,
-              $"Time reaches {insideStraight[3]:P0} inside its slot radius");
+        sp.GameMotion = true; sp.ShaderDepth = true; sp.IdleTumble = false; sp.SocketSpacing = 0.1; sp.Stagger = sp.Flight;
+        {
+            // the spacing: a plate is pushed out along its slot by w * spacing * |slot| until it settles, and lands exactly
+            var none = sp; none.SocketSpacing = 0;
+            var (pushErr, landed, spaceMoved) = SpacingStats(core, sp, none);
+            Check("the extra spacing pushes each plate out along its slot by exactly w x spacing, and settles before it lands", pushErr < 1e-4f * R, $"worst {pushErr / R:E2} R");
+            Check("every plate still lands exactly in its slot", landed < 1e-4f * R, $"worst {landed / R:E2} R");
+            Check("the first crystal (Space) is untouched by the spacing", spaceMoved == 0f, $"{spaceMoved:E2}");
+        }
+        {
+            // the approach: aimed where the camera will be, starting from exactly where the crystal idles
+            var rng = new System.Random(5);
+            float worstAim = 0f, worstStart = 0f, worstSpaceTurn = 0f;
+            float[] faced = new float[4], straightIn = new float[4];
+            for (int play = 0; play < 24; play++)
+            {
+                var pq = sp; pq.LayoutYaw = rng.NextDouble() * 2 * Math.PI; pq.Swirl = rng.NextDouble() * 0.3 - 0.15; pq.Seed = rng.Next();
+                double orbit0 = rng.NextDouble() * 2 * Math.PI, rate = 5 * Math.PI / 180;
+                D3 Cam(double t) => CameraAt(orbit0 + rate * t);
+                var aimed = pq;
+                core.FaceCamera(ref aimed, Azimuth(Cam(0)), rate, 0);
+                worstSpaceTurn = Math.Max(worstSpaceTurn, (float)Math.Abs(aimed.ApproachTurn[0]));
+                for (int k = 1; k < 4; k++)
+                {
+                    double t0 = OmniCombineCore.Departs(k, pq);
+                    core.CrystalFrame(k, t0, pq, out var c0, out _, out _, out _, out _);
+                    core.CrystalFrame(k, t0, aimed, out var c1, out _, out _, out _, out _);
+                    worstStart = Math.Max(worstStart, (float)(c1 - c0).Length);
+                    double tA = t0 + 0.97 * pq.Flight;
+                    core.CrystalFrame(k, tA, aimed, out var cA, out _, out _, out _, out _);
+                    worstAim = Math.Max(worstAim, (float)Math.Abs(OmniCombineCore.WrapAngle(Azimuth(cA) - Azimuth(Cam(tA)))));
+                }
+                var h1 = HiddenStats(core, aimed, Cam); var h0 = HiddenStats(core, pq, Cam);
+                for (int k = 1; k < 4; k++) { faced[k] += h1[k] / 24; straightIn[k] += h0[k] / 24; }
+            }
+            Check("every crystal but the first comes in from the camera's side", worstAim * 180 / Math.PI < 12f, $"worst {worstAim * 180 / Math.PI:F1} deg off the camera's azimuth as it arrives");
+            Check("the turn starts at nothing: a crystal sets off from exactly where it idles", worstStart < 1e-9f * R, $"{worstStart:E2}");
+            Check("Space keeps its path", worstSpaceTurn == 0f);
+            Check("rhombi under camera-facing holes are almost never inside the omni late in their morph",
+                  faced[1] < 0.04f && faced[2] < 0.08f && faced[3] < 0.04f,
+                  $"Charge {faced[1]:P1}, Mass {faced[2]:P1}, Time {faced[3]:P1} of late frames");
+            Check("negative control: arriving straight in, they are (the reported 'came in from inside')", straightIn[3] > 0.12f,
+                  $"Charge {straightIn[1]:P1}, Mass {straightIn[2]:P1}, Time {straightIn[3]:P1}");
+        }
 
         // negative control: keys out of order
         var swappedData = JsonSerializer.Deserialize<OmniCombineData>(File.ReadAllText(args[0]), new JsonSerializerOptions { IncludeFields = true });
@@ -187,43 +223,84 @@ static class Program
         return Finish();
     }
 
-    /// <summary>Over every frame of a play: how far (as a fraction of the slot radius) any plate of each crystal dips inside
-    /// its slot's radius while it morphs, the worst angle between a plate's last approach and its slot's direction, the
-    /// worst landing error, and how far Space moved relative to the straight path.</summary>
-    static (float[] inside, float approach, float landed, float spaceMoved) SocketStats(OmniCombineCore core, OmniCombineData data, OmniCombineParams p)
+    static D3 CameraAt(double orbit)
     {
-        var straight = p; straight.SocketLift = 0;
+        // ElementalConverterView: Quaternion.Euler(18, orbit, 0) * Vector3.back, the direction from the stage to the camera
+        double pitch = 18 * Math.PI / 180;
+        return new D3(-Math.Sin(orbit) * Math.Cos(pitch), Math.Sin(pitch), -Math.Cos(orbit) * Math.Cos(pitch));
+    }
+
+    static double Azimuth(D3 v) => Math.Atan2(v.X, v.Z);
+
+    static IEnumerable<(int k, int q, Vector3 centre, Vector3 slot, float w)> PlateCentres(OmniCombineCore core, float[][] pos, float[][] morph)
+    {
+        for (int k = 1; k < 4; k++)
+        {
+            var d = core.CrystalData(k);
+            foreach (var g in Enumerable.Range(0, d.plate.Length).GroupBy(i => d.plate[i]))
+            {
+                var c = g.Aggregate(Vector3.zero, (acc, i) => acc + V(pos[k], i)) / g.Count();
+                var slot = g.Aggregate(Vector3.zero, (acc, i) => acc + V(d.final, i)) / g.Count();
+                yield return (k, g.Key, c, slot, morph[k][g.Key]);
+            }
+        }
+    }
+
+    /// <summary>Over a play: how far each plate's centre is from (the pose without spacing + its slot direction pushed out by
+    /// w x spacing x settle, carried by the crystal's turn), the worst landing error, and how far Space moved.</summary>
+    static (float pushErr, float landed, float spaceMoved) SpacingStats(OmniCombineCore core, OmniCombineParams p, OmniCombineParams none)
+    {
         var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
-        var posStraight = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
+        var pos0 = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
         var morph = Enumerable.Range(0, 4).Select(k => new float[core.CrystalData(k).plateSite.Length]).ToArray();
         var effect = new float[4];
-        var inside = new float[4];
-        float approach = 0f, landed = 0f, spaceMoved = 0f;
         var cam = new D3(0.2, 0.5, 1).Unit;
+        float pushErr = 0f, landed = 0f, spaceMoved = 0f;
         double end = OmniCombineCore.MorphEnds(p);
-        for (double t = 0; t <= end + 0.01; t += 1.0 / 60)
+        for (double t = 0; t <= end + 0.01; t += 1.0 / 30)
         {
             double tt = Math.Min(t, end);
             core.Pose(tt, p, cam, pos, effect, null, morph);
-            core.Pose(tt, straight, cam, posStraight, effect);
-            for (int i = 0; i < pos[0].Length; i++) spaceMoved = Math.Max(spaceMoved, Math.Abs(pos[0][i] - posStraight[0][i]));
-            for (int k = 1; k < 4; k++)
+            core.Pose(tt, none, cam, pos0, effect);
+            for (int i = 0; i < pos[0].Length; i++) spaceMoved = Math.Max(spaceMoved, Math.Abs(pos[0][i] - pos0[0][i]));
+            var plain = PlateCentres(core, pos0, morph).ToList();
+            int j = 0;
+            foreach (var pc in PlateCentres(core, pos, morph))
             {
-                var d = core.CrystalData(k);
-                foreach (var g in Enumerable.Range(0, d.plate.Length).GroupBy(i => d.plate[i]))
-                {
-                    int q = g.Key;
-                    var c = g.Aggregate(Vector3.zero, (acc, i) => acc + V(pos[k], i)) / g.Count();
-                    var slot = g.Aggregate(Vector3.zero, (acc, i) => acc + V(d.final, i)) / g.Count();
-                    float w = morph[k][q];
-                    if (w > 0f && w < 1f) inside[k] = Math.Max(inside[k], 1f - c.magnitude / slot.magnitude);
-                    if (w > 0.9f && w < 0.999f && (c - slot).magnitude > 1e-4f)
-                        approach = Math.Max(approach, Vector3.Angle(c - slot, slot));
-                    if (tt >= end) landed = Math.Max(landed, (c - slot).magnitude);
-                }
+                core.CrystalFrame(pc.k, tt, p, out _, out var spinAxis, out double spin, out var tumbleAxis, out double tumble);
+                double w = pc.w, settle = OmniCombineCore.Smooth((w - OmniCombineCore.SettleFrom) / (1 - OmniCombineCore.SettleFrom));
+                var push = Quaternion.AngleAxis((float)(tumble * 180 / Math.PI), V(tumbleAxis)) * (Quaternion.AngleAxis((float)(spin * 180 / Math.PI), V(spinAxis))
+                           * (pc.slot * (float)(w * p.SocketSpacing * (1 - settle))));
+                pushErr = Math.Max(pushErr, (pc.centre - (plain[j].centre + push)).magnitude);
+                if (tt >= end) landed = Math.Max(landed, (pc.centre - pc.slot).magnitude);
+                j++;
             }
         }
-        return (inside, approach, landed, spaceMoved);
+        return (pushErr, landed, spaceMoved);
+    }
+
+    /// <summary>Per crystal, the share of late-morph frames (w 0.6..1) in which a plate whose hole faces the camera is
+    /// inside the omni (more than 2% below its slot radius): the "coming in from inside" a viewer can see.</summary>
+    static float[] HiddenStats(OmniCombineCore core, OmniCombineParams p, Func<double, D3> cam)
+    {
+        var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
+        var morph = Enumerable.Range(0, 4).Select(k => new float[core.CrystalData(k).plateSite.Length]).ToArray();
+        var effect = new float[4];
+        var inside = new float[4]; var seen = new float[4];
+        double end = OmniCombineCore.MorphEnds(p);
+        for (double t = 0; t <= end; t += 1.0 / 30)
+        {
+            var toward = cam(t);
+            core.Pose(t, p, toward, pos, effect, null, morph);
+            foreach (var pc in PlateCentres(core, pos, morph))
+            {
+                if (pc.w < 0.6f || pc.w >= 1f || Vector3.Dot(pc.slot.normalized, V(toward)) <= 0.15f) continue;
+                seen[pc.k]++;
+                if (pc.centre.magnitude < 0.98f * pc.slot.magnitude) inside[pc.k]++;
+            }
+        }
+        for (int k = 1; k < 4; k++) inside[k] /= Math.Max(1, seen[k]);
+        return inside;
     }
 
     static int Finish()

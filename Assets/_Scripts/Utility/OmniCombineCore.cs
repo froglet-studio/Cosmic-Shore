@@ -138,12 +138,18 @@ namespace CosmicShore.Utility
         /// (<see cref="OmniCombineCore.OmniPose(double, in OmniCombineParams, double, D3, float[], float[], double, long)"/>).
         /// Off in the lab, so parity holds.</summary>
         public bool GameMotion;
-        /// <summary>Every crystal but the first sockets in from OUTSIDE (designer, 2026-10-13: "the time crystal appeared to
-        /// come in from inside ... they should all (except the first) be separating more as if they are eating the whole
-        /// and then socketing into place from the outside"): each plate's centre rises from where it is to a shell this many
-        /// omni radii beyond its slot, travels round that shell to above its slot, and drops into it radially. Its shape
-        /// morph and its turn are untouched; only the path of its centre changes. 0 (the lab) = the straight path.</summary>
-        public double SocketLift;
+        /// <summary>Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing
+        /// (designer, 2026-10-13: "the time rhombuses come in with a bit of extra spacing and then come down to perfect
+        /// spacing in order to socket in from the outside"): each plate morphs toward its slot pushed out this fraction of
+        /// the slot's radius, and from <see cref="OmniCombineCore.SettleFrom"/> of its morph on the extra eases to nothing,
+        /// so its last motion is inward. The morph itself is untouched. 0 (the lab) = none.</summary>
+        public double SocketSpacing;
+        /// <summary>Radians each crystal's flight turns about the vertical on the way in (index = element; null, the lab =
+        /// none), so it arrives from the side the camera will be on and the rhombi that have to cross the omni do it behind
+        /// it (designer, 2026-10-13: "the solution i want has all its clipping occluded"). The turn starts at nothing - a
+        /// crystal sets off from exactly where it idles - and is complete by <see cref="OmniCombineCore.ApproachTurnEnds"/>
+        /// of its flight, well before its shell meets the omni. <see cref="OmniCombineCore.FaceCamera"/> sets it.</summary>
+        public double[] ApproachTurn;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -228,6 +234,15 @@ namespace CosmicShore.Utility
             return sizes.ToArray();
         }
 
+        /// <summary>How far through its morph a plate starts settling from its extra spacing to its slot
+        /// (<see cref="OmniCombineParams.SocketSpacing"/>).</summary>
+        public const double SettleFrom = 0.85;
+        /// <summary>How far through a crystal's eased flight its approach turn (<see cref="OmniCombineParams.ApproachTurn"/>)
+        /// is complete: while the crystal is still well clear of the omni.</summary>
+        public const double ApproachTurnEnds = 0.7;
+        /// <summary>The point of a crystal's flight the camera is aimed for: its shell is meeting the omni.</summary>
+        const double ArrivalAt = 0.85;
+
         public static double Departs(int element, in OmniCombineParams p) => p.Lead + element * p.Stagger;
         public static double MorphEnds(in OmniCombineParams p) => p.Lead + 3 * p.Stagger + p.Flight;
 
@@ -275,8 +290,10 @@ namespace CosmicShore.Utility
                         seatScale = 1 + (Data.depth.massSizeStart - 1) * (1 - sd) * fxIdle;
                         seatLift = pl.C * ((Data.depth.massReach - 1) * (1 - sd) * fxIdle);
                     }
-                    bool socket = p.SocketLift > 0 && k > 0 && w > 0 && w < 1;
-                    D3 restSum = default, drawnSum = default;
+                    // A bit of extra spacing that comes down to nothing as the plate lands: its slot, pushed out along itself.
+                    double extra = k > 0 && p.SocketSpacing > 0
+                        ? w * p.SocketSpacing * (1 - Smooth((w - SettleFrom) / (1 - SettleFrom)))
+                        : 0;
                     foreach (int i in pl.Idx)
                     {
                         D3 b = V(c.Data.basis, i);
@@ -309,34 +326,13 @@ namespace CosmicShore.Utility
                                 v = D3.Lerp(b, V(c.Data.final, i), w);
                                 break;
                         }
+                        if (extra != 0) v += c.FinalCentre[q] * extra;
                         if (spin != 0) v = RotAxis(_tumbleAxis, spin, v);
                         if (ang != 0) v = RotAxis(_tumbleAxes[k], ang, v);
                         v += centre;
                         outPos[3 * i] = (float)v.X;
                         outPos[3 * i + 1] = (float)v.Y;
                         outPos[3 * i + 2] = (float)v.Z;
-                        if (socket)
-                        {
-                            restSum += b;
-                            drawnSum += v;
-                        }
-                    }
-                    if (socket)
-                    {
-                        // Where the plate's centre would be unmorphed (exactly where its straight path starts) and where it is
-                        // now; the socket path replaces the second, so a plate starts and lands exactly as before.
-                        double inv = 1.0 / pl.Idx.Length;
-                        D3 from = restSum * inv;
-                        if (spin != 0) from = RotAxis(_tumbleAxis, spin, from);
-                        if (ang != 0) from = RotAxis(_tumbleAxes[k], ang, from);
-                        from += centre;
-                        D3 shift = SocketPath(from, c.FinalCentre[q], w, p.SocketLift * OmniRadius) - drawnSum * inv;
-                        foreach (int i in pl.Idx)
-                        {
-                            outPos[3 * i] += (float)shift.X;
-                            outPos[3 * i + 1] += (float)shift.Y;
-                            outPos[3 * i + 2] += (float)shift.Z;
-                        }
                     }
                 }
                 if (centres != null)
@@ -423,7 +419,8 @@ namespace CosmicShore.Utility
             double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
             D3 s = StartOf(k, p);
             double left = 1 - e;
-            centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left, s * left);
+            double turn = p.ApproachTurn != null ? p.ApproachTurn[k] * Smooth(e / ApproachTurnEnds) : 0;
+            centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left + turn, s * left);
             centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
             tumble = p.Tumble * 2 * Math.PI * left;
             // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
@@ -432,35 +429,34 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A plate's centre <paramref name="w"/> (0..1) of the way from <paramref name="start"/> into the slot at
-        /// <paramref name="slot"/> from OUTSIDE (<see cref="OmniCombineParams.SocketLift"/>): its radius from the omni's centre
-        /// eases to a shell <paramref name="lift"/> beyond the slot's while its direction turns (along the great circle) to
-        /// the slot's by 0.7; then it drops straight in along the slot's own direction. It never cuts through the omni to
-        /// get there, and its last approach is always radial, from outside.
+        /// Sets <see cref="OmniCombineParams.ApproachTurn"/> so every crystal but the first arrives from the camera's side:
+        /// a crystal coming in from one side has to bring the rhombi on its far side through the omni, and arriving from
+        /// the camera's side puts them behind it. <paramref name="cameraAzimuth"/> is the camera's azimuth about the stage's
+        /// vertical (<c>atan2(x, z)</c> of the direction toward it) at play time <paramref name="now"/>, and it turns at
+        /// <paramref name="cameraRadiansPerSecond"/>, so each crystal is aimed where the camera will be as it arrives. Each
+        /// turn is the shorter way round. Space keeps its path.
         /// </summary>
-        public static D3 SocketPath(D3 start, D3 slot, double w, double lift)
+        public void FaceCamera(ref OmniCombineParams p, double cameraAzimuth, double cameraRadiansPerSecond, double now)
         {
-            double r0 = start.Length, rf = slot.Length, rOut = rf + lift;
-            D3 d1 = slot.Unit, d0 = r0 > 1e-9 ? start * (1 / r0) : d1;
-            const double Over = 0.7;
-            double turn = Smooth(w / Over);
-            double r = w < Over ? r0 + (rOut - r0) * Smooth(w / 0.35) : rOut + (rf - rOut) * Smooth((w - Over) / (1 - Over));
-            return SlerpUnit(d0, d1, turn) * r;
+            var turns = new double[4];
+            for (int k = 1; k < 4; k++)
+            {
+                // The swirl unwinds by the end, so a crystal arrives from its start's own azimuth.
+                D3 s = StartOf(k, p);
+                double arrives = Departs(k, p) + ArrivalAt * p.Flight;
+                double camera = cameraAzimuth + cameraRadiansPerSecond * (arrives - now);
+                turns[k] = WrapAngle(camera - Math.Atan2(s.X, s.Z));
+            }
+            p.ApproachTurn = turns;
         }
 
-        static D3 SlerpUnit(D3 a, D3 b, double t)
+        /// <summary>An angle wrapped into (-pi, pi]: the shorter way round.</summary>
+        public static double WrapAngle(double a)
         {
-            double dot = Math.Max(-1, Math.Min(1, D3.Dot(a, b)));
-            double omega = Math.Acos(dot);
-            if (omega < 1e-6) return a;
-            if (Math.PI - omega < 1e-4)
-            {
-                // opposite: round any great circle (the one through the vertical, or failing that the x axis)
-                var axis = D3.Cross(a, Math.Abs(a.Y) < 0.9 ? D3.Up : new D3(1, 0, 0)).Unit;
-                return RotAxis(axis, omega * t, a);
-            }
-            double so = Math.Sin(omega);
-            return a * (Math.Sin((1 - t) * omega) / so) + b * (Math.Sin(t * omega) / so);
+            a %= 2 * Math.PI;
+            if (a > Math.PI) a -= 2 * Math.PI;
+            else if (a <= -Math.PI) a += 2 * Math.PI;
+            return a;
         }
 
         // ------------------------------------------------------------------ the four effects

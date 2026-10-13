@@ -130,6 +130,42 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EveryCrystalButTheFirst_ArrivesFromTheCamerasSide_AndStillLands()
+        {
+            var data = LoadData();
+            var core = new OmniCombineCore(data);
+            var straight = OmniCombineParams.LabDefault;
+            straight.GameMotion = true;
+            straight.SocketSpacing = 0.1;
+            for (int trial = 0; trial < 8; trial++)
+            {
+                double cameraAzimuth = trial * 0.9 - 3, rate = 0.087;   // ~5 degrees a second, as the converter's camera circles
+                var aimed = straight;
+                core.FaceCamera(ref aimed, cameraAzimuth, rate, 0);
+                Assert.AreEqual(0.0, aimed.ApproachTurn[OmniCombineCore.Space], "Space keeps its path");
+                for (int k = 1; k < 4; k++)
+                {
+                    double t0 = OmniCombineCore.Departs(k, aimed);
+                    core.CrystalFrame(k, t0, straight, out var idle, out _, out _, out _, out _);
+                    core.CrystalFrame(k, t0, aimed, out var setsOff, out _, out _, out _, out _);
+                    Assert.Less((setsOff - idle).Length, 1e-9, "a crystal sets off from exactly where it idles");
+                    double tA = t0 + 0.97 * aimed.Flight;
+                    core.CrystalFrame(k, tA, aimed, out var arriving, out _, out _, out _, out _);
+                    double off = OmniCombineCore.WrapAngle(System.Math.Atan2(arriving.X, arriving.Z) - (cameraAzimuth + rate * tA));
+                    Assert.Less(System.Math.Abs(off), 12 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive from the camera's side");
+                }
+                var pos = Buffers(core);
+                core.Pose(OmniCombineCore.MorphEnds(aimed), aimed, Camera, pos, new float[4]);
+                for (int k = 0; k < 4; k++)
+                {
+                    var final = core.CrystalData(k).final;
+                    for (int i = 0; i < pos[k].Length; i++)
+                        Assert.AreEqual(final[i], pos[k][i], 1e-4f, $"{OmniCombineCore.Order[k]} does not land in its slots");
+                }
+            }
+        }
+
+        [Test]
         public void APlayIsAFunctionOfItsSeed()
         {
             var core = new OmniCombineCore(LoadData());
@@ -269,7 +305,8 @@ namespace CosmicShore.Tests
             {
                 var p = config.Draw(rng);
                 Assert.IsTrue(p.GameMotion, "the converter's omni moves as the game's does");
-                Assert.That(p.SocketLift, Is.InRange(0.35, 0.6), "every crystal but the first sockets in from outside");
+                Assert.That(p.SocketSpacing, Is.InRange(0.08 - 1e-6, 0.12 + 1e-6), "every crystal but the first comes in with a bit of extra spacing");
+                Assert.IsNull(p.ApproachTurn, "the approach is aimed at the camera when the crystals set off, not when the play is drawn");
                 Assert.That(p.Flight, Is.InRange(4.4, 5.4));
                 Assert.That(p.Stagger / p.Flight, Is.InRange(0.95 - 1e-6, 1.05 + 1e-6), "each crystal sets off as the last lands");
                 Assert.That(p.Lead, Is.InRange(2.2, 3.2));

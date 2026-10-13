@@ -373,13 +373,52 @@ user).
   scene" was already edited and two refusals never reached the code they guard. Both were red. It now edits the scene
   from before the converter landed and asserts that it does; 11/11.
 
+**Revision 7 (2026-10-13): the lab's morphs back; a bit of extra spacing; arrive from the camera's side.** The
+designer: "you have embellished heavily on the morphs. revert to the morphs that elegantly undergo minimal
+transformations to be exactly where they need to be. the point was it is better if the time rhombuses come in with a bit
+of extra spacing and then come down to perfect spacing in order to socket in from the outside instead of sliding through
+on the same radius or coming out to higher radii from within the structure ... the solution i want has all its clipping
+occluded or unnoticeable, but leaves the minimal transformations preserved."
+
+- **What the lab's morph actually does at the end.** Measured on the shipped data: a crystal's shell is 90% formed
+  while its centre is still 0.3–0.5 omni radii out, coming down off its arc. The last stretch is the finished shell
+  sliding home. The rhombi on its leading side rise out of their holes, the ones at its sides slide along at slot
+  radius, and only the trailing side comes in from outside.
+- **Why spacing alone cannot fix it.** A crystal arriving from one side can only bring its leading rhombi in from
+  outside by going round the omni (revision 6's swing, retired) or by swelling to about twice the omni's size.
+  - A bit of extra spacing on its own barely helps: Time's camera-facing rhombi stay inside 26% of the late morph,
+    against 30% before.
+  - Retiming the flight's ease does no better: 19–41%.
+  - Lifting plates radially onto a floor whips them at 36 R/s.
+- **What shipped.** The designer chose the third option: arrive from the camera's side.
+  - Revision 6's `SocketPath` is gone, and the morphs are the lab's again.
+  - `SocketSpacing` (0.08–0.12, drawn per play): each plate of every crystal but Space morphs toward its slot pushed
+    out by that fraction of the slot's radius. Over the last 15% of its morph (`OmniCombineCore.SettleFrom`) the extra
+    eases to nothing, so the plate comes down to perfect spacing.
+  - `ApproachTurn`, set by `OmniCombineCore.FaceCamera` when the crystals set off: each crystal's flight turns about
+    the vertical, the shorter way round. The turn starts at nothing, so a crystal sets off from exactly where it idles,
+    and is complete by 70% of the eased flight, while the crystal is well clear of the omni.
+  - The camera aimed for is where it will be as each crystal arrives. The player reads the camera's position and how
+    fast it circles from what the view hands it each frame. The rhombi that have to cross the omni then do it on its
+    far side, behind it.
+- **Measured** (`converter_round5_harness`, 24 random plays against the real orbit, 18° pitch at 5°/s):
+  - Camera-facing rhombi are inside the omni late in their morph 0.5% (Charge), 6.5% (Mass) and 0.6% (Time) of the
+    time, against 24.6%, 19.0% and 33.0% arriving straight in (the negative control).
+  - Arrival is within 2.9° of the camera's azimuth.
+  - Landings are 7e-8 R. The spacing matches its formula to 6e-7 R.
+  - Space is untouched.
+  - The lab path (`SocketSpacing` 0, no turn) matches the lab to 7e-7.
+- **Cost.** A crystal that has to come round from the far side moves at up to 4.5 omni radii a second, against 1.9
+  arriving straight in. Turning only to within a tolerance of the camera trades that speed straight back for visible
+  clipping: at ±30° Time is inside 4% of the time, at ±60° 12%.
+
 **Revision 6 (2026-10-13): socket in from outside; five seamless strands.** The designer: "the time crystal appeared to
 come in from inside. they should all (except the first) be separating more as if they are eating the whole and then
 socketing into place from the outside. The 5 streams that touch the pentagon tip are great, but then there is an abrupt
 seam and then a different effect ... keep all 5 streams and have them connect from one to the other with as much
 coaxial definition as you can for that length instead of creating any seams at all."
 
-- **Socket from outside.** Space lands first, so the later crystals arrive near the centre. Time's plates moved
+- **Socket from outside** (retired in revision 7: the designer read it as an embellishment). Space lands first, so the later crystals arrive near the centre. Time's plates moved
   straight from there to their slots: outward, through the omni. The harness's negative control measures it at up to
   76% inside the slot radius. Now, for every crystal but the first, each plate's CENTRE follows
   `OmniCombineCore.SocketPath`:

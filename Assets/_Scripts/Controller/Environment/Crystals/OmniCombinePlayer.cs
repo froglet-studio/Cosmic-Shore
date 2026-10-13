@@ -89,6 +89,10 @@ namespace CosmicShore.Gameplay
         double _t;
         bool _playing;
         System.Random _rng;
+        // The camera about the stage's vertical: where it is and how fast it circles, so each crystal can be sent in from
+        // the side the camera will be on (OmniCombineCore.FaceCamera).
+        double _cameraAzimuth, _cameraTurnRate;
+        bool _cameraSeen;
 
         /// <summary>Seconds into the current play.</summary>
         public double PlayTime => _t;
@@ -316,6 +320,7 @@ namespace CosmicShore.Gameplay
             _params.IdleTumble = false;    // designer, 2026-10-13: the Charge crystal's idle turn is vestigial
             if (!convert) _params.Lead = Waiting;
             _t = 0;
+            if (convert) FaceCamera();
             _playing = true;
             _massColumns.Fresh = true;
             // The Charge light's own walk and chain, seeded by the play (a CONVERT that only ends the wait keeps them).
@@ -329,8 +334,33 @@ namespace CosmicShore.Gameplay
         public void Convert()
         {
             if (_core == null) return;
-            if (IsWaiting) _params.Lead = _t + ConvertDelay;
+            if (IsWaiting)
+            {
+                _params.Lead = _t + ConvertDelay;
+                FaceCamera();
+            }
             else Begin(convert: true);
+        }
+
+        /// <summary>Aims every crystal but the first at the side the camera will be on as it arrives, so the rhombi that
+        /// cross the omni do it behind it. Before the first frame the camera is unknown and the crystals fly straight in.</summary>
+        void FaceCamera()
+        {
+            if (_cameraSeen) _core.FaceCamera(ref _params, _cameraAzimuth, _cameraTurnRate, _t);
+        }
+
+        /// <summary>Follows the camera round the stage's vertical: its azimuth, and how fast that turns (eased, so one
+        /// uneven frame does not swing the next aim).</summary>
+        void TrackCamera(D3 camDir, float dt)
+        {
+            double azimuth = System.Math.Atan2(camDir.X, camDir.Z);
+            if (_cameraSeen && dt > 1e-4f)
+            {
+                double rate = OmniCombineCore.WrapAngle(azimuth - _cameraAzimuth) / dt;
+                _cameraTurnRate += (rate - _cameraTurnRate) * (1 - System.Math.Exp(-dt / 0.5));
+            }
+            _cameraAzimuth = azimuth;
+            _cameraSeen = true;
         }
 
         /// <summary>Advances the play by <paramref name="dt"/> seconds and writes every mesh.
@@ -342,6 +372,7 @@ namespace CosmicShore.Gameplay
             _t += dt;
             var toward = transform.InverseTransformPoint(cameraWorld);
             var camDir = new D3(toward.x, toward.y, toward.z).Unit;
+            TrackCamera(camDir, dt);
             double m = OmniCombineCore.MorphEnds(_params);
             double handOff = _config.HandOffSeconds;
 

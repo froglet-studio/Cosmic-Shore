@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Converter: the lab's morphs back, a bit of extra spacing, every crystal but Space arrives from the camera's side (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor;
+- `converter_round5_harness`, with "arriving straight in" as the negative control (Time 33% inside);
+- `omni_combine_parity` (lab 7e-7);
+- `author_elemental_converter.py --check` and `--self-test`.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 7):
+- The socket swing below is gone; the plates morph exactly as the lab's.
+- `OmniCombineParams.SocketSpacing` (`socketSpacing`, 0.08–0.12 per play): plates come in a bit wide of their slots
+  and settle onto them over the last 15% of their morph.
+- `OmniCombineCore.FaceCamera`, called on CONVERT: Charge, Mass and Time each turn about the vertical on the way in,
+  so they arrive from the side the camera will be on.
+
+**Verify in editor:**
+1. Ark → CONVERT several times, watching Charge, Mass and Time land:
+   - each crystal sets off from exactly where it idled (no jump);
+   - it curves round to come in from the camera's side, finished turning well before it reaches the omni;
+   - the rhombi you can see come in a little wide of their holes and settle in from outside;
+   - nothing rises out of a hole that faces you, and none slides along the surface;
+   - Space, first, is as before.
+2. Watch for the swoop speed when a crystal starts on the far side; it's the cost of this choice.
+3. Tuning: `socketSpacing` (min, max) on `OmniCombineConfig`; `SettleFrom` (0.85) and `ApproachTurnEnds` (0.7) are
+   constants in `OmniCombineCore`.
+
 ### 🔴 Converter crystals socket in from outside; flux arcs are five seamless coaxial strands (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
@@ -76,22 +102,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - the converter self-test.
 
 **What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 6):
-- `OmniCombineParams.SocketLift`, drawn 0.35–0.6 per play: every crystal but Space flies its plates out to a shell
-  beyond the omni, round it, and radially into their slots.
+- ~~`OmniCombineParams.SocketLift`~~ (retired by the entry above): every crystal but Space flew its plates out to a
+  shell beyond the omni, round it, and radially into their slots.
 - `ChargeFluxPath.Strand`: five full-length strands, coaxial between the forks. The beam is retired; the corners are
   paired by order round the arc. `CrystalChargeArcsProfile.fluxBundle` / `fluxTurns`.
 
 **Verify in editor:**
-1. Ark → CONVERT, watching Charge, Mass and Time:
-   - their plates spread out round the omni, beyond its surface (the omni being "eaten");
-   - then each drops into its slot from outside;
-   - nothing emerges from inside the omni;
-   - Space, first, is as before.
+1. (The socket swing is retired; see the entry above.)
 2. The woken omni's flux arcs (and an omni in play): five filaments leave the source pentagon's corners, gather into a
    thin braided cable that makes one turn on the way, and fan out onto the sink's five corners. There's no thicker
    middle beam and no seam anywhere.
-3. Tuning: `fluxBundle` (how far apart the five run) and `fluxTurns` on `CrystalChargeArcsProfile`; `socketLift`
-   (min, max) on `OmniCombineConfig`.
+3. Tuning: `fluxBundle` (how far apart the five run) and `fluxTurns` on `CrystalChargeArcsProfile`.
 
 ### 🔴 Charge polish: one hue in the converter, flux arcs light the Mass columns they pass through, plasma bolts (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 

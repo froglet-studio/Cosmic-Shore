@@ -624,3 +624,30 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: a lab that re-implements the kernel can drift from the game, and one that calls the shipped kernel cannot. Report verdicts as ratios against the shipped baseline.
 - Evidence: PrismOcclusionDitherLab.cs class doc.
 - Promoted: §0
+
+### L-STU-50 — Before inventing a path, measure where the existing one goes wrong, and ask whether topology allows "a bit"
+- Lab: Omni Combine Lab revisions 6–7 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: "Time came in from inside" got answered with a new per-plate path that rose to a shell, went round
+  and dropped in. The designer called it heavily embellished and asked for the lab's morphs plus "a bit of extra
+  spacing". Measuring the lab's morph first showed the real fault: its shell is 90% formed while the crystal is still
+  0.3–0.5 R out, so the finish is a finished shell SLIDING home. Its leading rhombi rise out of their holes, its sides
+  slide along at slot radius, and only its trailing side comes in from outside. A body arriving from one side must
+  bring its leading side through or round the other body. No small spacing can avoid that, and five cheaper variants
+  were measured and failed:
+  - spacing alone;
+  - retiming the ease;
+  - a radial floor, which whips plates at 36 R/s;
+  - re-anchoring plates to their slots, which moves them 1.5–3 R;
+  - containment, which swells the shell to 2–3x.
+  The conflict was put to the designer with numbers. The answer was to keep the morphs and choose WHERE the crossing
+  happens: the flight turns so each crystal arrives from the camera's side, and the crossing goes behind the omni.
+- Do instead:
+  - Measure the existing motion against the complaint in the viewer's terms first. Here that is "a rhombus under a
+    camera-facing hole is inside the omni, late in its morph".
+  - Before building a new path, check whether "a bit" can satisfy the ask at all. If the geometry forbids it, put the
+    conflict to the designer with measured options, rather than shipping an embellishment that looks like an answer.
+  - When something unavoidable can't be made smaller, the viewer's camera is a design input. Put the crossing where
+    the body itself hides it. This is the same move as the Mass "rise while hidden".
+- Evidence: `OmniCombineCore.FaceCamera`, `SocketSpacing`; `Tools/Build/converter_round5_harness` (camera-facing
+  rhombi inside 0.5 / 6.5 / 0.6% of late frames, against 24.6 / 19.0 / 33.0% arriving straight in).
+- Promoted: no

@@ -70,8 +70,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector2 siteSpread = new(0.35f, 0.65f);
         [Tooltip("Share of Charge's morph spent sucking each petal's back in before the tips fuse and flatten.")]
         [SerializeField] Vector2 suck = new(0.3f, 0.4f);
-        [Tooltip("Every crystal but the first sockets in from OUTSIDE: its plates rise to a shell this many omni radii beyond their slots, travel round the omni on it, and drop into their slots radially (designer, 2026-10-13: \"separating more as if they are eating the whole and then socketing into place from the outside\").")]
-        [SerializeField] Vector2 socketLift = new(0.35f, 0.6f);
+        [Tooltip("Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing: each plate morphs toward its slot pushed out this fraction of the slot's radius, settling to nothing as it lands, so its last motion is inward (designer, 2026-10-13). The morphs themselves are the lab's. Each crystal also arrives from the camera's side (OmniCombineCore.FaceCamera), so the rhombi that must cross the omni do it behind it.")]
+        [SerializeField] Vector2 socketSpacing = new(0.08f, 0.12f);
 
         [Header("Choreography - fixed")]
         [Tooltip("Where the four start: 0 the art file's row, 1 a ring, 2 a tetrahedron.")]
@@ -130,7 +130,7 @@ namespace CosmicShore.Gameplay
                 MorphLength = morphLength,
                 SiteSpread = Pick(siteSpread),
                 Suck = Pick(suck),
-                SocketLift = Pick(socketLift),
+                SocketSpacing = Pick(socketSpacing),
                 EffectFade = effectFade,
                 EffectPhase = rng.NextDouble() * 100.0,
                 GameMotion = true,
