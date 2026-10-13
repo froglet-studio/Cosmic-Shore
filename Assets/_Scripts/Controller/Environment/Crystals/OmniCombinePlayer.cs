@@ -365,8 +365,9 @@ namespace CosmicShore.Gameplay
             }
             else if (!_cameraSeen) _cameraAzimuth = azimuth;
             _cameraSeen = true;
-            // Every crystal on its way in follows the camera round (OmniCombineParams.CameraAzimuth).
+            // Every crystal on its way in follows the camera round and comes in at its height (OmniCombineParams).
             _params.CameraAzimuth = _cameraAzimuth;
+            _params.CameraElevation = System.Math.Asin(System.Math.Max(-1.0, System.Math.Min(1.0, camDir.Y)));
         }
 
         /// <summary>Advances the play by <paramref name="dt"/> seconds and writes every mesh.

@@ -183,7 +183,7 @@ static class Program
         {
             // the approach: aimed where the camera will be, starting from exactly where the crystal idles
             var rng = new System.Random(5);
-            float worstAim = 0f, worstStart = 0f, worstSpaceTurn = 0f, worstFollow = 0f, worstFrozen = 0f;
+            float worstAim = 0f, worstStart = 0f, worstSpaceTurn = 0f, worstFollow = 0f, worstFrozen = 0f, worstHeight = 0f, straightHeight = 0f;
             float[] faced = new float[4], straightIn = new float[4];
             for (int play = 0; play < 24; play++)
             {
@@ -194,7 +194,12 @@ static class Program
                 double az0 = Azimuth(Cam(0));
                 core.FaceCamera(ref aimed, az0, rate, 0);
                 // the camera the player hands it every frame: unwrapped, on the same count FaceCamera was aimed with
-                OmniCombineParams Live(OmniCombineParams q0, double t, double actualRate) { q0.CameraAzimuth = az0 + actualRate * t; return q0; }
+                OmniCombineParams Live(OmniCombineParams q0, double t, double actualRate)
+                {
+                    q0.CameraAzimuth = az0 + actualRate * t;
+                    q0.CameraElevation = 18 * Math.PI / 180;   // ElementalConverterView's pitch
+                    return q0;
+                }
                 worstSpaceTurn = Math.Max(worstSpaceTurn, (float)Math.Abs(aimed.ApproachTurn[0]));
                 for (int k = 1; k < 4; k++)
                 {
@@ -205,6 +210,11 @@ static class Program
                     double tA = t0 + 0.97 * pq.Flight;
                     core.CrystalFrame(k, tA, Live(aimed, tA, rate), out var cA, out _, out _, out _, out _);
                     worstAim = Math.Max(worstAim, (float)Math.Abs(OmniCombineCore.WrapAngle(Azimuth(cA) - Azimuth(Cam(tA)))));
+                    // and at the camera's height, not dropping in from above it
+                    double elevation = Math.Asin(cA.Y / cA.Length);
+                    worstHeight = Math.Max(worstHeight, (float)Math.Abs(elevation - 18 * Math.PI / 180));
+                    core.CrystalFrame(k, tA, pq, out var cS, out _, out _, out _, out _);
+                    straightHeight = Math.Max(straightHeight, (float)(Math.Asin(cS.Y / cS.Length) - 18 * Math.PI / 180));
                     // the camera circling twice as fast as predicted, or stopping: the approach still moves with it
                     foreach (double actual in new[] { 2 * rate, 0.0 })
                     {
@@ -221,6 +231,10 @@ static class Program
             }
             Check("every crystal but the first comes in from the camera's side", worstAim * 180 / Math.PI < 12f, $"worst {worstAim * 180 / Math.PI:F1} deg off the camera's azimuth as it arrives");
             Check("the turn starts at nothing: a crystal sets off from exactly where it idles", worstStart < 1e-9f * R, $"{worstStart:E2}");
+            Check("every crystal but the first arrives at the camera's height, not from above it", worstHeight * 180 / Math.PI < 8f,
+                  $"worst {worstHeight * 180 / Math.PI:F1} deg off the camera's 18 deg");
+            Check("negative control: on its own path a crystal drops in from well above the camera (the reported 'from the top')",
+                  straightHeight * 180 / Math.PI > 25f, $"up to {straightHeight * 180 / Math.PI:F0} deg above it");
             Check("the approach moves with the camera: twice as fast as predicted, or stopped, it still arrives from the camera's side",
                   worstFollow * 180 / Math.PI < 12f, $"worst {worstFollow * 180 / Math.PI:F1} deg");
             Check("negative control: aimed once without following, a faster camera leaves it behind", worstFrozen * 180 / Math.PI > 30f,

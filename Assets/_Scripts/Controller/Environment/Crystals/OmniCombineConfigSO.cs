@@ -72,6 +72,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector2 suck = new(0.3f, 0.4f);
         [Tooltip("Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing: each plate morphs toward its slot pushed out this fraction of the slot's radius, settling to nothing as it lands, so its last motion is inward (designer, 2026-10-13). The morphs themselves are the lab's. Each crystal also arrives from the camera's side (OmniCombineCore.FaceCamera), so the rhombi that must cross the omni do it behind it.")]
         [SerializeField] Vector2 socketSpacing = new(0.08f, 0.12f);
+        [Tooltip("Degrees above the camera's own height that Charge, Mass and Time arrive from (they always come in from the camera's side, following it round). 0 = along the camera's line of sight; raise it to have them drop in from above (designer, 2026-10-13: 'the mass triangles especially come in from the top which presents visible clipping to the camera viewing from the side').")]
+        [SerializeField, Range(-30f, 80f)] float approachAboveCameraDegrees = 0f;
 
         [Header("Choreography - fixed")]
         [Tooltip("Where the four start: 0 the art file's row, 1 a ring, 2 a tetrahedron.")]
@@ -131,6 +133,7 @@ namespace CosmicShore.Gameplay
                 SiteSpread = Pick(siteSpread),
                 Suck = Pick(suck),
                 SocketSpacing = Pick(socketSpacing),
+                ApproachAboveCamera = approachAboveCameraDegrees * Mathf.Deg2Rad,
                 EffectFade = effectFade,
                 EffectPhase = rng.NextDouble() * 100.0,
                 GameMotion = true,

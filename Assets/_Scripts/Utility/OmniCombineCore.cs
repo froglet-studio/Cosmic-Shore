@@ -160,6 +160,17 @@ namespace CosmicShore.Utility
         /// <summary>The camera's azimuth NOW, on the same unwrapped count; the caller sets it every frame. With
         /// <see cref="ApproachTurn"/> null it is ignored.</summary>
         public double CameraAzimuth;
+        /// <summary>Each crystal's own arrival elevation (radians above the stage's horizon, index = element), measured
+        /// when aimed. The flight's start height and its upward arc bring a crystal in from well above the camera
+        /// (designer, 2026-10-13: "the mass triangles especially come in from the top which presents visible clipping to
+        /// the camera viewing from the side"); the path is tipped by <see cref="CameraElevation"/> minus this, so it
+        /// arrives at the camera's height as well as from its side.</summary>
+        public double[] ApproachElevation;
+        /// <summary>The camera's elevation above the stage's horizon NOW (radians); the caller sets it every frame.</summary>
+        public double CameraElevation;
+        /// <summary>How far above the camera's own height a crystal arrives (radians; 0 = along the camera's line of
+        /// sight, negative = below it).</summary>
+        public double ApproachAboveCamera;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -429,11 +440,18 @@ namespace CosmicShore.Utility
             double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
             D3 s = StartOf(k, p);
             double left = 1 - e;
-            double turn = p.ApproachTurn != null
-                ? (p.ApproachTurn[k] + (p.CameraAzimuth - p.ApproachCameraAzimuth)) * Smooth(e / ApproachTurnEnds)
-                : 0;
+            double aim = p.ApproachTurn != null ? Smooth(e / ApproachTurnEnds) : 0;
+            double turn = aim > 0 ? (p.ApproachTurn[k] + (p.CameraAzimuth - p.ApproachCameraAzimuth)) * aim : 0;
             centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left + turn, s * left);
             centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
+            if (aim > 0 && p.ApproachElevation != null)
+            {
+                // Tip the path in the vertical plane that faces the camera: about the horizontal axis across its view.
+                double az = p.CameraAzimuth;
+                // cross(toward the camera (sin az, 0, cos az), up): turning by +angle about it lifts the path.
+                var across = new D3(-Math.Cos(az), 0, Math.Sin(az));
+                centre = RotAxis(across, (p.CameraElevation + p.ApproachAboveCamera - p.ApproachElevation[k]) * aim, centre);
+            }
             tumble = p.Tumble * 2 * Math.PI * left;
             // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
             // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
@@ -452,8 +470,14 @@ namespace CosmicShore.Utility
         public void FaceCamera(ref OmniCombineParams p, double cameraAzimuth, double cameraRadiansPerSecond, double now)
         {
             var turns = new double[4];
+            var elevations = new double[4];
             for (int k = 1; k < 4; k++)
             {
+                // The height it arrives from on its own path (the start's height plus the arc), before any aim.
+                var straight = p;
+                straight.ApproachTurn = null;
+                Frame(k, Departs(k, p) + ArrivalAt * p.Flight, straight, out var at, out _, out _);
+                elevations[k] = Math.Asin(Math.Max(-1, Math.Min(1, at.Y / Math.Max(1e-12, at.Length))));
                 // The swirl unwinds by the end, so a crystal arrives from its start's own azimuth.
                 D3 s = StartOf(k, p);
                 double arrives = Departs(k, p) + ArrivalAt * p.Flight;
@@ -462,6 +486,7 @@ namespace CosmicShore.Utility
                 turns[k] = WrapAngle(cameraAzimuth + travel - Math.Atan2(s.X, s.Z)) - travel;
             }
             p.ApproachTurn = turns;
+            p.ApproachElevation = elevations;
             p.ApproachCameraAzimuth = cameraAzimuth;
             p.CameraAzimuth = cameraAzimuth;
         }

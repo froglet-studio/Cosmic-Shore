@@ -79,6 +79,7 @@ CONFIG_VALUES = [
     ("siteSpread", "{x: 0.35, y: 0.65}"),
     ("suck", "{x: 0.3, y: 0.4}"),
     ("socketSpacing", "{x: 0.08, y: 0.12}"),
+    ("approachAboveCameraDegrees", "0"),
     ("layout", "2"),
     ("ease", "2"),
     ("morphStart", "0.1"),

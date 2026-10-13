@@ -155,9 +155,12 @@ namespace CosmicShore.Tests
                     {
                         var live = aimed;
                         live.CameraAzimuth = cameraAzimuth + actual * tA;
+                        live.CameraElevation = 0.314;   // the converter's 18 degrees
                         core.CrystalFrame(k, tA, live, out var arriving, out _, out _, out _, out _);
                         double off = OmniCombineCore.WrapAngle(System.Math.Atan2(arriving.X, arriving.Z) - live.CameraAzimuth);
                         Assert.Less(System.Math.Abs(off), 12 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive from the camera's side");
+                        double height = System.Math.Asin(arriving.Y / arriving.Length);
+                        Assert.AreEqual(live.CameraElevation, height, 8 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive at the camera's height");
                     }
                 }
                 var pos = Buffers(core);
@@ -313,6 +316,7 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(p.GameMotion, "the converter's omni moves as the game's does");
                 Assert.That(p.SocketSpacing, Is.InRange(0.08 - 1e-6, 0.12 + 1e-6), "every crystal but the first comes in with a bit of extra spacing");
                 Assert.IsNull(p.ApproachTurn, "the approach is aimed at the camera when the crystals set off, not when the play is drawn");
+                Assert.AreEqual(0.0, p.ApproachAboveCamera, 1e-9, "the crystals arrive at the camera's own height");
                 Assert.That(p.Flight, Is.InRange(4.4, 5.4));
                 Assert.That(p.Stagger / p.Flight, Is.InRange(0.95 - 1e-6, 1.05 + 1e-6), "each crystal sets off as the last lands");
                 Assert.That(p.Lead, Is.InRange(2.2, 3.2));

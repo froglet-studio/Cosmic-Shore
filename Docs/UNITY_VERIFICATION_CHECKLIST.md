@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Converter: the crystals arrive at the camera's height, not from above it (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What ran:
+- `unity_refcompile`, player and editor;
+- `converter_round5_harness`, with "on its own path, up to 48° above the camera" as the negative control;
+- `omni_combine_parity` (7e-7);
+- `author_elemental_converter.py --check` and `--self-test`.
+
+**What landed:** `OmniCombineParams.ApproachElevation`, `CameraElevation` and `ApproachAboveCamera`
+(`approachAboveCameraDegrees` on `OmniCombineConfig`, default 0). Charge, Mass and Time are tipped so they arrive at
+the camera's height as well as from its side, following it.
+
+**Verify in editor:**
+1. Ark → CONVERT, watching Mass especially: it should come in level with the camera, not drop through the omni's top.
+2. Judge the edge of the omni. The triangle ray-cast says arriving along the line of sight puts more clipping on the
+   silhouette than arriving from above (Mass 98 against 31 rim intersections a second). If it reads worse, raise
+   `approachAboveCameraDegrees` (e.g. 30–60) in `Tools/Build/author_elemental_converter.py` and regenerate.
+
 ### 🔴 Converter: the camera-side approach moves with the camera (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI). What ran: `unity_refcompile` (player and editor), and

@@ -428,6 +428,27 @@ occluded or unnoticeable, but leaves the minimal transformations preserved."
     Aimed once without following (the negative control), a faster camera leaves a crystal 162° behind.
   - Ray-cast, the visible clipping is unchanged by this (Time 221/s, Mass 82/s, Charge 188/s, against 209, 91 and 187
     straight in). Following guarantees the side a crystal arrives from, not what it hides.
+- **Round 9: the camera's height too** (designer: "the mass triangles especially come in from the top which presents
+  visible clipping to the camera viewing from the side. do you have a 90 degree error?").
+  - Not in azimuth. The turn matched only the camera's compass direction, while the start's height plus the upward
+    arc brought each crystal in up to 48° above the camera's 18°. Mass starts on an upper vertex of the tetrahedron,
+    so it comes in steepest.
+  - Each path is now also tipped in the vertical plane facing the camera, so a crystal arrives at the camera's height
+    plus `approachAboveCameraDegrees` (0 = along the line of sight). That plane follows the live camera
+    (`CameraElevation`, `ApproachElevation`).
+  - Measured: arrival within 0.2° of the camera's height. Mass's camera-facing rhombi inside the omni late in the
+    morph went from 6.5% to 0%.
+  - Not backed by the triangle ray-cast (6 plays per direction, intersections a second visible / on the silhouette):
+
+    | Approach (from the camera's side unless noted) | Mass | Time | Charge |
+    |---|---|---|---|
+    | at the camera's height | 119 / 98 | 217 / 173 | 234 / 180 |
+    | 60° up | 109 / 59 | 231 / 105 | 222 / 148 |
+    | overhead | 72 / 31 | 215 / 78 | 181 / 87 |
+    | from behind, below | 60 / 47 | 133 / 97 | 150 / 113 |
+
+    Arriving along the line of sight puts the crystal's side rhombi, the ones that slide along the surface, on the
+    silhouette. The designer's eye in the converter decides. `approachAboveCameraDegrees` is the dial.
 - **Cost.** A crystal that has to come round from the far side moves at up to 4.5 omni radii a second, against 1.9
   arriving straight in. Turning only to within a tolerance of the camera trades that speed straight back for visible
   clipping: at ±30° Time is inside 4% of the time, at ±60° 12%.
