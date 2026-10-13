@@ -25,7 +25,7 @@ namespace CosmicShore.Editor.Froglet
         Validation = 6,
         /// <summary>UI, toasts, dialogue, canvases.</summary>
         Interface = 7,
-        /// <summary>Backend, PlayFab, UGS, data plumbing.</summary>
+        /// <summary>Backend, UGS, data plumbing.</summary>
         Services = 8,
         /// <summary>Everything else / uncategorised.</summary>
         Misc = 9,

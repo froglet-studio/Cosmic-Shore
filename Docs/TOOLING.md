@@ -69,8 +69,8 @@ to the inferred category and importance 3.
 Launching routes through `EditorApplication.ExecuteMenuItem`, so validate functions and editor
 context behave exactly as a manual menu click would, with a direct reflection call as fallback.
 
-The `FrogletTools/` prefix is also the registry's only filter, so third-party menus (PlayFab,
-FMOD, Soap, Quick Scene Pro, …) are never picked up — the board shows only tools we own.
+The `FrogletTools/` prefix is also the registry's only filter, so third-party menus (FMOD,
+Soap, Quick Scene Pro, …) are never picked up — the board shows only tools we own.
 
 ### Sections
 
@@ -325,7 +325,7 @@ Menu items previously lived under three roots. All first-party items were moved 
 | `Cosmic Shore/Toast Notification/…` | `FrogletTools/Interface/Toast Notification/…` |
 | `Window/Animation Recorder` | `FrogletTools/Misc/Animation Recorder` |
 
-Third-party menus (PlayFab, FMOD, Obvious Soap, Primitive Plus, **Quick Scene Pro**) were left
+Third-party menus (FMOD, Obvious Soap, Primitive Plus, **Quick Scene Pro**) were left
 exactly where they were — they are not ours to move, and the registry never picks them up because
 their paths do not start with `FrogletTools/`.
 

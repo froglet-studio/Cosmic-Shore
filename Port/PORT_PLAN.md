@@ -234,7 +234,7 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 | **3 — Game modes** | MiniGameControllerBase hierarchy (template method: rounds→turns→countdown→gameplay→end), turn monitors, scoring (incl. golf rules), AI pilot/gunner, all 36 GameModes' controllers (priority: Freestyle, CellularDuel, WildlifeBlitz, HexRace, Joust, CrystalCapture) | ⬜ |
 | **4 — Networking** | First-party transport + replication: NetworkVariable wire sync, RPC equivalent, server-authoritative session flow, host/client lifecycle, replacing Unity Netcode + UGS Relay/Sessions/Lobby with self-hosted session server | ⬜ |
 | **5 — Presentation** | Renderer backend (evaluate: custom GL via first-party bindings vs software-rendered headless screenshots first), camera system (CameraSettingsSO port), input strategies (Keyboard/Gamepad/Touch via IInputStrategy), HUD/UI framework, VFX/shader ports (HLSL sources exist in repo), audio backend (Wwise replacement) | ⬜ |
-| **6 — Services** | Replace UGS/PlayFab/PostHog: auth, cloud save, leaderboards, friends/presence, parties/invites, analytics — self-hosted service + local-first fallback | ⬜ |
+| **6 — Services** | Replace UGS/PostHog: auth, cloud save, leaderboards, friends/presence, parties/invites, analytics — self-hosted service + local-first fallback | ⬜ |
 | **7 — Content pipeline** | Extract all `_SO_Assets/**/*.asset` (Unity YAML) → JSON for the asset registry; scene descriptions → first-party scene format; models/textures/audio export | ⬜ |
 | **8 — Integration** | Full playable loop: boot → menu → game mode → end-game → menu, multiplayer session E2E, performance passes | ⬜ |
 
@@ -291,7 +291,6 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 | Reflex DI | ✅ `CosmicShore.Engine.Injection.Container` (RegisterValue/RegisterFactory-lazy, `[Inject]`, child scopes, InjectGameObject) | 1 | ✅ |
 | Unity Netcode for GameObjects | First-party replication over UDP/TCP (NetworkVariable sync + RPC); API contract already established in `Engine.Networking` | 4 | ⬜ |
 | UGS (Auth, Relay, Sessions/Lobby, Friends, CloudSave, Leaderboards, Analytics) | Self-hosted session/identity service (single small server, JSON protocol) + local-first offline mode | 6 | ⬜ |
-| PlayFab (economy, catalog) | Same self-hosted service | 6 | ⬜ |
 | PostHog (analytics; the game removed Firebase 2026-06-11) | First-party event log → pluggable sink | 6 | ⬜ |
 | Wwise | First-party audio mixer over a low-level output lib (decide at phase 5; candidate: miniaudio P/Invoke, vendored) | 5 | ⬜ |
 | DOTween | First-party tween library on engine update loop | 1–2 | ⬜ |
@@ -770,6 +769,51 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Backend-retirement mirror ✅ (2026-10-13) — the port follows the game in dropping PlayFab
+
+The game stopped using PlayFab on 2026-09-12 (`Docs/PLAYFAB_RETIREMENT.md` is the
+record); the hand-ported `CosmicShore.Game` still mirrored the pre-retirement shape.
+It now mirrors upstream's current one, and carries no type, file, folder or lane
+named for that backend.
+
+- **Deleted, as upstream deleted them:** the `AuthenticationManager` and
+  `PlayerDataController` shells, the account type behind the former, and
+  `LeaderboardManager` with its offline lane and `StatisticUpdate` stand-in.
+- **Moved** to `System/Economy/`, as upstream moved them: `CaptainManager`,
+  `CatalogManager`, `DailyRewardHandler`, `Inventory`, `ItemPrice`, `StoreShelve`,
+  `VirtualItem`.
+- **Re-synced to upstream:** `CatalogManager` is local-only (the catalog/inventory
+  landing lanes and the local purchase settlement are gone; both purchase calls run
+  only their failure callback; `LoadAllCatalogItems` / `LoadPlayerInventory` release
+  the gates; `ResetStatics`). `DailyRewardHandler` has `Claim`,
+  `ClaimDailyChallengeReward` and `PlayDailyChallenge(Action)`. `XpHandler`'s
+  `LoadCaptainXpData` seeds empty tables and every write raises
+  `OnCaptainDataLoaded`. `CaptainManager`'s OnDisable `+=` leak is fixed upstream,
+  so the port no longer pins it. `LeaderboardsMenu` owns a nested `LeaderboardEntry`,
+  has no fetch path (the board renders its empty state) and highlights by the UGS
+  player id. Upstream's `CSDebug.LogVerbose` traces in these files are omitted (the
+  port's `CSDebug` has no channels).
+- **Kept:** the port-only rig seam `CaptainManager.LoadLocalCaptains`, which now
+  lands the XP tables through `XpHandler.LoadCaptainXpData`.
+- **Menushell:** the STORE fixture is authored on the public `StoreShelve` /
+  `Inventory` and released with `LoadAllCatalogItems`; a confirmed purchase fails
+  closed, as in the game. The PORT board renders empty, as in the game.
+- **Tests:** `LeaderboardsMenuTests` 5 → 4 (three went with their deleted lanes:
+  the profile-loaded refresh, the stat-key format and offline stat accumulation; two
+  were added for the row renderer, reached through its private method because the
+  game no longer has a public path that fills the board). `StoreScreenTests` 6 → 7
+  (purchase and ticket purchase now fail closed; the over-purchase-guard test became
+  "purchase calls run only the failure callback"; the currency fan-out now rides the
+  daily-reward claim; plus the daily-ticket spend). `CaptainXpFamilyTests` 4 → 5
+  (XpHandler load + raise). `CosmicShore.Tests` 1690/1691 → 1691/1692 passing (the
+  one failure, `ShaderGraphCompilerTests.EveryCustomFunctionTheProjectCalls_IsInTheGlslLibrary`,
+  predates this change), `CosmicShore.Tests.Ported` 352/352, `Launcher.Tests` 21/21.
+  Menushell under xvfb: `--screen store` shows the 500-crystal wallet, three captain
+  cards and the ticket card; `--screen port` shows the selectors over an empty board.
+  `CosmicShore.Live` (so the player and `AssetTool.Tests`) did not build before or
+  after: bleeding-edge's BlackHole and MouseOrbitCamera scripts use APIs the engine
+  lacks.
 
 ### CaptainManager unit ✅ (2026-07-10) — the captain economy manager + XpHandler are REAL
 

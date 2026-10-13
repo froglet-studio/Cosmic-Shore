@@ -1,7 +1,6 @@
-// Ported from Assets/_Scripts/System/Playfab/Economy/Inventory.cs (Store unit
-// 2026-07-10) — verbatim; UnityEngine → CosmicShore.Engine. This is the one true
-// Inventory — the temporary shell `Inventory` inside the ported CatalogManager.cs is
-// being removed in the parallel CatalogManager rewrite.
+// Ported from Assets/_Scripts/System/Economy/Inventory.cs (Store unit 2026-07-10;
+// path follows upstream's move into System/Economy/) — verbatim; UnityEngine →
+// CosmicShore.Engine.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +39,6 @@ namespace CosmicShore.Core
 
         public void LoadFromDisk()
         {
-            CSDebug.Log("Inventory.LoadFromDisk");
             var tempInventory = DataAccessor.Load<Inventory>("inventory.data");
 
             crystals = tempInventory.crystals;

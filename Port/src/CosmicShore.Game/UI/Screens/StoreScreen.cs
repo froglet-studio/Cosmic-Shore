@@ -120,7 +120,7 @@ namespace CosmicShore.UI
                 {
                     var captain = _captainManager.GetCaptainByName(x.Name);
 
-                    // If this assert is triggered, it suggests a configuration mismatch between playfab and scriptable objects
+                    // If this assert is triggered, it suggests a configuration mismatch between the catalog and the captain ScriptableObjects
                     Assert.AreNotEqual(captain, null, $"Could not find captain while loading store catalog - Captain Name: {x.Name}");
 
                     return captain != null && captain.Encountered == true;
