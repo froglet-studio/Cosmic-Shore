@@ -21,7 +21,7 @@ What `build` does, without touching your checkout:
      goes on, listing what it dropped;
   5. stops and reports on any conflict in code or assets (none exist for single parts measured
      on 2026-10-12, so one means bleeding-edge moved; resolve it by hand in the worktree it names);
-  6. files the picked parts' editor test steps: it puts Docs/UNITY_VERIFICATION_CHECKLIST.md back to
+  6. files the picked parts' editor test steps (unless every picked part is Port-only): it puts Docs/UNITY_VERIFICATION_CHECKLIST.md back to
      the base's text (this branch's own checklist hunks are written against sections the base does
      not have, and the reviewed steps supersede them) and inserts ONE section holding exactly the
      chosen parts' steps, read from Docs/BRANCH_TEST_PLAN_2026-10-12.md on --source. CLAUDE.md wants
@@ -58,7 +58,7 @@ PARTS = {
     # parts is picked once; without F its table hunk is a docs-only conflict and only the metas land.
     "H": ("Parity harness, Unity side (replay recorder/player, deterministic session, probe, capture)",
           "1a397c3e3 646d599e0 9339b9f21 b3490953f aaf649451 9bf9961f5 751ec5a11 635d0787b a348f9750"),
-    "I": ("Prisma engine (Port/ only)", "8bd90dbe4 e03b31341 1fcb52135 1ea3d23b5 441fafc47 6bf9e5a0c 2c915676c 7ad2ef887 ca79890d2 a8a904c5c"),
+    "I": ("Prisma engine (Port/ only)", "8bd90dbe4 e03b31341 1fcb52135 1ea3d23b5 441fafc47 6bf9e5a0c 2c915676c 7ad2ef887 ca79890d2 a8a904c5c 0594f0dd9 62189bdb3"),
     "J": ("Multiplayer QoL: Add Friend, Recently played with, ready lights, dropping out and its notice, invite inbox",
           "75b764375 d70061b42 278055856 107c04c8a 6be10752d 71ed6a5ce caf4e2dd8 f2b1b343b 3703aee94 daec4871f 4817e6861 4e8d7789c e52d06987 0729e0d94 0f715f1d2"),
     "K": ("Leak and lifetime fixes", "c88d7083f 1c6fc87ad f375809ea e12a8165a 66aa4bed6"),
@@ -91,6 +91,9 @@ SOURCE_BRANCH = "cece/nice-brahmagupta-ojclij"
 # Commits that touch only these paths are this branch's own scaffolding and never travel (build resets
 # the checklist to the base's text and files the picked parts' steps itself).
 SOURCE_ONLY_PATHS = {"Tools/Build/pick_branch_parts.py", PLAN, CHECKLIST}
+# Parts that change only Port/. A branch of nothing else files no Unity checklist section (Port changes
+# are not editor-verified, and Port/CLAUDE.md keeps a port push inside Port/).
+PORT_ONLY = {"I", "M"}
 # Generated running docs a part rewrites wholesale: their cherry-picks conflict whenever the base
 # edits the same file, and keeping the base's copy would drop the part's whole content. Instead the
 # branch's net change to the file (merge-base of base and source -> source) is 3-way merged onto it.
@@ -225,8 +228,10 @@ def pr_body(chosen, branch):
     out = ["## What and why", "", f"Selected parts of `{SOURCE_BRANCH}`:", ""]
     out += [f"- {PARTS[k][0]}" for k in chosen]
     out += ["", "## Verification status", "",
-            "- Compiled offline (Unity reference compile, player and editor configs) on the source branch.",
-            f"- NOT run, untested; verify in editor: the steps filed in {CHECKLIST} under `{branch}`.", ""]
+            "- Compiled offline on the source branch: Unity reference compile (player and editor configs), "
+            "Prisma's live compile and its engine tests. /verify-unity did NOT run (no Unity CLI in the session).",
+            f"- NOT run, untested; verify in editor: the steps filed in {CHECKLIST} under `{branch}` "
+            f"(or {PLAN} on `{SOURCE_BRANCH}` for a Port-only push).", ""]
     return "\n".join(out)
 
 
@@ -310,7 +315,9 @@ def cmd_build(a):
                 git("cherry-pick", "--skip", cwd=wt, check=False)  # the pick was docs only and nothing remains
         orphans = drop_orphan_metas(wt, a.base)
         carried = carry_files(wt, a, chosen)
-        file_checklist(wt, a, chosen)
+        filed = not set(chosen) <= PORT_ONLY
+        if filed:
+            file_checklist(wt, a, chosen)
         print(f"built {a.branch}: parts {' '.join(chosen)}, {len(commits)} commit(s) on {a.base}")
         for sha, k, p in dropped:
             print(f"  kept {a.base}'s {p} where {sha} (part {k}) conflicted on it")
@@ -318,7 +325,8 @@ def cmd_build(a):
             print(f"  dropped {p}: the branch does not carry its folder")
         for p in carried:
             print(f"  carried {SOURCE_BRANCH}'s {p} onto {a.base} by 3-way merge")
-        print(f"  filed the test steps of parts {' '.join(chosen)} in {CHECKLIST}")
+        print(f"  filed the test steps of parts {' '.join(chosen)} in {CHECKLIST}" if filed
+              else "  filed no checklist section: Port/ only (the PR body carries the steps)")
         print(f"next: review `git log --oneline {a.base}..{a.branch}`, then git push -u origin {a.branch}")
         print("pull request body:\n\n" + pr_body(chosen, a.branch))
     finally:
