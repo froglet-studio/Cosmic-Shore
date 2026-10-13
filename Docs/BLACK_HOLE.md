@@ -75,7 +75,7 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
 | 12 | WHITE holes and black–white PAIRS: the radial law reversed, the horizon emitting, captured mass passed through to the other pole, the pair drifting apart and annihilating; tool buttons, N/M keys, `blackhole white|pair` | §11 |
-| 13 | The STOAT (`VesselClassType.Stoat = 15`): a Squirrel-prefab clone whose triggers sling an attractor–repulsor pair across the hull, hold = size, attractor on the pressed side; the Sparrow's stop on X; generator + gates | §11, `R_VesselActions/STOAT.md` |
+| 13 | The STOAT (`VesselClassType.Stoat = 15`): a Squirrel-prefab clone whose triggers sling an attractor–repulsor pair across the hull, hold = size, attractor on the pressed side; the Sparrow's stop on X; generator + gates (its own vessel since 2026-10-13 — the orbit is now its Time mode, `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e) | §11, `R_VesselActions/STOAT.md` |
 | 14 | (charming-cerf) The Black Hole cell, then the dipole — now the Crystal Wormhole: smooth wells, the graded lens, the felt pull, the seamless mouths, formation and annihilation | §12, `Docs/CRYSTAL_WORMHOLE.md` |
 | 15 | (charming-cerf) The warp field | `Docs/WARP_FIELD.md` |
 | 16 | The merge: both pair styles on one engine, a pair-style switch on the Stoat's sling and in the Black Hole tool | §13 |

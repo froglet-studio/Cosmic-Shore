@@ -117,8 +117,21 @@ namespace CosmicShore.Gameplay
         /// <c>ThresherExecutor</c>; cleared on a follow-target change.</para>
         /// </summary>
         public float MaxFollowTurnRate { get; set; }
+
+        /// <summary>
+        /// With <see cref="MaxFollowTurnRate"/> set, also a cap (degrees/second²) on how fast the follow frame's
+        /// turn RATE may change, so it eases into and out of a turn instead of starting and stopping one in a
+        /// frame (the rate cap alone is bang-bang: a hull winding a 400°/s spin down swung the frame from +240
+        /// to −240°/s in one frame). It tracks the target's own turn and closes the remaining angle no faster
+        /// than it can stop (√(2·a·angle)), proportionally near zero so it settles rather than chattering.
+        /// 0 (the default, and every other vessel) = the rate cap alone. Driven only by <c>ThresherExecutor</c>
+        /// (<c>Docs/Studios/THRESHER_PLANT_LAB.md</c> round 2); cleared with the rate cap.
+        /// </summary>
+        public float MaxFollowAngularAcceleration { get; set; }
         private Quaternion _followFrame = Quaternion.identity;
         private bool _followFrameValid;
+        private Vector3 _followAngularVelocity;          // degrees/s, axis x rate (angular-acceleration mode)
+        private Quaternion _lastFollowTargetRotation;
 
         /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
         private Quaternion StepFollowFrame(float dt)
@@ -128,10 +141,39 @@ namespace CosmicShore.Gameplay
             {
                 _followFrame = target;
                 _followFrameValid = true;
+                _followAngularVelocity = Vector3.zero;
+                _lastFollowTargetRotation = target;
                 return target;
             }
-            _followFrame = Quaternion.RotateTowards(_followFrame, target, MaxFollowTurnRate * Mathf.Max(0f, dt));
+            dt = Mathf.Max(0f, dt);
+            if (MaxFollowAngularAcceleration > 0f && dt > 0f)
+            {
+                float accel = MaxFollowAngularAcceleration;
+                Vector3 targetRate = AngularStep(_lastFollowTargetRotation, target) / dt;
+                Vector3 error = AngularStep(_followFrame, target);
+                float e = error.magnitude;
+                Vector3 want = targetRate + (e > 1e-5f ? error / e * Mathf.Min(Mathf.Sqrt(2f * accel * e), 10f * e) : Vector3.zero);
+                want = Vector3.ClampMagnitude(want, MaxFollowTurnRate);
+                _followAngularVelocity = Vector3.MoveTowards(_followAngularVelocity, want, accel * dt);
+                float step = _followAngularVelocity.magnitude * dt;
+                if (step > 1e-6f) _followFrame = Quaternion.AngleAxis(step, _followAngularVelocity.normalized) * _followFrame;
+            }
+            else
+            {
+                _followFrame = Quaternion.RotateTowards(_followFrame, target, MaxFollowTurnRate * dt);
+            }
+            _lastFollowTargetRotation = target;
             return _followFrame;
+        }
+
+        /// <summary>The rotation from <paramref name="from"/> to <paramref name="to"/> as axis × degrees,
+        /// taking the short way round.</summary>
+        static Vector3 AngularStep(Quaternion from, Quaternion to)
+        {
+            (to * Quaternion.Inverse(from)).ToAngleAxis(out float angle, out Vector3 axis);
+            if (angle > 180f) angle -= 360f;
+            if (float.IsNaN(axis.x) || float.IsInfinity(axis.x) || Mathf.Abs(angle) < 1e-5f) return Vector3.zero;
+            return axis.normalized * angle;
         }
 
         /// <summary>A still camera vantage (see <see cref="Spectate"/>).</summary>
@@ -582,6 +624,7 @@ namespace CosmicShore.Gameplay
                 _spectate = null;
                 _spectateBlend = 0f;
                 MaxFollowTurnRate = 0f;
+                MaxFollowAngularAcceleration = 0f;
                 _followFrameValid = false;
             }
 
