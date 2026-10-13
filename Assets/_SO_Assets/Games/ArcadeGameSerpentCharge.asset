@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameSerpentCharge
   m_EditorClassIdentifier:
-  Mode: 66
+  Mode: 67
   IsMultiplayer: 1
   DisplayName: Serpent Charge
   Description: Serpents only, over Rampage's cactus forest. Hold the scope, lay the reticle

@@ -1923,6 +1923,11 @@ PrefabInstance:
       propertyPath: nudgeShardPoolManager
       value: 
       objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
 --- !u!4 &440103224039929245 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,

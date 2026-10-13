@@ -197,7 +197,7 @@ lining are super-shielded for exactly that reason — should be re-checked again
 
 ## Where the rifle is the whole game: Serpent Charge
 
-`GameModes.SerpentCharge = 66` (`_Scripts/Controller/Arcade/SERPENTCHARGE.md`) is the Serpent's
+`GameModes.SerpentCharge = 67` (`_Scripts/Controller/Arcade/SERPENTCHARGE.md`) is the Serpent's
 Charge game, built entirely on this weapon. It is a sniper race through Rampage's forest. In that
 mode the round's pilot strip (`hitClass: 2`, Debuff) is **priced at 60 prisms**, and its AI holds
 the scope latched for the whole match. A held scope makes the cloak decline, so AI Serpents never

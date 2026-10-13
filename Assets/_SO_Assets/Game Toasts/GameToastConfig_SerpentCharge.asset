@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
   m_Name: GameToastConfig_SerpentCharge
   m_EditorClassIdentifier:
-  gameMode: 66
+  gameMode: 67
   toasts:
   - situation: 82
     messageTemplate: '<b>{0}</b> sniped a rival pilot!'

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Serpent Charge game mode needs (GameModes.SerpentCharge = 66).
+Authors every serialized asset the Serpent Charge game mode needs (GameModes.SerpentCharge = 67).
 
 Serpent Charge is the Serpent's CHARGE game - a sniper race through Rampage's cactus forest. On the
 Serpent, Charge is the Sniper Shot's RECOVERY (12 s at rest -> 5.4 s at Charge 10); the round is a
@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib              # noqa: E402
 import rampage_intensity as rampage        # noqa: E402
 
-MODE_ID = 66
+MODE_ID = 67
 g = lib.Generator(MODE_ID, "SerpentCharge")
 guid = lib.guid
 

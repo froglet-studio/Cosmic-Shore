@@ -16,7 +16,7 @@ MonoBehaviour:
   chargeCrystalWaveSeconds: 40
   crystalScatterInnerRadius: 320
   crystalScatterOuterRadius: 1000
-  crystalScatterSeed: 66
+  crystalScatterSeed: 67
   aiSolveSecondsByIntensity:
   - 1.6
   - 1.1

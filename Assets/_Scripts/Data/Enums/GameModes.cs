@@ -46,7 +46,7 @@ namespace CosmicShore.Data
         // it. Removed 2026-10 with its card, scene and mode preview; OnlineDuelForTheCellController
         // stays because the CoOp Wildlife Blitz scene still runs on it. 29 IS RESERVED FOREVER.
         Multiplayer2v2CoOpVsAI = 30,
-        CoOpWildlifeBlitz = 32,
+        CoOpWildlifeBlitz = 32,     // retired 2026-10 (Bug_Hunt BH-5.5/5.7); scene + controller deleted; enum kept
         SkimRace = 33,
         Joust = 34,
         Scurry = 35,
@@ -312,16 +312,23 @@ namespace CosmicShore.Data
         // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
         Warpline = 65,
 
-        // SerpentCharge (66): the Serpent's CHARGE game - a sniper race through Rampage's cactus
+        // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Thresher's SLING: plant
+        // the ball, orbit it, wind the chain in and let go, and the launch is the hull's own
+        // momentum on a fixed 120 deg/s turn - a corner asks how much sling it is worth. See
+        // _Scripts/Controller/Arcade/THRESHERTIME.md.
+        ThresherTime = 66,
+
+        // SerpentCharge (67): the Serpent's CHARGE game - a sniper race through Rampage's cactus
         // forest. Charge is the rifle's RECOVERY (12 s -> 5.4 s at Charge 10), so the arena is
         // seeded with Charge crystals and every one a pilot collects is a faster next shot. A
         // round pierces everything hostile in its 1.5 deg cone; a sniped rival PILOT is worth a
         // stand of forest. First DOMAIN to the target wins (ScoringMetric.PrismsDestroyed with
         // pilot snipes folded in). See _Scripts/Controller/Arcade/SERPENTCHARGE.md.
-        SerpentCharge = 66,
+        SerpentCharge = 67,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 62) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 63) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

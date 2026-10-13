@@ -7,8 +7,8 @@ Capture ("Scurry"): every domain races to be the first to DESTROY **2,000 hostil
 prisms**. A forest of big cacti and other breakable flora fills the cell from just
 outside the nucleus out to the membrane, and the arena's **contested crystals** respawn
 inside the nucleus at the centre of it all. **Intensity means HOW MUCH FOREST, HOW BIG, and
-HOW SCARCE**: at 1 there are **five times as many plants** (295 against 59), their prisms are
-1.6x the authored leaf, the nucleus is 2.5x as wide and there are twice the roster in crystals;
+HOW SCARCE**: at 1 there are **1.3x as many plants** (89 against 67 - it was five times until a
+2 FPS play test, see "Four intensities"), their prisms are 1.6x the authored leaf, the nucleus is 2.5x as wide and there are twice the roster in crystals;
 at 4 everything is back to the shipped, play-tested arena — 67 plants, authored leaves, a single
 contested crystal for the whole lobby.
 
@@ -68,8 +68,8 @@ economy itself; this file only arranges around it.
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
 - **Intensity**: **4 levels** — **less flora, smaller prisms, smaller nucleus, fewer crystals,
-  more wildlife**. Intensity 4 is the shipped, play-tested arena exactly; 1 grows five times its
-  forest. `CellTypeChoiceOptions.IntensityWise` over four cell configs. See "Four intensities"
+  more wildlife**. Intensity 4 is the shipped, play-tested arena exactly; 1 grows 1.3x its
+  forest (five times until 2026-10-13, which ran at 2 FPS). `CellTypeChoiceOptions.IntensityWise` over four cell configs. See "Four intensities"
   below — and note that flora POPULATION is the one axis of the ladder that costs colliders.
 - **Vessels**: **Dolphin only** — see "Why Dolphin-only" below
 - **Objective arrow**: `RampageObjectiveProvider` — points at the **nearest** contested omni
@@ -194,9 +194,9 @@ that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
-| **flora** (`FloraPopulationScale`) | **5.00×** | 3.67× | 2.33× | **1.00×** (authored) |
-| …seeded plants | **335** | 245 | 157 | **67** |
-| …seeded prisms | **59,590** | 43,468 | 28,040 | **11,918** |
+| **flora** (`FloraPopulationScale`) | **1.30×** | 1.20× | 1.10× | **1.00×** (authored) |
+| …seeded plants | **89** | 78 | 74 | **67** |
+| …seeded prisms | **15,962** | 13,748 | 13,088 | **11,918** |
 | **prism size** (`FloraPrismScale`) | **1.60×** | 1.40× | 1.20× | **1.00×** (authored) |
 | …a cactus leaf | 8 × 8 × 4.8 | 7 × 7 × 4.2 | 6 × 6 × 3.6 | **5 × 5 × 3** |
 | **nucleus** (`NucleusPrefab`) | `Nucleus500` | `Nucleus` | `Nucleus300` | **`HalfNucleus`** |
@@ -205,11 +205,26 @@ that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 | …for a 4-player lobby | 8 | 4 | 3 | **1** |
 | **wildlife** (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
 | …tadpoles / sharks at cap | 6 / 2 | 12 / 4 | 18 / 6 | **24 / 8** |
-| forest at full growth | 7,876,018 vol | 3,965,178 | 1,671,954 | **441,070** |
-| `FrenzyEnterVolume` | 29,110,000 | 14,650,000 | 6,180,000 | **1,630,000** |
-| `RestlessEnterVolume` | 2,018,000 | 1,016,000 | 428,000 | **113,000** |
-| `FrenzyEnter` (count) | 60,750 | 44,250 | 28,750 | **12,250** |
-| **always-on crystal colliders** | **500** | 367 | 233 | **100** |
+| forest at full growth | 2,066,810 vol | 1,283,212 | 789,524 | **441,070** |
+| `FrenzyEnterVolume` | 7,640,000 | 4,740,000 | 2,920,000 | **1,630,000** |
+| `RestlessEnterVolume` | 530,000 | 329,000 | 202,000 | **113,000** |
+| `FrenzyEnter` (count) | 16,250 | 14,000 | 13,500 | **12,250** |
+| **always-on crystal colliders** | **132** | 122 | 110 | **100** |
+| opening planting interval (s) | 1.32 | 1.45 | 1.55 | 1.73 |
+
+⚠ **The flora ladder was 5.00 / 3.67 / 2.33 / 1.00 until 2026-10-13, and intensities 1-2 ran at
+2 FPS** (59,590 / 43,468 seeded prisms; Serpent Charge, which shares these cells, reported it
+first). The forest's PRISM COUNT is a per-frame cost, not only a collider cost. A laid prism stays
+invisible until it wins one of SIX creation completions per frame
+(`Prism.MaxCreationCompletionsPerFrame`, environment mass has its own six), and every prism still
+waiting resumes its `CreateBlockCoroutine` every frame. So a forest is a queue that drains at
+360 prisms/s at 60 FPS and at 12/s at 2 FPS. 43k prisms is a backlog the frame never climbs out
+of: the slower it runs, the longer the queue, and the longer the queue, the slower it runs. The old
+gate held the forest against Atlantis' 69,000 laid prisms as "ground the engine has shown it can
+hold", and it modelled colliders, not this. `rampage_intensity.py` now gates every intensity on
+the queue: its seeded forest must drain inside the 45 s planting window at 60 FPS (16,200 prisms,
+read off `Prism.cs`). Intensity 1 is still the easiest, but on the axes that cost nothing per
+prism: fatter prisms, a bigger nucleus, more crystals, less wildlife.
 
 ⚠ **The arena grew a SIXTH species on 2026-09-20 and every number in this table moved with
 it.** The Borromean minimal-surface flora was adopted here as mass to destroy
@@ -242,9 +257,10 @@ to charge off on the way in. It also makes a ram less punishing to aim around. N
 "easier"; it falls out of the geometry, exactly as the crystal count falls out of the roster.
 
 **The prism COUNT moves too, and it is the expensive half.** Prism SIZE is free in colliders —
-the same prisms, larger. Prism COUNT is not, and five times the flora is five times the prisms:
-**59,590 at intensity 1 against 11,918 at 4**. That is the one axis of this ladder with a
-collider price, and it is gated rather than asserted-away — see "Collider impact" below.
+the same prisms, larger. Prism COUNT is not: **15,962 at intensity 1 against 11,918 at 4** (it
+was 59,590 under the old 5x ladder, which ran at 2 FPS). That is the one axis of this ladder with a
+per-prism price, colliders AND creation queue, and it is gated rather than asserted-away (see the
+⚠ above and "Collider impact" below).
 
 **The per-family exponent is the part that is easy to get wrong.** `FloraPrismScale` multiplies a
 plant's authored `leafSize`, and the two flora families spend that differently:
@@ -307,9 +323,12 @@ Everything defining the arena's silhouette and rules is still one constant at al
 
 **Collider impact — the hard gate, and the ONE axis that pays it.**
 
-Prism SIZE, nucleus size and crystal count are all free in colliders. **Flora population is not**,
-and it is now 5× at intensity 1 — so the budget has to be argued rather than waved through. Two
-lines, because they are culled differently and bounded differently:
+Prism SIZE, nucleus size and crystal count are all free in colliders. **Flora population is not**
+(1.3× at intensity 1 since 2026-10-13; it was 5×, and that table below is SUPERSEDED: the
+binding gate is now the creation queue, see the ⚠ in "Four intensities"). Current numbers: seeded
+prisms 15,962 / 13,748 / 13,088 / 11,918 against a 16,200 queue ceiling, count backstop 16,250 /
+14,000 / 13,500 / 12,250, heart crystals at cap 132 / 122 / 110 / 100. The old table, kept for the
+argument it records:
 
 | | I1 | I2 | I3 | I4 | held against |
 |---|---|---|---|---|---|

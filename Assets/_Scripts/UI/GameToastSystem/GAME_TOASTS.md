@@ -122,7 +122,7 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Dustup` | Dustup (59) | the quarter / half / lead-change milestones, one idle hint (get ABOVE a rival — the dust hangs below you) |
 | `GameToastConfig_Tapestry` | Tapestry (60) | the lead-change beat, two idle hints (Mass mode paints a wide wake that is score; behind? Dust mode raids their painting) |
 | `GameToastConfig_Sirocco` | Sirocco (61) | `{0} has eroded {1} prisms` (`everyN` 100), the lead-change beat, one idle hint (Dust mode, low and long over the forest) |
-| `GameToastConfig_SerpentCharge` | Serpent Charge (66) | `{0} sniped a rival pilot!` (82 — `DebuffHitsLanded` rose, which IS a pilot snipe here), `{0} has shot down {1} prisms` (`everyN` 200), the quarter / half / lead-change / home-stretch race beats, one idle hint (scope, line up a stand, fire), `Comeback system is on` |
+| `GameToastConfig_SerpentCharge` | Serpent Charge (67) | `{0} sniped a rival pilot!` (82 — `DebuffHitsLanded` rose, which IS a pilot snipe here), `{0} has shot down {1} prisms` (`everyN` 200), the quarter / half / lead-change / home-stretch race beats, one idle hint (scope, line up a stand, fire), `Comeback system is on` |
 | `GameToastConfig_Undertow` | Undertow (55) | `{0} dragged a rival through the undertow!` (every bend), `{0} has drowned {1} creatures` (`everyN` 3), the quarter / half / lead-change milestones, an idle dash hint, `Comeback system is on` — authored by `author_undertow_assets.py` |
 | `GameToastConfig_Rampage` | Rampage (2) | `{0} has smashed {1} prisms` (`everyN` 250), the quarter / half / lead-change race beats, `Comeback system is on` |
 | `GameToastConfig_Cleave` | Cleave (39) | `{0} has cut {1} prisms` (`everyN` 200), the quarter / half / lead-change milestones the controller posts (50-52), `Comeback system is on` |
@@ -131,6 +131,7 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_WildlifeLiberation` | WildlifeLiberation (40) | `{0} has hunted {1} creatures` (`everyN` 5), the quarter / half / lead-change milestones (53-55), `{0} broke into the core!` (56), `Comeback system is on` |
 | `GameToastConfig_Switchback` / `_Skein` | Switchback (45) / Skein (51) | halfway / lead change / home stretch (`gate` / `ring`), `Comeback system is on` — open chains, so no final lap |
 | `GameToastConfig_Headlong` / `_Redline` / `_Breakwater` | Headlong (49) / Redline (53) / Breakwater (50) | halfway / lead change / home stretch (`gate` / `gate` / `station`) + `{0} is on the final lap`, `Comeback system is on` |
+| `GameToastConfig_ThresherTime` | ThresherTime (66) | Redline's set word for word (halfway / lead change / home stretch `gate {1}/{2}`, `{0} is on the final lap`, `Comeback system is on`) — authored by `author_thresher_time_assets.py` |
 | `GameToastConfig_AstroLeague` | AstroLeague (37) | `{0} scores! {1}/{2}`, `MATCH POINT - {0} needs one more goal`, `Golden goal - the next one wins`, `Comeback system is on` |
 | `GameToastLibrary` | — | shared + every mode config above |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |

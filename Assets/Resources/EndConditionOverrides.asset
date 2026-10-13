@@ -48,6 +48,7 @@ MonoBehaviour:
   grizzlyTimeGateTarget: 24
   slingshotGateTarget: 16
   warplineGateTarget: 10
+  thresherTimeGateTarget: 24
   regattaGateTarget: 24
   hijackStealTarget: 750
   hexRaceCrystalCountBuild: 0
@@ -86,6 +87,7 @@ MonoBehaviour:
   grizzlyTimeGateTargetBuild: 24
   slingshotGateTargetBuild: 16
   warplineGateTargetBuild: 10
+  thresherTimeGateTargetBuild: 24
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 750
   autoRestoreBuildValuesBeforeBuild: 1

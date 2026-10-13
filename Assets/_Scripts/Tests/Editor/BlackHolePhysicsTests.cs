@@ -387,7 +387,7 @@ namespace CosmicShore.Tests
             var w = new BlackHolePhysics.NativeWells();
             for (int i = 0; i < BlackHolePhysics.NativeWells.Capacity + 2; i++)
                 w.Add(Well(new float3(i, 0f, 0f)));
-            Assert.AreEqual(BlackHolePhysics.NativeWells.Capacity, w.Count, "a fifth well must be refused, not written over the fourth");
+            Assert.AreEqual(BlackHolePhysics.NativeWells.Capacity, w.Count, "a well past the capacity must be refused, not written over the last");
             for (int i = 0; i < w.Count; i++)
                 Assert.AreEqual(i, w[i].Position.x, 1e-6f);
         }

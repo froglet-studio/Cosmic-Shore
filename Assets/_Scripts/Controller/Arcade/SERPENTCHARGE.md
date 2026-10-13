@@ -1,4 +1,4 @@
-# Serpent Charge (`GameModes.SerpentCharge = 66`)
+# Serpent Charge (`GameModes.SerpentCharge = 67`)
 
 The Serpent's **CHARGE** game: a sniper race through Rampage's cactus forest. On the Serpent,
 **Charge is the Sniper Shot's recovery**. The rifle waits 12 s between rounds at rest and 5.4 s at
@@ -59,8 +59,9 @@ and it counts, but it is the slow way.
   so they agree by construction. `IsObjectiveReached` is overridden for that reason, because
   Rampage's reads the raw metric sum.
 - **The arena is Rampage's**, the same four configs The Bends, Bloomrush and Sirocco reference.
-  Intensity comes with it as the forest's density: 335 / 245 / 157 / 67 plants, 59,590 → 11,918
-  prisms. A forest suits a piercing round because the value of a shot lives entirely in its angle.
+  Intensity comes with it as the forest's density: 89 / 78 / 74 / 67 plants, 15,962 → 11,918
+  prisms (it was 335 → 67 and 59,590 → 11,918 until a 2 FPS play test on 2026-10-13, see
+  `RAMPAGE.md` § "Four intensities"). A forest suits a piercing round because the value of a shot lives entirely in its angle.
 - **The scene** is a six-line delta from Sirocco's: identity guids, plus the four AI hulls going
   from Butterfly (13) to Serpent (7). The spawn ring is Rampage's own, 500 outside the nucleus.
 - **The forest PLANTS IN over the opening ~45 s** (2026-10-13, Rampage's own change, inherited).
@@ -139,7 +140,7 @@ on a thin line, hunts you across nearly the whole range and keeps its Charge top
 
 ## Platform changes (and the rule each one records)
 
-- **`GameModes.SerpentCharge = 66`**, and `EnumIntegrityTests` moves to 62 members.
+- **`GameModes.SerpentCharge = 67`**, and `EnumIntegrityTests` moves to 63 members (ThresherTime took 66 on bleeding-edge first).
 - **`EndConditionOverridesSO.serpentChargePrismTarget`** gets the full row set (field, build twin,
   getter, authored-target row, live/build compare, apply, capture) plus the editor window's field,
   "effective now" and build-summary rows.

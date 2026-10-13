@@ -29,6 +29,11 @@ namespace CosmicShore.Engine.Profiling
         public ProfilerRecorder(string categoryName, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
         { _name = statName; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
 
+        /// <summary>Records the marker a <see cref="LowLevel.Unsafe.ProfilerRecorderHandle"/> names; the engine
+        /// enumerates no handles yet, so this is reached only with an invalid one and reads 0.</summary>
+        public ProfilerRecorder(LowLevel.Unsafe.ProfilerRecorderHandle statHandle, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
+        { _name = LowLevel.Unsafe.ProfilerRecorderHandle.GetDescription(statHandle).Name ?? ""; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
+
         public static ProfilerRecorder StartNew(ProfilerCategory category, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
             => new(category, statName, capacity, options | ProfilerRecorderOptions.StartImmediately);
 

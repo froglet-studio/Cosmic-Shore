@@ -66,11 +66,12 @@ Three properties of that choice are worth keeping:
 - **The local player is not pinned to slot 0.** Anything that assumed it was is wrong:
   `HandleProfileChanged` used to repaint `slots[0]` on a resolved cloud profile, which is
   the host's seat on a client.
-- **The seat count and the capacity differ on purpose.** The panel draws 4
-  (`PartyDisplaySlots`) while `MaxPartySlots` carries one spare seat of anti-flicker
-  headroom, so a transient fifth member can exist. If that would push the LOCAL player off
-  the end they are moved into the last drawn slot instead — a panel that stops showing you
-  your own party is a worse lie than a momentarily imperfect order.
+- **One party size: 4** (`HostConnectionDataSO.MaxPartySlots`, 2026-10-08). The panel draws 4,
+  peers publish 4, and the party session is created with 4 seats, so UGS refuses a fifth. The
+  polled roster can still carry one player twice for a moment on a join or leave; if that would
+  push the LOCAL player off the end they are moved into the last drawn slot instead — a panel
+  that stops showing you your own party is a worse lie than a momentarily imperfect order.
+  (`HasOpenSlots` counts distinct player ids for the same reason.)
 
 **The domain glow rides the same lookup.** `PartySlotDomainGlow` paints each occupied slot
 with `SO_ColorSet.GetDomainSignalColor` for that pilot's **live** `Player.Domain`, pushed on

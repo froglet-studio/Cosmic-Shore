@@ -97,7 +97,7 @@ g.emit_asset(
     + "  metric: 9\n  golfRules: 1\n")
 
 # ── the arcade card ─────────────────────────────────────────────────────────
-DESCRIPTION = (
+DESCRIPTION = lib.wrap_yaml_scalar(
     "Butterflies only. The rings come in clusters - weave the coil, line up on the gate at the "
     "far end, then FOLD across the gap to the next one. The fold has one degree of freedom, the "
     "heading you leave on, so the exit gate is the aiming device: thread it on the right line "

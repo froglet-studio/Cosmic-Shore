@@ -11,18 +11,18 @@
   "Bends": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4480,
+   "prisms": 1384,
    "tier": "MODEL",
    "track": null,
-   "triangles": 58112
+   "triangles": 20960
   },
   "Bloomrush": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4474,
+   "prisms": 1400,
    "tier": "MODEL",
    "track": null,
-   "triangles": 81168
+   "triangles": 44280
   },
   "Breakwater": {
    "cell": "Breakwater Cell Config 2",
@@ -128,10 +128,10 @@
   "Rampage": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4486,
+   "prisms": 1402,
    "tier": "MODEL",
    "track": null,
-   "triangles": 58208
+   "triangles": 21200
   },
   "Redline": {
    "cell": "Skim Race Cell Config",
@@ -176,18 +176,18 @@
   "SerpentCharge": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4484,
+   "prisms": 1382,
    "tier": "MODEL",
    "track": null,
-   "triangles": 185812
+   "triangles": 148588
   },
   "Sirocco": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4478,
+   "prisms": 1380,
    "tier": "MODEL",
    "track": null,
-   "triangles": 242844
+   "triangles": 205668
   },
   "Skein": {
    "cell": "Skein Cell Config 2",
@@ -228,6 +228,14 @@
    "tier": "MODEL",
    "track": null,
    "triangles": 80500
+  },
+  "ThresherTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 20124
   },
   "Tollway": {
    "cell": "Tollway Cell Config 2",
@@ -283,5 +291,5 @@
   768,
   510
  ],
- "source_hash": "599d9a41dea647b0be0572199c0169f684b8d13bf9e2e7e5db6e5cf3d1c2b273"
+ "source_hash": "a84c2d7eaf1b7110b1dbc2f6f8ce1b26ed9203f64ef612b7992016380e38b146"
 }

@@ -143,7 +143,7 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 62 = IDs 0..66 with 7, 28, 29, 31 and 47 deliberately skipped (retired Freestyle /
+            // 63 = IDs 0..67 with 7, 28, 29, 31 and 47 deliberately skipped (retired Freestyle /
             // retired MultiplayerFreestyle / retired OnlineDuelForTheCell / never assigned /
             // retired Drumfire — see GameModes.cs). Deliberately a hard-coded
             // number rather than one derived from the enum: the whole point is that ADDING a
@@ -163,9 +163,10 @@ namespace CosmicShore.Tests
             // 61 -> 59 on 2026-10-08: MultiplayerFreestyle (28) and OnlineDuelForTheCell (29)
             // retired; both IDs stay reserved. 59 -> 60 the same day: Slingshot (64), the Stoat's.
             // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
-            // 61 -> 62 on 2026-10-13: SerpentCharge (66), the Serpent's sniper race.
+            // 61 -> 62 on 2026-10-13: ThresherTime (66), the Thresher's circuit race.
+            // 62 -> 63 on 2026-10-13: SerpentCharge (67), the Serpent's sniper race.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(62, values.Length,
+            Assert.AreEqual(63, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -205,7 +206,8 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.GrizzlyTime, 63)]
         [TestCase(GameModes.Slingshot, 64)]
         [TestCase(GameModes.Warpline, 65)]
-        [TestCase(GameModes.SerpentCharge, 66)]
+        [TestCase(GameModes.ThresherTime, 66)]
+        [TestCase(GameModes.SerpentCharge, 67)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -89,6 +90,12 @@ namespace CosmicShore.Gameplay
             public float ReadySince = -1f;
             public Transform Detour;
         }
+
+        // A per-frame AI cost gets a marker (Docs/AI_SYSTEM): Tick is the whole server-side cost
+        // per throttled frame, Plan the burst one bot's line search spends, ScoreLine one cone.
+        static readonly ProfilerMarker s_TickMarker = new("SerpentCharge.Marksman.Tick");
+        static readonly ProfilerMarker s_PlanMarker = new("SerpentCharge.Marksman.Plan");
+        static readonly ProfilerMarker s_ScoreLineMarker = new("SerpentCharge.Marksman.ScoreLine");
 
         readonly List<Marksman> _marksmen = new();
         readonly List<Prism> _hits = new();
@@ -184,6 +191,7 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return;
 
+            using var tickScope = s_TickMarker.Auto();
             for (int i = 0; i < _marksmen.Count; i++)
                 TickOne(_marksmen[i], index, now);
         }
@@ -318,6 +326,7 @@ namespace CosmicShore.Gameplay
 
         void Plan(Marksman m, IVesselStatus status, PrismSpatialIndex index, float now)
         {
+            using var planScope = s_PlanMarker.Auto();
             m.NextPlanAt = now + Mathf.Max(0.1f,
                 SerpentChargeSettingsSO.Pick(_settings.aiSolveSecondsByIntensity, _intensity, 1f));
 
@@ -460,6 +469,7 @@ namespace CosmicShore.Gameplay
         int ScoreLine(IVesselStatus status, SniperShotActionExecutor shot, PrismSpatialIndex index,
                       Vector3 origin, Vector3 dir)
         {
+            using var lineScope = s_ScoreLineMarker.Auto();
             float range = shot.RangeUnits;
             float half = shot.ConeHalfAngleDegrees;
             float minRadius = shot.MinPathRadius;

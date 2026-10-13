@@ -34,7 +34,7 @@ FF="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna"
 SW="$FF/Swarm"; SUB="$FF/Substrate"; B="$FF/Builders"; TF="$FF/ThreatFlora"
 
 # the pure cores that ship - one line per creature family
-CORES=("$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs")
+CORES=("$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$SW/KernelMath.cs")
 # round 11f ecology LOD: the pure cores (CellEcologyLod.cs is the Unity host - the harness drives the director as it does)
 for f in "$FF"/Ecology/*.cs; do [[ "$(basename "$f")" == CellEcologyLod.cs ]] || CORES+=("$f"); done
 CORES+=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateCore.cs" "$SUB/SubstrateSiege.cs" "$SUB/SubstrateArms.cs" "$SUB/SubstrateArmsPolicy.cs" "$SUB/SubstrateTickJob.cs")

@@ -48,6 +48,9 @@ import arcade_mode_lib as aml  # noqa: E402  - committed_scene (the clone's stan
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from arcade_mode_lib import wrap_yaml_scalar  # noqa: E402
+
 
 def guid(name: str) -> str:
     """Deterministic GUID for a stable asset name (asset-surgery: generator-authored family)."""
@@ -671,13 +674,15 @@ CELL_DESC_TMPL = (
     "TOLLWAY.md."
 )
 for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    _cell_desc = wrap_yaml_scalar(CELL_DESC_TMPL.format(
+        i=_i, plants=ANCHOR_PLANTS, species=_sp,
+        family=ANCHOR_FAMILY[_sp],
+        volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS[_sp],
+        restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
+        maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET))
     emit(f"{ANCHOR_FLORA_DIR}/Tollway Cell Config {_i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Tollway Cell Config {_i}") + f"""  CellName: Tollway
-  Description: {CELL_DESC_TMPL.format(i=_i, plants=ANCHOR_PLANTS, species=_sp,
-                                      family=ANCHOR_FAMILY[_sp],
-                                      volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS[_sp],
-                                      restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
-                                      maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET)}
+  Description: {_cell_desc}
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
