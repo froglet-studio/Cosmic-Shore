@@ -87,7 +87,10 @@ negative controls); DXC compiles both passes; `crystal_depth_harness` 10/10 (two
 
 **Verify in editor:**
 1. A row of Mass pickups or a colony's hearts, seen from far away: neighbouring crystals show DIFFERENT columns
-   (each is turned its own way). Two clients see the same crystal turned the same way.
+   (each is turned its own way). Two clients see the same PICKUP turned the same way (crystals are local, and
+   a pickup spawns at the same place on both). A lifeform's heart is posed from wherever its host stands on
+   the first frame after it enables, which can differ by a client's interpolation lag, so two machines may
+   turn a heart differently; that is cosmetic and expected.
 2. Fly round an omni at range: no prism appears at the top of a column in view (reseats happen behind). Close
    in, the far side still stands open with its faces parted.
 3. The omni's body turns WITH its prisms: the holes line up with the prisms, and the squares, rhombi and
@@ -95,7 +98,10 @@ negative controls); DXC compiles both passes; `crystal_depth_harness` 10/10 (two
 4. Collect an omni and a Mass. The husk bursts with thick prisms, matching the live crystal. Fusion (Scarab
    forge, Squirrel ring, hull fusion) starts from the turned pose.
 5. A pooled crystal respawned elsewhere takes a new pose; nothing stays turned after it is collected.
-6. Console: no `CrystalDepthPrisms` errors.
+6. Every sibling under the crystal root that carries a renderer turns with the pose, particle systems
+   included. A directional effect parented there (none known) would turn too; check the crystal prefabs'
+   effects still read right.
+7. Console: no `CrystalDepthPrisms` errors.
 
 ---
 
@@ -500,6 +506,8 @@ outcome onto the prefab component, which fixed it. Root cause of the null load i
 
 ### 🔴 Omni crystal: the triangles BREATHE; the rim is retired (`cece/eager-rubin-km7qyn`, 2026-10-10)
 
+> **SUPERSEDED 2026-10-13 — do not run.** The Breathe look was replaced by the Depth ratchet (round 8), and its six tone materials and the rim's two were deleted on `cece/determined-ride-rqzaeo` (F2); the lab pins their values. Nothing in this entry can be seen in game any more.
+
 **Landed** (`Docs/PALETTE.md §2.10`; picked in the Omni Shepard Lab, `Docs/Studios/OMNI_SHEPARD_LAB.md`
 round 4): `OmniShepardFresnelShader` gained four opt-in dials, inert at their defaults
 (`_Breathe`, `_PhaseOffset`, `_PlateScaleStart`, `_Thickness`). `OmniCrystalTriangles.asset` gained a
@@ -531,6 +539,8 @@ ShaderLab wrapper were not compiled by Unity.
    other. Watch for a shell visibly drawing in front of a nearer one; if it shows, report it.
 
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
+
+> **SUPERSEDED 2026-10-13 — do not run the tone steps.** The tone shells and their materials are gone (Depth ratchet since round 8; materials deleted on `cece/determined-ride-rqzaeo`, F2). The body steps are covered by the round-9/10 crystal entries at the top.
 
 > **Partly superseded 2026-10-10:** the triangles now breathe instead of falling, and the
 > stationary rim (slot 4) is gone; see the entry above. Steps 3 (falling, rim) and 8 (falling,
@@ -854,6 +864,8 @@ no edit-mode tests executed, no play mode.
 ---
 
 ### 🔴 Mass crystal — one geometry in every state, Space/Time colour contrast (`cece/lucid-ride-4arncr`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+> **PARTLY SUPERSEDED 2026-10-13.** The four shells and their eight materials are gone (depth prisms since round 8; materials and the orphaned `SpawnedSegments.prefab` deleted on `cece/determined-ride-rqzaeo`, F3). The husk (`ExplodingMassCrystalMaterial*`) and lifeform-heart steps still apply; the shell-colour steps do not.
 
 Asked for: *"the blue inactive mass crystal looks correct except its colors should reflect the
 color contrast seen in the space and time crystals. however the active state looks like it changes

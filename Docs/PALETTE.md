@@ -563,8 +563,9 @@ seen on 56–73% of reseats at 250 u once the camera moves round a still crystal
 ship `_Thickness 1`), and undriven, `OmniDepthPrismShader` draws the mesh exactly as authored. Hull
 fusion depends on both.
 
-The Breathe look below shipped from 2026-10-10 to 2026-10-12; its materials stay authored
-(`OriginalMaterialSet` slots 2-3 still name them, and the lab's Breathe styles read them).
+The Breathe look below shipped from 2026-10-10 to 2026-10-12. Its materials, the rim's and the Mass crystal's old
+shells were retired on 2026-10-13 (`OriginalMaterialSet` slots 2-4 are empty); the Omni Shepard Lab pins their
+values in its `RETIRED` constant.
 
 **The tone BREATHES (2026-10-10, the Omni Shepard Lab's pick).** Until then the three shells were
 contiguous falling bands (1.000 → 0.833 → 0.667 → 0.500, 3 s each) that landed on the body and
@@ -662,10 +663,10 @@ the omni body in its domain colour instead of a Shepard band.
 2026-10-12 the omni has two slots (body, depth prisms); before that, four. Slot 4 was a stationary rim (the Mass
 crystal's fourth shell, `_ScaleDistance 0`, alpha 0.02–0.07 at the full radius) that hid each
 falling shell's birth. A breathing shell has no birth: it turns round at the far end at alpha 0.05,
-so the rim went (2026-10-10). `SO_MaterialSet.CrystalMaterial4` and `GetTeamCrystalMaterial` case 4
-stay (optional; nothing asks for index 4 now), and `OriginalMaterialSet.CrystalMaterial4` still
-points at `OmniShepardTrianglesRim`, which the generator keeps authoring so the lab's Classic style
-can draw it. Every slot explodes on `CrystalMaterial`, because the spent husk animates
+so the rim went (2026-10-10). `SO_MaterialSet.CrystalMaterial2..4` stay as optional slots, EMPTY in
+`OriginalMaterialSet` since 2026-10-13 (the rim and tone materials are retired; the lab pins them). A team crystal's
+material is looked up by the model's OWN default material (`ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain,
+material)`), not its slot index. Every slot explodes on `CrystalMaterial`, because the spent husk animates
 `CrystalGraph`'s `_velocity` and a tone material on a husk would play its band instead of bursting.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
