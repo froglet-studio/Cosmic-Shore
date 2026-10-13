@@ -39,6 +39,8 @@ MonoBehaviour:
     lockSpin: 220
     lockMax: 2.2
     yank: 0.5
+    pivotSteer: 45
+    windmillSpeed: 1000
   explosionSizeMultiplier:
     Enabled: 1
     Value: 1
@@ -75,6 +77,17 @@ MonoBehaviour:
   - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
   explosionDiameter: 45
   explosionMinInterval: 0.08
+  energyPerSlice: 1
+  energyPerSteal: 0.5
+  energyMax: 30
+  energyDiameterPerUnit: 0.1
+  energyMaxDiameterScale: 4
+  energyRimTint: 0.6
+  massTrailPrismScale: {x: 8, y: 0.75, z: 5.5}
+  massTrailSpacing: 6
+  massTrailMaxPerFrame: 3
+  massTrailWaitTime: 0.3
+  windmillSeconds: 6
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
   hitStopMinSeconds: 0.03
@@ -97,12 +110,15 @@ MonoBehaviour:
   cameraMinAhead: 6
   cameraMaxDistance: 450
   cameraMaxFollowTurnRate: 240
-  spectateSpinRate: 1.8
-  spectateEngageSeconds: 0.2
+  spectateSpinRate: 0.9
+  spectateEngageSeconds: 0.1
   spectateReleaseFraction: 0.75
-  spectateTiltDegrees: 25
+  spectateTiltDegrees: 30
   spectateBlendSeconds: 0.6
-  spectatePlaneFollowRate: 1.5
+  aimYawRate: 180
+  aimPitchRate: 120
+  aimLineLength: 150
+  aimLineWidth: 1.2
   ballBodyCool: 0.16
   ballBodyNearSmash: 0.4
   ballBodyHot: 0.5
@@ -114,7 +130,8 @@ MonoBehaviour:
   chainRimTaut: 0.75
   chainRimReady: 0.95
   ballVisualScale: 1.25
-  chainLinks: 12
+  chainLinks: 24
+  chainRenderSubdivisions: 6
   chainColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}
   fallbackDomainColor: {r: 0.3, g: 0.9, b: 0.85, a: 1}
   fallbackDangerColor: {r: 1, g: 0.05, b: 0.05, a: 1}

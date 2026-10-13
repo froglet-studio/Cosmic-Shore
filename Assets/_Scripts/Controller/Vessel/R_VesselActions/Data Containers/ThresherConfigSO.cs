@@ -9,10 +9,11 @@ namespace CosmicShore.Gameplay
     /// scalings, the smash explosion, the chain cut, the impact feel, and the look. One asset per
     /// hull; read by <see cref="ThresherExecutor"/>. See <c>THRESHER.md</c>.
     ///
-    /// Element map (approved 2026-10-08): CHARGE = the ball's threat (explosion size; L5 "Lit"),
-    /// MASS = the ball's weight and size (L5 "Wrecker"), SPACE = the chain's reach (L5 "Reaper
-    /// Chain"), TIME = the plant's spin (L5 "Slingshot"). Every scaling is an
-    /// <see cref="ElementalFloat"/> read through <c>EvaluateLive</c> at the point of use.
+    /// Element map (approved 2026-10-08; Mass Mode on A added 2026-10-13): CHARGE = the ball's
+    /// threat (explosion size; L5 "Lit"), MASS = the ball's weight and size, and the A-button Mass
+    /// Mode (L5 "Wrecker"), SPACE = the chain's reach (L5 "Reaper Chain"), TIME = the plant's spin
+    /// (L5 "Slingshot"). Every scaling is an <see cref="ElementalFloat"/> read through
+    /// <c>EvaluateReplicated</c> at the point of use.
     /// </summary>
     [CreateAssetMenu(fileName = "ThresherConfig", menuName = "ScriptableObjects/Vessel Actions/Thresher Config")]
     public sealed class ThresherConfigSO : ScriptableObject
@@ -41,6 +42,37 @@ namespace CosmicShore.Gameplay
         [Tooltip("At most one explosion per this many seconds, so a hot ball ploughing a row makes a " +
                  "string of blasts rather than one per prism.")]
         [SerializeField, Min(0f)] float explosionMinInterval = 0.08f;
+
+        [Header("Chain energy (the chain's kills charge the ball's next explosion)")]
+        [Tooltip("Energy each prism the CHAIN slices stores in the ball. Stored energy is released by the ball's " +
+                 "next hit on a RIVAL prism as an explosion, even below smash speed (outside Mass Mode).")]
+        [SerializeField, Min(0f)] float energyPerSlice = 1f;
+        [Tooltip("Energy each prism the ball STEALS in Mass Mode adds - Mass Mode never releases energy, it banks it.")]
+        [SerializeField, Min(0f)] float energyPerSteal = 0.5f;
+        [Tooltip("The most energy the ball can bank.")]
+        [SerializeField, Min(0f)] float energyMax = 30f;
+        [Tooltip("Each unit of banked energy adds this much to the explosion's diameter multiplier (1 + this x energy).")]
+        [SerializeField, Min(0f)] float energyDiameterPerUnit = 0.1f;
+        [Tooltip("Cap on the energy diameter multiplier, so a full bank is a big blast and not an arena wipe.")]
+        [SerializeField, Min(1f)] float energyMaxDiameterScale = 4f;
+        [Tooltip("How far the ball's rim leans toward the CTA lime at a FULL bank (0 = no cue, 1 = pure lime).")]
+        [SerializeField, Range(0f, 1f)] float energyRimTint = 0.6f;
+
+        [Header("Mass Mode (A button: toggle)")]
+        [Tooltip("Size of each prism the ball lays behind it in Mass Mode (x across, y thick, z along its path).")]
+        [SerializeField] Vector3 massTrailPrismScale = new Vector3(8f, 0.75f, 5.5f);
+        [Tooltip("The ball lays one prism per this much of its own travel in Mass Mode (world units).")]
+        [SerializeField, Min(0.5f)] float massTrailSpacing = 6f;
+        [Tooltip("Most prisms the ball lays in one frame, so a hitch or a white-hot ball never dumps a burst; " +
+                 "the excess distance is dropped, not owed.")]
+        [SerializeField, Min(1)] int massTrailMaxPerFrame = 3;
+        [Tooltip("Seconds a freshly laid ball-trail prism keeps its collider off so the ball and chain can clear it.")]
+        [SerializeField, Min(0f)] float massTrailWaitTime = 0.3f;
+
+        [Header("Windmill (omni crystal)")]
+        [Tooltip("Seconds the ball windmills round the ship after an omni crystal (speed: ThresherDials.windmillSpeed). " +
+                 "A second crystal mid-windmill tops the clock back up.")]
+        [SerializeField, Min(0f)] float windmillSeconds = 6f;
 
         [Header("Chain cut")]
         [Tooltip("The chain's cutting half-width (world units). It cuts RIVAL prisms it touches while taut; " +
@@ -109,25 +141,31 @@ namespace CosmicShore.Gameplay
                  "untouched; only snaps are spread out. 0 = hard-attached as the rest of the fleet.")]
         [SerializeField, Min(0f)] float cameraMaxFollowTurnRate = 240f;
 
-        [Header("Camera - spectate a fast planted spin (local pilot only)")]
-        [Tooltip("Detach the camera and WATCH the planted orbit from a still vantage once the ship " +
-                 "circles the pivot at this rate or faster (radians/s; 1.8 is about 100 deg/s). Riding " +
-                 "a faster spin in a chase camera reads as dizzying.")]
-        [SerializeField, Min(0f)] float spectateSpinRate = 1.8f;
+        [Header("Camera - spectate + AIM a planted spin (local pilot only)")]
+        [Tooltip("Detach the camera from the spinning hull once the ship circles the pivot at this rate or " +
+                 "faster (radians/s; 0.9 is about 52 deg/s). Riding a spin in a chase camera made spectators " +
+                 "sick at the old 1.8 (about 100 deg/s), so it now detaches at half that.")]
+        [SerializeField, Min(0f)] float spectateSpinRate = 0.9f;
         [Tooltip("The spin must hold at or over spectateSpinRate this long (seconds) before the camera " +
                  "detaches, so a tap of LT does not bob the camera.")]
-        [SerializeField, Min(0f)] float spectateEngageSeconds = 0.2f;
+        [SerializeField, Min(0f)] float spectateEngageSeconds = 0.1f;
         [Tooltip("Re-attach once the spin falls below this fraction of spectateSpinRate (or the plant " +
                  "is released). Below 1 so a spin hovering at the threshold does not flap.")]
         [SerializeField, Range(0f, 1f)] float spectateReleaseFraction = 0.75f;
-        [Tooltip("The vantage's tilt off straight-down-the-orbit-axis, leaning toward the side the ship " +
-                 "was on when it detached (degrees). 0 = a top-down plan view.")]
-        [SerializeField, Range(0f, 80f)] float spectateTiltDegrees = 25f;
+        [Tooltip("The aim camera's tilt off straight-down, leaning BACK from the aim (degrees): it looks down " +
+                 "on the orbit from over the launch path's shoulder. 0 = a pure top-down plan view.")]
+        [SerializeField, Range(0f, 80f)] float spectateTiltDegrees = 30f;
         [Tooltip("Seconds to ease into the vantage and back out to the chase camera.")]
         [SerializeField, Min(0f)] float spectateBlendSeconds = 0.6f;
-        [Tooltip("How fast the vantage leans after the orbit's plane when the pilot tilts a planted orbit " +
-                 "(1/s, exponential). Slow, so the orbit turns in front of a still camera.")]
-        [SerializeField, Min(0f)] float spectatePlaneFollowRate = 1.5f;
+        [Tooltip("While spectating, full stick X swings the AIM (the path a release flies off along) at this " +
+                 "rate (degrees/s). The camera turns with it, so aiming IS turning the camera.")]
+        [SerializeField, Min(0f)] float aimYawRate = 180f;
+        [Tooltip("While spectating, full stick Y pitches the aim at this rate (degrees/s), the hull's own pitch sign.")]
+        [SerializeField, Min(0f)] float aimPitchRate = 120f;
+        [Tooltip("Length of the drawn launch path while aiming (world units), from the ship along the aim.")]
+        [SerializeField, Min(0f)] float aimLineLength = 150f;
+        [Tooltip("Width of the drawn launch path (world units).")]
+        [SerializeField, Min(0f)] float aimLineWidth = 1.2f;
 
         [Header("Ball shading (ThresherBallFresnelShader: dull body, bright fresnel rim)")]
         [Tooltip("Body brightness (max channel) of a slow ball. Under the bloom threshold (0.2).")]
@@ -158,8 +196,12 @@ namespace CosmicShore.Gameplay
         [Header("Look")]
         [Tooltip("Rendered ball radius as a multiple of the physics radius.")]
         [SerializeField, Min(0.1f)] float ballVisualScale = 1.25f;
-        [Tooltip("Chain links (gameplay: the chain cuts; and drawn - at the width that cuts, 2 x chainCutRadius).")]
-        [SerializeField, Range(2, 32)] int chainLinks = 12;
+        [Tooltip("Chain links (gameplay: the chain cuts along these segments). The drawn chain is a smooth " +
+                 "curve through them (chainRenderSubdivisions), at the width that cuts, 2 x chainCutRadius.")]
+        [SerializeField, Range(2, 64)] int chainLinks = 24;
+        [Tooltip("Drawn segments per chain link: the chain is drawn as a Catmull-Rom curve through the links, " +
+                 "so a slack chain bends smoothly instead of showing a kink at every link.")]
+        [SerializeField, Range(1, 16)] int chainRenderSubdivisions = 6;
         [Tooltip("The chain tube's BODY colour (iron). Keep it under the 0.2 bloom threshold: the rim carries the light.")]
         [SerializeField] Color chainColor = new Color(0.07f, 0.065f, 0.065f);
         [Tooltip("Fallback ball colour when the palette cannot be read (e.g. no theme loaded).")]
@@ -179,6 +221,17 @@ namespace CosmicShore.Gameplay
         public AOEExplosion[] SmashExplosions => smashExplosions;
         public float ExplosionDiameter => explosionDiameter;
         public float ExplosionMinInterval => explosionMinInterval;
+        public float EnergyPerSlice => energyPerSlice;
+        public float EnergyPerSteal => energyPerSteal;
+        public float EnergyMax => energyMax;
+        public float EnergyDiameterPerUnit => energyDiameterPerUnit;
+        public float EnergyMaxDiameterScale => energyMaxDiameterScale;
+        public float EnergyRimTint => energyRimTint;
+        public Vector3 MassTrailPrismScale => massTrailPrismScale;
+        public float MassTrailSpacing => Mathf.Max(0.5f, massTrailSpacing);
+        public int MassTrailMaxPerFrame => Mathf.Max(1, massTrailMaxPerFrame);
+        public float MassTrailWaitTime => massTrailWaitTime;
+        public float WindmillSeconds => windmillSeconds;
         public float ChainCutRadius => chainCutRadius;
         public float ChainDebrisRestitution => chainDebrisRestitution;
         public float HitStopMinSeconds => hitStopMinSeconds;
@@ -206,7 +259,10 @@ namespace CosmicShore.Gameplay
         public float SpectateReleaseFraction => spectateReleaseFraction;
         public float SpectateTiltDegrees => spectateTiltDegrees;
         public float SpectateBlendSeconds => spectateBlendSeconds;
-        public float SpectatePlaneFollowRate => spectatePlaneFollowRate;
+        public float AimYawRate => aimYawRate;
+        public float AimPitchRate => aimPitchRate;
+        public float AimLineLength => aimLineLength;
+        public float AimLineWidth => aimLineWidth;
         public float BallBodyCool => ballBodyCool;
         public float BallBodyNearSmash => ballBodyNearSmash;
         public float BallBodyHot => ballBodyHot;
@@ -219,6 +275,7 @@ namespace CosmicShore.Gameplay
         public float ChainRimReady => chainRimReady;
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
+        public int ChainRenderSubdivisions => chainRenderSubdivisions;
         public Color ChainColor => chainColor;
         public Color FallbackDomainColor => fallbackDomainColor;
         public Color FallbackDangerColor => fallbackDangerColor;

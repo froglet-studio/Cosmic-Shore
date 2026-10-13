@@ -47,6 +47,19 @@ namespace CosmicShore.Gameplay
     /// sweeping, with debris at the touching link's own velocity. It never cuts its own domain, and
     /// it skips shielded prisms unless Reaper Chain is active (then the first cut pops the shield).
     ///
+    /// <b>The chain's kills charge the ball.</b> Every prism the chain slices banks
+    /// <c>energyPerSlice</c> in the ball; the ball's next hit on a RIVAL prism releases the bank as
+    /// an explosion even below smash speed (and a smash's own explosion spends it), its diameter
+    /// growing with the bank.
+    ///
+    /// <b>Mass Mode</b> (A, a toggle). The bank is never released: the ball STEALS the rival prisms
+    /// it touches (each steal banks <c>energyPerSteal</c>), SHIELDS its own domain's, lays a trail
+    /// of its own prisms behind it, and makes no explosion at any speed. Leave Mass Mode and the
+    /// next rival hit spends everything it banked.
+    ///
+    /// <b>Windmill</b> (an omni crystal, <see cref="ThresherWindmillByCrystalEffectSO"/>): for
+    /// <c>windmillSeconds</c> the ball circles the ship red-hot across its line of flight.
+    ///
     /// <b>Networking: none of its own</b> (the Gibbon's shape). Press and release round-trip through
     /// <c>R_VesselActionHandler</c>, so every peer runs the same chain from the same inputs; a peer
     /// can disagree on a marginal hit by a frame of drift.
@@ -92,6 +105,16 @@ namespace CosmicShore.Gameplay
         bool _seeded;
         bool _payOut;
         bool _plantHeld;
+        bool _massMode;
+        float _energy;
+        /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
+        /// by the transformer on the release edge (<see cref="TryConsumeReleaseDirection"/>).</summary>
+        Vector3? _releaseDirection;
+
+        // Mass Mode: the ball's own trail. A container of our own so the prisms it lays are a ribbon
+        // (rideable, identity-testable) and never members of the hull's wake.
+        readonly Trail _ballTrail = new Trail();
+        float _trailOwed;
 
         int _lastStepFrame = -1;
         Vector3 _lastShipPosition;
@@ -131,6 +154,15 @@ namespace CosmicShore.Gameplay
         /// <summary>The planted orbit's speed as a fraction of its cap; 0 when not planted.</summary>
         public float Spin01 => IsPivoting && _settings.LockMaxSpeed > 0f ? Mathf.Clamp01(_solver.LockSpeed / _settings.LockMaxSpeed) : 0f;
         public int Combo => _combo;
+        /// <summary>Mass Mode (A): the ball steals, shields and lays a trail, and banks its energy.</summary>
+        public bool IsMassMode => _massMode;
+        /// <summary>Energy banked by the chain's kills (and Mass Mode steals) for the next explosion.</summary>
+        public float Energy => _energy;
+        public float Energy01 => config && config.EnergyMax > 0f ? Mathf.Clamp01(_energy / config.EnergyMax) : 0f;
+        /// <summary>An omni crystal has the ball windmilling round the ship.</summary>
+        public bool IsWindmilling => _solver != null && _solver.Mode == ThresherMode.Windmill;
+        /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
+        public bool IsAiming => _spectating;
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
         public Color BallColorNow => _shownValid ? _shownHue : config && _solver != null ? BallColor(out _) : Color.white;
         /// <summary>The READY lime (LINEAR).</summary>
@@ -145,6 +177,10 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            _massMode = false;
+            _energy = 0f;
+            _releaseDirection = null;
+            _trailOwed = 0f;
             _combo = 0;
             _touching.Clear();
             _touchingNext.Clear();
@@ -156,7 +192,7 @@ namespace CosmicShore.Gameplay
             _settings = _baseSettings;
             if (_solver == null) _solver = new ThresherChainSolver(_settings);
             else _solver.Settings = _settings;
-            int links = config ? config.ChainLinks : 12;
+            int links = config ? config.ChainLinks : 24;
             if (_links == null || _links.Count != links + 1) _links = new ThresherChainLinks(links);
         }
 
@@ -209,8 +245,47 @@ namespace CosmicShore.Gameplay
             if (_solver == null) return;
             _plantHeld = false;
             bool wasPivot = _solver.Mode == ThresherMode.Pivot;
-            _solver.Release(_lastShipVelocity, slingshot: SlingshotActive);
+
+            // AIMED release: while the camera spectates, the pilot has been aiming the launch with
+            // the sticks, so the ship flies off along the aim the instant LT comes up — at the
+            // orbit's speed, wherever on the circle it happens to be. No waiting for the tangent to
+            // come round: the aim is the whole input. Unaimed (a slow orbit, a remote replica, the
+            // autopilot) it leaves on the orbit's tangent as before.
+            Vector3 fling = _lastShipVelocity;
+            if (wasPivot && _spectating && _aimDir.sqrMagnitude > 0.5f)
+            {
+                fling = _aimDir * _lastShipVelocity.magnitude;
+                _releaseDirection = _aimDir;
+            }
+            _solver.Release(fling, slingshot: SlingshotActive);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
+        }
+
+        /// <summary>The aimed launch direction of the plant release that just happened, once; the
+        /// transformer faces the hull along it on the release edge (grip then puts the momentum on
+        /// the nose the same frame).</summary>
+        public bool TryConsumeReleaseDirection(out Vector3 direction)
+        {
+            direction = _releaseDirection ?? Vector3.zero;
+            bool has = _releaseDirection.HasValue;
+            _releaseDirection = null;
+            return has;
+        }
+
+        /// <summary>A (Mass Mode): toggle. Every peer runs the press, so every peer toggles.</summary>
+        public void ToggleMassMode()
+        {
+            _massMode = !_massMode;
+            _trailOwed = 0f;
+        }
+
+        /// <summary>An omni crystal: the ball windmills round the ship (<c>windmillSeconds</c>).
+        /// Run on every peer by the vessel crystal-effect dispatch.</summary>
+        public void StartWindmill()
+        {
+            if (_solver == null || !config || _status == null || _status.Transform == null) return;
+            if (!_seeded) EnsureSeeded(_status.Transform.position, _lastShipVelocity);
+            _solver.StartWindmill(_status.Transform.position, config.WindmillSeconds);
         }
 
         void OnEnable()
@@ -227,6 +302,7 @@ namespace CosmicShore.Gameplay
             _payOut = false;
             if (_plantHeld && _solver != null) _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
             ReleaseCamera();
@@ -263,9 +339,13 @@ namespace CosmicShore.Gameplay
 
             if (result.Planted) PlayAt(plantEvent, _solver.Pivot);
             if (_solver.Mode != ThresherMode.Pivot)
+            {
                 SweepBall(result.BallFrom, _solver.BallPosition);
+                if (_massMode) LayBallTrail(result.BallFrom, _solver.BallPosition, shipPosition);
+            }
 
-            _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length);
+            _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length,
+                        iterations: ThresherChainLinks.IterationsFor(_links.Count - 1));
             CutWithChain(dt);
 
             UpdateCombo(dt);
@@ -352,6 +432,14 @@ namespace CosmicShore.Gameplay
                 bool hot = ThresherChainSolver.IsSmash(speed, _settings);
                 bool ownDomain = prism.Domain == own;
 
+                if (_massMode)
+                {
+                    // Mass Mode builds instead of breaking, at any speed: it shields its own and
+                    // steals the rival's, keeps all its speed, and never explodes.
+                    MassModeTouch(prism, ownDomain, at);
+                    continue;
+                }
+
                 if (ownDomain && (!hot || lit))
                 {
                     // Bounce: the ball never harms its own domain unless it is red-hot and unlit.
@@ -365,26 +453,130 @@ namespace CosmicShore.Gameplay
                              debrisSpeedLimit: config ? config.DebrisSpeedLimit : 200f);
                 _solver.RegisterHit(ThresherChainSolver.KeepAfterHit(speed, _settings, wrecker));
 
-                if (hot) OnSmash(at, speed, lit);
+                // A rival hit releases the chain's banked energy even below smash speed; a smash
+                // explodes anyway, and spends the bank on the way.
+                float banked = _energy;
+                bool exploded = (hot || (!ownDomain && banked > 0f)) && Explode(at, lit);
+                if (hot) OnSmash(at, speed, exploded, banked);
+                else if (exploded) OnEnergyBlast(at, banked);
                 else OnCrush(at);
             }
 
             (_touching, _touchingNext) = (_touchingNext, _touching);
         }
 
-        void OnSmash(Vector3 at, float speed, bool lit)
+        void OnSmash(Vector3 at, float speed, bool exploded, float banked)
         {
             float heat = ThresherChainSolver.Heat01(speed, _settings);
             _combo++;
             _coolTime = 0f;
-            Explode(at, lit);
             PlayAt(smashEvent, at);
             if (!IsLocalPilot() || !config) return;
 
             if (_combo == 1)
                 HitStop(Mathf.Lerp(config.HitStopMinSeconds, config.HitStopMaxSeconds, heat));
-            Shake(Mathf.Lerp(config.ShakeMin, config.ShakeMax, heat) * (_combo == 1 ? 1f : 0.6f), config.ShakeSeconds);
+            float bank = exploded ? EnergyScale(banked) : 1f;
+            Shake(Mathf.Lerp(config.ShakeMin, config.ShakeMax, heat) * (_combo == 1 ? 1f : 0.6f) * bank, config.ShakeSeconds);
             HapticController.PlaySkim(Mathf.Lerp(config.HapticFloor01, 1f, heat));
+        }
+
+        /// <summary>A slow ball's rival hit that released the chain's bank: the blast's own beat.</summary>
+        void OnEnergyBlast(Vector3 at, float banked)
+        {
+            PlayAt(smashEvent, at);
+            if (!IsLocalPilot() || !config) return;
+            float scale = EnergyScale(banked);
+            Shake(config.ShakeMin * scale, config.ShakeSeconds);
+            HapticController.PlaySkim(Mathf.Clamp01(config.HapticFloor01 * scale));
+        }
+
+        /// <summary>The explosion-diameter multiplier a bank of <paramref name="energy"/> buys.</summary>
+        float EnergyScale(float energy)
+            => config ? Mathf.Min(config.EnergyMaxDiameterScale, 1f + config.EnergyDiameterPerUnit * Mathf.Max(0f, energy)) : 1f;
+
+        void Bank(float amount)
+        {
+            if (!config || amount <= 0f) return;
+            _energy = Mathf.Min(config.EnergyMax, _energy + amount);
+        }
+
+        /// <summary>Mass Mode's touch: shield own-domain mass (once — an already armoured prism is
+        /// left alone), steal rival mass (a shielded rival sheds its shield first and changes hands
+        /// on the next touch, the fleet's steal rule; super-shielded mass refuses).</summary>
+        void MassModeTouch(Prism prism, bool ownDomain, Vector3 at)
+        {
+            var props = prism.prismProperties;
+            if (ownDomain)
+            {
+                if (props == null || props.IsShielded || props.IsSuperShielded) return;
+                prism.ActivateShield();
+                return;
+            }
+            if (props != null && props.IsSuperShielded) return;
+            prism.Steal(_status.PlayerName, _status.Domain);
+            if (prism.Domain == _status.Domain) Bank(config ? config.EnergyPerSteal : 0f);
+            PlayAt(crushEvent, at);
+        }
+
+        /// <summary>
+        /// Mass Mode's trail: one prism of the pilot's domain per <c>massTrailSpacing</c> of the
+        /// ball's travel, laid along its path, through the SAME spawn channel and prism type the
+        /// hull's own trail uses (so it is ordinary, conserved trail mass). Owed in distance and paid
+        /// in whole prisms, capped per frame with the excess DROPPED (vessel rule 17's shape), so a
+        /// hitch never dumps a burst. Stamped with <c>ownerID</c>, so the fleet's own-fresh-trail
+        /// rule keeps the ball and chain from hitting what they just laid.
+        /// </summary>
+        void LayBallTrail(Vector3 from, Vector3 to, Vector3 shipPosition)
+        {
+            var spawner = _status?.VesselPrismController;
+            var channel = spawner ? spawner.PrismSpawnChannel : null;
+            if (!config || !channel) return;
+
+            Vector3 path = to - from;
+            float travelled = path.magnitude;
+            if (travelled < 1e-4f) return;
+            Vector3 dir = path / travelled;
+
+            float spacing = config.MassTrailSpacing;
+            _trailOwed += travelled;
+            int lays = Mathf.Min(Mathf.FloorToInt(_trailOwed / spacing), config.MassTrailMaxPerFrame);
+            if (lays <= 0) return;
+            _trailOwed = Mathf.Min(_trailOwed - lays * spacing, spacing);
+
+            Vector3 up = Vector3.ProjectOnPlane(shipPosition - to, dir);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, dir);
+            if (!SafeLookRotation.TryGet(dir, up.normalized, out var rot, this, logError: false)) return;
+
+            for (int i = 0; i < lays; i++)
+            {
+                // Spread this frame's lays back along its path, newest at the ball.
+                Vector3 pos = Vector3.Lerp(from, to, (i + 1f) / lays);
+                LayTrailPrism(channel, spawner.SpawnPrismType, pos, rot);
+            }
+        }
+
+        void LayTrailPrism(PrismEventChannelWithReturnSO channel, PrismType type, Vector3 pos, Quaternion rot)
+        {
+            Vector3 scale = config.MassTrailPrismScale;
+            var ret = channel.RaiseEvent(new PrismEventData
+            {
+                ownDomain = _status.Domain,
+                Rotation = rot,
+                SpawnPosition = pos,
+                Scale = scale,
+                PrismType = type,
+            });
+            if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return;
+
+            prism.TargetScale = scale;
+            prism.ownerID = _status.PlayerName;
+            prism.ChangeTeam(_status.Domain);
+            prism.waitTime = config.MassTrailWaitTime;
+            _ballTrail.Add(prism);
+            prism.prismProperties.Index = (ushort)Mathf.Min(_ballTrail.TrailList.Count - 1, ushort.MaxValue);
+            prism.Initialize(_status.PlayerName);
+            // AFTER Initialize: pool-reuse reset clears trail membership (AssignTrail's contract).
+            prism.AssignTrail(_ballTrail);
         }
 
         void OnCrush(Vector3 at)
@@ -399,14 +591,19 @@ namespace CosmicShore.Gameplay
         /// true, the Grizzly charged shot's setting); lit it spares the pilot's own domain — the
         /// fleet's rule that domain-sparing lives in the EXPLOSION layer, never in Prism.Damage.
         /// Rate-limited so a hot ball through a row makes a string of blasts, not one per prism.
+        /// The chain's banked energy rides the blast that actually goes off (its diameter ×
+        /// <see cref="EnergyScale"/>) and is spent by it; a rate-limited hit keeps the bank for the
+        /// next one. Returns true if an explosion was spawned.
         /// </summary>
-        void Explode(Vector3 at, bool lit)
+        bool Explode(Vector3 at, bool lit)
         {
-            if (!config || config.SmashExplosions is not { Length: > 0 } || _status == null) return;
-            if (Time.time < _nextExplosionTime) return;
+            if (!config || config.SmashExplosions is not { Length: > 0 } || _status == null) return false;
+            if (Time.time < _nextExplosionTime) return false;
             _nextExplosionTime = Time.time + config.ExplosionMinInterval;
 
-            float diameter = config.ExplosionDiameter * Mathf.Max(0.1f, config.ExplosionSizeMultiplier.EvaluateReplicated(_status));
+            float diameter = config.ExplosionDiameter * Mathf.Max(0.1f, config.ExplosionSizeMultiplier.EvaluateReplicated(_status))
+                             * EnergyScale(_energy);
+            _energy = 0f;
             Vector3 v = _solver.BallVelocity;
             var init = new AOEExplosion.InitializeStruct
             {
@@ -420,6 +617,7 @@ namespace CosmicShore.Gameplay
                 AffectSelfOverride = !lit,
             };
             ExplosionHelper.CreateExplosion(config.SmashExplosions, init, _impactor ? _impactor.DIContainer : null);
+            return true;
         }
 
         // ------------------------------------------------------------------ the chain
@@ -474,6 +672,7 @@ namespace CosmicShore.Gameplay
                     _cutThisFrame.Add(prism);
                     prism.Slice(v * config.ChainDebrisRestitution, _status.Domain, _status.PlayerName,
                                 onChain, cutNormal.normalized, debrisSpeedLimit: config.DebrisSpeedLimit);
+                    if (prism.destroyed) Bank(config.EnergyPerSlice);   // a cut that only popped a shield banks nothing
                     PlayAt(sliceEvent, onChain);
                 }
             }
@@ -556,9 +755,10 @@ namespace CosmicShore.Gameplay
         float _camDistance;
         float _camWritten = float.NaN;   // the last distance this hull wrote (negative z)
         bool _spectating;
-        Vector3 _spectateNormal, _spectateOutward, _spectateUp;
         float _spectateRadius;
         float _spectateQualifyTime;
+        // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
+        Vector3 _aimDir, _aimUp;
 
         /// <summary>
         /// The local pilot's camera, two jobs (<c>THRESHER.md</c> § Camera):
@@ -566,10 +766,12 @@ namespace CosmicShore.Gameplay
         /// <item><b>Keep the ball in frame.</b> The chase distance is pulled back as far as the
         /// rendered ball needs (<see cref="ThresherCameraFraming.RequiredDistance"/>), FAST, and
         /// eased back toward the prefab's own distance SLOWLY — never nearer than it.</item>
-        /// <item><b>Spectate a fast spin.</b> Once a planted orbit circles faster than
-        /// <c>spectateSpinRate</c>, the camera blends to a still vantage over the orbit and watches
-        /// the ship spin rather than riding it; it re-attaches when the plant is released or the
-        /// spin falls back under the release fraction.</item>
+        /// <item><b>Spectate and AIM a spin.</b> Once a planted orbit circles faster than
+        /// <c>spectateSpinRate</c>, the camera stops riding the spinning hull and looks DOWN on the
+        /// orbit from over the shoulder of the launch path; the sticks then turn that aim (and the
+        /// camera with it) instead of tilting the orbit, a line shows the path, and releasing LT
+        /// flies the ship off along it at once (<see cref="EndPlant"/>). It re-attaches when the
+        /// plant is released or the spin falls back under the release fraction.</item>
         /// </list>
         /// Pose only, through <see cref="CustomCameraController.SetCameraDistance"/> and
         /// <see cref="CustomCameraController.Spectate"/>; FOV belongs to the speed tunnel and is
@@ -635,23 +837,30 @@ namespace CosmicShore.Gameplay
 
             if (!_spectating) return;
             Vector3 pivot = _solver.Pivot;
-            FollowOrbitPlane(ship.position, pivot, dt);
+
+            // AIM. The sticks turn the launch direction in screen terms (right is right, the hull's
+            // pitch sign up/down), and the camera rides the aim, so aiming IS turning the camera.
+            var input = _status.InputStatus;
+            if (input != null)
+                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,
+                    config.AimYawRate * Mathf.Deg2Rad, config.AimPitchRate * Mathf.Deg2Rad, dt);
+
             _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ballRadius,
                 config.CameraZoomOutRate, config.CameraZoomInRate, dt);
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
             _cam.Spectate = new CustomCameraController.SpectateView
             {
-                Position = ThresherCameraFraming.SpectatePosition(pivot, _spectateNormal, _spectateOutward,
+                Position = ThresherCameraFraming.AimVantagePosition(pivot, _aimDir, _aimUp,
                     _spectateRadius, Mathf.Min(halfFovV, halfFovH), config.SpectateTiltDegrees, config.CameraFramingMargin),
                 LookAt = pivot,
-                Up = _spectateUp,
+                Up = _aimDir,   // the launch path always runs up the screen
             };
         }
 
-        /// <summary>Freeze the vantage's frame at the moment of detaching: the orbit's axis on the
-        /// camera's own side of the plane (so it never flips to watch from underneath), the side
-        /// the ship was on, and the screen's up = the way the camera was facing, laid into the
-        /// plane — the ship's heading stays "up" across the cut.</summary>
+        /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
+        /// was facing laid into the orbit plane (so what was "ahead" on screen stays "up" across
+        /// the cut), and the aim camera's "above" is the orbit's axis on the camera's own side, so
+        /// it lifts off over the orbit rather than dropping under it.</summary>
         void BeginSpectate(Vector3 shipPosition)
         {
             Vector3 pivot = _solver.Pivot;
@@ -661,33 +870,14 @@ namespace CosmicShore.Gameplay
             normal.Normalize();
             if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
 
-            Vector3 up = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
-            if (up.sqrMagnitude < 1e-6f) up = outward;
+            Vector3 aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            if (aim.sqrMagnitude < 1e-6f) aim = _lastShipVelocity;
+            if (aim.sqrMagnitude < 1e-6f) return;
 
-            _spectateNormal = normal;
-            _spectateOutward = outward.normalized;
-            _spectateUp = up.normalized;
+            _aimDir = aim.normalized;
+            _aimUp = normal;
             _spectateRadius = _solver.Length;
             _spectating = true;
-        }
-
-        /// <summary>The pilot can tilt a planted orbit (<c>pivotSteer</c>), so the vantage leans
-        /// after the orbit's plane — slowly (<c>spectatePlaneFollowRate</c>), so a steady tilt reads
-        /// as the orbit turning in front of a still camera, never as the camera swinging. The axis
-        /// stays on the camera's side of the plane; outward and up are re-laid into it.</summary>
-        void FollowOrbitPlane(Vector3 shipPosition, Vector3 pivot, float dt)
-        {
-            Vector3 now = Vector3.Cross(shipPosition - pivot, _lastShipVelocity);
-            if (now.sqrMagnitude < 1e-6f) return;
-            now.Normalize();
-            if (Vector3.Dot(now, _spectateNormal) < 0f) now = -now;
-            float t = 1f - Mathf.Exp(-config.SpectatePlaneFollowRate * dt);
-            _spectateNormal = Vector3.Slerp(_spectateNormal, now, t).normalized;
-
-            Vector3 outward = Vector3.ProjectOnPlane(_spectateOutward, _spectateNormal);
-            if (outward.sqrMagnitude > 1e-6f) _spectateOutward = outward.normalized;
-            Vector3 up = Vector3.ProjectOnPlane(_spectateUp, _spectateNormal);
-            if (up.sqrMagnitude > 1e-6f) _spectateUp = up.normalized;
         }
 
         void EndSpectate()
@@ -755,6 +945,13 @@ namespace CosmicShore.Gameplay
         Color BallColor(out float emission)
         {
             Domains domain = PilotDomain();
+            // Mass Mode never smashes, so it never shows red: a builder's ball wears its domain's
+            // LIT colour (it is armouring its own mass) at a steady glow.
+            if (_massMode)
+            {
+                emission = 1.5f;
+                return LitColor(domain);
+            }
             if (IsHot)
             {
                 float heat = ThresherChainSolver.Heat01(_solver.BallSpeed, _settings);
@@ -777,8 +974,23 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void BallShade(out Color body, out Color rim)
         {
+            BallShadeForState(out body, out rim);
+            // The bank: the rim leans toward the CTA lime as the chain's kills charge the next
+            // explosion, so a charged ball is legible before it hits anything.
+            float e = Energy01;
+            if (e > 0f) rim = Color.Lerp(rim, WithMaxChannel(ReadyColor(), config.BallRimHot), e * config.EnergyRimTint);
+        }
+
+        void BallShadeForState(out Color body, out Color rim)
+        {
             Color hue = BallColor(out _);
             float g = Gauge01;
+            if (_massMode)
+            {
+                body = WithMaxChannel(hue, config.BallBodyNearSmash);
+                rim = WithMaxChannel(hue, config.BallRimHot);
+                return;
+            }
             if (IsHot)
             {
                 float heat = ThresherChainSolver.Heat01(_solver.BallSpeed, _settings);
@@ -825,6 +1037,8 @@ namespace CosmicShore.Gameplay
         Transform _ball;
         MeshRenderer[] _ballRenderers;
         LineRenderer _chain;
+        Vector3[] _chainDrawn;
+        LineRenderer _aimLine;
         TrailRenderer _skid;
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
@@ -869,6 +1083,13 @@ namespace CosmicShore.Gameplay
             _chain = MakeLine("Chain", chainMaterial ? chainMaterial : lineMat, false);
             _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
             _chainMpb = new MaterialPropertyBlock();
+
+            // The launch path while aiming a spectated spin: a straight line from the ship along the
+            // aim, in the CTA lime. Local pilot only (it is drawn from the camera's aim).
+            _aimLine = MakeLine("AimPath", lineMat, false);
+            _aimLine.positionCount = 2;
+            _aimLine.numCapVertices = 0;
+            _aimLine.enabled = false;
 
             var skidGo = new GameObject("SkidTrail");
             skidGo.transform.SetParent(_ball, false);
@@ -1013,8 +1234,29 @@ namespace CosmicShore.Gameplay
             _chainMpb.SetColor(BrightColorId, chainRim);
             _chain.SetPropertyBlock(_chainMpb);
             _chain.startColor = _chain.endColor = chainRim;   // the vertex-colour fallback material
-            if (_chain.positionCount != _links.Count) _chain.positionCount = _links.Count;
-            _chain.SetPositions(_links.Points);
+            // Drawn as a smooth curve through the gameplay links (ThresherChainLinks.Smooth), so a
+            // slack chain bends instead of showing a kink at every link.
+            int drawn = ThresherChainLinks.SmoothedCount(_links.Count, config.ChainRenderSubdivisions);
+            if (_chainDrawn == null || _chainDrawn.Length != drawn) _chainDrawn = new Vector3[drawn];
+            int written = ThresherChainLinks.Smooth(_links.Points, config.ChainRenderSubdivisions, _chainDrawn);
+            if (_chain.positionCount != written) _chain.positionCount = written;
+            _chain.SetPositions(_chainDrawn);
+
+            if (_aimLine)
+            {
+                bool aiming = _spectating && IsLocalPilot();
+                _aimLine.enabled = aiming;
+                if (aiming)
+                {
+                    Color lime = ReadyColor();
+                    _aimLine.startColor = lime;
+                    _aimLine.endColor = new Color(lime.r, lime.g, lime.b, 0f);
+                    _aimLine.startWidth = config.AimLineWidth;
+                    _aimLine.endWidth = config.AimLineWidth * 0.5f;
+                    _aimLine.SetPosition(0, ship);
+                    _aimLine.SetPosition(1, ship + _aimDir * config.AimLineLength);
+                }
+            }
 
             // Skid trail while planting.
             if (_skid)

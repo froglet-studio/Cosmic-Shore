@@ -24,9 +24,9 @@ MonoBehaviour:
     UpgradeLabel: Lit
     UpgradeDescription: 'The hot ball burns your LIT domain colour instead of red; its explosions spare your own domain''s prisms (AffectSelfOverride off - the fleet''s domain-sparing-in-the-explosion-layer rule) and it bounces off your own domain''s mass even when hot. Gated on IsUpgradeActive(Charge) in ThresherExecutor.'
   - Element: 2
-    AbilityLabel: Heavy Iron
-    AbilityDescription: 'The ball''s weight - PASSIVE. Mass scales the ball''s MASS (a heavier ball tugs the ship harder and swings with more momentum) and, because Mass is volume, its RADIUS with the cube root: ThresherConfigSO.ballMassMultiplier, x1 at rest -> x1.75 at level 10 (floor x0.5).'
-    Input: 0
+    AbilityLabel: Mass Mode
+    AbilityDescription: 'The A button TOGGLES Mass Mode: the ball builds instead of breaking. It STEALS the rival prisms it touches, SHIELDS your own, lays a trail of your prisms behind it and never explodes - and the energy the chain''s kills bank in the ball keeps building instead of being spent, so leaving Mass Mode makes the next rival hit a bigger blast. Mass also scales the ball''s MASS (a heavier ball tugs the ship harder and swings with more momentum) and, because Mass is volume, its RADIUS with the cube root: ThresherConfigSO.ballMassMultiplier, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

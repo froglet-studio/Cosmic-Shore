@@ -6,7 +6,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Thresher's HUD readouts (design: <c>R_VesselActions/THRESHER.md</c>). The row order IS
-    /// the element map: <b>Wrecking Ball (charge) · Heavy Iron (mass) · Winch (space) · Plant
+    /// the element map: <b>Wrecking Ball (charge) · Mass Mode (mass) · Winch (space) · Plant
     /// (time)</b>.
     ///
     /// <para>Two gauges, each answering the one question its trigger poses:</para>
@@ -19,7 +19,8 @@ namespace CosmicShore.UI
     /// (READY), the same cue the chain itself gives. Its colour EASES to lime and back
     /// (<c>colorBlendRate</c>), the same quick blend as the chain's — never a flicker.</item>
     /// </list>
-    /// Mass and Time are passive/held states with nothing a pilot waits on, so they get no gauge.
+    /// Mass (the A toggle) and Time (a hold) are states with nothing a pilot waits on, so they get no gauge;
+    /// Mass Mode and the chain's banked energy read on the ball itself (lit colour; a lime-leaning rim).
     /// Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this view only
     /// re-anchors its captured rest scales in <see cref="SetAbilityUpgraded"/>.
     /// </summary>

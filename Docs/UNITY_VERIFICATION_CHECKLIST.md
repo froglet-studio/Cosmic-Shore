@@ -65,6 +65,51 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher: earlier spectate + stick AIM, smooth 24-link chain, chain energy, Mass Mode (A), omni windmill (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`R_VesselActions/THRESHER.md` §1, §2a–2c, §5, §5a):
+- **Spectate sooner** (`spectateSpinRate` 1.8 → 0.9 rad/s, engage 0.2 → 0.1 s) to an **aim camera**
+  that looks down on the orbit from behind the launch direction; the sticks turn the aim (and the
+  camera) instead of tilting the orbit; a lime line shows the path; LT up flies off along it at once.
+- **Chain**: 24 gameplay links (was 12), drawn as a Catmull-Rom curve (6 segments per link).
+- **Chain energy**: each chain kill banks 1 (cap 30); the ball's next rival hit explodes even below
+  smash speed, diameter × (1 + 0.1 × bank, cap ×4). Rim leans lime with the bank.
+- **Mass Mode** (A = `Button1Action`, toggle; new `ThresherMassModeAction.asset` in the prefab's
+  shared map): the ball steals rivals, shields own, lays a trail through the hull's spawn channel,
+  never explodes, banks 0.5 per steal. The Mass map entry is now "Mass Mode", `Input: 6`.
+- **Windmill** (`ThresherWindmillByCrystalEffectSO` in `ThresherImpactorDataContainer.vesselCrystalEffects`):
+  an omni crystal makes the ball circle the ship red-hot across its flight for 6 s.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` RESULT OK
+(0 errors in project code); `thresher_chain_harness` runs the shipped solver + test file, 52/52 pass
+(6 new: windmill radius/plane/heat/release/top-up, chain smoothing through every link, aim orthonormality
+and screen-right sign, aim vantage tilt/side, long-chain relaxation); `peer_press_harness` clean;
+`element_ability_table.py Thresher` 4/4 with Mass on `A / Space`.
+
+**Verify in editor** (Toy Box > Vessel Changer → Thresher; THRESHER.md § In-editor verification 11–15):
+1. Plant reeled in: the camera lifts off almost at once and looks DOWN with a lime line up the
+   screen from the ship. Stick right → line and camera swing right; pitch → up/down; the orbit does
+   NOT tilt. Release LT mid-spin → the ship leaves along the line immediately. Note any camera
+   whip on the release and whether stick-Y feels inverted (sign: the hull's nose-down convention).
+2. Swing a slack chain: no kinks at link joints. Taut: straight.
+3. Chain-slice rival prisms → ball rim leans lime. Slow ball into a rival prism → explosion sized by
+   the bank; rim resets. Own-trail bounce → no blast.
+4. Press A (gamepad A / Space): ball goes lit. Through rival trail → prisms flip to your domain, no
+   blasts even red-hot; through own trail → shields appear; a trail of your prisms follows the
+   ball. Press A again, hit a rival → one big blast. Console clean (no `[PrismSpawner]` errors).
+5. Fly through an OMNI crystal → ball windmills round the ship ~6 s, red-hot, smashing; RT resizes
+   it. An elemental crystal does not trigger it.
+6. MPPM two clients: guest sees the host's windmill and Mass Mode trail; host's aimed release
+   reaches the guest within a frame or two (the yank direction is owner-decided, see §9).
+
+**First-pass tuning** (all `ThresherConfig.asset`): `spectateSpinRate` 0.9, `spectateTiltDegrees` 30,
+`aimYawRate` 180 / `aimPitchRate` 120 °/s, `aimLineLength` 150; `chainLinks` 24, `chainRenderSubdivisions` 6;
+`energyPerSlice` 1, `energyPerSteal` 0.5, `energyMax` 30, `energyDiameterPerUnit` 0.1, `energyMaxDiameterScale` 4;
+`massTrailSpacing` 6, `massTrailPrismScale` (8, 0.75, 5.5), `massTrailMaxPerFrame` 3; `windmillSeconds` 6,
+`dials.windmillSpeed` 1000 (sandbox; 184 u/s).
+
+---
+
 ### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator

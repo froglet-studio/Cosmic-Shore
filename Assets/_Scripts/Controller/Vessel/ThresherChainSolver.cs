@@ -21,6 +21,8 @@ namespace CosmicShore.Gameplay
         public float SkidRate, SkidSeconds, LockKeep, LockSpinRate, LockMaxSpeed, Yank;
         /// <summary>Max rate (rad/s) at which full stick tilts a planted orbit's plane.</summary>
         public float PivotSteerRate;
+        // Windmill (an omni crystal): the ball circles the SHIP at this speed for a while
+        public float WindmillSpeed;
         // Reference
         public float CruiseSpeed;
     }
@@ -111,6 +113,12 @@ namespace CosmicShore.Gameplay
                  "0 = sticks ignored while planted. A rate, so not scaled.")]
         [SerializeField] float pivotSteer = 45f;
 
+        [Header("Windmill (omni crystal)")]
+        [Tooltip("Collecting an OMNI crystal throws the ball into a windmill: it circles the ship at this speed " +
+                 "(sandbox units/s; 1000 sits between smash 700 and white-hot 1300, so the windmill is red-hot " +
+                 "all the way round) in the plane across the ship's flight, at the chain's current length.")]
+        [SerializeField] float windmillSpeed = 1000f;
+
         /// <summary>Sandbox → game length/speed factor.</summary>
         public float Scale => sandboxCruise > 0f ? gameCruise / sandboxCruise : 1f;
         public float GameCruise => gameCruise;
@@ -145,6 +153,7 @@ namespace CosmicShore.Gameplay
                 LockMaxSpeed = lockMax * gameCruise,
                 Yank = Mathf.Max(0f, yank),
                 PivotSteerRate = Mathf.Max(0f, pivotSteer) * Mathf.Deg2Rad,
+                WindmillSpeed = Mathf.Max(0f, windmillSpeed) * k,
                 CruiseSpeed = gameCruise,
             };
         }
@@ -159,6 +168,9 @@ namespace CosmicShore.Gameplay
         Skidding = 1,
         /// <summary>The ball is planted in space and the SHIP swings round it.</summary>
         Pivot = 2,
+        /// <summary>An omni crystal: the ball circles the SHIP like a windmill's sails, across its
+        /// line of flight, for a while (<see cref="ThresherChainSolver.StartWindmill"/>).</summary>
+        Windmill = 3,
     }
 
     /// <summary>One frame's answer from <see cref="ThresherChainSolver.Step"/>.</summary>
@@ -219,6 +231,10 @@ namespace CosmicShore.Gameplay
         Vector3 _lockDirection;
         float _skidTime;
         bool _wasSlack;
+        float _windmillRadius;
+
+        /// <summary>Seconds of windmill left; 0 outside <see cref="ThresherMode.Windmill"/>.</summary>
+        public float WindmillTimeLeft { get; private set; }
 
         /// <summary>Fraction below full length at which the chain counts as SLACK for the crack.
         /// A chain riding taut frame after frame must not crack every frame; it has to go slack
@@ -240,6 +256,7 @@ namespace CosmicShore.Gameplay
             LockSpeed = 0f;
             _skidTime = 0f;
             _wasSlack = false;
+            WindmillTimeLeft = 0f;
             IsTaut = true;
         }
 
@@ -260,6 +277,9 @@ namespace CosmicShore.Gameplay
         /// smash speed, so the ball leaves the pivot hot.</summary>
         public void Release(Vector3 shipVelocity, bool slingshot = false)
         {
+            // The windmill owns the ball until it runs out; a left-trigger release mid-windmill
+            // (the trigger was held when the crystal was collected) must not cut it short.
+            if (Mode == ThresherMode.Windmill) return;
             if (Mode == ThresherMode.Pivot)
             {
                 Vector3 yank = shipVelocity * Settings.Yank;
@@ -270,6 +290,25 @@ namespace CosmicShore.Gameplay
             Mode = ThresherMode.Free;
             LockSpeed = 0f;
             _wasSlack = false;
+        }
+
+        /// <summary>
+        /// An omni crystal: for <paramref name="seconds"/> the ball circles the SHIP at
+        /// <see cref="ThresherChainSettings.WindmillSpeed"/>, in the plane across the ship's line of
+        /// flight (a windmill's sails facing the wind), at the chain's length — the winch still
+        /// works, so the pilot sizes the windmill. A planted pivot is abandoned (the ship flies on at
+        /// its orbit velocity). Collecting another crystal mid-windmill tops the clock up, never
+        /// stacks it. When the clock runs out the ball is let go Free at the speed it has, and the
+        /// ordinary rope takes over.
+        /// </summary>
+        public void StartWindmill(Vector3 shipPosition, float seconds)
+        {
+            if (seconds <= 0f) return;
+            if (Mode != ThresherMode.Windmill)
+                _windmillRadius = Mathf.Max(1e-3f, (BallPosition - shipPosition).magnitude);
+            Mode = ThresherMode.Windmill;
+            LockSpeed = 0f;
+            WindmillTimeLeft = Mathf.Max(WindmillTimeLeft, seconds);
         }
 
         // ------------------------------------------------------------------ the step
@@ -289,6 +328,12 @@ namespace CosmicShore.Gameplay
         {
             var result = new ThresherStepResult { ShipVelocity = shipVelocity, BallFrom = BallPosition };
             if (dt <= 0f) return result;
+
+            if (Mode == ThresherMode.Windmill)
+            {
+                StepWindmill(shipPosition, shipVelocity, payOut, dt);
+                return result;   // the ship flies on untouched: the windmill pulls on nothing
+            }
 
             if (Mode == ThresherMode.Pivot)
             {
@@ -419,6 +464,47 @@ namespace CosmicShore.Gameplay
             }
 
             BallVelocity = shipVelocity + n * radial + tangential;
+        }
+
+        // ------------------------------------------------------------------ the windmill
+
+        /// <summary>
+        /// One windmill frame. The ball's offset from the ship is laid into the plane across the
+        /// ship's velocity (parallel transport: the sails keep their phase as the ship turns), turned
+        /// about that velocity by <c>WindmillSpeed / radius × dt</c>, and put back at the radius,
+        /// which eases onto the chain's length at the reel rate so the ball is pulled onto the circle
+        /// rather than teleported there. The ball's velocity is what that move implies, so the sweep
+        /// and the heat colour see the real speed (ship velocity + the sails' tangential speed).
+        /// </summary>
+        void StepWindmill(Vector3 shipPosition, Vector3 shipVelocity, bool payOut, float dt)
+        {
+            Length = payOut
+                ? Mathf.Min(Settings.MaxLength, Length + Settings.PayOutRate * dt)
+                : Mathf.Max(Settings.RestLength, Length - Settings.ReelInRate * dt);
+            _windmillRadius = Mathf.MoveTowards(_windmillRadius, Length,
+                Mathf.Max(Settings.PayOutRate, Settings.ReelInRate) * dt);
+
+            Vector3 axis = shipVelocity.sqrMagnitude > 1e-6f ? shipVelocity.normalized
+                : (_lockDirection.sqrMagnitude > 1e-6f ? _lockDirection : Vector3.forward);
+            _lockDirection = axis;
+            Vector3 radial = Vector3.ProjectOnPlane(BallPosition - shipPosition, axis);
+            radial = radial.sqrMagnitude > 1e-8f ? radial.normalized : AnyPerpendicular(axis, Vector3.up);
+
+            float radius = Mathf.Max(1e-3f, _windmillRadius);
+            float angle = Settings.WindmillSpeed / radius * dt;
+            Vector3 sail = Vector3.Cross(axis, radial);   // the sails' direction of travel
+            Vector3 turned = (radial * Mathf.Cos(angle) + sail * Mathf.Sin(angle)).normalized;
+
+            Vector3 ballNext = shipPosition + shipVelocity * dt + turned * radius;
+            BallVelocity = Vector3.ClampMagnitude((ballNext - BallPosition) / dt, Settings.MaxBallSpeed);
+            BallPosition = ballNext;
+            IsTaut = true;
+
+            WindmillTimeLeft -= dt;
+            if (WindmillTimeLeft > 0f) return;
+            WindmillTimeLeft = 0f;
+            Mode = ThresherMode.Free;
+            _wasSlack = false;
         }
 
         // ------------------------------------------------------------------ the pivot
@@ -570,7 +656,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool Bounce(Vector3 contact, Vector3 outwardNormal)
         {
-            if (Mode == ThresherMode.Pivot || outwardNormal.sqrMagnitude < 1e-8f) return false;
+            if (Mode == ThresherMode.Pivot || Mode == ThresherMode.Windmill || outwardNormal.sqrMagnitude < 1e-8f) return false;
             Vector3 n = outwardNormal.normalized;
             float into = Vector3.Dot(BallVelocity, n);
             if (into >= 0f) return false;
@@ -584,7 +670,8 @@ namespace CosmicShore.Gameplay
         /// path order, so a long row costs the ball speed one prism at a time.</summary>
         public void RegisterHit(float keep)
         {
-            if (Mode == ThresherMode.Pivot) return;
+            // A planted ball has no speed to lose, and a windmill's ball is driven round its circle.
+            if (Mode == ThresherMode.Pivot || Mode == ThresherMode.Windmill) return;
             BallVelocity *= Mathf.Clamp01(keep);
         }
     }
@@ -657,6 +744,54 @@ namespace CosmicShore.Gameplay
             }
             Points[0] = hull;
             Points[n - 1] = ball;
+        }
+
+        /// <summary>Verlet relaxation passes for a chain of <paramref name="links"/>: a max-distance
+        /// rope converges one link per pass, so a longer chain needs more of them or it reads as
+        /// stretched (and its middle sags) while the ends are already taut.</summary>
+        public static int IterationsFor(int links) => Mathf.Max(6, (links + 1) / 2);
+
+        /// <summary>Points a smoothed copy of <paramref name="points"/> needs at
+        /// <paramref name="subdivisions"/> drawn segments per link.</summary>
+        public static int SmoothedCount(int points, int subdivisions)
+            => points < 2 ? points : (points - 1) * Mathf.Max(1, subdivisions) + 1;
+
+        /// <summary>
+        /// The DRAWN chain: a uniform Catmull-Rom curve through the gameplay links, with
+        /// <paramref name="subdivisions"/> segments per link, written into <paramref name="output"/>
+        /// (length <see cref="SmoothedCount"/>). It passes through every link exactly, so the
+        /// drawn chain never strays from the one that cuts by more than the curve's bow between two
+        /// links; the end tangents mirror their neighbour so the pins are not kinked either.
+        /// Returns the number of points written.
+        /// </summary>
+        public static int Smooth(Vector3[] points, int subdivisions, Vector3[] output)
+        {
+            int n = points.Length;
+            int sub = Mathf.Max(1, subdivisions);
+            int count = SmoothedCount(n, sub);
+            if (output == null || output.Length < count) return 0;
+            if (n < 2)
+            {
+                for (int i = 0; i < n; i++) output[i] = points[i];
+                return n;
+            }
+
+            int w = 0;
+            for (int i = 0; i < n - 1; i++)
+            {
+                Vector3 p1 = points[i], p2 = points[i + 1];
+                Vector3 p0 = i > 0 ? points[i - 1] : 2f * p1 - p2;
+                Vector3 p3 = i + 2 < n ? points[i + 2] : 2f * p2 - p1;
+                for (int k = 0; k < sub; k++)
+                {
+                    float t = k / (float)sub, t2 = t * t, t3 = t2 * t;
+                    output[w++] = 0.5f * (2f * p1 + (p2 - p0) * t
+                                          + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
+                                          + (3f * p1 - p0 - 3f * p2 + p3) * t3);
+                }
+            }
+            output[w++] = points[n - 1];
+            return w;
         }
     }
 
@@ -766,6 +901,60 @@ namespace CosmicShore.Gameplay
             float a = tiltDegrees * Mathf.Deg2Rad;
             Vector3 dir = normal.normalized * Mathf.Cos(a) + outward.normalized * Mathf.Sin(a);
             return pivot + dir.normalized * d;
+        }
+
+        /// <summary>
+        /// The AIM camera of a spectated orbit: it looks DOWN on the orbit from over the shoulder of
+        /// the launch direction. <paramref name="aim"/> is where a release would send the ship and
+        /// <paramref name="aimUp"/> the camera's "above" (both unit, perpendicular). The camera sits
+        /// <paramref name="tiltDegrees"/> off straight-down-<paramref name="aimUp"/>, leaning BACK
+        /// from the aim, far enough that an orbit of <paramref name="radius"/> fits the narrower
+        /// half-angle with <paramref name="margin"/> from any side; it looks at the pivot with the
+        /// aim as screen-up, so the launch path always runs up the screen.
+        /// </summary>
+        public static Vector3 AimVantagePosition(Vector3 pivot, Vector3 aim, Vector3 aimUp, float radius,
+                                                 float halfFovRad, float tiltDegrees, float margin)
+        {
+            float tan = Mathf.Max(0.05f, Mathf.Tan(halfFovRad));
+            float d = radius * Mathf.Max(1f, margin) / tan;
+            float a = tiltDegrees * Mathf.Deg2Rad;
+            Vector3 dir = aimUp.normalized * Mathf.Cos(a) - aim.normalized * Mathf.Sin(a);
+            return pivot + dir.normalized * d;
+        }
+
+        /// <summary>
+        /// Turn the aim with the stick, in SCREEN terms for the aim camera (screen-up = the aim,
+        /// screen-right = aimUp × aim): stick X swings the aim right/left about
+        /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it
+        /// toward/away from the camera at <paramref name="pitchRate"/> (rad/s) — positive Y moves it
+        /// away/down, the hull's own nose-down sign, so the pilot's pitch inversion carries over.
+        /// Pitch turns aim and aimUp together (the camera rolls over with it), so the aim can be
+        /// swung anywhere on the sphere. Both stay unit and perpendicular.
+        /// </summary>
+        public static void TurnAim(ref Vector3 aim, ref Vector3 aimUp, float stickX, float stickY,
+                                   float yawRate, float pitchRate, float dt)
+        {
+            float yaw = Mathf.Clamp(stickX, -1f, 1f) * yawRate * dt;
+            float pitch = Mathf.Clamp(stickY, -1f, 1f) * pitchRate * dt;
+
+            if (Mathf.Abs(yaw) > 0f)
+            {
+                Vector3 right = Vector3.Cross(aimUp, aim);
+                aim = aim * Mathf.Cos(yaw) + right * Mathf.Sin(yaw);
+            }
+            if (Mathf.Abs(pitch) > 0f)
+            {
+                Vector3 a = aim * Mathf.Cos(pitch) - aimUp * Mathf.Sin(pitch);
+                aimUp = aimUp * Mathf.Cos(pitch) + aim * Mathf.Sin(pitch);
+                aim = a;
+            }
+
+            // Re-orthonormalise: the aim is the authority, aimUp is laid perpendicular to it.
+            aim = aim.sqrMagnitude > 1e-8f ? aim.normalized : Vector3.forward;
+            aimUp = Vector3.ProjectOnPlane(aimUp, aim);
+            if (aimUp.sqrMagnitude < 1e-8f) aimUp = Vector3.Cross(aim, Vector3.right);
+            if (aimUp.sqrMagnitude < 1e-8f) aimUp = Vector3.Cross(aim, Vector3.forward);
+            aimUp.Normalize();
         }
     }
 }

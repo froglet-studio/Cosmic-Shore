@@ -5,7 +5,9 @@
 tail; a thresher is also what a flail is). A small, nimble two-stick ship towing a heavy wrecking
 ball on a chain. Turn hard and the ball whips round; wind the chain out and let it reel in, and the
 ball cracks red-hot through everything. The **chain slices**, the **ball is always destructive**,
-and prisms are **binary** — there is no partial damage anywhere.
+and prisms are **binary** — there is no partial damage anywhere. The chain's kills **charge** the
+ball's next explosion; **A** switches to **Mass Mode**, where the ball builds instead of breaking;
+an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13).
 
 The mechanic was prototyped in a 2D browser sandbox (cruise 380 u/s). Every chain dial is authored
 in the sandbox's units and scaled to this game by one factor (§4), so the two read side by side.
@@ -18,10 +20,14 @@ in the sandbox's units and scaled to this game by one factor (§4), so the two r
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
 | **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain turns **lime** (the palette's CTA colour, a quick ease, never a flicker) while releasing now would reach smash speed (READY). |
 | **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 45 °/s (under half of free flight's 120), never the spin. |
-| **LT release** | | | Fly off along the orbit's tangent; the ball is yanked after you (`yank`). |
+| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, straight along the **aim** the sticks have set (§5a), the instant LT comes up; the ball is yanked after you (`yank`). |
+| **A press** (Mass Mode) | `Button1Action` (6), shared map | `Button1Action` (on-screen button) | **Toggle** Mass Mode (§2b). The release is ignored (rule 37). |
 
-The bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
+The trigger bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
 Left/Right Shift; one-thumb mouse: LMB/RMB. The triggers are read as press/release EDGES only.
+Mass Mode is `Button1Action`, which the gamepad strategy fires from `buttonSouth` (A on an Xbox
+pad; the enum's own comment says "X" and is stale) and the keyboard from Space; it lives in the
+SHARED map (`_inputEventShipActions`), so every device resolves it the same way.
 
 ## 2. What the ball and the chain do to prisms
 
@@ -50,14 +56,60 @@ Left/Right Shift; one-thumb mouse: LMB/RMB. The triggers are read as press/relea
   velocity. It **never cuts its own domain**, and skips shielded prisms — **Space L5 Reaper Chain**
   makes it cut while slack too, and cut shields (the first cut pops one).
 - **Own fresh trail**: the fleet's one rule (`SelfTrailContactConfigSO.SuppressesSkimContact`) — the
-  ball and chain ignore prisms this pilot laid within the grace window.
+  ball and chain ignore prisms this pilot laid within the grace window (Mass Mode's ball trail
+  included — it is stamped with the pilot's `ownerID`).
+
+## 2a. Chain energy — the chain's kills charge the ball
+
+Every prism the chain **destroys** (a cut that only pops a shield banks nothing) banks
+`energyPerSlice` 1 in the ball, up to `energyMax` 30. The ball's next hit on a **rival** prism
+releases the whole bank as an explosion **even below smash speed** — the same Grizzly blast as a
+smash, with the same Lit rule — and a smash's own explosion spends it too. The bank multiplies the
+diameter: `× min(energyMaxDiameterScale 4, 1 + energyDiameterPerUnit 0.1 × energy)`, on top of the
+Charge scaling (so 10 slices = ×2, 30 = ×4 → 180 u at rest Charge, 360 u at full). A hit that
+lands inside `explosionMinInterval` keeps the bank for the next one. The ball's rim leans toward
+the CTA lime with the bank (`energyRimTint` 0.6 at full), so a charged ball reads before it hits.
+Own-domain bounces never spend it.
+
+## 2b. Mass Mode (A, toggle) — the ball builds instead of breaking
+
+| Ball touches… | Mass Mode does | Speed cost |
+|---|---|---|
+| a **rival** prism | **steals** it (`Prism.Steal` — a shielded rival sheds its shield first and changes hands on the next touch; super-shielded refuses), banking `energyPerSteal` 0.5 | none |
+| an **own-domain** prism | **shields** it (`ActivateShield`, untimed; an already-armoured prism is left alone) | none |
+| anything, at any speed | **never explodes** and never destroys — the bank is held, not spent | — |
+
+- **The ball lays a trail**: one prism of the pilot's domain per `massTrailSpacing` 6 u of the
+  ball's own travel, `massTrailPrismScale` (8, 0.75, 5.5), oriented along its path, through the
+  hull's OWN spawn channel and prism type (`VesselPrismController.PrismSpawnChannel` /
+  `SpawnPrismType`), so it is ordinary conserved trail mass. Owed in distance, paid in whole
+  prisms, at most `massTrailMaxPerFrame` 3 per frame with the excess dropped (rule 17). The prisms
+  go into a `Trail` the executor owns (never the hull's wake), so they are a ribbon and
+  identity-testable. A planted ball does not move and lays nothing.
+- The chain still slices in Mass Mode, and its kills still bank.
+- The ball wears its domain's **lit** colour in Mass Mode (it never shows red: it does not smash).
+- Leave Mass Mode (A again) and the next rival hit spends everything banked.
+
+## 2c. Windmill — an omni crystal
+
+`ThresherWindmillByCrystalEffectSO`, the one entry added to `ThresherImpactorDataContainer.
+vesselCrystalEffects` (the OMNI list — elemental crystals dispatch elsewhere and still only level
+an element). For `windmillSeconds` 6 the ball circles the **ship** at `windmillSpeed` 1000 sandbox
+(184 u/s — between smash 129 and white-hot 240, so it is red-hot all the way round) in the plane
+ACROSS the ship's flight, like a windmill's sails, at the chain's length — the winch still works,
+so RT sizes the windmill. The ship flies on untouched; the ball eases onto the circle at the reel
+rate rather than teleporting. A planted pivot is abandoned; an LT release mid-windmill does not cut
+it short; a second crystal tops the clock back up, never stacks it. When it runs out the ball is let
+go at the speed it has and the rope takes over. It sweeps and explodes exactly as any hot ball (or
+steals/shields in Mass Mode). Runs on every peer: `VesselImpactor.ExecuteOmniCrystalImpact` is
+routed to all of them.
 
 ## 3. Elements (approved 2026-10-08) — one parameter per element
 
 | Element | Ability | Scales (`ThresherConfigSO`, `EvaluateReplicated`) | Level 5 |
 |---|---|---|---|
 | Charge | **Wrecking Ball** (passive) | `explosionSizeMultiplier` ×1 → ×2 (floor ×0.5) | **Lit** — lit colour, explosions spare own domain, bounces own domain even hot |
-| Mass | **Heavy Iron** (passive) | `ballMassMultiplier` ×1 → ×1.75 on mass; radius × its cube root | **Wrecker** — a smash costs the ball no speed |
+| Mass | **Mass Mode** (A, toggle; was the passive Heavy Iron until 2026-10-13) | `ballMassMultiplier` ×1 → ×1.75 on mass; radius × its cube root | **Wrecker** — a smash costs the ball no speed |
 | Space | **Winch** (RT) | `chainReachMultiplier` ×1 → ×1.5 on `maxLen` | **Reaper Chain** — cuts slack and shielded |
 | Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap | **Slingshot** — unlock yank ≥ smash speed |
 
@@ -110,6 +162,7 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 | `skid` / `skidSeconds` / `lockKeep` | 7 / 0.3 s / 1 | same | plant brake, duration, speed kept |
 | `lockSpin` / `lockMax` / `yank` | 220 /s² / 2.2 / 0.5 | 40.5 u/s² / 154 u/s / 0.5 | spin-up (× Time), cap (× Time), unlock yank |
 | `pivotSteer` | 45 °/s | 45 °/s | full-stick steering while planted (a rate, unscaled; 0 = sticks ignored) |
+| `windmillSpeed` | 1000 | 184.2 u/s | the omni-crystal windmill's sail speed (§2c) |
 
 Measured feel (`Tools/Build/thresher_chain_harness`, 60 Hz, rest levels; peak ball speed × smash):
 steady turns reeled in 15/30/60/90/120 °/s → 0.62/0.74/0.94/1.09/1.21, let out → 0.54/0.52/0.38/0.38/0.38
@@ -141,7 +194,11 @@ Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2
   drawn ball's ROLL is capped at `ballMaxVisualSpin` 540 °/s: a white-hot ball truly rolls ~7000
   °/s, which at 60 fps strobed the studs backwards (wagon-wheel) and read as jitter. **No dial on
   the ball** — the heat gauge lives only on the HUD's Charge card. A skid trail while planting.
-- **The chain** IS the gameplay chain (the 12 links), drawn as a **fresnel tube** —
+- **The chain** IS the gameplay chain (`chainLinks` **24** links since 2026-10-13, was 12; relaxed
+  with `ThresherChainLinks.IterationsFor` passes so a long rope does not read stretched), DRAWN as
+  a uniform **Catmull-Rom curve** through the links (`ThresherChainLinks.Smooth`,
+  `chainRenderSubdivisions` 6 segments per link — 139 drawn points) so a slack chain bends smoothly
+  instead of kinking at every link. The curve passes through every link exactly. It is a **fresnel tube** —
   **`ThresherChainMaterial` / `ThresherChainFresnelShader`**. It is a LineRenderer (a VIEW-aligned
   ribbon), whose normals all face the lens, so a mesh fresnel would be flat; but a view-aligned
   ribbon is exactly a cylinder's silhouette, and across a unit cylinder seen side-on `N·V =
@@ -190,20 +247,31 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   (reeled in; 67° let out — measured offline by mimicking the transformer, while the rope's own
   tug turns it at most 85–131 °/s). That was the camera "getting whipped around". Below the cap the
   frame tracks the hull exactly, so ordinary flying is unchanged; a snap is spread over ~0.4 s.
-- **Spectate a fast spin.** Once a planted orbit circles at `spectateSpinRate` **1.8 rad/s
-  (~100 °/s)** or faster, the camera detaches: `CustomCameraController.Spectate` (a new, default-null
-  seam) blends over `spectateBlendSeconds` 0.6 s to a still vantage on the orbit's axis, tilted
-  `spectateTiltDegrees` 25° toward the side the ship was on, far enough that the whole orbit fits
-  the narrower FOV with margin, looking at the pivot; screen-up is the way the camera was facing,
-  laid into the orbit plane, so the ship's heading stays "up" across the cut. It watches the ship
-  spin. It re-attaches (blending back out) on releasing LT or when the spin falls under
-  `spectateReleaseFraction` 0.75 of the threshold. It detaches only after the spin has held over the
-  threshold for `spectateEngageSeconds` 0.2 s, so a tap of LT does not bob the camera up and
-  straight back down. At the shipped dials planting reeled in at cruise
-  is already 3.2 rad/s (spectates at once); a fully let-out orbit at its cap is 1.1 rad/s (ridden),
-  1.9 at full Time (spectates). While detached the vantage LEANS after the orbit's plane at
-  `spectatePlaneFollowRate` 1.5/s, so steering a planted orbit turns it in front of a still camera
-  instead of leaving it to drift out of an obsolete view.
+- **Spectate a spin — and AIM it** (re-cut 2026-10-13: the old 1.8 rad/s threshold still made
+  spectators sick). Once a planted orbit circles at `spectateSpinRate` **0.9 rad/s (~52 °/s)** or
+  faster for `spectateEngageSeconds` **0.1 s**, the camera detaches (`CustomCameraController.
+  Spectate`, blending over `spectateBlendSeconds` 0.6 s) to an **aim camera**: it looks DOWN on the
+  orbit from over the shoulder of the launch direction — `spectateTiltDegrees` 30° off straight-down,
+  leaning back from the aim (`ThresherCameraFraming.AimVantagePosition`), far enough that the whole
+  orbit fits the narrower FOV from any side, looking at the pivot, with the **aim as screen-up** so
+  the launch path always runs up the screen. The aim starts as the way the chase camera was facing,
+  laid into the orbit plane, so "ahead" stays "up" across the cut.
+  - **The sticks aim; they no longer tilt the orbit.** `ThresherCameraFraming.TurnAim`: stick X swings
+    the aim right/left in screen terms at `aimYawRate` 180 °/s, stick Y pitches it at `aimPitchRate`
+    120 °/s with the hull's nose-down sign (so the pilot's pitch inversion carries over), and the
+    camera rides the aim — aiming IS turning the camera. The aim can go anywhere on the sphere.
+    `ThresherVesselTransformer.PivotSteer` returns zero while `IsAiming`.
+  - **A lime line** (`aimLineLength` 150 u, `aimLineWidth` 1.2) runs from the ship along the aim:
+    the path a release will fly.
+  - **Release costs no time.** LT up flies the ship off along the aim *at once*, from wherever on the
+    circle it is, at the orbit's speed (`EndPlant` snapshots the aim; the transformer faces the hull
+    along it on the release edge and grip puts the momentum on the nose the same frame). There is
+    no waiting for the tangent to come round. The ball is yanked along the aim too.
+  - It re-attaches on releasing LT or when the spin falls under `spectateReleaseFraction` 0.75 of
+    the threshold. At the shipped dials every orbit at its cap now spectates (reeled in at cruise
+    3.2 rad/s, let out at its cap 1.1); only a let-out orbit hooked on at the crawl floor (0.3 rad/s)
+    is ridden until it spins up. Below the threshold the old behaviour stands: the sticks tilt the
+    orbit at `pivotSteer` and LT releases on the tangent.
 - **The camera seam** (`CustomCameraController.Spectate` / `SpectateBlendSeconds` /
   `SpectateView`): applied as a BLEND over the settled follow pose, before shake and the portal
   carry; the follow pose is kept separately while blended so the chase smoothing never chases the
@@ -244,14 +312,16 @@ frame of drift. Untested in MPPM.
 | `R_VesselActions/Data Containers/ThresherActionSO.cs` / `ThresherConfigSO.cs` | Trigger routing; every dial |
 | `UI/Controller/ThresherHUDController.cs`, `UI/View/ThresherHUDView.cs` | HUD pair |
 | `_Prefabs/Spacevessels/Thresher.prefab`, `_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab` | Hull (Squirrel clone), HUD |
-| `_SO_Assets/VesselActions/Thresher/*.asset` | Config, Winch and Plant actions |
+| `_SO_Assets/VesselActions/Thresher/*.asset` | Config, Winch, Plant and Mass Mode actions |
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
 | `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
 | `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null) and `MaxFollowTurnRate` follow-frame cap (default 0), §5a |
+| `ImpactEffects/EffectsSO/Vessel Crystal Effects/ThresherWindmillByCrystalEffectSO.cs`, `_SO_Assets/Effects/Vessel Crystal Effects/ThresherWindmillByCrystalEffect.asset` | The omni-crystal windmill (§2c), wired into `ThresherImpactorDataContainer.vesselCrystalEffects` |
+| `_SO_Assets/VesselActions/Thresher/ThresherMassModeAction.asset` | `ThresherActionSO` `control: MassMode`, bound to `Button1Action` in the prefab's shared map (§2b) |
 | `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 46 tests (solver, planted steering, camera framing and reach envelope); offline runner + feel table |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 52 tests (solver, planted steering, windmill, chain smoothing, camera framing, reach envelope, aim camera); offline runner + feel table |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -265,8 +335,15 @@ prefab, `DriftAudioController`, jets and tails.
   (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.
 - The chase camera can sit well back (up to ~240 u at full Space) whenever the chain is out and the
   ball trails behind; the ball then sits low in the frame, between the lens and the hull.
-- Planted steering is hull-relative, so in the spectate view (looking down the orbit's axis) the
-  stick still means "the way the nose would go", not "toward the top of the screen".
+- **The aimed release is decided on the OWNER.** The aim is the local pilot's camera state; the
+  hull's pose replicates, but a remote peer's copy of the ball is yanked along that peer's last
+  observed velocity rather than the aim, so for a frame or two the ball's direction can differ
+  across peers until the rope pulls it in line. Untested in MPPM.
+- Mass Mode is a toggle replicated by re-running the press on every peer; a press lost to a peer
+  would invert that peer's Mass Mode until the next press (the same exposure every edge has).
+- The windmill and Mass Mode have **no FMOD events of their own** yet: the trail and shield reuse
+  nothing, a steal plays `crushEvent`, an energy blast `smashEvent`.
+- Mass Mode's icon is still the Heavy Iron placeholder (a weight).
 - READY underestimates during fast snaps (it projects the current spin through a full reel and
   ignores the snap crack).
 
@@ -297,6 +374,23 @@ prefab, `DriftAudioController`, jets and tails.
    hull visibly swings onto the orbit inside a camera that turns smoothly after it. Swinging a
    let-out ball does not pump the camera in and out. Fly another vessel afterwards: its camera is
    at its own distance and hard-attached.
+11. **Spectate earlier + aim** (2026-10-13): plant and let it spin — the camera lifts off much sooner
+    than before (≈ 52 °/s) and looks DOWN on the orbit with a lime line running up the screen from
+    the ship. Push the stick: right swings the line (and the camera) right, pitch swings it
+    up/down; the orbit itself does not tilt. Release LT at any point in the spin — the ship leaves
+    along the line immediately, not on the tangent; the camera eases back behind it.
+12. **Smooth chain**: let the chain out and swing it slack — it curves smoothly, no visible kinks
+    at link joints; taut it is a straight line.
+13. **Chain energy**: slice a few rival prisms with the taut chain — the ball's rim leans lime. Tow
+    the SLOW ball (domain colour, below smash) into a rival prism — it explodes, bigger the more
+    you sliced; the rim returns to normal. Bounce off your own trail — no explosion, rim stays lime.
+14. **Mass Mode**: press A — the ball turns your lit colour. Swing it through a rival trail: prisms
+    change to your domain (no explosions, even red-hot); through your own trail: they gain shields;
+    it lays a trail of your prisms behind it. Slice rival prisms with the chain meanwhile (bank
+    grows). Press A again, then hit a rival prism: one big blast.
+15. **Windmill**: fly through an omni crystal — the ball whips round the ship across your flight
+    path, red-hot, for ~6 s, smashing anything it crosses; RT changes its radius. An elemental
+    crystal does NOT do this.
 10. **Ball and chain look**: the ball is a dark body with a bright rim in your domain colour (no
     ring round it); its studs flash as it rolls, and stay legible (no backwards strobe) when white
     hot; it brightens toward smash speed, turns red and blooms when hot, lit-blue with Charge L5.
@@ -305,7 +399,9 @@ prefab, `DriftAudioController`, jets and tails.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
-(when it detaches), then `cameraZoomInRate` (how lazily it comes home).
+(when it detaches), `aimYawRate` / `spectateTiltDegrees` (how the aim feels), then `cameraZoomInRate`
+(how lazily it comes home). Energy: `energyDiameterPerUnit` / `energyMaxDiameterScale`. Mass Mode:
+`massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups
 
