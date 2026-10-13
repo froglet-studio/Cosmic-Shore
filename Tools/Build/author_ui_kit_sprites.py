@@ -1,0 +1,542 @@
+#!/usr/bin/env python3
+"""
+Author the STYLE-B COMPONENT SPRITE KIT (UI redesign task T7) - white + alpha, tinted at runtime.
+
+Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_B.md, item 0):
+
+    kit_sliver14_{fill,line1,line2}[_flip]   panels, cards, popups, list tiles   (§5: 14 px)
+    kit_sliver10_{fill,line1,line2}[_flip]   buttons, chips, small tiles, rings  (§5: 10 px)
+    kit_hex_{fill,line1,line2}               icon-only nav tiles (§10.5, §10.12) 88 x 76
+    kit_hex_handle                           the settings slider handle (§10.7)  32 x 28
+    kit_banner_body / _cap_left / _cap_right the end-game header (§10.9) - authored so T7 closes;
+                                             the end-game screens are OUT of the menu redesign
+
+THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
+and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
+silhouette; `line1`/`line2` are the outline band at the §5 hairline (1) and emphasis stroke (2).
+A slivered surface is a `fill` Image tinted the surface colour with a `line` Image on top tinted
+the border colour - the band's outer edge IS the silhouette, so the two always register.
+
+UNITS. One canvas unit (the 1920x1080 reference, Menu_Main's `m_ReferencePixelsPerUnit: 240`) is
+TWO texels, so the kit stays crisp at 1440p and 4K. That makes every sprite PPU 480: a sliced
+Image draws its border at `spriteBorder / (spritePPU / canvasReferencePPU)`, so a 36-texel border
+renders as 18 canvas units - the same arithmetic `author_ui_frame_sprites.py` documents.
+
+WHAT 9-SLICES. The slivers are sliced: each cut sits wholly inside its own corner tile, and the
+stretch band is uniform (asserted), so a sliver holds its 14/10 px cut at ANY width or height -
+the "slivers hold their shape at any width" criterion. The hexagons are drawn SIMPLE at their
+design size: a hexagon's slanted sides run the full height, so no 9-slice preserves them. The
+banner slices horizontally only; its slant is authored for its 56-unit design height.
+
+    python3 Tools/Build/author_ui_kit_sprites.py              # write the PNGs + .meta
+    python3 Tools/Build/author_ui_kit_sprites.py --check      # fail if any file drifted
+    python3 Tools/Build/author_ui_kit_sprites.py --self-test  # prove the shape asserts fire
+"""
+
+import argparse
+import hashlib
+import math
+import os
+import re
+import struct
+import sys
+import zlib
+
+import numpy as np
+
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+OUT_DIR = os.path.join(REPO, "Assets", "_Graphics", "UI", "Kit")
+
+TEXELS_PER_UNIT = 2          # one 1920-reference canvas unit = two texels
+PPU = 240 * TEXELS_PER_UNIT  # Menu_Main's CanvasScaler.m_ReferencePixelsPerUnit is 240
+SUPERSAMPLE = 8
+
+SLIVERS = (14, 10)           # §5 sliverLarge / sliverSmall, in canvas units
+LINES = (1, 2)               # §5 hairline / stroke, in canvas units
+
+HEX_W, HEX_H = 88, 76        # §10.12 nav tile, canvas units (the approved kit mockup)
+HANDLE_W, HANDLE_H = 32, 28  # §10.7 slider handle, canvas units
+BANNER_H, BANNER_SLANT = 56, 14
+
+
+def guid_for(name):
+    return hashlib.md5(f"CosmicShore/UIKit/{name}".encode()).hexdigest()
+
+
+# --------------------------------------------------------------------------------------------
+# Geometry. Every predicate takes x, y in CANVAS UNITS, y counting DOWN from the top edge.
+# --------------------------------------------------------------------------------------------
+
+def grid(w_tex, h_tex):
+    n = SUPERSAMPLE
+    step = 1.0 / n
+    xs = (np.arange(w_tex * n) * step + step / 2) / TEXELS_PER_UNIT
+    ys = (np.arange(h_tex * n) * step + step / 2) / TEXELS_PER_UNIT
+    return xs[None, :], ys[:, None]
+
+
+def downsample(mask, w_tex, h_tex):
+    n = SUPERSAMPLE
+    return mask.reshape(h_tex, n, w_tex, n).mean(axis=(1, 3))
+
+
+def sliver_mask(xs, ys, w, h, cut, flip, inset=0.0):
+    """Points inside the sliver rect [0,w]x[0,h] with `cut`-unit 45 deg cuts on two opposite
+    corners, offset INWARD by `inset` units perpendicular to every edge. A perpendicular inset
+    moves a straight edge by `inset` and a 45 deg edge's x+y line by inset*sqrt(2)."""
+    d = cut + inset * math.sqrt(2.0)
+    box = (xs >= inset) & (xs <= w - inset) & (ys >= inset) & (ys <= h - inset)
+    if not flip:
+        cuts = ((xs + ys) >= d) & (((w - xs) + (h - ys)) >= d)
+    else:
+        cuts = (((w - xs) + ys) >= d) & ((xs + (h - ys)) >= d)
+    return box & cuts
+
+
+def convex_mask(xs, ys, verts, inset=0.0):
+    """Points inside a convex polygon (clockwise in y-down space) at least `inset` from every
+    edge - so `inset=0` is the polygon and `inset=w` its inner offset."""
+    out = np.ones(np.broadcast(xs, ys).shape, dtype=bool)
+    for (x0, y0), (x1, y1) in zip(verts, verts[1:] + verts[:1]):
+        ex, ey = x1 - x0, y1 - y0
+        ln = math.hypot(ex, ey)
+        # inward normal for a clockwise loop in y-down coordinates
+        nx, ny = -ey / ln, ex / ln
+        out &= ((xs - x0) * nx + (ys - y0) * ny) >= inset
+    return out
+
+
+def hex_verts(w, h):
+    # flat-top: (25%,0) (75%,0) (100%,50%) (75%,100%) (25%,100%) (0,50%) - clockwise, y down
+    return [(0.25 * w, 0.0), (0.75 * w, 0.0), (w, 0.5 * h),
+            (0.75 * w, h), (0.25 * w, h), (0.0, 0.5 * h)]
+
+
+# --------------------------------------------------------------------------------------------
+# Sprite set
+# --------------------------------------------------------------------------------------------
+
+def sliver_border_units(cut):
+    # The corner tile must hold the cut AND the 2-unit band's inner cut (it meets the inset edge
+    # cut + 2*sqrt2 - 2 = cut + 0.83 units from the corner), plus antialiasing. Kept this tight on
+    # purpose: a sliced Image shrinks its borders once the rect is smaller than both together, so
+    # cut + 2 lets a 24-unit keycap keep its full 10-unit cut.
+    return cut + 2
+
+
+def build_sliver(cut, kind, flip):
+    border_u = sliver_border_units(cut)
+    border_tex = border_u * TEXELS_PER_UNIT
+    side_tex = 2 * border_tex + 4               # a 4-texel uniform stretch band
+    side_u = side_tex / TEXELS_PER_UNIT
+    xs, ys = grid(side_tex, side_tex)
+    outer = sliver_mask(xs, ys, side_u, side_u, cut, flip)
+    if kind == "fill":
+        mask = outer
+    else:
+        width = LINES[0] if kind == "line1" else LINES[1]
+        mask = outer & ~sliver_mask(xs, ys, side_u, side_u, cut, flip, inset=width)
+    alpha = downsample(mask, side_tex, side_tex)
+    return alpha, border_tex
+
+
+def build_hex(w, h, kind):
+    w_tex, h_tex = w * TEXELS_PER_UNIT, h * TEXELS_PER_UNIT
+    xs, ys = grid(w_tex, h_tex)
+    verts = hex_verts(w, h)
+    outer = convex_mask(xs, ys, verts)
+    if kind == "fill":
+        mask = outer
+    else:
+        width = LINES[0] if kind == "line1" else LINES[1]
+        mask = outer & ~convex_mask(xs, ys, verts, inset=width)
+    return downsample(mask, w_tex, h_tex), 0
+
+
+def build_banner(part):
+    h_tex = BANNER_H * TEXELS_PER_UNIT
+    if part == "body":
+        border_u = BANNER_SLANT + 2
+        w_tex = 2 * border_u * TEXELS_PER_UNIT + 4
+        w = w_tex / TEXELS_PER_UNIT
+        xs, ys = grid(w_tex, h_tex)
+        verts = [(BANNER_SLANT, 0.0), (w, 0.0), (w - BANNER_SLANT, BANNER_H), (0.0, BANNER_H)]
+        return downsample(convex_mask(xs, ys, verts), w_tex, h_tex), border_u * TEXELS_PER_UNIT
+    cap_w = BANNER_H // 2
+    w_tex = cap_w * TEXELS_PER_UNIT
+    xs, ys = grid(w_tex, h_tex)
+    if part == "cap_left":       # points LEFT
+        verts = [(cap_w, 0.0), (cap_w, BANNER_H), (0.0, BANNER_H / 2)]   # clockwise, y down
+    else:                        # points RIGHT
+        verts = [(0.0, 0.0), (cap_w, BANNER_H / 2), (0.0, BANNER_H)]
+    return downsample(convex_mask(xs, ys, verts), w_tex, h_tex), 0
+
+
+def sprite_set():
+    """(name, alpha, 9-slice border in texels as (left, bottom, right, top))."""
+    out = []
+    for cut in SLIVERS:
+        for kind in ("fill", "line1", "line2"):
+            for flip in (False, True):
+                a, b = build_sliver(cut, kind, flip)
+                name = f"kit_sliver{cut}_{kind}" + ("_flip" if flip else "")
+                out.append((name, a, (b, b, b, b), dict(cut=cut, kind=kind, flip=flip)))
+    for kind in ("fill", "line1", "line2"):
+        a, _ = build_hex(HEX_W, HEX_H, kind)
+        out.append((f"kit_hex_{kind}", a, (0, 0, 0, 0), dict(hex=kind)))
+    a, _ = build_hex(HANDLE_W, HANDLE_H, "fill")
+    out.append(("kit_hex_handle", a, (0, 0, 0, 0), dict(hex="handle")))
+    a, b = build_banner("body")
+    out.append(("kit_banner_body", a, (b, 0, b, 0), dict(banner="body")))
+    for part in ("cap_left", "cap_right"):
+        a, _ = build_banner(part)
+        out.append((f"kit_banner_{part}", a, (0, 0, 0, 0), dict(banner=part)))
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# Invariants - the shape's claims, measured off the rendered alpha
+# --------------------------------------------------------------------------------------------
+
+def edge_crossing(row):
+    """Index (in texels, fractional) where alpha first reaches 0.5 scanning from the left."""
+    for i, v in enumerate(row):
+        if v >= 0.5:
+            prev = row[i - 1] if i > 0 else 0.0
+            return i - (v - 0.5) / max(v - prev, 1e-9) + 0.5
+    return float("nan")
+
+
+def check_sprite(name, alpha, border, meta):
+    h, w = alpha.shape
+    if "cut" in meta:
+        cut, kind, flip = meta["cut"], meta["kind"], meta["flip"]
+        b = border[0]
+        # the cut corners are empty, the square corners are solid
+        empty = [(0, 0), (h - 1, w - 1)] if not flip else [(0, w - 1), (h - 1, 0)]
+        solid = [(0, w - 1), (h - 1, 0)] if not flip else [(0, 0), (h - 1, w - 1)]
+        for r, c in empty:
+            assert alpha[r, c] == 0, f"{name}: cut corner ({r},{c}) must be empty"
+        for r, c in solid:
+            assert alpha[r, c] > 0.99, f"{name}: square corner ({r},{c}) must be solid"
+        # the cut measures `cut` canvas units along the edge it starts on (top row, from the
+        # cut side) - +-0.6 texel for the 45 deg antialiasing ramp
+        top = alpha[0] if not flip else alpha[0][::-1]
+        measured = edge_crossing(top) / TEXELS_PER_UNIT
+        assert abs(measured - cut) <= 0.6 / TEXELS_PER_UNIT + 0.26, \
+            f"{name}: cut measures {measured:.2f} units, expected {cut}"
+        # the cut lives inside its own 9-slice corner tile
+        assert cut * TEXELS_PER_UNIT + 2 <= b, f"{name}: the cut does not fit the {b}-texel border"
+        # the stretch band is uniform in both directions, so slicing preserves the shape
+        mid_rows = alpha[b:h - b, :]
+        assert np.allclose(mid_rows, mid_rows[0:1, :]), f"{name}: vertical stretch band varies"
+        mid_cols = alpha[:, b:w - b]
+        assert np.allclose(mid_cols, mid_cols[:, 0:1]), f"{name}: horizontal stretch band varies"
+        if kind != "fill":
+            width = LINES[0] if kind == "line1" else LINES[1]
+            row = alpha[h // 2]
+            band = row[: w // 2].sum() / TEXELS_PER_UNIT
+            assert abs(band - width) <= 0.05, f"{name}: band is {band:.3f} units, expected {width}"
+            assert row[w // 2] == 0, f"{name}: an outline must be hollow"
+        else:
+            assert alpha[h // 2, w // 2] == 1.0, f"{name}: a fill must be solid inside"
+    elif "hex" in meta:
+        assert alpha[0, 0] == 0 and alpha[-1, -1] == 0 and alpha[0, -1] == 0, \
+            f"{name}: a hexagon's bounding corners must be empty"
+        assert alpha[h // 2, 0] > 0.4 and alpha[h // 2, -1] > 0.4, \
+            f"{name}: a flat-top hexagon touches both side edges at mid-height"
+        if meta["hex"] in ("line1", "line2"):
+            assert alpha[h // 2, w // 2] == 0, f"{name}: an outline must be hollow"
+    elif meta.get("banner") == "body":
+        b = border[0]
+        mid = alpha[:, b:w - b]
+        assert np.allclose(mid, mid[:, 0:1]), f"{name}: the banner stretch band varies"
+        assert alpha[0, 0] == 0 and alpha[-1, -1] == 0, f"{name}: the slant corners must be empty"
+
+
+# --------------------------------------------------------------------------------------------
+# Encoding
+# --------------------------------------------------------------------------------------------
+
+def encode_png(alpha):
+    h, w = alpha.shape
+    rgba = np.full((h, w, 4), 255, dtype=np.uint8)
+    rgba[..., 3] = np.clip(np.rint(alpha * 255.0), 0, 255).astype(np.uint8)
+    raw = b"".join(b"\x00" + rgba[y].tobytes() for y in range(h))
+
+    def chunk(tag, data):
+        return (struct.pack(">I", len(data)) + tag + data
+                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9))
+            + chunk(b"IEND", b""))
+
+
+# Cloned from author_ui_frame_sprites.py's META (itself Unity's own TextureImporter output).
+# The trailing spaces on the empty-value lines are DELIBERATE: Unity writes `key: ` for an empty
+# scalar, so a file emitted without them is rewritten on first import and `--check` then reports
+# drift nobody caused.
+META = """fileFormatVersion: 2
+guid: {guid}
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {{}}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: {max_size}
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {{x: 0.5, y: 0.5}}
+  spritePixelsToUnits: {ppu}
+  spriteBorder: {{x: {bl}, y: {bb}, z: {br}, w: {bt}}}
+  spriteGenerateFallbackPhysicsShape: 0
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: {max_size}
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID: {sprite_id}
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {{}}
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+"""
+
+FOLDER_META = """fileFormatVersion: 2
+guid: {guid}
+folderAsset: yes
+DefaultImporter:
+  externalObjects: {{}}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+"""
+
+
+def unity_empty_scalars(text):
+    """Re-add the trailing space Unity writes after an EMPTY scalar (`key: `). A bare `key:` is a
+    PARENT when the next line is indented deeper, or is a `- ` item at the same indent (Unity's
+    block-sequence spelling); otherwise it is an empty scalar. Without this a file is rewritten by
+    Unity on first import and `--check` reports drift nobody caused."""
+    lines = text.split("\n")
+    out = []
+    for i, line in enumerate(lines):
+        if re.match(r"^\s*[^\s#][^:]*:$", line) and not line.lstrip().startswith("- "):
+            indent = len(line) - len(line.lstrip())
+            nxt = lines[i + 1] if i + 1 < len(lines) else ""
+            n_indent = len(nxt) - len(nxt.lstrip())
+            parent = nxt.strip() != "" and (n_indent > indent or
+                                            (n_indent == indent and nxt.lstrip().startswith("- ")))
+            if not parent:
+                line += " "
+        out.append(line)
+    return "\n".join(out)
+
+
+def render_files():
+    files = {}
+    for name, alpha, border, meta in sprite_set():
+        check_sprite(name, alpha, border, meta)
+        bl, bb, br, bt = border
+        max_size = 128 if max(alpha.shape) <= 128 else 256
+        files[name + ".png"] = encode_png(alpha)
+        files[name + ".png.meta"] = unity_empty_scalars(META.format(
+            guid=guid_for(name), sprite_id=guid_for(name + "/sprite"), ppu=PPU,
+            bl=bl, bb=bb, br=br, bt=bt, max_size=max_size)).encode()
+    return files
+
+
+def assert_guids_unique(files):
+    """Exactly one .meta may OWN each guid this script mints."""
+    mine = {guid_for(n[:-len(".png.meta")]) for n in files if n.endswith(".png.meta")}
+    mine.add(guid_for("__folder__"))
+    own_dir = os.path.abspath(OUT_DIR)
+    for root, _dirs, names in os.walk(os.path.join(REPO, "Assets")):
+        if os.path.abspath(root).startswith(own_dir):
+            continue
+        for n in names:
+            if not n.endswith(".meta") or os.path.join(root, n) == OUT_DIR + ".meta":
+                continue
+            with open(os.path.join(root, n), "r", errors="ignore") as fh:
+                head = fh.read(200)
+            for g in mine:
+                if f"guid: {g}" in head:
+                    sys.exit(f"guid {g} is already owned by {os.path.join(root, n)}")
+
+
+def self_test():
+    """Every shape assert must fire on the defect it exists for. A gate nobody has watched FAIL
+    is a gate nobody should trust."""
+    global SUPERSAMPLE
+    controls = []
+
+    def expect_fail(label, fn):
+        try:
+            fn()
+        except AssertionError as e:
+            controls.append((label, True, str(e)))
+            return
+        controls.append((label, False, "no assertion fired"))
+
+    # 1. a sliced sliver whose cut overruns its corner tile
+    a, b = build_sliver(14, "fill", False)
+    expect_fail("cut larger than its 9-slice tile",
+                lambda: check_sprite("ctl", a, (14 * TEXELS_PER_UNIT,) * 4,
+                                     dict(cut=14, kind="fill", flip=False)))
+    # 2. a cut 3 units short of spec
+    a, b = build_sliver(11, "fill", False)
+    expect_fail("cut measures 11 when 14 is claimed",
+                lambda: check_sprite("ctl", a, (b,) * 4, dict(cut=14, kind="fill", flip=False)))
+    # 3. an outline whose band is the wrong width
+    a, b = build_sliver(10, "line2", False)
+    expect_fail("2-unit band checked as a 1-unit line",
+                lambda: check_sprite("ctl", a, (b,) * 4, dict(cut=10, kind="line1", flip=False)))
+    # 4. a flipped sprite checked as normal (wrong corners cut)
+    a, b = build_sliver(10, "fill", True)
+    expect_fail("flipped sprite checked as normal",
+                lambda: check_sprite("ctl", a, (b,) * 4, dict(cut=10, kind="fill", flip=False)))
+    # 5. a fill checked as an outline (not hollow)
+    a, b = build_sliver(14, "fill", False)
+    expect_fail("solid fill checked as an outline",
+                lambda: check_sprite("ctl", a, (b,) * 4, dict(cut=14, kind="line1", flip=False)))
+
+    ok = True
+    for label, fired, msg in controls:
+        ok &= fired
+        print(f"  {'FIRES' if fired else 'SILENT'}  {label}: {msg}")
+    print("OK: every negative control fires" if ok else "FAIL: a shape defect slipped through")
+    return 0 if ok else 1
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
+    args = ap.parse_args()
+
+    if args.self_test:
+        return self_test()
+
+    files = render_files()
+    files_meta = unity_empty_scalars(FOLDER_META.format(guid=guid_for("__folder__"))).encode()
+    folder_meta_path = OUT_DIR + ".meta"
+
+    if args.check:
+        drift = []
+        for name, want in files.items():
+            p = os.path.join(OUT_DIR, name)
+            have = open(p, "rb").read() if os.path.exists(p) else b""
+            if have != want:
+                drift.append(os.path.relpath(p, REPO))
+        have = open(folder_meta_path, "rb").read() if os.path.exists(folder_meta_path) else b""
+        if have != files_meta:
+            drift.append(os.path.relpath(folder_meta_path, REPO))
+        extra = sorted(set(os.listdir(OUT_DIR)) - set(files)) if os.path.isdir(OUT_DIR) else []
+        if drift or extra:
+            for d in drift:
+                print("DRIFT:", d)
+            for e in extra:
+                print("UNKNOWN FILE in the kit folder:", e)
+            return 1
+        print(f"OK: {len(files) // 2} kit sprites match the generator")
+        return 0
+
+    assert_guids_unique(files)
+    os.makedirs(OUT_DIR, exist_ok=True)
+    with open(folder_meta_path, "wb") as fh:
+        fh.write(files_meta)
+    for name, data in files.items():
+        with open(os.path.join(OUT_DIR, name), "wb") as fh:
+            fh.write(data)
+    print(f"wrote {len(files) // 2} sprites to {os.path.relpath(OUT_DIR, REPO)}")
+    for name, alpha, border, _ in sprite_set():
+        h, w = alpha.shape
+        print(f"  {name:28s} {w:4d}x{h:<4d} texels  ({w / TEXELS_PER_UNIT:g}x{h / TEXELS_PER_UNIT:g} "
+              f"units)  border {border}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

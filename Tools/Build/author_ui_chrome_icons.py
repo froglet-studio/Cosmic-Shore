@@ -21,10 +21,11 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-FIVE glyphs, FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+SEVEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
-`chrome_close` here. That is the one intentional look change in the swap.
+`chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
+`chrome_crystal` were added for the style-B component kit (Docs/MENU_REDESIGN_B.md, item 0).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -118,12 +119,32 @@ def chrome_vessel_placeholder():
     return m
 
 
+def chrome_lock():
+    """Locked - a padlock built from right angles (section 5: nothing is rounded), so the
+    shackle is a squared arch rather than the usual hoop. Worn by the style-B kit's locked
+    tiles and the locked top-nav tab (Docs/MENU_REDESIGN_B.md, item 0)."""
+    m = stroke([(-0.40, -0.02), (-0.40, 0.70), (0.40, 0.70), (0.40, -0.02)], w=W * 1.10)
+    m |= ring([(-0.66, 0.02), (0.66, 0.02), (0.66, -0.74), (-0.66, -0.74)], w=W * 1.10)
+    m |= stroke([(0.00, -0.24), (0.00, -0.50)], w=W * 1.10)
+    return m
+
+
+def chrome_crystal():
+    """Currency - a cut gem: a crown over a long pavilion, the girdle drawn across it.
+    The currency bar and Purchase buttons wear it, tinted the purchase role (section 3)."""
+    m = ring([(0.00, 0.80), (0.68, 0.24), (0.00, -0.80), (-0.68, 0.24)], w=W * 1.05)
+    m |= stroke([(-0.62, 0.24), (0.62, 0.24)], w=W * 0.95)
+    return m
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
     ("chrome_confirm",    chrome_confirm),
     ("chrome_arrow_down", chrome_arrow_down),
     ("chrome_vessel_placeholder", chrome_vessel_placeholder),
+    ("chrome_lock",       chrome_lock),
+    ("chrome_crystal",    chrome_crystal),
 ]
 
 
