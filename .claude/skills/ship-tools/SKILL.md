@@ -63,6 +63,14 @@ will not have it; its absence proves nothing.
 
 A tool that both audits and offers a "fix" button is a WRITER. Say so.
 
+**A LAB is classified by the same evidence, and it is usually a READER that has one WRITER
+button.** Examples are an in-editor lab window (`*Lab.cs`) or a script that bakes a lab viewer.
+The Occlusion Dither Lab only previews and measures until you press **Bake**, and Bake writes
+the shader. Classify the Bake path, not the window. A viewer generator that writes only its own
+HTML or results under `Tools/`, never under `Assets/`, has no asset output for this gate. Commit
+its output by the lab's own rule (`/labmaker` §5). Either way, a lab on the branch also
+triggers `/ship` §3.55. Note it in the report so the full ship runs it.
+
 ## 3. Establish the truth about each WRITER
 
 Two checks, both required, before you ask the human anything:

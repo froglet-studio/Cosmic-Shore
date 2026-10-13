@@ -1,6 +1,6 @@
 ---
 name: ship
-description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
+description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, feed what any LAB on the branch taught back into the /labmaker skill (§3.55), make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
 ---
 
 # Ship Protocol — review, document, decide, then PR
@@ -14,8 +14,8 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 | You want | Use | What changes |
 |---|---|---|
 | The default, full protocol | `/ship` | Everything below. |
-| A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5. |
-| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, and a mechanical refactor-opportunity sweep (D8) over §3.6. |
+| A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5, and keeps §3.55's minimum (the lab's CATALOG row plus any costly lesson). |
+| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, a mechanical refactor-opportunity sweep (D8) over §3.6, and a lab audit (D9) over §3.55. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
@@ -795,6 +795,70 @@ Then act on it — this step produces edits, not intentions:
   decide — silence is the only wrong output. A session that learned nothing
   reusable says so explicitly.
 
+## 3.55 Lab capture (any branch that made or changed a LAB — feeds `/labmaker`)
+
+A lab is a prototype rig built to DECIDE a mechanic before Unity: a browser studio, a research
+rig with a generated viewer, a calibrated headless model, or an in-editor lab window
+(`/labmaker` §0). Labs are built by many contributors on many branches. The craft compounds only
+if every branch that touched one leaves what it learned in **`.claude/skills/labmaker/`**. This
+is §3.5 made specific and mechanical for labs. It runs in every mode that runs §3.5, and
+`/ship-quick` keeps a minimum of it (see that file).
+
+**1. Detect.** The branch touched a lab if any of these hits:
+
+```sh
+git diff --name-only <merge-base>..HEAD | grep -iE \
+  '(^|/)(Docs/Studios|Tools/(NCA|Ecology|ecosim))/|(lab|studio|bestiary|sandbox|playground)[^/]*\.(html|py|cjs|js|cs)$|(^|/)(DISCOVERIES|PROGRAM)\.md$|/briefs/'
+git diff <merge-base>..HEAD -- '*.html' | grep -cE '^\+.*(window\.__[A-Za-z]+(Studio|Lab)\b|use\(.db.\))'   # >0 = a lab page
+```
+
+(Measured on `claude/peaceful-rubin-hhw49n`: the first command lists `Docs/Studios/**`, and the
+second counts 8. On `cece/swarm-x-live2` the first lists about 500 `Tools/NCA` paths.)
+
+Also count a lab the session PUBLISHED as an artifact even if its repo copy did not change. No hit
+means one report line, "no lab touched", and you are done.
+
+**2. Verify each single-file browser lab** it touched:
+
+```sh
+node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
+```
+
+- Read both screenshots.
+- A page that fails to load cleanly, or scrolls on desktop, is a §2 finding against the branch.
+- A lab that predates the `window.__lab` hook fails the hook checks: report that as "not on the
+  contract yet". It is not a §4 blocker.
+- Research rigs and models run their own gates (fidelity, `--check`, parity harness). Report what
+  ran.
+
+**3. Update `/labmaker` — edits, not intentions:**
+
+- **`CATALOG.md`**: add or refresh the lab's row (branch, path, live URL, status, what it
+  decided). A lab that is not in the catalog is invisible to the next contributor.
+- **`LEARNINGS.md`**: one attributed entry (branch, session, date) per lesson that cost real time
+  or that the next lab would re-learn. That covers:
+  - a trap;
+  - a verification that caught something;
+  - a technique that made the lab legible;
+  - a process change the human asked for between rounds.
+
+  Use that file's entry format. Grep the id before you claim it (§1's id-collision rule).
+- **Promote** into `SKILL.md` §2–§8 any entry that has now recurred in a second lab or cost a
+  round. Mark it `Promoted: §N`.
+- If the branch added a reusable check, extend `verify_lab.cjs`, add its planted defect to
+  `--self-test`, and run both.
+
+**4. Two traps specific to this step.**
+
+- **A lab branch is often not the branch being shipped.** Its learnings still belong in this
+  branch's copy of `/labmaker` when this session learned them. Attribute them to the branch where
+  the lab lives.
+- **Never copy a lab's numbers into LEARNINGS as current truth.** Quote them as "measured at round
+  N", with the tool that produced them (§3: a measurement is a derived value).
+
+**Report**: labs touched, the verifier verdict per lab, the CATALOG rows changed, the LEARNINGS
+ids added and anything promoted, or an explicit "lab touched, nothing new learned: <why>".
+
 ## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
 
 §3.5 harvests what the session learned. This harvests what the session **saw and did not
@@ -922,6 +986,8 @@ Tell the prompter: the go/no-go call and why, the PR link (or the iteration list
 the §5.5 CI dispatch went out, the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
 what was retired), the follow-ups you recorded, the §3.5 skill-capture outcome
-(skills created/extended, or the explicit "nothing reusable this session"), and the
+(skills created/extended, or the explicit "nothing reusable this session"), the §3.55
+lab-capture outcome (labs touched, verifier verdicts, `/labmaker` CATALOG/LEARNINGS changes, or
+"no lab touched"), and the
 §3.6 refactor-opportunity outcome (the rows opened and where they live, or the explicit
 "nothing found" — and never a fix made in their place).

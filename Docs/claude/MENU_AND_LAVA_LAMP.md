@@ -6,6 +6,19 @@
 
 The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
 
+How the strip is positioned (fixed 2026-10-12, after it broke on the first iPhone build and at 4:3):
+- It sits in a runtime `Screens Viewport`, a full-canvas `RectMask2D` child of the root canvas
+  placed just before `Safe Area`.
+- Each screen gets a full-screen SLOT, and its content is laid out in the safe rect within that
+  slot.
+- Full-width background images bleed to the slot edges (`SafeAreaBleed`). So do the NavBar band
+  and modal backgrounds. A notched phone therefore looks like the desktop.
+- The strip slides one slot per screen by `anchoredPosition`. Never set `transform.position`,
+  which is absolute screen pixels.
+- It re-lays out whenever the slot width or the safe insets change.
+
+Details: `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3.
+
 #### IScreen Interface
 
 All menu screens that need lifecycle notifications implement `IScreen` (`Assets/_Scripts/UI/Interfaces/IScreen.cs`):
@@ -27,7 +40,7 @@ public interface IScreen
 | Screen | Class | Extends `IScreen` | Init Pattern |
 |---|---|---|---|
 | Home | `HomeScreen` | No | `Start()` |
-| Arcade (ARK) | `ArcadeScreen` | No | `Start()` |
+| Ark (ARK) — the Elemental Converter (2026-10-13; the arcade moved to `ModalWindows.ARCADE`) | `ElementalConverterView` (+ the disabled legacy `StoreScreen`) | Yes | `OnScreenEnter()` → idle crystals; CONVERT plays the omni combine (`Docs/Studios/OMNI_COMBINE_LAB.md` § In the game) |
 | Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
 | Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
 | Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
@@ -63,7 +76,7 @@ public interface IScreen
 
 ### Lava-Lamp Mode (Menu Freestyle Merge)
 
-**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
+**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its multiplayer sibling `MultiplayerFreestyle (28)` was the prototype that grew into the lava lamp, freestyle, toybox and lobby; it was removed 2026-10-08 (scene, controller, card, preview) and 28 stays reserved. Online Duel for the Cell (29) went the same day; Brood Rush replaced it.
 
 Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 

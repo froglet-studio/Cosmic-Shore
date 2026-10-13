@@ -5020,10 +5020,10 @@ RectTransform:
   - {fileID: 1669693109}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &159236444
 MonoBehaviour:
@@ -25195,10 +25195,10 @@ RectTransform:
   - {fileID: 745667877}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &948404566
 MonoBehaviour:
@@ -46592,11 +46592,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
   m_Padding:
-    m_Left: 171
+    m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 3
+  m_ChildAlignment: 4
   m_Spacing: 100
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
@@ -60685,10 +60685,10 @@ RectTransform:
   - {fileID: 122070151}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &2072797376
 MonoBehaviour:
@@ -71230,10 +71230,10 @@ RectTransform:
   - {fileID: 688672353}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!224 &461934434115840359
 RectTransform:
@@ -87843,7 +87843,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2879243035581748626}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -105746,7 +105746,6 @@ GameObject:
   - component: {fileID: 5340227408031961627}
   - component: {fileID: 636647420894223883}
   - component: {fileID: 1229040209808752503}
-  - component: {fileID: 5340227408031961628}
   m_Layer: 5
   m_Name: ArkScreen
   m_TagString: Untagged
@@ -122518,6 +122517,7 @@ RectTransform:
   - {fileID: 6742882396976509978}
   - {fileID: 6026066575147697685}
   - {fileID: 8464709120126791073}
+  - {fileID: 7700130000000000002}
   m_Father: {fileID: 2525219157635147276}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -122525,6 +122525,56 @@ RectTransform:
   m_AnchoredPosition: {x: 1920.0001, y: -85.19997}
   m_SizeDelta: {x: 1922.64, y: -170.40005}
   m_Pivot: {x: 0, y: 0.5}
+--- !u!1 &7700130000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7700130000000000002}
+  - component: {fileID: 7700130000000000003}
+  m_Layer: 5
+  m_Name: ElementalConverter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7700130000000000002
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7700130000000000001}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4100490384345192841}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7700130000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7700130000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61b1f160d8c7f96d249a004974474dc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: c1c7cfd1c4b61617e26da92823bd3add, type: 2}
+  font: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
 --- !u!222 &4102067197520110292
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -123722,7 +123772,7 @@ MonoBehaviour:
   HangarMenu: {fileID: 3082319601828466910}
   LeaderboardMenu: {fileID: 1301504438265022924}
   screensCanvasGroup: {fileID: 560552141}
-  disabledScreens: 0100000003000000
+  disabledScreens: 03000000
   disabledScreenMessage: Not open yet.
   ArcadeModal: {fileID: 4163919379400151758}
   hubButtonsFadeSeconds: 0.2
@@ -137323,24 +137373,6 @@ MonoBehaviour:
   MaxGameRows: 2
   ShowGamePurchasing: 0
   DailyChallengeTicketCard: {fileID: 2197490711470985941}
---- !u!114 &5340227408031961628
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2879243035581748626}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: baaedda65cd145fcb3b36c06bc5afd51, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OfflineUIGate
-  style: 1
-  onlineOnlyObjects:
-  - {fileID: 2879243035581748626}
-  onlineOnlyControls: []
-  offlineOnlyObjects: []
-  disabledAlpha: 0.4
 --- !u!1 &5342675959985235172
 GameObject:
   m_ObjectHideFlags: 0
@@ -140661,7 +140693,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 2108651155724165083}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1

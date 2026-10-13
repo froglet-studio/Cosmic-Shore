@@ -62,6 +62,14 @@ member at different offsets auto-merge into a `CS0102` that only Unity will find
    defect.
 3. Same trap in docs: two branches both claiming `§4.6` merges clean and produces a
    document with two of them. Renumber yours and fix every inbound reference.
+4. **A set-wide edit misses members the base added.** If the branch applied one change to
+   every member of a set ("every vessel HUD canvas", "every mode scene"), re-run the sweep
+   that found the set after the merge. The new member merges with no conflict and no
+   compile error, because nothing in it touches your files. One branch moved nine vessel
+   `ShipHUDContainer` canvases to Expand for the iPad; the base meanwhile added the Stoat, so
+   after the merge it was the one vessel HUD still losing a quarter of its width at 4:3.
+   Re-sweep with the same query (`m_ScreenMatchMode: 0` with match 1), not a re-read of the
+   list in your commit message.
 
 ## D4. Asset integrity (any branch that touched serialized assets)
 
@@ -181,10 +189,25 @@ with evidence, never an edit to this branch.**
   assets carry it and what their authored values are *today*, because that measurement is
   destroyed the moment anybody rewrites those assets.
 
+## D9. Labs, audited against what they claim to read
+
+If `/ship` §3.55's detect step hits, run §3.55 in full and then add three checks:
+
+- **The SHIPPED block against the assets.** Every constant in a lab's `SHIPPED` block names
+  its source (`/labmaker` §2.1). Re-read each named asset field and compare. A mismatch is
+  either a lab that has gone stale (fix the page, or make it say on screen that it differs) or
+  a lab number that leaked into the game without being labelled a proposal. Both are §2
+  findings. Tabulate them. Do not eyeball.
+- **Every number the lab's write-up quotes, re-run.** Use the lab's own headless batch through
+  its `window.__lab` / `window.__<name>Studio` hooks, or the research rig's result files.
+  Never re-quote the commit message (`/labmaker` L-NCA-5).
+- **The verifier's own negative control.** `node .claude/skills/labmaker/verify_lab.cjs --self-test`.
+  If the branch extended the verifier, its new check needs a planted defect that it names.
+
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once). The PR body carries D5's matrix and D2's sweep
+something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
 "D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
 go in the report as rows, with where each one lives; a row that turned into a diff hunk on

@@ -577,3 +577,100 @@ Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
   or pilot handover) where no SOAP release is ever raised. Moving the HUD to the raw channels would
   light ability chips for presses the handler refused and leave them lit across a pause. Before
   acting, decide which semantics the HUD wants; if it is the filtered one, delete the TODO instead.
+
+## From the crystal hull fusion branch (`cece/nice-babbage-j6sejq`, 2026-10-08)
+
+Rows only, opened by the ship pass; nothing here was changed on that branch except where a row says so.
+The census command for the first three is one script over each vessel prefab's `_nearFieldSkimmer`
+and the `SkimmerImpactor` whose `skimmer:` field points at it (recorded in
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §13).
+
+- **[inconsistency, prefab wiring] Termite, Falcon and Shrike initialise NO skimmer.** Measured:
+  `grep -n "_nearFieldSkimmer\|_farFieldSkimmer" Assets/_Prefabs/Spacevessels/{Termite,Falcon,Shrike}.prefab`
+  → `{fileID: 0}` for both on all three. `VesselController.Initialize` only initialises those two, and
+  `SkimmerImpactor.isInitialized => skimmer != null && skimmer.IsInitialized`, so every skimmer on
+  these hulls is inert: no prism skim effects, and an elemental crystal is collected with NO vessel
+  (`ElementalCrystalImpactor.CollectBy` → `skimmer.VesselStatus == null`) — no score
+  (`OnCrystalCollected` is skipped), no element level, no hull fusion. The fix is to point
+  `_nearFieldSkimmer` at each hull's nested Skimmer (the Manta's is the stripped
+  `874579554510349383`); confirm first that these three hulls are meant to be flyable.
+- **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
+  GameObject with `m_IsActive: 0`, its SphereCollider `m_Enabled: 0`, and no `SkimmerImpactor` or
+  `ImpactCollider` at all, so nothing on the Serpent can take an elemental crystal (play-tested
+  2026-10-08: crystals hit the hull and are not collected). Whether the Serpent SHOULD collect by
+  skimming is a design question; wiring it is a prefab change.
+- **[cleanup] The Grizzly's nested `Skimmer.prefab` instance (x30) is never initialised.** It used to
+  take every crystal the Grizzly touched with no vessel (no score, no element level) — fixed on this
+  branch by `ElementalCrystalImpactor.DefersToItsVesselsSkimmer`, which makes it stand aside for the
+  initialised `DummySkimmer`. The instance itself is now dead weight on the prefab; delete it or list
+  it as the far-field skimmer.
+- **[inconsistency] `GrizzlyImpactorDataContainer.vesselCrystalEffects` holds a dangling reference**
+  (`guid: dcf9d69a52b65c1438af3861b7c89e07`, no `.meta` anywhere on `origin/bleeding-edge`; the probe
+  was controlled against `Skimmer.cs.meta`, which it finds). Every omni-crystal impact on a Grizzly
+  walks a null slot. Also: `vesselElementalCrystalEffects` is a serialized key on the Grizzly and
+  Sparrow containers that no C# reads (`git grep -n vesselElementalCrystalEffects -- '*.cs'` → empty).
+
+## From the Grizzly trigger-bomb cruise branch (`cece/funny-lamport-bkzvtc`, 2026-10-08)
+
+Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
+
+- **[report, needs a look decision] Every `DangerProjectileMaterial` body renders one world unit
+  fatter than its authored scale.** Measured 2026-10-08: `grep -c _Spread
+  Assets/_Graphics/Materials/DangerProjectileMaterial.mat` → 0, so `Custom/SpreadFresnelShader` uses
+  its property default `(1,1,1)` and pushes every vertex a constant world unit along its normal; no
+  projectile code writes `_Spread` (`grep -rn '"_Spread"\|SpreadId' Assets/_Scripts/Controller/Projectiles`
+  → nothing). Seven prefabs/assets wear that material (`grep -rl 4109669bc21cfa844bd19bbbb8697e6f
+  Assets --include=*.prefab --include=*.asset`), among them every Grizzly round. The trigger bomb's
+  size table (2.5–5) is therefore 4.5–7 on screen. Nothing chose this; whether to author `_Spread: 0`
+  on the material (shrinks every round that wears it) or keep the look is a design call. If zeroed,
+  the bomb's spike crown still works — its radial normals are only REQUIRED while the push exists
+  (vessel skill rule 41).
+- **[debt created] `GrizzlyTriggerBombExecutor.NominalFlightSeconds` exists only because
+  `Gun.FireGun` demands a lifetime, and `Projectile.Cruises` must be set AFTER the fire call** (the
+  move loop's first step runs inside it). One user today (`grep -rn "Cruises = true" Assets/_Scripts`
+  → 1). If a second cruising round appears, give `FireGun` a `cruise` argument so `Initialize` sets
+  the flag before the first step, and retire both the constant and the ordering rule.
+- **[report, needs MPPM] The hull stop is decided per peer.** `Projectile.VesselStruck` is raised by
+  each peer's own sweep of its own bomb copy against its own (replicated, lagged) hull copies, so a
+  bomb that only GRAZES a rival can stop on one peer and fly on on another; nothing replicates the
+  stop. Unmeasured — what to measure: two MPPM clients, fire bombs past a rival at decreasing miss
+  distances, and record the distance below which the peers disagree. If that band is wide enough to
+  see, route the stop through the owner (an RPC carrying the stop position, as the press replay does).
+
+## From the Serpent Seed Wall branch (`claude/serpent-mass-seed-wall`, 2026-10-13)
+
+Rows only, opened by the §3.6 pass. Fixed on the branch rather than filed: an ended wall now
+releases shot-out bricks, a destroyed brick reopens its site, a wall whose vessel is gone stops
+sweeping instead of throwing, and Lockdown no longer allocates per landing.
+
+- **[report, needs MPPM] The stance's wall is built only on the owner and the server.**
+  `ToggleTranslationModeActionExecutor.Toggle` returns at `if (!hasAuthority) return;` (`:66`,
+  re-grep) before seeding, so on a third peer the press arrives and no wall forms. The cloak's wall
+  has no such gate. The guard predates the branch and keeps `n_IsTranslationRestricted`
+  single-writer, so it cannot simply move. Unmeasured: three MPPM players, one Serpent stops beside
+  a trail; record whether the third player sees bricks fly. If not, seed the stance's wall from
+  `stationaryModeChanged` on every peer, and keep the press for the flag alone.
+- **[walked past] `Prism.TimeCreated` is stamped in `Awake` only** (`Prism.cs`
+  `InitializePrismProperties`, called from `Awake`; `RegisterProjectileCreated` for projectiles).
+  Every "same life" check that compares it (`SerpentWallAssembler.IsAlive`,
+  `BuilderPrismWorld.cs:122`) therefore misses a pooled prism REUSED between two checks, and only
+  catches one still sitting in the pool (`activeInHierarchy`). Measure first: log `TimeCreated`
+  before and after a trail prism's return and re-spawn. Fixing it in `Initialize` changes every
+  caller of that check, and `Initialize` may also run on a live prism (`LayPanel` calls it after
+  spawn), so that is the question to answer before moving the stamp.
+- **[walked past] `SeedAssemblerActionExecutor.GetLatestBlock` reads `Trail2` by reflection**
+  (`"Trail2"`, `BindingFlags.NonPublic`) although `VesselPrismController.SecondaryTrail` (`:140`)
+  exposes it publicly. Replace with the property.
+- **[walked past] `SeedAssemblerActionExecutor.StopSeedCompletely` swallows every exception**
+  from `StopBonding` (`catch { /* ignore */ }`, `:145`). No current assembler throws there;
+  delete the catch so a future one fails loud.
+- **[debt created] `SeedWallActionSO.bondingDepth` serves only the legacy Wall / Gyroid
+  assemblers, and no asset uses them.** `git grep -l bfaa15f5819f4a50bf81a9f9fedc9b92 HEAD --
+  '*.asset' '*.prefab'` returns one asset, `SeedWallAction.asset`, with `assemblerType: 2`
+  (SerpentLattice). Once nothing else will ever author a Wall/Gyroid seed, delete the field, the
+  `AssemblerKind.Wall/Gyroid` branches of `EnsureAssembler`, and `Depth` plumbing for it.
+- **[report, needs profiling] A wall's sweep radius never shrinks.** The query radius is
+  `(_maxRing + 1) * pitch * 1.4143 + radius` and `_maxRing` only grows, and a cloak wall is active
+  until its super-shield breaks, which in normal play is never. Profile a long match with several
+  cloak walls (`ProfilerMarker` around `SerpentWallAssembler.Sweep`) before deciding whether an
+  old wall should stop sweeping, or `_maxRing` should be recomputed from the standing bricks.

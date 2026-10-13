@@ -384,9 +384,9 @@ no entry should stay on `AIPilot`.
   recipe picked by game mode — racing recipe for HexRace / Freestyle,
   Joust recipe for joust modes, Cellular recipe for capture/duel
   modes. Assigning a custom profile always overrides the fallback.
-- `FitnessProfileSO` ships with four named presets accessible from
+- `FitnessProfileSO` ships with named presets accessible from
   code (`ApplyRacingDefaults`, `ApplyJoustDefaults`,
-  `ApplyCellularCaptureDefaults`, `ApplyFreestyleDefaults`) and via
+  `ApplyCellularCaptureDefaults`, and one per trained mode) and via
   the asset's `Reset` context-menu item.
 
 To deploy at runtime, drop a `TrainingAIDeploymentBridge` on the AI vessel
@@ -485,9 +485,9 @@ These modes have no scenario yet. They are outside the start list, or
 the existing stats cannot express a per-pilot signal the mode does not
 already write.
 
-- Multiplayer Freestyle, Cellular Duel, Wildlife Blitz, and 2v2 Co-op
-  vs AI. Freestyle has a distance/speed fallback recipe in code and no
-  scenario asset.
+- Cellular Duel, Wildlife Blitz, and 2v2 Co-op vs AI. (Multiplayer
+  Freestyle, mode 28, was retired 2026-10 along with its distance/speed
+  fallback recipe.)
 - Tournament / Maelstrom. It chains other modes; it is not its own
   scoring surface.
 - Single-player arcade cards whose scenes are gone.

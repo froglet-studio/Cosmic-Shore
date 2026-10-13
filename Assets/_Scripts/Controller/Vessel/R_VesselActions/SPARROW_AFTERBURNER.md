@@ -319,7 +319,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    about the Sparrow's ability row. (The Sparrow's `ElementalBarsController.view` reference is
    dangling **on `bleeding-edge` already** — `fileID 7416581124810081342` resolves to nothing — so a
    missing-bars fallback warning there is pre-existing, not from this branch.)
-2. **Indefinite boost.** `MinigameFreestyleMultiplayer_Gameplay` (or Menu_Main freestyle), Sparrow.
+2. **Indefinite boost.** Menu_Main freestyle, Sparrow.
    Hold boost for 60 s: speed stays elevated, no force-release, trail never turns into danger
    prisms, and flying back through your own trail does not slam you.
 3. **Roll is base kit.** With Time at level 0 (do not collect Time crystals), boost + hold the left

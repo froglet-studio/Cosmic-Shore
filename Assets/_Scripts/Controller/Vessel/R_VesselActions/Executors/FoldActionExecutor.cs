@@ -556,6 +556,8 @@ namespace CosmicShore.Gameplay
                 DomainTolled = true,
                 TollPetalsPerElement = so.RivalTollPetalsPerElement,
                 TollShedSpeed = so.RivalTollShedSpeed,
+                TollHitClass = so.TollHitClass,
+                TollHitLanded = so.OnTollHitLanded,
                 Domain = domain,
                 // The pair follows THIS Butterfly: it always rides free, and the toll (and the
                 // rim's hue) track its domain live.

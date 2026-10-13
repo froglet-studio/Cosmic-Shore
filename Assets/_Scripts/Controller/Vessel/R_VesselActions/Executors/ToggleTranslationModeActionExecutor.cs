@@ -73,13 +73,16 @@ namespace CosmicShore.Gameplay
             {
                 if (isOn)
                 {
-                    var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status);
+                    // The stance's seed is held, not super-shielded: its wall steals until the
+                    // Serpent flies again (SERPENT_SEED_WALL.md, "The stance's wall").
+                    var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status, heldByStance: true);
                     vesselPrismController?.StopSpawn();
                     if (seeded) seedAssemblerExecutor.BeginBonding();
                 }
                 else
                 {
                     vesselPrismController?.StartSpawn();
+                    seedAssemblerExecutor.ReleaseHeldWall();
                     seedAssemblerExecutor.StopSeedCompletely();
                 }
             }
@@ -100,6 +103,14 @@ namespace CosmicShore.Gameplay
      
      
 
+        /// <summary>
+        /// Leave the stance now, if in it — the same exit a mini-game turn end takes (through the
+        /// controller, so the replicated flag clears on every peer, prism spawning resumed,
+        /// <c>stationaryModeChanged</c> raised). The Stoat's sling calls it: a slung wormhole pair
+        /// is a launch, and a hull held in the stance would ignore the pull (STOAT.md §1).
+        /// </summary>
+        public void EndStance() => End();
+
         void End()
         {
             if (_status == null) return;
@@ -114,7 +125,11 @@ namespace CosmicShore.Gameplay
             else _status.IsTranslationRestricted = false;
 
             vesselPrismController?.StartSpawn();
-            if (seedAssemblerExecutor) seedAssemblerExecutor.StopSeedCompletely();
+            if (seedAssemblerExecutor)
+            {
+                seedAssemblerExecutor.ReleaseHeldWall();
+                seedAssemblerExecutor.StopSeedCompletely();
+            }
 
             stationaryModeChanged?.Raise(false);
         }

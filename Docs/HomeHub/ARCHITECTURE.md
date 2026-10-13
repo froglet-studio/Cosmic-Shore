@@ -86,7 +86,7 @@ quietly un-dim the first time a sibling is pressed.
 
 ### 2.3 The nav bar: `disabledScreens` stays the single source of truth
 
-`ScreenSwitcher.disabledScreens` (`{ARK, PORT}`) already decided which screens are closed. It now
+`ScreenSwitcher.disabledScreens` (`{PORT}`; ARK reopened 2026-10-13 as the Elemental Converter) already decided which screens are closed. It now
 also decides which links *read* as closed: `MarkDisabledNavLinks` stamps `Locked` onto each
 disabled screen's link at `Start`, and `NavigateTo` answers a press through that link's view
 instead of returning in silence.
@@ -109,7 +109,7 @@ screen. The two lists answer different questions and move on different clocks:
 
 | | `disabledScreens` | `SO_CommerceAvailability` |
 |---|---|---|
-| Says | this screen is **permanently** closed (ARK, PORT) | this surface is closed **for this build** |
+| Says | this screen is **permanently** closed (PORT; ARK until 2026-10-13) | this surface is closed **for this build** |
 | Reads as | `Locked` | whatever the surface's own row says |
 | Flips when | design opens the screen | the paid-EA conversion — **one asset edit** |
 | Lives in | the scene | `Resources/` |
@@ -471,8 +471,8 @@ Three rules, all carried by one authored bit on the card - **`SO_ArcadeGame.Aren
 the four `ArenaGames` cards and nowhere else (`ArenaSeatingTests` holds both directions) - and
 published at launch as **`GameDataSO.IsArenaMatch`** (by `SyncFromArcadeGame` on the host, by the
 config-sync RPC on a guest, cleared by the menu). It is an explicit bit rather than "the card lists
-several hulls" because that proxy is false: Scurry, Multiplayer Freestyle and the Maelstrom card
-all list several hulls and are not arenas.
+several hulls" because that proxy is false: Scurry and the Maelstrom card
+both list several hulls and are not arenas.
 
 **1. Arena cards go up to six pilots.** `MaxPlayersAllowed` is 6 on Astro League (already), Brood
 Rush, Regatta and Broadside; the two Regatta/Broadside generators author the same number. What the

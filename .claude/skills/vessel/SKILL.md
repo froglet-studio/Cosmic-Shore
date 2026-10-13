@@ -192,6 +192,31 @@ applies to new abilities, new resources on the meter list, and anything that add
     (trigger sphere, kinematic rigidbody, `ImpactCollider`, container, layer 7) and skim nothing,
     silently, because the reference points at a disabled twin. Run **Audit Vessel Skimmers**
     first; never conclude from the prefab looking right.
+    **The CRYSTAL side never asked** (until 2026-10-08): `ElementalCrystalImpactor.AcceptImpactee`
+    took a crystal from ANY `SkimmerImpactor`, initialised or not, so an uninitialised skimmer
+    collected it with `VesselStatus == null` — no score, no element level, no hull fusion, and on
+    screen just "the old capture". The Grizzly's nested x30 `Skimmer.prefab` beat its initialised
+    `DummySkimmer` to every crystal that way; `DefersToItsVesselsSkimmer` now makes such a skimmer
+    stand aside when its vessel HAS an initialised one. The Termite, Falcon and Shrike list NO
+    near-field skimmer at all (`_nearFieldSkimmer: {fileID: 0}`), so they still collect crediting
+    nobody — `Docs/ElementalAbilitySystem/BACKLOG.md`. A pickup "with no vessel" is now a one-time
+    `[CrystalMorph] [HullFusion]` warning, which is how this was found after four rounds of reading
+    the prefabs had not found it.
+    **A skimmer that is SWITCHED OFF is no skimmer either.** The Butterfly's only skimmer was its
+    Dust-mode capsule, which `ButterflyDustField` disables in Mass mode — the spawn mode — so it
+    collected no elemental crystal at all while every audit read clean (the slot was assigned). A hull
+    whose skimmer is mode-gated needs an always-on crystal catcher: an initialised far-field sphere
+    with an EMPTY container (`ButterflyCrystalSkimmer`, `BUTTERFLY.md §3.1a`). Collection is the
+    crystal's side, so the catcher needs no effect, and empty lists make it inert to prisms and pilots.
+11b. **A skinned renderer's TRANSFORM is not its bind space — never size or aim anything off it.**
+    `lossyScale`, `InverseTransformPoint` and `position` on a `SkinnedMeshRenderer` describe a node
+    the bones may not agree with: the Sparrow model carries a node moved 185 units, the Manta family
+    a 100x node scale folded into its bind poses (its bind-pose mesh is 0.011 units across). Bones
+    are right by construction, so read world sizes and directions off points pinned THROUGH them
+    (`bone.localToWorldMatrix × bindpose × p`). A hull fusion that used the renderer transform drew
+    its faces off-screen on the Sparrow while the identical code worked on the Squirrel — and a
+    solver with absolute tolerances landed 6% of its points on the 0.011-unit Manta mesh until it
+    solved at unit size (`CRYSTAL_HULL_FUSION.md` §12).
 12. **Before removing a "redundant" writer, enumerate ALL writers of that meter.** A resource can
     be fed by both `ResourceSystem`'s per-second `resourceGainRate` and an action executor, and
     an executor's own cooldown can block its path entirely — so deleting the passive trickle
@@ -476,6 +501,16 @@ applies to new abilities, new resources on the meter list, and anything that add
     time-to-target figure, read the movement loop for a shaping factor** — and when you write a
     new one, write the derivation next to it so the next sweep can check it in one line rather
     than re-deriving it from the integral.
+    **Corollary — a pilot reports this ease-out as FRICTION.** *"The bombs are stopping due to a
+    friction of some sort"* was this loop: every round in the fleet decelerates to rest, so a
+    projectile meant to coast reads as dragged. The opt-out is per flight, `Projectile.Cruises`
+    (constant velocity, no lifetime — set it AFTER `Gun.FireGun`, because the loop's first step
+    runs inside the fire call). Nothing else may be expected to stop a cruising round, so its
+    owner must own every retirement path (turn end, disable, re-init) — the Grizzly trigger bomb
+    is the reference (`GRIZZLY_TRIGGER_BOMBS.md`). To STOP a round on a hull rather than hit it,
+    listen to `Projectile.VesselStruck` and `Freeze()` it from the handler: `Freeze` latches
+    `FlightHalted`, so the sweep that raised the event halts at the contact instead of finishing
+    the frame's step past it. (Grizzly trigger bombs, 2026-10-08.)
 
 35. **A derivation that collapses two facts into one is a statement about the cases that existed
     when it was written — and it goes on compiling after you add the case that separates them.**
@@ -597,6 +632,87 @@ applies to new abilities, new resources on the meter list, and anything that add
     asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
     the whole set by asking which lists name a vessel, not by reading the list of lists somebody
     wrote down last time.** (Butterfly, 2026-09-22.)
+
+41. **`Custom/SpreadFresnelShader` MOVES your geometry — one WORLD unit along every normal.** Its
+    `_Spread` property defaults to `(1,1,1)` and `DangerProjectileMaterial` (every Grizzly round,
+    `ExplodableProjectile`, `ProjectileFX`) authors no value, so the vertex stage pushes each vertex
+    `normal × _Spread / objectScale` — a constant world unit whatever the object's scale. Two
+    consequences. **A visible size is the authored scale + 2**: the trigger bomb's doc table said
+    2.5–5 and the screen showed 4.5–7 (rule 4b again — nothing chose that number). And **any
+    geometry you add on this material must carry RADIAL normals**, or the push tears it: flat-shaded
+    faces separate along their own normals, and true cone normals bloat a spike sideways by a full
+    unit. The bomb's spike crown uses the sphere's own normal at each vertex, so the whole spike rides
+    the sphere's push and stays seated (`GrizzlyBombVisual.SpikeMesh`, `GrizzlyBombSpikeMeshTests`).
+    Before sizing anything against a fresnel-shaded body, read the material's `_Spread`; absent means
+    one unit. (Grizzly trigger bombs, 2026-10-08.)
+
+42. **A vessel made by COPYING another prefab on disk inherits four things that are silently
+    wrong, and the registration list is longer than the setup tool's.** The Thresher (2026-10-08) is
+    a YAML clone of the Squirrel and hit each one:
+    - **`GlobalObjectIdHash`** is the source's verbatim, so only one of the two can ever spawn
+      (Netcode keys on the hash alone). Compute it as
+      `XXHash32("GlobalObjectId_V1-1-<prefab guid>-<NetworkObject fileID>-0")` (verify by
+      reproducing the source's shipped hash first) and zero
+      `InScenePlacedSourceGlobalObjectIdHash`. Gate: `Tools/Build/check_network_prefab_hashes.py`.
+    - **`DefaultNetworkPrefabs.asset`** keys by the root GAMEOBJECT fileID; the prefab container
+      keys by the root TRANSFORM. Same object, different ids.
+    - **Tests that enumerate `VesselClassType`** fail for a new member with no data:
+      `CrystalHullFusionConfigTests` needs four `CrystalHullFusionConfig` entries (a hull that
+      draws the source's mesh may reuse the source's bakes — `Matches` keys on mesh + tuning),
+      `EnumIntegrityTests` counts members (it was already one behind when the Thresher landed), and
+      `OneThumbVesselCoverageTests` must be told a new transformer type exists or it skips the hull.
+      `grep -rln "GetValues(typeof(VesselClassType))" Assets/_Scripts` before committing.
+    - **Stale keys travel with the copy.** The Squirrel's camera asset carried seven fields
+      `CameraSettingsSO` no longer has; `Tools/Build/check_generated_assets.py` (after
+      `unity_refcompile`) reports them. To tell inherited findings from introduced ones, commit an
+      untouched copy of the source in a base worktree, audit it, and diff the two finding lists.
+
+43. **The fleet's chase camera is HARD-ATTACHED, so any hull rotation faster than a stick can make
+    is a camera whip.** Every vessel camera asset ships `CameraMode.FixedCamera`, which sets
+    `_disableRotationLerp`: the camera's pose is the hull's rotation × the offset, the same frame.
+    A mechanic that rotates the hull itself — snapping onto an orbit tangent, a tug that turns the
+    nose, a fling that faces the velocity — therefore swings the WORLD on screen. The Thresher's
+    plant (2026-10-09) turned the hull up to **91° in one frame** and read as the camera "getting
+    whipped around"; the rope's own tug, the suspect, peaked at only 85–131 °/s. Two lessons:
+    - **Measure the hull's per-frame turn before guessing.** Copy the transformer's velocity→nose
+      logic into a scratch driver over the pure solver (the Thresher harness's stubs compile it in
+      seconds) and record max degrees/frame per scenario. The answer pointed at a different line
+      than intuition did.
+    - **Cap the camera's FOLLOW FRAME, not the hull.** `CustomCameraController.MaxFollowTurnRate`
+      (default 0 = hard-attached) `RotateTowards`s the frame at most N °/s. Set it above every
+      stick rate (the Thresher uses 240) and ordinary flying is bit-for-bit unchanged; only snaps
+      are spread. Slowing the hull instead changes gameplay — a fling bends by exactly the nose's
+      lag. `RearViewLawTests` counts `rotation * EffectiveOffset` pose sites in the camera SOURCE
+      (exactly two), so keep the follow-frame local named `rotation` and keep the teleport path
+      from adding a third site.
+
+44. **A camera blend toward a MOVING pose reads as rough however long you make it — drive the
+    transition yourself between poses that are not moving under you, and hand over only where
+    they coincide.** `CustomCameraController.Spectate` blends the settled follow pose toward a
+    vantage over `SpectateBlendSeconds`, which is correct and was still the Thresher's "make it
+    smoother" report (2026-10-13): on ENTRY the follow pose underneath was still spinning with a
+    planted hull, on EXIT a turn-capped follow frame (rule 43) was still swinging onto the new
+    heading — so both blends chased a target that moved during them. The fix is on the caller's
+    clock: capture the camera's ACTUAL pose, ease (SmoothStep) your own vantage from it to the
+    destination — a still vantage going in; the follow pose COMPUTED from the hull's live pose and
+    the camera's own offset going out — then `SnapToTarget()` and release with a near-zero
+    hand-over blend between two equal poses. Two traps: a computed follow pose must use the SAME
+    formula the camera does (the warp field made it `EffectiveOffset * WarpFieldRuntime.ScaleAt`,
+    merged in mid-branch — a duplicated formula drifts silently; see THRESHER.md's refactor rows),
+    and never ease from `transform` read AFTER shake, or the start pose carries the shake.
+
+45. **A hull snap is a VELOCITY snap first — cap the turn, let the constraint stretch, and reel
+    the stretch back with a SPRING, never an exponential.** Rule 43 hides a one-frame hull turn
+    from the camera; it does not make the motion smooth. The Thresher's plant replaced the ship's
+    heading with the orbit tangent in one frame (91°). Capping the heading's turn rate (300 °/s)
+    is half the fix, and it STALLS the ship if the constraint holds — a ship flying radially away
+    from the pivot, clamped to the rope, has nowhere to go. So let the constraint stretch while
+    the heading turns (the ship swings wide, ~15 u), then reel the stretch back. An
+    exponential reel-back steps the radial speed from 0 to `rate × stretch` in one frame — that
+    was a single **47°** frame in the measurement — while a critically damped spring seeded with
+    the swing-out's own radial speed ramps it (worst 6.9°/frame, which is the orbit's own
+    curvature). Measure per-frame heading change in the pure solver (rule 43's scratch driver)
+    before and after; `HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling` is the template.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
@@ -747,6 +863,14 @@ every time: *"I don't see the pip."*
   - **A corner sharper than a right angle needs a MITER, not a bisector.** An antialiasing feather
     offset along the bisector is `sin(theta/2)` too thin at the point — at a 72-degree apex that is
     41% — and the apex is exactly where the eye lands first.
+- **Not every petal is square — the window's rect AND its render target take the petal's
+  aspect.** The Charge petal's bounding box is square to 0.5%, so the Serpent's eyepiece got away
+  with a square everything. The Time petal (traced off `time_petal.png`, 2026-10-13) is an exact
+  rhombus with 72° tips and width / height = tan 36° = 0.727: positions-are-UVs then needs a 0.727
+  rect AND a 0.727 render target (`ScopePipView.RenderAspect`), and its inradius and miters must be
+  computed in TRUE proportions (x scaled by the aspect), or the feather and the round marks skew.
+  Measure a sprite with coverage-weighted row edges and a line fit per edge; the residual (≤0.05 px
+  here) is what tells you the shape really is a polygon.
 - **Derive a shape's constants from its outline, never transcribe them.** `ScopePetalGeometry`
   computes inradius, circumradius and area in a static constructor by walking its own edges, so
   re-tracing the sprite moves the picture, the frame, the reticle cap and the recharge ring
@@ -854,6 +978,14 @@ Elemental levels are simulated per peer, so the rival toll (`WormholeMouth.LevyT
 is levied there: putting it in `Transit` would have stripped petals on the owner only and desynced
 every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
 server re-broadcasts to everyone else), so a hook there fires once per machine.
+
+- **Anything that PREDICTS where a hull will go must fly the hull's response, not its stick** (the Stoat's
+  pathfinder, an AI's lead, an aim-assist line). `VesselTransformer` turns a COMMAND (`CommandedRotation`)
+  that the visible hull slerps after at `RotationFollowRate` (1.5 /s, a 0.67 s lag), and eases `speed` to
+  `CurrentThrottleTarget` at the same rate. A body that turns at the stick's rate at once is 15–73 u off the
+  real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
+  to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
+  pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

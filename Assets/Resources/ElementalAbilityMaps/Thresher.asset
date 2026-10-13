@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Thresher
+  m_EditorClassIdentifier:
+  vesselClass: 14
+  entries:
+  - Element: 1
+    AbilityLabel: Wrecking Ball
+    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s; at smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion. The ball and the chain also reach ENEMY VESSELS: each contact is a scored Strike that STEALS petals (the PvP-is-petals-only rule). Charge scales how many: ThresherConfigSO.vesselHitPetals, 1 petal per element at rest -> 3 at level 10 (floor 0.5).'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Magnet
+    UpgradeDescription: 'The free ball is drawn toward the nearest enemy vessel within magnetRange (150 u) at magnetAcceleration (220 u/s^2) - it moves only your ball, never the other vessel. Gated on IsUpgradeActive(Charge) in ThresherExecutor (MagnetActive -> PullBallToEnemy).'
+  - Element: 2
+    AbilityLabel: Mass Mode
+    AbilityDescription: 'The A button TOGGLES Mass Mode: the ball builds instead of breaking. It STEALS the rival prisms it touches, SHIELDS your own, lays a trail of your prisms behind it and never explodes - and the energy the chain''s kills bank keeps building instead of being spent, so leaving Mass Mode makes the next rival hit a bigger blast. Mass scales the SIZE of the trail prisms the ball lays: ThresherConfigSO.massTrailScale on every axis of massTrailPrismScale, x1 at rest -> x2 at level 10 (floor x0.5).'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Armoured Trail
+    UpgradeDescription: 'The prisms the ball lays in Mass Mode are laid SHIELDED (per-lay snapshot). Gated on IsUpgradeActive(Mass) in ThresherExecutor.LayTrailPrism (ArmouredTrailActive).'
+  - Element: 3
+    AbilityLabel: Winch
+    AbilityDescription: 'The RIGHT trigger. Hold to let chain out (longer reach, slower whip); release and it reels in fast, conserving the ball''s spin - the crack. The chain, taut or slack, SLICES rival prisms it touches and SHIELDS your own; each kill banks energy for the ball''s next explosion (the Space card shows how much radius is banked). Space scales the LARGEST explosion the bank can buy: ThresherConfigSO.energyMaxDiameterScale, x4 diameter at rest -> x8 at level 10 (floor x2).'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Breaker
+    UpgradeDescription: 'A RED (smash-speed) ball''s direct hit destroys super-shielded prisms, through the sanctioned DeactivateShields -> Damage(devastate) sequence. Gated on IsUpgradeActive(Space) in ThresherExecutor.SweepBall (BreakerActive). (Until 2026-10-13 Space 5 was Reaper Chain.)'
+  - Element: 4
+    AbilityLabel: Plant
+    AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it, faster every lap (right trigger up winds you in and spins you faster). A fast spin hands the camera to the launch view: the sticks pick a launch point on the circle and releasing LT launches from it, through the crosshair, as the ship comes round; pulling LT deeper zooms the Time-petal sight window. Time scales how fast the spin winds up to launch speed: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Perfect Release
+    UpgradeDescription: 'A release timed inside the window - the ship reaches the launch point within perfectWindowSeconds (0.25 s) of LT coming up, while the crosshair is lime - launches perfectBoost (x1.6) faster than the orbit. Gated on IsUpgradeActive(Time) in ThresherExecutor.EndPlant (PerfectReleaseActive -> ThresherChainSolver.ArmLaunch).'

@@ -482,6 +482,25 @@ namespace CosmicShore.Gameplay
                 renderer.SetPropertyBlock(null);
         }
 
+        /// <summary>
+        /// The crystal pair <paramref name="domain"/> paints a crystal in — what this crystal would
+        /// wear if that domain owned it. A hull fusion converges onto it, so a pickup that becomes
+        /// part of a vessel ends in that vessel's colours rather than the lime it was collected in.
+        /// False for a domain with no crystal pair (<see cref="Domains.Blue"/> is the unresolved
+        /// sentinel and is refused, not answered — Docs/PALETTE.md §2.8) or an unwired theme.
+        /// </summary>
+        public bool TryGetDomainCrystalColors(Domains domain, out Color bright, out Color dull)
+        {
+            bright = default;
+            dull = default;
+            if (domain is not (Domains.Jade or Domains.Ruby or Domains.Gold)) return false;
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return false;
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var set) || set == null) return false;
+            bright = set.BrightCrystalColor;
+            dull = set.DullCrystalColor;
+            return true;
+        }
+
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
 
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;
@@ -729,7 +748,7 @@ namespace CosmicShore.Gameplay
                 var model = modelData.model;
 
                 model.GetComponent<Renderer>().material = modelData.inactiveMaterial;
-                StartCoroutine(LerpCrystalMaterialCoroutine(model, ResolveActivationMaterial(modelData, i)));
+                StartCoroutine(LerpCrystalMaterialCoroutine(model, ResolveActivationMaterial(modelData)));
             }
 
             // The state just flipped from "living heart" to "collectible", so repaint NOW - after
@@ -752,14 +771,22 @@ namespace CosmicShore.Gameplay
         /// crystal colour is what tells a pilot who may collect it. An unowned crystal keeps its
         /// authored neutral material and stays free for anyone.
         /// </summary>
-        Material ResolveActivationMaterial(CrystalModelData modelData, int index)
+        Material ResolveActivationMaterial(CrystalModelData modelData)
         {
             bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
-            if (!domainOwned || !_themeManagerData) return modelData.defaultMaterial;
+            return domainOwned ? TeamMaterialFor(modelData) : modelData.defaultMaterial;
+        }
 
+        /// <summary>
+        /// This model's material in <see cref="ownDomain"/>'s colours: the team clone of its OWN default material
+        /// (<see cref="ThemeManagerDataContainerSO.GetTeamCrystalMaterial(Domains, Material)"/> - by material, not
+        /// by slot index), or its default material when the theme has none for it.
+        /// </summary>
+        Material TeamMaterialFor(CrystalModelData modelData)
+        {
             // Unity's implicit bool, not ?? - a destroyed material is FAKE-null, which ?? happily
             // passes through, and the lerp would then bail and strand the crystal on inactiveMaterial.
-            var teamMaterial = _themeManagerData.GetTeamCrystalMaterial(ownDomain, index);
+            var teamMaterial = _themeManagerData ? _themeManagerData.GetTeamCrystalMaterial(ownDomain, modelData.defaultMaterial) : null;
             return teamMaterial ? teamMaterial : modelData.defaultMaterial;
         }
 
@@ -779,7 +806,7 @@ namespace CosmicShore.Gameplay
             ownDomain = newDomain;
             for (int i = 0; i < crystalModels.Count; i++)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, _themeManagerData.GetTeamCrystalMaterial(ownDomain, i), 1));
+                StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, TeamMaterialFor(crystalModels[i]), 1));
             }
             if (duration != -1) StartCoroutine(DecayingTheftCoroutine(duration));
         }

@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(14, values.Length,
+            Assert.AreEqual(17, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -51,6 +51,9 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Shrike, 10)]
         [TestCase(VesselClassType.Sparrow, 11)]
         [TestCase(VesselClassType.Scarab, 12)]
+        [TestCase(VesselClassType.Butterfly, 13)]
+        [TestCase(VesselClassType.Thresher, 14)]
+        [TestCase(VesselClassType.Stoat, 15)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -156,6 +159,9 @@ namespace CosmicShore.Tests
             // GrizzlyCharge took 54 at the 2026-09-12 grizzly-v2 merge, after 44 (Salvo)
             // and 45 (Switchback) were both taken from under it - the fifth such collision -
             // and 62 at the 2026-10-02 merge, after WreckingBall took 54: the sixth.
+            // 61 -> 59 on 2026-10-08: MultiplayerFreestyle (28) and OnlineDuelForTheCell (29)
+            // retired; both IDs stay reserved. 59 -> 60 the same day: Slingshot (64), the Stoat's.
+            // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
             var values = Enum.GetValues(typeof(GameModes));
             Assert.AreEqual(61, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
@@ -173,8 +179,6 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.MultiplayerFreestyle, 28)]
-        [TestCase(GameModes.OnlineDuelForTheCell, 29)]
         [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]
         [TestCase(GameModes.CoOpWildlifeBlitz, 32)]
         [TestCase(GameModes.SkimRace, 33)]
@@ -197,6 +201,8 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Redline, 53)]
         [TestCase(GameModes.GrizzlyCharge, 62)]
         [TestCase(GameModes.GrizzlyTime, 63)]
+        [TestCase(GameModes.Slingshot, 64)]
+        [TestCase(GameModes.Warpline, 65)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
@@ -219,8 +225,6 @@ namespace CosmicShore.Tests
             // Convention check: multiplayer modes should be identifiable by name.
             var multiplayerModes = new[]
             {
-                GameModes.MultiplayerFreestyle,
-                GameModes.OnlineDuelForTheCell,
                 GameModes.Multiplayer2v2CoOpVsAI,
                 GameModes.CoOpWildlifeBlitz,
                 GameModes.Joust,

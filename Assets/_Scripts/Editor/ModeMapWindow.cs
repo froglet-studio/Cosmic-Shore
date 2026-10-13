@@ -129,7 +129,6 @@ namespace CosmicShore.Editor
             {
                 { "Scurry", GameModes.Scurry },
                 { "Joust", GameModes.Joust },
-                { "DuelForTheCell", GameModes.OnlineDuelForTheCell },
             };
             foreach (var guid in AssetDatabase.FindAssets("t:ScoringRuleSO"))
             {
