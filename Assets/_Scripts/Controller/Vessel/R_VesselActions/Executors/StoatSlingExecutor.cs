@@ -12,6 +12,14 @@ namespace CosmicShore.Gameplay
     /// The Stoat's SLINGSHOT (<c>R_VesselActions/STOAT.md</c>): an attractor–repulsor WORMHOLE pair
     /// laid beside the hull — the attractor on the trigger's side, the repulsor mirrored on the other.
     ///
+    /// <para><b>TIME MODE (2026-10-13, <c>STOAT_DIPOLE.md</c> §1b).</b> The triggers fly this orbit only while the
+    /// hull is in Time mode (<see cref="StoatModeExecutor"/>; Mass mode lays the field dipole). The release is TIMED:
+    /// the whole kick for a let-go a quarter-turn round the attractor (<see cref="StoatSlingConfigSO.SweetSpotDegrees"/>,
+    /// 90° ± 15°, easing off over 30° more), <see cref="StoatSlingConfigSO.MissKickShare"/> of it outside the window,
+    /// × Time's rate (<see cref="StoatDipoleConfigSO.BoostRatio"/>). The pathfinder draws the rest of the orbit and
+    /// turns it lime inside the window. Every annihilation of this hull's pair throws the Charge ripple
+    /// (<see cref="StoatRippleExecutor"/>).</para>
+    ///
     /// <para><b>The orbit</b> (the drift pair, the playtest's design of 2026-10-09). PRESS lays the
     /// pair: the attractor perpendicular to the nose at the radius the squeeze asks for, the repulsor
     /// the same distance on the other side, both the same size. HOLD and the hull ORBITS the attractor:
@@ -70,6 +78,12 @@ namespace CosmicShore.Gameplay
         float _aiLastSlingTime = float.NegativeInfinity;
         float _aiReleaseAt = float.PositiveInfinity;
 
+        StoatModeExecutor _mode;
+        StoatRippleExecutor _ripple;
+        StoatDipoleExecutor _dipole;
+        bool _resolvedSiblings;
+        float _lastTiming = -1f;
+
         // The orbit in flight (drift pair).
         bool _orbiting;
         Side _orbitSide;
@@ -89,6 +103,17 @@ namespace CosmicShore.Gameplay
         public float OrbitRadius => _orbiting ? _orbitRadius : 0f;
         /// <summary>Radians turned around the attractor in the current orbit.</summary>
         public float OrbitAngle => _orbitAngle;
+        /// <summary>True while either trigger holds this executor's squeeze.</summary>
+        public bool IsHoldingAny => _holds[0].Holding || _holds[1].Holding;
+        /// <summary>The attractor the hull is circling, or null.</summary>
+        public BlackHole Attractor => _orbiting && _pair != null ? _pair.Black : null;
+        /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 when not orbiting) — the pathfinder and HUD.</summary>
+        public float Timing01 => _orbiting && config ? config.SweetSpot(_orbitAngle * Mathf.Rad2Deg) : 0f;
+        /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card).</summary>
+        public float SweetProgress01 => _orbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
+        /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
+        public float LastTiming => _lastTiming;
+        public StoatSlingConfigSO Config => config;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -96,6 +121,8 @@ namespace CosmicShore.Gameplay
             _holds[0] = default;
             _holds[1] = default;
             _orbiting = false;
+            _resolvedSiblings = false;
+            _lastTiming = -1f;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatSlingExecutor has no StoatSlingConfig — the triggers will sling nothing. " +
@@ -105,6 +132,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Trigger PRESS: the drift pair is laid now and the orbit begins; a crystal pair waits for the release.</summary>
         public void BeginHold(Side side)
         {
+            // The triggers fly the orbit in TIME mode only; in Mass mode they lay the field dipole (StoatDipoleExecutor).
+            ResolveSiblings();
+            if (_mode && !_mode.IsTimeMode) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
@@ -131,6 +161,27 @@ namespace CosmicShore.Gameplay
                 return;
             }
             if (BlackHoleRegistry.Config.CrystalPairs) SlingCrystal(side, _holds[i].Peak);
+        }
+
+        /// <summary>
+        /// A mode switch: both triggers let go here. An orbit is let go WITHOUT its kick (the switch is not a release) and
+        /// its pair closes and annihilates as any let-go pair does. Every peer runs it (the switch is replicated).
+        /// </summary>
+        public void ReleaseAll()
+        {
+            if (_orbiting) Slingshot(boost: false);
+            _holds[0].Holding = false;
+            _holds[1].Holding = false;
+        }
+
+        void ResolveSiblings()
+        {
+            if (_resolvedSiblings) return;
+            _resolvedSiblings = true;
+            if (!TryGetComponent<ActionExecutorRegistry>(out var registry)) return;
+            _mode = registry.Get<StoatModeExecutor>();
+            _ripple = registry.Get<StoatRippleExecutor>();
+            _dipole = registry.Get<StoatDipoleExecutor>();
         }
 
         // ------------------------------------------------------------------ the orbit
@@ -236,9 +287,19 @@ namespace CosmicShore.Gameplay
             var hull = _status.Transform;
             if (boost && transformer && hull && MantaStingActionExecutor.IsSimAuthority(_status))
             {
-                float kick = StoatSlingMath.SlingBoost(OrbitSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
-                // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer).
-                if (kick > 0f) transformer.ModifyVelocity(hull.forward * (kick / 1.5f), config.SlingBoostSeconds);
+                // TIMED: the whole kick for a release a quarter-turn round (the sweet spot), the miss share outside it;
+                // × Time's rate, the Stoat's one Time number (StoatDipoleConfigSO.BoostRatio).
+                ResolveSiblings();
+                float timing = config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+                float rate = _dipole && _dipole.Config ? _dipole.Config.BoostRatio(_status) : 1f;
+                float squeeze = StoatSlingMath.SlingBoost(OrbitSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
+                float kick = StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, rate);
+                _lastTiming = timing;
+                // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer). A timed kick can
+                // pass the shared 100 u/s displacement ceiling, so it raises the cap for its own life (vessel §4.ab2) —
+                // never the vessel's ceiling, which every knock-back shares.
+                if (kick > 0f) transformer.ModifyVelocity(hull.forward * (kick / 1.5f), config.SlingBoostSeconds, false, kick * 1.05f);
+                if (timing >= 0.999f) PlayOneShot(config.SweetSpotEvent);
             }
             if (boost) PlayOneShot(config.SlingEvent);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
@@ -247,9 +308,33 @@ namespace CosmicShore.Gameplay
 
         void EndLastPair()
         {
-            if (_pair != null && _pair.IsAlive) BlackHoleRegistry.Annihilate(_pair);
+            if (_pair != null && _pair.IsAlive)
+            {
+                // A fresh press over a live pair annihilates it where it stands: that is an annihilation too, and throws
+                // the Charge ripple from its middle (StoatRippleExecutor).
+                var middle = 0.5f * (_pair.Black.transform.position + _pair.White.transform.position);
+                float separation = Vector3.Distance(_pair.Black.transform.position, _pair.White.transform.position);
+                BlackHoleRegistry.Annihilate(_pair);
+                Detonate(middle, separation);
+            }
             if (_crystal && !_crystal.IsGone && !_crystal.IsAnnihilating) _crystal.Annihilate(BlackHoleRegistry.Config.CrystalReplaceSeconds);
         }
+
+        /// <summary>This hull's let-go pair met and annihilated (every peer, its own copy): the Charge ripple, its reach
+        /// the separation the pair was laid at.</summary>
+        void OnPairMet(BlackHoleRegistry.Pair pair, Vector3 at)
+        {
+            if (pair == null || pair != _pair) return;
+            Detonate(at, 2f * pair.HalfGap0);
+        }
+
+        void Detonate(Vector3 at, float separation)
+        {
+            ResolveSiblings();
+            if (_ripple) _ripple.Detonate(at, separation);
+        }
+
+        void OnEnable() => BlackHoleRegistry.PairMet += OnPairMet;
 
         // ------------------------------------------------------------------ the crystal style
 
@@ -300,7 +385,8 @@ namespace CosmicShore.Gameplay
                 else if (MantaStingActionExecutor.IsSimAuthority(_status)) StepOrbit(Time.deltaTime);
             }
 
-            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status)) AutopilotSling();
+            ResolveSiblings();
+            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.IsTimeMode)) AutopilotSling();
         }
 
         /// <summary>
@@ -392,6 +478,7 @@ namespace CosmicShore.Gameplay
         // A vessel swap or despawn drops the squeeze and lets an orbiting pair go (it closes and annihilates).
         void OnDisable()
         {
+            BlackHoleRegistry.PairMet -= OnPairMet;
             if (_orbiting)
             {
                 _orbiting = false;

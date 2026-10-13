@@ -184,17 +184,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Prefab_BindsTheTriggersToTheDipoleAndXToTheHold()
+        public void Prefab_BindsEachTriggerToBothModesXToTheHoldAndBToTheSwitch()
         {
             string text = Read(Prefab);
             string block = Regex.Match(text, @"  _gamepadActionOverrides:\n(?:.*\n)*?(?=  _onButtonPressed:)").Value;
             Assert.IsNotEmpty(block, "gamepad override block");
-            StringAssert.Contains("  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}\n", block, "LT → StoatDipoleLeftAction");
-            StringAssert.Contains("  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}\n", block, "RT → StoatDipoleRightAction");
+            // Each trigger carries its dipole (Mass mode) AND its orbit (Time mode); StoatModeExecutor decides which acts.
+            StringAssert.Contains("  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}\n" +
+                                  "    - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}\n", block, "LT → dipole left + orbit left");
+            StringAssert.Contains("  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}\n" +
+                                  "    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}\n", block, "RT → dipole right + orbit right");
             StringAssert.Contains("  - InputEvent: 6\n    ShipActions:\n    - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}\n", block, "X → StoatHoldAction");
-            // The sling is superseded on the triggers, not deleted: its actions stay authored and unbound.
-            StringAssert.DoesNotContain("guid: 5c382e0def5b45d7b1230d75e8be082b", block, "StoatSlingLeftAction must not be bound");
-            StringAssert.DoesNotContain("guid: 012d65baf31c49c496d38975eba8c0be", block, "StoatSlingRightAction must not be bound");
+            StringAssert.Contains("  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n", block, "B → StoatModeAction");
             StringAssert.Contains("  _touchActionOverrides: []\n", text, "no touch design yet — recorded in STOAT.md");
             // No DriftActionSO is bound, so the trigger analog the transformer still reads never drifts.
             StringAssert.DoesNotContain("guid: aa095c07c8cd0374698884d1a44dbdec", text, "the Squirrel's drift action must not ride the Stoat's triggers");
@@ -212,20 +213,55 @@ namespace CosmicShore.Tests
             // The stop is the Sparrow's: its own prism controller, the fleet's shared channels.
             StringAssert.Contains("  stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f, type: 2}\n", text);
             StringAssert.Contains("  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}\n", text);
+            // Stage 6: the mode switch and the ripple.
+            StringAssert.Contains("  - {fileID: 5137264980012345605}\n", registry, "mode executor registered");
+            StringAssert.Contains("  - {fileID: 5137264980012345606}\n", registry, "ripple executor registered");
+            StringAssert.Contains("  config: {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n", text, "the mode executor's config");
+            StringAssert.Contains("  config: {fileID: 11400000, guid: da077e9619f845c388ad5b7baf8da948, type: 2}\n", text, "the ripple executor's config");
         }
 
         [Test]
-        public void Map_DeclaresTheDipoleOnSpaceAndThePathfinderOnTime()
+        public void Prefab_IsItsOwnVessel_NothingOfTheSquirrelLeft()
+        {
+            string text = Read(Prefab);
+            StringAssert.DoesNotContain("Squirrel", text, "a Squirrel name survives in the prefab");
+            foreach (var (guid, what) in new[]
+                     {
+                         ("5db69771d02b4c24ca00998adf318137", "the Squirrel model"),
+                         ("c1572db06ad4244469ad3f25d86940b8", "SquirrelHUDVariant"),
+                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelVesselHUDController"),
+                         ("2b0d487de1554acfad93a158ddac3874", "SquirrelVesselTelemetry"),
+                         ("3c3fc507fffc4f5e86ab043ee7543cd2", "the Squirrel's camera settings"),
+                         ("769c65db9958c064485be49a2183f263", "the Squirrel's vessel container"),
+                         ("643af834f1bcd9946903ac2c71d6d8ff", "the Squirrel's skimmer container"),
+                     })
+                StringAssert.DoesNotContain(guid, text, $"still references {what}");
+            StringAssert.Contains("guid: 1f9b41e6fa58494599674753191b495b", text, "the HUD is StoatHUDVariant");
+            StringAssert.Contains("  settings: {fileID: 11400000, guid: 2fb2a0bb0eaf4bd1863fdf55490fa869, type: 2}\n", text, "StoatCameraSettingsSO");
+            StringAssert.Contains("  m_Name: StoatBody\n", text, "the Stoat's own hit box");
+            StringAssert.Contains("  m_Name: StoatHitbox\n", text, "the Stoat's own trigger volume");
+        }
+
+        [Test]
+        public void Map_DeclaresAllFourAbilitiesAndTheirLevelFives()
         {
             string text = Read(Map);
             StringAssert.Contains($"  vesselClass: {StoatClass}\n", text);
-            string Entry(int element) => Regex.Match(text, $@"  - Element: {element}\n(?:    .*\n)*?    Input: \d+\n").Value;
-            string space = Entry(3), time = Entry(4);
+            string Entry(int element) => Regex.Match(text, $@"  - Element: {element}\n(?:    .*\n)*?    UpgradeDescription: .*\n").Value;
+            string charge = Entry(1), mass = Entry(2), space = Entry(3), time = Entry(4);
             StringAssert.StartsWith("  - Element: 3\n    AbilityLabel: Field Dipole\n", space);
-            StringAssert.EndsWith("    Input: 2\n", space, "the dipole is on the triggers (LT; RT mirrors)");
-            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Pathfinder\n", time);
-            StringAssert.EndsWith("    Input: 0\n", time, "the pathfinder is passive; X's hold sits outside the four abilities");
+            StringAssert.Contains("    Input: 2\n", space, "the dipole is on the triggers (LT; RT mirrors)");
+            StringAssert.Contains("    UpgradeLabel: Accretion\n", space);
+            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Pathfinder / Time Mode\n", time);
+            StringAssert.Contains("    Input: 0\n", time, "the pathfinder is passive; X's hold sits outside the four abilities");
+            StringAssert.Contains("    UpgradeLabel: Foresight\n", time);
+            StringAssert.StartsWith("  - Element: 1\n    AbilityLabel: Ripple\n", charge);
+            StringAssert.Contains("    UpgradeLabel: Siphon\n", charge);
+            StringAssert.StartsWith("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", mass);
+            StringAssert.Contains("    Input: 7\n", mass, "B switches the mode");
+            StringAssert.Contains("    UpgradeLabel: Armoured Wake\n", mass);
             Assert.AreEqual(4, Regex.Matches(text, @"  - Element: \d\n").Count, "one entry per element");
+            StringAssert.DoesNotContain("open design slot", text, "every slot is designed");
         }
 
         [Test]

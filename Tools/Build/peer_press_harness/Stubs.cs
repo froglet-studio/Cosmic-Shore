@@ -18,6 +18,7 @@ namespace UnityEngine
     public class MonoBehaviour : Behaviour { }
     public class ScriptableObject : Object { }
     public struct Vector3 { public float x, y, z; public static Vector3 zero => default; }
+    public struct Vector4 { public float x, y, z, w; public static Vector4 zero => default; }
     public static class Time { public static float time; }
     public static class Mathf { public static float Max(float a, float b) => a > b ? a : b; }
     [AttributeUsage(AttributeTargets.Field)] public class SerializeField : Attribute { }

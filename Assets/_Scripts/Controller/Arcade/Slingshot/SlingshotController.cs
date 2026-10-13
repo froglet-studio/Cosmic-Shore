@@ -21,7 +21,8 @@ namespace CosmicShore.Gameplay
     /// <para><b>What the mode does NOT add:</b> no new ability, no cell of its own, no new
     /// scoring metric and no circuit generator - Redline's shape on Headlong's solver, with
     /// <see cref="SlingshotCourse"/> supplying the Stoat's cut. The autopilot slings through the
-    /// replicated press path (<c>StoatSlingExecutor.AutopilotSling</c>).</para>
+    /// replicated press path (<c>StoatSlingExecutor.AutopilotSling</c>) in Time mode, and lays dipoles
+    /// (<c>StoatDipoleExecutor.Autopilot</c>) in Mass mode; it switches itself (<c>StoatModeExecutor</c>).</para>
     /// </summary>
     public class SlingshotController : GateRaceController
     {
