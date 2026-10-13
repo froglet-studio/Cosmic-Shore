@@ -24,5 +24,6 @@ namespace CosmicShore.Data
         Scarab = 12,
         Butterfly = 13,
         Thresher = 14,
+        Stoat = 15,
     }
 }

@@ -41,7 +41,11 @@ namespace CosmicShore.Render
         public float Width, Height, Near, Far;
         public bool Orthographic;
         public float OrthoSize, Aspect;
-        public Vector3 LightDir, LightColor, Ambient;
+        public Vector3 LightDir, LightColor;
+        /// <summary>The ambient probe's nine rgb coefficients (EnvironmentLighting.SH, flattened).</summary>
+        public float[] SH;
+        /// <summary>x reflection intensity, y 1 = the reflection cubemap is bound.</summary>
+        public Vector4 EnvParams;
         public Vector4 FogColor, Fog;
     }
 
@@ -173,7 +177,7 @@ vec4 sg_computeScreenPos(vec4 clip) {
         const string VertexMain = @"
 out vec3 vPosOS; out vec3 vNrmOS; out vec4 vTanOS;
 out vec3 vPosWS; out vec3 vNrmWS; out vec4 vTanWS;
-out vec4 vUv0; out vec4 vUv1; out vec4 vColor; out vec4 vScreenRaw;
+out vec4 vUv0; out vec4 vUv1; out vec4 vUv2; out vec4 vUv3; out vec4 vColor; out vec4 vScreenRaw;
 flat out float vVertexID;
 flat out vec4 vM0; flat out vec4 vM1; flat out vec4 vM2; flat out vec4 vM3;
 void main() {
@@ -184,7 +188,7 @@ void main() {
   sg_WorldToObject = inverse(M);
   mat3 NM = transpose(mat3(sg_WorldToObject));
   sg_PosOS = aPos; sg_NrmOS = aNormal; sg_TanOS = aTangent;
-  sg_Uv0 = vec4(aUv, 0.0, 0.0); sg_Uv1 = aUv1; sg_Uv2 = vec4(0.0); sg_Uv3 = vec4(0.0);
+  sg_Uv0 = vec4(aUv, 0.0, 0.0); sg_Uv1 = aUv1; sg_Uv2 = aUv2; sg_Uv3 = aUv3;
   sg_Color = uVertexColor == 1 ? aColor : vec4(1.0);
   sg_VertexID = float(gl_VertexID);
   sg_FrontFace = true;
@@ -199,7 +203,7 @@ void main() {
   vec4 w = M * vec4(p, 1.0);
   vPosOS = p; vNrmOS = n; vTanOS = vec4(t, aTangent.w);
   vPosWS = w.xyz; vNrmWS = NM * n; vTanWS = vec4(mat3(M) * t, aTangent.w);
-  vUv0 = sg_Uv0; vUv1 = sg_Uv1; vColor = sg_Color;
+  vUv0 = sg_Uv0; vUv1 = sg_Uv1; vUv2 = sg_Uv2; vUv3 = sg_Uv3; vColor = sg_Color;
   vVertexID = sg_VertexID;
   vM0 = M[0]; vM1 = M[1]; vM2 = M[2]; vM3 = M[3];
   gl_Position = sg_ViewProj * w;
@@ -210,12 +214,11 @@ void main() {
         const string FragmentMain = @"
 in vec3 vPosOS; in vec3 vNrmOS; in vec4 vTanOS;
 in vec3 vPosWS; in vec3 vNrmWS; in vec4 vTanWS;
-in vec4 vUv0; in vec4 vUv1; in vec4 vColor; in vec4 vScreenRaw;
+in vec4 vUv0; in vec4 vUv1; in vec4 vUv2; in vec4 vUv3; in vec4 vColor; in vec4 vScreenRaw;
 flat in float vVertexID;
 flat in vec4 vM0; flat in vec4 vM1; flat in vec4 vM2; flat in vec4 vM3;
 uniform vec3 uLightDir;
 uniform vec3 uLightColor;
-uniform vec3 uAmbient;
 uniform vec4 uFogColor;
 uniform vec4 uFog;
 uniform int uLit;
@@ -228,7 +231,7 @@ void main() {
   sg_WorldToObject = inverse(sg_ObjectToWorld);
   sg_PosOS = vPosOS; sg_NrmOS = vNrmOS; sg_TanOS = vTanOS;
   sg_PosWS = vPosWS; sg_NrmWS = normalize(vNrmWS); sg_TanWS = vTanWS;
-  sg_Uv0 = vUv0; sg_Uv1 = vUv1; sg_Uv2 = vec4(0.0); sg_Uv3 = vec4(0.0); sg_Color = vColor;
+  sg_Uv0 = vUv0; sg_Uv1 = vUv1; sg_Uv2 = vUv2; sg_Uv3 = vUv3; sg_Color = vColor;
   sg_VertexID = vVertexID;
   sg_FrontFace = gl_FrontFacing;
   sg_ScreenPosRaw = vScreenRaw;
@@ -241,10 +244,9 @@ void main() {
   else if (s.NormalSpace == 3) N = normalize(s.Normal);
   if (!gl_FrontFacing) N = -N;
   vec3 col = s.BaseColor;
-  if (uLit == 1) {
-    float ndl = max(dot(N, uLightDir), 0.0);
-    col = s.BaseColor * (1.0 - 0.5 * s.Metallic) * (uLightColor * ndl + uAmbient * s.Occlusion);
-  }
+  if (uLit == 1)
+    col = urpLit(s.BaseColor, clamp(s.Metallic, 0.0, 1.0), clamp(s.Smoothness, 0.0, 1.0), s.Occlusion, N, normalize(sg_CamPos - sg_PosWS),
+                 uLightDir, uLightColor, true, true);
   col += s.Emission;
   float a = uTransparent == 1 ? s.Alpha : 1.0;
   if (uAlphaMode == 1) col *= a;
@@ -272,6 +274,8 @@ layout(location=12) in vec4 aBoneIdx;
 layout(location=13) in vec4 aBoneW;
 layout(location=14) in vec4 aTangent;
 layout(location=15) in vec4 aUv1;
+layout(location=10) in vec4 aUv2;       // TEXCOORD2/3: the mesh's own channels in a graph draw (SceneRenderer.BindGraphUv23)
+layout(location=11) in vec4 aUv3;
 uniform int uSkinned;
 uniform mat4 uBones[128];
 uniform int uVertexColor;
@@ -303,7 +307,8 @@ uniform int uVertexColor;
               .Append(g.Uniforms).Append(ShaderGraphLibrary.Source).Append('\n').Append(g.Functions).Append(g.Vertex).Append(VertexMain);
             var fs = new StringBuilder();
             fs.Append("#version 330 core\n#define SG_FRAGMENT 1\n").Append(Common)
-              .Append(g.Uniforms).Append(ShaderGraphLibrary.Source).Append('\n').Append(g.Functions).Append(g.Fragment).Append(FragmentMain);
+              .Append(g.Uniforms).Append(ShaderGraphLibrary.Source).Append('\n').Append(g.Functions).Append(g.Fragment)
+              .Append(UrpLitGlsl.Source).Append(FragmentMain);
             return (vs.ToString(), fs.ToString());
         }
 
@@ -339,7 +344,7 @@ uniform int uVertexColor;
         }
 
         /// <summary>Makes the program current and sets this frame's camera, time, light and fog (once per frame).</summary>
-        public void Use(Entry e)
+        public unsafe void Use(Entry e)
         {
             var p = e.Program;
             p.Use();
@@ -359,7 +364,9 @@ uniform int uVertexColor;
             p.Set("sg_OrthoParams", ow, oh, 0f, f.Orthographic ? 1f : 0f);
             p.Set("uLightDir", f.LightDir.x, f.LightDir.y, f.LightDir.z);
             p.Set("uLightColor", f.LightColor.x, f.LightColor.y, f.LightColor.z);
-            p.Set("uAmbient", f.Ambient.x, f.Ambient.y, f.Ambient.z);
+            if (f.SH != null) fixed (float* sh = f.SH) _gl.Uniform3(p.Loc("uSH"), 9, sh);
+            p.Set("uEnvParams", f.EnvParams.x, f.EnvParams.y, f.EnvParams.z, f.EnvParams.w);
+            p.Set("uEnvCube", EnvironmentLighting.CubeUnit);
             p.Set("uFogColor", f.FogColor.x, f.FogColor.y, f.FogColor.z, f.FogColor.w);
             p.Set("uFog", f.Fog.x, f.Fog.y, f.Fog.z, f.Fog.w);
             p.Set("uLit", e.Graph.Lit ? 1 : 0);
@@ -466,17 +473,19 @@ uniform int uVertexColor;
             return m.GetFloat(id);
         }
 
+        /// <summary>
+        /// A colour or vector as the GPU receives it (Unity's linear colour space): the block's
+        /// colour converted to linear or its vector raw; the material's value through
+        /// <see cref="Material.GetShaderVector"/> (a plain colour property converted, an HDR colour
+        /// or a vector as stored); a global as set (SetGlobalColor does not convert).
+        /// </summary>
         static Vector4 VectorFor(int id, Material m, MaterialPropertyBlock block)
         {
-            if (block != null)
-            {
-                if (block.HasVector(id)) return block.GetVector(id);
-                if (block.HasColor(id)) { var c = block.GetColor(id); return new Vector4(c.r, c.g, c.b, c.a); }
-            }
-            if (m.HasStoredProperty(id)) return m.GetVector(id);
+            if (block != null && block.TryGetShaderVector(id, out var bv)) return bv;
+            if (m.HasStoredProperty(id)) return m.GetShaderVector(id);
             if (Shader.GlobalVectors.TryGetValue(id, out var gv)) return gv;
             if (Shader.GlobalColors.TryGetValue(id, out var gc)) return new Vector4(gc.r, gc.g, gc.b, gc.a);
-            return m.GetVector(id);
+            return m.GetShaderVector(id);
         }
 
         Texture TextureFor(Entry e, Uniform u, Material m, MaterialPropertyBlock block)

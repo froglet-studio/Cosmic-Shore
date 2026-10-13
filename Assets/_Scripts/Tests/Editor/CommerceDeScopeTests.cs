@@ -172,6 +172,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void CheckoutIsFencedToDesktopBuilds()
+        {
+            // Store policy, not posture: iOS and Android require their own billing for digital
+            // goods (Apple App Review Guideline 3.1.1, Google Play's payments policy), so the
+            // browser checkout has to be compiled as refused there, whatever CommerceAvailability
+            // says. A source-text fact, because no Editor compile sees the non-desktop branch while
+            // a desktop target is active.
+            var text = Source("System/IAPManager.cs");
+            const string fence = "WebCheckoutPermittedOnThisPlatform";
+
+            StringAssert.Contains("#if UNITY_STANDALONE", text,
+                "IAPManager no longer fences the browser checkout to desktop builds.");
+            StringAssert.Contains(fence + " => false", text,
+                "IAPManager's non-desktop branch no longer refuses the browser checkout.");
+
+            // Two definitions (one per branch) plus at least one read, and the last read sits
+            // before the one OpenURL call, i.e. inside OpenCheckout's refusal.
+            Assert.GreaterOrEqual(CountOccurrences(text, fence), 3,
+                "IAPManager defines the platform fence but OpenCheckout never reads it.");
+            Assert.Less(text.LastIndexOf(fence, System.StringComparison.Ordinal),
+                        text.IndexOf("Application.OpenURL(", System.StringComparison.Ordinal),
+                "The platform fence must be read before Application.OpenURL.");
+        }
+
+        [Test]
         public void EpisodeCheckoutIsWiredOnlyWhenEpisodesAreAvailable()
         {
             var text = Source("UI/Screens/EpisodeScreen.cs");

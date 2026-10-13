@@ -75,6 +75,11 @@ Shader "CosmicShore/Wormhole"
         _SealedRimPower ("Sealed Rim Power", Range(0.5, 8)) = 2.5
         _SealedRimCutoff ("Sealed Rim Cutoff", Range(0, 1)) = 0.2
         _SealedIntensity ("Sealed Rim Intensity", Range(0, 8)) = 1.5
+        [Header(Seamless mouth (a crystal wormhole, Docs CRYSTAL_WORMHOLE.md))]
+        _SoftEdge ("Seamless edge: 0 = the fold's hard sphere and rim; above 0 the fraction of the radius the view dissolves over", Range(0, 1)) = 0
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
+        [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 1
     }
 
     SubShader
@@ -103,6 +108,7 @@ Shader "CosmicShore/Wormhole"
             float _SealedRimPower;
             float _SealedRimCutoff;
             float _SealedIntensity;
+            float _SoftEdge;
         CBUFFER_END
 
         // PER RENDERER (WormholeMouth.ApplySurface, through a MaterialPropertyBlock).
@@ -166,7 +172,10 @@ Shader "CosmicShore/Wormhole"
             Name "Wormhole"
             Tags { "LightMode" = "SRPDefaultUnlit" }
 
-            ZWrite On
+            // The fold's material: One Zero, ZWrite On (opaque). A seamless material: SrcAlpha
+            // OneMinusSrcAlpha, ZWrite Off, transparent queue.
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
             ZTest LEqual
             Cull Back
 
@@ -289,6 +298,20 @@ Shader "CosmicShore/Wormhole"
                     uv = uv * _WormholeExactUV.xy + _WormholeExactUV.zw;
                     half3 seen = SAMPLE_TEXTURE2D(_WormholeExactTex, sampler_WormholeExactTex, uv).rgb;
                     colour = lerp(colour, seen, exact);
+                }
+
+                // A SEAMLESS mouth (Docs/CRYSTAL_WORMHOLE.md) has no surface of its own at all: the view
+                // beyond it dissolves into the world toward its silhouette — opaque at the centre of
+                // the disc, gone at its edge, graded by the view ray's impact parameter — and there is
+                // no rim and no flare. Nothing on screen says "here is a surface".
+                if (_SoftEdge > 0.0)
+                {
+                    float3 toC = centre - _WorldSpaceCameraPos;
+                    float b = length(toC - viewDir * dot(toC, viewDir));
+                    float u = saturate(b / radius);
+                    float alpha = 1.0 - smoothstep(1.0 - saturate(_SoftEdge), 1.0, u);
+                    alpha = alpha * alpha * (3.0 - 2.0 * alpha);   // eased twice: no visible ramp
+                    return half4(colour, alpha);
                 }
 
                 // The rim: the only thing on the surface that is the mouth itself rather than the

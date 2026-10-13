@@ -33,7 +33,7 @@ namespace CosmicShore.Core
         // public List<Image> Images;
         
         /// <summary>
-        /// Economy categories in PlayFab, such as Items, Currency, UGC, etc.
+        /// Economy categories, such as Items, Currency, UGC, etc.
         /// </summary>
         public string Categories;
         

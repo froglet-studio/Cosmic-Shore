@@ -65,6 +65,868 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at
+4:3: on HOME the next screen covered the right third of the display. No editor and no `unity` CLI
+in the authoring session, so `/verify-unity` did NOT run. Out of editor, `unity_refcompile` compiles
+the player and editor configs with 0 errors in project code, and the console-logging gate passes.
+
+**What landed**
+
+1. **`ScreenSwitcher` (the menu filmstrip).**
+   - The strip is wrapped at `Start` in a runtime `Screens Viewport`: a full-canvas child of the
+     root canvas, carrying a `RectMask2D`, placed just before `Safe Area` (item 8).
+   - The panel width is read from that viewport, not from `Screens`. The ContentSizeFitter on
+     `Screens` zeroes its width after the first layout pass, so the old self-read fell back to the
+     canvas width.
+   - The strip's pivot is pinned to its left edge, and it slides by `anchoredPosition` instead of
+     an absolute `transform.position`.
+   - The strip re-lays out on the frame the viewport width changes. That covers the 4:3 case:
+     `AdaptiveCanvasScaler` flips the match after `Start`, and the canvas grows from 1440 to 1920
+     units.
+   - `Start` navigates from "no screen", so restoring HANGAR (serialized index 0) positions the
+     strip and builds the hangar grid.
+   - The empty `IDragHandler` / `IEndDragHandler` (bodies commented out) were removed. They took
+     drags from every button outside a scroll view and cancelled the tap.
+2. **`TouchDragThreshold` (new):** every EventSystem's `pixelDragThreshold` is scaled by
+   `Screen.dpi / 160`, never below the authored value. That is 10 → 29 px on a 460 ppi iPhone and
+   unchanged on a desktop. It runs at scene load. Tests: `TouchDragThresholdTests`.
+3. **`QuestTrackView`:** the two display-only progress Sliders are disabled, so a drag that starts
+   on the bar reaches the quest track's ScrollRect.
+4. **`Menu_Main.unity`:** Hangar `AbilitiesDescriptionScrollView` is `m_Horizontal: 0`. Its content
+   is exactly the viewport width, so horizontal scrolling could only rubber-band.
+5. **`GraphicsSettingsApplier.ApplyDisplay`** returns on `Application.isMobilePlatform`. It used to
+   call `Screen.SetResolution(Display.main.systemWidth, systemHeight)` at every boot.
+6. **`SceneTransitionModal`** hoists itself to the root canvas in `Awake`, just above the layer it
+   came from. Menu_Main nested it in `Safe Area/ModalWindows`. On a notched phone the open doors
+   rested just outside the inset rect and showed in the cutout margins as grey metal plates (seen
+   in the Device Simulator on every notch and Dynamic Island iPhone, and on the Pixel 5). Closed,
+   they left the margins uncovered. It is a no-op in GameCanvas, where the modal is already a root
+   child.
+7. **Home hub row** (`HomeScreen/Main_Menu_Panel/ButtonLayouts`) is MiddleCenter with zero padding.
+   It was MiddleLeft with 171 left padding, which only looked centred at 1920 wide; on a phone the
+   extra width all collected on the right. On desktop it moves 14 units to true centre.
+8. **Screens and backgrounds look like the desktop on a phone.** The strip moved to a full-canvas
+   viewport: one full-screen slot per screen, content in the safe rect inside it.
+   - `SafeAreaBleed` copies carry full-width background images out to the screen edges: Profile
+     `Background`, Hangar `GridPanel`/`DetailPanel`, the NavBar gradient and line, modal
+     backgrounds, and the 1920-wide hub modals.
+   - It replaces the earlier clip-to-safe-area, which left every screen a box with the 3D scene
+     leaking round the corners and the NavBar band short of the edges.
+9. **`CameraAspectFit`** puts every on-screen game camera (no RenderTexture, not orthographic) on a
+   16:9 physical-camera gate with Overscan. Below 16:9 (iPad 4:3, 16:10) the 16:9 width is kept
+   and height is gained; 16:9 and wider are unchanged. Tests: `CameraAspectFitTests`, including
+   Unity's projection matrix at 4:3, 16:9 and 21:9.
+10. **The 13 match-height canvases** without `AdaptiveCanvasScaler` use Expand: the 10 vessel
+    `ShipHUDContainer`s (Stoat included, which arrived in the bleeding-edge merge),
+    `VesselHUDContainer`, `Duel Cell Stats Canvas` and `FTUE_Canvas`. Identical at 16:9 and
+    wider; matches width below 16:9.
+11. **The Arcade, Mission, Toybox and Arena windows fill the safe area below the NavBar.**
+    - They were fixed 1920 × 908.7 rects, centred, which is the whole screen under the nav bar
+      only at 1920 × 1080. On a phone they floated 47 units in from each side, overlapped the
+      NavBar by 37 and ran 29 past the safe bottom.
+    - They are now stretch-anchored. The rect at 1920 × 1080 is identical, checked numerically.
+    - Their party panel is a "side panel": as tall as its parent and docked on an edge. Its frame
+      now bleeds out to the screen edge (`ScreenSwitcher.TryBleedSidePanel`); its content stays in
+      the safe area.
+
+**Verify in editor**
+
+1. Open Menu_Main in the **Device Simulator**. Use an iPhone with a notch or Dynamic Island,
+   landscape, and also a 4:3 iPad. Then check Game view at 4:3 and 16:9.
+   - HOME fills the safe area with no other screen showing at either edge.
+   - Page through every screen with L1/R1 and with the nav bar. Each screen lands exactly in the
+     safe area.
+   - Resize the Game view mid-session. The current screen re-fits within a frame.
+2. In the Hierarchy at runtime, `UI_Refactored/Screens Viewport/Screens` exists, just before
+   `Safe Area`, and there is exactly one `Screens Viewport`.
+3. Quit while on HANGAR, then re-enter Play. HANGAR is shown full-width, and its vessel grid is
+   populated.
+4. On a device or Simulator, tap cards in the Arcade grid, the leaderboard and the friends list
+   with a slightly moving finger. The taps register. Drag the Profile quest track starting on the
+   progress bar; it scrolls. The bar still animates on claim.
+5. Desktop windowed: change the resolution in Settings. `SetResolution` still applies
+   (`isMobilePlatform` is false there).
+6. In the Device Simulator on any notch or Dynamic Island iPhone, no grey plates show in the side
+   margins.
+   - Start a game from the menu: the transition doors close over the whole screen, margins
+     included, and open again.
+   - At runtime, `SceneTransitionModal` is a direct child of `UI_Refactored`, right after
+     `Safe Area`.
+7. HOME's four hub buttons are centred under the nav bar on a phone, an iPad and a 16:9 desktop.
+8. On a notch or Dynamic Island iPhone (Device Simulator), there are no 3D gaps at the sides,
+   the corners or the bottom.
+   - Profile and Hangar fill the screen edge to edge.
+   - The NavBar's dark band runs the full width.
+   - The Arcade, Mission, Toybox and Arena windows reach both edges.
+   - In each of those windows, the party panel's grey frame reaches the left screen edge behind the
+     notch, and its avatars and buttons stay clear of it.
+   - The window sits under the NavBar, as on desktop.
+   - Buttons and text stay inside the safe area.
+   - On a 16:9 desktop, the hierarchy has no `Safe Area Bleed` objects.
+9. iPad Air / Pro (4:3) in the Simulator:
+   - the menu's background flight shows the same width as on a 16:9 desktop, plus more top and
+     bottom, not zoomed in;
+   - in a match, the vessel HUD fits the screen width;
+   - `CameraAspectFitTests` passes in the Test Runner;
+   - tapping the menu crystal still hits it.
+
+**Found and left open** (not phone-only, or a designer's call):
+
+- **Scroll content heights never resize.** These leave a long blank scroll:
+  - weekly leaderboard content: 5608 units, 10 rows;
+  - friends lists: 1813;
+  - avatar grid: 1809.
+- **Controls list can never scroll.** The ArcadeGameConfigureModal list has both axes off.
+- **Quest track snap ignores the finger.** Its 0.6 s snap tween is not killed when a new drag
+  starts. Inertia is off, so it only snaps after an elastic bounce.
+- **Hub modals overlap the NavBar by 9 units.** That is how the Arcade, Mission, Toybox and Arena
+  modals are authored at 1920 × 1080 (NavBar 180.4 tall, modal top 171.3 below the safe top).
+  Item 11 made it the same 9 on every display; it was about 37 on an iPhone.
+- **`PartyInviteNotificationPanel` sits outside `Safe Area`.**
+- **`DeviceOrientationHandler` locks LandscapeLeft for the session**, even though
+  `SafeAreaFitter`'s docs assume auto-rotation between the two landscapes.
+- **The Elemental Converter's picture stops at the safe margins** (designer's call). ARK opened in
+  the bleeding-edge merge. `ElementalConverterView.BuildUi` stretches its `RawImage` "Picture" over
+  `ArkScreen`, which the strip lays out in the safe rect, and `SafeAreaBleed` copies only `Image`s.
+  On a notched phone the 3D picture is therefore inset by the margins. Decide whether it should
+  fill the screen before extending the bleed to `RawImage`.
+- **`ScreenSwitcher.EnsureStripViewport` trusts a pre-existing `Screens Viewport`.** If one is
+  ever authored in the scene, it returns before `_contentLayer` is set, so the safe insets read
+  as zero and no background bleeds. Today none is authored (`grep -c 'Screens Viewport'
+  Menu_Main.unity` = 0), so this is unreachable. Set `_contentLayer` before that return if it ever
+  becomes reachable.
+
+---
+
+### 🔴 Serpent Mass: Seed Wall + Lockdown (`claude/serpent-mass-seed-wall`, 2026-10-09)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md`): the stance and cloak
+seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 5 x
+short so shielded octahedra - 3x the box's half-extents - point long vertex at short vertex with half a short side of air), Mass-scaled and snapshotted at
+placement. The wall steals from its edge (`SerpentWallStealPlanner`), the cloak's super-shielded
+seed outlives the cloak, and the stance's plain-shielded seed grows only while the Serpent stays
+stopped. Any crystal beams to every active wall's seed (`SerpentWallShieldByCrystalEffectSO`) and
+ripples a shield through each wall; a Mass-5 wall seals its holes with danger panels (it twisted first and
+panelled half of them, until the fourth playtest). Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
+
+**Garrett's first playtest (2026-10-10):** the wall stopped after barely any growth and its prisms
+piled into each other. Cause: the pitch was fitted to the BOX (1.5 x short) but a shield draws 3x
+the box, and the Serpent trail arrived pre-shielded, so every brick was an oversized octahedron
+packed into one clump. Fixed: pitch fitted to the shield (13.5 at rest), trail no longer shielded
+(`Serpent.prefab` `shielded` 0), and a site's recruit reach grows with its distance from the seed
+so outer rings still find trail to pull. Re-test steps 1, 4 and 6.
+
+**Garrett's second playtest (2026-10-10):** spacing much better, but shielded bricks still touched a
+little, and the danger panels went into the holes that CLOSED. Causes: the pitch made shield
+vertices meet exactly (and the super-shielded seed's stellation, which covers the whole 3x box
+face-on, cut into its neighbours once twisted); and the assembler signed its twist independently of
+the lattice maths, so the bricks turned counter-clockwise while the maths that picks the panel
+cells assumed clockwise. Fixed: `SerpentWallLattice.ShieldGap` adds half a short side (pitch 15 at
+rest), the twist is capped at 25 degrees (`MaxTwistDegrees`, the range that gap clears), and bricks
+and panels turn only through `SerpentWallLattice.BrickRotation` / `PanelRotation`, which edit-mode
+tests pin against the maths. Re-test steps 4 and 6.
+
+**Garrett's third playtest (2026-10-10):** spacing good, but with Mass upgraded a crystal brought no
+twist and no panels; walls stopped growing; the cloaked Serpent and its trail were invisible to
+their own pilot; the illusion vanished instead of becoming the seed; some wall prisms used an old
+model. Causes and fixes: Lockdown was snapshotted at placement and only omni crystals answered, so
+it is now read from the replicated Mass unlock bit at crystal time and every crystal (omni and all
+four elements) re-shields; growth was capped at 50 and stopped when the stance or cloak ended, so
+it now runs for the seed's whole life, retries empty sites and refills shot-out ones (stable
+`GrowthOrder` prefix); the cloak's `IsLocalUser` was hard-wired true, so the pilot now sees a
+translucent hull and a dimmed trail while others see neither; the illusion now collapses into the
+seed and the seed's stellation blooms; `Serpent Prism.prefab` and `Prism Interactive.prefab` were
+on the built-in cube and now use the 24-face prism mesh. Re-test steps 1, 2, 6 and 8.
+
+**Garrett's fourth playtest (2026-10-13):** drop the Lockdown twist and put same-size danger panels
+in every square hole, with a crack of clearance to the shielded bricks; and the cloak's ghost looked
+cheap: too dark, and it came back with a cut. Fixed: the twist is gone (`lockTwistDegrees` /
+`lockTwistSeconds` retired, `SerpentWallLattice` lost its twist maths); `SerpentWallLattice.CellPanel`
+sizes one panel for every hole, tilted so its sides run parallel to the four shield edges, shrunk by
+`lockPanelClearance` (0.25 x short) so the crack is even all round (edit-mode tests check it against
+a brute-force search). The pilot's hull now wears a new additive Fresnel shader
+(`_Graphics/Materials/Graphs/CloakGhost.shader` + `CloakGhost.mat`, domain-tinted at runtime) instead
+of a 30%-alpha dark-blue Lit material; the trail fades through the prism dither (BlockGraph `_Alpha`)
+to 0.4 for the pilot and 0 for everyone else instead of being darkened; the cloak fades in over
+0.4 s from a flash, and the reveal (0.7 s) builds a flash, swaps the hull back under it, fades a
+ghost glow off the hull and fills the trail back in. `prismCloakTransparent` / `prismCloakOpaque` /
+`pilotGhostAlpha` / `pilotTrailShade` retired. The shader has never been compiled: check the
+console for shader errors first. Re-test steps 1, 2 and 6.
+
+**Garrett's follow-up (2026-10-13):** restore the old wall's steal-from-the-edge instead of a uniform
+disc; Space sets the steal radius; the Space upgrade lets it steal shielded prisms; make it a
+performant routine that schedules a lot of theft with infrequent updates. Done:
+`SerpentWallStealPlanner` (pure, edit-mode tested) plans each sweep (every 0.3 s): one
+`PrismSpatialIndex.QuerySphere`, candidates bucketed by lattice cell, up to 4 waves of edge-site to
+nearest-prism matching, up to 48 claims. Only in-flight prisms are steered per frame. Steal radius
+= 40 x Mass x live Space multiplier (x2 at Space 10); opponents' shielded prisms only with
+`IsUpgradeActive(Space)` (Deep Focus). `siteClaimInterval` and `SerpentWallLattice.GrowthOrder`
+retired; `recruitRadius` renamed `stealRadius` (FormerlySerializedAs). Re-test step 1.
+
+**Garrett's stance follow-up (2026-10-13):** stopping must not lay a super-shielded seed (that is the
+cloak's alone); the stance's wall steals until the Serpent flies again, then behaves like a wall
+whose super-shield was destroyed. Done: the stance calls `StartSeed(..., heldByStance: true)`, which
+applies the new `stanceShieldOnSeed` (Shield; a SuperShield setting is clamped to Shield) and holds
+the wall; `SerpentWallAssembler.IsActive` is `seed alive && (held || super-shielded)`; leaving the
+stance, the turn ending or the executor's `End` calls `ReleaseHeldWall`. A plain shield no longer
+lands on an already super-shielded seed. Re-test steps 1 and 2.
+
+**Ship pass (2026-10-13):** an ended wall now releases shot-out bricks on its sweep cadence; a
+DESTROYED brick reopens its site (Unity's `if (prism)` had skipped it); a wall whose vessel is gone
+stops sweeping instead of throwing every 0.3 s; Lockdown reuses one cell set per landing. Re-test:
+despawn a Serpent with a cloak wall standing and check the console stays clean. Open rows:
+`Docs/ElementalAbilitySystem/BACKLOG.md`, "From the Serpent Seed Wall branch" (the stance wall is
+built only on the owner and server).
+
+**Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
+result.
+
+**Verify in editor:** the eight steps in SERPENT_SEED_WALL.md § "Editor checks".
+
+**First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, a steal sweep
+every 0.3 s (up to 48 claims in 4 waves), steal radius 40 (x2 at Space 10), pull 20 / 6 u/s, ripple 0.08 s per ring, panel clearance 0.25 x short,
+panel thickness 0.15. `CloakSeedWallAction.asset` - pilot trail alpha 0.4, fade in 0.4 s, reveal 0.7 s,
+flare 1.5, illusion morph 0.6 s.
+
+---
+
+### 🔴 Thresher round 5: smooth spin entry/exit, doubled sight zoom (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`THRESHER.md` §4 Lock, §5a): (1) the camera's launch-view entry and exit are eased on the
+executor's clock between still / analytically tracked poses (`spectateEnterSeconds` 0.9, `spectateExitSeconds`
+0.8, hand-over `spectateBlendSeconds` 0.05; exit ends with `SnapToTarget`); (2) the solver's hook-on turns the
+heading onto the orbit at `hookTurnRate` 300 °/s with a stretch-and-spring reel-back instead of a one-frame snap
+(worst 6.9°/frame vs 91°); (3) `sightZoomFieldOfView` 12° → 6°.
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK; `thresher_chain_harness` 57/57 (new hook-on test).
+
+**Verify in editor:**
+1. Tow the ball behind you and plant: the ship swings wide and curves onto the orbit, no snap; it does not
+   slow to a crawl. The camera glides into the launch view with no wobble.
+2. Release LT: the ship launches; the camera glides back behind it with no swing or pop at the end.
+3. Let the spin decay (pay out RT) until the view releases: same glide.
+4. Squeeze LT fully: the Time-petal window zooms about twice as far as before.
+5. Tuning if needed: `spectateEnterSeconds` / `spectateExitSeconds` (glide lengths), `hookTurnRate` (how fast the
+   ship swings on; higher = tighter, less stretch), `hookReturnRate` (how fast the stretch reels back).
+
+---
+
+### 🔴 Thresher round 4: launch camera on the trajectory, crosshair, Time-petal zoom window (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §5a): the spectated-spin camera follows behind the launch point ON
+the trajectory at the hull's chase distance with no height offset (`aimElevationDegrees` 0); the dotted
+line is gone (deleted `ScreenDotPath`) and `ThresherLaunchSight` draws a crosshair at screen centre (lime
+while the timing is right) plus a Time-petal zoom window top-left — a second camera down the trajectory
+from the launch point, zoomed by LT depth (deadzone 0.25, 50° → 12°). New `TimePetalGeometry` (rhombus
+traced off `time_petal.png`, aspect tan 36°) + `TimePetalImage : ScopePetalImage`. **Shared Serpent code
+touched:** `ScopePipView` (+explicit-eye `Tick`, `RenderAspect`, `Label`; defaults unchanged) and
+`ScopePetalImage` (outline/hub/miter now virtual, defaults identical).
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK (0 errors in project code);
+`thresher_chain_harness` 56/56.
+
+**Verify in editor:**
+1. Thresher: plant and spin. The camera sits level behind a point on the circle looking along the launch
+   path; crosshair at screen centre; the ship crosses in front of it each lap and the crosshair flashes
+   lime just before. Release LT while lime → near-instant launch through the crosshair.
+2. A diamond-shaped (Time petal) window top-left shows the path magnified with its own crosshair. Squeeze LT
+   deeper → zooms in; ease to a light hold → widens; the main view never zooms. Keyboard (binary LT): full zoom.
+   If the window is ABSENT, check the Hierarchy for `[ThresherLaunchSight …]` / `ZoomWindow` and
+   `[ThresherSightCamera]`; if it is there but blank, the camera is the suspect, not the surface
+   (`TimePetalImage` is the Serpent's RawImage subclass).
+3. **Serpent regression**: hold LT on a Serpent — its Charge-petal eyepiece looks exactly as before
+   (square, same place, same reticle).
+4. The window and crosshair vanish the moment the ship launches, when the spin drops, and when you swap vessel.
+
+---
+
+### 🔴 Thresher round 3: element re-cut, vessel petal hits, dotted launch path with perfect window, snap-back fix (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §2, §2a–2c, §3, §5a):
+- **Snap-back fix**: the launch point and the launch camera use the ship's ACTUAL orbit radius, not the
+  chain length (which runs ahead while RT pays out).
+- **Element re-cut** (rule 26 — old gates deleted): Charge = petals stolen per enemy-vessel hit 1→3
+  (L5 **Magnet**: free ball drawn to enemy vessels); Mass = Mass Mode trail prism size ×1→×2 (L5
+  **Armoured Trail**: laid shielded); Space = largest energy blast ×4→×8 (L5 **Breaker**: red ball's
+  direct hit destroys super-shielded prisms); Time = spin-up rate/cap (L5 **Perfect Release**: ×1.6
+  launch when released inside the 0.25 s window). Retired: Lit, Wrecker, Reaper Chain, Slingshot,
+  Charge-scaled explosion, Mass-scaled ball, Space-scaled chain reach.
+- **Enemy vessels**: ball sweep + every chain link reach enemy hulls; a contact is a Strike through
+  `CombatHitDrain.TryAdmit` that steals petals and raises `Event_CombatHitStats` (wired on
+  `ThresherConfig.asset`), decided on the Thresher owner's machine. PvP-is-petals-only respected.
+- **Launch path** = `ScreenDotPath`, a port of the Stoat's `StoatPathfinderDots` (unmerged branch);
+  white, lime while a release would be perfect.
+- **Windmill** 6 → 12 s. Chain cuts shielded rivals (first cut pops) since Reaper is gone.
+
+**Not opened in Unity.** Offline: `thresher_chain_harness` 55/55 (new: perfect vs late launch, wait
+prediction and launch point on the ship's own circle while paying out, magnet pulls only a free ball).
+
+**Verify in editor:**
+1. Plant, hold RT so the chain pays out: the dotted line's start stays on the ship's path (no jump
+   outward); release LT — the ship launches from the point without being yanked back.
+2. Watch the dots flash lime as the ship nears the point each lap; release while lime → near-instant
+   launch; with Time L5 it leaves visibly faster.
+3. Ball/chain into an AI or rival vessel: their petals drop, a Strike scores (Broadside/Dogfight-style
+   scoring), at most once a second per victim; they are not pushed. Charge L5: the free ball bends
+   toward a nearby enemy.
+4. Mass Mode trail: bigger prisms at high Mass; shielded at Mass L5. Space L5: a red ball breaks a
+   super-shielded (stellated) prism. Space level: a full bank's blast grows with Space.
+5. Omni crystal: windmill lasts ~12 s.
+
+---
+
+### 🔴 Thresher round 2: chain always slices + shields own, Space card = banked energy, launch-point camera with timed release (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §2, §5, §5a), on top of the entry below (which it partly supersedes — its step 1 now reads as here):
+- **Chain**: slices rival prisms taut OR slack, and shields own-domain prisms it touches (fresh own trail
+  excepted). Reaper Chain (Space L5) is now just "cuts shielded rivals"; map text updated.
+- **Space card gauge** = banked explosion radius (`EnergyRadius01`), iron → lime; replaces the chain-out
+  gauge (`energyGauge`, FormerlySerializedAs `chainOutGauge`; GameObject renamed `EnergyGauge`).
+- **Launch camera**: centred on a launch point on the circle (the point whose tangent is the aim), behind
+  it looking down the path, `aimElevationDegrees` 25. Stick X slides the point round the circle; stick Y
+  tilts the orbit with the camera (`SteerOrbitPlane`). LT up ARMS the launch: the ship keeps circling and
+  leaves from that point along the aim (`ArmLaunch`), at most a lap later.
+
+**Not opened in Unity.** Offline: `thresher_chain_harness` 54/54 (new: armed launch leaves from the chosen
+point along the aim; steered plane carries the orbit; launch-camera pose). `unity_refcompile` RESULT OK (0 errors in project code).
+
+**Verify in editor:**
+1. Plant and spin: camera sits behind a point on the circle looking along a lime line; the ship sweeps
+   through the point each lap. Stick X moves the point round (camera follows); stick Y tilts the orbit.
+   Release LT mid-lap: the ship keeps going round and leaves exactly at the point along the line. Report
+   whether the wait feels too long at slow spins, and whether the camera is too close/far (`aimElevationDegrees`).
+2. Drag a SLACK chain through rival prisms → sliced; through your own older trail → shields appear.
+3. Space card fills toward lime as the chain kills; empties on the blast.
+4. MPPM: the guest's view of the host's ball during an armed launch (expected to look off for up to a lap — owner-only aim).
+
+---
+
+### 🔴 Thresher: earlier spectate + stick AIM, smooth 24-link chain, chain energy, Mass Mode (A), omni windmill (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §1, §2a–2c, §5, §5a):
+- **Spectate sooner** (`spectateSpinRate` 1.8 → 0.9 rad/s, engage 0.2 → 0.1 s) to an **aim camera**
+  that looks down on the orbit from behind the launch direction; the sticks turn the aim (and the
+  camera) instead of tilting the orbit; a lime line shows the path; LT up flies off along it at once.
+- **Chain**: 24 gameplay links (was 12), drawn as a Catmull-Rom curve (6 segments per link).
+- **Chain energy**: each chain kill banks 1 (cap 30); the ball's next rival hit explodes even below
+  smash speed, diameter × (1 + 0.1 × bank, cap ×4). Rim leans lime with the bank.
+- **Mass Mode** (A = `Button1Action`, toggle; new `ThresherMassModeAction.asset` in the prefab's
+  shared map): the ball steals rivals, shields own, lays a trail through the hull's spawn channel,
+  never explodes, banks 0.5 per steal. The Mass map entry is now "Mass Mode", `Input: 6`.
+- **Windmill** (`ThresherWindmillByCrystalEffectSO` in `ThresherImpactorDataContainer.vesselCrystalEffects`):
+  an omni crystal makes the ball circle the ship red-hot across its flight for 6 s.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` RESULT OK
+(0 errors in project code); `thresher_chain_harness` runs the shipped solver + test file, 52/52 pass
+(6 new: windmill radius/plane/heat/release/top-up, chain smoothing through every link, aim orthonormality
+and screen-right sign, aim vantage tilt/side, long-chain relaxation); `peer_press_harness` clean;
+`element_ability_table.py Thresher` 4/4 with Mass on `A / Space`.
+
+**Verify in editor** (Toy Box > Vessel Changer → Thresher; THRESHER.md § In-editor verification 11–15):
+1. Plant reeled in: the camera lifts off almost at once and looks DOWN with a lime line up the
+   screen from the ship. Stick right → line and camera swing right; pitch → up/down; the orbit does
+   NOT tilt. Release LT mid-spin → the ship leaves along the line immediately. Note any camera
+   whip on the release and whether stick-Y feels inverted (sign: the hull's nose-down convention).
+2. Swing a slack chain: no kinks at link joints. Taut: straight.
+3. Chain-slice rival prisms → ball rim leans lime. Slow ball into a rival prism → explosion sized by
+   the bank; rim resets. Own-trail bounce → no blast.
+4. Press A (gamepad A / Space): ball goes lit. Through rival trail → prisms flip to your domain, no
+   blasts even red-hot; through own trail → shields appear; a trail of your prisms follows the
+   ball. Press A again, hit a rival → one big blast. Console clean (no `[PrismSpawner]` errors).
+5. Fly through an OMNI crystal → ball windmills round the ship ~6 s, red-hot, smashing; RT resizes
+   it. An elemental crystal does not trigger it.
+6. MPPM two clients: guest sees the host's windmill and Mass Mode trail; host's aimed release
+   reaches the guest within a frame or two (the yank direction is owner-decided, see §9).
+
+**First-pass tuning** (all `ThresherConfig.asset`): `spectateSpinRate` 0.9, `spectateTiltDegrees` 30,
+`aimYawRate` 180 / `aimPitchRate` 120 °/s, `aimLineLength` 150; `chainLinks` 24, `chainRenderSubdivisions` 6;
+`energyPerSlice` 1, `energyPerSteal` 0.5, `energyMax` 30, `energyDiameterPerUnit` 0.1, `energyMaxDiameterScale` 4;
+`massTrailSpacing` 6, `massTrailPrismScale` (8, 0.75, 5.5), `massTrailMaxPerFrame` 3; `windmillSeconds` 6,
+`dials.windmillSpeed` 1000 (sandbox; 184 u/s).
+
+---
+
+### 🔴 Elemental Converter on the Ark screen: the omni combine plays in the app shell (`cece/eager-rubin-km7qyn`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_COMBINE_LAB.md` § "In the game"; generators
+`author_omni_combine_asset.py --check` and `author_elemental_converter.py --check`):
+- **The Ark screen is open.** Menu_Main's `ScreenSwitcher.disabledScreens` is `[PORT]` (was `[ARK, PORT]`).
+  ArkScreen's "SQUAD" mockup Image is switched off and its `OfflineUIGate` is removed (the converter works
+  offline). ARK is no longer host-only, and an arcade card no longer pulls a party guest onto it
+  (`FollowHostToArcadeScreen` is gone: ARK stopped being the arcade long ago).
+- **`ElementalConverter`** (child of ArkScreen, `ElementalConverterView`) builds a picture, a title and a
+  CONVERT button in code, and renders an off-screen stage (y −150000) through a hand-stepped camera that
+  adopts the game camera's image, on unscaled time, only while ARK is the active screen.
+- **`OmniCombinePlayer`** builds the four crystals and the omni from the art file's geometry
+  (`OmniCombineData.json`) and moves them every frame with `OmniCombineCore`, the lab's pose ported line
+  for line. Charge wears `ChargeCrystalMaterial` with the game's discharge bake run on its mesh; Space and
+  Time wear `OmniCrystalBody`; the omni's pentagons get the `OmniChargeEdges` overlay. Every press draws a
+  new choreography from `OmniCombineConfig.asset`'s ranges.
+- **Revision 2 (same day, after the first look):**
+  - **Mass is the game's crystal:** `MassCrystalPrisms.asset` on `MassDepthPrisms.mat`, its columns
+    stepped by the game's ratchet and profile against the converter camera.
+  - **The omni's triangles are the game's:** `OmniCrystalTriangles.asset` on `OmniDepthPrisms.mat`, with
+    the body's holes cut.
+  - **The hand-off:** the depth shader's shape blends from Mass's to the triangles' as the prisms morph.
+  - **After the thickness bake (merged from `cece/determined-ride-rqzaeo`):** the combine morphs thin Mass
+    prisms and thickens them in the shader (6.25 → 8, from the data). Check the landed Mass prisms are as thick
+    as the omni's triangles when the omni takes over: no step in thickness at the hand-off.
+  - **Ship review:** leaving the Ark releases the picture's render target (Memory Profiler: no
+    `ElementalConverter` RenderTexture while on HOME or flying); coming back rebuilds it with no blank frame.
+    The idle pose no longer allocates per frame (Profiler GC Alloc 0 B in `ElementalConverterView.LateUpdate`).
+  - **The picture** renders at screen pixels ×2, with 4× MSAA and SMAA.
+  - **The button** sits 56 units above the bottom (the nav bar is at the top).
+- **Revision 3:**
+  - **Charge** no longer turns as it idles.
+  - **The discharge** on the Charge crystal and the omni's pentagons runs on the converter's own clock, through a
+    new `_ArcClock` property on `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader`. The default −1 keeps
+    `_Time.y` for every shipped material. On the Ark screen the menu is at timeScale 0, so the bolts had stood
+    still.
+  - **The stage** moved from y −150000 to −30000 and grew 10×, which removes the float-precision shimmer.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player and
+editor 0 errors in project code, negative-controlled on the new view, the player, the new test file and
+ScreenSwitcher. `Tools/Build/omni_combine_parity/run.sh` runs the shipped `OmniCombineCore.cs` against the
+lab's own `pose`/`omniPose` (worst vertex 7e-7 over 14 crystal times and 5 omni times, seed 7) and against
+the shipped Unity-frame asset (every crystal reaches its target; Time locks in 9e-6 off its rigid pose,
+which proves the quaternion conversion; CONVERT after a 300 s wait moves nothing; Charge after a 1000 s
+wait moves at most 0.039 omni radii a frame). Two mutations (a flip salt, the seeding order) fail it.
+`OmniCombineTests` (9 edit-mode tests) has NOT run.
+
+**Verify in editor:**
+1. Run the edit-mode tests in `OmniCombineTests`.
+2. Play Menu_Main. The nav bar's Ark link is no longer greyed out. Press it: the screen shows "ELEMENTAL
+   CONVERTER", the four crystals fading in and idling with their own effects (Time's flip wave, Space's
+   spin, Charge's discharge and tumble, Mass's prisms riding by depth), the camera slowly circling, and a
+   CONVERT button above the nav bar. If the picture is black or the crystals are white silhouettes, the
+   offscreen camera lost post-processing (`OffscreenCameraSetup`).
+3. Press CONVERT. Space flies in and blends into its squares; then Charge (each petal's back sucks in,
+   then the five untwist and flatten into the pentagon); then Mass (while it waits it must look like a
+   Mass crystal in play: prisms riding their columns by depth as the camera circles, faces parting at the
+   back; as it flies they seal, then three wedges fold into each triangle); then Time
+   locks in rigidly. Each lands as the next sets off. The omni then dithers in over the landed plates and
+   wakes its four effects (flip wave, squares weave, depth prisms, discharge on the pentagons). The camera
+   eases in as each crystal lands (it frames what is on stage now, over 1.6 s), ending close on the omni.
+4. Press CONVERT again: a new combine, visibly different (layout turned, arcs, tumble, timing).
+5. Leave the screen and come back: the four are idling again. The picture is not rendered off-screen
+   (Profiler: no `ElementalConverterCamera` render while on HOME).
+6. Party: as a guest, the Ark link opens the converter; when the host opens an arcade card the guest is
+   NOT moved to the Ark screen.
+7. Offline (airplane mode): the Ark screen is fully bright and the converter plays.
+8. Console: no `OmniCombinePlayer` / `CrystalEdgeArcMeshBaker` error. Watch for: Charge with no discharge
+   (the bake found no crease), black or inside-out faces (winding), seams at the hand-off.
+9. Charge crystals IN PLAY still discharge as before (the new `_ArcClock` defaults to −1 = scene time):
+   check a Charge pickup and an omni in any arcade mode.
+10. Look for: back-face culling on the Charge crystal (its shader is `Cull Back`); the scale of the
+   shells' `_Spread` push at `omniWorldRadius` 4; jaggies or softness in the picture (raise
+   `supersampling` to 3 or `msaaSamples` to 8 on `ElementalConverter`); a seam or pop where the omni's
+   triangles take over from the landed Mass wedges (there should be none).
+
+---
+
+### 🔴 Stoat poles a little bigger and stronger: horizon 1.75 → 2.1 u, GM 40 000 → 50 000 (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`StoatDipoleConfig` only (+ its generator). Measured headless: the softened bend still rises and falls
+smoothly with pass distance, now peaking 141° at 30 u/s (was 128°) and 25° at 60 u/s, with a longer tail
+(75° at 120 u, was 54°); the fly-through zone (135 u) behaves as before (180° out, past 200° through).
+
+1. Holes ~20% wider than last round; passes bend a little harder and from a little further out.
+2. Re-check the slam/neutralize release and the 180°/200° loop rule still read right.
+
+---
+
+### 🔴 Stoat: smaller hull; bigger, weaker, softened poles; releases slam and neutralize (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1, `STOAT.md`. Changed: `Stoat.prefab` root scale 0.8; `StoatDipoleConfig`
+`poleHorizon` 1.75, `poleGM` 40 000, new `sinkSofteningHorizons` 14 and `annihilateSeconds` 0.3,
+`throughZoneRadius` 135; `BlackHoleLens.shader` gains `_BHStrength` (fed from `BlackHole.Amplitude`, 1 for
+every other hole). Proven offline: the lens verifier (glslang compile + negative controls), refcompile,
+the generator's `--check`/`--self-test` (new stage 5 + its negative control), five StoatDipoleTests run
+headless.
+
+1. **Size.** The Stoat is visibly a bit smaller than last round; trail, camera and skimmer still sane.
+2. **Release.** Squeeze, let go: the two poles rush into each other (~0.3 s, accelerating) and, as they
+   close, the bending around both straightens and the dark and light discs fade — at their full size —
+   into nothing where they meet. NOT two shrinking warps. Re-press during the slam: a fresh pair appears
+   at once. A peer sees the same slam.
+3. **Poles / field.** Holes ~1.5× last round's diameter; passes near a pole bend smoothly and
+   predictably over a wide band of distances (no sudden all-or-nothing whip near the hole).
+4. **Zone.** At full speed a 180° swing round the pole flies out; keep looping and ~200° takes you
+   through. Slow: steer out or let go to leave.
+5. **Other holes unchanged**: the Black Hole tool's holes and the crystal wormhole look as before.
+
+---
+
+### 🔴 Stoat: the fly-through zone, a pathfinder that flies the hull's own response, lighter dot depth (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1. Proven headless (the shipped `StoatDipoleMath` on stub vectors):
+the winding rule at 30 / 60 u/s and four offsets, and the prediction against a frame-stepped model of
+`VesselTransformer` (≤ 2 u off over 3 s, where the first port's was 15–75 u off).
+
+1. **Path = flight.** No pair: hold a full yaw from straight flight and keep holding — the hull flies
+   down the dots, including the first second where it eases into the turn. Same with a pair held and
+   with the throttle changing (the line now leads the speed change too).
+2. **The zone.** One trigger, swing round the sink with the stick: up to ~180° you fly out (or let go);
+   keep looping and at ~200° you come out of the white hole. The dots show the jump (lime, a break)
+   before it happens. Fly past 40+ u off without steering: nothing. Tune `throughZoneRadius` (90) /
+   `throughDegrees` (200) on `StoatDipoleConfig`.
+3. **Dots.** Gap ~¾ of last round's; far dots barely smaller or dimmer; a held roll+yaw helix shows two
+   to three windings, the far ones readable.
+4. **Cost.** The path is now 1200 u (was 600): profile `StoatPathfinderExecutor.Update` near a sink; if
+   it shows, drop `pathLength` before `pathStep`.
+
+---
+
+### 🔴 Stoat dipole retune: smaller, weaker poles; release kills the pair; depth-cued denser dots; stronger boost (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+Play feedback on the port, applied (`R_VesselActions/STOAT_DIPOLE.md` §1, §3). Numbers on
+`StoatDipoleConfig.asset` (and its generator): `poleHorizon` 3.5 → **1.17** (a third of the diameter),
+`poleGM` 120 000 → **60 000**, `boost` ×2→×4 → **×2.5→×5**, `dotGap` 10 → **3.33**, new
+`dotDepthMinScale` 0.35 / `dotDepthFade` 0.5. `BlackHoleConfig.minHorizonRadius` 1.5 → **1** — fleet-wide:
+it floored the new 1.17 u horizon back up; only a hole smaller than 1.5 u is affected.
+
+1. **Release.** Squeeze RT, let go: the pair is gone that frame (no glide back together); squeeze again
+   at once: a NEW pair 250 u ahead, never the old one. Hold LT, then press RT: a fresh pair replaces
+   LT's. Let go of one of two held triggers: the pair is gone; the still-held one lays nothing until
+   re-pressed. Both triggers on the same frame (and the AI's presses): one pair, not two.
+2. **Size and strength.** The black (domain-dark) and white (domain-light) holes are about a third of
+   the diameter they were; the lens around them and the prisms' stretch are visibly weaker; the path
+   still turns lime when a pole is placed beside it (if it rarely does now, lower `warpDegrees` before
+   raising `poleGM`). Flying through the sink is a smaller target — say if it has become impossible.
+3. **Dots.** Three times as dense; the nearest dots full size, shrinking and fading toward the far end;
+   a path climbing or diving away reads as depth. No dot flickers sub-pixel at the far end.
+4. **Boost.** Lime path: noticeably faster than before (×2.5 at rest).
+5. **Peers** (2 players): a re-press shows the peer a new pair at the new place, not the old pair
+   sliding there (the serial now rides `NetStoatDipoleSource.w`).
+
+---
+
+### 🔴 The Stoat in the vessel selector + Slingshot / Warpline in the arcade (ported from `claude/peaceful-rubin-hhw49n`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+The Stoat slice of `claude/peaceful-rubin-hhw49n` (black holes, warp field, crystal wormhole, the Stoat,
+Slingshot, Warpline) brought onto bleeding-edge WITHOUT that branch's Prisma port, party/UGS, Skim Race AI,
+perf-diagnostics and studio work. Changes made in the port, to check first:
+
+1. **`VesselClassType.Stoat` is 15, not 14** — bleeding-edge's Thresher took 14 first. Every serialized
+   reference moved with it (`SO_Class_Stoat.Class`, `Stoat.prefab` `vesselType`,
+   `ElementalAbilityMaps/Stoat.asset`, both `ModePreview_*.asset` `Vessel`). Open `Stoat.prefab`: the
+   `VesselStatus` type must read **Stoat**, not Thresher.
+2. **`Vessel Prefab Container`** — the Stoat entry now references the prefab's root **Transform**
+   (fileID 5928382658856804067), like every other entry; the source branch pointed the `Transform[]` at
+   the GameObject. Expect the Stoat in the lava-lamp Vessel Changer and in Arcade launch panels.
+3. **Not ported**: the source branch's Black Hole cell entry on `Menu_Main`'s Cell Selector (it pointed
+   at a cell config that branch no longer carries).
+
+Then run the three entries below.
+
+---
+
+### 🔴 The Stoat's round-15 field dipole + pathfinder, and Warpline (`GameModes.Warpline = 65`) (`cece/magical-carson-9bdq8z`, 2026-10-09) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md`, `Arcade/WARPLINE.md`. `/verify-unity` was NOT available in the session
+that wrote this (no Editor, no `unity` binary). Proven offline: the headless refcompile (player config, 0
+errors in project code), `author_stoat_assets.py --check` / `--self-test` (every negative control fires,
+stage 4 idempotent), `author_warpline_assets.py --check` (+ watched fail), `author_slingshot_assets.py
+--check`, `render_card_backgrounds --check`, `author_card_backgrounds --strict`, the preview / switch-label /
+enum / using / logging / conditional-compilation gates. `StoatDipoleTests`, `EnumIntegrityTests` written,
+not run. Platform changes to watch beyond the Stoat: `VesselTransformer.FlightTimeScale` (base
+Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hull), `Prism.Vanish`,
+`BlackHole.PrismCapture` in `BlackHoleGravityField.ApplyVerdicts`, `BlackHoleCrystalStrip` from
+`TeleportContinuity`, two new owner-write NetworkVariables on `R_VesselActionHandler`.
+
+1. **Fly the Stoat (lava-lamp / any Stoat mode).** Expect: dots from just ahead of the nose, blue-grey,
+   evenly spaced (4 px, 10 diameters apart), not bent or doubled by a black hole (they are an overlay).
+   The hull turns at 48 °/s (×0.4). Hold a full stick turn: the dots draw a circle and STOP where it
+   closes, still blue-grey, no boost.
+2. **Squeeze RT.** Expect: a pair 250 u ahead; the sink (dark, toward your domain's dark colour) moves
+   right and slightly back, the source (bright, toward your light colour) left and on. Release: they fall
+   together and annihilate. Both triggers: the sink dead ahead, the source beyond. The dots bend through
+   the field; when they bend ≥ 3° or pass through the sink they turn LIME and you fly them faster (×2 at
+   rest, ×3 at Time 5, ×4 at Time 10) along the same line. Fly into the sink: you come out of the source.
+3. **What the sink takes.** Prisms pulled in vanish at the horizon (no debris); at Space 5 they come out of
+   the source in your domain. A creature within 1.5 horizons is killed and suctioned in. In a 2-player
+   match a rival who flies into your sink comes out of your source and its crystals are left on your
+   side of the sink; a teammate is not stripped; you never are.
+4. **Peers.** A remote player sees your pair where you hold it (it follows at the network tick); an AI
+   Stoat's pair is seen by everyone.
+5. **Arcade ▸ Warpline** (intensity 1–4): five rings a lap, two laps, golf; AI Stoats lay pairs (both
+   triggers dead ahead, one trigger into a turn). **Arcade ▸ Slingshot** now flies on the dipole too.
+6. **Hole budget.** With 3–4 Stoats (Warpline at 4 players), only two pairs can exist at once (the
+   4-hole cap); confirm a third squeeze lays nothing and that nothing errors. A known limit, not a bug.
+7. **Feel / cost.** Profile `StoatPathfinderExecutor.Update` near a sink (≤ 96 substeps per 3 u step). If
+   the field flight fights the nose follow, compare `StoatDipoleExecutor.FlyField` against the studio.
+   Tune on `StoatDipoleConfig` (the studio's `ft*` row).
+
+---
+
+### 🔴 Slingshot (`GameModes.Slingshot = 64`) + the Stoat's plated hull, lope and autopilot sling (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Arcade/SLINGSHOT.md`, `R_VesselActions/STOAT.md` §2.1–2.2. The Stoat's drawn hull is now its own
+procedural plated body (`StoatHullBuilder` on a `StoatHull` object; the Squirrel model's renderers
+off, colliders on) with the user's body-only bounding lope (`StoatAnimation`); its game is a two-lap
+Stoat-only circuit race in the barren race cell. Proven offline: `stoat_hull_harness`,
+`slingshot_course_harness` (1,600 courses), both generators' `--check` (+ watched fail), the card art
+(`render_card_backgrounds --check`, 32/32 wired), preview / game-list / switch-label / enum / using /
+logging gates, the offline refcompile. `StoatHullTests`, `SlingshotCourseTests` written, not run.
+
+1. **Vessel Changer → Stoat (lava-lamp).** Expect: a blue plated stoat (diamond plates, wedge head),
+   domain-coloured fins, eyes and tail crystal; NOT the Squirrel. It lopes every ~1.5 s (rises
+   nose-up, arches, lands bunched, legs reach) while the vessel's path and trail stay straight; the
+   spine bends into a stick turn and the tail swings out. Collect elements: Charge grows the fins and
+   crystal, Mass thickens it, Space lengthens it, Time lengthens the legs. Inspector on `StoatHull`:
+   right-click the builder ▸ Rebuild Hull previews it in edit mode.
+2. **Arcade ▸ Slingshot** (intensity 1–4). Expect: eight neutral rings round the nucleus, gate 0 above
+   the spawn ring; LT/RT throw a pair (attractor on the trigger's side); the pull drags only YOUR
+   Stoat; two laps; golf result. AI Stoats fly the gates and sling into turns (BlackHole verbose
+   channel: `[Stoat] Left sling` lines from AI hulls).
+3. **Rival's pair never moves you**: in a 2-player match, fly through another Stoat's pair — no pull.
+4. **Feel**: if the throw is weak or wild, tune `StoatSlingConfig` (`maxStrength`, `aheadHorizons`,
+   `halfGapHorizons`) first; `BlackHoleConfig.vesselPullScale` / `maxVesselPullSpeed` are fleet-wide.
+
+---
+
+### 🔴 The Stoat (`VesselClassType.Stoat = 15`): black–white hole slingshot on the triggers, the Sparrow's stop on X (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`_Scripts/Controller/Vessel/R_VesselActions/STOAT.md`; the black hole itself (lens, pull, tides, white
+holes, pairs) is `Docs/BLACK_HOLE.md`, whose §0.1 lists ITS untested rows — none of that work has been
+run in the editor by its author either. `Stoat.prefab` is a text clone of `Squirrel.prefab` written by
+`Tools/Build/author_stoat_assets.py` (fresh Netcode `GlobalObjectIdHash`, computed the way
+`NetworkObject.OnValidate` does and proven against the Squirrel's own). Verified out of editor: the
+generator's `--check` and `--self-test` (seven negative controls), every vessel gate, the console /
+conditional-compilation / abstract-member gates, the generated-asset audit, the offline refcompile on
+all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRITTEN, not run.
+
+1. **Open `Stoat.prefab`.** Expect: no "missing script" on the `ShipActions` object (two added
+   components: `StoatSlingExecutor` with its config wired, `ToggleTranslationModeActionExecutor` with
+   the hull's own `VesselPrismController` and the two shared channels); `VesselStatus.vesselType` reads
+   **Stoat**; the `NetworkObject` keeps `GlobalObjectIdHash` unchanged on save (if it changes, the
+   generator's hash is wrong — report the number). Run `FrogletTools ▸ Vessels ▸ Audit Vessel Ability
+   Rows`: the row will show the SQUIRREL's icons (prototype debt, STOAT.md §4) — expected.
+2. **Run the edit-mode tests** `StoatSlingTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`,
+   `OneThumbVesselCoverageTests`. The enum count is now asserted at 17 (Thresher took 14; the Stoat is 15).
+3. **Lava-lamp (Menu_Main), Vessel Changer → Stoat.** Expect: the Squirrel hull, flyable. Press **X**:
+   the hull stops translating and stops laying prisms; press again: moves. Hold **LT** ~1 s and release
+   (gamepad: the trigger's depth is the size; keyboard: Left Shift, 1.2 s = full): a black hole on the
+   LEFT and a white hole on the RIGHT, ahead, on the hull's horizontal; the hull is pulled toward the
+   black hole / shoved off the white one. **RT** / Right Shift mirrors it. A tap is a nudge (horizon
+   radius 4 u), a buried trigger the big swing (24 u). The pair drifts apart, stops at 2 s, falls back
+   and is gone at 4 s. A second sling while the first pair lives annihilates the first.
+4. **Console** (`BlackHole` channel ON in FrogletTools ▸ Toolbox ▸ Logging): one `[Stoat] Left sling:
+   hold … → strength …` line per sling; NO per-frame lines. With the channel off: nothing.
+5. **Game mode** (any arcade mode as the Stoat): the same, and `IsTranslationRestricted` replicates
+   (a party guest sees the stopped Stoat stopped). Pairs do NOT replicate (STOAT.md §7).
+
+**First-pass tuning** (`_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset`): `minStrength 2`,
+`maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
+`lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
+and `aheadHorizons` first.
+### 🔴 Omni + Mass crystals: Mass hull fusion fixed (thickness baked in), a random pose per crystal, reseat −0.87 (`cece/determined-ride-rqzaeo`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 10, `Docs/PALETTE.md §2.10`; generators
+`author_omni_crystal_triangles.py --check`, `author_mass_crystal_look.py`):
+- **Mass hull fusion.** The prism meshes carry their thickness (omni 8, Mass 6.25), and the four depth
+  materials ship `_Thickness 1`. Undriven, `OmniDepthPrismShader` draws the mesh exactly as authored
+  (`PrismPose`). `CrystalHullFusion.Undrive` forces `_DepthDriven 0` on the faces it flies. The 13 Mass bakes
+  were re-baked against `MassCrystalPrisms.asset` (commit `99e70e31`, by the designer). **Played: Mass onto two
+  hulls OK, no STALE warning** (2026-10-13).
+- **A random pose per crystal**, seeded from the spawn position (`CrystalPoseJitter`). It turns the crystal's
+  models, never the root, on the first frame after enable, and restores them on disable. Omni and Mass.
+- **Reseat depth −0.87** (was −0.8), from the profile.
+- The face split has no sign test any more (every normal faces out; the generator asserts it).
+
+**Not opened in Unity by this session** (except the bake and fusion play above, run by the designer). Offline:
+`unity_refcompile` player and editor configs 0 errors in project code (negative-controlled, twice);
+`omni_depth_prism_shader_parity.py` 22/22 (lab at every place, fusion identity for three TEXCOORD2 cases;
+negative controls); DXC compiles both passes; `crystal_depth_harness` 10/10 (two mutants fail); lab graduation
+0 px.
+
+**Verify in editor:**
+1. A row of Mass pickups or a colony's hearts, seen from far away: neighbouring crystals show DIFFERENT columns
+   (each is turned its own way). Two clients see the same PICKUP turned the same way (crystals are local, and
+   a pickup spawns at the same place on both). A lifeform's heart is posed from wherever its host stands on
+   the first frame after it enables, which can differ by a client's interpolation lag, so two machines may
+   turn a heart differently; that is cosmetic and expected.
+2. Fly round an omni at range: no prism appears at the top of a column in view (reseats happen behind). Close
+   in, the far side still stands open with its faces parted.
+3. The omni's body turns WITH its prisms: the holes line up with the prisms, and the squares, rhombi and
+   charge edges all sit on the turned body.
+4. Collect an omni and a Mass. The husk bursts with thick prisms, matching the live crystal. Fusion (Scarab
+   forge, Squirrel ring, hull fusion) starts from the turned pose.
+5. A pooled crystal respawned elsewhere takes a new pose; nothing stays turned after it is collected.
+6. Every sibling under the crystal root that carries a renderer turns with the pose, particle systems
+   included. A directional effect parented there (none known) would turn too; check the crystal prefabs'
+   effects still read right.
+7. Console: no `CrystalDepthPrisms` errors.
+
+---
+
+### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator
+`author_omni_crystal_triangles.py --check`), on top of the Depth ratchet entry below:
+- **No free turn.** `CrystalDepthPrisms` no longer turns the crystal's models; the profile's three turn
+  fields are gone. Step 1 of the entry below now reads "fly round a crystal": the crystal holds still.
+- **The ratchet runs against the gameplay camera** (`CameraManager.GetActiveController()` →
+  `CustomCameraController.Camera`), not `Camera.main`. `Camera.main` in Bootstrap is the menu's
+  Cinemachine-brain camera under `CameraManager`, which never follows the vessel, so round 8's
+  prisms held still and sealed in flight and the face split never opened.
+- **Space squares:** `CrystalSpaceSquares` on `OmniCrystalBody.prefab` puts the body on a shared copy of
+  its runtime twin with the art file's three shape keys as blend shapes (`OmniSpaceSquares.asset`) and
+  plays the 4.8 s loop, each crystal at its own phase.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player
+and editor 0 errors in project code (negative-controlled); the squares baker run headlessly on the
+shipped code against the real body FBX and asset (16/16: exactly the 480 square corners move, normals
+turn with their faces to 2e-5; three mutants fail); playback matches the lab's `squaresWeights()` to
+6e-7. What only the Editor can show: that a SkinnedMeshRenderer swapped onto the shaped twin keeps its
+bones and plays the weights.
+
+**Verify in editor:**
+1. Fly round an omni crystal (any mode with omnis). The crystal does not turn. The far side's prisms
+   stand out from the silhouette with their faces parted; as you circle, prisms coming toward you drop
+   into their holes and never rise while in view. If every prism sits sealed and still, the camera
+   resolve failed: check which camera `CameraManager.GetActiveController()` returns.
+2. On the omni body the 60 squares turn about the pentagons, then weave over the triangles, looping
+   every 4.8 s. Neighbouring crystals are out of step. The rhombi still flip, and the squares'
+   shading turns with them (no flat or black squares mid-turn).
+3. Console: no `CrystalSpaceSquares` error. The likely ones name an unreadable mesh, or anchors that
+   do not sit on a body vertex, which means the FBX moved: re-run the bake.
+4. Collect an omni; let the Scarab forge / Squirrel ring morph fold one. Fusion still finds the body
+   (`RhombusSkinBaker.SourceOf` resolves the squares twin to the FBX).
+5. Team omni (Skim Race track): prisms still ride by depth in the domain colour; squares still weave.
+6. Main menu (freestyle lava lamp): crystals there fall back to `Camera.main`. Check that the prisms
+   still respond as the menu camera moves.
+7. Profile: `CrystalSpaceSquares.LateUpdate` is a few µs per visible omni. The one-time shaping, on
+   the first omni seen, is one bake per twin.
+
+---
+
+### 🔴 Omni + Mass crystals: triangles SEALED BY DEPTH (the Depth ratchet) (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/PALETTE.md §2.10`, `Docs/Studios/OMNI_SHEPARD_LAB.md` round 8; generators
+`author_omni_crystal_triangles.py --check` and `author_mass_crystal_look.py`): the omni's three
+breathing tone shells and the Mass crystal's four shells are replaced by ONE opaque prism renderer per
+crystal on the new `OmniDepthPrismShader`, driven by the new `CrystalDepthPrisms`
+(`CrystalDepthPrismProfile.asset`, pure math in `DepthRatchet`). Each prism rides a column over its
+own hole by its DEPTH from the camera: the far side stands open at the top of its columns, the near
+side is sealed, and in view a prism only ever moves down (it reseats at the top of its column only
+behind the crystal). Faces split at the top (0.5 plate radius), thickness grows inward (omni 8, Mass
+6.25), and the whole crystal turns 15°/s about an axis tipped 25° (the crystal ROOT is not turned).
+The omni body loses its 20 triangle plates at runtime (`RhombusSkinBaker.TryCutPlates`, a cut twin of
+the skinned body). `Crystal.prefab` now has two `crystalModels` slots (body, prisms);
+`OriginalMaterialSet.CrystalMaterial1` is `OmniDepthPrisms`.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player
+and editor configs 0 errors in project code (negative-controlled); the ratchet tests run headlessly
+against the shipped `DepthRatchet.cs` (3/3, a mutant that reseats in view fails); the shader compiles
+with DXC (both passes, vertex + fragment) and its vertex function matches the lab to 2e-5 on both
+meshes (`Tools/Build/omni_depth_prism_shader_parity.py`); the lab's Shipped style equals the recorded
+pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
+
+**Verify in editor:**
+1. Any mode with omni crystals (Skim Race, freestyle): fly round a crystal. The side facing you is
+   sealed (flush triangles, no holes); the far side's triangles stand out from the silhouette with
+   their faces parted; as the crystal turns, triangles coming toward you drop into their holes and
+   never rise while in view. No triangle pops in or out in view.
+2. The body's 30 rhombi still flip (Time wave) and the pentagons still crackle (charge edges), and
+   both turn WITH the body - nothing slides against the holes.
+3. Collect an omni crystal: the husk bursts as before; a respawned crystal appears at once.
+4. A team crystal (Skim Race track, or a Dolphin team crystal): the prisms wear the domain colour and
+   still ride their columns (slot 1 = `OmniDepthPrisms` clone).
+5. A Mass crystal (free pickup, a Gyroid / Tadpole / Mass Shark / Brittlestar heart): one solid prism
+   crystal, prisms riding by depth; blue while embedded, lime once free; collect bursts the husk.
+6. The Scarab forge and the Squirrel ring morph on an omni pickup: the body folds; the prisms fade as
+   an overlay (they carry their frozen state).
+7. Console: no `CrystalDepthPrisms` errors (they name a missing profile, an unreadable mesh, or a body
+   that could not be cut).
+8. Profile with many crystals on screen: `CrystalDepthPrisms.LateUpdate` should be a few µs per
+   visible crystal.
+
+---
+
+### 🔴 Store readiness: production iOS id, Android API 36 + ARM64, Unity IAP removed, iOS export-compliance plist (`claude/serene-edison-lfv24f`, 2026-10-08)
+
+Step 1 and the store settings of `Docs/PLATFORM_UNIFICATION.md` (§3.9). The console walkthrough is
+the shared doc *Cosmic Shore — Google Play & App Store setup guide*. No editor and no `unity` CLI in
+the authoring session, so `/verify-unity` did NOT run. Out of editor:
+
+- `unity_refcompile` compiled the branch with the IAP package gone. Its package scan now compiles only
+  what the lock lists, so a stale cache cannot mask a removed package.
+- The conditional-compilation and console-logging gates pass.
+- The `UNITY_IOS` body of the new post-processor is compiled by nothing here. The first iOS build is
+  its proof.
+
+**What landed**
+
+1. **Player Settings:**
+   - iOS `com.FrogletGames.CosmicShore` (was `.dev`).
+   - Android target API 36 (was 35), ARM64 only (was ARMv7 + ARM64).
+   - The TailGlider keystore path and alias cleared.
+2. ~~**`ios-unsigned-ipa.yml`** rewrites the sideload `.ipa`'s `CFBundleIdentifier` to `.dev`.~~
+   **Retired 2026-10-13:** the free-Apple-ID path and its workflow were removed; TestFlight is the
+   only iOS distribution path.
+3. **Gradle templates:** namespace and NDK lines outside the EDM4U block; Unity Ads gone (two commits
+   cherry-picked).
+4. **IAP removed:** `com.unity.purchasing` uninstalled, `BillingMode.json` deleted, the Purchasing
+   service off.
+5. **Legacy Unity Analytics** (engine-level, ran before consent) off.
+6. **`IosExportCompliancePostprocess`** writes `ITSAppUsesNonExemptEncryption = NO` into every iOS
+   `Info.plist`.
+
+**Verify in editor**
+
+1. Open the project. The Package Manager resolves without `com.unity.purchasing`, and the console has
+   no compile errors. Nothing in project code or asmdefs referenced it (grep); a reference that only
+   the editor resolves would show here.
+2. Build the Android App Bundle (Release, upload keystore selected). If Unity says the SDK is older
+   than API 36, install Android SDK Platform 36 and rebuild.
+3. Inspect the bundle with `bundletool`:
+   - `dump config` shows `PAGE_ALIGNMENT_16K`.
+   - `dump manifest` shows `android:appCategory="game"`. Android 16 exempts only games from forced
+     large-screen resizing under API 36.
+   - The bundle carries no `com.android.vending.BILLING`.
+   - Note whether `POST_NOTIFICATIONS` / `AD_ID` appear.
+4. Install the bundle on a phone (internal testing track or `bundletool install-apks`):
+   - It launches.
+   - The first-run consent screen appears.
+   - A match plays.
+   - Haptics fire. Nice Vibrations' `liblofelt_sdk.so` is still 4 KB-aligned; only Play's
+     1 Feb 2027 update gate cares, not the phone.
+5. iOS build (Release):
+   - In the exported Xcode project, `Info.plist` has `ITSAppUsesNonExemptEncryption` = NO, the
+     bundle id `com.FrogletGames.CosmicShore`, and both photo-library purpose strings reading
+     "Cosmic Shore saves the paintings and screenshots…" (from `ProjectSettings/NativeShare.json`).
+   - Archive and upload to TestFlight. The build appears **without** a "Missing Compliance" flag.
+6. ~~Path A: run `ios-unsigned-ipa.yml` once. Its log prints `com.FrogletGames.CosmicShore.dev`, and
+   Sideloadly installs it with a free Apple ID.~~ **Retired 2026-10-13** with Path A; nothing to
+   verify.
+7. Windows: a Release build from `FrogletTools ▸ Build` still succeeds, and the game runs unchanged.
+   Nothing here touches Standalone settings, but the package removal re-resolves every platform.
+8. **Path C (2026-10-12):** after the one-time setup in `Docs/IOS_BUILD.md` §2 Path C, run **iOS
+   TestFlight** once.
+   - The job's summary names the version and build (`0.2.0 (14.<run>)`).
+   - The build appears in App Store Connect → TestFlight within about an hour.
+   - It installs through the TestFlight app on an iPhone.
+   - The workflow has never run. Its signing script was tested on a generated Xcode project with
+     the same three targets, and its profile check against good and bad profiles. Xcode 26 on a
+     real Unity export is untested.
+
+---
+
 ### 🔴 PvP is petals only: one gate for scored hits and petal theft (`claude/pvp-petals-only`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 **Landed** (rule: `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md` § "PvP is petals only"): every combat-hit
@@ -314,7 +1176,47 @@ outcome onto the prefab component, which fixed it. Root cause of the null load i
 
 ---
 
+### 🔴 Omni crystal: the triangles BREATHE; the rim is retired (`cece/eager-rubin-km7qyn`, 2026-10-10)
+
+> **SUPERSEDED 2026-10-13 — do not run.** The Breathe look was replaced by the Depth ratchet (round 8), and its six tone materials and the rim's two were deleted on `cece/determined-ride-rqzaeo` (F2); the lab pins their values. Nothing in this entry can be seen in game any more.
+
+**Landed** (`Docs/PALETTE.md §2.10`; picked in the Omni Shepard Lab, `Docs/Studios/OMNI_SHEPARD_LAB.md`
+round 4): `OmniShepardFresnelShader` gained four opt-in dials, inert at their defaults
+(`_Breathe`, `_PhaseOffset`, `_PlateScaleStart`, `_Thickness`). `OmniCrystalTriangles.asset` gained a
+per-vertex plate centre in TEXCOORD2 (stride 48 → 60). The six `OmniShepardTriangles*` materials now
+breathe 1.0 ↔ 0.5 over 10.5 s, phases 0 / ⅓ / ⅔, with plates half size far out, 1.25× thick, and
+face-forward shading. `Crystal.prefab` lost slot 4 (the rim). Everything is regenerated by
+`Tools/Build/author_omni_crystal_triangles.py` (`--check` clean). C# changes are comment and
+tooltip text only. **No Unity editor or `unity` CLI in the authoring container, so `/verify-unity`
+did NOT run.** The HLSL `vert()` was compiled with clang and checked vertex by vertex against the lab
+(`Tools/Build/omni_shepard_shader_parity.py`, 7/7 incl. two negative controls); the fragment and
+ShaderLab wrapper were not compiled by Unity.
+
+**Verify in editor**
+1. Console after import: no errors on `OmniShepardFresnelShader`, `OmniCrystalTriangles.asset` or
+   `Crystal.prefab`. The mesh inspector shows UV2 (TEXCOORD2) with 3 components.
+2. In play, the omni crystal's triangles drift IN from twice the crystal's radius to its surface and
+   back OUT, three shells a third of a cycle apart (one full round trip ≈ 10.5 s). Far out they are
+   small (half size), on the surface they match the body's triangles. They are slightly thicker than
+   the body's plates. No visible pop anywhere in the cycle. There is no static outer triangle rim any more.
+3. **Compare against the lab:** open `Docs/Studios/OmniShepardLab.html` (Styles ▸ Shipped). The game
+   should match it apart from bloom and transparent sort order.
+4. **Mass crystal unchanged:** it shares this shader and authors none of the new dials; its four shells
+   should look exactly as before.
+5. Team crystals (Skim Race track crystal, Dolphin crystal) breathe the same way in domain colours.
+   Console: no "Invalid crystal material index".
+6. Scarab forge / Squirrel ring morph on an omni crystal: the triangle overlays fade as the cage opens
+   (four slots now, not five); no warnings.
+7. Transparent order: the three shells keep fixed queues 2999/3000/3001 while breathing through each
+   other. Watch for a shell visibly drawing in front of a nearer one; if it shows, report it.
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
+
+> **SUPERSEDED 2026-10-13 — do not run the tone steps.** The tone shells and their materials are gone (Depth ratchet since round 8; materials deleted on `cece/determined-ride-rqzaeo`, F2). The body steps are covered by the round-9/10 crystal entries at the top.
+
+> **Partly superseded 2026-10-10:** the triangles now breathe instead of falling, and the
+> stationary rim (slot 4) is gone; see the entry above. Steps 3 (falling, rim) and 8 (falling,
+> rim) describe the old look; the rest still applies.
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
 `Crystal.prefab` slot 0 = whole omni model on the new, self-contained `OmniCrystalFresnelShader`
@@ -634,6 +1536,8 @@ no edit-mode tests executed, no play mode.
 ---
 
 ### 🔴 Mass crystal — one geometry in every state, Space/Time colour contrast (`cece/lucid-ride-4arncr`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+> **PARTLY SUPERSEDED 2026-10-13.** The four shells and their eight materials are gone (depth prisms since round 8; materials and the orphaned `SpawnedSegments.prefab` deleted on `cece/determined-ride-rqzaeo`, F3). The husk (`ExplodingMassCrystalMaterial*`) and lifeform-heart steps still apply; the shell-colour steps do not.
 
 Asked for: *"the blue inactive mass crystal looks correct except its colors should reflect the
 color contrast seen in the space and time crystals. however the active state looks like it changes

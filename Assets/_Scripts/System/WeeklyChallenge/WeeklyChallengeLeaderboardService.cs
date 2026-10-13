@@ -8,8 +8,8 @@ using Cysharp.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Leaderboards;
-// ALIASED, not imported. `CosmicShore.Data` also has a `LeaderboardEntry` (and PlayFab has a
-// third), so importing the Models namespace makes the name ambiguous the moment this file uses
+// ALIASED, not imported. `CosmicShore.Data` also has a `LeaderboardEntry` (and `LeaderboardsMenu`
+// nests a third), so importing the Models namespace makes the name ambiguous the moment this file uses
 // it - which is the collision WeeklyChallengeRanking's own docs exist to warn about, hit here.
 // An alias names the ONE type this file means and leaves every other name alone.
 using UgsLeaderboardEntry = Unity.Services.Leaderboards.Models.LeaderboardEntry;

@@ -55,6 +55,8 @@ namespace CosmicShore.Engine
         public int BlendSrc = -1, BlendDst = -1;
         /// <summary>The render queue its tags ask for ("Transparent+2" = 3002), -1 to derive it.</summary>
         public int Queue = -1;
+        /// <summary>A hand-written shader's depth Offset (factor, units); 0, 0 for none.</summary>
+        public float OffsetFactor, OffsetUnits;
 
         /// <summary>Nodes the compiler could not translate exactly: "Type: reason". Empty when every node translated.</summary>
         public readonly List<string> Approximations = new();

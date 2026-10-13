@@ -48,8 +48,8 @@ namespace CosmicShore.Editor.Froglet
     /// <see cref="FrogletToolAttribute"/> when you want a specific section, importance or
     /// description.
     ///
-    /// That prefix is also the only filter: menus belonging to third-party packages (PlayFab,
-    /// FMOD, Soap, Quick Scene Pro, ...) live under their own roots and are simply never picked
+    /// That prefix is also the only filter: menus belonging to third-party packages (FMOD,
+    /// Soap, Quick Scene Pro, ...) live under their own roots and are simply never picked
     /// up, so the board only ever shows tools we own.
     /// </summary>
     public static class FrogletToolRegistry

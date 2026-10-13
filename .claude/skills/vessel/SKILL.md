@@ -686,6 +686,34 @@ applies to new abilities, new resources on the meter list, and anything that add
       (exactly two), so keep the follow-frame local named `rotation` and keep the teleport path
       from adding a third site.
 
+44. **A camera blend toward a MOVING pose reads as rough however long you make it — drive the
+    transition yourself between poses that are not moving under you, and hand over only where
+    they coincide.** `CustomCameraController.Spectate` blends the settled follow pose toward a
+    vantage over `SpectateBlendSeconds`, which is correct and was still the Thresher's "make it
+    smoother" report (2026-10-13): on ENTRY the follow pose underneath was still spinning with a
+    planted hull, on EXIT a turn-capped follow frame (rule 43) was still swinging onto the new
+    heading — so both blends chased a target that moved during them. The fix is on the caller's
+    clock: capture the camera's ACTUAL pose, ease (SmoothStep) your own vantage from it to the
+    destination — a still vantage going in; the follow pose COMPUTED from the hull's live pose and
+    the camera's own offset going out — then `SnapToTarget()` and release with a near-zero
+    hand-over blend between two equal poses. Two traps: a computed follow pose must use the SAME
+    formula the camera does (the warp field made it `EffectiveOffset * WarpFieldRuntime.ScaleAt`,
+    merged in mid-branch — a duplicated formula drifts silently; see THRESHER.md's refactor rows),
+    and never ease from `transform` read AFTER shake, or the start pose carries the shake.
+
+45. **A hull snap is a VELOCITY snap first — cap the turn, let the constraint stretch, and reel
+    the stretch back with a SPRING, never an exponential.** Rule 43 hides a one-frame hull turn
+    from the camera; it does not make the motion smooth. The Thresher's plant replaced the ship's
+    heading with the orbit tangent in one frame (91°). Capping the heading's turn rate (300 °/s)
+    is half the fix, and it STALLS the ship if the constraint holds — a ship flying radially away
+    from the pivot, clamped to the rope, has nowhere to go. So let the constraint stretch while
+    the heading turns (the ship swings wide, ~15 u), then reel the stretch back. An
+    exponential reel-back steps the radial speed from 0 to `rate × stretch` in one frame — that
+    was a single **47°** frame in the measurement — while a critically damped spring seeded with
+    the swing-out's own radial speed ramps it (worst 6.9°/frame, which is the orbit's own
+    curvature). Measure per-frame heading change in the pure solver (rule 43's scratch driver)
+    before and after; `HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling` is the template.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
@@ -835,6 +863,14 @@ every time: *"I don't see the pip."*
   - **A corner sharper than a right angle needs a MITER, not a bisector.** An antialiasing feather
     offset along the bisector is `sin(theta/2)` too thin at the point — at a 72-degree apex that is
     41% — and the apex is exactly where the eye lands first.
+- **Not every petal is square — the window's rect AND its render target take the petal's
+  aspect.** The Charge petal's bounding box is square to 0.5%, so the Serpent's eyepiece got away
+  with a square everything. The Time petal (traced off `time_petal.png`, 2026-10-13) is an exact
+  rhombus with 72° tips and width / height = tan 36° = 0.727: positions-are-UVs then needs a 0.727
+  rect AND a 0.727 render target (`ScopePipView.RenderAspect`), and its inradius and miters must be
+  computed in TRUE proportions (x scaled by the aspect), or the feather and the round marks skew.
+  Measure a sprite with coverage-weighted row edges and a line fit per edge; the residual (≤0.05 px
+  here) is what tells you the shape really is a polygon.
 - **Derive a shape's constants from its outline, never transcribe them.** `ScopePetalGeometry`
   computes inradius, circumradius and area in a static constructor by walking its own edges, so
   re-tracing the sprite moves the picture, the frame, the reticle cap and the recharge ring
@@ -942,6 +978,14 @@ Elemental levels are simulated per peer, so the rival toll (`WormholeMouth.LevyT
 is levied there: putting it in `Transit` would have stripped petals on the owner only and desynced
 every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
 server re-broadcasts to everyone else), so a hook there fires once per machine.
+
+- **Anything that PREDICTS where a hull will go must fly the hull's response, not its stick** (the Stoat's
+  pathfinder, an AI's lead, an aim-assist line). `VesselTransformer` turns a COMMAND (`CommandedRotation`)
+  that the visible hull slerps after at `RotationFollowRate` (1.5 /s, a 0.67 s lag), and eases `speed` to
+  `CurrentThrottleTarget` at the same rate. A body that turns at the stick's rate at once is 15–73 u off the
+  real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
+  to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
+  pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

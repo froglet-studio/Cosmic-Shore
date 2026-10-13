@@ -178,14 +178,41 @@ exact same `GameLoop`.
 renderer, plus Entities Graphics entities. The game's `PrismRenderService` drives prism mass
 through those entities.
 
-**Shaders.** It does not run Unity's shaders. One uber-shader reproduces the project's material
-families: unlit, lit, the prism fresnel pair, snow, cage, Voronoi, crystal, additive and slice.
-The project's own HLSL is translated into GLSL inside it:
-- the prism clock animation and sway;
-- the occlusion corridor;
-- the destruction sight;
-- the vessel vision band;
-- the cradle and the slice.
+**Shaders.** Each material takes one route (the session report counts instances per route,
+`render.shaders`; `cs-asset shadergraph-census` lists every project shader's):
+- **family**: the scene uber-shader's hand-tuned code for the prism graphs (instancing, entity
+  overrides, the clock block), the slice and the forcefield. The project's own HLSL is translated
+  into it: the prism clock animation and sway, the occlusion corridor, the destruction sight, the
+  vessel vision band, the cradle and the slice.
+- **compiled**: every other Shader Graph, compiled node by node to GLSL (`Content/Shaders`) inside
+  `GraphProgramCache`'s template. `cs-asset shadergraph-glsl FILE` prints what it draws.
+- **hand**: a hand-written `.shader` translated in `Content/Shaders/Hand/*.glsl` (the crystals:
+  OmniCrystalFresnel, OmniChargeEdges, ChargeCrystal, OmniShepardFresnel, SpreadFresnel). They
+  read the mesh's TEXCOORD2/3 (attribute locations 10/11 in a graph draw) and honour `Offset`.
+- **builtin**: Unity's own shaders by name, each by its source's formula — Particles/Standard
+  Unlit (the vessel jets' flares), the legacy particle shaders, Sprites/Default, URP Unlit and
+  Particles/Unlit (family 9), URP Lit (family 1, below). Default-Line and Default-Particle are the
+  legacy Alpha Blended Premultiply shader.
+- **fallback**: anything else draws unlit (base colour x texture) and is reported once.
+
+**Colour space.** The project is Linear (`ColorSpaceRules`): a plain colour property is stored
+sRGB and reaches the GPU linearised (`Mathf.GammaToLinearSpace`, pow 2.2 above 1), an [HDR] one is
+stored linear and goes up as stored (`Material.SetColor` converts on the way in), vectors are raw,
+a property block's colour is linearised, `Shader.SetGlobalColor` is not, and particle, trail and
+line vertex colours are converted. `Material.color` / `mainTexture` address the shader's
+[MainColor] / [MainTexture] (URP's `_BaseColor` / `_BaseMap`), else `_Color` / `_MainTex`; a
+material's queue is the shader's (its `Queue` tag, or the graph target's) until it sets its own.
+
+**Lighting.** URP's Lit BRDF (`UrpLitGlsl`) for URP Lit materials and Lit graphs: the main light
+(the sun, else the brightest directional light; gameplay scenes have none, so none), the ambient
+probe and the default reflection from `EnvironmentLighting`. The probe follows the scene's ambient
+mode: Skybox projects the skybox (captured into a 128 cubemap) onto L2 spherical harmonics x
+ambient intensity, Flat is the sky colour, Trilight the gradient. Not drawn: additional lights,
+shadows, texture-driven metallic/smoothness, GGX-convolved reflection mips (box-filtered here),
+soft particles (no depth texture).
+
+**Cameras.** The player raises URP's `RenderPipelineManager.beginCameraRendering` /
+`endCameraRendering` around every camera it draws (the wormhole view depends on them).
 
 **Batching.** Opaque geometry is instanced per (mesh, submesh, material). Transparent geometry
 is sorted back to front. A per-instance "clock block" (15 vec4) rides in a texture buffer.
@@ -193,10 +220,13 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 **Culling.** Frustum culling uses cached bounding spheres. Vertex-animated debris is never culled.
 
 **Other passes:**
-- `SkyboxPass`: the HyperSea skybox, translated.
-- `PostPass`: bloom mip chain and Panini projection. The project authors no tonemapper.
+- `SkyboxPass`: the HyperSea skybox, translated (also drawn into the environment cubemap).
+- `PostPass`: URP 17.3's order and maths: the Panini projection, then the Gaussian bloom (gamma
+  threshold and knee, clamp, a 9-tap/5-tap pyramid of URP's depth, scatter, luminance-normalised
+  tint, the high-quality bicubic upsample), then the composite. The project authors no tonemapper.
 - `UguiRenderer` and `TmpTextRenderer`: canvases in hierarchy order, CanvasGroup alpha,
-  RectMask2D, stencil masks, SDF text.
+  RectMask2D, stencil masks, SDF text. A Graphic whose material names a translated UI shader
+  (`UiCustomShaders`: the HUD's team-volume gauge) draws with it; any other draws as UI/Default.
 - `PresentPass`.
 
 **GL ES (phones).** `GlCaps` translates every shader at the one compile point

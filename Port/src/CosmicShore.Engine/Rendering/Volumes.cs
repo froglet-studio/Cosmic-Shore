@@ -186,7 +186,6 @@ namespace CosmicShore.Engine.Rendering
         public MinFloatParameter clamp = new(65472f, 0f);
         public ColorParameter tint = new(Color.white);
         public BoolParameter highQualityFiltering = new(false);
-        public ClampedIntParameter skipIterations = new(1, 0, 16);
         public VolumeParameter<BloomDownscaleMode> downscale = new(BloomDownscaleMode.Half);
         public ClampedIntParameter maxIterations = new(6, 2, 8);
         public TextureParameter dirtTexture = new(null);

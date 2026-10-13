@@ -75,6 +75,11 @@ namespace CosmicShore.Gameplay
                 CarryCameras(vessel, mouth, exit - entry);
                 mouth.LevyToll(status, entry);
             }
+            else
+            {
+                // Through a black hole's pair instead: a stripping sink (the Stoat's dipole) takes its toll.
+                BlackHoleCrystalStrip.Levy(status, from);
+            }
 
             CutRibbons(vessel, departAt, arriveAt, speed);
         }

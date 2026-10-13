@@ -5,7 +5,6 @@ apply from: '../shared/keepUnitySymbols.gradle'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 // Android Resolver Dependencies Start
-    implementation 'com.unity3d.ads:unity-ads:[4.12.0,4.13[' // Packages/com.unity.ads/Editor/Source/Dependencies.xml:7
 // Android Resolver Dependencies End
 **DEPS**}
 
@@ -21,6 +20,13 @@ android {
 }
 // Android Resolver Exclusions End
 android {
+    // namespace/ndkPath/ndkVersion MUST stay in this block, outside the "Android Resolver" markers:
+    // EDM4U rewrites everything between those markers on every resolve and silently drops them,
+    // and AGP then fails with "Namespace not specified" (plus a knock-on launcher compileSdk error).
+    namespace "com.unity3d.player"
+    ndkPath "**NDKPATH**"
+    ndkVersion "**NDKVERSION**"
+
     compileSdk **APIVERSION**
     buildToolsVersion '**BUILDTOOLS**'
 

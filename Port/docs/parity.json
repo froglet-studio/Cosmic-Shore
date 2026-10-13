@@ -16,8 +16,8 @@
     },
     "shaders": {
       "Faithful": 0,
-      "Approximate": 63,
-      "Missing": 18
+      "Approximate": 67,
+      "Missing": 14
     }
   },
   "subsystems": [
@@ -530,8 +530,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph",
       "name": "Shader Graphs/CageGraph",
       "status": "Approximate",
-      "why": "hand-tuned family; frames not yet compared per shader (C2)",
-      "test": "engine_parity frames"
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/CausticsNoiseGraph.shadergraph",
@@ -543,9 +543,9 @@
     {
       "path": "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader",
       "name": "Shader Graphs/ChargeCrystal",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/ConicGraph.shadergraph",
@@ -558,8 +558,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/CrystalGraph.shadergraph",
       "name": "Shader Graphs/CrystalGraph",
       "status": "Approximate",
-      "why": "hand-tuned family; frames not yet compared per shader (C2)",
-      "test": "engine_parity frames"
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/DandruffGraph.shadergraph",
@@ -740,8 +740,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/SnowGraph.shadergraph",
       "name": "Shader Graphs/SnowGraph",
       "status": "Approximate",
-      "why": "hand-tuned family; frames not yet compared per shader (C2)",
-      "test": "engine_parity frames"
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/SoftSpark.shader",
@@ -761,8 +761,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph",
       "name": "Shader Graphs/SpindleGraph",
       "status": "Approximate",
-      "why": "hand-tuned family; frames not yet compared per shader (C2)",
-      "test": "engine_parity frames"
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/StarGraph.shadergraph",
@@ -803,8 +803,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph",
       "name": "Shader Graphs/VesselGraph",
       "status": "Approximate",
-      "why": "hand-tuned family; frames not yet compared per shader (C2)",
-      "test": "engine_parity frames"
+      "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
+      "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/VesselTextureGraph.shadergraph",
@@ -823,9 +823,9 @@
     {
       "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
       "name": "CosmicShore/Wormhole",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Panorama",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
@@ -935,15 +935,15 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
       "name": "Custom/OmniChargeEdgesShader",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Fog",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
       "name": "Custom/OmniCrystalFresnelShader",
       "status": "Approximate",
-      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: CrystalMorph",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
       "test": "HandShaderTests, --check-shaders"
     },
     {
@@ -1012,9 +1012,9 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/UI/VolumeDisplayShader.shader",
       "name": "Shader Graphs/VolumeDisplayShader",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "uGUI renderer, translated UI shader (Render/UiCustomShaders.cs); frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
     },
     {
       "path": "Assets/_Models/ShieldShader.shadergraph",

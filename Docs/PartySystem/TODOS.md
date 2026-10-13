@@ -51,7 +51,7 @@ references in `Assets/`.
 
 Canonical: `../NetworkDiagnostics/TODOS.md` § "TODO-2. Broader adoption
 — non-party UGS catches" (pattern + candidate site list:
-`AuthenticationServiceFacade`, `FriendsServiceFacade`, PlayFab, IAP,
+`AuthenticationServiceFacade`, `FriendsServiceFacade`, IAP,
 leaderboards-write). Not duplicated here.
 
 ## UI / UX (deferred — needs design pass)

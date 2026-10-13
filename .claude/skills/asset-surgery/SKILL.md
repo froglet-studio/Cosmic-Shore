@@ -1088,6 +1088,18 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
   cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
   is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **In a SPARSE checkout, `check_generated_assets.py`'s `[guid]` findings are mostly the checkout,
+  not the asset.** `build_guid_index` walks `Assets/` on DISK, so every `.meta` outside the sparse
+  cone is invisible and a reference to it reads `resolves to no asset in Assets/`. A package script
+  that a generator ADDED is flagged the same way even though the docstring says package references
+  are "counted, not judged": the new `UnityEngine.UI.Image` components on `SerpentHUDVariant.prefab`
+  (`m_Script` guid `fe87c0e1cc204ed48ad3b37840f39efc`, the ugui Image) came back as findings, while
+  the 14 Images already in that prefab were suppressed as pre-existing. Resolve each `[guid]` line
+  before calling it a defect: `git grep -l <guid> HEAD -- '*.meta'` finds an asset the cone hides
+  (it found `_Models/Testing/Prism.asset`, guid `8f4a329b…`), and a guid already used elsewhere in
+  the same file as an `m_Script` is a package script. Measured 2026-10-13 on
+  `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
+  from `git ls-tree` plus the refcompile package cache), not in a habit.
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
@@ -1114,6 +1126,19 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
+
+**`unity_refcompile`'s engine DLLs are REFERENCE assemblies: they bind, they do not RUN.** Calling
+`Vector3`/`Quaternion` from them in a harness throws `NullReferenceException` on the first operator, so
+a compile against them cannot execute the shipped maths. To RUN a pure-math class (a predictor, a field
+law, a layout routine), compile the SHIPPED file unmodified beside a ~60-line stub `namespace
+UnityEngine` (`Vector2`/`Vector3`/`Quaternion` with `AngleAxis`, `*`, `Slerp`, and `Mathf`). Then drive
+it from a scratch `Main`, and lift the test bodies out of the `[Test]` file with a ten-line NUnit
+`Assert` shim, so they run too. On 2026-10-13 this ran the Stoat's `StoatDipoleMath` and five of its
+edit-mode tests, and measured the bug a play report described: the instant path predictor was 15–73 u
+off a frame-stepped model of `VesselTransformer` within 3 s. Keep the stub in the scratchpad, never in
+the repo, and add members only as the compile asks for them. Also: `verify_black_hole_lens.py` needs
+`glslangValidator`; a root container gets it from `apt-get install -y glslang-tools` (after an
+`apt-get update`).
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
@@ -4154,6 +4179,18 @@ never fold it into a fix for something else.
   idiom. So a new rule dropped into that tick inherits the local path for free, where its
   detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
   rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
+- **A mesh whose vertex shader REBUILDS geometry from per-vertex data cannot be moved by a CPU
+  consumer that draws it on the same material - unless the shader's undriven path is the identity.**
+  `OmniDepthPrismShader` rebuilt every vertex from TEXCOORD2 (its prism's centre) and stretched it by
+  the material's `_Thickness` 6.25. `CrystalHullFusion` re-tessellates the crystal onto a vessel hull
+  and draws that copy on the crystal's own material, with TEXCOORD2 holding ITS data (discharge
+  heights, zero on filler vertices): the stretch ran against the wrong centres and blew the Mass
+  faces 36 mesh units apart, and `normalize(0)` made filler vertices NaN. Fix shape: bake every
+  shape parameter the shader applied into the mesh (the material ships the neutral value), make the
+  undriven branch return the vertex untouched without reading the per-vertex channel, and have the
+  consumer force undriven. Prove it with a formula identity (max |p - v| at float32) and a negative
+  control that leaves the parameter in (238 units). Grep for every renderer that borrows a
+  material's `sharedMaterials` before giving a shader per-vertex semantics.
 
 ### Bundled tool: `field_parity.py`
 

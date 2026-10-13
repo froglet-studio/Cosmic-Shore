@@ -366,6 +366,115 @@ void CrystalMorphNormal_float(vec3 Normal, vec4 Target, float Clock, vec3 Morph,
 }
 
 // ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/ChargeCrystal.hlsl (the charge crystal's edge discharge)
+// Bolts crackle vertex to vertex along the baked crease edges: TEXCOORD1 barycentrics, TEXCOORD2
+// heights to each edge in model-radius fractions (negative = a triangulation diagonal, no bolt),
+// TEXCOORD3 per-edge seeds (>= 1 = traversed against the edge's canonical direction). An unbaked
+// mesh (sum of barycentrics 0) contributes nothing.
+// ---------------------------------------------------------------------------------------------
+float sgChargeHash11(float p)
+{
+  p = fract(p * 0.1031);
+  p *= p + 33.33;
+  p *= p + p;
+  return fract(p);
+}
+
+float sgChargeValueNoise(float x)
+{
+  float i = floor(x);
+  float f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(sgChargeHash11(i), sgChargeHash11(i + 1.0), f);
+}
+
+float sgChargeFBM(float x)
+{
+  float v = 0.0, a = 0.5, fq = 1.0;
+  for (int o = 0; o < 3; o++) { v += a * (sgChargeValueNoise(x * fq) * 2.0 - 1.0); fq *= 2.13; a *= 0.5; }
+  return v;
+}
+
+// Negative for fragments this frame's screen-door coverage drops (FadeIn's _opacity).
+float sgChargeCoverageClip(float opacity, vec2 positionSS)
+{
+  if (opacity >= 1.0) return 1.0;
+  float n = fract(52.9829189 * fract(dot(positionSS, vec2(0.06711056, 0.00583715))));
+  return opacity - (n * 0.998 + 0.001);
+}
+
+void ChargeCrystalArcs_float(vec3 bary, vec3 edgeH, vec3 edgeSeed, float time,
+  float arcWidth, float arcLength, float arcSpeed, float arcDuty, float arcJitter, float arcShimmer, float nodeRadius,
+  out float Arc, out float Heat, out float Node)
+{
+  Arc = 0.0; Heat = 0.0; Node = 0.0;
+  if (bary.x + bary.y + bary.z < 0.5) return;
+  vec3 h = abs(edgeH);
+  vec3 d = bary * h;
+  float dmin = min(d.x, min(d.y, d.z));
+  float dmax = max(d.x, max(d.y, d.z));
+  float dmid = d.x + d.y + d.z - dmin - dmax;
+  Node = exp(-(dmid * dmid) / max(nodeRadius * nodeRadius, 1e-8));
+  float w2 = max(arcWidth * arcWidth, 1e-8);
+  float l2 = max(arcLength * arcLength, 1e-8);
+  for (int i = 0; i < 3; i++)
+  {
+    if (edgeH[i] <= 0.0) continue;
+    float s = edgeSeed[i];
+    float flipped = s >= 1.0 ? 1.0 : 0.0;
+    s = fract(s);
+    int j = (i + 1) % 3;
+    int k = (i + 2) % 3;
+    float t = bary[k] / max(bary[j] + bary[k], 1e-5);
+    t = mix(t, 1.0 - t, flipped);
+    float wobble = sgChargeFBM(t * 9.0 + s * 57.31 + time * 3.1);
+    float jitter = (0.5 + 0.5 * wobble) * arcJitter * arcWidth;
+    float dd = abs(d[i] - jitter);
+    float core = exp(-(dd * dd) / w2);
+    float rate = arcSpeed * (0.55 + 0.9 * s);
+    float phase = time * rate + s * 13.7;
+    float span = 1.0 + 2.0 * arcLength;
+    float head = fract(phase) * span - arcLength;
+    float dt = t - head;
+    float along = exp(-(dt * dt) / l2);
+    float fire = step(arcDuty, sgChargeHash11(floor(phase) * 1.37 + s * 91.7));
+    float shim = arcShimmer * (0.35 + 0.65 * sg_saturate(sgChargeFBM(t * 11.0 + time * 2.3 + s * 29.0) * 0.5 + 0.5));
+    float amp = max(along * fire, shim);
+    Arc = max(Arc, core * amp);
+    Heat = max(Heat, core * along * fire);
+  }
+  Node *= Arc;
+}
+
+vec3 sgChargeCrystalDischarge(vec3 bary, vec3 edgeH, vec3 edgeSeed, float time, vec3 brightColor, vec3 arcCoreColor,
+  float arcIntensity, float arcWidth, float arcLength, float arcSpeed, float arcDuty, float arcJitter, float arcShimmer,
+  float nodeRadius, float nodeIntensity)
+{
+  float arc, heat, node;
+  ChargeCrystalArcs_float(bary, edgeH, edgeSeed, time, arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius, arc, heat, node);
+  vec3 arcColor = mix(brightColor, arcCoreColor, sg_saturate(heat * heat));
+  return arcColor * (arc * arcIntensity) + arcCoreColor * (node * nodeIntensity);
+}
+
+// The charge crystal's whole surface: flat facets lit by a fixed world key, a theme-pair rim,
+// a rim emission and the discharge on top.
+vec3 sgChargeCrystalSurface(vec3 normalWS, vec3 viewDirWS, vec3 bary, vec3 edgeH, vec3 edgeSeed, float time,
+  vec4 dullColor, vec4 brightColor, vec3 keyDirWS, float facetAmbient, float rimPower, float rimStrength, float emissionStrength,
+  vec3 arcCoreColor, float arcIntensity, float arcWidth, float arcLength, float arcSpeed, float arcDuty, float arcJitter,
+  float arcShimmer, float nodeRadius, float nodeIntensity)
+{
+  vec3 N = normalize(normalWS);
+  vec3 V = normalize(viewDirWS);
+  float facet = mix(facetAmbient, 1.0, abs(dot(N, normalize(keyDirWS))));
+  float fresnel = pow(sg_saturate(1.0 - sg_saturate(dot(N, V))), rimPower);
+  vec3 body = mix(dullColor.rgb, brightColor.rgb, sg_saturate(fresnel * rimStrength)) * facet;
+  vec3 emissive = brightColor.rgb * (emissionStrength * fresnel);
+  vec3 discharge = sgChargeCrystalDischarge(bary, edgeH, edgeSeed, time, brightColor.rgb, arcCoreColor, arcIntensity,
+    arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius, nodeIntensity);
+  return body + emissive + discharge;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl (02815910e1a7418bb18c430341747719)
 // The Urchin's drape: vertices inside a riding hull's reach slide along their radius onto it.
 // ---------------------------------------------------------------------------------------------

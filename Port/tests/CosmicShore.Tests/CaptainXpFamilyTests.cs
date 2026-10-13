@@ -4,18 +4,19 @@ using System.Reflection;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Engine;
-using CosmicShore.Engine.Soap;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Tests;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CaptainManager unit (2026-07-10) — the REAL captain economy manager + the
-// XpHandler local lanes (replacing the Store-unit shell + the struct-only
-// XpHandler extraction). Covers: XpHandler's per-element XP accumulation
-// (IssueXP creates the class row on demand, adds only to the captain's primary
-// element; GetCaptainXP reads it back) and EncounterCaptain's dedupe;
+// CaptainManager unit (2026-07-10; re-synced 2026-10-13 to upstream's
+// post-retirement XpHandler) — the REAL captain economy manager + the XpHandler
+// local lanes (replacing the Store-unit shell + the struct-only XpHandler
+// extraction). Covers: XpHandler's per-element XP accumulation (IssueXP creates
+// the class row on demand, adds only to the captain's primary element;
+// GetCaptainXP reads it back) and EncounterCaptain's dedupe; LoadCaptainXpData
+// seeding empty tables, and every XpHandler write raising OnCaptainDataLoaded;
 // LoadCaptainsData deriving the full roster from the serialized SO_CaptainList
 // over the LIVE XpHandler + CatalogManager.Inventory lanes (XP, Encountered,
 // Unlocked, Level = 1 + matching upgrade count; locked-or-unencountered → 0;
@@ -56,9 +57,8 @@ public class CaptainXpFamilyTests : IDisposable
         captainList = ScriptableObject.CreateInstance<SO_CaptainList>();
         captainList.CaptainList = new List<SO_Captain> { aureliaSO, korvaxSO };
 
-        // The rig stands in for the PlayFab login: it lands the XpHandler
-        // dictionaries (AURELIA encountered with 120 Space XP) that
-        // OnLoadCaptainXpData would have landed.
+        // The rig stands in for a loaded save: it lands the XpHandler tables
+        // (AURELIA encountered with 120 Space XP).
         XpHandler.ClassXpData = new Dictionary<VesselClassType, XpData>
         {
             [VesselClassType.Manta] = new XpData(space: 120, time: 0, mass: 0, charge: 0),
@@ -72,35 +72,19 @@ public class CaptainXpFamilyTests : IDisposable
         go.SetActive(false);
         manager = go.AddComponent<CaptainManager>();
         Set(manager, "AllCaptains", captainList);
-        go.SetActive(true); // OnEnable: the upstream "[PLAYFAB DISABLED]" early return
+        go.SetActive(true); // OnEnable: wires nothing (disabled upstream)
 
-        // CatalogManager wired the StoreScreenTests way (its inventory Captain
-        // lane calls the injected _captainManager.EncounterCaptain).
-        var catalogGo = new GameObject("CatalogManager");
-        catalogGo.SetActive(false);
-        var catalog = catalogGo.AddComponent<CatalogManager>();
-        var netVariable = ScriptableObject.CreateInstance<NetworkMonitorDataVariable>();
-        netVariable.Value = new NetworkMonitorData
-        {
-            OnNetworkFound = ScriptableObject.CreateInstance<ScriptableEventNoParam>(),
-            OnNetworkLost = ScriptableObject.CreateInstance<ScriptableEventNoParam>(),
-        };
-        Set(catalog, "_networkMonitorDataVariable", netVariable);
-        Set(catalog, "_captainManager", manager);
-        catalogGo.SetActive(true);
-
-        // First derivation over the still-empty inventory (populates
-        // captainData so the inventory load's EncounterCaptain lane can
-        // resolve names — upstream ordering: captains load, then inventory
-        // events re-derive). Then AURELIA lands owned + one matching upgrade.
-        LoadRoster();
-        catalog.LoadLocalInventory(new List<VirtualItem>
-        {
-            new() { ItemId = "captain-aurelia", Name = "AURELIA", ContentType = "Captain",
-                    Tags = new List<string>(), Amount = 1 },
-            new() { ItemId = "upgrade-1", Name = "Aurelia Upgrade I", ContentType = "CaptainUpgrade",
-                    Tags = new List<string> { "Manta", "Space" }, Amount = 1 },
-        });
+        // The owned inventory, authored onto CatalogManager's public static
+        // Inventory (the catalog has no backend to load it from; LoadCaptainData
+        // reads only the static): AURELIA owned + one matching upgrade.
+        var aureliaItem = new VirtualItem { ItemId = "captain-aurelia", Name = "AURELIA", ContentType = "Captain",
+                                            Tags = new List<string>(), Amount = 1 };
+        var upgradeItem = new VirtualItem { ItemId = "upgrade-1", Name = "Aurelia Upgrade I", ContentType = "CaptainUpgrade",
+                                            Tags = new List<string> { "Manta", "Space" }, Amount = 1 };
+        CatalogManager.Inventory.captains.Add(aureliaItem);
+        CatalogManager.Inventory.captainUpgrades.Add(upgradeItem);
+        CatalogManager.Inventory.allItems.Add(aureliaItem);
+        CatalogManager.Inventory.allItems.Add(upgradeItem);
     }
 
     public void Dispose()
@@ -117,10 +101,9 @@ public class CaptainXpFamilyTests : IDisposable
         typeof(CaptainManager)
             .GetField("OnLoadCaptainData", BindingFlags.Static | BindingFlags.NonPublic)!
             .SetValue(null, null);
-        XpHandler.ClassXpData = null;
-        XpHandler.EncounteredCaptainsData = null;
-        XpHandler.OnCaptainDataLoaded = null;
-        CatalogManager.ResetLocalEconomy();
+        // Upstream's per-domain-load resets ([RuntimeInitializeOnLoadMethod], data-only here).
+        typeof(XpHandler).GetMethod("ResetStatics", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, null);
+        typeof(CatalogManager).GetMethod("ResetStatics", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, null);
     }
 
     static void Set(object target, string field, object value)
@@ -206,6 +189,36 @@ public class CaptainXpFamilyTests : IDisposable
         // The reload derives the new encounter into the roster.
         LoadRoster();
         Assert.True(manager.GetCaptainByName("KORVAX").Encountered);
+    }
+
+    [Fact]
+    public void XpHandler_LoadSeedsEmptyTables_AndEveryWriteRaisesOnCaptainDataLoaded()
+    {
+        int raises = 0;
+        XpHandler.OnCaptainDataLoaded += () => raises++;
+
+        // LoadCaptainXpData keeps loaded tables and raises once.
+        XpHandler.LoadCaptainXpData();
+        Assert.Equal(120, XpHandler.ClassXpData[VesselClassType.Manta].Space);
+        Assert.Equal(1, raises);
+
+        // With no tables yet it seeds empty ones (nothing to pull: no backend).
+        XpHandler.ClassXpData = null;
+        XpHandler.EncounteredCaptainsData = null;
+        XpHandler.LoadCaptainXpData();
+        Assert.Empty(XpHandler.ClassXpData);
+        Assert.Empty(XpHandler.EncounteredCaptainsData);
+        Assert.Equal(2, raises);
+
+        // IssueXP and a NEW encounter raise; a repeat encounter returns before raising.
+        LoadRoster();
+        var korvax = manager.GetCaptainByName("KORVAX");
+        XpHandler.IssueXP(korvax, 10);
+        Assert.Equal(3, raises);
+        XpHandler.EncounterCaptain(korvax);
+        Assert.Equal(4, raises);
+        XpHandler.EncounterCaptain(korvax);
+        Assert.Equal(4, raises);
     }
 
     [Fact]

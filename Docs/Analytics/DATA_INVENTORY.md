@@ -23,7 +23,7 @@ string fallback on load.
 | 4 | `GAME_MODE_PROGRESSION` | `GameModeProgressionData` | **ACTIVE** | 1.5s + immediate | Quest claims, intensity unlocks, stat reports |
 | 5 | `HANGAR_DATA` | `HangarCloudData` | **ACTIVE** | 1.5s | Vessel lock/unlock |
 | 6 | `PLAYER_SETTINGS` | `PlayerSettingsCloudData` | **ACTIVE** | 1.5s | Per settings change |
-| 7 | `WEEKLY_CHALLENGE` | `WeeklyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling). | 1.5s | none yet |
+| 7 | `WEEKLY_CHALLENGE` | `WeeklyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs. Migration deferred (legacy economy coupling; the PlayFab half was removed 12 Sep 2026). | 1.5s | none yet |
 | 8 | `TRAINING_PROGRESS` | `TrainingProgressCloudData` | **WIRED** — repo loads/flushes; system still writes local file. Migration held for Unity review. | 1.5s | none yet |
 | 9 | `CAPTAIN_PROGRESS` | `CaptainProgressCloudData` | **DISABLED** — `CaptainManager` stubbed since PlayFab retirement (repo not wired) | 1.5s | none |
 | 10 | `EPISODE_PROGRESS` | `EpisodeProgressCloudData` | **SCAFFOLD** — `ReportMissionCompleted` has no callers | 1.5s | none |
@@ -257,7 +257,6 @@ favorites is a referral signal), and should get cloud keys + events when touched
   runner's `FTUEEventManager.OnQuestPhaseCompleted` / `OnQuestCompleted`, not the old classes.
   Note it does not run at all while `DeveloperUnlockGate.AllUnlocked` is on (the default until
   the FTUE is designed), so a build taken today emits nothing here by construction.
-- PlayFab PlayStream `AnalyticsController` — disabled, delete when convenient.
 
 ### 2.3 Consent
 
@@ -348,7 +347,7 @@ bunk space, prism→omni conversion, store-page/UTM attribution (storefront-side
 > **Phase 3 status (2026-06-15):** infrastructure fixes #2, #4, #6, #9 shipped; deprecated field
 > (#7's cousin) dropped; all 12 repos wired (incl. new Squad/Loadout). Issues #5 (per-event Flush)
 > shipped in Phase 1. The local→cloud system migrations (#1) are **held for Unity review**; Daily
-> Challenge is **deferred** (PlayFab economy coupling).
+> Challenge is **deferred** (legacy economy coupling).
 
 ### What's already good
 

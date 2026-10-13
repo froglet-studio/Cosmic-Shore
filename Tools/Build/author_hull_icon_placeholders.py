@@ -22,13 +22,14 @@ Each icon names the ACT, read from the hull's ElementalAbilityMapSO entry:
   Rhino    Mass   Trail Slabs        three trail slabs, growing   (Mass = size)
            Time   Ramp Spool         a ramp wedge under a wind-up arrow   (Time = rate)
   Serpent  Charge Sniper Shot        one long round with its tracer streaks
+           Mass   Seed Wall          a 3x3 patch of the wall's touching diamonds, seed ringed
            Space  Scope              a reticle: ring, split crosshair, centre dot
   Scarab   Charge Cavitation Blast   a bubble throwing three shock arcs
            Mass   Switch             a ball about to thread a ring
            Space  Ball Forge         a ball with crystals converging on it
            Time   Throttle           a speed dial with its needle
 
-OPEN DESIGN SLOTS GET NO ICON - the Rhino's Charge and Space and the Serpent's Mass. Their
+OPEN DESIGN SLOTS GET NO ICON - the Rhino's Charge and Space. Their
 map entries are `(open design slot)` with no ability behind them, and the contract for that
 is a LOCKED card (VesselHUDView.omniAbilitySprite's tooltip: "an ability that does not exist
 is not the same as one the player has not unlocked, and the locked card says the first").
@@ -187,6 +188,19 @@ def serpent_scope(px, py):
     return False
 
 
+def serpent_seed_wall(px, py):
+    """A 3x3 patch of the seed wall: shielded bricks as diamonds, alternating long-axis up and
+    right and touching vertex to vertex, with the super-shielded seed ringed at the centre."""
+    pitch, half_short = 24.0, 8.0
+    for i in (-1, 0, 1):
+        for j in (-1, 0, 1):
+            cx, cy = 64 + i * pitch, 64 + j * pitch
+            ax, ay = (half_short, 2 * half_short) if (i + j) % 2 == 0 else (2 * half_short, half_short)
+            if abs(px - cx) / ax + abs(py - cy) / ay <= 1.0:
+                return True
+    return ring(px, py, 64, 64, 22, 2.5)
+
+
 # -- Scarab --------------------------------------------------------------------
 
 def scarab_cavitation_blast(px, py):
@@ -249,6 +263,7 @@ HULLS = {
     "Serpent": {
         "Serpent_SniperShot-PLACEHOLDER.png": serpent_sniper_shot,
         "Serpent_Scope-PLACEHOLDER.png": serpent_scope,
+        "Serpent_SeedWall-PLACEHOLDER.png": serpent_seed_wall,
     },
     "Scarab": {
         "Scarab_CavitationBlast-PLACEHOLDER.png": scarab_cavitation_blast,

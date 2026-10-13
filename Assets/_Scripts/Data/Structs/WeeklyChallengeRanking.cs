@@ -10,8 +10,8 @@ namespace CosmicShore.Data
     /// owns every piece of Unity Gaming Services API surface, and a view that took a
     /// <c>Unity.Services.Leaderboards.Models.LeaderboardEntry</c> would drag the SDK into the UI
     /// layer and break the day the package renames a field. It also keeps the two OTHER
-    /// <c>LeaderboardEntry</c> types already in this project (the PlayFab one and
-    /// <see cref="LeaderboardEntry"/>) from becoming three names for one idea.</para>
+    /// <c>LeaderboardEntry</c> types already in this project (the one nested in <c>LeaderboardsMenu</c>
+    /// and <see cref="LeaderboardEntry"/>) from becoming three names for one idea.</para>
     /// </summary>
     [Serializable]
     public struct WeeklyChallengeRanking

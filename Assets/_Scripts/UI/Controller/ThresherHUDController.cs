@@ -9,8 +9,8 @@ namespace CosmicShore.UI
     ///
     /// <para>Both signals are POLLED per frame from this vessel's OWN executor, a serialized
     /// reference on its prefab — never reached for by type through the hierarchy (rule 14). Ball
-    /// speed and chain length are continuous quantities with no event behind them, so polling is
-    /// the honest drive. Colours come from the executor in LINEAR space and are converted to gamma
+    /// speed and the chain's banked energy are continuous quantities with no event behind them, so
+    /// polling is the honest drive. Colours come from the executor in LINEAR space and are converted to gamma
     /// here, at the UI consumer (contract §5.0).</para>
     ///
     /// <para>The pilot gate runs every <see cref="Initialize"/>, above anything that depends on it,
@@ -43,7 +43,7 @@ namespace CosmicShore.UI
         {
             if (!_isLocalPilotHud || !view || !thresher) return;
             view.SetBallHeat(thresher.Gauge01, thresher.BallColorNow.gamma);
-            view.SetChainOut(thresher.ChainOut01, thresher.IsReady, thresher.ReadyColorNow.gamma);
+            view.SetEnergy(thresher.EnergyRadius01, thresher.ReadyColorNow.gamma);
         }
     }
 }

@@ -201,3 +201,25 @@ Unity-shaped*. It is evidence that nothing is malformed, not that everything res
 **What a human should check first, in this order:** the project compiles; Menu_Main opens; the
 profile modal's randomize-name button now fills the field instead of spinning forever; the Records
 screen opens without throwing; the Hangar's captain list still populates.
+
+## 7 · Second pass, 2026-10-13 — the leftovers
+
+The 12 Sep pass removed the SDK and the backend classes. This pass removed what was still around them:
+
+- **Deleted:** `PlayFabContent/`, nine captured Game Manager catalog requests plus a `title-data.json`
+  that nothing read; and the spent scoping prompt `Docs/prompts/PLAYFAB_RETIREMENT_PROMPT.md`. Its
+  §0 corrections live on in this document.
+- **Dead entries for folders that no longer exist:** the `.gitignore` rule for the editor-extensions
+  prefs asset, four project entries in `Cosmic-Shore.slnx`, and the `PlayFabSDK` /
+  `PlayFabEditorExtensions` skip entries in `validate_project.py`, `check_conditional_compilation.py`
+  and `rename_game_modes.py`.
+- **Prose that still described PlayFab as present:** comment-only edits in nine C# files and fixes
+  across the docs. The surviving "was X (PlayFab)" comments are history and stay on purpose.
+- **Port/ (Prisma)** now mirrors the post-retirement shape: `System/Playfab/` is gone, the economy
+  classes live in `System/Economy/`, and the tests are ported (`Port/PORT_PLAN.md`,
+  "Backend-retirement mirror").
+- **One reference looks dead and is not.** `ModalWindows.prefab` still names
+  `_Scripts._Core.Playfab_Models.ProfileMenu` in a button's `m_TargetAssemblyTypeName`. Its
+  `m_Target` is the `ProfileModal` component, which still declares `GenerateRandomNameButton_OnClicked`,
+  so the listener is live; Unity rewrites the cached type name on the prefab's next save.
+  Deleting it would break the randomize-name button.

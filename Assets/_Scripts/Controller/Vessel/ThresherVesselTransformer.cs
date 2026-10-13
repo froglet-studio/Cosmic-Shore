@@ -23,8 +23,10 @@ namespace CosmicShore.Gameplay
     /// 0) so the solver owns the velocity outright, and the hull is turned to face the orbit's
     /// tangent so that on release you fly off along it — not along wherever the nose last
     /// pointed. The sticks keep a LOW-sensitivity say (<see cref="PivotSteer"/>): they lean the
-    /// orbit's plane at under half the free-flight turn rate, so you aim the release without
-    /// fighting the spin.</item>
+    /// orbit's plane at under half the free-flight turn rate. Once the spin is fast enough that the
+    /// local pilot's camera SPECTATES it, the sticks aim the release instead
+    /// (<see cref="ThresherExecutor.IsAiming"/>) and the orbit is left alone; releasing then faces
+    /// the hull straight along the aim.</item>
     /// </list>
     ///
     /// <b>Hit-stop</b> in a multiplayer session cannot touch <c>Time.timeScale</c> (it would
@@ -71,7 +73,10 @@ namespace CosmicShore.Gameplay
                 // The release edge: fly off along the orbit's TANGENT. Grip closes the whole angle
                 // between momentum and nose on the next move step, so a nose still lagging the
                 // tangent would bend the fling inward by exactly that lag.
-                if (_wasPivoting && _lastShipVelocity.sqrMagnitude > 1e-4f)
+                // An AIMED release (the spectate camera's aim) replaces the tangent outright.
+                if (_wasPivoting && thresher && thresher.TryConsumeReleaseDirection(out Vector3 aimed))
+                    FaceAlong(aimed, 1f);
+                else if (_wasPivoting && _lastShipVelocity.sqrMagnitude > 1e-4f)
                     FaceAlong(_lastShipVelocity, 1f);
                 _wasPivoting = false;
                 base.RotateShip();
@@ -103,7 +108,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 PivotSteer()
         {
-            if (!Pivoting || InputStatus == null) return Vector3.zero;
+            // While the camera spectates, the sticks AIM the release (the executor reads them).
+            if (!Pivoting || InputStatus == null || thresher.IsAiming) return Vector3.zero;
             return Vector3.ClampMagnitude(
                 transform.right * InputStatus.XSum - transform.up * InputStatus.YSum, 1f);
         }

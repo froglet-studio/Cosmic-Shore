@@ -99,6 +99,13 @@ aimed with.
   near plane sized for a chase camera 250 units back clips away everything this one is close to.
   Its three sibling windows each derive their own for their own reasons.
 
+**Shared since 2026-10-13:** the Thresher's launch sight (`THRESHER.md` §5a) reuses `ScopePipView`
+(it gained `Tick(eye, rotation, fov)` for an eye that is not on a hull, `RenderAspect` for a
+non-square window, and `Label`; the nose-eye `Tick` is unchanged and the defaults reproduce the
+Serpent exactly) and `ScopePetalImage` (its outline, hub and miter are now three `protected
+virtual` members defaulting to `ScopePetalGeometry`; `TimePetalImage` overrides them for the Time
+petal). Change either with both instruments in mind.
+
 **What this retired:** `VesselFirstPersonView` is **deleted**, and `CustomCameraController` no
 longer carries `FirstPerson` / `FirstPersonOffset` or the rigid-attach branch. An unreferenced
 camera vantage bound at two `IsLocalPilot` sites is exactly the "unreferenced subsystem eventually
@@ -143,7 +150,9 @@ Two terms were removed to get here, and both were defensible when written:
 more magnification step. `upgradeZoomDepthMultiplier` (1.6) multiplies the zoom depth **and divides
 the floor by the same number**, so the extra reach is actually reachable instead of running into a
 ceiling the upgrade cannot pass — 22° at full zoom at rest becomes 13.8°, and Space 10 reaches
-6.9°.
+6.9°. Since 2026-10-13 the same upgrade also lets the Serpent's seed walls steal an opponent's
+SHIELDED prisms from their edge (Garrett; `SERPENT_SEED_WALL.md`, "Stealing"), and Space sets the
+walls' steal radius.
 
 ## The shot
 

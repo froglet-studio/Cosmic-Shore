@@ -66,6 +66,7 @@ day after the channel it referred to had been deleted.
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
+| **Stoat** | 2/4 | 2/4 | 1/4 | *(re-cut 2026-10-09 — the round-15 FIELD DIPOLE: Space = Field Dipole on the triggers (pole size ×1→×2, L5 **Theft**: swallowed prisms are stolen, not destroyed), Time = Pathfinder, passive (warp boost ×2.5→×5 since 2026-10-13, no L5 yet); Charge and Mass are open with proposals in §2 ▸ Stoat and `R_VesselActions/STOAT_DIPOLE.md` §6)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -335,8 +336,8 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
-| Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
-| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
+| Mass | **Seed Wall** — the cloak's super-shielded seed (or the stopped stance's plain-shielded one) grows a symmetric herringbone of 2:1 bricks spaced so shielded octahedra point long vertex at short vertex with half a short side of air; it steals from its EDGE (Space sets the reach; the Space upgrade takes shielded prisms) and keeps growing until the cloak seed's super-shield breaks, or, for the stance's wall, until the Serpent flies again; MASS sets brick SIZE and SPACING together, snapshotted at placement (`SeedWallAction.asset`, ×2 at Mass 10). Every crystal beams to every growing wall's seed and ripples a shield through its wall. Garrett, 2026-10-09 (`R_VesselActions/SERPENT_SEED_WALL.md`) | **Lockdown** — a crystal collected while the Mass upgrade is active seals every square hole of every live wall with a same-size flat danger panel, an even crack short of the shields (no twist since 2026-10-13; replaces the Fortified Wall proposal) |
+| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`); it also lets the Seed Wall steal opponents' SHIELDED prisms (2026-10-13, `SERPENT_SEED_WALL.md`) |
 | Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
@@ -548,16 +549,36 @@ One parameter per element, each an `ElementalFloat` on `ThresherConfigSO` read w
 
 | Element | Ability (input) | Scales | Level 5 | Gated at |
 |---|---|---|---|---|
-| Charge | **Wrecking Ball** (passive) | smash-explosion diameter ×1 → ×2 | **Lit** — the hot ball burns the lit domain colour; its explosions spare the pilot's own domain (`AffectSelfOverride` off — domain-sparing in the explosion layer) and it bounces off own-domain mass even when hot | `ThresherExecutor.LitActive` |
-| Mass | **Heavy Iron** (passive) | ball mass ×1 → ×1.75 (radius by the cube root) | **Wrecker** — a smash costs the ball no speed (plough 1.0) | `ThresherExecutor.WreckerActive` |
-| Space | **Winch** (RT) | let-out chain length ×1 → ×1.5 | **Reaper Chain** — the chain cuts while slack, and cuts shielded prisms | `ThresherExecutor.ReaperActive` |
-| Time | **Plant** (LT) | orbit spin-up rate and cap ×1 → ×1.75 | **Slingshot** — the unlock yank is never weaker than smash speed | `ThresherExecutor.SlingshotActive` |
+| Charge | **Wrecking Ball** (passive) — the ball and chain also reach enemy vessels: a scored Strike that steals petals | petals stolen per enemy-vessel hit 1 → 3 per element | **Magnet** — the free ball is drawn toward the nearest enemy vessel | `ThresherExecutor.MagnetActive` |
+| Mass | **Mass Mode** (A, toggle) — the ball steals rival prisms, shields its own, lays a trail and banks the chain's energy instead of exploding | Mass Mode trail prism size ×1 → ×2 | **Armoured Trail** — those trail prisms are laid shielded | `ThresherExecutor.ArmouredTrailActive` |
+| Space | **Winch** (RT) — the chain, taut or slack, slices rivals and shields own mass; the Space card shows the banked explosion radius | largest blast the chain's bank can buy ×4 → ×8 diameter | **Breaker** — a red ball's direct hit destroys super-shielded prisms | `ThresherExecutor.BreakerActive` |
+| Time | **Plant** (LT) — a fast spin hands the camera to the launch view; LT up launches from the chosen point | orbit spin-up rate and cap ×1 → ×1.75 (how fast it winds up to launch) | **Perfect Release** — a launch timed inside the lime window leaves ×1.6 faster | `ThresherExecutor.PerfectReleaseActive` |
+
+Re-cut 2026-10-13 (round 3, Garrett's spec). Retired with their gates: Charge "Lit", Mass "Wrecker",
+Space "Reaper Chain", Time "Slingshot"; Charge no longer scales the explosion, Mass the ball's weight,
+or Space the chain's reach.
 
 **One L5 per element** (rule 26): the hull is a Squirrel clone, and the Squirrel's skimmer and
 vessel containers gate their own upgrades on Charge/Space/Time (steal, overtake, crystal blast,
 lifeform wither, danger skim bonus). The Thresher runs forked containers
 (`ThresherImpactorDataContainer`, `ThresherSkimmerImpactorDataContainer`,
 `ThresherSkimmerBoostPrismEffect`) without them, and its skimmer's Space scaling is off.
+
+### Stoat — the field dipole + pathfinder (round 15) — SPACE + TIME APPROVED (2026-10-09)
+
+Approved and shipped: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **L5 Theft**
+(swallowed prisms are stolen into the owner's domain; below it they vanish), **Time = Pathfinder**
+(passive; Time scales the warp boost ×2.5 → ×5, raised from ×2 → ×4 on 2026-10-13). Open, proposals only (full tables and reasons in
+`_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §6):
+
+| Slot | Recommended proposal | Alternatives |
+|---|---|---|
+| Mass ability | **Accretion** — what the sink swallows grows the pair until it annihilates; Mass scales the growth per unit volume | Ballast on X (heavy = bends less, falls faster); trail prism size |
+| Charge ability | **Annihilation blast** — letting go detonates the pair where the poles meet, radius = the separation at release; Charge scales it | Throat shear (the sink→source line cuts prisms) |
+| Omni crystal | **Overclock** — 6 s of full boost, warped or not | Lodestone (loose crystals fall into the sink and come out toward you); the Sparrow's 8 s debuff ward |
+| Time L5 | **Slipstream** — every hole warps your path (rivals' pairs, environmental holes) | Foresight (rivals' predicted paths drawn) |
+| Charge L5 | **Pair production** (with the blast) — destroyed prisms return in your domain | — |
+| Mass L5 | **Event horizon** (with Accretion) — an accreted pair swallows shielded prisms and strips a grazing rival | — |
 
 ## 3. Implementation notes for approved rows
 

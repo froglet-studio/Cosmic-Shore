@@ -20,6 +20,26 @@ namespace CosmicShore.Engine
         /// <summary>Render backend: channel 1's full-width values when they were authored wider than 2 (the shield meshes' face centroids), else null. Zero-copy.</summary>
         public Vector4[] RenderUv1Wide => _uvFull.TryGetValue(1, out var f) && f.Length == vertexCount ? f : null;
 
+        readonly Dictionary<int, (Vector2[] Source, Vector4[] Wide)> _uvWidened = new();
+
+        /// <summary>
+        /// Render backend: a channel's values as Vector4 (a Vector2 channel widened with z = w = 0),
+        /// or null when the channel holds nothing for these vertices. The same array is returned
+        /// until the channel changes, so a renderer can compare references.
+        /// </summary>
+        public Vector4[] RenderUvWide(int channel)
+        {
+            if (_uvFull.TryGetValue(channel, out var f) && f.Length == vertexCount) return f;
+            if (channel < 1 || channel > 7) return null;
+            var v2 = _extraUvs[channel - 1];
+            if (v2 == null || v2.Length != vertexCount || vertexCount == 0) return null;
+            if (_uvWidened.TryGetValue(channel, out var cached) && ReferenceEquals(cached.Source, v2)) return cached.Wide;
+            var wide = new Vector4[v2.Length];
+            for (int i = 0; i < wide.Length; i++) wide[i] = new Vector4(v2[i].x, v2[i].y, 0f, 0f);
+            _uvWidened[channel] = (v2, wide);
+            return wide;
+        }
+
         /// <summary>Full-width UVs of a channel (x,y from the Vector2 storage when never set wider).</summary>
         public Vector4[] GetUVsFull(int channel)
         {
