@@ -58,7 +58,7 @@ namespace CosmicShore.Player
         {
             _control = control;
             var parts = (arg ?? "").Split(';');
-            _dir = Path.GetFullPath(parts[0].Trim().Length > 0 ? parts[0].Trim() : Path.Combine(Path.GetTempPath(), "prisma-ui-sweep"));
+            _dir = Path.GetFullPath(parts[0].Trim().Length > 0 ? parts[0].Trim() : Path.Combine(Path.GetTempPath(), "amoebius-ui-sweep"));
             _sizes = parts.Length > 1 && parts[1].Trim().Length > 0
                 ? parts[1].Split(',').Select(s => ParseSize(s) ?? throw new ArgumentException($"bad size '{s}' (WxH)")).ToList()
                 : DefaultSizes.ToList();

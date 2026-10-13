@@ -5,6 +5,7 @@ using System.Linq;
 using CosmicShore.Engine;
 using CosmicShore.Engine.InputSystem;
 using EKey = CosmicShore.Engine.InputSystem.Key;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Player
 {
@@ -19,6 +20,8 @@ namespace CosmicShore.Player
     ///   key NAME       tap a key (Input System Key name: Enter, Escape, Tab, UpArrow…)
     ///   hold NAME N    hold a key for N frames
     ///   pad BUTTON     tap a gamepad button (buttonSouth, startButton, dpad.up…)
+    ///   scroll X,Y N   turn the mouse wheel N notches at a point (negative: towards the user)
+    ///   drag X,Y X,Y F press at the first point, move to the second over F frames, release
     /// </summary>
     public sealed class InputScript
     {
@@ -101,6 +104,29 @@ namespace CosmicShore.Player
                     case "pad":
                         Tap(PadButton(arg), frame, 2);
                         break;
+                    case "scroll":
+                    {
+                        // One frame of wheel at the point, in the units the window reports (a notch is 120).
+                        var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        _mouse.position.SetRaw(Point(a[0]));
+                        _mouse.scroll.SetRaw(new Vector2(0f, float.Parse(a[1], CultureInfo.InvariantCulture) * 120f));
+                        break;
+                    }
+                    case "drag":
+                    {
+                        var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        Vector2 from = Point(a[0]), to = Point(a[1]);
+                        int frames = a.Length > 2 ? Math.Max(1, int.Parse(a[2], CultureInfo.InvariantCulture)) : 10;
+                        _mouse.position.SetRaw(from);
+                        _mouse.leftButton.SetRaw(true);
+                        for (int i = 1; i <= frames; i++)
+                        {
+                            var p = Vector2.Lerp(from, to, i / (float)frames);
+                            _releases.Add((frame + i, () => _mouse.position.SetRaw(p)));
+                        }
+                        _releases.Add((frame + frames + 1, () => _mouse.leftButton.SetRaw(false)));
+                        break;
+                    }
                     case "inspect":
                     {
                         // inspect OBJECT COMPONENT — every field of that component, this frame.

@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- prisma-mcp: Prisma's MCP server. Claude Code (the CLI, the desktop app, the
+  <!-- amoebius-mcp: Amoebius's MCP server. Claude Code (the CLI, the desktop app, the
        launcher's CLAUDE page) talks to it over stdio to build and test the engine and to start,
        watch and drive a running player through its control port. No package dependencies:
        stdout carries only the protocol. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>prisma-mcp</AssemblyName>
+    <AssemblyName>amoebius-mcp</AssemblyName>
     <RootNamespace>CosmicShore.Mcp</RootNamespace>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
-    <Compile Include="../Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
+    <Compile Include="../Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
+    <Compile Include="../Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
     <Compile Include="../Shared/ParityDiff.cs" Link="Shared/ParityDiff.cs" />
     <Compile Include="../Shared/Bisect.cs" Link="Shared/Bisect.cs" />
   </ItemGroup>

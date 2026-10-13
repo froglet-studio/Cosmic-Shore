@@ -102,5 +102,12 @@ namespace CosmicShore.Engine.UI
         public List<GameObject> hovered = new();
 
         public bool IsPointerMoving() => delta.sqrMagnitude > 0f;
+        public bool IsScrolling() => scrollDelta.sqrMagnitude > 0f;
+
+        /// <summary>The camera of the raycaster that hit the pressed object (null on an overlay canvas).</summary>
+        public Camera pressEventCamera => pointerPressRaycast.module != null ? pointerPressRaycast.module.eventCamera : null;
+
+        /// <summary>The camera of the raycaster that hit the object under the pointer (null on an overlay canvas).</summary>
+        public Camera enterEventCamera => pointerCurrentRaycast.module != null ? pointerCurrentRaycast.module.eventCamera : null;
     }
 }

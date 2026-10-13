@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 26 | 6 |
-| Shaders | 0 | 67 | 14 |
+| Shaders | 0 | 67 | 19 |
 
 ## Subsystems
 
@@ -57,10 +57,12 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/AnimatedSpindleGraph | `Assets/_Graphics/Materials/Graphs/AnimatedSpindleGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/AxeBubbleDecal | `Assets/_Graphics/Materials/Graphs/AxeBubbleDecal.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | CosmicShore/BallTrail | `Assets/_Graphics/Materials/Graphs/BallTrail.shader` | Missing | hand-written .shader: no translation yet |
+| CosmicShore/BlackHoleLens | `Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader` | Missing | generic material-family fallback |
 | Shader Graphs/BlockGraph | `Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph` | Approximate | hand-tuned family; frames not yet compared per shader (C2) |
 | Shader Graphs/CageGraph | `Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/CausticsNoiseGraph | `Assets/_Graphics/Materials/Graphs/CausticsNoiseGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/ChargeCrystal | `Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
+| CosmicShore/CloakGhost | `Assets/_Graphics/Materials/Graphs/CloakGhost.shader` | Missing | generic material-family fallback |
 | Shader Graphs/ConicGraph | `Assets/_Graphics/Materials/Graphs/ConicGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/CrystalGraph | `Assets/_Graphics/Materials/Graphs/CrystalGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/DandruffGraph | `Assets/_Graphics/Materials/Graphs/DandruffGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
@@ -118,11 +120,14 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | CosmicShore/HyperSeaSkybox | `Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader` | Approximate | skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs); frames not yet compared per shader (C2) |
 | Custom/OmniChargeEdgesShader | `Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Fog |
 | Custom/OmniCrystalFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
+| Custom/OmniDepthPrismShader | `Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader` | Missing | generic material-family fallback |
 | Custom/OmniShepardFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Shapes_Shader_Pack | `Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Sprite Shaders Ultimate/Standard SSU | `Assets/_Graphics/Materials/Shaders/Standard SSU.shader` | Missing | hand-written .shader: no translation yet |
 | CosmicShore/StaticSkyPanorama | `Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader` | Missing | hand-written .shader: no translation yet |
+| CosmicShore/ThresherBallFresnel | `Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader` | Missing | generic material-family fallback |
+| CosmicShore/ThresherChainFresnel | `Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader` | Missing | generic material-family fallback |
 | Custom/ViewAngleBasedColorBlendHDR | `Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Custom/CircularGradientFresnel | `Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | UI/Gradient | `Assets/_Graphics/Materials/Shaders/UI/Gradient.shader` | Missing | hand-written .shader: no translation yet |

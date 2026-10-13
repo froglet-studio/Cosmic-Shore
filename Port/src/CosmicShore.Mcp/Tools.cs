@@ -18,7 +18,7 @@ namespace CosmicShore.Mcp
     public sealed partial class Tools : IDisposable
     {
         public const string Instructions =
-            "Prisma (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
+            "Amoebius (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
             "game_start -> game_state / game_screenshot / game_input / game_get ... -> game_stop. The port must not change " +
             "Assets/, Packages/ or ProjectSettings/ (unity_isolation_check). Coordinates are screenshot pixels, top-left origin.";
 
@@ -81,14 +81,14 @@ namespace CosmicShore.Mcp
                     ["build"] = P("boolean", "compile first (default true)"),
                 }),
             BisectTool(),
-            Tool("prisma_tracks", "Prisma's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
+            Tool("amoebius_tracks", "Amoebius's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
                 new JsonObject
                 {
                     ["section"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("memory", "issues", "runs"), ["description"] = "memory (default): the brief; issues: every problem as JSON; runs: every run as JSON" },
                 }),
-            Tool("prisma_board", "Prisma's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
+            Tool("amoebius_board", "Amoebius's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
                 new JsonObject { ["state"] = P("string", "only this state (suggested, todo, doing, done); default: everything open") }),
-            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Prisma's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
+            Tool("amoebius_board_suggest", "Suggest a bug or task to the user. It appears on Amoebius's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
                 new JsonObject
                 {
                     ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("bug", "task") },
@@ -134,7 +134,7 @@ namespace CosmicShore.Mcp
             Tool("game_state", "Active scene, frame, game time, window size, frame time, live behaviour count."),
             Tool("game_screenshot", "PNG of the next presented frame, returned as an image.",
                 new JsonObject { ["path"] = P("string", "also keep it at this path") }),
-            Tool("game_input", "Run one input/diagnostic action now, the same verbs as --do: 'click X,Y', 'move X,Y', 'type TEXT', 'key Enter', 'hold W 30', 'pad buttonSouth', 'inspect OBJ COMP', 'eval Type.Static.member', 'score', 'vessels', 'timescale 4'.",
+            Tool("game_input", "Run one input/diagnostic action now, the same verbs as --do: 'click X,Y', 'move X,Y', 'type TEXT', 'key Enter', 'hold W 30', 'pad buttonSouth', 'scroll X,Y -3' (wheel notches), 'drag X1,Y1 X2,Y2 8' (over 8 frames), 'inspect OBJ COMP', 'eval Type.Static.member', 'score', 'vessels', 'timescale 4'.",
                 new JsonObject { ["action"] = P("string", "the action") }, "action"),
             Tool("game_wait", "Let the game run N frames, then return (input needs a few frames to land; scene loads need more).",
                 new JsonObject { ["frames"] = P("integer", "frames to wait (default 60)") }),
@@ -221,12 +221,12 @@ namespace CosmicShore.Mcp
                     var r = await Run(OperatingSystem.IsWindows() ? "python" : "python3", args, _repo, TimeSpan.FromMinutes(2));
                     return new JsonArray(Text(r.Output.Trim()));
                 }
-                case "prisma_board":
+                case "amoebius_board":
                 {
-                    var b = Prisma.PrismaBoard.Load();
+                    var b = Amoebius.AmoebiusBoard.Load();
                     var want = Str(a, "state").ToLowerInvariant();
                     var items = b.Items.Where(i => want.Length > 0 ? i.State.ToString().ToLowerInvariant() == want
-                                                                    : i.State is not (Prisma.PrismaBoard.Status.Done or Prisma.PrismaBoard.Status.Dismissed))
+                                                                    : i.State is not (Amoebius.AmoebiusBoard.Status.Done or Amoebius.AmoebiusBoard.Status.Dismissed))
                                        .OrderBy(i => i.State).ThenBy(i => i.Priority);
                     var text = string.Join("\n", items.Select(i => $"{i.Id} [{i.State}] P{i.Priority} {i.Type} ({i.Source}): {i.Title}" +
                         (i.Detail.Length > 0 ? "\n    " + i.Detail.Replace("\n", "\n    ") : "") +
@@ -234,19 +234,19 @@ namespace CosmicShore.Mcp
                         (i.Notes.Count > 0 ? "\n    notes: " + string.Join(" | ", i.Notes) : "")));
                     return new JsonArray(Text(text.Length > 0 ? text : "The board is empty."));
                 }
-                case "prisma_board_suggest":
+                case "amoebius_board_suggest":
                 {
-                    var b = Prisma.PrismaBoard.Load();
-                    var type = Str(a, "type") == "bug" ? Prisma.PrismaBoard.Kind.Bug : Prisma.PrismaBoard.Kind.Task;
+                    var b = Amoebius.AmoebiusBoard.Load();
+                    var type = Str(a, "type") == "bug" ? Amoebius.AmoebiusBoard.Kind.Bug : Amoebius.AmoebiusBoard.Kind.Task;
                     if (Str(a, "criterion").Trim().Length == 0)
                         return new JsonArray(Text("Not added: give a criterion - the check that will prove this done."));
-                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Prisma.PrismaBoard.Status.Suggested, Int(a, "priority", 2), criterion: Str(a, "criterion"));
+                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Amoebius.AmoebiusBoard.Status.Suggested, Int(a, "priority", 2), criterion: Str(a, "criterion"));
                     b.Save();
-                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Prisma's BOARD."));
+                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Amoebius's BOARD."));
                 }
-                case "prisma_tracks":
+                case "amoebius_tracks":
                 {
-                    var t = Prisma.PrismaTracks.Load();
+                    var t = Amoebius.AmoebiusTracks.Load();
                     var section = Str(a, "section", "memory");
                     var text = section switch
                     {
@@ -258,7 +258,7 @@ namespace CosmicShore.Mcp
                 }
                 case "engine_smoke": return new JsonArray(Text(await Smoke(a)));
                 case "engine_parity": return new JsonArray(Text(await Parity(a)));
-                case "prisma_bisect": return new JsonArray(Text(await Bisect(a)));
+                case "amoebius_bisect": return new JsonArray(Text(await Bisect(a)));
                 case "game_start": return new JsonArray(Text(await Start(a)));
                 case "game_attach":
                 {
@@ -443,7 +443,7 @@ namespace CosmicShore.Mcp
 
         async Task<string> Smoke(JsonObject a) => (await SmokeRun(a)).Text;
 
-        /// <summary>A smoke run's report, plus what prisma_bisect judges: every error, exception, assert and crash text that was not ignored.</summary>
+        /// <summary>A smoke run's report, plus what amoebius_bisect judges: every error, exception, assert and crash text that was not ignored.</summary>
         sealed record SmokeResult(string Text, bool Pass, bool BuildFailed, List<string> Problems);
 
         async Task<SmokeResult> SmokeRun(JsonObject a)
@@ -526,7 +526,7 @@ namespace CosmicShore.Mcp
 
         async Task<string> Parity(JsonObject a) => (await ParityRun(a)).Text;
 
-        /// <summary>A replay diff's report, plus what prisma_bisect judges: failed channels (a player that died counts as one) and the run's work folder.</summary>
+        /// <summary>A replay diff's report, plus what amoebius_bisect judges: failed channels (a player that died counts as one) and the run's work folder.</summary>
         sealed record ParityResult(string Text, int Fails, bool BuildFailed, string Work);
 
         async Task<ParityResult> ParityRun(JsonObject a)
@@ -540,7 +540,7 @@ namespace CosmicShore.Mcp
             var manifestPath = Path.Combine(root, "manifest.json");
             if (!File.Exists(manifestPath)) return new ParityResult("FAIL: no " + manifestPath, 1, false, "");
             var manifest = JsonNode.Parse(await File.ReadAllTextAsync(manifestPath))!.AsObject();
-            var tol = Prisma.Parity.Tolerances.Load(Path.Combine(root, "tolerances.json"));
+            var tol = Amoebius.Parity.Tolerances.Load(Path.Combine(root, "tolerances.json"));
             bool self = Str(a, "against", "goldens") == "self";
             bool custom = Str(a, "golden_dir").Length > 0;
             string goldenRoot = custom ? Path.GetFullPath(Str(a, "golden_dir"), _repo) : Path.Combine(root, "goldens");
@@ -552,7 +552,7 @@ namespace CosmicShore.Mcp
             var sb = new StringBuilder();
             var results = new JsonObject();
             int fails = 0, missing = 0, passes = 0;
-            void Add(string name, IEnumerable<Prisma.Parity.ChannelResult> rs)
+            void Add(string name, IEnumerable<Amoebius.Parity.ChannelResult> rs)
             {
                 var o = new JsonObject();
                 sb.AppendLine(name);
@@ -560,8 +560,8 @@ namespace CosmicShore.Mcp
                 {
                     sb.AppendLine("  " + r);
                     o[r.Channel] = new JsonObject { ["status"] = r.Status.ToString().ToLowerInvariant(), ["detail"] = r.Detail };
-                    if (r.Status == Prisma.Parity.ChannelStatus.Fail) fails++;
-                    else if (r.Status == Prisma.Parity.ChannelStatus.Missing) missing++;
+                    if (r.Status == Amoebius.Parity.ChannelStatus.Fail) fails++;
+                    else if (r.Status == Amoebius.Parity.ChannelStatus.Missing) missing++;
                     else passes++;
                 }
                 results[name] = o;
@@ -576,7 +576,7 @@ namespace CosmicShore.Mcp
                 if (r.ExitCode != 0) return new ParityResult("FAIL: the random golden run exited " + r.ExitCode + "\n" + string.Join('\n', r.Output.Split('\n').TakeLast(30)), 1, false, work);
                 string gold = Path.Combine(goldenRoot, "random");
                 if (self) await RunRandom(gold = Path.Combine(work, "random-0"), seeds);
-                Add("random", new[] { Prisma.Parity.ParityDiff.Random(gold, mine) });
+                Add("random", new[] { Amoebius.Parity.ParityDiff.Random(gold, mine) });
             }
 
             foreach (var c in (manifest["cases"] as JsonArray ?? new JsonArray()).OfType<JsonObject>())
@@ -601,10 +601,10 @@ namespace CosmicShore.Mcp
                     sb.AppendLine($"{name}: audio silent (no FMOD runtime: python3 Port/tools/fetch_native.py) - FMOD descriptions approximate");
                 Add(name, new[]
                 {
-                    Prisma.Parity.ParityDiff.State(gold, run),
-                    Prisma.Parity.ParityDiff.Events(gold, run, tol),
-                    Prisma.Parity.ParityDiff.Transforms(gold, run, tol),
-                    Prisma.Parity.ParityDiff.Frames(gold, run, tol),
+                    Amoebius.Parity.ParityDiff.State(gold, run),
+                    Amoebius.Parity.ParityDiff.Events(gold, run, tol),
+                    Amoebius.Parity.ParityDiff.Transforms(gold, run, tol),
+                    Amoebius.Parity.ParityDiff.Frames(gold, run, tol),
                 });
             }
             if (results.Count == 0) return new ParityResult($"FAIL: no case named '{want}'", 1, false, work);

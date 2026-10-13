@@ -125,6 +125,12 @@ namespace CosmicShore.Engine.InputSystem
         public override object ReadValueAsObject() => ReadValue();
     }
 
+}
+
+// The controls live where Unity's do (UnityEngine.InputSystem.Controls), so a game file that names
+// one fully qualified - UnityEngine.InputSystem.Controls.ButtonControl - compiles unchanged.
+namespace CosmicShore.Engine.InputSystem.Controls
+{
     /// <summary>A single float axis.</summary>
     public class AxisControl : InputControl<float>
     {
@@ -332,6 +338,10 @@ namespace CosmicShore.Engine.InputSystem
         public override double ReadValue() => value;
     }
 
+}
+
+namespace CosmicShore.Engine.InputSystem
+{
     // ── Devices ──────────────────────────────────────────────────────────────
 
     [Serializable]

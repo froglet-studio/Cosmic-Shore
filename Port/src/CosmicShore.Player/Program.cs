@@ -32,14 +32,14 @@ namespace CosmicShore.Player
     public static class Program
     {
         /// <summary>
-        /// Quality from the engine's own Project Settings (Port/ProjectSettings/PrismaProject.json),
+        /// Quality from the engine's own Project Settings (Port/ProjectSettings/AmoebiusProject.json),
         /// before environment variables and arguments, which override it for one run.
         /// </summary>
         static void ApplyProjectQuality()
         {
             var root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
             if (root == null) return;
-            var q = Prisma.PrismaProjectSettings.Load(root).Quality;
+            var q = Amoebius.AmoebiusProjectSettings.Load(root).Quality;
             if (q.Msaa is { } m) CosmicShore.Render.RenderQuality.Msaa = m;
             if (q.RenderScale is { } s) CosmicShore.Render.RenderQuality.RenderScale = s;
             if (q.Anisotropy is { } a) CosmicShore.Render.RenderQuality.Anisotropy = a;

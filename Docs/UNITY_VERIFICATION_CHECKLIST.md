@@ -632,7 +632,7 @@ it floored the new 1.17 u horizon back up; only a hole smaller than 1.5 u is aff
 ### 🔴 The Stoat in the vessel selector + Slingshot / Warpline in the arcade (ported from `claude/peaceful-rubin-hhw49n`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 The Stoat slice of `claude/peaceful-rubin-hhw49n` (black holes, warp field, crystal wormhole, the Stoat,
-Slingshot, Warpline) brought onto bleeding-edge WITHOUT that branch's Prisma port, party/UGS, Skim Race AI,
+Slingshot, Warpline) brought onto bleeding-edge WITHOUT that branch's Amoebius port, party/UGS, Skim Race AI,
 perf-diagnostics and studio work. Changes made in the port, to check first:
 
 1. **`VesselClassType.Stoat` is 15, not 14** — bleeding-edge's Thresher took 14 first. Every serialized

@@ -542,7 +542,7 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
   - branch protection.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, `ios-testflight.yml` and
-  the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
+  the Amoebius ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
 
 ---
 

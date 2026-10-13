@@ -1,15 +1,15 @@
-# Prisma roadmap: checkpoints, timeline, prompts
+# Amoebius roadmap: checkpoints, timeline, prompts
 
 Written 2026-10-05; updated 2026-10-06 with the architecture review
 (`ARCHITECTURE_REVIEW_2026-10-06.md`: what was checked, decided and done for each of its 20
 items). Owner: Froglet Inc. Read this before planning engine work. Agents: the launcher's PARITY
-CHECK and `/prisma` read the open lists here.
+CHECK and `/amoebius` read the open lists here.
 
 ## The two milestones
 
 | | Milestone | Done when | Target |
 |---|---|---|---|
-| **M1** | **Gameplay parity.** Playing Cosmic Shore in Prisma is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
+| **M1** | **Gameplay parity.** Playing Cosmic Shore in Amoebius is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
 | **M2** | **Unity-free development.** Developers stop opening Unity. The engine's own tools do every Unity job Cosmic Shore needs, and nothing more. | One full release cycle (3 weeks) is shipped with Unity never opened (E9). | **Q1 2028** (~22 more weeks) |
 
 M2 depends on M1: nobody gives up the editor for a runtime that still looks different. Some
@@ -33,7 +33,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |
 | Networking | Netcode model over TCP; LAN parties work. **No internet relay, no real UGS** | PROGRESS §Known gaps 1 |
 | Performance | Heavy Bloomrush: collect 22-26 ms (was ~150 ms). Not yet at Unity's level on the GTX 1060 floor | PROGRESS §2 |
-| Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS .ipa via GitHub CI (unsigned, Sideloadly) | |
+| Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS Xcode project export and a signed .ipa on a Mac (the GitHub CI + Sideloadly route was retired 2026-10-13) | |
 | Tooling | Launcher (play, phone builds, Project Settings, Claude, tracks, board, milestones), `cs-asset` (scene/prefab writes, `serialization-audit`), `cs-build`, MCP server, session reports with CPU/GC per phase, `engine_smoke` | `docs/LAUNCHER.md` |
 | Tests | ~1,590 engine tests + 352 ported Unity EditMode tests | `dotnet test` |
 | Unity editor surface we'd replace | 300 editor scripts, 44 EditorWindows, 23 custom inspectors/drawers, **91 FrogletTools menu items** | scan of `Assets/**/Editor` |
@@ -70,6 +70,24 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 12. **Editor.** Everything in M2, scoped by the 2026-10-08 decision below: FrogletTools, data
     sets and models first; scene and hierarchy editing stay with the agent. The launcher's Dear
     ImGui shell (its EDITOR page) is where it grows.
+13. **UI parity loose ends (2026-10-13 pass).** The menus now follow uGUI's rules (layout
+    messages, dimension changes, ScrollRect/Slider/Scrollbar ports, clone anchors, canvas text).
+    Still open:
+    - A grey square a user saw in a gameplay HUD did not reproduce in Salvo. Find the mode, then
+      `game_ui_at` the square.
+    - The Profile quest track opens on its last card. `QuestTrackView` snaps once, a frame after
+      load, while progression briefly reads every mode as unlocked. That is game-side timing to
+      compare with Unity's.
+    - There is no manual layout editing. Hierarchy edits go through the agent and `cs-asset`
+      (item 12).
+    - The Live compile defines no `UNITY_STANDALONE`/`UNITY_ANDROID`/`UNITY_IOS`
+      (`docs/ARCHITECTURE.md` §13). Defining them per target would bring the game's platform
+      branches in; check first what `MultiMouseService` (Win32 raw input) needs.
+    - `RectTransformUtility.ScreenPointToLocalPointInRectangle` divides the offset from the pivot
+      by `lossyScale` and ignores rotation and the camera (`UI/RectTransformUtility.cs`). Unity
+      raycasts the point onto the rect's plane, then `InverseTransformPoint`s it. ScrollRect,
+      Slider and Scrollbar drags now go through it, so a rotated or world-space panel would drag
+      wrongly. The menus have neither today.
 
 ## External factors (and what each one changes)
 
@@ -78,7 +96,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | **The game keeps moving in Unity.** Every day new scripts, Shader Graphs and packages land on bleeding-edge. | Parity is a moving target; the port can break on any push. | Parity CI (C1.3) on every push; a "port breakers" list reviewed weekly; new Unity APIs get engine support within a week. |
 | **The Steam Early Access release runs on Unity** (`Docs/STEAM_RELEASE_TASKS.md`; 3-week test cadence) | The engine is never on the launch's critical path. | The port never changes `Assets/` (`check_unity_isolation.py`). Engine work never blocks a Unity release. Switching the shipped build to the engine is a separate decision after M1. |
 | **Team capacity:** one developer plus Claude sessions | Throughput is bounded by review time, not typing. Claude plan usage limits cap long agent runs. | Parallel Claude sessions per checkpoint (one per row of the parity matrix); the launcher's session reports and `engine_smoke` keep each loop short. Assume ~2 checkpoint-weeks of output per calendar week. |
-| **Hardware access:** no Mac, no Android test phone yet, GTX 1060 is the floor | Phones and low-end performance go unverified. | iOS via GitHub macOS runners + Sideloadly (works today). Buy one mid-range Android phone (~$200). Profile on a GTX 1060 machine at each performance checkpoint (Steam task H8). |
+| **Hardware access:** no Mac, no Android test phone yet, GTX 1060 is the floor | Phones and low-end performance go unverified. | iOS needs a Mac (the GitHub macOS runner + Sideloadly route was retired 2026-10-13; TestFlight is the game's only iOS route). Buy one mid-range Android phone (~$200). Profile on a GTX 1060 machine at each performance checkpoint (Steam task H8). |
 | **Unity Gaming Services** (Auth, Cloud Save, Leaderboards, Lobby, Relay) | The port uses local stand-ins. UGS has REST APIs, but Relay speaks Unity Transport. | **Decision gate G2 (by 2026-12-15):** (a) UGS over REST plus our own Relay-compatible transport, or (b) Steam networking (Steamworks.NET, MIT) plus our own small backend. Recommendation: (b) for PC, because Steam is the launch platform; revisit phones later. |
 | **Steamworks** (3 scripts use it) | Achievements, overlay and authentication must work in the engine for a Steam build. | Steamworks.NET runs on any .NET. Wire it in C6. |
 | **FMOD licensing** | The engine ships FMOD's runtime. The license is per title, not per engine, so it carries over, but confirm. | Check the FMOD indie/commercial terms before any engine build ships (G3). |
@@ -113,16 +131,16 @@ C0 foundations (done Oct 6)
 
 | # | Checkpoint | Exit criterion (measurable) | Weeks | Depends on |
 |---|---|---|---|---|
-| **C0** | **Foundations** (done 2026-10-06) | `#line` maps errors to `Assets/`; incremental sync; RPCs the sync cannot intercept are warned (`PRISMA001`); execution order from `.meta` and the attribute in every phase; Unity's serialization rules with `cs-asset serialization-audit` at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test) | - | - |
+| **C0** | **Foundations** (done 2026-10-06) | `#line` maps errors to `Assets/`; incremental sync; RPCs the sync cannot intercept are warned (`AMOEBIUS001`); execution order from `.meta` and the attribute in every phase; Unity's serialization rules with `cs-asset serialization-audit` at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test) | - | - |
 | **C1** | **Parity harness** | (1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in the review response (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON): every subsystem and shader Faithful / Approximate / Missing with its covering test | 4 | C0 |
-| **C1b** | **Bisect** (done 2026-10-08: found a planted regression in 3 steps) | `prisma_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps | 1 | C1 |
+| **C1b** | **Bisect** (done 2026-10-08: found a planted regression in 3 steps) | `amoebius_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps | 1 | C1 |
 | **C2** | **Visual completeness** | A Shader Graph compiler (the 85 node types the project uses) with the 30 custom functions ported once and families keyed by guid; the 38 `.shader` files hand-translated by on-screen use; an unknown shader warns once; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw (VFX Graph as Approximate); the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s | 14 (rolling) | C1 |
 | **C3** | **Physics parity** | Contact resolution for the 17 Rigidbody users, plus oriented boxes; OnCollision* fires; replays end with identical scores. Rule: never a general solver in-house; bind BepuPhysics v2 for contacts only if the census needs mesh contacts or PhysX-like friction | 3 | C1 |
 | **C4** | **Audio parity** | Every replay's FMOD event sequence matches Unity's, including mixer snapshots | 1 | C1 |
 | **C5** | **UI + text parity** | Every screen at 16:9, 21:9 and 4:3 matches Unity (SSIM >= 0.98). TMP rendering rewritten clean (legal) | 4 | C1 |
 | **C6** | **Online parity** | An `INetTransport` seam with TCP as its first transport (can start before G2); then 4 players over the internet in each multiplayer mode; Steam auth and achievements; cloud save and leaderboards on the chosen backend | 8 | G2 |
 | **C7** | **Performance parity** | On the GTX 1060: every mode at every intensity within 10% of Unity's frame time, and load times within the R7 target. Includes GPU timer queries in the session report, the `tasks` phase's allocations (279-728 KB/frame in Menu_Main, steady GC up to 1.9 ms/frame), jobs moved to `Parallel.For` only where a profile shows them, and a `SustainedLowLatency` A/B | 8 | C2 |
-| **C8** | **Platforms** | (1) Windows real-machine pass. (2) Android device pass. (3) iOS sideload pass. (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build | 6 | C2, C7, G6 |
+| **C8** | **Platforms** | (1) Windows real-machine pass. (2) Android device pass. (3) iOS device pass (a Mac-signed build). (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build | 6 | C2, C7, G6 |
 | **C9** | **Blind test (= M1)** | 10 players play both builds in random order; detection no better than chance (<= 60% correct) | 2 | all |
 
 ### M2 checkpoints
@@ -135,14 +153,14 @@ transition, and the cut-over is a decision, not a migration.
 the editor starts where daily work happens - the tools, the data and the models - and **builds no
 hierarchy, scene inspector, prefab-override UI or asset browser**. Scene and prefab structure is
 the agent's job: `cs-asset` already creates, deletes, reparents and adds components, writes prefab
-overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Prisma
+overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Amoebius
 shows the result in the running game. Measured that day: **95 FrogletTools** menu items (66 with
 `[FrogletTool]` metadata), **1,313 ScriptableObject data files** in **363 script types**, **66 FBX
 models**. E1-E3 do not depend on M1 and run beside it.
 
 | # | Checkpoint | Exit criterion | Weeks |
 |---|---|---|---|
-| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Prisma (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
+| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Amoebius (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
 | **E2** | **Data sets** (started 2026-10-08) | EDITOR > DATA shows every ScriptableObject data file with Unity's labels, headers, tooltips and ranges; edits every field kind the data uses (values, enums, vectors, colours, references picked from the project, list items added and removed) through `cs-asset set`, byte-stable; creates a new data file of a type with the script's defaults | 4 |
 | **E3** | **Models** (started 2026-10-08) | EDITOR > MODELS shows every FBX as Unity imports it (meshes, materials, blend shapes, bones, takes, import settings) with a preview; importing a new FBX writes its `.meta` with the settings the game's models use and a stable GUID, and the engine loads it in a prefab like the others | 4 |
 | **E4** | **Play mode** | Play from the editor with an incremental script recompile (< 5 s); data-set edits apply to the running game live | 4 |
@@ -169,19 +187,19 @@ hands, it comes back as a narrow tool for that job, not a general hierarchy.
 
 ## How to run each checkpoint (prompts)
 
-Milestones are worked in Claude Code at the repository root (Prisma's MILESTONES page was retired
+Milestones are worked in Claude Code at the repository root (Amoebius's MILESTONES page was retired
 on 2026-10-08): paste a prompt below; the session updates `docs/milestones.json` as it moves the
 checkpoint. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
 `engine_test` green, `engine_smoke` PASS, `unity_isolation_check` ok, docs updated, and this
 file's row marked done with the date and the measurement.
 
 **C1 - Parity harness**
-> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
+> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Amoebius and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
 
 **C1b - Bisect**
-> Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.
+> Add `amoebius_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.
 
-Built 2026-10-08: `prisma_bisect` (`src/CosmicShore.Mcp/Bisect.cs`, verdicts in `src/Shared/Bisect.cs`, `BisectTests`); proof `python Port/tools/bisect_demo.py --check smoke|parity`. Evidence in docs/milestones.json.
+Built 2026-10-08: `amoebius_bisect` (`src/CosmicShore.Mcp/Bisect.cs`, verdicts in `src/Shared/Bisect.cs`, `BisectTests`); proof `python Port/tools/bisect_demo.py --check smoke|parity`. Evidence in docs/milestones.json.
 
 **C2 - Visual completeness**
 > First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in this file.
@@ -201,7 +219,7 @@ C2 items (each: what, where, proof).
 | 2026-10-12 | URP Lit lighting: the BRDF (metallic workflow, GGX), the ambient probe from the scene's ambient mode (Skybox: the HyperSea sky captured into a 128 cubemap and projected onto L2 SH x intensity; Flat; Trilight) and the default reflection (that cubemap, URP's roughness-to-mip); no invented key light (gameplay scenes have no light, as in Unity) | `UrpLitGlsl.cs`, `EnvironmentLighting.cs`, `SkyboxPass.DrawSky` | `--view-model` Dolphin: black silhouette → shaded with highlights |
 | 2026-10-12 | The HUD's team-volume gauge (`VolumeDisplayShader`, the one custom UI material) and the Butterfly fold's `Wormhole` translated; URP's `beginCameraRendering`/`endCameraRendering` now raised around every camera (WormholeView needs them) | `UiCustomShaders.cs`, `Hand/Wormhole.glsl`, `PlayerWindow.BeginCamera` | `--check-shaders`; HUD screenshot |
 
-Route order in `Classify`: the prism graphs, the slice and the forcefield (hand-tuned families, instanced with the clock block) → the compiled graph or hand translation → Unity's built-in shaders by name → the old family approximations when a compile fails → the property heuristics → generic fallback (warns). Not drawn yet: soft particles (no scene depth texture), texture arrays (the wormhole panorama), additional lights and shadows, texture-driven metallic/smoothness, GGX-convolved reflection mips (box-filtered).
+Route order in `Classify`: the prism graphs, the slice and the forcefield (hand-tuned families, instanced with the clock block) → the compiled graph or hand translation → Unity's built-in shaders by name → the old family approximations when a compile fails → the property heuristics → generic fallback (warns). Not drawn yet: soft particles (no scene depth texture), texture arrays (the wormhole panorama), additional lights and shadows, texture-driven metallic/smoothness, GGX-convolved reflection mips (box-filtered), script-injected URP passes (a `ScriptableRenderPass` enqueued on a camera's renderer is kept in `ScriptableRenderer.QueuedPasses` but its `RecordRenderGraph` never runs, so the black hole's lens is not drawn) and executed command buffers (`Graphics.ExecuteCommandBuffer` records into `CommandBuffer.Commands` and calls `ExecuteCommandBufferHook`, which no backend installs yet, so the lens's sky faces are not rendered). The black hole's spaghettification (`PrismGravityWarp.hlsl`) is drawn: on the prism family in `SceneRenderer` and in the graph library.
 
 Next items, by on-screen use (rank with `render.shaders` from each mode's report): the 14 hand-written `.shader` files still without a translation are unreachable from shipped prefabs and scenes (census `missing`: demo, editor and retired assets) — take one only when a mode's report shows it; then a scene depth texture (soft particles, SceneColor/SceneDepth nodes), VFX Graph, Timeline.
 
@@ -246,4 +264,4 @@ Next items, by on-screen use (rank with `render.shaders` from each mode's report
 |---|---|---|---|
 | M0 - runs the real game, builds, tooling, Claude bridge | done | 2026-10-05 | PR #959 |
 | C0 - foundations (architecture review) | done | 2026-10-06 | `ARCHITECTURE_REVIEW_2026-10-06.md` |
-| C1 - parity harness | in progress | 2026-10-08 | engine side done: `engine_parity` diffs state, Random, events (`fmod`, `game`, `contact`), transforms and frames; 5 planted differences caught; `prisma-parity-ci.yml` (36 build scenes); `PARITY.md`. Waiting on the Unity replay/capture PR (board T-3, spec `Port/parity/README.md`) for goldens and on CI's first GitHub run; the engine's self-diff drifts on the Authentication load time (B-1) |
+| C1 - parity harness | in progress | 2026-10-08 | engine side done: `engine_parity` diffs state, Random, events (`fmod`, `game`, `contact`), transforms and frames; 5 planted differences caught; `amoebius-parity-ci.yml` (36 build scenes); `PARITY.md`. Waiting on the Unity replay/capture PR (board T-3, spec `Port/parity/README.md`) for goldens and on CI's first GitHub run; the engine's self-diff drifts on the Authentication load time (B-1) |

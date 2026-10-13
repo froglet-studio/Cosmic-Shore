@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Prisma.Parity
+namespace Amoebius.Parity
 {
     /// <summary>
     /// The per-channel tolerances of docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Loaded from

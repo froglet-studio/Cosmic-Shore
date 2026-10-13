@@ -549,6 +549,97 @@ void PrismCradleDeform_float(vec3 Position, vec3 Normal, out vec3 OutPosition, o
 }
 
 // ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/PrismGravityWarp.hlsl
+// Spaghettification: a prism within a hole's reach is stretched along the line to it and squeezed
+// across it (log-stretch GM*tau^2/r^3, volume conserved), one affine map about the prism's centre.
+// The bank is BlackHoleWarp.cs's per-frame globals; Params.y (live slots) 0 means no hole is live.
+// ---------------------------------------------------------------------------------------------
+uniform vec4 _PrismGravityWarpCentre[4];
+uniform vec4 _PrismGravityWarpWeight[4];
+#ifndef SG_HAS_PrismGravityWarpParams
+uniform vec4 _PrismGravityWarpParams;
+#endif
+
+float sgPrismGravityWarpWindow(float s, float reach)
+{
+  if (s >= reach) return 0.0;
+  float u = sg_saturate(2.0 * s / reach - 1.0);
+  return 1.0 - u * u * (3.0 - 2.0 * u);
+}
+
+float sgPrismGravityWarpCeiling(float eps, float ceiling)
+{
+  float x = min(eps / ceiling, 1e4);
+  float x2 = x * x;
+  return ceiling * x * inversesqrt(sqrt(1.0 + x2 * x2));
+}
+
+float sgPrismGravityWarpTide(float d, float rs, float k, float reach)
+{
+  float r = max(d, rs);
+  return k / (r * r * r) * sgPrismGravityWarpWindow(d - rs, reach);
+}
+
+float sgPrismGravityWarpTideSoft(float d, float rs, float k, float reach, float softening)
+{
+  if (!(softening > 0.0)) return sgPrismGravityWarpTide(d, rs, k, reach);
+  float q = d * d + softening * softening;
+  return k / (q * sqrt(q)) * sgPrismGravityWarpWindow(max(d - rs, 0.0), reach);
+}
+
+void PrismGravityWarpDeform_float(vec3 Position, vec3 Normal, out vec3 OutPosition, out vec3 OutNormal)
+{
+  OutPosition = Position;
+  OutNormal = Normal;
+  int count = int(_PrismGravityWarpParams.y);
+  if (count <= 0) return;
+  float nLenSq = dot(Normal, Normal);
+  if (!(nLenSq > 1e-8)) return;
+  vec3 nObj = Normal * inversesqrt(nLenSq);
+  vec3 nW = nObj * mat3(sg_WorldToObject);
+  float nwLenSq = dot(nW, nW);
+  if (!(nwLenSq > 1e-12) || !(nwLenSq < 1e12)) return;
+  nW *= inversesqrt(nwLenSq);
+  vec3 c = sg_ObjectToWorld[3].xyz;
+  float bestTide = 0.0;
+  vec3 bestDir = vec3(0.0, 0.0, 1.0);
+  for (int i = 0; i < 4; i++)
+  {
+    if (i >= count) break;
+    vec4 slot = _PrismGravityWarpCentre[i];
+    vec4 weight = _PrismGravityWarpWeight[i];
+    float k = weight.x;
+    float reach = weight.y;
+    if (!(abs(k) > 0.0) || !(slot.w > 0.0) || !(reach > 0.0)) continue;
+    vec3 rad = c - slot.xyz;
+    float d = length(rad);
+    if (!(d > 1e-4)) continue;
+    if (d - slot.w >= reach) continue;
+    float tide = sgPrismGravityWarpTideSoft(d, slot.w, k, reach, weight.z);
+    if (abs(tide) <= abs(bestTide)) continue;
+    bestTide = tide;
+    bestDir = rad / d;
+  }
+  if (!(abs(bestTide) > 0.0)) return;
+  float ceiling = max(_PrismGravityWarpParams.x, 1e-3);
+  float eps = sign(bestTide) * sgPrismGravityWarpCeiling(abs(bestTide), ceiling);
+  float radial = exp(eps);
+  float across = exp(-0.5 * eps);
+  vec3 pW = (sg_ObjectToWorld * vec4(Position, 1.0)).xyz;
+  vec3 q = pW - c;
+  float qr = dot(q, bestDir);
+  vec3 pNew = c + bestDir * (qr * radial) + (q - bestDir * qr) * across;
+  float nr = dot(nW, bestDir);
+  vec3 nNew = bestDir * (nr / radial) + (nW - bestDir * nr) / across;
+  vec3 outPos = (sg_WorldToObject * vec4(pNew, 1.0)).xyz;
+  vec3 outNrm = nNew * mat3(sg_ObjectToWorld);
+  float outNrmLenSq = dot(outNrm, outNrm);
+  if (!(dot(outPos, outPos) < 1e12) || !(outNrmLenSq > 1e-12)) return;
+  OutPosition = outPos;
+  OutNormal = outNrm * inversesqrt(outNrmLenSq);
+}
+
+// ---------------------------------------------------------------------------------------------
 // Assets/_Graphics/Materials/Graphs/PrismDestructionSight.hlsl (c7d41a9e5b8f4e3ab216d0f97c4e8a52)
 // The LIT fundamental: the viewer's own aim, then up to eight peer lights.
 // ---------------------------------------------------------------------------------------------

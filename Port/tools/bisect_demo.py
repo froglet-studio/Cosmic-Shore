@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""prisma_bisect proof (ROADMAP C1b): plant a regression three commits back and find it.
+"""amoebius_bisect proof (ROADMAP C1b): plant a regression three commits back and find it.
 
 Works in a throwaway clone, never in this checkout: it clones the repository (--shared, so no
 object copy), commits this working tree's Port/ as the GOOD base, then lays down a history that
@@ -14,7 +14,7 @@ looks like real work -
     8     THE PLANT                 (HEAD~3)
     9-11  edits touching Port/      <- bad = HEAD
 
-and runs `prisma-mcp --repo <clone> --call prisma_bisect` on it. It passes when the tool names the
+and runs `amoebius-mcp --repo <clone> --call amoebius_bisect` on it. It passes when the tool names the
 plant, in under 15 steps, without testing the commit outside Port/.
 
     python3 Port/tools/bisect_demo.py --check smoke     # plant: an error logged on every scene load
@@ -31,8 +31,8 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ENV = dict(os.environ, GIT_AUTHOR_NAME="bisect-demo", GIT_AUTHOR_EMAIL="demo@prisma",
-           GIT_COMMITTER_NAME="bisect-demo", GIT_COMMITTER_EMAIL="demo@prisma", GIT_LFS_SKIP_SMUDGE="1")
+ENV = dict(os.environ, GIT_AUTHOR_NAME="bisect-demo", GIT_AUTHOR_EMAIL="demo@amoebius",
+           GIT_COMMITTER_NAME="bisect-demo", GIT_COMMITTER_EMAIL="demo@amoebius", GIT_LFS_SKIP_SMUDGE="1")
 
 SIGNATURE = "[bisect-plant]"
 SCENE_MANAGER = "Port/src/CosmicShore.Engine/SceneGraph/SceneManager.cs"
@@ -87,7 +87,7 @@ def plant_parity(s):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", choices=["smoke", "parity"], default="smoke")
-    ap.add_argument("--mcp", help="prisma-mcp.dll to run (default: build Port/src/CosmicShore.Mcp into a scratch folder, so a running server's lock does not matter)")
+    ap.add_argument("--mcp", help="amoebius-mcp.dll to run (default: build Port/src/CosmicShore.Mcp into a scratch folder, so a running server's lock does not matter)")
     ap.add_argument("--keep", action="store_true", help="keep the scratch clone")
     a = ap.parse_args()
 
@@ -102,8 +102,8 @@ def main():
         r = subprocess.run(["dotnet", "build", os.path.join(src, "Port", "src", "CosmicShore.Mcp"), "-nologo", "-v", "q", "-o", out],
                            capture_output=True, text=True)
         if r.returncode != 0:
-            sys.exit("could not build prisma-mcp:\n" + r.stdout[-3000:])
-        mcp = os.path.join(out, "prisma-mcp.dll")
+            sys.exit("could not build amoebius-mcp:\n" + r.stdout[-3000:])
+        mcp = os.path.join(out, "amoebius-mcp.dll")
 
     print(f"clone: {clone}")
     git(work, "clone", "-q", "--shared", "--no-checkout", src, clone)
@@ -151,15 +151,15 @@ def main():
         args.update(signature=SIGNATURE, frames=300)
     else:
         args.update(case="random")
-    cmd = ["dotnet", "exec", mcp, "--repo", clone, "--call", "prisma_bisect", json.dumps(args)]
-    print("$ prisma-mcp --repo <clone> --call prisma_bisect " + json.dumps(args), flush=True)
+    cmd = ["dotnet", "exec", mcp, "--repo", clone, "--call", "amoebius_bisect", json.dumps(args)]
+    print("$ amoebius-mcp --repo <clone> --call amoebius_bisect " + json.dumps(args), flush=True)
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     print(r.stdout + r.stderr)
 
     ok = True
     m = re.search(r"^FOUND ([0-9a-f]{10}) in (\d+) step", r.stdout, re.M)
     if not m:
-        print("FAIL: prisma_bisect found nothing"); ok = False
+        print("FAIL: amoebius_bisect found nothing"); ok = False
     else:
         steps = int(m.group(2))
         if not plant.startswith(m.group(1)):
@@ -169,7 +169,7 @@ def main():
         if outside[:10] in r.stdout.split("steps:")[-1]:
             print("FAIL: the commit outside Port/ was tested"); ok = False
         if ok:
-            print(f"PASS: prisma_bisect found the plant {plant[:10]} (HEAD~3) in {steps} step(s); the commit outside Port/ was never tested")
+            print(f"PASS: amoebius_bisect found the plant {plant[:10]} (HEAD~3) in {steps} step(s); the commit outside Port/ was never tested")
     leftovers = [l for l in git(clone, "worktree", "list").splitlines()[1:]] + [l for l in git(src, "worktree", "list").splitlines() if "bisect" in l]
     if leftovers:
         print("FAIL: scratch worktrees left behind:\n  " + "\n  ".join(leftovers)); ok = False

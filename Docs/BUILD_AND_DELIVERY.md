@@ -260,13 +260,13 @@ Agent sessions push often and open many pull requests, so a branch named `claude
 exactly two cases:
 
 1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) and
-   `prisma-parity-ci.yml` like any other.
+   `amoebius-parity-ci.yml` like any other.
 2. **A `/ship`, `/ship-quick`, `/ship-deep` or `/ship-tools` command runs on it.** The skill
    dispatches `unity-ci.yml` with `mode=static` on the branch once, after its final push
    (`.claude/skills/ship/SKILL.md` §5.5).
 
 Everything else is suppressed: `unity-ci.yml` skips every job for a `pull_request` event whose head
-is `claude/**` (a skipped check, never a pending one), and `prisma-ios.yml` lists `claude/**` in
+is `claude/**` (a skipped check, never a pending one), and `amoebius-ios.yml` lists `claude/**` in
 `branches-ignore` (`ios-testflight.yml` has no push trigger at all), because an agent branch merging
 `bleeding-edge` in would otherwise "change" the request file and start a Mac build nobody asked for.
 A human can still run any of them on a `claude/**` branch from the Actions tab (**Run workflow**).

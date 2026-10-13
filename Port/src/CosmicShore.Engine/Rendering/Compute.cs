@@ -73,7 +73,7 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>
-    /// GPU buffer (UnityEngine.GraphicsBuffer), CPU-backed like <see cref="ComputeBuffer"/>. Prisma's
+    /// GPU buffer (UnityEngine.GraphicsBuffer), CPU-backed like <see cref="ComputeBuffer"/>. Amoebius's
     /// GL 3.3 / GL ES 3.0 renderer has no vertex-stage storage buffers, so nothing draws from one
     /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> says so, as Unity does on such a device).
     /// </summary>

@@ -5,7 +5,7 @@ namespace CosmicShore.Engine.Audio.Fmod
     /// <summary>
     /// What the game asked the audio layer for during a run: event instances by path, events the
     /// loaded banks do not have, and one-shots fired with an unwired (empty) EventReference. The
-    /// player's session report carries these, so audio problems show up in Prisma's tracks.
+    /// player's session report carries these, so audio problems show up in Amoebius's tracks.
     /// </summary>
     public static class AudioStats
     {

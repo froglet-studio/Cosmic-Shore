@@ -215,7 +215,7 @@ The 12 Sep pass removed the SDK and the backend classes. This pass removed what 
   and `rename_game_modes.py`.
 - **Prose that still described PlayFab as present:** comment-only edits in nine C# files and fixes
   across the docs. The surviving "was X (PlayFab)" comments are history and stay on purpose.
-- **Port/ (Prisma)** now mirrors the post-retirement shape: `System/Playfab/` is gone, the economy
+- **Port/ (Amoebius)** now mirrors the post-retirement shape: `System/Playfab/` is gone, the economy
   classes live in `System/Economy/`, and the tests are ported (`Port/PORT_PLAN.md`,
   "Backend-retirement mirror").
 - **One reference looks dead and is not.** `ModalWindows.prefab` still names

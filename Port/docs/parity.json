@@ -17,7 +17,7 @@
     "shaders": {
       "Faithful": 0,
       "Approximate": 67,
-      "Missing": 14
+      "Missing": 19
     }
   },
   "subsystems": [
@@ -520,6 +520,13 @@
       "test": ""
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader",
+      "name": "CosmicShore/BlackHoleLens",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
       "name": "Shader Graphs/BlockGraph",
       "status": "Approximate",
@@ -546,6 +553,13 @@
       "status": "Approximate",
       "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
       "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CloakGhost.shader",
+      "name": "CosmicShore/CloakGhost",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/ConicGraph.shadergraph",
@@ -947,6 +961,13 @@
       "test": "HandShaderTests, --check-shaders"
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader",
+      "name": "Custom/OmniDepthPrismShader",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
       "name": "Custom/OmniShepardFresnelShader",
       "status": "Approximate",
@@ -979,6 +1000,20 @@
       "name": "CosmicShore/StaticSkyPanorama",
       "status": "Missing",
       "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader",
+      "name": "CosmicShore/ThresherBallFresnel",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader",
+      "name": "CosmicShore/ThresherChainFresnel",
+      "status": "Missing",
+      "why": "generic material-family fallback",
       "test": ""
     },
     {

@@ -11,11 +11,11 @@ namespace CosmicShore.Content.Models
     /// <summary>
     /// Blender (<c>.blend</c>) and Maya (<c>.ma</c>/<c>.mb</c>) files, imported the way Unity does:
     /// Unity cannot read them either - its ModelImporter runs the installed Blender or Maya in the
-    /// background to export an FBX, then imports that. Prisma does the same, with the same export
+    /// background to export an FBX, then imports that. Amoebius does the same, with the same export
     /// settings as Unity's <c>Unity-BlenderToFBX.py</c> (and Maya's FBX plugin), caches the FBX by
     /// the file's path, size and time, and hands it to <see cref="FbxModelImporter"/>.
     /// Without Blender/Maya on the machine the file does not import, exactly as in Unity.
-    /// Override the search with <c>PRISMA_BLENDER</c> (blender executable) or <c>PRISMA_MAYAPY</c>.
+    /// Override the search with <c>AMOEBIUS_BLENDER</c> (blender executable) or <c>AMOEBIUS_MAYAPY</c>.
     /// </summary>
     public static class DccModelConverter
     {
@@ -24,7 +24,7 @@ namespace CosmicShore.Content.Models
         public static bool IsDccPath(string path) => IsBlender(path) || IsMaya(path);
 
         /// <summary>The folder converted FBX files are kept in (overridable for tests).</summary>
-        public static string CacheDir = Path.Combine(Path.GetTempPath(), "prisma-dcc");
+        public static string CacheDir = Path.Combine(Path.GetTempPath(), "amoebius-dcc");
 
         /// <summary>How long one conversion may take.</summary>
         public static TimeSpan Timeout = TimeSpan.FromMinutes(3);
@@ -32,11 +32,11 @@ namespace CosmicShore.Content.Models
         /// <summary>Which application converts this file, or null for a file that needs none.</summary>
         public static string ToolFor(string path) => IsBlender(path) ? "Blender" : IsMaya(path) ? "Maya" : null;
 
-        /// <summary>The Blender executable: PRISMA_BLENDER, then PATH, then the usual install folders.</summary>
-        public static string FindBlender() => Prisma.DccLocator.FindBlender();
+        /// <summary>The Blender executable: AMOEBIUS_BLENDER, then PATH, then the usual install folders.</summary>
+        public static string FindBlender() => Amoebius.DccLocator.FindBlender();
 
-        /// <summary>Maya's Python (mayapy): PRISMA_MAYAPY, MAYA_LOCATION/bin, then PATH and the usual install folders.</summary>
-        public static string FindMayaPy() => Prisma.DccLocator.FindMayaPy();
+        /// <summary>Maya's Python (mayapy): AMOEBIUS_MAYAPY, MAYA_LOCATION/bin, then PATH and the usual install folders.</summary>
+        public static string FindMayaPy() => Amoebius.DccLocator.FindMayaPy();
 
         /// <summary>
         /// The FBX for a Blender/Maya file, converting it when the cache has none for this version of
@@ -54,8 +54,8 @@ namespace CosmicShore.Content.Models
             if (exe == null)
             {
                 error = tool == "Blender"
-                    ? "Blender is not installed (Unity needs it for .blend files too); install it or set PRISMA_BLENDER to blender's path"
-                    : "Maya is not installed (Unity needs it for .ma/.mb files too); install it or set PRISMA_MAYAPY to mayapy's path";
+                    ? "Blender is not installed (Unity needs it for .blend files too); install it or set AMOEBIUS_BLENDER to blender's path"
+                    : "Maya is not installed (Unity needs it for .ma/.mb files too); install it or set AMOEBIUS_MAYAPY to mayapy's path";
                 return null;
             }
 

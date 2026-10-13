@@ -15,7 +15,7 @@ namespace CosmicShore.AssetTool
     /// file, plus a <c>.meta</c> with a fresh GUID and the ModelImporter settings the project's
     /// existing models share (the donor is the cleanest meta at the newest importer version, its
     /// tallied settings set to the majority value, every model-specific table emptied). It then
-    /// imports the model through Prisma's own importer, and with <c>--prefab</c> writes
+    /// imports the model through Amoebius's own importer, and with <c>--prefab</c> writes
     /// <c>NAME.prefab</c> nesting it and loads that prefab through the engine as the proof.
     /// </summary>
     static partial class Program
@@ -112,7 +112,7 @@ namespace CosmicShore.AssetTool
             db.Register(dest, guid);
 
             var model = db.LoadModel(guid);
-            if (model == null) throw new InvalidOperationException($"{db.ProjectRelative(dest)} was written but Prisma's importer could not read it");
+            if (model == null) throw new InvalidOperationException($"{db.ProjectRelative(dest)} was written but Amoebius's importer could not read it");
             int meshes = model.Meshes.Count(m => m.Mesh != null), tris = model.Meshes.Sum(m => (m.Mesh?.triangles.Length ?? 0) / 3);
 
             string prefabRel = null; int renderers = 0;
