@@ -714,6 +714,20 @@ applies to new abilities, new resources on the meter list, and anything that add
     curvature). Measure per-frame heading change in the pure solver (rule 43's scratch driver)
     before and after; `HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling` is the template.
 
+46. **Removing a CLONED DONOR'S model is four removals, not one — and the model is never only a mesh.** A hull
+    built as a text clone that hides its donor's model (the Stoat over the Squirrel's FBX; the Scarab over the
+    Sparrow's) still leans on that model for: (a) the **hit box** — the donor's colliders and `ImpactCollider` were
+    ADDED to the model's GameObjects, so they go with it and must be re-authored at the new hull's size; (b) the
+    **jet mounts** — the jets are parented to the donor's bones and usually carry a donor-specific steering
+    component (the Squirrel's `DriftJet` turns its plume SIDEWAYS every frame unless drifting); (c) the **hull-fusion
+    bakes**, keyed to the donor's mesh — with no model left the hull is generated at runtime and the fusion solves on a
+    worker (`CrystalHullFusion.Prewarm`), so the entries ship with no bake; (d) the **nested-instance plumbing** —
+    `m_AddedGameObjects` entries naming objects you are KEEPING must be detached before the instance is deleted.
+    Do it as a document-level pass with a reference-integrity gate (every local `{fileID}` names a document in the
+    file), never by deleting line ranges: `author_stoat_assets.py` stage 6 (`remove_instance`,
+    `remove_gameobject_tree`, `dangling_refs`) is the reference, and it took the Stoat from 4,381 lines to 2,038 with
+    zero dangling references. (Stoat own-vessel pass, 2026-10-13.)
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
