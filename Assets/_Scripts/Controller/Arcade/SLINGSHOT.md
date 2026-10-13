@@ -24,7 +24,8 @@ threads the last ring of the last lap wins (golf: finish time).
 ## 1. What the mode is asking
 
 **Where to turn.** The Stoat (`R_VesselActions/STOAT.md`) cruises at **60 u/s** at full throttle
-(30 at rest sticks — the game's throttle sits at half) on a flat 120°/s stick turn, and the barren race
+(30 at rest sticks — the game's throttle sits at half) on a flat 48°/s stick turn (the dipole round's ×0.4 cut
+of the Squirrel's 120, `STOAT_DIPOLE.md`; `SlingshotCourse.StoatTurnScaler` follows it), and the barren race
 cell has nothing to skim. Its speed and its turns are its ability. **Press** LT or RT and an attractor
 is laid beside the hull on that side with a repulsor mirrored on the other; **hold** and the Stoat
 orbits the attractor — the squeeze sets the circle live, 150 u at a touch down to 40 u buried, and the
@@ -53,14 +54,18 @@ Measured by running the shipped solver over 400 seeds per level (`slingshot_cour
 
 | Level | Mouth | Corner floor | Tightest corner, median (min) | Corners < 2× slung circle, per lap | Legs (min / median / max) | Lap | At cruise / slung |
 |---|---|---|---|---|---|---|---|
-| 1 | 48 u | 143 u | 322 u (297) | 0.00 | 444 / 480 / 632 u | 4005 u | 67 s / 27 s |
-| 2 | 40 u | 115 u | 124 u (115) | 0.67 | 362 / 494 / 736 u | 4124 u | 69 s / 27 s |
-| 3 | 32 u | 93 u | 116 u (101) | 1.96 | 473 / 558 / 675 u | 4450 u | 74 s / 30 s |
-| 4 | 26 u | 86 u | 93 u (86) | 1.98 | 404 / 569 / 699 u | 4386 u | 73 s / 29 s |
+| 1 | 48 u | 358 u | 361 u (358) | 0.00 | 433 / 465 / 583 u | 3709 u | 62 s / 25 s |
+| 2 | 40 u | 286 u | 297 u (287) | 1.37 | 362 / 450 / 660 u | 3684 u | 61 s / 25 s |
+| 3 | 32 u | 233 u | 249 u (233) | 2.00 | 406 / 496 / 553 u | 3733 u | 62 s / 25 s |
+| 4 | 26 u | 215 u | 226 u (215) | 2.00 | 344 / 513 / 596 u | 3703 u | 62 s / 25 s |
+
+Re-measured 2026-10-13 on the shipped 48°/s turn (a 72 u cruise pivot, a 179 u slung circle). The
+first ladder was cut for the round-4 Stoat's 120°/s (a 29 u pivot), so its floors (143 / 115 / 93 / 86 u)
+fell under twice the shipped cruise pivot from level 2 up — `SlingshotCourseTests` caught the drift.
 
 Every one of the 1,600 courses: eight gates, gate 0 on the equatorial spawn ring's pole (the
 fairness rule), every gate inside the shell, no corner under the floor or under twice the cruise
-pivot. A two-lap race is ~2.3 min at cruise and ~1 min slung well — the gap is the skill.
+pivot. A two-lap race is ~2 min at cruise and under a minute slung well — the gap is the skill.
 
 ## 3. Reused, not built
 
