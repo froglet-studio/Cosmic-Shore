@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher round 2: chain always slices + shields own, Space card = banked energy, launch-point camera with timed release (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`R_VesselActions/THRESHER.md` §2, §5, §5a), on top of the entry below (which it partly supersedes — its step 1 now reads as here):
+- **Chain**: slices rival prisms taut OR slack, and shields own-domain prisms it touches (fresh own trail
+  excepted). Reaper Chain (Space L5) is now just "cuts shielded rivals"; map text updated.
+- **Space card gauge** = banked explosion radius (`EnergyRadius01`), iron → lime; replaces the chain-out
+  gauge (`energyGauge`, FormerlySerializedAs `chainOutGauge`; GameObject renamed `EnergyGauge`).
+- **Launch camera**: centred on a launch point on the circle (the point whose tangent is the aim), behind
+  it looking down the path, `aimElevationDegrees` 25. Stick X slides the point round the circle; stick Y
+  tilts the orbit with the camera (`SteerOrbitPlane`). LT up ARMS the launch: the ship keeps circling and
+  leaves from that point along the aim (`ArmLaunch`), at most a lap later.
+
+**Not opened in Unity.** Offline: `thresher_chain_harness` 54/54 (new: armed launch leaves from the chosen
+point along the aim; steered plane carries the orbit; launch-camera pose). `unity_refcompile` RESULT OK (0 errors in project code).
+
+**Verify in editor:**
+1. Plant and spin: camera sits behind a point on the circle looking along a lime line; the ship sweeps
+   through the point each lap. Stick X moves the point round (camera follows); stick Y tilts the orbit.
+   Release LT mid-lap: the ship keeps going round and leaves exactly at the point along the line. Report
+   whether the wait feels too long at slow spins, and whether the camera is too close/far (`aimElevationDegrees`).
+2. Drag a SLACK chain through rival prisms → sliced; through your own older trail → shields appear.
+3. Space card fills toward lime as the chain kills; empties on the blast.
+4. MPPM: the guest's view of the host's ball during an armed launch (expected to look off for up to a lap — owner-only aim).
+
+---
+
 ### 🔴 Thresher: earlier spectate + stick AIM, smooth 24-link chain, chain energy, Mass Mode (A), omni windmill (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/THRESHER.md` §1, §2a–2c, §5, §5a):

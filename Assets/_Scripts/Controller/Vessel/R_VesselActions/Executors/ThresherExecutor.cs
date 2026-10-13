@@ -42,10 +42,10 @@ namespace CosmicShore.Gameplay
     /// vector — the Rhino sword's contact-velocity idea at its core — so shields pop and
     /// super-shields hold as for every other hull.
     ///
-    /// <b>The chain slices.</b> While the chain is taut (or always, with Space L5 "Reaper Chain")
-    /// every rival prism its links touch is <see cref="Prism.Slice"/>d along the plane the chain is
-    /// sweeping, with debris at the touching link's own velocity. It never cuts its own domain, and
-    /// it skips shielded prisms unless Reaper Chain is active (then the first cut pops the shield).
+    /// <b>The chain slices and shields</b>, taut or slack. Every rival prism its links touch is
+    /// <see cref="Prism.Slice"/>d along the plane the chain is sweeping, with debris at the touching
+    /// link's own velocity, and every prism of its OWN domain it touches is shielded. It skips
+    /// shielded rivals unless Space L5 "Reaper Chain" is active (then the first cut pops the shield).
     ///
     /// <b>The chain's kills charge the ball.</b> Every prism the chain slices banks
     /// <c>energyPerSlice</c> in the ball; the ball's next hit on a RIVAL prism releases the bank as
@@ -159,6 +159,12 @@ namespace CosmicShore.Gameplay
         /// <summary>Energy banked by the chain's kills (and Mass Mode steals) for the next explosion.</summary>
         public float Energy => _energy;
         public float Energy01 => config && config.EnergyMax > 0f ? Mathf.Clamp01(_energy / config.EnergyMax) : 0f;
+        /// <summary>The bank as explosion RADIUS gained: 0 = a plain blast, 1 = the bank has bought the
+        /// full <c>energyMaxDiameterScale</c>. The Space card's gauge.</summary>
+        public float EnergyRadius01 => config && config.EnergyMaxDiameterScale > 1f
+            ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (config.EnergyMaxDiameterScale - 1f)) : 0f;
+        /// <summary>An aimed release is waiting for the ship to reach its launch point.</summary>
+        public bool IsLaunchArmed => _solver != null && _solver.LaunchArmed;
         /// <summary>An omni crystal has the ball windmilling round the ship.</summary>
         public bool IsWindmilling => _solver != null && _solver.Mode == ThresherMode.Windmill;
         /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
@@ -246,22 +252,21 @@ namespace CosmicShore.Gameplay
             _plantHeld = false;
             bool wasPivot = _solver.Mode == ThresherMode.Pivot;
 
-            // AIMED release: while the camera spectates, the pilot has been aiming the launch with
-            // the sticks, so the ship flies off along the aim the instant LT comes up — at the
-            // orbit's speed, wherever on the circle it happens to be. No waiting for the tangent to
-            // come round: the aim is the whole input. Unaimed (a slow orbit, a remote replica, the
-            // autopilot) it leaves on the orbit's tangent as before.
-            Vector3 fling = _lastShipVelocity;
+            // AIMED release: while the camera spectates, the aim names ONE point on the circle (the
+            // point whose tangent is the aim, centred on screen). Releasing ARMS the launch: the ship
+            // keeps circling and leaves from exactly that point, along the aim — the pilot picks the
+            // point, the solver does the timing. Unaimed (a slow orbit, a remote replica, the
+            // autopilot) it leaves on the orbit's tangent at once, as before.
             if (wasPivot && _spectating && _aimDir.sqrMagnitude > 0.5f)
             {
-                fling = _aimDir * _lastShipVelocity.magnitude;
-                _releaseDirection = _aimDir;
+                _solver.ArmLaunch(_aimDir, SlingshotActive);
+                return;   // the yank plays when the launch happens (StepChain)
             }
-            _solver.Release(fling, slingshot: SlingshotActive);
+            _solver.Release(_lastShipVelocity, slingshot: SlingshotActive);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
         }
 
-        /// <summary>The aimed launch direction of the plant release that just happened, once; the
+        /// <summary>The aimed launch direction of the armed launch that just left the orbit, once; the
         /// transformer faces the hull along it on the release edge (grip then puts the momentum on
         /// the nose the same frame).</summary>
         public bool TryConsumeReleaseDirection(out Vector3 direction)
@@ -300,7 +305,7 @@ namespace CosmicShore.Gameplay
             // The release edge never arrives for a vessel whose input is paused or handed to the
             // autopilot, so a held trigger must not stay held across a disable.
             _payOut = false;
-            if (_plantHeld && _solver != null) _solver.Release(_lastShipVelocity);
+            if (_solver != null && (_plantHeld || _solver.LaunchArmed)) _solver.Release(_lastShipVelocity);
             _plantHeld = false;
             _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
@@ -338,6 +343,11 @@ namespace CosmicShore.Gameplay
             _lastShipVelocity = result.ShipVelocity;
 
             if (result.Planted) PlayAt(plantEvent, _solver.Pivot);
+            if (result.Launched)
+            {
+                _releaseDirection = result.LaunchDirection;
+                PlayAt(yankEvent, shipPosition);
+            }
             if (_solver.Mode != ThresherMode.Pivot)
             {
                 SweepBall(result.BallFrom, _solver.BallPosition);
@@ -622,16 +632,20 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the chain
 
+        /// <summary>
+        /// The chain, taut or slack: every RIVAL prism a link touches is sliced along the plane the
+        /// chain is sweeping (and banks energy for the ball's next blast when it dies), and every
+        /// prism of the pilot's OWN domain it touches is shielded. Shielded rivals are skipped unless
+        /// Reaper Chain (Space L5) is active, when the first cut pops the shield. The fleet's
+        /// own-fresh-trail grace applies to both: what this pilot laid moments ago is left alone.
+        /// </summary>
         void CutWithChain(float dt)
         {
             if (!config || _status == null || _links == null) return;
-            bool reaper = ReaperActive;
-            bool taut = _solver.Mode == ThresherMode.Pivot || _solver.IsTaut;
-            if (!taut && !reaper) return;
-
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
 
+            bool reaper = ReaperActive;
             Domains own = PilotDomain();
             float cut = config.ChainCutRadius;
             const float candidateExtent = 8f;
@@ -651,9 +665,11 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _candidates[i];
                     if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                    if (prism.Domain == own) continue;   // the chain never cuts its own domain
-                    if (!reaper && prism.prismProperties != null &&
-                        (prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded)) continue;
+                    var props = prism.prismProperties;
+                    bool ownDomain = prism.Domain == own;
+                    // Nothing to do to armoured own mass, or to a shielded rival without Reaper Chain.
+                    if (ownDomain && (props == null || props.IsShielded || props.IsSuperShielded)) continue;
+                    if (!ownDomain && !reaper && props != null && (props.IsShielded || props.IsSuperShielded)) continue;
                     if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                     Vector3 centre = prism.transform.position;
@@ -662,6 +678,13 @@ namespace CosmicShore.Gameplay
                     Vector3 onChain = a + ab * t;
                     if ((centre - onChain).sqrMagnitude > contact * contact) continue;
 
+                    _cutThisFrame.Add(prism);
+                    if (ownDomain)
+                    {
+                        prism.ActivateShield();
+                        continue;
+                    }
+
                     // The link's own velocity is the blade's: the chain point moves between the
                     // hull's velocity and the ball's (a lever arm), so the debris does too.
                     Vector3 v = Vector3.Lerp(_links.NodeVelocity(s, dt), _links.NodeVelocity(s + 1, dt), t);
@@ -669,7 +692,6 @@ namespace CosmicShore.Gameplay
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, Vector3.up);
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
 
-                    _cutThisFrame.Add(prism);
                     prism.Slice(v * config.ChainDebrisRestitution, _status.Domain, _status.PlayerName,
                                 onChain, cutNormal.normalized, debrisSpeedLimit: config.DebrisSpeedLimit);
                     if (prism.destroyed) Bank(config.EnergyPerSlice);   // a cut that only popped a shield banks nothing
@@ -836,31 +858,34 @@ namespace CosmicShore.Gameplay
                 EndSpectate();
 
             if (!_spectating) return;
-            Vector3 pivot = _solver.Pivot;
 
             // AIM. The sticks turn the launch direction in screen terms (right is right, the hull's
-            // pitch sign up/down), and the camera rides the aim, so aiming IS turning the camera.
+            // pitch sign up/down) until a release ARMS it; then the point is chosen and held.
             var input = _status.InputStatus;
-            if (input != null)
+            if (input != null && !_solver.LaunchArmed)
                 ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,
                     config.AimYawRate * Mathf.Deg2Rad, config.AimPitchRate * Mathf.Deg2Rad, dt);
+            // The whole spin turns with the camera: the orbit is laid into the plane the aim lives in.
+            _solver.SteerOrbitPlane(_aimUp);
 
             _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ballRadius,
                 config.CameraZoomOutRate, config.CameraZoomInRate, dt);
+            Vector3 launch = _solver.LaunchPoint(ship.position, _aimDir);
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
             _cam.Spectate = new CustomCameraController.SpectateView
             {
-                Position = ThresherCameraFraming.AimVantagePosition(pivot, _aimDir, _aimUp,
-                    _spectateRadius, Mathf.Min(halfFovV, halfFovH), config.SpectateTiltDegrees, config.CameraFramingMargin),
-                LookAt = pivot,
-                Up = _aimDir,   // the launch path always runs up the screen
+                // Centred on the launch point, looking down the launch trajectory.
+                Position = ThresherCameraFraming.LaunchCameraPosition(launch, _aimDir, _aimUp, _spectateRadius,
+                    halfFovV, halfFovH, config.AimElevationDegrees, config.CameraFramingMargin),
+                LookAt = launch,
+                Up = _aimUp,
             };
         }
 
         /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
-        /// was facing laid into the orbit plane (so what was "ahead" on screen stays "up" across
-        /// the cut), and the aim camera's "above" is the orbit's axis on the camera's own side, so
-        /// it lifts off over the orbit rather than dropping under it.</summary>
+        /// was facing laid into the orbit plane (so the launch camera looks the way the chase camera
+        /// did), and the aim's "above" is the orbit's axis on the camera's own side, so the launch
+        /// camera rises over the orbit rather than dropping under it.</summary>
         void BeginSpectate(Vector3 shipPosition)
         {
             Vector3 pivot = _solver.Pivot;
@@ -883,6 +908,7 @@ namespace CosmicShore.Gameplay
         void EndSpectate()
         {
             if (_spectating && _cam) _cam.Spectate = null;
+            if (_spectating) _solver?.SteerOrbitPlane(Vector3.zero);   // the orbit's plane is the ship's again
             _spectating = false;
         }
 
@@ -1084,8 +1110,8 @@ namespace CosmicShore.Gameplay
             _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
             _chainMpb = new MaterialPropertyBlock();
 
-            // The launch path while aiming a spectated spin: a straight line from the ship along the
-            // aim, in the CTA lime. Local pilot only (it is drawn from the camera's aim).
+            // The launch path while aiming a spectated spin: a straight line from the launch point
+            // along the aim, in the CTA lime. Local pilot only (it is drawn from the camera's aim).
             _aimLine = MakeLine("AimPath", lineMat, false);
             _aimLine.positionCount = 2;
             _aimLine.numCapVertices = 0;
@@ -1253,8 +1279,9 @@ namespace CosmicShore.Gameplay
                     _aimLine.endColor = new Color(lime.r, lime.g, lime.b, 0f);
                     _aimLine.startWidth = config.AimLineWidth;
                     _aimLine.endWidth = config.AimLineWidth * 0.5f;
-                    _aimLine.SetPosition(0, ship);
-                    _aimLine.SetPosition(1, ship + _aimDir * config.AimLineLength);
+                    Vector3 launch = _solver.LaunchPoint(ship, _aimDir);
+                    _aimLine.SetPosition(0, launch);
+                    _aimLine.SetPosition(1, launch + _aimDir * config.AimLineLength);
                 }
             }
 

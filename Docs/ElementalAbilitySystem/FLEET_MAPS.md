@@ -550,7 +550,7 @@ One parameter per element, each an `ElementalFloat` on `ThresherConfigSO` read w
 |---|---|---|---|---|
 | Charge | **Wrecking Ball** (passive) | smash-explosion diameter ×1 → ×2 | **Lit** — the hot ball burns the lit domain colour; its explosions spare the pilot's own domain (`AffectSelfOverride` off — domain-sparing in the explosion layer) and it bounces off own-domain mass even when hot | `ThresherExecutor.LitActive` |
 | Mass | **Mass Mode** (A, toggle — 2026-10-13; was the passive Heavy Iron) — the ball steals rival prisms, shields its own, lays a trail and banks the chain's energy instead of exploding | ball mass ×1 → ×1.75 (radius by the cube root) | **Wrecker** — a smash costs the ball no speed (plough 1.0) | `ThresherExecutor.WreckerActive` |
-| Space | **Winch** (RT) | let-out chain length ×1 → ×1.5 | **Reaper Chain** — the chain cuts while slack, and cuts shielded prisms | `ThresherExecutor.ReaperActive` |
+| Space | **Winch** (RT) — the chain, taut or slack, slices rivals and shields own mass (2026-10-13); the Space card shows the banked explosion radius | let-out chain length ×1 → ×1.5 | **Reaper Chain** — the chain cuts shielded rival prisms (its old "cuts while slack" half became the base on 2026-10-13) | `ThresherExecutor.ReaperActive` |
 | Time | **Plant** (LT) | orbit spin-up rate and cap ×1 → ×1.75 | **Slingshot** — the unlock yank is never weaker than smash speed | `ThresherExecutor.SlingshotActive` |
 
 **One L5 per element** (rule 26): the hull is a Squirrel clone, and the Squirrel's skimmer and

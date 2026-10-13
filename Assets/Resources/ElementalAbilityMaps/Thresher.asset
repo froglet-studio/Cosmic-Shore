@@ -34,13 +34,13 @@ MonoBehaviour:
     UpgradeDescription: 'A smashing ball loses no speed: plough becomes 1.0, so a hot ball tears through a whole row at full speed. Below smash speed it still pays crushKeep. Gated on IsUpgradeActive(Mass) in ThresherExecutor (ThresherChainSolver.KeepAfterHit).'
   - Element: 3
     AbilityLabel: Winch
-    AbilityDescription: 'The RIGHT trigger. Hold to let chain out (longer reach, slower whip); release and it reels in fast, conserving the ball''s spin - the crack. The chain SLICES rival prisms it touches while taut. Space scales the reach: ThresherConfigSO.chainReachMultiplier on maxLen, x1 at rest -> x1.5 at level 10 (floor x0.6).'
+    AbilityDescription: 'The RIGHT trigger. Hold to let chain out (longer reach, slower whip); release and it reels in fast, conserving the ball''s spin - the crack. The chain, taut or slack, SLICES rival prisms it touches (each kill banks energy for the ball''s next explosion - the Space card shows the banked radius) and SHIELDS your own. Space scales the reach: ThresherConfigSO.chainReachMultiplier on maxLen, x1 at rest -> x1.5 at level 10 (floor x0.6).'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Reaper Chain
-    UpgradeDescription: 'The chain cuts while slack too, and cuts shielded prisms (the first cut pops the shield). Gated on IsUpgradeActive(Space) in ThresherExecutor.CutWithChain.'
+    UpgradeDescription: 'The chain cuts SHIELDED rival prisms (the first cut pops the shield, the next kills). Since 2026-10-13 the chain cuts while slack at every level, so that half of the old upgrade is now the base. Gated on IsUpgradeActive(Space) in ThresherExecutor.CutWithChain.'
   - Element: 4
     AbilityLabel: Plant
     AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it on the chain, faster every lap (right trigger up winds you in and spins you faster); release to fly off with the ball yanked after you. Time scales the spin: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'

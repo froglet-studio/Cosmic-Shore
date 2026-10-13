@@ -113,7 +113,7 @@ MonoBehaviour:
   spectateSpinRate: 0.9
   spectateEngageSeconds: 0.1
   spectateReleaseFraction: 0.75
-  spectateTiltDegrees: 30
+  aimElevationDegrees: 25
   spectateBlendSeconds: 0.6
   aimYawRate: 180
   aimPitchRate: 120

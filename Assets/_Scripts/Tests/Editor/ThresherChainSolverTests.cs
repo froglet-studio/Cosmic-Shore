@@ -612,16 +612,91 @@ namespace CosmicShore.Tests
         // ---------------------------------------------------------------- the aim camera
 
         [Test]
-        public void Aim_VantageLooksDownFromBehindTheAim()
+        public void Aim_LaunchCameraSitsBehindTheLaunchPointLookingDownThePath()
         {
-            Vector3 pivot = new Vector3(5f, 2f, -7f);
+            Vector3 launch = new Vector3(5f, 2f, -7f);
             Vector3 aim = Vector3.forward, up = Vector3.up;
-            float radius = 30f, tilt = 30f;
-            Vector3 off = ThresherCameraFraming.AimVantagePosition(pivot, aim, up, radius, HalfV, tilt, Margin) - pivot;
-            Assert.AreEqual(radius * Margin / Mathf.Tan(HalfV), off.magnitude, 1e-3f, "the whole orbit fits the narrower FOV");
-            float fromUp = Mathf.Acos(Mathf.Clamp(Vector3.Dot(off.normalized, up), -1f, 1f)) / Mathf.Deg2Rad;
-            Assert.AreEqual(tilt, fromUp, 1e-2f, "looking DOWN, tilted only by spectateTiltDegrees");
-            Assert.Less(Vector3.Dot(off, aim), 0f, "it sits BEHIND the aim, so the launch path runs away up the screen");
+            float radius = 30f, elevation = 25f;
+            float halfH = Mathf.Atan(Mathf.Tan(HalfV) * 16f / 9f);
+            Vector3 off = ThresherCameraFraming.LaunchCameraPosition(launch, aim, up, radius, HalfV, halfH, elevation, Margin) - launch;
+            Assert.Less(Vector3.Dot(off, aim), 0f, "behind the launch point, so it looks DOWN the trajectory");
+            Assert.Greater(Vector3.Dot(off, up), 0f, "raised over the orbit's plane");
+            float above = Mathf.Asin(Mathf.Clamp(Vector3.Dot(off.normalized, up), -1f, 1f)) / Mathf.Deg2Rad;
+            Assert.AreEqual(elevation, above, 1e-2f);
+            Assert.GreaterOrEqual(off.magnitude * Mathf.Tan(halfH) + 1e-3f, 2f * radius * Margin,
+                "far enough that the whole circle, up to 2r to one side of the launch point, fits the width");
+        }
+
+        [Test]
+        public void Launch_LeavesFromThePointWhoseTangentIsTheAim_NotWhereTheTriggerCameUp()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            Vector3 pos, vel;
+            PlantFrom(solver, s, out pos, out vel);
+            Vector3 aim = Vector3.right;   // in the orbit's (horizontal) plane
+            Assert.IsTrue(solver.LaunchRadial(pos, aim, out Vector3 radial));
+            Vector3 launchPoint = solver.Pivot + radial * solver.Length;
+
+            solver.ArmLaunch(aim, slingshot: false);
+            Assert.IsTrue(solver.LaunchArmed);
+            int frames = 0;
+            ThresherStepResult r = default;
+            for (; frames < 2000; frames++)
+            {
+                r = solver.Step(pos, vel, false, s.CruiseSpeed, Dt);
+                if (r.Launched) break;
+                vel = r.ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.IsTrue(r.Launched, "an armed launch always comes round within a lap");
+            Assert.AreEqual(ThresherMode.Free, solver.Mode);
+            Assert.IsFalse(solver.LaunchArmed);
+            Assert.AreEqual(1f, Vector3.Dot(r.ShipVelocity.normalized, aim), 1e-4f, "it leaves exactly along the aim");
+            float lapStep = solver.Length * 0.08f;   // well under a frame's travel at orbit speed
+            Assert.Less((pos - launchPoint).magnitude, Mathf.Max(lapStep, r.ShipVelocity.magnitude * Dt * 1.5f),
+                "from the chosen point on the circle, within a frame's travel");
+            Assert.Greater(Vector3.Dot(solver.BallVelocity, aim), 0f, "the ball is yanked after it along the aim");
+        }
+
+        [Test]
+        public void Launch_SteeredPlaneTurnsTheWholeSpin()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            PlantFrom(solver, s, out Vector3 pos, out Vector3 vel);
+            // Tilt the plane 30 degrees about x, a little each frame, as the aim camera would.
+            for (int f = 0; f < 120; f++)
+            {
+                float a = Mathf.Min(1f, f / 60f) * 30f * Mathf.Deg2Rad;
+                solver.SteerOrbitPlane(new Vector3(0f, Mathf.Cos(a), -Mathf.Sin(a)));
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            Vector3 target = new Vector3(0f, Mathf.Cos(30f * Mathf.Deg2Rad), -Mathf.Sin(30f * Mathf.Deg2Rad));
+            Assert.Less(Mathf.Abs(Vector3.Dot((pos - solver.Pivot).normalized, target)), 0.05f, "the ship circles in the steered plane");
+            Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "steering the plane never drops the plant");
+            Assert.AreEqual(solver.Length, (pos - solver.Pivot).magnitude, 0.5f, "on the chain's length");
+        }
+
+        /// <summary>Tow straight, then plant and run the skid out, so the solver is orbiting a pivot
+        /// in the horizontal plane (the ship flies along +z with the ball behind it).</summary>
+        static void PlantFrom(ThresherChainSolver solver, ThresherChainSettings s, out Vector3 pos, out Vector3 vel)
+        {
+            pos = Vector3.zero;
+            vel = new Vector3(0.6f, 0f, 1f).normalized * s.CruiseSpeed;
+            solver.Reset(pos, Vector3.forward, vel);
+            solver.Plant();
+            for (int f = 0; f < 120 && solver.Mode != ThresherMode.Pivot; f++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            for (int f = 0; f < 30; f++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
         }
 
         [Test]

@@ -27,7 +27,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("MASS: multiplier on the ball's mass (heavier tug, the same plough). The ball's radius " +
                  "grows with the CUBE ROOT of it, because Mass is volume.")]
         [SerializeField] ElementalFloat ballMassMultiplier = ElementalFloat.Multiplier(1f, 1.75f, Element.Mass, 0.5f);
-        [Tooltip("SPACE: multiplier on the let-out chain length (maxLen). The reeled-in length is fixed.")]
+        [Tooltip("SPACE: multiplier on the let-out chain length (maxLen). The reeled-in length is fixed. The Space " +
+                 "card's gauge shows the chain's banked ENERGY (the explosion radius it has bought).")]
         [SerializeField] ElementalFloat chainReachMultiplier = ElementalFloat.Multiplier(1f, 1.5f, Element.Space, 0.6f);
         [Tooltip("TIME: multiplier on the planted orbit's spin-up rate AND its cap (lockSpin, lockMax).")]
         [SerializeField] ElementalFloat spinMultiplier = ElementalFloat.Multiplier(1f, 1.75f, Element.Time, 0.5f);
@@ -152,17 +153,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("Re-attach once the spin falls below this fraction of spectateSpinRate (or the plant " +
                  "is released). Below 1 so a spin hovering at the threshold does not flap.")]
         [SerializeField, Range(0f, 1f)] float spectateReleaseFraction = 0.75f;
-        [Tooltip("The aim camera's tilt off straight-down, leaning BACK from the aim (degrees): it looks down " +
-                 "on the orbit from over the launch path's shoulder. 0 = a pure top-down plan view.")]
-        [SerializeField, Range(0f, 80f)] float spectateTiltDegrees = 30f;
+        [Tooltip("The launch camera sits behind the launch point and looks DOWN the launch trajectory from this " +
+                 "elevation above it (degrees, toward the orbit's axis on the camera's side). 0 = level with the " +
+                 "path; 90 = straight down on the launch point.")]
+        [SerializeField, Range(0f, 85f)] float aimElevationDegrees = 25f;
         [Tooltip("Seconds to ease into the vantage and back out to the chase camera.")]
         [SerializeField, Min(0f)] float spectateBlendSeconds = 0.6f;
         [Tooltip("While spectating, full stick X swings the AIM (the path a release flies off along) at this " +
-                 "rate (degrees/s). The camera turns with it, so aiming IS turning the camera.")]
+                 "rate (degrees/s). The launch point moves round the circle with it and the camera follows, so " +
+                 "aiming IS turning the camera; stick Y tilts the whole orbit with the aim.")]
         [SerializeField, Min(0f)] float aimYawRate = 180f;
         [Tooltip("While spectating, full stick Y pitches the aim at this rate (degrees/s), the hull's own pitch sign.")]
         [SerializeField, Min(0f)] float aimPitchRate = 120f;
-        [Tooltip("Length of the drawn launch path while aiming (world units), from the ship along the aim.")]
+        [Tooltip("Length of the drawn launch path while aiming (world units), from the launch point along the aim.")]
         [SerializeField, Min(0f)] float aimLineLength = 150f;
         [Tooltip("Width of the drawn launch path (world units).")]
         [SerializeField, Min(0f)] float aimLineWidth = 1.2f;
@@ -257,7 +260,7 @@ namespace CosmicShore.Gameplay
         public float SpectateSpinRate => spectateSpinRate;
         public float SpectateEngageSeconds => spectateEngageSeconds;
         public float SpectateReleaseFraction => spectateReleaseFraction;
-        public float SpectateTiltDegrees => spectateTiltDegrees;
+        public float AimElevationDegrees => aimElevationDegrees;
         public float SpectateBlendSeconds => spectateBlendSeconds;
         public float AimYawRate => aimYawRate;
         public float AimPitchRate => aimPitchRate;

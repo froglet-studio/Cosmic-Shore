@@ -50,11 +50,14 @@ SHARED map (`_inputEventShipActions`), so every device resolves it the same way.
 - **Sweep, not colliders**: the ball's path each frame is swept as a sphere through
   `PrismSpatialIndex.QuerySegment`, nearest-first, so a fast ball never tunnels. Each prism is hit
   once per contact; a bounce ends that frame's path.
-- **The chain slices**: the 12 verlet links are GAMEPLAY (`ThresherChainLinks`, stepped in the chain
-  step on every peer). While the chain is **taut** (always, while planted) every **rival** prism a
-  link touches is `Prism.Slice`d along the plane the chain is sweeping, debris at that link's own
-  velocity. It **never cuts its own domain**, and skips shielded prisms — **Space L5 Reaper Chain**
-  makes it cut while slack too, and cut shields (the first cut pops one).
+- **The chain slices rivals and shields its own — taut or slack** (2026-10-13; it used to cut only
+  while taut): the 24 verlet links are GAMEPLAY (`ThresherChainLinks`, stepped in the chain step on
+  every peer). Every **rival** prism a link touches is `Prism.Slice`d along the plane the chain is
+  sweeping, debris at that link's own velocity, and each kill banks energy (§2a); every
+  **own-domain** prism it touches is **shielded** (`ActivateShield`, untimed; already-armoured mass
+  is left alone). It skips shielded rivals — **Space L5 Reaper Chain** makes it cut them (the first
+  cut pops the shield). Reaper Chain used to also mean "cuts while slack"; that half is now the base
+  (rule 26 — the map's `UpgradeDescription` says so).
 - **Own fresh trail**: the fleet's one rule (`SelfTrailContactConfigSO.SuppressesSkimContact`) — the
   ball and chain ignore prisms this pilot laid within the grace window (Mass Mode's ball trail
   included — it is stamped with the pilot's `ownerID`).
@@ -110,7 +113,7 @@ routed to all of them.
 |---|---|---|---|
 | Charge | **Wrecking Ball** (passive) | `explosionSizeMultiplier` ×1 → ×2 (floor ×0.5) | **Lit** — lit colour, explosions spare own domain, bounces own domain even hot |
 | Mass | **Mass Mode** (A, toggle; was the passive Heavy Iron until 2026-10-13) | `ballMassMultiplier` ×1 → ×1.75 on mass; radius × its cube root | **Wrecker** — a smash costs the ball no speed |
-| Space | **Winch** (RT) | `chainReachMultiplier` ×1 → ×1.5 on `maxLen` | **Reaper Chain** — cuts slack and shielded |
+| Space | **Winch** (RT) | `chainReachMultiplier` ×1 → ×1.5 on `maxLen` | **Reaper Chain** — cuts shielded rivals (slack cutting is now the base) |
 | Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap | **Slingshot** — unlock yank ≥ smash speed |
 
 Upgrades are read through the replicated unlock bits at the moment of use (`LitActive`,
@@ -210,13 +213,17 @@ Orbit from cruise (× cruise, RT up): 1.02 at 0.5 s, 1.31 at 1 s, 1.88 at 2 s, 2
 - **Every state change is a quick EASE to the new colour, never a cut or a flicker**
   (`colorBlendRate` 15/s: 95% in 0.2 s, on unscaled time so a smash's turn to red lands inside its
   hit-stop): ball domain → red / lit at smash speed, chain slack → taut → READY lime, and the HUD's
-  chain-out gauge (its own matching `colorBlendRate`). A strobing READY flicker was tried and read
+  energy gauge (its own matching `colorBlendRate`). A strobing READY flicker was tried and read
   as noise; the change itself is the signal. The skid trail keeps `lineMaterial` (vertex colour).
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
-  `VesselHUDPrefab`): the four-icon row Wrecking Ball · Heavy Iron · Winch · Plant
+  `VesselHUDPrefab`): the four-icon row Wrecking Ball · Mass Mode · Winch · Plant
   (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
-  Charge card in the ball's colour and a **chain-out gauge** on the Space card that turns lime at
-  READY. Petal bars are authored (transplanted from the Squirrel's variant).
+  Charge card in the ball's colour and an **energy gauge** on the Space card (2026-10-13; it was the
+  chain-out gauge): how much explosion RADIUS the chain's kills have banked
+  (`ThresherExecutor.EnergyRadius01` = (energy scale − 1) / (`energyMaxDiameterScale` − 1)), iron
+  when empty easing to lime when full, emptied by the blast that spends it. The READY cue now lives
+  on the chain alone. (Field `energyGauge`, `[FormerlySerializedAs("chainOutGauge")]`; the
+  GameObject is `EnergyGauge`.) Petal bars are authored (transplanted from the Squirrel's variant).
 - **Camera**: `ThresherCameraSettingsSO` at `(0, 8, -55)` so the reeled-in ball is in front of the
   lens. Beyond that the executor drives the local pilot's camera (§5a).
 
@@ -247,31 +254,38 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   (reeled in; 67° let out — measured offline by mimicking the transformer, while the rope's own
   tug turns it at most 85–131 °/s). That was the camera "getting whipped around". Below the cap the
   frame tracks the hull exactly, so ordinary flying is unchanged; a snap is spread over ~0.4 s.
-- **Spectate a spin — and AIM it** (re-cut 2026-10-13: the old 1.8 rad/s threshold still made
-  spectators sick). Once a planted orbit circles at `spectateSpinRate` **0.9 rad/s (~52 °/s)** or
-  faster for `spectateEngageSeconds` **0.1 s**, the camera detaches (`CustomCameraController.
-  Spectate`, blending over `spectateBlendSeconds` 0.6 s) to an **aim camera**: it looks DOWN on the
-  orbit from over the shoulder of the launch direction — `spectateTiltDegrees` 30° off straight-down,
-  leaning back from the aim (`ThresherCameraFraming.AimVantagePosition`), far enough that the whole
-  orbit fits the narrower FOV from any side, looking at the pivot, with the **aim as screen-up** so
-  the launch path always runs up the screen. The aim starts as the way the chase camera was facing,
-  laid into the orbit plane, so "ahead" stays "up" across the cut.
-  - **The sticks aim; they no longer tilt the orbit.** `ThresherCameraFraming.TurnAim`: stick X swings
-    the aim right/left in screen terms at `aimYawRate` 180 °/s, stick Y pitches it at `aimPitchRate`
-    120 °/s with the hull's nose-down sign (so the pilot's pitch inversion carries over), and the
-    camera rides the aim — aiming IS turning the camera. The aim can go anywhere on the sphere.
-    `ThresherVesselTransformer.PivotSteer` returns zero while `IsAiming`.
-  - **A lime line** (`aimLineLength` 150 u, `aimLineWidth` 1.2) runs from the ship along the aim:
-    the path a release will fly.
-  - **Release costs no time.** LT up flies the ship off along the aim *at once*, from wherever on the
-    circle it is, at the orbit's speed (`EndPlant` snapshots the aim; the transformer faces the hull
-    along it on the release edge and grip puts the momentum on the nose the same frame). There is
-    no waiting for the tangent to come round. The ball is yanked along the aim too.
-  - It re-attaches on releasing LT or when the spin falls under `spectateReleaseFraction` 0.75 of
-    the threshold. At the shipped dials every orbit at its cap now spectates (reeled in at cruise
-    3.2 rad/s, let out at its cap 1.1); only a let-out orbit hooked on at the crawl floor (0.3 rad/s)
-    is ridden until it spins up. Below the threshold the old behaviour stands: the sticks tilt the
-    orbit at `pivotSteer` and LT releases on the tangent.
+- **Spectate a spin — and AIM it from the launch point** (re-cut twice on 2026-10-13: the 1.8 rad/s
+  threshold still made spectators sick, then the first aim camera watched from over the pivot).
+  Once a planted orbit circles at `spectateSpinRate` **0.9 rad/s (~52 °/s)** or faster for
+  `spectateEngageSeconds` **0.1 s**, the camera detaches (`CustomCameraController.Spectate`, blending
+  over `spectateBlendSeconds` 0.6 s) to the **launch camera**:
+  - **The launch point.** The aim names one point on the circle — the point whose tangent IS the aim
+    (`ThresherChainSolver.LaunchRadial`: with travel normal N, the velocity at radial r is N × r, so
+    the point is r = aim × N). The camera is **centred on that point and looks down the launch
+    trajectory**: it sits behind it along −aim, raised `aimElevationDegrees` 25° toward the orbit's
+    axis, far enough that the whole circle (up to 2r to one side of the point) fits the width
+    (`ThresherCameraFraming.LaunchCameraPosition`), up = the orbit's axis. The aim starts as the way
+    the chase camera was facing, laid into the orbit plane, so the view direction carries across the cut.
+  - **The sticks aim, and the whole spin turns with the camera.** `ThresherCameraFraming.TurnAim`:
+    stick X swings the aim at `aimYawRate` 180 °/s — the launch point slides round the circle and the
+    camera swings with it; stick Y pitches aim and axis together at `aimPitchRate` 120 °/s (the hull's
+    nose-down sign) and the **orbit plane tilts with it** (`ThresherChainSolver.SteerOrbitPlane`
+    lays each pivot step into the plane ⟂ the aim's axis, keeping the spin's sense). `PivotSteer`
+    returns zero while `IsAiming`.
+  - **A lime line** (`aimLineLength` 150 u, `aimLineWidth` 1.2) runs from the launch point along the
+    aim: the path the ship will fly.
+  - **The release is timed for you.** LT up ARMS the launch (`ThresherChainSolver.ArmLaunch`): the
+    ship keeps circling and leaves from the chosen point, along the aim, on the frame it would
+    otherwise carry past it (the angle still to go is within that frame's angular step) — at most one
+    lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). The aim is held once armed. The ball is
+    yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
+    grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
+    re-arms with the same aim).
+  - It re-attaches once the ship has launched, or if the spin falls under `spectateReleaseFraction`
+    0.75 of the threshold (an armed launch still fires at its point). At the shipped dials every orbit
+    at its cap spectates (reeled in at cruise 3.2 rad/s, let out at its cap 1.1); only a let-out orbit
+    hooked on at the crawl floor (0.3 rad/s) is ridden until it spins up. Below the threshold the old
+    behaviour stands: the sticks lean the orbit at `pivotSteer` and LT releases on the tangent at once.
 - **The camera seam** (`CustomCameraController.Spectate` / `SpectateBlendSeconds` /
   `SpectateView`): applied as a BLEND over the settled follow pose, before shake and the portal
   carry; the follow pose is kept separately while blended so the chase smoothing never chases the
@@ -321,7 +335,7 @@ frame of drift. Untested in MPPM.
 | `_SO_Assets/VesselActions/Thresher/ThresherMassModeAction.asset` | `ThresherActionSO` `control: MassMode`, bound to `Button1Action` in the prefab's shared map (§2b) |
 | `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 52 tests (solver, planted steering, windmill, chain smoothing, camera framing, reach envelope, aim camera); offline runner + feel table |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 54 tests (solver, planted steering, windmill, chain smoothing, camera framing, reach envelope, launch camera, armed launch, steered plane); offline runner + feel table |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -335,10 +349,11 @@ prefab, `DriftAudioController`, jets and tails.
   (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.
 - The chase camera can sit well back (up to ~240 u at full Space) whenever the chain is out and the
   ball trails behind; the ball then sits low in the frame, between the lens and the hull.
-- **The aimed release is decided on the OWNER.** The aim is the local pilot's camera state; the
-  hull's pose replicates, but a remote peer's copy of the ball is yanked along that peer's last
-  observed velocity rather than the aim, so for a frame or two the ball's direction can differ
-  across peers until the rope pulls it in line. Untested in MPPM.
+- **The aimed launch is decided on the OWNER.** The aim, the steered plane and the armed launch are
+  the local pilot's camera state and do not replicate. The hull's pose does, but a remote peer runs
+  the plain release the moment LT comes up, so its copy of the ball is let go while the replicated
+  hull keeps circling to the launch point — the remote ball and chain can look wrong for up to a lap.
+  Replicating the armed aim (one Vector3 with the release) is the fix. Untested in MPPM.
 - Mass Mode is a toggle replicated by re-running the press on every peer; a press lost to a peer
   would invert that peer's Mass Mode until the next press (the same exposure every edge has).
 - The windmill and Mass Mode have **no FMOD events of their own** yet: the trail and shield reuse
@@ -356,14 +371,14 @@ prefab, `DriftAudioController`, jets and tails.
 3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. The chain eases to lime first;
    on release the ball goes red, destroys everything including your own trail, each hit a blast
    (string, not per prism), first hit with a hit-stop, debris along its path, `x2, x3…` counter.
-4. **Chain**: fly so the taut chain sweeps through rival prisms — they are sliced; your own are not;
-   shielded rival prisms are skipped.
+4. **Chain**: sweep the chain — taut OR slack — through rival prisms: they are sliced; through your
+   own older trail: those prisms gain shields; shielded rival prisms are skipped (without Reaper).
 5. **Plant**: hold LT — skid (trail), orbit, spin-up; RT up winds in. Release: fly off on the tangent,
    ball yanked after you. Planting straight at the ball still orbits. While planted, the sticks
    steer the orbit (45 °/s, under half the normal turn rate) without changing its speed.
 6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge — hot ball lit, blasts spare
-   your trail, bounces off it; Mass — a hot ball keeps its speed through a row; Space — chain cuts
-   slack and pops shields; Time — releasing a slow orbit still throws a red ball.
+   your trail, bounces off it; Mass — a hot ball keeps its speed through a row; Space — chain pops
+   rival shields and cuts them; Time — releasing a slow orbit still throws a red ball.
 7. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged.
 8. **MPPM two clients**: the guest sees the host's ball and chain; a host hit-stop does not freeze
    the guest, and the host's camera zoom/spectate never moves the guest's camera.
@@ -374,16 +389,18 @@ prefab, `DriftAudioController`, jets and tails.
    hull visibly swings onto the orbit inside a camera that turns smoothly after it. Swinging a
    let-out ball does not pump the camera in and out. Fly another vessel afterwards: its camera is
    at its own distance and hard-attached.
-11. **Spectate earlier + aim** (2026-10-13): plant and let it spin — the camera lifts off much sooner
-    than before (≈ 52 °/s) and looks DOWN on the orbit with a lime line running up the screen from
-    the ship. Push the stick: right swings the line (and the camera) right, pitch swings it
-    up/down; the orbit itself does not tilt. Release LT at any point in the spin — the ship leaves
-    along the line immediately, not on the tangent; the camera eases back behind it.
+11. **Launch camera** (2026-10-13): plant and let it spin — the camera lifts off much sooner than
+    before (≈ 52 °/s) to sit behind a point on the circle, looking down a lime line that starts
+    there. The ship sweeps through that point every lap. Stick right: the point slides round the
+    circle and the camera swings with it. Stick Y: the whole orbit tilts with the camera. Release LT
+    anywhere in the lap — the ship keeps circling and leaves exactly from the point along the line;
+    then the camera eases back behind it.
 12. **Smooth chain**: let the chain out and swing it slack — it curves smoothly, no visible kinks
     at link joints; taut it is a straight line.
-13. **Chain energy**: slice a few rival prisms with the taut chain — the ball's rim leans lime. Tow
+13. **Chain energy**: slice a few rival prisms with the chain — the ball's rim leans lime and the
+    SPACE card's gauge fills toward lime. Tow
     the SLOW ball (domain colour, below smash) into a rival prism — it explodes, bigger the more
-    you sliced; the rim returns to normal. Bounce off your own trail — no explosion, rim stays lime.
+    you sliced; the rim and the Space gauge empty. Bounce off your own trail — no explosion, rim stays lime.
 14. **Mass Mode**: press A — the ball turns your lit colour. Swing it through a rival trail: prisms
     change to your domain (no explosions, even red-hot); through your own trail: they gain shields;
     it lays a trail of your prisms behind it. Slice rival prisms with the chain meanwhile (bank
@@ -399,7 +416,7 @@ prefab, `DriftAudioController`, jets and tails.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
-(when it detaches), `aimYawRate` / `spectateTiltDegrees` (how the aim feels), then `cameraZoomInRate`
+(when it detaches), `aimYawRate` / `aimElevationDegrees` (how the aim feels), then `cameraZoomInRate`
 (how lazily it comes home). Energy: `energyDiameterPerUnit` / `energyMaxDiameterScale`. Mass Mode:
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 

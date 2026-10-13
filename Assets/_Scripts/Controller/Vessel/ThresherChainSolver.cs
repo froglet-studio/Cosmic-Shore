@@ -185,6 +185,10 @@ namespace CosmicShore.Gameplay
         public bool Cracked;
         /// <summary>True on the frame the skid finished and the ball became the pivot.</summary>
         public bool Planted;
+        /// <summary>True on the frame an ARMED launch (<see cref="ThresherChainSolver.ArmLaunch"/>)
+        /// reached its launch point and the ship left the orbit along <see cref="LaunchDirection"/>.</summary>
+        public bool Launched;
+        public Vector3 LaunchDirection;
     }
 
     /// <summary>
@@ -232,9 +236,15 @@ namespace CosmicShore.Gameplay
         float _skidTime;
         bool _wasSlack;
         float _windmillRadius;
+        Vector3 _planeNormal;      // steered orbit plane (zero = leave the plane alone)
+        Vector3 _launchAim;        // armed launch direction (zero = none armed)
+        bool _launchSlingshot;
 
         /// <summary>Seconds of windmill left; 0 outside <see cref="ThresherMode.Windmill"/>.</summary>
         public float WindmillTimeLeft { get; private set; }
+
+        /// <summary>A launch is armed: the ship keeps orbiting until it reaches the launch point.</summary>
+        public bool LaunchArmed => _launchAim.sqrMagnitude > 0.5f;
 
         /// <summary>Fraction below full length at which the chain counts as SLACK for the crack.
         /// A chain riding taut frame after frame must not crack every frame; it has to go slack
@@ -257,6 +267,8 @@ namespace CosmicShore.Gameplay
             _skidTime = 0f;
             _wasSlack = false;
             WindmillTimeLeft = 0f;
+            _planeNormal = Vector3.zero;
+            _launchAim = Vector3.zero;
             IsTaut = true;
         }
 
@@ -280,6 +292,8 @@ namespace CosmicShore.Gameplay
             // The windmill owns the ball until it runs out; a left-trigger release mid-windmill
             // (the trigger was held when the crystal was collected) must not cut it short.
             if (Mode == ThresherMode.Windmill) return;
+            _launchAim = Vector3.zero;
+            _planeNormal = Vector3.zero;
             if (Mode == ThresherMode.Pivot)
             {
                 Vector3 yank = shipVelocity * Settings.Yank;
@@ -308,8 +322,67 @@ namespace CosmicShore.Gameplay
                 _windmillRadius = Mathf.Max(1e-3f, (BallPosition - shipPosition).magnitude);
             Mode = ThresherMode.Windmill;
             LockSpeed = 0f;
+            _launchAim = Vector3.zero;
+            _planeNormal = Vector3.zero;
             WindmillTimeLeft = Mathf.Max(WindmillTimeLeft, seconds);
         }
+
+        /// <summary>
+        /// Steer the planted orbit's PLANE: from the next step the ship's circle is laid into the
+        /// plane with this normal (either sign — the spin keeps its own sense), so turning the aim
+        /// camera turns the whole spin with it. Zero hands the plane back (only
+        /// <see cref="SteerPivot"/> leans it then). Each frame's change is small, so re-laying the
+        /// ship onto the new plane is a small move, never a jump.
+        /// </summary>
+        public void SteerOrbitPlane(Vector3 normal)
+            => _planeNormal = normal.sqrMagnitude > 1e-8f ? normal.normalized : Vector3.zero;
+
+        /// <summary>
+        /// ARM a launch along <paramref name="aim"/>: rather than leaving the orbit wherever the ship
+        /// is when the trigger comes up, it keeps circling until it reaches the one point of the
+        /// circle whose tangent IS the aim (<see cref="LaunchRadial"/>), and leaves from there —
+        /// so the pilot picks a point, and the timing is the solver's job. A re-arm replaces the aim;
+        /// <see cref="Release"/> (or a windmill) disarms. Ignored unless planted.
+        /// <paramref name="slingshot"/> is the Time level-5 snapshot, as on <see cref="Release"/>.
+        /// </summary>
+        public void ArmLaunch(Vector3 aim, bool slingshot)
+        {
+            if (Mode != ThresherMode.Pivot || aim.sqrMagnitude < 1e-8f) return;
+            _launchAim = aim.normalized;
+            _launchSlingshot = slingshot;
+        }
+
+        /// <summary>The planted orbit's normal in its TRAVEL sense (velocity = normal × radial), or
+        /// zero when not planted / degenerate.</summary>
+        public Vector3 OrbitNormal(Vector3 shipPosition)
+        {
+            if (Mode != ThresherMode.Pivot) return Vector3.zero;
+            Vector3 r = shipPosition - Pivot;
+            Vector3 n = Vector3.Cross(r, _lockDirection);
+            return n.sqrMagnitude > 1e-10f ? n.normalized : Vector3.zero;
+        }
+
+        /// <summary>
+        /// The unit radial (from the pivot) of the point on the planted circle where the ship's
+        /// velocity points along <paramref name="aim"/>: with travel normal N, velocity at radial r is
+        /// N × r, so that point is r = aim × N (aim laid into the orbit plane first). False when not
+        /// planted, or the aim is along the orbit's axis (it has no such point).
+        /// </summary>
+        public bool LaunchRadial(Vector3 shipPosition, Vector3 aim, out Vector3 radial)
+        {
+            radial = Vector3.zero;
+            Vector3 n = OrbitNormal(shipPosition);
+            if (n.sqrMagnitude < 0.5f) return false;
+            Vector3 a = Vector3.ProjectOnPlane(aim, n);
+            if (a.sqrMagnitude < 1e-6f) return false;
+            radial = Vector3.Cross(a.normalized, n).normalized;
+            return true;
+        }
+
+        /// <summary>The launch point on the planted circle for <paramref name="aim"/> (see
+        /// <see cref="LaunchRadial"/>); the pivot when there is none.</summary>
+        public Vector3 LaunchPoint(Vector3 shipPosition, Vector3 aim)
+            => LaunchRadial(shipPosition, aim, out var r) ? Pivot + r * Length : Pivot;
 
         // ------------------------------------------------------------------ the step
 
@@ -337,6 +410,7 @@ namespace CosmicShore.Gameplay
 
             if (Mode == ThresherMode.Pivot)
             {
+                if (TryLaunch(shipPosition, dt, ref result)) return result;
                 SteerPivot(shipPosition, pivotSteer, dt);
                 result.ShipVelocity = StepPivot(shipPosition, shipVelocity, payOut, dt);
                 result.BallFrom = BallPosition;
@@ -527,6 +601,38 @@ namespace CosmicShore.Gameplay
                                   Settings.MinShipFraction * Settings.CruiseSpeed);
         }
 
+        /// <summary>
+        /// An armed launch leaves on the frame the ship would otherwise carry PAST its launch point:
+        /// the angle still to go round (in the travel sense) is within this frame's angular step.
+        /// It leaves along the aim at the orbit's speed — the tangent there, by construction — and
+        /// the ball is yanked after it exactly as <see cref="Release"/> yanks it.
+        /// </summary>
+        bool TryLaunch(Vector3 shipPosition, float dt, ref ThresherStepResult result)
+        {
+            if (!LaunchArmed) return false;
+            if (!LaunchRadial(shipPosition, _launchAim, out Vector3 target)) return false;
+            Vector3 r = shipPosition - Pivot;
+            float dist = r.magnitude;
+            if (dist < 1e-5f) return false;
+            Vector3 n = OrbitNormal(shipPosition);
+            Vector3 rh = r / dist;
+            Vector3 t = Vector3.Cross(n, rh);
+            float ahead = Mathf.Atan2(Vector3.Dot(target, t), Vector3.Dot(target, rh));
+            if (ahead < 0f) ahead += 2f * Mathf.PI;
+            float step = LockSpeed / Mathf.Max(1e-3f, dist) * dt;
+            if (ahead > step) return false;
+
+            Vector3 aim = _launchAim;
+            Vector3 velocity = aim * LockSpeed;
+            bool slingshot = _launchSlingshot;
+            Release(velocity, slingshot);   // Pivot -> Free, the yank, disarms
+            result.ShipVelocity = velocity;
+            result.BallFrom = BallPosition;
+            result.Launched = true;
+            result.LaunchDirection = aim;
+            return true;
+        }
+
         Vector3 StepPivot(Vector3 shipPosition, Vector3 shipVelocity, bool payOut, float dt)
         {
             BallPosition = Pivot;
@@ -560,16 +666,27 @@ namespace CosmicShore.Gameplay
 
             Vector3 next = shipPosition + tangent * (LockSpeed * dt);
             Vector3 fromPivot = next - Pivot;
+
+            // A steered plane (the aim camera): lay the step onto it, so the whole circle turns
+            // with the aim. The spin's sense is kept — only the plane moves.
+            if (_planeNormal.sqrMagnitude > 0.5f)
+            {
+                Vector3 laid = Vector3.ProjectOnPlane(fromPivot, _planeNormal);
+                if (laid.sqrMagnitude > 1e-8f) fromPivot = laid.normalized * fromPivot.magnitude;
+            }
+
             float nextDist = fromPivot.magnitude;
             IsTaut = nextDist >= Length;
             if (IsTaut && nextDist > 1e-5f)
-                next = Pivot + fromPivot * (Length / nextDist);
+                fromPivot *= Length / nextDist;
+            next = Pivot + fromPivot;
 
             // The hull travels the CHORD so it lands exactly on the circle; the orbital speed is
             // kept in LockSpeed so the chord's tiny shortfall never accumulates into a stall.
             Vector3 velocity = (next - shipPosition) / dt;
             Vector3 n2 = (next - Pivot).sqrMagnitude > 1e-8f ? (next - Pivot).normalized : n;
             Vector3 t2 = velocity - n2 * Vector3.Dot(velocity, n2);
+            if (_planeNormal.sqrMagnitude > 0.5f) t2 = Vector3.ProjectOnPlane(t2, _planeNormal);
             if (t2.sqrMagnitude > 1e-6f) _lockDirection = t2.normalized;
             return velocity;
         }
@@ -904,32 +1021,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The AIM camera of a spectated orbit: it looks DOWN on the orbit from over the shoulder of
-        /// the launch direction. <paramref name="aim"/> is where a release would send the ship and
-        /// <paramref name="aimUp"/> the camera's "above" (both unit, perpendicular). The camera sits
-        /// <paramref name="tiltDegrees"/> off straight-down-<paramref name="aimUp"/>, leaning BACK
-        /// from the aim, far enough that an orbit of <paramref name="radius"/> fits the narrower
-        /// half-angle with <paramref name="margin"/> from any side; it looks at the pivot with the
-        /// aim as screen-up, so the launch path always runs up the screen.
+        /// The LAUNCH camera of a spectated orbit: centred on the launch point, looking DOWN the
+        /// launch trajectory. It sits behind <paramref name="launchPoint"/> along
+        /// −<paramref name="aim"/>, raised <paramref name="elevationDegrees"/> toward
+        /// <paramref name="aimUp"/> (the orbit's axis on the camera's side), far enough that the
+        /// whole circle — which lies to one side of the launch point, up to 2 ×
+        /// <paramref name="radius"/> across — fits the horizontal half-angle, and its depth the
+        /// vertical one, with <paramref name="margin"/>. Look at the launch point with aimUp as up.
         /// </summary>
-        public static Vector3 AimVantagePosition(Vector3 pivot, Vector3 aim, Vector3 aimUp, float radius,
-                                                 float halfFovRad, float tiltDegrees, float margin)
+        public static Vector3 LaunchCameraPosition(Vector3 launchPoint, Vector3 aim, Vector3 aimUp, float radius,
+                                                   float halfFovVerticalRad, float halfFovHorizontalRad,
+                                                   float elevationDegrees, float margin)
         {
-            float tan = Mathf.Max(0.05f, Mathf.Tan(halfFovRad));
-            float d = radius * Mathf.Max(1f, margin) / tan;
-            float a = tiltDegrees * Mathf.Deg2Rad;
-            Vector3 dir = aimUp.normalized * Mathf.Cos(a) - aim.normalized * Mathf.Sin(a);
-            return pivot + dir.normalized * d;
+            float m = Mathf.Max(1f, margin);
+            float tanH = Mathf.Max(0.05f, Mathf.Tan(halfFovHorizontalRad));
+            float tanV = Mathf.Max(0.05f, Mathf.Tan(halfFovVerticalRad));
+            float d = Mathf.Max(2f * radius * m / tanH, radius * m / tanV);
+            float a = elevationDegrees * Mathf.Deg2Rad;
+            Vector3 dir = -aim.normalized * Mathf.Cos(a) + aimUp.normalized * Mathf.Sin(a);
+            return launchPoint + dir.normalized * d;
         }
 
         /// <summary>
-        /// Turn the aim with the stick, in SCREEN terms for the aim camera (screen-up = the aim,
-        /// screen-right = aimUp × aim): stick X swings the aim right/left about
-        /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it
-        /// toward/away from the camera at <paramref name="pitchRate"/> (rad/s) — positive Y moves it
-        /// away/down, the hull's own nose-down sign, so the pilot's pitch inversion carries over.
-        /// Pitch turns aim and aimUp together (the camera rolls over with it), so the aim can be
-        /// swung anywhere on the sphere. Both stay unit and perpendicular.
+        /// Turn the aim with the stick, in SCREEN terms for the launch camera (looking along the aim,
+        /// aimUp up, screen-right = aimUp × aim): stick X swings the aim right/left about
+        /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it at
+        /// <paramref name="pitchRate"/> (rad/s) — positive Y pitches it DOWN, the hull's own
+        /// nose-down sign, so the pilot's pitch inversion carries over. Pitch turns aim and aimUp
+        /// together (the orbit plane tilts with it), so the aim can be swung anywhere on the sphere.
+        /// Both stay unit and perpendicular.
         /// </summary>
         public static void TurnAim(ref Vector3 aim, ref Vector3 aimUp, float stickX, float stickY,
                                    float yawRate, float pitchRate, float dt)
