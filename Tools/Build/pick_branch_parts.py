@@ -97,7 +97,9 @@ PORT_ONLY = {"I", "M"}
 # Generated running docs a part rewrites wholesale: their cherry-picks conflict whenever the base
 # edits the same file, and keeping the base's copy would drop the part's whole content. Instead the
 # branch's net change to the file (merge-base of base and source -> source) is 3-way merged onto it.
-CARRY = {"D": ["Docs/QA/QA_BACKLOG.md"]}
+# L's Darwin Lab row in the lab catalogue collides with bleeding-edge's Omni Shepard Lab row (2026-10-13);
+# the catalogue's net change also holds D's one-line ecosim note, which is harmless to carry with L.
+CARRY = {"D": ["Docs/QA/QA_BACKLOG.md"], "L": [".claude/skills/labmaker/CATALOG.md"]}
 # Part D's QA backlog refresh and checklist entry describe these parts' features.
 D_DESCRIBES = ["A", "E", "F", "G", "H", "J"]
 
