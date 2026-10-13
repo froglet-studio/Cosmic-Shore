@@ -108,6 +108,63 @@ for element, name in CRYSTALS:
     print(f"{element:6s} {name:10s} {len(basis)} verts, {max(crystals[-1]['plate']) + 1} plates, "
           f"lands on {len(set(lands))} omni verts ({stack} per), worst {worst:.1e}")
 
+# The Space crystal's own animation (its idle state before it joins the combine): Solid.055 is the Space
+# crystal (Solid.060) vertex for vertex at another scale, carrying four shape keys - the squares spinning
+# about the 5-point vertices in two half spins, then about the 3-point vertices - played by Solid.081Action
+# over 120 frames. Baked as deltas in Solid.060's vertex order and frame, plus every frame's weights, and
+# refused unless the replay matches Blender's evaluated mesh at sampled frames.
+SPACE_ANIM = "Solid.055"
+space = next(c for c in crystals if c["element"] == "Space")
+sp_obj = bpy.data.objects[space["object"]]
+src = bpy.data.objects[SPACE_ANIM]
+s_basis = [d.co.copy() for d in sp_obj.data.shape_keys.key_blocks["Basis"].data]
+a_basis = [d.co.copy() for d in src.data.shape_keys.key_blocks["Basis"].data]
+scale = max(v.length for v in s_basis) / max(v.length for v in a_basis)
+atree = kdtree.KDTree(len(a_basis))
+for i, v in enumerate(a_basis):
+    atree.insert(v * scale, i)
+atree.balance()
+amap, aworst = [], 0.0
+for v in s_basis:
+    _, j, dist = atree.find(v)
+    amap.append(j)
+    aworst = max(aworst, dist)
+if aworst > 1e-4 or len(set(amap)) != len(amap):
+    raise SystemExit(f"{SPACE_ANIM} is not the Space crystal at another scale (worst {aworst:.2e})")
+kbs = src.data.shape_keys.key_blocks
+names = [k.name for k in kbs if k.name != "Basis"]
+akeys = []
+for k in kbs:
+    if k.name == "Basis":
+        continue
+    rel = k.relative_key
+    delta = [(k.data[j].co - rel.data[j].co) * scale for j in amap]
+    akeys.append({"name": k.name, "relative": rel.name, "delta": [r5(c) for v in delta for c in v]})
+action = src.data.shape_keys.animation_data.action
+f0, f1 = int(action.frame_range[0]), int(action.frame_range[1])
+curves = {fc.data_path: fc for fc in action.fcurves}
+aweights = []
+for f in range(f0, f1 + 1):
+    aweights.append([round(curves[f'key_blocks["{n}"].value'].evaluate(f), 6) if f'key_blocks["{n}"].value' in curves else 0.0 for n in names])
+# Replay check against Blender's own evaluation at sampled frames.
+scene = bpy.context.scene
+for f in (f0, (f0 + f1) // 4, (f0 + f1) // 2, 3 * (f0 + f1) // 4, f1):
+    scene.frame_set(f)
+    ev = src.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+    w = aweights[f - f0]
+    worst = 0.0
+    for n_i, j in enumerate(amap):
+        replay = s_basis[n_i].copy()
+        for ki, k in enumerate(akeys):
+            replay += w[ki] * __import__("mathutils").Vector(k["delta"][3 * n_i:3 * n_i + 3])
+        worst = max(worst, (replay - ev.vertices[j].co * scale).length)
+    src.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh_clear()
+    if worst > 1e-4:
+        raise SystemExit(f"{SPACE_ANIM} replay at frame {f} is {worst:.2e} off Blender's own mesh")
+space["idle"] = {"source": f"{SPACE_ANIM} ({action.name}), x{scale:.5f}", "fps": scene.render.fps,
+                 "keys": akeys, "weights": aweights}
+print(f"Space idle: {len(akeys)} keys, frames {f0}-{f1}, replay matches Blender")
+
 if len(covered) != len(omni_co):
     raise SystemExit(f"the four crystals land on {len(covered)} of the omni's {len(omni_co)} vertices")
 

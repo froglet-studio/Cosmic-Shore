@@ -9,7 +9,7 @@ a headless scorecard and a shared decision log.
 - **Art data:** `blender -b CrystalsRaw.blend --python Tools/Build/bake_omni_crystal_combine.py -- Docs/Studios/data/omni_crystal_combine.json`
   (the `.blend` is the art team's, not in the repo)
 - **Lab data block:** `python3 Tools/Build/omni_combine_lab_assets.py` (`--check` fails when the data or the
-  shipped colours move and the page has not been rebaked; `--self-test` 6/6)
+  shipped colours move and the page has not been rebaked; `--self-test` 9/9)
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniCombineLab.html`
 
 ## What the art file has (measured 2026-10-13)
@@ -112,3 +112,141 @@ shape keys re-solved against the shipped meshes.
 - What triggers the combine in a match, and whether it plays in reverse (the Split playback) anywhere.
 - The end size: in the game the omni prefab is scaled ×10 and the elemental prefabs ×1.34–1.5. The lab
   uses the art file's relative sizes.
+
+## Round 2 (2026-10-13): the designer's order and morphs, with every effect running
+
+**The decision (logged on the page):** each crystal starts doing its own animation and effects, and the
+combine hands over to the omni doing all four of its effects. Space goes first, because it lays down the
+negative space the others fill. Charge goes next, with a symmetric morph: each petal's back sucks in so its
+three back sides become one, then the five petals become the pentagon's sides as their centres fuse and
+flatten. Mass gets the same treatment into the triangles. Time locks in last with no morph. The timing
+knobs are the designer's round-1 pick (stagger 1.2, flight 4.6, arc 0.4, no swirl, tumble 0.25, morph
+0.1 to 0.9, no flash).
+
+**The timeline (the lab default):**
+
+| Time | What happens |
+|---|---|
+| 0 to 2.5 s | The four idle, each doing its own effect. |
+| 2.5 s | Space sets off. |
+| 3.7 s | Charge sets off. |
+| 4.9 s | Mass sets off. |
+| 6.1 s | Time sets off. |
+| 10.7 s | The last plate lands, and the page hands over to the real omni mesh with its four effects fading in over 0.7 s. |
+| 10.7 to 13.7 s | The omni holds, doing its four effects, then the loop restarts. |
+
+Each crystal's idle effect settles over 0.7 s once it sets off.
+
+**The morphs.** These are derived from the art file's own end pose (`Key 1`), not invented. The derivation
+is in `omni_combine_lab_assets.py`, and its results are baked into the page.
+
+- **Charge** (`wedge_targets`). Each petal is a pentagonal slab with:
+  - a tip (3° off its site's axis);
+  - two shoulders (26°);
+  - two back points (34°).
+
+  The morph runs in two stages:
+  - **Stage 1**, the first 35% of the morph (`suck`): the back points slide onto the line between the
+    shoulders, so the petal's three back edges become one and the petal is a triangle.
+  - **Stage 2**: the five petals untwist together about the site axis (−13.1°, the same at all 12 sites).
+    Each tip goes to the pentagon's centre, the shoulders go to the corners of one pentagon side, and the
+    back points go to the same place along that side. The five wedges then tile the pentagon. This is
+    checked: their area sums to the face's to 1e-4, and no point leaves the face's plane by more than 1e-5.
+- **Mass**: the same, with three wedges per triangle. The prisms are already triangles, so there is no
+  suck-in stage. They untwist by 31.51°, the tips fuse at the centroid, and the base corners go to a side's
+  corners.
+- **Time** (`time_rigid`): per rhombus, the rotation that carries its rest shape onto its slot (Kabsch).
+  The rhombus flies and turns rigidly, with no deformation. Its worst residual against the omni is
+  0.0068, which is 0.4% of the omni's radius.
+- **Space**: its `Key 1` (the squares were already one to one).
+
+A plot of one site through the morph (looking down the site axis) shows the expected shapes:
+- Charge's five petals go from slabs, to triangles at w=0.35, to a flat pentagon of five wedges at w=1.
+- Mass's three prisms go to three thirds of the triangle.
+
+**The effects come from the game's own assets,** not guesses. `omni_combine_lab_assets.py` reads them and
+`--check` fails if they move.
+
+- **Time: the flip wave** (`TimeCrystalFlipWaveProfile.asset`, `FlipWave.Plan`).
+  - Loop 2 s, first ring at 0.2 s, stagger 0.2 s, with the lead ring's and later rings' curves.
+  - Rings go outward from one of the 12 five-fold vertices, sized 5/5/10/5/5.
+  - A new start vertex is drawn each loop.
+- **Space: the 5-point spin, then the 3-point spin.** The idle comes from the art file's own animated copy,
+  `Solid.055` (4 shape keys over 120 frames). The baker replays it and refuses to write unless the replay
+  matches Blender's evaluated mesh at 5 frames. Timing comes from `SpaceCrystalAnimator` (1 s a spin, then
+  a 0.1 s pause).
+- **Charge: bolts on every slab edge** (`ChargeCrystal.hlsl`: speed 0.85, length 0.14, duty 0.35). The
+  crystal also tumbles at 20°/s, as `JustRotate` does on `CrystalCharge.prefab`, and the tumble unwinds in
+  flight so the crystal lands in the omni's frame.
+- **Mass: the depth prisms** (`CrystalDepthPrismProfile.asset`: open −0.88, seal 1, reach 2, start size
+  0.5).
+- **The omni:**
+  - the flip wave on its 30 rhombi;
+  - the squares weave on its 60 squares (`omni_space_squares.json`);
+  - bolts on its 12 pentagons;
+  - the depth prisms on its 20 triangles.
+
+**Scorecard** (seed 7; 60 samples a second from the first departure to the last landing):
+
+| Style | Seam % | Overlap s | Peak (radii/s) | Clearance | Duration s |
+|---|---|---|---|---|---|
+| **Designer's order (round 2)**, the lab default | **0.001** | 0 | 2.05 | 2.6 | 8.2 |
+| Round-1 pick, Key 1 morphs | 0.018 | 0 | 2.1 | 2.6 | 8.2 |
+| All four at once | 0.001 | 0 | 2.78 | 1.41 | 3.4 |
+| Archive: Converge (round 1) | 0.018 | 0 | 4.94 | 1.81 | 2.4 |
+| Archive: Spiral in (round 1) | 0.018 | 0 | 8.24 | 2.17 | 3.2 |
+| Control: no morph | **62.5** | 0 | 1.88 | 2.6 | 8.2 |
+| Control: Key 1 stacks overlap | 0.018 | **3.55** | 2.1 | 2.6 | 8.2 |
+
+The designer's morphs land closer than `Key 1`: the seam drops from 0.018% to 0.001%. The wedge targets
+are computed from the omni's own vertices. Time's rigid pose is compared against the omni separately (see
+Checked). The designer's morphs never stack plates, so they have no overlap to resolve, and round 1's
+fade/shrink question goes away for them.
+
+**Checked**
+- `verify_lab.cjs` PASS (desktop and phone). Both screenshots read: at 2 s the four idle with their effects
+  (Charge's bolts, Time's flip, Space's spin, Mass's prisms).
+- A frame strip of the whole default:
+  - idle effects run first;
+  - Space, Charge, Mass and Time arrive in that order;
+  - the landing is clean at 10.69 s;
+  - the omni effects are running at 12.5 s.
+- A close-up strip of Charge (tinted, 4.3 to 8.4 s) shows pentagons building out of five wedges on the
+  shell.
+- The flip rig finds 12 start vertices and rings of 5/5/10/5/5 on both the Time crystal and the omni,
+  matching the game's plan.
+- `omni_combine_lab_assets.py --check` OK. `--self-test` 9/9, including three new negative controls:
+  - a Charge petal moved to another pentagon is refused ("omni plate 64 gathers 6 plates, expected 5");
+  - a Time rhombus 30% too big, which would need a morph to land, is refused ("misses the omni (worst
+    0.068)");
+  - the shipped wedges and lock-in pass.
+- Both controls still move only their own columns.
+
+**Found**
+1. **The art file has a slip in Time's `Key 1`.** In rhombus 2, corners 9 and 129 are swapped between the
+   rhombus's inner and outer faces. Round 1's land check passed it, because each corner still lands on *an*
+   omni vertex. Only the rigid fit exposed it: the plain Kabsch residual was 0.061 against 0.0068 for every
+   other rhombus. The lab's fit leaves the two corners out and reports them (`artSlips`). Under round 1's `Key 1`
+   morph those two corners cross through the slab on the way in. **For the artist:** swap `Key 1` on vertices 9
+   and 129 of `1.011`.
+2. **Five-fold vertices can't be found from shared corners on an exploded shell.** The plates don't touch,
+   so "vertices where five plates meet" found 60 candidates instead of 12. The fix: tilt each rhombus's
+   outward axis by atan(1/φ) ≈ 31.7° along its long diagonal (the angle from a rhombic triacontahedron
+   face to its five-fold vertex), then cluster within 4°. That gives 12.
+3. **The game's Space crystal is not the art file's.** It ships kites (`author_space_crystal_mesh.py`); the
+   art file and this lab show squares. The idle spin is the art file's animation, which matches the game's
+   5-point/3-point rhythm, but not its mesh.
+
+**Not modelled** (also on the page's About panel):
+- bolts are drawn as 1-pixel lines;
+- the depth prisms are stateless (the game's ratchet keeps state);
+- the shading is a fresnel, not the game's shaders;
+- the sizes are the art file's, not the prefabs'.
+
+**Decision needed (designer)**
+- Whether the morph reads right in motion, especially Charge's suck-in share (`suck`, 35%), and the
+  `plateSpread` across sites.
+- What triggers the combine in a match.
+- The end size.
+- Graduation needs the elemental meshes re-exported from this file (or the targets re-solved against the
+  shipped meshes), and Space's kites reconciled with the squares.
