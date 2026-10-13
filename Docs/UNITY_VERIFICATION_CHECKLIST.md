@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher Time (66) — the Thresher-only circuit race, cut against its sling (`cece/dazzling-hypatia-nmdhle`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed** (`_Scripts/Controller/Arcade/THRESHERTIME.md`): `GameModes.ThresherTime = 66`; `ThresherTimeController :
+GateRaceController` and `ThresherTimeCourse` (Grizzly Time's octagon on the shared `HeadlongCircuit`, cut against the
+Thresher's 229 u full-sling circle — the ball's 479 u/s ceiling on a flat 120 °/s turn), `ThresherTimeCourseTests`
+(14); end-condition target `thresherTimeGateTarget` 24 (SO field + Build twin + getter + `TryGetAuthoredTurnTarget` +
+the three build-baseline rows + `EndConditionOverridesWindow`), `MiniGameHUD` objective provider, `EnumIntegrityTests`
+61 → 62. Every asset authored by `Tools/Build/author_thresher_time_assets.py`: scene `MinigameThresherTime` (cloned from
+`MinigameGrizzlyTime`, fresh `GlobalObjectIdHash`es), card, scoring rule, toast config, preview, build-scene row,
+always-unlocked, both rosters. Card art `CardBackgrounds/ThresherTime.png` (`/cardart` COURSE tier). **No vessel file
+was edited.** AI Threshers never sling (AIPilot writes no trigger) and race at cruise.
+
+**Proved offline:** the course + test file compiled and RUN with Roslyn against the card-art Unity shim (14/14, 400
+seeds × 4 levels; three mutations watched failing); the §1 sling table measured on the shipped `ThresherChainSolver`;
+`author_thresher_time_assets.py --check` (watched failing on a mutated rule asset and a mutated scene block);
+`render_card_backgrounds.py --check`, `author_card_backgrounds.py --strict`, the arcade gates; `unity_refcompile`
+(see the branch's commit message). Nothing has been seen in the editor.
+
+**Verify:**
+1. **Compiles** — `ThresherTimeController`, `ThresherTimeCourse`, `EndConditionOverridesSO`, `EndConditionOverridesWindow`,
+   `MiniGameHUD`; Test Runner: `ThresherTimeCourseTests` (14), `EnumIntegrityTests` (62 modes).
+2. **Build Settings** — `MinigameThresherTime` is listed after `MinigameWarpline` (if the open Editor predates the pull,
+   FrogletTools ▸ Game Modes ▸ Reconcile Build Scene List).
+3. **Arcade card** — **Thresher Time** shows on a fresh account with its course-render background; the launch panel
+   pins the vessel to the Thresher; Test Flight opens the preview.
+4. **Intensity 1, 2 players** — eight rings bloom in a closed loop; the arrow points at your next gate; goal row 0/24.
+5. **Sling** — plant (LT full) at a corner, wind in (RT), let go on the next leg's line: a slack orbit held ~3 s then
+   wound in should leave at > 400 u/s and bleed to cruise in ~2 s. The gate you thread at that speed is CREDITED (the
+   detection clamp is 1600).
+6. **Lap wrap** — after gate 8 the lit ring returns to gate 1, goal row 8/24; the final-lap toast fires on lap 3.
+7. **Intensity 4** — a median lap is a triangle: two near-hairpins (~100–120 u) and a ~200 u corner.
+8. **AI** — add AI Threshers: they steer and thread rings at cruise, never plant, and finish.
+9. **MPPM two clients** — both see the same circuit; gate reports credited once; the winner is the domain whose lead
+   runner finished first.
+10. **End Game Conditions window** — shows the Thresher Time row (24) and the build-summary line.
+
+First-pass tuning: the course's floors / mouths (`ThresherTimeCourse.ForIntensity`), the AI approach (135 / 150 / 100 in
+the scene), comeback 0.3. Open design question: does slinging actually beat cruising (THRESHERTIME.md §8)?
+
 ### 🔴 The Thresher becomes its own vessel: shark hull, swim, morning-star ball, icons (`cece/dazzling-hypatia-nmdhle`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed** (`R_VesselActions/THRESHER.md` §5b): the Squirrel FBX is gone from `Thresher.prefab`; a procedural

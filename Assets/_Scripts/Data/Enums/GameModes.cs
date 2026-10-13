@@ -312,8 +312,15 @@ namespace CosmicShore.Data
         // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
         Warpline = 65,
 
+        // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Thresher's SLING: plant
+        // the ball, orbit it, wind the chain in and let go, and the launch is the hull's own
+        // momentum on a fixed 120 deg/s turn - a corner asks how much sling it is worth. See
+        // _Scripts/Controller/Arcade/THRESHERTIME.md.
+        ThresherTime = 66,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 61) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 62) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
