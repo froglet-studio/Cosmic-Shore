@@ -236,6 +236,13 @@ MonoBehaviours is a normal pattern.
 
 Only the first can stop a build. A check that cries wolf gets switched off.
 
+The two C# checks read only what Unity compiles: `Assets/` and embedded packages
+under `Packages/`. `Port/` (Prisma, the .NET port) and the dotnet harnesses under
+`Tools/` never reach a player, so a `UnityEditor` there is not a finding. Prisma
+matches Shader Graph JSON whose type is the string
+`"UnityEditor.ShaderGraph.GraphData"`; while the checker scanned the whole
+repository, that string held bleeding-edge red (2026-10-13).
+
 Run it yourself before pushing anything structural:
 
 ```bash
@@ -396,7 +403,7 @@ bug to fix.
 | `.github/workflows/build-branch-ci.yml` | Verifies what landed on `build/**`, autofix |
 | `.github/workflows/unity-ci.yml` | Tiered compile verification (inert, needs a runner) |
 | `Tools/CI/validate_project.py` | The static checks |
-| `Tools/CI/test_validate_project.py` | Self-test for the above, 16 cases |
+| `Tools/CI/test_validate_project.py` | Self-test for the above, 25 cases |
 
 ### Settings
 
