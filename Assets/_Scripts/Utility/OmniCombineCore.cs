@@ -160,6 +160,7 @@ namespace CosmicShore.Utility
         /// <summary>The lab's seeding order (its data order), kept so one seed means one combine everywhere.</summary>
         static readonly int[] RngOrder = { Charge, Mass, Space, Time };
         const int TimeFlipSalt = 11, OmniFlipSalt = 23;
+        readonly double[] _slerp = new double[4];
 
         public readonly OmniCombineData Data;
         public readonly double OmniRadius;
@@ -283,7 +284,7 @@ namespace CosmicShore.Utility
                         {
                             case Time:
                             {
-                                var rq = SlerpIdentity(c.Quat[q], w);
+                                var rq = SlerpIdentity(c.Quat[q], w, _slerp);
                                 var cc = D3.Lerp(pl.C, c.FinalCentre[q], w);
                                 v = cc + QuatRotate(rq, b - pl.C);
                                 break;
@@ -416,12 +417,21 @@ namespace CosmicShore.Utility
             return keys[keys.Length - 1];
         }
 
-        /// <summary>A new start vertex every loop, drawn from the other eleven (CrystalFlipWave.LateUpdate), seeded.</summary>
-        static int FlipStart(long loopIndex, int salt, int n)
+        /// <summary>A new start vertex every loop, drawn from the other eleven (CrystalFlipWave.LateUpdate), seeded.
+        /// Each loop's start follows from the last, so the rig carries the walk forward from the loop it last
+        /// answered instead of replaying it from loop 0 (which grew without bound while the converter idles).</summary>
+        static int FlipStart(FlipRig rig, long loopIndex, int salt)
         {
-            int s = (int)Math.Floor(Hash(salt, 0) * n);
-            for (long k = 1; k <= loopIndex; k++) s = (s + 1 + (int)Math.Floor(Hash(salt, (int)k) * (n - 1))) % n;
-            return s;
+            int n = rig.Axes.Length;
+            if (rig.StartLoop < 0 || loopIndex < rig.StartLoop)
+            {
+                rig.StartLoop = 0;
+                rig.Start = (int)Math.Floor(Hash(salt, 0) * n);
+            }
+            for (long k = rig.StartLoop + 1; k <= loopIndex; k++)
+                rig.Start = (rig.Start + 1 + (int)Math.Floor(Hash(salt, (int)k) * (n - 1))) % n;
+            rig.StartLoop = Math.Max(rig.StartLoop, loopIndex);
+            return rig.Start;
         }
 
         Flip FlipPose(FlipRig rig, int p, Plate pl, double t, int salt, double fx)
@@ -429,7 +439,7 @@ namespace CosmicShore.Utility
             var fl = Data.flip;
             long loop = (long)Math.Floor(t / fl.loop);
             double local = t - loop * fl.loop;
-            var step = rig.Plans[FlipStart(loop, salt, rig.Axes.Length)][p];
+            var step = rig.Plans[FlipStart(rig, loop, salt)][p];
             double tk = local - (fl.first + fl.stagger * step.Ring);
             if (tk < 0) return default;
             var cv = step.Ring == 0 ? fl.lead : fl.later;
@@ -618,6 +628,9 @@ namespace CosmicShore.Utility
         {
             public readonly D3[] Axes;
             public readonly Dictionary<int, FlipStep>[] Plans;
+            /// <summary>The flip walk's last answered loop and its start vertex (<see cref="FlipStart"/>).</summary>
+            public long StartLoop = -1;
+            public int Start;
 
             public FlipRig(Plate[] plates, int[] ids)
             {
@@ -705,13 +718,23 @@ namespace CosmicShore.Utility
             return v + t * q[0] + D3.Cross(u, t);
         }
 
-        /// <summary>The fraction <paramref name="t"/> of the turn <paramref name="q"/>, from no turn.</summary>
-        static double[] SlerpIdentity(double[] q, double t)
+        /// <summary>The fraction <paramref name="t"/> of the turn <paramref name="q"/>, from no turn, written into
+        /// <paramref name="into"/> (reused per vertex: Pose runs every frame).</summary>
+        static double[] SlerpIdentity(double[] q, double t, double[] into)
         {
             double w = Math.Max(-1, Math.Min(1, q[0])), ang = 2 * Math.Acos(Math.Abs(w)), s = Math.Sin(ang / 2), sgn = w < 0 ? -1 : 1;
-            if (s < 1e-6) return new double[] { 1, 0, 0, 0 };
+            if (s < 1e-6)
+            {
+                into[0] = 1;
+                into[1] = into[2] = into[3] = 0;
+                return into;
+            }
             double a = ang * t / 2, k = Math.Sin(a) / s;
-            return new[] { Math.Cos(a), q[1] * sgn * k, q[2] * sgn * k, q[3] * sgn * k };
+            into[0] = Math.Cos(a);
+            into[1] = q[1] * sgn * k;
+            into[2] = q[2] * sgn * k;
+            into[3] = q[3] * sgn * k;
+            return into;
         }
 
         /// <summary>The lab's integer hash, bit for bit (Math.imul / &gt;&gt;&gt; semantics).</summary>

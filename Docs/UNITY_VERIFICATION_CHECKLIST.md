@@ -90,6 +90,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   - **After the thickness bake (merged from `cece/determined-ride-rqzaeo`):** the combine morphs thin Mass
     prisms and thickens them in the shader (6.25 → 8, from the data). Check the landed Mass prisms are as thick
     as the omni's triangles when the omni takes over: no step in thickness at the hand-off.
+  - **Ship review:** leaving the Ark releases the picture's render target (Memory Profiler: no
+    `ElementalConverter` RenderTexture while on HOME or flying); coming back rebuilds it with no blank frame.
+    The idle pose no longer allocates per frame (Profiler GC Alloc 0 B in `ElementalConverterView.LateUpdate`).
   - **The picture** renders at screen pixels ×2, with 4× MSAA and SMAA.
   - **The button** sits 56 units above the bottom (the nav bar is at the top).
 - **Revision 3:**

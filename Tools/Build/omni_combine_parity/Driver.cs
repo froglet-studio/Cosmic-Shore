@@ -164,6 +164,21 @@ static class Driver
         bool calm = step < 0.08 * core.OmniRadius;
         Console.WriteLine($"{(calm ? "PASS" : "FAIL")} Charge after a 1000 s wait moves at most {step / core.OmniRadius:F3} omni radii a frame");
         if (!calm) fails++;
+        // The flip walk is carried forward from the last loop asked, not replayed from loop 0: a core that has been
+        // asked about other times (later, then earlier) must pose exactly as a fresh one, in the crystals and the omni.
+        var warm = new OmniCombineCore(data);
+        var fresh = new OmniCombineCore(data);
+        var wa = new float[4][]; var fr = new float[4][];
+        for (int k = 0; k < 4; k++) { wa[k] = new float[pos[k].Length]; fr[k] = new float[pos[k].Length]; }
+        var wo = new float[omni.Length]; var fo = new float[omni.Length];
+        foreach (double t in new[] { 5.0, 900.0, 12.0 }) { warm.Pose(t, wait, cam, wa, fx); warm.OmniPose(t, wait, 1.0, cam, wo); }
+        warm.Pose(733.3, wait, cam, wa, fx); warm.OmniPose(733.3, go, 1.0, cam, wo);
+        fresh.Pose(733.3, wait, cam, fr, fx); fresh.OmniPose(733.3, go, 1.0, cam, fo);
+        double walk = 0;
+        for (int k = 0; k < 4; k++) for (int i = 0; i < wa[k].Length; i++) walk = Math.Max(walk, Math.Abs(wa[k][i] - fr[k][i]));
+        for (int i = 0; i < wo.Length; i++) walk = Math.Max(walk, Math.Abs(wo[i] - fo[i]));
+        Console.WriteLine($"{(walk == 0 ? "PASS" : "FAIL")} the flip walk is independent of what the core was asked before ({walk:E1})");
+        if (walk != 0) fails++;
         return fails;
     }
 }

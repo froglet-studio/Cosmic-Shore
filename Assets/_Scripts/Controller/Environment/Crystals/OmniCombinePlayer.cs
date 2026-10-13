@@ -70,6 +70,8 @@ namespace CosmicShore.Gameplay
         readonly float[] _effect = new float[4];
         float[] _omniPose;
         Vector4[] _massPlates;
+        Vector3[] _massSum;   // WriteMass's per-plate scratch, reused every frame
+        int[] _massCount;
         int[][] _massSites;
         MaterialPropertyBlock _block;
         float _chargeArcBase, _chargeNodeBase, _edgesArcBase, _edgesNodeBase;
@@ -171,6 +173,8 @@ namespace CosmicShore.Gameplay
                 return false;
             }
             _massPlates = new Vector4[massPlates];
+            _massSum = new Vector3[massPlates];
+            _massCount = new int[massPlates];
             var bySite = new Dictionary<int, List<int>>();
             for (int q = 0; q < massPlates; q++)
             {
@@ -358,8 +362,10 @@ namespace CosmicShore.Gameplay
             piece.Renderer.transform.localPosition = centre;
             var pose = _poses[k];
             var plate = _core.CrystalData(k).plate;
-            var sum = new Vector3[_massPlates.Length];
-            var count = new int[_massPlates.Length];
+            var sum = _massSum;
+            var count = _massCount;
+            System.Array.Clear(sum, 0, sum.Length);
+            System.Array.Clear(count, 0, count.Length);
             for (int i = 0; i < plate.Length; i++)
             {
                 sum[plate[i]] += new Vector3(pose[3 * i], pose[3 * i + 1], pose[3 * i + 2]) - centre;

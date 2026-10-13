@@ -47,7 +47,7 @@ namespace CosmicShore.UI
         [Tooltip("Rendered pixels per SCREEN pixel along each edge. The picture is rendered at the size it is shown on " +
                  "screen times this, then filtered down: 2 = four samples per pixel before MSAA.")]
         [SerializeField, Range(1, 3)] int supersampling = 2;
-        [Tooltip("Hardware multisampling on top of the supersampling: 1 (off), 2, 4 or 8. Memory grows with it.")]
+        [Tooltip("Hardware multisampling on top of the supersampling: 1 (off), 2, 4 or 8. Memory grows with it. Off at 3x supersampling (a mipped target cannot be multisampled).")]
         [SerializeField] int msaaSamples = 4;
         [Tooltip("The render target's longest edge never exceeds this many pixels (a 4K screen at 2x would be 7680).")]
         [SerializeField, Range(1024, 8192)] int maxTextureSize = 6144;
@@ -106,12 +106,19 @@ namespace CosmicShore.UI
             if (_button) _button.Select();
         }
 
+        // Leaving lets the picture go: at screen pixels x2 with MSAA it is hundreds of MB on a phone, and nothing
+        // shows it until the Ark is entered again (LateUpdate rebuilds it). The stage itself is small and stays.
         public void OnScreenExit()
         {
             _active = false;
+            ReleaseTarget();
         }
 
-        void OnDisable() => _active = false;
+        void OnDisable()
+        {
+            _active = false;
+            ReleaseTarget();
+        }
 
         void OnDestroy() => ReleaseStage();
 
@@ -203,10 +210,11 @@ namespace CosmicShore.UI
             float w = Mathf.Max(1f, r.width * toPixels) * supersampling, h = Mathf.Max(1f, r.height * toPixels) * supersampling;
             float k = Mathf.Min(1f, maxTextureSize / Mathf.Max(w, h));
             int tw = Mathf.Max(64, Mathf.RoundToInt(w * k)), th = Mathf.Max(64, Mathf.RoundToInt(h * k));
-            int msaa = msaaSamples >= 8 ? 8 : msaaSamples >= 4 ? 4 : msaaSamples >= 2 ? 2 : 1;
+            // A multisampled target cannot carry mips, and above 2x the supersampling is the anti-aliasing anyway.
+            bool mips = supersampling > 2;
+            int msaa = mips ? 1 : msaaSamples >= 8 ? 8 : msaaSamples >= 4 ? 4 : msaaSamples >= 2 ? 2 : 1;
             if (_target && _target.width == tw && _target.height == th && _target.antiAliasing == msaa) return;
             ReleaseTarget();
-            bool mips = supersampling > 2;
             _target = new RenderTexture(tw, th, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
             {
                 name = "ElementalConverter",
