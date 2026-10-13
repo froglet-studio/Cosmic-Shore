@@ -137,6 +137,10 @@ namespace CosmicShore.Gameplay
                     // Seeded per bot so two bots sampling the same stand do not pick the same line.
                     Rng = new System.Random(unchecked(settings.crystalScatterSeed * 7919 + ++ordinal)),
                 };
+                // Spread the bots across the re-plan interval, so their full-range cone queries
+                // never all land in one frame (a plan is ~lines+rivals QueryCones each).
+                m.NextPlanAt = Time.time + Mathf.Max(0.1f,
+                    SerpentChargeSettingsSO.Pick(settings.aiSolveSecondsByIntensity, _intensity, 1f)) * ordinal / 4f;
                 _marksmen.Add(m);
                 pilot.SetExternalTargetProvider(() => SteerPoint(m));
                 // The marksman owns the right trigger (cloak unscoped, rifle scoped) - see the

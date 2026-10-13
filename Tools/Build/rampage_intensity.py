@@ -14,12 +14,13 @@ and 2-3 interpolate. Five axes, all pointing the same way:
     intensity  ->  LESS FLORA + SMALLER PRISMS + SMALLER NUCLEUS + FEWER CRYSTALS
                    + MORE WILDLIFE
 
-  * Flora: 5.00x / 3.67x / 2.33x / 1.00x the authored PLANT COUNT, via this script's SCALES ->
-    SpawnProfileSO.FloraPopulationScale. Intensity 1 grows five times intensity 4's forest -
-    295 plants and 49,150 prisms against 59 and 9,830 - so there is simply more to shoot,
-    everywhere. **This is the one axis that costs COLLIDERS**, and it is gated on two cells
-    the game already ships (see assert_collider_budget). The per-plant BUDGET stays 1.0: more
-    flora means more PLANTS, not bigger ones.
+  * Flora: 1.30x / 1.20x / 1.10x / 1.00x the authored PLANT COUNT, via this script's SCALES ->
+    SpawnProfileSO.FloraPopulationScale. It was 5.00x / 3.67x / 2.33x until 2026-10-13, when
+    intensities 1-2 measured at 2 FPS in play (59,590 / 43,468 prisms - see SCALES for why the
+    PRISM COUNT, not the collider count, is what costs the frame). **This is the one axis that
+    costs per-prism work**, and it is gated on the creation queue's real drain rate (see
+    assert_creation_budget). The per-plant BUDGET stays 1.0: more flora means more PLANTS, not
+    bigger ones.
   * Prisms: 1.60x / 1.40x / 1.20x / 1.00x the authored leaf, via this script's PRISM_SCALES ->
     SpawnProfileSO.FloraPrismScale. A fatter leaf is an easier target for the cone and an
     easier surface to skim, and it is FREE in colliders - the same prisms, larger.
@@ -122,10 +123,22 @@ SPECIES = [
 
 # (FloraPopulationScale, FloraPlantBudgetScale) per intensity, 1-indexed.
 #
-# HOW MANY PLANTS. Intensity 1 grows FIVE TIMES intensity 4's forest and 2-3 interpolate
-# linearly (the ladder is 1 + 4*(4-i)/3, to 2dp - the numbers are written out rather than
-# computed so the asset states exactly what the game reads). Intensity 4 stays at 1.0: the
-# shipped, play-tested arena, untouched.
+# HOW MANY PLANTS. Intensity 1 grows 1.3x intensity 4's forest and 2-3 step down by 0.1.
+# Intensity 4 stays at 1.0: the shipped, play-tested arena, untouched.
+#
+# **It was 5.00 / 3.67 / 2.33 / 1.00 and that was UNPLAYABLE (2026-10-13: 2 FPS in Rampage and
+# Serpent Charge).** The old ceiling (assert_collider_budget, below) compared the forest against
+# Atlantis' 69,000 laid prisms as "ground the engine has already been shown to hold", and the
+# measurement says otherwise. The mechanism is in Prism.CreateBlockCoroutine: a laid prism stays
+# invisible until it wins one of SIX creation completions per frame (MaxCreationCompletionsPerFrame,
+# environment mass has its own six), and every prism still waiting RESUMES ITS COROUTINE EVERY
+# FRAME. So the forest's prism count is a per-frame cost for as long as the backlog lasts, and the
+# backlog drains at 6/frame - 360/s at 60 FPS, 12/s at 2 FPS. 43k prisms is a backlog the game
+# cannot climb out of: the slower it runs the longer the queue, and the longer the queue the slower
+# it runs. The ladder is now bounded by that drain rate (assert_creation_budget): intensity 1's
+# forest drains in under the 45 s planting window at 60 FPS, the same as the play-tested arena.
+# "Easier at 1" is still true on the axes that cost nothing per prism - fatter prisms, a bigger
+# nucleus, more crystals, less wildlife - and those were never touched.
 #
 # **This is the axis that costs COLLIDERS**, and it is the only one that does. Prism size,
 # nucleus size and crystal count are all free in that currency; plant count is not, because
@@ -139,7 +152,16 @@ SPECIES = [
 # plants, not five times as big a plant. Growing the budget instead would multiply prisms
 # without multiplying the thing the player reads (how much forest there is), and it would
 # compound with FloraPrismScale on the same prisms.
-SCALES = [(5.00, 1.00), (3.67, 1.00), (2.33, 1.00), (1.00, 1.00)]
+SCALES = [(1.30, 1.00), (1.20, 1.00), (1.10, 1.00), (1.00, 1.00)]
+
+# The creation queue's real drain rate (Prism.MaxCreationCompletionsPerFrame for environment mass)
+# at a 60 FPS frame, and how long the seeded forest may take to drain through it. The window is the
+# planting window: a forest that cannot finish appearing by the time it finishes being planted is
+# one the frame is still paying for.
+CREATION_COMPLETIONS_PER_FRAME = 6
+CREATION_DRAIN_FPS = 60
+CREATION_DRAIN_SECONDS = 45.0
+FOREST_PRISM_CEILING = int(CREATION_COMPLETIONS_PER_FRAME * CREATION_DRAIN_FPS * CREATION_DRAIN_SECONDS)
 
 # SpawnProfileSO.FaunaPopulationScale per intensity, 1-indexed: intensity N carries N times
 # the authored wildlife. Intensity 1 is 1.0 - the exact Blob-authored population Rampage has
@@ -829,9 +851,19 @@ def main() -> int:
         assert all(a > b for a, b in zip(seq, seq[1:])), \
             f"the {key} ladder is not strictly decreasing: {seq}"
 
-    assert forest(1)[1] == 5 * forest(4)[1], \
-        f"intensity 1 must grow FIVE TIMES intensity 4's plants, got {forest(1)[1]} vs " \
-        f"{forest(4)[1]} - that is the spec, not a tuning value"
+    # THE PERFORMANCE GATE (2026-10-13). Every intensity's seeded forest must drain through the
+    # creation queue inside the planting window at 60 FPS - see SCALES for the death spiral this
+    # exists to prevent. Read the queue's rate off Prism.cs rather than trusting the constant.
+    prism_cs = open(os.path.join(REPO, "Assets", "_Scripts", "Controller", "Vessel", "Prism.cs")).read()
+    assert f"const int MaxCreationCompletionsPerFrame = {CREATION_COMPLETIONS_PER_FRAME};" in prism_cs, \
+        "Prism.MaxCreationCompletionsPerFrame moved - re-derive FOREST_PRISM_CEILING from it"
+    for i in range(1, 5):
+        prisms_i = forest(i)[2]
+        assert prisms_i <= FOREST_PRISM_CEILING, (
+            f"intensity {i} seeds {prisms_i:,} prisms; the creation queue drains "
+            f"{CREATION_COMPLETIONS_PER_FRAME}/frame, so past {FOREST_PRISM_CEILING:,} the forest is "
+            f"still appearing - and every waiting prism still costs a coroutine resume per frame - "
+            f"after {CREATION_DRAIN_SECONDS:.0f} s at {CREATION_DRAIN_FPS} FPS. Lower SCALES[{i - 1}].")
 
     assert_species_aggregation()
 
@@ -925,7 +957,7 @@ def main() -> int:
 
     print("\nself-test OK: intensity 4 reproduces the shipped, play-tested ladder to the digit; "
           "the flora,\nprism, nucleus, volume, count and fauna ladders are all monotonic and "
-          "end on it; intensity 1\ngrows exactly 5x intensity 4's plants; every intensity's "
+          "end on it; every intensity's\nforest drains through the creation queue inside the planting window; every intensity's "
           "forest fits under its own Frenzy gate\nat the same 3.70x; every nucleus guid names a "
           "shipped prefab at the scale this model claims;\nand the collider budget clears both "
           "shipped reference cells.")

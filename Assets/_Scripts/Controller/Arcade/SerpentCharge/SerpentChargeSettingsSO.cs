@@ -48,8 +48,9 @@ namespace CosmicShore.Gameplay
         public float[] aiSolveSecondsByIntensity = { 1.6f, 1.1f, 0.75f, 0.5f };
 
         [Tooltip("Candidate lines an AI scores per plan - aim points sampled from the densest " +
-                 "hostile stand and from the mass ahead of its nose. More = better lines found.")]
-        public int[] aiCandidateLinesByIntensity = { 6, 10, 16, 24 };
+                 "hostile stand and from the mass ahead of its nose. More = better lines found, and " +
+                 "each is one full-range cone query, so this is the AI's frame-time dial.")]
+        public int[] aiCandidateLinesByIntensity = { 4, 6, 9, 12 };
 
         [Tooltip("Degrees of error added to every aim point. The cone is 1.5 deg half-angle, so " +
                  "anything near that visibly costs prisms per shot and most pilot snipes.")]

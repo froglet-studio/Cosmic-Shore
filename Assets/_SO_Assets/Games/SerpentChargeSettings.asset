@@ -23,10 +23,10 @@ MonoBehaviour:
   - 0.75
   - 0.5
   aiCandidateLinesByIntensity:
+  - 4
   - 6
-  - 10
-  - 16
-  - 24
+  - 9
+  - 12
   aiAimJitterDegreesByIntensity:
   - 2.5
   - 1.5

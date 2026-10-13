@@ -97,7 +97,10 @@ SPAWN = ("  arrangeSpawnPointsAroundCell: 1\n  spawnDistanceOutsideNucleus: 500\
 # Each tuple: (settings key, values, +1 if a bigger number is harder, -1 if smaller is harder).
 AI_LADDERS = [
     ("aiSolveSecondsByIntensity",       [1.6, 1.1, 0.75, 0.5],     -1),
-    ("aiCandidateLinesByIntensity",     [6, 10, 16, 24],           +1),
+    # Each candidate is one full-range QueryCone (a linear scan of the spatial index once the
+    # 3,000 u cone's AABB spans the cell), so this is the ladder that costs frame time. Halved on
+    # 2026-10-13 after a 2 FPS report; the bots are also staggered across the re-plan interval.
+    ("aiCandidateLinesByIntensity",     [4, 6, 9, 12],             +1),
     ("aiAimJitterDegreesByIntensity",   [2.5, 1.5, 0.75, 0.25],    -1),
     ("aiReactionSecondsByIntensity",    [1.0, 0.6, 0.3, 0.12],     -1),
     ("aiFireFractionByIntensity",       [0.5, 0.6, 0.7, 0.8],      +1),
