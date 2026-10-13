@@ -30,6 +30,18 @@ reference is that same asset).
 
 ## Recording and playing in Unity
 
+In the editor, three Play-mode entries do this by hand: **FrogletTools > Parity > Record Input**
+starts the recorder, **Replay Recording** stops it, saves the file as
+`Logs/Parity/recording-<yyyyMMdd-HHmmss>.json` (gitignored) and replays it from that file through
+`ReplayPlayer.StartFromFile`, and **Stop Replay** hands input back to the devices. The replay
+holds its last frame until Stop Replay or the end of Play. All three are greyed out outside Play
+and while a capture is queued. Recording a turn on a single-stick hull (Sparrow, in the Dog Fight
+card) and replaying it is the editor check that the stick vectors reach the vessel. The file's
+header is the recorder's default (the active scene, seed 0 outside a deterministic session), so
+it replays from wherever the vessel is when playback starts; it is not a parity case as it stands.
+
+From code:
+
 ```csharp
 ReplayRecorder.Start();                       // from a debug console, a tool, or a test rig
 // ... fly ...

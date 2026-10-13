@@ -47,8 +47,13 @@ namespace CosmicShore.Editor
     /// next case start. Pressing Stop mid-case, or <c>FrogletTools > Parity > Cancel Capture</c>,
     /// cancels the whole run instead; the interrupted case's <c>run.json</c> (the probe's
     /// finished-run marker) is removed and the console names the partial directory. A case whose
-    /// replay will not load, or whose scene is not in the build, is counted as failed and skipped. Each exit runs <see cref="DeterministicSession.Reset"/> and
-    /// clears the two environment variables, so a normal Play afterwards gets the devices back.</para>
+    /// replay will not load, or whose scene is not in the build, is counted as failed and
+    /// skipped. Each exit runs <see cref="DeterministicSession.Reset"/> and clears the two
+    /// environment variables, so a normal Play afterwards gets the devices back.</para>
+    ///
+    /// <para>Three Play-mode entries record and replay by hand, outside any capture:
+    /// <c>Record Input</c>, <c>Replay Recording</c> (saves under the gitignored
+    /// <c>Logs/Parity/</c> and plays the saved file back) and <c>Stop Replay</c>.</para>
     /// </summary>
     public static class ParityCapture
     {
@@ -121,6 +126,101 @@ namespace CosmicShore.Editor
             }
             CSDebug.LogWarning($"[ParityCapture] cancelled at case {Math.Min(queue.index + 1, queue.cases.Length)}/{queue.cases.Length}; cases after it were not captured");
             return true;
+        }
+
+        // ── Record and play back by hand (Play mode) ───────────────────────────────────
+        // A tester records the local pilot's input and plays it straight back from the saved
+        // file, to see a replay drive a hull in the editor (a single-stick hull turns only if the
+        // replay carries its stick vectors). The file lands under the gitignored Logs/Parity/,
+        // never Assets/, so these entries record nothing in the tool ledger either. Outside Play,
+        // and while a capture is queued, the menu greys them out and each one refuses on its own
+        // too, because the Froglet board falls back to a direct call when a validate says no.
+
+        const string RecordInputMenuPath = "FrogletTools/Parity/Record Input";
+        const string ReplayRecordingMenuPath = "FrogletTools/Parity/Replay Recording";
+        const string StopReplayMenuPath = "FrogletTools/Parity/Stop Replay";
+
+        /// <summary>Where <see cref="ReplayRecording"/> saves (gitignored, outside <c>Assets/</c>).</summary>
+        public static string RecordingDirectory => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "Parity"));
+
+        static bool CanRecordInput => HandReplayAllowed && !ReplayRecorder.Recording && !ReplayPlayer.Active;
+        static bool CanReplayRecording => HandReplayAllowed && ReplayRecorder.Recording;
+        static bool CanStopReplay => HandReplayAllowed && ReplayPlayer.Active;
+        static bool HandReplayAllowed => EditorApplication.isPlaying && LoadQueue() == null;
+
+        [MenuItem(RecordInputMenuPath)]
+        [FrogletTool(FrogletToolCategory.Validation, Importance = 1,
+            Description = "Play mode: record the local pilot's input (the IInputStatus floats, stick vectors and button edges) as a parity replay. Replay Recording plays it back.",
+            DocPath = "Assets/_Scripts/Utility/Replay/README.md")]
+        public static void RecordInputMenu()
+        {
+            if (!CanRecordInput)
+            {
+                CSDebug.LogWarning("[ParityCapture] Record Input needs Play mode with no capture queued, no recording running and no replay playing");
+                return;
+            }
+            ReplayRecorder.Start();
+            CSDebug.Log("[ParityCapture] recording input; FrogletTools > Parity > Replay Recording saves it and plays it back");
+        }
+
+        [MenuItem(RecordInputMenuPath, true)]
+        static bool RecordInputMenuValidate() => CanRecordInput;
+
+        [MenuItem(ReplayRecordingMenuPath)]
+        [FrogletTool(FrogletToolCategory.Validation, Importance = 1,
+            Description = "Play mode: stop the Record Input recording, save it under Logs/Parity/ and replay it from that file. The replay owns input until Stop Replay or the end of Play.",
+            DocPath = "Assets/_Scripts/Utility/Replay/README.md")]
+        public static void ReplayRecordingMenu()
+        {
+            if (!CanReplayRecording)
+            {
+                CSDebug.LogWarning("[ParityCapture] Replay Recording needs Play mode with no capture queued and a Record Input recording running");
+                return;
+            }
+            ReplayRecording();
+        }
+
+        [MenuItem(ReplayRecordingMenuPath, true)]
+        static bool ReplayRecordingMenuValidate() => CanReplayRecording;
+
+        [MenuItem(StopReplayMenuPath)]
+        [FrogletTool(FrogletToolCategory.Validation, Importance = 1,
+            Description = "Play mode: stop a replay started by Replay Recording and hand input back to the devices.",
+            DocPath = "Assets/_Scripts/Utility/Replay/README.md")]
+        public static void StopReplayMenu()
+        {
+            if (!CanStopReplay)
+            {
+                CSDebug.LogWarning("[ParityCapture] Stop Replay needs Play mode with no capture queued and a replay playing");
+                return;
+            }
+            ReplayPlayer.Stop();
+            CSDebug.Log("[ParityCapture] replay stopped; input is back on the devices");
+        }
+
+        [MenuItem(StopReplayMenuPath, true)]
+        static bool StopReplayMenuValidate() => CanStopReplay;
+
+        /// <summary>
+        /// Stops the running recording, saves it under <see cref="RecordingDirectory"/> and plays
+        /// it back through <see cref="ReplayPlayer.StartFromFile"/>, so the saved file is what
+        /// drives the vessel. Returns the saved path, or null when nothing was recording or no
+        /// frame was recorded.
+        /// </summary>
+        public static string ReplayRecording()
+        {
+            string path = Path.Combine(RecordingDirectory, $"recording-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            var file = ReplayRecorder.StopAndSave(path);
+            if (file == null || file.Status.Length == 0)
+            {
+                CSDebug.LogWarning(file == null
+                    ? "[ParityCapture] nothing was recording; nothing to replay"
+                    : "[ParityCapture] no input frame was recorded (no local pilot's InputController ran while recording); nothing to replay");
+                return null;
+            }
+            ReplayPlayer.StartFromFile(path);
+            CSDebug.Log($"[ParityCapture] replaying {file.Status.Length} recorded frame(s) from {path}; the last frame is held until Stop Replay or the end of Play");
+            return path;
         }
 
         /// <summary>
