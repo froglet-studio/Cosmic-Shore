@@ -643,7 +643,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var cam = Camera.main;
+            // The flight view's camera: the reticle is projected through it. Not Camera.main, which in flight is
+            // the menu's static camera, so the reticle landed where that camera would have seen the target.
+            var cam = CameraManager.ViewCamera;
             if (cam == null || cam.orthographic)
             {
                 SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NoGameCamera);

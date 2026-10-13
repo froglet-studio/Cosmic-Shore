@@ -246,6 +246,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `styleParams` and `snapshot()` in the page; `omni_shepard_lab_parity.cjs --old-style X --new-style X`.
 - Promoted: no
 
+### L-STU-26 — A fixed-camera scorecard cannot test a stateful promise; score it under the motion the game has
+- Lab: Omni Shepard Lab, round 10 · Branch: `cece/determined-ride-rqzaeo` · Date: 2026-10-13
+- What happened: since round 9 the crystal holds still, and the scorecard's 26 cameras are fixed, so the depth ratchet never reseated and "births seen 0%" was true by default. A new field scorecard orbits the camera 90° over 20 s. It found the shipped reseat (−0.8) seen 73% of the time on the Mass at 250 u and 8.6–56.5% on the omni. Round 7's "0% at −0.8" had been measured at 34 u on a crystal TURNING 15°/s, a different motion. A sweep under the orbit put the bound at −0.87 (0% at both ranges), which matches the mechanism: seen nearly orthographically, a column top 2 radii out clears the silhouette when √(1−d²) > 0.5.
+- Do instead: when a promise depends on history (a ratchet, a hysteresis, a cooldown), the scorecard must move the thing the history is about. Re-measure a promise whenever the motion that produced its number changes, and derive the bound from the mechanism before trusting the sweep.
+- Evidence: `fieldMetricsOf` / `fieldScore` in `Docs/Studios/OmniShepardLab.html`; `OMNI_SHEPARD_LAB.md` "Round 10" Found 1–2 and the reseat table.
+- Promoted: no
+
+### L-STU-27 — "Do they look alike" is a PIXEL question: correlate rendered images, and measure the noise band first
+- Lab: Omni Shepard Lab, round 10 · Branch: `cece/determined-ride-rqzaeo` · Date: 2026-10-13
+- What happened: the ask was "a field of Mass crystals reads as one shared animation". Parameter-space metrics (prism heights matched by view direction, or by plate index) stayed at 0.87–0.99 for every variant, because the depth rule makes the same columns from the same direction whatever the knobs. Only a rendered-image metric separated them: each crystal drawn alone from its own camera direction at 48×48, pixels correlated with its nearest neighbours over the pixels either covers. Every crystal alike: 0.61 at 250 u; a random pose each: 0.12. Three seeds put the noise at ±0.02, so differences under ~0.05 were not called.
+- Do instead: when the ask is about what the eye sees, score the picture, not the parameters. Measure the metric's spread across seeds before ranking variants by it, and keep the parameter metrics as diagnostics of WHY (here: the depth rule holds; only the pose decorrelates).
+- Evidence: `snapLook` / `lookR` in the page; the "After the pick" table, reproduced exactly by `runFieldBatch()` at ship.
+- Promoted: no
+
+### L-STU-28 — Before deleting the assets a lab's old looks read, pin their values in the page
+- Lab: Omni Shepard Lab, round 10 + follow-ups · Branch: `cece/determined-ride-rqzaeo` · Date: 2026-10-13
+- What happened: the Breathe-era tone and rim materials and the Mass crystal's four shell materials were no longer drawn by the game, but the lab's pinned Breathe and Classic looks and its Mass "as shipped" view still read their values through the extractor. Deleting them first would have changed library styles that L-STU-25 says must draw 0 px. The values were copied into a `RETIRED` constant in the page (with the old names aliased to it), the extractor stopped reading the files and emits empty lists, and then the files were deleted. The parity checks that compared against the materials read `RETIRED` instead.
+- Do instead: retire in that order (pin, repoint the extractor and parity, delete), and name the pinned block as retired so no one mistakes it for a shipped value.
+- Evidence: `RETIRED` in the page; `omni_shepard_lab_assets.py` `"shells": []`; commits for F2/F3 on the branch.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

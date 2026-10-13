@@ -52,18 +52,46 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void MassCrystal_FliesTheShellThatHoldsItsSize()
+        public void MassCrystal_FliesItsDepthPrisms_WithTheThicknessInTheMesh()
         {
-            // Three of the Mass crystal's four shells ride a band that SHRINKS them; flying one of
-            // those is what read as "it just shrinks to a point". The outer shell holds its size.
+            // The Mass crystal is one renderer of 60 depth prisms (round 8). The fusion moves that mesh's
+            // vertices onto the hull and draws them on the crystal's own OmniDepthPrismShader material,
+            // undriven - where the vertex stage is the identity only while the material leaves the
+            // thickness to the mesh. A thickness on the material stretches every moved face away from a
+            // plate centre it has left (x5.25 at the Mass's 6.25).
             var set = ElementalCrystalSetSO.Load();
             Assert.IsNotNull(set);
             var mass = set.GetPrefab(CosmicShore.Data.Element.Mass);
             Assert.IsNotNull(mass);
-            Assert.IsTrue(CrystalHullFusion.TryResolveCrystal(mass, out _, out _, out _, out _, out var renderer));
+            Assert.IsTrue(CrystalHullFusion.TryResolveCrystal(mass, out var drawn, out var source, out _, out _, out var renderer));
+            Assert.AreSame(drawn, source, "the Mass prisms draw their own mesh");
+            Assert.AreEqual("MassCrystalPrisms", source.name, $"the Mass crystal flies '{source.name}'");
             var material = renderer.sharedMaterial;
-            Assert.IsTrue(material.HasProperty("_ScaleDistance"), $"'{material.name}' is not a Shepard shell");
-            Assert.AreEqual(0f, material.GetFloat("_ScaleDistance"), $"'{renderer.name}' wears '{material.name}', a shrinking shell");
+            Assert.IsTrue(material.HasProperty("_DepthDriven"), $"'{material.name}' is not on OmniDepthPrismShader");
+            Assert.AreEqual(1f, material.GetFloat("_Thickness"),
+                $"'{material.name}' carries _Thickness {material.GetFloat("_Thickness")}: the thickness belongs in the mesh - re-run Tools/Build/author_mass_crystal_look.py");
+        }
+
+        [Test]
+        public void Undrive_TurnsOffTheCrystalsDepthDriver()
+        {
+            var set = ElementalCrystalSetSO.Load();
+            var mass = set.GetPrefab(CosmicShore.Data.Element.Mass);
+            Assert.IsTrue(CrystalHullFusion.TryResolveCrystal(mass, out _, out _, out _, out _, out var renderer));
+            var block = new MaterialPropertyBlock();
+            block.SetFloat("_DepthDriven", 1f);   // what CrystalDepthPrisms leaves on a visible crystal
+            CrystalHullFusion.Undrive(block, renderer.sharedMaterial);
+            Assert.AreEqual(0f, block.GetFloat("_DepthDriven"));
+
+            // A crystal on any other shader is left alone.
+            var other = new MaterialPropertyBlock();
+            var plain = new Material(Shader.Find("Hidden/InternalErrorShader"));
+            try
+            {
+                CrystalHullFusion.Undrive(other, plain);
+                Assert.IsFalse(other.HasFloat("_DepthDriven"));
+            }
+            finally { Object.DestroyImmediate(plain); }
         }
 
         [Test]
