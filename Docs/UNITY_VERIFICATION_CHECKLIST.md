@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fresh profile: no squad until captains exist — `SquadSystem.Init` no longer builds a squad from null captains (`claude/intelligent-mendel-8jdfvr`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+On a fresh save profile, every entry to Menu_Main threw
+`NullReferenceException at Squad..ctor (Squad.cs:19) ← SquadSystem.Init ← SquadSystem.LoadSquad ← PortSquadView.UpdateView ← PortSquadView.Start`.
+Captains were removed from vessels (`49aa8b455`, 2026-03-02), so `PortSquadView`'s roster is empty, it never
+assigns `SquadSystem.DefaultLeader/RogueOne/RogueTwo`, and with no `squad.data` on disk `Init` called
+`new Squad(null, null, null)`.
+
+**What landed.** `SquadSystem.Init` seeds and saves a squad only when all three default captains are
+assigned. Otherwise the squad stays default and nothing is written, so the `SquadLeader`/`RogueOne`/`RogueTwo`
+getters resolve to null: the empty slot `SquadMemberCard` and `FactionMissionModal` already handle. The squad
+system itself stays: `Docs/PILOTS_AND_ARTIFACTS.md` §1/§5.1 grows the persisted `Squad` into the pilots/artifacts
+squad. Only its captain-seeded default was dead. The fix is in `SquadSystem`, not `PortSquadView`, because
+`FactionMissionModal.Play` reaches the same `Init` through `SquadSystem.SquadLeader`.
+
+**Verified out of editor.** No `unity` CLI or Editor in the session, so `/verify-unity` did NOT run. What did run:
+- **Prisma port, before and after, on a new profile each time.** Both runs used the same tree, driven Bootstrap →
+  Authentication (birth year, consent *declined*, username) → Menu_Main, offline and headless. Before the fix:
+  exactly one `Squad..ctor` NRE, with the reported stack. After: 0 squad exceptions or errors, and no `squad.data`
+  in the profile folder. The tree was a scratch worktree at `36418e79a`, the last bleeding-edge merge before the
+  Stoat port (#1064): today's tip does not build in the port (15 engine gaps in `BlackHole*` and
+  `MouseOrbitCamera`). The squad path is byte-identical between the two commits.
+- `Tools/Build/unity_refcompile` (player config): 0 errors in project code, 0 unverified.
+- `check_console_logging.py`: 0 problems.
+
+**Verify in editor**
+1. Delete `squad.data` from `Application.persistentDataPath`, or use a fresh profile, then enter Menu_Main.
+   Expect no exception from `Squad`/`SquadSystem`, blank member cards under `Screens/PortScreen/SquadView`
+   (inspect them in the Hierarchy), and no `squad.data` file is created.
+2. With a legacy `squad.data` present (non-default values), enter Menu_Main. Expect it to load unchanged, with
+   no exception, and the cards still blank (`CaptainList` is unassigned).
+
 ### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at

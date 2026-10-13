@@ -19,15 +19,23 @@ namespace CosmicShore.Core
 
         public static void Init()
         {
+            // CaptainList must be set externally (e.g. by PortSquadView) before use.
             Squad = DataAccessor.Load<Squad>(SquadSaveFileName);
 
-            if (Squad.Equals(default(Squad)))
-            {
-                Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
-                DataAccessor.Save(SquadSaveFileName, Squad);
-            }
+            if (!Squad.Equals(default(Squad)))
+                return;
 
-            // CaptainList must be set externally (e.g. by PortSquadView) before use.
+            // No saved squad: seed one from the default captains - but only once something has
+            // supplied all three. Captains were removed from vessels, so nothing assigns them today
+            // (PortSquadView's roster is empty) and a fresh profile has NO squad: it stays default,
+            // nothing is written, and the getters below resolve to null - the empty slot every
+            // consumer already draws (SquadMemberCard, FactionMissionModal). Building one from null
+            // captains threw out of Squad's constructor on every fresh-profile entry to Menu_Main.
+            if (DefaultLeader == null || DefaultRogueOne == null || DefaultRogueTwo == null)
+                return;
+
+            Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
+            DataAccessor.Save(SquadSaveFileName, Squad);
         }
 
         public static Squad LoadSquad()
