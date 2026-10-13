@@ -126,12 +126,16 @@ namespace CosmicShore.Utility
         /// <summary>The Mass prisms' depth effect is drawn by the game's depth-prism shader (the converter), not
         /// moved here on the CPU (the lab, whose stateless model this core otherwise reproduces).</summary>
         public bool ShaderDepth;
+        /// <summary>The Charge crystal turns as it idles (the lab's port of JustRotate on CrystalCharge.prefab). The
+        /// converter turns it off (designer, 2026-10-13: "a vestigial rotation that we don't want").</summary>
+        public bool IdleTumble;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
             Seed = 7, Lead = 2.5, Layout = 2, Spread = 3, LayoutYaw = 0,
             Stagger = 1.2, Flight = 4.6, Ease = 2, Arc = 0.4, Swirl = 0, Tumble = 0.25,
             MorphStart = 0.1, MorphLength = 0.8, SiteSpread = 0.5, Suck = 0.35, EffectFade = 0.7, EffectPhase = 0,
+            IdleTumble = true,
         };
     }
 
@@ -245,7 +249,7 @@ namespace CosmicShore.Utility
                 if (idleSpin) SpinWeights(te, c.Data.idle.names, _spinWeights);
                 // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
                 // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
-                double spin = k == Charge ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
+                double spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
                 for (int q = 0; q < c.Plates.Length; q++)
                 {
                     var pl = c.Plates[q];

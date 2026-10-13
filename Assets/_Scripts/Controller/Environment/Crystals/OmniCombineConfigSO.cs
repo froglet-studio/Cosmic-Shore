@@ -84,8 +84,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 3f)] float fadeInSeconds = 1f;
         [Tooltip("Seconds the omni's body takes to dither in over the landed plates before its effects wake.")]
         [SerializeField, Range(0.05f, 2f)] float handOffSeconds = 0.6f;
-        [Tooltip("The omni crystal's radius in world units on the stage.")]
-        [SerializeField, Min(0.1f)] float omniWorldRadius = 4f;
+        [Tooltip("The omni crystal's radius in world units on the stage. Large on purpose: float precision on the off-screen stage is absolute, so a bigger stage shimmers less (ElementalConverterView.StageOrigin).")]
+        [SerializeField, Min(0.1f)] float omniWorldRadius = 40f;
 
         public TextAsset CombineData => combineData;
         public Material ChargeMaterial => chargeMaterial;

@@ -43,6 +43,7 @@ namespace CosmicShore.Gameplay
         static readonly int OpacityUpper = Shader.PropertyToID("_Opacity");     // OmniCrystalFresnel / OmniDepthPrism
         static readonly int ArcIntensity = Shader.PropertyToID("_ArcIntensity");
         static readonly int NodeIntensity = Shader.PropertyToID("_NodeIntensity");
+        static readonly int ArcClockID = Shader.PropertyToID("_ArcClock");
         static readonly int DepthStateID = Shader.PropertyToID("_DepthState");
         static readonly int DepthDrivenID = Shader.PropertyToID("_DepthDriven");
         static readonly int ThicknessID = Shader.PropertyToID("_Thickness");
@@ -270,6 +271,7 @@ namespace CosmicShore.Gameplay
             if (seed.HasValue) _rng = new System.Random(seed.Value);
             _params = _config.Draw(_rng);
             _params.ShaderDepth = true;    // the game's depth-prism shader draws the Mass prisms' depth effect
+            _params.IdleTumble = false;    // designer, 2026-10-13: the Charge crystal's idle turn is vestigial
             if (!convert) _params.Lead = Waiting;
             _t = 0;
             _playing = true;
@@ -422,12 +424,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Read-modify-write, so another writer's override on the same renderer survives (FadeIn's lesson).
-        /// A negative id or value leaves that property alone.</summary>
+        /// A negative id or value leaves that property alone. A discharge also gets the converter's own clock: the
+        /// menu runs at timeScale 0 off the HOME screen, which freezes the shader's _Time.y and with it every bolt.</summary>
         void SetBlock(Renderer r, int opacityId, float opacity, float arcs, float nodes)
         {
             r.GetPropertyBlock(_block);
             if (opacityId >= 0) _block.SetFloat(opacityId, opacity);
-            if (arcs >= 0f) _block.SetFloat(ArcIntensity, arcs);
+            if (arcs >= 0f)
+            {
+                _block.SetFloat(ArcIntensity, arcs);
+                _block.SetFloat(ArcClockID, (float)((_t + _params.EffectPhase) % 3600.0));
+            }
             if (nodes >= 0f) _block.SetFloat(NodeIntensity, nodes);
             r.SetPropertyBlock(_block);
         }

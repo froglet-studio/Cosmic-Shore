@@ -82,7 +82,7 @@ CONFIG_VALUES = [
     ("effectFade", "0.7"),
     ("fadeInSeconds", "1"),
     ("handOffSeconds", "0.6"),
-    ("omniWorldRadius", "4"),
+    ("omniWorldRadius", "40"),
 ]
 
 

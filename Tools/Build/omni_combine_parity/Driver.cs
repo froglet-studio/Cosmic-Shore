@@ -152,6 +152,15 @@ static class Driver
         double off = centres.Max(Math.Abs), least = morph.Min(a => a.Min());
         Console.WriteLine($"{(off < 1e-6 && least == 1 ? "PASS" : "FAIL")} at landing every centre is the omni's ({off:E1}) and every plate has morphed ({least})");
         if (!(off < 1e-6 && least == 1)) fails++;
+        // The converter turns the Charge crystal's idle turn off: waiting, it must not move at all.
+        var still = wait; still.IdleTumble = false;
+        var s0 = new float[4][]; var s1 = new float[4][];
+        for (int k = 0; k < 4; k++) { s0[k] = new float[pos[k].Length]; s1[k] = new float[pos[k].Length]; }
+        core.Pose(0.0, still, cam, s0, fx);
+        core.Pose(37.0, still, cam, s1, fx);
+        double drift = 0; for (int i = 0; i < s0[1].Length; i++) drift = Math.Max(drift, Math.Abs(s0[1][i] - s1[1][i]));
+        Console.WriteLine($"{(drift == 0 ? "PASS" : "FAIL")} without IdleTumble the waiting Charge crystal holds still ({drift:E1})");
+        if (drift != 0) fails++;
         bool calm = step < 0.08 * core.OmniRadius;
         Console.WriteLine($"{(calm ? "PASS" : "FAIL")} Charge after a 1000 s wait moves at most {step / core.OmniRadius:F3} omni radii a frame");
         if (!calm) fails++;

@@ -374,7 +374,22 @@ guarding against nothing.
    That second rule was a no-op only because ARK was disabled. Opening ARK without removing both would
    have dragged every guest onto the converter whenever the host opened a card.
 
-6. **The shipped elemental meshes ARE the art file's, turned.** Round 1 said Charge, Mass and Time "do NOT
+6. **Revision 3 (after the second look): three faults, three causes.**
+   - **"The charge crystal has a vestigial rotation"**: the converter ported `JustRotate` (20°/s) from
+     `CrystalCharge.prefab` as an idle tumble. It is off in the converter (`OmniCombineParams.IdleTumble`; the
+     lab keeps it, so parity still holds).
+   - **"Its edge effect is not working, on the elemental crystal or the omni"**: both discharge shaders time
+     their bolts with `_Time.y`, and `ScreenSwitcher` runs every screen but HOME at `Time.timeScale = 0`, so
+     on the Ark screen the bolts stood still. `ChargeCrystal.shader` and `OmniChargeEdgesShader.shader` now take
+     an optional `_ArcClock` (default −1 = `_Time.y`, so every shipped material is unchanged). The converter
+     writes its own unscaled clock through the property block. DXC compiles every pass of both shaders; a
+     misspelt use fails.
+   - **"A jitter where the whole object looks like it is constantly miscalculating position"**: float
+     precision. The stage sat at y −150000, where a float resolves 1/64 of a unit, on an omni 4 units
+     across, so every vertex snapped by ~0.4% of the radius as the camera circled. The stage is now at
+     −30000 (1/512 of a unit) and 10× larger (`omniWorldRadius` 40), about 0.005% of the radius. That is far
+     below a pixel. (The Toy Box's preview stage at −90000 has the same exposure, at 1/128 of a unit.)
+7. **The shipped elemental meshes ARE the art file's, turned.** Round 1 said Charge, Mass and Time "do NOT
    match the shipped FBXs after a uniform scale", but it never tried a rotation.
    - Mass is the art Mass turned a quarter turn about Z.
    - The omni's triangle prisms are the art omni's turned by a five-fold rotation.

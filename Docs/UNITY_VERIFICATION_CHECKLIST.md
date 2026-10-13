@@ -89,6 +89,13 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   - **The hand-off:** the depth shader's shape blends from Mass's to the triangles' as the prisms morph.
   - **The picture** renders at screen pixels ×2, with 4× MSAA and SMAA.
   - **The button** sits 56 units above the bottom (the nav bar is at the top).
+- **Revision 3:**
+  - **Charge** no longer turns as it idles.
+  - **The discharge** on the Charge crystal and the omni's pentagons runs on the converter's own clock, through a
+    new `_ArcClock` property on `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader`. The default −1 keeps
+    `_Time.y` for every shipped material. On the Ark screen the menu is at timeScale 0, so the bolts had stood
+    still.
+  - **The stage** moved from y −150000 to −30000 and grew 10×, which removes the float-precision shimmer.
 
 **Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player and
 editor 0 errors in project code, negative-controlled on the new view, the player, the new test file and
@@ -121,7 +128,9 @@ wait moves at most 0.039 omni radii a frame). Two mutations (a flip salt, the se
 7. Offline (airplane mode): the Ark screen is fully bright and the converter plays.
 8. Console: no `OmniCombinePlayer` / `CrystalEdgeArcMeshBaker` error. Watch for: Charge with no discharge
    (the bake found no crease), black or inside-out faces (winding), seams at the hand-off.
-9. Look for: back-face culling on the Charge crystal (its shader is `Cull Back`); the scale of the
+9. Charge crystals IN PLAY still discharge as before (the new `_ArcClock` defaults to −1 = scene time):
+   check a Charge pickup and an omni in any arcade mode.
+10. Look for: back-face culling on the Charge crystal (its shader is `Cull Back`); the scale of the
    shells' `_Spread` push at `omniWorldRadius` 4; jaggies or softness in the picture (raise
    `supersampling` to 3 or `msaaSamples` to 8 on `ElementalConverter`); a seam or pop where the omni's
    triangles take over from the landed Mass wedges (there should be none).

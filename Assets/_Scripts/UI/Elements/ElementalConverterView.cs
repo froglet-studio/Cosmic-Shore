@@ -31,8 +31,13 @@ namespace CosmicShore.UI
     [RequireComponent(typeof(RectTransform))]
     public sealed class ElementalConverterView : MonoBehaviour, IScreen
     {
-        /// <summary>Far below the menu cell and the Toy Box's own stage (y −90000), past every far clip.</summary>
-        static readonly Vector3 StageOrigin = new(0f, -150000f, 0f);
+        /// <summary>
+        /// Below the menu cell, past the menu camera's far clip (8000), and NOT far: a GPU computes positions in
+        /// floats, and at y −150000 (the first cut) a float resolves only 1/64 of a unit, so every vertex snapped
+        /// as the camera circled and the whole picture shimmered. At −30000 it resolves 1/512 - on an omni 40
+        /// units across (<see cref="OmniCombineConfigSO"/>), well under a pixel.
+        /// </summary>
+        static readonly Vector3 StageOrigin = new(0f, -30000f, 0f);
 
         [Header("Combine")]
         [Tooltip("What the converter plays: the combine data, the crystals' materials and the per-play ranges.")]
@@ -132,7 +137,9 @@ namespace CosmicShore.UI
             float distance = framing * _frame / Mathf.Sin(half);
             var dir = Quaternion.Euler(pitchDegrees, _orbit, 0f) * Vector3.back;
             _camera.transform.SetPositionAndRotation(centre + dir * distance, Quaternion.LookRotation(-dir, Vector3.up));
-            _camera.nearClipPlane = Mathf.Max(0.05f, distance - 2f * _player.FramingRadius);
+            // Near hugs the stage (nothing on it comes closer than distance - FramingRadius): a far-out near plane is
+            // what keeps the depth buffer's precision for the crystals themselves.
+            _camera.nearClipPlane = Mathf.Max(0.5f, 0.5f * (distance - _player.FramingRadius));
             _camera.farClipPlane = distance + 2f * _player.FramingRadius;
             _camera.fieldOfView = fieldOfView;
             EnsureTarget();
